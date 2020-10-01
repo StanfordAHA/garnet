@@ -1,3 +1,4 @@
+import argparse
 from memory_core.memory_core import gen_memory_core, Mode
 from memory_core.memory_core_magma import MemCore
 from lake.utils.parse_clkwork_csv import generate_data_lists
@@ -1037,7 +1038,9 @@ def basic_tb(config_path,
              stream_path,
              in_file_name="input",
              out_file_name="output",
-             verilator=False):
+             xcelium=False,
+             tempdir_override=False,
+             trace=False):
 
     # These need to be set to refer to certain csvs....
     lake_controller_path = os.getenv("LAKE_CONTROLLERS")
@@ -1117,7 +1120,8 @@ def basic_tb(config_path,
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
+        if tempdir_override:
+            tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files():
@@ -1133,13 +1137,17 @@ def basic_tb(config_path,
                           "magma_opts": {"coreir_libs": {"float_CW"}},
                           "directory": tempdir,
                           "flags": []}
-        if verilator is True:
+        if xcelium is False:
             runtime_kwargs["flags"].append("-Wno-fatal")
+            if trace:
+                runtime_kwargs["flags"].append("--trace")
         else:
             target = "system-verilog"
             runtime_kwargs["simulator"] = "xcelium"
             runtime_kwargs["flags"].append("-sv")
             runtime_kwargs["flags"].append("./*.*v")
+            if trace:
+                runtime_kwargs["dump_vcd"] = True
 
         tester.compile_and_run(target=target,
                                tmp_dir=False,
@@ -1157,8 +1165,25 @@ def test_conv_3_3():
 
 
 if __name__ == "__main__":
+    # conv_3_3 - default tb - use command line to override
+    parser = argparse.ArgumentParser(description='Tile_MemCore TB Generator')
+    parser.add_argument('--config_path',
+                        type=str,
+                        default="conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf")
+    parser.add_argument('--stream_path',
+                        type=str,
+                        default="conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf_0_top_SMT.csv")
+    parser.add_argument('--in_file_name', type=str, default="input")
+    parser.add_argument('--out_file_name', type=str, default="output")
+    parser.add_argument('--xcelium', action="store_true")
+    parser.add_argument('--tempdir_override', action="store_true")
+    parser.add_argument('--trace', action="store_true")
+    args = parser.parse_args()
 
-
-
-
-    test_conv_3_3()
+    basic_tb(config_path=args.config_path,
+             stream_path=args.stream_path,
+             in_file_name=args.in_file_name,
+             out_file_name=args.out_file_name,
+             xcelium=args.xcelium,
+             tempdir_override=args.tempdir_override,
+             trace=args.trace)
