@@ -53,11 +53,6 @@ module `mname`(
 	       );
 
 
-   /* synopsys dc_tcl_script_begin
-    set_dont_retime [current_design] true
-    set_optimize_registers false -design [current_design]
-    */
-   
    //; if ($type =~  m/^constant$/i) {
    assign dout = `$default`;
    //; } 
