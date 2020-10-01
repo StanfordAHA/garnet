@@ -201,7 +201,7 @@ def construct():
   synth.extend_inputs( read_design.all_outputs() )
   synth.extend_inputs( ["cons_scripts"] )
 
-  power.extend_outputs( ["design_innovus_merged.gds"] )
+  power.extend_outputs( ["design-merged.gds"] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -354,11 +354,11 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        lvs            )
-  g.connect(signoff.o('design_innovus_merged.gds'), drc.i('design_merged.gds'))
-  g.connect(signoff.o('design_innovus_merged.gds'), lvs.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
   
   # Skipping 
-  g.connect( signoff.o('design_innovus_merged.gds'), merge_rdl.i('design.gds') )
+  g.connect( signoff.o('design-merged.gds'), merge_rdl.i('design.gds') )
   g.connect( dragonphy.o('dragonphy_RDL.gds'), merge_rdl.i('child.gds') )
   g.connect_by_name( merge_rdl, lvs )
 
@@ -388,7 +388,7 @@ def construct():
   g.connect_by_name( netlist_fixing, signoff )
 
   # Post-Power DRC
-  g.connect(power.o('design_innovus_merged.gds'), power_drc.i('design_merged.gds'))
+  g.connect(power.o('design-merged.gds'), power_drc.i('design_merged.gds'))
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
