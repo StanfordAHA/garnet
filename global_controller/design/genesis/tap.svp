@@ -123,8 +123,7 @@ module `$self->get_module_name()`
    
 
    
-   // First, let's instantiate a Synopsys DesignWare module for the tap
-   // (From /cad/synopsys/syn/P-2019.03/dw/sim_ver/DW_tap.v)
+   // First, let's instantiate a Cadence ChipWare module for the tap
    // ==========================================================================
    //    Parameters:       Valid Values
    //    ==========        ============
@@ -169,7 +168,7 @@ module `$self->get_module_name()`
    //Signals not used in sync mode. Only included to supress warnings
    wire clock_dr, update_dr;
 
-   DW_tap #(
+   CW_tap #(
 	    // system verilog parameterization:
 	    .width(`$width`),
 	    .id(1), // ID is not part of the standard, but really useful to make sure something is alive in the jtag domain.
