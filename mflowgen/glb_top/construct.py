@@ -75,7 +75,7 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
-  genlib            = Step( 'cadence-genus-genlib',          default=True )
+  genlib         = Step( 'cadence-genus-genlib',            default=True )
   drc            = Step( 'mentor-calibre-drc',              default=True )
   lvs            = Step( 'mentor-calibre-lvs',              default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
