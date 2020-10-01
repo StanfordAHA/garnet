@@ -34,7 +34,7 @@ set_driving_cell -no_design_rule \
 
 # reset
 set_max_delay -from [get_ports reset] [expr ${clock_period}*0.9]
-set_min_delay -from [get_ports reset] [expr ${clock_period}*0.5]
+#set_min_delay -from [get_ports reset] [expr ${clock_period}*0.2]
 
 # set_min_delay for all tile-connected inputs
 set_min_delay -from [get_ports *_est* -filter "direction==in"] [expr ${clock_period}*0.65]
