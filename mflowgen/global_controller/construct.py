@@ -61,7 +61,7 @@ def construct():
 
   info         = Step( 'info',                          default=True )
   #constraints  = Step( 'constraints',                   default=True )
-  dc           = Step( 'synopsys-dc-synthesis',         default=True )
+  synth        = Step( 'cadence-genus-synthesis',         default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
@@ -91,7 +91,7 @@ def construct():
   g.add_step( info                     )
   g.add_step( rtl                      )
   g.add_step( constraints              )
-  g.add_step( dc                       )
+  g.add_step( synth                    )
   g.add_step( iflow                    )
   g.add_step( init                     )
   g.add_step( custom_init              )
@@ -117,7 +117,7 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      dc           )
+  g.connect_by_name( adk,      synth           )
   g.connect_by_name( adk,      iflow        )
   g.connect_by_name( adk,      init         )
   g.connect_by_name( adk,      power        )
@@ -132,14 +132,14 @@ def construct():
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
 
-  g.connect_by_name( rtl,         dc        )
-  g.connect_by_name( constraints, dc        )
+  g.connect_by_name( rtl,         synth     )
+  g.connect_by_name( constraints, synth     )
 
-  g.connect_by_name( dc,       iflow        )
-  g.connect_by_name( dc,       init         )
-  g.connect_by_name( dc,       power        )
-  g.connect_by_name( dc,       place        )
-  g.connect_by_name( dc,       cts          )
+  g.connect_by_name( synth,    iflow        )
+  g.connect_by_name( synth,    init         )
+  g.connect_by_name( synth,    power        )
+  g.connect_by_name( synth,    place        )
+  g.connect_by_name( synth,    cts          )
 
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
