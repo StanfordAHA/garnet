@@ -73,8 +73,7 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
-  genlibdb       = Step( 'synopsys-ptpx-genlibdb',          default=True )
-  gdsmerge       = Step( 'mentor-calibre-gdsmerge',         default=True )
+  genlib         = Step( 'cadence-genus-genlib',            default=True )
   drc            = Step( 'mentor-calibre-drc',              default=True )
   lvs            = Step( 'mentor-calibre-lvs',              default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
@@ -89,20 +88,18 @@ def construct():
   # Add glb_tile macro inputs to downstream nodes
 
   pt_signoff.extend_inputs( ['glb_tile.db'] )
-  genlibdb.extend_inputs( ['glb_tile.db'] )
 
   # These steps need timing info for glb_tiles
-
   tile_steps = \
     [ synth, iflow, init, power, place, cts, postcts_hold,
-      route, postroute, postroute_hold, signoff, gdsmerge ]
+      route, postroute, postroute_hold, signoff, genlib ]
 
   for step in tile_steps:
     step.extend_inputs( ['glb_tile_tt.lib', 'glb_tile.lef'] )
 
   # Need the glb_tile gds to merge into the final layout
 
-  gdsmerge.extend_inputs( ['glb_tile.gds'] )
+  signoff.extend_inputs( ['glb_tile.gds'] )
 
   # Need glb_tile lvs.v file for LVS
 
@@ -150,8 +147,7 @@ def construct():
   g.add_step( postroute_hold )
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
-  g.add_step( genlibdb       )
-  g.add_step( gdsmerge       )
+  g.add_step( genlib         )
   g.add_step( drc            )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
@@ -174,7 +170,6 @@ def construct():
   g.connect_by_name( adk,      postroute      )
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
-  g.connect_by_name( adk,      gdsmerge       )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
 
@@ -190,8 +185,7 @@ def construct():
   g.connect_by_name( glb_tile,      postroute_hold )
   g.connect_by_name( glb_tile,      signoff      )
   g.connect_by_name( glb_tile,      pt_signoff   )
-  g.connect_by_name( glb_tile,      genlibdb     )
-  g.connect_by_name( glb_tile,      gdsmerge     )
+  g.connect_by_name( glb_tile,      genlib       )
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
 
@@ -229,17 +223,16 @@ def construct():
   g.connect_by_name( route,        postroute      )
   g.connect_by_name( postroute,    postroute_hold )
   g.connect_by_name( postroute_hold,    signoff   )
-  g.connect_by_name( signoff,      gdsmerge       )
   g.connect_by_name( signoff,      drc            )
   g.connect_by_name( signoff,      lvs            )
-  g.connect_by_name( gdsmerge,     drc            )
-  g.connect_by_name( gdsmerge,     lvs            )
+  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( adk,          pt_signoff     )
   g.connect_by_name( signoff,      pt_signoff     )
 
-  g.connect_by_name( adk,          genlibdb   )
-  g.connect_by_name( signoff,      genlibdb   )
+  g.connect_by_name( adk,          genlib   )
+  g.connect_by_name( signoff,      genlib   )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,       debugcalibre )

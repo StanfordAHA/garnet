@@ -2,8 +2,8 @@
 #=========================================================================
 # construct.py
 #=========================================================================
-# Author : 
-# Date   : 
+# Author :
+# Date   :
 #
 
 import os
@@ -23,6 +23,23 @@ def construct():
   adk_view = 'multicorner-multivt'
   pwr_aware = True
 
+  flatten = 3
+  os_flatten = os.environ.get('FLATTEN')
+  if os_flatten:
+      flatten = os_flatten
+
+  # RTL power estimation
+  rtl_power = False
+  if os.environ.get('RTL_POWER') == 'True':
+      pwr_aware = False
+      rtl_power = True
+
+  # DC power estimation
+  synth_power = False
+  if os.environ.get('SYNTH_POWER') == 'True':
+      synth_power = True
+      pwr_aware = False
+
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
@@ -30,15 +47,19 @@ def construct():
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort'    : 3,
+    'flatten_effort'    : flatten,
     'topographical'     : True,
     # RTL Generation
     'interconnect_only' : True,
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
-    'core_density_target': 0.63
-  
-  }
+    'core_density_target': 0.63,
+
+    'saif_instance'     : 'TilePETb/Tile_PE_inst',
+
+    'testbench_name'    : 'TilePETb',
+    'strip_path'        : 'TilePETb/Tile_PE_inst'
+    }
 
   #-----------------------------------------------------------------------
   # Create nodes
@@ -62,11 +83,30 @@ def construct():
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
+  testbench            = Step( this_dir + '/testbench'                             )
+  xcelium_sim          = Step( this_dir + '/../common/cadence-xcelium-sim'         )
+  if rtl_power:
+    rtl_sim              = xcelium_sim.clone()
+    rtl_sim.set_name( 'rtl-sim' )
+    pt_power_rtl         = Step( this_dir + '/../common/synopsys-ptpx-rtl'         )
+    rtl_sim.extend_inputs( testbench.all_outputs() )
+  gl_sim               = xcelium_sim.clone()
+  gl_sim.set_name( 'gl-sim' )
+  gl_sim.extend_inputs( testbench.all_outputs() )
+  pt_power_gl          = Step( this_dir + '/../common/synopsys-ptpx-gl'            )
+  parse_power_gl       = Step( this_dir + '/parse-power-gl'                        )
+
+  if synth_power:
+    synth_sim               = xcelium_sim.clone()
+    synth_sim.set_name( 'synth-sim' )
+    synth_sim.extend_inputs( testbench.all_outputs() )
+    synth_sim.extend_inputs( ['design.v'] )
+    pt_power_synth          = Step( this_dir + '/../common/synopsys-ptpx-synth'    )
 
   # Power aware setup
   power_domains = None
   pwr_aware_gls = None
-  if pwr_aware: 
+  if pwr_aware:
       power_domains = Step( this_dir + '/../common/power-domains' )
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
   # Default steps
@@ -74,6 +114,8 @@ def construct():
   info         = Step( 'info',                          default=True )
   synth        = Step( 'cadence-genus-synthesis',       default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
+  if synth_power:
+      synth.extend_outputs( ['design.spef.gz'] )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
   place        = Step( 'cadence-innovus-place',         default=True )
@@ -83,8 +125,7 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
-  gdsmerge     = Step( 'mentor-calibre-gdsmerge',       default=True )
+  genlibdb     = Step( 'cadence-genus-genlib',          default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
@@ -118,24 +159,27 @@ def construct():
   synth.set_param( 'order', order )
 
   # Power aware setup
-  if pwr_aware: 
+  if pwr_aware:
       synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
       place.extend_inputs(['place-dont-use-constraints.tcl', 'check-clamp-logic-structure.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
       cts.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'])
       postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
-      route.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] ) 
+      route.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
-      signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] ) 
-      pwr_aware_gls.extend_inputs(['design.vcs.pg.v']) 
+      signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
+      pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
 
+      gl_sim.extend_inputs( ["design.vcs.pg.v"] )
+  
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
   g.add_step( info                     )
   g.add_step( rtl                      )
+  g.add_step( testbench                )
   g.add_step( constraints              )
   g.add_step( custom_dc_scripts        )
   g.add_step( synth                    )
@@ -153,13 +197,22 @@ def construct():
   g.add_step( route                    )
   g.add_step( postroute                )
   g.add_step( signoff                  )
-  g.add_step( pt_signoff   )
+  g.add_step( pt_signoff               )
   g.add_step( genlibdb_constraints     )
   g.add_step( genlibdb                 )
-  g.add_step( gdsmerge                 )
   g.add_step( drc                      )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
+
+  if rtl_power:
+    g.add_step( rtl_sim                )
+    g.add_step( pt_power_rtl           )
+  g.add_step( gl_sim                   )
+  g.add_step( pt_power_gl              )
+  g.add_step( parse_power_gl           )
+  if synth_power:
+    g.add_step( synth_sim              )
+    g.add_step( pt_power_synth            )
 
   # Power aware step
   if pwr_aware:
@@ -169,6 +222,8 @@ def construct():
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
+
+  # Dynamically add edges
 
   # Connect by name
 
@@ -182,9 +237,21 @@ def construct():
   g.connect_by_name( adk,      route        )
   g.connect_by_name( adk,      postroute    )
   g.connect_by_name( adk,      signoff      )
-  g.connect_by_name( adk,      gdsmerge     )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
+  g.connect_by_name( adk,      pt_power_gl  )
+
+  if rtl_power:
+    rtl_sim.extend_inputs(['design.v'])
+    g.connect_by_name( adk,      rtl_sim      )
+    g.connect_by_name( adk,      pt_power_rtl )
+    # To generate namemap
+    g.connect_by_name( rtl_sim,     dc       ) # run.saif
+    g.connect_by_name( rtl,          rtl_sim      ) # design.v
+    g.connect_by_name( testbench,    rtl_sim      ) # testbench.sv
+    g.connect_by_name( dc,       pt_power_rtl ) # design.namemap
+    g.connect_by_name( signoff,      pt_power_rtl ) # design.vcs.v, design.spef.gz, design.pt.sdc
+    g.connect_by_name( rtl_sim,      pt_power_rtl ) # run.saif
 
   g.connect_by_name( rtl,         synth          )
   g.connect_by_name( constraints, synth          )
@@ -222,11 +289,10 @@ def construct():
   g.connect_by_name( postcts_hold, route        )
   g.connect_by_name( route,        postroute    )
   g.connect_by_name( postroute,    signoff      )
-  g.connect_by_name( signoff,      gdsmerge     )
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
-  g.connect_by_name( gdsmerge,     drc          )
-  g.connect_by_name( gdsmerge,     lvs          )
+  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,              genlibdb )
   g.connect_by_name( adk,                  genlibdb )
@@ -234,6 +300,24 @@ def construct():
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
+
+  g.connect_by_name( signoff,      pt_power_gl  )
+  g.connect_by_name( gl_sim,       pt_power_gl  ) # run.saif
+
+  g.connect_by_name( adk,          gl_sim       )
+  g.connect_by_name( signoff,      gl_sim       ) # design.vcs.v, design.spef.gz, design.pt.sdc
+  g.connect_by_name( pt_signoff,   gl_sim       ) # design.sdf
+  g.connect_by_name( testbench,    gl_sim       ) # testbench.sv
+  g.connect_by_name( pt_power_gl,  parse_power_gl ) # power.hier
+
+  if synth_power:
+    g.connect_by_name( adk,          pt_power_synth  )
+    g.connect_by_name( synth,        pt_power_synth  )
+    g.connect_by_name( synth_sim,    pt_power_synth  )
+  
+    g.connect_by_name( adk,          synth_sim       )
+    g.connect_by_name( synth,        synth_sim       )
+    g.connect_by_name( testbench,    synth_sim       )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
@@ -243,9 +327,9 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   # Pwr aware steps:
-  if pwr_aware: 
+  if pwr_aware:
       g.connect_by_name( power_domains,        synth        )
-      g.connect_by_name( power_domains,        init         ) 
+      g.connect_by_name( power_domains,        init         )
       g.connect_by_name( power_domains,        power        )
       g.connect_by_name( power_domains,        place        )
       g.connect_by_name( power_domains,        cts          )
@@ -256,7 +340,7 @@ def construct():
       g.connect_by_name( adk,                  pwr_aware_gls)
       g.connect_by_name( signoff,              pwr_aware_gls)
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
-  
+
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -275,12 +359,12 @@ def construct():
   synth.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
- 
+
   if pwr_aware:
-     init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True ) 
-     pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True ) 
-     
-     init.extend_postconditions(         ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )  
+     init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True )
+     pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True )
+
+     init.extend_postconditions(         ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
      place.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
      cts.extend_postconditions(          ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
      postcts_hold.extend_postconditions( ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
@@ -296,7 +380,7 @@ def construct():
   # and 'additional-path-groups' after 'make_path_groups'
 
   order = init.get_param('order') # get the default script run order
-  path_group_idx = order.index( 'make-path-groups.tcl' ) 
+  path_group_idx = order.index( 'make-path-groups.tcl' )
   order.insert( path_group_idx + 1, 'additional-path-groups.tcl' )
   pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
   order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
@@ -311,8 +395,8 @@ def construct():
   # Pwr aware steps:
   if pwr_aware:
       # init node
-      order = init.get_param('order') 
-      read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl  
+      order = init.get_param('order')
+      read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
       order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
       order.insert( read_idx + 2, 'pd-pe-floorplan.tcl' ) # add here
       order.insert( read_idx + 3, 'pe-add-endcaps-welltaps-setup.tcl' ) # add here
@@ -331,39 +415,39 @@ def construct():
 
       # place node
       order = place.get_param('order')
-      read_idx = order.index( 'main.tcl' ) # find main.tcl  
+      read_idx = order.index( 'main.tcl' ) # find main.tcl
       order.insert(read_idx - 1, 'place-dont-use-constraints.tcl')
       order.append('check-clamp-logic-structure.tcl')
       place.update_params( { 'order': order } )
 
       # cts node
       order = cts.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
       cts.update_params( { 'order': order } )
 
       # postcts_hold node
       order = postcts_hold.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
       postcts_hold.update_params( { 'order': order } )
 
       # route node
       order = route.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
       route.update_params( { 'order': order } )
 
       # postroute node
       order = postroute.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
       postroute.update_params( { 'order': order } )
 
       # signoff node
       order = signoff.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here 
-      read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl 
+      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
+      read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl
       order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
       order.append('check-clamp-logic-structure.tcl')
       signoff.update_params( { 'order': order } )

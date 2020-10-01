@@ -6,7 +6,6 @@ commands:
 outputs:
   - glb_top_tt.lib
   - glb_top.lef
-  - glb_top.db
   - glb_top.gds
   - glb_top.vcs.v
   - glb_top.sdf
