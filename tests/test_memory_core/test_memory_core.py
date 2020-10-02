@@ -1134,7 +1134,7 @@ def basic_tb(config_path,
 
         target = "verilator"
         runtime_kwargs = {"magma_output": "coreir-verilog",
-                          "magma_opts": {"coreir_libs": {"float_CW"}.
+                          "magma_opts": {"coreir_libs": {"float_CW"},
                                          "disable_ndarray": True},
                           "directory": tempdir,
                           "flags": []}
