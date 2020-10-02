@@ -24,8 +24,6 @@ outputs:
 commands:
   - mkdir -p logs
   - source ./run_sim.sh 
-  - cp mflowgen-run.log logs/gls.log 
-  - cp verilog.vcd outputs/run.vcd
 
 #-------------------------------------------------------------------------
 # Parameters
