@@ -1136,7 +1136,8 @@ def basic_tb(config_path,
         runtime_kwargs = {"magma_output": "coreir-verilog",
                           "magma_opts": {"coreir_libs": {"float_CW"}},
                           "directory": tempdir,
-                          "flags": []}
+                          "flags": [],
+                          "disable_ndarray": True}
         if xcelium is False:
             runtime_kwargs["flags"].append("-Wno-fatal")
             if trace:

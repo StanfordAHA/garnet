@@ -145,7 +145,7 @@ def construct():
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
 
-  xcelium_sim.extend_inputs( ["array_rtl.v", "CW_fp_mult.v", "CW_fp_add.v"] )
+  xcelium_sim.extend_inputs( ["array_rtl.v", "CW_fp_mult.v", "CW_fp_add.v", "sram.v"] )
 
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )
@@ -305,6 +305,7 @@ def construct():
   g.connect_by_name( gen_testbench, xcelium_sim )
   g.connect_by_name( adk,           xcelium_sim )
   g.connect_by_name( signoff,       xcelium_sim )
+  g.connect_by_name( gen_sram,      xcelium_sim )
 
   # Now hand off the rest of everything to ptpx-gl
   g.connect_by_name( adk , gl_power )
