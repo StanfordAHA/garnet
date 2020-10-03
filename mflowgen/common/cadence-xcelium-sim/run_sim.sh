@@ -4,7 +4,10 @@ sed -i "1 i\`define CLK_PERIOD ${clock_period}" inputs/testbench.sv
 
 # Default arguments
 ARGS="-sv -timescale 1ns/1ns -access +rwc"
-ARGS="$ARGS -input inputs/cmd.tcl -ALLOWREDEFINITION"
+ARGS="$ARGS -ALLOWREDEFINITION"
+if [ -f "inputs/cmd.tcl" ]; then
+  ARGS="$ARGS -input inputs/cmd.tcl"
+fi
 
 if [ "$PWR_AWARE" = "True" ]; then
   rm inputs/design.vcs.v
@@ -68,3 +71,10 @@ done
   set -x;
   xrun $ARGS
 )
+
+# Reporting
+cp mflowgen-run.log logs/gls.log
+# Bring out trace if waveform enabled...
+if [ "${waveform}" = true ]; then
+  cp verilog.vcd outputs/run.vcd
+fi
