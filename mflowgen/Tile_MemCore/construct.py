@@ -46,8 +46,9 @@ def construct():
     # RTL Generation
     'interconnect_only'   : True,
     # Power Domains
-    'PWR_AWARE'           : pwr_aware
-
+    'PWR_AWARE'           : pwr_aware,
+    'testbench_name'      : 'Interconnect_tb',
+    'gl_strip_path'       : 'Interconnect_tb/dut'
   }
 
   #-----------------------------------------------------------------------
@@ -62,7 +63,6 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-
   rtl                  = Step( this_dir + '/../common/rtl'                         )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   constraints          = Step( this_dir + '/constraints'                           )
@@ -74,16 +74,16 @@ def construct():
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
   gen_testbench        = Step( this_dir + '/gen_testbench'                         )
   gl_sim               = Step( this_dir + '/custom-vcs-sim'                        )
-  gl_power             = Step( this_dir + '/custom-ptpx-gl'                        )
+  gl_power             = Step( this_dir + '/../common/synopsys-ptpx-gl'            )
+  xcelium_sim          = Step( this_dir + '/../common/cadence-xcelium-sim'         )
 
   # Power aware setup
   if pwr_aware:
       power_domains = Step( this_dir + '/../common/power-domains' )
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
-  # Default steps
 
+  # Default steps
   info           = Step( 'info',                           default=True )
-  #constraints    = Step( 'constraints',                    default=True )
   synth          = Step( 'cadence-genus-synthesis',        default=True )
   iflow          = Step( 'cadence-innovus-flowsetup',      default=True )
   init           = Step( 'cadence-innovus-init',           default=True )
@@ -96,10 +96,11 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  genlibdb       = Step( 'cadence-genus-genlib',           default=True )
   drc            = Step( 'mentor-calibre-drc',             default=True )
   lvs            = Step( 'mentor-calibre-lvs',             default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',  default=True )
+
 
   # Extra DC input
   synth.extend_inputs(["common.tcl"])
@@ -108,8 +109,8 @@ def construct():
   # Add sram macro inputs to downstream nodes
 
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-  pt_signoff.extend_inputs( ['sram_tt.db'] )
-  genlibdb.extend_inputs( ['sram_tt.db'] )
+  #pt_signoff.extend_inputs( ['sram_tt.db'] )
+  genlibdb.extend_inputs( ['sram_tt.lib'] )
 
   # These steps need timing and lef info for srams
 
@@ -143,6 +144,8 @@ def construct():
   power.extend_inputs( ["sdc"] )
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
+
+  xcelium_sim.extend_inputs( ["array_rtl.v", "CW_fp_mult.v", "CW_fp_add.v", "sram.v"] )
 
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )
@@ -196,6 +199,8 @@ def construct():
   g.add_step( gen_testbench        )
   g.add_step( gl_sim               )
   g.add_step( gl_power             )
+
+  g.add_step( xcelium_sim          )
 
   # Power aware step
   if pwr_aware:
@@ -296,10 +301,16 @@ def construct():
   g.connect_by_name( adk,           gl_sim )
   g.connect_by_name( signoff,       gl_sim )
 
+  # xcelium sim just needs tb, adk, and outputs from signoff...
+  g.connect_by_name( gen_testbench, xcelium_sim )
+  g.connect_by_name( adk,           xcelium_sim )
+  g.connect_by_name( signoff,       xcelium_sim )
+  g.connect_by_name( gen_sram,      xcelium_sim )
+
   # Now hand off the rest of everything to ptpx-gl
   g.connect_by_name( adk , gl_power )
   g.connect_by_name( signoff , gl_power )
-  g.connect_by_name( gl_sim, gl_power )
+  g.connect_by_name( xcelium_sim, gl_power )
 
   # Pwr aware steps:
   if pwr_aware:
@@ -328,6 +339,8 @@ def construct():
   synth.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+
+  gl_power.update_params( {'strip_path': parameters['gl_strip_path']}, True )
 
   if pwr_aware:
       pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True )
