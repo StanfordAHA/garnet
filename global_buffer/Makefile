@@ -79,7 +79,7 @@ html: $(rdl_post)
 	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl.post
 
 # sim-tile
-# run testbench of glb-tile with vcs/xcelium
+# run testbench of glb-tile with xcelium
 .PHONY: sim-tile
 sim-tile: TOP_MODULE=glb_tile
 sim-tile: TB_DIR=sim-tile
@@ -88,7 +88,7 @@ sim-tile: $(RTL_LISTS)
 	$(XRUN)
 
 # sim-tile-pnr
-# run testbench of glb-tile with vcs/xcelium with sdf back annotation
+# run testbench of glb-tile with xcelium with sdf back annotation
 .PHONY: sim-til-gl
 sim-tile-gl: TOP_MODULE=glb_tile
 sim-tile-gl: TB_DIR=sim-tile
@@ -118,7 +118,8 @@ sim-gl: DESIGNARGS += \
 	-v $(SRAM_RTL) \
 	$(GLB_TOP_NETLIST) \
 	$(GLB_TILE_NETLIST)
-sim-gl: $(RTL_LISTS) $(GLB_TOP_NETLIST) $(GLB_TILE_NETLIST)
+sim-gl: XRUNARGS += +define+PNR
+sim-gl: $(GLB_TOP_NETLIST) $(GLB_TILE_NETLIST)
 	$(XRUN)
 
 .PHONY: clean
