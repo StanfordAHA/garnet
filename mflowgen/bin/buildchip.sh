@@ -34,8 +34,13 @@ Options:
 
     '--retry' <dir> attempts to restart an existing failed build <dir>
                     (same as 'cd <dir>; $cmd')
+
+History:
+   On arm machine, build history is maintained in /build/build.HIST
+   On vde machine, build history is maintained in /proj/forward/CI/build.HIST
     
 Examples:
+   $cmd --new   /build/            ; # Creates new directory "/build/build.<n>"
    $cmd --new   /proj/forward/CI          ; # Creates new directory "build.<n>"
    $cmd --retry /proj/forward/CI/build.14 ; # Builds in existing directory
    $cmd |& tee buildchip.log              ; # Basically does "make lvs" in cur dir
@@ -50,7 +55,10 @@ EOF
 
 ########################################################################
 # command-line args
-ACTION=make
+ACTION=new
+if [ "$1" == "" ]; then
+    Usage; exit 13
+fi
 case "$1" in
     -v|--verbose) VERBOSE=true;  shift ;;
     -q|--quiet)   VERBOSE=false; shift ;;
@@ -85,14 +93,14 @@ if [ "$ACTION" == "new" ]; then
     # Maybe build numbers are coordinated by a world-writable directory
     # full of build logs e.g. /build/buildchip_logs/{build.0,build.1,build.2...}
 
-    logdir=/proj/forward/CI/buildchip_logs ;  # For VDE
-    [ `hostname` == "r7arm-aha" ] && logdir=/build/buildchip_logs ; # for ARM
+    logdir=/proj/forward/CI/build.HIST ;  # For VDE
+    [ `hostname` == "r7arm-aha" ] && logdir=/build/build.HIST ; # for ARM
     if ! (test -d $logdir && test -w $logdir); then
         echo "**ERROR: logdir $logdir not found or not writeable"; exit 13
     fi
 
     build=`cd $logdir; get_next_name build1` ; # e.g. 'build.14'
-    log=$logdir/$build;                       # e.g. '/build/buildchip_logs/build.14'
+    log=$logdir/$build;                       # e.g. '/build/build.HIST/build.14'
 
     echo `date` $build | tee $log
 
