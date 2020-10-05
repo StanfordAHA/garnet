@@ -57,8 +57,9 @@ else
          else
            cp garnet.v design.v
          fi
-         cat global_buffer/rtl/*.sv >> design.v
-         cat global_buffer/rtl/*.svh >> design.v"
+         cat global_buffer/rtl/global_buffer_param.svh >> design.v
+         cat global_buffer/rtl/global_buffer_pkg.svh >> design.v
+         cat global_buffer/rtl/*.sv >> design.v"
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       # Kill the container
@@ -85,8 +86,9 @@ else
       fi
 
       # Copy global buffer systemverilog from the global buffer folder
+      cat global_buffer/rtl/global_buffer_param.svh >> $current_dir/outputs/design.v
+      cat global_buffer/rtl/global_buffer_pkg.svh >> $current_dir/outputs/design.v
       cat global_buffer/rtl/*.sv >> $current_dir/outputs/design.v
-      cat global_buffer/rtl/*.svh >> $current_dir/outputs/design.v
     fi
 
     cd $current_dir
