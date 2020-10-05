@@ -57,6 +57,7 @@ else
          else
            cp garnet.v design.v
          fi
+         make -C global_buffer rtl CGRA_WIDTH=${array_width} NUM_GLB_TILES=$((array_width / 2))
          cat global_buffer/rtl/global_buffer_param.svh >> design.v
          cat global_buffer/rtl/global_buffer_pkg.svh >> design.v
          cat global_buffer/systemRDL/output/*.sv >> design.v
@@ -86,6 +87,8 @@ else
         cp garnet.v $current_dir/outputs/design.v
       fi
 
+      # make to generate systemRDL RTL files
+      make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${array_width} NUM_GLB_TILES=$((array_width / 2))
       # Copy global buffer systemverilog from the global buffer folder
       cat global_buffer/rtl/global_buffer_param.svh >> $current_dir/outputs/design.v
       cat global_buffer/rtl/global_buffer_pkg.svh >> $current_dir/outputs/design.v
