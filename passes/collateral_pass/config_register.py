@@ -99,7 +99,7 @@ def get_core_registers(interconnect: Interconnect):
             # memory has couple features
             base_feat_addr = tile.features().index(core)
             regs = list(core.registers.keys())
-            for reg_name in enumerate(regs):
+            for reg_name in regs:
                 reg_addr, lo, hi = core.get_reg_info(reg_name)
                 width = core.registers[reg_name].width
                 addr = interconnect.get_config_addr(reg_addr, base_feat_addr,
