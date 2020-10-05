@@ -148,7 +148,7 @@ if [ "$ACTION" == "new" ]; then
         log=$logdir/$build;     # e.g. '/build/build.HIST/build.14'
         echo "Remaining output tees to '$log'"
         set -o pipefail; # Don't let 'tee' command obscure error status
-        exec $0 "$orig_args[@]" --build_num $BUILD_NUM | tee -a $log
+        exec $0 "${orig_args[@]}" --build_num $BUILD_NUM | tee -a $log
         echo "WARNING should *never* be here on line 153"
         exit
     else
