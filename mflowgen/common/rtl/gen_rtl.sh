@@ -12,34 +12,34 @@ else
     # Clean out old rtl outputs
     rm -rf $GARNET_HOME/genesis_verif
     rm -f $GARNET_HOME/garnet.v
-  
+
     # Build up the flags we want to pass to python garnet.v
     flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --no-sram-stub"
-   
+
     if [ $PWR_AWARE == False ]; then
      flags+=" --no-pd"
     fi
-   
+
     if [ $interconnect_only == True ]; then
      flags+=" --interconnect-only"
     fi
-   
-    # Use aha docker container for all dependencies 
+
+    # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
       # Clone AHA repo
       git clone https://github.com/StanfordAHA/aha.git
       cd aha
       # install the aha wrapper script
       pip install -e .
-  
+
       # pull docker image from docker hub
       docker pull stanfordaha/garnet:latest
-      
+
       # run the container in the background and delete it when it exits
       # (this will print out the name of the container to attach to)
       container_name=$(aha docker)
       echo "container-name: $container_name"
-  
+
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # Clone local garnet repo to prevent copying untracked files
@@ -56,32 +56,39 @@ else
            cat genesis_verif/* >> design.v
          else
            cp garnet.v design.v
-         fi"
+         fi
+         cat global_buffer/rtl/*.sv >> design.v
+         cat global_buffer/rtl/*.svh >> design.v"
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       # Kill the container
       docker kill $container_name
       echo "killed docker container $container_name"
       cd ..
-    
-    # Else we want to use local python env to generate rtl 
+
+    # Else we want to use local python env to generate rtl
     else
       current_dir=$(pwd)
       cd $GARNET_HOME
-       
+
       eval "python garnet.py $flags"
-      
+
       # If there are any genesis files, we need to cat those
       # with the magma generated garnet.v
       if [ -d "genesis_verif" ]; then
         cp garnet.v genesis_verif/garnet.sv
         cat genesis_verif/* >> $current_dir/outputs/design.v
+
       # Otherwise, garnet.v contains all rtl
       else
         cp garnet.v $current_dir/outputs/design.v
       fi
-    fi 
-    
+
+      # Copy global buffer systemverilog from the global buffer folder
+      cat global_buffer/rtl/*.sv >> $current_dir/outputs/design.v
+      cat global_buffer/rtl/*.svh >> $current_dir/outputs/design.v
+    fi
+
     cd $current_dir
   fi
 fi
