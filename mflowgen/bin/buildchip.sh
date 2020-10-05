@@ -172,7 +172,7 @@ if [ "$ACTION" == "new" ]; then
 elif  [ "$ACTION" == "old" ]; then
     cd $build_dir
     if [ "$build_dir" == "" ]; then 
-        echo "**ERROR: No build dir on command line"; Usage; exit 13; fi
+        echo "**ERROR: No build dir on command line"; Usage; exit 13
     fi
 fi
 
