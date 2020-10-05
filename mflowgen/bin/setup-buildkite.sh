@@ -5,6 +5,17 @@
 #     source setup-buildkite.sh --dir /build/gold.100/full_chip
 #     source setup-buildkite.sh --dir /build/gold.100/full_chip --need_space 30G
 
+# Setup script "source setup-buildkite.sh --dir <d>" does the following:
+#   - if unset yet, sets GARNET_HOME to wherever the setup script lives
+#   - checks dir <d> for sufficient disk space;
+#   - sets TMPDIR to /sim/tmp
+#   - sets python env BUT ONLY if you're running as buildkite-agent
+#   - source garnet-setup.sh for CAD paths
+#   - finds or creates requested build directory
+#   - makes local link to mflowgen repo "/sim/buildkite-agent/mflowgen"
+#   - makes local copy of adk
+
+
 ##############################################################################
 # Script must be sourced; complain if someone tries to execute it instead.
 # Stackoverflow says to do it this way (ish)
