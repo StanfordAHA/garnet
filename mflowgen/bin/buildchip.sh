@@ -177,7 +177,7 @@ if [ "$ACTION" == "new" ]; then
     
     which mflowgen
     mflowgen run --design $GARNET_HOME/mflowgen/full_chip || exit 13
-    set -o pipefail; exec --make_only $0 |& tee -a $log
+    set -o pipefail; exec $0 --make_only |& tee -a $log
 
     # Unit test:
     if [ ]; then 
