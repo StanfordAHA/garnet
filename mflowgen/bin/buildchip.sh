@@ -155,7 +155,8 @@ if [ "$ACTION" == "new" ]; then
         #   - makes local copy of adk
 
         # We still need/want this, right? Not sure how it's gonnna work on VDE
-        source $garnet/mflowgen/bin/setup-buildkite.sh \
+        garnet=$GARNET_HOME
+        source $GARNET_HOME/mflowgen/bin/setup-buildkite.sh \
                --dir $build_dir \
                --need_space $need_space \
             || exit 13
