@@ -168,12 +168,12 @@ if [ "$ACTION" == "new" ]; then
         # --single-branch is probably unnecessary...
         git clone https://github.com/StanfordAHA/garnet /sim/tmp/garnet \
             -b adad99d --single-branch
-        setenv GARNET_HOME /sim/tmp/garnet
+        export GARNET_HOME=/sim/tmp/garnet
 
     fi
     
     which mflowgen
-    mflowgen run --design $GARNET_HOME/full_chip
+    mflowgen run --design $GARNET_HOME/mflowgen/full_chip || exit 13
     set -o pipefail; exec $0 |& tee -a $log
 
     # Unit test:
