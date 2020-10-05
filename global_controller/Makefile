@@ -9,24 +9,6 @@ GENESIS_FILES := $(wildcard $(GENESIS_DIR)/*.svp)
 TB_GENESIS_FILES := $(wildcard $(TB_GENESIS_DIR)/*.svp)
 TOP_MODULE = global_controller
 
-VCS = vcs \
-	  -R \
-	  -debug_all \
-	  -sverilog \
-	  -timescale=1ns/1ps \
-      +lint=TFIPC-L \
-	  +vcs+dumpvars+tb_$(TOP_MODULE).vcd \
-	  +vcs+lic+wait \
-      +vcs+dumparrays \
-	  +define+VCS_BUILD \
-      +v2k \
-	  +memcbk \
-      -full64 \
-      -ldflags "-Wl,--no-as-needed" \
-	  -CFLAGS "-m64" \
-	  -top top \
-	  -F $(TB)/tb_$(TOP_MODULE).filelist
-
 TB_NCSIM = irun \
 		-timescale 1ns/1ps \
 		-l irun.log \
@@ -37,6 +19,7 @@ TB_NCSIM = irun \
 		-vcdextend \
 		-input "$(TB)/cmd.tcl" \
 		-top top \
+		-v /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/CW_tap.v \
 		-F $(TB)/tb_$(TOP_MODULE).filelist 
 		# -coverage all \
 
@@ -49,6 +32,7 @@ NCSIM = irun \
 		-notimingchecks \
 		-vcdextend \
 		-top $(TOP_MODULE) \
+		-v /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/CW_tap.v \
 		-F $(TOP_MODULE).filelist 
 		# -coverage all \
 
@@ -58,9 +42,9 @@ SIMV = ./simv \
 	   -assert nopostproc \
 	   -l vcs.log
 
-FILELIST = find $(RTL_DIR) -type f -name '*.sv' > $(TOP_MODULE).filelist; \
-		   find ./systemRDL/output -type f -name '*.sv' >> $(TOP_MODULE).filelist; \
-		   echo "/cad/synopsys/syn/P-2019.03/dw/sim_ver/DW_tap.v" >> $(TOP_MODULE).filelist
+GEN_FILELIST = \
+	find $(RTL_DIR) -type f -name '*.sv' > $(TOP_MODULE).filelist; \
+	find ./systemRDL/output -type f -name '*.sv' >> $(TOP_MODULE).filelist;
 
 
 .PHONY: rdl clean compile html genesis tb_genesis rtl tb_rtl tb_compile
@@ -83,7 +67,7 @@ html: rdl
 
 rtl: rdl genesis
 	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glc.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glc.rdl.final
-	$(FILELIST)
+	$(GEN_FILELIST)
 
 compile: rtl
 	$(NCSIM) 
