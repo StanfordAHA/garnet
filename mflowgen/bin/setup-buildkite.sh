@@ -285,10 +285,12 @@ export PATH="$PATH:/usr/local/bin"; hash -r
 # source $garnet/.buildkite/setup.sh
 # source $garnet/.buildkite/setup-calibre.sh
 # Use the new stuff
+echo Sourcing $garnet/mflowgen/setup-garnet.sh ...
 source $garnet/mflowgen/setup-garnet.sh
 
 ##############################################################################
 # Recheck python/pip versions b/c CAD modules can muck them up :(
+echo Recheck python/pip versions
 check_pyversions
 
 ##############################################################################
