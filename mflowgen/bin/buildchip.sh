@@ -74,7 +74,7 @@ case "$1" in
     --re*)   ACTION=old; shift; build_dir=$1 ;;
     --cont*) ACTION=old; shift; build_dir=$1 ;;
 
-    --make*  ACTION=make_only; shift ;;
+    --make*) ACTION=make_only; shift ;;
 
     *) echo "**ERROR: Unrecognized command-line arg '$1'"; Usage; exit 13; ;;
 esac
