@@ -30,6 +30,8 @@ Optional environment:
 Options:
     (none)          basically does "make chip" in the current directory
 
+    '--make_only'   skip all the setup and just do the make commands
+
     '--new' <dir>   creates a new directory '<dir>/build.<n>' and builds the chip there.
 
     '--retry' <dir> attempts to restart an existing failed build <dir>
@@ -72,7 +74,9 @@ case "$1" in
     --re*)   ACTION=old; shift; build_dir=$1 ;;
     --cont*) ACTION=old; shift; build_dir=$1 ;;
 
-    -*) echo "**ERROR: Unrecognized option '$1'"; Usage; exit 13; ;;
+    --make*  ACTION=make_only; shift ;;
+
+    *) echo "**ERROR: Unrecognized command-line arg '$1'"; Usage; exit 13; ;;
 esac
 # echo ACTION=$ACTION
 
@@ -164,16 +168,16 @@ if [ "$ACTION" == "new" ]; then
 
         # Duhhhhh...is this too stoopid?
         gtmp=/sim/tmp/deleteme.garnet
-        test -e gtmp && /bin/rm -rf gtmp
-        mkdir -p gtmp
-        git clone https://github.com/StanfordAHA/garnet gtmp
-        (cd gtmp; git checkout adad99d)
-        export GARNET_HOME=gtmp
+        test -e $gtmp && /bin/rm -rf $gtmp
+        mkdir -p $gtmp
+        git clone https://github.com/StanfordAHA/garnet $gtmp
+        (cd $gtmp; git checkout adad99d)
+        export GARNET_HOME=$gtmp
     fi
     
     which mflowgen
     mflowgen run --design $GARNET_HOME/mflowgen/full_chip || exit 13
-    set -o pipefail; exec $0 |& tee -a $log
+    set -o pipefail; exec --make_only $0 |& tee -a $log
 
     # Unit test:
     if [ ]; then 
