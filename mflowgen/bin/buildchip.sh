@@ -103,7 +103,7 @@ if [ "$ACTION" == "new" ]; then
         echo "**ERROR: logdir $logdir not found or not writeable"; exit 13
     fi
 
-    build=`cd $logdir; get_next_name build1` ; # e.g. 'build.14'
+    build=`cd $logdir; get_next_name build` ; # e.g. 'build.14'
     log=$logdir/$build;                       # e.g. '/build/build.HIST/build.14'
 
     echo `date` $build | tee $log
