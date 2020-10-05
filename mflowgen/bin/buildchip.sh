@@ -163,13 +163,12 @@ if [ "$ACTION" == "new" ]; then
 
 
         # Duhhhhh...is this too stoopid?
-        test -e /sim/tmp/garnet && /bin/rm -rf /sim/tmp/garnet
-        mkdir -p /sim/tmp/garnet
-        # --single-branch is probably unnecessary...
-        git clone https://github.com/StanfordAHA/garnet /sim/tmp/garnet \
-            -b adad99d --single-branch
-        export GARNET_HOME=/sim/tmp/garnet
-
+        gtmp=/sim/tmp/deleteme.garnet
+        test -e gtmp && /bin/rm -rf gtmp
+        mkdir -p gtmp
+        git clone https://github.com/StanfordAHA/garnet gtmp
+        (cd gtmp; git checkout adad99d)
+        export GARNET_HOME=gtmp
     fi
     
     which mflowgen
