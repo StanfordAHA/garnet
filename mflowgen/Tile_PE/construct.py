@@ -54,9 +54,7 @@ def construct():
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
     'core_density_target': 0.63,
-
     'saif_instance'     : 'TilePETb/Tile_PE_inst',
-
     'testbench_name'    : 'TilePETb',
     'strip_path'        : 'TilePETb/Tile_PE_inst'
     }

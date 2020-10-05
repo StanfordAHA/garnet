@@ -36,7 +36,9 @@ def construct():
     # Power Domains (leave this false)
     'PWR_AWARE'         : False,
     # hold target slack
-    'hold_target_slack' : 0.030
+    'hold_target_slack' : 0.030,
+    # Utilization target
+    'core_density_target' : 0.50
   }
 
   #-----------------------------------------------------------------------
@@ -193,6 +195,9 @@ def construct():
   floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
   order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
   init.update_params( { 'order': order } )
+  
+  # Add density target parameter
+  init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
 
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
