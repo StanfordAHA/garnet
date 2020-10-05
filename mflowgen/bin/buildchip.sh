@@ -36,11 +36,11 @@ Options:
                     (same as 'cd <dir>; $cmd')
 
 History:
-   On arm machine, build history is maintained in /build/build.HIST
+   On arm machine, build history is maintained in /build/CI/build.HIST
    On vde machine, build history is maintained in /proj/forward/CI/build.HIST
     
 Examples:
-   $cmd --new   /build/            ; # Creates new directory "/build/build.<n>"
+   $cmd --new   /build/CI          ; # Creates new directory "/build/build.<n>"
    $cmd --new   /proj/forward/CI          ; # Creates new directory "build.<n>"
    $cmd --retry /proj/forward/CI/build.14 ; # Builds in existing directory
    $cmd |& tee buildchip.log              ; # Basically does "make lvs" in cur dir
@@ -50,6 +50,10 @@ Examples:
 EOF
 }
 
+# Sequence:
+#    ssh buildkite-agent@r7arm-aha
+#    cd /build/CI; $garnet/bin/mflowgen/buildchip.sh |& tee buildchip.log
+
 [ "$GARNET_HOME"   ] || GARNET_HOME=$gdefault
 [ "$MFLOWGEN_HOME" ] || MFLOWGEN_HOME=$mdefault
 
@@ -57,7 +61,7 @@ EOF
 # command-line args
 ACTION=new
 if [ "$1" == "" ]; then
-    Usage; exit 13
+    Help; exit 13
 fi
 case "$1" in
     -v|--verbose) VERBOSE=true;  shift ;;
@@ -94,7 +98,7 @@ if [ "$ACTION" == "new" ]; then
     # full of build logs e.g. /build/buildchip_logs/{build.0,build.1,build.2...}
 
     logdir=/proj/forward/CI/build.HIST ;  # For VDE
-    [ `hostname` == "r7arm-aha" ] && logdir=/build/build.HIST ; # for ARM
+    [ `hostname` == "r7arm-aha" ] && logdir=/build/CI/build.HIST ; # for ARM
     if ! (test -d $logdir && test -w $logdir); then
         echo "**ERROR: logdir $logdir not found or not writeable"; exit 13
     fi
