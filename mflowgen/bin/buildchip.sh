@@ -109,13 +109,15 @@ if [ "$ACTION" == "new" ]; then
 
     build=`cd $logdir; get_next_name build` ; # e.g. 'build.14'
     log=$logdir/$build;                       # e.g. '/build/build.HIST/build.14'
+    build_dir=$build_dir/$build    
 
     echo `date` $build | tee $log
 
-    echo "Initiating new build in dir '$build_dir/$build'" | tee -a $log
+    echo "Initiating new build in dir '$build_dir'" | tee -a $log
+    mkdir -p $build_dir |& tee -a $log
+    echo cd $build_dir |& tee -a $log
+    cd $build_dir; 
     echo "Log file = '$logdir/$build'" | tee -a $log
-    mkdir -p $build_dir/$build |& tee -a $log
-    cd $build_dir/$build
 
     ########################################################################
     # Build the chip, with output to the log.
@@ -160,6 +162,7 @@ if [ "$ACTION" == "new" ]; then
 
         # We still need/want this, right? Not sure how it's gonnna work on VDE
         garnet=$GARNET_HOME
+        echo "Sourcing 'setup-buildkite.sh'..."
         source $GARNET_HOME/mflowgen/bin/setup-buildkite.sh \
                --dir $build_dir \
                --need_space $need_space \
