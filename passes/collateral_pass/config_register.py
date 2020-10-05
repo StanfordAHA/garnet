@@ -30,7 +30,8 @@ def get_interconnect_regs(interconnect: Interconnect):
                 "addr": config_addr,
                 "range": mux_range - 1,
                 "lo": lo,
-                "hi": hi
+                "hi": hi,
+                "reg_name": f"config_reg_{reg_addr}"
             })
 
         for switchbox in tile.sbs.values():
@@ -47,7 +48,8 @@ def get_interconnect_regs(interconnect: Interconnect):
                         "addr": config_addr,
                         "range": mux_range - 1,
                         "lo": lo,
-                        "hi": hi
+                        "hi": hi,
+                        "reg_name": f"config_reg_{reg_addr}"
                     })
             for node, reg_mux in switchbox.reg_muxs.values():
                 if reg_mux.height > 1:
@@ -61,7 +63,8 @@ def get_interconnect_regs(interconnect: Interconnect):
                         "addr": config_addr,
                         "range": mux_range - 1,
                         "lo": lo,
-                        "hi": hi
+                        "hi": hi,
+                        "reg_name": f"config_reg_{reg_addr}"
                     })
 
     return result
