@@ -61,7 +61,9 @@ else
          cat global_buffer/rtl/global_buffer_param.svh >> design.v
          cat global_buffer/rtl/global_buffer_pkg.svh >> design.v
          cat global_buffer/systemRDL/output/*.sv >> design.v
-         cat global_buffer/rtl/*.sv >> design.v"
+         cat global_buffer/rtl/*.sv >> design.v
+         make -C global_controller rtl
+         cat global_controller/systemRDL/output/*.sv >> design.v"
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       # Kill the container
@@ -87,13 +89,16 @@ else
         cp garnet.v $current_dir/outputs/design.v
       fi
 
-      # make to generate systemRDL RTL files
+      # make to generate systemRDL RTL files global buffer
       make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${array_width} NUM_GLB_TILES=$((array_width / 2))
       # Copy global buffer systemverilog from the global buffer folder
       cat global_buffer/rtl/global_buffer_param.svh >> $current_dir/outputs/design.v
       cat global_buffer/rtl/global_buffer_pkg.svh >> $current_dir/outputs/design.v
       cat global_buffer/systemRDL/output/*.sv >> $current_dir/outputs/design.v
       cat global_buffer/rtl/*.sv >> $current_dir/outputs/design.v
+      # make to generate systemRDL RTL files for global controller
+      make -C $GARNET_HOME/global_controller rtl
+      cat global_controller/systemRDL/output/*.sv >> $current_dir/outputs/design.v
     fi
 
     cd $current_dir
