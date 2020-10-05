@@ -218,7 +218,7 @@ if [ "$ACTION" == "new" ]; then
             || exit 13
 
         # If there's already a valid garnet in top level, use that
-        top=(cd ..; pwd)
+        top=`cd ..; pwd`
         echo "Look for existing garnet repo $top/garnet"
         if test -d $top/garnet; then
             echo "Found existing garnet repo $top/garnet"
