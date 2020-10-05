@@ -195,6 +195,9 @@ def construct():
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
 
+  # glb_tile can use the same rtl as glb_top
+  g.connect_by_name( rtl,         glb_tile      )
+
   g.connect_by_name( synth,       iflow        )
   g.connect_by_name( synth,       init         )
   g.connect_by_name( synth,       power        )
