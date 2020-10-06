@@ -24,7 +24,6 @@ glb_bank_memory.sv
 glb_bank_ctrl.sv
 glb_bank_sram_gen.sv
 glb_shift.sv
-TS1N16FFCLLSBLVTC2048X64M8SW.sv
 ../systemRDL/output/glb_jrdl_decode.sv
 ../systemRDL/output/glb_jrdl_logic.sv
 ../systemRDL/output/glb_pio.sv
