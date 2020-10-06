@@ -21,9 +21,7 @@ from gemstone.generator.from_verilog import FromVerilog
 from typing import List
 from lake.top.lake_top import LakeTop
 from lake.top.pond import Pond
-from lake.passes.passes import change_sram_port_names
 from lake.passes.passes import lift_config_reg
-from lake.utils.sram_macro import SRAMMacroInfo
 from lake.top.extract_tile_info import *
 from lake.utils.parse_clkwork_csv import generate_data_lists
 import lake.utils.parse_clkwork_config as lake_parse_conf
@@ -166,7 +164,8 @@ class PondCore(ConfigurableCore):
                                           0,
                                           io_info.port_name))
                 # TODO - commented out for now. re-visit
-                assert(len(self.__outputs) > 0)
+                # Sometimes errors out when run for 1st time, doesn't error out later 
+                #assert(len(self.__outputs) > 0)
 
         # We call clk_en stall at this level for legacy reasons????
         self.add_ports(
@@ -218,23 +217,17 @@ class PondCore(ConfigurableCore):
                   self.underlying.ports.rst_n)
         self.wire(self.ports.clk, self.underlying.ports.clk)
 
-        # Mem core uses clk_en (essentially active low stall)
+        # Use clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
         self.wire(self.stallInverter.ports.I, self.ports.stall)
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
 
-        # TODO: review for later for Pond
-        # we have six? features in total
-        # 0:    TILE
-        # 1:    TILE
-        # 1-4:  SMEM
-        # Feature 0: Tile
+        # TODO: review for Pond
         self.__features: List[CoreFeature] = [self]
-        # Features 1-4: SRAM
         # No. of feature for Pond will be 1
-        self.num_sram_features = 1  # self.pond_dut.total_sets
-        for sram_index in range(self.num_sram_features):
-            core_feature = CoreFeature(self, sram_index + 1)
+        self.num_pond_features = self.pond_dut.total_sets
+        for pond_index in range(self.num_pond_features):
+            core_feature = CoreFeature(self, pond_index + 1)
             self.__features.append(core_feature)
 
         # Wire the config
@@ -275,7 +268,7 @@ class PondCore(ConfigurableCore):
                 core_feature.ports["read_config_data"] = \
                     self.ports[f"read_config_data_{idx}"]
 
-        # MEM Config
+        # Pond Config
         configurations = []
         # merged_configs = []
         skip_cfgs = []
@@ -303,47 +296,44 @@ class PondCore(ConfigurableCore):
                 self.wire(main_feature.registers[config_reg_name].ports.O,
                           self.underlying.ports[config_reg_name])
 
-        # SRAM
-        # These should also account for num features
-        # or_all_cfg_rd = FromMagma(mantle.DefineOr(4, 1))
 
-        or_all_cfg_rd = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
-        or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_SRAM"
-        or_all_cfg_wr = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
-        or_all_cfg_wr.instance_name = f"OR_CONFIG_RD_SRAM"
+        or_all_cfg_rd = FromMagma(mantle.DefineOr(self.num_pond_features, 1))
+        or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_POND"
+        or_all_cfg_wr = FromMagma(mantle.DefineOr(self.num_pond_features, 1))
+        or_all_cfg_wr.instance_name = f"OR_CONFIG_RD_POND"
 
-        for sram_index in range(self.num_sram_features):
-            core_feature = self.__features[sram_index + 1]
-            self.add_port(f"config_en_{sram_index}", magma.In(magma.Bit))
+        for pond_index in range(self.num_pond_features):
+            core_feature = self.__features[pond_index + 1]
+            self.add_port(f"config_en_{pond_index}", magma.In(magma.Bit))
             # port aliasing
             core_feature.ports["config_en"] = \
-                self.ports[f"config_en_{sram_index}"]
+                self.ports[f"config_en_{pond_index}"]
             # Sort of a temp hack - the name is just config_data_out
-            if self.num_sram_features == 1:
+            if self.num_pond_features == 1:
                 self.wire(core_feature.ports.read_config_data,
                           self.underlying.ports["config_data_out"])
             else:
                 self.wire(core_feature.ports.read_config_data,
-                          self.underlying.ports[f"config_data_out_{sram_index}"])
+                          self.underlying.ports[f"config_data_out_{pond_index}"])
 
             and_gate_en = FromMagma(mantle.DefineAnd(2, 1))
-            and_gate_en.instance_name = f"AND_CONFIG_EN_SRAM_{sram_index}"
-            # also need to wire the sram signal
+            and_gate_en.instance_name = f"AND_CONFIG_EN_POND_{pond_index}"
+            # also need to wire the pond signal
             # the config enable is the OR of the rd+wr
             or_gate_en = FromMagma(mantle.DefineOr(2, 1))
-            or_gate_en.instance_name = f"OR_CONFIG_EN_SRAM_{sram_index}"
+            or_gate_en.instance_name = f"OR_CONFIG_EN_POND_{pond_index}"
 
             self.wire(or_gate_en.ports.I0, core_feature.ports.config.write)
             self.wire(or_gate_en.ports.I1, core_feature.ports.config.read)
             self.wire(and_gate_en.ports.I0, or_gate_en.ports.O)
             self.wire(and_gate_en.ports.I1[0], core_feature.ports.config_en)
             self.wire(and_gate_en.ports.O[0],
-                      self.underlying.ports["config_en"][sram_index])
+                      self.underlying.ports["config_en"][pond_index])
             # Still connect to the OR of all the config rd/wr
             self.wire(core_feature.ports.config.write,
-                      or_all_cfg_wr.ports[f"I{sram_index}"])
+                      or_all_cfg_wr.ports[f"I{pond_index}"])
             self.wire(core_feature.ports.config.read,
-                      or_all_cfg_rd.ports[f"I{sram_index}"])
+                      or_all_cfg_rd.ports[f"I{pond_index}"])
 
         self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read[0])
         self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write[0])
@@ -362,40 +352,8 @@ class PondCore(ConfigurableCore):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, instr):
+        # Needs to be updated for Pond
         configs = []
-        if "init" in instr['config'][1]:
-            config_mem = [("tile_en", 1),
-                          ("mode", 2),
-                          ("wen_in_0_reg_sel", 1),
-                          ("wen_in_1_reg_sel", 1)]
-            for name, v in config_mem:
-                configs = [self.get_config_data(name, v)] + configs
-            # this is SRAM content
-            content = instr['config'][1]['init']
-            for addr, data in enumerate(content):
-                if (not isinstance(data, int)) and len(data) == 2:
-                    addr, data = data
-                feat_addr = addr // 256 + 1
-                addr = (addr % 256) >> 2
-                configs.append((addr, feat_addr, data))
-            print(configs)
-            return configs
-        else:
-            # need to download the csv and get configuration files
-            app_name = instr["app_name"]
-            # hardcode the config bitstream depends on the apps
-            config_mem = []
-            print("app is", app_name)
-            use_json = True
-            if use_json:
-                top_controller_node = instr['config'][1]
-                config_mem = self.pond_dut.get_static_bitstream_json(top_controller_node)
-        for name, v in config_mem:
-            configs += [self.get_config_data(name, v)]
-        # gate config signals
-        conf_names = []
-        for conf_name in conf_names:
-            configs += [self.get_config_data(conf_name, 1)]
         print(configs)
         return configs
 
