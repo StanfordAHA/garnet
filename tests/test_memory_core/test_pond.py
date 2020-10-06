@@ -1,4 +1,5 @@
-from memory_core.memory_core_magma import PondCore, transform_strides_and_ranges 
+from memory_core.pond_core import PondCore
+from lake.utils.util import transform_strides_and_ranges
 import glob
 import tempfile
 import shutil
