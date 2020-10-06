@@ -122,8 +122,8 @@ class GlobalBuffer(Generator):
         # instantiate global buffer declaration
         self.glb_dcl = GlobalBufferDeclarationGenerator(self.param)
 
+        self.glb_dcl.gen_param_files()
         if parameter_only:
-            self.glb_dcl.gen_param_files()
             return
 
         self.underlying = FromMagma(self.glb_dcl)

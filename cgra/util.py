@@ -90,7 +90,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     core = PeakCore(PE_fc)
                     if add_pond:
                         additional_core[(x, y)] = PondCore()
-
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):

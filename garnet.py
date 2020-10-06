@@ -13,6 +13,8 @@ from mini_mapper import map_app, has_rom
 from cgra import glb_glc_wiring, glb_interconnect_wiring, \
         glc_interconnect_wiring, create_cgra, compress_config_data
 import json
+from passes.collateral_pass.config_register import get_interconnect_regs, \
+    get_core_registers
 import math
 import archipelago
 
@@ -302,6 +304,7 @@ def main():
     parser.add_argument("--no-sram-stub", action="store_true")
     parser.add_argument("--standalone", action="store_true")
     parser.add_argument("--unconstrained-io", action="store_true")
+    parser.add_argument("--dump-config-reg", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -321,7 +324,8 @@ def main():
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_CW"},
-                      passes = ["rungenerators", "inline_single_instances", "clock_gate"])
+                      passes = ["rungenerators", "inline_single_instances", "clock_gate"],
+                      disable_ndarray=True)
         garnet.create_stub()
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0:
@@ -354,6 +358,12 @@ def main():
             bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
                   in bitstream]
             f.write("\n".join(bs))
+    if args.dump_config_reg:
+        ic = garnet.interconnect
+        ic_reg = get_interconnect_regs(ic)
+        core_reg = get_core_registers(ic)
+        with open("config.json", "w+") as f:
+            json.dump(ic_reg + core_reg, f)
 
 
 if __name__ == "__main__":
