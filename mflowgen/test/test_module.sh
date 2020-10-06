@@ -71,6 +71,7 @@ fi
 
 # Function to expand step aliases
 # E.g. 'step_alias syn' returns 'synopsys-dc-synthesis' or 'cadence-genus-synthesis' as appropriate
+# Only works in mflowgen design dir e.g. 'make list' must return mflowgen steps.
 function step_alias {
     case "$1" in
         # This is probably dangerous; init is heavily overloaded
@@ -154,55 +155,10 @@ export GARNET_HOME=$garnet
 # - moved to setup-buildkite.sh
 
 ########################################################################
-# Turn copy-list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
-copy_list=()
-if [ "$use_cached" ]; then
-    copy_list=`echo $use_cached | tr ',' ' '`
-    echo "--- FOUND COPY LIST"
-    for step in ${copy_list[@]}; do
-        echo $step
-    done
-fi
-
-########################################################################
 # Branch filter. Seldom used.
+# Refuses to proceed if branch does not match regex "branch_filter"
 if [ "$branch_filter" ]; then
-    echo '+++ BRANCH FILTER'
-    echo ""
-    echo "Note tests only work in branches that match regexp '$branch_filter'"
-    if [ "$BUILDKITE_BRANCH" ]; then
-        branch=${BUILDKITE_BRANCH}
-        echo "It looks like we are running from within buildkite"
-        echo "And it looks like we are in branch '$branch'"
-
-    else 
-        branch=`git symbolic-ref --short HEAD`
-        echo "It looks like we are *not* running from within buildkite"
-        echo "We appear to be in branch '$branch'"
-    fi
-    echo ""
-
-    # Note DOES NOT WORK if $branch_filter is in quotes e.g. "$branch_filter" :o
-    if [[ "$branch" =~ $branch_filter ]]; then
-        echo "Okay that's the right branch, off we go."
-    else
-        # Test is disabled for this branch, emit a polite info message and leave.
-        if [ "$BUILDKITE_LABEL" ]; then
-            # https://buildkite.com/docs/agent/v3/cli-annotate
-            cmd="buildkite-agent annotate --append"
-            label="$BUILDKITE_LABEL"
-        else
-            cmd='cat'
-            label=${modlist[0]}
-        fi
-
-        ems='!!!'
-        echo "NOTE '$label' TEST DID NOT ACTUALLY RUN$ems"$'\n' | $cmd
-        # echo "- Tests only work in branch '$allowed_branch'" | $cmd
-        echo "- This test is disabled except for branches that match regex '$branch_filter'" | $cmd
-        echo "- and we appear to be in branch '$branch'"$'\n' | $cmd
-        exit 0
-    fi
+    $garnet/mflowgen/bin/check_branch.sh "$branch_filter" || exit 13
 fi
 
 # Exit on error in any stage of any pipeline (is this a good idea?)
@@ -228,14 +184,26 @@ export TMPDIR=/sim/tmp
 # - moved to setup-buildkite.sh
 
 ##############################################################################
+# Set up the build environment
 source $garnet/mflowgen/bin/setup-buildkite.sh \
        --dir $build_dir \
        --need_space $need_space \
        || exit 13
 
-##############################################################################
-
 echo "--- Building in destination dir `pwd`"
+
+
+########################################################################
+# Turn copy-list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
+copy_list=()
+if [ "$use_cached" ]; then
+    copy_list=`echo $use_cached | tr ',' ' '`
+    echo "--- FOUND COPY LIST"
+    for step in ${copy_list[@]}; do
+        echo $step
+    done
+fi
+
 
 
 ##################################################################
