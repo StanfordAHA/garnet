@@ -6,7 +6,7 @@ import fault
 import logging
 import karst.basic as kam
 import buffer_mapping.mapping as bam
-from memory_core.memory_mode import Mode
+from .memory_mode import Mode
 logging.basicConfig(level=logging.DEBUG)
 
 
