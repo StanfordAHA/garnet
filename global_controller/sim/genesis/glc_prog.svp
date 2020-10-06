@@ -62,16 +62,16 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     //============================================================================//
     //Property assertion
     //============================================================================//
-    assert property (!(top.dut.cgra_cfg_read && top.dut.cgra_cfg_write)) else $error("read and write both asserted");
-    assert property (!((state==cgra_reading) && (top.dut.cgra_cfg_write))) else $error("write asserted while reading");
-    assert property (!((state==glb_reading) && (top.dut.glb_cfg_wr_en))) else $error("glb write asserted while glb reading");
-    assert property (!((state==sram_reading) && (top.dut.sram_cfg_wr_en))) else $error("glb sram write asserted while glb sram reading");
-    assert property (!((state==cgra_writing) && (top.dut.cgra_cfg_read))) else $error("read asserted while writing");
-    assert property (!((state==glb_writing) && (top.dut.glb_cfg_rd_en))) else $error("glb read asserted while glb writing");
-    assert property (!((state==sram_writing) && (top.dut.sram_cfg_rd_en))) else $error("glb sram read asserted while glb sram writing");
-    assert property (!((state==other) && (top.dut.cgra_cfg_read | top.dut.cgra_cfg_write))) else $error("cgra cfg r/w asserted while not doing either");
-    assert property (!((state==other) && (top.dut.glb_cfg_wr_en | top.dut.glb_cfg_rd_en))) else $error("glb cfg r/w asserted while not doing either");
-    assert property (!((state==other) && (top.dut.sram_cfg_wr_en | top.dut.sram_cfg_rd_en))) else $error("sram cfg r/w asserted while not doing either");
+    assert property (@(posedge dut_ifc.Clk) (!(top.dut.cgra_cfg_read && top.dut.cgra_cfg_write))) else $error("read and write both asserted");
+    assert property (@(posedge dut_ifc.Clk) (!((state==cgra_reading) && (top.dut.cgra_cfg_write)))) else $error("write asserted while reading");
+    assert property (@(posedge dut_ifc.Clk) (!((state==glb_reading) && (top.dut.glb_cfg_wr_en)))) else $error("glb write asserted while glb reading");
+    assert property (@(posedge dut_ifc.Clk) (!((state==sram_reading) && (top.dut.sram_cfg_wr_en)))) else $error("glb sram write asserted while glb sram reading");
+    assert property (@(posedge dut_ifc.Clk) (!((state==cgra_writing) && (top.dut.cgra_cfg_read)))) else $error("read asserted while writing");
+    assert property (@(posedge dut_ifc.Clk) (!((state==glb_writing) && (top.dut.glb_cfg_rd_en)))) else $error("glb read asserted while glb writing");
+    assert property (@(posedge dut_ifc.Clk) (!((state==sram_writing) && (top.dut.sram_cfg_rd_en)))) else $error("glb sram read asserted while glb sram writing");
+    assert property (@(posedge dut_ifc.Clk) (!((state==other) && (top.dut.cgra_cfg_read | top.dut.cgra_cfg_write)))) else $error("cgra cfg r/w asserted while not doing either");
+    assert property (@(posedge dut_ifc.Clk) (!((state==other) && (top.dut.glb_cfg_wr_en | top.dut.glb_cfg_rd_en)))) else $error("glb cfg r/w asserted while not doing either");
+    assert property (@(posedge dut_ifc.Clk) (!((state==other) && (top.dut.sram_cfg_wr_en | top.dut.sram_cfg_rd_en)))) else $error("sram cfg r/w asserted while not doing either");
 
     //============================================================================//
     //Add assertions for read sequence

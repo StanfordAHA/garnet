@@ -1,8 +1,0 @@
-./design/genesis/global_controller.svp
-./design/genesis/cfg_and_dbg.svp
-./design/genesis/flop.svp
-./design/genesis/jtag.svp
-./design/genesis/tap.svp
-./design/genesis/glc_axi_ctrl.svp
-./design/genesis/glc_jtag_ctrl.svp
-./design/genesis/glc_axi_addrmap.svp
