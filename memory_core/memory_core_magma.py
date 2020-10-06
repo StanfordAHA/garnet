@@ -98,8 +98,6 @@ class MemCore(LakeCoreBase):
                          config_addr_width=config_addr_width,
                          data_width=data_width)
 
-        self.lname = "balls"
-
         # name
         if override_name:
             self.__name = override_name + "Core"
