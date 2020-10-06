@@ -16,9 +16,11 @@ from canal.util import IOSide
 from memory_core.memory_core_magma import config_mem_tile
 from archipelago import pnr
 
+
 # @pytest.fixture()
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
+
 
 # @pytest.fixture(scope="module")
 def dw_files():
@@ -30,6 +32,7 @@ def dw_files():
         assert os.path.isfile(filename)
         result_filenames.append(filename)
     return result_filenames
+
 
 class PondCoreTester(BasicTester):
 
@@ -51,6 +54,7 @@ class PondCoreTester(BasicTester):
             exec(f"self.poke(self._circuit.config_{feature}.write, 0)")
             exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
 
+
 def make_pond_core():
     pond_core = PondCore()
     pond_circ = pond_core.circuit()
@@ -70,73 +74,72 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
     (tform_ranges_rd, tform_strides_rd) = transform_strides_and_ranges(ctrl_rd[0], ctrl_rd[1], ctrl_rd[2])
     (tform_ranges_wr, tform_strides_wr) = transform_strides_and_ranges(ctrl_wr[0], ctrl_wr[1], ctrl_wr[2])
 
-    
     idx, value = pondcore.get_config_data("tile_en", 1)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    #idx, value = pondcore.get_config_data("clk_en", 1)
-    #config_data.append((interconnect.get_config_addr(idx, 0, pe_x, pe_y), value))
-     
+    # idx, value = pondcore.get_config_data("clk_en", 1)
+    # config_data.append((interconnect.get_config_addr(idx, 0, pe_x, pe_y), value))
+
     idx, value = pondcore.get_config_data("rf_read_iter_0_dimensionality", ctrl_rd[2])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
     idx, value = pondcore.get_config_data("rf_read_addr_0_starting_addr", ctrl_rd[3])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-    
+
     idx, value = pondcore.get_config_data("rf_read_addr_0_strides_0", tform_strides_rd[0])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-    
+
     # doesnt work
     idx, value = pondcore.get_config_data("rf_read_addr_0_strides_1", tform_strides_rd[1])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
     idx, value = pondcore.get_config_data("rf_read_iter_0_ranges_0", tform_ranges_rd[0])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-   
+
     # doesnt work
-    #not working 
+    # not working
     idx, value = pondcore.get_config_data("rf_read_iter_0_ranges_1", tform_ranges_rd[1])
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value)) 
+    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
     idx, value = pondcore.get_config_data("rf_read_sched_0_sched_addr_gen_starting_addr", ctrl_rd[4])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
     idx, value = pondcore.get_config_data("rf_read_sched_0_sched_addr_gen_strides_0", tform_strides_rd[0])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-   
+
     # doesnt work
     # not working
     idx, value = pondcore.get_config_data("rf_read_sched_0_sched_addr_gen_strides_1", tform_strides_rd[1])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-    
+
     idx, value = pondcore.get_config_data("rf_write_iter_0_dimensionality", ctrl_wr[2])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-   
+
     # doesnt work
-    # not working - not tested individually 
+    # not working - not tested individually
     idx, value = pondcore.get_config_data("rf_write_addr_0_starting_addr", ctrl_wr[3])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-    
+
     idx, value = pondcore.get_config_data("rf_write_addr_0_strides_0", tform_strides_wr[0])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-   
+
     # doesnt work
     idx, value = pondcore.get_config_data("rf_write_addr_0_strides_1", tform_strides_wr[1])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-    
+
     idx, value = pondcore.get_config_data("rf_write_iter_0_ranges_0", tform_ranges_wr[0])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    #doesn't work 
+    # doesn't work
     idx, value = pondcore.get_config_data("rf_write_iter_0_ranges_1", tform_ranges_wr[1])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-    
+
     idx, value = pondcore.get_config_data("rf_write_sched_0_sched_addr_gen_starting_addr", ctrl_wr[4])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-    
+
     idx, value = pondcore.get_config_data("rf_write_sched_0_sched_addr_gen_strides_0", tform_strides_wr[0])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-    
+
     idx, value = pondcore.get_config_data("rf_write_sched_0_sched_addr_gen_strides_1", tform_strides_wr[1])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
@@ -164,52 +167,51 @@ def basic_tb(config_path,
                                add_pond=True,
                                mem_ratio=(1, 2))
 
-    
     netlist = {
         "e0": [("I0", "io2f_16"), ("p0", "data_in_pond")],
         "e1": [("I1", "io2f_16"), ("p0", "data1")],
         "e2": [("p0", "data_out_pond"), ("I2", "f2io_16")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 16}
-    
+
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
-     
+
     [circuit, tester, PCore] = make_pond_core()
-     
+
     pe_x, pe_y = placement["p0"]
-    
+
     petile = interconnect.tile_circuits[(pe_x, pe_y)]
-     
-    pondcore = PondCore() #petile.additional_core[0][0]
-     
+
+    pondcore = PondCore()  # petile.additional_core[0][0]
+
     # Ranges, Strides, Dimensionality, Starting Addr, Starting Addr - Schedule
     ctrl_rd = [[16, 1], [1, 1], 2, 0, 16]
     ctrl_wr = [[16, 1], [1, 1], 2, 0, 0]
 
     generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data)
-   
+
     config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
-    
+
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
-    #TODO: needed?
-    #tester.reset()
-    #tester.zero_inputs()
-    
+    # TODO: needed?
+    # tester.reset()
+    # tester.zero_inputs()
+
     tester.poke(circuit.interface["stall"], 1)
-    
+
     for addr, index in config_data:
         tester.configure(addr, index)
         tester.config_read(addr)
         tester.eval()
-        #tester.expect(circuit.read_config_data, index)
-    
+        # tester.expect(circuit.read_config_data, index)
+
     tester.done_config()
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
-    
+
     src_x0, src_y0 = placement["I0"]
     src_x1, src_y1 = placement["I1"]
     src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
@@ -217,29 +219,29 @@ def basic_tb(config_path,
     dst_x, dst_y = placement["I2"]
     dst_name = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
     random.seed(0)
-    
+
     for i in range(32):
         tester.poke(circuit.interface[src_name0], i)
-        tester.poke(circuit.interface[src_name1], i+1)
+        tester.poke(circuit.interface[src_name1], i + 1)
         tester.eval()
         tester.step(2)
         tester.eval()
         if i >= 16:
-             #tester.print(circuit.interface[dst_name])
-             tester.expect(circuit.interface[dst_name], i-16)
-             
+            # tester.print(circuit.interface[dst_name])
+            tester.expect(circuit.interface[dst_name], i - 16)
+
     with tempfile.TemporaryDirectory() as tempdir:
-        #tempdir = "dump_new"
+        # tempdir = "dump_new"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files():
             shutil.copy(filename, tempdir)
-        shutil.copy(os.path.join("tests", "test_memory_core", 
+        shutil.copy(os.path.join("tests", "test_memory_core",
                                  "sram_stub.v"),
                     os.path.join(tempdir, "sram_512w_16b.v"))
         for aoi_mux in glob.glob("tests/*.sv"):
             shutil.copy(aoi_mux, tempdir)
-        
+
         target = "verilator"
         runtime_kwargs = {"magma_output": "coreir-verilog",
                           "magma_opts": {"coreir_libs": {"float_DW"}},
@@ -248,12 +250,12 @@ def basic_tb(config_path,
         if verilator is False:
             target = "system-verilog"
             runtime_kwargs["simulator"] = "vcs"
-        
+
         tester.compile_and_run(target=target,
                                tmp_dir=False,
                                **runtime_kwargs)
-       
-     
+
+
 def test_conv_3_3():
     # conv_3_3
     config_path = "conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf"
@@ -265,4 +267,4 @@ def test_conv_3_3():
 
 
 if __name__ == "__main__":
-    test_conv_3_3()    
+    test_conv_3_3()

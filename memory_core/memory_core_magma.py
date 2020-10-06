@@ -98,12 +98,12 @@ class MemCore(LakeCoreBase):
                  override_name=None,
                  gen_addr=True):
 
+        lake_name = "LakeTop"
+
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
-                         data_width=data_width)
-
-        self.__name = "MemCore"
-        lake_name = "LakeTop"
+                         data_width=data_width,
+                         name="MemCore")
 
         # Capture everything to the tile object
         # self.data_width = data_width
