@@ -152,8 +152,7 @@ class MemCore(LakeCoreBase):
                      self.add_clk_enable, self.add_flush, self.gen_addr)
 
         # Check for circuit caching
-        # if cache_key not in super().__circuit_cache:
-        if False:
+        if cache_key not in LakeCoreBase.__circuit_cache:
 
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
