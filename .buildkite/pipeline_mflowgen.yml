@@ -17,26 +17,38 @@ steps:
   - $$test --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
-##############################################################################
-# TILE_ARRAY RUN
-# 
-# tile-array init step, fastest version, uses cached synthesis results, takes 5 min
-# Also: uses about 3G
-# What's new:
-# 1) now testing --build_dir option, building in /sim/tmp instead of .
-- label: 'array init 5m'
-  agents: { jobsize: "hours" }
-  commands:
-  - build_dir=/sim/tmp/deleteme.buildkite-$$BUILDKITE_BUILD_NUMBER.array-init
-  - 'mflowgen/test/test_module.sh full_chip tile_array --need_space 30G
-       --debug
-       --use_cached constraints,MemCore,PE,rtl,tsmc16,synthesis
-       --build_dir $$build_dir
-       --steps init'
-  - echo /bin/rm -rf $$build_dir
-  - /bin/rm -rf $$build_dir
 
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+
+
+# Temporarily disabled
+# ##############################################################################
+# # TILE_ARRAY RUN
+# # 
+# # tile-array init step, fastest version, uses cached synthesis results, takes 5 min
+# # Also: uses about 3G
+# # What's new:
+# # 1) now testing --build_dir option, building in /sim/tmp instead of .
+# - label: 'array init 5m'
+#   agents: { jobsize: "hours" }
+#   commands:
+#   - build_dir=/sim/tmp/deleteme.buildkite-$$BUILDKITE_BUILD_NUMBER.array-init
+#   - 'mflowgen/test/test_module.sh full_chip tile_array --need_space 30G
+#        --debug
+#        --use_cached constraints,MemCore,PE,rtl,tsmc16,synthesis
+#        --build_dir $$build_dir
+#        --steps init'
+#   - echo /bin/rm -rf $$build_dir
+#   - /bin/rm -rf $$build_dir
+# 
+# - wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+
+
+
+
+
+
 
 ########################################################################
 # To build a cache:
