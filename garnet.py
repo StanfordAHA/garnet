@@ -276,10 +276,10 @@ class Garnet(Generator):
         partition_result = archipelago.pnr_virtualize(self.interconnect, (netlist, bus), cwd="temp",
                                                       id_to_name=id_to_name, max_group=max_group)
         result = {}
-        for c_id, (placement, routing) in partition_result.items():
+        for c_id, ((placement, routing), p_id_to_name) in partition_result.items():
             bitstream = []
             bitstream += self.interconnect.get_route_bitstream(routing)
-            bitstream += self.get_placement_bitstream(placement, id_to_name,
+            bitstream += self.get_placement_bitstream(placement, p_id_to_name,
                                                       instance_to_instr)
             skip_addr = self.interconnect.get_skip_addr()
             bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
