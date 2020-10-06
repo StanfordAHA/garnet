@@ -103,9 +103,6 @@ class PondCore(ConfigurableCore):
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
 
-
-
-
         # Enumerate input and output ports
         # (clk and reset are assumed)
         core_interface = get_interface(self.pond_dut)
