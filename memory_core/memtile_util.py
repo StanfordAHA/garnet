@@ -35,13 +35,13 @@ class LakeCoreBase(ConfigurableCore):
                  data_width=16,
                  lname="LakeBase_inst"):
 
+        self.lname = lname
         super().__init__(config_addr_width=config_addr_width,
                          config_data_width=config_data_width)
 
         self._inputs = []
         self._outputs = []
         self._features = []
-        self.lname = lname
         self.data_width = data_width
 
     def wrap_lake_core(self):

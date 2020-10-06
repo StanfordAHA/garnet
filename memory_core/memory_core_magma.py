@@ -154,7 +154,7 @@ class MemCore(LakeCoreBase):
                      self.add_clk_enable, self.add_flush, self.gen_addr)
 
         # Check for circuit caching
-        if cache_key not in LakeCoreBase.__circuit_cache:
+        if cache_key not in LakeCoreBase._circuit_cache:
 
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
@@ -190,9 +190,9 @@ class MemCore(LakeCoreBase):
                                      optimize_if=False,
                                      check_flip_flop_always_ff=False,
                                      additional_passes={"change_sram_port": change_sram_port_pass})
-            MemCore.__circuit_cache[cache_key] = (circ, self.dut)
+            MemCore._circuit_cache[cache_key] = (circ, self.dut)
         else:
-            circ, self.dut = MemCore.__circuit_cache[cache_key]
+            circ, self.dut = MemCore._circuit_cache[cache_key]
 
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
