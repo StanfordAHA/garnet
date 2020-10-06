@@ -159,28 +159,28 @@ class MemCore(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.dut = LakeTop(data_width=self.data_width,
-                                  mem_width=self.mem_width,
-                                  mem_depth=self.mem_depth,
-                                  banks=self.banks,
-                                  input_iterator_support=self.input_iterator_support,
-                                  output_iterator_support=self.output_iterator_support,
-                                  input_config_width=self.input_config_width,
-                                  output_config_width=self.output_config_width,
-                                  interconnect_input_ports=self.interconnect_input_ports,
-                                  interconnect_output_ports=self.interconnect_output_ports,
-                                  use_sram_stub=self.use_sram_stub,
-                                  sram_macro_info=self.sram_macro_info,
-                                  read_delay=self.read_delay,
-                                  rw_same_cycle=self.rw_same_cycle,
-                                  agg_height=self.agg_height,
-                                  config_data_width=self.config_data_width,
-                                  config_addr_width=self.config_addr_width,
-                                  num_tiles=self.num_tiles,
-                                  fifo_mode=self.fifo_mode,
-                                  add_clk_enable=self.add_clk_enable,
-                                  add_flush=self.add_flush,
-                                  name=lake_name,
-                                  gen_addr=self.gen_addr)
+                               mem_width=self.mem_width,
+                               mem_depth=self.mem_depth,
+                               banks=self.banks,
+                               input_iterator_support=self.input_iterator_support,
+                               output_iterator_support=self.output_iterator_support,
+                               input_config_width=self.input_config_width,
+                               output_config_width=self.output_config_width,
+                               interconnect_input_ports=self.interconnect_input_ports,
+                               interconnect_output_ports=self.interconnect_output_ports,
+                               use_sram_stub=self.use_sram_stub,
+                               sram_macro_info=self.sram_macro_info,
+                               read_delay=self.read_delay,
+                               rw_same_cycle=self.rw_same_cycle,
+                               agg_height=self.agg_height,
+                               config_data_width=self.config_data_width,
+                               config_addr_width=self.config_addr_width,
+                               num_tiles=self.num_tiles,
+                               fifo_mode=self.fifo_mode,
+                               add_clk_enable=self.add_clk_enable,
+                               add_flush=self.add_flush,
+                               name=lake_name,
+                               gen_addr=self.gen_addr)
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
             circ = kts.util.to_magma(self.dut,
@@ -288,8 +288,8 @@ class MemCore(LakeCoreBase):
 
         # Don't do the rest anymore...
         return self.dut.get_static_bitstream(config_path=config_path,
-                                                in_file_name=in_file_name,
-                                                out_file_name=out_file_name)
+                                             in_file_name=in_file_name,
+                                             out_file_name=out_file_name)
 
 
 if __name__ == "__main__":
