@@ -297,6 +297,10 @@ def construct():
           g.connect_by_name( block, lvs            )
       # Tile_array can use rtl from rtl node
       g.connect_by_name( rtl, tile_array )
+      # glb_top can use rtl from rtl node
+      g.connect_by_name( rtl, glb_top )
+      # global_controller can use rtl from rtl node
+      g.connect_by_name( rtl, global_controller )
 
   g.connect_by_name( rtl,         synth     )
   g.connect_by_name( soc_rtl,     synth        )

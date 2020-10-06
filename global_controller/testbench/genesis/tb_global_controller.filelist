@@ -1,9 +1,0 @@
-./testbench/genesis/axi_driver.svp
-./testbench/genesis/jtag_driver.svp
-./testbench/genesis/axil_ifc.svp
-./testbench/genesis/cfg_ifc.svp
-./testbench/genesis/clocker.svp
-./testbench/genesis/glc_prog.svp
-./testbench/genesis/jtag_ifc.svp
-./testbench/genesis/template_ifc.svp
-./testbench/genesis/top.svp
