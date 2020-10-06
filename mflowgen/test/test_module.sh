@@ -165,6 +165,7 @@ if [ "$use_cached" ]; then
 fi
 
 ########################################################################
+# Branch filter. Seldom used.
 if [ "$branch_filter" ]; then
     echo '+++ BRANCH FILTER'
     echo ""
