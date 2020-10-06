@@ -1,34 +1,15 @@
 import magma
-import mantle
-from gemstone.common.configurable import ConfigurationType
-from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
-from gemstone.common.mux_wrapper import MuxWrapper
 from gemstone.generator.from_magma import FromMagma
 from typing import List
 from lake.top.pond import Pond
 from lake.top.extract_tile_info import *
 import kratos as kts
-import urllib.request
-import collections
-from canal.interconnect import Interconnect
-from gemstone.common.configurable import ConfigurationType, \
-    ConfigRegister, _generate_config_register
-from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
-from gemstone.common.mux_wrapper import MuxWrapper
-from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
-from gemstone.generator.from_verilog import FromVerilog
 from typing import List
-from lake.top.lake_top import LakeTop
 from lake.top.pond import Pond
-from lake.passes.passes import change_sram_port_names
-from lake.passes.passes import lift_config_reg
-from lake.utils.sram_macro import SRAMMacroInfo
 from lake.top.extract_tile_info import *
-from lake.utils.parse_clkwork_csv import generate_data_lists
-import lake.utils.parse_clkwork_config as lake_parse_conf
-from lake.utils.util import get_configs_dict, set_configs_sv, extract_formal_annotation
-import math
+
+
 import kratos as kts
 
 if __name__ == "__main__":
