@@ -95,7 +95,7 @@ class MemCore(LakeCoreBase):
                  override_name=None,
                  gen_addr=True):
 
-        LakeCoreBase().__init__(config_data_width=config_data_width,
+        super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width)
 
