@@ -163,9 +163,8 @@ class PondCore(ConfigurableCore):
                                           io_info.expl_arr,
                                           0,
                                           io_info.port_name))
-                # TODO - commented out for now. re-visit
-                # Sometimes errors out when run for 1st time, doesn't error out later 
-                #assert(len(self.__outputs) > 0)
+        
+        assert(len(self.__outputs) > 0)
 
         # We call clk_en stall at this level for legacy reasons????
         self.add_ports(
