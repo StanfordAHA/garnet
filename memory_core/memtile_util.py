@@ -33,9 +33,9 @@ class LakeCoreBase(ConfigurableCore):
                  config_data_width=32,
                  config_addr_width=8,
                  data_width=16,
-                 lname="LakeBase_inst"):
+                 name="LakeBase_inst"):
 
-        self.__name = lname
+        self.__name = name
         self.__inputs = []
         self.__outputs = []
         self.__features = []
@@ -117,8 +117,6 @@ class LakeCoreBase(ConfigurableCore):
         self.add_ports(
             stall=magma.In(TBit),
         )
-
-        self.chain_idx_bits = max(1, kts.clog2(self.num_tiles))
 
         # put a 1-bit register and a mux to select the control signals
         for control_signal, width in control_signals:
