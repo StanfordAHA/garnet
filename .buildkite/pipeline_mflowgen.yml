@@ -30,7 +30,7 @@ steps:
   - build_dir=/sim/tmp/deleteme.buildkite-$$BUILDKITE_BUILD_NUMBER.array-init
   - 'mflowgen/test/test_module.sh full_chip tile_array --need_space 30G
        --debug
-       --use_cached constraints,MemCore,PE,rtl,synthesis,custom-dc-postcompile,tsmc16,synthesis
+       --use_cached constraints,MemCore,PE,rtl,tsmc16,synthesis
        --build_dir $$build_dir
        --steps init'
   - echo /bin/rm -rf $$build_dir
