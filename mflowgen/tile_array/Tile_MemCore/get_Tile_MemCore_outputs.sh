@@ -1,11 +1,10 @@
 #!/bin/bash
 mflowgen run --design $GARNET_HOME/mflowgen/Tile_MemCore/
-make synopsys-ptpx-genlibdb
 make mentor-calibre-gdsmerge
 make mentor-calibre-lvs
+make cadence-genus-genlib
 mkdir -p outputs
-cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/Tile_MemCore_tt.lib
-cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/Tile_MemCore.db
+cp -L *cadence-genus-genlib/outputs/design.lib outputs/Tile_MemCore_tt.lib
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_MemCore.lef
 cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/Tile_MemCore.vcs.v
 cp -L *cadence-innovus-signoff/outputs/design.sdf outputs/Tile_MemCore.sdf
