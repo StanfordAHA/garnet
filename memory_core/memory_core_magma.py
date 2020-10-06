@@ -22,7 +22,11 @@ import lake.utils.parse_clkwork_config as lake_parse_conf
 from lake.utils.util import get_configs_dict, set_configs_sv, extract_formal_annotation
 import math
 import kratos as kts
-from memory_core.memtile_util import LakeCoreBase
+
+if __name__ == "__main__":
+    from memtile_util import LakeCoreBase
+else:
+    from .memtile_util import LakeCoreBase
 
 
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
