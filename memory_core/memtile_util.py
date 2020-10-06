@@ -11,7 +11,6 @@ from gemstone.common.mux_wrapper import MuxWrapper
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.from_verilog import FromVerilog
-from memory_core import memory_core_genesis2
 from typing import List
 from lake.top.lake_top import LakeTop
 from lake.top.pond import Pond
