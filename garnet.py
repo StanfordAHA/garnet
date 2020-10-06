@@ -17,6 +17,7 @@ from passes.collateral_pass.config_register import get_interconnect_regs, \
     get_core_registers
 from passes.interconnect_port_pass import stall_port_pass, config_port_pass
 import math
+import os
 import archipelago
 import archipelago.power
 
@@ -270,6 +271,21 @@ class Garnet(Generator):
         return bitstream, (input_interface, output_interface, reset, valid, en,
                            delay)
 
+    def compile_virtualize(self, halide_src, max_group):
+        id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
+        partition_result = archipelago.pnr_virtualize(self.interconnect, (netlist, bus), cwd="temp",
+                                                      id_to_name=id_to_name, max_group=max_group)
+        result = {}
+        for c_id, (placement, routing) in partition_result.items():
+            bitstream = []
+            bitstream += self.interconnect.get_route_bitstream(routing)
+            bitstream += self.get_placement_bitstream(placement, id_to_name,
+                                                      instance_to_instr)
+            skip_addr = self.interconnect.get_skip_addr()
+            bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
+            result[c_id] = bitstream
+        return result
+
     def create_stub(self):
         result = """
 module Interconnect (
@@ -297,6 +313,13 @@ module Interconnect (
         return "Garnet"
 
 
+def write_out_bitstream(filename, bitstream):
+    with open(filename, "w+") as f:
+        bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
+              in bitstream]
+        f.write("\n".join(bs))
+
+
 def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
@@ -315,6 +338,8 @@ def main():
     parser.add_argument("--standalone", action="store_true")
     parser.add_argument("--unconstrained-io", action="store_true")
     parser.add_argument("--dump-config-reg", action="store_true")
+    parser.add_argument("--virtualize-group-size", type=int, default=4)
+    parser.add_argument("--virtualize", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -338,7 +363,7 @@ def main():
                       disable_ndarray=True)
         garnet.create_stub()
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
-            and len(args.output) > 0:
+            and len(args.output) > 0 and not args.virtualize:
         # do PnR and produce bitstream
         bitstream, (inputs, outputs, reset, valid, \
             en, delay) = garnet.compile(args.app, args.unconstrained_io)
@@ -366,10 +391,13 @@ def main():
         }
         with open(f"{args.output}.json", "w+") as f:
             json.dump(config, f)
-        with open(args.output, "w+") as f:
-            bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
-                  in bitstream]
-            f.write("\n".join(bs))
+        write_out_bitstream(args.output, bitstream)
+    elif args.virtualize and len(args.app) > 0:
+        group_size = args.virtualize_group_size
+        result = garnet.compile_virtualize(args.app, group_size)
+        for c_id, bitstream in result.items():
+            filename = os.path.join("temp", f"{c_id}.bs")
+            write_out_bitstream(filename, bitstream)
     if args.dump_config_reg:
         ic = garnet.interconnect
         ic_reg = get_interconnect_regs(ic)
