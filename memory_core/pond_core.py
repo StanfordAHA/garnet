@@ -1,6 +1,13 @@
 import magma
-import tempfile
 import mantle
+from gemstone.common.configurable import ConfigurationType
+from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
+from gemstone.common.mux_wrapper import MuxWrapper
+from gemstone.generator.from_magma import FromMagma
+from typing import List
+from lake.top.pond import Pond
+from lake.top.extract_tile_info import *
+import kratos as kts
 import urllib.request
 import collections
 from canal.interconnect import Interconnect
@@ -11,7 +18,6 @@ from gemstone.common.mux_wrapper import MuxWrapper
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.from_verilog import FromVerilog
-from memory_core import memory_core_genesis2
 from typing import List
 from lake.top.lake_top import LakeTop
 from lake.top.pond import Pond
@@ -26,114 +32,35 @@ import math
 import kratos as kts
 
 
-def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
-    for config_reg, val, feat in new_config_data:
-        idx, value = mcore_cfg.get_config_data(config_reg, val)
-        full_cfg.append((interconnect.get_config_addr(
-                         idx,
-                         feat, x_place, y_place), value))
-
-
-def chain_pass(interconnect: Interconnect):  # pragma: nocover
-    for (x, y) in interconnect.tile_circuits:
-        tile = interconnect.tile_circuits[(x, y)]
-        tile_core = tile.core
-        if isinstance(tile_core, MemCore):
-            # lift ports up
-            lift_mem_ports(tile, tile_core)
-
-            previous_tile = interconnect.tile_circuits[(x, y - 1)]
-            if not isinstance(previous_tile.core, MemCore):
-                interconnect.wire(Const(0), tile.ports.chain_valid_in)
-                interconnect.wire(Const(0), tile.ports.chain_data_in)
-            else:
-                interconnect.wire(previous_tile.ports.chain_valid_out,
-                                  tile.ports.chain_valid_in)
-                interconnect.wire(previous_tile.ports.chain_data_out,
-                                  tile.ports.chain_data_in)
-
-
-def lift_mem_ports(tile, tile_core):  # pragma: nocover
-    ports = ["chain_wen_in", "chain_valid_out", "chain_in", "chain_out"]
-    for port in ports:
-        lift_mem_core_ports(port, tile, tile_core)
-
-
-def lift_mem_core_ports(port, tile, tile_core):  # pragma: nocover
-    tile.add_port(port, tile_core.ports[port].base_type())
-    tile.wire(tile.ports[port], tile_core.ports[port])
-
-
-class MemCore(ConfigurableCore):
+class PondCore(ConfigurableCore):
     __circuit_cache = {}
 
     def __init__(self,
                  data_width=16,  # CGRA Params
-                 mem_width=64,
-                 mem_depth=512,
-                 banks=1,
-                 input_iterator_support=6,  # Addr Controllers
-                 output_iterator_support=6,
-                 input_config_width=16,
-                 output_config_width=16,
-                 interconnect_input_ports=2,  # Connection to int
-                 interconnect_output_ports=2,
-                 mem_input_ports=1,
-                 mem_output_ports=1,
-                 use_sram_stub=True,
-                 sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S",
-                                               wtsel_value=0, rtsel_value=1),
-                 read_delay=1,  # Cycle delay in read (SRAM vs Register File)
-                 rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
-                 agg_height=4,
-                 tb_sched_max=16,
+                 mem_depth=32,
+                 default_iterator_support=2,
+                 interconnect_input_ports=1,  # Connection to int
+                 interconnect_output_ports=1,
                  config_data_width=32,
                  config_addr_width=8,
-                 num_tiles=1,
-                 fifo_mode=True,
+                 cycle_count_width=16,
                  add_clk_enable=True,
-                 add_flush=True,
-                 override_name=None,
-                 gen_addr=True):
-
-        # name
-        if override_name:
-            self.__name = override_name + "Core"
-            lake_name = override_name
-        else:
-            self.__name = "MemCore"
-            lake_name = "LakeTop"
+                 add_flush=True):
 
         super().__init__(config_addr_width, config_data_width)
 
         # Capture everything to the tile object
-        self.data_width = data_width
-        self.mem_width = mem_width
-        self.mem_depth = mem_depth
-        self.banks = banks
-        self.fw_int = int(self.mem_width / self.data_width)
-        self.input_iterator_support = input_iterator_support
-        self.output_iterator_support = output_iterator_support
-        self.input_config_width = input_config_width
-        self.output_config_width = output_config_width
         self.interconnect_input_ports = interconnect_input_ports
         self.interconnect_output_ports = interconnect_output_ports
-        self.mem_input_ports = mem_input_ports
-        self.mem_output_ports = mem_output_ports
-        self.use_sram_stub = use_sram_stub
-        self.sram_macro_info = sram_macro_info
-        self.read_delay = read_delay
-        self.rw_same_cycle = rw_same_cycle
-        self.agg_height = agg_height
+        self.mem_depth = mem_depth
+        self.data_width = data_width
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
-        self.num_tiles = num_tiles
-        self.fifo_mode = fifo_mode
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
-        self.gen_addr = gen_addr
-        # self.app_ctrl_depth_width = app_ctrl_depth_width
-        # self.stcl_valid_iter = stcl_valid_iter
+        self.cycle_count_width = cycle_count_width
+        self.default_iterator_support = default_iterator_support
+        self.default_config_width = kts.clog2(self.mem_depth)
 
         # Typedefs for ease
         TData = magma.Bits[self.data_width]
@@ -142,62 +69,44 @@ class MemCore(ConfigurableCore):
         self.__inputs = []
         self.__outputs = []
 
-        cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
-                     self.input_iterator_support, self.output_iterator_support,
+        cache_key = (self.data_width, self.mem_depth,
                      self.interconnect_input_ports, self.interconnect_output_ports,
-                     self.use_sram_stub, self.sram_macro_info, self.read_delay,
-                     self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
-                     self.num_tiles, self.fifo_mode,
-                     self.add_clk_enable, self.add_flush, self.gen_addr)
+                     self.config_data_width, self.config_addr_width,
+                     self.add_clk_enable, self.add_flush,
+                     self.cycle_count_width, self.default_iterator_support)
 
         # Check for circuit caching
-        if cache_key not in MemCore.__circuit_cache:
-
+        if cache_key not in PondCore.__circuit_cache:
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.lt_dut = LakeTop(data_width=self.data_width,
-                                  mem_width=self.mem_width,
-                                  mem_depth=self.mem_depth,
-                                  banks=self.banks,
-                                  input_iterator_support=self.input_iterator_support,
-                                  output_iterator_support=self.output_iterator_support,
-                                  input_config_width=self.input_config_width,
-                                  output_config_width=self.output_config_width,
-                                  interconnect_input_ports=self.interconnect_input_ports,
-                                  interconnect_output_ports=self.interconnect_output_ports,
-                                  use_sram_stub=self.use_sram_stub,
-                                  sram_macro_info=self.sram_macro_info,
-                                  read_delay=self.read_delay,
-                                  rw_same_cycle=self.rw_same_cycle,
-                                  agg_height=self.agg_height,
-                                  config_data_width=self.config_data_width,
-                                  config_addr_width=self.config_addr_width,
-                                  num_tiles=self.num_tiles,
-                                  fifo_mode=self.fifo_mode,
-                                  add_clk_enable=self.add_clk_enable,
-                                  add_flush=self.add_flush,
-                                  name=lake_name,
-                                  gen_addr=self.gen_addr)
+            self.pond_dut = Pond(data_width=data_width,  # CGRA Params
+                                 mem_depth=mem_depth,
+                                 default_iterator_support=default_iterator_support,
+                                 interconnect_input_ports=interconnect_input_ports,  # Connection to int
+                                 interconnect_output_ports=interconnect_output_ports,
+                                 config_data_width=config_data_width,
+                                 config_addr_width=config_addr_width,
+                                 cycle_count_width=cycle_count_width,
+                                 add_clk_enable=add_clk_enable,
+                                 add_flush=add_flush)
 
-            change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
-            circ = kts.util.to_magma(self.lt_dut,
+            circ = kts.util.to_magma(self.pond_dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
                                      optimize_if=False,
-                                     check_flip_flop_always_ff=False,
-                                     additional_passes={"change_sram_port": change_sram_port_pass})
-            MemCore.__circuit_cache[cache_key] = (circ, self.lt_dut)
+                                     check_flip_flop_always_ff=False)
+            PondCore.__circuit_cache[cache_key] = (circ, self.pond_dut)
         else:
-            circ, self.lt_dut = MemCore.__circuit_cache[cache_key]
+            circ, self.pond_dut = PondCore.__circuit_cache[cache_key]
 
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
 
         # Enumerate input and output ports
         # (clk and reset are assumed)
-        core_interface = get_interface(self.lt_dut)
-        cfgs = extract_top_config(self.lt_dut)
+        core_interface = get_interface(self.pond_dut)
+        cfgs = extract_top_config(self.pond_dut)
         assert len(cfgs) > 0, "No configs?"
 
         # We basically add in the configuration bus differently
@@ -256,15 +165,13 @@ class MemCore(ConfigurableCore):
                                           io_info.expl_arr,
                                           0,
                                           io_info.port_name))
-
-        assert(len(self.__outputs) > 0)
+                # TODO - commented out for now. re-visit
+                assert(len(self.__outputs) > 0)
 
         # We call clk_en stall at this level for legacy reasons????
         self.add_ports(
             stall=magma.In(TBit),
         )
-
-        self.chain_idx_bits = max(1, kts.clog2(self.num_tiles))
 
         # put a 1-bit register and a mux to select the control signals
         for control_signal, width in control_signals:
@@ -316,6 +223,7 @@ class MemCore(ConfigurableCore):
         self.wire(self.stallInverter.ports.I, self.ports.stall)
         self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
 
+        # TODO: review for later for Pond
         # we have six? features in total
         # 0:    TILE
         # 1:    TILE
@@ -323,10 +231,10 @@ class MemCore(ConfigurableCore):
         # Feature 0: Tile
         self.__features: List[CoreFeature] = [self]
         # Features 1-4: SRAM
-        self.num_sram_features = self.lt_dut.total_sets
+        # No. of feature for Pond will be 1
+        self.num_sram_features = 1  # self.pond_dut.total_sets
         for sram_index in range(self.num_sram_features):
             core_feature = CoreFeature(self, sram_index + 1)
-            core_feature.skip_compression = True
             self.__features.append(core_feature)
 
         # Wire the config
@@ -398,10 +306,12 @@ class MemCore(ConfigurableCore):
         # SRAM
         # These should also account for num features
         # or_all_cfg_rd = FromMagma(mantle.DefineOr(4, 1))
+
         or_all_cfg_rd = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
         or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_SRAM"
         or_all_cfg_wr = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
         or_all_cfg_wr.instance_name = f"OR_CONFIG_RD_SRAM"
+
         for sram_index in range(self.num_sram_features):
             core_feature = self.__features[sram_index + 1]
             self.add_port(f"config_en_{sram_index}", magma.In(magma.Bit))
@@ -415,6 +325,7 @@ class MemCore(ConfigurableCore):
             else:
                 self.wire(core_feature.ports.read_config_data,
                           self.underlying.ports[f"config_data_out_{sram_index}"])
+
             and_gate_en = FromMagma(mantle.DefineAnd(2, 1))
             and_gate_en.instance_name = f"AND_CONFIG_EN_SRAM_{sram_index}"
             # also need to wire the sram signal
@@ -436,6 +347,7 @@ class MemCore(ConfigurableCore):
 
         self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read[0])
         self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write[0])
+
         self._setup_config()
 
         conf_names = list(self.registers.keys())
@@ -468,13 +380,7 @@ class MemCore(ConfigurableCore):
                 configs.append((addr, feat_addr, data))
             print(configs)
             return configs
-
-        # unified buffer buffer stuff
-        if "is_ub" in instr and instr["is_ub"]:
-            depth = instr["range_0"]
-            instr["depth"] = depth
-            print("configure ub to have depth", depth)
-        if "depth" in instr:
+        else:
             # need to download the csv and get configuration files
             app_name = instr["app_name"]
             # hardcode the config bitstream depends on the apps
@@ -483,53 +389,18 @@ class MemCore(ConfigurableCore):
             use_json = True
             if use_json:
                 top_controller_node = instr['config'][1]
-                config_mem = self.lt_dut.get_static_bitstream_json(top_controller_node)
-            elif app_name == "conv_3_3":
-                # Create a tempdir and download the files...
-                with tempfile.TemporaryDirectory() as tempdir:
-                    # Download files here and leverage lake bitstream code....
-                    print(f'Downloading app files for {app_name}')
-                    url_prefix = "https://raw.githubusercontent.com/dillonhuff/clockwork/" +\
-                                 "fix_config/lake_controllers/conv_3_3_aha/buf_inst_input" +\
-                                 "_10_to_buf_inst_output_3_ubuf/"
-                    file_suffix = ["input_agg2sram.csv",
-                                   "input_in2agg_0.csv",
-                                   "output_2_sram2tb.csv",
-                                   "output_2_tb2out_0.csv",
-                                   "output_2_tb2out_1.csv",
-                                   "stencil_valid.csv"]
-                    for fs in file_suffix:
-                        full_url = url_prefix + fs
-                        print(f"Downloading from {full_url}")
-                        urllib.request.urlretrieve(full_url, tempdir + "/" + fs)
-                    config_path = tempdir
-                    config_mem = self.get_static_bitstream(config_path=config_path,
-                                                           in_file_name="input",
-                                                           out_file_name="output")
-
-            for name, v in config_mem:
-                configs += [self.get_config_data(name, v)]
-            # gate config signals
-            conf_names = ["wen_in_1_reg_sel"]
-            for conf_name in conf_names:
-                configs += [self.get_config_data(conf_name, 1)]
-        else:
-            # for now config it as sram
-            config_mem = [("tile_en", 1),
-                          ("mode", 2),
-                          ("wen_in_0_reg_sel", 1),
-                          ("wen_in_1_reg_sel", 1)]
-            for name, v in config_mem:
-                configs = [self.get_config_data(name, v)] + configs
+                config_mem = self.pond_dut.get_static_bitstream_json(top_controller_node)
+        for name, v in config_mem:
+            configs += [self.get_config_data(name, v)]
+        # gate config signals
+        conf_names = []
+        for conf_name in conf_names:
+            configs += [self.get_config_data(conf_name, 1)]
         print(configs)
         return configs
 
-    def get_static_bitstream(self, config_path, in_file_name, out_file_name):
-
-        # Don't do the rest anymore...
-        return self.lt_dut.get_static_bitstream(config_path=config_path,
-                                                in_file_name=in_file_name,
-                                                out_file_name=out_file_name)
+    def instruction_type(self):
+        raise NotImplementedError()  # pragma: nocover
 
     def instruction_type(self):
         raise NotImplementedError()  # pragma: nocover
@@ -544,7 +415,7 @@ class MemCore(ConfigurableCore):
         return self.__features
 
     def name(self):
-        return self.__name
+        return "PondCore"
 
     def pnr_info(self):
         return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
@@ -557,4 +428,4 @@ class MemCore(ConfigurableCore):
 
 
 if __name__ == "__main__":
-    mc = MemCore()
+    pc = PondCore()
