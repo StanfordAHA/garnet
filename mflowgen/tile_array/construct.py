@@ -76,7 +76,7 @@ def construct():
   info         = Step( 'info',                          default=True )
   #constraints  = Step( 'constraints',                   default=True )
   #dc           = Step( 'synopsys-dc-synthesis',         default=True )
-  synth           = Step( 'cadence-genus-synthesis',         default=True )
+  synth        = Step( 'cadence-genus-synthesis',         default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
@@ -88,7 +88,7 @@ def construct():
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   #pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   #genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
-  genlib     = Step( 'cadence-genus-genlib',        default=True )
+  genlib       = Step( 'cadence-genus-genlib',        default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
@@ -136,7 +136,7 @@ def construct():
 
   # Extra dc inputs
   #dc.extend_inputs( dc_postcompile.all_outputs() )
-  synth.extend_inputs( dc_postcompile.all_outputs() )
+  #synth.extend_inputs( dc_postcompile.all_outputs() )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -252,7 +252,6 @@ def construct():
   g.connect_by_name( Tile_PE,      lvs          )
 
   #g.connect_by_name( rtl,            dc        )
-  #g.connect_by_name( rtl,            dc        )
   #g.connect_by_name( constraints,    dc        )
   #g.connect_by_name( dc_postcompile, dc        )
 
@@ -266,7 +265,7 @@ def construct():
   g.connect_by_name( rtl,            synth        )
   g.connect_by_name( rtl,            synth        )
   g.connect_by_name( constraints,    synth        )
-  g.connect_by_name( dc_postcompile, synth        )
+  #g.connect_by_name( dc_postcompile, synth        )
 
   g.connect_by_name( synth,       iflow        )
   g.connect_by_name( synth,       init         )
@@ -309,7 +308,7 @@ def construct():
 
   g.connect_by_name( adk,      debugcalibre )
   #g.connect_by_name( dc,       debugcalibre )
-  g.connect_by_name( synth,       debugcalibre )
+  g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
