@@ -85,5 +85,5 @@ sim: rtl sim_genesis
 	$(XRUN)
 
 clean:
-	rm -rf coverage.vdb csrc DVEfiles inter.vpd simv simv.daidir ucli.key vc_hdrs.h vcs.log INCA_libs irun.history irun.log $(TOP_MODULE).filelist
-	cd $(RTL); ./genesis_clean.cmd
+	rm -rf coverage.vdb csrc DVEfiles inter.vpd simv simv.daidir ucli.key vc_hdrs.h vcs.log INCA_libs irun.history irun.log $(TOP_MODULE).filelist tb_$(TOP_MODULE).filelist
+	./genesis_clean.cmd
