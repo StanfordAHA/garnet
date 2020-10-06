@@ -103,6 +103,9 @@ class PondCore(ConfigurableCore):
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
 
+
+
+
         # Enumerate input and output ports
         # (clk and reset are assumed)
         core_interface = get_interface(self.pond_dut)
@@ -165,8 +168,8 @@ class PondCore(ConfigurableCore):
                                           io_info.expl_arr,
                                           0,
                                           io_info.port_name))
-                # TODO - commented out for now. re-visit
-                assert(len(self.__outputs) > 0)
+
+        assert(len(self.__outputs) > 0)
 
         # We call clk_en stall at this level for legacy reasons????
         self.add_ports(
@@ -347,16 +350,15 @@ class PondCore(ConfigurableCore):
 
         self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read[0])
         self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write[0])
-
         self._setup_config()
 
         conf_names = list(self.registers.keys())
         conf_names.sort()
-        with open("mem_cfg.txt", "w+") as cfg_dump:
+        with open("pond_cfg.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
                 write_line = f"(\"{reg}\", 0),  # {self.registers[reg].width}\n"
                 cfg_dump.write(write_line)
-        with open("mem_synth.txt", "w+") as cfg_dump:
+        with open("pond_synth.txt", "w+") as cfg_dump:
             for idx, reg in enumerate(conf_names):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)

@@ -6,7 +6,6 @@ import collections
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import ConfigurationType, \
     ConfigRegister, _generate_config_register
-from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
 from gemstone.common.mux_wrapper import MuxWrapper
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
@@ -24,6 +23,7 @@ import lake.utils.parse_clkwork_config as lake_parse_conf
 from lake.utils.util import get_configs_dict, set_configs_sv, extract_formal_annotation
 import math
 import kratos as kts
+from memory_core.memtile_util import LakeCoreBase
 
 
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
@@ -64,8 +64,7 @@ def lift_mem_core_ports(port, tile, tile_core):  # pragma: nocover
     tile.wire(tile.ports[port], tile_core.ports[port])
 
 
-class MemCore(ConfigurableCore):
-    __circuit_cache = {}
+class MemCore(LakeCoreBase):
 
     def __init__(self,
                  data_width=16,  # CGRA Params
@@ -96,6 +95,11 @@ class MemCore(ConfigurableCore):
                  override_name=None,
                  gen_addr=True):
 
+        super().__init__(config_data_width=config_data_width,
+                         config_addr_width=config_addr_width,
+                         data_width=data_width)
+
+        self.__name = "max"
         # name
         if override_name:
             self.__name = override_name + "Core"
@@ -103,8 +107,6 @@ class MemCore(ConfigurableCore):
         else:
             self.__name = "MemCore"
             lake_name = "LakeTop"
-
-        super().__init__(config_addr_width, config_data_width)
 
         # Capture everything to the tile object
         self.data_width = data_width
@@ -139,8 +141,8 @@ class MemCore(ConfigurableCore):
         TData = magma.Bits[self.data_width]
         TBit = magma.Bits[1]
 
-        self.__inputs = []
-        self.__outputs = []
+        # self.__inputs = []
+        # self.__outputs = []
 
         cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
                      self.input_iterator_support, self.output_iterator_support,
@@ -151,12 +153,12 @@ class MemCore(ConfigurableCore):
                      self.add_clk_enable, self.add_flush, self.gen_addr)
 
         # Check for circuit caching
-        if cache_key not in MemCore.__circuit_cache:
+        if cache_key not in super().__circuit_cache:
 
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.lt_dut = LakeTop(data_width=self.data_width,
+            self.dut = LakeTop(data_width=self.data_width,
                                   mem_width=self.mem_width,
                                   mem_depth=self.mem_depth,
                                   banks=self.banks,
@@ -181,262 +183,20 @@ class MemCore(ConfigurableCore):
                                   gen_addr=self.gen_addr)
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
-            circ = kts.util.to_magma(self.lt_dut,
+            circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
                                      optimize_if=False,
                                      check_flip_flop_always_ff=False,
                                      additional_passes={"change_sram_port": change_sram_port_pass})
-            MemCore.__circuit_cache[cache_key] = (circ, self.lt_dut)
+            MemCore.__circuit_cache[cache_key] = (circ, self.dut)
         else:
-            circ, self.lt_dut = MemCore.__circuit_cache[cache_key]
+            circ, self.dut = MemCore.__circuit_cache[cache_key]
 
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
 
-        # Enumerate input and output ports
-        # (clk and reset are assumed)
-        core_interface = get_interface(self.lt_dut)
-        cfgs = extract_top_config(self.lt_dut)
-        assert len(cfgs) > 0, "No configs?"
-
-        # We basically add in the configuration bus differently
-        # than the other ports...
-        skip_names = ["config_data_in",
-                      "config_write",
-                      "config_addr_in",
-                      "config_data_out",
-                      "config_read",
-                      "config_en",
-                      "clk_en"]
-
-        # Create a list of signals that will be able to be
-        # hardwired to a constant at runtime...
-        control_signals = []
-        # The rest of the signals to wire to the underlying representation...
-        other_signals = []
-
-        # for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array in core_interface:
-        for io_info in core_interface:
-            if io_info.port_name in skip_names:
-                continue
-            ind_ports = io_info.port_width
-            intf_type = TBit
-            # For our purposes, an explicit array means the inner data HAS to be 16 bits
-            if io_info.expl_arr:
-                ind_ports = io_info.port_size[0]
-                intf_type = TData
-            dir_type = magma.In
-            app_list = self.__inputs
-            if io_info.port_dir == "PortDirection.Out":
-                dir_type = magma.Out
-                app_list = self.__outputs
-            if ind_ports > 1:
-                for i in range(ind_ports):
-                    self.add_port(f"{io_info.port_name}_{i}", dir_type(intf_type))
-                    app_list.append(self.ports[f"{io_info.port_name}_{i}"])
-            else:
-                self.add_port(io_info.port_name, dir_type(intf_type))
-                app_list.append(self.ports[io_info.port_name])
-
-            # classify each signal for wiring to underlying representation...
-            if io_info.is_ctrl:
-                control_signals.append((io_info.port_name, io_info.port_width))
-            else:
-                if ind_ports > 1:
-                    for i in range(ind_ports):
-                        other_signals.append((f"{io_info.port_name}_{i}",
-                                              io_info.port_dir,
-                                              io_info.expl_arr,
-                                              i,
-                                              io_info.port_name))
-                else:
-                    other_signals.append((io_info.port_name,
-                                          io_info.port_dir,
-                                          io_info.expl_arr,
-                                          0,
-                                          io_info.port_name))
-
-        assert(len(self.__outputs) > 0)
-
-        # We call clk_en stall at this level for legacy reasons????
-        self.add_ports(
-            stall=magma.In(TBit),
-        )
-
-        self.chain_idx_bits = max(1, kts.clog2(self.num_tiles))
-
-        # put a 1-bit register and a mux to select the control signals
-        for control_signal, width in control_signals:
-            if width == 1:
-                mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
-                reg_value_name = f"{control_signal}_reg_value"
-                reg_sel_name = f"{control_signal}_reg_sel"
-                self.add_config(reg_value_name, 1)
-                self.add_config(reg_sel_name, 1)
-                self.wire(mux.ports.I[0], self.ports[control_signal])
-                self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
-                self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
-                # 0 is the default wire, which takes from the routing network
-                self.wire(mux.ports.O[0], self.underlying.ports[control_signal][0])
-            else:
-                for i in range(width):
-                    mux = MuxWrapper(2, 1, name=f"{control_signal}_{i}_sel")
-                    reg_value_name = f"{control_signal}_{i}_reg_value"
-                    reg_sel_name = f"{control_signal}_{i}_reg_sel"
-                    self.add_config(reg_value_name, 1)
-                    self.add_config(reg_sel_name, 1)
-                    self.wire(mux.ports.I[0], self.ports[f"{control_signal}_{i}"])
-                    self.wire(mux.ports.I[1], self.registers[reg_value_name].ports.O)
-                    self.wire(mux.ports.S, self.registers[reg_sel_name].ports.O)
-                    # 0 is the default wire, which takes from the routing network
-                    self.wire(mux.ports.O[0], self.underlying.ports[control_signal][i])
-
-        # Wire the other signals up...
-        for pname, pdir, expl_arr, ind, uname in other_signals:
-            # If we are in an explicit array moment, use the given wire name...
-            if expl_arr is False:
-                # And if not, use the index
-                self.wire(self.ports[pname][0], self.underlying.ports[uname][ind])
-            else:
-                self.wire(self.ports[pname], self.underlying.ports[pname])
-
-        # CLK, RESET, and STALL PER STANDARD PROCEDURE
-
-        # Need to invert this
-        self.resetInverter = FromMagma(mantle.DefineInvert(1))
-        self.wire(self.resetInverter.ports.I[0], self.ports.reset)
-        self.wire(self.convert(self.resetInverter.ports.O[0],
-                               magma.asyncreset),
-                  self.underlying.ports.rst_n)
-        self.wire(self.ports.clk, self.underlying.ports.clk)
-
-        # Mem core uses clk_en (essentially active low stall)
-        self.stallInverter = FromMagma(mantle.DefineInvert(1))
-        self.wire(self.stallInverter.ports.I, self.ports.stall)
-        self.wire(self.stallInverter.ports.O[0], self.underlying.ports.clk_en[0])
-
-        # we have six? features in total
-        # 0:    TILE
-        # 1:    TILE
-        # 1-4:  SMEM
-        # Feature 0: Tile
-        self.__features: List[CoreFeature] = [self]
-        # Features 1-4: SRAM
-        self.num_sram_features = self.lt_dut.total_sets
-        for sram_index in range(self.num_sram_features):
-            core_feature = CoreFeature(self, sram_index + 1)
-            core_feature.skip_compression = True
-            self.__features.append(core_feature)
-
-        # Wire the config
-        for idx, core_feature in enumerate(self.__features):
-            if(idx > 0):
-                self.add_port(f"config_{idx}",
-                              magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
-                # port aliasing
-                core_feature.ports["config"] = self.ports[f"config_{idx}"]
-        self.add_port("config", magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
-
-        # or the signal up
-        t = ConfigurationType(self.config_addr_width, self.config_data_width)
-        t_names = ["config_addr", "config_data"]
-        or_gates = {}
-        for t_name in t_names:
-            port_type = t[t_name]
-            or_gate = FromMagma(mantle.DefineOr(len(self.__features),
-                                                len(port_type)))
-            or_gate.instance_name = f"OR_{t_name}_FEATURE"
-            for idx, core_feature in enumerate(self.__features):
-                self.wire(or_gate.ports[f"I{idx}"],
-                          core_feature.ports.config[t_name])
-            or_gates[t_name] = or_gate
-
-        self.wire(or_gates["config_addr"].ports.O,
-                  self.underlying.ports.config_addr_in[0:self.config_addr_width])
-        self.wire(or_gates["config_data"].ports.O,
-                  self.underlying.ports.config_data_in)
-
-        # read data out
-        for idx, core_feature in enumerate(self.__features):
-            if(idx > 0):
-                # self.add_port(f"read_config_data_{idx}",
-                self.add_port(f"read_config_data_{idx}",
-                              magma.Out(magma.Bits[self.config_data_width]))
-                # port aliasing
-                core_feature.ports["read_config_data"] = \
-                    self.ports[f"read_config_data_{idx}"]
-
-        # MEM Config
-        configurations = []
-        # merged_configs = []
-        skip_cfgs = []
-
-        for cfg_info in cfgs:
-            if cfg_info.port_name in skip_cfgs:
-                continue
-            if cfg_info.expl_arr:
-                if cfg_info.port_size[0] > 1:
-                    for i in range(cfg_info.port_size[0]):
-                        configurations.append((f"{cfg_info.port_name}_{i}", cfg_info.port_width))
-                else:
-                    configurations.append((cfg_info.port_name, cfg_info.port_width))
-            else:
-                configurations.append((cfg_info.port_name, cfg_info.port_width))
-
-        # Do all the stuff for the main config
-        main_feature = self.__features[0]
-        for config_reg_name, width in configurations:
-            main_feature.add_config(config_reg_name, width)
-            if(width == 1):
-                self.wire(main_feature.registers[config_reg_name].ports.O[0],
-                          self.underlying.ports[config_reg_name][0])
-            else:
-                self.wire(main_feature.registers[config_reg_name].ports.O,
-                          self.underlying.ports[config_reg_name])
-
-        # SRAM
-        # These should also account for num features
-        # or_all_cfg_rd = FromMagma(mantle.DefineOr(4, 1))
-        or_all_cfg_rd = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
-        or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_SRAM"
-        or_all_cfg_wr = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
-        or_all_cfg_wr.instance_name = f"OR_CONFIG_RD_SRAM"
-        for sram_index in range(self.num_sram_features):
-            core_feature = self.__features[sram_index + 1]
-            self.add_port(f"config_en_{sram_index}", magma.In(magma.Bit))
-            # port aliasing
-            core_feature.ports["config_en"] = \
-                self.ports[f"config_en_{sram_index}"]
-            # Sort of a temp hack - the name is just config_data_out
-            if self.num_sram_features == 1:
-                self.wire(core_feature.ports.read_config_data,
-                          self.underlying.ports["config_data_out"])
-            else:
-                self.wire(core_feature.ports.read_config_data,
-                          self.underlying.ports[f"config_data_out_{sram_index}"])
-            and_gate_en = FromMagma(mantle.DefineAnd(2, 1))
-            and_gate_en.instance_name = f"AND_CONFIG_EN_SRAM_{sram_index}"
-            # also need to wire the sram signal
-            # the config enable is the OR of the rd+wr
-            or_gate_en = FromMagma(mantle.DefineOr(2, 1))
-            or_gate_en.instance_name = f"OR_CONFIG_EN_SRAM_{sram_index}"
-
-            self.wire(or_gate_en.ports.I0, core_feature.ports.config.write)
-            self.wire(or_gate_en.ports.I1, core_feature.ports.config.read)
-            self.wire(and_gate_en.ports.I0, or_gate_en.ports.O)
-            self.wire(and_gate_en.ports.I1[0], core_feature.ports.config_en)
-            self.wire(and_gate_en.ports.O[0],
-                      self.underlying.ports["config_en"][sram_index])
-            # Still connect to the OR of all the config rd/wr
-            self.wire(core_feature.ports.config.write,
-                      or_all_cfg_wr.ports[f"I{sram_index}"])
-            self.wire(core_feature.ports.config.read,
-                      or_all_cfg_rd.ports[f"I{sram_index}"])
-
-        self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read[0])
-        self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write[0])
-        self._setup_config()
+        self.wrap_lake_core()
 
         conf_names = list(self.registers.keys())
         conf_names.sort()
@@ -483,7 +243,7 @@ class MemCore(ConfigurableCore):
             use_json = True
             if use_json:
                 top_controller_node = instr['config'][1]
-                config_mem = self.lt_dut.get_static_bitstream_json(top_controller_node)
+                config_mem = self.dut.get_static_bitstream_json(top_controller_node)
             elif app_name == "conv_3_3":
                 # Create a tempdir and download the files...
                 with tempfile.TemporaryDirectory() as tempdir:
@@ -527,33 +287,9 @@ class MemCore(ConfigurableCore):
     def get_static_bitstream(self, config_path, in_file_name, out_file_name):
 
         # Don't do the rest anymore...
-        return self.lt_dut.get_static_bitstream(config_path=config_path,
+        return self.dut.get_static_bitstream(config_path=config_path,
                                                 in_file_name=in_file_name,
                                                 out_file_name=out_file_name)
-
-    def instruction_type(self):
-        raise NotImplementedError()  # pragma: nocover
-
-    def inputs(self):
-        return self.__inputs
-
-    def outputs(self):
-        return self.__outputs
-
-    def features(self):
-        return self.__features
-
-    def name(self):
-        return self.__name
-
-    def pnr_info(self):
-        return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
-
-    def num_data_inputs(self):
-        return self.interconnect_input_ports
-
-    def num_data_outputs(self):
-        return self.interconnect_output_ports
 
 
 if __name__ == "__main__":
