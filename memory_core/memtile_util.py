@@ -35,14 +35,14 @@ class LakeCoreBase(ConfigurableCore):
                  data_width=16,
                  lname="LakeBase_inst"):
 
-        self.lname = lname
+        self.__name = lname
+        self.__inputs = []
+        self.__outputs = []
+        self.__features = []
+        self.data_width = data_width
+
         super().__init__(config_addr_width=config_addr_width,
                          config_data_width=config_data_width)
-
-        self._inputs = []
-        self._outputs = []
-        self._features = []
-        self.data_width = data_width
 
     def wrap_lake_core(self):
         # Typedefs for ease
@@ -303,17 +303,16 @@ class LakeCoreBase(ConfigurableCore):
         raise NotImplementedError()  # pragma: nocover
 
     def inputs(self):
-        return self._inputs
+        return self.__inputs
 
     def outputs(self):
-        return self._outputs
+        return self.__outputs
 
     def features(self):
-        return self._features
+        return self.__features
 
     def name(self):
-        print("trying to return name")
-        return self.lname
+        return self.__name
 
     def pnr_info(self):
         return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)

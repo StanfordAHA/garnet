@@ -142,9 +142,6 @@ class MemCore(LakeCoreBase):
         TData = magma.Bits[self.data_width]
         TBit = magma.Bits[1]
 
-        # self.__inputs = []
-        # self.__outputs = []
-
         cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
                      self.input_iterator_support, self.output_iterator_support,
                      self.interconnect_input_ports, self.interconnect_output_ports,
