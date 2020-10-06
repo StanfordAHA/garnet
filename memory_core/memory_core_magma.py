@@ -10,7 +10,6 @@ from gemstone.common.mux_wrapper import MuxWrapper
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.from_verilog import FromVerilog
-from memory_core import memory_core_genesis2
 from typing import List
 from lake.top.lake_top import LakeTop
 from lake.top.pond import Pond
@@ -99,13 +98,15 @@ class MemCore(LakeCoreBase):
                          config_addr_width=config_addr_width,
                          data_width=data_width)
 
+        self.lname = "balls"
+
         # name
-        # if override_name:
-        #     self.__name = override_name + "Core"
-        #     lake_name = override_name
-        # else:
-        #     self.__name = "MemCore"
-        #     lake_name = "LakeTop"
+        if override_name:
+            self.__name = override_name + "Core"
+            lake_name = override_name
+        else:
+            self.__name = "MemCore"
+            lake_name = "LakeTop"
 
         # Capture everything to the tile object
         # self.data_width = data_width
@@ -135,7 +136,6 @@ class MemCore(LakeCoreBase):
         self.gen_addr = gen_addr
         # self.app_ctrl_depth_width = app_ctrl_depth_width
         # self.stcl_valid_iter = stcl_valid_iter
-
         # Typedefs for ease
         TData = magma.Bits[self.data_width]
         TBit = magma.Bits[1]
@@ -152,7 +152,8 @@ class MemCore(LakeCoreBase):
                      self.add_clk_enable, self.add_flush, self.gen_addr)
 
         # Check for circuit caching
-        if cache_key not in super().__circuit_cache:
+        # if cache_key not in super().__circuit_cache:
+        if False:
 
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
