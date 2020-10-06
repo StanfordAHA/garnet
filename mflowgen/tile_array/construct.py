@@ -103,7 +103,9 @@ def construct():
   #pt_signoff.extend_inputs( ['Tile_PE.db'] )
   #pt_signoff.extend_inputs( ['Tile_MemCore.db'] )
   #genlibdb.extend_inputs( ['Tile_PE.db'] )
+  genlib.extend_inputs( ['Tile_PE_tt.lib'] )
   #genlibdb.extend_inputs( ['Tile_MemCore.db'] )
+  genlib.extend_inputs( ['Tile_MemCore_tt.lib'] )
 
   # These steps need timing info for cgra tiles
 
