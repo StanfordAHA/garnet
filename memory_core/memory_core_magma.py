@@ -102,13 +102,8 @@ class MemCore(LakeCoreBase):
                          config_addr_width=config_addr_width,
                          data_width=data_width)
 
-        # name
-        if override_name:
-            self.__name = override_name + "Core"
-            lake_name = override_name
-        else:
-            self.__name = "MemCore"
-            lake_name = "LakeTop"
+        self.__name = "MemCore"
+        lake_name = "LakeTop"
 
         # Capture everything to the tile object
         # self.data_width = data_width
