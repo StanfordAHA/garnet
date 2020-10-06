@@ -3,10 +3,12 @@ name: glb_tile
 commands:
   - bash get_glb_outputs.sh
 
+inputs:
+  - design.v
+
 outputs:
   - glb_tile_tt.lib
   - glb_tile.lef
-  - glb_tile.db
   - glb_tile.gds
   - glb_tile.lvs.v
   - sram.spi

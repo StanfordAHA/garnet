@@ -69,9 +69,8 @@ def construct():
   # Default steps
 
   info              = Step( 'info',                          default=True )
-  #constraints       = Step( 'constraints',                   default=True )
-  synth             = Step( 'cadence-genus-synthesis',         default=True )
-  dc                = Step( 'synopsys-dc-synthesis',         default=True )
+  # constraints       = Step( 'constraints',                   default=True )
+  synth             = Step( 'cadence-genus-synthesis',       default=True )
   iflow             = Step( 'cadence-innovus-flowsetup',     default=True )
   init              = Step( 'cadence-innovus-init',          default=True )
   power             = Step( 'cadence-innovus-power',         default=True )
@@ -83,8 +82,7 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff           = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff        = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb          = Step( 'synopsys-ptpx-genlibdb',        default=True )
-  gdsmerge          = Step( 'mentor-calibre-gdsmerge',       default=True )
+  genlib            = Step( 'cadence-genus-genlib',          default=True )
   drc               = Step( 'mentor-calibre-drc',            default=True )
   lvs               = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre      = Step( 'cadence-innovus-debug-calibre', default=True )
@@ -98,21 +96,18 @@ def construct():
 
   # Add sram macro inputs to downstream nodes
 
-  dc.extend_inputs( ['sram_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
-  genlibdb.extend_inputs( ['sram_tt.db'] )
 
   # These steps need timing and lef info for srams
-
   sram_steps = \
     [synth, iflow, init, power, place, cts, postcts_hold, \
-     route, postroute, postroute_hold, signoff]
+     route, postroute, postroute_hold, signoff, genlib]
   for step in sram_steps:
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
 
   # Need the sram gds to merge into the final layout
 
-  gdsmerge.extend_inputs( ['sram.gds'] )
+  signoff.extend_inputs( ['sram.gds'] )
 
   # Need SRAM spice file for LVS
   lvs.extend_inputs( ['sram.spi'] )
@@ -131,7 +126,6 @@ def construct():
   g.add_step( gen_sram       )
   g.add_step( constraints    )
   g.add_step( synth          )
-  g.add_step( dc             )
   g.add_step( iflow          )
   g.add_step( init           )
   g.add_step( custom_init    )
@@ -145,8 +139,7 @@ def construct():
   g.add_step( postroute_hold )
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
-  g.add_step( genlibdb       )
-  g.add_step( gdsmerge       )
+  g.add_step( genlib         )
   g.add_step( drc            )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
@@ -160,7 +153,6 @@ def construct():
 
   g.connect_by_name( adk,      gen_sram       )
   g.connect_by_name( adk,      synth          )
-  g.connect_by_name( adk,      dc             )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
   g.connect_by_name( adk,      power          )
@@ -171,12 +163,10 @@ def construct():
   g.connect_by_name( adk,      postroute      )
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
-  g.connect_by_name( adk,      gdsmerge       )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
 
   g.connect_by_name( gen_sram,      synth          )
-  g.connect_by_name( gen_sram,      dc             )
   g.connect_by_name( gen_sram,      iflow          )
   g.connect_by_name( gen_sram,      init           )
   g.connect_by_name( gen_sram,      power          )
@@ -187,17 +177,13 @@ def construct():
   g.connect_by_name( gen_sram,      postroute      )
   g.connect_by_name( gen_sram,      postroute_hold )
   g.connect_by_name( gen_sram,      signoff        )
-  g.connect_by_name( gen_sram,      genlibdb       )
+  g.connect_by_name( gen_sram,      genlib         )
   g.connect_by_name( gen_sram,      pt_signoff     )
-  g.connect_by_name( gen_sram,      gdsmerge       )
   g.connect_by_name( gen_sram,      drc            )
   g.connect_by_name( gen_sram,      lvs            )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
-
-  g.connect_by_name( rtl,         dc           )
-  g.connect_by_name( constraints, dc           )
 
   g.connect_by_name( synth,       iflow        )
   g.connect_by_name( synth,       init         )
@@ -227,14 +213,13 @@ def construct():
   g.connect_by_name( route,          postroute      )
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
-  g.connect_by_name( signoff,        gdsmerge       )
   g.connect_by_name( signoff,        drc            )
   g.connect_by_name( signoff,        lvs            )
-  g.connect_by_name( gdsmerge,       drc            )
-  g.connect_by_name( gdsmerge,       lvs            )
+  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  g.connect_by_name( signoff, genlibdb )
-  g.connect_by_name( adk,     genlibdb )
+  g.connect_by_name( signoff, genlib )
+  g.connect_by_name( adk,     genlib )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
@@ -257,7 +242,6 @@ def construct():
 
   # Change nthreads
   synth.update_params( { 'nthreads': 4 } )
-  dc.update_params( { 'nthreads': 4 } )
   iflow.update_params( { 'nthreads': 8 } )
 
   # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'

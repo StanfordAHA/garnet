@@ -15,51 +15,56 @@ def get_interconnect_regs(interconnect: Interconnect):
         for cb_name, cb in tile.cbs.items():
             # get the index
             index = tile.features().index(cb)
-            # reg space is always 0 for CB
-            reg_addr = 0
             # need to get range
             # notice that we may already replace the mux with aoi + const
             # so we need to get the height from the actual mux
             mux = cb.mux
             mux_range = mux.height
+            if mux_range <= 1:
+                continue
+            reg_addr, lo, hi = cb.get_reg_info(get_mux_sel_name(cb.node))
             config_addr = interconnect.get_config_addr(reg_addr, index,
                                                        x, y)
             result.append({
                 "name": cb_name,
                 "addr": config_addr,
-                "range": mux_range
+                "range": mux_range - 1,
+                "lo": lo,
+                "hi": hi,
+                "reg_name": f"config_reg_{reg_addr}"
             })
 
         for switchbox in tile.sbs.values():
             index = tile.features().index(switchbox)
-            # sort the reg names
-            reg_names = list(switchbox.registers.keys())
-            reg_names.sort()
             for sb, sb_mux in switchbox.sb_muxs.values():
                 if sb_mux.height > 1:
                     config_name = get_mux_sel_name(sb)
-                    assert config_name in reg_names
-                    reg_addr = reg_names.index(config_name)
+                    reg_addr, lo, hi = switchbox.get_reg_info(config_name)
                     mux_range = sb_mux.height
                     config_addr = interconnect.get_config_addr(reg_addr, index,
                                                                x, y)
                     result.append({
                         "name": str(sb),
                         "addr": config_addr,
-                        "range": mux_range
+                        "range": mux_range - 1,
+                        "lo": lo,
+                        "hi": hi,
+                        "reg_name": f"config_reg_{reg_addr}"
                     })
             for node, reg_mux in switchbox.reg_muxs.values():
                 if reg_mux.height > 1:
                     config_name = get_mux_sel_name(node)
-                    assert config_name in reg_names
-                    reg_addr = reg_names.index(config_name)
+                    reg_addr, lo, hi = switchbox.get_reg_info(config_name)
                     mux_range = reg_mux.height
                     config_addr = interconnect.get_config_addr(reg_addr, index,
                                                                x, y)
                     result.append({
                         "name": str(node),
                         "addr": config_addr,
-                        "range": mux_range
+                        "range": mux_range - 1,
+                        "lo": lo,
+                        "hi": hi,
+                        "reg_name": f"config_reg_{reg_addr}"
                     })
 
     return result
@@ -86,26 +91,31 @@ def get_core_registers(interconnect: Interconnect):
                 result.append({
                     "name": reg_name,
                     "addr": addr,
-                    "range": 1 << width
+                    "range": (1 << width) - 1,
+                    "lo": 0,
+                    "hi": width + 1
                 })
         elif isinstance(core, MemCore):
-            # memory has five features
+            # memory has couple features
             base_feat_addr = tile.features().index(core)
             regs = list(core.registers.keys())
-            regs.sort()
-            for idx, reg_name in enumerate(regs):
-                reg_addr = idx
+            for reg_name in regs:
+                reg_addr, lo, hi = core.get_reg_info(reg_name)
                 width = core.registers[reg_name].width
                 addr = interconnect.get_config_addr(reg_addr, base_feat_addr,
                                                     x, y)
                 result.append({
                     "name": reg_name,
                     "addr": addr,
-                    "range": 1 << width
+                    "range": 1 << width,
+                    "lo": lo,
+                    "hi": hi
                 })
 
             # SRAM
-            for sram_index in range(4):
+            num_sram = core.num_sram_features
+            repeat = core.mem_width // core.data_width
+            for sram_index in range(num_sram):
                 for reg_addr in range(256):
                     addr = \
                         interconnect.get_config_addr(
@@ -113,6 +123,7 @@ def get_core_registers(interconnect: Interconnect):
                     result.append({
                         "name": f"SRAM_{sram_index}_{reg_addr}",
                         "addr": addr,
-                        "range": 1 << 16
+                        "range": (1 << 16) - 1,
+                        "repeat": repeat
                     })
     return result

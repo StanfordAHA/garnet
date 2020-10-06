@@ -6,3 +6,6 @@ commands:
 outputs:
   - design.v
 
+parameters:
+  num_glb_tiles: 16
+  cgra_width: 32
