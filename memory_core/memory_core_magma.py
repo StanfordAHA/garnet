@@ -95,21 +95,20 @@ class MemCore(LakeCoreBase):
                  override_name=None,
                  gen_addr=True):
 
-        super().__init__(config_data_width=config_data_width,
+        LakeCoreBase().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width)
 
-        self.__name = "max"
         # name
-        if override_name:
-            self.__name = override_name + "Core"
-            lake_name = override_name
-        else:
-            self.__name = "MemCore"
-            lake_name = "LakeTop"
+        # if override_name:
+        #     self.__name = override_name + "Core"
+        #     lake_name = override_name
+        # else:
+        #     self.__name = "MemCore"
+        #     lake_name = "LakeTop"
 
         # Capture everything to the tile object
-        self.data_width = data_width
+        # self.data_width = data_width
         self.mem_width = mem_width
         self.mem_depth = mem_depth
         self.banks = banks
