@@ -1,0 +1,9 @@
+./sim/genesis/axi_driver.svp
+./sim/genesis/jtag_driver.svp
+./sim/genesis/axil_ifc.svp
+./sim/genesis/cfg_ifc.svp
+./sim/genesis/clocker.svp
+./sim/genesis/glc_prog.svp
+./sim/genesis/jtag_ifc.svp
+./sim/genesis/template_ifc.svp
+./sim/genesis/top.svp
