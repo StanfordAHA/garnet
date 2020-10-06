@@ -10,7 +10,7 @@ NUM_GLB_TILES := 16
 
 GLB_TILE_NETLIST := /sim/kongty/pnr_annotate/glb_tile.vcs.v
 GLB_TOP_NETLIST := /sim/kongty/pnr_annotate/global_buffer.vcs.v
-SRAM_RTL := /sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/*.v
+SRAM_RTL := /sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/ts1n16ffcllsblvtc2048x64m8sw_130a.v
 
 RTL_LISTS := `cat $(RTL_DIR)/global_buffer.filelist | sed -e 's/^/$(RTL_DIR)\//' | xargs readlink -f`
 
@@ -83,7 +83,7 @@ html: $(rdl_post)
 .PHONY: sim-tile
 sim-tile: TOP_MODULE=glb_tile
 sim-tile: TB_DIR=sim-tile
-sim-tile: DESIGNARGS += -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist
+sim-tile: DESIGNARGS += -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist -v $(SRAM_RTL)
 sim-tile: $(RTL_LISTS)
 	$(XRUN)
 
@@ -105,7 +105,7 @@ sim-tile-gl: $(RTL_LISTS) $(GLB_TILE_NETLIST)
 # run testbench of glb with xcelium
 .PHONY: sim
 #sim: XRUNARGS+=+define+DEBUG
-sim: DESIGNARGS += -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist
+sim: DESIGNARGS += -v $(SRAM_RTL) -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist 
 sim: $(RTL_LISTS) 
 	$(XRUN)
 
