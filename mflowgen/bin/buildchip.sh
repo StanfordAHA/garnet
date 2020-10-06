@@ -1,9 +1,15 @@
 #!/bin/bash
 
-# echo args="$@"
-# 
-# for arg; do echo arg="'$arg'"; done
-# echo ---
+# STATUS
+# I think the kiwi tests work (see "kiwi test" below)
+# Maybe ready to try on arm machine again...
+
+
+
+echo args="$@"
+
+for arg; do echo arg="'$arg'"; done
+echo ---
 # arg_array=( "$@" )
 # for aarg in "${arg_array[@]}"; do echo aarg="$aarg"; done
 # echo ---
@@ -97,21 +103,24 @@ BUILD_NUM=
 if [ "$1" == "" ]; then
     Help; exit 13
 fi
-case "$1" in
-    -v|--verbose) VERBOSE=true;  shift ;;
-    -q|--quiet)   VERBOSE=false; shift ;;
-    -h|--help)    Help; exit ;;
-
-    --new)   ACTION=new; shift; build_dir=$1 ;;
-    --re*)   ACTION=old; shift; build_dir=$1 ;;
-    --cont*) ACTION=old; shift; build_dir=$1 ;;
-
-    --make*) ACTION=make_only; shift ;;
-
-    --build_num) shift; BUILD_NUM=$1 ;;
-
-    *) echo "**ERROR: Unrecognized command-line arg '$1'"; Usage; exit 13; ;;
-esac
+while [ $# -gt 0 ] ; do
+    case "$1" in
+        -v|--verbose) VERBOSE=true ;;
+        -q|--quiet)   VERBOSE=false ;;
+        -h|--help)    Help; exit ;;
+        
+        --new)   ACTION=new; shift; build_dir=$1 ;;
+        --re*)   ACTION=old; shift; build_dir=$1 ;;
+        --cont*) ACTION=old; shift; build_dir=$1 ;;
+        
+        --make*) ACTION=make_only ;;
+        
+        --build_num) shift; BUILD_NUM=$1 ;;
+        
+        *) echo "**ERROR: Unrecognized command-line arg '$1'"; Usage; exit 13; ;;
+    esac
+    shift
+done
 # echo ACTION=$ACTION
 
 ########################################################################
@@ -137,6 +146,16 @@ if [ "$ACTION" == "new" ]; then
 
     logdir=/proj/forward/CI/build.HIST ;  # For VDE
     [ `hostname` == "r7arm-aha" ] && logdir=/build/CI/build.HIST ; # for ARM
+
+    # kiwi is for debugging the script
+    if [ `hostname` == "kiwi" ]; then
+        logdir=/tmp/deleteme.buildchip.CI/build.HIST
+        test -e $logdir || mkdir $logdir
+    fi
+    # kiwi test: CI=/tmp/deleteme.buildchip.CI; cd $CI
+    # kiwi test: $garnet/mflowgen/bin/buildchip.sh --new $CI |& tee tmp.log0
+    
+
     if ! (test -d $logdir && test -w $logdir); then
         echo "**ERROR: logdir $logdir not found or not writeable"; exit 13
     fi
@@ -167,6 +186,12 @@ if [ "$ACTION" == "new" ]; then
     echo mkdir -p $build_dir; mkdir -p $build_dir
     echo cd       $build_dir; cd       $build_dir
     echo "Log file = '$log'"
+
+    # kiwi is for debugging the script
+    if [ `hostname` == "kiwi" ]; then
+        echo "okay we're debugged already"; exit
+    fi
+
 
     ########################################################################
     # Build the chip, with output to the log.
@@ -259,6 +284,11 @@ elif  [ "$ACTION" == "old" ]; then
         echo "**ERROR: No build dir on command line"; Usage; exit 13
     fi
 fi
+
+if [ `hostname` == "kiwi" ]; then
+    echo "kiwi DONE bugging out"; exit
+fi
+
 
 # echo FOO; exit
 
