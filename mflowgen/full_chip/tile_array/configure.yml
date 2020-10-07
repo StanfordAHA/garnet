@@ -9,10 +9,18 @@ inputs:
 outputs:
   - tile_array_tt.lib
   - tile_array.lef
-  - tile_array.db
   - tile_array.gds
   - tile_array.vcs.v
   - tile_array.sdf
   - tile_array.lvs.v
   - tile_array.sram.spi
+
+postconditions:
+  - assert File( 'outputs/tile_array_tt.lib' ) # must exist
+  - assert File( 'outputs/tile_array.lef' ) # must exist
+  - assert File( 'outputs/tile_array.gds' ) # must exist
+  - assert File( 'outputs/tile_array.vcs.v' ) # must exist
+  - assert File( 'outputs/tile_array.sdf' ) # must exist
+  - assert File( 'outputs/tile_array.lvs.v' ) # must exist
+  - assert File( 'outputs/tile_array.sram.spi' ) # must exist
 
