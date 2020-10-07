@@ -172,9 +172,9 @@ class MemCore(LakeCoreBase):
                                      optimize_if=False,
                                      check_flip_flop_always_ff=False,
                                      additional_passes={"change_sram_port": change_sram_port_pass})
-            MemCore._circuit_cache[cache_key] = (circ, self.dut)
+            LakeCoreBase._circuit_cache[cache_key] = (circ, self.dut)
         else:
-            circ, self.dut = MemCore._circuit_cache[cache_key]
+            circ, self.dut = LakeCoreBase._circuit_cache[cache_key]
 
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)

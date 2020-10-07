@@ -6,7 +6,7 @@ from lake.top.extract_tile_info import *
 import kratos as kts
 from gemstone.generator.from_magma import FromMagma
 from typing import List
-from lake.top.pond import Pond
+from lake.top.valid_io import ValidIO
 from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
 
@@ -19,43 +19,32 @@ else:
     from .memtile_util import LakeCoreBase
 
 
-class PondCore(LakeCoreBase):
+class ValidIOCore(LakeCoreBase):
 
     def __init__(self,
-                 data_width=16,  # CGRA Params
-                 mem_depth=32,
                  default_iterator_support=3,
-                 interconnect_input_ports=1,  # Connection to int
-                 interconnect_output_ports=1,
                  config_data_width=32,
                  config_addr_width=8,
                  cycle_count_width=16,
                  add_clk_enable=True,
                  add_flush=True):
 
-        lake_name = "Pond_pond"
+        lake_name = "valid_io"
 
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
-                         data_width=data_width,
-                         name="PondCore")
+                         data_width=None,
+                         name="ValidIOCore")
 
         # Capture everything to the tile object
-        self.interconnect_input_ports = interconnect_input_ports
-        self.interconnect_output_ports = interconnect_output_ports
-        self.mem_depth = mem_depth
-        self.data_width = data_width
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
         self.cycle_count_width = cycle_count_width
         self.default_iterator_support = default_iterator_support
-        self.default_config_width = kts.clog2(self.mem_depth)
 
-        cache_key = (self.data_width, self.mem_depth,
-                     self.interconnect_input_ports, self.interconnect_output_ports,
-                     self.config_data_width, self.config_addr_width,
+        cache_key = (self.config_data_width, self.config_addr_width,
                      self.add_clk_enable, self.add_flush,
                      self.cycle_count_width, self.default_iterator_support)
 
@@ -64,16 +53,12 @@ class PondCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = Pond(data_width=data_width,  # CGRA Params
-                            mem_depth=mem_depth,
-                            default_iterator_support=default_iterator_support,
-                            interconnect_input_ports=interconnect_input_ports,  # Connection to int
-                            interconnect_output_ports=interconnect_output_ports,
-                            config_data_width=config_data_width,
-                            config_addr_width=config_addr_width,
-                            cycle_count_width=cycle_count_width,
-                            add_clk_enable=add_clk_enable,
-                            add_flush=add_flush)
+            self.dut = ValidIO(default_iterator_support=default_iterator_support,
+                               config_data_width=config_data_width,
+                               config_addr_width=config_addr_width,
+                               cycle_count_width=cycle_count_width,
+                               add_clk_enable=add_clk_enable,
+                               add_flush=add_flush)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -143,4 +128,4 @@ class PondCore(LakeCoreBase):
 
 
 if __name__ == "__main__":
-    pc = PondCore()
+    vioc = ValidIOCore()
