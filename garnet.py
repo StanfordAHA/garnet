@@ -182,7 +182,8 @@ class Garnet(Generator):
             if instance not in instrs:
                 continue
             instr = instrs[instance]
-            result += self.interconnect.configure_placement(x, y, instr)
+            result += self.interconnect.configure_placement(x, y, instr,
+                                                            node[0])
         return result
 
     def convert_mapped_to_netlist(self, mapped):
