@@ -189,11 +189,7 @@ def basic_tb(config_path,
 
     generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data)
 
-<<<<<<< HEAD
-    #config_data = compress_config_data(config_data)
-=======
     # config_data = compress_config_data(config_data)
->>>>>>> fd0e75797124acf8afca76b41206f57cb75aa21c
 
     circuit = interconnect.circuit()
 
@@ -228,15 +224,11 @@ def basic_tb(config_path,
         tester.eval()
         tester.step(2)
         tester.eval()
-        #if i >= 16:
+        # if i >= 16:
         #    tester.expect(circuit.interface[dst_name], i - 16)
 
     with tempfile.TemporaryDirectory() as tempdir:
-<<<<<<< HEAD
-        #tempdir = "dump_new"
-=======
-        tempdir = "dump_new"
->>>>>>> fd0e75797124acf8afca76b41206f57cb75aa21c
+        # tempdir = "dump_new"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files():
