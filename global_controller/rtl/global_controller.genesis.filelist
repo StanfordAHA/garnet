@@ -1,0 +1,8 @@
+./rtl/genesis/global_controller.svp
+./rtl/genesis/cfg_and_dbg.svp
+./rtl/genesis/flop.svp
+./rtl/genesis/jtag.svp
+./rtl/genesis/tap.svp
+./rtl/genesis/glc_axi_ctrl.svp
+./rtl/genesis/glc_jtag_ctrl.svp
+./rtl/genesis/glc_axi_addrmap.svp

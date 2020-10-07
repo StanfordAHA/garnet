@@ -56,7 +56,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh
        --dir /build/gold.$${BUILDKITE_BUILD_NUMBER}/full_chip;
-     make synopsys-dc-synthesis |& tee make-syn.log'
+     make cadence-genus-synthesis |& tee make-syn.log'
 - wait: ~
 
 - label: 'place'

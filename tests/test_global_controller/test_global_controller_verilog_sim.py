@@ -6,10 +6,10 @@ import pytest
 
 @pytest.mark.skipif(not verilog_sim_available(),
                     reason="verilog simulator not available")
-@pytest.mark.skipif(not ip_available("DW_tap.v",
-                                     ["/cad/synopsys/syn/"
-                                      "P-2019.03/dw/sim_ver"]),
+@pytest.mark.skipif(not ip_available("CW_tap.v",
+                                     ["/cad/cadence/GENUS_19.10.000_lnx86/"
+                                      "share/synth/lib/chipware/sim/verilog/CW"]),
                     reason="TAP IP not available")
 def test_global_controller_verilog_sim():
-    result = os.system("make -C global_controller tb_compile")
+    result = os.system("make -C global_controller sim")
     assert result == 0
