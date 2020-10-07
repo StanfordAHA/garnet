@@ -109,7 +109,7 @@ __PORT_RENAME = {
 def is_conn_out(raw_name):
     port_names = ["out", "outb", "valid", "rdata", "res", "res_p", "io2f_16",
                   "alu_res", "tofab", "data_out_0", "data_out_1",
-                  "stencil_valid"]
+                  "stencil_valid", "data_out_pond"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -123,7 +123,7 @@ def is_conn_out(raw_name):
 def is_conn_in(raw_name):
     port_names = ["in", "wen", "cg_en", "ren", "wdata", "in0", "in1", "in",
                   "inb", "data0", "data1", "f2io_16", "clk_en", "fromfab",
-                  "data_in_0", "wen_in_0", "ren_in_0"]
+                  "data_in_0", "wen_in_0", "ren_in_0", "data_in_pond"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -513,6 +513,8 @@ def change_name_to_id(instances):
                 blk_type = "I"
             elif instance_type == "cgralib.Mem":
                 blk_type = "m"
+            elif instance_type == "cgralib.Pond":
+                blk_type = "M"
             elif instance_type == "coreir.const":
                 blk_type = "c"
             elif instance_type == "coreir.reg":
@@ -576,7 +578,7 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
                 return "alu", 0
         else:
             return None, None
-    elif pe_type == "cgralib.Mem":
+    elif pe_type == "cgralib.Mem" or pe_type == "cgralib.Pond":
         if rename_op:
             # this depends on the mode
             mode = instance["modargs"]["mode"][-1]
@@ -780,8 +782,8 @@ def wire_reset_to_flush(netlist, id_to_name, bus):
     mems = []
     io_blk = None
     for blk_id, name in id_to_name.items():
-        if "cgramem" in name or "rom" in name:
-            assert blk_id[0] == "m"
+        if "cgramem" in name or "rom" in name or "lakemem" in name:
+            assert blk_id[0] in {"m", "M"}
             mems.append(blk_id)
         if "reset" in name and blk_id[0] in {"i", "I"}:
             io_blk = blk_id
