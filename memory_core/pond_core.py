@@ -25,7 +25,7 @@ class PondCore(LakeCoreBase):
     def __init__(self,
                  data_width=16,  # CGRA Params
                  mem_depth=32,
-                 default_iterator_support=2,
+                 default_iterator_support=3,
                  interconnect_input_ports=1,  # Connection to int
                  interconnect_output_ports=1,
                  config_data_width=32,
@@ -68,7 +68,8 @@ class PondCore(LakeCoreBase):
                      self.cycle_count_width, self.default_iterator_support)
 
         # Check for circuit caching
-        if cache_key not in PondCore.__circuit_cache:
+        if cache_key not in PondCore._circuit_cache:
+        #if cache_key not in PondCore.__circuit_cache:
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
@@ -88,9 +89,9 @@ class PondCore(LakeCoreBase):
                                      check_multiple_driver=False,
                                      optimize_if=False,
                                      check_flip_flop_always_ff=False)
-            PondCore.__circuit_cache[cache_key] = (circ, self.dut)
+            PondCore._circuit_cache[cache_key] = (circ, self.dut)
         else:
-            circ, self.dut = PondCore.__circuit_cache[cache_key]
+            circ, self.dut = PondCore._circuit_cache[cache_key]
 
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
