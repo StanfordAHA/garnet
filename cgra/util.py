@@ -7,7 +7,8 @@ from canal.interconnect import Interconnect
 from passes.power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import PE_fc
 from io_core.io_core_magma import IOCore
-from memory_core.memory_core_magma import MemCore, get_pond
+from memory_core.memory_core_magma import MemCore
+from memory_core.pond_core import PondCore
 from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
@@ -88,8 +89,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 else:
                     core = PeakCore(PE_fc)
                     if add_pond:
-                        additional_core[(x, y)] = get_pond()
-
+                        additional_core[(x, y)] = PondCore()
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
@@ -121,10 +121,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             inputs |= {i.qualified_name() for i in core.inputs()}
             outputs |= {o.qualified_name() for o in core.outputs()}
 
-            outputs.remove("data_out_pond")
-            outputs.remove("valid_out_pond")
-            outputs.remove("chain_data_out_pond")
-            outputs.remove("chain_valid_out_pond")
+            # Pond outputs will be connected to the SBs
+            # outputs.remove("data_out_pond")
+            # outputs.remove("valid_out_pond")
 
     # This is slightly different from the original CGRA. Here we connect
     # input to every SB_IN and output to every SB_OUT.
