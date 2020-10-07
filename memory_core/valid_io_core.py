@@ -87,44 +87,20 @@ class ValidIOCore(LakeCoreBase):
 
     def get_config_bitstream(self, instr):
         configs = []
-        if "init" in instr['config'][1]:
-            config_mem = [("tile_en", 1),
-                          ("mode", 2),
-                          ("wen_in_0_reg_sel", 1),
-                          ("wen_in_1_reg_sel", 1)]
-            for name, v in config_mem:
-                configs = [self.get_config_data(name, v)] + configs
-            # this is SRAM content
-            content = instr['config'][1]['init']
-            for addr, data in enumerate(content):
-                if (not isinstance(data, int)) and len(data) == 2:
-                    addr, data = data
-                feat_addr = addr // 256 + 1
-                addr = addr % 256
-                configs.append((addr, feat_addr, data))
-            print(configs)
-            return configs
-        else:
-            # need to download the csv and get configuration files
-            app_name = instr["app_name"]
-            # hardcode the config bitstream depends on the apps
-            config_mem = []
-            print("app is", app_name)
-            use_json = True
-            if use_json:
-                top_controller_node = instr['config'][1]
-                config_mem = self.dut.get_static_bitstream_json(top_controller_node)
+        app_name = instr["app_name"]
+        # hardcode the config bitstream depends on the apps
+        config_mem = []
+        print("app is", app_name)
+        top_controller_node = instr['config'][1]
+        config_mem = self.dut.get_static_bitstream_json(top_controller_node)
         for name, v in config_mem:
             configs += [self.get_config_data(name, v)]
         # gate config signals
-        conf_names = []
-        for conf_name in conf_names:
-            configs += [self.get_config_data(conf_name, 1)]
         print(configs)
         return configs
 
     def pnr_info(self):
-        return PnRTag("M", self.DEFAULT_PRIORITY, 1)
+        return PnRTag("v", self.DEFAULT_PRIORITY, 1)
 
 
 if __name__ == "__main__":
