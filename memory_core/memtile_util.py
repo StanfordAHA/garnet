@@ -313,7 +313,7 @@ class LakeCoreBase(ConfigurableCore):
         return self.__name
 
     def pnr_info(self):
-        return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
+        return PnRTag("blank", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
 
     def num_data_inputs(self):
         return self.interconnect_input_ports
