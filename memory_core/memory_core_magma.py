@@ -4,6 +4,7 @@ import urllib.request
 from canal.interconnect import Interconnect
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
+from gemstone.common.core import PnRTag
 from typing import List
 from lake.top.lake_top import LakeTop
 from lake.top.pond import Pond
@@ -272,6 +273,9 @@ class MemCore(LakeCoreBase):
         return self.dut.get_static_bitstream(config_path=config_path,
                                              in_file_name=in_file_name,
                                              out_file_name=out_file_name)
+
+    def pnr_info(self):
+        return PnRTag("m", self.DEFAULT_PRIORITY - 1, self.DEFAULT_PRIORITY)
 
 
 if __name__ == "__main__":
