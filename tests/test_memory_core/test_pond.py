@@ -71,6 +71,9 @@ def make_pond_core():
 
 # Function for generating Pond API
 def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data):
+
+    feat_addr = 0
+
     (tform_ranges_rd, tform_strides_rd) = transform_strides_and_ranges(ctrl_rd[0], ctrl_rd[1], ctrl_rd[2])
     (tform_ranges_wr, tform_strides_wr) = transform_strides_and_ranges(ctrl_wr[0], ctrl_wr[1], ctrl_wr[2])
 
@@ -134,6 +137,7 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
     idx, value = pondcore.get_config_data("rf_write_iter_0_ranges_1", tform_ranges_wr[1])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
+    print(f"write sched gen starting addr: {ctrl_wr[4]}")
     idx, value = pondcore.get_config_data("rf_write_sched_0_sched_addr_gen_starting_addr", ctrl_wr[4])
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
@@ -150,15 +154,15 @@ def basic_tb(config_path,
              out_file_name="output",
              verilator=True):
 
-    # These need to be set to refer to certain csvs....
-    lake_controller_path = os.getenv("LAKE_CONTROLLERS")
-    lake_stream_path = os.getenv("LAKE_STREAM")
+    # # These need to be set to refer to certain csvs....
+    # lake_controller_path = os.getenv("LAKE_CONTROLLERS")
+    # lake_stream_path = os.getenv("LAKE_STREAM")
 
-    assert lake_controller_path is not None and lake_stream_path is not None,\
-        f"Please check env vars:\nLAKE_CONTROLLERS: {lake_controller_path}\nLAKE_STREAM: {lake_stream_path}"
+    # assert lake_controller_path is not None and lake_stream_path is not None,\
+    #     f"Please check env vars:\nLAKE_CONTROLLERS: {lake_controller_path}\nLAKE_STREAM: {lake_stream_path}"
 
-    config_path = lake_controller_path + "/" + config_path
-    stream_path = lake_stream_path + "/" + stream_path
+    # config_path = lake_controller_path + "/" + config_path
+    # stream_path = lake_stream_path + "/" + stream_path
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
@@ -191,14 +195,14 @@ def basic_tb(config_path,
 
     generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data)
 
-    config_data = compress_config_data(config_data)
+    # config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     # TODO: needed?
-    # tester.reset()
-    # tester.zero_inputs()
+    tester.reset()
+    tester.zero_inputs()
 
     tester.poke(circuit.interface["stall"], 1)
 
@@ -231,7 +235,7 @@ def basic_tb(config_path,
             tester.expect(circuit.interface[dst_name], i - 16)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        # tempdir = "dump_new"
+        tempdir = "dump_new"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files():

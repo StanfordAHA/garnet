@@ -8,6 +8,7 @@ from gemstone.generator.from_magma import FromMagma
 from typing import List
 from lake.top.pond import Pond
 from lake.top.extract_tile_info import *
+from gemstone.common.core import PnRTag
 
 
 import kratos as kts
@@ -144,6 +145,9 @@ class PondCore(LakeCoreBase):
             configs += [self.get_config_data(conf_name, 1)]
         print(configs)
         return configs
+
+    def pnr_info(self):
+        return PnRTag("M", self.DEFAULT_PRIORITY, 1)
 
 
 if __name__ == "__main__":
