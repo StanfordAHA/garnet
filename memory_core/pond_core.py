@@ -123,7 +123,7 @@ class PondCore(LakeCoreBase):
                 if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
                 feat_addr = addr // 256 + 1
-                addr = (addr % 256) >> 2
+                addr = addr % 256
                 configs.append((addr, feat_addr, data))
             print(configs)
             return configs
