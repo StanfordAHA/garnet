@@ -121,6 +121,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             inputs |= {i.qualified_name() for i in core.inputs()}
             outputs |= {o.qualified_name() for o in core.outputs()}
 
+            # Pond outputs will be connected to the SBs
             # outputs.remove("data_out_pond")
             # outputs.remove("valid_out_pond")
 
