@@ -10,7 +10,7 @@ NUM_GLB_TILES := 16
 
 GLB_TILE_NETLIST := /sim/kongty/pnr_annotate/glb_tile.vcs.v
 GLB_TOP_NETLIST := /sim/kongty/pnr_annotate/global_buffer.vcs.v
-SRAM_RTL := /sim/ajcars/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/ts1n16ffcllsblvtc2048x64m8sw_130a.v
+SRAM_RTL := /sim/kongty/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/ts1n16ffcllsblvtc2048x64m8sw_130a.v
 
 RTL_LISTS := `cat $(RTL_DIR)/global_buffer.filelist | sed -e 's/^/$(RTL_DIR)\//' | xargs readlink -f`
 
