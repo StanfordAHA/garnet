@@ -14,3 +14,11 @@ outputs:
   - global_controller.sdf
   - global_controller.lvs.v
 
+postconditions:
+  - assert File( 'outputs/global_controller_tt.lib' ) # must exist
+  - assert File( 'outputs/global_controller.lef' ) # must exist
+  - assert File( 'outputs/global_controller.gds' ) # must exist
+  - assert File( 'outputs/global_controller.vcs.v' ) # must exist
+  - assert File( 'outputs/global_controller.sdf' ) # must exist
+  - assert File( 'outputs/global_controller.lvs.v' ) # must exist
+
