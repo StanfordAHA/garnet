@@ -46,7 +46,10 @@ class LakeCoreBase(ConfigurableCore):
 
     def wrap_lake_core(self):
         # Typedefs for ease
-        TData = magma.Bits[self.data_width]
+        if self.data_width:
+            TData = magma.Bits[self.data_width]
+        else:
+            TData = magma.Bits[16]  # This shouldn't be used if the data_width was None
         TBit = magma.Bits[1]
         # Enumerate input and output ports
         # (clk and reset are assumed)
@@ -190,24 +193,25 @@ class LakeCoreBase(ConfigurableCore):
                 core_feature.ports["config"] = self.ports[f"config_{idx}"]
         self.add_port("config", magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
 
-        # or the signal up
-        t = ConfigurationType(self.config_addr_width, self.config_data_width)
-        t_names = ["config_addr", "config_data"]
-        or_gates = {}
-        for t_name in t_names:
-            port_type = t[t_name]
-            or_gate = FromMagma(mantle.DefineOr(len(self.__features),
-                                                len(port_type)))
-            or_gate.instance_name = f"OR_{t_name}_FEATURE"
-            for idx, core_feature in enumerate(self.__features):
-                self.wire(or_gate.ports[f"I{idx}"],
-                          core_feature.ports.config[t_name])
-            or_gates[t_name] = or_gate
+        if self.num_sram_features > 0:
+            # or the signal up
+            t = ConfigurationType(self.config_addr_width, self.config_data_width)
+            t_names = ["config_addr", "config_data"]
+            or_gates = {}
+            for t_name in t_names:
+                port_type = t[t_name]
+                or_gate = FromMagma(mantle.DefineOr(len(self.__features),
+                                                    len(port_type)))
+                or_gate.instance_name = f"OR_{t_name}_FEATURE"
+                for idx, core_feature in enumerate(self.__features):
+                    self.wire(or_gate.ports[f"I{idx}"],
+                              core_feature.ports.config[t_name])
+                or_gates[t_name] = or_gate
 
-        self.wire(or_gates["config_addr"].ports.O,
-                  self.underlying.ports.config_addr_in[0:self.config_addr_width])
-        self.wire(or_gates["config_data"].ports.O,
-                  self.underlying.ports.config_data_in)
+            self.wire(or_gates["config_addr"].ports.O,
+                      self.underlying.ports.config_addr_in[0:self.config_addr_width])
+            self.wire(or_gates["config_data"].ports.O,
+                      self.underlying.ports.config_data_in)
 
         # read data out
         for idx, core_feature in enumerate(self.__features):
@@ -250,45 +254,47 @@ class LakeCoreBase(ConfigurableCore):
         # SRAM
         # These should also account for num features
         # or_all_cfg_rd = FromMagma(mantle.DefineOr(4, 1))
-        or_all_cfg_rd = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
-        or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_SRAM"
-        or_all_cfg_wr = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
-        or_all_cfg_wr.instance_name = f"OR_CONFIG_RD_SRAM"
+        if self.num_sram_features > 0:
+            or_all_cfg_rd = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
+            or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_SRAM"
+            or_all_cfg_wr = FromMagma(mantle.DefineOr(self.num_sram_features, 1))
+            or_all_cfg_wr.instance_name = f"OR_CONFIG_RD_SRAM"
 
-        for sram_index in range(self.num_sram_features):
-            core_feature = self.__features[sram_index + 1]
-            self.add_port(f"config_en_{sram_index}", magma.In(magma.Bit))
-            # port aliasing
-            core_feature.ports["config_en"] = \
-                self.ports[f"config_en_{sram_index}"]
-            # Sort of a temp hack - the name is just config_data_out
-            if self.num_sram_features == 1:
-                self.wire(core_feature.ports.read_config_data,
-                          self.underlying.ports["config_data_out"])
-            else:
-                self.wire(core_feature.ports.read_config_data,
-                          self.underlying.ports[f"config_data_out_{sram_index}"])
-            and_gate_en = FromMagma(mantle.DefineAnd(2, 1))
-            and_gate_en.instance_name = f"AND_CONFIG_EN_SRAM_{sram_index}"
-            # also need to wire the sram signal
-            # the config enable is the OR of the rd+wr
-            or_gate_en = FromMagma(mantle.DefineOr(2, 1))
-            or_gate_en.instance_name = f"OR_CONFIG_EN_SRAM_{sram_index}"
+            for sram_index in range(self.num_sram_features):
+                core_feature = self.__features[sram_index + 1]
+                self.add_port(f"config_en_{sram_index}", magma.In(magma.Bit))
+                # port aliasing
+                core_feature.ports["config_en"] = \
+                    self.ports[f"config_en_{sram_index}"]
+                # Sort of a temp hack - the name is just config_data_out
+                if self.num_sram_features == 1:
+                    self.wire(core_feature.ports.read_config_data,
+                              self.underlying.ports["config_data_out"])
+                else:
+                    self.wire(core_feature.ports.read_config_data,
+                              self.underlying.ports[f"config_data_out_{sram_index}"])
+                and_gate_en = FromMagma(mantle.DefineAnd(2, 1))
+                and_gate_en.instance_name = f"AND_CONFIG_EN_SRAM_{sram_index}"
+                # also need to wire the sram signal
+                # the config enable is the OR of the rd+wr
+                or_gate_en = FromMagma(mantle.DefineOr(2, 1))
+                or_gate_en.instance_name = f"OR_CONFIG_EN_SRAM_{sram_index}"
 
-            self.wire(or_gate_en.ports.I0, core_feature.ports.config.write)
-            self.wire(or_gate_en.ports.I1, core_feature.ports.config.read)
-            self.wire(and_gate_en.ports.I0, or_gate_en.ports.O)
-            self.wire(and_gate_en.ports.I1[0], core_feature.ports.config_en)
-            self.wire(and_gate_en.ports.O[0],
-                      self.underlying.ports["config_en"][sram_index])
-            # Still connect to the OR of all the config rd/wr
-            self.wire(core_feature.ports.config.write,
-                      or_all_cfg_wr.ports[f"I{sram_index}"])
-            self.wire(core_feature.ports.config.read,
-                      or_all_cfg_rd.ports[f"I{sram_index}"])
+                self.wire(or_gate_en.ports.I0, core_feature.ports.config.write)
+                self.wire(or_gate_en.ports.I1, core_feature.ports.config.read)
+                self.wire(and_gate_en.ports.I0, or_gate_en.ports.O)
+                self.wire(and_gate_en.ports.I1[0], core_feature.ports.config_en)
+                self.wire(and_gate_en.ports.O[0],
+                          self.underlying.ports["config_en"][sram_index])
+                # Still connect to the OR of all the config rd/wr
+                self.wire(core_feature.ports.config.write,
+                          or_all_cfg_wr.ports[f"I{sram_index}"])
+                self.wire(core_feature.ports.config.read,
+                          or_all_cfg_rd.ports[f"I{sram_index}"])
 
-        self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read[0])
-        self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write[0])
+            self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read[0])
+            self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write[0])
+
         self._setup_config()
 
     def get_config_bitstream(self, instr):
