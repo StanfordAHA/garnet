@@ -156,11 +156,7 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
 
-def basic_tb(config_path,
-             stream_path,
-             in_file_name="input",
-             out_file_name="output",
-             verilator=True):
+def basic_tb(verilator=True):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
@@ -254,15 +250,10 @@ def basic_tb(config_path,
                                **runtime_kwargs)
 
 
-def test_conv_3_3():
-    # conv_3_3
-    config_path = "conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf"
-    stream_path = "conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf_0_top_SMT.csv"
-    basic_tb(config_path=config_path,
-             stream_path=stream_path,
-             in_file_name="input",
-             out_file_name="output")
+def test_pond_rd_wr():
+    # pond rd wr test 
+    basic_tb()
 
 
 if __name__ == "__main__":
-    test_conv_3_3()
+    test_pond_rd_wr()
