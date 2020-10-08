@@ -1,5 +1,5 @@
 from memory_core.pond_core import PondCore
-from lake.utils.util import transform_strides_and_ranges
+from lake.utils.util import transform_strides_and_ranges, trim_config
 import glob
 import tempfile
 import shutil
@@ -15,6 +15,8 @@ from cgra.util import create_cgra, compress_config_data
 from canal.util import IOSide
 from memory_core.memory_core_magma import config_mem_tile
 from archipelago import pnr
+import kratos as kts
+from _kratos import create_wrapper_flatten
 
 
 # @pytest.fixture()
@@ -65,80 +67,92 @@ def make_pond_core():
     tester.step(1)
     tester.poke(pond_circ.reset, 1)
     tester.step(1)
-    tester.reset()
+    #tester.reset()
     return [pond_circ, tester, pond_core]
 
 
-# Function for generating Pond API
+
 def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data):
-
-    feat_addr = 0
-
+    flattened = create_wrapper_flatten(pondcore.dut.internal_generator.clone(),
+                                           pondcore.dut.name)
+  
     (tform_ranges_rd, tform_strides_rd) = transform_strides_and_ranges(ctrl_rd[0], ctrl_rd[1], ctrl_rd[2])
     (tform_ranges_wr, tform_strides_wr) = transform_strides_and_ranges(ctrl_wr[0], ctrl_wr[1], ctrl_wr[2])
 
-    idx, value = pondcore.get_config_data("tile_en", 1)
+    name_out, val_out = trim_config(flattened, "tile_en", 1)
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_read_iter_0_dimensionality", ctrl_rd[2])
+    name_out, val_out = trim_config(flattened, "rf_read_iter_0_dimensionality", ctrl_rd[2])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_read_addr_0_starting_addr", ctrl_rd[3])
+    name_out, val_out = trim_config(flattened, "rf_read_addr_0_starting_addr", ctrl_rd[3])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_read_addr_0_strides_0", tform_strides_rd[0])
+    name_out, val_out = trim_config(flattened, "rf_read_addr_0_strides_0", tform_strides_rd[0])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    # doesnt work
-    idx, value = pondcore.get_config_data("rf_read_addr_0_strides_1", tform_strides_rd[1])
+    name_out, val_out = trim_config(flattened, "rf_read_addr_0_strides_1", tform_strides_rd[1])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_read_iter_0_ranges_0", tform_ranges_rd[0])
+    name_out, val_out = trim_config(flattened, "rf_read_iter_0_ranges_0", tform_ranges_rd[0])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    # doesnt work
-    idx, value = pondcore.get_config_data("rf_read_iter_0_ranges_1", tform_ranges_rd[1])
+    name_out, val_out = trim_config(flattened, "rf_read_iter_0_ranges_1", tform_ranges_rd[1])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_read_sched_0_sched_addr_gen_starting_addr", ctrl_rd[4])
+    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_starting_addr", ctrl_rd[4])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_read_sched_0_sched_addr_gen_strides_0", tform_strides_rd[0])
+    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_strides_0", tform_strides_rd[0])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    # doesnt work
-    idx, value = pondcore.get_config_data("rf_read_sched_0_sched_addr_gen_strides_1", tform_strides_rd[1])
+    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_strides_1", tform_strides_rd[1])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_write_iter_0_dimensionality", ctrl_wr[2])
+    name_out, val_out = trim_config(flattened, "rf_write_iter_0_dimensionality", ctrl_wr[2])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    # doesnt work
-    idx, value = pondcore.get_config_data("rf_write_addr_0_starting_addr", ctrl_wr[3])
+    name_out, val_out = trim_config(flattened, "rf_write_addr_0_starting_addr", ctrl_wr[3])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_write_addr_0_strides_0", tform_strides_wr[0])
+    name_out, val_out = trim_config(flattened, "rf_write_addr_0_strides_0", tform_strides_wr[0])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    # doesnt work
-    idx, value = pondcore.get_config_data("rf_write_addr_0_strides_1", tform_strides_wr[1])
+    name_out, val_out = trim_config(flattened, "rf_write_addr_0_strides_1", tform_strides_wr[1])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_write_iter_0_ranges_0", tform_ranges_wr[0])
+    name_out, val_out = trim_config(flattened, "rf_write_iter_0_ranges_0", tform_ranges_wr[0])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    # doesn't work
-    idx, value = pondcore.get_config_data("rf_write_iter_0_ranges_1", tform_ranges_wr[1])
+    name_out, val_out = trim_config(flattened, "rf_write_iter_0_ranges_1", tform_ranges_wr[1])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    print(f"write sched gen starting addr: {ctrl_wr[4]}")
-    idx, value = pondcore.get_config_data("rf_write_sched_0_sched_addr_gen_starting_addr", ctrl_wr[4])
+    name_out, val_out = trim_config(flattened, "rf_write_sched_0_sched_addr_gen_starting_addr", ctrl_wr[4])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_write_sched_0_sched_addr_gen_strides_0", tform_strides_wr[0])
+    name_out, val_out = trim_config(flattened, "rf_write_sched_0_sched_addr_gen_strides_0", tform_strides_wr[0])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    idx, value = pondcore.get_config_data("rf_write_sched_0_sched_addr_gen_strides_1", tform_strides_wr[1])
+    name_out, val_out = trim_config(flattened, "rf_write_sched_0_sched_addr_gen_strides_1", tform_strides_wr[1])
+    idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
 
@@ -147,16 +161,6 @@ def basic_tb(config_path,
              in_file_name="input",
              out_file_name="output",
              verilator=True):
-
-    # # These need to be set to refer to certain csvs....
-    # lake_controller_path = os.getenv("LAKE_CONTROLLERS")
-    # lake_stream_path = os.getenv("LAKE_STREAM")
-
-    # assert lake_controller_path is not None and lake_stream_path is not None,\
-    #     f"Please check env vars:\nLAKE_CONTROLLERS: {lake_controller_path}\nLAKE_STREAM: {lake_stream_path}"
-
-    # config_path = lake_controller_path + "/" + config_path
-    # stream_path = lake_stream_path + "/" + stream_path
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
@@ -189,14 +193,11 @@ def basic_tb(config_path,
 
     generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data)
 
-    # config_data = compress_config_data(config_data)
+    config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
-    # TODO: needed?
-    #tester.reset()
-    #tester.zero_inputs()
 
     tester.poke(circuit.interface["stall"], 1)
 
@@ -204,7 +205,7 @@ def basic_tb(config_path,
         tester.configure(addr, index)
         tester.config_read(addr)
         tester.eval()
-        # tester.expect(circuit.read_config_data, index)
+        tester.expect(circuit.read_config_data, index)
 
     tester.done_config()
     tester.poke(circuit.interface["stall"], 0)
@@ -222,13 +223,13 @@ def basic_tb(config_path,
         tester.poke(circuit.interface[src_name0], i)
         tester.poke(circuit.interface[src_name1], i + 1)
         tester.eval()
+        if i >= 16: 
+            tester.expect(circuit.interface[dst_name], i-16) 
         tester.step(2)
         tester.eval()
-        # if i >= 16:
-        #    tester.expect(circuit.interface[dst_name], i - 16)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        # tempdir = "dump_new"
+        tempdir = "dump_new12"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files():
