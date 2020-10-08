@@ -36,40 +36,6 @@ def dw_files():
     return result_filenames
 
 
-class PondCoreTester(BasicTester):
-
-    def configure(self, addr, data, feature=0):
-        self.poke(self.clock, 0)
-        self.poke(self.reset_port, 0)
-        if(feature == 0):
-            exec(f"self.poke(self._circuit.config.config_addr, addr)")
-            exec(f"self.poke(self._circuit.config.config_data, data)")
-            exec(f"self.poke(self._circuit.config.write, 1)")
-            self.step(1)
-            exec(f"self.poke(self._circuit.config.write, 0)")
-            exec(f"self.poke(self._circuit.config.config_data, 0)")
-        else:
-            exec(f"self.poke(self._circuit.config_{feature}.config_addr, addr)")
-            exec(f"self.poke(self._circuit.config_{feature}.config_data, data)")
-            exec(f"self.poke(self._circuit.config_{feature}.write, 1)")
-            self.step(1)
-            exec(f"self.poke(self._circuit.config_{feature}.write, 0)")
-            exec(f"self.poke(self._circuit.config_{feature}.config_data, 0)")
-
-
-def make_pond_core():
-    pond_core = PondCore()
-    pond_circ = pond_core.circuit()
-
-    tester = PondCoreTester(pond_circ, pond_circ.clk, pond_circ.reset)
-    tester.poke(pond_circ.clk, 0)
-    tester.poke(pond_circ.reset, 0)
-    tester.step(1)
-    tester.poke(pond_circ.reset, 1)
-    tester.step(1)
-    return [pond_circ, tester, pond_core]
-
-
 def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data):
     flattened = create_wrapper_flatten(pondcore.dut.internal_generator.clone(),
                                        pondcore.dut.name)
@@ -173,13 +139,11 @@ def basic_tb(verilator=True):
     placement, routing = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
-    [circuit, tester, PCore] = make_pond_core()
-
     pe_x, pe_y = placement["p0"]
 
     petile = interconnect.tile_circuits[(pe_x, pe_y)]
 
-    pondcore = PondCore()  # petile.additional_core[0][0]
+    pondcore = petile.additional_cores[0]
 
     # Ranges, Strides, Dimensionality, Starting Addr, Starting Addr - Schedule
     ctrl_rd = [[16, 1], [1, 1], 2, 0, 16]
