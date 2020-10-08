@@ -195,8 +195,8 @@ def basic_tb(config_path,
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     # TODO: needed?
-    tester.reset()
-    tester.zero_inputs()
+    #tester.reset()
+    #tester.zero_inputs()
 
     tester.poke(circuit.interface["stall"], 1)
 
