@@ -67,15 +67,13 @@ def make_pond_core():
     tester.step(1)
     tester.poke(pond_circ.reset, 1)
     tester.step(1)
-    #tester.reset()
     return [pond_circ, tester, pond_core]
-
 
 
 def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data):
     flattened = create_wrapper_flatten(pondcore.dut.internal_generator.clone(),
-                                           pondcore.dut.name)
-  
+                                       pondcore.dut.name)
+
     (tform_ranges_rd, tform_strides_rd) = transform_strides_and_ranges(ctrl_rd[0], ctrl_rd[1], ctrl_rd[2])
     (tform_ranges_wr, tform_strides_wr) = transform_strides_and_ranges(ctrl_wr[0], ctrl_wr[1], ctrl_wr[2])
 
@@ -219,13 +217,12 @@ def basic_tb(verilator=True):
         tester.poke(circuit.interface[src_name0], i)
         tester.poke(circuit.interface[src_name1], i + 1)
         tester.eval()
-        if i >= 16: 
-            tester.expect(circuit.interface[dst_name], i-16) 
+        if i >= 16:
+            tester.expect(circuit.interface[dst_name], i - 16)
         tester.step(2)
         tester.eval()
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump_new12"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files():
@@ -240,7 +237,7 @@ def basic_tb(verilator=True):
         runtime_kwargs = {"magma_output": "coreir-verilog",
                           "magma_opts": {"coreir_libs": {"float_DW"}},
                           "directory": tempdir,
-                          "flags": ["-Wno-fatal", "--trace"]}
+                          "flags": ["-Wno-fatal"]}
         if verilator is False:
             target = "system-verilog"
             runtime_kwargs["simulator"] = "vcs"
@@ -251,7 +248,7 @@ def basic_tb(verilator=True):
 
 
 def test_pond_rd_wr():
-    # pond rd wr test 
+    # pond rd wr test
     basic_tb()
 
 
