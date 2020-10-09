@@ -24,7 +24,7 @@ class PondCore(LakeCoreBase):
     def __init__(self,
                  data_width=16,  # CGRA Params
                  mem_depth=32,
-                 default_iterator_support=3,
+                 default_iterator_support=2,
                  interconnect_input_ports=1,  # Connection to int
                  interconnect_output_ports=1,
                  config_data_width=32,
