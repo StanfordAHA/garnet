@@ -44,7 +44,6 @@ def place_io_blk(id_to_name):
 
     # place it on the interconnect
     # input and outputs are placed on the same IO tiles
-    # place it on the interconnect
     group_index = 0
     for idx, input_blk in enumerate(inputs):
         placement[input_blk] = (group_index * 2, 0)
