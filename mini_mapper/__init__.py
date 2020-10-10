@@ -802,8 +802,10 @@ def wire_reset_to_flush(netlist, id_to_name, bus):
         bus[new_id] = 1
     net = netlist[reset_net_id]
     for mem in mems:
-        net.append((mem, "flush"))
-        print("add flush to", mem)
+        blk_port = (mem, "flush")
+        if blk_port not in net:
+            net.append((mem, "flush"))
+            print("add flush to", mem)
 
 
 def has_rom(id_to_name):
