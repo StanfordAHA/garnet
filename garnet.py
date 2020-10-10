@@ -17,6 +17,7 @@ from passes.collateral_pass.config_register import get_interconnect_regs, \
     get_core_registers
 import math
 import archipelago
+import archipelago.power
 
 # set the debug mode to false to speed up construction
 set_debug_mode(False)
@@ -242,6 +243,8 @@ class Garnet(Generator):
                                              cwd="temp",
                                              id_to_name=id_to_name,
                                              fixed_pos=fixed_io)
+        routing_fix = archipelago.power.reduce_switching(routing, self.interconnect)
+        routing.update(routing_fix)
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
