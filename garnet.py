@@ -9,7 +9,7 @@ from global_buffer.global_buffer_magma import GlobalBuffer
 from global_controller.global_controller_magma import GlobalController
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
-from mini_mapper import map_app, has_rom
+from mini_mapper import map_app, has_rom, get_total_cycle_from_app
 from cgra import glb_glc_wiring, glb_interconnect_wiring, \
         glc_interconnect_wiring, create_cgra, compress_config_data
 import json
@@ -26,6 +26,7 @@ set_debug_mode(False)
 class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
                  use_sram_stub: bool = True, standalone: bool = False,
+                 add_pond: bool = True,
                  pipeline_config_interval: int = 8):
         super().__init__()
 
@@ -102,6 +103,7 @@ class Garnet(Generator):
                                    tile_id_width=tile_id_width,
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
+                                   add_pond=add_pond,
                                    use_sram_stub=use_sram_stub,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
@@ -181,7 +183,8 @@ class Garnet(Generator):
             if instance not in instrs:
                 continue
             instr = instrs[instance]
-            result += self.interconnect.configure_placement(x, y, instr)
+            result += self.interconnect.configure_placement(x, y, instr,
+                                                            node[0])
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -300,6 +303,7 @@ def main():
                         dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
+    parser.add_argument("--add-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--no-sram-stub", action="store_true")
     parser.add_argument("--standalone", action="store_true")
@@ -315,6 +319,7 @@ def main():
     garnet = Garnet(width=args.width, height=args.height,
                     add_pd=not args.no_pd,
                     pipeline_config_interval=args.pipeline_config_interval,
+                    add_pond=args.add_pond,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
                     standalone=args.standalone)
@@ -338,6 +343,7 @@ def main():
             for en_port in en:
                 if en_port in inputs:
                     inputs.remove(en_port)
+        total_cycle = get_total_cycle_from_app(args.app)
         if len(outputs) > 1:
             outputs.remove(valid)
         config = {
@@ -349,7 +355,8 @@ def main():
             "valid_port_name": valid,
             "reset_port_name": reset,
             "en_port_name": en,
-            "delay": delay
+            "delay": delay,
+            "total_cycle": total_cycle
         }
         with open(f"{args.output}.json", "w+") as f:
             json.dump(config, f)
