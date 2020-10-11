@@ -124,6 +124,11 @@ class TestBenchGenerator:
         self._check_input(self.input_filename)
         self._check_output(self.gold_filename)
 
+        # if total cycle set, need to compute delay
+        if config.get("total_cycle", 0) > 0:
+            total_cycle = config["total_cycle"]
+            self.delay += total_cycle - self._loop_size
+
     def _check_input(self, input_filename):
         ext = os.path.splitext(input_filename)[-1]
         assert ext in {".raw", ".pgm"}
@@ -197,7 +202,6 @@ class TestBenchGenerator:
         for addr, value in self.bitstream:
             tester.configure(addr, value)
             tester.eval()
-
 
         for addr, value in self.bitstream:
             tester.config_read(addr)
