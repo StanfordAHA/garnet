@@ -342,7 +342,7 @@ echo ""
 #    % multivt -> ../../../mflowgen/adks/tsmc16/multivt/
 
 mflowgen_orig=$mflowgen
-ln -s $mflowgen_orig
+test -e mflowgen || ln -s $mflowgen_orig
 mflowgen=`pwd`/mflowgen
 
 
