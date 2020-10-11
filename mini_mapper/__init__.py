@@ -1087,17 +1087,27 @@ def insert_valid_delay(id_to_name, instance_to_instr, netlist, bus):
     bus[new_net_id] = 1
 
 
+def get_total_cycle_from_app(halide_src):
+    # in some cases there are delay files in the same directory as halide
+    # design top
+    dirname = os.path.dirname(halide_src)
+    config_file = os.path.join(dirname, "testing.json")
+    if os.path.isfile(config_file):
+        with open(config_file) as f:
+            data = json.load(f)
+            if "total_cycles" in data:
+                return data["total_cycles"]
+    return 0
+
+
 def map_app(pre_map):
-    with tempfile.NamedTemporaryFile() as temp_file:
-        # src_file = temp_file.name
-        # subprocess.check_call(["mapper", pre_map, src_file])
-        src_file = pre_map
-        netlist, folded_blocks, id_to_name, changed_pe = \
-            parse_and_pack_netlist(src_file, fold_reg=True)
-        rename_id_changed(id_to_name, changed_pe)
-        bus = determine_track_bus(netlist, id_to_name)
-        blks = get_blks(netlist)
-        connections, instances = read_netlist_json(src_file)
+    src_file = pre_map
+    netlist, folded_blocks, id_to_name, changed_pe = \
+        parse_and_pack_netlist(src_file, fold_reg=True)
+    rename_id_changed(id_to_name, changed_pe)
+    bus = determine_track_bus(netlist, id_to_name)
+    blks = get_blks(netlist)
+    connections, instances = read_netlist_json(src_file)
 
     name_to_id = {}
     for blk_id in id_to_name:
