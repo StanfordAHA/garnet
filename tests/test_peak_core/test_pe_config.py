@@ -5,8 +5,7 @@ from peak_core.peak_core import PeakCore
 from peak.family import PyFamily
 from lassen.sim import PE_fc
 from lassen.asm import (add, Mode_t, lut_and, inst, ALU_t,
-                        umult0, fp_mul, fp_add,
-                        fcnvexp2f, fcnvsint2f, fcnvuint2f)
+                        umult0, fp_mul, fp_add)
 from lassen.common import BFloat16_fc
 import hwtypes
 import shutil
