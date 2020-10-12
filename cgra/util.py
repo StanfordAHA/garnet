@@ -8,6 +8,7 @@ from passes.power_domain.pd_pass import add_power_domain, add_aon_read_config_da
 from lassen.sim import PE_fc
 from io_core.io_core_magma import IOCore
 from memory_core.memory_core_magma import MemCore
+from memory_core.pond_core import PondCore
 from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
@@ -43,6 +44,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 GlobalSignalWiring.Meso,
                 pipeline_config_interval: int = 8,
                 standalone: bool = False,
+                add_pond: bool = False,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
                 port_conn_override: Dict[str,
                                          List[Tuple[SwitchBoxSide,
@@ -63,6 +65,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     # we don't want duplicated cores when snapping into different interconnect
     # graphs
     cores = {}
+    additional_core = {}
     for x in range(width):
         for y in range(height):
             # empty corner
@@ -80,14 +83,28 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     or y in range(y_max + 1, height):
                 core = IOCore()
             else:
-                core = MemCore(use_sram_stub=use_sram_stub) if \
-                    ((x - x_min) % tile_max >= mem_tile_ratio) else \
-                    PeakCore(PE_fc)
-
+                use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
+                if use_mem_core:
+                    core = MemCore(use_sram_stub=use_sram_stub)
+                else:
+                    core = PeakCore(PE_fc)
+                    if add_pond:
+                        additional_core[(x, y)] = PondCore()
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
         return cores[(xx, yy)]
+
+    def create_additional_core(xx: int, yy: int):
+        return additional_core.get((xx, yy), None)
+
+    # pond may have inter-core connection
+    if add_pond:
+        inter_core_connection = {"data_out_pond": ["data0", "data1"],
+                                 "valid_out_pond": ["bit0"]}
+        # inter_core_connection = {}
+    else:
+        inter_core_connection = {}
 
     # Specify input and output port connections.
     inputs = set()
@@ -98,6 +115,15 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             continue
         inputs |= {i.qualified_name() for i in core.inputs()}
         outputs |= {o.qualified_name() for o in core.outputs()}
+
+    if add_pond:
+        for core in additional_core.values():
+            inputs |= {i.qualified_name() for i in core.inputs()}
+            outputs |= {o.qualified_name() for o in core.outputs()}
+
+            # Pond outputs will be connected to the SBs
+            # outputs.remove("data_out_pond")
+            # outputs.remove("valid_out_pond")
 
     # This is slightly different from the original CGRA. Here we connect
     # input to every SB_IN and output to every SB_OUT.
@@ -135,7 +161,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                          switchbox_type,
                                          pipeline_regs,
                                          io_sides=io_sides,
-                                         io_conn=io_conn)
+                                         io_conn=io_conn,
+                                         additional_core_fn=create_additional_core,
+                                         inter_core_connection=inter_core_connection)
         ics[bit_width] = ic
 
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,

@@ -32,6 +32,9 @@ else
       # install the aha wrapper script
       pip install -e .
 
+      # Prune docker images...
+      yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
+
       # pull docker image from docker hub
       docker pull stanfordaha/garnet:latest
 
@@ -42,6 +45,7 @@ else
 
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
+        # docker exec $container_name /bin/bash -c "cd /aha/lake/ && git checkout master && git pull"
         # Clone local garnet repo to prevent copying untracked files
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
