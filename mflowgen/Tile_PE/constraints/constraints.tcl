@@ -37,12 +37,18 @@ set_constraint_mode default_c
 
 # Constraints for false paths that show up when PondCore is introduced
 # Constraints are also valid for baseline PE, but these false paths are
-# not a concern for the baseline PE
-set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
-set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins SB_ID0_5TRACKS_B*_PE/REG_T*_B*/value__CE/value_reg[*]/*]
-set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
-set_false_path -from [all_inputs] -through [get_pins [list $pe_path/*]]
+# not a concern for timing for the baseline PE
 
+# Paths from config input ports to SB output ports
+set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
+
+# Paths from config input ports to SB registers
+set sb_reg_path SB_ID0_5TRACKS_B*_PE/REG_T*_B*/value__CE/value_reg[*]/*
+set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
+
+# Paths from config input ports to PE registers
+set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
+set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pe_path/* ]]
 
 source -echo -verbose inputs/common.tcl
 
