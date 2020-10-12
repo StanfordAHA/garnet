@@ -86,7 +86,6 @@ def test_peak_core_sequence(sequences, dw_files):
 
     def core_output_monitor(tester, value):
         tester.expect(tester._circuit.alu_res, value)
-        inputs, outputs = sequences
 
     core = PeakCore(PE_fc)
     core.name = lambda: "PECore"
