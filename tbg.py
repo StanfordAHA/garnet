@@ -317,7 +317,7 @@ class TestBenchGenerator:
             tester.compile_and_run(target="system-verilog",
                                    skip_compile=True,
                                    skip_run=args.tb_only,
-                                   simulator="ncsim",
+                                   simulator="xcelium",
                                    # num_cycles is an experimental feature
                                    # need to be merged in fault
                                    num_cycles=1000000,
