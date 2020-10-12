@@ -37,15 +37,25 @@ def dw_files():
 
 @pytest.fixture()
 def sequences():
+    """
+    * inputs - a triple (config_data, a, and b)
+      * config_data - bitstream for configuring the coreto perform a random instruction
+      * a, b - random input values for data0, data
+    * outputs - the expected output value given config_data, a, and b
+    """
     core = PeakCore(PE_fc)
     inputs = []
     outputs = []
     for _ in range(5):
+        # Choose a random operation from lassen.asm
         op = random.choice([add, sub])
+        # Get encoded instruction (using bypass registers for now)
         instruction = op(ra_mode=Mode_t.BYPASS, rb_mode=Mode_t.BYPASS)
+        # Convert to bitstream format
         config_data = core.get_config_bitstream(instruction)
         a, b = (BitVector.random(16) for _ in range(2))
         inputs.append((config_data, a, b))
+        # generate expected output using model
         outputs.append(core.wrapper.model(instruction, a, b)[0])
     return inputs, outputs
 
