@@ -28,6 +28,13 @@ set fp_mul_path $alu_path/magma_BFloat_16_mul_inst0
 set mul_path $alu_path/magma_Bits_32_mul_inst0
 set add_path $alu_path/magma_Bits_17_add*
 
+########################################################################
+# GENERAL
+########################################################################
+create_mode -name default_c
+set_constraint_mode default_c
+
+
 # Constraints for false paths that show up when PondCore is introduced
 # Constraints are also valid for baseline PE, but these false paths are
 # not a concern for the baseline PE
@@ -36,11 +43,6 @@ set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins SB
 set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
 set_false_path -from [all_inputs] -through [get_pins [list $pe_path/*]]
 
-########################################################################
-# GENERAL
-########################################################################
-create_mode -name default_c
-set_constraint_mode default_c
 
 source -echo -verbose inputs/common.tcl
 
