@@ -74,7 +74,9 @@ foreach port $bump_to_iphy {
 }
 
 foreach port $iphy_to_bump {
-  deleteNet $port
+  if {[sizeof_collection [get_nets -quiet $port]] > 0} {
+    deleteNet $port
+  }
   addModulePort - $port output
   attachTerm -noNewPort iphy $port $port
 }

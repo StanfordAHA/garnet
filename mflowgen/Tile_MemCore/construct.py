@@ -42,7 +42,7 @@ def construct():
     'bc_corner'           : "ffg0p88v125c",
     'partial_write'       : False,
     # Utilization target
-    'core_density_target' : 0.70,
+    'core_density_target' : 0.74,
     # RTL Generation
     'interconnect_only'   : True,
     # Power Domains
