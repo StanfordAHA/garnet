@@ -68,7 +68,7 @@ def sequences():
     return inputs, outputs
 
 
-def test_peak_core_sequence(sequences):
+def test_peak_core_sequence(sequences, dw_files):
     inputs, outputs = sequences
     core = PeakCore(PE_fc)
     core.name = lambda: "PECore"
@@ -81,6 +81,9 @@ def test_peak_core_sequence(sequences):
     tester.reset()
 
     with tempfile.TemporaryDirectory() as tempdir:
+        for filename in dw_files:
+            shutil.copy(filename, tempdir)
+
         tester.compile_and_run("verilator",
                                directory=tempdir,
                                magma_opts={"coreir_libs": {"float_DW"}},
