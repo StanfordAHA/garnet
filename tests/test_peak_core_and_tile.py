@@ -2,6 +2,7 @@ import glob
 import os
 import random
 import shutil
+import tempfile
 
 import pytest
 
@@ -20,6 +21,18 @@ from canal.util import IOSide
 from peak_core.peak_core import PeakCore
 
 from cgra import create_cgra, compress_config_data
+
+
+@pytest.fixture(scope="module")
+def dw_files():
+    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
+    dirname = "peak_core"
+    result_filenames = []
+    for name in filenames:
+        filename = os.path.join(dirname, name)
+        assert os.path.isfile(filename)
+        result_filenames.append(filename)
+    return result_filenames
 
 
 class BasicSequenceTester(SequenceTester, BasicTester):
@@ -67,9 +80,11 @@ def test_peak_core_sequence(sequences):
     ], circuit.clk, circuit.reset)
     tester.reset()
 
-    tester.compile_and_run("verilator",
-                           magma_opts={"coreir_libs": {"float_DW"}},
-                           flags=["-Wno-fatal"])
+    with tempfile.TemporaryDirectory() as tempdir:
+        tester.compile_and_run("verilator",
+                               directory=tempdir,
+                               magma_opts={"coreir_libs": {"float_DW"}},
+                               flags=["-Wno-fatal"])
 
 
 def make_tile_input_driver(interconnect, x, y):
@@ -94,7 +109,7 @@ def tile_output_monitor(tester, value):
     tester.expect(tester._circuit.SB_T0_WEST_SB_OUT_B16, value)
 
 
-def test_peak_tile_sequence(sequences):
+def test_peak_tile_sequence(sequences, dw_files):
     inputs, outputs = sequences
     # Use stub CGRA to get PE_tile
     # TODO: Is there an API to just get a PE_tile?
@@ -145,12 +160,14 @@ def test_peak_tile_sequence(sequences):
     for addr, data in route_config:
         tester.configure(addr, data)
 
-    for filename in ["DW_fp_add.v", "DW_fp_mult.v"]:
-        shutil.copy(os.path.join("peak_core", filename), "build")
+    with tempfile.TemporaryDirectory() as tempdir:
+        for filename in dw_files:
+            shutil.copy(filename, tempdir)
 
-    for aoi_mux in glob.glob("tests/*.sv"):
-        shutil.copy(aoi_mux, "build")
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
 
-    tester.compile_and_run("verilator",
-                           magma_opts={"coreir_libs": {"float_DW"}},
-                           flags=["-Wno-fatal"])
+        tester.compile_and_run("verilator",
+                               directory=tempdir,
+                               magma_opts={"coreir_libs": {"float_DW"}},
+                               flags=["-Wno-fatal"])
