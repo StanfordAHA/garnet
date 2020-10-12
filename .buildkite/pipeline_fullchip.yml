@@ -60,7 +60,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 72G;
      echo "--- MAKE SYNOPSYS-DC-SYNTHESIS"; set -o pipefail;
-     make synopsys-dc-synthesis |& tee make-syn.log'
+     make cadence-genus-synthesis |& tee make-syn.log'
 - wait: ~
 
 - label: 'cts'

@@ -64,6 +64,11 @@ always_ff @(posedge CLK) begin
     WEB_d2 <= WEB_d1;
 end
 
+always_ff @(posedge CLK) begin
+    CEB_d1 <= CEB;
+    CEB_d2 <= CEB_d1;
+end
+    
 always_ff @ (posedge CLK) begin
     if (CEB_d2 == 0) begin
         if (WEB_d2 == 1) begin
