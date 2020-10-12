@@ -41,8 +41,8 @@ tests/*/obj_dir/
 *.bs
 
 *.json
-mem_cfg.txt
-mem_synth.txt
+*_cfg.txt
+*_synth.txt
 dump/
 # COSA temporary files
 CoSA*tmp.out

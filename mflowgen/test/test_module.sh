@@ -353,6 +353,10 @@ cat -n make*.log | grep -i error  | tail | tee -a tmp.summary || PASS; echo "---
 cat -n make*.log | grep    FAIL   | tail | tee -a tmp.summary || PASS; echo "-----"
 cat -n make*.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
 
+echo '+++ FAIL if make job failed, duh.'
+egrep '^make: .* Error 1' make*.log && exit 13 || echo 'Did not fail. Right?'
+
+
 ########################################################################
 echo '+++ SUMMARY of what we did'
 f=`/bin/ls -t make*.log`
