@@ -47,7 +47,7 @@ def construct():
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort'    : flatten, 
+    'flatten_effort'    : flatten,
     'topographical'     : True,
     # RTL Generation
     'interconnect_only' : True,
