@@ -75,12 +75,12 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
 
     tester.done_config()
 
-    src_x0, src_y0 = placement["I0"]
-    src_x1, src_y1 = placement["I1"]
-    src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
-    src_name1 = f"glb2io_16_X{src_x1:02X}_Y{src_y1:02X}"
-    dst_x, dst_y = placement["I2"]
-    dst_name = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    src0 = placement["I0"]
+    src1 = placement["I1"]
+    src_name0 = interconnect.get_top_input_port_by_coord(src0, 16)
+    src_name1 = interconnect.get_top_input_port_by_coord(src1, 16)
+    dst = placement["I2"]
+    dst_name = interconnect.get_top_output_port_by_coord(dst, 16)
     random.seed(0)
     for _ in range(batch_size):
         num_1 = random.randrange(0, 256)
@@ -179,12 +179,12 @@ def test_interconnect_sram(dw_files, io_sides):
 
     tester.done_config()
 
-    addr_x, addr_y = placement["I0"]
-    src = f"glb2io_16_X{addr_x:02X}_Y{addr_y:02X}"
-    dst_x, dst_y = placement["I1"]
-    dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
-    ren_x, ren_y = placement["i3"]
-    ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
+    addr_coord = placement["I0"]
+    src = interconnect.get_top_input_port_by_coord(addr_coord, 16)
+    dst_coord = placement["I1"]
+    dst = interconnect.get_top_output_port_by_coord(dst_coord, 16)
+    ren_coord = placement["i3"]
+    ren = interconnect.get_top_input_port_by_coord(ren_coord, 1)
 
     tester.step(2)
     tester.poke(circuit.interface[ren], 1)
@@ -270,20 +270,20 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
         tester.eval()
         tester.expect(circuit.read_config_data, index)
 
-    src_x, src_y = placement["I0"]
-    src = f"glb2io_16_X{src_x:02X}_Y{src_y:02X}"
-    dst_x, dst_y = placement["I1"]
-    dst = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
-    wen_x, wen_y = placement["i3"]
-    wen = f"glb2io_1_X{wen_x:02X}_Y{wen_y:02X}"
-    valid_x, valid_y = placement["i4"]
-    valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
-    ren_x, ren_y = placement["i4"]
-    ren = f"glb2io_1_X{ren_x:02X}_Y{ren_y:02X}"
-    full_x, full_y = placement["i3"]
-    full = f"io2glb_1_X{full_x:02X}_Y{full_y:02X}"
-    empty_x, empty_y = placement["i2"]
-    empty = f"io2glb_1_X{empty_x:02X}_Y{empty_y:02X}"
+    src_coord = placement["I0"]
+    src = interconnect.get_top_input_port_by_coord(src_coord, 16)
+    dst_coord = placement["I1"]
+    dst = interconnect.get_top_output_port_by_coord(dst_coord, 16)
+    wen_coord = placement["i3"]
+    wen = interconnect.get_top_input_port_by_coord(wen_coord, 1)
+    valid_coord = placement["i4"]
+    valid = interconnect.get_top_output_port_by_coord(valid_coord, 1)
+    ren_coord = placement["i4"]
+    ren = interconnect.get_top_input_port_by_coord(ren_coord, 1)
+    full_coord = placement["i3"]
+    full = interconnect.get_top_output_port_by_coord(full_coord, 1)
+    empty_coord = placement["i2"]
+    empty = interconnect.get_top_output_port_by_coord(empty_coord, 1)
 
     tester.step(1)
 
