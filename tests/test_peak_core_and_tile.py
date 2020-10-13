@@ -24,8 +24,8 @@ from cgra import create_cgra, compress_config_data
 
 
 @pytest.fixture(scope="module")
-def dw_files():
-    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
+def cw_files():
+    filenames = ["CW_fp_add.v", "CW_fp_mult.v"]
     dirname = "peak_core"
     result_filenames = []
     for name in filenames:
@@ -70,7 +70,7 @@ class BasicSequenceTester(SequenceTester, BasicTester):
         self.reset_port = reset
 
 
-def test_peak_core_sequence(sequences, dw_files):
+def test_peak_core_sequence(sequences, cw_files):
     """
     Core level test
     * configures core using instruction bitstream
@@ -99,16 +99,16 @@ def test_peak_core_sequence(sequences, dw_files):
     tester.reset()
 
     with tempfile.TemporaryDirectory() as tempdir:
-        for filename in dw_files:
+        for filename in cw_files:
             shutil.copy(filename, tempdir)
 
         tester.compile_and_run("verilator",
                                directory=tempdir,
-                               magma_opts={"coreir_libs": {"float_DW"}},
+                               magma_opts={"coreir_libs": {"float_CW"}},
                                flags=["-Wno-fatal"])
 
 
-def test_peak_tile_sequence(sequences, dw_files):
+def test_peak_tile_sequence(sequences, cw_files):
     """
     Tile level test:
     * Generates CGRA to extract PE_tile
@@ -185,7 +185,7 @@ def test_peak_tile_sequence(sequences, dw_files):
         tester.configure(addr, data)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        for filename in dw_files:
+        for filename in cw_files:
             shutil.copy(filename, tempdir)
 
         for aoi_mux in glob.glob("tests/*.sv"):
@@ -193,5 +193,5 @@ def test_peak_tile_sequence(sequences, dw_files):
 
         tester.compile_and_run("verilator",
                                directory=tempdir,
-                               magma_opts={"coreir_libs": {"float_DW"}},
+                               magma_opts={"coreir_libs": {"float_CW"}},
                                flags=["-Wno-fatal"])
