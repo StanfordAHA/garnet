@@ -44,15 +44,20 @@ def place_io_blk(id_to_name):
 
     # place it on the interconnect
     # input and outputs are placed on the same IO tiles
+    # place it on the interconnect
+    group_index = 0
     for idx, input_blk in enumerate(inputs):
-        placement[input_blk] = (idx, 0)
+        placement[input_blk] = (group_index * 2, 0)
         if idx < len(en):
-            placement[en[idx]] = (idx * 2, 0)
+            placement[en[idx]] = (group_index * 2, 0)
+        group_index += 1
 
+    group_index = 0
     for idx, output_blk in enumerate(outputs):
-        placement[output_blk] = (idx, 0)
+        placement[output_blk] = (group_index * 2 + 1, 0)
         if idx < len(valid):
-            placement[valid[idx]] = (idx, 0)
+            placement[valid[idx]] = (group_index * 2 + 1, 0)
+        group_index += 1
 
     # place reset on the first one
     if reset is not None:
