@@ -1,5 +1,6 @@
 agents: { jobsize: "hours" }
 
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
 
@@ -8,7 +9,6 @@ steps:
 ##############################################################################
 # INDIVIDUAL TILE RUNS
 # 
-# Note: "echo exit 13" prevents hang at genus/innovus prompt
 - label: 'MemCore synth 17m'
   commands:
   - $TEST  --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
