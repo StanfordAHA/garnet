@@ -81,7 +81,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     or x in range(x_max + 1, width) \
                     or y in range(y_min) \
                     or y in range(y_max + 1, height):
-                core = IOCore()
+                core = IOCore(config_addr_width=reg_addr_width,
+                              config_data_width=config_data_width)
             else:
                 use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
                 if use_mem_core:
