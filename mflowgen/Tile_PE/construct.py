@@ -21,7 +21,7 @@ def construct():
 
   adk_name = 'tsmc16'
   adk_view = 'multicorner-multivt'
-  pwr_aware = True
+  pwr_aware = True 
 
   flatten = 3
   os_flatten = os.environ.get('FLATTEN')
@@ -47,7 +47,7 @@ def construct():
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort'    : flatten,
+    'flatten_effort'    : 0, 
     'topographical'     : True,
     # RTL Generation
     'interconnect_only' : True,
