@@ -17,6 +17,7 @@ from lassen.asm import add, sub, Mode_t
 from gemstone.common.testers import BasicTester
 
 from canal.util import IOSide
+from archipelago import pnr
 
 from peak_core.peak_core import PeakCore
 
@@ -127,30 +128,29 @@ def test_peak_tile_sequence(sequences, cw_files):
     # Use test application to get a configuration
     # TODO: We should randomize or cover all possible configurations of the
     # CB/SBs
-    # placement, routing generated from:
-    # netlist = {
-    #     "e0": [("I0", "io2f_16"), ("p0", "data0")],
-    #     "e1": [("I1", "io2f_16"), ("p0", "data1")],
-    #     "e3": [("p0", "alu_res"), ("I2", "f2io_16")],
-    # }
-    # bus = {"e0": 16, "e1": 16, "e3": 16}
+    netlist = {
+        "e0": [("I0", "io2f_16"), ("p0", "data0")],
+        "e1": [("I1", "io2f_16"), ("p0", "data1")],
+        "e3": [("p0", "alu_res"), ("I2", "f2io_16")],
+    }
+    bus = {"e0": 16, "e1": 16, "e3": 16}
 
-    # from archipelago import pnr
-    # placement, routing = pnr(interconnect, (netlist, bus))
-    # route_config = interconnect.get_route_bitstream(routing)
-    # x, y = placement["p0"]
+    placement, routing = pnr(interconnect, (netlist, bus))
+    route_config = interconnect.get_route_bitstream(routing)
+    x, y = placement["p0"]
+    # print(placement)
+    # {'I0': (1, 0), 'I1': (2, 0), 'I2': (0, 1), 'p0': (1, 1)}
 
-    # placement = {'I0': (1, 0), 'I1': (2, 0), 'I2': (0, 1), 'p0': (1, 1)}
-    # routing = {'e0': [[CB_io2f_16, SB_T0_NORTH_SB_IN_B16, CB_data0]],
-    #            'e1': [[CB_io2f_16, SB_T0_NORTH_SB_IN_B16,
-    #                    SB_T0_WEST_SB_OUT_B16, RMUX_T0_WEST_B16,
-    #                    SB_T0_EAST_SB_IN_B16, CB_data1]],
-    #            'e3': [[CB_alu_res, SB_T0_WEST_SB_OUT_B16, RMUX_T0_WEST_B16, CB_f2io_16]]}
+    # print(routing)
+    # {'e0': [[CB_io2f_16, SB_T0_NORTH_SB_IN_B16, CB_data0]],
+    #  'e1': [[CB_io2f_16, SB_T1_NORTH_SB_IN_B16, SB_T2_WEST_SB_OUT_B16,
+    #          RMUX_T2_WEST_B16, SB_T2_EAST_SB_IN_B16, CB_data1]],
+    #  'e3': [[CB_alu_res, SB_T0_WEST_SB_OUT_B16, RMUX_T0_WEST_B16, CB_f2io_16]]}
 
-    route_config = [(262401, 0), (459265, 0), (459265, 0), (327937, 2),
-                    (459009, 786432), (459009, 0)]
+    assert route_config == [(262401, 0), (17236481, 0), (459265, 0),
+                            (327937, 10), (459009, 786432), (459009, 0)]
+
     route_config = compress_config_data(route_config)
-    x, y = (1, 1)
 
     tile_id = x << 8 | y
     tile = interconnect.tile_circuits[x, y]
@@ -167,7 +167,7 @@ def test_peak_tile_sequence(sequences, cw_files):
         # this should be done based on the configuration (so we can test
         # multiple)
         tester.poke(tester._circuit.SB_T0_NORTH_SB_IN_B16, a)
-        tester.poke(tester._circuit.SB_T0_EAST_SB_IN_B16, b)
+        tester.poke(tester._circuit.SB_T2_EAST_SB_IN_B16, b)
 
     def tile_output_monitor(tester, value):
         # TODO: We assume this output from the test routing app,
