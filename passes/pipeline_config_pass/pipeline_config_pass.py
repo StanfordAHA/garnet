@@ -1,4 +1,3 @@
-from io_core.io_core_magma import IOCoreValid
 from canal.interconnect import Interconnect
 import magma
 from mantle import FF
