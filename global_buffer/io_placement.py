@@ -48,8 +48,9 @@ def place_io_blk(id_to_name):
     group_index = 0
     for idx, input_blk in enumerate(inputs):
         placement[input_blk] = (group_index * 2, 0)
-        if idx < len(en):
-            placement[en[idx]] = (group_index * 2, 0)
+        group_index += 1
+    for en_blk in en:
+        placement[en_blk] = (group_index * 2, 0)
         group_index += 1
 
     group_index = 0
