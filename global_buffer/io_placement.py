@@ -1,4 +1,4 @@
-def place_io_blk(id_to_name, width):
+def place_io_blk(id_to_name):
     """Hacky function to place the IO blocks"""
     placement = {}
     # find out all the IO blocks
@@ -39,11 +39,11 @@ def place_io_blk(id_to_name, width):
         if "in" in id_to_name[blk_id]:
             inputs.append(blk_id)
         else:
-            print(blk_id)
-            print(id_to_name[blk_id])
             assert "out" in id_to_name[blk_id]
             outputs.append(blk_id)
 
+    # place it on the interconnect
+    # input and outputs are placed on the same IO tiles
     # place it on the interconnect
     group_index = 0
     for idx, input_blk in enumerate(inputs):
@@ -52,14 +52,15 @@ def place_io_blk(id_to_name, width):
             placement[en[idx]] = (group_index * 2, 0)
         group_index += 1
 
+    group_index = 0
     for idx, output_blk in enumerate(outputs):
         placement[output_blk] = (group_index * 2 + 1, 0)
         if idx < len(valid):
             placement[valid[idx]] = (group_index * 2 + 1, 0)
         group_index += 1
 
-    # place reset on the last one
+    # place reset on the first one
     if reset is not None:
-        placement[reset] = (width - 1, 0)
+        placement[reset] = (0, 0)
 
     return placement
