@@ -178,11 +178,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     interconnect.finalize()
     if global_signal_wiring == GlobalSignalWiring.Meso:
-        apply_global_meso_wiring(interconnect, io_sides=io_sides)
+        apply_global_meso_wiring(interconnect)
     elif global_signal_wiring == GlobalSignalWiring.Fanout:
-        apply_global_fanout_wiring(interconnect, io_sides=io_sides)
+        apply_global_fanout_wiring(interconnect)
     elif global_signal_wiring == GlobalSignalWiring.ParallelMeso:
-        apply_global_meso_wiring(interconnect, io_sides=io_sides)
+        apply_global_meso_wiring(interconnect)
     if add_pd:
         add_aon_read_config_data(interconnect)
 
