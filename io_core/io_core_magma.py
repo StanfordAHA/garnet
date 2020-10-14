@@ -27,7 +27,7 @@ class ValidIOCore(Generator):
         self.valid = self.var("valid", 1)
         # only if the state is in counting and count is larger or equal to max_cycle
         self.wire(self.valid,
-                  (self.has_start == self.start_state.io_valid_count) & (self.count >= self.max_cycle))
+                  (self.has_start == self.start_state.io_valid_count) & (self.count < self.max_cycle))
         # normal output
         self.f2io_1 = self.input("f2io_1", 1)
         # mode
@@ -39,8 +39,7 @@ class ValidIOCore(Generator):
         # counter enable logic
         self.cen = self.var("cen", 1)
         self.wire(self.cen,
-                  self.stall & (self.has_start == self.start_state.io_valid_count) & (self.count <= self.max_cycle) & (
-                      ~self.stall))
+                  (self.has_start == self.start_state.io_valid_count) & (self.count < self.max_cycle) & (~self.stall))
 
         # add code blocks
         self.add_always(self.start_signal)
@@ -50,7 +49,7 @@ class ValidIOCore(Generator):
     def start_signal(self):
         if self.rst:
             self.has_start = self.start_state.io_valid_idle
-        else:
+        elif self.start:
             self.has_start = self.start_state.io_valid_count
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
