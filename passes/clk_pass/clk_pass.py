@@ -45,7 +45,7 @@ def clk_physical(interconnect: Interconnect):
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
         # We only want to do this on PE and memory tiles
-        if isinstance(tile_core, IOCore) or tile_core is None:
+        if tile_core is None or "clk" not in tile_core.ports:
             continue
         elif isinstance(tile_core, MemCore):
             if (x, y+1) in interconnect.tile_circuits:

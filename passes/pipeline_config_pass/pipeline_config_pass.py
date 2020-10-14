@@ -1,4 +1,4 @@
-from io_core.io_core_magma import IOCore
+from io_core.io_core_magma import IOCoreValid
 from canal.interconnect import Interconnect
 import magma
 from mantle import FF
@@ -56,7 +56,7 @@ def pipeline_config_signals(interconnect: Interconnect, interval):
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
         # We only want to do this on PE and memory tiles
-        if isinstance(tile_core, IOCore) or tile_core is None:
+        if tile_core is None or "config" not in tile_core.ports:
             continue
         else:
             if interval != 0 and y % interval == 0 and ((x, y+1) in interconnect.tile_circuits):

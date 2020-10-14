@@ -1,13 +1,13 @@
 import tempfile
 from gemstone.common.testers import BasicTester
 from gemstone.common.util import compress_config_data
-from io_core.io_core_magma import IOCore
+from io_core.io_core_magma import IOCoreValid
 from fault.tester import Tester
 from fault.random import random_bv
 
 
 def test_regression():
-    io_core = IOCore()
+    io_core = IOCoreValid()
     io_core_circuit = io_core.circuit()
     tester = Tester(io_core_circuit)
 
@@ -35,7 +35,7 @@ def test_regression():
 
 
 def test_valid_generation():
-    io_core = IOCore()
+    io_core = IOCoreValid()
     io_core_circuit = io_core.circuit()
     tester = BasicTester(io_core_circuit, io_core_circuit.clk, io_core_circuit.reset)
 
