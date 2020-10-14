@@ -6,7 +6,7 @@ from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
 from canal.interconnect import Interconnect
 from passes.power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import PE_fc
-from io_core.io_core_magma import IOCore
+from io_core.io_core_magma import IOCoreValid, IOCore
 from memory_core.memory_core_magma import MemCore
 from memory_core.pond_core import PondCore
 from peak_core.peak_core import PeakCore
@@ -45,6 +45,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 pipeline_config_interval: int = 8,
                 standalone: bool = False,
                 add_pond: bool = False,
+                use_io_valid: bool = True,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
                 port_conn_override: Dict[str,
                                          List[Tuple[SwitchBoxSide,
@@ -81,8 +82,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     or x in range(x_max + 1, width) \
                     or y in range(y_min) \
                     or y in range(y_max + 1, height):
-                core = IOCore(config_addr_width=reg_addr_width,
-                              config_data_width=config_data_width)
+                if use_io_valid:
+                    core = IOCoreValid(config_addr_width=reg_addr_width,
+                                       config_data_width=config_data_width)
+                else:
+                    core = IOCore()
             else:
                 use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
                 if use_mem_core:
@@ -112,7 +116,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     outputs = set()
     for core in cores.values():
         # Skip IO cores.
-        if core is None or isinstance(core, IOCore):
+        if core is None or isinstance(core, IOCoreValid):
             continue
         inputs |= {i.qualified_name() for i in core.inputs()}
         outputs |= {o.qualified_name() for o in core.outputs()}

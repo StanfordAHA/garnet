@@ -29,6 +29,7 @@ class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
                  use_sram_stub: bool = True, standalone: bool = False,
                  add_pond: bool = True,
+                 use_io_valid: bool = False,
                  pipeline_config_interval: int = 8):
         super().__init__()
 
@@ -106,6 +107,7 @@ class Garnet(Generator):
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
                                    add_pond=add_pond,
+                                   use_io_valid=use_io_valid,
                                    use_sram_stub=use_sram_stub,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
@@ -342,6 +344,7 @@ def main():
     parser.add_argument("--dump-config-reg", action="store_true")
     parser.add_argument("--virtualize-group-size", type=int, default=4)
     parser.add_argument("--virtualize", action="store_true")
+    parser.add_argument("--use-io-valid", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -353,6 +356,7 @@ def main():
                     add_pd=not args.no_pd,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
+                    use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
                     standalone=args.standalone)

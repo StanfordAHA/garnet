@@ -1,11 +1,11 @@
 import magma
-from gemstone.common.core import ConfigurableCore, PnRTag, ConfigurationType
+from gemstone.common.core import ConfigurableCore, PnRTag, ConfigurationType, Core
 from gemstone.generator import FromMagma
 from kratos import Generator, posedge, always_ff, mux
 from kratos.util import to_magma
 
 
-class ValidIOCore(Generator):
+class KratosValidIOCore(Generator):
     __cache = {}
 
     def __init__(self, count_width):
@@ -61,21 +61,20 @@ class ValidIOCore(Generator):
 
     @staticmethod
     def get_core(width):
-        if width in ValidIOCore.__cache:
-            return ValidIOCore.__cache[width]
+        if width in KratosValidIOCore.__cache:
+            return KratosValidIOCore.__cache[width]
         else:
-            core = ValidIOCore(width)
+            core = KratosValidIOCore(width)
             circ = to_magma(core)
-            ValidIOCore.__cache[width] = circ
+            KratosValidIOCore.__cache[width] = circ
             return circ
 
 
-class IOCore(ConfigurableCore):
-    def __init__(self, config_addr_width=8, config_data_width=32):
-        super().__init__(config_addr_width, config_data_width)
+class IOCoreBase(Core):
+    def __init__(self):
+        super().__init__()
 
-        max_cycle_width = 22
-
+    def _add_ports(self):
         self.add_ports(
             glb2io_16=magma.In(magma.Bits[16]),
             glb2io_1=magma.In(magma.Bits[1]),
@@ -84,29 +83,8 @@ class IOCore(ConfigurableCore):
             f2io_16=magma.In(magma.Bits[16]),
             f2io_1=magma.In(magma.Bits[1]),
             io2f_16=magma.Out(magma.Bits[16]),
-            io2f_1=magma.Out(magma.Bits[1]),
-            stall=magma.In(magma.Bits[1])
+            io2f_1=magma.Out(magma.Bits[1])
         )
-
-        self.add_port("config", magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
-
-        self.wire(self.ports.glb2io_16, self.ports.io2f_16)
-        self.wire(self.ports.glb2io_1, self.ports.io2f_1)
-        self.wire(self.ports.f2io_16, self.ports.io2glb_16)
-
-        self.core = FromMagma(ValidIOCore.get_core(22))
-        for p in {"clk", "reset", "stall"}:
-            self.wire(self.ports[p], self.core.ports[p])
-        self.add_config("max_cycle", max_cycle_width)
-        self.add_config("mode", 1)
-
-        self.wire(self.registers["max_cycle"].ports.O, self.core.ports.max_cycle)
-        self.wire(self.registers["mode"].ports.O, self.core.ports.mode)
-        self.wire(self.ports.f2io_1, self.core.ports.f2io_1)
-        self.wire(self.ports.io2glb_1, self.core.ports.out)
-        self.wire(self.ports.glb2io_1, self.core.ports.start)
-
-        self._setup_config()
 
     def inputs(self):
         return [self.ports.glb2io_16, self.ports.glb2io_1,
@@ -123,6 +101,49 @@ class IOCore(ConfigurableCore):
         return [PnRTag("I", 2, self.DEFAULT_PRIORITY),
                 PnRTag("i", 1, self.DEFAULT_PRIORITY)]
 
+
+class IOCore(IOCoreBase):
+    def __init__(self):
+        super().__init__()
+        self._add_ports()
+
+        self.wire(self.ports.glb2io_16, self.ports.io2f_16)
+        self.wire(self.ports.glb2io_1, self.ports.io2f_1)
+        self.wire(self.ports.f2io_16, self.ports.io2glb_16)
+        self.wire(self.ports.f2io_1, self.ports.io2glb_1)
+
+
+class IOCoreValid(ConfigurableCore, IOCoreBase):
+    def __init__(self, config_addr_width=8, config_data_width=32):
+        super().__init__(config_addr_width, config_data_width)
+        self._add_ports()
+
+        max_cycle_width = 22
+
+        self.add_ports(
+            stall=magma.In(magma.Bits[1])
+        )
+
+        self.add_port("config", magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
+
+        self.wire(self.ports.glb2io_16, self.ports.io2f_16)
+        self.wire(self.ports.glb2io_1, self.ports.io2f_1)
+        self.wire(self.ports.f2io_16, self.ports.io2glb_16)
+
+        self.core = FromMagma(KratosValidIOCore.get_core(22))
+        for p in {"clk", "reset", "stall"}:
+            self.wire(self.ports[p], self.core.ports[p])
+        self.add_config("max_cycle", max_cycle_width)
+        self.add_config("mode", 1)
+
+        self.wire(self.registers["max_cycle"].ports.O, self.core.ports.max_cycle)
+        self.wire(self.registers["mode"].ports.O, self.core.ports.mode)
+        self.wire(self.ports.f2io_1, self.core.ports.f2io_1)
+        self.wire(self.ports.io2glb_1, self.core.ports.out)
+        self.wire(self.ports.glb2io_1, self.core.ports.start)
+
+        self._setup_config()
+
     def get_config_bitstream(self, instr):
         return []  # pragma: nocover
 
@@ -131,5 +152,5 @@ class IOCore(ConfigurableCore):
 
 
 if __name__ == "__main__":
-    core = IOCore(8, 32)
+    core = IOCoreValid(8, 32)
     magma.compile("io", core.circuit())
