@@ -36,6 +36,12 @@ class ValidIOCore(Generator):
         self.out = self.output("out", 1)
         self.wire(self.out, mux(self.mode == 1, self.valid, self.f2io_1))
 
+        # counter enable logic
+        self.cen = self.var("cen", 1)
+        self.wire(self.cen,
+                  self.stall & (self.has_start == self.start_state.io_valid_count) & (self.count <= self.max_cycle) & (
+                      ~self.stall))
+
         # add code blocks
         self.add_always(self.start_signal)
         self.add_always(self.count_cycle)
@@ -51,7 +57,7 @@ class ValidIOCore(Generator):
     def count_cycle(self):
         if self.rst:
             self.count = 0
-        elif (self.has_start == self.start_state.io_valid_count) & (self.count <= self.max_cycle) & (~self.stall):
+        elif self.cen:
             self.count = self.count + 1
 
     @staticmethod
