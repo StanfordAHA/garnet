@@ -8,8 +8,7 @@ import pytest
 
 from hwtypes import BitVector
 
-from fault.tester.sequence_tester import (SequenceTester, InputSequence,
-                                          OutputSequence)
+from fault.tester.sequence_tester import SequenceTester, Driver, Monitor
 
 from lassen.sim import PE_fc
 from lassen.asm import add, sub, Mode_t
@@ -37,16 +36,17 @@ def cw_files():
 
 
 @pytest.fixture()
-def sequences():
+def sequence():
     """
-    * inputs - a triple (config_data, a, and b)
-      * config_data - bitstream for configuring the coreto perform a random instruction
-      * a, b - random input values for data0, data
-    * outputs - the expected output value given config_data, a, and b
+    a 4-tuple (config_data, a, b, output)
+
+    * config_data - bitstream for configuring the core to perform a random
+                    instruction
+    * a, b - random input values for data0, data
+    * output - expected outputs given a, b
     """
     core = PeakCore(PE_fc)
-    inputs = []
-    outputs = []
+    sequence = []
     for _ in range(5):
         # Choose a random operation from lassen.asm
         op = random.choice([add, sub])
@@ -54,11 +54,12 @@ def sequences():
         instruction = op(ra_mode=Mode_t.BYPASS, rb_mode=Mode_t.BYPASS)
         # Convert to bitstream format
         config_data = core.get_config_bitstream(instruction)
+        # Generate random inputs
         a, b = (BitVector.random(16) for _ in range(2))
-        inputs.append((config_data, a, b))
-        # generate expected output using model
-        outputs.append(core.wrapper.model(instruction, a, b)[0])
-    return inputs, outputs
+        # Get expected output
+        output = core.wrapper.model(instruction, a, b)[0]
+        sequence.append((config_data, a, b, output))
+    return sequence
 
 
 class BasicSequenceTester(SequenceTester, BasicTester):
@@ -66,37 +67,41 @@ class BasicSequenceTester(SequenceTester, BasicTester):
     Extend SequenceTester with BasicTester methods (e.g. reset, configure)
     """
 
-    def __init__(self, circuit, sequences, clock, reset):
-        super().__init__(circuit, sequences, clock)
+    def __init__(self, circuit, driver, monitor, sequence, clock, reset):
+        super().__init__(circuit, driver, monitor, sequence, clock)
         self.reset_port = reset
 
 
-def test_peak_core_sequence(sequences, cw_files):
+class CoreDriver(Driver):
+    def consume(self, config_data, a, b, output):
+        for addr, data in config_data:
+            self.tester.configure(addr, data)
+        self.tester.circuit.data0 = a
+        self.tester.circuit.data1 = b
+
+
+class CoreMonitor(Monitor):
+    def observe(self, config_data, a, b, output):
+        self.tester.circuit.alu_res.expect(output)
+
+
+def test_peak_core_sequence(sequence, cw_files):
     """
     Core level test
     * configures core using instruction bitstream
     * drives input values onto data0 and data1 ports
     * checks alu_res output
     """
-    def core_input_driver(tester, value):
-        config_data, a, b, = value
-        for addr, data in config_data:
-            tester.configure(addr, data)
-        tester.poke(tester._circuit.data0, a)
-        tester.poke(tester._circuit.data1, b)
 
-    def core_output_monitor(tester, value):
-        tester.expect(tester._circuit.alu_res, value)
+    def core_output_monitor(tester, config_data, a, b, output):
+        tester.expect(tester._circuit.alu_res, output)
 
     core = PeakCore(PE_fc)
     core.name = lambda: "PECore"
     circuit = core.circuit()
 
-    inputs, outputs = sequences
-    tester = BasicSequenceTester(circuit, [
-        (core_input_driver, InputSequence(inputs)),
-        (core_output_monitor, OutputSequence(outputs))
-    ], circuit.clk, circuit.reset)
+    tester = BasicSequenceTester(circuit, CoreDriver(), CoreMonitor(),
+                                 sequence, circuit.clk, circuit.reset)
     tester.reset()
 
     with tempfile.TemporaryDirectory() as tempdir:
@@ -109,7 +114,7 @@ def test_peak_core_sequence(sequences, cw_files):
                                flags=["-Wno-fatal"])
 
 
-def test_peak_tile_sequence(sequences, cw_files):
+def test_peak_tile_sequence(sequence, cw_files):
     """
     Tile level test:
     * Generates CGRA to extract PE_tile
@@ -156,29 +161,25 @@ def test_peak_tile_sequence(sequences, cw_files):
     tile = interconnect.tile_circuits[x, y]
     circuit = tile.circuit()
 
-    def tile_input_driver(tester, value):
-        config_data, a, b, = value
-        for addr, data in config_data:
-            # Convert to tile level address space
-            addr = interconnect.get_config_addr(addr, 0, x, y)
-            tester.configure(addr, data)
+    class TileDriver(Driver):
+        def consume(self, config_data, a, b, output):
+            for addr, data in config_data:
+                addr = interconnect.get_config_addr(addr, 0, x, y)
+                self.tester.configure(addr, data)
+            # TODO: We assume these inputs from the test routing app,
+            # this should be done based on the configuration (so we can test
+            # multiple)
+            self.tester.circuit.SB_T0_NORTH_SB_IN_B16 = a
+            self.tester.circuit.SB_T2_EAST_SB_IN_B16 = b
 
-        # TODO: We assume these inputs from the test routing app,
-        # this should be done based on the configuration (so we can test
-        # multiple)
-        tester.poke(tester._circuit.SB_T0_NORTH_SB_IN_B16, a)
-        tester.poke(tester._circuit.SB_T2_EAST_SB_IN_B16, b)
+    class TileMonitor(Monitor):
+        def observe(self, config_data, a, b, output):
+            # TODO: We assume this output from the test routing app,
+            # should be based on cofig
+            self.tester.circuit.SB_T0_WEST_SB_OUT_B16.expect(output)
 
-    def tile_output_monitor(tester, value):
-        # TODO: We assume this output from the test routing app,
-        # should be based on cofig
-        tester.expect(tester._circuit.SB_T0_WEST_SB_OUT_B16, value)
-
-    inputs, outputs = sequences
-    tester = BasicSequenceTester(circuit, [
-        (tile_input_driver, InputSequence(inputs)),
-        (tile_output_monitor, OutputSequence(outputs))
-    ], circuit.clk, circuit.reset)
+    tester = BasicSequenceTester(circuit, TileDriver(), TileMonitor(),
+                                 sequence, circuit.clk, circuit.reset)
     tester.reset()
     tester.poke(circuit.tile_id, tile_id)
     for addr, data in route_config:
