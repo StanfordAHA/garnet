@@ -357,6 +357,9 @@ def construct():
   # Core density target param
   init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
 
+  # Need to know whether or not hierarchy is flattened to select pipeline config
+  # regs during .lib generation
+  genlibdb.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True )
 
   # Disable pwr aware flow
   #init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True )

@@ -24,7 +24,13 @@ set config_reg_name config_reg_0
 
 for {set bit $min_bit} {[expr $bit - $min_bit] < $num_bits} {incr bit} {
     # Name of config register in netlist
-    set config_regs [get_cells -hierarchical *${SB_name}*${config_reg_name}_Register*[$bit] -filter "is_sequential==True"]
+    if {$::env(flatten_effort) == 0} {
+      # When we don't flatten, the config reg is buried under multiple levels of hierarchy
+      set config_regs [get_cells ${SB_name}/${config_reg_name}/*/*/*[$bit] -filter "is_sequential==True"]
+    } else {
+      # When we flatten, we don't need slashes since there is no hierarchy
+      set config_regs [get_cells -hierarchical *${SB_name}*${config_reg_name}_Register*[$bit] -filter "is_sequential==True"]
+    }
     set config_reg_outs [get_pins -of_objects $config_regs -filter "direction==out"]
     # Set config reg values to 1 so that all pipeline regs are activated
     set_case_analysis 1 $config_reg_outs

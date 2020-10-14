@@ -376,6 +376,10 @@ def construct():
   init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
   # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
   # and 'additional-path-groups' after 'make_path_groups'
+  
+  # Need to know whether or not hierarchy is flattened to select pipeline config
+  # regs during .lib generation
+  genlibdb.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True )
 
   order = init.get_param('order') # get the default script run order
   path_group_idx = order.index( 'make-path-groups.tcl' )
