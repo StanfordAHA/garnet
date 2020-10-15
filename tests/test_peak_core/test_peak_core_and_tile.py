@@ -73,7 +73,7 @@ class BasicSequenceTester(SequenceTester, BasicTester):
 
 
 class CoreDriver(Driver):
-    def consume(self, config_data, a, b, output):
+    def lower(self, config_data, a, b, output):
         for addr, data in config_data:
             self.tester.configure(addr, data)
         self.tester.circuit.data0 = a
@@ -162,7 +162,7 @@ def test_peak_tile_sequence(sequence, cw_files):
     circuit = tile.circuit()
 
     class TileDriver(Driver):
-        def consume(self, config_data, a, b, output):
+        def lower(self, config_data, a, b, output):
             for addr, data in config_data:
                 addr = interconnect.get_config_addr(addr, 0, x, y)
                 self.tester.configure(addr, data)
