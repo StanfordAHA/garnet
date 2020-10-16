@@ -32,6 +32,17 @@ def dw_files():
     return result_filenames
 
 
+def test_1x1():
+    # this is all PE
+    interconnect = create_cgra(1, 1, IOSide.None_, num_tracks=3, mem_ratio=(0, 1))
+    circuit = interconnect.circuit()
+    with tempfile.TemporaryDirectory() as temp:
+        filename = os.path.join(temp, "1x1")
+        import magma
+        magma.compile(filename, circuit, output="coreir-verilog")
+        assert os.path.isfile(filename + ".v")
+
+
 @pytest.mark.parametrize("batch_size", [100])
 def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
     # we test a simple point-wise multiplier function
