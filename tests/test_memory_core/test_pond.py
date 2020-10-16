@@ -19,6 +19,7 @@ import kratos as kts
 from _kratos import create_wrapper_flatten
 import lassen.asm as asm
 
+
 # @pytest.fixture()
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
@@ -211,7 +212,6 @@ def test_pond_rd_wr(verilator=True):
                                **runtime_kwargs)
 
 
-
 def test_pond_pe(verilator=True):
 
     chip_size = 2
@@ -275,19 +275,18 @@ def test_pond_pe(verilator=True):
     random.seed(0)
 
     for i in range(32):
-        if i<16:
+        if i < 16:
             tester.poke(circuit.interface[src_name0], i)
             tester.eval()
         if i >= 16:
             num = random.randrange(0, 256)
-            tester.poke(circuit.interface[src_name1], num) 
+            tester.poke(circuit.interface[src_name1], num)
             tester.eval()
-            tester.expect(circuit.interface[dst_name], (i - 16)*num)
+            tester.expect(circuit.interface[dst_name], (i - 16) * num)
         tester.step(2)
         tester.eval()
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="new"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files():
@@ -310,5 +309,3 @@ def test_pond_pe(verilator=True):
         tester.compile_and_run(target=target,
                                tmp_dir=False,
                                **runtime_kwargs)
-
-
