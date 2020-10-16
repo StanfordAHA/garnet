@@ -125,6 +125,8 @@ def construct():
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlibdb     = Step( 'cadence-genus-genlib',          default=True )
   drc          = Step( 'mentor-calibre-drc',            default=True )
+  # Define pegasus as alternative DRC path for now - enables local DRC testing in calibre
+  alt_drc      = Step( 'cadence-pegasus-drc',           default=True )
   lvs          = Step( 'mentor-calibre-lvs',            default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
@@ -199,6 +201,7 @@ def construct():
   g.add_step( genlibdb_constraints     )
   g.add_step( genlibdb                 )
   g.add_step( drc                      )
+  g.add_step( alt_drc                  )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
 
@@ -236,6 +239,7 @@ def construct():
   g.connect_by_name( adk,      postroute    )
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      drc          )
+  g.connect_by_name( adk,      alt_drc      )
   g.connect_by_name( adk,      lvs          )
   g.connect_by_name( adk,      pt_power_gl  )
 
@@ -288,8 +292,10 @@ def construct():
   g.connect_by_name( route,        postroute    )
   g.connect_by_name( postroute,    signoff      )
   g.connect_by_name( signoff,      drc          )
+  g.connect_by_name( signoff,      alt_drc      )
   g.connect_by_name( signoff,      lvs          )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), alt_drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,              genlibdb )
