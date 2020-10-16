@@ -117,14 +117,14 @@ def test_peak_core_sequence(sequence, cw_files):
 def test_peak_tile_sequence(sequence, cw_files):
     """
     Tile level test:
-    * Generates 2x2 CGRA
+    * Generates 1x1 CGRA
     * configures PE_tile using test application
     * similar input driver and output monitor behavior to core test except:
       * inputs are driven onto the appropriate tile ports based on the
         generated route for the application
       * output is similarly monitored based on the generate route
     """
-    # Use 2x2 CGRA to test PE TILE
+    # Use 1x1 CGRA to test PE TILE
     # TODO: Do we need to test without interconnect (i.e. just tile)
     io_sides = IOSide.North | IOSide.East | IOSide.South | IOSide.West
     interconnect = create_cgra(1, 1, io_sides, num_tracks=3)
