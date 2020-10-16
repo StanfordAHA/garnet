@@ -303,7 +303,7 @@ def main():
                         dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
-    parser.add_argument("--add-pond", action="store_true")
+    parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--no-sram-stub", action="store_true")
     parser.add_argument("--standalone", action="store_true")
@@ -319,7 +319,7 @@ def main():
     garnet = Garnet(width=args.width, height=args.height,
                     add_pd=not args.no_pd,
                     pipeline_config_interval=args.pipeline_config_interval,
-                    add_pond=args.add_pond,
+                    add_pond=not args.no_pond,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
                     standalone=args.standalone)
