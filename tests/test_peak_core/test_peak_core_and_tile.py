@@ -117,16 +117,15 @@ def test_peak_core_sequence(sequence, cw_files):
 def test_peak_tile_sequence(sequence, cw_files):
     """
     Tile level test:
-    * Generates CGRA to extract PE_tile
-    * sets tile_id input based on test app
-    * configures PE_tile based on fixed route (taken from a test app)
+    * Generates 2x2 CGRA
+    * configures PE_tile using test application
     * similar input driver and output monitor behavior to core test except:
-      * inputs are driven onto the appropriate tile ports based on the fixed
-        route configuration
-      * output is similarly monitored based on the route config
+      * inputs are driven onto the appropriate tile ports based on the
+        generated route for the application
+      * output is similarly monitored based on the generate route
     """
-    # Use stub CGRA to get PE_tile
-    # TODO: Is there an API to just get a PE_tile?
+    # Use 2x2 CGRA to test PE TILE
+    # TODO: Do we need to test without interconnect (i.e. just tile)
     io_sides = IOSide.North | IOSide.East | IOSide.South | IOSide.West
     interconnect = create_cgra(2, 2, io_sides, num_tracks=3)
 
@@ -143,45 +142,30 @@ def test_peak_tile_sequence(sequence, cw_files):
     placement, routing = pnr(interconnect, (netlist, bus))
     route_config = interconnect.get_route_bitstream(routing)
     x, y = placement["p0"]
-    # print(placement)
-    # {'I0': (1, 0), 'I1': (2, 0), 'I2': (0, 1), 'p0': (1, 1)}
-
-    # print(routing)
-    # {'e0': [[CB_io2f_16, SB_T0_NORTH_SB_IN_B16, CB_data0]],
-    #  'e1': [[CB_io2f_16, SB_T1_NORTH_SB_IN_B16, SB_T2_WEST_SB_OUT_B16,
-    #          RMUX_T2_WEST_B16, SB_T2_EAST_SB_IN_B16, CB_data1]],
-    #  'e3': [[CB_alu_res, SB_T0_WEST_SB_OUT_B16, RMUX_T0_WEST_B16, CB_f2io_16]]}
-
-    assert route_config == [(262401, 0), (17236481, 0), (459265, 0),
-                            (327937, 10), (459009, 786432), (459009, 0)]
 
     route_config = compress_config_data(route_config)
 
-    tile_id = x << 8 | y
-    tile = interconnect.tile_circuits[x, y]
-    circuit = tile.circuit()
+    circuit = interconnect.circuit()
+    input_a = interconnect.get_top_input_port_by_coord(placement["I0"], 16)
+    input_b = interconnect.get_top_input_port_by_coord(placement["I1"], 16)
+    output_port = interconnect.get_top_output_port_by_coord(placement["I2"],
+                                                            16)
 
     class TileDriver(Driver):
         def lower(self, config_data, a, b, output):
             for addr, data in config_data:
                 addr = interconnect.get_config_addr(addr, 0, x, y)
                 self.tester.configure(addr, data)
-            # TODO: We assume these inputs from the test routing app,
-            # this should be done based on the configuration (so we can test
-            # multiple)
-            self.tester.circuit.SB_T0_NORTH_SB_IN_B16 = a
-            self.tester.circuit.SB_T2_EAST_SB_IN_B16 = b
+            setattr(self.tester.circuit, input_a, a)
+            setattr(self.tester.circuit, input_b, b)
 
     class TileMonitor(Monitor):
         def observe(self, config_data, a, b, output):
-            # TODO: We assume this output from the test routing app,
-            # should be based on cofig
-            self.tester.circuit.SB_T0_WEST_SB_OUT_B16.expect(output)
+            getattr(self.tester.circuit, output_port).expect(output)
 
     tester = BasicSequenceTester(circuit, TileDriver(), TileMonitor(),
                                  sequence, circuit.clk, circuit.reset)
     tester.reset()
-    tester.poke(circuit.tile_id, tile_id)
     for addr, data in route_config:
         tester.configure(addr, data)
 
