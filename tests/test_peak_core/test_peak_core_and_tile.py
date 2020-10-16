@@ -127,7 +127,7 @@ def test_peak_tile_sequence(sequence, cw_files):
     # Use 2x2 CGRA to test PE TILE
     # TODO: Do we need to test without interconnect (i.e. just tile)
     io_sides = IOSide.North | IOSide.East | IOSide.South | IOSide.West
-    interconnect = create_cgra(2, 2, io_sides, num_tracks=3)
+    interconnect = create_cgra(1, 1, io_sides, num_tracks=3)
 
     # Use test application to get a configuration
     # TODO: We should randomize or cover all possible configurations of the
