@@ -41,6 +41,8 @@ def construct():
     'soc_only'          : False,
     # Include SoC core? (use 0 for false, 1 for true)
     'include_core'      : 1,
+    # Include sealring?
+    'include_sealring'  : False,
     # SRAM macros
     'num_words'         : 2048,
     'word_size'         : 64,
@@ -437,9 +439,11 @@ def construct():
   order.insert( 0, 'pre-route.tcl' )
   route.update_params( { 'order': order } )
 
-  # Add sealring at beginning of signoff, so it's in before we stream out GDS
+  # Signoff order additions
   order = signoff.get_param('order')
-  order.insert(0, 'add-sealring.tcl')
+  # Add sealring at beginning of signoff, so it's in before we stream out GDS
+  if parameters['include_sealring'] == True:
+      order.insert(0, 'add-sealring.tcl')
   # Add netlist-fixing script before we save new netlist
   index = order.index( 'generate-results.tcl' )
   order.insert( index, 'netlist-fixing.tcl' )
