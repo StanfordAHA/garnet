@@ -10,7 +10,7 @@ from archipelago import pnr
 import pytest
 import random
 from cgra import create_cgra, compress_config_data
-from memory_core.memory_mode import Mode
+import magma
 from memory_core.memory_core_magma import config_mem_tile
 from collections import deque
 
@@ -38,8 +38,7 @@ def test_1x1():
     circuit = interconnect.circuit()
     with tempfile.TemporaryDirectory() as temp:
         filename = os.path.join(temp, "1x1")
-        import magma
-        magma.compile(filename, circuit, output="coreir-verilog")
+        magma.compile(filename, circuit)
         assert os.path.isfile(filename + ".v")
 
 
