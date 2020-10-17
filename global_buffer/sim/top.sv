@@ -21,38 +21,6 @@ timeprecision 1ps;
     logic                           reset;
     logic                           cgra_soft_reset;
 
-    // proc
-    logic                           proc_wr_en;
-    logic [BANK_DATA_WIDTH/8-1:0]   proc_wr_strb;
-    logic [GLB_ADDR_WIDTH-1:0]      proc_wr_addr;
-    logic [BANK_DATA_WIDTH-1:0]     proc_wr_data;
-    logic                           proc_rd_en;
-    logic [GLB_ADDR_WIDTH-1:0]      proc_rd_addr;
-    logic [BANK_DATA_WIDTH-1:0]     proc_rd_data;
-    logic                           proc_rd_data_valid;
-
-    // configuration of glb from glc
-    logic                           if_cfg_wr_en;
-    logic                           if_cfg_wr_clk_en;
-    logic [AXI_ADDR_WIDTH-1:0]      if_cfg_wr_addr;
-    logic [AXI_DATA_WIDTH-1:0]      if_cfg_wr_data;
-    logic                           if_cfg_rd_en;
-    logic                           if_cfg_rd_clk_en;
-    logic [AXI_ADDR_WIDTH-1:0]      if_cfg_rd_addr;
-    logic [AXI_DATA_WIDTH-1:0]      if_cfg_rd_data;
-    logic                           if_cfg_rd_data_valid;
-
-    // configuration of sram from glc
-    logic                           if_sram_cfg_wr_en;
-    logic                           if_sram_cfg_wr_clk_en;
-    logic [GLB_ADDR_WIDTH-1:0]      if_sram_cfg_wr_addr;
-    logic [AXI_DATA_WIDTH-1:0]      if_sram_cfg_wr_data;
-    logic                           if_sram_cfg_rd_en;
-    logic                           if_sram_cfg_rd_clk_en;
-    logic [GLB_ADDR_WIDTH-1:0]      if_sram_cfg_rd_addr;
-    logic [AXI_DATA_WIDTH-1:0]      if_sram_cfg_rd_data;
-    logic                           if_sram_cfg_rd_data_valid;
-
     // cgra configuration from global controller
     logic                           cgra_cfg_jtag_gc2glb_wr_en;
     logic                           cgra_cfg_jtag_gc2glb_rd_en;
