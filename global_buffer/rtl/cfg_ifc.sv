@@ -5,9 +5,6 @@
 ** Author: Taeyoung Kong
 ** Change history: 11/10/2019 - Implement first version of interface
 **===========================================================================*/
-`ifndef CFG_IFC
-`define CFG_IFC
-
 interface cfg_ifc #(
     parameter integer AWIDTH = 12,
     parameter integer DWIDTH = 32
@@ -47,5 +44,3 @@ interface cfg_ifc #(
     );
 
 endinterface: cfg_ifc
-
-`endif
