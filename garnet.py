@@ -113,6 +113,7 @@ class Garnet(Generator):
 
         self.interconnect = interconnect
 
+        # make multiple stall ports
         stall_port_pass(self.interconnect)
 
         if not interconnect_only:
@@ -164,7 +165,8 @@ class Garnet(Generator):
                     ConfigurationType(self.interconnect.config_data_width,
                                       self.interconnect.config_data_width)),
                 stall=magma.In(
-                    magma.Bits[width*self.interconnect.stall_signal_width]),
+                    magma.Array[width,
+                                magma.Bits[self.interconnect.stall_signal_width]]),
                 read_config_data=magma.Out(magma.Bits[config_data_width])
             )
 
