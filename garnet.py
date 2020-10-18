@@ -114,7 +114,6 @@ class Garnet(Generator):
         self.interconnect = interconnect
 
         stall_port_pass(self.interconnect)
-        config_port_pass(self.interconnect)
 
         if not interconnect_only:
             self.add_ports(
@@ -146,6 +145,9 @@ class Garnet(Generator):
             # Top -> Interconnect clock port connection
             self.wire(self.ports.clk_in, self.interconnect.ports.clk)
 
+            # make multiple configuration ports
+            config_port_pass(self.interconnect)
+
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
             glc_interconnect_wiring(self)
@@ -162,7 +164,7 @@ class Garnet(Generator):
                     ConfigurationType(self.interconnect.config_data_width,
                                       self.interconnect.config_data_width)),
                 stall=magma.In(
-                    magma.Bits[self.interconnect.stall_signal_width]),
+                    magma.Bits[width*self.interconnect.stall_signal_width]),
                 read_config_data=magma.Out(magma.Bits[config_data_width])
             )
 

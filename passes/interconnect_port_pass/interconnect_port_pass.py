@@ -1,10 +1,12 @@
 from canal.interconnect import Interconnect
+from gemstone.common.configurable import ConfigurationType
 import magma
 
 def config_port_pass(interconnect: Interconnect):
-    # width of garnet
-    width = interconnect.width
-    start_idx = interconnect.x_min
+    # x coordinate of garnet
+    x_min = interconnect.x_min
+    x_max = interconnect.x_max
+    width = x_max - x_min + 1
 
     # Add parallel configuration ports to interconnect
     # interconnect must have config port
@@ -20,7 +22,7 @@ def config_port_pass(interconnect: Interconnect):
                                                    config_data_width)]))
 
     # looping through on a per-column bases
-    for x_coor in range(start_idx, start_idx + width):
+    for x_coor in range(x_min, x_min + width):
         column = interconnect.get_column(x_coor)
         # skip tiles with no config
         column = [entry for entry in column if "config" in entry.ports]
@@ -29,9 +31,10 @@ def config_port_pass(interconnect: Interconnect):
                           column[0].ports.config)
 
 def stall_port_pass(interconnect: Interconnect):
-    # width of garnet
-    width = interconnect.width
-    start_idx = interconnect.x_min
+    # x coordinate of garnet
+    x_min = interconnect.x_min
+    x_max = interconnect.x_max
+    width = x_max - x_min + 1
 
     # Add cgra stall
     assert "stall" in interconnect.ports
@@ -42,14 +45,13 @@ def stall_port_pass(interconnect: Interconnect):
 
     interconnect.remove_port("stall")
     interconnect.add_port("stall",
-                          magma.In(magma.Array[width,
-                                               magma.Bits[stall_signal_width]]))
+                          magma.In(magma.Bits[width*stall_signal_width]))
 
     # looping through on a per-column bases
-    for x_coor in range(start_idx, start_idx + width):
+    for x_coor in range(x_min, x_min + width):
         column = interconnect.get_column(x_coor)
         # skip tiles with no stall
         column = [entry for entry in column if "stall" in entry.ports]
         # wire configuration ports to first tile in column
         interconnect.wire(interconnect.ports.stall[x_coor],
-                          column[0].ports.stall)
+                          column[0].ports.stall[0])

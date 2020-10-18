@@ -46,7 +46,7 @@ def glb_interconnect_wiring(garnet):
     # stall signal wiring
     for i in range(width):
         garnet.wire(garnet.global_buffer.ports.cgra_stall[i],
-                    garnet.interconnect.ports.stall[i][0])
+                    garnet.interconnect.ports.stall[i])
 
     # input/output stream ports wiring
     for x in range(width):
