@@ -15,6 +15,7 @@ from cgra import glb_glc_wiring, glb_interconnect_wiring, \
 import json
 from passes.collateral_pass.config_register import get_interconnect_regs, \
     get_core_registers
+from passes.interconnect_port_pass import stall_port_pass, config_port_pass
 import math
 import archipelago
 import archipelago.power
@@ -111,6 +112,9 @@ class Garnet(Generator):
                                    standalone=standalone)
 
         self.interconnect = interconnect
+
+        stall_port_pass(self.interconnect)
+        config_port_pass(self.interconnect)
 
         if not interconnect_only:
             self.add_ports(

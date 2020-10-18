@@ -13,9 +13,9 @@ import global_buffer_param::*;
 
     // LEFT
     input  logic                                                                clk,
-    input  logic                                                                stall,
+    input  logic [NUM_GLB_TILES-1:0]                                            stall,
     input  logic                                                                reset,
-    input  logic                                                                cgra_stall_in,
+    input  logic [NUM_GLB_TILES-1:0]                                            cgra_stall_in,
 
     // proc
     input  logic                                                                proc_wr_en,
@@ -150,26 +150,25 @@ logic [CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_jtag_esto_addr_bypass [NUM_GLB_TILES];
 // register all input/output
 //============================================================================//
 // stall signal
-logic stall_d1, stall_d2, clk_en;
+logic [NUM_GLB_TILES-1:0] stall_d1, stall_d2;
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        stall_d1 <= 0;
-        stall_d2 <= 0;
+        stall_d1 <= '0;
+        stall_d2 <= '0;
     end
     else begin
         stall_d1 <= stall;
         stall_d2 <= stall_d1;
     end
 end
-assign clk_en = !stall_d2;
 
 // cgra stall signal
-logic cgra_stall_d1, cgra_stall_d2, cgra_stall_d3;
+logic [NUM_GLB_TILES-1:0] cgra_stall_d1, cgra_stall_d2, cgra_stall_d3;
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        cgra_stall_d1 <= 0;
-        cgra_stall_d2 <= 0;
-        cgra_stall_d3 <= 0;
+        cgra_stall_d1 <= '0;
+        cgra_stall_d2 <= '0;
+        cgra_stall_d3 <= '0;
     end
     else begin
         cgra_stall_d1 <= cgra_stall_in;
@@ -177,7 +176,12 @@ always_ff @(posedge clk or posedge reset) begin
         cgra_stall_d3 <= cgra_stall_d2;
     end
 end
-assign cgra_stall = {(NUM_GLB_TILES*CGRA_PER_GLB){cgra_stall_d3}};
+
+always_comb begin
+    for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
+        cgra_stall[CGRA_PER_GLB*i+:CGRA_PER_GLB] = {CGRA_PER_GLB{cgra_stall_d3[i]}};
+    end
+end
 
 // config to cgra
 always_ff @(posedge reset or posedge clk) begin
@@ -361,6 +365,7 @@ for (i=0; i<NUM_GLB_TILES; i=i+1) begin: glb_tile_gen
     glb_tile glb_tile (
         // tile id
         .glb_tile_id                        (glb_tile_id[i]),
+        .clk_en                             (!stall_d2[i]),
 
         // processor packet
         // .proc_wr_packet_sel_e2w_esti        (proc_packet_e2w_esti_int[i].wr.packet_sel),

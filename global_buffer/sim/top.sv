@@ -16,8 +16,8 @@ timeunit 1ps;
 timeprecision 1ps;
 
     logic                           clk;
-    logic                           stall;
-    logic                           cgra_stall_in;
+    logic [NUM_GLB_TILES-1:0]       stall;
+    logic [NUM_GLB_TILES-1:0]       cgra_stall_in;
     logic                           reset;
     logic                           cgra_soft_reset;
 
@@ -89,7 +89,7 @@ timeprecision 1ps;
     // reset and stall generation
     initial begin
         reset <= 1;
-        stall = 0;
+        stall = '0;
         repeat(3) @(posedge clk);
         reset <= 0;
     end
