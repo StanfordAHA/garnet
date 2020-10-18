@@ -45,7 +45,8 @@ def stall_port_pass(interconnect: Interconnect):
 
     interconnect.remove_port("stall")
     interconnect.add_port("stall",
-                          magma.In(magma.Bits[width*stall_signal_width]))
+                          magma.In(magma.Array[width,
+                                               magma.Bits[stall_signal_width]]))
 
     # looping through on a per-column bases
     for x_coor in range(x_min, x_min + width):
@@ -54,4 +55,4 @@ def stall_port_pass(interconnect: Interconnect):
         column = [entry for entry in column if "stall" in entry.ports]
         # wire configuration ports to first tile in column
         interconnect.wire(interconnect.ports.stall[x_coor],
-                          column[0].ports.stall[0])
+                          column[0].ports.stall)
