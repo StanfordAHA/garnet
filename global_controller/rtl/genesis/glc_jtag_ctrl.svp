@@ -14,6 +14,7 @@
 //; my $axi_data_width = parameter(NAME => 'axi_data_width', VAL => 32, DOC => 'Width of axi_data');
 //; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
 //; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
+//; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
 
 module `mname` (
     input  logic                                clk_in,
@@ -31,8 +32,8 @@ module `mname` (
     output logic                                clk_out,
     output logic                                jtag_global_reset,
     output logic                                jtag_soft_reset,
-    output logic                                jtag_glb_stall, 
-    output logic                                jtag_cgra_stall, 
+    output logic [`$num_glb_tiles-1`:0]         jtag_glb_stall, 
+    output logic [`$num_glb_tiles-1`:0]         jtag_cgra_stall, 
 
     // global buffer configuration
     output logic                                jtag_glb_cfg_wr_en,
@@ -79,7 +80,7 @@ module `mname` (
 // clk control signal
 logic clk;
 logic clk_domain;
-logic [1:0] stall, stall_bak;
+logic [`2*$num_glb_tiles-1`:0] stall, stall_bak;
 
 // cgra configuration
 logic                               write;
@@ -129,8 +130,8 @@ assign jtag_cgra_cfg_wr_data = cgra_config_data_out;
 assign config_data_in = jtag_cgra_cfg_data_in;
 
 // stall signals
-assign jtag_glb_stall = stall[1];
-assign jtag_cgra_stall = stall[0];
+assign jtag_glb_stall = stall[`2*$num_glb_tiles-1`:`$num_glb_tiles`];
+assign jtag_cgra_stall = stall[`$num_glb_tiles-1`:0];
 
 // global reset signal
 assign jtag_global_reset = reset_out;
@@ -544,8 +545,8 @@ always @ (posedge clk or posedge reset_in) begin
         glb_sram_config_data_out <= 0;
 
         // other control registers
-        stall <= 0;
-        stall_bak <= 0;
+        stall <= '0;
+        stall_bak <= '0;
         clk_switch_request <= 1;
         rd_delay_reg <= 2;
         TST <= 0;
@@ -724,7 +725,7 @@ always @ (posedge clk or posedge reset_in) begin
                 axi_rd_en <= 0;
             end
             read_stall: begin
-                config_data_jtag_in <= {`$cfg_data_width-2`'b0, stall};
+                config_data_jtag_in <= stall;
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;
@@ -735,7 +736,7 @@ always @ (posedge clk or posedge reset_in) begin
                 axi_rd_en <= 0;
             end
             write_stall: begin
-                stall <= config_data_jtag_out[1:0];
+                stall <= config_data_jtag_out[`2*$num_glb_tiles-1`:0];
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;
@@ -750,7 +751,7 @@ always @ (posedge clk or posedge reset_in) begin
                     if (|stall) begin
                         counter <= config_data_jtag_out-1;
                         state <= advancing_clk; 
-                        stall <= 2'b00;
+                        stall <= '0;
                         stall_bak <= stall;
                     end
                 end

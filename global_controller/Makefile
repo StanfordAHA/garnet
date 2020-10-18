@@ -23,6 +23,8 @@ XRUN = xrun \
        -initreg0 \
        +access+rwc \
        +maxdelays \
+	   -vcdextend \
+	   -input "$(TB)/cmd.tcl" \
        $(XRUNARGS) \
        $(DESIGNARGS)
 
