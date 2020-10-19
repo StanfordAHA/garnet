@@ -164,9 +164,7 @@ class Garnet(Generator):
                 config=magma.In(
                     ConfigurationType(self.interconnect.config_data_width,
                                       self.interconnect.config_data_width)),
-                stall=magma.In(
-                    magma.Array[width,
-                                magma.Bits[self.interconnect.stall_signal_width]]),
+                stall=magma.In(magma.Bits[self.width * self.interconnect.stall_signal_width]),
                 read_config_data=magma.Out(magma.Bits[config_data_width])
             )
 
@@ -282,9 +280,9 @@ module Interconnect (
    input [0:0] config_write,
    output [31:0] read_config_data,
    input  reset,
-   input [3:0] stall,
-
 """
+        # add stall based on the size
+        result += f"   input [{str(self.width * self.interconnect.stall_signal_width - 1)}:0] stall,\n\n"
         # loop through the interfaces
         ports = []
         for port_name, port_node in self.interconnect.interface().items():
