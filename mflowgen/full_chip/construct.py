@@ -10,6 +10,7 @@ import os
 import sys
 
 from mflowgen.components import Graph, Step
+from shutil import which
 
 def construct():
 
@@ -122,8 +123,12 @@ def construct():
   signoff        = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',    default=True )
   merge_rdl      = Step( 'mentor-calibre-gdsmerge-child', default=True )
-  drc            = Step( 'mentor-calibre-drc',            default=True )
-  lvs            = Step( 'mentor-calibre-lvs',            default=True )
+  if which("calibre") is not None:
+      drc            = Step( 'mentor-calibre-drc',            default=True )
+      lvs            = Step( 'mentor-calibre-lvs',            default=True )
+  else:
+      drc            = Step( 'cadence-pegasus-drc',           default=True )
+      lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre', default=True )
   fill           = Step( 'mentor-calibre-fill',           default=True )
   merge_fill     = Step( 'mentor-calibre-gdsmerge-child', default=True )
