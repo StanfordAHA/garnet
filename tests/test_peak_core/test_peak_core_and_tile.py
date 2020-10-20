@@ -115,7 +115,8 @@ def test_peak_core_sequence(sequence, cw_files):
                                flags=["-Wno-fatal"])
 
 
-def test_peak_tile_sequence(sequence, cw_files):
+@pytest.mark.parametrize('seed', [0, 1])
+def test_peak_tile_sequence(sequence, cw_files, seed):
     """
     Tile level test:
     * Generates 1x1 CGRA
@@ -129,7 +130,8 @@ def test_peak_tile_sequence(sequence, cw_files):
                                standalone=True)
 
     routing, port_mapping = route_one_tile(interconnect, 0, 0,
-                                           ports=["data0", "data1", "alu_res"])
+                                           ports=["data0", "data1", "alu_res"],
+                                           seed=seed)
     route_config = interconnect.get_route_bitstream(routing)
     route_config = compress_config_data(route_config)
 
