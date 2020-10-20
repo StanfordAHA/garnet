@@ -16,6 +16,7 @@ from lassen.asm import add, sub, Mode_t
 from gemstone.common.testers import BasicTester
 
 from canal.util import IOSide
+from canal.pnr_io import route_one_tile
 from archipelago import pnr
 
 from peak_core.peak_core import PeakCore
@@ -124,32 +125,19 @@ def test_peak_tile_sequence(sequence, cw_files):
         generated route for the application
       * output is similarly monitored based on the generate route
     """
-    # Use 1x1 CGRA to test PE TILE
-    # TODO: Do we need to test without interconnect (i.e. just tile)
-    io_sides = IOSide.North | IOSide.East | IOSide.South | IOSide.West
-    interconnect = create_cgra(1, 1, io_sides, num_tracks=3)
+    interconnect = create_cgra(1, 1, IOSide.None_, num_tracks=3,
+                               standalone=True)
 
-    # Use test application to get a configuration
-    # TODO: We should randomize or cover all possible configurations of the
-    # CB/SBs
-    netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "data0")],
-        "e1": [("I1", "io2f_16"), ("p0", "data1")],
-        "e3": [("p0", "alu_res"), ("I2", "f2io_16")],
-    }
-    bus = {"e0": 16, "e1": 16, "e3": 16}
-
-    placement, routing = pnr(interconnect, (netlist, bus))
+    routing, port_mapping = route_one_tile(interconnect, 0, 0,
+                                           ports=["data0", "data1", "alu_res"])
     route_config = interconnect.get_route_bitstream(routing)
-    x, y = placement["p0"]
-
     route_config = compress_config_data(route_config)
 
+    x, y = 0, 0
     circuit = interconnect.circuit()
-    input_a = interconnect.get_top_input_port_by_coord(placement["I0"], 16)
-    input_b = interconnect.get_top_input_port_by_coord(placement["I1"], 16)
-    output_port = interconnect.get_top_output_port_by_coord(placement["I2"],
-                                                            16)
+    input_a = port_mapping["data0"]
+    input_b = port_mapping["data1"]
+    output_port = port_mapping["alu_res"]
 
     class TileDriver(Driver):
         def lower(self, config_data, a, b, output):
