@@ -25,8 +25,8 @@ module `mname` (
     // cgra control signals
     output logic                                axi_global_reset,
     output logic                                axi_soft_reset,
-    output logic                                axi_glb_stall, 
-    output logic                                axi_cgra_stall, 
+    output logic [`$num_glb_tiles-1`:0]         axi_glb_stall, 
+    output logic [`$num_glb_tiles-1`:0]         axi_cgra_stall, 
 
 	// global buffer control signals
 	output logic [`$num_glb_tiles-1`:0]         strm_start_pulse,
@@ -135,8 +135,8 @@ module `mname` (
     //------- outputs
     logic     [31:0] l2h_global_reset_cnt_r;
     logic     [31:0] l2h_soft_reset_cnt_r;
-    logic    l2h_stall_cgra_stall_r;
-    logic    l2h_stall_glb_stall_r;
+    logic     [15:0] l2h_stall_cgra_stall_r;
+    logic     [15:0] l2h_stall_glb_stall_r;
     logic    l2h_stream_start_pulse_glb_tile_0_r;
     logic    l2h_stream_start_pulse_glb_tile_1_r;
     logic    l2h_stream_start_pulse_glb_tile_2_r;

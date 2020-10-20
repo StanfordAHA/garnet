@@ -16,42 +16,10 @@ timeunit 1ps;
 timeprecision 1ps;
 
     logic                           clk;
-    logic                           stall;
-    logic                           cgra_stall_in;
+    logic [NUM_GLB_TILES-1:0]       stall;
+    logic [NUM_GLB_TILES-1:0]       cgra_stall_in;
     logic                           reset;
     logic                           cgra_soft_reset;
-
-    // proc
-    logic                           proc_wr_en;
-    logic [BANK_DATA_WIDTH/8-1:0]   proc_wr_strb;
-    logic [GLB_ADDR_WIDTH-1:0]      proc_wr_addr;
-    logic [BANK_DATA_WIDTH-1:0]     proc_wr_data;
-    logic                           proc_rd_en;
-    logic [GLB_ADDR_WIDTH-1:0]      proc_rd_addr;
-    logic [BANK_DATA_WIDTH-1:0]     proc_rd_data;
-    logic                           proc_rd_data_valid;
-
-    // configuration of glb from glc
-    logic                           if_cfg_wr_en;
-    logic                           if_cfg_wr_clk_en;
-    logic [AXI_ADDR_WIDTH-1:0]      if_cfg_wr_addr;
-    logic [AXI_DATA_WIDTH-1:0]      if_cfg_wr_data;
-    logic                           if_cfg_rd_en;
-    logic                           if_cfg_rd_clk_en;
-    logic [AXI_ADDR_WIDTH-1:0]      if_cfg_rd_addr;
-    logic [AXI_DATA_WIDTH-1:0]      if_cfg_rd_data;
-    logic                           if_cfg_rd_data_valid;
-
-    // configuration of sram from glc
-    logic                           if_sram_cfg_wr_en;
-    logic                           if_sram_cfg_wr_clk_en;
-    logic [GLB_ADDR_WIDTH-1:0]      if_sram_cfg_wr_addr;
-    logic [AXI_DATA_WIDTH-1:0]      if_sram_cfg_wr_data;
-    logic                           if_sram_cfg_rd_en;
-    logic                           if_sram_cfg_rd_clk_en;
-    logic [GLB_ADDR_WIDTH-1:0]      if_sram_cfg_rd_addr;
-    logic [AXI_DATA_WIDTH-1:0]      if_sram_cfg_rd_data;
-    logic                           if_sram_cfg_rd_data_valid;
 
     // cgra configuration from global controller
     logic                           cgra_cfg_jtag_gc2glb_wr_en;
@@ -121,7 +89,7 @@ timeprecision 1ps;
     // reset and stall generation
     initial begin
         reset <= 1;
-        stall = 0;
+        stall = '0;
         repeat(3) @(posedge clk);
         reset <= 0;
     end

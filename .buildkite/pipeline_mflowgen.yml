@@ -1,24 +1,23 @@
+agents: { jobsize: "hours" }
+
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
+env:
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+
 steps:
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
 # 
 - label: 'MemCore synth 17m'
-  agents: { jobsize: "hours" }
   commands:
-  - test=mflowgen/test/test_module.sh
-  - echo exit 13 | $$test  --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
-
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 - label: 'PE synth 23m'
-  agents: { jobsize: "hours" }
   commands:
-  - test=mflowgen/test/test_module.sh
-  - $$test --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
+  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-
 
 
 
@@ -30,6 +29,7 @@ steps:
 # # Also: uses about 3G
 # # What's new:
 # # 1) now testing --build_dir option, building in /sim/tmp instead of .
+# # 2) also testing step aliases e.g. "syn" for "synthesis" (synopsys OR cadence)
 # - label: 'array init 5m'
 #   agents: { jobsize: "hours" }
 #   commands:

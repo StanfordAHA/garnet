@@ -10,6 +10,7 @@ import os
 import sys
 
 from mflowgen.components import Graph, Step
+from shutil import which
 
 def construct():
 
@@ -41,6 +42,8 @@ def construct():
     'soc_only'          : False,
     # Include SoC core? (use 0 for false, 1 for true)
     'include_core'      : 1,
+    # Include sealring?
+    'include_sealring'  : False,
     # SRAM macros
     'num_words'         : 2048,
     'word_size'         : 64,
@@ -120,8 +123,12 @@ def construct():
   signoff        = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',    default=True )
   merge_rdl      = Step( 'mentor-calibre-gdsmerge-child', default=True )
-  drc            = Step( 'mentor-calibre-drc',            default=True )
-  lvs            = Step( 'mentor-calibre-lvs',            default=True )
+  if which("calibre") is not None:
+      drc            = Step( 'mentor-calibre-drc',            default=True )
+      lvs            = Step( 'mentor-calibre-lvs',            default=True )
+  else:
+      drc            = Step( 'cadence-pegasus-drc',           default=True )
+      lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre', default=True )
   fill           = Step( 'mentor-calibre-fill',           default=True )
   merge_fill     = Step( 'mentor-calibre-gdsmerge-child', default=True )
@@ -437,9 +444,11 @@ def construct():
   order.insert( 0, 'pre-route.tcl' )
   route.update_params( { 'order': order } )
 
-  # Add sealring at beginning of signoff, so it's in before we stream out GDS
+  # Signoff order additions
   order = signoff.get_param('order')
-  order.insert(0, 'add-sealring.tcl')
+  # Add sealring at beginning of signoff, so it's in before we stream out GDS
+  if parameters['include_sealring'] == True:
+      order.insert(0, 'add-sealring.tcl')
   # Add netlist-fixing script before we save new netlist
   index = order.index( 'generate-results.tcl' )
   order.insert( index, 'netlist-fixing.tcl' )

@@ -69,55 +69,6 @@ if [ "$DEBUG"=="true" ]; then
     VERBOSE=true
 fi
 
-# Function to expand step aliases
-# E.g. 'step_alias syn' returns 'synopsys-dc-synthesis' or 'cadence-genus-synthesis' as appropriate
-function step_alias {
-    case "$1" in
-        # This is probably dangerous; init is heavily overloaded
-        init)      s=cadence-innovus-init      ;;
-
-        # "synthesis" will expand to dc or genus according to what's
-        # in "make list" (see below). Same for gdsmerge etc.
-        syn)       s=synthesis ;;
-        gds)       s=gdsmerge ;;
-        tape)      s=gdsmerge ;;
-        merge)     s=gdsmerge ;;
-        *)         s="$1" ;;
-    esac
-
-    # 1. First, look for exact match
-    ntries=1
-    s1=`make list |& egrep -- " $s"'$' | awk '{ print $NF; exit }'`
-
-    # Then look for alias that expands to synopsys/cadence/mentor tool
-    # Uses *first* pattern match found in "make list" to expand e.g.
-    # "synthesis" => "synopsys-dc-synthesis" or "cadence-genus-synthesis"
-    if ! [ "$s1" ]; then
-        ntries=2
-        p=' synopsys| cadence| mentor'
-        s1=`make list |& egrep "$p" | egrep -- "$s"'$' | awk '{ print $NF; exit }'`
-    fi
-
-    # Then look for alias that expands to anything that kinda matches
-    if ! [ "$s1" ]; then
-        ntries=3
-        s1=`make list |& egrep -- "$s"'$' | awk '{ print $NF; exit }'`
-    fi
-
-    DBG=""
-    if [ "$DBG" ] ; then echo '---'; echo "FINAL '$s' -> '$s1' (after $ntries tries)"; fi
-
-    # Note: returns null ("") if no alias found
-    echo $s1; # return value = $s1
-    return
-
-    # UNIT TESTS for step_alias fn, cut'n'paste
-    test_steps="syn init cts place route postroute gds tape merge gdsmerge lvs drc"
-    test_steps="constraints MemCore PE rtl synthesis custom-dc-postcompile tsmc16 synthesis foooo"
-    for s in $test_steps; do echo "'$s' ==> '`step_alias $s`'"; done
-    for s in $test_steps; do step_alias $s; done
-}
-
 ########################################################################
 # Turn build sequence into an array e.g. 'lvs,gls' => 'lvs gls'
 build_sequence=`echo $build_sequence | tr ',' ' '`
@@ -154,54 +105,10 @@ export GARNET_HOME=$garnet
 # - moved to setup-buildkite.sh
 
 ########################################################################
-# Turn copy-list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
-copy_list=()
-if [ "$use_cached" ]; then
-    copy_list=`echo $use_cached | tr ',' ' '`
-    echo "--- FOUND COPY LIST"
-    for step in ${copy_list[@]}; do
-        echo $step
-    done
-fi
-
-########################################################################
+# Branch filter. Seldom used.
+# Refuses to proceed if branch does not match regex "branch_filter"
 if [ "$branch_filter" ]; then
-    echo '+++ BRANCH FILTER'
-    echo ""
-    echo "Note tests only work in branches that match regexp '$branch_filter'"
-    if [ "$BUILDKITE_BRANCH" ]; then
-        branch=${BUILDKITE_BRANCH}
-        echo "It looks like we are running from within buildkite"
-        echo "And it looks like we are in branch '$branch'"
-
-    else 
-        branch=`git symbolic-ref --short HEAD`
-        echo "It looks like we are *not* running from within buildkite"
-        echo "We appear to be in branch '$branch'"
-    fi
-    echo ""
-
-    # Note DOES NOT WORK if $branch_filter is in quotes e.g. "$branch_filter" :o
-    if [[ "$branch" =~ $branch_filter ]]; then
-        echo "Okay that's the right branch, off we go."
-    else
-        # Test is disabled for this branch, emit a polite info message and leave.
-        if [ "$BUILDKITE_LABEL" ]; then
-            # https://buildkite.com/docs/agent/v3/cli-annotate
-            cmd="buildkite-agent annotate --append"
-            label="$BUILDKITE_LABEL"
-        else
-            cmd='cat'
-            label=${modlist[0]}
-        fi
-
-        ems='!!!'
-        echo "NOTE '$label' TEST DID NOT ACTUALLY RUN$ems"$'\n' | $cmd
-        # echo "- Tests only work in branch '$allowed_branch'" | $cmd
-        echo "- This test is disabled except for branches that match regex '$branch_filter'" | $cmd
-        echo "- and we appear to be in branch '$branch'"$'\n' | $cmd
-        exit 0
-    fi
+    $garnet/mflowgen/bin/check_branch.sh "$branch_filter" || exit 13
 fi
 
 # Exit on error in any stage of any pipeline (is this a good idea?)
@@ -227,14 +134,27 @@ export TMPDIR=/sim/tmp
 # - moved to setup-buildkite.sh
 
 ##############################################################################
+# Set up the build environment
+echo Sourcing $garnet/mflowgen/bin/setup-buildkite.sh ...
 source $garnet/mflowgen/bin/setup-buildkite.sh \
        --dir $build_dir \
        --need_space $need_space \
        || exit 13
 
-##############################################################################
-
 echo "--- Building in destination dir `pwd`"
+
+
+########################################################################
+# Turn copy-list into an array e.g. 'Tile_PE,rtl' => 'Tile_PE,rtl'
+copy_list=()
+if [ "$use_cached" ]; then
+    copy_list=`echo $use_cached | tr ',' ' '`
+    echo "--- FOUND COPY LIST"
+    for step in ${copy_list[@]}; do
+        echo $step
+    done
+fi
+
 
 
 ##################################################################
@@ -288,13 +208,14 @@ build_module $firstmod
 subgraphs=${modlist[@]:1}
 for sg in $subgraphs; do
     build_subgraph $sg
-    echo sg=$sg
 done
 
 echo ""
 echo "STEPS to take"
 for step in ${build_sequence[@]}; do
-    echo "  $step -> `step_alias $step`"
+    # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
+    step_alias=`make list | $garnet/mflowgen/bin/step_alias.sh $step`
+    echo "  $step -> $step_alias"
 done
 echo ""
 
@@ -319,15 +240,8 @@ if [ "$copy_list" ]; then
         
         # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
         # echo "  $step -> `step_alias $step`"
-        step=`step_alias $step`
+        step=`make list | $garnet/mflowgen/bin/step_alias.sh $step`
     
-#         set -x
-#         if ! test -d $cache; then 
-#             echo "WARNING Could not find cache for step '${step'"
-#             echo "Will try and go on without it..."
-#             continue
-#         fi
-
         # NOTE if cd command fails, pwd (disastrously) defaults to current dir
         # cache=`cd $gold/*${step}; pwd` || FAIL=true
         # if [ "$FAIL" == "true" ]; then
@@ -397,7 +311,8 @@ touch .stamp; # Breaks if don't do this before final step; I forget why...? Chri
 for step in ${build_sequence[@]}; do
 
     # Expand aliases e.g. "syn" -> "synopsys-dc-synthesis"
-    step_orig=$step; step=`step_alias $step`
+    # step_orig=$step; step=`step_alias $step`
+    step_orig=$step; step=`make list | $garnet/mflowgen/bin/step_alias.sh $step`
     echo "================================================================"
     echo "    Ready to do step $step_orig -> $step"
     # [ "$DEBUG" ] && echo "    $step_orig -> $step"
