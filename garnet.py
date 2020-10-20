@@ -15,6 +15,7 @@ from cgra import glb_glc_wiring, glb_interconnect_wiring, \
 import json
 from passes.collateral_pass.config_register import get_interconnect_regs, \
     get_core_registers
+from passes.interconnect_port_pass import stall_port_pass, config_port_pass
 import math
 import archipelago
 import archipelago.power
@@ -112,6 +113,9 @@ class Garnet(Generator):
 
         self.interconnect = interconnect
 
+        # make multiple stall ports
+        stall_port_pass(self.interconnect)
+
         if not interconnect_only:
             self.add_ports(
                 jtag=JTAGType,
@@ -142,6 +146,9 @@ class Garnet(Generator):
             # Top -> Interconnect clock port connection
             self.wire(self.ports.clk_in, self.interconnect.ports.clk)
 
+            # make multiple configuration ports
+            config_port_pass(self.interconnect)
+
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
             glc_interconnect_wiring(self)
@@ -157,8 +164,7 @@ class Garnet(Generator):
                 config=magma.In(
                     ConfigurationType(self.interconnect.config_data_width,
                                       self.interconnect.config_data_width)),
-                stall=magma.In(
-                    magma.Bits[self.interconnect.stall_signal_width]),
+                stall=magma.In(magma.Bits[self.width * self.interconnect.stall_signal_width]),
                 read_config_data=magma.Out(magma.Bits[config_data_width])
             )
 
@@ -274,9 +280,9 @@ module Interconnect (
    input [0:0] config_write,
    output [31:0] read_config_data,
    input  reset,
-   input [3:0] stall,
-
 """
+        # add stall based on the size
+        result += f"   input [{str(self.width * self.interconnect.stall_signal_width - 1)}:0] stall,\n\n"
         # loop through the interfaces
         ports = []
         for port_name, port_node in self.interconnect.interface().items():
@@ -303,7 +309,7 @@ def main():
                         dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
-    parser.add_argument("--add-pond", action="store_true")
+    parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--no-sram-stub", action="store_true")
     parser.add_argument("--standalone", action="store_true")
@@ -319,7 +325,7 @@ def main():
     garnet = Garnet(width=args.width, height=args.height,
                     add_pd=not args.no_pd,
                     pipeline_config_interval=args.pipeline_config_interval,
-                    add_pond=args.add_pond,
+                    add_pond=not args.no_pond,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
                     standalone=args.standalone)

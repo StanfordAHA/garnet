@@ -27,7 +27,7 @@ def glb_glc_wiring(garnet):
                 garnet.global_buffer.ports.pcfg_g2f_interrupt_pulse)
     garnet.wire(garnet.global_controller.ports.soft_reset,
                 garnet.global_buffer.ports.cgra_soft_reset)
-    garnet.wire(garnet.global_controller.ports.stall[0],
+    garnet.wire(garnet.global_controller.ports.cgra_stall,
                 garnet.global_buffer.ports.cgra_stall_in)
 
     return garnet
@@ -37,57 +37,16 @@ def glb_interconnect_wiring(garnet):
 
     # width of garnet
     width = garnet.width
-    start_idx = garnet.interconnect.x_min
-
-    # Add parallel configuration ports to interconnect
-    # interconnect must have config port
-    assert "config" in garnet.interconnect.ports
-
-    garnet.interconnect.remove_port("config")
-    config_addr_width = garnet.config_addr_width
-    config_data_width = garnet.config_data_width
-    garnet.interconnect.add_port(
-            "config",
-            magma.In(magma.Array[width,
-                                 ConfigurationType(config_addr_width,
-                                                   config_data_width)]))
-
-    # looping through on a per-column bases
-    for x_coor in range(start_idx, start_idx + width):
-        column = garnet.interconnect.get_column(x_coor)
-        # skip tiles with no config
-        column = [entry for entry in column if "config" in entry.ports]
-        # wire configuration ports to first tile in column
-        garnet.interconnect.wire(garnet.interconnect.ports.config[x_coor],
-                                 column[0].ports.config)
 
     # parallel configuration ports wiring
     for i in range(width):
         garnet.wire(garnet.global_buffer.ports.cgra_cfg_g2f[i],
                     garnet.interconnect.ports.config[i])
 
-    # Add cgra stall
-    assert "stall" in garnet.interconnect.ports
-    stall_signal_width = garnet.interconnect.stall_signal_width
-
-    garnet.interconnect.remove_port("stall")
-    garnet.interconnect.add_port(
-            "stall",
-            magma.In(magma.Array[width, magma.Bits[stall_signal_width]]))
-
-    # looping through on a per-column bases
-    for x_coor in range(start_idx, start_idx + width):
-        column = garnet.interconnect.get_column(x_coor)
-        # skip tiles with no stall
-        column = [entry for entry in column if "stall" in entry.ports]
-        # wire configuration ports to first tile in column
-        garnet.interconnect.wire(garnet.interconnect.ports.stall[x_coor],
-                                 column[0].ports.stall)
-    # Currently stall signal is 1 bit
-    assert garnet.interconnect.stall_signal_width == 1
+    # stall signal wiring
     for i in range(width):
         garnet.wire(garnet.global_buffer.ports.cgra_stall[i],
-                    garnet.interconnect.ports.stall[i][0])
+                    garnet.interconnect.ports.stall[i])
 
     # input/output stream ports wiring
     for x in range(width):

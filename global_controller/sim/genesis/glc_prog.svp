@@ -357,12 +357,26 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         read_config(); 
     end
        
-    // stall
+    // stall all
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(write_stall,{`2*$num_glb_tiles`{1'b1}});
+    repeat(2) jtag_driver.Next_tck();
+    check_register(top.dut.glb_stall, {`$num_glb_tiles`{1'b1}});
+    check_register(top.dut.cgra_stall, {`$num_glb_tiles`{1'b1}});
+
+    // cgra stall
     @(posedge dut_ifc.Clk);
     write_gc_reg(write_stall,32'b11);
     repeat(2) jtag_driver.Next_tck();
-    check_register(top.dut.glb_stall, 1);
-    check_register(top.dut.cgra_stall, 1);
+    check_register(top.dut.glb_stall, 0);
+    check_register(top.dut.cgra_stall, 16'b11);
+
+    // glb stall
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(write_stall,32'b11 << 16);
+    repeat(2) jtag_driver.Next_tck();
+    check_register(top.dut.glb_stall, 16'b11);
+    check_register(top.dut.cgra_stall, 0);
 
     // unstall
     @(posedge dut_ifc.Clk);
@@ -416,6 +430,10 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     // axi control
     @(posedge dut_ifc.Clk);
     addrmap_read(am_global_reset);
+
+    // axi control - stall all
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_stall, {`2*$num_glb_tiles`{1'b1}});
 
     // axi control - stall
     @(posedge dut_ifc.Clk);
@@ -790,7 +808,6 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     task axi_stall(int data);
     begin
-        assert (data >= 2'b00 && data <= 2'b11) else $display("stall signal is two bit");
         gc_interface = axi4;
         config_count++;
         axi_trans.addr = 'hc;
@@ -800,6 +817,8 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         $fdisplay(file_desc,"%t: %m: Trans %d (axi stall):  Address to CGRA=%d, Data to CGRA=%d",  
             $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
         repeat (100) @(posedge dut_ifc.Clk); 
+        check_register(top.dut.glb_stall, data[`2*$num_glb_tiles-1`:`$num_glb_tiles`]);
+        check_register(top.dut.cgra_stall, data[`$num_glb_tiles-1`:0]);
     end
     endtask
 
