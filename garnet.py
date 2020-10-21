@@ -17,6 +17,7 @@ from passes.collateral_pass.config_register import get_interconnect_regs, \
     get_core_registers
 from passes.interconnect_port_pass import stall_port_pass, config_port_pass
 import math
+import os
 import archipelago
 import archipelago.power
 
@@ -28,6 +29,7 @@ class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
                  use_sram_stub: bool = True, standalone: bool = False,
                  add_pond: bool = True,
+                 use_io_valid: bool = False,
                  pipeline_config_interval: int = 8):
         super().__init__()
 
@@ -105,6 +107,7 @@ class Garnet(Generator):
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
                                    add_pond=add_pond,
+                                   use_io_valid=use_io_valid,
                                    use_sram_stub=use_sram_stub,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
@@ -242,7 +245,7 @@ class Garnet(Generator):
         return input_interface, output_interface,\
                (reset_port_name, valid_port_name, en_port_name)
 
-    def compile(self, halide_src, unconstrained_io=False):
+    def compile(self, halide_src, unconstrained_io=False, compact=False):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
         if unconstrained_io:
             fixed_io = None
@@ -251,8 +254,10 @@ class Garnet(Generator):
         placement, routing = archipelago.pnr(self.interconnect, (netlist, bus),
                                              cwd="temp",
                                              id_to_name=id_to_name,
-                                             fixed_pos=fixed_io)
-        routing_fix = archipelago.power.reduce_switching(routing, self.interconnect)
+                                             fixed_pos=fixed_io,
+                                             compact=compact)
+        routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
+                                                         compact=compact)
         routing.update(routing_fix)
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
@@ -269,6 +274,21 @@ class Garnet(Generator):
         delay = 1 if has_rom(id_to_name) else 0
         return bitstream, (input_interface, output_interface, reset, valid, en,
                            delay)
+
+    def compile_virtualize(self, halide_src, max_group):
+        id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
+        partition_result = archipelago.pnr_virtualize(self.interconnect, (netlist, bus), cwd="temp",
+                                                      id_to_name=id_to_name, max_group=max_group)
+        result = {}
+        for c_id, ((placement, routing), p_id_to_name) in partition_result.items():
+            bitstream = []
+            bitstream += self.interconnect.get_route_bitstream(routing)
+            bitstream += self.get_placement_bitstream(placement, p_id_to_name,
+                                                      instance_to_instr)
+            skip_addr = self.interconnect.get_skip_addr()
+            bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
+            result[c_id] = bitstream
+        return result
 
     def create_stub(self):
         result = """
@@ -297,6 +317,13 @@ module Interconnect (
         return "Garnet"
 
 
+def write_out_bitstream(filename, bitstream):
+    with open(filename, "w+") as f:
+        bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
+              in bitstream]
+        f.write("\n".join(bs))
+
+
 def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
@@ -311,10 +338,14 @@ def main():
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
+    parser.add_argument("--compact", action="store_true")
     parser.add_argument("--no-sram-stub", action="store_true")
     parser.add_argument("--standalone", action="store_true")
     parser.add_argument("--unconstrained-io", action="store_true")
     parser.add_argument("--dump-config-reg", action="store_true")
+    parser.add_argument("--virtualize-group-size", type=int, default=4)
+    parser.add_argument("--virtualize", action="store_true")
+    parser.add_argument("--use-io-valid", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -326,6 +357,7 @@ def main():
                     add_pd=not args.no_pd,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
+                    use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
                     standalone=args.standalone)
@@ -338,10 +370,10 @@ def main():
                       disable_ndarray=True)
         garnet.create_stub()
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
-            and len(args.output) > 0:
+            and len(args.output) > 0 and not args.virtualize:
         # do PnR and produce bitstream
         bitstream, (inputs, outputs, reset, valid, \
-            en, delay) = garnet.compile(args.app, args.unconstrained_io)
+            en, delay) = garnet.compile(args.app, args.unconstrained_io, compact=args.compact)
         # write out the config file
         if len(inputs) > 1:
             if reset in inputs:
@@ -366,10 +398,13 @@ def main():
         }
         with open(f"{args.output}.json", "w+") as f:
             json.dump(config, f)
-        with open(args.output, "w+") as f:
-            bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
-                  in bitstream]
-            f.write("\n".join(bs))
+        write_out_bitstream(args.output, bitstream)
+    elif args.virtualize and len(args.app) > 0:
+        group_size = args.virtualize_group_size
+        result = garnet.compile_virtualize(args.app, group_size)
+        for c_id, bitstream in result.items():
+            filename = os.path.join("temp", f"{c_id}.bs")
+            write_out_bitstream(filename, bitstream)
     if args.dump_config_reg:
         ic = garnet.interconnect
         ic_reg = get_interconnect_regs(ic)
