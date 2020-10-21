@@ -14,6 +14,6 @@ ordered_set
 cosa
 -e git://github.com/leonardt/fault.git#egg=fault
 hwtypes
-archipelago
+-e git+git://github.com/Kuree/archipelago.git#egg=archipelago
 peakrdl-html
 ralbot-html
