@@ -177,3 +177,8 @@ set_false_path -from [get_ports tile_id]
 #set_tlu_plus_files -max_tluplus  $tluplus_max \
 #                   -min_tluplus  $tluplus_min \
 #                   -tech2itf_map $tluplus_map
+
+# Preserve the RMUXes so that we can easily constrain them later
+set rmux_cells [get_cells -hier RMUX_T*sel_inst0]
+set_dont_touch $rmux_cells true
+set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true
