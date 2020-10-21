@@ -17,6 +17,7 @@ from memory_core.memory_core_magma import config_mem_tile
 from archipelago import pnr
 import kratos as kts
 from _kratos import create_wrapper_flatten
+import lassen.asm as asm
 
 
 # @pytest.fixture()
@@ -120,7 +121,7 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
 
-def basic_tb(verilator=True):
+def test_pond_rd_wr(verilator=True):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
@@ -211,10 +212,100 @@ def basic_tb(verilator=True):
                                **runtime_kwargs)
 
 
-def test_pond_rd_wr():
-    # pond rd wr test
-    basic_tb()
+def test_pond_pe(verilator=True):
 
+    chip_size = 2
+    interconnect = create_cgra(chip_size, chip_size, io_sides(),
+                               num_tracks=3,
+                               add_pd=True,
+                               add_pond=True,
+                               mem_ratio=(1, 2))
 
-if __name__ == "__main__":
-    test_pond_rd_wr()
+    netlist = {
+        "e0": [("I0", "io2f_16"), ("p0", "data_in_pond")],
+        "e1": [("I1", "io2f_16"), ("p0", "data1")],
+        "e2": [("p0", "alu_res"), ("I2", "f2io_16")],
+        "e3": [("p0", "data_out_pond"), ("p0", "data0")]
+    }
+    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 16}
+
+    placement, routing = pnr(interconnect, (netlist, bus))
+    config_data = interconnect.get_route_bitstream(routing)
+
+    pe_x, pe_y = placement["p0"]
+
+    petile = interconnect.tile_circuits[(pe_x, pe_y)]
+
+    pondcore = petile.additional_cores[0]
+
+    add_bs = petile.core.get_config_bitstream(asm.umult0())
+    for addr, data in add_bs:
+        config_data.append((interconnect.get_config_addr(addr, 0, pe_x, pe_y), data))
+
+    # Ranges, Strides, Dimensionality, Starting Addr, Starting Addr - Schedule
+    ctrl_rd = [[16, 1], [1, 1], 2, 0, 16]
+    ctrl_wr = [[16, 1], [1, 1], 2, 0, 0]
+
+    generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data)
+
+    config_data = compress_config_data(config_data)
+
+    circuit = interconnect.circuit()
+
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+
+    tester.poke(circuit.interface["stall"], 1)
+
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(circuit.read_config_data, index)
+
+    tester.done_config()
+    tester.poke(circuit.interface["stall"], 0)
+    tester.eval()
+
+    src_x0, src_y0 = placement["I0"]
+    src_x1, src_y1 = placement["I1"]
+    src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
+    src_name1 = f"glb2io_16_X{src_x1:02X}_Y{src_y1:02X}"
+    dst_x, dst_y = placement["I2"]
+    dst_name = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    random.seed(0)
+
+    for i in range(32):
+        if i < 16:
+            tester.poke(circuit.interface[src_name0], i)
+            tester.eval()
+        if i >= 16:
+            num = random.randrange(0, 256)
+            tester.poke(circuit.interface[src_name1], num)
+            tester.eval()
+            tester.expect(circuit.interface[dst_name], (i - 16) * num)
+        tester.step(2)
+        tester.eval()
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        for filename in dw_files():
+            shutil.copy(filename, tempdir)
+        shutil.copy(os.path.join("tests", "test_memory_core",
+                                 "sram_stub.v"),
+                    os.path.join(tempdir, "sram_512w_16b.v"))
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
+
+        target = "verilator"
+        runtime_kwargs = {"magma_output": "coreir-verilog",
+                          "magma_opts": {"coreir_libs": {"float_DW"}},
+                          "directory": tempdir,
+                          "flags": ["-Wno-fatal", "--trace"]}
+        if verilator is False:
+            target = "system-verilog"
+            runtime_kwargs["simulator"] = "vcs"
+
+        tester.compile_and_run(target=target,
+                               tmp_dir=False,
+                               **runtime_kwargs)

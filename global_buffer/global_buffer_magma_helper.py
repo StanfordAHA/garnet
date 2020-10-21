@@ -60,8 +60,8 @@ class GlobalBufferParams:
 def _get_raw_interface(params: GlobalBufferParams):
     return dict(
         clk                               = m.In(m.Clock),
-        stall                             = m.In(m.Bit),
-        cgra_stall_in                     = m.In(m.Bit),
+        stall                             = m.In(m.Bits[params.NUM_GLB_TILES]),
+        cgra_stall_in                     = m.In(m.Bits[params.NUM_GLB_TILES]),
         reset                             = m.In(m.AsyncReset),
         cgra_soft_reset                   = m.In(m.Bit),
 

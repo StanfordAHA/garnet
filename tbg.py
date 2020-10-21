@@ -59,7 +59,20 @@ class BasicTester(Tester):
         self.poke(self.reset_port, 0)
         self.poke(self._circuit.config_read, 0)
         self.poke(self._circuit.config_write, 0)
+        self.unstall()
         self.step(2)
+
+    def stall(self, max_col):
+        mask = 0
+        for i in range(max_col):
+            mask = (mask << 1) | 1
+        self.poke(self._circuit.stall, mask)
+        self.eval()
+        self.step(2)
+
+    def unstall(self):
+        self.poke(self._circuit.stall, 0)
+        self.eval()
 
 
 class TestBenchGenerator:
@@ -72,12 +85,12 @@ class TestBenchGenerator:
         config_file = args.config_file
 
         # detect the environment
-        if shutil.which("ncsim"):
-            self.use_ncsim = True
+        if shutil.which("xrun"):
+            self.use_xcelium = True
         else:
-            self.use_ncsim = False
-        # if it's ncsim, rename copy it to .sv extension
-        if self.use_ncsim:
+            self.use_xcelium = False
+        # if it's xcelium, rename copy it to .sv extension
+        if self.use_xcelium:
             new_filename = os.path.splitext(stub_filename)[0] + ".sv"
             shutil.copy2(stub_filename, new_filename)
             stub_filename = new_filename
@@ -128,6 +141,14 @@ class TestBenchGenerator:
         if config.get("total_cycle", 0) > 0:
             total_cycle = config["total_cycle"]
             self.delay += total_cycle - self._loop_size
+
+    def get_max_col(self):
+        max_x = 0
+        for addr, _ in self.bitstream:
+            x = (addr & 0xFFFF) >> 8
+            if x > max_x:
+                max_x = x
+        return max_x + 1
 
     def _check_input(self, input_filename):
         ext = os.path.splitext(input_filename)[-1]
@@ -182,7 +203,7 @@ class TestBenchGenerator:
 
     def test(self):
         tester = BasicTester(self.circuit, self.circuit.clk, self.circuit.reset)
-        if self.use_ncsim:
+        if self.use_xcelium:
             tester.zero_inputs()
         tester.reset()
 
@@ -197,6 +218,9 @@ class TestBenchGenerator:
             valid_out = tester.file_open(f"{self.output_filename}.valid", "w")
         else:
             valid_out = None
+
+        # before configuration stall it
+        tester.stall(self.get_max_col())
 
         # configure it
         for addr, value in self.bitstream:
@@ -263,7 +287,7 @@ class TestBenchGenerator:
         if not os.path.isdir(tempdir):
             os.makedirs(tempdir, exist_ok=True)
         # copy files over
-        if self.use_ncsim:
+        if self.use_xcelium:
             # coreir always outputs as verilog even though we have system-
             # verilog component
             copy_file(self.top_filename,
@@ -303,7 +327,7 @@ class TestBenchGenerator:
             copy_file(genesis_verilog,
                       os.path.join(tempdir, os.path.basename(genesis_verilog)))
 
-        if self.use_ncsim:
+        if self.use_xcelium:
             verilogs = list(glob.glob(os.path.join(tempdir, "*.v")))
             verilogs += list(glob.glob(os.path.join(tempdir, "*.sv")))
             verilog_libraries = [os.path.basename(f) for f in verilogs]

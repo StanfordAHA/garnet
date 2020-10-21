@@ -1,4 +1,4 @@
-from io_core.io_core_magma import IOCore
+from io_core.io_core_magma import IOCoreValid
 from canal.interconnect import Interconnect
 import magma
 from gemstone.generator.const import Const
@@ -21,7 +21,7 @@ def tile_id_physical(interconnect: Interconnect):
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
-        if isinstance(tile_core, IOCore) or tile_core is None:
+        if isinstance(tile_core, IOCoreValid) or tile_core is None:
             continue
         tile.add_ports(
             hi=magma.Out(magma.Bits[tie_hi_width]),
