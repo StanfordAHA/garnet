@@ -161,7 +161,7 @@ def construct():
   if pwr_aware:
       synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['check-clamp-logic-structure.tcl', 'upf_Tile_MemCore.tcl', 'mem-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-mem-floorplan.tcl', 'mem-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'mem-power-switches-setup.tcl', 'add-power-switches.tcl'])
-      place.extend_inputs(['check-clamp-logic-structure.tcl', 'place-dont-use-constraints.tcl'])
+      place.extend_inputs(['check-clamp-logic-structure.tcl', 'place-dont-use-constraints.tcl', 'add-aon-tie-cells.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
       cts.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl'])
       postcts_hold.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl'] )
@@ -402,7 +402,7 @@ def construct():
       order.append('check-clamp-logic-structure.tcl')
       init.update_params( { 'order': order } )
 
-   # power node
+      # power node
       order = power.get_param('order')
       order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
       order.remove('globalnetconnect.tcl')
@@ -411,6 +411,7 @@ def construct():
       # place node
       order = place.get_param('order')
       read_idx = order.index( 'main.tcl' ) # find main.tcl
+      order.insert(read_idx + 1, 'add-aon-tie-cells.tcl')
       order.insert(read_idx - 1, 'place-dont-use-constraints.tcl')
       order.append('check-clamp-logic-structure.tcl')
       place.update_params( { 'order': order } )
