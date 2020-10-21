@@ -795,6 +795,11 @@ def wire_reset_to_flush(netlist, id_to_name, bus):
         if net[0][0] == io_blk:
             reset_net_id = net_id
             break
+    used_ports = set()
+    for net in netlist.values():
+        for port in net:
+            used_ports.add(port)
+
     if reset_net_id is None:
         new_id = get_new_id("e", len(netlist), netlist)
         netlist[new_id] = [(io_blk, "io2f_1")]
@@ -803,7 +808,7 @@ def wire_reset_to_flush(netlist, id_to_name, bus):
     net = netlist[reset_net_id]
     for mem in mems:
         blk_port = (mem, "flush")
-        if blk_port not in net:
+        if blk_port not in used_ports:
             net.append((mem, "flush"))
             print("add flush to", mem)
 

@@ -10,23 +10,10 @@
 # Authors: Alex Carsello, Teguh Hofstee
 # Date: 1/24/2020
 
-# How many tracks per side?
-set num_tracks 5
-set num_sides 4
-# Which is the first bit which controls pipeline registers
-set min_bit 0
-# One control bit ber routing track
-set num_bits [expr $num_tracks * $num_sides]
-# Name of SB where the config regs we're targeting reside
-set SB_name SB_ID0_${num_tracks}TRACKS_B*
-# name of config reg within SB
-set config_reg_name config_reg_0
-
-for {set bit $min_bit} {[expr $bit - $min_bit] < $num_bits} {incr bit} {
-    # Name of config register in netlist
-    set config_regs [get_cells -hierarchical *${SB_name}*${config_reg_name}_Register*[$bit] -filter "is_sequential==True"]
-    set config_reg_outs [get_pins -of_objects $config_regs -filter "direction==out"]
-    # Set config reg values to 1 so that all pipeline regs are activated
-    set_case_analysis 1 $config_reg_outs
-}
+# These RMUX instances have been marked dont_touch
+# in the synthesis constraints so we can more easily
+# do set_case_analysis on them here
+set rmuxes [get_cells -hier *RMUX_*_sel_inst0]
+set rmux_outputs [get_pins -of_objects $rmuxes -filter "direction==out"]
+set_case_analysis 1 $rmux_outputs
 

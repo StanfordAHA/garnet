@@ -1,4 +1,4 @@
-from io_core.io_core_magma import IOCore
+from io_core.io_core_magma import IOCoreBase
 from memory_core.memory_core_magma import MemCore
 from canal.interconnect import Interconnect
 import magma
@@ -45,7 +45,7 @@ def clk_physical(interconnect: Interconnect):
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
         # We only want to do this on PE and memory tiles
-        if isinstance(tile_core, IOCore) or tile_core is None:
+        if tile_core is None or isinstance(tile_core, IOCoreBase):
             continue
         elif isinstance(tile_core, MemCore):
             if (x, y+1) in interconnect.tile_circuits:

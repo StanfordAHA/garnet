@@ -24,7 +24,7 @@ for {set col 0} {$col < $num_cgra_tiles} {incr col} {
     set data_ports [sort_collection $data_ports hierarchical_name]
     # Config and stall signals
     set config_ports [get_ports [list \
-        stall_${col} \
+        stall\[${col}\] \
         config_${col}_* \
         ]]
     set config_ports [sort_collection $config_ports hierarchical_name]

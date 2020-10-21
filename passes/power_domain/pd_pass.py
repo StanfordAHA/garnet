@@ -1,6 +1,6 @@
 from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper, AOIMuxType
 from gemstone.common.transform import replace, Generator, FromMagma
-from io_core.io_core_magma import IOCore
+from io_core.io_core_magma import IOCoreValid
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import Configurable, ConfigurationType
 from canal.circuit import flatten_mux
@@ -36,7 +36,7 @@ def add_power_domain(interconnect: Interconnect):
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
-        if isinstance(tile_core, IOCore) or tile_core is None:
+        if tile_core is None or "config" not in tile_core.ports:
             continue
         # Add PS config register
         pd_feature = PowerDomainConfigReg(tile.config_addr_width,

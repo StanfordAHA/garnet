@@ -23,7 +23,7 @@
 // Genesis object generation
 //============================================================================//
 //; my $jtag_obj = generate_base("jtag", "jtag_controller", SYSCLK_CFG_BUS_WIDTH => $cfg_data_width, SYSCLK_CFG_ADDR_WIDTH => $cfg_addr_width, SYSCLK_CFG_OPCODE_WIDTH =>$cfg_op_width);
-//; my $jtag_ctrl = generate_base("glc_jtag_ctrl", "jtag_ctrl", cfg_data_width => $cfg_data_width, cfg_addr_width => $cfg_addr_width, cfg_op_width=>$cfg_op_width, axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, glb_addr_width=>$glb_addr_width);
+//; my $jtag_ctrl = generate_base("glc_jtag_ctrl", "jtag_ctrl", cfg_data_width => $cfg_data_width, cfg_addr_width => $cfg_addr_width, cfg_op_width=>$cfg_op_width, axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles,glb_addr_width=>$glb_addr_width);
 //; my $axi_obj = generate_base("glc_axi_ctrl", "axi_controller", axi_addr_width=>$axi_addr_width, axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles);
 //; my $axi_addrmap = generate_base("glc_axi_addrmap", "axi_addressmap", cfg_data_width => $cfg_data_width, cfg_addr_width => $cfg_addr_width,axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles, glb_addr_width=>$glb_addr_width);
 
@@ -35,8 +35,8 @@ module `mname` (
     output logic                                clk_out,
     output logic                                reset_out,
     output logic                                soft_reset,
-    output logic                                cgra_stall, 
-    output logic                                glb_stall, 
+    output logic [`$num_glb_tiles-1`:0]         cgra_stall, 
+    output logic [`$num_glb_tiles-1`:0]         glb_stall, 
 
     // global buffer configuration
     output logic                                glb_cfg_wr_en,
@@ -119,8 +119,8 @@ logic                                sys_clk_activated;
 // cgra control signals
 logic                                jtag_global_reset, axi_global_reset, global_reset;
 logic                                jtag_soft_reset, axi_soft_reset;
-logic                                jtag_glb_stall, axi_glb_stall;
-logic                                jtag_cgra_stall, axi_cgra_stall;
+logic [`$num_glb_tiles-1`:0]         jtag_glb_stall, axi_glb_stall;
+logic [`$num_glb_tiles-1`:0]         jtag_cgra_stall, axi_cgra_stall;
 
 // global buffer configuration
 logic                                jtag_glb_cfg_wr_en, axi_glb_cfg_wr_en;

@@ -10,7 +10,7 @@ from archipelago import pnr
 import pytest
 import random
 from cgra import create_cgra, compress_config_data
-from memory_core.memory_mode import Mode
+import magma
 from memory_core.memory_core_magma import config_mem_tile
 from collections import deque
 
@@ -30,6 +30,16 @@ def dw_files():
         assert os.path.isfile(filename)
         result_filenames.append(filename)
     return result_filenames
+
+
+def test_1x1():
+    # this is all PE
+    interconnect = create_cgra(1, 1, IOSide.None_, num_tracks=3, mem_ratio=(0, 1))
+    circuit = interconnect.circuit()
+    with tempfile.TemporaryDirectory() as temp:
+        filename = os.path.join(temp, "1x1")
+        magma.compile(filename, circuit)
+        assert os.path.isfile(filename + ".v")
 
 
 @pytest.mark.parametrize("batch_size", [100])
