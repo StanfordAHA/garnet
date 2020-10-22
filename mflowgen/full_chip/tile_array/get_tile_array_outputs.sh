@@ -10,5 +10,5 @@ cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/tile_array.vcs.v
 cp -L *cadence-innovus-signoff/outputs/design.sdf outputs/tile_array.sdf
 cp -L *cadence-innovus-signoff/outputs/design-merged.gds outputs/tile_array.gds
 cp -L *Tile_MemCore/outputs/sram.spi outputs/tile_array.sram.spi
-cp -L *mentor-calibre-lvs/outputs/design_merged.lvs.v outputs/tile_array.lvs.v
+cp -L *-lvs/outputs/design_merged.lvs.v outputs/tile_array.lvs.v
 
