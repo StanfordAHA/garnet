@@ -10,7 +10,7 @@ import pytest
 
 from memory_core.memory_core import gen_memory_core, Mode
 from memory_core.memory_core_magma import MemCore
-from lake.helper_test import test_conv_3_3
+from lake.utils.test_infra import conv_3_3_args
 from lake.utils.parse_clkwork_csv import generate_data_lists
 from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
@@ -1044,16 +1044,6 @@ def basic_tb(config_path,
              tempdir_override=False,
              trace=False):
 
-    # These need to be set to refer to certain csvs....
-    lake_controller_path = os.getenv("LAKE_CONTROLLERS")
-    lake_stream_path = os.getenv("LAKE_STREAM")
-
-    assert lake_controller_path is not None and lake_stream_path is not None,\
-        f"Please check env vars:\nLAKE_CONTROLLERS: {lake_controller_path}\nLAKE_STREAM: {lake_stream_path}"
-
-    config_path = lake_controller_path + "/" + config_path
-    stream_path = lake_stream_path + "/" + stream_path
-
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
                                num_tracks=3,
@@ -1159,7 +1149,7 @@ def basic_tb(config_path,
 
 
 # add more tests with this function by adding args
-@pytest.mark.parameterize("args", [conv_3_3_args()])
+@pytest.mark.parametrize("args", [conv_3_3_args()])
 def test_lake_garnet(args):
     basic_tb(config_path=args[0],
              stream_path=args[1],
