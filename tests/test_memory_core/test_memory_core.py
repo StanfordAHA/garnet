@@ -1161,8 +1161,8 @@ def test_conv_3_3():
     stream_path = "conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf_0_top_SMT.csv"
     basic_tb(config_path=config_path,
              stream_path=stream_path,
-             in_file_name="input",
-             out_file_name="output")
+             in_file_name="input_",
+             out_file_name="output_2_")
 
 
 if __name__ == "__main__":
