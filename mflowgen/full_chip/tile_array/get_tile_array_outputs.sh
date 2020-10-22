@@ -1,7 +1,6 @@
 #!/bin/bash
 mflowgen run --design $GARNET_HOME/mflowgen/tile_array/
 make cadence-genus-genlib -j 2
-make mentor-calibre-gdsmerge
 if command -v calibre &> /dev/null
 then
     make mentor-calibre-lvs

@@ -1,6 +1,5 @@
 #!/bin/bash
 mflowgen run --design $GARNET_HOME/mflowgen/Tile_MemCore/
-make mentor-calibre-gdsmerge
 make cadence-genus-genlib
 if command -v calibre &> /dev/null
 then
