@@ -9,10 +9,18 @@ inputs:
 outputs:
   - Tile_MemCore_tt.lib
   - Tile_MemCore.lef
-  - Tile_MemCore.db
   - Tile_MemCore.gds
   - Tile_MemCore.vcs.v
   - Tile_MemCore.lvs.v
   - Tile_MemCore.sdf
   - sram.spi
+
+postconditions:
+  - assert File( 'outputs/Tile_MemCore_tt.lib' ) # must exist
+  - assert File( 'outputs/Tile_MemCore.lef' ) # must exist
+  - assert File( 'outputs/Tile_MemCore.gds' ) # must exist
+  - assert File( 'outputs/Tile_MemCore.vcs.v' ) # must exist
+  - assert File( 'outputs/Tile_MemCore.lvs.v' ) # must exist
+  - assert File( 'outputs/Tile_MemCore.sdf' ) # must exist
+  - assert File( 'outputs/sram.spi' ) # must exist
 
