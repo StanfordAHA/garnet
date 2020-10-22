@@ -1037,12 +1037,12 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
 
 
 def gen_test_lake(config_path,
-             stream_path,
-             in_file_name="input",
-             out_file_name="output",
-             xcelium=False,
-             tempdir_override=False,
-             trace=False):
+                  stream_path,
+                  in_file_name="input",
+                  out_file_name="output",
+                  xcelium=False,
+                  tempdir_override=False,
+                  trace=False):
 
     # These need to be set to refer to certain csvs....
     lake_controller_path = os.getenv("LAKE_CONTROLLERS")
