@@ -2,7 +2,12 @@
 mflowgen run --design $GARNET_HOME/mflowgen/tile_array/
 make cadence-genus-genlib -j 2
 make mentor-calibre-gdsmerge
-make mentor-calibre-lvs
+if command -v calibre &> /dev/null
+then
+    make mentor-calibre-lvs
+else
+    make cadence-pegasus-lvs
+fi
 mkdir -p outputs
 cp -L *cadence-genus-genlib/outputs/design.lib outputs/tile_array_tt.lib
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/tile_array.lef

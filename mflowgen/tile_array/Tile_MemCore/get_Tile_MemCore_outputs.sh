@@ -1,8 +1,14 @@
 #!/bin/bash
 mflowgen run --design $GARNET_HOME/mflowgen/Tile_MemCore/
 make mentor-calibre-gdsmerge
-make mentor-calibre-lvs
 make cadence-genus-genlib
+if command -v calibre &> /dev/null
+then
+    make mentor-calibre-lvs
+else
+    make cadence-pegasus-lvs
+fi
+
 mkdir -p outputs
 cp -L *cadence-genus-genlib/outputs/design.lib outputs/Tile_MemCore_tt.lib
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_MemCore.lef

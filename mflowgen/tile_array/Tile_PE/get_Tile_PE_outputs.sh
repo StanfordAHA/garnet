@@ -2,7 +2,13 @@
 mflowgen run --design $GARNET_HOME/mflowgen/Tile_PE/
 make cadence-genus-genlib
 make mentor-calibre-gdsmerge
-make mentor-calibre-lvs
+if command -v calibre &> /dev/null
+then
+    make mentor-calibre-lvs
+else
+    make cadence-pegasus-lvs
+fi
+
 mkdir -p outputs
 cp -L *cadence-genus-genlib/outputs/design.lib outputs/Tile_PE_tt.lib
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_PE.lef
