@@ -1,7 +1,4 @@
 import argparse
-from memory_core.memory_core import gen_memory_core, Mode
-from memory_core.memory_core_magma import MemCore
-from lake.utils.parse_clkwork_csv import generate_data_lists
 import glob
 import tempfile
 import shutil
@@ -9,10 +6,15 @@ import fault
 import random
 import magma
 import os
+import pytest
+
+from memory_core.memory_core import gen_memory_core, Mode
+from memory_core.memory_core_magma import MemCore
+from lake.helper_test import test_conv_3_3
+from lake.utils.parse_clkwork_csv import generate_data_lists
 from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
 from gemstone.common.util import compress_config_data
-import pytest
 from gemstone.generator import Const
 from cgra.util import create_cgra
 from canal.util import IOSide
@@ -1034,7 +1036,7 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
                                flags=["-Wno-fatal"])
 
 
-def basic_tb(config_path,
+def gen_test_lake(config_path,
              stream_path,
              in_file_name="input",
              out_file_name="output",
@@ -1155,14 +1157,9 @@ def basic_tb(config_path,
                                **runtime_kwargs)
 
 
-def test_conv_3_3():
+def test_lake_garnet():
     # conv_3_3
-    config_path = "conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf"
-    stream_path = "conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf_0_top_SMT.csv"
-    basic_tb(config_path=config_path,
-             stream_path=stream_path,
-             in_file_name="input_",
-             out_file_name="output_2_")
+    test_conv_3_3()
 
 
 if __name__ == "__main__":
