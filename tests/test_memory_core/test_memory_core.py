@@ -1036,13 +1036,13 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
                                flags=["-Wno-fatal"])
 
 
-def gen_test_lake(config_path,
-                  stream_path,
-                  in_file_name="input",
-                  out_file_name="output",
-                  xcelium=False,
-                  tempdir_override=False,
-                  trace=False):
+def basic_tb(config_path,
+             stream_path,
+             in_file_name="input",
+             out_file_name="output",
+             xcelium=False,
+             tempdir_override=False,
+             trace=False):
 
     # These need to be set to refer to certain csvs....
     lake_controller_path = os.getenv("LAKE_CONTROLLERS")
@@ -1122,6 +1122,7 @@ def gen_test_lake(config_path,
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        tempdir = "dump"
         if tempdir_override:
             tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
@@ -1157,9 +1158,13 @@ def gen_test_lake(config_path,
                                **runtime_kwargs)
 
 
-def test_lake_garnet():
-    # conv_3_3
-    test_conv_3_3()
+# add more tests with this function by adding args
+@pytest.mark.parameterize("args", [conv_3_3_args()])
+def test_lake_garnet(args):
+    basic_tb(config_path=args[0],
+             stream_path=args[1],
+             in_file_name=args[2],
+             out_file_name=args[3])
 
 
 if __name__ == "__main__":
