@@ -1112,7 +1112,6 @@ def basic_tb(config_path,
         tester.step(2)
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir = "dump"
         if tempdir_override:
             tempdir = "dump"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
