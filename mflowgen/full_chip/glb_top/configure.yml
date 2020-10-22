@@ -15,3 +15,12 @@ outputs:
   - glb_top.lvs.v
   - glb_top.sram.spi
 
+postconditions:
+  - assert File( 'outputs/glb_top_tt.lib' ) # must exist
+  - assert File( 'outputs/glb_top.lef' ) # must exist
+  - assert File( 'outputs/glb_top.gds' ) # must exist
+  - assert File( 'outputs/glb_top.vcs.v' ) # must exist
+  - assert File( 'outputs/glb_top.sdf' ) # must exist
+  - assert File( 'outputs/glb_top.lvs.v' ) # must exist
+  - assert File( 'outputs/glb_top.sram.spi' ) # must exist
+
