@@ -26,6 +26,8 @@ class BasicTester(Tester):
         self.__xmin = 0xFFFF
         self.__xmax = 0
 
+        self.__last_addr = None
+
     def __get_x(self, addr):
         x = (addr >> 8) & 0xFF
         if x > self.__xmax:
@@ -34,15 +36,31 @@ class BasicTester(Tester):
             self.__xmin = x
         return x
 
+    def __clear_last_addr(self, addr):
+        if self.__last_addr is not None:
+            last_addr = self.__last_addr
+            last_x = self.__get_x(last_addr)
+            x = self.__get_x(addr)
+            if last_x != x:
+                self.__last_addr = None
+                self.__config_write(last_addr, 0)
+                self.__config_read(last_addr, 0)
+
     def __config_write(self, addr, value):
+        self.__clear_last_addr(addr)
         x = self.__get_x(addr)
         port_name = f"config_{x}_write"
         self.poke(self._circuit.interface[port_name], value)
+        if value:
+            self.__last_addr = addr
 
     def __config_read(self, addr, value):
+        self.__clear_last_addr(addr)
         x = self.__get_x(addr)
         port_name = f"config_{x}_read"
         self.poke(self._circuit.interface[port_name], value)
+        if value:
+            self.__last_addr = addr
 
     def __config_addr(self, addr, value):
         x = self.__get_x(addr)
