@@ -66,10 +66,41 @@ proc route_bumps { route_cmd} {
     #     puts "@file_info: Route bumps group 3: top row exc. right corner, 37 bumps"
     #     select_bumpring_section  24 99 1 22; deselect_obj Bump_619.24.21; select_obj   Bump_673.26.23
 
+
+
+
+# set cross_bump Bump_620.24.22
+# set cross_net pad_freq_lvl_cross
+# 
+# set ramp_bump Bump_647.25.23
+# set ramp_net pad_ramp_clk
+# 
+# # TEMPORARY
+# # set ramp_bump Bump_620.24.22
+# # set cross_bump Bump_647.25.23
+# 
+# 
+# deselectAll; select_obj $cross_bump
+# unassignBump -selected
+# assignBump -selected    $cross_net
+# assignSigToBump -net $cross_net -bumps $cross_bump
+# 
+# 
+# deselectAll; select_obj $ramp_bump
+# unassignBump -selected
+# assignBump -selected    $ramp_net
+# assignSigToBump -net $ramp_net -bumps $ramp_bump
+
+
+
+
+
+
     puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
     select_bumpring_section  24 99 18 22
-    deselect_obj Bump_619.24.21; # Remove this,
+    # deselect_obj Bump_619.24.21; # Remove this,
     select_obj   Bump_673.26.23; # add that...
+    select_obj   Bump_647.25.23; # pad_ramp_clk maybe
     sleep 1; $route_cmd
 
     # Top right corner is tricky b/c logo displaces a bunch of pads; FIXME/TODO should do this section FIRST?
