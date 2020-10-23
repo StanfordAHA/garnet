@@ -122,13 +122,14 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',    default=True )
-  merge_rdl      = Step( 'mentor-calibre-gdsmerge-child', default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
+      merge_rdl      = Step( 'mentor-calibre-gdsmerge-child', default=True )
   else:
-      drc            = Step( 'cadence-pegasus-drc',           default=True )
-      lvs            = Step( 'cadence-pegasus-lvs',           default=True )
+      drc            = Step( 'cadence-pegasus-drc',            default=True )
+      lvs            = Step( 'cadence-pegasus-lvs',            default=True )
+      merge_rdl      = Step( 'cadence-pegasus-gdsmerge-child', default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre', default=True )
   fill           = Step( 'mentor-calibre-fill',           default=True )
   merge_fill     = Step( 'mentor-calibre-gdsmerge-child', default=True )
@@ -454,7 +455,8 @@ def construct():
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
 
-  merge_rdl.update_params( {'coord_x': parameters['dragonphy_rdl_x'], 'coord_y': parameters['dragonphy_rdl_y'], 'flatten_child': True} )
+  merge_rdl.update_params( {'coord_x': parameters['dragonphy_rdl_x'], 'coord_y': parameters['dragonphy_rdl_y'], 'flatten_child': True,
+                            'design_top_cell': parameters['design_name'], 'child_top_cell': 'dragonphy_RDL'} )
 
   # Antenna DRC node needs to use antenna rule deck
   antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'] } )
