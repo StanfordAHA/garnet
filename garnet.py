@@ -302,8 +302,8 @@ module Interconnect (
         for i in range(self.width):
             result += f"   input [31:0] config_{i}_config_addr,\n"
             result += f"   input [31:0] config_{i}_config_data,\n"
-            result += f"   input [0:0] config_{i}_config_read,\n"
-            result += f"   input [0:0] config_{i}_config_write,\n"
+            result += f"   input [0:0] config_{i}_read,\n"
+            result += f"   input [0:0] config_{i}_write,\n"
         # loop through the interfaces
         ports = []
         for port_name, port_node in self.interconnect.interface().items():
