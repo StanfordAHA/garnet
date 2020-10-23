@@ -67,53 +67,20 @@ proc route_bumps { route_cmd} {
     #     puts "@file_info: Route bumps group 3: top row exc. right corner, 37 bumps"
     #     select_bumpring_section  24 99 1 22; deselect_obj Bump_619.24.21; select_obj   Bump_673.26.23
 
-
-
-
-# This happens in gen_bumps
-# set cross_bump Bump_620.24.22
-# set cross_net pad_freq_lvl_cross
-# 
-# set ramp_bump Bump_647.25.23
-# set ramp_net pad_ramp_clk
-# 
-# deselectAll; select_obj $cross_bump
-# unassignBump -selected
-# assignSigToBump -net $cross_net -bumps $cross_bump
-# 
-# 
-# deselectAll; select_obj $ramp_bump
-# unassignBump -selected
-# assignSigToBump -net $ramp_net -bumps $ramp_bump
-
-
-
-
-
-
     # FIXME could/should insert blockage here and eliminate fix_jtag later, see 'proc fix_jtag'
     puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
     select_bumpring_section  24 99 18 22
     # deselect_obj Bump_619.24.21; # Remove this,
-    select_obj   Bump_673.26.23; # add that...
-    select_obj   Bump_647.25.23; # pad_ramp_clk maybe
+    select_obj   Bump_673.26.23;   # add that...
+    select_obj   Bump_647.25.23;   # and this (pad_ramp_clk maybe)
     sleep 1; $route_cmd
 
-    # Top right corner is tricky b/c logo displaces a bunch of pads; FIXME/TODO should do this section FIRST?
-    # Five bumps overlap prev region but guess that's okay
-    # 05/16/2020 15-99 => 14-99
     puts "@file_info: Route bumps group 4a: top right corner"
-    # select_bumpring_section 14 99 21 99; sleep 1; $route_cmd; # top right corner
-    select_bumpring_section 14 99 23 99; 
-    sleep 1; $route_cmd; # top right corner
+    select_bumpring_section 14 99 23 99; sleep 1; $route_cmd; # top right corner
 
-    # 05/16/2020 11-14 => 11-15 (oops but seems to have worked anyway)
     puts "@file_info: Route bumps group 4b: right center top"
-    # select_bumpring_section 11 14 21 99; sleep 1; $route_cmd; # right center top
-    # FIXME low priority - Overlaps prev group by two rows but seems okay
     select_bumpring_section 11 13 21 99; sleep 1; $route_cmd; # right center top
 
-###GOOD TO HERE###
     puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
     select_bumpring_section  7 10 21 99; sleep 1; $route_cmd;  # right center bottom
 
@@ -342,25 +309,17 @@ proc fix_jtag {} {
     # Clean slate
     deselectAll
     
-
     # Delete old routes
-    set net pad_jtag_intf_i_phy_tck
-    editDelete -net $net
-
-    set net pad_jtag_intf_i_phy_tdi
-    editDelete -net $net
-
+    set net pad_jtag_intf_i_phy_tck; editDelete -net $net
+    set net pad_jtag_intf_i_phy_tdi; editDelete -net $net
 
     # Insert blockage
     create_route_blockage -layer AP  -name temp -box "3125 4690  3353 4900"
     redraw; sleep 1
 
     # Select bump(s)
-    set bump Bump_668.26.18
-    select_obj $bump
-
-    set bump2 Bump_643.25.19
-    select_obj $bump2
+    set bump1 Bump_668.26.18; select_obj $bump1
+    set bump2 Bump_643.25.19; select_obj $bump2
 
     # Build new route
     viewBumpConnection -selected; sleep 1
