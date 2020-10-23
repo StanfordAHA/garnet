@@ -10,6 +10,7 @@ if {0} {
     # Procs needed to run these scripts:
     source inputs/stylus-compatibility-procs.tcl
     source inputs/check-bumps.tcl
+    set route_cmd route_bumps_within_region; # PREFERRED!!
 }
 
 proc route_bumps_main {} {
@@ -69,20 +70,21 @@ proc route_bumps { route_cmd} {
 
 
 
-set cross_bump Bump_620.24.22
-set cross_net pad_freq_lvl_cross
-
-set ramp_bump Bump_647.25.23
-set ramp_net pad_ramp_clk
-
-deselectAll; select_obj $cross_bump
-unassignBump -selected
-assignSigToBump -net $cross_net -bumps $cross_bump
-
-
-deselectAll; select_obj $ramp_bump
-unassignBump -selected
-assignSigToBump -net $ramp_net -bumps $ramp_bump
+# This happens in gen_bumps
+# set cross_bump Bump_620.24.22
+# set cross_net pad_freq_lvl_cross
+# 
+# set ramp_bump Bump_647.25.23
+# set ramp_net pad_ramp_clk
+# 
+# deselectAll; select_obj $cross_bump
+# unassignBump -selected
+# assignSigToBump -net $cross_net -bumps $cross_bump
+# 
+# 
+# deselectAll; select_obj $ramp_bump
+# unassignBump -selected
+# assignSigToBump -net $ramp_net -bumps $ramp_bump
 
 
 
@@ -93,7 +95,7 @@ assignSigToBump -net $ramp_net -bumps $ramp_bump
     puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
     select_bumpring_section  24 99 18 22
     # deselect_obj Bump_619.24.21; # Remove this,
-    # select_obj   Bump_673.26.23; # add that...
+    select_obj   Bump_673.26.23; # add that...
     select_obj   Bump_647.25.23; # pad_ramp_clk maybe
     sleep 1; $route_cmd
 
