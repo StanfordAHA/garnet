@@ -71,8 +71,9 @@ proc route_bumps { route_cmd} {
     puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
     select_bumpring_section  24 99 18 22
     # deselect_obj Bump_619.24.21; # Remove this,
-    select_obj   Bump_673.26.23;   # add that...
-    select_obj   Bump_647.25.23;   # and this (pad_ramp_clk maybe)
+    select_obj     Bump_673.26.23;   # add that (pad_ext_dump_start)...
+    select_obj     Bump_647.25.23;   # and this (pad_ramp_clk maybe) 
+    select_obj     Bump_648.25.24;   # and this (VSS)
     sleep 1; $route_cmd
 
     puts "@file_info: Route bumps group 4a: top right corner"
