@@ -179,7 +179,7 @@ end
 
 always_comb begin
     for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
-        cgra_stall[CGRA_PER_GLB*i+:CGRA_PER_GLB] = {CGRA_PER_GLB{cgra_stall_d3[i]}};
+        cgra_stall[i] = {CGRA_PER_GLB{cgra_stall_d3[i]}};
     end
 end
 
