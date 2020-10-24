@@ -27,9 +27,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
-  # 'clock_period'        : 1.1,    # 900MHz never finishes AFAICT
-  # 'clock_period'        : 1.25,   # 800MHz requires > ten hours
-    'clock_period'        : 4.0,    # 250MHz finishes in three hours
+    'clock_period'        : 1.1,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     # Synthesis
@@ -43,7 +41,7 @@ def construct():
     'bc_corner'           : "ffg0p88v125c",
     'partial_write'       : False,
     # Utilization target
-    'core_density_target' : 0.74,
+    'core_density_target' : 0.68,
     # RTL Generation
     'interconnect_only'   : True,
     # Power Domains
