@@ -165,8 +165,8 @@ def construct():
   if pwr_aware:
       synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
       init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
-      place.extend_inputs(['place-dont-use-constraints.tcl', 'check-clamp-logic-structure.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
+      place.extend_inputs(['place-dont-use-constraints.tcl', 'check-clamp-logic-structure.tcl', 'add-aon-tie-cells.tcl'])
       cts.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'])
       postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
       route.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
@@ -419,6 +419,7 @@ def construct():
       # place node
       order = place.get_param('order')
       read_idx = order.index( 'main.tcl' ) # find main.tcl
+      order.insert(read_idx + 1, 'add-aon-tie-cells.tcl')
       order.insert(read_idx - 1, 'place-dont-use-constraints.tcl')
       order.append('check-clamp-logic-structure.tcl')
       place.update_params( { 'order': order } )
