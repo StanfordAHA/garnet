@@ -23,29 +23,76 @@ class BasicTester(Tester):
     def __init__(self, circuit, clock, reset_port=None):
         super().__init__(circuit, clock)
         self.reset_port = reset_port
+        self.__xmin = 0xFFFF
+        self.__xmax = 0
+
+        self.__last_addr = None
+
+    def __get_x(self, addr):
+        x = (addr >> 8) & 0xFF
+        if x > self.__xmax:
+            self.__xmax = x
+        if x < self.__xmin:
+            self.__xmin = x
+        return x
+
+    def __clear_last_addr(self, addr):
+        if self.__last_addr is not None:
+            last_addr = self.__last_addr
+            last_x = self.__get_x(last_addr)
+            x = self.__get_x(addr)
+            if last_x != x:
+                self.__last_addr = None
+                self.__config_write(last_addr, 0)
+                self.__config_read(last_addr, 0)
+
+    def __config_write(self, addr, value):
+        self.__clear_last_addr(addr)
+        x = self.__get_x(addr)
+        port_name = f"config_{x}_write"
+        self.poke(self._circuit.interface[port_name], value)
+        if value:
+            self.__last_addr = addr
+
+    def __config_read(self, addr, value):
+        self.__clear_last_addr(addr)
+        x = self.__get_x(addr)
+        port_name = f"config_{x}_read"
+        self.poke(self._circuit.interface[port_name], value)
+        if value:
+            self.__last_addr = addr
+
+    def __config_addr(self, addr, value):
+        x = self.__get_x(addr)
+        port_name = f"config_{x}_config_addr"
+        self.poke(self._circuit.interface[port_name], value)
+
+    def __config_data(self, addr, value):
+        x = self.__get_x(addr)
+        port_name = f"config_{x}_config_data"
+        self.poke(self._circuit.interface[port_name], value)
 
     def configure(self, addr, data, assert_wr=True):
         self.poke(self.clock, 0)
         self.poke(self.reset_port, 0)
-        self.poke(self._circuit.config_config_addr, addr)
-        self.poke(self._circuit.config_config_data, data)
-        self.poke(self._circuit.config_read, 0)
+        self.__config_addr(addr, addr)
+        self.__config_data(addr, data)
+        self.__config_read(addr, 0)
         # We can use assert_wr switch to check that no reconfiguration
         # occurs when write = 0
         if assert_wr:
-            self.poke(self._circuit.config_write, 1)
+            self.__config_write(addr, 1)
         else:
-            self.poke(self._circuit.config_write, 0)
-        #
+            self.__config_write(addr, 0)
         self.step(2)
-        self.poke(self._circuit.config_write, 0)
+        self.__config_write(addr, 0)
 
     def config_read(self, addr):
         self.poke(self.clock, 0)
         self.poke(self.reset_port, 0)
-        self.poke(self._circuit.config_config_addr, addr)
-        self.poke(self._circuit.config_read, 1)
-        self.poke(self._circuit.config_write, 0)
+        self.__config_addr(addr, addr)
+        self.__config_read(addr, 1)
+        self.__config_write(addr, 0)
         self.step(2)
 
     def reset(self):
@@ -57,8 +104,11 @@ class BasicTester(Tester):
     def done_config(self):
         self.poke(self.clock, 0)
         self.poke(self.reset_port, 0)
-        self.poke(self._circuit.config_read, 0)
-        self.poke(self._circuit.config_write, 0)
+        # reset all read/write ports touched before
+        for x in range(self.__xmin, self.__xmax + 1):
+            addr = x << 8
+            self.__config_read(addr, 0)
+            self.__config_write(addr, 0)
         self.unstall()
         self.step(2)
 

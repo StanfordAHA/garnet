@@ -61,8 +61,10 @@ set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
 # ALU OP SCENARIOS
 ########################################################################
 
-exec python inputs/report_alu.py
-source alu_op_scenarios.tcl
+# reports timing for each op
+# but it slows down synthesis a lot, so disabling for now
+#exec python inputs/report_alu.py
+#source alu_op_scenarios.tcl
 
 ########################################################################
 source inputs/scenarios.tcl
