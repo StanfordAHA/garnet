@@ -1,6 +1,6 @@
 echo "${num_words}x${word_size}m${mux_size}s" >> config.txt
-
-export MC_HOME=inputs/adk/mc/tsn16ffcllhdspsbsram_20131200_130a
+mc_name=tsn16ffcllhdspsbsram_20131200_130a
+export MC_HOME=inputs/adk/mc/${mc_name}
 export PATH="${PATH}:inputs/adk/mc/MC2_2013.12.00.f/bin"
 sram_name="ts1n16ffcllsblvtc${num_words}x${word_size}m${mux_size}s"
 if [ $partial_write == True ]; then
@@ -8,7 +8,7 @@ if [ $partial_write == True ]; then
 fi
 
 sram_name+="_130a"
-cmd="./inputs/adk/mc/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
+cmd="./inputs/adk/mc/${mc_name}/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
 if [ ! $partial_write == True ]; then
   cmd+=" -NonBWEB"
 fi
