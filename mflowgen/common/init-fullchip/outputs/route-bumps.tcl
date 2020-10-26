@@ -310,19 +310,20 @@ proc fix_jtag {} {
     # Clean slate
     deselectAll
     
-    # Delete old routes
+    # Delete old routes b/c default router runs wires over PHY rdl region
     set net pad_jtag_intf_i_phy_tck; editDelete -net $net
     set net pad_jtag_intf_i_phy_tdi; editDelete -net $net
 
-    # Insert blockage
+    # Insert blockage over forbidden PHY rdl region
     create_route_blockage -layer AP  -name temp -box "3125 4690  3353 4900"
     redraw; sleep 1
 
-    # Select bump(s)
+    # Rebuild deleted routes for tck and tdi
+    # Select tck and tdi bump(s)
     set bump1 Bump_668.26.18; select_obj $bump1
     set bump2 Bump_643.25.19; select_obj $bump2
 
-    # Build new route
+    # Build new tck and tdi routes
     viewBumpConnection -selected; sleep 1
     myfcroute -incremental -selected_bump
 
