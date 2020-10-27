@@ -72,6 +72,11 @@ def construct():
   gls_args       = Step( this_dir + '/gls_args'                            )
   testbench      = Step( this_dir + '/testbench'                           )
 
+  # Only use these steps with power domains off and no flattening...
+  use_e2e = parameters['flatten_effort'] == 0 and parameters['PWR_AWARE'] == False
+  if use_e2e:
+    e2e_testbench  = Step( this_dir + '/e2e_testbench'                     )
+    #e2e_power_est  = Step( this_dir + '/e2e_power_est'                     )
   # Default steps
 
   info         = Step( 'info',                          default=True )
@@ -187,6 +192,8 @@ def construct():
   g.add_step( testbench      )
   g.add_step( vcs_sim        )
 
+  if use_e2e:
+    g.add_step( e2e_testbench )
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
