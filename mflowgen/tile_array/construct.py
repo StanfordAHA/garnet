@@ -26,18 +26,18 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 1.1,
+    'clock_period'      : 10,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
-    'flatten_effort'    : 3,
+    'flatten_effort'    : 0,
     'topographical'     : True,
     # RTL Generation
-    'array_width'       : 32,
-    'array_height'      : 16,
+    'array_width'       : 12,
+    'array_height'      : 12,
     'interconnect_only' : False,
     # Power Domains
-    'PWR_AWARE'         : True,
+    'PWR_AWARE'         : False,
     # Useful Skew (CTS)
     'useful_skew'       : False,
     # Pipeline stage insertion

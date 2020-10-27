@@ -49,7 +49,7 @@ if [ $design_name == "Tile_MemCore" ]; then
 fi
 
 # Grab all design/testbench files
-for f in inputs/*.v; do
+for f in inputs/*.*v; do
   [ -e "$f" ] || continue
   ARGS="$ARGS $f"
 done
