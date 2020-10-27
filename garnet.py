@@ -246,6 +246,7 @@ class Garnet(Generator):
 
     def compile(self, halide_src, unconstrained_io=False, compact=False):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
+        app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
         else:
@@ -254,7 +255,8 @@ class Garnet(Generator):
                                              cwd="temp",
                                              id_to_name=id_to_name,
                                              fixed_pos=fixed_io,
-                                             compact=compact)
+                                             compact=compact,
+                                             copy_to_dir=app_dir)
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
