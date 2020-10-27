@@ -22,14 +22,14 @@ docker pull stanfordaha/garnet:latest
 container_name=$(aha docker)
 echo "container-name: $container_name"
 
-docker exec $container_name /usr/bin/bash -c "rm -rf /aha/garnet"
+docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
 # Clone local garnet repo to prevent copying untracked files
 git clone $GARNET_HOME ./garnet
 docker cp ./garnet $container_name:/aha/garnet
-docker cp ../module_load.sh $container_name:/aha/garnet/
 # run the tests in the container and get all relevant files (tb, place file)
-docker exec $container_name /usr/bin/bash -c \
-  "pushd /aha/garnet && source module_load.sh && popd
+docker exec $container_name /bin/bash -c \
+  "source /cad/modules/tcl/init/bash;
+   module load incisive;
    source /aha/bin/activate;
    aha garnet ${flags};
    cd garnet;
