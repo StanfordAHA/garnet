@@ -7,7 +7,9 @@ commands:
 outputs:
   - testbench.sv
   - input.raw
-  - design.place
+  - tiles_Tile_MemCore.list
+  - tiles_Tile_PE.list
+  - cmd.tcl
 
 parameters:
   array_width: 12

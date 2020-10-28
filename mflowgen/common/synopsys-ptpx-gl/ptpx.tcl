@@ -25,6 +25,14 @@
 
 source -echo -verbose designer-interface.tcl
 
+set batch_path_str ""
+# Check for batch_mode
+if { $::env(batch) == "True" } {
+  set tile_name  $::env(tile_name)
+  set tile_alias $::env(tile_alias)
+  set batch_path_str "_${tile_alias}_${tile_name}"
+} 
+
 #-------------------------------------------------------------------------
 # Setup
 #-------------------------------------------------------------------------
@@ -60,21 +68,21 @@ link_design
 # Read in switching activity
 
 report_activity_file_check $ptpx_saif -strip_path $ptpx_strip_path \
-  > reports/$ptpx_design_name.activity.pre.rpt
+  > reports/${ptpx_design_name}${batch_path_str}.activity.pre.rpt
 
-read_saif $ptpx_saif -strip_path $ptpx_strip_path
+read_saif $ptpx_saif -strip_path $ptpx_strip_path -quiet
 
 # Read in the SDC and parasitics
 
 read_sdc -echo $ptpx_sdc
 
 check_constraints -verbose \
-  > reports/$ptpx_design_name.checkconstraints.rpt
+  > reports/${ptpx_design_name}${batch_path_str}.checkconstraints.rpt
 
 read_parasitics -format spef $ptpx_spef
 
 report_annotated_parasitics -check \
-  > reports/$ptpx_design_name.parasitics.rpt
+  > reports/${ptpx_design_name}${batch_path_str}.parasitics.rpt
 
 #-------------------------------------------------------------------------
 # Power analysis
@@ -83,7 +91,7 @@ report_annotated_parasitics -check \
 update_timing -full
 
 check_power \
-  > reports/$ptpx_design_name.checkpower.rpt
+  > reports/${ptpx_design_name}${batch_path_str}.checkpower.rpt
 
 update_power
 
@@ -92,16 +100,16 @@ update_power
 #-------------------------------------------------------------------------
 
 report_switching_activity \
-  > reports/$ptpx_design_name.activity.post.rpt
+  > reports/${ptpx_design_name}${batch_path_str}.activity.post.rpt
 
 report_power -nosplit \
-  > reports/$ptpx_design_name.power.rpt
+  > reports/${ptpx_design_name}${batch_path_str}.power.rpt
 
 report_power -nosplit -hierarchy \
-  > reports/$ptpx_design_name.power.hier.rpt
+  > reports/${ptpx_design_name}${batch_path_str}.power.hier.rpt
 
 report_power -nosplit -hierarchy -leaf -levels 10 \
-  > reports/$ptpx_design_name.power.cell.rpt
+  > reports/${ptpx_design_name}${batch_path_str}.power.cell.rpt
 
 exit
 
