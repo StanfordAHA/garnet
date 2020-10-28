@@ -1,0 +1,8 @@
+garnet_param.svh
+top.sv
+axil_ifc.sv
+proc_ifc.sv
+kernel.sv
+io_helper.sv
+garnet_test.sv
+garnet_monitor.sv
