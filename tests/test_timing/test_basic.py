@@ -29,6 +29,7 @@ def test_basic(dw_files):
     with tempfile.TemporaryDirectory() as tempdir:
         common.generate_scaffolding(tempdir)
         magma.compile(f"{tempdir}/{circuit.name}", circuit,
-                      output="coreir-verilog", coreir_libs={"float_DW"})
+                      output="coreir-verilog", coreir_libs={"float_DW"},
+                      inline=False)
         tester.compile_and_run(skip_compile=True, target="verilator",
                                directory=tempdir, flags=["-Wno-fatal"])

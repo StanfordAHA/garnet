@@ -38,7 +38,7 @@ def test_1x1():
     circuit = interconnect.circuit()
     with tempfile.TemporaryDirectory() as temp:
         filename = os.path.join(temp, "1x1")
-        magma.compile(filename, circuit)
+        magma.compile(filename, circuit, inline=False)
         assert os.path.isfile(filename + ".v")
 
 
@@ -113,7 +113,8 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"}},
+                               magma_opts={"coreir_libs": {"float_DW"},
+                                           "inline": False},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -219,7 +220,8 @@ def test_interconnect_sram(dw_files, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"}},
+                               magma_opts={"coreir_libs": {"float_DW"},
+                                           "inline": False},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -360,6 +362,7 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"}},
+                               magma_opts={"coreir_libs": {"float_DW"},
+                                           "inline": False},
                                directory=tempdir,
                                flags=["-Wno-fatal"])

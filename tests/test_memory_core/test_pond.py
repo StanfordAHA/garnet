@@ -200,7 +200,8 @@ def test_pond_rd_wr(verilator=True):
 
         target = "verilator"
         runtime_kwargs = {"magma_output": "coreir-verilog",
-                          "magma_opts": {"coreir_libs": {"float_DW"}},
+                          "magma_opts": {"coreir_libs": {"float_DW"},
+                                         "inline": False},
                           "directory": tempdir,
                           "flags": ["-Wno-fatal"]}
         if verilator is False:
@@ -299,7 +300,8 @@ def test_pond_pe(verilator=True):
 
         target = "verilator"
         runtime_kwargs = {"magma_output": "coreir-verilog",
-                          "magma_opts": {"coreir_libs": {"float_DW"}},
+                          "magma_opts": {"coreir_libs": {"float_DW"},
+                                         "inline": False},
                           "directory": tempdir,
                           "flags": ["-Wno-fatal", "--trace"]}
         if verilator is False:
