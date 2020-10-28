@@ -11,16 +11,24 @@ outputs:
   - Tile_MemCore.lef
   - Tile_MemCore.gds
   - Tile_MemCore.vcs.v
+  - Tile_MemCore.vcs.pg.v
   - Tile_MemCore.lvs.v
   - Tile_MemCore.sdf
+  - Tile_MemCore.pt.sdc
+  - Tile_MemCore.spef.gz
   - sram.spi
+  - sram.v
 
 postconditions:
   - assert File( 'outputs/Tile_MemCore_tt.lib' ) # must exist
   - assert File( 'outputs/Tile_MemCore.lef' ) # must exist
   - assert File( 'outputs/Tile_MemCore.gds' ) # must exist
   - assert File( 'outputs/Tile_MemCore.vcs.v' ) # must exist
+  - assert File( 'outputs/Tile_MemCore.vcs.pg.v' ) # must exist
+  - assert File( 'outputs/Tile_MemCore.pt.sdc' ) # must exist
+  - assert File( 'outputs/Tile_MemCore.spef.gz' ) # must exist
   - assert File( 'outputs/Tile_MemCore.lvs.v' ) # must exist
   - assert File( 'outputs/Tile_MemCore.sdf' ) # must exist
   - assert File( 'outputs/sram.spi' ) # must exist
+  - assert File( 'outputs/sram.v' ) # must exist
 

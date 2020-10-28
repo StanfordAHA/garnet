@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build up the flags we want to pass to python garnet.v
-flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --no-sram-stub --no-pd --interconnect-only"
+flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --no-pd --interconnect-only"
 
 map_flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval --no-pd --interconnect-only"
 
@@ -29,7 +29,7 @@ docker cp ./garnet $container_name:/aha/garnet
 # run the tests in the container and get all relevant files (tb, place file)
 docker exec $container_name /bin/bash -c \
   "source /cad/modules/tcl/init/bash;
-   module load incisive;
+   module load xcelium;
    source /aha/bin/activate;
    aha garnet ${flags};
    cd garnet;
@@ -41,9 +41,12 @@ docker exec $container_name /bin/bash -c \
 docker cp $container_name:/aha/garnet/temp/garnet/Interconnect_tb.sv ../outputs/testbench.sv
 # Fix testbench file paths
 sed -i "s|/aha/Halide-to-Hardware/apps/hardware_benchmarks/${app_to_run}/bin/|./inputs/|g" ../outputs/testbench.sv
-docker cp $container_name:/aha/garnet/temp/design.place ../outputs/design.place
+docker cp $container_name:/aha/garnet/temp/design.place ../design.place
+grep '#m' ../design.place | awk '{printf "%s,%02X,%02X\n",$1,$2,$3}' > ../outputs/tiles_Tile_MemCore.list
+grep '#p' ../design.place | awk '{printf "%s,%02X,%02X\n",$1,$2,$3}' > ../outputs/tiles_Tile_PE.list
 docker cp $container_name:/aha/Halide-to-Hardware/apps/hardware_benchmarks/${app_to_run}/bin/input.raw ../outputs/input.raw
+cp ../cmd.tcl ../outputs/
 # Kill the container
-#docker kill $container_name
+docker kill $container_name
 echo "killed docker container $container_name"
 cd $current_dir
