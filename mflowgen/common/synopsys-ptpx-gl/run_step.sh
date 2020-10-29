@@ -16,7 +16,9 @@ if [ $batch = "True" ]; then
     do
       # Kill original so we don't screw things up backwards
       repl_name=$(echo ${design_file} | sed "s|${design_name}|design|g")
-      rm $repl_name
+      if [ -f $repl_name ]; then
+        rm $repl_name
+      fi
       cp -L $design_file $repl_name
     done
     popd
