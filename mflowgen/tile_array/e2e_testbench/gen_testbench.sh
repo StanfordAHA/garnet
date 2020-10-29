@@ -1,9 +1,13 @@
 #!/bin/bash
 
 # Build up the flags we want to pass to python garnet.v
-flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --no-pd --interconnect-only"
+flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --interconnect-only"
+map_flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval --interconnect-only"
 
-map_flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval --no-pd --interconnect-only"
+if [ ${PWR_AWARE} = "False" ]; then
+  flags="$flags --no-pd"
+  map_flags="$map_flags --no-pd"
+fi
 
 # Clone AHA repo
 git clone https://github.com/StanfordAHA/aha.git
