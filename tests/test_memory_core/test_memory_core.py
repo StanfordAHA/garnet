@@ -233,6 +233,7 @@ def test_multiple_output_ports():
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                target="verilator",
                                flags=["-Wno-fatal"])
 
@@ -412,6 +413,7 @@ def test_multiple_output_ports_conv():
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                target="verilator",
                                flags=["-Wno-fatal"])
 
@@ -626,6 +628,7 @@ def test_mult_ports_mult_aggs_double_buffer_conv():
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                target="verilator",
                                flags=["-Wno-fatal"])
 
@@ -829,6 +832,7 @@ def test_mult_ports_mult_aggs_double_buffer():
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                target="verilator",
                                flags=["-Wno-fatal"])
 
@@ -1030,6 +1034,7 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                target="verilator",
                                flags=["-Wno-fatal"])
 
@@ -1135,7 +1140,8 @@ def basic_tb(config_path,
         target = "verilator"
         runtime_kwargs = {"magma_output": "coreir-verilog",
                           "magma_opts": {"coreir_libs": {"float_CW"},
-                                         "disable_ndarray": True},
+                                         "disable_ndarray": True,
+                                         "inline": False},
                           "directory": tempdir,
                           "flags": []}
         if xcelium is False:

@@ -370,7 +370,8 @@ def main():
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_CW"},
                       passes = ["rungenerators", "inline_single_instances", "clock_gate"],
-                      disable_ndarray=True)
+                      disable_ndarray=True,
+                      inline=False)
         garnet.create_stub()
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
