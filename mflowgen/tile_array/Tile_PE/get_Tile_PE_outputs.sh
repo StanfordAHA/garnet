@@ -16,5 +16,5 @@ cp -L *cadence-innovus-signoff/outputs/design.sdf outputs/Tile_PE.sdf
 cp -L *cadence-innovus-signoff/outputs/design-merged.gds outputs/Tile_PE.gds
 cp -L *-lvs/outputs/design_merged.lvs.v outputs/Tile_PE.lvs.v
 cp -L *cadence-innovus-signoff/outputs/design.vcs.pg.v outputs/Tile_PE.vcs.pg.v
-cp -L *cadence-innovus-signoff/outputs/design.vcs.pt.sdc outputs/Tile_PE.pt.sdc
-cp -L *cadence-innovus-signoff/outputs/design.vcs.spef.gz outputs/Tile_PE.spef.gz
+cp -L *cadence-innovus-signoff/outputs/design.pt.sdc outputs/Tile_PE.pt.sdc
+cp -L *cadence-innovus-signoff/outputs/design.spef.gz outputs/Tile_PE.spef.gz
