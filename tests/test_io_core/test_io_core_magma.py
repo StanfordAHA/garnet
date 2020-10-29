@@ -30,6 +30,7 @@ def test_regression():
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
 
@@ -87,5 +88,6 @@ def test_valid_generation():
     with tempfile.TemporaryDirectory() as tempdir:
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                directory=tempdir,
                                flags=["-Wno-fatal"])

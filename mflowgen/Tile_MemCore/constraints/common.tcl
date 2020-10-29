@@ -51,7 +51,7 @@ set_max_transition 0.120 $design_name
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
 set i_delay [expr 0.2 * ${clock_period}]
-set_input_delay -clock ${clock_name} ${i_delay} [all_inputs]
+set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 set pt_i_delay [expr 0.8 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${pt_i_delay} stall
@@ -161,3 +161,10 @@ set_false_path -to [get_ports lo]
 set rmux_cells [get_cells -hier RMUX_T*sel_inst0]
 set_dont_touch $rmux_cells true
 set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true
+
+# False paths from config input ports to SB output ports
+set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
+
+# False paths from config input ports to SB registers
+set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg[*]/*
+set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]

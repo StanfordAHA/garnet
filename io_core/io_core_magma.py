@@ -153,4 +153,4 @@ class IOCoreValid(ConfigurableCore, IOCoreBase):
 
 if __name__ == "__main__":
     core = IOCoreValid(8, 32)
-    magma.compile("io", core.circuit())
+    magma.compile("io", core.circuit(), inline=False)

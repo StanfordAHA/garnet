@@ -213,7 +213,7 @@ program glb_test
         r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
         r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
         r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_START_ADDR"], 'h0);
-        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], 'h200080);
+        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (1 << MAX_NUM_WORDS_WIDTH) + 128);
         r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
 
         s_cnt = 0;

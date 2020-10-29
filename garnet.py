@@ -118,6 +118,8 @@ class Garnet(Generator):
 
         # make multiple stall ports
         stall_port_pass(self.interconnect)
+        # make multiple configuration ports
+        config_port_pass(self.interconnect)
 
         if not interconnect_only:
             self.add_ports(
@@ -149,9 +151,6 @@ class Garnet(Generator):
             # Top -> Interconnect clock port connection
             self.wire(self.ports.clk_in, self.interconnect.ports.clk)
 
-            # make multiple configuration ports
-            config_port_pass(self.interconnect)
-
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
             glc_interconnect_wiring(self)
@@ -164,9 +163,9 @@ class Garnet(Generator):
             self.add_ports(
                 clk=magma.In(magma.Clock),
                 reset=magma.In(magma.AsyncReset),
-                config=magma.In(
-                    ConfigurationType(self.interconnect.config_data_width,
-                                      self.interconnect.config_data_width)),
+                config=magma.In(magma.Array[width,
+                                ConfigurationType(config_data_width,
+                                                  config_data_width)]),
                 stall=magma.In(magma.Bits[self.width * self.interconnect.stall_signal_width]),
                 read_config_data=magma.Out(magma.Bits[config_data_width])
             )
@@ -247,6 +246,7 @@ class Garnet(Generator):
 
     def compile(self, halide_src, unconstrained_io=False, compact=False):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
+        app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
         else:
@@ -255,7 +255,8 @@ class Garnet(Generator):
                                              cwd="temp",
                                              id_to_name=id_to_name,
                                              fixed_pos=fixed_io,
-                                             compact=compact)
+                                             compact=compact,
+                                             copy_to_dir=app_dir)
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -294,15 +295,17 @@ class Garnet(Generator):
         result = """
 module Interconnect (
    input  clk,
-   input [31:0] config_config_addr,
-   input [31:0] config_config_data,
-   input [0:0] config_read,
-   input [0:0] config_write,
    output [31:0] read_config_data,
    input  reset,
 """
         # add stall based on the size
         result += f"   input [{str(self.width * self.interconnect.stall_signal_width - 1)}:0] stall,\n\n"
+        # magma can't generate SV struct array, which would be the ideal solution here
+        for i in range(self.width):
+            result += f"   input [31:0] config_{i}_config_addr,\n"
+            result += f"   input [31:0] config_{i}_config_data,\n"
+            result += f"   input [0:0] config_{i}_read,\n"
+            result += f"   input [0:0] config_{i}_write,\n"
         # loop through the interfaces
         ports = []
         for port_name, port_node in self.interconnect.interface().items():
@@ -367,7 +370,8 @@ def main():
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_CW"},
                       passes = ["rungenerators", "inline_single_instances", "clock_gate"],
-                      disable_ndarray=True)
+                      disable_ndarray=True,
+                      inline=False)
         garnet.create_stub()
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:

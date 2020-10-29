@@ -56,7 +56,7 @@ remove_driving_cell reset
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
 set i_delay [expr 0.2 * ${clock_period}]
-set_input_delay -clock ${clock_name} ${i_delay} [all_inputs]
+set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 set pt_i_delay [expr 0.8 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${pt_i_delay} clk_pass_through
