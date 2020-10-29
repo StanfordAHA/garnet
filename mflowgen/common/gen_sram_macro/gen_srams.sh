@@ -23,3 +23,7 @@ ln -s ../$sram_name/VERILOG/${sram_name}_pwr.v outputs/sram_pwr.v
 ln -s ../$sram_name/VERILOG/${sram_name}.v outputs/sram.v
 ln -s ../$sram_name/SPICE/${sram_name}.spi outputs/sram.spi
 
+cd lib2db/
+make
+cd..
+

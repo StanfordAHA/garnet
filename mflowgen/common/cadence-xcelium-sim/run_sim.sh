@@ -10,7 +10,10 @@ if [ -f "inputs/cmd.tcl" ]; then
 fi
 
 if [ "$PWR_AWARE" = "True" ]; then
-  rm inputs/design.vcs.v
+  rm -f inputs/*.vcs.v
+  if [ -f "inputs/sram.v" ]; then
+    rm -f inputs/sram.v
+  fi
 fi
 
 # ADK for GLS
@@ -32,7 +35,6 @@ if [ -d "inputs/adk" ]; then
     fi
   fi
 fi
-
 
 # Set-up testbench
 ARGS="$ARGS -top $testbench_name"
