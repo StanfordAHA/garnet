@@ -116,7 +116,7 @@ def construct():
   e2e_apps = ["tests/conv_3_3", "apps/cascade"]
 
   # Only use these steps with power domains off and no flattening...
-  use_e2e = parameters['flatten_effort'] == 0 and parameters['PWR_AWARE'] == False
+  use_e2e = True
   e2e_tb_nodes = {}
   e2e_sim_nodes = {}
   e2e_power_nodes = {}
@@ -140,6 +140,7 @@ def construct():
         # Send all the relevant post-pnr files to sim 
         e2e_xcelium_sim.extend_inputs(Tile_MemCore.all_outputs())
         e2e_xcelium_sim.extend_inputs(Tile_PE.all_outputs())
+        e2e_xcelium_sim.extend_inputs(['design.vcs.pg.v'])
         e2e_xcelium_sim.extend_inputs(['input.raw'])
 
         # Configure the ptpx step a little differently...
