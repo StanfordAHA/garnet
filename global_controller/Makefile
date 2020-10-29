@@ -51,7 +51,7 @@ FIX_SYSTEMRDL = \
 	sed -i '/pio_dec_write_data_d1 <=/d' ./systemRDL/output/glc_jrdl_decode.sv; \
 	sed -i '/pio_dec_address_d1 <=/d' ./systemRDL/output/glc_jrdl_decode.sv; \
 	sed -i '/endmodule/d' ./systemRDL/output/glc_jrdl_decode.sv; \
-	echo -e "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glc_jrdl_decode.sv
+	printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glc_jrdl_decode.sv
 
 
 GEN_RTL_FILELIST = \
