@@ -87,6 +87,7 @@ steps:
      make soc-rtl |& tee make-soc-rtl.log'
 - wait: ~
 
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
 - label: 'syn'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 72G;
