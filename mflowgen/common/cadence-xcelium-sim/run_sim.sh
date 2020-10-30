@@ -11,9 +11,6 @@ fi
 
 if [ "$PWR_AWARE" = "True" ]; then
   rm -f inputs/*.vcs.v
-  if [ -f "inputs/sram.v" ]; then
-    rm -f inputs/sram.v
-  fi
 fi
 
 # ADK for GLS
@@ -63,8 +60,8 @@ done
 
 # SRAM power hack for now (files need to read in a specific order)"
 if [ $PWR_AWARE == "True" ]; then
-  if [[ -f "inputs/sram_pwr.v" ]]; then
-    ARGS="$ARGS inputs/sram_pwr.v"
+  if [[ -f "inputs/sram-pwr.v" ]]; then
+    ARGS="$ARGS inputs/sram-pwr.v"
   fi
 fi
 

@@ -21,6 +21,7 @@ parameters:
   use_container: True
   use_local_garnet: True
   app_to_run: "tests/conv_3_3"
+  waves: False
 
 postconditions:
   - assert File( 'outputs/testbench.sv' )        # must exist

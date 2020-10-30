@@ -43,6 +43,12 @@ docker exec $container_name /bin/bash -c \
    aha test ${app_to_run};"
 # Copy the testbench, input file, and placement file out of the container
 docker cp $container_name:/aha/garnet/temp/garnet/Interconnect_tb.sv ../outputs/testbench.sv
+# If doing power aware, the pg collateral will have VDD and VSS ports, so
+# we have to provide those as supply0 and supply 1 in the top level testbench
+if [ ${PWR_AWARE} = "True" ]; then
+   sed -i '/Interconnect #(/i \    supply0 VSS;\n    supply1 VDD;' ../outputs/testbench.sv
+   sed -i '/clk(clk),/a \        .VSS(VSS),\n        .VDD(VDD),' ../outputs/testbench.sv
+fi
 # Fix testbench file paths
 sed -i "s|/aha/Halide-to-Hardware/apps/hardware_benchmarks/${app_to_run}/bin/|./inputs/|g" ../outputs/testbench.sv
 docker cp $container_name:/aha/garnet/temp/design.place ../design.place
