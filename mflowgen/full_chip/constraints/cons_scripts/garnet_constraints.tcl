@@ -38,6 +38,8 @@ set_dont_touch [get_nets clk_out_p]  true
 set_dont_touch [get_nets clk_out_n]  true
 set_dont_touch [get_nets clk_trig_p]  true
 set_dont_touch [get_nets clk_trig_n]  true
+set_dont_touch [get_nets ext_tx_outn]  true
+set_dont_touch [get_nets ext_tx_outp]  true
 
 # Genus-specific constraints to prevent these pins from being tied to 0
 set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_clk_async_p]
@@ -58,3 +60,5 @@ set_attribute skip_pin_for_undriven_handling true [get_pins -hier *clk_out_p]
 set_attribute skip_pin_for_undriven_handling true [get_pins -hier *clk_out_n]
 set_attribute skip_pin_for_undriven_handling true [get_pins -hier *clk_trig_p]
 set_attribute skip_pin_for_undriven_handling true [get_pins -hier *clk_trig_n]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_tx_outp]
+set_attribute skip_pin_for_undriven_handling true [get_pins -hier *ext_tx_outn]

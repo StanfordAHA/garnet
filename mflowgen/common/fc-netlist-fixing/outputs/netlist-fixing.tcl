@@ -57,6 +57,8 @@ set iphy_to_bump [list \
   clk_out_n \
   clk_trig_p \
   clk_trig_n \
+  ext_tx_outp \
+  ext_tx_outn \
 ]
 
 set pad_to_iphy [list \
