@@ -47,14 +47,21 @@ SIMV = ./simv \
 	   -assert nopostproc \
 	   -l vcs.log
 
+FIX_SYSTEMRDL = \
+	sed -i '/pio_dec_write_data_d1 <=/d' ./systemRDL/output/glc_jrdl_decode.sv; \
+	sed -i '/pio_dec_address_d1 <=/d' ./systemRDL/output/glc_jrdl_decode.sv; \
+	sed -i '/endmodule/d' ./systemRDL/output/glc_jrdl_decode.sv; \
+	printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glc_jrdl_decode.sv
+
+
 GEN_RTL_FILELIST = \
-	find $(RTL_DIR) -type f -name '*.sv' > $(TOP_MODULE).filelist; \
-	find ./systemRDL/output -type f -name '*.sv' >> $(TOP_MODULE).filelist; \
+	find $(RTL_DIR) -type f -name '*.sv' | xargs realpath  > $(TOP_MODULE).filelist; \
+	find ./systemRDL/output -type f -name '*.sv' | xargs realpath  >> $(TOP_MODULE).filelist; \
 	echo "/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/CW_tap.v" >> $(TOP_MODULE).filelist
 
 GEN_TB_FILELIST = \
-	find $(TB_RTL_DIR) -type f -name '*.sv' > tb_$(TOP_MODULE).filelist; \
-	find ./systemRDL/output -type f -name '*.sv' >> tb_$(TOP_MODULE).filelist; \
+	find $(TB_RTL_DIR) -type f -name '*.sv' | xargs realpath  > tb_$(TOP_MODULE).filelist; \
+	find ./systemRDL/output -type f -name '*.sv' | xargs realpath  >> tb_$(TOP_MODULE).filelist; \
 	echo "/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/CW_tap.v" >> tb_$(TOP_MODULE).filelist
 
 
@@ -73,6 +80,7 @@ html: rdl
 
 rtl: rdl genesis
 	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glc.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glc.rdl.final
+	$(FIX_SYSTEMRDL)
 	$(GEN_RTL_FILELIST)
 
 sim_genesis: $(TB_GENESIS_FILES)

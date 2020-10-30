@@ -20,7 +20,10 @@ def main():
 
     if args.verilog:
         global_buffer_circ = global_buffer.circuit()
-        magma.compile("global_buffer", global_buffer_circ, output="coreir-verilog")
+        magma.compile("global_buffer",
+                      global_buffer_circ,
+                      output="coreir-verilog",
+                      inline=False)
 
 if __name__ == "__main__":
     main()

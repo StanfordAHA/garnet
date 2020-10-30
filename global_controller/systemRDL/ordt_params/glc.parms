@@ -17,5 +17,6 @@ output systemverilog {
     leaf_address_size = 12
     root_decoder_interface = parallel
     generate_child_addrmaps = true
+    use_async_resets = true
 }
 

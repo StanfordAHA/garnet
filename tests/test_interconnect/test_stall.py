@@ -184,6 +184,7 @@ def test_stall(dw_files, io_sides):
             shutil.copy(aoi_mux, tempdir)
         tester.compile_and_run(target="verilator",
                                magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"}},
+                               magma_opts={"coreir_libs": {"float_DW"},
+                                           "inline": False},
                                directory=tempdir,
                                flags=["-Wno-fatal"])
