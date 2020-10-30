@@ -111,7 +111,8 @@ def test_peak_core_sequence(sequence, cw_files):
 
         tester.compile_and_run("verilator",
                                directory=tempdir,
-                               magma_opts={"coreir_libs": {"float_CW"}},
+                               magma_opts={"coreir_libs": {"float_CW"},
+                                           "inline": False},
                                flags=["-Wno-fatal"])
 
 
@@ -168,5 +169,6 @@ def test_peak_tile_sequence(sequence, cw_files, seed):
 
         tester.compile_and_run("verilator",
                                directory=tempdir,
-                               magma_opts={"coreir_libs": {"float_CW"}},
+                               magma_opts={"coreir_libs": {"float_CW"},
+                                           "inline": False},
                                flags=["-Wno-fatal"])

@@ -41,6 +41,9 @@
 
     set_db [get_db nets esd] .skip_routing true
     set_db [get_db nets esd] .dont_touch true
+    
+    set_db [get_db nets rte*] .skip_routing true
+    set_db [get_db nets rte*] .dont_touch true
 
     # end of "rte_madness.tcl"
     ########################################################################

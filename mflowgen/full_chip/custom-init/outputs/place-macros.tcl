@@ -168,8 +168,8 @@ foreach_in_collection sram $srams {
   } else {
     placeinstance $sram_name $x_loc $y_loc -fixed
   }
-  # Create M3 pg net blockage to prevent DRC from interaction
-  # with M5 stripes
+  # Create M1,M3 pg net blockage to prevent DRC from interaction
+  # with M5 stripes or pgnet short with sram pins
   set llx [dbGet [dbGet -p top.insts.name $sram_name].box_llx]
   set lly [dbGet [dbGet -p top.insts.name $sram_name].box_lly]
   set urx [dbGet [dbGet -p top.insts.name $sram_name].box_urx]
@@ -180,7 +180,7 @@ foreach_in_collection sram $srams {
   createRouteBlk \
     -inst $sram_name \
     -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-    -layer 3 \
+    -layer [list 1 3] \
     -pgnetonly
   set row [expr $row + 1]
   set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
