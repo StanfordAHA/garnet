@@ -20,7 +20,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
      echo "--- MAKE RTL"; set -o pipefail;
-     cp -rp /sim/buildkite-agent/gold/8-rtl/ .;
+     cp -rp /sim/buildkite-agent/gold/full_chip/9-rtl/ .;
 
      echo "+++ make -n rtl";
      make -n rtl;
@@ -34,7 +34,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
      echo "--- MAKE TILE_ARRAY"; set -o pipefail;
-     cp -rp /sim/buildkite-agent/gold/17-tile_array/ .;
+     cp -rp /sim/buildkite-agent/gold/full_chip/17-tile_array/ .;
 
      echo "+++ make -n tile_array";
      make -n tile_array;
