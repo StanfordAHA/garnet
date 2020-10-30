@@ -198,7 +198,7 @@ proc gen_bumps {} {
     # FIXME/TODO should do this for all the analog signals (i.e. jtag)
     # you know build an array or a dictionary or sumpm
     set cross_bump Bump_620.24.22; set cross_net pad_freq_lvl_cross
-    set ramp_bump  Bump_647.25.23; set ramp_net  pad_ramp_clk
+    set ramp_bump  Bump_647.25.23; set ramp_net  pad_ramp_clock
     
     assignSigToBump -net $cross_net -bumps $cross_bump
     assignSigToBump -net $ramp_net  -bumps $ramp_bump
