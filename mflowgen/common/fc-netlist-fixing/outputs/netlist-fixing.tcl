@@ -42,8 +42,6 @@ attachTerm -noNewPort ANAIOPAD_ext_Vcal AIO ext_Vcal
 
 # Add port for each iphy-to-bump connection
 set bump_to_iphy [list \
-  ext_tx_outp \
-  ext_tx_outn \
   ext_rx_inp \
   ext_rx_inn \
   ext_rx_inp_test \
