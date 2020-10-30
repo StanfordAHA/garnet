@@ -10,7 +10,7 @@ import pytest
 
 from memory_core.memory_core import gen_memory_core, Mode
 from memory_core.memory_core_magma import MemCore
-from lake.utils.test_infra import conv_3_3_args
+from lake.utils.test_infra import lake_test_app_args
 from lake.utils.parse_clkwork_csv import generate_data_lists
 from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
@@ -1154,7 +1154,7 @@ def basic_tb(config_path,
 
 
 # add more tests with this function by adding args
-@pytest.mark.parametrize("args", [conv_3_3_args()])
+@pytest.mark.parametrize("args", [lake_test_app_args("conv_3_3")])
 def test_lake_garnet(args):
     basic_tb(config_path=args[0],
              stream_path=args[1],
