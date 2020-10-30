@@ -25,5 +25,5 @@ ln -s ../$sram_name/SPICE/${sram_name}.spi outputs/sram.spi
 
 cd lib2db/
 make
-cd..
+cd ..
 
