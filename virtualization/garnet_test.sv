@@ -16,22 +16,19 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[];
-    // Environment env;
+    //Environment env;
 
     initial begin
         initialize();
-        env = new(kernels, p_vif, r_vif, interrupt);
-        env.build();
-        env.run();
+        //env = new(kernels, p_vif, r_vif, interrupt);
+        //env.build();
+        //env.run();
     end
 
     //============================================================================//
     // initialize
     //============================================================================//
     task initialize;
-        bitstream_t bitstream;
-        data_array_t input_data;
-        data_array_t gold_data;
         int num_app;
         string app_dirs[$], temp_str;
         num_app = 0;
@@ -51,10 +48,11 @@ program garnet_test #(
 
         foreach (app_dirs[i]) begin
             // get app name
-            automatic string app_name;
-            automatic string dir;
-            automatic string bs_location, input_location, gold_location;
-            automatic int last_str;
+            string app_name;
+            string meta_name;
+            string dir;
+            string bs_location, input_location, gold_location;
+            int last_str;
             dir = app_dirs[i];
             last_str = dir.getc(dir.len() - 1) == "/"? dir.len() - 2: dir.len() - 1;
 
@@ -65,13 +63,8 @@ program garnet_test #(
                 end
             end
             if (app_name.len() == 0) app_name = dir;
-            bs_location = {dir, "/bin/", app_name, ".bs"};
-            input_location = {dir, "/bin/", "input.raw"};
-            gold_location = {dir, "/bin/", "gold.raw"};
-            bitstream = IOHelper::get_bitstream(bs_location);
-            input_data = IOHelper::get_input_data(input_location);
-            gold_data  = IOHelper::get_gold_data(gold_location);
-            kernels[i] = new(i, bitstream, input_data, gold_data);
+            meta_name = {dir, "/bin/", "design.meta"};
+            kernels[i] = new(meta_name);
         end
     endtask
 endprogram

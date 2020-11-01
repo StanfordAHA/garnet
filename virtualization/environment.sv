@@ -8,7 +8,6 @@
 class Environment;
     vAxilIfcDriver vifc_axil;
     vProcIfcDriver vifc_proc;
-    GarnetMonitor mon;
 
     Kernel kernels[];
 
@@ -30,7 +29,6 @@ function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDr
 endfunction
 
 task Environment::build();
-    mon = new();
 endtask
 
 task Environment::test();
