@@ -376,7 +376,6 @@ def test_pond_pe_acc(verilator=True):
     total = 0
     for i in range(16):
         tester.poke(circuit.interface[src_name0], i+1)
-        print("total is", total)
         total = total + i 
         tester.eval()
         tester.expect(circuit.interface[dst_name], total)
