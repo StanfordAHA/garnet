@@ -50,6 +50,10 @@ set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $s
 set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
 set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pe_path/* ]]
 
+# Paths from config input ports to Pond registers 
+set pond_path PondCore_inst0/pond_W_inst0/pond/rf/data_array_reg*
+set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]]
+
 source -echo -verbose inputs/common.tcl
 
 set_false_path -from [all_inputs] -through [get_pins [list $fp_mul_path/*]]
