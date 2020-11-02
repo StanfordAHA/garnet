@@ -79,11 +79,11 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_strides_0", tform_strides_rd_sched[0])#tform_strides_rd[0])
+    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_strides_0", tform_strides_rd_sched[0])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_strides_1", tform_strides_rd_sched[1])#tform_strides_rd[1])
+    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_strides_1", tform_strides_rd_sched[1])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
@@ -384,7 +384,6 @@ def test_pond_pe_acc(verilator=True):
         tester.eval()
 
     with tempfile.TemporaryDirectory() as tempdir:
-        tempdir="pond_acc"
         for genesis_verilog in glob.glob("genesis_verif/*.*"):
             shutil.copy(genesis_verilog, tempdir)
         for filename in dw_files():
