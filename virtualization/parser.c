@@ -203,13 +203,16 @@ void *parse_metadata(char *filename) {
     fclose(fp);
     if (line) free(line);
 
+    info->place_info = parse_placement(info->placement_filename);
+    info->bitstream_info = parse_bitstream(info->bitstream_filename);
+
     // compute the input size
     for (int i = 0; i < num_inputs; i++) {
         if (info->input_filenames[i][0] != '\0') {
             fp = fopen(info->input_filenames[i], "r");
             if (fp) {
                 fseek(fp, 0L, SEEK_END);
-                info->input_size[i] = (int) ftell(fp);
+                info->place_info->input_size[i] = (int) ftell(fp);
                 fclose(fp);
             }
         }
@@ -221,14 +224,11 @@ void *parse_metadata(char *filename) {
             fp = fopen(info->output_filenames[i], "r");
             if (fp) {
                 fseek(fp, 0L, SEEK_END);
-                info->output_size[i] = (int) ftell(fp);
+                info->place_info->output_size[i] = (int) ftell(fp);
                 fclose(fp);
             }
         }
     }
-
-    info->place_info = parse_placement(info->placement_filename);
-    info->bitstream_info = parse_bitstream(info->bitstream_filename);
 
     return info;
 }
@@ -238,7 +238,7 @@ void *get_place_info(void *info) {
     return kernel_info->place_info;
 }
 
-void *get_bitstream_info(void *info) {
+void *get_bs_info(void *info) {
     GET_KERNEL_INFO(info);
     return kernel_info->bitstream_info;
 }
@@ -330,7 +330,7 @@ char *get_output_filename(void *info, int index) {
 
 int get_input_size(void *info, int index) {
     GET_PLACE_INFO(info);
-    return place_info->inputs[index].size;
+    return place_info->input_size[index];
 }
 
 int get_input_start_addr(void *info, int index) {
@@ -345,7 +345,7 @@ int get_input_tile(void *info, int index) {
 
 int get_output_size(void *info, int index) {
     GET_PLACE_INFO(info);
-    return place_info->outputs[index].size;
+    return place_info->output_size[index];
 }
 
 int get_output_start_addr(void *info, int index) {
@@ -356,6 +356,16 @@ int get_output_start_addr(void *info, int index) {
 int get_output_tile(void *info, int index) {
     GET_PLACE_INFO(info);
     return place_info->outputs[index].tile;
+}
+
+int get_bs_start_addr(void *info) {
+    GET_BS_INFO(info);
+    return bs_info->start_addr;
+}
+
+int get_bs_size(void *info) {
+    GET_BS_INFO(info);
+    return bs_info->size;
 }
 
 char *get_prefix(const char *s, char t)

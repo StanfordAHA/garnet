@@ -10,6 +10,15 @@
 #define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = \
                                     (struct KernelInfo *) info
 
+#define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = \
+                                    (struct ConfigInfo *) info
+
+#define GET_BS_INFO(info) struct BitstreamInfo *bs_info = \
+                                    (struct BitstreamInfo *) info
+
+#define GET_IO_INFO(info) struct IOInfo *io_info = \
+                                    (struct IOInfo *) info
+
 #define MAX_CONFIG 20
 
 struct Configuration {
@@ -56,6 +65,9 @@ struct PlaceInfo {
 
     struct ConfigInfo config;
 
+    int input_size[MAX_NUM_IO];
+    int output_size[MAX_NUM_IO];
+
     // index to the inputs, need to multiply by 2
     int reset_port;
 };
@@ -67,9 +79,6 @@ struct KernelInfo {
     char input_filenames[MAX_NUM_IO][BUFFER_SIZE];
     char output_filenames[MAX_NUM_IO][BUFFER_SIZE];
 
-    int input_size[MAX_NUM_IO];
-    int output_size[MAX_NUM_IO];
-
     struct PlaceInfo *place_info;
     struct BitstreamInfo *bitstream_info;
 };
@@ -77,7 +86,7 @@ struct KernelInfo {
 void *parse_placement(char *filename);
 void *parse_metadata(char *filename);
 void *get_place_info(void *info);
-void *get_bitstream_info(void *info);
+void *get_bs_info(void *info);
 void *get_input_info(void *info, int index);
 void *get_output_info(void *info, int index);
 
@@ -103,6 +112,7 @@ int get_input_size(void *info, int index);
 int get_output_start_addr(void *info, int index);
 int get_output_size(void *info, int index);
 
+int get_bs_start_addr(void *info);
 int get_bs_size(void *info);
 char *get_prefix(const char *s, char t);
 
