@@ -126,13 +126,15 @@ def construct():
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
       merge_rdl      = Step( 'mentor-calibre-gdsmerge-child', default=True )
+      fill           = Step( 'mentor-calibre-fill',           default=True )
+      merge_fill     = Step( 'mentor-calibre-gdsmerge-child', default=True )
   else:
       drc            = Step( 'cadence-pegasus-drc',            default=True )
       lvs            = Step( 'cadence-pegasus-lvs',            default=True )
       merge_rdl      = Step( 'cadence-pegasus-gdsmerge-child', default=True )
+      fill           = Step( 'cadence-pegasus-fill',           default=True )
+      merge_fill     = Step( 'cadence-pegasus-gdsmerge-child', default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre', default=True )
-  fill           = Step( 'mentor-calibre-fill',           default=True )
-  merge_fill     = Step( 'mentor-calibre-gdsmerge-child', default=True )
 
   merge_rdl.set_name('gdsmerge-dragonphy-rdl')
   merge_fill.set_name('gdsmerge-fill')
