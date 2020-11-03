@@ -40,8 +40,10 @@ timeprecision 1ps;
 `else
     initial begin
         if ($test$plusargs("VCD_ON")) begin
-            $dumpfile("garnet.vcd");
-            $dumpvars(0, top);
+            $recordfile("dump.trn");
+            $recordvars(top.dut);
+            //$dumpfile("garnet.vcd");
+            //$dumpvars(0, top);
         end
     end
 `endif

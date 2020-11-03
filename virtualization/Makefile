@@ -37,6 +37,7 @@ test-all: test
 .PHONY: sim
 sim: XRUN_ARGS += +libext+.v+.sv -top top
 sim: XRUN_ARGS += -sv_lib parser.so map.so gen.so
+sim: XRUN_ARGS += +VCD_ON
 sim: DESIGN_ARGS += -F tb_garnet.filelist 
 sim: DESIGN_ARGS += -v $(DESIGN)
 sim: DESIGN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \

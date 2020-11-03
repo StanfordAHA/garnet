@@ -5,8 +5,9 @@
 ** Author: Keyi Zhang, Taeyoung Kong
 ** Change history:  10/14/2020 - Implement the first version
 **===========================================================================*/
+
 program garnet_test #(
-    parameter int MAX_NUM_APPS = 2
+    parameter int MAX_NUM_APPS = 3
 ) (
     input logic clk, reset, interrupt,
     proc_ifc p_ifc,
@@ -16,19 +17,22 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[];
-    //Environment env;
+    Environment env;
 
     initial begin
         initialize();
-        //env = new(kernels, p_vif, r_vif, interrupt);
-        //env.build();
-        //env.run();
+        map(kernels);
+
+        env = new(kernels, axil_ifc, p_ifc, interrupt);
+        env.build();
+        env.load();
+        env.run();
     end
 
     //============================================================================//
     // initialize
     //============================================================================//
-    task initialize;
+    function void initialize();
         int num_app;
         string app_dirs[$], temp_str;
         num_app = 0;
@@ -66,6 +70,17 @@ program garnet_test #(
             meta_name = {dir, "/bin/", "design.meta"};
             kernels[i] = new(meta_name);
         end
-    endtask
+    endfunction
+
+    function void map(Kernel kernels[]);
+        foreach(kernels[i]) begin
+            if (kernels[i].kernel_map() == 0) begin
+                $display("map error");
+                $finish(2);
+            end else begin
+                $display("map success");
+            end
+        end
+    endfunction
 endprogram
 

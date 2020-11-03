@@ -2,15 +2,6 @@
 #include "parser.h"
 #include "regmap.h"
 
-#define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = \
-                                    (struct ConfigInfo *) info
-
-#define GET_BS_INFO(info) struct BitstreamInfo *bs_info = \
-                                    (struct BitstreamInfo *) info
-
-#define GET_IO_INFO(info) struct IOInfo *io_info = \
-                                    (struct IOInfo *) info
-
 void *get_pcfg_configuration(void *info) {
     GET_BS_INFO(info);
     return &bs_info->config;

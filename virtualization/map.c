@@ -18,17 +18,10 @@ struct GarnetMonitor {
     int banks[NUM_BANKS];
 };
 
-struct GarnetMonitor garnet;
+static struct GarnetMonitor garnet;
 
-int glb_map(void *kernels, int num_app) {
-    struct KernelInfo **kernels_ = kernels;
-    for (int i=0; i < num_app; i++) {
-        if (glb_map_(kernels_[i]) == 0) return 0;
-    }
-    return 1;
-}
-
-int glb_map_(struct KernelInfo *kernel) {
+int glb_map(void *kernel_) {
+    struct KernelInfo *kernel = kernel_;
     int num_groups = kernel->place_info->num_groups;
 
     int col_start = -1;
@@ -54,7 +47,7 @@ int glb_map_(struct KernelInfo *kernel) {
     // always put bitstream first
     int tile;
     tile = col_start / 2;
-    struct BitstreamInfo *bs_info = get_bitstream_info(kernel);
+    struct BitstreamInfo *bs_info = get_bs_info(kernel);
 
     bs_info->tile = tile;
     bs_info->start_addr = (tile * 2) * BANK_SIZE;
@@ -68,7 +61,7 @@ int glb_map_(struct KernelInfo *kernel) {
     struct IOInfo *io_info;
     for(int i=0; i<num_inputs; i++) {
         io_info = get_input_info(kernel->place_info, i);
-        io_info->size = kernel->input_size[i];
+        io_info->size = kernel->place_info->input_size[i];
         tile = (col_start + io_info->pos.x) / 2;
         io_info->tile = tile;
         if (i == 0) {
@@ -81,7 +74,7 @@ int glb_map_(struct KernelInfo *kernel) {
 
     for(int i=0; i<num_outputs; i++) {
         io_info = get_output_info(kernel->place_info, i);
-        io_info->size = kernel->output_size[i];
+        io_info->size = kernel->place_info->output_size[i];
         tile = (col_start + io_info->pos.x) / 2;
         io_info->tile = tile;
         io_info->start_addr = (tile * 2 + 1) * BANK_SIZE;
