@@ -123,6 +123,7 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
+
 def test_pond_rd_wr(verilator=True):
 
     chip_size = 2
@@ -214,6 +215,7 @@ def test_pond_rd_wr(verilator=True):
                                tmp_dir=False,
                                **runtime_kwargs)
 
+
 def test_pond_pe(verilator=True):
 
     chip_size = 2
@@ -245,7 +247,7 @@ def test_pond_pe(verilator=True):
         config_data.append((interconnect.get_config_addr(addr, 0, pe_x, pe_y), data))
 
     # Ranges, Strides, Dimensionality, Starting Addr, Starting Addr - Schedule
-    ctrl_rd = [[16, 1], [1, 1], 2, 0, 16, [1 ,1]]
+    ctrl_rd = [[16, 1], [1, 1], 2, 0, 16, [1, 1]]
     ctrl_wr = [[16, 1], [1, 1], 2, 0, 0, [1, 1]]
 
     generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data)
@@ -313,6 +315,7 @@ def test_pond_pe(verilator=True):
                                tmp_dir=False,
                                **runtime_kwargs)
 
+
 def test_pond_pe_acc(verilator=True):
 
     chip_size = 2
@@ -375,8 +378,8 @@ def test_pond_pe_acc(verilator=True):
 
     total = 0
     for i in range(16):
-        tester.poke(circuit.interface[src_name0], i+1)
-        total = total + i 
+        tester.poke(circuit.interface[src_name0], i + 1)
+        total = total + i
         tester.eval()
         tester.expect(circuit.interface[dst_name], total)
         tester.step(2)
@@ -405,4 +408,4 @@ def test_pond_pe_acc(verilator=True):
 
         tester.compile_and_run(target=target,
                                tmp_dir=False,
-                               **runtime_kwargs)        
+                               **runtime_kwargs)
