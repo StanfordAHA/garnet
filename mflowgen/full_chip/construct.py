@@ -460,6 +460,8 @@ def construct():
   merge_rdl.update_params( {'coord_x': parameters['dragonphy_rdl_x'], 'coord_y': parameters['dragonphy_rdl_y'], 'flatten_child': True,
                             'design_top_cell': parameters['design_name'], 'child_top_cell': 'dragonphy_RDL'} )
 
+  merge_fill.update_params( {'design_top_cell': parameters['design_name'], 'child_top_cell': f"{parameters['design_name']}_F16a"} )
+
   # Antenna DRC node needs to use antenna rule deck
   antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'] } )
 
