@@ -50,9 +50,15 @@ set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $s
 set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
 set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pe_path/* ]]
 
-# Paths from config input ports to Pond registers 
+# Paths from config input ports to the register file in Pond 
 set pond_path PondCore_inst0/pond_W_inst0/pond/rf/data_array_reg*
-set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]]
+
+# set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]]
+# Set multicycle path from config ports to the register file passing through the ALU
+# These are false paths and the above false path constraint can be applied but use MCP for conservative constraints
+# The correct config paths from the config ports directly to the register file are verified to be constrained 
+set_multicycle_path 2 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -setup
+set_multicycle_path 1 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -hold
 
 source -echo -verbose inputs/common.tcl
 
