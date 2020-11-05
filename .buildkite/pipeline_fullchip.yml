@@ -14,33 +14,61 @@ steps:
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
 - wait: ~
 
-- label: 'rtl'
+
+# Bypass rtl build
+- label: 'rtl*'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
-     echo "--- MAKE RTL"; set -o pipefail;
+     echo "--- COPY RTL"; set -o pipefail;
+     cp -rp /sim/buildkite-agent/gold/full_chip/9-rtl/ .;
+
+     echo "+++ make -n rtl";
+     make -n rtl;
+
+     echo "--- make rtl";
      make rtl |& tee make-rtl.log'
 - wait: ~
 
-# Note: "echo exit 13" prevents hang at genus/innovus prompt
-- label: 'tile_array'
+# Bypass tile_array
+- label: 'tile_array*'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
-     echo "--- MAKE TILE_ARRAY"; set -o pipefail;
-     echo exit 13 | make tile_array |& tee make-tile_array.log'
+     echo "--- COPY TILE_ARRAY"; set -o pipefail;
+     cp -rp /sim/buildkite-agent/gold/full_chip/17-tile_array/ .;
+
+     echo "+++ make -n tile_array";
+     make -n tile_array;
+
+     echo "--- make tile_array";
+     make tile_array |& tee make-tile_array.log'
 - wait: ~
 
-- label: 'glb_top'
+# Bypass
+- label: 'glb_top*'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 84G;
-     echo "--- MAKE GLB_TOP"; set -o pipefail;
-     echo exit 13 | make glb_top |& tee make-glb_top.log'
+     echo "--- COPY GLB_TOP"; set -o pipefail;
+     cp -rp /sim/buildkite-agent/gold/full_chip/*-glb_top/ .;
+
+     echo "+++ make -n glb_top";
+     make -n glb_top;
+
+     echo "--- make glb_top";
+     make glb_top |& tee make-glb_top.log'
 - wait: ~
 
-- label: 'GLC'
+# Bypass
+- label: 'GLC*'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 74G;
      echo "--- MAKE GLOBAL_CONTROLLER"; set -o pipefail;
-     echo exit 13 | make global_controller |& tee make-GLC.log'
+     cp -rp /sim/buildkite-agent/gold/full_chip/*-global_controller/ .;
+
+     echo "+++ make -n global_controller";
+     make -n global_controller;
+
+     echo "--- make global_controller";
+     make global_controller |& tee make-GLC.log'
 - wait: ~
 
 # 5 sec
