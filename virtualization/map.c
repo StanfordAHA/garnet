@@ -3,11 +3,9 @@
 #include "regmap.h"
 #include <stdio.h>
 
-#define NUM_GLB_TILES 16
 #define BANK_SIZE 131072
-#define NUM_BANKS 32
-#define BANK_WIDTH 32
 #define NUM_COLS 32
+#define NUM_GLB_TILES NUM_COLS/2
 #define GROUP_SIZE 4
 
 // Hacky way to cache tile control configuration
@@ -15,7 +13,6 @@ int tile_config_table[NUM_GLB_TILES];
 
 struct GarnetMonitor {
     int cols[NUM_COLS];
-    int banks[NUM_BANKS];
 };
 
 static struct GarnetMonitor garnet;
@@ -110,7 +107,7 @@ void update_io_configuration(struct IOInfo *io_info) {
         update_tile_config_table(tile, 1 << 6);
         update_tile_config_table(tile, 1 << 2);
         add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_START_ADDR, start_addr); 
-        add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0, (1 << 21) + size); 
+        add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0, (size << 10) + 1); 
         add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_VALIDATE, 1); 
     } else {
         update_tile_config_table(tile, 1 << 8);
@@ -128,7 +125,7 @@ void update_tile_config_table(int tile, int data) {
 void update_tile_configuration(struct PlaceInfo *place_info) {
     for(int i=0; i<NUM_GLB_TILES; i++) {
         if (tile_config_table[i] != 0) {
-            add_config(&place_info->config, i * 0x100, tile_config_table[i]);
+            add_config(&place_info->config, (i * 0x100) + GLB_TILE0_TILE_CTRL, tile_config_table[i]);
         }
     }
 }

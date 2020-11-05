@@ -9,7 +9,7 @@
 program garnet_test #(
     parameter int MAX_NUM_APPS = 3
 ) (
-    input logic clk, reset, interrupt,
+    input logic clk, reset,
     proc_ifc p_ifc,
     axil_ifc axil_ifc
 );
@@ -23,9 +23,8 @@ program garnet_test #(
         initialize();
         map(kernels);
 
-        env = new(kernels, axil_ifc, p_ifc, interrupt);
+        env = new(kernels, axil_ifc, p_ifc);
         env.build();
-        env.load();
         env.run();
     end
 

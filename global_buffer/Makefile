@@ -6,7 +6,7 @@ TB_DIR := ./sim
 TOP_MODULE := global_buffer
 
 CGRA_WIDTH := 32
-NUM_GLB_TILES := 16
+NUM_GLB_TILES := $(shell expr $(CGRA_WIDTH) / 2 )
 
 GLB_TILE_NETLIST := /sim/kongty/pnr_annotate/glb_tile.vcs.v
 GLB_TOP_NETLIST := /sim/kongty/pnr_annotate/global_buffer.vcs.v
@@ -72,7 +72,7 @@ $(rdl_post): $(rdl_pre)
 
 rdl_gen = $(RDL_DIR)/glb_jrdl_decode.sv $(RDL_DIR)/glb_jrdl_logic.sv $(RDL_DIR)/glb_pio.sv
 $(rdl_gen): $(rdl_post)
-	java -jar ../systemRDL/Ordt.jar -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.post
+	java -jar ../systemRDL/Ordt.jar -reglist systemRDL/output/glb.reglist -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.post
 
 $(RTL_LISTS): $(rdl_gen)
 

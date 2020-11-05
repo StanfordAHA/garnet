@@ -7,6 +7,7 @@
 **  10/14/2020 - Implement the first version
 **===========================================================================*/
 `define CLK_PERIOD 1ns
+`include "garnet_regmap.svh"
 
 import garnet_param::*;
 
@@ -40,10 +41,8 @@ timeprecision 1ps;
 `else
     initial begin
         if ($test$plusargs("VCD_ON")) begin
-            $recordfile("dump.trn");
-            $recordvars(top.dut);
-            //$dumpfile("garnet.vcd");
-            //$dumpvars(0, top);
+            $dumpfile("garnet.vcd");
+            $dumpvars(0, top);
         end
     end
 `endif
@@ -77,7 +76,6 @@ timeprecision 1ps;
     garnet_test test (
         .clk        (clk),
         .reset      (reset),
-        .interrupt  (interrupt),
         .p_ifc      (p_ifc),
         .axil_ifc   (axil_ifc)
     );

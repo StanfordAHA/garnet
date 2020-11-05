@@ -368,6 +368,11 @@ int get_bs_size(void *info) {
     return bs_info->size;
 }
 
+int get_bs_tile(void *info) {
+    GET_BS_INFO(info);
+    return bs_info->tile;
+}
+
 char *get_prefix(const char *s, char t)
 {
     const char * last = strrchr(s, t);
