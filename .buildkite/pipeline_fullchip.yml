@@ -15,11 +15,17 @@ steps:
 - wait: ~
 
 
-# DO NOT Bypass rtl build
-- label: 'rtl'
+# Bypass rtl build
+- label: 'rtl*'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
-     echo "--- MAKE RTL"; set -o pipefail;
+     echo "--- COPY RTL"; set -o pipefail;
+     cp -rp /sim/buildkite-agent/gold/full_chip/9-rtl/ .;
+
+     echo "+++ make -n rtl";
+     make -n rtl;
+
+     echo "--- make rtl";
      make rtl |& tee make-rtl.log'
 - wait: ~
 
