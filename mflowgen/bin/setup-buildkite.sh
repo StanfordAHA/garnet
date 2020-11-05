@@ -167,6 +167,7 @@ echo '+++ SPACE CHECK'
 dest_dir=`pwd`
 
 function find_existing_dir {
+    set -x
     # Given a pathname such that only the first part of the pathname
     # might currently exist, find the existing portion of the path
     # E.g. given "/var/lib/foo/bar/tmp.lib", but only "/var/lib" exists atm,
@@ -182,7 +183,9 @@ function find_existing_dir {
     d=$1; while ! test -d $d; do d=`dirname $d`; done
     echo $d
 }
-DO_UNIT_TESTS=false
+set -x
+find_existing_dir $build_dir
+DO_UNIT_TESTS=true
 if [ "$DO_UNIT_TESTS" == "true" ]; then # cut'n'paste for unit tests
     find_existing_dir newdir/cachename
     (cd /var; find_existing_dir lib)
