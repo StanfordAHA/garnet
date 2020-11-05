@@ -43,7 +43,7 @@ def construct():
     # Include SoC core? (use 0 for false, 1 for true)
     'include_core'      : 1,
     # Include sealring?
-    'include_sealring'  : False,
+    'include_sealring'  : True,
     # SRAM macros
     'num_words'         : 2048,
     'word_size'         : 64,
