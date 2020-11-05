@@ -10,7 +10,8 @@ steps:
 
 - label: 'setup'
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+  - 'df; ls /build; test -d /build || echo cannot find /build;
+     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
 - wait: ~
 
