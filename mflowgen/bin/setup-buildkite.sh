@@ -167,7 +167,6 @@ echo '+++ SPACE CHECK'
 dest_dir=`pwd`
 
 function find_existing_dir {
-    set -x
     # Given a pathname such that only the first part of the pathname
     # might currently exist, find the existing portion of the path
     # E.g. given "/var/lib/foo/bar/tmp.lib", but only "/var/lib" exists atm,
@@ -183,14 +182,7 @@ function find_existing_dir {
     d=$1; while ! test -d $d; do d=`dirname $d`; done
     echo $d
 }
-set -x
-ls -l /build
-df /build
-(cd /build; pwd)
-test -d /build && echo found /build || echo cannot find /build
-
-find_existing_dir $build_dir
-DO_UNIT_TESTS=true
+DO_UNIT_TESTS=false
 if [ "$DO_UNIT_TESTS" == "true" ]; then # cut'n'paste for unit tests
     find_existing_dir newdir/cachename
     (cd /var; find_existing_dir lib)
@@ -202,6 +194,14 @@ if [ "$DO_UNIT_TESTS" == "true" ]; then # cut'n'paste for unit tests
     find_existing_dir /goob
     find_existing_dir /
 fi
+
+# Huh.
+if expr $build_dir : /build > /dev/null; then
+  if ! test -d /build; then
+      echo "**ERROR: Cannot find dir '/build'; may need to restart buildkite agent(s)"
+  fi
+fi
+
 
 # Find currently-existing portion of target build dir
 dest_dir=`find_existing_dir $build_dir`
