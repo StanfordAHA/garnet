@@ -6,7 +6,7 @@ TB_DIR := ./sim
 TOP_MODULE := global_buffer
 
 CGRA_WIDTH := 32
-NUM_GLB_TILES := 16
+NUM_GLB_TILES := $(shell expr $(CGRA_WIDTH) / 2 )
 
 GLB_TILE_NETLIST := /sim/kongty/pnr_annotate/glb_tile.vcs.v
 GLB_TOP_NETLIST := /sim/kongty/pnr_annotate/global_buffer.vcs.v
