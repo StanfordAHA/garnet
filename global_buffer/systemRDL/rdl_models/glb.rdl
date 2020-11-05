@@ -80,8 +80,8 @@ addrmap glb {
     reg iter_ctrl_r {
         name = "Iteration Control";
         desc = "Iteration control registers";
-        field {} range[<%=MAX_NUM_WORDS_WIDTH%>] = 0;
         field {} stride[<%=MAX_STRIDE_WIDTH%>] = 0;
+        field {} range[<%=MAX_NUM_WORDS_WIDTH%>] = 0;
     };
 
     reg active_ctrl_r {
