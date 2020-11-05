@@ -184,6 +184,11 @@ function find_existing_dir {
     echo $d
 }
 set -x
+ls -l /build
+df /build
+(cd /build; pwd)
+test -d /build && echo found /build || echo cannot find /build
+
 find_existing_dir $build_dir
 DO_UNIT_TESTS=true
 if [ "$DO_UNIT_TESTS" == "true" ]; then # cut'n'paste for unit tests
