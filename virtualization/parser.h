@@ -109,11 +109,14 @@ int get_output_size(void *info, int index);
 
 int get_input_start_addr(void *info, int index);
 int get_input_size(void *info, int index);
+int get_input_tile(void *info, int index);
 int get_output_start_addr(void *info, int index);
 int get_output_size(void *info, int index);
+int get_output_tile(void *info, int index);
 
 int get_bs_start_addr(void *info);
 int get_bs_size(void *info);
+int get_bs_tile(void *info);
 char *get_prefix(const char *s, char t);
 
 #endif//VIRTUALIZE_META_LIBRARY_H

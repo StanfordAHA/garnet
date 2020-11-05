@@ -1,15 +1,20 @@
 #!/bin/bash
 
+CGRA_WIDTH := 8
+AXI_ADDR_WIDTH := 13
+AXI_DATA_WIDTH := 32
+
 H2H := /sim/kongty/aha/Halide-to-Hardware/apps/hardware_benchmarks
 DESIGN := /sim/kongty/garnet/virtualization/build-fullchip/9-rtl/outputs/design.v
 XRUN = xrun \
 	   -64bit \
 	   -sv \
+	   -debug \
 	   -sysv \
 	   -l xrun.log \
 	   -notimingchecks \
 	   -covoverwrite \
-	   -timescale 1ns/1ps \
+	   -timescale 100ps/1ps \
 	   -initmem0 \
 	   -initreg0 \
 	   +access+rw \
@@ -22,7 +27,7 @@ gen.so: gen.c gen.h
 	gcc -Wno-error -Wall gen.c -shared -o gen.so -fPIC
 
 map.so: map.c map.h
-	gcc -Wno-error -Wall map.c -shared -o map.so -fPIC
+	gcc -DNUM_COLS=$(CGRA_WIDTH) -Wno-error -Wall map.c -shared -o map.so -fPIC
 
 parser.so: parser.c parser.h
 	gcc -Wno-error -Wall parser.c -shared -o parser.so -fPIC
@@ -34,12 +39,13 @@ test-all: test
 	LD_LIBRARY_PATH=. ./test
 
 # run testbench of glb with xcelium
-.PHONY: sim
+.PHONY: sim map.so
 sim: XRUN_ARGS += +libext+.v+.sv -top top
 sim: XRUN_ARGS += -sv_lib parser.so map.so gen.so
 sim: XRUN_ARGS += +VCD_ON
-sim: DESIGN_ARGS += -F tb_garnet.filelist 
+sim: XRUN_ARGS += +define+CGRA_WIDTH=$(CGRA_WIDTH) +define+AXI_ADDR_WIDTH=$(AXI_ADDR_WIDTH) +define+AXI_DATA_WIDTH=$(AXI_DATA_WIDTH)
 sim: DESIGN_ARGS += -v $(DESIGN)
+sim: DESIGN_ARGS += -F tb_garnet.filelist 
 sim: DESIGN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
 				    -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
 				   	-v /home/kongty/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/ts1n16ffcllsblvtc2048x64m8sw_130a.v \
