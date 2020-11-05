@@ -37,7 +37,7 @@ def construct():
     'array_height'      : 16,
     'interconnect_only' : False,
     # Power Domains
-    'PWR_AWARE'         : False,
+    'PWR_AWARE'         : True,
     # Include Garnet?
     'soc_only'          : False,
     # Include SoC core? (use 0 for false, 1 for true)
@@ -370,8 +370,8 @@ def construct():
   g.connect_by_name( signoff,        lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
-
-  # Skipping
+  
+  # Skipping 
   g.connect( signoff.o('design-merged.gds'), merge_rdl.i('design.gds') )
   g.connect( dragonphy.o('dragonphy_RDL.gds'), merge_rdl.i('child.gds') )
   g.connect_by_name( merge_rdl, lvs )
@@ -426,7 +426,7 @@ def construct():
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'alignment-cells.tcl',
       'analog-bumps/route-phy-bumps.tcl',
-      'analog-bumps/bump-connect.tcl',
+      'analog-bumps/bump-connect.tcl', 
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
       'place-macros.tcl', 'dont-touch.tcl'
     ]}
