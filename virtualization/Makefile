@@ -62,7 +62,6 @@ sim: DESIGN_ARGS += -F tb_garnet.filelist -F $(glb_dir)/rtl/global_buffer.fileli
 sim: DESIGN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
 				    -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ 
 
-sim: APP_ARGS += +APP0=$(app0)
 sim: glb-rtl glc-rtl map.so gen.so parser.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_driver.sv axil_driver.sv axil_ifc.sv proc_ifc.sv environment.sv
 	$(XRUN)
 
