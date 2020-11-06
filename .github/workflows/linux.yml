@@ -1,0 +1,39 @@
+name: CI Test
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Checkout submodules
+      shell: bash
+      run: |
+        auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+        git submodule sync --recursive
+        git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+    - name: Pull and run docker 🐋 
+      shell: bash
+      run: |
+        docker pull keyiz/garnet-flow
+        docker run -d -it --name garnet keyiz/garnet-flow bash
+        docker cp ../garnet garnet:/
+    - name: Install deps 🛠️
+      shell: bash
+      run: |
+        docker exec -i garnet bash -c "pip install -r /garnet/requirements.txt"
+        docker exec -i garnet bash -c "pip install pytest python-coveralls"
+        docker exec -i garnet bash -c "pip install pytest-cov pytest-pycodestyle z3-solver genesis2"
+    - name: Run tests ⚙️
+      shell: bash
+      run: |
+        docker exec -i garnet bash -c "/garnet/.github/scripts/run.sh"
+    - name: Upload coverall
+      shell: bash
+      run: |
+        docker exec -i garnet bash -c "cd /garnet/ && coveralls"
+
