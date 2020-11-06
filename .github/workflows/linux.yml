@@ -26,7 +26,8 @@ jobs:
       shell: bash
       run: |
         docker exec -i garnet bash -c "pip install -r /garnet/requirements.txt"
-        docker exec -i garnet bash -c "pip install pytest python-coveralls"
+        docker exec -i garnet bash -c "pip install coveralls"
+        docker exec -i garnet bash -c "pip install pytest"
         docker exec -i garnet bash -c "pip install pytest-cov pytest-pycodestyle z3-solver genesis2"
     - name: Run tests ⚙️
       shell: bash
