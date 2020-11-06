@@ -1,7 +1,4 @@
 import argparse
-from memory_core.memory_core import gen_memory_core, Mode
-from memory_core.memory_core_magma import MemCore
-from lake.utils.parse_clkwork_csv import generate_data_lists
 import glob
 import tempfile
 import shutil
@@ -9,10 +6,15 @@ import fault
 import random
 import magma
 import os
+import pytest
+
+from memory_core.memory_core import gen_memory_core, Mode
+from memory_core.memory_core_magma import MemCore
+from lake.utils.test_infra import lake_test_app_args
+from lake.utils.parse_clkwork_csv import generate_data_lists
 from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
 from gemstone.common.util import compress_config_data
-import pytest
 from gemstone.generator import Const
 from cgra.util import create_cgra
 from canal.util import IOSide
@@ -233,6 +235,7 @@ def test_multiple_output_ports():
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                target="verilator",
                                flags=["-Wno-fatal"])
 
@@ -412,6 +415,7 @@ def test_multiple_output_ports_conv():
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                target="verilator",
                                flags=["-Wno-fatal"])
 
@@ -626,6 +630,7 @@ def test_mult_ports_mult_aggs_double_buffer_conv():
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                target="verilator",
                                flags=["-Wno-fatal"])
 
@@ -829,6 +834,7 @@ def test_mult_ports_mult_aggs_double_buffer():
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                target="verilator",
                                flags=["-Wno-fatal"])
 
@@ -1030,6 +1036,7 @@ def test_multiple_input_ports_identity_stream_mult_aggs():
             shutil.copy(genesis_verilog, tempdir)
         tester.compile_and_run(directory=tempdir,
                                magma_output="coreir-verilog",
+                               magma_opts={"inline": False},
                                target="verilator",
                                flags=["-Wno-fatal"])
 
@@ -1041,16 +1048,6 @@ def basic_tb(config_path,
              xcelium=False,
              tempdir_override=False,
              trace=False):
-
-    # These need to be set to refer to certain csvs....
-    lake_controller_path = os.getenv("LAKE_CONTROLLERS")
-    lake_stream_path = os.getenv("LAKE_STREAM")
-
-    assert lake_controller_path is not None and lake_stream_path is not None,\
-        f"Please check env vars:\nLAKE_CONTROLLERS: {lake_controller_path}\nLAKE_STREAM: {lake_stream_path}"
-
-    config_path = lake_controller_path + "/" + config_path
-    stream_path = lake_stream_path + "/" + stream_path
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
@@ -1135,7 +1132,8 @@ def basic_tb(config_path,
         target = "verilator"
         runtime_kwargs = {"magma_output": "coreir-verilog",
                           "magma_opts": {"coreir_libs": {"float_CW"},
-                                         "disable_ndarray": True},
+                                         "disable_ndarray": True,
+                                         "inline": False},
                           "directory": tempdir,
                           "flags": []}
         if xcelium is False:
@@ -1155,14 +1153,13 @@ def basic_tb(config_path,
                                **runtime_kwargs)
 
 
-def test_conv_3_3():
-    # conv_3_3
-    config_path = "conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf"
-    stream_path = "conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf_0_top_SMT.csv"
-    basic_tb(config_path=config_path,
-             stream_path=stream_path,
-             in_file_name="input",
-             out_file_name="output")
+# add more tests with this function by adding args
+@pytest.mark.parametrize("args", [lake_test_app_args("conv_3_3")])
+def test_lake_garnet(args):
+    basic_tb(config_path=args[0],
+             stream_path=args[1],
+             in_file_name=args[2],
+             out_file_name=args[3])
 
 
 if __name__ == "__main__":

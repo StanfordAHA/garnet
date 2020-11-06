@@ -6,13 +6,19 @@ TB_DIR := ./sim
 TOP_MODULE := global_buffer
 
 CGRA_WIDTH := 32
-NUM_GLB_TILES := 16
+NUM_GLB_TILES := $(shell expr $(CGRA_WIDTH) / 2 )
 
 GLB_TILE_NETLIST := /sim/kongty/pnr_annotate/glb_tile.vcs.v
 GLB_TOP_NETLIST := /sim/kongty/pnr_annotate/global_buffer.vcs.v
 SRAM_RTL := /sim/kongty/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/ts1n16ffcllsblvtc2048x64m8sw_130a.v
 
 RTL_LISTS := `cat $(RTL_DIR)/global_buffer.filelist | sed -e 's/^/$(RTL_DIR)\//' | xargs readlink -f`
+
+FIX_SYSTEMRDL = \
+    sed -i '/pio_dec_write_data_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
+    sed -i '/pio_dec_address_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
+    sed -i '/endmodule/d' ./systemRDL/output/glb_jrdl_decode.sv; \
+    printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glb_jrdl_decode.sv
 
 XRUN = xrun \
 	   -64bit \
@@ -72,6 +78,7 @@ $(RTL_LISTS): $(rdl_gen)
 
 .PHONY: rtl
 rtl: $(RTL_LISTS)
+	$(FIX_SYSTEMRDL)
 
 # html target generates html for systemRDL table
 .PHONY: html
@@ -84,7 +91,7 @@ html: $(rdl_post)
 sim-tile: TOP_MODULE=glb_tile
 sim-tile: TB_DIR=sim-tile
 sim-tile: DESIGNARGS += -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist -v $(SRAM_RTL)
-sim-tile: $(RTL_LISTS)
+sim-tile: rtl
 	$(XRUN)
 
 # sim-tile-pnr
@@ -99,14 +106,14 @@ sim-tile-gl: DESIGNARGS += \
 	$(GLB_TILE_NETLIST) \
 	$(RTL_DIR)/global_buffer_param.svh \
 	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist
-sim-tile-gl: $(RTL_LISTS) $(GLB_TILE_NETLIST)
+sim-tile-gl: $(GLB_TILE_NETLIST)
 	$(XRUN)
 
 # run testbench of glb with xcelium
 .PHONY: sim
 #sim: XRUNARGS+=+define+DEBUG
 sim: DESIGNARGS += -v $(SRAM_RTL) -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist 
-sim: $(RTL_LISTS) 
+sim: rtl
 	$(XRUN)
 
 .PHONY: sim-gl
