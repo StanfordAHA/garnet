@@ -1,0 +1,23 @@
+steps:
+- label: ":wrench: Build  and Test Garnet GLB + Fabric"
+  commands:
+  - source /aha/bin/activate
+  - source /cad/modules/tcl/init/sh
+  - module load base xcelium
+    # test using a specific branch of aha
+  - cd /aha/ && git fetch && git checkout origin/glb_command && cd ..
+    # use the mounted garnet
+  - rm -rf /aha/garnet
+  - cp -r /workdir /aha/garnet
+  - aha garnet -v --width 8 --height 4
+  - aha halide tests/conv_1_2
+  - aha map tests/conv_1_2 --width 8 --height 4 --no-pd
+  - aha glb tests/conv_1_2 --width 8
+  plugins:
+    - docker#v3.2.0:
+        image: stanfordaha/garnet
+        volumes:
+          - "/cad/:/cad"
+        shell: ["/bin/bash", "-e", "-c"]
+  agents:
+    docker: true
