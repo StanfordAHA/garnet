@@ -33,3 +33,8 @@ jobs:
       shell: bash
       run: |
         docker exec -i garnet bash -c "/garnet/.github/scripts/run.sh"
+    - name: Upload Coverage
+      shell: bash
+      run: |
+        export CODECOV_TOKEN="${{ secrets.CODECOV_TOKEN }}"
+        docker exec -i garnet bash -c "cd /garnet/ && bash <(curl -s https://codecov.io/bash)"
