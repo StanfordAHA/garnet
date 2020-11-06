@@ -36,5 +36,4 @@ jobs:
     - name: Upload Coverage
       shell: bash
       run: |
-        export CODECOV_TOKEN="${{ secrets.CODECOV_TOKEN }}"
-        docker exec -i garnet bash -c "cd /garnet/ && bash <(curl -s https://codecov.io/bash)"
+        docker exec -i garnet bash -c "cd /garnet/ && bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }}"
