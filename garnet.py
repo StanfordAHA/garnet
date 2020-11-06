@@ -246,6 +246,7 @@ class Garnet(Generator):
 
     def compile(self, halide_src, unconstrained_io=False, compact=False):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
+        app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
         else:
@@ -254,7 +255,8 @@ class Garnet(Generator):
                                              cwd="temp",
                                              id_to_name=id_to_name,
                                              fixed_pos=fixed_io,
-                                             compact=compact)
+                                             compact=compact,
+                                             copy_to_dir=app_dir)
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -368,7 +370,8 @@ def main():
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_CW"},
                       passes = ["rungenerators", "inline_single_instances", "clock_gate"],
-                      disable_ndarray=True)
+                      disable_ndarray=True,
+                      inline=False)
         garnet.create_stub()
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:

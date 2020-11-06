@@ -41,7 +41,7 @@ class GlobalBufferParams:
                                 - BANK_BYTE_OFFSET
                                 + m.bitutils.clog2(BANK_DATA_WIDTH
                                                    // CGRA_DATA_WIDTH))
-    MAX_STRIDE_WIDTH: int = AXI_DATA_WIDTH - MAX_NUM_WORDS_WIDTH
+    MAX_STRIDE_WIDTH: int = 10
 
     # Max number of bitstream in dma header
     MAX_NUM_CFGS_WIDTH: int = GLB_ADDR_WIDTH - BANK_BYTE_OFFSET
