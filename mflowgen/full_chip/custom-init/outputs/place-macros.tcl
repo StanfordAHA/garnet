@@ -199,7 +199,8 @@ foreach_in_collection sram $srams {
 }
 
 # Place analog block
-placeInstance iphy 1352.685 4098.000 -fixed
+# placeInstance iphy 1352.685 4098.000 -fixed ; # dragonphy
+  placeInstance iphy 1703.075 4098.000 -fixed ; # dragonphy2 11/2020
 
 # Create route Blockage over dragonphy
 set llx [dbGet [dbGet -p top.insts.name iphy].box_llx]
