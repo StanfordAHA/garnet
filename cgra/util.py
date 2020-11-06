@@ -106,7 +106,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     # pond may have inter-core connection
     if add_pond:
         inter_core_connection = {"data_out_pond": ["data0", "data1"],
-                                 "valid_out_pond": ["bit0"]}
+                                 "valid_out_pond": ["bit0"],
+                                 "alu_res": ["data_in_pond"]}
         # inter_core_connection = {}
     else:
         inter_core_connection = {}
