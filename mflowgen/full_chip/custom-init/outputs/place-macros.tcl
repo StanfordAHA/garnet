@@ -237,6 +237,9 @@ set_db [get_db nets clk_out_p] .skip_routing true
 set_db [get_db nets clk_out_n] .skip_routing true
 set_db [get_db nets clk_trig_p] .skip_routing true
 set_db [get_db nets clk_trig_n] .skip_routing true
+# But why not?
+# set_db [get_db nets ext_tx_outp] .skip_routing true ; # dragonphy2 11/2020
+# set_db [get_db nets ext_tx_outn] .skip_routing true ; # dragonphy2 11/2020
 
 
 
