@@ -55,7 +55,8 @@ glc-rtl:
 .PHONY: sim map.so
 sim: XRUN_ARGS += +libext+.v+.sv -top top
 sim: XRUN_ARGS += -sv_lib parser.so map.so gen.so
-sim: XRUN_ARGS += +VCD_ON
+
+# sim: XRUN_ARGS += +VCD_ON
 sim: XRUN_ARGS += +define+CGRA_WIDTH=$(CGRA_WIDTH) +define+AXI_ADDR_WIDTH=$(AXI_ADDR_WIDTH) +define+AXI_DATA_WIDTH=$(AXI_DATA_WIDTH)
 sim: DESIGN_ARGS += -v $(garnet_dir)/garnet.v -v $(glb_dir)/rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv
 sim: DESIGN_ARGS += -F tb_garnet.filelist -F $(glb_dir)/rtl/global_buffer.filelist -F $(glc_dir)/global_controller.filelist
