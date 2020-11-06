@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.com/StanfordAHA/garnet.svg?branch=master)](https://travis-ci.com/StanfordAHA/garnet)
-[![Coverage Status](https://coveralls.io/repos/github/StanfordAHA/garnet/badge.svg?branch=master)](https://coveralls.io/github/StanfordAHA/garnet?branch=master)
+[![codecov](https://codecov.io/gh/stanfordaha/garnet/branch/master/graph/badge.svg?token=9XcZmGqxyt)](https://codecov.io/gh/stanfordaha/garnet)
 
 The main purpose of this repo is to investigate and experiment with implementing our CGRA using new generator infrastructure. You will find in this repo: the original Genesis2 source for top level modules, functional models, and testing infrastructure. Also, you will find common generator patterns abstracted away to make designing, testing, and programming the CGRA faster.
 
