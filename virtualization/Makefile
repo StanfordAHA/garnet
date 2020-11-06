@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CGRA_WIDTH := 8
+CGRA_WIDTH ?= 8
 AXI_ADDR_WIDTH := 13
 AXI_DATA_WIDTH := 32
 
