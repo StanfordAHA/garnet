@@ -20,6 +20,7 @@ import math
 import os
 import archipelago
 import archipelago.power
+import archipelago.io
 
 # set the debug mode to false to speed up construction
 set_debug_mode(False)
@@ -273,6 +274,8 @@ class Garnet(Generator):
                                                        placement,
                                                        id_to_name)
         delay = 1 if has_rom(id_to_name) else 0
+        # also write out the meta file
+        archipelago.io.dump_meta_file(halide_src, "design", os.path.dirname(halide_src))
         return bitstream, (input_interface, output_interface, reset, valid, en,
                            delay)
 
