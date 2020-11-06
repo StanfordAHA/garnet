@@ -3,8 +3,11 @@
 #include "regmap.h"
 #include <stdio.h>
 
-#define BANK_SIZE 131072
+#ifndef NUM_COLS
 #define NUM_COLS 32
+#endif
+
+#define BANK_SIZE 131072
 #define NUM_GLB_TILES NUM_COLS/2
 #define GROUP_SIZE 4
 
