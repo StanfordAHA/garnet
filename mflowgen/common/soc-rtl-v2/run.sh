@@ -6,10 +6,6 @@ CUR_DIR=$(pwd)
 # Clone the SoC Repo
 git clone https://github.com/StanfordAHA/AhaM3SoC.git aham3soc
 
-# We'll need this until the new PHY RDL is incorporated and working (right?);
-# then we can delete it before the final merge(s)
-(cd aham3soc; git checkout phy_pads)
-
 # Clone the ARM IP Repo
 git clone git@r7arm-aha:nyengele/aham3soc_armip.git aham3soc_armip
 
