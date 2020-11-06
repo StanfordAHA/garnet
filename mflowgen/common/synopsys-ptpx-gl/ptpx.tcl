@@ -5,6 +5,7 @@
 #
 # - Gate-level power analysis
 # - Averaged power analysis
+# - save_session is your friend
 #
 # Requires:
 #
@@ -39,7 +40,7 @@ if { $::env(batch) == "True" } {
 
 # Set up paths and libraries
 
-set_app_var search_path      ". $ptpx_additional_search_path $search_path"
+set_app_var search_path      ". $ptpx_additional_search_path $search_path ./inputs/"
 set_app_var target_library   $ptpx_target_libraries
 set_app_var link_library     [join "
                                *
@@ -54,6 +55,9 @@ set_app_var power_analysis_mode   averaged
 
 set_app_var report_default_significant_digits 3
 
+###
+save_session chk_env
+
 #-------------------------------------------------------------------------
 # Read design
 #-------------------------------------------------------------------------
@@ -61,9 +65,24 @@ set_app_var report_default_significant_digits 3
 # Read and link the design
 
 read_verilog   $ptpx_gl_netlist
+
+# We should really move the input to a list of verilog files...
+if { $ptpx_design_name == "Interconnect" } {
+  puts "Reading children verilog..."
+  set ending ".vcs.v"
+  if { $::env(PWR_AWARE) == "True" } { 
+    set ending ".vcs.pg.v"
+  }
+  read_verilog "inputs/Tile_MemCore${ending}"
+  read_verilog "inputs/Tile_PE${ending}"
+}
+
 current_design $ptpx_design_name
 
 link_design
+
+###
+save_session chk_post_link
 
 # Read in switching activity
 
@@ -72,9 +91,17 @@ report_activity_file_check $ptpx_saif -strip_path $ptpx_strip_path \
 
 read_saif $ptpx_saif -strip_path $ptpx_strip_path -quiet
 
+###
+save_session chk_post_saif
+
 # Read in the SDC and parasitics
 
 read_sdc -echo $ptpx_sdc
+
+# If we are dealing with Interconnect, source loop-breaking constraints
+if { $ptpx_design_name == "Interconnect" } {
+  source loop_break_Interconnect.tcl
+}
 
 check_constraints -verbose \
   > reports/${ptpx_design_name}${batch_path_str}.checkconstraints.rpt
@@ -87,6 +114,9 @@ report_annotated_parasitics -check \
 #-------------------------------------------------------------------------
 # Power analysis
 #-------------------------------------------------------------------------
+
+###
+save_session chk_pre_timing
 
 update_timing -full
 
@@ -110,6 +140,9 @@ report_power -nosplit -hierarchy \
 
 report_power -nosplit -hierarchy -leaf -levels 10 \
   > reports/${ptpx_design_name}${batch_path_str}.power.cell.rpt
+
+###
+save_session chk_final
 
 exit
 

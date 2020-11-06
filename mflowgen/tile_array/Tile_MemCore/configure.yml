@@ -19,6 +19,7 @@ outputs:
   - sram.spi
   - sram.v
   - sram-pwr.v
+  - sram_tt.db
 
 postconditions:
   - assert File( 'outputs/Tile_MemCore_tt.lib' ) # must exist

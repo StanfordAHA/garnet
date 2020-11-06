@@ -113,7 +113,7 @@ def construct():
   #genlibdb.extend_inputs( ['Tile_MemCore.db'] )
   genlib.extend_inputs( ['Tile_MemCore_tt.lib'] )
 
-  e2e_apps = ["tests/conv_3_3", "apps/cascade"]
+  e2e_apps = ["tests/conv_3_3", "apps/cascade", "apps/harris_auto"]
 
   # Only use these steps with power domains off and no flattening...
   use_e2e = True
@@ -144,7 +144,6 @@ def construct():
         e2e_xcelium_sim.extend_inputs(['input.raw'])
 
         # Configure the ptpx step a little differently...
-        e2e_ptpx_gl.set_param("batch", True)
         e2e_ptpx_gl.set_param("strip_path", "Interconnect_tb/dut")
         e2e_ptpx_gl.extend_inputs(e2e_testbench.all_outputs())
         e2e_ptpx_gl.extend_inputs(Tile_MemCore.all_outputs())

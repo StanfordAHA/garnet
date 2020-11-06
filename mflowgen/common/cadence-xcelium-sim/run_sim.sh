@@ -11,6 +11,9 @@ fi
 
 if [ "$PWR_AWARE" = "True" ]; then
   rm -f inputs/*.vcs.v
+  #if [ -f "inputs/sram.v" ]; then
+  #  rm -f inputs/sram.v
+  #fi
 fi
 
 # ADK for GLS
@@ -53,7 +56,7 @@ if [ -f "inputs/sram.v" ]; then
 fi
 
 # Grab all design/testbench files
-for f in inputs/*.*v; do
+for f in inputs/*.v; do
   [ -e "$f" ] || continue
   ARGS="$ARGS $f"
 done
@@ -70,6 +73,14 @@ for f in inputs/*.sv; do
   ARGS="$ARGS $f"
 done
 
+if [ ${use_sdf} = "True" ]; then
+  # Annotate the subcomponents first and then do top
+  if [ -f "sub_cmd.cmd" ]; then
+    ARGS="$ARGS -sdf_cmd_file sub_cmd.cmd"
+  fi
+  ARGS="$ARGS -sdf_cmd_file sdf_cmd.cmd -sdf_verbose"
+fi
+
 # Run NC-SIM and print out the command
 (
   set -x;
@@ -79,6 +90,8 @@ done
 # Reporting
 cp mflowgen-run.log logs/gls.log
 # Bring out trace if waveform enabled...
-if [ "${waveform}" = true ]; then
-  cp verilog.vcd outputs/run.vcd
-fi
+#if [ "${waveform}" = true ]; then
+#  cp verilog.vcd outputs/run.vcd
+#fi
+
+#ARGS="$ARGS -sdf_cmd_file sdf_cmds.cmd"
