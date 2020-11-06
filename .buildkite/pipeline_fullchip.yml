@@ -95,18 +95,18 @@ steps:
      echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log'
 - wait: ~
 
-- label: 'place'
-  commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
-     echo "--- MAKE CADENCE-INNOVUS-PLACE"; set -o pipefail;
-     echo exit 13 | make cadence-innovus-place |& tee make-place.log'
-- wait: ~
-
 - label: 'cts'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
      echo "--- MAKE CADENCE-INNOVUS-CTS"; set -o pipefail;
      echo exit 13 | make cadence-innovus-cts |& tee make-cts.log'
+- wait: ~
+
+- label: 'place'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
+     echo "--- MAKE CADENCE-INNOVUS-PLACE"; set -o pipefail;
+     echo exit 13 | make cadence-innovus-place |& tee make-place.log'
 - wait: ~
 
 - label: 'route'
