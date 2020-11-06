@@ -33,8 +33,3 @@ jobs:
       shell: bash
       run: |
         docker exec -i garnet bash -c "/garnet/.github/scripts/run.sh"
-    - name: Upload coverall
-      shell: bash
-      run: |
-        docker exec -i garnet bash -c "cd /garnet/ && coveralls"
-
