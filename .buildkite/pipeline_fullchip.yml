@@ -15,19 +15,14 @@ steps:
 - wait: ~
 
 
-# Bypass rtl build
-- label: 'rtl*'
+# DO NOT bypass rtl build or you won't get the new dragonphy
+- label: 'rtl'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
-     echo "--- COPY RTL"; set -o pipefail;
-     cp -rp /sim/buildkite-agent/gold/full_chip/9-rtl/ .;
-
-     echo "+++ make -n rtl";
-     make -n rtl;
-
-     echo "--- make rtl";
+     echo "--- MAKE RTL"; set -o pipefail;
      make rtl |& tee make-rtl.log'
 - wait: ~
+
 
 # Bypass tile_array
 - label: 'tile_array*'
