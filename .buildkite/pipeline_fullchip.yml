@@ -29,7 +29,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
      echo "--- COPY TILE_ARRAY"; set -o pipefail;
-     cp -rp /sim/buildkite-agent/gold/full_chip/17-tile_array/ .;
+     cp -r /sim/buildkite-agent/gold/full_chip/17-tile_array/ .;
 
      echo "+++ make -n tile_array";
      make -n tile_array;
@@ -43,7 +43,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 84G;
      echo "--- COPY GLB_TOP"; set -o pipefail;
-     cp -rp /sim/buildkite-agent/gold/full_chip/*-glb_top/ .;
+     cp -r /sim/buildkite-agent/gold/full_chip/*-glb_top/ .;
 
      echo "+++ make -n glb_top";
      make -n glb_top;
@@ -57,7 +57,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 74G;
      echo "--- MAKE GLOBAL_CONTROLLER"; set -o pipefail;
-     cp -rp /sim/buildkite-agent/gold/full_chip/*-global_controller/ .;
+     cp -r /sim/buildkite-agent/gold/full_chip/*-global_controller/ .;
 
      echo "+++ make -n global_controller";
      make -n global_controller;
