@@ -26,9 +26,11 @@ def construct():
   if which("calibre") is not None:
       drc_rule_deck = 'calibre-drc-chip.rule' 
       antenna_drc_rule_deck = 'calibre-drc-antenna.rule'
+      power_drc_rule_deck = 'calibre-drc-block.rule'
   else:
       drc_rule_deck = 'pegasus-drc-chip.rule' 
       antenna_drc_rule_deck = 'pegasus-drc-antenna.rule'
+      power_drc_rule_deck = 'pegasus-drc-block.rule'
 
   parameters = {
     'construct_path'    : __file__,
@@ -76,6 +78,7 @@ def construct():
     # DRC rule deck
     'drc_rule_deck'         : drc_rule_deck,
     'antenna_drc_rule_deck' : antenna_drc_rule_deck,
+    'power_drc_rule_deck'   : power_drc_rule_deck,
     'nthreads'              : 16
   }
 
@@ -471,6 +474,9 @@ def construct():
 
   # Antenna DRC node needs to use antenna rule deck
   antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'] } )
+
+  # Power DRC node should use block level rule deck to improve runtimes and not report false errors
+  power_drc.update_params( {'drc_rule_deck': parameters['power_drc_rule_deck'] } )
 
   return g
 
