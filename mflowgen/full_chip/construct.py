@@ -22,6 +22,13 @@ def construct():
 
   adk_name = 'tsmc16'
   adk_view = 'stdview'
+  
+  if which("calibre") is not None:
+      drc_rule_deck = 'calibre-drc-chip.rule' 
+      antenna_drc_rule_deck = 'calibre-drc-antenna.rule'
+  else:
+      drc_rule_deck = 'pegasus-drc-chip.rule' 
+      antenna_drc_rule_deck = 'pegasus-drc-antenna.rule'
 
   parameters = {
     'construct_path'    : __file__,
@@ -43,7 +50,7 @@ def construct():
     # Include SoC core? (use 0 for false, 1 for true)
     'include_core'      : 1,
     # Include sealring?
-    'include_sealring'  : False,
+    'include_sealring'  : True,
     # SRAM macros
     'num_words'         : 2048,
     'word_size'         : 64,
@@ -67,8 +74,8 @@ def construct():
     'TLX_FWD_DATA_LO_WIDTH' : 16,
     'TLX_REV_DATA_LO_WIDTH' : 45,
     # DRC rule deck
-    'drc_rule_deck'         : 'calibre-drc-chip.rule',
-    'antenna_drc_rule_deck' : 'calibre-drc-antenna.rule',
+    'drc_rule_deck'         : drc_rule_deck,
+    'antenna_drc_rule_deck' : antenna_drc_rule_deck,
     'nthreads'              : 16
   }
 
