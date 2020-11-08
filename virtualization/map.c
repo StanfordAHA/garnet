@@ -45,7 +45,6 @@ int glb_map(void *kernel_) {
                 break;
             }
             if (monitor.groups[i+j] != 0) {
-                success = -1;
                 break;
             }
             if (j == (num_groups-1)) {
@@ -146,8 +145,8 @@ void update_tile_config_table(int tile, int data) {
 }
 
 void update_tile_configuration(struct PlaceInfo *place_info) {
-    int start = place_info->group_start;
-    int end = start + place_info->num_groups;
+    int start = place_info->group_start*2;
+    int end = start + place_info->num_groups*2;
     for(int i=start; i<end; i++) {
         if (tile_config_table[i] != 0) {
             add_config(&place_info->config, (i * 0x100) + GLB_TILE0_TILE_CTRL, tile_config_table[i]);

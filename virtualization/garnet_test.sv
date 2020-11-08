@@ -61,36 +61,15 @@ program garnet_test #(
         end
 
         kernels = new[num_app];
-
         foreach (app_dirs[i]) begin
-            // get app name
-            string app_name;
-            string meta_name;
-            string dir;
-            string bs_location, input_location, gold_location;
-            int last_str;
-            dir = app_dirs[i];
-            last_str = dir.getc(dir.len() - 1) == "/"? dir.len() - 2: dir.len() - 1;
-
-            for (int i = dir.len() - 1; i >= 0; i--) begin
-                if (dir.getc(i) == "/" && i != (dir.len() - 1)) begin
-                    app_name = dir.substr(i + 1, last_str);
-                    break;
-                end
-            end
-            if (app_name.len() == 0) app_name = dir;
-            meta_name = {dir, "/bin/", "design.meta"};
-            kernels[i] = new(meta_name);
+            kernels[i] = new(app_dirs[i]);
         end
     endfunction
 
     function void map(Kernel kernels[]);
         foreach(kernels[i]) begin
             if (kernels[i].kernel_map() == 0) begin
-                $display("map error");
                 $finish(2);
-            end else begin
-                $display("map success");
             end
         end
     endfunction
