@@ -13,6 +13,8 @@ import "DPI-C" function chandle get_bs_info(chandle info);
 import "DPI-C" function chandle get_input_info(chandle info, int index);
 import "DPI-C" function chandle get_output_info(chandle info, int index);
 import "DPI-C" function int glb_map(chandle kernel);
+import "DPI-C" function int get_num_groups(chandle info);
+import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_num_inputs(chandle info);
 import "DPI-C" function int get_num_outputs(chandle info);
 import "DPI-C" function string get_placement_filename(chandle info);
@@ -71,6 +73,8 @@ class Kernel;
     string input_filenames[];
     string output_filenames[];
 
+    int num_groups;
+    int group_start;
     int num_inputs;
     int num_outputs;
 
@@ -106,6 +110,7 @@ class Kernel;
     extern function data_array_t get_input_data(int idx);
     extern function data_array_t get_gold_data(int idx);
     extern function bitstream_t get_bitstream();
+    extern function void add_offset_bitstream(bitstream_t bitstream_data, int offset);
     extern function void print_input(int idx);
     extern function void print_output(int idx);
     extern function void print_gold(int idx);
@@ -137,6 +142,7 @@ function Kernel::new(string meta_filename);
 
     num_inputs = get_num_inputs(place_info);
     num_outputs = get_num_outputs(place_info);
+    num_groups = get_num_groups(place_info);
 
     input_filenames = new[num_inputs];
     input_data = new[num_inputs];
@@ -225,6 +231,10 @@ function int Kernel::kernel_map();
     int result = glb_map(kernel_info);
     if (result == 0) return result;
 
+    // update group_start offset and add offset
+    group_start = get_group_start(place_info);
+    add_offset_bitstream(bitstream_data, group_start*4);
+
     // Set start address after mapping
     bs_start_addr = get_bs_start_addr(bs_info);
     bs_tile = get_bs_tile(bs_info);
@@ -281,6 +291,17 @@ function int Kernel::kernel_map();
     end
 
     return result;
+endfunction
+
+function void Kernel::add_offset_bitstream(bitstream_t bitstream_data, int offset);
+    int addr, new_addr;
+    bit [7:0] x_coor;
+    foreach(bitstream_data[i]) begin
+        addr = bitstream_data[i].addr;
+        x_coor = (((addr & 32'h0000FF00) >> 8) + offset);
+        new_addr = {addr[31:16], x_coor, addr[7:0]};
+        bit_stream_data[i].addr = new_addr;
+    end
 endfunction
 
 function Config Kernel::get_pcfg_start_config();
