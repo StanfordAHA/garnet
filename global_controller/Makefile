@@ -8,6 +8,8 @@ TB_RTL_DIR = sim_genesis_verif
 GENESIS_FILES := $(wildcard $(GENESIS_DIR)/*.svp)
 TB_GENESIS_FILES := $(wildcard $(TB_GENESIS_DIR)/*.svp)
 TOP_MODULE = global_controller
+CGRA_WIDTH ?= 32
+NUM_GLB_TILES := $(shell expr $(CGRA_WIDTH) / 2 )
 
 XRUN = xrun \
        -64bit \
@@ -69,7 +71,7 @@ GEN_TB_FILELIST = \
 
 genesis: $(GENESIS_FILES)
 	rm -rf $(RTL_DIR)
-	Genesis2.pl -parse -generate -top ${TOP_MODULE} -inputlist $(RTL)/$(TOP_MODULE).genesis.filelist
+	Genesis2.pl -parse -generate -top ${TOP_MODULE} -inputlist $(RTL)/$(TOP_MODULE).genesis.filelist -parameter global_controller.num_glb_tiles=$(NUM_GLB_TILES)
 	mv genesis_verif $(RTL_DIR)
 
 rdl: systemRDL/rdl_models/glc.rdl systemRDL/ordt_params/glc.parms
