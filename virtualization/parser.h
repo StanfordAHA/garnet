@@ -93,6 +93,7 @@ void *get_output_info(void *info, int index);
 
 // helper functions to access data from SV
 int get_num_groups(void *info);
+int get_group_start(void *info);
 int get_num_inputs(void *info);
 int get_num_outputs(void *info);
 int get_input_x(void *info, int index);

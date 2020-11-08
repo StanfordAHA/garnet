@@ -257,6 +257,12 @@ int get_num_groups(void *info) {
     GET_PLACE_INFO(info);
     return place_info->num_groups;
 }
+
+int get_group_start(void *info) {
+    GET_PLACE_INFO(info);
+    return place_info->group_start;
+}
+
 int get_num_inputs(void *info) {
     GET_PLACE_INFO(info);
     return place_info->num_inputs;
