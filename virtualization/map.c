@@ -2,51 +2,71 @@
 #include "map.h"
 #include "regmap.h"
 #include <stdio.h>
+#include <assert.h>
 
-#ifndef NUM_COLS
-#define NUM_COLS 32
-#endif
-
-#define BANK_SIZE 131072
-#define NUM_GLB_TILES NUM_COLS/2
+#define MAX_NUM_COLS 32
+#define MAX_NUM_GLB_TILES 16
 #define GROUP_SIZE 4
+#define MAX_NUM_GROUPS MAX_NUM_COLS / GROUP_SIZE
+#define BANK_SIZE 131072
 
 // Hacky way to cache tile control configuration
-int tile_config_table[NUM_GLB_TILES];
+int tile_config_table[MAX_NUM_GLB_TILES];
 
-struct GarnetMonitor {
-    int cols[NUM_COLS];
+struct Monitor {
+    int num_groups;
+    int num_glb_tiles;
+    int groups[MAX_NUM_GROUPS];
 };
 
-static struct GarnetMonitor garnet;
+static struct Monitor monitor;
+
+int initialize_monitor(int num_cols) {
+    assert(num_cols % GROUP_SIZE == 0);
+    if (num_cols > MAX_NUM_COLS) return 0;
+
+    monitor.num_groups = num_cols / GROUP_SIZE;
+    // currently, glb_tiles:group = 2:1
+    monitor.num_glb_tiles = monitor.num_groups * 2;
+
+    return 1;
+}
 
 int glb_map(void *kernel_) {
     struct KernelInfo *kernel = kernel_;
     int num_groups = kernel->place_info->num_groups;
 
-    int col_start = -1;
-    for (int i=0; i < NUM_COLS; i++) {
-        if (garnet.cols[i] == 0) {
-            col_start = i;
-            break;
+    int group_start = -1;
+    for (int i=0; i < monitor.num_groups; i++) {
+        int success = 0;
+        for (int j=0; j < num_groups; j++) {
+            if ((i+j) >= monitor.num_groups) {
+                success = -1;
+                break;
+            }
+            if (monitor.groups[i+j] != 0) {
+                success = -1;
+                break;
+            }
+            if (j == (num_groups-1)) {
+                group_start = i;
+                success = 1;
+            }
         }
+        if (success != 0) break;
     }
-    // no available columns
-    if (col_start == -1) return 0;
-    if (col_start % GROUP_SIZE != 0) {
-        col_start = (col_start + GROUP_SIZE - 1) / GROUP_SIZE * GROUP_SIZE;
-    }
-    // not enought columns
-    if ((col_start + num_groups * GROUP_SIZE) > NUM_COLS) return 0;
+    // no available group
+    if (group_start == -1) return 0;
 
-    for(int i=col_start; i < col_start+num_groups*GROUP_SIZE; i++) {
-        garnet.cols[i] = 1;
+    for(int i=group_start; i < group_start+num_groups; i++) {
+        monitor.groups[i] = 1;
     }
+    kernel->place_info->group_start = group_start;
 
     // bitstream map
     // always put bitstream first
     int tile;
-    tile = col_start / 2;
+    tile = group_start*2;
     struct BitstreamInfo *bs_info = get_bs_info(kernel);
 
     bs_info->tile = tile;
@@ -62,7 +82,7 @@ int glb_map(void *kernel_) {
     for(int i=0; i<num_inputs; i++) {
         io_info = get_input_info(kernel->place_info, i);
         io_info->size = kernel->place_info->input_size[i];
-        tile = (col_start + io_info->pos.x) / 2;
+        tile = (group_start*GROUP_SIZE + io_info->pos.x) / 2;
         io_info->tile = tile;
         if (i == 0) {
             io_info->start_addr = (tile * 2) * BANK_SIZE + num_bs*8;
@@ -75,7 +95,7 @@ int glb_map(void *kernel_) {
     for(int i=0; i<num_outputs; i++) {
         io_info = get_output_info(kernel->place_info, i);
         io_info->size = kernel->place_info->output_size[i];
-        tile = (col_start + io_info->pos.x) / 2;
+        tile = (group_start*GROUP_SIZE + io_info->pos.x) / 2;
         io_info->tile = tile;
         io_info->start_addr = (tile * 2 + 1) * BANK_SIZE;
         update_io_configuration(io_info);
@@ -126,7 +146,9 @@ void update_tile_config_table(int tile, int data) {
 }
 
 void update_tile_configuration(struct PlaceInfo *place_info) {
-    for(int i=0; i<NUM_GLB_TILES; i++) {
+    int start = place_info->group_start;
+    int end = start + place_info->num_groups;
+    for(int i=start; i<end; i++) {
         if (tile_config_table[i] != 0) {
             add_config(&place_info->config, (i * 0x100) + GLB_TILE0_TILE_CTRL, tile_config_table[i]);
         }
