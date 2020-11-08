@@ -136,7 +136,7 @@ function Kernel::new(string app_dir);
     if (app_name.len() == 0) app_name = app_dir;
 
     meta_filename = {app_dir, "/bin/", "design.meta"};
-    $sformat(name, "%s-%0d", app_name, cnt++);
+    $sformat(name, "APP%0d-%0s", cnt++, app_name);
 
     app_state = IDLE;
 
@@ -201,7 +201,7 @@ function bitstream_t Kernel::parse_bitstream();
         bitstream_entry_t entry;
         code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
         if (code == -1) continue;
-        assert_(code == 2 , $sformatf("Incorrect bs format. Expected 2 entries, got: %d. Current entires: %d", code, result.size()));
+        assert_(code == 2 , $sformatf("Incorrect bs format. Expected 2 entries, got: %0d. Current entires: %0d", code, result.size()));
         result[i++] = entry;
     end
     return result;
@@ -244,7 +244,7 @@ function int Kernel::kernel_map();
 
     int result = glb_map(kernel_info);
     if (result == 0) begin
-        $display("APP[%s] glb mapping failed", name);
+        $display("[%s] glb mapping failed", name);
         return result;
     end
 
@@ -307,7 +307,7 @@ function int Kernel::kernel_map();
         end
     end
 
-    $display("APP[%s] glb mapping success", name);
+    $display("[%s] glb mapping success", name);
     return result;
 endfunction
 
@@ -359,12 +359,12 @@ endfunction
 function void Kernel::compare_(int idx);
     assert (gold_data[idx].size() == output_data[idx].size())
     else begin
-        $display("APP[%s]-Output[%0d], gold data size is %0d, output data size is %0d", name, idx, gold_data[idx].size(), output_data[idx].size());
+        $display("[%s]-Output[%0d], gold data size is %0d, output data size is %0d", name, idx, gold_data[idx].size(), output_data[idx].size());
         $finish(2);
     end
     for (int i = 0; i < gold_data[idx].size(); i++) begin
         assert_(gold_data[idx][i] == output_data[idx][i],
-                $sformatf("APP[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]));
+                $sformatf("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]));
     end
 endfunction
 

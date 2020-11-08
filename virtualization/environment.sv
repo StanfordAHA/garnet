@@ -46,14 +46,14 @@ function void Environment::build();
 endfunction
 
 task Environment::write_data(Kernel kernel);
-    $display("APP[%s] write bitstream to glb start", kernel->name);
+    $display("[%s] write bitstream to glb start", kernel.name);
     proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
-    $display("APP[%s] write bitstream to glb end", kernel->name);
+    $display("[%s] write bitstream to glb end", kernel.name);
     repeat (10) @(vifc_proc.cbd);
     foreach(kernel.input_data[i]) begin
-        $display("APP[%s] write input-%d to glb start", kernel->name, i);
+        $display("[%s] write input-%0d to glb start", kernel.name, i);
         proc_drv.write_data(kernel.input_start_addr[i], kernel.input_data[i]);
-        $display("APP[%s] write input-%d to glb end", kernel->name, i);
+        $display("[%s] write input-%0d to glb end", kernel.name, i);
     end
 endtask
 
@@ -61,14 +61,14 @@ task Environment::read_data(Kernel kernel);
     repeat (20) @(vifc_proc.cbd);
 
     foreach(kernel.output_data[i]) begin
-        $display("APP[%s] read output-%d from glb start", kernel->name, i);
+        $display("[%s] read output-%0d from glb start", kernel.name, i);
         proc_drv.read_data(kernel.output_start_addr[i], kernel.output_data[i]);
-        $display("APP[%s] read output-%d from glb start", kernel->name, i);
+        $display("[%s] read output-%0d from glb end", kernel.name, i);
     end
 endtask
 
 task Environment::glb_configure(Kernel kernel);
-    $display("APP[%s] glb configuration start", kernel->name);
+    $display("[%s] glb configuration start", kernel.name);
     axil_drv.config_write(kernel.bs_cfg);
     foreach(kernel.input_cfg[i]) begin
         axil_drv.config_write(kernel.input_cfg[i]);
@@ -77,28 +77,30 @@ task Environment::glb_configure(Kernel kernel);
         axil_drv.config_write(kernel.output_cfg[i]);
     end
     axil_drv.config_write(kernel.tile_cfg);
-    $display("APP[%s] glb configuration end", kernel->name);
+    $display("[%s] glb configuration end", kernel.name);
 endtask
 
 task Environment::cgra_configure(Kernel kernel);
-    $display("APP[%s] fast configuration start", kernel->name);
     // define variables
     bit [NUM_GLB_TILES-1:0] tile_mask;
     Config cfg;
 
+    $display("[%s] fast configuration start", kernel.name);
     cfg = kernel.get_pcfg_start_config();
     axil_drv.write(cfg.addr, cfg.data);
     tile_mask = (1 << kernel.bs_tile);
 
     wait_interrupt(GLB_PCFG_CTRL, tile_mask);
     clear_interrupt(GLB_PCFG_CTRL, tile_mask);
-    $display("APP[%s] fast configuration end", kernel->name);
+    $display("[%s] fast configuration end", kernel.name);
 endtask
 
 task Environment::kernel_test(Kernel kernel);
-    $display("APP[%s] kernel start", kernel->name);
+    // define variables
     bit [NUM_GLB_TILES-1:0] tile_mask;
     Config cfg;
+
+    $display("[%s] kernel start", kernel.name);
     cfg = kernel.get_strm_start_config();
     axil_drv.write(cfg.addr, cfg.data);
     foreach(kernel.input_tile[i]) begin
@@ -107,12 +109,15 @@ task Environment::kernel_test(Kernel kernel);
 
     wait_interrupt(GLB_STRM_F2G_CTRL, tile_mask);
     clear_interrupt(GLB_STRM_F2G_CTRL, tile_mask);
-    $display("APP[%s] kernel end", kernel->name);
+    $display("[%s] kernel end at time: %0t", kernel.name, $time);
 endtask
 
 task Environment::run();
     // wait for reset
     repeat (20) @(vifc_proc.cbd);
+
+    // turn on interrupt
+    set_interrupt_on();
 
     foreach(kernels[i]) begin
         automatic int j = i;
@@ -174,7 +179,7 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] til
             end
         end
         begin
-            repeat (10_000) @(vifc_axil.cbd);
+            repeat (20_000) @(vifc_axil.cbd);
             $display("@%0t: %m ERROR: Interrupt wait timeout ", $time);
         end
     join_any
