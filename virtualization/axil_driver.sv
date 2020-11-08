@@ -20,7 +20,7 @@ task AxilDriver::config_write(Config cfg[]);
 endtask
 
 task AxilDriver::write(bit[AXI_ADDR_WIDTH-1:0] addr, bit[AXI_DATA_WIDTH-1:0] data);
-    $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
+    // $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
     axil_lock.get(1);
     @(vif.cbd);
     vif.cbd.awaddr <= addr;
