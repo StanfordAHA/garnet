@@ -76,16 +76,12 @@ int parse_placement_(char *filename, int *num_inputs, struct IOInfo *inputs,
                 outputs[*num_outputs].io = Output;
                 outputs[*num_outputs].pos.x = x;
                 outputs[*num_outputs].pos.y = y;
-                //outputs[(*num_outputs) * 2] = x;
-                //outputs[(*num_outputs) * 2 + 1] = y;
                 *num_outputs = *num_outputs + 1;
             } else {
                 // it's input
                 inputs[*num_inputs].io = Input;
                 inputs[*num_inputs].pos.x = x;
                 inputs[*num_inputs].pos.y = y;
-                // inputs[(*num_inputs) * 2] = x;
-                // inputs[(*num_inputs) * 2 + 1] = y;
                 *num_inputs = *num_inputs + 1;
             }
         }
@@ -123,12 +119,18 @@ void *parse_bitstream(char *filename) {
     FILE *fp;
     if (filename[0] != '\0') {
         fp = fopen(filename, "r");
+        if (fp == NULL) {
+            printf("Could not open file %s", filename);
+            return 0;
+        }
         for (char c = getc(fp); c != EOF; c = getc(fp)) {
             if (c == '\n') // Increment count if this character is newline
                 num_bs++;
         }
         fclose(fp);
     }
+    // add 1 because the last line does not have new line
+    num_bs++;
     bs_info->size = num_bs;
 
     return bs_info;

@@ -22,13 +22,13 @@ class Environment;
     extern function new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc);
     extern function void build();
     extern task write_data(Kernel kernel);
+    extern task read_data(Kernel kernel);
     extern task glb_configure(Kernel kernel);
     extern task cgra_configure(Kernel kernel);
     extern task set_interrupt_on();
     extern task wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] tile_mask);
     extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] tile_mask);
     extern task kernel_test(Kernel kernel);
-    extern task read_data(Kernel kernel);
     extern task run();
 endclass
 
@@ -46,14 +46,29 @@ function void Environment::build();
 endfunction
 
 task Environment::write_data(Kernel kernel);
+    $display("APP[%s] write bitstream to glb start", kernel->name);
     proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
+    $display("APP[%s] write bitstream to glb end", kernel->name);
     repeat (10) @(vifc_proc.cbd);
-    foreach(kernel.input_data[j]) begin
-        proc_drv.write_data(kernel.input_start_addr[j], kernel.input_data[j]);
+    foreach(kernel.input_data[i]) begin
+        $display("APP[%s] write input-%d to glb start", kernel->name, i);
+        proc_drv.write_data(kernel.input_start_addr[i], kernel.input_data[i]);
+        $display("APP[%s] write input-%d to glb end", kernel->name, i);
+    end
+endtask
+
+task Environment::read_data(Kernel kernel);
+    repeat (20) @(vifc_proc.cbd);
+
+    foreach(kernel.output_data[i]) begin
+        $display("APP[%s] read output-%d from glb start", kernel->name, i);
+        proc_drv.read_data(kernel.output_start_addr[i], kernel.output_data[i]);
+        $display("APP[%s] read output-%d from glb start", kernel->name, i);
     end
 endtask
 
 task Environment::glb_configure(Kernel kernel);
+    $display("APP[%s] glb configuration start", kernel->name);
     axil_drv.config_write(kernel.bs_cfg);
     foreach(kernel.input_cfg[i]) begin
         axil_drv.config_write(kernel.input_cfg[i]);
@@ -62,9 +77,11 @@ task Environment::glb_configure(Kernel kernel);
         axil_drv.config_write(kernel.output_cfg[i]);
     end
     axil_drv.config_write(kernel.tile_cfg);
+    $display("APP[%s] glb configuration end", kernel->name);
 endtask
 
 task Environment::cgra_configure(Kernel kernel);
+    $display("APP[%s] fast configuration start", kernel->name);
     // define variables
     bit [NUM_GLB_TILES-1:0] tile_mask;
     Config cfg;
@@ -75,9 +92,11 @@ task Environment::cgra_configure(Kernel kernel);
 
     wait_interrupt(GLB_PCFG_CTRL, tile_mask);
     clear_interrupt(GLB_PCFG_CTRL, tile_mask);
+    $display("APP[%s] fast configuration end", kernel->name);
 endtask
 
 task Environment::kernel_test(Kernel kernel);
+    $display("APP[%s] kernel start", kernel->name);
     bit [NUM_GLB_TILES-1:0] tile_mask;
     Config cfg;
     cfg = kernel.get_strm_start_config();
@@ -88,13 +107,13 @@ task Environment::kernel_test(Kernel kernel);
 
     wait_interrupt(GLB_STRM_F2G_CTRL, tile_mask);
     clear_interrupt(GLB_STRM_F2G_CTRL, tile_mask);
+    $display("APP[%s] kernel end", kernel->name);
 endtask
 
 task Environment::run();
     // wait for reset
     repeat (20) @(vifc_proc.cbd);
 
-    set_interrupt_on();
     foreach(kernels[i]) begin
         automatic int j = i;
         fork
@@ -117,6 +136,7 @@ task Environment::run();
 endtask
 
 task Environment::set_interrupt_on();
+    $display("Turn on interrupt enable registers");
     axil_drv.write(`GLC_GLOBAL_IER, 3'b111);
     axil_drv.write(`GLC_PAR_CFG_G2F_IER, {NUM_GLB_TILES{1'b1}});
     axil_drv.write(`GLC_STRM_F2G_IER, {NUM_GLB_TILES{1'b1}});
@@ -125,16 +145,20 @@ endtask
 task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] tile_mask);
     bit [AXI_ADDR_WIDTH-1:0] addr;
     bit [AXI_DATA_WIDTH-1:0] data;
+    string reg_name;
 
     // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
         addr = `GLC_PAR_CFG_G2F_ISR;
+        reg_name = "PCFG";
     end
     else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
         addr = `GLC_STRM_G2F_ISR;
+        reg_name = "STRM_G2F";
     end
     else begin
         addr = `GLC_STRM_F2G_ISR;
+        reg_name = "STRM_F2G";
     end
 
     fork
@@ -144,12 +168,13 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] til
                 wait(top.interrupt);
                 axil_drv.read(addr, data);
                 if (&(data | (~tile_mask)) == 1) begin
+                    $display("%s interrupt from %b", reg_name, tile_mask);
                     break;
                 end
             end
         end
         begin
-            repeat (1_000_000) @(vifc_axil.cbd);
+            repeat (10_000) @(vifc_axil.cbd);
             $display("@%0t: %m ERROR: Interrupt wait timeout ", $time);
         end
     join_any
@@ -158,26 +183,22 @@ endtask
 
 task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] tile_mask);
     bit [AXI_ADDR_WIDTH-1:0] addr;
+    string reg_name;
 
     // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
         addr = `GLC_PAR_CFG_G2F_ISR;
+        reg_name = "PCFG";
     end
     else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
         addr = `GLC_STRM_G2F_ISR;
+        reg_name = "STRM_G2F";
     end
     else begin
         addr = `GLC_STRM_F2G_ISR;
+        reg_name = "STRM_F2G";
     end
 
+    $display("%s interrupt clear", reg_name);
     axil_drv.write(addr, tile_mask);
-endtask
-
-task Environment::read_data(Kernel kernel);
-    repeat (20) @(vifc_proc.cbd);
-
-    foreach(kernel.output_data[i]) begin
-        proc_drv.read_data(kernel.output_start_addr[i], kernel.output_data[i]);
-    end
-
 endtask

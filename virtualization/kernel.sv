@@ -60,11 +60,11 @@ typedef struct {
 } Config;
 
 typedef bit[15:0] data_array_t[];
-typedef bitstream_entry_t bitstream_t[$];
+typedef bitstream_entry_t bitstream_t[];
 
 class Kernel;
     static int cnt = 0;
-    int id;
+    string name;
 
     chandle kernel_info, place_info, bs_info;
 
@@ -105,12 +105,12 @@ class Kernel;
     Config input_cfg[][];
     Config output_cfg[][];
 
-    extern function new(string meta_filename);
+    extern function new(string app_dir);
     extern function void display();
-    extern function data_array_t get_input_data(int idx);
-    extern function data_array_t get_gold_data(int idx);
-    extern function bitstream_t get_bitstream();
-    extern function void add_offset_bitstream(bitstream_t bitstream_data, int offset);
+    extern function data_array_t parse_input_data(int idx);
+    extern function data_array_t parse_gold_data(int idx);
+    extern function bitstream_t parse_bitstream();
+    extern function void add_offset_bitstream(ref bitstream_t bitstream_data, input int offset);
     extern function void print_input(int idx);
     extern function void print_output(int idx);
     extern function void print_gold(int idx);
@@ -123,10 +123,22 @@ class Kernel;
     extern function Config get_strm_start_config();
 endclass
 
-function Kernel::new(string meta_filename);
-    id = cnt++;
-    app_state = IDLE;
+function Kernel::new(string app_dir);
+    string last_str, app_name, meta_filename;
 
+    last_str = app_dir.getc(app_dir.len() - 1) == "/"? app_dir.len() - 2: app_dir.len() - 1;
+    for (int i = app_dir.len() - 1; i >= 0; i--) begin
+        if (app_dir.getc(i) == "/" && i != (app_dir.len() - 1)) begin
+            app_name = app_dir.substr(i + 1, last_str);
+            break;
+        end
+    end
+    if (app_name.len() == 0) app_name = app_dir;
+
+    meta_filename = {app_dir, "/bin/", "design.meta"};
+    $sformat(name, "%s-%0d", app_name, cnt++);
+
+    app_state = IDLE;
 
     kernel_info = parse_metadata(meta_filename);
     assert_(kernel_info != null, $sformatf("Unable to find %s", meta_filename));
@@ -162,22 +174,24 @@ function Kernel::new(string meta_filename);
     for (int i = 0; i < num_inputs; i++) begin
         input_filenames[i] = get_input_filename(kernel_info, i);
         input_size[i] = get_input_size(place_info, i);
-        input_data[i] = get_input_data(i);
+        input_data[i] = parse_input_data(i);
     end
 
     for (int i = 0; i < num_outputs; i++) begin
         output_filenames[i] = get_output_filename(kernel_info, i);
         output_size[i] = get_output_size(place_info, i);
-        gold_data[i] = get_gold_data(i);
+        gold_data[i] = parse_gold_data(i);
         output_data[i] = new[output_size[i]];
     end
 
-    bitstream_data = get_bitstream();
     bs_size = get_bs_size(bs_info);
+    bitstream_data = parse_bitstream();
 endfunction
 
-function bitstream_t Kernel::get_bitstream();
-    bitstream_t result;
+function bitstream_t Kernel::parse_bitstream();
+    int i = 0;
+    bitstream_t result = new[bs_size];
+
     int fp = $fopen(bitstream_filename, "r");
     assert_(fp != 0, "Unable to read bitstream file");
     while (!$feof(fp)) begin
@@ -188,13 +202,13 @@ function bitstream_t Kernel::get_bitstream();
         code = $fscanf(fp, "%08x %08x", entry.addr, entry.data);
         if (code == -1) continue;
         assert_(code == 2 , $sformatf("Incorrect bs format. Expected 2 entries, got: %d. Current entires: %d", code, result.size()));
-        result.push_back(entry);
+        result[i++] = entry;
     end
     return result;
 endfunction
 
-function data_array_t Kernel::get_input_data(int idx);
-    bit[15:0] result[] = new[input_size[idx]];
+function data_array_t Kernel::parse_input_data(int idx);
+    data_array_t result = new[input_size[idx]];
     int fp = $fopen(input_filenames[idx], "rb");
     assert_(fp != 0, "Unable to read input file");
     for (int i = 0; i < input_size[idx]; i++) begin
@@ -208,8 +222,8 @@ function data_array_t Kernel::get_input_data(int idx);
     return result;
 endfunction
 
-function data_array_t Kernel::get_gold_data(int idx);
-    bit[15:0] result[] = new[output_size[idx]];
+function data_array_t Kernel::parse_gold_data(int idx);
+    data_array_t result = new[output_size[idx]];
     int fp = $fopen(output_filenames[idx], "rb");
     assert_(fp != 0, "Unable to read output file");
     for (int i = 0; i < output_size[idx]; i++) begin
@@ -229,7 +243,10 @@ function int Kernel::kernel_map();
     int size;
 
     int result = glb_map(kernel_info);
-    if (result == 0) return result;
+    if (result == 0) begin
+        $display("APP[%s] glb mapping failed", name);
+        return result;
+    end
 
     // update group_start offset and add offset
     group_start = get_group_start(place_info);
@@ -290,17 +307,18 @@ function int Kernel::kernel_map();
         end
     end
 
+    $display("APP[%s] glb mapping success", name);
     return result;
 endfunction
 
-function void Kernel::add_offset_bitstream(bitstream_t bitstream_data, int offset);
+function void Kernel::add_offset_bitstream(ref bitstream_t bitstream_data, input int offset);
     int addr, new_addr;
     bit [7:0] x_coor;
     foreach(bitstream_data[i]) begin
         addr = bitstream_data[i].addr;
         x_coor = (((addr & 32'h0000FF00) >> 8) + offset);
         new_addr = {addr[31:16], x_coor, addr[7:0]};
-        bit_stream_data[i].addr = new_addr;
+        bitstream_data[i].addr = new_addr;
     end
 endfunction
 
@@ -328,25 +346,25 @@ function void Kernel::assert_(bit cond, string msg);
 endfunction
 
 function void Kernel::display();
-    $display("Kernel number: %0d\n", id); 
+    $display("Kernel name: %s", name); 
 endfunction
 
 function void Kernel::compare();
     for(int i=0; i<num_outputs; i++) begin
         compare_(i);
     end
-    $display("APP %0d passed", id);
+    $display("%s passed", name);
 endfunction
 
 function void Kernel::compare_(int idx);
     assert (gold_data[idx].size() == output_data[idx].size())
     else begin
-        $display("APP[%0d]-Output[%0d], gold data size is %0d, output data size is %0d", id, idx, gold_data[idx].size(), output_data[idx].size());
+        $display("APP[%s]-Output[%0d], gold data size is %0d, output data size is %0d", name, idx, gold_data[idx].size(), output_data[idx].size());
         $finish(2);
     end
     for (int i = 0; i < gold_data[idx].size(); i++) begin
         assert_(gold_data[idx][i] == output_data[idx][i],
-                $sformatf("APP[%0d]-Output[%0d], pixel[%0d] Get %02X but expect %02X", id, idx, i, output_data[idx][i], gold_data[idx][i]));
+                $sformatf("APP[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]));
     end
 endfunction
 
