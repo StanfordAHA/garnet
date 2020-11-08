@@ -5,6 +5,7 @@
 ** Author: Keyi Zhang, Taeyoung Kong
 ** Change history:  10/14/2020 - Implement the first version
 **===========================================================================*/
+import "DPI-C" function int initialize_monitor(int num_cols);
 
 program garnet_test #(
     parameter int MAX_NUM_APPS = 3
@@ -32,8 +33,20 @@ program garnet_test #(
     // initialize
     //============================================================================//
     function void initialize();
+        int num_cols;
         int num_app;
+        int result;
         string app_dirs[$], temp_str;
+
+        num_cols = CGRA_WIDTH;
+        result = initialize_monitor(num_cols);
+
+        if (result == 1) begin
+            $display("Monitor initialization success");
+        end else begin
+            $display("Monitor initialization failed");
+        end
+
         num_app = 0;
         for (int i = 0; i < MAX_NUM_APPS; i++) begin
             automatic string arg_name = {$sformatf("APP%0d", i), "=%s"};

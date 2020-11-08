@@ -96,8 +96,8 @@ task Environment::run();
 
     set_interrupt_on();
     foreach(kernels[i]) begin
+        automatic int j = i;
         fork
-            automatic int j = i;
             begin
                 write_data(kernels[j]);
                 glb_configure(kernels[j]);
@@ -105,9 +105,9 @@ task Environment::run();
                 kernel_test(kernels[j]);
                 read_data(kernels[j]);
             end
-        join
-        // join_none
+        join_none
     end
+    wait fork;
     repeat (20) @(vifc_axil.cbd);
 
     foreach(kernels[i]) begin

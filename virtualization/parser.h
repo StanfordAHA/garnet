@@ -59,6 +59,7 @@ struct PlaceInfo {
     int num_groups;
     int num_inputs;
     int num_outputs;
+    int group_start;
 
     struct IOInfo inputs[MAX_NUM_IO];
     struct IOInfo outputs[MAX_NUM_IO];

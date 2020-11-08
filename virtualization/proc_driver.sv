@@ -29,6 +29,7 @@ task ProcDriver::write_data(int start_addr, data_array_t data_q);
     bit [BANK_DATA_WIDTH-1:0] data;
     int size;
     proc_lock.get(1);
+    $display("proc write get lock");
     assert (BANK_DATA_WIDTH == 64);
     size = data_q.size();
     for(int i=0; i<size; i+=4) begin
@@ -48,6 +49,7 @@ task ProcDriver::write_data(int start_addr, data_array_t data_q);
         cur_addr += 8;
     end
     proc_lock.put(1);
+    $display("proc write release lock");
 endtask
 
 task ProcDriver::write(int addr, bit[BANK_DATA_WIDTH-1:0] data);
@@ -66,6 +68,7 @@ task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
     int num_words = data_q.size();
     int num_trans = (num_words + 3) / 4;
     proc_lock.get(1);
+    $display("proc read get lock");
     fork
         begin
             @(vif.cbd);
@@ -98,4 +101,5 @@ task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
         end
     join
     proc_lock.put(1);
+    $display("proc read release lock");
 endtask
