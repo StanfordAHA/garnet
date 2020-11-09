@@ -232,6 +232,35 @@ program glb_test
         env.run();
         repeat(300) @(posedge clk);
 
+        //=============================================================================
+        // stream write tile 0-1, read tile 0
+        //=============================================================================
+        seq.empty();
+        r_cnt = 0;
+        r_trans_q[r_cnt++] = new(0, addr_dic["TILE_CTRL"], 'h155);
+        r_trans_q[r_cnt++] = new(0, addr_dic["LATENCY"], 'h2);
+        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_START_ADDR"], (1 << 18)-64);
+        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
+        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
+        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_START_ADDR"], (1 << 18)-64);
+        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (128 << MAX_STRIDE_WIDTH) + 1);
+        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
+
+        s_cnt = 0;
+        s_trans_q[s_cnt++] = new(0, (1 << 18) - 64, 128, 1);
+        s_trans_q[s_cnt++] = new(0, (1 << 18) - 64, 128);
+
+        foreach(r_trans_q[i]) begin
+            seq.add(r_trans_q[i]);
+        end
+        foreach(s_trans_q[i]) begin
+            seq.add(s_trans_q[i]);
+        end
+
+        env = new(seq, p_ifc, r_ifc, s_ifc);
+        env.build();
+        env.run();
+        repeat(300) @(posedge clk);
     end
 
     //=============================================================================
