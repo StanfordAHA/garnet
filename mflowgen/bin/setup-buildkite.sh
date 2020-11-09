@@ -397,137 +397,57 @@ else
     echo "Meanwhile: found MFLOWGEN_PATH='$MFLOWGEN_PATH'"; echo ""
 fi
 
-
-
-
-
-
-
-##############################################################################
-##############################################################################
-##############################################################################
-# END; everything from here down is to be deleted later
-##############################################################################
-##############################################################################
-##############################################################################
-#   update_cache=/build/gold.100/full_chip/17-tile_array
-#   source mflowgen/test/bin/bk_setup.sh full_chip
-#   cd $update_cache
-#   pwd
-#   ./mflowgen-run > mflowgen_run.log.$$PPID
-# 
-# 
-# 
-#   - 'mflowgen/test/test_module.sh full_chip
-#        --debug
-#        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-#        --setup_only;
-#      cd /build/gold.100/full_chip/17-tile_array
-# 
-# 
-#   build_dir=/build/gold.100/full_chip/17-tile_array;
-# 
-#   '
-#   cd $$build_dir; source 
-#   
-
-# OLD:
-#     if test -d $venv; then
-#         echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT"
-#         source $venv/bin/activate
-#     else
-#         echo "CANNOT FIND PRE-BUILT PYTHON VIRTUAL ENVIRONMENT"
-#         echo "- building a new one from scratch"
-#         # JOBDIR should be per-buildstep environment e.g.
-#         # /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
-#         JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
-#         pushd $JOBDIR
-#           /usr/local/bin/python3 -m venv venv ;# Builds "$JOBDIR/venv" maybe
-#           source $JOBDIR/venv/bin/activate
-#         popd
-#     fi
-# 
-#     check_pyversions
-# 
-#     # pip install -r $garnet/requirements.txt
-#     # Biting the bullet and updating to the latest everything;
-#     # also, it's the right thing to do I guess
-#     pip install -U -r $garnet/requirements.txt
-
 ########################################################################
-# OLD MFLOWGEN - delete after new code (below) has successfully
-# completed a build or two...
-# ########################################################################
-# # Make a build space for mflowgen; clone mflowgen
-# echo "--- CLONE *AND INSTALL* MFLOWGEN REPO"
-# [ "$VERBOSE" == "true" ] && (echo ""; echo "--- pwd="`pwd`; echo "")
-# if [ "$USER" == "buildkite-agent" ]; then
-#     build=$garnet/mflowgen/test
-# else
-#     build=/sim/$USER
-# fi
-# 
-# # CLONE
-# test  -d $build || mkdir $build; cd $build
-# test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
-# mflowgen=$build/mflowgen
-# 
-# # INSTALL
-# pushd $mflowgen
-#   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
-# popd
-# echo ""
+# TCLSH VERSION CHECK
 ########################################################################
+# 
+# tclsh version must be >= 8.5!  Because of e.g.
+#    "delay_best" in $vars(delay_corners)
+# in flowgen-setup/setup.tcl
+# 
+# For reference, I can see these versions in my various open windows
+#   kiwi/stever:  tclsh v8.6 (/usr/bin/tclsh)
+#   r7arm/agent:  tclsh v8.5 (/usr/bin/tclsh)
+#   r7arm/stever: tclsh v8.4 (/cad/mentor/2019.1/aoi_cal_2019.1_18.11/bin/tclsh
+# 
+# An example path that breaks tclsh:
+#   % source $garnet/.buildkite/setup-calibre.sh
+#   % which tclsh => 'tclsh is /cad/mentor/2019.1/aoi_cal_2019.1_18.11/bin/tclsh'
+#   % echo 'puts $tcl_version; exit 0' | tclsh => 8.4
+# 
+echo "--- TCLSH VERSION CHECK (must be >= 8.5)"
 
-
-########################################################################
-# OLD ADK SETUP - delete after new code (below) has successfully
-# completed a build or two...
-########################################################################
-# echo "--- ADK SETUP / CHECK"
-# 
-# # Copy the tsmc16 views into the adks directory.  Note the adks must
-# # be touchable by current user, thus must copy locally and cannot
-# # e.g. use symlink to someone else's existing adk.
-# 
-# # Find the tsmc16 libraries
-# 
-# # Check out official adk repo?
-# #   test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
-# # Yeah, no, that ain't gonna fly. gitlab repo requires username/pwd permissions and junk
-# # Instead, let's just use a cached copy
-# 
-# # FIXME/TODO check to see if user can use official repo,
-# # if so use that instead of cached copy, e.g.
-# 
-# # FIXME/TODO give buildkite-agent permission to use official repo
-# 
-# # tsmc16=/sim/steveri/mflowgen/adks/tsmc16-adk
-# tsmc16=/sim/steveri/mflowgen/adks/tsmc16
-# echo copying adk from $tsmc16
-# ls -l $tsmc16
-# 
-# # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
-# # test -e tsmc16 || ln -s ${tsmc16} tsmc16
-# 
-# set -x
-# echo COPYING IN A FRESH ADK
-# 
-# # Copy to cache (gold) dir if that was requested, else use default
-# if [ "$build_dir" ]; then
-#     test -d $build_dir/mflowgen/adks || mkdir -p $build_dir/mflowgen/adks
-#     # cp -rpf $build/mflowgen/adks $build_dir/mflowgen
-#     adks=$build_dir/mflowgen/adks
-# else
-#     adks=$build/mflowgen/adks
-# fi
-# 
-# if test -d $adks/tsmc16; then
-#     echo Using existing adks $adks/tsmc16
-# else
-#     echo "Copying adks from '$tscm16' to '$adks'"
-#     set -x; cp -rpH $tsmc16 $adks; set +x
-# fi
-# 
-# export MFLOWGEN_PATH=$adks
-# echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+# Uncomment to reset tclsh for testing
+# unset -f tclsh; source $garnet/.buildkite/setup-calibre.sh
+tclsh_version=`echo 'puts $tcl_version; exit 0' | tclsh`
+echo "  "`type tclsh`", version $tclsh_version"
+if (( $(echo "$tclsh_version >= 8.5" | bc -l) )); then
+    echo '  Good enough!'
+else
+    echo ""
+    echo "**WARNING tclsh version should be >= 8.5!"
+    echo "I will try and fix it for you"
+    echo ""
+    FIXED=
+    for d in $( echo $PATH | sed 's/:/ /g' ); do 
+        if test -x $d/tclsh; then
+            tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
+            echo -n "  Found tclsh v$tclsh_version: $d/tclsh"
+            if (( $(echo "$tclsh_version < 8.5" | bc -l) )); then
+                echo "  - no good"
+            else
+                echo '  - GOOD!'
+                eval 'function tclsh { '$d/tclsh' $* ; }'
+                FIXED=true
+                break
+            fi
+        fi
+    done
+    if [ ! $FIXED ]; then
+        echo "**ERROR could not find tclsh with version >= 8.5!"
+        return 13 || exit 13
+    fi
+    echo ""
+    echo "  "`type tclsh`", version $tclsh_version"
+fi
+echo ""
