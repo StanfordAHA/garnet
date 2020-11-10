@@ -264,7 +264,7 @@ program glb_test
         seq.empty();
         r_cnt = 0;
         r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h155);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LATENCY"], 'h2);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LATENCY"], 'h4);
         r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_START_ADDR"], (1 << 18)-64);
         r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
         r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
