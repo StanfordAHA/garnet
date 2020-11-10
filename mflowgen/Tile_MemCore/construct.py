@@ -23,6 +23,9 @@ def construct():
   adk_name = 'tsmc16'
   adk_view = 'multicorner-multivt'
   pwr_aware = True
+  
+  # Are we using multiple corners?
+  multicorner = 'multicorner' in adk_view
 
   parameters = {
     'construct_path'      : __file__,
@@ -96,6 +99,9 @@ def construct():
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
   genlibdb       = Step( 'cadence-genus-genlib',           default=True )
+  if multicorner:
+      genlibdb_ff    = genlibdb.clone()
+      genlibdb_ff.set_name( 'genlibdb-ff' ) 
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -114,6 +120,8 @@ def construct():
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
   #pt_signoff.extend_inputs( ['sram_tt.db'] )
   genlibdb.extend_inputs( ['sram_tt.lib'] )
+  if multicorner:
+      genlibdb_ff.extend_inputs( ['sram_tt.lib'] )
 
   # These steps need timing and lef info for srams
 
@@ -138,6 +146,9 @@ def construct():
   # Add extra input edges to genlibdb for loop-breaking constraints
 
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
+  if multicorner:
+      genlibdb_ff.extend_inputs( genlibdb_constraints.all_outputs() )
+
   synth.extend_inputs( custom_genus_scripts.all_outputs() )
   iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
 
@@ -194,6 +205,8 @@ def construct():
   g.add_step( pt_signoff           )
   g.add_step( genlibdb_constraints )
   g.add_step( genlibdb             )
+  if multicorner:
+      g.add_step( genlibdb_ff          )
   g.add_step( drc                  )
   g.add_step( lvs                  )
   g.add_step( custom_lvs           )
@@ -243,6 +256,7 @@ def construct():
   g.connect_by_name( gen_sram,      postroute_hold )
   g.connect_by_name( gen_sram,      signoff        )
   g.connect_by_name( gen_sram,      genlibdb       )
+  g.connect_by_name( gen_sram,      genlibdb_ff    )
   g.connect_by_name( gen_sram,      pt_signoff     )
   g.connect_by_name( gen_sram,      drc            )
   g.connect_by_name( gen_sram,      lvs            )
@@ -288,6 +302,12 @@ def construct():
   g.connect_by_name( signoff,              genlibdb )
   g.connect_by_name( adk,                  genlibdb )
   g.connect_by_name( genlibdb_constraints, genlibdb )
+  if multicorner:
+      g.connect_by_name( signoff,              genlibdb_ff )
+      g.connect_by_name( adk,                  genlibdb_ff )
+      g.connect_by_name( genlibdb_constraints, genlibdb_ff )
+      # use the rcbest spef to generate the ff lib
+      g.connect(signoff.o('design.rcbest.spef.gz'), genlibdb_ff.i('design.spef.gz'))
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
@@ -383,6 +403,8 @@ def construct():
   read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
   order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
   genlibdb.update_params( { 'order': order } )
+  if multicorner:
+      genlibdb_ff.update_params( { 'order': order } )
 
 
   # Pwr aware steps:
