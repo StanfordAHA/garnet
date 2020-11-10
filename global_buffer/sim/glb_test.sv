@@ -47,38 +47,42 @@ class MyProcTransaction extends ProcTransaction;
     endfunction
 endclass
 
-class MyRegTransaction extends RegTransaction;
-    bit is_read;
-    bit [AXI_ADDR_WIDTH-1:0] addr_internal;
-    bit [AXI_DATA_WIDTH-1:0] data_internal;
-
-    // en constraint
-    constraint en_c {
-        rd_en == is_read;
-    }
-
-    // addr constraint
-    constraint addr_c {
-        solve rd_en before rd_addr;
-        solve wr_en before wr_addr;
-        if (rd_en) {
-            rd_addr == addr_internal;
-            wr_addr == 0;
-            wr_data == 0;
-        } else {
-            rd_addr == 0;
-            wr_addr == addr_internal;
-            wr_data == data_internal;
-        }
-    }
-
-    function new(bit[TILE_SEL_ADDR_WIDTH-1:0] tile=0, bit[7:0] addr=0, bit[AXI_DATA_WIDTH-1:0] data=0, bit is_read=0);
-        this.is_read = is_read;
-        this.addr_internal = tile;
-        this.addr_internal = (this.addr_internal << 8) + addr;
-        this.data_internal = data;
+class MySramTransaction #(int ADDR_WIDTH=22) extends RegTransaction;
+    function new(bit[ADDR_WIDTH-1:0] addr=0, bit[AXI_DATA_WIDTH-1:0] data=0, bit is_read=0);
+        this.trans_type = SRAM;
+        if (is_read) begin
+            this.rd_en = 1;
+            this.rd_addr = addr;
+            this.wr_en = 0;
+            this.wr_addr = 0;
+            this.wr_data = data;
+        end else begin
+            this.rd_en = 0;
+            this.rd_addr = 0;
+            this.wr_en = 1;
+            this.wr_addr = addr;
+            this.wr_data = data;
+        end
     endfunction
+endclass
 
+class MyRegTransaction #(int ADDR_WIDTH=12) extends RegTransaction;
+    function new(bit[ADDR_WIDTH-1:0] addr=0, bit[AXI_DATA_WIDTH-1:0] data=0, bit is_read=0);
+        this.trans_type = REG;
+        if (is_read) begin
+            this.rd_en = 1;
+            this.rd_addr = addr;
+            this.wr_en = 0;
+            this.wr_addr = 0;
+            this.wr_data = data;
+        end else begin
+            this.rd_en = 0;
+            this.rd_addr = 0;
+            this.wr_en = 1;
+            this.wr_addr = addr;
+            this.wr_data = data;
+        end
+    endfunction
 endclass
 
 class MyStrmTransaction extends StrmTransaction;
@@ -152,8 +156,10 @@ program glb_test
     Sequence            seq;
     MyProcTransaction   p_trans_q[$];
     int                 p_cnt;
-    MyRegTransaction    r_trans_q[$];
+    MyRegTransaction #(AXI_ADDR_WIDTH) r_trans_q[$];
+    MySramTransaction #(GLB_ADDR_WIDTH) m_trans_q[$];
     int                 r_cnt;
+    int                 m_cnt;
     MyStrmTransaction   s_trans_q[$];
     int                 s_cnt;
 
@@ -180,7 +186,7 @@ program glb_test
             seq.add(p_trans_q[i]);
         end
 
-        env = new(seq, p_ifc, r_ifc, s_ifc);
+        env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
         env.build();
         env.run();
 
@@ -191,14 +197,34 @@ program glb_test
         //=============================================================================
         seq.empty();
         r_cnt = 0;
-        r_trans_q[r_cnt++] = new(0, addr_dic["TILE_CTRL"], 'h44);
-        r_trans_q[r_cnt++] = new(0, addr_dic["TILE_CTRL"], 'h44, 1);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h44);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h44, 1);
 
         foreach(r_trans_q[i]) begin
             seq.add(r_trans_q[i]);
         end
 
-        env = new(seq, p_ifc, r_ifc, s_ifc);
+        env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
+        env.build();
+        env.run();
+        repeat(300) @(posedge clk);
+
+        //=============================================================================
+        // sram read/write
+        //=============================================================================
+        seq.empty();
+        m_cnt = 0;
+        m_trans_q[m_cnt++] = new('h10, 100);
+        m_trans_q[m_cnt++] = new('h10, 100, 1);
+
+        m_trans_q[m_cnt++] = new('h40000, 100);
+        m_trans_q[m_cnt++] = new('h40000, 100, 1);
+
+        foreach(m_trans_q[i]) begin
+            seq.add(m_trans_q[i]);
+        end
+
+        env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
         env.build();
         env.run();
         repeat(300) @(posedge clk);
@@ -208,13 +234,13 @@ program glb_test
         //=============================================================================
         seq.empty();
         r_cnt = 0;
-        r_trans_q[r_cnt++] = new(0, addr_dic["TILE_CTRL"], 'h154);
-        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_START_ADDR"], 'h0);
-        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
-        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
-        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_START_ADDR"], 'h0);
-        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (128 << MAX_STRIDE_WIDTH) + 1);
-        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h154);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_START_ADDR"], 'h0);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_START_ADDR"], 'h0);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (128 << MAX_STRIDE_WIDTH) + 1);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
 
         s_cnt = 0;
         s_trans_q[s_cnt++] = new(0, 0, 128, 1);
@@ -227,7 +253,7 @@ program glb_test
             seq.add(s_trans_q[i]);
         end
 
-        env = new(seq, p_ifc, r_ifc, s_ifc);
+        env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
         env.build();
         env.run();
         repeat(300) @(posedge clk);
@@ -237,14 +263,14 @@ program glb_test
         //=============================================================================
         seq.empty();
         r_cnt = 0;
-        r_trans_q[r_cnt++] = new(0, addr_dic["TILE_CTRL"], 'h155);
-        r_trans_q[r_cnt++] = new(0, addr_dic["LATENCY"], 'h2);
-        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_START_ADDR"], (1 << 18)-64);
-        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
-        r_trans_q[r_cnt++] = new(0, addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
-        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_START_ADDR"], (1 << 18)-64);
-        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (128 << MAX_STRIDE_WIDTH) + 1);
-        r_trans_q[r_cnt++] = new(0, addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h155);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LATENCY"], 'h2);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_START_ADDR"], (1 << 18)-64);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_START_ADDR"], (1 << 18)-64);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (128 << MAX_STRIDE_WIDTH) + 1);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
 
         s_cnt = 0;
         s_trans_q[s_cnt++] = new(0, (1 << 18) - 64, 128, 1);
@@ -257,7 +283,7 @@ program glb_test
             seq.add(s_trans_q[i]);
         end
 
-        env = new(seq, p_ifc, r_ifc, s_ifc);
+        env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
         env.build();
         env.run();
         repeat(300) @(posedge clk);
