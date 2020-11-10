@@ -48,9 +48,9 @@ logic                       packet_rd_en_d1, packet_rd_en_d2, packet_rd_en_d3;
 logic [BANK_DATA_WIDTH-1:0] packet_rd_data_d1;
 
 // sram cfg
-logic                       cfg_sram_rd_en_d1, cfg_sram_rd_en_d2, cfg_sram_rd_en_d3;
+logic                       cfg_sram_rd_en_d1, cfg_sram_rd_en_d2, cfg_sram_rd_en_d3, cfg_sram_rd_valid_int;
 logic                       cfg_sram_rd_addr_mux_d1, cfg_sram_rd_addr_mux_d2, cfg_sram_rd_addr_mux_d3;
-logic [BANK_DATA_WIDTH-1:0] cfg_sram_rd_data, cfg_sram_rd_data_d1;
+logic [BANK_DATA_WIDTH-1:0] cfg_sram_rd_data, cfg_sram_rd_data_d1, cfg_sram_rd_data_int;
 
 // internal mem
 logic                       internal_mem_rd_en, internal_mem_rd_en_d1, internal_mem_rd_en_d2, internal_mem_rd_en_d3;
