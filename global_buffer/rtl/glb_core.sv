@@ -22,9 +22,9 @@ import global_buffer_param::*;
     output packet_t                         proc_packet_w2e_esto,
 
     // stream packet
-    input  packet_t                         strm_packet_w2e_wsti,
+    input  packet_t                         strm_packet_w2e_wsti_d1,
     output packet_t                         strm_packet_e2w_wsto,
-    input  packet_t                         strm_packet_e2w_esti,
+    input  packet_t                         strm_packet_e2w_esti_d1,
     output packet_t                         strm_packet_w2e_esto,
 
     // pc packet
@@ -214,9 +214,9 @@ glb_core_proc_router glb_core_proc_router (
 // Stream Packet Router
 //============================================================================//
 glb_core_strm_router glb_core_strm_router (
-    .packet_w2e_wsti    (strm_packet_w2e_wsti),
+    .packet_w2e_wsti_d1 (strm_packet_w2e_wsti_d1),
     .packet_e2w_wsto    (strm_packet_e2w_wsto),
-    .packet_e2w_esti    (strm_packet_e2w_esti),
+    .packet_e2w_esti_d1 (strm_packet_e2w_esti_d1),
     .packet_w2e_esto    (strm_packet_w2e_esto),
     .packet_sw2sr       (strm_packet_sw2sr),
     .packet_sr2sw       (strm_packet_sr2sw),

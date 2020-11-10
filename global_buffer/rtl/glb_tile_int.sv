@@ -179,6 +179,22 @@ assign strm_g2f_interrupt_pulse = strm_g2f_interrupt_pulse_int_d1;
 assign pcfg_g2f_interrupt_pulse = pcfg_g2f_interrupt_pulse_int_d1;
 
 //============================================================================//
+// pipeline registers for strm packet connection
+//============================================================================//
+packet_t strm_packet_w2e_wsti_d1;
+packet_t strm_packet_e2w_esti_d1;
+always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+        strm_packet_w2e_wsti_d1 <= '0;
+        strm_packet_e2w_esti_d1 <= '0;
+    end
+    else if (clk_en) begin
+        strm_packet_w2e_wsti_d1 <= strm_packet_w2e_wsti;
+        strm_packet_e2w_esti_d1 <= strm_packet_e2w_esti;
+    end
+end
+
+//============================================================================//
 // Configuration Controller
 //============================================================================//
 glb_tile_cfg glb_tile_cfg (.*);
