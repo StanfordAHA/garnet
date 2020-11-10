@@ -22,6 +22,9 @@ def construct():
 
   adk_name = 'tsmc16'
   adk_view = 'multicorner'
+  
+  # Are we using multiple corners?
+  multicorner = 'multicorner' in adk_view
 
   parameters = {
     'construct_path'    : __file__,
@@ -77,6 +80,9 @@ def construct():
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlib       = Step( 'cadence-genus-genlib',        default=True )
+  if multicorner:
+      genlib_ff = genlib.clone()
+      genlib_ff.set_name('genlibdb-ff')
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -112,6 +118,8 @@ def construct():
   g.add_step( signoff                  )
   g.add_step( pt_signoff   )
   g.add_step( genlib                   )
+  if multicorner:
+      g.add_step( genlib_ff                )
   g.add_step( drc                      )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
@@ -173,6 +181,11 @@ def construct():
 
   g.connect_by_name( signoff,              genlib   )
   g.connect_by_name( adk,                  genlib   )
+  if multicorner:
+      g.connect_by_name( signoff,              genlib_ff )
+      g.connect_by_name( adk,                  genlib_ff )
+      # use the rcbest spef to generate the ff lib
+      g.connect(signoff.o('design.rcbest.spef.gz'), genlib_ff.i('design.spef.gz'))
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
