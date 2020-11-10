@@ -124,6 +124,34 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
 
+def run_tb(tester, use_verilator=True):
+    with tempfile.TemporaryDirectory() as tempdir:
+        for genesis_verilog in glob.glob("genesis_verif/*.*"):
+            shutil.copy(genesis_verilog, tempdir)
+        for filename in dw_files():
+            shutil.copy(filename, tempdir)
+        shutil.copy(os.path.join("tests", "test_memory_core",
+                                 "sram_stub.v"),
+                    os.path.join(tempdir, "sram_512w_16b.v"))
+        for aoi_mux in glob.glob("tests/*.sv"):
+            shutil.copy(aoi_mux, tempdir)
+
+        target = "verilator"
+        runtime_kwargs = {"magma_output": "coreir-verilog",
+                          "magma_opts": {"coreir_libs": {"float_DW"},
+                                         "inline": False},
+                          "directory": tempdir,
+                          "flags": ["-Wno-fatal"]}
+        if not use_verilator:
+            target = "system-verilog"
+            runtime_kwargs["simulator"] = "vcs"
+            runtime_kwargs["flags"] = ["-sv"]
+
+        tester.compile_and_run(target=target,
+                               tmp_dir=False,
+                               **runtime_kwargs)
+
+
 def test_pond_rd_wr(verilator=True):
 
     chip_size = 2
@@ -190,30 +218,7 @@ def test_pond_rd_wr(verilator=True):
         tester.step(2)
         tester.eval()
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
-        for filename in dw_files():
-            shutil.copy(filename, tempdir)
-        shutil.copy(os.path.join("tests", "test_memory_core",
-                                 "sram_stub.v"),
-                    os.path.join(tempdir, "sram_512w_16b.v"))
-        for aoi_mux in glob.glob("tests/*.sv"):
-            shutil.copy(aoi_mux, tempdir)
-
-        target = "verilator"
-        runtime_kwargs = {"magma_output": "coreir-verilog",
-                          "magma_opts": {"coreir_libs": {"float_DW"},
-                                         "inline": False},
-                          "directory": tempdir,
-                          "flags": ["-Wno-fatal"]}
-        if verilator is False:
-            target = "system-verilog"
-            runtime_kwargs["simulator"] = "vcs"
-
-        tester.compile_and_run(target=target,
-                               tmp_dir=False,
-                               **runtime_kwargs)
+    run_tb(tester, use_verilator=verilator)
 
 
 def test_pond_pe(verilator=True):
@@ -290,30 +295,7 @@ def test_pond_pe(verilator=True):
         tester.step(2)
         tester.eval()
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
-        for filename in dw_files():
-            shutil.copy(filename, tempdir)
-        shutil.copy(os.path.join("tests", "test_memory_core",
-                                 "sram_stub.v"),
-                    os.path.join(tempdir, "sram_512w_16b.v"))
-        for aoi_mux in glob.glob("tests/*.sv"):
-            shutil.copy(aoi_mux, tempdir)
-
-        target = "verilator"
-        runtime_kwargs = {"magma_output": "coreir-verilog",
-                          "magma_opts": {"coreir_libs": {"float_DW"},
-                                         "inline": False},
-                          "directory": tempdir,
-                          "flags": ["-Wno-fatal", "--trace"]}
-        if verilator is False:
-            target = "system-verilog"
-            runtime_kwargs["simulator"] = "vcs"
-
-        tester.compile_and_run(target=target,
-                               tmp_dir=False,
-                               **runtime_kwargs)
+    run_tb(tester, use_verilator=verilator)
 
 
 def test_pond_pe_acc(verilator=True):
@@ -385,27 +367,39 @@ def test_pond_pe_acc(verilator=True):
         tester.step(2)
         tester.eval()
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
-        for filename in dw_files():
-            shutil.copy(filename, tempdir)
-        shutil.copy(os.path.join("tests", "test_memory_core",
-                                 "sram_stub.v"),
-                    os.path.join(tempdir, "sram_512w_16b.v"))
-        for aoi_mux in glob.glob("tests/*.sv"):
-            shutil.copy(aoi_mux, tempdir)
+    run_tb(tester, use_verilator=verilator)
 
-        target = "verilator"
-        runtime_kwargs = {"magma_output": "coreir-verilog",
-                          "magma_opts": {"coreir_libs": {"float_DW"},
-                                         "inline": False},
-                          "directory": tempdir,
-                          "flags": ["-Wno-fatal", "--trace"]}
-        if verilator is False:
-            target = "system-verilog"
-            runtime_kwargs["simulator"] = "vcs"
 
-        tester.compile_and_run(target=target,
-                               tmp_dir=False,
-                               **runtime_kwargs)
+def test_pond_config():
+    # 1x1 interconnect with only PE tile
+    interconnect = create_cgra(1, 1, IOSide.None_, standalone=True,
+                               mem_ratio=(0, 1),
+                               add_pond=True)
+
+    # get pond core
+    pe_tile = interconnect.tile_circuits[0, 0]
+    pond_core = pe_tile.additional_cores[0]
+    pond_feat = pe_tile.features().index(pond_core)
+    sram_feat = pond_feat + pond_core.num_sram_features
+
+    circuit = interconnect.circuit()
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+
+    config_data = []
+    # tile enable
+    reg_addr, value = pond_core.get_config_data("tile_en", 1)
+    config_data.append((interconnect.get_config_addr(reg_addr, pond_feat, 0, 0), value))
+
+    for i in range(32):
+        addr = interconnect.get_config_addr(i, sram_feat, 0, 0)
+        config_data.append((addr, i + 1))
+    for addr, data in config_data:
+        tester.configure(addr, data)
+
+    # read back
+    for addr, data in config_data:
+        tester.config_read(addr)
+        tester.expect(circuit.read_config_data, data)
+
+    run_tb(tester)
