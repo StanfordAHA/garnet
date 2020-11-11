@@ -8,12 +8,16 @@ inputs:
 
 outputs:
   - tile_array_tt.lib
+  - tile_array_ff.lib
   - tile_array.lef
   - tile_array.gds
   - tile_array.vcs.v
   - tile_array.sdf
   - tile_array.lvs.v
   - tile_array.sram.spi
+
+parameters:
+  multicorner: True
 
 postconditions:
   - assert File( 'outputs/tile_array_tt.lib' ) # must exist
