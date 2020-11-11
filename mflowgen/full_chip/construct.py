@@ -22,6 +22,8 @@ def construct():
 
   adk_name = 'tsmc16'
   adk_view = 'stdview'
+
+  multicorner = 'multicorner' in adk_view
   
   if which("calibre") is not None:
       drc_rule_deck = 'calibre-drc-chip.rule' 
@@ -79,7 +81,9 @@ def construct():
     'drc_rule_deck'         : drc_rule_deck,
     'antenna_drc_rule_deck' : antenna_drc_rule_deck,
     'power_drc_rule_deck'   : power_drc_rule_deck,
-    'nthreads'              : 16
+    'nthreads'              : 16,
+    # timing/.lib generation
+    'multicorner'           : multicorner
   }
 
   #-----------------------------------------------------------------------
@@ -190,6 +194,10 @@ def construct():
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
     step.extend_inputs( ['dragonphy_top_tt.lib', 'dragonphy_top.lef'] )
     step.extend_inputs( ['dragonphy_RDL.lef'] )
+    if multicorner:
+        step.extend_inputs( ['tile_array_ff.lib', 'glb_top_ff.lib', 
+                             'global_controller_ff.lib', 'sram_ff.lib',
+                             'dragonphy_top_ff.lib'] ) 
 
   # Need all block gds's to merge into the final layout
   gdsmerge_nodes = [signoff, power]
