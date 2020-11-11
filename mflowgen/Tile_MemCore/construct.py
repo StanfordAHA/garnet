@@ -121,7 +121,7 @@ def construct():
   #pt_signoff.extend_inputs( ['sram_tt.db'] )
   genlibdb.extend_inputs( ['sram_tt.lib'] )
   if multicorner:
-      genlibdb_ff.extend_inputs( ['sram_tt.lib'] )
+      genlibdb_ff.extend_inputs( ['sram_ff.lib'] )
 
   # These steps need timing and lef info for srams
 
