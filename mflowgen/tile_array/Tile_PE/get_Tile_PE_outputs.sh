@@ -4,7 +4,6 @@ make cadence-genus-genlib
 if [ $multicorner = True ]; then
   make genlib-ff
 fi
-make genlib-ff
 if command -v calibre &> /dev/null
 then
     make mentor-calibre-lvs
