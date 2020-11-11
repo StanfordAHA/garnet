@@ -23,6 +23,8 @@ def construct():
   adk_name = 'tsmc16'
   adk_view = 'multivt'
 
+  multicorner = 'multicorner' in adk_view
+
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
@@ -45,6 +47,8 @@ def construct():
     'pipeline_stage_height': 30,
     # Testing
     'testbench_name'    : 'Interconnect_tb',
+    # .lib generation and graph construction
+    'multicorner'       : multicorner
   }
 
   #-----------------------------------------------------------------------
@@ -91,6 +95,9 @@ def construct():
   #pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
   #genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
   genlib         = Step( 'cadence-genus-genlib',           default=True )
+  if multicorner:
+      genlib_ff = genlib.clone()
+      genlib_ff.set_name('genlib-ff')
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -112,6 +119,9 @@ def construct():
   genlib.extend_inputs( ['Tile_PE_tt.lib'] )
   #genlibdb.extend_inputs( ['Tile_MemCore.db'] )
   genlib.extend_inputs( ['Tile_MemCore_tt.lib'] )
+  if multicorner:
+      genlib_ff.extend_inputs( ['Tile_PE_ff.lib'] )
+      genlib_ff.extend_inputs( ['Tile_MemCore_ff.lib'] )
 
   # These steps need timing info for cgra tiles
 
@@ -122,6 +132,9 @@ def construct():
   for step in tile_steps:
     step.extend_inputs( ['Tile_PE_tt.lib', 'Tile_PE.lef'] )
     step.extend_inputs( ['Tile_MemCore_tt.lib', 'Tile_MemCore.lef'] )
+    if multicorner:
+        step.extend_inputs( 'Tile_PE_ff.lib' )
+        step.extend_inputs( 'Tile_MemCore_ff.lib' )
 
   # Need the netlist and SDF files for gate-level sim
 
@@ -180,7 +193,9 @@ def construct():
   g.add_step( signoff        )
   #g.add_step( pt_signoff     )
   #g.add_step( genlibdb       )
-  g.add_step( genlib       )
+  g.add_step( genlib         )
+  if multicorner:
+      g.add_step( genlib_ff      )
   g.add_step( drc            )
   g.add_step( custom_lvs     )
   g.add_step( lvs            )
@@ -234,6 +249,8 @@ def construct():
       #g.connect_by_name( Tile_MemCore,      pt_signoff     )
       #g.connect_by_name( Tile_MemCore,      genlibdb       )
       g.connect_by_name( Tile_MemCore,      genlib         )
+      if multicorner:
+          g.connect_by_name( Tile_MemCore,      genlib_ff      )
       g.connect_by_name( Tile_MemCore,      drc            )
       g.connect_by_name( Tile_MemCore,      lvs            )
       # These rules LVS BOX the SRAM macro, so they should
@@ -259,7 +276,8 @@ def construct():
   g.connect_by_name( Tile_PE,      signoff        )
   #g.connect_by_name( Tile_PE,      pt_signoff     )
   #g.connect_by_name( Tile_PE,      genlibdb       )
-  g.connect_by_name( Tile_PE,      genlib         )
+  if multicorner:
+      g.connect_by_name( Tile_PE,      genlib_ff      )
   g.connect_by_name( Tile_PE,      drc            )
   g.connect_by_name( Tile_PE,      lvs            )
 
@@ -319,6 +337,11 @@ def construct():
   g.connect_by_name( adk,          genlib   )
   #g.connect_by_name( signoff,      genlibdb   )
   g.connect_by_name( signoff,      genlib   )
+  if multicorner:
+      g.connect_by_name( adk,          genlib_ff )
+      g.connect_by_name( signoff,      genlib_ff )
+      # use the rcbest spef to generate the ff lib
+      g.connect(signoff.o('design.rcbest.spef.gz'), genlib_ff.i('design.spef.gz'))
 
   g.connect_by_name( adk,      debugcalibre )
   #g.connect_by_name( dc,       debugcalibre )
