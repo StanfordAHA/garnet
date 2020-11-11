@@ -82,7 +82,7 @@ def construct():
   genlib       = Step( 'cadence-genus-genlib',        default=True )
   if multicorner:
       genlib_ff = genlib.clone()
-      genlib_ff.set_name('genlibdb-ff')
+      genlib_ff.set_name('genlib-ff')
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
