@@ -116,6 +116,8 @@ def construct():
       sram_steps.append(genlib_ff)
   for step in sram_steps:
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+    if multicorner:
+        step.extend_inputs( ['sram_ff.lib', 'sram.lef'] )
 
   # Need the sram gds to merge into the final layout
 
