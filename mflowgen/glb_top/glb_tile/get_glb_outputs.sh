@@ -14,7 +14,7 @@ fi
 mkdir -p outputs
 cp -L *cadence-genus-genlib/outputs/design.lib outputs/glb_tile_tt.lib
 if [ $multicorner = True ]; then
-  cp -L *genlib-ff/outputs/design.lib outputs/glb_tile_tt.lib
+  cp -L *genlib-ff/outputs/design.lib outputs/glb_tile_ff.lib
 fi
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/glb_tile.lef
 cp -L *cadence-innovus-signoff/outputs/design-merged.gds outputs/glb_tile.gds
