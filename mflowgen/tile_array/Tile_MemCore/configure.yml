@@ -8,12 +8,16 @@ inputs:
 
 outputs:
   - Tile_MemCore_tt.lib
+  - Tile_MemCore_ff.lib
   - Tile_MemCore.lef
   - Tile_MemCore.gds
   - Tile_MemCore.vcs.v
   - Tile_MemCore.lvs.v
   - Tile_MemCore.sdf
   - sram.spi
+
+parameters:
+  multicorner: True
 
 postconditions:
   - assert File( 'outputs/Tile_MemCore_tt.lib' ) # must exist

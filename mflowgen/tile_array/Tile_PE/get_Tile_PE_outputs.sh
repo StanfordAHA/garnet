@@ -1,6 +1,10 @@
 #!/bin/bash
 mflowgen run --design $GARNET_HOME/mflowgen/Tile_PE/
 make cadence-genus-genlib
+if [ $multicorner = True ]; then
+  make genlib-ff
+fi
+make genlib-ff
 if command -v calibre &> /dev/null
 then
     make mentor-calibre-lvs
@@ -10,6 +14,9 @@ fi
 
 mkdir -p outputs
 cp -L *cadence-genus-genlib/outputs/design.lib outputs/Tile_PE_tt.lib
+if [ $multicorner = True ]; then
+  cp -L *genlib_ff/outputs/design.lib outputs/Tile_PE_ff.lib
+fi
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_PE.lef
 cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/Tile_PE.vcs.v
 cp -L *cadence-innovus-signoff/outputs/design.sdf outputs/Tile_PE.sdf

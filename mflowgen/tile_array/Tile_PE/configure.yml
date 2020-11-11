@@ -8,11 +8,15 @@ inputs:
 
 outputs:
   - Tile_PE_tt.lib
+  - Tile_PE_ff.lib
   - Tile_PE.lef
   - Tile_PE.gds
   - Tile_PE.vcs.v
   - Tile_PE.lvs.v
   - Tile_PE.sdf
+
+parameters:
+  multicorner: True
 
 postconditions:
   - assert File( 'outputs/Tile_PE_tt.lib' ) # must exist
