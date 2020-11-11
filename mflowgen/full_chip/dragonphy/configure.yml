@@ -2,6 +2,7 @@ name: dragonphy
 
 outputs:
   - dragonphy_top_tt.lib
+  - dragonphy_top_ff.lib
   - dragonphy_top_tt.db
   - dragonphy_top.lef
   - dragonphy_top.gds
