@@ -23,6 +23,8 @@ def construct():
   adk_name = 'tsmc16'
   adk_view = 'stdview'
 
+  multicorner = 'multicorner' in adk_view
+
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
@@ -34,6 +36,7 @@ def construct():
     'topographical'  : True,
     # hold target slack
     'hold_target_slack' : 0.045,
+    'multicorner' : multicorner
   }
 
   #-----------------------------------------------------------------------
@@ -75,6 +78,9 @@ def construct():
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
   genlib         = Step( 'cadence-genus-genlib',            default=True )
+  if multicorner:
+    genlib_ff = genlib.clone()
+    genlib_ff.set_name('genlib-ff')
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
@@ -98,9 +104,13 @@ def construct():
   tile_steps = \
     [ synth, iflow, init, power, place, cts, postcts_hold,
       route, postroute, postroute_hold, signoff, genlib ]
+  if multicorner:
+    tile_steps.append(genlib_ff)
 
   for step in tile_steps:
     step.extend_inputs( ['glb_tile_tt.lib', 'glb_tile.lef'] )
+    if multicorner:
+        step.extend_inputs( ['glb_tile_ff.lib'] )
 
   # Need the glb_tile gds to merge into the final layout
 
@@ -153,6 +163,8 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
+  if multicorner:
+      g.add_step( genlib_ff      )
   g.add_step( drc            )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
@@ -191,6 +203,8 @@ def construct():
   g.connect_by_name( glb_tile,      signoff      )
   g.connect_by_name( glb_tile,      pt_signoff   )
   g.connect_by_name( glb_tile,      genlib       )
+  if multicorner:
+      g.connect_by_name( glb_tile,      genlib_ff    )
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
 
@@ -241,6 +255,11 @@ def construct():
 
   g.connect_by_name( adk,          genlib   )
   g.connect_by_name( signoff,      genlib   )
+  if multicorner:
+      g.connect_by_name( adk,          genlib_ff   )
+      g.connect_by_name( signoff,      genlib_ff   )
+      # use the rcbest spef to generate the ff lib
+      g.connect(signoff.o('design.rcbest.spef.gz'), genlib_ff.i('design.spef.gz'))
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,       debugcalibre )
