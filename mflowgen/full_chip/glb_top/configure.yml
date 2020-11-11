@@ -8,12 +8,16 @@ inputs:
 
 outputs:
   - glb_top_tt.lib
+  - glb_top_ff.lib
   - glb_top.lef
   - glb_top.gds
   - glb_top.vcs.v
   - glb_top.sdf
   - glb_top.lvs.v
   - glb_top.sram.spi
+
+parameters:
+  multicorner: True
 
 postconditions:
   - assert File( 'outputs/glb_top_tt.lib' ) # must exist
