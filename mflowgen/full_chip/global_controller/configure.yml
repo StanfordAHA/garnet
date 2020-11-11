@@ -8,11 +8,15 @@ inputs:
 
 outputs:
   - global_controller_tt.lib
+  - global_controller_ff.lib
   - global_controller.lef
   - global_controller.gds
   - global_controller.vcs.v
   - global_controller.sdf
   - global_controller.lvs.v
+
+parameters:
+  multicorner: True
 
 postconditions:
   - assert File( 'outputs/global_controller_tt.lib' ) # must exist
