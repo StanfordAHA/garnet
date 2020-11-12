@@ -286,7 +286,6 @@ module tb_Tile_MemCore();
       #1 config_write = 1;
       #1 config_read = 0;
       #1 stall = 0;
-      //#1 clk_pass_through = 1;
       #1 read_config_data_in = 32'hABCDEF01;
       #1 $display("All global signals are = clk: %h clk_out: %h reset: %h config_out_config_addr: %h config_out_config_data: %h config_out_read: %h config_out_write: %h read_config_data: %h stall_out: %h", clk, clk_out, reset_out, config_out_config_addr, config_out_config_data, config_out_read, config_out_write, read_config_data, stall_out);   
       
@@ -303,8 +302,8 @@ module tb_Tile_MemCore();
          else $error("tie low cells are off");
       #1 assert (hi == 9'h1FF && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: tie hi cells are active");
  
-      //#1 assert (clk_out == clk && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: Clk is ON");
-      //   else $error("Clk is OFF"); 
+      #1 assert (clk_out == clk && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: Clk is ON");
+         else $error("Clk is OFF"); 
       #1 assert (reset_out == reset && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: Reset is ON");
          else $error("Reset is OFF"); 
       #1 assert (config_out_config_data == config_config_data && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: config_out_config_data is ON");
