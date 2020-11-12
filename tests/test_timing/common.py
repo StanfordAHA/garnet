@@ -16,6 +16,7 @@ def dw_files():
 
 
 def configure(tester, sequence, check_read_data=True):
+    tester.zero_inputs()
     tester.circuit.clk = 0
     tester.print(f"Starting reset\n")
     tester.reset()
