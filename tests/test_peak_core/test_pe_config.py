@@ -14,6 +14,18 @@ import os
 import pytest
 
 
+@pytest.fixture(scope="module")
+def dw_files():
+    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
+    dirname = "peak_core"
+    result_filenames = []
+    for name in filenames:
+        filename = os.path.join(dirname, name)
+        assert os.path.isfile(filename)
+        result_filenames.append(filename)
+    return result_filenames
+
+
 def _make_random(cls):
     if issubclass(cls, hwtypes.BitVector):
         return cls.random(len(cls))
