@@ -135,6 +135,8 @@ def test_pond_rd_wr(run_tb):
     circuit = interconnect.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.zero_inputs()
+    tester.reset()
 
     tester.poke(circuit.interface["stall"], 1)
 
@@ -209,6 +211,8 @@ def test_pond_pe(run_tb):
     circuit = interconnect.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.zero_inputs()
+    tester.reset()
 
     tester.poke(circuit.interface["stall"], 1)
 
@@ -286,6 +290,8 @@ def test_pond_pe_acc(run_tb):
     circuit = interconnect.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.zero_inputs()
+    tester.reset()
 
     tester.poke(circuit.interface["stall"], 1)
 
@@ -331,6 +337,7 @@ def test_pond_config(run_tb):
 
     circuit = interconnect.circuit()
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.zero_inputs()
     tester.reset()
 
     config_data = []

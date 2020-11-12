@@ -13,6 +13,7 @@ steps:
   - echo "--- Install requirements"
   - pip install -r /aha/garnet/requirements.txt
   - pip install pytest-cov pytest-pycodestyle z3-solver genesis2 coveralls
+  - echo "--- Running CI tests"
   - cd /aha/garnet && bash .github/scripts/run.sh
   plugins:
     - docker#v3.2.0:
