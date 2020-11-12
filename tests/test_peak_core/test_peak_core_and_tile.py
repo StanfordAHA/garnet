@@ -24,18 +24,6 @@ from peak_core.peak_core import PeakCore
 from cgra import create_cgra, compress_config_data
 
 
-@pytest.fixture(scope="module")
-def cw_files():
-    filenames = ["CW_fp_add.v", "CW_fp_mult.v"]
-    dirname = "peak_core"
-    result_filenames = []
-    for name in filenames:
-        filename = os.path.join(dirname, name)
-        assert os.path.isfile(filename)
-        result_filenames.append(filename)
-    return result_filenames
-
-
 @pytest.fixture()
 def sequence():
     """
@@ -86,7 +74,7 @@ class CoreMonitor(Monitor):
         self.tester.circuit.alu_res.expect(output)
 
 
-def test_peak_core_sequence(sequence, cw_files):
+def test_peak_core_sequence(sequence, run_tb):
     """
     Core level test
     * configures core using instruction bitstream
@@ -105,19 +93,11 @@ def test_peak_core_sequence(sequence, cw_files):
                                  sequence, circuit.clk, circuit.reset)
     tester.reset()
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for filename in cw_files:
-            shutil.copy(filename, tempdir)
-
-        tester.compile_and_run("verilator",
-                               directory=tempdir,
-                               magma_opts={"coreir_libs": {"float_CW"},
-                                           "inline": False},
-                               flags=["-Wno-fatal"])
+    run_tb(tester)
 
 
 @pytest.mark.parametrize('seed', [0, 1])
-def test_peak_tile_sequence(sequence, cw_files, seed):
+def test_peak_tile_sequence(sequence, seed, run_tb):
     """
     Tile level test:
     * Generates 1x1 CGRA
@@ -160,15 +140,4 @@ def test_peak_tile_sequence(sequence, cw_files, seed):
     for addr, data in route_config:
         tester.configure(addr, data)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for filename in cw_files:
-            shutil.copy(filename, tempdir)
-
-        for aoi_mux in glob.glob("tests/*.sv"):
-            shutil.copy(aoi_mux, tempdir)
-
-        tester.compile_and_run("verilator",
-                               directory=tempdir,
-                               magma_opts={"coreir_libs": {"float_CW"},
-                                           "inline": False},
-                               flags=["-Wno-fatal"])
+    run_tb(tester)

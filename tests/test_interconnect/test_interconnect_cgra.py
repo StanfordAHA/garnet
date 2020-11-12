@@ -20,18 +20,6 @@ def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
 
-@pytest.fixture(scope="module")
-def dw_files():
-    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
-    dirname = "peak_core"
-    result_filenames = []
-    for name in filenames:
-        filename = os.path.join(dirname, name)
-        assert os.path.isfile(filename)
-        result_filenames.append(filename)
-    return result_filenames
-
-
 def test_1x1():
     # this is all PE
     interconnect = create_cgra(1, 1, IOSide.None_, num_tracks=3, mem_ratio=(0, 1))
@@ -43,7 +31,7 @@ def test_1x1():
 
 
 @pytest.mark.parametrize("batch_size", [100])
-def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
+def test_interconnect_point_wise(batch_size: int, run_tb, io_sides):
     # we test a simple point-wise multiplier function
     # to account for different CGRA size, we feed in data to the very top-left
     # SB and route through horizontally to reach very top-right SB
@@ -101,25 +89,10 @@ def test_interconnect_point_wise(batch_size: int, dw_files, io_sides):
         tester.eval()
         tester.expect(circuit.interface[dst_name], num_1 * num_2)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
-        for filename in dw_files:
-            shutil.copy(filename, tempdir)
-        shutil.copy(os.path.join("tests", "test_memory_core",
-                                 "sram_stub.v"),
-                    os.path.join(tempdir, "sram_512w_16b.v"))
-        for aoi_mux in glob.glob("tests/*.sv"):
-            shutil.copy(aoi_mux, tempdir)
-        tester.compile_and_run(target="verilator",
-                               magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"},
-                                           "inline": False},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+    run_tb(tester)
 
 
-def test_interconnect_sram(dw_files, io_sides):
+def test_interconnect_sram(run_tb, io_sides):
 
     # NEW: PASSES
 
@@ -208,26 +181,11 @@ def test_interconnect_sram(dw_files, io_sides):
         tester.eval()
         tester.expect(circuit.interface[dst], i)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
-        for filename in dw_files:
-            shutil.copy(filename, tempdir)
-        shutil.copy(os.path.join("tests", "test_memory_core",
-                                 "sram_stub.v"),
-                    os.path.join(tempdir, "sram_512w_16b.v"))
-        for aoi_mux in glob.glob("tests/*.sv"):
-            shutil.copy(aoi_mux, tempdir)
-        tester.compile_and_run(target="verilator",
-                               magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"},
-                                           "inline": False},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+    run_tb(tester)
 
 
 @pytest.mark.parametrize("depth", [10, 1024])
-def test_interconnect_fifo(dw_files, io_sides, depth):
+def test_interconnect_fifo(run_tb, io_sides, depth):
 
     # NEW: PASSES
 
@@ -350,19 +308,4 @@ def test_interconnect_fifo(dw_files, io_sides, depth):
         tester.poke(circuit.interface[wen], 0)
         tester.poke(circuit.interface[ren], 0)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
-        for filename in dw_files:
-            shutil.copy(filename, tempdir)
-        shutil.copy(os.path.join("tests", "test_memory_core",
-                                 "sram_stub.v"),
-                    os.path.join(tempdir, "sram_512w_16b.v"))
-        for aoi_mux in glob.glob("tests/*.sv"):
-            shutil.copy(aoi_mux, tempdir)
-        tester.compile_and_run(target="verilator",
-                               magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"},
-                                           "inline": False},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+    run_tb(tester)
