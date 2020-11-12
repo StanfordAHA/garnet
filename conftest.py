@@ -93,7 +93,8 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
                 runtime_kwargs["dump_vcd"] = True
         else:
             target = "verilator"
-            runtime_kwargs["flags"].append("--trace")
+            if trace:
+                runtime_kwargs["flags"].append("--trace")
 
         runtime_kwargs["magma_opts"].update(magma_args)
 

@@ -40,6 +40,10 @@ def test_pe_data_gate(op, run_tb):
     if not irun_available() and is_float:
         pytest.skip("Need irun to test fp ops")
 
+    # note to skip mul since CW BFloat is faulty
+    if op == "bfloat16.mul":
+        pytest.skip("We don't have correct CW BFloat implementation yet")
+
     core = PeakCore(PE_fc)
     core.name = lambda: "PECore"
     circuit = core.circuit()
@@ -76,4 +80,7 @@ def test_pe_data_gate(op, run_tb):
     for instr in instrs:
         _test_instr(instr)
 
-    run_tb(tester)
+    if irun_available():
+        run_tb(tester)
+    else:
+        run_tb(tester, verilator_debug=True)

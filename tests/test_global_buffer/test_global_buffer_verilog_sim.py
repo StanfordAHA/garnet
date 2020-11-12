@@ -8,5 +8,5 @@ import pytest
 def test_global_buffer_verilog_sim():
     result = os.system("make -C global_buffer sim")
     assert result == 0
-    result = os.system("make -C global_buffer tile-sim")
+    result = os.system("make -C global_buffer sim-tile")
     assert result == 0
