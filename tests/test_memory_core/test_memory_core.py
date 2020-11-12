@@ -101,7 +101,6 @@ def basic_tb(config_path,
                                                     data_in_width=MCore.num_data_inputs(),
                                                     data_out_width=MCore.num_data_outputs())
 
-
     data_in_x, data_in_y = placement["I0"]
     data_in = f"glb2io_16_X{data_in_x:02X}_Y{data_in_y:02X}"
     data_out_x, data_out_y = placement["I1"]
