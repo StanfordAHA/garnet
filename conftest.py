@@ -82,7 +82,7 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
                           "flags": ["-Wno-fatal"]}
         if not use_verilator:
             target = "system-verilog"
-            runtime_kwargs["simulator"] = "vcs"
+            runtime_kwargs["simulator"] = "xcelium"
             runtime_kwargs["flags"] = ["-sv"]
             if trace:
                 runtime_kwargs["dump_vcd"] = True
