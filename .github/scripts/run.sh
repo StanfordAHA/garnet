@@ -4,6 +4,11 @@ source ${LAKE_DIR}/scripts/setenv.sh
 # force color
 export PYTEST_ADDOPTS="--color=yes"
 
+# get the garnet root
+# .github/scripts/run.sh
+ROOT=$(dirname $(dirname $(dirname "$0")))
+cd ${ROOT}
+
 pytest --pycodestyle           \
        --cov global_controller \
        --cov io_core           \
