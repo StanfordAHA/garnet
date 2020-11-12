@@ -63,12 +63,16 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
     with tempfile.TemporaryDirectory() as tempdir:
         if cwd is not None:
             tempdir = cwd
+        rtl_lib = []
         for genesis_verilog in glob.glob(os.path.join(root_dir, "genesis_verif/*.*")):
             shutil.copy(genesis_verilog, tempdir)
+            rtl_lib.append(os.path.basename(genesis_verilog))
         for filename in fp_files(use_dw):
             shutil.copy(filename, tempdir)
+            rtl_lib.append(os.path.basename(filename))
         for aoi_mux in glob.glob(os.path.join(root_dir, "tests/*.sv")):
             shutil.copy(aoi_mux, tempdir)
+            rtl_lib.append(os.path.basename(aoi_mux))
 
         if use_dw:
             coreir_lib_name = "float_DW"
@@ -78,6 +82,7 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
         runtime_kwargs = {"magma_output": "coreir-verilog",
                           "magma_opts": {"coreir_libs": {coreir_lib_name},
                                          "inline": False},
+                          "include_verilog_libraries": rtl_lib,
                           "directory": tempdir,
                           "flags": ["-Wno-fatal"]}
         if not use_verilator:
