@@ -8,6 +8,8 @@ else
     make cadence-pegasus-lvs
 fi
 
+make pwr-aware-gls
+
 mkdir -p outputs
 cp -L *cadence-genus-genlib/outputs/design.lib outputs/Tile_MemCore_tt.lib
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_MemCore.lef
