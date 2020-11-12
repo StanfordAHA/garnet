@@ -81,8 +81,9 @@ module tb_Tile_PE();
   reg [15:0] SB_T4_WEST_SB_OUT_B16;
   reg  clk;
   reg  clk_out;
-  reg  clk_pass_through;
-  reg  clk_pass_through_out;
+  reg clk_pass_through;
+  reg  clk_pass_through_out_bot;
+  reg  clk_pass_through_out_right;
   reg [31:0] config_config_addr;
   reg [31:0] config_config_data;
   reg [31:0] config_out_config_addr;
@@ -172,7 +173,7 @@ module tb_Tile_PE();
       #1 $display("==== TEST2: DISABLE TILE  ======");
       #1 $display("===================================");   
       #1 $display("------------PS REGISTER DISABLE:--------------");
-      #1 config_config_addr = 32'h00080000;
+      #1 config_config_addr = 32'h000C0000;
       #1 config_config_data = 32'h00000001;
     
       // Set tile_id through the hi/lo pins
@@ -245,7 +246,7 @@ module tb_Tile_PE();
       #1 $display("===================================");
       #1 $display("------------PS REGISTER DISABLE:--------------");
        #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.config_config_addr);
-      #1 config_config_addr = 32'h00080000;
+      #1 config_config_addr = 32'h000C0000;
       #1 config_config_data = 32'h0;
        #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.config_config_addr);
       #1 config_write = 1;
@@ -281,14 +282,14 @@ module tb_Tile_PE();
       #1 $display("-----DISABLE TILE and CHECK IF GLOBAL SIGNALS STILL ON--------");
       #1 $display("tile_id after shutdown = %h", tile_id);
       #1 $display("lo after shutdown = %h", lo);  
-      #1 config_config_addr = 32'h00080000;
+      #1 config_config_addr = 32'h000C0000;
       #1 config_config_data = 32'h00000001;
       #1 config_write = 1;
       #1 config_read = 0;
       #1 stall = 0;
       #1 clk_pass_through = 1;
       #1 read_config_data_in = 32'hABCDEF01;
-      #1 $display("All global signals are = clk: %h clk_out: %h clk_pass_through_out: %h reset: %h config_out_config_addr: %h config_out_config_data: %h config_out_read: %h config_out_write: %h read_config_data: %h stall_out: %h", clk, clk_out, clk_pass_through_out, reset_out, config_out_config_addr, config_out_config_data, config_out_read, config_out_write, read_config_data, stall_out);   
+      #1 $display("All global signals are = clk: %h clk_out: %h  reset: %h config_out_config_addr: %h config_out_config_data: %h config_out_read: %h config_out_write: %h read_config_data: %h stall_out: %h", clk, clk_out, reset_out, config_out_config_addr, config_out_config_data, config_out_read, config_out_write, read_config_data, stall_out);   
       
       #1 $display("VDD = %h", VDD);
       #1 $display("VSS = %h", VSS);
@@ -305,8 +306,11 @@ module tb_Tile_PE();
  
       #1 assert (clk_out == clk_pass_through && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: Clk is ON");
          else $error("Clk is OFF"); 
-      #1 assert (clk_pass_through_out == clk_pass_through && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: Clk Passthrough is ON");               
+      #1 assert (clk_pass_through_out_bot == clk_pass_through && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: Clk Passthrough is ON");               
          else $error("Clk Passthrough is OFF"); 
+      #1 assert (clk_pass_through_out_right == clk_pass_through && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: Clk Passthrough is ON");               
+         else $error("Clk Passthrough is OFF"); 
+
       #1 assert (reset_out == reset && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: Reset is ON");
          else $error("Reset is OFF"); 
       #1 assert (config_out_config_data == config_config_data && dut.PowerDomainConfigReg_inst0.ps_en_out == 1'b1) $display ("PASS: config_out_config_data is ON");
@@ -359,7 +363,7 @@ module tb_Tile_PE();
       #1 $display("===================================");
 
       #1 config_write = 1;
-      #1 config_config_addr = 32'h00080000;
+      #1 config_config_addr = 32'h000C0000;
       #1 config_config_data = 32'h0;
       #1 config_read = 0;
       #1 stall = 0;
@@ -373,7 +377,7 @@ module tb_Tile_PE();
          else $error("ASSERTION 7 FAIL: Tile didn't turn on");
       #1 $display("===================================");
 
-
+      /*
       // ====================================== 
       // ====================================== 
       // TEST 8 - AOI-CONST-MUX OUT CHECKS    
@@ -383,7 +387,7 @@ module tb_Tile_PE();
       #1 $display("\n===================================");
       #1 $display("==== TEST 8 - AOI-CONST-MUX OUT CHECKS  ======");
       #1 $display("==================================="); 
-      #1 config_config_addr = 32'h00080000;
+      #1 config_config_addr = 32'h000C0000;
       #1 config_config_data = 32'h0;
       #1 config_write = 1;
       #1 $display("VDD = %h", VDD);
@@ -395,7 +399,7 @@ module tb_Tile_PE();
       #1 config_write = 1;
       //#1 $display("Sel = %d",dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.out_sel);
       //#1 $display("AOI-CONST MUX OUT = %h", dut.CB_data0.O);
-      #1 $display("Inter AOI-CONST MUX OUT = %h", dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0);
+      //#1 $display("Inter AOI-CONST MUX OUT = %h", dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0);
       #1 $display("\n===================================");
       #1 $display("ASSERTION #8");
       #1 assert (dut.CB_data0.O == 0) $display ("ASSERTION 8 PASS: Constant mux output generated when sel==height");
@@ -404,12 +408,13 @@ module tb_Tile_PE();
   //#1 assert (dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O1 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O2 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O3 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O4 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O5 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O6 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O7 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O8 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O9 == 0) $display ("ASSERTION 7 PASS: X Prop is terminated at 1st stage of MUX");
        //  else $error("ASSERTION 9 FAIL : X Prop is not terminated at 1st stage of MUX");
 
-      #1 assert (dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O1 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O2 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O3 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O4 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O5 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O6 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O7 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O8 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O9 == 0) $display ("ASSERTION 9 PASS: X Prop is terminated at 1st stage of MUX");
-        else $error("ASSERTION 9 FAIL : X Prop is not terminated at 1st stage of MUX");
+      //#1 assert (dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O1 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O2 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O3 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O4 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O5 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O6 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O7 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O8 == 0 && dut.CB_data0.CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O9 == 0) $display ("ASSERTION 9 PASS: X Prop is terminated at 1st stage of MUX");
+       // else $error("ASSERTION 9 FAIL : X Prop is not terminated at 1st stage of MUX");
 
     // #1 assert (dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O0 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O1 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O2 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O3 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O4 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O5 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O6 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O7 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O8 == 0 && dut.CB_data0_CB_data0_mux_aoi_const_20_16_inst0_u_mux_logic.O9 == 0) $display ("ASSERTION 9 PASS: X Prop is terminated at 1st stage of MUX");
       //  else $error("ASSERTION 9 FAIL : X Prop is not terminated at 1st stage of MUX");
 
+*/
 
 /*
       #1 $display("===================================");
@@ -520,7 +525,8 @@ end
     .clk(clk),
     .clk_out(clk_out),
     .clk_pass_through(clk_pass_through),
-    .clk_pass_through_out(clk_pass_through_out),
+    .clk_pass_through_out_bot(clk_pass_through_out_bot),
+    .clk_pass_through_out_right(clk_pass_through_out_right),
     .config_config_addr(config_config_addr),
     .config_config_data(config_config_data),
     .config_out_config_addr(config_out_config_addr),
