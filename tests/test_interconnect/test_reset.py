@@ -8,7 +8,6 @@ import lassen.asm as asm
 from archipelago import pnr
 import pytest
 from cgra import create_cgra, compress_config_data
-from passes.power_domain.pd_pass import PowerDomainConfigReg
 
 
 @pytest.fixture()
@@ -16,20 +15,8 @@ def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
 
-@pytest.fixture(scope="module")
-def dw_files():
-    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
-    dirname = "peak_core"
-    result_filenames = []
-    for name in filenames:
-        filename = os.path.join(dirname, name)
-        assert os.path.isfile(filename)
-        result_filenames.append(filename)
-    return result_filenames
-
-
 @pytest.mark.parametrize("batch_size", [100])
-def test_interconnect_reset(batch_size: int, dw_files, io_sides):
+def test_interconnect_reset(batch_size: int, run_tb, io_sides):
     # we test a simple point-wise multiplier function
     # to account for different CGRA size, we feed in data to the very top-left
     # SB and route through horizontally to reach very top-right SB
@@ -84,19 +71,4 @@ def test_interconnect_reset(batch_size: int, dw_files, io_sides):
         tester.eval()
         tester.expect(circuit.read_config_data, index)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
-        for filename in dw_files:
-            shutil.copy(filename, tempdir)
-        shutil.copy(os.path.join("tests", "test_memory_core",
-                                 "sram_stub.v"),
-                    os.path.join(tempdir, "sram_512w_16b.v"))
-        for aoi_mux in glob.glob("tests/*.sv"):
-            shutil.copy(aoi_mux, tempdir)
-        tester.compile_and_run(target="verilator",
-                               magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"},
-                                           "inline": False},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+    run_tb(tester)

@@ -6,7 +6,7 @@ from fault.tester import Tester
 from fault.random import random_bv
 
 
-def test_regression():
+def test_regression(run_tb):
     io_core = IOCoreValid()
     io_core_circuit = io_core.circuit()
     tester = Tester(io_core_circuit)
@@ -27,15 +27,10 @@ def test_regression():
         tester.expect(io_core_circuit.io2glb_1, _f2io_1)
         tester.expect(io_core_circuit.io2f_1, _glb2io_1)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        tester.compile_and_run(target="verilator",
-                               magma_output="coreir-verilog",
-                               magma_opts={"inline": False},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+    run_tb(tester)
 
 
-def test_valid_generation():
+def test_valid_generation(run_tb):
     io_core = IOCoreValid()
     io_core_circuit = io_core.circuit()
     tester = BasicTester(io_core_circuit, io_core_circuit.clk, io_core_circuit.reset)
@@ -85,9 +80,4 @@ def test_valid_generation():
         tester.expect(io_core_circuit.io2glb_1, 0)
         tester.step(2)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        tester.compile_and_run(target="verilator",
-                               magma_output="coreir-verilog",
-                               magma_opts={"inline": False},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+    run_tb(tester)
