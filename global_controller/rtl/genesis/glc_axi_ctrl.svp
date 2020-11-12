@@ -367,7 +367,7 @@ always_ff @(posedge clk or posedge reset) begin
 
             axi_rresp <= 2'b10;
             axi_rvalid <= 1'h0;
-            rd_state <= RD_RESP;
+            rd_state <= RD_IDLE;
         end
         else begin
             rd_timeout_cnt <= rd_timeout_cnt - 1;

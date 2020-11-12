@@ -59,7 +59,6 @@ class GlobalController(Generator):
                                         axi_addr_width=self.axi_addr_width,
                                         axi_data_width=self.axi_data_width,
                                         num_glb_tiles=self.num_glb_tiles,
-                                        glb_addr_width=self.glb_addr_width,
                                         block_axi_addr_width=(
                                             self.block_axi_addr_width))
 

@@ -94,14 +94,14 @@ else
       fi
 
       # make to generate systemRDL RTL files global buffer
-      make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${array_width} NUM_GLB_TILES=$((array_width / 2))
+      make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${array_width}
       # Copy global buffer systemverilog from the global buffer folder
       cat global_buffer/rtl/global_buffer_param.svh >> $current_dir/outputs/design.v
       cat global_buffer/rtl/global_buffer_pkg.svh >> $current_dir/outputs/design.v
       cat global_buffer/systemRDL/output/*.sv >> $current_dir/outputs/design.v
       cat global_buffer/rtl/*.sv >> $current_dir/outputs/design.v
       # make to generate systemRDL RTL files for global controller
-      make -C $GARNET_HOME/global_controller rtl
+      make -C $GARNET_HOME/global_controller rtl CGRA_WIDTH=${array_width}
       cat global_controller/systemRDL/output/*.sv >> $current_dir/outputs/design.v
     fi
 

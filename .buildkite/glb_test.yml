@@ -1,0 +1,31 @@
+steps:
+- label: ":wrench: Build  and Test Garnet GLB + Fabric"
+  commands:
+  - source /aha/bin/activate
+  - source /cad/modules/tcl/init/sh
+  - module load base xcelium
+  - echo "--- Pruning Docker Images"
+  - yes | docker image prune -a --filter "until=24h" --filter=label='description=garnet' || true
+    # use the mounted garnet
+  - rm -rf /aha/garnet
+  - cp -r /workdir /aha/garnet
+  - echo "--- Generating Garnet"
+  - aha garnet -v --width 8 --height 4
+  - echo "--- Generating Apps"
+  - aha halide tests/conv_1_2
+  - aha map tests/conv_1_2 --width 4 --height 4 --no-pd
+  - aha halide tests/conv_2_1
+  - aha map tests/conv_2_1 --width 4 --height 4 --no-pd
+  - echo "--- Testing Single App"
+  - aha glb tests/conv_1_2 --width 8
+  - aha glb tests/conv_2_1 --width 8
+  - echo "--- Testing Two Apps"
+  - aha glb tests/conv_1_2 tests/conv_2_1 --width 8
+  plugins:
+    - docker#v3.2.0:
+        image: stanfordaha/garnet
+        volumes:
+          - "/cad/:/cad"
+        shell: ["/bin/bash", "-e", "-c"]
+  agents:
+    docker: true
