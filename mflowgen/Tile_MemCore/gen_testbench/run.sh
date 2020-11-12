@@ -4,7 +4,7 @@ if [ ! -d ./dump ]; then
     mkdir dump
 fi
 cp ./tests/test_memory_core/test_memory_core.py .
-python test_memory_core.py --xcelium --tempdir_override
+python test_memory_core.py --app conv_3_3 --xcelium --tempdir_override
 popd
 
 # Now copy outputs out

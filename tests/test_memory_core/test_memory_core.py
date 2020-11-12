@@ -1165,23 +1165,20 @@ def test_lake_garnet(args):
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
     parser = argparse.ArgumentParser(description='Tile_MemCore TB Generator')
-    parser.add_argument('--config_path',
+    parser.add_argument('--app',
                         type=str,
-                        default="conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf")
-    parser.add_argument('--stream_path',
-                        type=str,
-                        default="conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf_0_top_SMT.csv")
-    parser.add_argument('--in_file_name', type=str, default="input")
-    parser.add_argument('--out_file_name', type=str, default="output")
+                        default="conv_3_3")
     parser.add_argument('--xcelium', action="store_true")
     parser.add_argument('--tempdir_override', action="store_true")
     parser.add_argument('--trace', action="store_true")
     args = parser.parse_args()
 
-    basic_tb(config_path=args.config_path,
-             stream_path=args.stream_path,
-             in_file_name=args.in_file_name,
-             out_file_name=args.out_file_name,
+    app_args = lake_test_app_args(args.app)
+
+    basic_tb(config_path=app_args[0],
+             stream_path=app_args[1],
+             in_file_name=app_args[2],
+             out_file_name=app_args[3],
              xcelium=args.xcelium,
              tempdir_override=args.tempdir_override,
              trace=args.trace)
