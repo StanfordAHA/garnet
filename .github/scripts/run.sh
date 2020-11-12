@@ -6,7 +6,7 @@ export PYTEST_ADDOPTS="--color=yes"
 
 # get the garnet root
 # .github/scripts/run.sh
-ROOT=$(dirname $(dirname $(dirname "$0")))
+ROOT=$(dirname $(dirname $(dirname $BASH_SOURCE)))
 cd ${ROOT}
 
 pytest --pycodestyle           \
