@@ -377,11 +377,6 @@ class TestBenchGenerator:
                 copy_file(os.path.join(base_dir, "peak_core", filename),
                           os.path.join(tempdir, filename))
 
-        # memory core
-        copy_file(os.path.join(base_dir,
-                               "tests", "test_memory_core",
-                               "sram_stub.v"),
-                  os.path.join(tempdir, "sram_512w_16b.v"))
         # std cells
         for std_cell in glob.glob(os.path.join(base_dir, "tests/*.sv")):
             copy_file(std_cell,
