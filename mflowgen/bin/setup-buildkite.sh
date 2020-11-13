@@ -397,11 +397,60 @@ else
     echo "Meanwhile: found MFLOWGEN_PATH='$MFLOWGEN_PATH'"; echo ""
 fi
 
+########################################################################
+# TCLSH VERSION CHECK
+########################################################################
+# 
+# tclsh version must be >= 8.5!  Because of e.g.
+#    "delay_best" in $vars(delay_corners)
+# in flowgen-setup/setup.tcl
+# 
+# For reference, I can see these versions in my various open windows
+#   kiwi/stever:  tclsh v8.6 (/usr/bin/tclsh)
+#   r7arm/agent:  tclsh v8.5 (/usr/bin/tclsh)
+#   r7arm/stever: tclsh v8.4 (/cad/mentor/2019.1/aoi_cal_2019.1_18.11/bin/tclsh
+# 
+# An example path that breaks tclsh:
+#   % source $garnet/.buildkite/setup-calibre.sh
+#   % which tclsh => 'tclsh is /cad/mentor/2019.1/aoi_cal_2019.1_18.11/bin/tclsh'
+#   % echo 'puts $tcl_version; exit 0' | tclsh => 8.4
+# 
+echo "--- TCLSH VERSION CHECK (must be >= 8.5)"
 
-
-
-
-
+# Uncomment to reset tclsh for testing
+# unset -f tclsh; source $garnet/.buildkite/setup-calibre.sh
+tclsh_version=`echo 'puts $tcl_version; exit 0' | tclsh`
+echo "  "`type tclsh`", version $tclsh_version"
+if (( $(echo "$tclsh_version >= 8.5" | bc -l) )); then
+    echo '  Good enough!'
+else
+    echo ""
+    echo "**WARNING tclsh version should be >= 8.5!"
+    echo "I will try and fix it for you"
+    echo ""
+    FIXED=
+    for d in $( echo $PATH | sed 's/:/ /g' ); do 
+        if test -x $d/tclsh; then
+            tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
+            echo -n "  Found tclsh v$tclsh_version: $d/tclsh"
+            if (( $(echo "$tclsh_version < 8.5" | bc -l) )); then
+                echo "  - no good"
+            else
+                echo '  - GOOD!'
+                eval 'function tclsh { '$d/tclsh' $* ; }'
+                FIXED=true
+                break
+            fi
+        fi
+    done
+    if [ ! $FIXED ]; then
+        echo "**ERROR could not find tclsh with version >= 8.5!"
+        return 13 || exit 13
+    fi
+    echo ""
+    echo "  "`type tclsh`", version $tclsh_version"
+fi
+echo ""
 
 ##############################################################################
 ##############################################################################

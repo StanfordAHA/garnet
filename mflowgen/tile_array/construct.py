@@ -40,6 +40,8 @@ def construct():
     'PWR_AWARE'         : True,
     # Useful Skew (CTS)
     'useful_skew'       : False,
+    # hold target slack
+    'hold_target_slack' : 0.015,
     # Pipeline stage insertion
     'pipeline_config_interval': 8,
     'pipeline_stage_height': 30,
