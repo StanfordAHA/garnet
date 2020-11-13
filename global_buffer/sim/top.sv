@@ -96,8 +96,8 @@ timeprecision 1ps;
 
     // interfaces
     proc_ifc p_ifc(.clk(clk));
-    reg_ifc #(.ADDR_WIDTH(AXI_ADDR_WIDTH), .DATA_WIDTH(AXI_DATA_WIDTH))  r_ifc(.clk(clk));
-    reg_ifc #(.ADDR_WIDTH(GLB_ADDR_WIDTH), .DATA_WIDTH(AXI_DATA_WIDTH))  m_ifc(.clk(clk));
+    reg_ifc #(.ADDR_WIDTH(32), .DATA_WIDTH(AXI_DATA_WIDTH))  r_ifc(.clk(clk));
+    reg_ifc #(.ADDR_WIDTH(32), .DATA_WIDTH(AXI_DATA_WIDTH))  m_ifc(.clk(clk));
     strm_ifc s_ifc[NUM_GLB_TILES](.clk(clk));
     pcfg_ifc c_ifc[NUM_GLB_TILES](.clk(clk));
 
@@ -148,21 +148,21 @@ timeprecision 1ps;
         // config ifc
         .if_cfg_wr_en               ( r_ifc.wr_en           ),
         .if_cfg_wr_clk_en           ( r_ifc.wr_clk_en       ),
-        .if_cfg_wr_addr             ( r_ifc.wr_addr         ),
+        .if_cfg_wr_addr             ( r_ifc.wr_addr[AXI_ADDR_WIDTH-1:0] ),
         .if_cfg_wr_data             ( r_ifc.wr_data         ),
         .if_cfg_rd_en               ( r_ifc.rd_en           ),
         .if_cfg_rd_clk_en           ( r_ifc.rd_clk_en       ),
-        .if_cfg_rd_addr             ( r_ifc.rd_addr         ),
+        .if_cfg_rd_addr             ( r_ifc.rd_addr[AXI_ADDR_WIDTH-1:0] ),
         .if_cfg_rd_data             ( r_ifc.rd_data         ),
         .if_cfg_rd_data_valid       ( r_ifc.rd_data_valid   ),
         // sram config ifc
         .if_sram_cfg_wr_en          ( m_ifc.wr_en           ),
         .if_sram_cfg_wr_clk_en      ( m_ifc.wr_clk_en       ),
-        .if_sram_cfg_wr_addr        ( m_ifc.wr_addr         ),
+        .if_sram_cfg_wr_addr        ( m_ifc.wr_addr[GLB_ADDR_WIDTH-1:0] ),
         .if_sram_cfg_wr_data        ( m_ifc.wr_data         ),
         .if_sram_cfg_rd_en          ( m_ifc.rd_en           ),
         .if_sram_cfg_rd_clk_en      ( m_ifc.rd_clk_en       ),
-        .if_sram_cfg_rd_addr        ( m_ifc.rd_addr         ),
+        .if_sram_cfg_rd_addr        ( m_ifc.rd_addr[GLB_ADDR_WIDTH-1:0] ),
         .if_sram_cfg_rd_data        ( m_ifc.rd_data         ),
         .if_sram_cfg_rd_data_valid  ( m_ifc.rd_data_valid   ),
         .*);
