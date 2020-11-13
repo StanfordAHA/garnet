@@ -94,7 +94,12 @@ class BasicTester(Tester):
         self.__config_addr(addr, addr)
         self.__config_read(addr, 1)
         self.__config_write(addr, 0)
-        self.step(2 * self.y_interval)
+        # SRAM content has to be read out immediately
+        x = (addr & 0xFF00) >> 8
+        if x % 4 == 3:
+            self.step(2)
+        else:
+            self.step(2 * self.y_interval)
 
     def reset(self):
         self.poke(self.reset_port, 1)
