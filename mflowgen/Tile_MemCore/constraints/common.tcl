@@ -53,7 +53,7 @@ set_max_transition 0.120 $design_name
 set i_delay [expr 0.2 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
-set pt_i_delay [expr 0.8 * ${clock_period}]
+set pt_i_delay [expr 0.6 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${pt_i_delay} stall
 set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_data*
 set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_addr*
@@ -100,6 +100,8 @@ set_max_delay -from read_config_data_in -to read_config_data [expr ${rd_cfg_marg
 # Relax config_addr -> read_config_data path
 set_multicycle_path 2 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -setup
 set_multicycle_path 1 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -hold
+set_multicycle_path 2 -to [get_ports read_config_data* -filter direction==out] -setup
+set_multicycle_path 1 -to [get_ports read_config_data* -filter direction==out] -hold
 
 # 5fF approx load
 set mark_approx_cap 0.025
