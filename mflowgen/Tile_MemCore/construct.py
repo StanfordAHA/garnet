@@ -27,7 +27,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
-    'clock_period'        : 1.1,
+    'clock_period'        : 1.25,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     # Synthesis
@@ -40,6 +40,8 @@ def construct():
     'corner'              : "tt0p8v25c",
     'bc_corner'           : "ffg0p88v125c",
     'partial_write'       : False,
+    # Hold target slack
+    'hold_target_slack'   : 0.015,
     # Utilization target
     'core_density_target' : 0.68,
     # RTL Generation

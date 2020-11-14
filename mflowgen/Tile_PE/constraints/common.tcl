@@ -58,7 +58,7 @@ remove_driving_cell reset
 set i_delay [expr 0.2 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
-set pt_i_delay [expr 0.8 * ${clock_period}]
+set pt_i_delay [expr 0.6 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${pt_i_delay} clk_pass_through
 set_input_delay -clock ${clock_name} ${pt_i_delay} stall
 set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_data*
@@ -148,6 +148,8 @@ set_input_transition ${max_trans_passthru} reset
 # Relax config_addr -> read_config_data path
 set_multicycle_path 2 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -setup
 set_multicycle_path 1 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -hold
+set_multicycle_path 2 -to [get_ports read_config_data* -filter direction==out] -setup
+set_multicycle_path 1 -to [get_ports read_config_data* -filter direction==out] -hold
 
 ## Constrain SB to ~200 ps
 set sb_delay 0.210
