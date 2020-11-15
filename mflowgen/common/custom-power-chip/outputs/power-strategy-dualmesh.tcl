@@ -246,7 +246,7 @@ foreach i { 0 1 2 3 4 5 6 7 8 } {
 
 
 # Delete the two stray wires where pins are missing at the top right.
-set a { 50 4762 1360 4768 }
+set a { 2830 4762 4900 4768 } ; # Top *right*
 editDelete -net VDD -layer M8 -area $a
 editDelete -net VSS -layer M8 -area $a
 
@@ -255,6 +255,14 @@ deleteRouteBlk -name dragonphy_M8
 
 
 
+# Delete wayward M8-to-M9 vias inside dragonphy block!
+# FIXME this will break when/if phy size/placement changes!!!
+# FIXME (along with much of the code above...)
+deselectAll
+set a {1703.075 4098.0 2853.095 4798.416}
+editSelectVia -net {VSS VDD} -cut_layer VIA8 -area $a
+redraw; sleep 1
+deleteSelectedFromFPlan
 
 
 #-------------------------------------------------------------------------
