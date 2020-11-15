@@ -199,8 +199,6 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -start [expr $pmesh_bot_str_pitch]                            \
     -stop 4000
 
-
-
 # Protect the dragonphy from wayward stripes with temporary blockage
 createRouteBlk \
     -layer M8 \
@@ -253,8 +251,6 @@ editDelete -net VSS -layer M8 -area $a
 # Clean up / delete temporary dragonphy blockage
 deleteRouteBlk -name dragonphy_M8
 
-
-
 # Delete wayward M8-to-M9 vias inside dragonphy block!
 # FIXME this will break when/if phy size/placement changes!!!
 # FIXME (along with much of the code above...)
@@ -263,7 +259,6 @@ set a {1703.075 4098.0 2853.095 4798.416}
 editSelectVia -net {VSS VDD} -cut_layer VIA8 -area $a
 redraw; sleep 1
 deleteSelectedFromFPlan
-
 
 #-------------------------------------------------------------------------
 # Power mesh top settings (vertical)
