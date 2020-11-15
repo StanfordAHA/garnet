@@ -199,6 +199,15 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -start [expr $pmesh_bot_str_pitch]                            \
     -stop 4000
 
+
+
+# Protect the dragonphy from wayward stripes with temporary blockage
+createRouteBlk \
+    -layer M8 \
+    -box {1723.075 4098.0 2833.095 4798.416} \
+    -name dragonphy_M8   \
+    ;
+
 # Add M8 stripes to connect to dragonphy
 # Stripes for bottom half of phy block
 set bottom 4101.96; set top 4400
@@ -240,6 +249,13 @@ foreach i { 0 1 2 3 4 5 6 7 8 } {
 set a { 50 4762 1360 4768 }
 editDelete -net VDD -layer M8 -area $a
 editDelete -net VSS -layer M8 -area $a
+
+# Clean up / delete temporary dragonphy blockage
+deleteRouteBlk -name dragonphy_M8
+
+
+
+
 
 #-------------------------------------------------------------------------
 # Power mesh top settings (vertical)
