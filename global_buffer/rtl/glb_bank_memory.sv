@@ -24,14 +24,13 @@ import global_buffer_param::*;
 //===========================================================================//
 // memory-SRAM interface signal declaration
 //===========================================================================//
-logic                                           sram_cen;
-logic                                           sram_wen;
-logic                                           sram_ren;
-logic [BANK_ADDR_WIDTH-BANK_BYTE_OFFSET-1:0]    sram_addr;
-logic [BANK_DATA_WIDTH-1:0]                     sram_data_in;
-logic [BANK_DATA_WIDTH-1:0]                     sram_bit_sel;
+logic                                           sram_cen, sram_cen_d1;
+logic                                           sram_wen, sram_wen_d1;
+logic                                           sram_ren, sram_ren_d1, sram_ren_d2, sram_ren_d3;
+logic [BANK_ADDR_WIDTH-BANK_BYTE_OFFSET-1:0]    sram_addr, sram_addr_d1;
+logic [BANK_DATA_WIDTH-1:0]                     sram_data_in, sram_data_in_d1;
+logic [BANK_DATA_WIDTH-1:0]                     sram_bit_sel, sram_bit_sel_d1;
 logic [BANK_DATA_WIDTH-1:0]                     sram_data_out;
-logic                                           sram_ren_d1, sram_ren_d2, sram_ren_d3;
 logic [BANK_DATA_WIDTH-1:0]                     data_out_d1;
 
 //===========================================================================//
@@ -42,11 +41,11 @@ glb_bank_sram_gen #(
     .ADDR_WIDTH(BANK_ADDR_WIDTH-BANK_BYTE_OFFSET)
 ) glb_bank_sram_gen (
     .CLK(clk),
-    .CEB(~sram_cen),
-    .WEB(~sram_wen),
-    .A(sram_addr),
-    .D(sram_data_in),
-    .BWEB(~sram_bit_sel),
+    .CEB(~sram_cen_d1),
+    .WEB(~sram_wen_d1),
+    .A(sram_addr_d1),
+    .D(sram_data_in_d1),
+    .BWEB(~sram_bit_sel_d1),
     .Q(sram_data_out)
 );
 
@@ -67,12 +66,22 @@ end
 //===========================================================================//
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
+        sram_cen_d1 <= 0;
+        sram_wen_d1 <= 0;
+        sram_addr_d1 <= 0;
+        sram_data_in_d1 <= 0;
+        sram_bit_sel_d1 <= 0;
         sram_ren_d1 <= 0;
         sram_ren_d2 <= 0;
         sram_ren_d3 <= 0;
         data_out_d1 <= 0;
     end
     else begin
+        sram_cen_d1 <= sram_cen;
+        sram_wen_d1 <= sram_wen;
+        sram_addr_d1 <= sram_addr;
+        sram_data_in_d1 <= sram_data_in;
+        sram_bit_sel_d1 <= sram_bit_sel;
         sram_ren_d1 <= sram_ren;
         sram_ren_d2 <= sram_ren_d1;
         sram_ren_d3 <= sram_ren_d2;

@@ -10,7 +10,7 @@ import common
 dw_files = pytest.fixture(scope="module")(common.dw_files)
 
 
-def test_basic(dw_files):
+def test_basic(run_tb):
     """
     Configuration sequence test on 2x2 fabric + IO tiles.
     """
@@ -26,10 +26,4 @@ def test_basic(dw_files):
     common.configure(tester, sequence, check_read_data=True)
 
     # Compile and run the test using a verilator backend.
-    with tempfile.TemporaryDirectory() as tempdir:
-        common.generate_scaffolding(tempdir)
-        magma.compile(f"{tempdir}/{circuit.name}", circuit,
-                      output="coreir-verilog", coreir_libs={"float_DW"},
-                      inline=False)
-        tester.compile_and_run(skip_compile=True, target="verilator",
-                               directory=tempdir, flags=["-Wno-fatal"])
+    run_tb(tester)

@@ -1,13 +1,13 @@
 import tempfile
 from gemstone.common.testers import BasicTester
 from gemstone.common.util import compress_config_data
-from io_core.io_core_magma import IOCoreValid
+from io_core.io_core_magma import IOCoreValid, IOCore
 from fault.tester import Tester
 from fault.random import random_bv
 
 
-def test_regression():
-    io_core = IOCoreValid()
+def test_regression(run_tb):
+    io_core = IOCore()
     io_core_circuit = io_core.circuit()
     tester = Tester(io_core_circuit)
 
@@ -27,15 +27,10 @@ def test_regression():
         tester.expect(io_core_circuit.io2glb_1, _f2io_1)
         tester.expect(io_core_circuit.io2f_1, _glb2io_1)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        tester.compile_and_run(target="verilator",
-                               magma_output="coreir-verilog",
-                               magma_opts={"inline": False},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+    run_tb(tester)
 
 
-def test_valid_generation():
+def test_valid_generation(run_tb):
     io_core = IOCoreValid()
     io_core_circuit = io_core.circuit()
     tester = BasicTester(io_core_circuit, io_core_circuit.clk, io_core_circuit.reset)
@@ -48,6 +43,7 @@ def test_valid_generation():
     config_data = compress_config_data(config_data)
 
     tester.zero_inputs()
+    tester.reset()
     tester.poke(io_core_circuit.stall, 1)
 
     for addr, data in config_data:
@@ -85,9 +81,4 @@ def test_valid_generation():
         tester.expect(io_core_circuit.io2glb_1, 0)
         tester.step(2)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        tester.compile_and_run(target="verilator",
-                               magma_output="coreir-verilog",
-                               magma_opts={"inline": False},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+    run_tb(tester)

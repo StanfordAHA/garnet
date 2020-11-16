@@ -26,9 +26,6 @@ import global_buffer_param::*;
 //============================================================================//
 // Internal logic
 //============================================================================//
-logic                           if_sram_cfg_bank_rd_en [BANKS_PER_TILE];
-logic                           if_sram_cfg_bank_rd_en_d1 [BANKS_PER_TILE];
-logic                           if_sram_cfg_bank_rd_en_d2 [BANKS_PER_TILE];
 logic [CGRA_CFG_DATA_WIDTH-1:0] rd_data_next;
 logic                           rd_data_valid_next;
 logic [CGRA_CFG_DATA_WIDTH-1:0] bank_rd_data_internal [BANKS_PER_TILE];
@@ -58,34 +55,10 @@ end
 endgenerate
 
 always_comb begin
-    for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
-        if_sram_cfg_bank_rd_en[i]  = ((if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id)
-                                        & (if_sram_cfg_wst_s.rd_addr[BANK_ADDR_WIDTH +: BANK_SEL_ADDR_WIDTH] == i))
-                                        ? if_sram_cfg_wst_s.rd_en : 0;
-    end
-end
-
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
-            if_sram_cfg_bank_rd_en_d1[i] <= 0;
-            if_sram_cfg_bank_rd_en_d2[i] <= 0;
-        end
-    end
-    else begin
-        for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
-            if_sram_cfg_bank_rd_en_d1[i] <= if_sram_cfg_bank_rd_en[i];
-            if_sram_cfg_bank_rd_en_d2[i] <= if_sram_cfg_bank_rd_en_d1[i];
-        end
-    end
-end
-
-always_comb begin
     rd_data_next = if_sram_cfg_est_m.rd_data;
     rd_data_valid_next = if_sram_cfg_est_m.rd_data_valid;
     for (int i=0; i<BANKS_PER_TILE; i=i+1) begin
-        // fixed latency of 2 cycle
-        if (if_sram_cfg_bank_rd_en_d2[i] == 1) begin
+        if (bank_rd_data_valid_internal[i] == 1) begin
             rd_data_next = bank_rd_data_internal[i];
             rd_data_valid_next = bank_rd_data_valid_internal[i];
         end

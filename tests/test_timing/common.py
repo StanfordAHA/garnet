@@ -16,6 +16,7 @@ def dw_files():
 
 
 def configure(tester, sequence, check_read_data=True):
+    tester.zero_inputs()
     tester.circuit.clk = 0
     tester.print(f"Starting reset\n")
     tester.reset()
@@ -49,8 +50,6 @@ def generate_scaffolding(directory):
         shutil.copy(genesis_verilog, directory)
     for filename in dw_files():
         shutil.copy(filename, directory)
-    shutil.copy(os.path.join("tests", "test_memory_core", "sram_stub.v"),
-                os.path.join(directory, "sram_512w_16b.v"))
     for aoi_mux in glob.glob("tests/*.sv"):
         shutil.copy(aoi_mux, directory)
 

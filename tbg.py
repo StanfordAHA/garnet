@@ -94,7 +94,12 @@ class BasicTester(Tester):
         self.__config_addr(addr, addr)
         self.__config_read(addr, 1)
         self.__config_write(addr, 0)
-        self.step(2 * self.y_interval)
+        # SRAM content has to be read out immediately
+        x = (addr & 0xFF00) >> 8
+        if x % 4 == 3:
+            self.step(2)
+        else:
+            self.step(2 * self.y_interval)
 
     def reset(self):
         self.poke(self.reset_port, 1)
@@ -372,11 +377,6 @@ class TestBenchGenerator:
                 copy_file(os.path.join(base_dir, "peak_core", filename),
                           os.path.join(tempdir, filename))
 
-        # memory core
-        copy_file(os.path.join(base_dir,
-                               "tests", "test_memory_core",
-                               "sram_stub.v"),
-                  os.path.join(tempdir, "sram_512w_16b.v"))
         # std cells
         for std_cell in glob.glob(os.path.join(base_dir, "tests/*.sv")):
             copy_file(std_cell,
