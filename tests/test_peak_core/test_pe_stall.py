@@ -8,19 +8,7 @@ import os
 import pytest
 
 
-@pytest.fixture(scope="module")
-def dw_files():
-    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
-    dirname = "peak_core"
-    result_filenames = []
-    for name in filenames:
-        filename = os.path.join(dirname, name)
-        assert os.path.isfile(filename)
-        result_filenames.append(filename)
-    return result_filenames
-
-
-def test_pe_stall(dw_files):
+def test_pe_stall(run_tb):
     core = PeakCore(PE_fc)
     core.name = lambda: "PECore"
     circuit = core.circuit()
@@ -43,12 +31,4 @@ def test_pe_stall(dw_files):
         tester.eval()
         tester.expect(circuit.interface["alu_res"], 0)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        for filename in dw_files:
-            shutil.copy(filename, tempdir)
-        tester.compile_and_run(target="verilator",
-                               magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"},
-                                           "inline": False},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
+    run_tb(tester)

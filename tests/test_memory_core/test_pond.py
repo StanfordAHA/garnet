@@ -1,40 +1,15 @@
-from memory_core.pond_core import PondCore
 from lake.utils.util import transform_strides_and_ranges, trim_config
-import glob
-import tempfile
-import shutil
-import fault
 import random
-import magma
-import os
-from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
-import pytest
-from gemstone.generator import Const
 from cgra.util import create_cgra, compress_config_data
 from canal.util import IOSide
-from memory_core.memory_core_magma import config_mem_tile
 from archipelago import pnr
-import kratos as kts
 from _kratos import create_wrapper_flatten
 import lassen.asm as asm
 
 
-# @pytest.fixture()
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
-
-
-# @pytest.fixture(scope="module")
-def dw_files():
-    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
-    dirname = "peak_core"
-    result_filenames = []
-    for name in filenames:
-        filename = os.path.join(dirname, name)
-        assert os.path.isfile(filename)
-        result_filenames.append(filename)
-    return result_filenames
 
 
 def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data):
@@ -124,35 +99,7 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
 
-def run_tb(tester, use_verilator=True):
-    with tempfile.TemporaryDirectory() as tempdir:
-        for genesis_verilog in glob.glob("genesis_verif/*.*"):
-            shutil.copy(genesis_verilog, tempdir)
-        for filename in dw_files():
-            shutil.copy(filename, tempdir)
-        shutil.copy(os.path.join("tests", "test_memory_core",
-                                 "sram_stub.v"),
-                    os.path.join(tempdir, "sram_512w_16b.v"))
-        for aoi_mux in glob.glob("tests/*.sv"):
-            shutil.copy(aoi_mux, tempdir)
-
-        target = "verilator"
-        runtime_kwargs = {"magma_output": "coreir-verilog",
-                          "magma_opts": {"coreir_libs": {"float_DW"},
-                                         "inline": False},
-                          "directory": tempdir,
-                          "flags": ["-Wno-fatal"]}
-        if not use_verilator:
-            target = "system-verilog"
-            runtime_kwargs["simulator"] = "vcs"
-            runtime_kwargs["flags"] = ["-sv"]
-
-        tester.compile_and_run(target=target,
-                               tmp_dir=False,
-                               **runtime_kwargs)
-
-
-def test_pond_rd_wr(verilator=True):
+def test_pond_rd_wr(run_tb):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
@@ -188,6 +135,8 @@ def test_pond_rd_wr(verilator=True):
     circuit = interconnect.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.zero_inputs()
+    tester.reset()
 
     tester.poke(circuit.interface["stall"], 1)
 
@@ -218,10 +167,10 @@ def test_pond_rd_wr(verilator=True):
         tester.step(2)
         tester.eval()
 
-    run_tb(tester, use_verilator=verilator)
+    run_tb(tester)
 
 
-def test_pond_pe(verilator=True):
+def test_pond_pe(run_tb):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
@@ -262,6 +211,8 @@ def test_pond_pe(verilator=True):
     circuit = interconnect.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.zero_inputs()
+    tester.reset()
 
     tester.poke(circuit.interface["stall"], 1)
 
@@ -295,10 +246,10 @@ def test_pond_pe(verilator=True):
         tester.step(2)
         tester.eval()
 
-    run_tb(tester, use_verilator=verilator)
+    run_tb(tester)
 
 
-def test_pond_pe_acc(verilator=True):
+def test_pond_pe_acc(run_tb):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
@@ -339,6 +290,8 @@ def test_pond_pe_acc(verilator=True):
     circuit = interconnect.circuit()
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.zero_inputs()
+    tester.reset()
 
     tester.poke(circuit.interface["stall"], 1)
 
@@ -367,10 +320,10 @@ def test_pond_pe_acc(verilator=True):
         tester.step(2)
         tester.eval()
 
-    run_tb(tester, use_verilator=verilator)
+    run_tb(tester)
 
 
-def test_pond_config():
+def test_pond_config(run_tb):
     # 1x1 interconnect with only PE tile
     interconnect = create_cgra(1, 1, IOSide.None_, standalone=True,
                                mem_ratio=(0, 1),
@@ -384,6 +337,7 @@ def test_pond_config():
 
     circuit = interconnect.circuit()
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.zero_inputs()
     tester.reset()
 
     config_data = []

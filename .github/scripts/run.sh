@@ -1,11 +1,13 @@
-cd / && git clone https://github.com/dillonhuff/clockwork && cd clockwork && git checkout lower_ubuffer
-export LAKE_CONTROLLERS="/clockwork/lake_controllers/"
-export LAKE_STREAM="/clockwork/lake_stream/"
+LAKE_DIR=$(dirname $(dirname `python -c "import lake; print(lake.__file__)"`))
+source ${LAKE_DIR}/scripts/setenv.sh
 
 # force color
 export PYTEST_ADDOPTS="--color=yes"
 
-cd /garnet/
+# get the garnet root
+# .github/scripts/run.sh
+ROOT=$(dirname $(dirname $(dirname $BASH_SOURCE)))
+cd ${ROOT}
 
 pytest --pycodestyle           \
        --cov global_controller \
