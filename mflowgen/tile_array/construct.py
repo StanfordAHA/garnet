@@ -45,6 +45,9 @@ def construct():
     'pipeline_stage_height': 30,
     # Testing
     'testbench_name'    : 'Interconnect_tb',
+    # I am defaulting to True because nothing is worse than finishing
+    # a sim and needing the wave but not having it...
+    'waves'             : True,
   }
 
   #-----------------------------------------------------------------------
@@ -114,7 +117,7 @@ def construct():
   #genlibdb.extend_inputs( ['Tile_MemCore.db'] )
   genlib.extend_inputs( ['Tile_MemCore_tt.lib'] )
 
-  e2e_apps = ["tests/conv_3_3", "apps/cascade", "apps/harris_auto"]
+  e2e_apps = ["tests/conv_3_3", "apps/cascade", "apps/harris_auto", "apps/resnet_i1_o1_mem", "apps/resnet_i1_o1_pond"]
 
   # Only use these steps with power domains off and no flattening...
   use_e2e = True
