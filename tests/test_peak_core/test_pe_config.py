@@ -14,70 +14,6 @@ import os
 import pytest
 
 
-@pytest.fixture(scope="module")
-def dw_files():
-    filenames = ["DW_fp_add.v", "DW_fp_mult.v"]
-    dirname = "peak_core"
-    result_filenames = []
-    for name in filenames:
-        filename = os.path.join(dirname, name)
-        assert os.path.isfile(filename)
-        result_filenames.append(filename)
-    return result_filenames
-
-
-@pytest.mark.skip(reason="Hacky registers are no longer needed")
-def test_pe_config(dw_files):
-    core = PeakCore(PE_fc)
-    core.name = lambda: "PECore"
-    circuit = core.circuit()
-
-    # random test stuff
-    tester = BasicTester(circuit, circuit.clk, circuit.reset)
-    tester.reset()
-
-    tester.poke(circuit.interface["stall"], 1)
-    config_data = core.get_config_bitstream(add(ra_mode=Mode_t.DELAY,
-                                                rb_mode=Mode_t.DELAY))
-    # hacky way to configure it as 0x42 + 0x42 from the operand register
-    config_data += [(3, 0x42 << 16 | 0x42)]
-    for addr, data in config_data:
-        print("{0:08X} {1:08X}".format(addr, data))
-        tester.configure(addr, data)
-        tester.config_read(addr)
-        tester.eval()
-        tester.expect(circuit.read_config_data, data)
-
-    for i in range(10):
-        tester.poke(circuit.interface["data0"], i + 1)
-        tester.poke(circuit.interface["data1"], i + 1)
-        tester.eval()
-        tester.expect(circuit.interface["alu_res"], 0x42 + 0x42)
-
-    tester.reset()
-    lut_val = lut_and().lut
-
-    config_data = core.get_config_bitstream(inst(alu=ALU_t.Add, lut=lut_val,
-                                                 rd_mode=Mode_t.DELAY,
-                                                 re_mode=Mode_t.DELAY,
-                                                 rf_mode=Mode_t.DELAY))
-    config_data += [(4, 0x7)]
-    tester.poke(circuit.interface["bit0"], 0)
-    tester.poke(circuit.interface["bit1"], 0)
-    tester.eval()
-    tester.expect(circuit.interface["res_p"], 1)
-
-    with tempfile.TemporaryDirectory() as tempdir:
-        for filename in dw_files:
-            shutil.copy(filename, tempdir)
-        tester.compile_and_run(target="verilator",
-                               magma_output="coreir-verilog",
-                               magma_opts={"coreir_libs": {"float_DW"},
-                                           "inline": False},
-                               directory=tempdir,
-                               flags=["-Wno-fatal"])
-
-
 def _make_random(cls):
     if issubclass(cls, hwtypes.BitVector):
         return cls.random(len(cls))
@@ -89,7 +25,6 @@ def _make_random(cls):
     return NotImplemented
 
 
-_CAD_DIR = "/cad/synopsys/syn/P-2019.03/dw/sim_ver/"
 _EXPENSIVE = {
     "bits32.mul": ((umult0(),), "magma_Bits_32_mul_inst0", hwtypes.UIntVector[16]),  # noqa
     "bfloat16.mul": ((fp_mul(),), "magma_BFloat_16_mul_inst0", BFloat16_fc(PyFamily())),  # noqa
@@ -98,12 +33,16 @@ _EXPENSIVE = {
 
 
 @pytest.mark.parametrize("op", list(_EXPENSIVE.keys()))
-def test_pe_data_gate(op, dw_files):
+def test_pe_data_gate(op, run_tb):
     instrs, fu, BV = _EXPENSIVE[op]
 
     is_float = issubclass(BV, hwtypes.FPVector)
     if not irun_available() and is_float:
         pytest.skip("Need irun to test fp ops")
+
+    # note to skip mul since CW BFloat is faulty
+    if op == "bfloat16.mul":
+        pytest.skip("We don't have correct CW BFloat implementation yet")
 
     core = PeakCore(PE_fc)
     core.name = lambda: "PECore"
@@ -120,6 +59,7 @@ def test_pe_data_gate(op, dw_files):
 
     def _test_instr(instr):
         # Configure PE.
+        tester.zero_inputs()
         tester.reset()
         config_data = core.get_config_bitstream(instr)
         for addr, data in config_data:
@@ -140,26 +80,7 @@ def test_pe_data_gate(op, dw_files):
     for instr in instrs:
         _test_instr(instr)
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        if is_float:
-            assert os.path.isdir(_CAD_DIR)
-            ext_srcs = list(map(os.path.basename, dw_files))
-            ext_srcs += ["DW_fp_addsub.v"]
-            ext_srcs = [os.path.join(_CAD_DIR, src) for src in ext_srcs]
-            tester.compile_and_run(target="system-verilog",
-                                   simulator="ncsim",
-                                   magma_output="coreir-verilog",
-                                   ext_srcs=ext_srcs,
-                                   magma_opts={"coreir_libs": {"float_DW"},
-                                               "inline": False},
-                                   directory=tempdir,)
-        else:
-            for filename in dw_files:
-                shutil.copy(filename, tempdir)
-            tester.compile_and_run(target="verilator",
-                                   magma_output="coreir-verilog",
-                                   magma_opts={"coreir_libs": {"float_DW"},
-                                               "inline": False,
-                                               "verilator_debug": True},
-                                   directory=tempdir,
-                                   flags=["-Wno-fatal"])
+    if irun_available():
+        run_tb(tester)
+    else:
+        run_tb(tester, verilator_debug=True)
