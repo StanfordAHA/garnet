@@ -37,7 +37,6 @@ docker exec $container_name /bin/bash -c \
    source /aha/bin/activate;
    aha garnet ${flags};
    cd garnet;
-   sed -i 's|tester.expect(self.circuit.read_config_data, value)|# removed expect|' tbg.py;
    aha halide ${app_to_run};
    aha map ${app_to_run} ${map_flags};
    aha test ${app_to_run};"

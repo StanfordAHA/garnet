@@ -5,6 +5,8 @@ proc heartbeat {} {
 }
 
 # Save the session
+# tcl implementation of mkdir doesn't error if it already exists...
+file mkdir sim_chk
 save interconnect_chk -path sim_chk
 
 ##############

@@ -49,6 +49,6 @@ interface reg_ifc #(
 
 endinterface
 
-typedef virtual reg_ifc vRegIfc;
-typedef virtual reg_ifc.driver vRegIfcDriver;
-typedef virtual reg_ifc.monitor vRegIfcMonitor;
+typedef virtual reg_ifc#(.ADDR_WIDTH(32)) vRegIfc;
+typedef virtual reg_ifc#(.ADDR_WIDTH(32)).driver vRegIfcDriver;
+typedef virtual reg_ifc#(.ADDR_WIDTH(32)).monitor vRegIfcMonitor;
