@@ -118,7 +118,7 @@ foreach x [get_property [get_cells *IOPAD*ext_mdll*] full_name] {
   globalNetConnect ESD_3  -netlistOverride -pin ESD -singleInstance $x
 }
 
-foreach x [get_property [get_cells {*IOPAD*jtag_intf* *IOPAD*ext_rstb* *IOPAD_ext_dump* *IOPAD*dom3*}] full_name] {
+foreach x [get_property [get_cells {*IOPAD*jtag_intf* *IOPAD*ext_rstb* *IOPAD_ext_dump* *IOPAD*dom3* *IOPAD*freq_lvl_cross* *IOPAD*ramp_clock*}] full_name] {
   globalNetConnect ESD_3  -netlistOverride -pin ESD -singleInstance $x
   globalNetConnect POC_1 -pin POCCTRL -singleInstance $x
   #connect_pin -net RTE_3 -pin RTE -singleInstance $x
