@@ -34,7 +34,7 @@ foreach area $cell_areas {
 }
 
 # Calculate FP width that will meet density target given fixed height 
-set width [expr $total_cell_area / $core_density_target / $height]
+#set width [expr $total_cell_area / $core_density_target / $height]
 
 # Core bounding box margins
 
@@ -42,6 +42,8 @@ set core_margin_t $vert_pitch
 set core_margin_b $vert_pitch 
 set core_margin_r [expr 10 * $horiz_pitch]
 set core_margin_l [expr 10 * $horiz_pitch]
+
+set width 277.74 - ($core_margin_r + $core_margin_l)
 
 #-------------------------------------------------------------------------
 # Floorplan

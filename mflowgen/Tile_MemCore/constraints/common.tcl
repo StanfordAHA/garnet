@@ -55,7 +55,8 @@ set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 # Fix config input delay to specific value
 set pt_i_delay 0.700
-set_input_delay -clock ${clock_name} ${pt_i_delay} stall
+set stall_i_delay 0.88
+set_input_delay -clock ${clock_name} ${stall_i_delay} stall
 set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_data*
 set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_addr*
 set_input_delay -clock ${clock_name} ${pt_i_delay} config_read*
@@ -76,23 +77,25 @@ set_max_delay -to clk_out $clock_max_delay
 
 # Min and max delay a little more than our clock
 set min_w_in [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
+set stall_min_w_in [expr ${clock_max_delay} + ${stall_i_delay} + ${o_delay}]
 #set min_w_in [expr $clock_max_delay]
 set_min_delay -to config_out_config_addr* ${min_w_in}
 set_min_delay -to config_out_config_data* ${min_w_in}
 set_min_delay -to config_out_read* ${min_w_in}
 set_min_delay -to config_out_write* ${min_w_in}
-set_min_delay -to stall_out ${min_w_in}
+set_min_delay -to stall_out ${stall_min_w_in}
 set_min_delay -from read_config_data_in -to read_config_data ${min_w_in}
 set_min_delay -from reset -to reset_out ${min_w_in}
 
 # Pass through (not clock) timing margin
 set alt_passthru_margin 0.03
 set alt_passthru_max [expr ${min_w_in} + ${alt_passthru_margin}]
+set stall_passthru_max [expr ${stall_min_w_in} + ${all_passthru_margin}]
 set_max_delay -to config_out_config_addr* ${alt_passthru_max}
 set_max_delay -to config_out_config_data* ${alt_passthru_max}
 set_max_delay -to config_out_read* ${alt_passthru_max}
 set_max_delay -to config_out_write* ${alt_passthru_max}
-set_max_delay -to stall_out ${alt_passthru_max}
+set_max_delay -to stall_out ${stall_passthru_max}
 set_max_delay -from reset -to reset_out ${alt_passthru_max}
 # This doesn't need to be as tight
 set rd_cfg_margin 0.300
