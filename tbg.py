@@ -390,7 +390,7 @@ class TestBenchGenerator:
         if self.use_xcelium:
 
             # Check for clock period override in env (mflowgen)
-            clk_period = 10
+            clk_period = 1.1
             clk_period_env = os.getenv("clock_period")
             if clk_period_env is not None:
                 clk_period = float(clk_period_env)
