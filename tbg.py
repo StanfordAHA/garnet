@@ -388,6 +388,13 @@ class TestBenchGenerator:
                       os.path.join(tempdir, os.path.basename(genesis_verilog)))
 
         if self.use_xcelium:
+
+            # Check for clock period override in env (mflowgen)
+            clk_period = 10
+            clk_period_env = os.getenv("clock_period")
+            if clk_period_env is not None:
+                clk_period = float(clk_period_env)
+
             verilogs = list(glob.glob(os.path.join(tempdir, "*.v")))
             verilogs += list(glob.glob(os.path.join(tempdir, "*.sv")))
             verilog_libraries = [os.path.basename(f) for f in verilogs]
@@ -407,6 +414,7 @@ class TestBenchGenerator:
                                    num_cycles=1000000,
                                    no_warning=True,
                                    dump_vcd=False,
+                                   clock_step_delay=(clk_period / 2.0),
                                    include_verilog_libraries=verilog_libraries,
                                    directory=tempdir)
         else:
