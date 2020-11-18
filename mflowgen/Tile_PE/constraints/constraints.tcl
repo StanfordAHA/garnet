@@ -43,8 +43,7 @@ set_constraint_mode default_c
 set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
 
 # Paths from config input ports to SB registers
-set sb_reg_path SB_ID0_5TRACKS_B*_PE/REG_T*_B*/value__CE/*
-#set sb_reg_path SB_ID0_5TRACKS_B*_PE/REG_T*_B*/value__CE/value_reg[*]/*
+set sb_reg_path SB_ID0_5TRACKS_B*_PE/REG_T*_B*/value__CE/value_reg_*/*
 set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
 
 # Paths from config input ports to PE registers
