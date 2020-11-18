@@ -239,9 +239,6 @@ set_db [get_db nets clk_out_n] .skip_routing true
 set_db [get_db nets clk_trig_p] .skip_routing true
 set_db [get_db nets clk_trig_n] .skip_routing true
 
-
-
-
 # Unplace any standard cells that got placed during init. Not sure why they're
 # being placed, but they make power stripe generation take forever.
 dbSet [dbGet top.insts.cell.baseClass core -p2].pStatus unplaced
