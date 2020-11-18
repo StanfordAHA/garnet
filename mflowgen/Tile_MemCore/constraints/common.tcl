@@ -90,7 +90,7 @@ set_min_delay -from reset -to reset_out ${min_w_in}
 # Pass through (not clock) timing margin
 set alt_passthru_margin 0.03
 set alt_passthru_max [expr ${min_w_in} + ${alt_passthru_margin}]
-set stall_passthru_max [expr ${stall_min_w_in} + ${all_passthru_margin}]
+set stall_passthru_max [expr ${stall_min_w_in} + ${alt_passthru_margin}]
 set_max_delay -to config_out_config_addr* ${alt_passthru_max}
 set_max_delay -to config_out_config_data* ${alt_passthru_max}
 set_max_delay -to config_out_read* ${alt_passthru_max}
