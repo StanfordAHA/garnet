@@ -43,7 +43,7 @@ set core_margin_b $vert_pitch
 set core_margin_r [expr 10 * $horiz_pitch]
 set core_margin_l [expr 10 * $horiz_pitch]
 
-set width 277.74 - ($core_margin_r + $core_margin_l)
+set width [expr 277.74 - ($core_margin_r + $core_margin_l)]
 
 #-------------------------------------------------------------------------
 # Floorplan
