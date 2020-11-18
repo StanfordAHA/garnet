@@ -98,6 +98,13 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
+    name_out, val_out = trim_config(flattened, "rf_write_sched_0_enable", 1)
+    idx, value = pondcore.get_config_data(name_out, val_out)
+    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
+
+    name_out, val_out = trim_config(flattened, "rf_read_sched_0_enabble", 1)
+    idx, value = pondcore.get_config_data(name_out, val_out)
+    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
 def test_pond_rd_wr(run_tb):
 
