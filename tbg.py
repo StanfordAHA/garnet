@@ -413,7 +413,7 @@ class TestBenchGenerator:
                                    # need to be merged in fault
                                    num_cycles=1000000,
                                    no_warning=True,
-                                   dump_vcd=False,
+                                   dump_vcd=True,
                                    clock_step_delay=(clk_period / 2.0),
                                    include_verilog_libraries=verilog_libraries,
                                    directory=tempdir)
