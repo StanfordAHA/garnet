@@ -321,7 +321,6 @@ class TestBenchGenerator:
         for input_port_name in input_port_names:
             value = loop.file_read(file_in)
             loop.poke(self.circuit.interface[input_port_name], value)
-            loop.eval()
         for output_port_name in output_port_names:
             loop.file_write(file_out, self.circuit.interface[output_port_name])
         if valid_out is not None:
@@ -415,6 +414,7 @@ class TestBenchGenerator:
                                    no_warning=True,
                                    dump_vcd=True,
                                    clock_step_delay=(clk_period / 2.0),
+                                   timescale="1ns/1ps",
                                    include_verilog_libraries=verilog_libraries,
                                    directory=tempdir)
         else:
