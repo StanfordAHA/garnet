@@ -312,7 +312,9 @@ class TestBenchGenerator:
         output_port_names = self.output_port_name[:]
         output_port_names.sort()
 
-        loop = tester.loop(self._loop_size * len(input_port_names))
+        # Introduce this twiddle factor due to evals going away - should still pass
+        # TODO fix
+        loop = tester.loop(self._loop_size * len(input_port_names) + 1)
         for input_port_name in input_port_names:
             value = loop.file_read(file_in)
             loop.poke(self.circuit.interface[input_port_name], value)
