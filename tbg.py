@@ -290,11 +290,11 @@ class TestBenchGenerator:
         # configure it
         for addr, value in self.bitstream:
             tester.configure(addr, value)
-            tester.eval()
+            # tester.eval()
 
         for addr, value in self.bitstream:
             tester.config_read(addr)
-            tester.eval()
+            # tester.eval()
             tester.expect(self.circuit.read_config_data, value)
 
         tester.done_config()
