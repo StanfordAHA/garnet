@@ -37,9 +37,13 @@ def convert_raw(signals, input_file, output_file):
             while len(value) % 4 != 0:
                 value = "0"+value
 
+            term = []
             for i in range(int((len(value) - 1) / 4) + 1):
                 partial_value = value[i*4:min((i+1)*4, len(value)+1)]
-                to_write.append(partial_value)
+                term.append(partial_value)
+            term.reverse()
+            for t in term:
+                to_write.append(t)
         to_write.reverse()
         f.write('_'.join(to_write)+'\n')
              
@@ -149,7 +153,7 @@ module TilePETb;
     for o in outputs:
         tb.write(f'''
         if ({o} != test_outputs[test_vector_addr][`SLICE_{o.upper()}] || $isunknown({o})) begin
-            $display("{o}: got %x, expected %x", {o}, test_outputs[test_vector_addr][`SLICE_{o.upper()}]);
+            $display("cycle %d: {o}: got %x, expected %x", test_vector_addr, {o}, test_outputs[test_vector_addr][`SLICE_{o.upper()}]);
         end
 ''')
 
