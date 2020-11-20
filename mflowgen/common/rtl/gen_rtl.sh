@@ -36,7 +36,7 @@ else
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
 
       # pull docker image from docker hub
-      docker pull stanfordaha/garnet:latest
+      docker pull stanfordaha/garnet:amber
 
       # run the container in the background and delete it when it exits
       # (this will print out the name of the container to attach to)
