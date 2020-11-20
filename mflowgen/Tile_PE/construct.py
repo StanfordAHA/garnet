@@ -21,7 +21,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'multicorner-multivt'
+  adk_view = 'multivt'
   pwr_aware = True
 
   flatten = 3
