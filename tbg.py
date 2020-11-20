@@ -104,6 +104,7 @@ class BasicTester(Tester):
     def reset(self):
         self.poke(self.reset_port, 1)
         self.step(2)
+        self.eval()
         self.poke(self.reset_port, 0)
 
     def done_config(self):
@@ -122,10 +123,12 @@ class BasicTester(Tester):
         for i in range(max_col):
             mask = (mask << 1) | 1
         self.poke(self._circuit.stall, mask)
+        self.eval()
         self.step(2)
 
     def unstall(self):
         self.poke(self._circuit.stall, 0)
+        self.eval()
 
 
 class TestBenchGenerator:
@@ -287,9 +290,11 @@ class TestBenchGenerator:
         # configure it
         for addr, value in self.bitstream:
             tester.configure(addr, value)
+            tester.eval()
 
         for addr, value in self.bitstream:
             tester.config_read(addr)
+            tester.eval()
             tester.expect(self.circuit.read_config_data, value)
 
         tester.done_config()
