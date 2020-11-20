@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python3 generate_test_vectors.py
+python3 generate_testbench.py
 
 cp testbench.sv outputs/testbench.sv
 cp test_vectors.txt outputs/test_vectors.txt
