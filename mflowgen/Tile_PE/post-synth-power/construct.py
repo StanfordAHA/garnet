@@ -32,7 +32,7 @@ def construct():
     'adk_view'          : adk_view,
     'PWR_AWARE'         : "False",#os.environ.get('PWR_AWARE'),
     'testbench_name'    : os.environ.get('testbench_name'),
-    'strip_path'        : os.environ.get('tb/dut'),
+    'strip_path'        : os.environ.get('strip_path'),
     'waves'             : os.environ.get('waves'),
     'use_sdf'           : os.environ.get('use_sdf'),
     'tile_id'           : os.environ.get('tile_id')
@@ -51,21 +51,19 @@ def construct():
 
   # Custom steps
 
-  setup          = Step( this_dir + '/setup'                            )
-  synth_sim      = Step( this_dir + '/../../common/cadence-xcelium-sim' )
-  pt_power_synth = Step( this_dir + '/../../common/synopsys-ptpx-synth' )
-  testbench      = Step( this_dir + '/../testbench'                     )
+  setup          = Step( this_dir + '/setup'                               )
+  synth_sim      = Step( this_dir + '/../../../common/cadence-xcelium-sim' )
+  pt_power_synth = Step( this_dir + '/../../../common/synopsys-ptpx-synth' )
 
-  synth_sim.extend_inputs( testbench.all_outputs() )
-  synth_sim.extend_inputs( ['design.v'] )
+  synth_sim.extend_inputs( ['test_vectors.txt', 'test_outputs.txt', 'design.v'] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_node(setup)
-  g.add_node(synth_sim)
-  g.add_node(pt_power_synth)
+  g.add_step(setup)
+  g.add_step(synth_sim)
+  g.add_step(pt_power_synth)
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges

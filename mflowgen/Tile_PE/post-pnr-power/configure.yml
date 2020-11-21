@@ -5,13 +5,14 @@ name: post-pnr-power
 #-------------------------------------------------------------------------
 
 inputs:
-  - tile_Tile_PE.list
+  - tiles_Tile_PE.list
   - cmd.tcl
   - design.spef.gz
   - design.pt.sdc
   - design.sdf
   - design.vcs.v
   - design.vcs.pg.v
+  - testbench.sv
   - tile_tbs
 
 outputs:

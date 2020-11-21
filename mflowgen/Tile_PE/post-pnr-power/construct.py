@@ -32,7 +32,7 @@ def construct():
     'adk_view'          : adk_view,
     'PWR_AWARE'         : os.environ.get('PWR_AWARE'),
     'testbench_name'    : os.environ.get('testbench_name'),
-    'strip_path'        : os.environ.get('tb/dut'),
+    'strip_path'        : os.environ.get('strip_path'),
     'waves'             : os.environ.get('waves'),
     'use_sdf'           : os.environ.get('use_sdf'),
     'tile_id'           : os.environ.get('tile_id')
@@ -51,12 +51,13 @@ def construct():
 
   # Custom steps
 
-  setup          = Step( this_dir + '/setup'                            )
-  gl_sim         = Step( this_dir + '/../../common/cadence-xcelium-sim' )
-  pt_power_gl    = Step( this_dir + '/../../common/synopsys-ptpx-gl'    )
-  testbench      = Step( this_dir + '/../testbench'                     )
+  setup          = Step( this_dir + '/setup'                               )
+  gl_sim         = Step( this_dir + '/../../../common/cadence-xcelium-sim' )
+  pt_power_gl    = Step( this_dir + '/../../../common/synopsys-ptpx-gl'    )
+  testbench      = Step( this_dir + '/../../testbench'                     )
 
-  pt_power_gl.extend_inputs( testbench.all_outputs() )
+  gl_sim.extend_inputs( ['test_vectors.txt', 'test_outputs.txt', 'design.v'] )
+
   if os.environ.get('PWR_AWARE') == 'True':
       gl_sim.extend_inputs( ["design.vcs.pg.v"] )
 
@@ -64,9 +65,9 @@ def construct():
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_node(setup)
-  g.add_node(gl_sim)
-  g.add_node(pt_power_gl)
+  g.add_step(setup)
+  g.add_step(gl_sim)
+  g.add_step(pt_power_gl)
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
