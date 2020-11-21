@@ -44,11 +44,11 @@ def construct():
     'PWR_AWARE'         : pwr_aware,
     'core_density_target': 0.63,
     # Power analysis
+    "use_sdf"           : False, # uses sdf but not the way it is in xrun node
     'app_to_run'        : 'tests/conv_3_3',
     'saif_instance'     : 'TilePETb/Tile_PE_inst',
     'testbench_name'    : 'TilePETb',
-    'strip_path'        : 'TilePETb/Tile_PE_inst',
-    'batch'             : True
+    'strip_path'        : 'TilePETb/Tile_PE_inst'
     }
 
   #-----------------------------------------------------------------------
@@ -74,17 +74,9 @@ def construct():
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
   testbench            = Step( this_dir + '/testbench'                             )
-  xcelium_sim          = Step( this_dir + '/../common/cadence-xcelium-sim'         )
   application          = Step( this_dir + '/application'                           )
-
-  gl_sim               = xcelium_sim.clone()
-  gl_sim.set_name( 'cadence-xcelium-glsim' )
-  pt_power_gl          = Step( this_dir + '/../common/synopsys-ptpx-gl'            )
-
-  # synth sim PWR_AWARE needs to be false
-  synth_sim               = xcelium_sim.clone()
-  synth_sim.set_name( 'cadence-xcelium-synthsim' )
-  pt_power_synth          = Step( this_dir + '/../common/synopsys-ptpx-synth'    )
+  post_synth_power     = Step( this_dir + '/post-synth-power'                      )
+  post_pnr_power       = Step( this_dir + '/post-pnr-power'                        )
 
   # Power aware setup
   power_domains = None
@@ -141,11 +133,6 @@ def construct():
   order.append( 'copy_sdc.tcl' )
   synth.set_param( 'order', order )
 
-  # Power analysis
-  gl_sim.extend_inputs( testbench.all_outputs() )
-  synth_sim.extend_inputs( testbench.all_outputs() )
-  synth_sim.extend_inputs( ['design.v'] )
-
   # Power aware setup
   if pwr_aware:
       synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
@@ -158,8 +145,6 @@ def construct():
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
-
-      gl_sim.extend_inputs( ["design.vcs.pg.v"] )
   
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -193,10 +178,8 @@ def construct():
 
   g.add_step( application              )
   g.add_step( testbench                )
-  g.add_step( gl_sim                   )
-  g.add_step( pt_power_gl              )
-  g.add_step( synth_sim                )
-  g.add_step( pt_power_synth           )
+  g.add_step( post_synth_power         )
+  g.add_step( post_pnr_power           )
 
   # Power aware step
   if pwr_aware:
@@ -272,20 +255,13 @@ def construct():
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
-  g.connect_by_name( adk,          pt_power_synth  )
-  g.connect_by_name( synth,        pt_power_synth  )
-  g.connect_by_name( synth_sim,    pt_power_synth  )
   g.connect_by_name( application,  testbench       )
-  g.connect_by_name( adk,          synth_sim       )
-  g.connect_by_name( synth,        synth_sim       )
-  g.connect_by_name( testbench,    synth_sim       )
-  g.connect_by_name( adk,          gl_sim          )
-  g.connect_by_name( signoff,      gl_sim          ) # design.vcs.v, design.spef.gz, design.pt.sdc
-  g.connect_by_name( pt_signoff,   gl_sim          ) # design.sdf
-  g.connect_by_name( testbench,    gl_sim          ) # testbench.sv
-  g.connect_by_name( adk,          pt_power_gl     )
-  g.connect_by_name( signoff,      pt_power_gl     )
-  g.connect_by_name( gl_sim,       pt_power_gl     ) # run.saif
+  g.connect_by_name( synth, post_synth_power )
+  g.connect_by_name( testbench, post_synth_power )
+  g.connect_by_name( signoff, post_pnr_power )
+  g.connect_by_name( pt_signoff, post_pnr_power )
+  g.connect_by_name( testbench, post_pnr_power )
+  g.connect_by_name( signoff, post_pnr_power )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
@@ -327,9 +303,6 @@ def construct():
   synth.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
-
-  # synth sim needs to be false so it doesn't grab the pwr-aware tech files
-  synth_sim.set_param( 'PWR_AWARE', False )
 
   if pwr_aware:
      init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True )

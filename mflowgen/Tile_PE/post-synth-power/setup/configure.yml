@@ -1,0 +1,32 @@
+name: setup
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+outputs:
+  - cmd.tcl
+  - design.spef
+  - design.sdc
+  - design.sdf
+  - design.v
+  - testbench.sv
+  - test_vectors.txt
+  - test_outputs.txt
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - cp ../../inputs/cmd.tcl outputs/cmd.tcl
+  - cp ../../inputs/design.spef outputs/design.spef
+  - cp ../../inputs/design.sdc outputs/design.sdc
+  - cp ../../inputs/design.sdf outputs/design.sdf
+  - cp ../../inputs/design.v outputs/design.v
+  - cp ../../inputs/testbench.sv outputs/testbench.sv
+  - cp ../../tile_tbs/${tile_id}/test_vectors.txt outputs/test_vectors.txt
+  - cp ../../tile_tbs/${tile_id}/test_outputs.txt outputs/test_outputs.txt
+
+parameters:
+  tile_id: Tile_X01_Y01
