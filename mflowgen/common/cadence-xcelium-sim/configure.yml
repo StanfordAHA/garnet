@@ -23,6 +23,7 @@ outputs:
 
 commands:
   - mkdir -p logs
+  - source ./all_tiles_sdf.sh
   - source ./run_sim.sh 
 
 #-------------------------------------------------------------------------
@@ -33,8 +34,9 @@ parameters:
   clock_period: 1.0
   design_name: undefined
   testbench_name: tb
-  waveform: True
+  waves: True
   PWR_AWARE: True
+  use_sdf: True
 
 #-------------------------------------------------------------------------
 # Assertions
