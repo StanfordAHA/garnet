@@ -25,9 +25,15 @@ def construct():
   pwr_aware = True
 
   flatten = 3
-  os_flatten = os.environ.get('FLATTEN')
-  if os_flatten:
-      flatten = os_flatten
+  if os.environ.get('FLATTEN'):
+      flatten = os.environ.get('FLATTEN')
+
+  synth_power = False
+  if os.environ.get('SYNTH_POWER') == 'True':
+      synth_power = True
+  # power domains do not work with post-synth power
+  if synth_power:
+      pwr_aware = False
 
   parameters = {
     'construct_path'    : __file__,
@@ -75,7 +81,8 @@ def construct():
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
   testbench            = Step( this_dir + '/testbench'                             )
   application          = Step( this_dir + '/application'                           )
-  post_synth_power     = Step( this_dir + '/post-synth-power'                      )
+  if synth_power:
+    post_synth_power     = Step( this_dir + '/post-synth-power'                      )
   post_pnr_power       = Step( this_dir + '/post-pnr-power'                        )
 
   # Power aware setup
@@ -178,7 +185,8 @@ def construct():
 
   g.add_step( application              )
   g.add_step( testbench                )
-  g.add_step( post_synth_power         )
+  if synth_power:
+    g.add_step( post_synth_power         )
   g.add_step( post_pnr_power           )
 
   # Power aware step
@@ -255,13 +263,16 @@ def construct():
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
-  g.connect_by_name( application,  testbench       )
-  g.connect_by_name( synth, post_synth_power )
-  g.connect_by_name( testbench, post_synth_power )
-  g.connect_by_name( signoff, post_pnr_power )
-  g.connect_by_name( pt_signoff, post_pnr_power )
-  g.connect_by_name( testbench, post_pnr_power )
-  g.connect_by_name( signoff, post_pnr_power )
+  g.connect_by_name( application, testbench       )
+  if synth_power:
+      g.connect_by_name( application, post_synth_power )
+      g.connect_by_name( synth,       post_synth_power )
+      g.connect_by_name( testbench,   post_synth_power )
+  g.connect_by_name( application, post_pnr_power)
+  g.connect_by_name( signoff,     post_pnr_power )
+  g.connect_by_name( pt_signoff,  post_pnr_power )
+  g.connect_by_name( testbench,   post_pnr_power )
+  g.connect_by_name( signoff,     post_pnr_power )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )

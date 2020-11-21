@@ -5,12 +5,13 @@ name: post-synth-power
 #-------------------------------------------------------------------------
 
 inputs:
-  - tile_Tile_PE.list
+  - tiles_Tile_PE.list
   - cmd.tcl
   - design.spef
   - design.sdc
   - design.sdf
   - design.v
+  - testbench.sv
   - tile_tbs
 
 outputs:

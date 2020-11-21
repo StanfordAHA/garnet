@@ -25,8 +25,8 @@ commands:
   - cp ../../inputs/design.sdf outputs/design.sdf
   - cp ../../inputs/design.v outputs/design.v
   - cp ../../inputs/testbench.sv outputs/testbench.sv
-  - cp ../../tile_tbs/${tile_id}/test_vectors.txt outputs/test_vectors.txt
-  - cp ../../tile_tbs/${tile_id}/test_outputs.txt outputs/test_outputs.txt
+  - cp ../../inputs/tile_tbs/{tile_id}/test_vectors.txt outputs/test_vectors.txt
+  - cp ../../inputs/tile_tbs/{tile_id}/test_outputs.txt outputs/test_outputs.txt
 
 parameters:
   tile_id: Tile_X01_Y01

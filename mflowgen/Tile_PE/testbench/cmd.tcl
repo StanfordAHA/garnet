@@ -1,4 +1,4 @@
-if { $::env(waveform) == "True" } {
+if { $::env(waves) == "True" } {
     database -shm -default waves
     probe -shm $::env(testbench_name) -depth all -all
 }

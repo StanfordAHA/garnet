@@ -1,4 +1,5 @@
 import subprocess
+import os
 
 def main():
     f = open('./inputs/tiles_Tile_PE.list', 'r')
@@ -8,7 +9,8 @@ def main():
         x = fields[-2]
         y = fields[-1]
         tile_id = f"Tile_X{x}_Y{y}"
-        subprocess.run(['export', f'tile_id={tile_id}', './run.sh'])
+        os.environ["tile_id"] = tile_id
+        subprocess.run(['./run.sh'])
 
 if __name__ == '__main__':
     main()
