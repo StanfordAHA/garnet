@@ -6,7 +6,37 @@ import struct
 import os
 import csv
 import re
-from defines import inputs, outputs
+from defines import inputs, outputs, scope
+import subprocess
+
+def generate_raw(tile):
+    sv = open('waveform_to_csv.sh', 'w')
+
+    waveform = 'run'
+    clock_period = float(os.environ.get("clock_period"))
+
+    input_signals = ' '.join([f'-signal {scope}.{tile}.{i}' for i in inputs])
+    output_signals = ' '.join([f'-signal {scope}.{tile}.{o}' for o in outputs])
+    flags = [
+        "-overwrite",
+        "-xsub 0",
+        "-timeunits ps",
+        "-radix hex",
+        "-64bit",
+        f"-period {int(clock_period*1000)}ps",
+        "-notime",
+    ]
+    flag_string = ' '.join(flags)
+
+    sv.write('#!/bin/bash\n')
+    sv.write(f'mkdir -p outputs/tile_tbs/{tile}\n')
+    sv.write(f'if [ ! -f {waveform}.trn ]; then\nsimvisdbutil inputs/{waveform}.vcd -sst2\nfi\n')
+    sv.write(f'simvisdbutil {waveform}.trn {input_signals} -output raw_input.csv {flag_string}\n')
+    sv.write(f'simvisdbutil {waveform}.trn {output_signals} -output raw_output.csv {flag_string}\n')
+    sv.close()
+
+    subprocess.run(['chmod', '+x', 'waveform_to_csv.sh'])
+    subprocess.run(['./waveform_to_csv.sh'])
 
 def convert_raw(signals, input_file, output_file):
     dim_pattern = re.compile("\w*\[(\d+):0\]")
@@ -169,9 +199,20 @@ endmodule''')
     tb.close()
 
 def main():
-    num_test_vectors, input_widths = convert_raw(inputs, "raw_input.csv", "test_vectors.txt")
-    _, output_widths = convert_raw(outputs, "raw_output.csv", "test_outputs.txt")
-    create_testbench(inputs, outputs, input_widths, output_widths, num_test_vectors)
+    f = open('inputs/tiles_Tile_PE.list', 'r')
+    i = 0
+    for line in f:
+        fields = line.strip().split(',')
+        x = fields[-2]
+        y = fields[-1]
+        tile = f"Tile_X{x}_Y{y}"
+
+        generate_raw(tile) 
+        num_test_vectors, input_widths = convert_raw(inputs, "raw_input.csv", f"outputs/tile_tbs/{tile}/test_vectors.txt")
+        _, output_widths = convert_raw(outputs, "raw_output.csv", f"outputs/tile_tbs/{tile}/test_outputs.txt")
+        if i == 0:
+            create_testbench(inputs, outputs, input_widths, output_widths, num_test_vectors)
+        i += 1
 
 if __name__ == '__main__':
     main()

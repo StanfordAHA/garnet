@@ -1,0 +1,89 @@
+#! /usr/bin/env python
+#=========================================================================
+# construct.py
+#=========================================================================
+# Author :
+# Date   :
+#
+
+import os
+import sys
+
+from mflowgen.components import Graph, Step
+from shutil import which
+
+def construct():
+
+  g = Graph()
+
+  #-----------------------------------------------------------------------
+  # Parameters
+  #-----------------------------------------------------------------------
+
+  adk_name = 'tsmc16'
+  adk_view = 'multivt'
+  pwr_aware = False
+
+  parameters = {
+    'construct_path'    : __file__,
+    'design_name'       : os.environ.get('design_name'),
+    'clock_period'      : float(os.environ.get('clock_period')),
+    'adk'               : adk_name,
+    'adk_view'          : adk_view,
+    'PWR_AWARE'         : "False",#os.environ.get('PWR_AWARE'),
+    'testbench_name'    : os.environ.get('testbench_name'),
+    'strip_path'        : os.environ.get('tb/dut'),
+    'waves'             : os.environ.get('waves'),
+    'use_sdf'           : os.environ.get('use_sdf'),
+    'tile_id'           : os.environ.get('tile_id')
+    }
+
+  #-----------------------------------------------------------------------
+  # Create nodes
+  #-----------------------------------------------------------------------
+
+  this_dir = os.path.dirname( os.path.abspath( __file__ ) )
+
+  # ADK step
+
+  g.set_adk( adk_name )
+  adk = g.get_adk_step()
+
+  # Custom steps
+
+  setup          = Step( this_dir + '/setup'                            )
+  synth_sim      = Step( this_dir + '/../../common/cadence-xcelium-sim' )
+  pt_power_synth = Step( this_dir + '/../../common/synopsys-ptpx-synth' )
+  testbench      = Step( this_dir + '/../testbench'                     )
+
+  synth_sim.extend_inputs( testbench.all_outputs() )
+  synth_sim.extend_inputs( ['design.v'] )
+
+  #-----------------------------------------------------------------------
+  # Graph -- Add nodes
+  #-----------------------------------------------------------------------
+
+  g.add_node(setup)
+  g.add_node(synth_sim)
+  g.add_node(pt_power_synth)
+
+  #-----------------------------------------------------------------------
+  # Graph -- Add edges
+  #-----------------------------------------------------------------------
+
+  g.connect_by_name(adk, synth_sim)
+  g.connect_by_name(adk, pt_power_synth)
+  g.connect_by_name(setup, synth_sim)
+  g.connect_by_name(setup, pt_power_synth)
+  g.connect_by_name(synth_sim, pt_power_synth)
+
+  #-----------------------------------------------------------------------
+  # Parameterize
+  #-----------------------------------------------------------------------
+
+  g.update_params( parameters )
+
+  return g
+
+if __name__ == '__main__':
+  g = construct()
