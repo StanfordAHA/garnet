@@ -317,11 +317,12 @@ class TestBenchGenerator:
         output_port_names = self.output_port_name[:]
         output_port_names.sort()
 
-        loop = tester.loop(self._loop_size * len(input_port_names))
+        # Introduce this twiddle factor due to evals going away - should still pass
+        # TODO fix
+        loop = tester.loop(self._loop_size * len(input_port_names) + 1)
         for input_port_name in input_port_names:
             value = loop.file_read(file_in)
             loop.poke(self.circuit.interface[input_port_name], value)
-            loop.eval()
         for output_port_name in output_port_names:
             loop.file_write(file_out, self.circuit.interface[output_port_name])
         if valid_out is not None:
@@ -388,6 +389,13 @@ class TestBenchGenerator:
                       os.path.join(tempdir, os.path.basename(genesis_verilog)))
 
         if self.use_xcelium:
+
+            # Check for clock period override in env (mflowgen)
+            clk_period = 1.1
+            clk_period_env = os.getenv("clock_period")
+            if clk_period_env is not None:
+                clk_period = float(clk_period_env)
+
             verilogs = list(glob.glob(os.path.join(tempdir, "*.v")))
             verilogs += list(glob.glob(os.path.join(tempdir, "*.sv")))
             verilog_libraries = [os.path.basename(f) for f in verilogs]
@@ -406,7 +414,9 @@ class TestBenchGenerator:
                                    # need to be merged in fault
                                    num_cycles=1000000,
                                    no_warning=True,
-                                   dump_vcd=False,
+                                   dump_vcd=True,
+                                   clock_step_delay=(clk_period / 2.0),
+                                   timescale="1ns/1ps",
                                    include_verilog_libraries=verilog_libraries,
                                    directory=tempdir)
         else:

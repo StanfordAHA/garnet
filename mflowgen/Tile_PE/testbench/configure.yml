@@ -1,10 +1,11 @@
 name: testbench
 
+inputs:
+  - run.vcd
+  - tile_Tile_PE.list
+
 outputs:
-  - testbench.sv
-  - test_vectors.txt
-  - test_outputs.txt
-  - cmd.tcl
+  - tile_tbs
 
 commands:
   - ./run.sh

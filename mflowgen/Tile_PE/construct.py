@@ -21,25 +21,13 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'multivt'
+  adk_view = 'multicorner-multivt'
   pwr_aware = True
 
   flatten = 3
   os_flatten = os.environ.get('FLATTEN')
   if os_flatten:
       flatten = os_flatten
-
-  # RTL power estimation
-  rtl_power = False
-  if os.environ.get('RTL_POWER') == 'True':
-      pwr_aware = False
-      rtl_power = True
-
-  # DC power estimation
-  synth_power = False
-  if os.environ.get('SYNTH_POWER') == 'True':
-      synth_power = True
-      pwr_aware = False
 
   parameters = {
     'construct_path'    : __file__,
@@ -55,9 +43,12 @@ def construct():
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
     'core_density_target': 0.63,
+    # Power analysis
+    'app_to_run'        : 'tests/conv_3_3',
     'saif_instance'     : 'TilePETb/Tile_PE_inst',
     'testbench_name'    : 'TilePETb',
-    'strip_path'        : 'TilePETb/Tile_PE_inst'
+    'strip_path'        : 'TilePETb/Tile_PE_inst',
+    'batch'             : True
     }
 
   #-----------------------------------------------------------------------
@@ -84,23 +75,16 @@ def construct():
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
   testbench            = Step( this_dir + '/testbench'                             )
   xcelium_sim          = Step( this_dir + '/../common/cadence-xcelium-sim'         )
-  if rtl_power:
-    rtl_sim              = xcelium_sim.clone()
-    rtl_sim.set_name( 'rtl-sim' )
-    pt_power_rtl         = Step( this_dir + '/../common/synopsys-ptpx-rtl'         )
-    rtl_sim.extend_inputs( testbench.all_outputs() )
-  gl_sim               = xcelium_sim.clone()
-  gl_sim.set_name( 'gl-sim' )
-  gl_sim.extend_inputs( testbench.all_outputs() )
-  pt_power_gl          = Step( this_dir + '/../common/synopsys-ptpx-gl'            )
-  parse_power_gl       = Step( this_dir + '/parse-power-gl'                        )
+  application          = Step( this_dir + '/application'                           )
 
-  if synth_power:
-    synth_sim               = xcelium_sim.clone()
-    synth_sim.set_name( 'synth-sim' )
-    synth_sim.extend_inputs( testbench.all_outputs() )
-    synth_sim.extend_inputs( ['design.v'] )
-    pt_power_synth          = Step( this_dir + '/../common/synopsys-ptpx-synth'    )
+  gl_sim               = xcelium_sim.clone()
+  gl_sim.set_name( 'cadence-xcelium-glsim' )
+  pt_power_gl          = Step( this_dir + '/../common/synopsys-ptpx-gl'            )
+
+  # synth sim PWR_AWARE needs to be false
+  synth_sim               = xcelium_sim.clone()
+  synth_sim.set_name( 'cadence-xcelium-synthsim' )
+  pt_power_synth          = Step( this_dir + '/../common/synopsys-ptpx-synth'    )
 
   # Power aware setup
   power_domains = None
@@ -108,13 +92,11 @@ def construct():
   if pwr_aware:
       power_domains = Step( this_dir + '/../common/power-domains' )
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
-  # Default steps
 
+  # Default steps
   info         = Step( 'info',                          default=True )
   synth        = Step( 'cadence-genus-synthesis',       default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
-  if synth_power:
-      synth.extend_outputs( ['design.spef.gz'] )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
   place        = Step( 'cadence-innovus-place',         default=True )
@@ -134,13 +116,11 @@ def construct():
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
   # Add custom timing scripts
-
   custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
   for c_step in custom_timing_steps:
     c_step.extend_inputs( custom_timing_assert.all_outputs() )
 
   # Add extra input edges to innovus steps that need custom tweaks
-
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
@@ -160,6 +140,11 @@ def construct():
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )
   synth.set_param( 'order', order )
+
+  # Power analysis
+  gl_sim.extend_inputs( testbench.all_outputs() )
+  synth_sim.extend_inputs( testbench.all_outputs() )
+  synth_sim.extend_inputs( ['design.v'] )
 
   # Power aware setup
   if pwr_aware:
@@ -182,7 +167,6 @@ def construct():
 
   g.add_step( info                     )
   g.add_step( rtl                      )
-  g.add_step( testbench                )
   g.add_step( constraints              )
   g.add_step( custom_dc_scripts        )
   g.add_step( synth                    )
@@ -207,15 +191,12 @@ def construct():
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
 
-  if rtl_power:
-    g.add_step( rtl_sim                )
-    g.add_step( pt_power_rtl           )
+  g.add_step( application              )
+  g.add_step( testbench                )
   g.add_step( gl_sim                   )
   g.add_step( pt_power_gl              )
-  g.add_step( parse_power_gl           )
-  if synth_power:
-    g.add_step( synth_sim              )
-    g.add_step( pt_power_synth            )
+  g.add_step( synth_sim                )
+  g.add_step( pt_power_synth           )
 
   # Power aware step
   if pwr_aware:
@@ -242,19 +223,6 @@ def construct():
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
-  g.connect_by_name( adk,      pt_power_gl  )
-
-  if rtl_power:
-    rtl_sim.extend_inputs(['design.v'])
-    g.connect_by_name( adk,      rtl_sim      )
-    g.connect_by_name( adk,      pt_power_rtl )
-    # To generate namemap
-    g.connect_by_name( rtl_sim,     dc       ) # run.saif
-    g.connect_by_name( rtl,          rtl_sim      ) # design.v
-    g.connect_by_name( testbench,    rtl_sim      ) # testbench.sv
-    g.connect_by_name( dc,       pt_power_rtl ) # design.namemap
-    g.connect_by_name( signoff,      pt_power_rtl ) # design.vcs.v, design.spef.gz, design.pt.sdc
-    g.connect_by_name( rtl_sim,      pt_power_rtl ) # run.saif
 
   g.connect_by_name( rtl,         synth          )
   g.connect_by_name( constraints, synth          )
@@ -304,23 +272,20 @@ def construct():
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
-  g.connect_by_name( signoff,      pt_power_gl  )
-  g.connect_by_name( gl_sim,       pt_power_gl  ) # run.saif
-
-  g.connect_by_name( adk,          gl_sim       )
-  g.connect_by_name( signoff,      gl_sim       ) # design.vcs.v, design.spef.gz, design.pt.sdc
-  g.connect_by_name( pt_signoff,   gl_sim       ) # design.sdf
-  g.connect_by_name( testbench,    gl_sim       ) # testbench.sv
-  g.connect_by_name( pt_power_gl,  parse_power_gl ) # power.hier
-
-  if synth_power:
-    g.connect_by_name( adk,          pt_power_synth  )
-    g.connect_by_name( synth,        pt_power_synth  )
-    g.connect_by_name( synth_sim,    pt_power_synth  )
-  
-    g.connect_by_name( adk,          synth_sim       )
-    g.connect_by_name( synth,        synth_sim       )
-    g.connect_by_name( testbench,    synth_sim       )
+  g.connect_by_name( adk,          pt_power_synth  )
+  g.connect_by_name( synth,        pt_power_synth  )
+  g.connect_by_name( synth_sim,    pt_power_synth  )
+  g.connect_by_name( application,  testbench       )
+  g.connect_by_name( adk,          synth_sim       )
+  g.connect_by_name( synth,        synth_sim       )
+  g.connect_by_name( testbench,    synth_sim       )
+  g.connect_by_name( adk,          gl_sim          )
+  g.connect_by_name( signoff,      gl_sim          ) # design.vcs.v, design.spef.gz, design.pt.sdc
+  g.connect_by_name( pt_signoff,   gl_sim          ) # design.sdf
+  g.connect_by_name( testbench,    gl_sim          ) # testbench.sv
+  g.connect_by_name( adk,          pt_power_gl     )
+  g.connect_by_name( signoff,      pt_power_gl     )
+  g.connect_by_name( gl_sim,       pt_power_gl     ) # run.saif
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
@@ -362,6 +327,9 @@ def construct():
   synth.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+
+  # synth sim needs to be false so it doesn't grab the pwr-aware tech files
+  synth_sim.set_param( 'PWR_AWARE', False )
 
   if pwr_aware:
      init.update_params( { 'flatten_effort': parameters['flatten_effort'] }, True )

@@ -6,6 +6,7 @@ if { $::env(waveform) == "True" } {
 stop -name stall_toggle -object $::env(testbench_name).stall
 run
 run
+run
 stop -delete stall_toggle
 
 dumpsaif -ewg -scope $::env(testbench_name) -hierarchy -internal -output outputs/run.saif -overwrite
