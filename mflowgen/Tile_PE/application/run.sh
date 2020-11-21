@@ -45,6 +45,8 @@ docker cp $container_name:/aha/garnet/temp/design.route ../design.route
 docker cp $container_name:/aha/garnet/temp/design.info ../design.info
 docker cp $container_name:/aha/garnet/temp/design.packed ../design.packed
 docker cp $container_name:/aha/garnet/temp/design.layout ../design.layout
+docker cp $container_name:/aha/garnet/temp/1.graph ../1.graph
+docker cp $container_name:/aha/garnet/temp/16.graph ../16.graph
 docker cp $container_name:/aha/garnet/temp/garnet/waveforms.vcd ../outputs/run.vcd
 grep '#m' ../design.place | awk '{printf "%s,%02X,%02X\n",$1,$2,$3}' > ../outputs/tiles_Tile_MemCore.list
 grep '#p' ../design.place | awk '{printf "%s,%02X,%02X\n",$1,$2,$3}' > ../outputs/tiles_Tile_PE.list
