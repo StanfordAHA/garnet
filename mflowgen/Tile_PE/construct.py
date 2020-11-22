@@ -52,9 +52,9 @@ def construct():
     # Power analysis
     "use_sdf"           : False, # uses sdf but not the way it is in xrun node
     'app_to_run'        : 'tests/conv_3_3',
-    'saif_instance'     : 'TilePETb/Tile_PE_inst',
-    'testbench_name'    : 'TilePETb',
-    'strip_path'        : 'TilePETb/Tile_PE_inst'
+    'saif_instance'     : 'testbench/dut',
+    'testbench_name'    : 'testbench',
+    'strip_path'        : 'testbench/dut'
     }
 
   #-----------------------------------------------------------------------
@@ -79,11 +79,11 @@ def construct():
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
-  testbench            = Step( this_dir + '/testbench'                             )
-  application          = Step( this_dir + '/application'                           )
+  testbench            = Step( this_dir + '/../common/testbench'                   )
+  application          = Step( this_dir + '/../common/application'                 )
   if synth_power:
-    post_synth_power     = Step( this_dir + '/post-synth-power'                      )
-  post_pnr_power       = Step( this_dir + '/post-pnr-power'                        )
+    post_synth_power     = Step( this_dir + '/../common/tile-post-synth-power'     )
+  post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'         )
 
   # Power aware setup
   power_domains = None
@@ -186,13 +186,13 @@ def construct():
   g.add_step( application              )
   g.add_step( testbench                )
   if synth_power:
-    g.add_step( post_synth_power         )
+    g.add_step( post_synth_power       )
   g.add_step( post_pnr_power           )
 
   # Power aware step
   if pwr_aware:
-      g.add_step( power_domains            )
-      g.add_step( pwr_aware_gls            )
+      g.add_step( power_domains        )
+      g.add_step( pwr_aware_gls        )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -268,11 +268,10 @@ def construct():
       g.connect_by_name( application, post_synth_power )
       g.connect_by_name( synth,       post_synth_power )
       g.connect_by_name( testbench,   post_synth_power )
-  g.connect_by_name( application, post_pnr_power)
+  g.connect_by_name( application, post_pnr_power )
   g.connect_by_name( signoff,     post_pnr_power )
   g.connect_by_name( pt_signoff,  post_pnr_power )
   g.connect_by_name( testbench,   post_pnr_power )
-  g.connect_by_name( signoff,     post_pnr_power )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )

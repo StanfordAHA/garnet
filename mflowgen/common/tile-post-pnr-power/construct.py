@@ -61,6 +61,11 @@ def construct():
   if os.environ.get('PWR_AWARE') == 'True':
       gl_sim.extend_inputs( ["design.vcs.pg.v"] )
 
+  design = os.environ.get('design_name')
+  if design == 'Tile_MemCore':
+      gl_sim.extend_inputs( ['sram.v'] )
+      pt_power_gl.extend_inputs( ['sram_tt.db'] )
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------

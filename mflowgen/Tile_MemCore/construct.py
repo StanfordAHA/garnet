@@ -24,6 +24,13 @@ def construct():
   adk_view = 'multicorner-multivt'
   pwr_aware = True
 
+  synth_power = False
+  if os.environ.get('SYNTH_POWER') == 'True':
+      synth_power = True
+  # power domains do not work with post-synth power
+  if synth_power:
+      pwr_aware = False
+
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
@@ -47,9 +54,13 @@ def construct():
     # RTL Generation
     'interconnect_only'   : True,
     # Power Domains
-    'PWR_AWARE'           : pwr_aware,
-    'testbench_name'      : 'Interconnect_tb',
-    'gl_strip_path'       : 'Interconnect_tb/dut'
+    'PWR_AWARE'         : pwr_aware,
+    # Power analysis
+    "use_sdf"           : False, # uses sdf but not the way it is in xrun node
+    'app_to_run'        : 'tests/conv_3_3',
+    'saif_instance'     : 'testbench/dut',
+    'testbench_name'    : 'testbench',
+    'strip_path'        : 'testbench/dut'
   }
 
   #-----------------------------------------------------------------------
@@ -73,10 +84,11 @@ def construct():
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
   custom_lvs           = Step( this_dir + '/custom-lvs-rules'                      )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
-  gen_testbench        = Step( this_dir + '/gen_testbench'                         )
-  gl_sim               = Step( this_dir + '/custom-vcs-sim'                        )
-  gl_power             = Step( this_dir + '/../common/synopsys-ptpx-gl'            )
-  xcelium_sim          = Step( this_dir + '/../common/cadence-xcelium-sim'         )
+  testbench            = Step( this_dir + '/../common/testbench'                   )
+  application          = Step( this_dir + '/../common/application'                 )
+  if synth_power:
+    post_synth_power     = Step( this_dir + '/../common/tile-post-synth-power'     )
+  post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'         )
 
   # Power aware setup
   if pwr_aware:
@@ -150,8 +162,6 @@ def construct():
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
 
-  xcelium_sim.extend_inputs( ["array_rtl.v", "CW_fp_mult.v", "CW_fp_add.v", "sram.v"] )
-
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )
   synth.set_param( 'order', order )
@@ -201,16 +211,16 @@ def construct():
   g.add_step( custom_lvs           )
   g.add_step( debugcalibre         )
 
-  g.add_step( gen_testbench        )
-  g.add_step( gl_sim               )
-  g.add_step( gl_power             )
-
-  g.add_step( xcelium_sim          )
+  g.add_step( application          )
+  g.add_step( testbench            )
+  if synth_power:
+    g.add_step( post_synth_power   )
+  g.add_step( post_pnr_power       )
 
   # Power aware step
   if pwr_aware:
-      g.add_step( power_domains            )
-      g.add_step( pwr_aware_gls            )
+      g.add_step( power_domains    )
+      g.add_step( pwr_aware_gls    )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -294,28 +304,24 @@ def construct():
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
+  g.connect_by_name( application, testbench       )
+  if synth_power:
+      g.connect_by_name( application, post_synth_power )
+      g.connect_by_name( gen_sram,    post_synth_power )
+      g.connect_by_name( synth,       post_synth_power )
+      g.connect_by_name( testbench,   post_synth_power )
+  g.connect_by_name( application, post_pnr_power )
+  g.connect_by_name( gen_sram,    post_pnr_power )
+  g.connect_by_name( signoff,     post_pnr_power )
+  g.connect_by_name( pt_signoff,  post_pnr_power )
+  g.connect_by_name( testbench,   post_pnr_power )
+
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
-
-  # Gl sim just needs tb, adk, and outputs from signoff...
-  g.connect_by_name( gen_testbench, gl_sim )
-  g.connect_by_name( adk,           gl_sim )
-  g.connect_by_name( signoff,       gl_sim )
-
-  # xcelium sim just needs tb, adk, and outputs from signoff...
-  g.connect_by_name( gen_testbench, xcelium_sim )
-  g.connect_by_name( adk,           xcelium_sim )
-  g.connect_by_name( signoff,       xcelium_sim )
-  g.connect_by_name( gen_sram,      xcelium_sim )
-
-  # Now hand off the rest of everything to ptpx-gl
-  g.connect_by_name( adk , gl_power )
-  g.connect_by_name( signoff , gl_power )
-  g.connect_by_name( xcelium_sim, gl_power )
 
   # Pwr aware steps:
   if pwr_aware:
@@ -344,8 +350,6 @@ def construct():
   synth.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
-
-  gl_power.update_params( {'strip_path': parameters['gl_strip_path']}, True )
 
   if pwr_aware:
       pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True )

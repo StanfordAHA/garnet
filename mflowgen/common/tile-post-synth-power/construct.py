@@ -57,6 +57,11 @@ def construct():
 
   synth_sim.extend_inputs( ['test_vectors.txt', 'test_outputs.txt', 'design.v'] )
 
+  design = os.environ-get('design_name')
+  if design == "Tile_MemCore":
+      synth_sim.extend_inputs( ['sram.v'] )
+      pt_power_synth.extend_inputs( ['sram_tt.db'] )
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
