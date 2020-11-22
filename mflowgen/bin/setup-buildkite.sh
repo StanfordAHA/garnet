@@ -438,12 +438,13 @@ else
     echo ""
     FIXED=
 
-    # Lowest impact solution is maybe to give it its own little directory
+    # Lowest impact solution is maybe to give tclsh its own little directory
     TBIN=~/bin-tclsh-fix
     export PATH=${TBIN}:${PATH}
     tclsh_version=`echo 'puts $tcl_version; exit 0' | tclsh`
     if (( $(echo "$tclsh_version >= 8.5" | bc -l) )); then
         echo "  - FIXED! Found good ~/bin/tclsh-fix/tclsh"
+        FIXED=true
     else
         echo "  - ${TBIN}/tclsh no good; looking for a new one"
         test -d $TBIN && /bin/rm -rf $TBIN; mkdir -p $TBIN
