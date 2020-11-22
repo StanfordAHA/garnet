@@ -437,13 +437,14 @@ else
     echo "I will try and fix it for you"
     echo ""
     FIXED=
-    export PATH=~/bin/tclsh-fix:${PATH}
+
+    # Lowest impact solution is maybe to give it its own little directory
+    TBIN=~/bin-tclsh-fix
+    export PATH=${TBIN}:${PATH}
     tclsh_version=`echo 'puts $tcl_version; exit 0' | tclsh`
     if (( $(echo "$tclsh_version >= 8.5" | bc -l) )); then
         echo "  - FIXED! Found good ~/bin/tclsh-fix/tclsh"
     else
-        # Lowest impact solution is maybe to give it its own little directory
-        TBIN=~/bin-tclsh-fix
         echo "  - ${TBIN}/tclsh no good; looking for a new one"
         test -d $TBIN && /bin/rm -rf $TBIN; mkdir -p $TBIN
         for d in $( echo $PATH | sed 's/:/ /g' ); do 
@@ -458,7 +459,7 @@ else
 
                     # So add it to ~/bin I guess
                     echo '  - GOOD! Adding to ~/bin'
-                    (cd $TBIN; ln -s $d/tclsh)
+                    (cd $TBIN; ln -s $d/tclsh; ls -l)
                     FIXED=true
                     break
                 fi
