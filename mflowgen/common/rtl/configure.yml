@@ -9,11 +9,12 @@ outputs:
 parameters:
   array_width: 4
   array_height: 2
+  glb_tile_mem_size: 256
   pipeline_config_interval: 8
   interconnect_only: False
   soc_only: False
   PWR_AWARE: True
-  use_container: True
+  use_container: False
   use_local_garnet: True
 
 postconditions:
