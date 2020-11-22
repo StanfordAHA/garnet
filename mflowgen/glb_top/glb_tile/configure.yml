@@ -17,6 +17,7 @@ outputs:
   - glb_tile_sram_pwr.v
   - glb_tile_sram_tt.lib
   - glb_tile_sram_ff.lib
+  - glb_tile_sram_tt.db
 
 postconditions:
   - assert File( 'outputs/glb_tile_tt.lib' ) # must exist
@@ -29,3 +30,4 @@ postconditions:
   - assert File( 'outputs/glb_tile_sram_pwr.v' ) # must exist
   - assert File( 'outputs/glb_tile_sram_tt.lib' ) # must exist
   - assert File( 'outputs/glb_tile_sram_ff.lib' ) # must exist
+  - assert File( 'outputs/glb_tile_sram_tt.db' ) # must exist
