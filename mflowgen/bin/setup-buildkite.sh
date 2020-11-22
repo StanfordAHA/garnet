@@ -437,20 +437,35 @@ else
     echo "I will try and fix it for you"
     echo ""
     FIXED=
-    for d in $( echo $PATH | sed 's/:/ /g' ); do 
-        if test -x $d/tclsh; then
-            tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
-            echo -n "  Found tclsh v$tclsh_version: $d/tclsh"
-            if (( $(echo "$tclsh_version < 8.5" | bc -l) )); then
-                echo "  - no good"
-            else
-                echo '  - GOOD!'
-                eval 'function tclsh { '$d/tclsh' $* ; }'
-                FIXED=true
-                break
+    export PATH=~/bin/tclsh-fix:${PATH}
+    tclsh_version=`echo 'puts $tcl_version; exit 0' | tclsh`
+    if (( $(echo "$tclsh_version >= 8.5" | bc -l) )); then
+        echo "  - FIXED! Found good ~/bin/tclsh-fix/tclsh"
+    else
+        # Lowest impact solution is maybe to give it its own little directory
+        TBIN=~/bin/tclsh-fix
+        echo "  - ${TBIN}/tclsh no good; looking for a new one"
+        test -d $TBIN && /bin/rm -rf $TBIN
+        mkdir -p $TBIN
+        for d in $( echo $PATH | sed 's/:/ /g' ); do 
+            if test -x $d/tclsh; then
+                tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
+                echo -n "  Found tclsh v$tclsh_version: $d/tclsh"
+                if (( $(echo "$tclsh_version < 8.5" | bc -l) )); then
+                    echo "  - no good"
+                else
+                    # Clever! But...functions don't survive into called scripts :(
+                    # eval 'function tclsh { '$d/tclsh' $* ; }'
+
+                    # So add it to ~/bin I guess
+                    echo '  - GOOD! Adding to ~/bin'
+                    (cd $TBIN; ln -s $d/tclsh)
+                    FIXED=true
+                    break
+                fi
             fi
-        fi
-    done
+        done
+    fi
     if [ ! $FIXED ]; then
         echo "**ERROR could not find tclsh with version >= 8.5!"
         return 13 || exit 13
