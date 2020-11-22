@@ -443,7 +443,8 @@ else
     export PATH=${TBIN}:${PATH}
     tclsh_version=`echo 'puts $tcl_version; exit 0' | tclsh`
     if (( $(echo "$tclsh_version >= 8.5" | bc -l) )); then
-        echo "  - FIXED! Found good ~/bin/tclsh-fix/tclsh"
+        echo "  - FIXED! Found good $TBIN/tclsh"
+        ls -l $TBIN/tclsh
         FIXED=true
     else
         echo "  - ${TBIN}/tclsh no good; looking for a new one"
