@@ -1,4 +1,4 @@
-name: post-synth-power
+name: post-pnr-power
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
@@ -7,10 +7,13 @@ name: post-synth-power
 inputs:
   - tiles_Tile_PE.list
   - cmd.tcl
-  - design.spef
-  - design.sdc
+  - design.spef.gz
+  - design.pt.sdc
   - design.sdf
-  - design.v
+  - design.vcs.v
+  - design.vcs.pg.v
+  - sram.v
+  - sram_tt.db
   - testbench.sv
   - tile_tbs
 

@@ -83,7 +83,7 @@ def convert_raw(signals, input_file, output_file):
     num_test_vectors = len(data) - 1
     return num_test_vectors, widths
 
-def create_testbench(inputs, outputs, input_widths, output_widths, num_test_vectors):
+def create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors):
     pwr_aware = os.environ.get("PWR_AWARE") == "True"
 
     tb = open("testbench.sv", "w")
@@ -109,7 +109,7 @@ def create_testbench(inputs, outputs, input_widths, output_widths, num_test_vect
             output_base += (16 - output_widths[o] % 16)
 
     tb.write(f'''
-module TilePETb;
+module testbench;
 
     localparam ADDR_WIDTH = $clog2(`NUM_TEST_VECTORS);
    
@@ -145,8 +145,8 @@ module TilePETb;
 ''')
 
 
-    tb.write('''
-    Tile_PE Tile_PE_inst (
+    tb.write(f'''
+    {design_name} dut (
 ''')
 
     for i in inputs+outputs:
@@ -199,7 +199,8 @@ endmodule''')
     tb.close()
 
 def main():
-    f = open('inputs/tiles_Tile_PE.list', 'r')
+    design = os.environ.get('design_name')
+    f = open(f'inputs/tiles_{design}.list', 'r')
     i = 0
     for line in f:
         fields = line.strip().split(',')
@@ -211,7 +212,7 @@ def main():
         num_test_vectors, input_widths = convert_raw(inputs, "raw_input.csv", f"outputs/tile_tbs/{tile}/test_vectors.txt")
         _, output_widths = convert_raw(outputs, "raw_output.csv", f"outputs/tile_tbs/{tile}/test_outputs.txt")
         if i == 0:
-            create_testbench(inputs, outputs, input_widths, output_widths, num_test_vectors)
+            create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors)
         i += 1
 
 if __name__ == '__main__':

@@ -2,7 +2,8 @@ import subprocess
 import os
 
 def main():
-    f = open('./inputs/tiles_Tile_PE.list', 'r')
+    design = os.environ.get('design_name')
+    f = open('./inputs/tiles_{design}.list', 'r')
 
     for line in f:
         fields = line.strip().split(',')

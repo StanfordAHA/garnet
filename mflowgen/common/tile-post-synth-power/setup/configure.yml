@@ -10,6 +10,8 @@ outputs:
   - design.sdc
   - design.sdf
   - design.v
+  - sram.v
+  - sram_tt.db
   - testbench.sv
   - test_vectors.txt
   - test_outputs.txt
@@ -19,12 +21,7 @@ outputs:
 #-------------------------------------------------------------------------
 
 commands:
-  - cp ../../inputs/cmd.tcl outputs/cmd.tcl
-  - cp ../../inputs/design.spef outputs/design.spef
-  - cp ../../inputs/design.sdc outputs/design.sdc
-  - cp ../../inputs/design.sdf outputs/design.sdf
-  - cp ../../inputs/design.v outputs/design.v
-  - cp ../../inputs/testbench.sv outputs/testbench.sv
+  - cp ../../inputs/* outputs
   - cp ../../inputs/tile_tbs/{tile_id}/test_vectors.txt outputs/test_vectors.txt
   - cp ../../inputs/tile_tbs/{tile_id}/test_outputs.txt outputs/test_outputs.txt
 
