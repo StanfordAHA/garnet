@@ -443,10 +443,9 @@ else
         echo "  - FIXED! Found good ~/bin/tclsh-fix/tclsh"
     else
         # Lowest impact solution is maybe to give it its own little directory
-        TBIN=~/bin/tclsh-fix
+        TBIN=~/bin-tclsh-fix
         echo "  - ${TBIN}/tclsh no good; looking for a new one"
-        test -d $TBIN && /bin/rm -rf $TBIN
-        mkdir -p $TBIN
+        test -d $TBIN && /bin/rm -rf $TBIN; mkdir -p $TBIN
         for d in $( echo $PATH | sed 's/:/ /g' ); do 
             if test -x $d/tclsh; then
                 tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
