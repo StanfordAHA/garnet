@@ -146,7 +146,7 @@ module testbench;
 
 
     tb.write(f'''
-    {design_name} dut (
+    {design} dut (
 ''')
 
     for i in inputs+outputs:
@@ -155,11 +155,14 @@ module testbench;
         tb.write(f'''        .VDD(VDD),
         .VSS(VSS),
 ''')
-    tb.write(f'''        .clk(clk),
-        .clk_out(clk_out),
-        .clk_pass_through(clk_pass_through),
+    if design == 'Tile_PE':
+        tb.write('''        .clk_pass_through(clk_pass_through),
         .clk_pass_through_out_bot(clk_pass_through_out_bot),
-        .clk_pass_through_out_right(clk_pass_through_out_right)
+        .clk_pass_through_out_right(clk_pass_through_out_right),
+''')
+
+    tb.write(f'''        .clk(clk),
+        .clk_out(clk_out)
     );
 
     always #(`CLK_PERIOD/2) clk =~clk;
@@ -191,7 +194,7 @@ module testbench;
     end
   
     initial begin
-        $sdf_annotate("inputs/design.sdf", TilePETb.Tile_PE_inst);
+        $sdf_annotate("inputs/design.sdf", testbench.dut);
     end
 
 endmodule''')

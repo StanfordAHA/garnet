@@ -22,7 +22,7 @@ outputs:
 #-------------------------------------------------------------------------
 
 commands:
-  - cp ../../inputs/* outputs
+  - cp ../../inputs/*.* outputs
   - cp ../../inputs/tile_tbs/{tile_id}/test_vectors.txt outputs/test_vectors.txt
   - cp ../../inputs/tile_tbs/{tile_id}/test_outputs.txt outputs/test_outputs.txt
 
