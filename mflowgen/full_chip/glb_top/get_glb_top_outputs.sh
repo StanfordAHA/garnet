@@ -17,6 +17,5 @@ cp -L *-lvs/outputs/design_merged.lvs.v outputs/glb_top.lvs.v
 cp -L *glb_tile/outputs/glb_tile_sram.spi outputs/glb_top.sram.spi
 cp -L *glb_tile/outputs/glb_tile_sram.v outputs/glb_top.sram.v
 cp -L *glb_tile/outputs/glb_tile_sram_pwr.v outputs/glb_top.sram.pwr.v
-cp -L *glb_tile/outputs/glb_tile_sram_tt.lib outputs/glb_top.sram_tt.lib
-cp -L *glb_tile/outputs/glb_tile_sram_ff.lib outputs/glb_top.sram_ff.lib
+cp -L *glb_tile/outputs/glb_tile_sram_tt.db outputs/glb_top.sram_tt.db
 
