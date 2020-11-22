@@ -265,10 +265,10 @@ program glb_test
         r_cnt = 0;
         r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h155);
         r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LATENCY"], 'h4);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_START_ADDR"], (1 << 18)-64);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_START_ADDR"], (1 << (BANK_ADDR_WIDTH+$clog2(BANKS_PER_TILE)))-64);
         r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
         r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_START_ADDR"], (1 << 18)-64);
+        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_START_ADDR"], (1 << (BANK_ADDR_WIDTH+$clog2(BANKS_PER_TILE)))-64);
         r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (128 << MAX_STRIDE_WIDTH) + 1);
         r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
 

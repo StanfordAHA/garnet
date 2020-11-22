@@ -14,7 +14,7 @@ else
     rm -f $GARNET_HOME/garnet.v
 
     # Build up the flags we want to pass to python garnet.v
-    flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --no-sram-stub"
+    flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --no-sram-stub --glb_tile_mem_size $glb_tile_mem_size"
 
     if [ $PWR_AWARE == False ]; then
      flags+=" --no-pd"
@@ -61,12 +61,12 @@ else
          else
            cp garnet.v design.v
          fi
-         make -C global_buffer rtl CGRA_WIDTH=${array_width} NUM_GLB_TILES=$((array_width / 2))
+         make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
          cat global_buffer/rtl/global_buffer_param.svh >> design.v
          cat global_buffer/rtl/global_buffer_pkg.svh >> design.v
          cat global_buffer/systemRDL/output/*.sv >> design.v
-         cat global_buffer/rtl/*.sv >> design.v
-         make -C global_controller rtl
+         cat global_buffer/rtl/gl*.sv >> design.v
+         make -C global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
          cat global_controller/systemRDL/output/*.sv >> design.v"
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
@@ -94,14 +94,14 @@ else
       fi
 
       # make to generate systemRDL RTL files global buffer
-      make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${array_width}
+      make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
       # Copy global buffer systemverilog from the global buffer folder
       cat global_buffer/rtl/global_buffer_param.svh >> $current_dir/outputs/design.v
       cat global_buffer/rtl/global_buffer_pkg.svh >> $current_dir/outputs/design.v
       cat global_buffer/systemRDL/output/*.sv >> $current_dir/outputs/design.v
-      cat global_buffer/rtl/*.sv >> $current_dir/outputs/design.v
+      cat global_buffer/rtl/gl*.sv >> $current_dir/outputs/design.v
       # make to generate systemRDL RTL files for global controller
-      make -C $GARNET_HOME/global_controller rtl CGRA_WIDTH=${array_width}
+      make -C $GARNET_HOME/global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
       cat global_controller/systemRDL/output/*.sv >> $current_dir/outputs/design.v
     fi
 

@@ -5,8 +5,9 @@ TB_DIR := ./sim
 
 TOP_MODULE := global_buffer
 
-CGRA_WIDTH := 32
-NUM_GLB_TILES := $(shell expr $(CGRA_WIDTH) / 2 )
+CGRA_WIDTH ?= 32
+NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
+GLB_TILE_MEM_SIZE ?= 256
 
 GLB_TILE_NETLIST := /sim/kongty/pnr_annotate/glb_tile.vcs.v
 GLB_TOP_NETLIST := /sim/kongty/pnr_annotate/global_buffer.vcs.v
@@ -59,8 +60,7 @@ VCS = vcs \
 # param target generates global_buffer_param.svh
 .PHONY: param
 param: global_buffer_main.py global_buffer_magma_helper.py
-	cd .. && python -m global_buffer.global_buffer_main -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES)
-
+	cd .. && python -m global_buffer.global_buffer_main -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE)
 
 # rtl target always runs param target
 rdl_pre = systemRDL/rdl_models/glb.rdl.pre
