@@ -6,4 +6,4 @@ exec ln -sf ../../results_syn/syn_out.SRAM.sdc outputs/sdc/SRAM.sdc
 # set "strict" sdc to be default sdc, this sdc isn't used in downstream pnr because
 # it uses the different modes/scenario sdcs anyway. the "strict" sdc is used
 # for synth power estimation
-exec ln -sf syn_out.UNIFIED_BUFFER.sdc results_syn/syn_out._default_constraint_mode_.sdc
+exec ln -sf strict.sdc results_syn/syn_out._default_constraint_mode_.sdc

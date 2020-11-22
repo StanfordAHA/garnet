@@ -3,7 +3,7 @@ name: testbench
 inputs:
   - run.vcd
   - tiles_Tile_MemCore.list
-  - tiles_PE.list
+  - tiles_Tile_PE.list
 
 outputs:
   - cmd.tcl
