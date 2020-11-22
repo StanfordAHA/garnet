@@ -14,8 +14,6 @@ steps:
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
 - wait: ~
 
-
-# DO NOT bypass rtl build or you won't get the new dragonphy
 - label: 'rtl'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
@@ -23,50 +21,27 @@ steps:
      make rtl |& tee make-rtl.log'
 - wait: ~
 
-
-# Bypass tile_array
-- label: 'tile_array*'
+- label: 'tile_array'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
-     echo "--- COPY TILE_ARRAY"; set -o pipefail;
-     cp -r /sim/buildkite-agent/gold/full_chip/17-tile_array/ .;
-
-     echo "+++ make -n tile_array";
-     make -n tile_array;
-
-     echo "--- make tile_array";
+     echo "--- MAKE TILE_ARRAY"; set -o pipefail;
      make tile_array |& tee make-tile_array.log'
 - wait: ~
 
-# Bypass
-- label: 'glb_top*'
+- label: 'glb_top'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 84G;
-     echo "--- COPY GLB_TOP"; set -o pipefail;
-     cp -r /sim/buildkite-agent/gold/full_chip/*-glb_top/ .;
-
-     echo "+++ make -n glb_top";
-     make -n glb_top;
-
-     echo "--- make glb_top";
+     echo "--- MAKE GLB_TOP"; set -o pipefail;
      make glb_top |& tee make-glb_top.log'
 - wait: ~
 
-# Bypass
-- label: 'GLC*'
+- label: 'GLC'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 74G;
      echo "--- MAKE GLOBAL_CONTROLLER"; set -o pipefail;
-     cp -r /sim/buildkite-agent/gold/full_chip/*-global_controller/ .;
-
-     echo "+++ make -n global_controller";
-     make -n global_controller;
-
-     echo "--- make global_controller";
      make global_controller |& tee make-GLC.log'
 - wait: ~
 
-# 5 sec
 - label: 'dragon'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 74G;
@@ -74,7 +49,6 @@ steps:
      make dragonphy |& tee make-dragon.log'
 - wait: ~
 
-# 5 sec
 - label: 'soc-rtl'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 73G;
@@ -82,47 +56,46 @@ steps:
      make soc-rtl |& tee make-soc-rtl.log'
 - wait: ~
 
-# Note: "echo exit 13" prevents hang at genus/innovus prompt
 - label: 'syn'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 72G;
      echo "--- MAKE SYNOPSYS-DC-SYNTHESIS"; set -o pipefail;
-     echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log'
-- wait: ~
-
-- label: 'place'
-  commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
-     echo "--- MAKE CADENCE-INNOVUS-PLACE"; set -o pipefail;
-     echo exit 13 | make cadence-innovus-place |& tee make-place.log'
+     make cadence-genus-synthesis |& tee make-syn.log'
 - wait: ~
 
 - label: 'cts'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
      echo "--- MAKE CADENCE-INNOVUS-CTS"; set -o pipefail;
-     echo exit 13 | make cadence-innovus-cts |& tee make-cts.log'
+     make cadence-innovus-cts |& tee make-cts.log'
+- wait: ~
+
+- label: 'place'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
+     echo "--- MAKE CADENCE-INNOVUS-PLACE"; set -o pipefail;
+     make cadence-innovus-place |& tee make-place.log'
 - wait: ~
 
 - label: 'route'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
      echo "--- MAKE CADENCE-INNOVUS-ROUTE"; set -o pipefail;
-     echo exit 13 | make cadence-innovus-route |& tee make-route.log'
+     make cadence-innovus-route |& tee make-route.log'
 - wait: ~
 
 - label: 'postroute'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
      echo "--- MAKE CADENCE-INNOVUS-POSTROUTE"; set -o pipefail;
-     echo exit 13 | make cadence-innovus-postroute |& tee make-postroute.log'
+     make cadence-innovus-postroute |& tee make-postroute.log'
 - wait: ~
 
 - label: 'hold'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
-     echo exit 13 | make cadence-innovus-postroute_hold |& tee make-hold.log'
+     make cadence-innovus-postroute_hold |& tee make-hold.log'
 - wait: ~
 
 - label: 'lvs'
