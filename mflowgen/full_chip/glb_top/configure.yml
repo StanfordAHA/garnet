@@ -16,8 +16,7 @@ outputs:
   - glb_top.sram.spi
   - glb_top.sram.v
   - glb_top.sram.pwr.v
-  - glb_top.sram_tt.lib
-  - glb_top.sram_ff.lib
+  - glb_top.sram_tt.db
 
 postconditions:
   - assert File( 'outputs/glb_top_tt.lib' ) # must exist
@@ -29,6 +28,5 @@ postconditions:
   - assert File( 'outputs/glb_top.sram.spi' ) # must exist
   - assert File( 'outputs/glb_top.sram.v' ) # must exist
   - assert File( 'outputs/glb_top.sram.pwr.v' ) # must exist
-  - assert File( 'outputs/glb_top.sram_tt.lib' ) # must exist
-  - assert File( 'outputs/glb_top.sram_ff.lib' ) # must exist
+  - assert File( 'outputs/glb_top.sram_tt.db' ) # must exist
 
