@@ -6,6 +6,7 @@ name: post-pnr-power
 
 inputs:
   - tiles_Tile_PE.list
+  - tiles_Tile_MemCore.list
   - cmd.tcl
   - design.spef.gz
   - design.pt.sdc

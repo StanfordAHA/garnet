@@ -54,7 +54,6 @@ def construct():
   setup          = Step( this_dir + '/setup'                               )
   gl_sim         = Step( this_dir + '/../../../common/cadence-xcelium-sim' )
   pt_power_gl    = Step( this_dir + '/../../../common/synopsys-ptpx-gl'    )
-  testbench      = Step( this_dir + '/../../testbench'                     )
 
   gl_sim.extend_inputs( ['test_vectors.txt', 'test_outputs.txt', 'design.v'] )
 
