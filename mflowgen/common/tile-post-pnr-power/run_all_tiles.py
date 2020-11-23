@@ -3,7 +3,7 @@ import os
 
 def main():
     design = os.environ.get('design_name')
-    f = open('./inputs/tiles_{design}.list', 'r')
+    f = open(f'./inputs/tiles_{design}.list', 'r')
 
     for line in f:
         fields = line.strip().split(',')
