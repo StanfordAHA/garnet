@@ -13,6 +13,7 @@ outputs:
   - design.vcs.pg.v
   - testbench.sv
   - sram.v
+  - sram-pwr.v
   - sram_tt.db
   - test_vectors.txt
   - test_outputs.txt

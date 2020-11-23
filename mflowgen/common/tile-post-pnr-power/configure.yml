@@ -14,6 +14,7 @@ inputs:
   - design.vcs.v
   - design.vcs.pg.v
   - sram.v
+  - sram-pwr.v
   - sram_tt.db
   - testbench.sv
   - tile_tbs
