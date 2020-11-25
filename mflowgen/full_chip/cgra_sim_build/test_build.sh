@@ -45,12 +45,11 @@ do
       "source /aha/bin/activate;
        aha halide ${app};
        aha map ${app} ${map_flags};
-       mkdir -pv /aha/meta/${app}
-       cp /aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/design.meta /aha/meta/${app}/design.meta;
-       cp /aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/design.place /aha/meta/${app}/design.place;
-       cp /aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/*.bs /aha/meta/${app}/;
-       cp /aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/*.raw /aha/meta/${app}/;"
-    mkdir -pv ../outputs/meta/${app}
+       mkdir -pv /aha/meta/${app}/bin
+       cp /aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/design.meta /aha/meta/${app}/bin/design.meta;
+       cp /aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/design.place /aha/meta/${app}/bin/design.place;
+       cp /aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/*.bs /aha/meta/${app}/bin/;
+       cp /aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/*.raw /aha/meta/${app}/bin/;"
 done
 
 docker cp $container_name:/aha/meta ../outputs
