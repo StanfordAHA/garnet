@@ -29,9 +29,11 @@ RTL_FILES="$RTL_FILES -v ${GARNET_HOME}/global_buffer/rtl/TS1*"
 COMPILE_ARGS="-elaborate"
 
 (
-    set -x;
+    set -xe;
+    make -C ${GARNET_HOME}/tests/test_app clean;
     make -C ${GARNET_HOME}/tests/test_app libcgra.so;
     make -C ${GARNET_HOME}/tests/test_app compile ${PARAMS} RTL_FILES="${RTL_FILES}" COMPILE_ARGS=${COMPILE_ARGS};
     cp -r ${GARNET_HOME}/tests/test_app/xcelium.d outputs/xcelium.d;
     cp -r ${GARNET_HOME}/tests/test_app/xrun.log outputs/xrun.log;
+    cp -r ${GARNET_HOME}/tests/test_app/libcgra.so outputs/libcgra.so;
 )

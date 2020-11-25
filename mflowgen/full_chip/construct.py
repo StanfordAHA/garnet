@@ -83,7 +83,7 @@ def construct():
     'power_drc_rule_deck'   : power_drc_rule_deck,
     'nthreads'              : 16,
     # Testbench
-    'cgra_apps' : ["tests/conv_3_3", "apps/cascade"]
+    'cgra_apps' : ["tests/conv_1_2", "tests/conv_2_1"]
   }
 
   #-----------------------------------------------------------------------
@@ -123,24 +123,13 @@ def construct():
   # CGRA simulation
 
   cgra_rtl_sim_compile  = Step( this_dir + '/cgra_rtl_sim_compile' )
+  cgra_rtl_sim_run      = Step( this_dir + '/cgra_rtl_sim_run'     )
+  cgra_sim_build        = Step( this_dir + '/cgra_sim_build'       )
   # cgra_gl_sim_compile   = Step( this_dir + '/cgra_gl_sim_compile'  )
-  # cgra_sim_build        = Step( this_dir + '/cgra_sim_build'       )
-  # cgra_rtl_sim_run      = Step( this_dir + '/cgrl_rtl_sim_run'     )
   # cgra_gl_sim_run       = Step( this_dir + '/cgra_gl_sim_run'      )
   # cgra_gl_ptpx          = Step( this_dir + '/cgra_gl_ptpx'         )
   # cgra_rtl_sim_verdict  = Step( this_dir + '/cgra_rtl_sim_verdict' )
   # cgra_gl_sim_verdict   = Step( this_dir + '/cgra_gl_sim_verdict'  )
-
-  cgra_sim_build_nodes   = {}
-  cgra_rtl_sim_run_nodes = {}
-  cgra_gl_sim_run_nodes  = {}
-  cgra_gl_ptpx_nodes     = {}
-
-  # for app in parameters['cgra_apps']:
-  #   app_name = app.split("/")[1]
-  #   cgra_sim_build_nodes[app] = cgra_sim_build.clone()
-  #   cgra_sim_build_nodes[app].set_name(f"cgra_sim_build_{app_name}")
-  #   cgra_sim_build_nodes[app].set_param("app", app)
 
   # Default steps
 
@@ -295,6 +284,8 @@ def construct():
 
   # App test nodes
   g.add_step( cgra_rtl_sim_compile )
+  g.add_step( cgra_sim_build       )
+  g.add_step( cgra_rtl_sim_run     )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -326,6 +317,8 @@ def construct():
 
   # Connect RTL verification nodes
   g.connect_by_name( rtl, cgra_rtl_sim_compile )
+  g.connect_by_name( cgra_sim_build, cgra_rtl_sim_run )
+  g.connect_by_name( cgra_rtl_sim_compile, cgra_rtl_sim_run )
 
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
@@ -482,6 +475,8 @@ def construct():
   cgra_rtl_sim_compile.update_params({'array_height': parameters['array_height']}, True)
   cgra_rtl_sim_compile.update_params({'clock_period': parameters['clock_period']}, True)
   cgra_rtl_sim_compile.update_params({'glb_tile_mem_size': parameters['glb_tile_mem_size']}, True)
+
+  cgra_rtl_sim_run.update_params({'cgra_apps': parameters['cgra_apps']}, True)
 
   # Power node order manipulation
   order = power.get_param('order')
