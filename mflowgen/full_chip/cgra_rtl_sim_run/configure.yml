@@ -6,6 +6,7 @@ commands:
 inputs:
   - xcelium.d
   - libcgra.so
+  - meta
 
 parameters:
   waveform: False

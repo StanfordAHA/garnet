@@ -17,6 +17,6 @@ for app in $(echo $cgra_apps | sed "s/,/ /g")
 do
     set -xe;
     # TODO: add application directory to mflowgen
-    xrun -R  -sv_lib inputs/libcgra.so +APP0=/sim/kongty/aha/Halide-to-Hardware/apps/hardware_benchmarks/${app};
+    xrun -R  -sv_lib inputs/libcgra.so +APP0=inputs/meta/${app};
     cp xrun.log outputs/xrun.${app}.log;
 done
