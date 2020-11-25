@@ -9,6 +9,7 @@ inputs:
 outputs:
   - xcelium.d
   - xrun.log
+  - libcgra.so
 
 parameters:
   array_width: 12
@@ -22,3 +23,4 @@ parameters:
 postconditions:
   - assert File( 'outputs/xcelium.d' )
   - assert File( 'outputs/xrun.log'  )
+  - assert File( 'outputs/libcgra.so'  )
