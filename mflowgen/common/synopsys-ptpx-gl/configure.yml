@@ -41,3 +41,4 @@ parameters:
   strip_path: tb/dut
   PWR_AWARE: True
   batch: False
+  chkpt: False # Turn this on to save periodically during ptpx flow
