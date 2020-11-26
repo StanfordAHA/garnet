@@ -92,8 +92,7 @@ fi
 # Reporting
 cp mflowgen-run.log logs/gls.log
 # Bring out trace if waveform enabled...
-#if [ "${waveform}" = true ]; then
-#  cp verilog.vcd outputs/run.vcd
-#fi
+if [ "${waves}" = true ]; then
+  cp -r waves.shm/ outputs/waves.shm
+fi
 
-#ARGS="$ARGS -sdf_cmd_file sdf_cmds.cmd"
