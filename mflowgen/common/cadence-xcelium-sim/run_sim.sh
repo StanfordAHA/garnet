@@ -47,7 +47,6 @@ if [ $design_name == "Tile_MemCore" ]; then
    ARGS="$ARGS +define+TSMC_CM_NO_WARNING +define+TSMC_NO_TESTPINS_DEFAULT_VALUE_CHECK"
 fi
 
-
 # Grab all design/testbench files
 for f in inputs/*.v; do
   [ -e "$f" ] || continue
