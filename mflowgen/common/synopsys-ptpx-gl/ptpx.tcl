@@ -56,8 +56,9 @@ set_app_var power_analysis_mode   averaged
 set_app_var report_default_significant_digits 3
 
 ###
-save_session chk_env
-
+if { $::env(chkpt) == "True" } {
+  save_session chk_env
+} 
 #-------------------------------------------------------------------------
 # Read design
 #-------------------------------------------------------------------------
@@ -82,7 +83,9 @@ current_design $ptpx_design_name
 link_design
 
 ###
-save_session chk_post_link
+if { $::env(chkpt) == "True" } {
+  save_session chk_post_link
+}
 
 # Read in switching activity
 
@@ -92,7 +95,9 @@ report_activity_file_check $ptpx_saif -strip_path $ptpx_strip_path \
 read_saif $ptpx_saif -strip_path $ptpx_strip_path -quiet
 
 ###
-save_session chk_post_saif
+if { $::env(chkpt) == "True" } {
+  save_session chk_post_saif
+}
 
 # Read in the SDC and parasitics
 
@@ -106,6 +111,15 @@ if { $ptpx_design_name == "Interconnect" } {
 check_constraints -verbose \
   > reports/${ptpx_design_name}${batch_path_str}.checkconstraints.rpt
 
+if { $::env(chkpt) == "True" } {
+  save_session chk_post_constraints
+}
+
+if { $ptpx_design_name == "Interconnect" } {
+  read_parasitics -format spef ./inputs/Tile_PE.spef.gz -path [all_instances -hierarchy Tile_PE]
+  read_parasitics -format spef ./inputs/Tile_MemCore.spef.gz -path [all_instances -hierarchy Tile_MemCore]
+}
+
 read_parasitics -format spef $ptpx_spef
 
 report_annotated_parasitics -check \
@@ -116,7 +130,9 @@ report_annotated_parasitics -check \
 #-------------------------------------------------------------------------
 
 ###
-save_session chk_pre_timing
+if { $::env(chkpt) == "True" } {
+  save_session chk_pre_timing
+}
 
 update_timing -full
 

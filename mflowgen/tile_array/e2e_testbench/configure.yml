@@ -22,6 +22,7 @@ parameters:
   use_local_garnet: True
   app_to_run: "tests/conv_3_3"
   waves: False
+  clock_period: 1.1
 
 postconditions:
   - assert File( 'outputs/testbench.sv' )        # must exist
