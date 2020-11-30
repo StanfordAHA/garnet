@@ -25,14 +25,11 @@ stop -name flush_toggle -object Interconnect_tb.glb2io_1_X00_Y00
 run
 run
 stop -delete flush_toggle
-# Print this time to config_duration.txt
-set cfg_time [time ns]
-#puts "$cfg_time" > config_duration.txt
 
 ##############
 # Saif front #
 ##############
-dumpsaif -scope Interconnect_tb -hierarchy -internal -output outputs/run.saif -overwrite
+dumpsaif -ewg -scope Interconnect_tb -hierarchy -internal -output outputs/run.saif -overwrite
 
 ###########
 # Runtime #
@@ -46,8 +43,4 @@ run
 ############
 dumpsaif -end
 
-# Print end time to app_duration.txt
-set app_time [time ns]
-#puts "$app_time" > app_duration.txt
-#
 quit
