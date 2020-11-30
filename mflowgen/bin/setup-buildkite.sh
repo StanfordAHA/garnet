@@ -199,6 +199,7 @@ fi
 if expr $build_dir : /build > /dev/null; then
   if ! test -d /build; then
       echo "**ERROR: Cannot find dir '/build'; may need to restart buildkite agent(s)"
+      return 13 || exit 13
   fi
 fi
 
