@@ -21,7 +21,12 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'stdview'
+  adk_view = 'multivt'
+
+  # [steveri 11/2020] adk_view was: stdview. Now: multivt (above).
+  # Really only need 'multivt' for lvs (dragonphy uses lvt/ulvt)
+  # but I'm not sure the right way to do that
+  # so oh well everybody gets multivt...
 
   parameters = {
     'construct_path'    : __file__,
