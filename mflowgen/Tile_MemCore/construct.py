@@ -94,6 +94,15 @@ def construct():
   postroute      = Step( 'cadence-innovus-postroute',      default=True )
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
+  if (os.getenv('USER') == "buildkite-agent"):
+
+      # For some reason buildkite-agent gets errors when synth step reads
+      # design.pt.sdc output from signoff. But I don't think buildkite-agent
+      # needs that anyway, and will skip reading it if it doesn't exist
+      # (see 'if {[ file exists $genus_sdc ]}' clause in read_sdc.tcl). So
+      # we remove it with an 'unlink' in the list of configure.yml commands...
+      signoff.extend_commands(['unlink design.pt.sdc'])
+
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
   genlibdb       = Step( 'cadence-genus-genlib',           default=True )
   if which("calibre") is not None:
