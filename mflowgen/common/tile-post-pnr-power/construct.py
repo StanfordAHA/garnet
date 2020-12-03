@@ -49,11 +49,13 @@ def construct():
   g.set_adk( adk_name )
   adk = g.get_adk_step()
 
+  garnet_home = os.environ.get('GARNET_HOME')
+
   # Custom steps
 
-  setup          = Step( this_dir + '/setup'                               )
-  gl_sim         = Step( this_dir + '/../../../common/cadence-xcelium-sim' )
-  pt_power_gl    = Step( this_dir + '/../../../common/synopsys-ptpx-gl'    )
+  setup          = Step( garnet_home + '/mflowgen/common/tile-post-pnr-power/setup' )
+  gl_sim         = Step( garnet_home + '/mflowgen/common/cadence-xcelium-sim'       )
+  pt_power_gl    = Step( garnet_home + '/mflowgen/common/synopsys-ptpx-gl'          )
 
   gl_sim.extend_inputs( ['test_vectors.txt', 'test_outputs.txt', 'design.v'] )
 
