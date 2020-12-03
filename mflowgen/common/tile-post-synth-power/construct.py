@@ -51,9 +51,11 @@ def construct():
 
   # Custom steps
 
-  setup          = Step( this_dir + '/setup'                               )
-  synth_sim      = Step( this_dir + '/../../../common/cadence-xcelium-sim' )
-  pt_power_synth = Step( this_dir + '/../../../common/synopsys-ptpx-synth' )
+  garnet_home = os.environ.get('GARNET_HOME')
+
+  setup          = Step( garnet_home + '/mflowgen/tile-post-synth-power/setup' )
+  synth_sim      = Step( garnet_home + '/mflowgen/common/cadence-xcelium-sim'  )
+  pt_power_synth = Step( garnet_home + '/mflowgen/common/synopsys-ptpx-synth'  )
 
   synth_sim.extend_inputs( ['test_vectors.txt', 'test_outputs.txt', 'design.v'] )
 
