@@ -3,80 +3,98 @@ agents: { jobsize: "hours" }
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  GOLD: /build/glb_tile.${BUILDKITE_BUILD_NUMBER}
 
 steps:
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
 # 
-- label: glb_tile
+- label: 'setup'
   commands:
-  - $TEST --need_space 30G glb_tile --debug
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/glb_tile'
 
+- wait: ~
 
+- label: 'lvs'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 30G;
+     echo "--- MAKE MENTOR-CALIBRE-LVS"; set -o pipefail;
+     make mentor-calibre-lvs |& tee make-lvs.log'
 
-# - label: 'MemCore synth 17m'
-#   commands:
-#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
-# - wait: { continue_on_failure: true } # One step at a time + continue on failure
 # 
-# - label: 'PE synth 23m'
-#   commands:
-#   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-# - wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-
-
-# Temporarily disabled
-# ##############################################################################
-# # TILE_ARRAY RUN
+# 
+# 
+# 
+# # - label: glb_tile
+# #   commands:
+# #   - $TEST --need_space 30G glb_tile --debug
+# 
+# 
+# 
+# # - label: 'MemCore synth 17m'
+# #   commands:
+# #   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
+# # - wait: { continue_on_failure: true } # One step at a time + continue on failure
 # # 
-# # tile-array init step, fastest version, uses cached synthesis results, takes 5 min
-# # Also: uses about 3G
-# # What's new:
-# # 1) now testing --build_dir option, building in /sim/tmp instead of .
-# # 2) also testing step aliases e.g. "syn" for "synthesis" (synopsys OR cadence)
-# - label: 'array init 5m'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - build_dir=/sim/tmp/deleteme.buildkite-$$BUILDKITE_BUILD_NUMBER.array-init
-#   - 'mflowgen/test/test_module.sh full_chip tile_array --need_space 30G
-#        --debug
-#        --use_cached constraints,MemCore,PE,rtl,tsmc16,synthesis
-#        --build_dir $$build_dir
-#        --steps init'
-#   - echo /bin/rm -rf $$build_dir
-#   - /bin/rm -rf $$build_dir
+# # - label: 'PE synth 23m'
+# #   commands:
+# #   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
+# # - wait: { continue_on_failure: true } # One step at a time + continue on failure
 # 
-# - wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-
-
-
-
-
-
-
-########################################################################
-# To build a cache:
-# --build_dir /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-# --build_dir /sim/buildkite-agent/cache.$$BUILDKITE_BUILD_NUMBER.deleteme
-
-########################################################################
-# Left this in (below) as option/example of longer tile array run
-########################################################################
-# tile-array init step, middle version includes synthesis step, takes 22 minutes
-# - label: 'array syn+init 22m'
-#   agents: { jobsize: "hours" }
-#   commands:
-#   - 'mflowgen/test/test_module.sh full_chip tile_array
-#        --debug
-#        --use_cached PE,MemCore,rtl
-#        --steps syn,init'
-# - wait: { continue_on_failure: true } # One step at a time + continue on failure
 # 
-
-########################################################################
-# FULL CHIP RUNS - see pipeline_fullchip.yml
-
-# For more see pipeline_notes.yml
+# 
+# # Temporarily disabled
+# # ##############################################################################
+# # # TILE_ARRAY RUN
+# # # 
+# # # tile-array init step, fastest version, uses cached synthesis results, takes 5 min
+# # # Also: uses about 3G
+# # # What's new:
+# # # 1) now testing --build_dir option, building in /sim/tmp instead of .
+# # # 2) also testing step aliases e.g. "syn" for "synthesis" (synopsys OR cadence)
+# # - label: 'array init 5m'
+# #   agents: { jobsize: "hours" }
+# #   commands:
+# #   - build_dir=/sim/tmp/deleteme.buildkite-$$BUILDKITE_BUILD_NUMBER.array-init
+# #   - 'mflowgen/test/test_module.sh full_chip tile_array --need_space 30G
+# #        --debug
+# #        --use_cached constraints,MemCore,PE,rtl,tsmc16,synthesis
+# #        --build_dir $$build_dir
+# #        --steps init'
+# #   - echo /bin/rm -rf $$build_dir
+# #   - /bin/rm -rf $$build_dir
+# # 
+# # - wait: { continue_on_failure: true } # One step at a time + continue on failure
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# ########################################################################
+# # To build a cache:
+# # --build_dir /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
+# # --build_dir /sim/buildkite-agent/cache.$$BUILDKITE_BUILD_NUMBER.deleteme
+# 
+# ########################################################################
+# # Left this in (below) as option/example of longer tile array run
+# ########################################################################
+# # tile-array init step, middle version includes synthesis step, takes 22 minutes
+# # - label: 'array syn+init 22m'
+# #   agents: { jobsize: "hours" }
+# #   commands:
+# #   - 'mflowgen/test/test_module.sh full_chip tile_array
+# #        --debug
+# #        --use_cached PE,MemCore,rtl
+# #        --steps syn,init'
+# # - wait: { continue_on_failure: true } # One step at a time + continue on failure
+# # 
+# 
+# ########################################################################
+# # FULL CHIP RUNS - see pipeline_fullchip.yml
+# 
+# # For more see pipeline_notes.yml
