@@ -4,6 +4,7 @@ agents: { jobsize: "hours" }
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
   GOLD: /build/glb_tile.${BUILDKITE_BUILD_NUMBER}
+  NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
 
 steps:
 
@@ -12,11 +13,10 @@ steps:
 # 
 - label: 'setup'
   commands:
+  - pwd; git branch; 
+  - git checkout $$NOV11
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
      mflowgen run --design $$GARNET_HOME/mflowgen/glb_tile'
-  - pwd; git branch; 
-  # nov 11
-  - git checkout ee214ef77b827f969e4b5f056f5d866cf391be7a
 
 
 
