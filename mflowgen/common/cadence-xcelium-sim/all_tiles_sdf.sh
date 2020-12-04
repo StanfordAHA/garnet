@@ -1,7 +1,6 @@
 #! /bin/bash
 
 if [ $use_sdf == "True" ]; then
-if [ $PWR_AWARE == "True" ]; then
 
 if [ ! -d "sdf_logs" ]; then
   mkdir sdf_logs
@@ -19,5 +18,4 @@ cat $cat_file | grep 'Tile_MemCore Tile' | sed 's/\s\+/,/g' | cut -d, -f3 > sdf_
 # Run script to produce the cadence sdf command file for annotating the separate subinstances before the top
 python create_sdf_file.py
 
-fi
 fi
