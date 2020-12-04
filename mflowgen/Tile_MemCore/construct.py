@@ -111,20 +111,20 @@ def construct():
       # so long as we get our design.lib output
       #
       # Before:
-      #     postconditions:
+      #     preconditions:
       #       - assert File( 'inputs/design.vcs.v' )     # must exist
       #       - assert File( 'inputs/design.pt.sdc' )    # must exist
       #       ...
       # After:
-      #     postconditions:
+      #     preconditions:
       #       - assert File( 'inputs/design.vcs.v' )     # must exist
       #       ...
 
       # Hey let's write something clever and obscure and terse but unreadable
       # Copied from TaeYoung(?) glb_top construct.py:
-      xlist = genlibdb.get_postconditions()
+      xlist = genlibdb.get_preconditions()
       xlist = [ _ for _ in xlist if "design.pt.sdc" not in _ ]
-      xlist = genlibdb.set_postconditions( xlist )
+      xlist = genlibdb.set_preconditions( xlist )
 
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
