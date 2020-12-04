@@ -194,7 +194,7 @@ module testbench;
     end
   
     initial begin
-        $sdf_annotate("inputs/design.sdf", testbench.dut);
+        $sdf_annotate("inputs/design.sdf", testbench.dut,,"testbench_sdf.log","MAXIMUM");
     end
 
 endmodule''')
