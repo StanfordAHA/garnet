@@ -172,5 +172,5 @@ set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter n
 set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
 
 # False paths from config input ports to SB registers
-set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg[*]/*
+set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg*/*
 set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]

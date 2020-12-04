@@ -8,10 +8,11 @@ inputs:
 
 outputs:
   - sram.v
-  - sram_pwr.v
+  - sram-pwr.v
   - sram.lef
   - sram_tt.lib
   - sram_ff.lib
+  - sram_tt.db  # Need this back for power on ptpx
   - sram.gds
   - sram.spi
 
