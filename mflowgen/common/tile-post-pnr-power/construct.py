@@ -49,9 +49,9 @@ def construct():
   g.set_adk( adk_name )
   adk = g.get_adk_step()
 
-  garnet_home = os.environ.get('GARNET_HOME')
-
   # Custom steps
+
+  garnet_home = os.environ.get('GARNET_HOME')
 
   setup          = Step( garnet_home + '/mflowgen/common/tile-post-pnr-power/setup' )
   gl_sim         = Step( garnet_home + '/mflowgen/common/cadence-xcelium-sim'       )
