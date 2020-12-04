@@ -23,8 +23,8 @@ def generate_raw(tile):
         "-timeunits ps",
         "-radix hex",
         "-64bit",
-        f"-period {int(clock_period*1000)}ps",
         "-notime",
+        "-expression \"Interconnect_tb.clk == 1'b1\"",
     ]
     flag_string = ' '.join(flags)
 
