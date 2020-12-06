@@ -4,7 +4,7 @@ create_power_domain TOP -include_scope
 #create_power_domain TOP
 # AON Domain - Modules that stay ON when tile is OFF  
 # PS configuration logic and tie cells for hi/lo outputs that drive the tile_id
-create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_18 coreir_eq_16_inst0 and_inst1 FEATURE_AND_18 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
+create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_16 coreir_eq_16_inst0 and_inst1 FEATURE_AND_16 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
 
 ### Toplevel Connections ######
 ## VDD 
@@ -30,7 +30,7 @@ set_domain_supply_net TOP -primary_power_net VDD_SW -primary_ground_net VSS
 
 ########### Set all Global Signals as AON
 set_related_supply_net -object_list {tile_id hi lo clk reset config_config_addr config_config_data config_read config_write read_config_data_in stall} -power VDD -ground VSS
-set_related_supply_net -object_list {reset_out config_out_config_addr config_out_config_data config_out_read config_out_write read_config_data stall_out} -power VDD -ground VSS
+set_related_supply_net -object_list {clk_out reset_out config_out_config_addr config_out_config_data config_out_read config_out_write read_config_data stall_out} -power VDD -ground VSS
 
 
 ########### Create Shut-Down Logic for SD #######

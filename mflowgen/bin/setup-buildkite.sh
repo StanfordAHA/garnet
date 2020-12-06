@@ -438,7 +438,6 @@ else
     echo "I will try and fix it for you"
     echo ""
     FIXED=
-
     # Lowest impact solution is maybe to give tclsh its own little directory
     TBIN=~/bin-tclsh-fix
     export PATH=${TBIN}:${PATH}

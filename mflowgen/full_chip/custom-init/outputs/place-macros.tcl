@@ -176,10 +176,11 @@ foreach_in_collection sram $srams {
   set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
   set tb_margin $vert_pitch
   set lr_margin [expr $horiz_pitch * 3]
-  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $sram_name -snapToSite
+  addHaloToBlock $lr_margin $tb_margin $lr_margin $tb_margin $sram_name -snapToSite
+  # Make routing blockage smaller than halo so that endcaps are not obstructed by M1 blockage
   createRouteBlk \
     -inst $sram_name \
-    -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
+    -box [expr $llx - (0.8 * $lr_margin)] [expr $lly - (0.8 * $tb_margin)] [expr $urx + (0.8 * $lr_margin)] [expr $ury + (0.8 * $tb_margin)] \
     -layer [list 1 3] \
     -pgnetonly
   set row [expr $row + 1]

@@ -46,11 +46,11 @@ class GlobalBuffer(Generator):
         self.max_num_words_width = (self.glb_addr_width - self.bank_byte_offset
                                     + magma.bitutils.clog2(bank_data_width
                                                            // cgra_data_width))
-        self.max_stride_width = self.axi_data_width - self.max_num_words_width
+        self.max_stride_width = 10
         self.max_num_cfgs_width = self.glb_addr_width - self.bank_byte_offset
         self.queue_depth = 4
         self.loop_level = 4
-        self.latency_width = 1 + magma.bitutils.clog2(self.num_glb_tiles)
+        self.latency_width = 2 + magma.bitutils.clog2(self.num_glb_tiles)
 
         self.add_ports(
             clk=magma.In(magma.Clock),
