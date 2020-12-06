@@ -40,11 +40,16 @@ def construct():
     'PWR_AWARE'         : True,
     # Useful Skew (CTS)
     'useful_skew'       : False,
+    # hold target slack
+    'hold_target_slack' : 0.015,
     # Pipeline stage insertion
     'pipeline_config_interval': 8,
     'pipeline_stage_height': 30,
     # Testing
     'testbench_name'    : 'Interconnect_tb',
+    # I am defaulting to True because nothing is worse than finishing
+    # a sim and needing the wave but not having it...
+    'waves'             : True,
   }
 
   #-----------------------------------------------------------------------
@@ -71,6 +76,7 @@ def construct():
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
   gls_args       = Step( this_dir + '/gls_args'                            )
   testbench      = Step( this_dir + '/testbench'                           )
+
 
   # Default steps
 
@@ -113,8 +119,43 @@ def construct():
   #genlibdb.extend_inputs( ['Tile_MemCore.db'] )
   genlib.extend_inputs( ['Tile_MemCore_tt.lib'] )
 
-  # These steps need timing info for cgra tiles
+  e2e_apps = ["tests/conv_3_3", "apps/cascade", "apps/harris_auto", "apps/resnet_i1_o1_mem", "apps/resnet_i1_o1_pond"]
 
+  # Only use these steps with power domains off and no flattening...
+  use_e2e = True
+  e2e_tb_nodes = {}
+  e2e_sim_nodes = {}
+  e2e_power_nodes = {}
+  if use_e2e:
+    for app in e2e_apps:
+        e2e_testbench = Step( this_dir + '/e2e_testbench' )
+        e2e_xcelium_sim = Step( this_dir + '/../common/cadence-xcelium-sim' )
+        e2e_ptpx_gl     = Step( this_dir + '/../common/synopsys-ptpx-gl'    ) 
+        # Simple rename
+        app_name = app.split("/")[1]
+        e2e_testbench.set_name(f"e2e_testbench_{app_name}") 
+        e2e_xcelium_sim.set_name(f"e2e_xcelium_sim_{app_name}")
+        e2e_ptpx_gl.set_name(f"e2e_ptpx_gl_{app_name}")
+        e2e_tb_nodes[app] = e2e_testbench
+        e2e_sim_nodes[app] = e2e_xcelium_sim
+        e2e_power_nodes[app] = e2e_ptpx_gl
+
+        # override app_to_run param of the testbench gen
+        e2e_testbench.set_param("app_to_run", app)
+
+        # Send all the relevant post-pnr files to sim 
+        e2e_xcelium_sim.extend_inputs(Tile_MemCore.all_outputs())
+        e2e_xcelium_sim.extend_inputs(Tile_PE.all_outputs())
+        e2e_xcelium_sim.extend_inputs(['design.vcs.pg.v'])
+        e2e_xcelium_sim.extend_inputs(['input.raw'])
+
+        # Configure the ptpx step a little differently...
+        e2e_ptpx_gl.set_param("strip_path", "Interconnect_tb/dut")
+        e2e_ptpx_gl.extend_inputs(e2e_testbench.all_outputs())
+        e2e_ptpx_gl.extend_inputs(Tile_MemCore.all_outputs())
+        e2e_ptpx_gl.extend_inputs(Tile_PE.all_outputs())
+
+  # These steps need timing info for cgra tiles
   tile_steps = \
     [ iflow, init, power, place, cts, postcts_hold,
       route, postroute, signoff ]
@@ -163,8 +204,7 @@ def construct():
   g.add_step( Tile_PE        )
   g.add_step( constraints    )
   g.add_step( dc_postcompile )
-  #g.add_step( dc             )
-  g.add_step( synth             )
+  g.add_step( synth          )
   g.add_step( iflow          )
   g.add_step( init           )
   g.add_step( custom_init    )
@@ -178,9 +218,7 @@ def construct():
   g.add_step( postroute      )
   g.add_step( postroute_hold )
   g.add_step( signoff        )
-  #g.add_step( pt_signoff     )
-  #g.add_step( genlibdb       )
-  g.add_step( genlib       )
+  g.add_step( genlib         )
   g.add_step( drc            )
   g.add_step( custom_lvs     )
   g.add_step( lvs            )
@@ -189,13 +227,17 @@ def construct():
   g.add_step( testbench      )
   g.add_step( vcs_sim        )
 
+  if use_e2e:
+    for app in e2e_apps:
+        g.add_step( e2e_tb_nodes[app]    )
+        g.add_step( e2e_sim_nodes[app]   )
+        g.add_step( e2e_power_nodes[app] )
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
 
   # Connect by name
 
-  #g.connect_by_name( adk,      dc           )
   g.connect_by_name( adk,      synth           )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
@@ -210,6 +252,20 @@ def construct():
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
 
+  if use_e2e:
+    for app in e2e_apps:
+        g.connect_by_name( adk,               e2e_sim_nodes[app] )
+        g.connect_by_name( Tile_MemCore,      e2e_sim_nodes[app] )
+        g.connect_by_name( Tile_PE,           e2e_sim_nodes[app] )
+        g.connect_by_name( e2e_tb_nodes[app], e2e_sim_nodes[app] )
+        g.connect_by_name( signoff,           e2e_sim_nodes[app] )
+
+        g.connect_by_name( adk,                e2e_power_nodes[app] )
+        g.connect_by_name( Tile_MemCore,       e2e_power_nodes[app] )
+        g.connect_by_name( Tile_PE,            e2e_power_nodes[app] )
+        g.connect_by_name( signoff,            e2e_power_nodes[app] )
+        g.connect_by_name( e2e_tb_nodes[app],  e2e_power_nodes[app] )
+        g.connect_by_name( e2e_sim_nodes[app], e2e_power_nodes[app] )
   # In our CGRA, the tile pattern is:
   # PE PE PE Mem PE PE PE Mem ...
   # Thus, if there are < 4 columns, the the array won't contain any

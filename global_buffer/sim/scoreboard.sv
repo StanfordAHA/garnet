@@ -12,6 +12,7 @@ class Scoreboard;
     // create mailbox handle
     mailbox p_mon2scb;
     mailbox r_mon2scb;
+    mailbox m_mon2scb;
     mailbox s_mon2scb [NUM_GLB_TILES];
 
     // used to count the number of transactions
@@ -23,15 +24,16 @@ class Scoreboard;
     // global_buffer config register file
     bit [AXI_DATA_WIDTH-1:0] reg_rf [2**AXI_ADDR_WIDTH];
 
-    extern function new(mailbox p_mon2scb, mailbox r_mon2scb, mailbox s_mon2scb[]);
+    extern function new(mailbox p_mon2scb, mailbox r_mon2scb, mailbox s_mon2scb[], mailbox m_mon2scb);
     extern task run();
     extern task proc_run();
     extern task strm_run(int i);
     extern task reg_run();
+    extern task sram_run();
 
 endclass
 
-function Scoreboard::new(mailbox p_mon2scb, mailbox r_mon2scb, mailbox s_mon2scb[]);
+function Scoreboard::new(mailbox p_mon2scb, mailbox r_mon2scb, mailbox s_mon2scb[], mailbox m_mon2scb);
     // no_trans
     no_trans = 0;
 
@@ -39,6 +41,7 @@ function Scoreboard::new(mailbox p_mon2scb, mailbox r_mon2scb, mailbox s_mon2scb
     this.p_mon2scb = p_mon2scb;
     this.r_mon2scb = r_mon2scb;
     this.s_mon2scb = s_mon2scb;
+    this.m_mon2scb = m_mon2scb;
 
     // initialize to zero
     foreach(mem[i])     mem[i] = 0;
@@ -49,6 +52,7 @@ task Scoreboard::run();
     fork
         proc_run();
         reg_run();
+        sram_run();
     join_none
     for(int i=0; i<NUM_GLB_TILES; i++) begin
         fork
@@ -132,6 +136,35 @@ task Scoreboard::strm_run(int i);
                                  ld_start_addr+2*k, s_trans.ld_data[k]); 
                     `endif
                 end
+            end
+        end
+        no_trans++;
+    end
+endtask
+
+task Scoreboard::sram_run();
+    forever begin
+        RegTransaction  m_trans;
+        m_mon2scb.get(m_trans);
+        if(m_trans.wr_en) begin
+            $display("[SRAM-WRITE] #SRAM Trans = %0d, Addr = 0x%0h, Data 0x%0h", m_trans.no_trans, m_trans.wr_addr, m_trans.wr_data);
+            if (m_trans.wr_addr % 8 == 0) begin
+                mem[m_trans.wr_addr][31:0] = m_trans.wr_data;
+            end else begin
+                mem[m_trans.wr_addr][63:32] = m_trans.wr_data;
+            end
+        end
+        else if (m_trans.rd_en) begin
+            if(mem[m_trans.rd_addr] != m_trans.rd_data) begin
+                $error("[SCB-FAIL] #SRAM Trans = %0d, Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
+                      m_trans.no_trans, m_trans.rd_addr, mem[m_trans.rd_addr], m_trans.rd_data);
+            end
+            else if (~m_trans.rd_data_valid) begin
+                $error("[SCB-FAIL] #SRAM Trans = %0d, rd_data_valid signal is not asserted", m_trans.no_trans);
+            end
+            else begin
+                $display("[SCB-PASS] #Reg Trans = %0d, Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
+                         m_trans.no_trans, m_trans.rd_addr, mem[m_trans.rd_addr], m_trans.rd_data);
             end
         end
         no_trans++;

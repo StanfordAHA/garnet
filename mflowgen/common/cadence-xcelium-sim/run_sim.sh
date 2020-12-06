@@ -10,7 +10,7 @@ if [ -f "inputs/cmd.tcl" ]; then
 fi
 
 if [ "$PWR_AWARE" = "True" ]; then
-  rm inputs/design.vcs.v
+  rm -f inputs/*.vcs.v
 fi
 
 # ADK for GLS
@@ -33,7 +33,6 @@ if [ -d "inputs/adk" ]; then
   fi
 fi
 
-
 # Set-up testbench
 ARGS="$ARGS -top $testbench_name"
 
@@ -48,6 +47,7 @@ if [ $design_name == "Tile_MemCore" ]; then
    ARGS="$ARGS +define+TSMC_CM_NO_WARNING +define+TSMC_NO_TESTPINS_DEFAULT_VALUE_CHECK"
 fi
 
+
 # Grab all design/testbench files
 for f in inputs/*.v; do
   [ -e "$f" ] || continue
@@ -56,8 +56,8 @@ done
 
 # SRAM power hack for now (files need to read in a specific order)"
 if [ $PWR_AWARE == "True" ]; then
-  if [[ -f "inputs/sram_pwr.v" ]]; then
-    ARGS="$ARGS inputs/sram_pwr.v"
+  if [[ -f "inputs/sram-pwr.v" ]]; then
+    ARGS="$ARGS inputs/sram-pwr.v"
   fi
 fi
 
@@ -65,6 +65,23 @@ for f in inputs/*.sv; do
   [ -e "$f" ] || continue
   ARGS="$ARGS $f"
 done
+
+if [ ${use_sdf} = "True" ]; then
+  # Annotate the subcomponents first and then do top
+  if [ -f "sub_cmd.cmd" ]; then
+    ARGS="$ARGS -sdf_cmd_file sub_cmd.cmd"
+  fi
+  ARGS="$ARGS -sdf_cmd_file sdf_cmd.cmd -sdf_verbose"
+  # Let it annotate negative delays
+  ARGS="$ARGS -negdelay"
+else
+  # If including the simulatable sram for now, prevent timing checks
+  if [ -f "inputs/sram.v" ]; then
+    ARGS="$ARGS +define+TSMC_CM_UNIT_DELAY"
+  elif [ -f "inputs/sram-pwr.v" ]; then 
+    ARGS="$ARGS +define+TSMC_CM_UNIT_DELAY"
+  fi
+fi
 
 # Run NC-SIM and print out the command
 (
@@ -75,6 +92,7 @@ done
 # Reporting
 cp mflowgen-run.log logs/gls.log
 # Bring out trace if waveform enabled...
-if [ "${waveform}" = true ]; then
-  cp verilog.vcd outputs/run.vcd
+if [ "${waves}" = true ]; then
+  cp -r waves.shm/ outputs/waves.shm
 fi
+

@@ -30,10 +30,7 @@ outputs:
 #-------------------------------------------------------------------------
 
 commands:
-  - mkdir -p reports logs
-  - pt_shell -f ptpx.tcl | tee logs/pt.log
-  - cp reports/{design_name}.power.hier.rpt outputs/power.hier
-  - cp reports/{design_name}.power.cell.rpt outputs/power.cell
+  - source run_step.sh
 
 #-------------------------------------------------------------------------
 # Parameters
@@ -43,3 +40,5 @@ parameters:
   design_name: undefined
   strip_path: tb/dut
   PWR_AWARE: True
+  batch: False
+  chkpt: False # Turn this on to save periodically during ptpx flow

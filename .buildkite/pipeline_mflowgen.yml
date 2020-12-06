@@ -3,7 +3,7 @@ agents: { jobsize: "hours" }
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
-  GOLD: /build/glb_tile_bumps_dev.${BUILDKITE_BUILD_NUMBER}
+  GOLD: /build/bdgtc.${BUILDKITE_BUILD_NUMBER}
 
 steps:
 
@@ -14,7 +14,6 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
      mflowgen run --design $$GARNET_HOME/mflowgen/glb_top'
-
 - wait: ~
 
 - label: 'glb_tile'
@@ -22,7 +21,6 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 30G;
      set -o pipefail;
      make glb_tile |& tee make-gtile.log'
-
 
 
 #   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a

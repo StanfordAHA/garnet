@@ -65,6 +65,13 @@ if {$::env(USER) == "buildkite-agent"} {
         -to [get_pins [list $pe_path/* ]]
 }
     
+# set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]]
+# Set multicycle path from config ports to the register file passing through the ALU
+# These are false paths and the above false path constraint can be applied but use MCP for conservative constraints
+# The correct config paths from the config ports directly to the register file are verified to be constrained 
+set_multicycle_path 2 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -setup
+set_multicycle_path 1 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -hold
+
 source -echo -verbose inputs/common.tcl
     
 if {$::env(USER) == "buildkite-agent"} {

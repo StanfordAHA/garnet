@@ -33,7 +33,7 @@ set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
 # reset
-set_max_delay -from [get_ports reset] [expr ${clock_period}*0.9]
+#set_max_delay -from [get_ports reset] [expr ${clock_period}*0.9]
 #set_min_delay -from [get_ports reset] [expr ${clock_period}*0.2]
 
 # set_min_delay for all tile-connected inputs
@@ -68,6 +68,10 @@ set_min_delay -to [get_ports if_cfg_* -filter "direction==out"] [expr ${clock_pe
 # all est<->wst connections
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports *_esti*]
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports *_wsti*]
+set_input_delay -clock ${clock_name} [expr ${clock_period}*0.6] [get_ports proc*_esti*]
+set_input_delay -clock ${clock_name} [expr ${clock_period}*0.6] [get_ports proc*_wsti*]
+set_input_delay -clock ${clock_name} [expr ${clock_period}*0.3] [get_ports strm*_esti*]
+set_input_delay -clock ${clock_name} [expr ${clock_period}*0.3] [get_ports strm*_wsti*]
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_cfg_est* -filter "direction==in"]
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==in"]
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==in"]
@@ -94,6 +98,8 @@ set_output_delay -clock ${clock_name} [expr ${clock_period}*0.75] [get_ports cgr
 # all est<->wst connections
 set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports *_esto* -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports *_wsto* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${clock_period}*0.35] [get_ports proc*_esto* -filter "direction==out"]
+set_output_delay -clock ${clock_name} [expr ${clock_period}*0.35] [get_ports proc*_wsto* -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_cfg_est* -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==out"]
 set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==out"]
@@ -136,8 +142,6 @@ set_false_path -from cgra_cfg_jtag_wsti_wr_en -to cgra_cfg_jtag_esto_wr_en
 # glb_core_sram_cfg_ctrl input to bank signals
 set_multicycle_path -setup 10 -through [get_pins glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_wst_s*rd* -filter "direction==in"] -through [get_pins glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_bank*rd* -filter "direction==out"]
 set_multicycle_path -hold 9 -through [get_pins glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_wst_s*rd* -filter "direction==in"] -through [get_pins glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_bank*rd* -filter "direction==out"]
-set_multicycle_path -setup 10 -through [get_pins glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_wst_s*rd* -filter "direction==in"] -through [get_cells glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_bank_rd_en*]
-set_multicycle_path -hold 9 -through [get_pins glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_wst_s*rd* -filter "direction==in"] -through [get_cells glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_bank_rd_en*]
 # bank to output signals
 set_multicycle_path -setup 10 -through [get_pins glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_bank*rd_data* -filter "direction==in"] -through [get_cells glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_wst_s*rd_data*] 
 set_multicycle_path -hold 9 -through [get_pins glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_bank*rd_data* -filter "direction==in"] -through [get_cells glb_tile_int/glb_core/glb_core_sram_cfg_ctrl/if_sram_cfg_wst_s*rd_data*] 

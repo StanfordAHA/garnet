@@ -20,11 +20,12 @@ def copy_file(src_filename, dst_filename, override=False):
 
 
 class BasicTester(Tester):
-    def __init__(self, circuit, clock, reset_port=None):
+    def __init__(self, circuit, clock, reset_port=None, y_interval=1):
         super().__init__(circuit, clock)
         self.reset_port = reset_port
         self.__xmin = 0xFFFF
         self.__xmax = 0
+        self.y_interval = y_interval
 
         self.__last_addr = None
 
@@ -93,7 +94,12 @@ class BasicTester(Tester):
         self.__config_addr(addr, addr)
         self.__config_read(addr, 1)
         self.__config_write(addr, 0)
-        self.step(2)
+        # SRAM content has to be read out immediately
+        x = (addr & 0xFF00) >> 8
+        if x % 4 == 3:
+            self.step(2)
+        else:
+            self.step(2 * self.y_interval)
 
     def reset(self):
         self.poke(self.reset_port, 1)
@@ -163,6 +169,14 @@ class TestBenchGenerator:
                 addr = int(addr, 16)
                 value = int(value, 16)
                 self.bitstream.append((addr, value))
+        # compute the config pipeline interval
+        max_y = 0
+        for addr, _ in self.bitstream:
+            y = addr & 0xFF
+            if y > max_y:
+                max_y = y
+        config_pipeline_interval = 8
+        self.y_interval = ((max_y - 1) // 8) + 1
         self.input_filename = config["input_filename"]
         self.output_filename = f"{bitstream_file}.out"
         self.gold_filename = config["gold_filename"]
@@ -252,7 +266,8 @@ class TestBenchGenerator:
         return input_size, loop_size
 
     def test(self):
-        tester = BasicTester(self.circuit, self.circuit.clk, self.circuit.reset)
+        tester = BasicTester(self.circuit, self.circuit.clk, self.circuit.reset,
+                             y_interval=self.y_interval)
         if self.use_xcelium:
             tester.zero_inputs()
         tester.reset()
@@ -362,11 +377,6 @@ class TestBenchGenerator:
                 copy_file(os.path.join(base_dir, "peak_core", filename),
                           os.path.join(tempdir, filename))
 
-        # memory core
-        copy_file(os.path.join(base_dir,
-                               "tests", "test_memory_core",
-                               "sram_stub.v"),
-                  os.path.join(tempdir, "sram_512w_16b.v"))
         # std cells
         for std_cell in glob.glob(os.path.join(base_dir, "tests/*.sv")):
             copy_file(std_cell,

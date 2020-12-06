@@ -6,40 +6,16 @@
 ** Change history:
 **  04/18/2020 - Implement first version
 **===========================================================================*/
-class RegTransaction extends Transaction;
-    rand bit                        wr_en;
-    rand bit                        wr_clk_en;
-    rand bit [AXI_ADDR_WIDTH-1:0]   wr_addr;
-    rand bit [AXI_DATA_WIDTH-1:0]   wr_data;
-    rand bit                        rd_en;
-    rand bit                        rd_clk_en;
-    rand bit [AXI_ADDR_WIDTH-1:0]   rd_addr;
-         bit [AXI_DATA_WIDTH-1:0]   rd_data;
-         bit                        rd_data_valid;
-
-    constraint clk_en_c {
-        // clk enable is same as enable
-        wr_en == wr_clk_en;
-        rd_en == rd_clk_en;
-    }
-
-    constraint wr_rd_c {
-        // generate any one among write and read
-        wr_en != rd_en;
-    }
-
-    constraint addr_c {
-        solve wr_en before wr_addr;
-        solve rd_en before rd_addr;
-        // address is aligned to bank_data_width
-        if (wr_en) {
-            wr_addr[AXI_BYTE_OFFSET-1:0] == {AXI_BYTE_OFFSET{1'b0}};
-            rd_addr == 0;
-        } else {
-            wr_addr == 0;
-            rd_addr[AXI_BYTE_OFFSET-1:0] == {AXI_BYTE_OFFSET{1'b0}};
-        }
-    }
+class RegTransaction #(int ADDR_WIDTH = 12) extends Transaction;
+    bit                        wr_en;
+    bit                        wr_clk_en;
+    bit [ADDR_WIDTH-1:0]       wr_addr;
+    bit [AXI_DATA_WIDTH-1:0]   wr_data;
+    bit                        rd_en;
+    bit                        rd_clk_en;
+    bit [ADDR_WIDTH-1:0]       rd_addr;
+    bit [AXI_DATA_WIDTH-1:0]   rd_data;
+    bit                        rd_data_valid;
 
     extern function new();
     extern function RegTransaction copy(RegTransaction to=null);
@@ -48,12 +24,12 @@ class RegTransaction extends Transaction;
 endclass
 
 function RegTransaction::new();
-    this.trans_type = REG;
 endfunction
 
 function RegTransaction RegTransaction::copy(RegTransaction to=null);
     if (to == null) copy = new();
     else            copy = to;
+    copy.trans_type = this.trans_type;
     copy.wr_en      = this.wr_en;
     copy.wr_clk_en  = this.wr_clk_en;
     copy.wr_addr    = this.wr_addr;

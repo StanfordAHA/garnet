@@ -36,8 +36,9 @@ import global_buffer_param::*;
 packet_t packet_w2e_wsti_d1;
 packet_t packet_e2w_esti_d1;
 
-// res packet
-rdrs_packet_t rdrs_packet_sw2pr_d1;
+wr_packet_t wr_packet_pr2sw_filtered, wr_packet_pr2sw_muxed;
+rdrq_packet_t rdrq_packet_pr2sw_filtered, rdrq_packet_pr2sw_muxed;
+rdrs_packet_t rdrs_packet_sw2pr_d1; 
 
 // is_even indicates If tile_id is even or not
 // Warning: Tile id starts from 0
@@ -71,16 +72,6 @@ end
 //============================================================================//
 // request packet
 //============================================================================//
-// assign packet_w2e_esto.wr = (is_even == 1'b1)
-//                           ? packet_w2e_wsti_d1.wr : packet_w2e_wsti.wr;
-// assign packet_e2w_wsto.wr = (is_even == 1'b0) 
-//                           ? packet_e2w_esti_d1.wr : packet_e2w_esti.wr;
-// 
-// assign packet_w2e_esto.rdrq = (is_even == 1'b1)
-//                             ? packet_w2e_wsti_d1.rdrq : packet_w2e_wsti.rdrq;
-// assign packet_e2w_wsto.rdrq = (is_even == 1'b0)
-//                             ? packet_e2w_esti_d1.rdrq : packet_e2w_esti.rdrq;
-
 assign packet_w2e_esto.wr = packet_w2e_wsti_d1.wr;
 assign packet_e2w_wsto.wr = packet_e2w_esti_d1.wr;
 
@@ -88,34 +79,29 @@ assign packet_w2e_esto.rdrq = packet_w2e_wsti_d1.rdrq;
 assign packet_e2w_wsto.rdrq = packet_e2w_esti_d1.rdrq;
 
 // packet router to core
-assign wr_packet_pr2sw = (is_even == 1'b1)
-                       ? packet_w2e_esto.wr : packet_e2w_wsto.wr;
-assign rdrq_packet_pr2sw = (is_even == 1'b1)
-                         ? packet_w2e_esto.rdrq : packet_e2w_wsto.rdrq;
+assign wr_packet_pr2sw_muxed = (is_even == 1'b1)
+                             ? packet_w2e_esto.wr : packet_e2w_wsto.wr;
+assign rdrq_packet_pr2sw_muxed = (is_even == 1'b1)
+                               ? packet_w2e_esto.rdrq : packet_e2w_wsto.rdrq;
+
+assign wr_packet_pr2sw_filtered = (wr_packet_pr2sw_muxed.wr_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) ? wr_packet_pr2sw_muxed : 0;
+assign rdrq_packet_pr2sw_filtered = (rdrq_packet_pr2sw_muxed.rd_addr[BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH +: TILE_SEL_ADDR_WIDTH] == glb_tile_id) ? rdrq_packet_pr2sw_muxed : 0;
+
+assign wr_packet_pr2sw = wr_packet_pr2sw_filtered;
+assign rdrq_packet_pr2sw = rdrq_packet_pr2sw_filtered;
+
 
 //============================================================================//
 // response packet
 //============================================================================//
 // packet core to router switch
-// assign packet_w2e_esto.rdrs = (is_even == 1'b1)
-//                         ? (rdrs_packet_sw2pr_d1.rd_data_valid == 1) 
-//                         ? rdrs_packet_sw2pr_d1 : packet_w2e_wsti_d1.rdrs
-//                         : packet_w2e_wsti.rdrs;
-// 
-// assign packet_e2w_wsto.rdrs = (is_even == 1'b0)
-//                         ? (rdrs_packet_sw2pr_d1.rd_data_valid == 1) 
-//                         ? rdrs_packet_sw2pr_d1 : packet_e2w_esti_d1.rdrs
-//                         : packet_e2w_esti.rdrs;
-
-
 assign packet_w2e_esto.rdrs = (is_even == 1'b1)
-                        ? (rdrs_packet_sw2pr_d1.rd_data_valid == 1) 
+                        ? (rdrs_packet_sw2pr_d1.rd_data_valid == 1)
                         ? rdrs_packet_sw2pr_d1 : packet_w2e_wsti_d1.rdrs
                         : packet_w2e_wsti_d1.rdrs;
 
 assign packet_e2w_wsto.rdrs = (is_even == 1'b0)
-                        ? (rdrs_packet_sw2pr_d1.rd_data_valid == 1) 
+                        ? (rdrs_packet_sw2pr_d1.rd_data_valid == 1)
                         ? rdrs_packet_sw2pr_d1 : packet_e2w_esti_d1.rdrs
                         : packet_e2w_esti_d1.rdrs;
-
 endmodule
