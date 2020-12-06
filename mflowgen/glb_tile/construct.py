@@ -101,9 +101,9 @@ def construct():
       # Copied from TaeYoung(?) glb_top construct.py:
       # FIXME this is pretty fragile; should probably use regex instead
       unwanted_assert="assert 'error' not in File( 'logs/genus.log' )"
-      xlist = genlibdb.get_postconditions()
+      xlist = genlib.get_postconditions()
       xlist = [ _ for _ in xlist if unwanted_assert not in _ ]
-      xlist = genlibdb.set_postconditions( xlist )
+      xlist = genlib.set_postconditions( xlist )
 
   if which("calibre") is not None:
       drc               = Step( 'mentor-calibre-drc',            default=True )
