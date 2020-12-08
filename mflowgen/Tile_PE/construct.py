@@ -161,6 +161,8 @@ def construct():
       xlist = [ _ for _ in xlist if "design.pt.sdc" not in _ ]
       xlist = genlibdb.set_preconditions( xlist )
 
+  genlibdb._config['outputs'] = [ 'foo' ]
+
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
