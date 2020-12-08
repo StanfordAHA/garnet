@@ -60,6 +60,12 @@ def construct():
     'strip_path'        : 'TilePETb/Tile_PE_inst'
     }
 
+  # (Very) relaxed timing for buildkite tests, to keep Steve sane
+  if (os.getenv('USER') == "buildkite-agent"):
+    parameters['clock_period'] = 4.0; # 4ns = 250 MHz
+
+
+
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
