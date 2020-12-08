@@ -136,7 +136,11 @@ def construct():
       # needs that anyway, and will skip reading it if it doesn't exist
       # (see 'if {[ file exists $genus_sdc ]}' clause in read_sdc.tcl). So
       # we remove it with an 'unlink' in the list of configure.yml commands...
-      signoff.extend_commands(['unlink design.pt.sdc'])
+
+      # Huh this don't work, downstream components want to see design.pt.sdc as input
+      # signoff.extend_commands(['unlink design.pt.sdc'])
+
+      signoff.extend_commands(['touch design.pt.sdc'])
 
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlibdb     = Step( 'cadence-genus-genlib',          default=True )
@@ -160,8 +164,6 @@ def construct():
       xlist = genlibdb.get_preconditions()
       xlist = [ _ for _ in xlist if "design.pt.sdc" not in _ ]
       xlist = genlibdb.set_preconditions( xlist )
-
-  genlibdb._config['outputs'] = [ 'foo' ]
 
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
