@@ -341,6 +341,9 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
 
+  # Fetch short-fix script in prep for eventual use by postroute
+  g.connect_by_name( short_fix, postroute )
+
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
   g.connect_by_name( place,        cts          )
@@ -348,9 +351,6 @@ def construct():
   g.connect_by_name( postcts_hold, route        )
   g.connect_by_name( route,        postroute    )
   g.connect_by_name( postroute,    signoff      )
-
-  # short_fix after postroute and just before signoff
-  g.connect_by_name( short_fix, postroute )
 
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
