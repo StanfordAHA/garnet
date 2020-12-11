@@ -42,8 +42,9 @@ redraw; sleep 1
 
 ########################################################################
 # Fix shorts 1: Fetch a fresh set of violation markers
+# Note Tile_PE has M1 shorts that we will choose to ignore for now...
 clearDrc
-verify_drc
+verify_drc -layer_range { M2 M9 }
 
 ########################################################################
 # Fix shorts 2: Identify the shorts

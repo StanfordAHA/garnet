@@ -85,6 +85,7 @@ def construct():
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                  )
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
+  short_fix            = Step( this_dir + '/../common/custom-short-fix'  )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
@@ -227,6 +228,9 @@ def construct():
 
       gl_sim.extend_inputs( ["design.vcs.pg.v"] )
   
+  # Add short_fix script(s) to list of available postroute scripts
+  postroute.extend_inputs( short_fix.all_outputs() )
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -498,6 +502,11 @@ def construct():
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
       postroute.update_params( { 'order': order } )
+
+      # Add fix-shorts as the last thing to do in postroute
+      order = postroute.get_param('order') ; # get the default script run order
+      order.append('fix-shorts.tcl' )      ; # Add fix-shorts at the end
+      postroute.update_params( { 'order': order } ) ; # Update
 
       # signoff node
       order = signoff.get_param('order')
