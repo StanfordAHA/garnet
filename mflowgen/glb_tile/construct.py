@@ -240,6 +240,7 @@ def construct():
   g.connect_by_name( custom_power, power      )
   g.connect_by_name( custom_lvs,   lvs        )
 
+  # short_fix after postroute_hold and just before signoff
   g.connect_by_name( short_fix, postroute_hold )
 
   g.connect_by_name( init,           power          )

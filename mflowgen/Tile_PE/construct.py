@@ -254,6 +254,7 @@ def construct():
   g.add_step( postcts_hold             )
   g.add_step( route                    )
   g.add_step( postroute                )
+  g.add_step( short_fix                )
   g.add_step( signoff                  )
   g.add_step( pt_signoff               )
   g.add_step( genlibdb_constraints     )
@@ -347,6 +348,10 @@ def construct():
   g.connect_by_name( postcts_hold, route        )
   g.connect_by_name( route,        postroute    )
   g.connect_by_name( postroute,    signoff      )
+
+  # short_fix after postroute and just before signoff
+  g.connect_by_name( short_fix, postroute )
+
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
