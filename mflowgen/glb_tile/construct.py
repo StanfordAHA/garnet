@@ -236,13 +236,12 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    signoff        )
 
+  # Fetch short-fix script in prep for eventual use by postroute_hold
+  g.connect_by_name( short_fix, postroute_hold )
+
   g.connect_by_name( custom_init,  init       )
   g.connect_by_name( custom_power, power      )
   g.connect_by_name( custom_lvs,   lvs        )
-
-  # short_fix after postroute_hold and just before signoff
-  g.connect_by_name( short_fix, postroute_hold )
-
   g.connect_by_name( init,           power          )
   g.connect_by_name( power,          place          )
   g.connect_by_name( place,          cts            )

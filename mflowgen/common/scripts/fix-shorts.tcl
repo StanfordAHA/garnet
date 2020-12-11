@@ -42,9 +42,12 @@ redraw; sleep 1
 
 ########################################################################
 # Fix shorts 1: Fetch a fresh set of violation markers
-# Note Tile_PE has M1 shorts that we will choose to ignore for now...
+# Note Tile_PE has VDD shorts on lower layers that we choose to ignore...
+# FIXME what's up with the VDD shorts!!??
 clearDrc
-verify_drc -layer_range { M2 M9 }
+verify_drc -layer_range { M4 M9 }
+
+
 
 ########################################################################
 # Fix shorts 2: Identify the shorts
@@ -55,7 +58,7 @@ if { $shorts == "0x0" } {
    # Fix shorts 3: Show how many shorts were found
     set nshorts [llength $shorts]
     echo "@file_info: Found $nshorts short circuit(s):"
-    dbGet [dbGet top.markers { .subType eq "Metal Short" }].message
+    echo [ dbGet [dbGet top.markers { .subType eq "Metal Short" }].message ]
 
     # Fix shorts 4: See if globalDetailRoute can fix the shorts with eco
     echo "@file_info: Fixing short circuits"
@@ -65,17 +68,47 @@ if { $shorts == "0x0" } {
 
     # Fix shorts 5: Check your work
     clearDrc
-    verify_drc
+    verify_drc -layer_range { M4 M9 }
+
     set shorts [dbGet top.markers { .subType eq "Metal Short" }]
     if { $shorts == "0x0" } {
         echo "@file_info: All shorts fixed"
-        saveDesign checkpoints/design.checkpoint/save.enc -user_path
     } {
-        echo "@file_info: Oops looks like I failed"
-        echo ""
-        echo "**ERROR: Metal shorts exist, see log for details"
-        echo "@file_info: Found $nshorts short circuit(s):"
-        echo "@file_info: Giving gup now"
+
+        # PE requires two tries maybe
+        echo "@file_info: Oops looks like I failed; lemme try again"
+
+        # Fix shorts 3a: Show how many shorts were found
+        set nshorts [llength $shorts]
+        echo "@file_info: (2)Found $nshorts short circuit(s):"
+        echo [ dbGet [dbGet top.markers { .subType eq "Metal Short" }].message ]
+
+        # Fix shorts 4a: See if globalDetailRoute can fix the shorts with eco
+        echo "@file_info: (2)Fixing short circuits"
+        setNanoRouteMode -routeWithEco true
+        setNanoRouteMode -drouteEndIteration 2
+        globalDetailRoute
+
+        # Fix shorts 5a: Check your work
+        clearDrc
+        verify_drc -layer_range { M4 M9 }
+
+        set shorts [dbGet top.markers { .subType eq "Metal Short" }]
+        if { $shorts == "0x0" } {
+            echo "@file_info: All shorts fixed"
+
+            # FIXME doesn't the wrapper script save the design?
+            # FIXME in which case we don't need this line here?
+            # Save changes *only* if shorts fixed
+            saveDesign checkpoints/design.checkpoint/save.enc -user_path
+
+        } {
+            echo "@file_info: Oops looks like I failed again oh no"
+            echo ""
+            echo "**ERROR: Metal shorts exist, see log for details"
+            echo "@file_info: Found $nshorts short circuit(s):"
+            echo "@file_info: Giving gup now"
+        }
     }
 }
 
