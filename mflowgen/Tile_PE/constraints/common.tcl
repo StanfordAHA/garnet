@@ -59,12 +59,14 @@ set i_delay [expr 0.2 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 
-# # Fix config input delay to specific value
-# set pt_i_delay 0.700
-# 
-# Maybe that was not so good...let's go back to the older one...
-set pt_i_delay [expr 0.8 * ${clock_period}]
+# # # Fix config input delay to specific value
+# # set pt_i_delay 0.700
+# # 
+# # Maybe that was not so good...let's go back to the older one...
+# set pt_i_delay [expr 0.8 * ${clock_period}]
 
+# Quick experiment to see if this still breaks things...
+set pt_i_delay 0.700
 
 set_input_delay -clock ${clock_name} ${pt_i_delay} clk_pass_through
 set_input_delay -clock ${clock_name} ${pt_i_delay} stall

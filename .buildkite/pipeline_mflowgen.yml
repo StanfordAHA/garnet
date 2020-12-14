@@ -8,6 +8,9 @@ env:
 steps:
 
 
+##############################################################################
+# INDIVIDUAL TILE RUNS - PE tile only
+
 - label: 'setup'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
@@ -21,11 +24,10 @@ steps:
      make Tile_PE |& tee make-pe.log'
 
 
-
-
 # ##############################################################################
-# # INDIVIDUAL TILE RUNS
-# # 
+# # INDIVIDUAL TILE RUNS - glb tile only
+# # GOLD: /build/bdgtc-gbtile.${BUILDKITE_BUILD_NUMBER}
+# 
 # - label: 'setup'
 #   commands:
 #   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
