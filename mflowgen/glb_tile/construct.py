@@ -68,8 +68,6 @@ def construct():
   short_fix    = Step( this_dir + '/../common/custom-short-fix'  )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'            )
 
-
-
   # Default steps
 
   info              = Step( 'info',                          default=True )
@@ -148,8 +146,6 @@ def construct():
   #-----------------------------------------------------------------------
 
   postroute_hold.extend_inputs( short_fix.all_outputs() )
-
-
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
