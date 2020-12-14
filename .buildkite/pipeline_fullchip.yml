@@ -105,10 +105,11 @@ steps:
      make mentor-calibre-lvs |& tee make-lvs.log'
 - wait: ~
 
-- label: 'drc'
-  commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 18G;
-     echo "--- MAKE MENTOR-CALIBRE-DRC"; set -o pipefail;
-     make mentor-calibre-drc |& tee make-drc.log'
-- wait: ~
+# Not sure if this is ever useful...
+# - label: 'drc'
+#   commands:
+#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 18G;
+#      echo "--- MAKE MENTOR-CALIBRE-DRC"; set -o pipefail;
+#      make mentor-calibre-drc |& tee make-drc.log'
+# - wait: ~
 
