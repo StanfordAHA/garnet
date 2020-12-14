@@ -130,45 +130,9 @@ def construct():
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
-
-
-# Okay maybe the pt.sdc stuff is fixed now?
-#   if (os.getenv('USER') == "buildkite-agent"):
-# 
-#       # For some reason buildkite-agent gets errors when synth step reads
-#       # design.pt.sdc output from signoff. But I don't think buildkite-agent
-#       # needs that anyway, and will skip reading it if it doesn't exist
-#       # (see 'if {[ file exists $genus_sdc ]}' clause in read_sdc.tcl). So
-#       # we remove it with an 'unlink' in the list of configure.yml commands...
-# 
-#       # Huh this don't work, downstream components want to see design.pt.sdc as input
-#       # signoff.extend_commands(['unlink design.pt.sdc'])
-#       signoff.extend_commands(['touch design.pt.sdc'])
-
-
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlibdb     = Step( 'cadence-genus-genlib',          default=True )
   if (os.getenv('USER') == "buildkite-agent"):
-
-# Okay maybe the pt.sdc stuff is fixed now?
-#       # buildkite-agent don't care about no stinkin' design.pt.sdc
-#       # so long as we get our design.lib output
-#       #
-#       # Before:
-#       #     preconditions:
-#       #       - assert File( 'inputs/design.vcs.v' )     # must exist
-#       #       - assert File( 'inputs/design.pt.sdc' )    # must exist
-#       #       ...
-#       # After:
-#       #     preconditions:
-#       #       - assert File( 'inputs/design.vcs.v' )     # must exist
-#       #       ...
-# 
-#       # Hey let's write something clever and obscure and terse but unreadable
-#       # Copied from TaeYoung(?) glb_top construct.py:
-#       xlist = genlibdb.get_preconditions()
-#       xlist = [ _ for _ in xlist if "design.pt.sdc" not in _ ]
-#       xlist = genlibdb.set_preconditions( xlist )
 
       # buildkite-agent doesn't care about multiple "read_sdc" errors in genus
       # log so long as we get our design.lib output (FIXME see email/issue?)
