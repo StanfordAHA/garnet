@@ -195,7 +195,7 @@ if [ "$DO_UNIT_TESTS" == "true" ]; then # cut'n'paste for unit tests
     find_existing_dir /
 fi
 
-# Huh.
+# If server dies and reboots, agent can lose access to file system(!)
 if expr $build_dir : /build > /dev/null; then
   if ! test -d /build; then
       echo "**ERROR: Cannot find dir '/build'; may need to restart buildkite agent(s)"
