@@ -39,55 +39,33 @@ set_constraint_mode default_c
 # Constraints are also valid for baseline PE, but these false paths are
 # not a concern for timing for the baseline PE
 
-# steveri 12/2020
-# Huh well it looks like 'set_false_path' commands break the buildkite flow...
-# dunno why...but until we figure it out I'm going to hack them out...
-# (but only for buildkite)
+# Paths from config input ports to SB output ports
+set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
 
-if {$::env(USER) == "buildkite-agent"} {
-    puts "@file_info: Skipping set_false_path cmds b/c I am buildkite-agent"
-} else {
-    # Paths from config input ports to SB output ports
-    set_false_path \
-        -from [get_ports config* -filter direction==in] \
-        -to [get_ports SB* -filter direction==out]
-    
-    # Paths from config input ports to SB registers
-    set sb_reg_path SB_ID0_5TRACKS_B*_PE/REG_T*_B*/value__CE/value_reg[*]/*
-    set_false_path \
-        -from [get_ports config_* -filter direction==in] \
-        -to [get_pins $sb_reg_path]
-    
-    # Paths from config input ports to PE registers
-    set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
-    set_false_path \
-        -from [get_ports config_* -filter direction==in] \
-        -to [get_pins [list $pe_path/* ]]
-    
-    # # set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]]
-    # # Set multicycle path from config ports to the register file passing through the ALU
-    # # These are false paths and the above false path constraint can be applied but use MCP for conservative constraints
-    # # The correct config paths from the config ports directly to the register file are verified to be constrained 
+# Paths from config input ports to SB registers
+set sb_reg_path SB_ID0_5TRACKS_B*_PE/REG_T*_B*/value__CE/value_reg*/*
+set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
 
-    # [steveri 12/2020] tried these multicycle_path commands in buildkite-agent...
-    # got error: can't read "pond_path": no such variable
+# Paths from config input ports to PE registers
+set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
+set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pe_path/* ]]
 
-    set_multicycle_path 2 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -setup
-    set_multicycle_path 1 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -hold
-}
+# Paths from config input ports to the register file in Pond 
+set pond_path PondCore_inst0/pond_W_inst0/pond/rf/data_array_reg*
+
+# set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]]
+# Set multicycle path from config ports to the register file passing through the ALU
+# These are false paths and the above false path constraint can be applied but use MCP for conservative constraints
+# The correct config paths from the config ports directly to the register file are verified to be constrained 
+set_multicycle_path 2 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -setup
+set_multicycle_path 1 -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]] -hold
 
 source -echo -verbose inputs/common.tcl
-    
-if {$::env(USER) == "buildkite-agent"} {
-    puts "@file_info: Skipping set_false_path cmds b/c I am buildkite-agent"
-} else {
-    set_false_path -from [all_inputs] -through [get_pins [list $fp_mul_path/*]]
-    set_false_path -to  [all_outputs] -through [get_pins [list $fp_mul_path/*]]
-    set_false_path -from [all_inputs] -through [get_pins [list $fp_add_path/*]]
-    set_false_path -to  [all_outputs] -through [get_pins [list $fp_add_path/*]]
-}
 
-
+set_false_path -from [all_inputs] -through [get_pins [list $fp_mul_path/*]]
+set_false_path -to [all_outputs] -through [get_pins [list $fp_mul_path/*]]
+set_false_path -from [all_inputs] -through [get_pins [list $fp_add_path/*]]
+set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
 
 ########################################################################
 # ALU OP SCENARIOS
