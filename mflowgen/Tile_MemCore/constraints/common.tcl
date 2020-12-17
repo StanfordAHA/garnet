@@ -165,22 +165,9 @@ set rmux_cells [get_cells -hier RMUX_T*sel_inst0]
 set_dont_touch $rmux_cells true
 set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true
 
-# steveri 12/2020
-# Huh well it looks like 'set_false_path' commands break the buildkite flow...
-# dunno why...but until we figure it out I'm going to hack them out...
-# (but only for buildkite)
+# False paths from config input ports to SB output ports
+set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
 
-if {$::env(USER) == "buildkite-agent"} {
-    puts "@file_info: Skipping set_false_path cmds b/c I am buildkite-agent"
-} else {
-    # False paths from config input ports to SB output ports
-    set_false_path \
-        -from [get_ports config* -filter direction==in] \
-        -to [get_ports SB* -filter direction==out]
-
-    # False paths from config input ports to SB registers
-    set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg[*]/*
-    set_false_path \
-        -from [get_ports config_* -filter direction==in] \
-        -to [get_pins $sb_reg_path]
-}
+# False paths from config input ports to SB registers
+set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg*/*
+set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
