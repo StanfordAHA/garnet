@@ -12,6 +12,7 @@ steps:
 - label: 'setup'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     pushd /sim/buildkite-agent/mflowgen; git checkout fix_genlib_libs; popd;
      mflowgen run --design $$GARNET_HOME/mflowgen/glb_top'
 - wait: ~
 
