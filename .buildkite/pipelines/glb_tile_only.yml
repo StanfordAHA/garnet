@@ -12,13 +12,11 @@ steps:
 - label: 'setup'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
-     pushd /sim/buildkite-agent/mflowgen; git checkout fix_genlib_libs; popd;
      mflowgen run --design $$GARNET_HOME/mflowgen/glb_top'
 - wait: ~
 
 - label: 'glb_tile'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 30G;
-     pushd /sim/buildkite-agent/mflowgen; git checkout fix_genlib_libs; popd;
      set -o pipefail;
      make glb_tile |& tee make-gtile.log'
