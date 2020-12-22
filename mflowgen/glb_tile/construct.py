@@ -85,6 +85,12 @@ def construct():
   signoff           = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff        = Step( 'synopsys-pt-timing-signoff',    default=True )
   genlib            = Step( 'cadence-genus-genlib',          default=True )
+
+
+  ########################################################################
+  # NOTE can delete this block when/if mflowgen pull 93 is approved
+  # see https://github.com/cornell-brg/mflowgen/pull/93
+  # 
   if (os.getenv('USER') == "buildkite-agent"):
 
       # buildkite-agent doen't care about multiple "read_sdc" errors in genus log
@@ -102,6 +108,8 @@ def construct():
       xlist = genlib.get_postconditions()
       xlist = [ _ for _ in xlist if unwanted_assert not in _ ]
       xlist = genlib.set_postconditions( xlist )
+  ########################################################################
+
 
   if which("calibre") is not None:
       drc               = Step( 'mentor-calibre-drc',            default=True )
