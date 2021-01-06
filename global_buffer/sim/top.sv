@@ -6,7 +6,7 @@
 ** Change history:
 **  09/19/2020 - Implement first version of uvm-style testbench
 **===========================================================================*/
-`define CLK_PERIOD 1ns
+`define CLK_PERIOD 2ns
 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
@@ -68,8 +68,8 @@ timeprecision 1ps;
     end
 `elsif PNR 
     initial begin
-        $sdf_annotate("/sim/kongty/pnr_annotate/global_buffer.sdf",top.dut);
-        $dumpfile("glb_pnr.vcd");
+        // $sdf_annotate("netlist/glb_top.sdf",top.dut);
+        $dumpfile("glb_pnr4.vcd");
         $dumpvars(0, top);
     end
 `else
@@ -81,6 +81,7 @@ timeprecision 1ps;
 
     // clk generation
     initial begin
+        #0.5ns
         clk = 0;
         forever
         #(`CLK_PERIOD/2.0) clk = !clk;
@@ -90,7 +91,7 @@ timeprecision 1ps;
     initial begin
         reset <= 1;
         stall = '0;
-        repeat(3) @(posedge clk);
+        repeat(40) @(posedge clk);
         reset <= 0;
     end
 

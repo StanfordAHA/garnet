@@ -5,12 +5,12 @@ TB_DIR := ./sim
 
 TOP_MODULE := global_buffer
 
-CGRA_WIDTH ?= 32
+CGRA_WIDTH ?= 12
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
-GLB_TILE_MEM_SIZE ?= 256
+GLB_TILE_MEM_SIZE ?= 64
 
-GLB_TILE_NETLIST := /sim/kongty/pnr_annotate/glb_tile.vcs.v
-GLB_TOP_NETLIST := /sim/kongty/pnr_annotate/global_buffer.vcs.v
+GLB_TILE_NETLIST := ./netlist/glb_tile.vcs.v
+GLB_TOP_NETLIST := ./netlist/global_buffer.vcs.v
 SRAM_RTL := /sim/kongty/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/ts1n16ffcllsblvtc2048x64m8sw_130a.v
 SRAM_STUB := ./rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv
 
@@ -27,7 +27,6 @@ XRUN = xrun \
 	   -sv \
 	   -sysv \
 	   -l xrun.log \
-	   -notimingchecks \
 	   -covoverwrite \
 	   -top top \
 	   -timescale 100ps/1ps \
@@ -57,6 +56,9 @@ VCS = vcs \
 	  $(VCSARGS) \
 	  $(DESIGNARGS)
 
+# -------------------------------------------------------------------
+# RTL
+# -------------------------------------------------------------------
 # param target generates global_buffer_param.svh
 .PHONY: param
 param: global_buffer_main.py global_buffer_magma_helper.py
@@ -86,6 +88,9 @@ rtl: $(RTL_LISTS)
 html: $(rdl_post)
 	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl.post
 
+# -------------------------------------------------------------------
+# GLB TILE
+# -------------------------------------------------------------------
 # sim-tile
 # run testbench of glb-tile with xcelium
 .PHONY: sim-tile
@@ -110,9 +115,11 @@ sim-tile-gl: DESIGNARGS += \
 sim-tile-gl: $(GLB_TILE_NETLIST)
 	$(XRUN)
 
-# run testbench of glb with xcelium
+# -------------------------------------------------------------------
+# GLB TOP
+# -------------------------------------------------------------------
 .PHONY: sim
-#sim: XRUNARGS+=+define+DEBUG
+sim: XRUNARGS+= -notimingchecks
 sim: DESIGNARGS += -v $(SRAM_STUB) -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist 
 sim: rtl
 	$(XRUN)
@@ -122,12 +129,11 @@ sim-gl: DESIGNARGS += \
 	$(RTL_DIR)/global_buffer_param.svh \
 	$(RTL_DIR)/global_buffer_pkg.svh \
 	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist \
-	`find /tsmc16/TSMCHOME/digital/Front_End/verilog/ -name '*.v' | grep -v "pwr" | sed -e 's/^/-v /' | xargs` \
-	-v $(SRAM_RTL) \
-	$(GLB_TOP_NETLIST) \
-	$(GLB_TILE_NETLIST)
-sim-gl: XRUNARGS += +define+PNR
-sim-gl: $(GLB_TOP_NETLIST) $(GLB_TILE_NETLIST)
+	-F netlist/netlist.filelist
+sim-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING -ALLOWREDEFINITION
+sim-gl: XRUNARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS +define+TSMC_MEM_LOAD_0
+sim-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
+sim-gl:
 	$(XRUN)
 
 .PHONY: clean
