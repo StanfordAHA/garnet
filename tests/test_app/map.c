@@ -8,7 +8,12 @@
 #define MAX_NUM_GLB_TILES 16
 #define GROUP_SIZE 4
 #define MAX_NUM_GROUPS MAX_NUM_COLS / GROUP_SIZE
-#define BANK_SIZE 131072
+
+#ifndef GLB_TILE_MEM_SIZE
+#define GLB_TILE_MEM_SIZE 256
+#endif
+
+#define BANK_SIZE GLB_TILE_MEM_SIZE / 2 * 1024
 
 // Hacky way to cache tile control configuration
 int tile_config_table[MAX_NUM_GLB_TILES];
