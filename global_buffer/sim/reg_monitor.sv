@@ -31,7 +31,12 @@ task RegMonitor::run();
         RegTransaction trans;
         trans = new();
 
-        wait(vif.cbm.wr_en || vif.cbm.rd_en);
+        while(1) begin
+            if (vif.cbm.wr_en || vif.cbm.rd_en) begin
+                break;
+            end
+            @(vif.cbm);
+        end
         if (vif.cbm.wr_en) begin
             trans.wr_en   = vif.cbm.wr_en;
             trans.wr_addr = vif.cbm.wr_addr;
