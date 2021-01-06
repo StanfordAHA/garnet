@@ -21,13 +21,8 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'multivt'
+  adk_view = 'stdview'
 
-  # [steveri 11/2020] adk_view was: stdview. Now: multivt (above).
-  # Really only need 'multivt' for lvs (dragonphy uses lvt/ulvt)
-  # but I'm not sure the right way to do that
-  # so oh well everybody gets multivt...
-  
   if which("calibre") is not None:
       drc_rule_deck = 'calibre-drc-chip.rule' 
       antenna_drc_rule_deck = 'calibre-drc-antenna.rule'
