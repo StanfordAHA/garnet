@@ -58,8 +58,9 @@ sim: glb-rtl glc-rtl libcgra.so compile run
 # -------------------------------------------------------------------
 # C API
 # -------------------------------------------------------------------
+.PHONY: libcgra.so
 libcgra.so: map.c map.h gen.c gen.h parser.c parser.h
-	gcc -Wno-error -Wall parser.c map.c gen.c -shared -o libcgra.so -fPIC
+	gcc -Wno-error -Wall parser.c map.c gen.c -shared -o libcgra.so -fPIC -DGLB_TILE_MEM_SIZE=$(GLB_TILE_MEM_SIZE)
 
 # -------------------------------------------------------------------
 # RTL
