@@ -7,6 +7,7 @@ then
 else
     make cadence-pegasus-lvs
 fi
+
 mkdir -p outputs
 cp -L *cadence-genus-genlib/outputs/design.lib outputs/glb_top_tt.lib
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/glb_top.lef

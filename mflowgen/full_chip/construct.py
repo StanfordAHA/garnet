@@ -125,7 +125,7 @@ def construct():
   cgra_rtl_sim_compile  = Step( this_dir + '/cgra_rtl_sim_compile' )
   cgra_rtl_sim_run      = Step( this_dir + '/cgra_rtl_sim_run'     )
   cgra_sim_build        = Step( this_dir + '/cgra_sim_build'       )
-  # cgra_gl_sim_compile   = Step( this_dir + '/cgra_gl_sim_compile'  )
+  cgra_gl_sim_compile   = Step( this_dir + '/cgra_gl_sim_compile'  )
   # cgra_gl_sim_run       = Step( this_dir + '/cgra_gl_sim_run'      )
   # cgra_gl_ptpx          = Step( this_dir + '/cgra_gl_ptpx'         )
   # cgra_rtl_sim_verdict  = Step( this_dir + '/cgra_rtl_sim_verdict' )
@@ -286,6 +286,7 @@ def construct():
   g.add_step( cgra_rtl_sim_compile )
   g.add_step( cgra_sim_build       )
   g.add_step( cgra_rtl_sim_run     )
+  g.add_step( cgra_gl_sim_compile )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -319,6 +320,9 @@ def construct():
   g.connect_by_name( rtl, cgra_rtl_sim_compile )
   g.connect_by_name( cgra_sim_build, cgra_rtl_sim_run )
   g.connect_by_name( cgra_rtl_sim_compile, cgra_rtl_sim_run )
+
+  # Connect GL verification nodes
+  g.connect_by_name( signoff, cgra_gl_sim_compile )
 
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
