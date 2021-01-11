@@ -347,7 +347,8 @@ echo "--- Building in destination dir `pwd`"
 echo "--- INSTALL LATEST MFLOWGEN"
 mflowgen=/sim/buildkite-agent/mflowgen
 pushd $mflowgen
-  git checkout master
+  # git checkout master
+  git checkout lvs_adk_view; # Just for temporary FIXME
   git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
 popd
