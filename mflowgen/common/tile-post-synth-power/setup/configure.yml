@@ -1,0 +1,29 @@
+name: setup
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+outputs:
+  - cmd.tcl
+  - design.spef
+  - design.sdc
+  - design.sdf
+  - design.v
+  - sram.v
+  - sram_tt.db
+  - testbench.sv
+  - test_vectors.txt
+  - test_outputs.txt
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - cp ../../inputs/*.* outputs
+  - cp ../../inputs/tile_tbs/{tile_id}/test_vectors.txt outputs/test_vectors.txt
+  - cp ../../inputs/tile_tbs/{tile_id}/test_outputs.txt outputs/test_outputs.txt
+
+parameters:
+  tile_id: Tile_X01_Y01
