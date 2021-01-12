@@ -23,6 +23,12 @@ set ptpx_extra_link_libraries     [join "
                                       [glob -nocomplain inputs/adk/*.db]
                                   "]
 
+# get rid of corner libs
+set corner_libs                   [glob -nocomplain inputs/adk/*bc*.db]
+foreach bc_lib $corner_libs {
+    set ptpx_extra_link_libraries [lsearch -all -inline -not -exact $ptpx_extra_link_libraries $bc_lib]
+}
+
 #-------------------------------------------------------------------------
 # Inputs
 #-------------------------------------------------------------------------

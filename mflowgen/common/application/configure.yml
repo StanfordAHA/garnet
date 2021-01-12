@@ -1,0 +1,28 @@
+name: application
+
+outputs:
+  - run.vcd
+  - tiles_Tile_PE.list
+  - tiles_Tile_MemCore.list
+
+commands:
+  - ./run.sh
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  array_width: 12
+  array_height: 12
+  pipeline_config_interval: 8
+  interconnect_only: False
+  soc_only: False
+  PWR_AWARE: False
+  use_container: True
+  use_local_garnet: True
+  app_to_run: "tests/conv_3_3"
+  waves: False
+
+postconditions:
+  - assert File( 'outputs/run.vcd' )
