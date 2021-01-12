@@ -69,7 +69,9 @@ def construct():
     'signoff_engine' : True,
     'hold_target_slack'  : 0.060,
     # LVS
-    'lvs_adk'           : 'inputs/adk/../multivt',
+    # - need lvs2 b/c dragonphy uses LVT cells
+    # - who knows what these other parms are supposed to do...
+    'adk_view_lvs2'     : 'multivt',
     'lvs_hcells_file'   : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
     'lvs_verify_netlist' : 0,
