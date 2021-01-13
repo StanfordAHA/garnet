@@ -60,11 +60,14 @@ def construct():
     'strip_path'        : 'TilePETb/Tile_PE_inst'
     }
 
-  # (Very) relaxed timing for buildkite tests, to keep Steve sane
-  if (os.getenv('USER') == "buildkite-agent"):
-    parameters['clock_period'] = 4.0; # 4ns = 250 MHz
-
-
+  # User-level option to change clock frequency
+  # E.g. 'export clock_period_PE="4.0"' to target 250MHz
+  # Optionally could restrict to bk only: if (os.getenv('USER') == "buildkite-agent")
+  cp=os.getenv('clock_period_PE')
+  if (cp != None):
+      print("@file_info: WARNING found env var 'clock_period_PE'")
+      print("@file_info: WARNING setting PE clock period to '%s'" % cp)
+      parameters['clock_period'] = cp;
 
   #-----------------------------------------------------------------------
   # Create nodes
