@@ -71,7 +71,7 @@ def construct():
     # LVS
     # - need lvs2 b/c dragonphy uses LVT cells
     # - who knows what these other parms are supposed to do...
-    'adk_view_lvs2'     : 'multivt',
+    'lvs_extra_spice_include' : 'inputs/adk_lvs2/*.cdl',
     'lvs_hcells_file'   : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
     'lvs_verify_netlist' : 0,

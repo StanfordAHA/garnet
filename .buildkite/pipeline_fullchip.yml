@@ -91,11 +91,12 @@ steps:
      make cadence-innovus-postroute |& tee make-postroute.log'
 - wait: ~
 
+# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
 - label: 'hold'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
-     make cadence-innovus-postroute_hold |& tee make-hold.log'
+     echo exit 13 | make cadence-innovus-postroute_hold |& tee make-hold.log'
 - wait: ~
 
 - label: 'lvs'
