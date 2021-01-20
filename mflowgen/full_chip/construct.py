@@ -75,6 +75,8 @@ def construct():
     'lvs_hcells_file'   : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
     'lvs_verify_netlist' : 0,
+    # TSMC16 support for LVS
+    'adk_view_lvs2'     : 'multivt',
     # TLX Ports Partitions
     'TLX_FWD_DATA_LO_WIDTH' : 16,
     'TLX_REV_DATA_LO_WIDTH' : 45,
