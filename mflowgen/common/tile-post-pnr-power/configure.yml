@@ -1,0 +1,44 @@
+name: post-pnr-power
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - tiles_Tile_PE.list
+  - tiles_Tile_MemCore.list
+  - cmd.tcl
+  - design.spef.gz
+  - design.pt.sdc
+  - design.sdf
+  - design.vcs.v
+  - design.vcs.pg.v
+  - sram.v
+  - sram-pwr.v
+  - sram_tt.db
+  - testbench.sv
+  - tile_tbs
+
+outputs:
+  - reports
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - mkdir outputs/reports
+  - python run_all_tiles.py
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  clock_period: 1.0
+  design_name: undefined
+  testbench_name: tb
+  strip_path: tb/dut
+  waves: True
+  PWR_AWARE: True
+  use_sdf: True
