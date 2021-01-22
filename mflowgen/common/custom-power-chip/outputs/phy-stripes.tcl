@@ -68,50 +68,6 @@ proc phy_power_stripe_pins { net layer left_or_right } {
 }
 
 #-------------------------------------------------------------------------
-# Add vias to connect new M8 stripes to existing M9 stripes
-#-------------------------------------------------------------------------
-
-proc myAddPowerVias { area } {
-    # Replace all missing M8/M9 power stripe vias in the given area
-    # Example: myAddPowerVias  $iphy_stripe_area_right
-    editPowerVia -bottom_layer M8 -top_layer M9 -add_vias true -area $area
-}
-
-#-------------------------------------------------------------------------
-# Check to see that vias exist for all M8/M9 power stripes in a given area
-#-------------------------------------------------------------------------
-
-proc myCheckPowerVias { area } {
-    # Check vias for all M8/M9 power stripes in a given area
-    # Example: myCheckPowerVias $iphy_stripe_area_right
-
-    # Start with a clean slate, delete all existing markers
-    deselectAll; select_obj [ get_db markers ]; deleteSelectedFromFPlan
-
-    # Generate new markers
-    verifyPowerVia -layerRange {M8 M9} -net { VDD VSS } -area $area
-    set markers [ dbGet -p top.markers.subtype "MissingVia" ]
-
-    # Look for missing vias
-    set i 0
-    foreach m $markers {
-        incr i
-        select_obj $m
-        set net [dbGet $m.message] ; # "Net VSS"
-        set box [dbGet $m.box] ; # "{2863.0 4755.684 2864.824 4757.684}"
-        echo "**ERROR $i. Missing via on $net at $box"
-        if { $i >= 9 } {
-            echo "Stopping after 10 errors"
-            break
-        }
-    }
-    if { $i > 1 } { 
-        echo "**ERROR Too many missing vias! Exiting..."
-        echo exit 13
-    }
-}
-
-#-------------------------------------------------------------------------
 # Build M8 stripes from left edge of core to left edge of phy block
 #-------------------------------------------------------------------------
 
@@ -152,11 +108,6 @@ foreach p $pg_pins_left {
     add_shape -net $net -status ROUTED -pathSeg $path \
         -layer M8 -shape STRIPE -width $height
 }
-# No M9 stripes yet, so no M8/M9 vias
-# myAddPowerVias   $iphy_stripe_area_left
-# myCheckPowerVias $iphy_stripe_area_left
-
-
 
 #-------------------------------------------------------------------------
 # Build M8 stripes from right edge of phy block to right edge of core
@@ -196,9 +147,6 @@ foreach p $pg_pins_right {
     add_shape -net $net -status ROUTED -pathSeg $path \
         -layer M8 -shape STRIPE -width $height
 }
-# No M9 stripes yet, so no M8/M9 vias
-# myAddPowerVias   $iphy_stripe_area_right
-# myCheckPowerVias $iphy_stripe_area_right
 
 #-------------------------------------------------------------------------
 # Useful scripts for debug and development
