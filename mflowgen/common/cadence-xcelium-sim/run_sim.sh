@@ -3,7 +3,7 @@
 sed -i "1 i\`define CLK_PERIOD ${clock_period}" inputs/testbench.sv
 
 # Default arguments
-ARGS="-sv -timescale 1ns/1ns -access +rwc"
+ARGS="-sv -timescale 1ns/1ps -access +rwc"
 ARGS="$ARGS -ALLOWREDEFINITION"
 if [ -f "inputs/cmd.tcl" ]; then
   ARGS="$ARGS -input inputs/cmd.tcl"
@@ -46,7 +46,6 @@ ARGS="$ARGS -top $testbench_name"
 if [ $design_name == "Tile_MemCore" ]; then
    ARGS="$ARGS +define+TSMC_CM_NO_WARNING +define+TSMC_NO_TESTPINS_DEFAULT_VALUE_CHECK"
 fi
-
 
 # Grab all design/testbench files
 for f in inputs/*.v; do
