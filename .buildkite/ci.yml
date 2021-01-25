@@ -7,7 +7,7 @@ steps:
   commands:
   - source /aha/bin/activate
   - source /cad/modules/tcl/init/sh
-  - module load base xcelium
+  - module load base xcelium/18.03.001
   - rm -rf /aha/garnet
   - cp -r /workdir /aha/garnet
   - echo "--- Install requirements"
