@@ -50,7 +50,7 @@ def test_pe_data_gate(op, run_tb):
 
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
 
-    alu = tester.circuit.WrappedPE_inst0.PE_inst0.ALU_inst0.ALU_comb_inst0
+    alu = tester.circuit.WrappedPE_inst0.PE_inst0.ALU_inst0
     fu = getattr(alu, fu)
     other_fu = set(_EXPENSIVE[other_op][1]
                    for other_op in _EXPENSIVE
