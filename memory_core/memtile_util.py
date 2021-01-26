@@ -160,7 +160,8 @@ class LakeCoreBase(ConfigurableCore):
 
         # Need to invert this
         self.resetInverter = FromMagma(mantle.DefineInvert(1))
-        self.wire(self.resetInverter.ports.I[0], self.ports.reset)
+        self.wire(self.resetInverter.ports.I[0],
+                  self.convert(self.ports.reset, magma.bit))
         self.wire(self.convert(self.resetInverter.ports.O[0],
                                magma.asyncreset),
                   self.underlying.ports.rst_n)
