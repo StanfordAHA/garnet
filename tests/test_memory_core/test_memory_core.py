@@ -146,15 +146,15 @@ def scanner_test(trace, run_tb):
 
     netlist = {
         # Scanner to I/O
-        "e0": [("s0", "data_out"), ("I0", "f2io_16")],
-        "e1": [("s0", "valid_out"), ("i0", "f2io_1")],
-        "e2": [("s0", "eos_out"), ("i1", "f2io_1")],
-        "e3": [("i2", "io2f_1"), ("s0", "ready_in")],
+        "e0": [("s4", "data_out"), ("I0", "f2io_16")],
+        "e1": [("s4", "valid_out"), ("i1", "f2io_1")],
+        "e2": [("s4", "eos_out"), ("i2", "f2io_1")],
+        "e3": [("i3", "io2f_1"), ("s4", "ready_in")],
         # Scanner to Mem
-        "e4": [("m0", "data_out_0"), ("s0", "data_in")],
-        "e5": [("m0", "valid_out_0"), ("s0", "valid_in")],
-        "e6": [("s0", "addr_out"), ("m0", "addr_in_0")],
-        "e7": [("s0", "ready_out"), ("m0", "ren_in_0")],
+        "e4": [("m5", "data_out_0"), ("s4", "data_in")],
+        "e5": [("m5", "valid_out_0"), ("s4", "valid_in")],
+        "e6": [("s4", "addr_out"), ("m5", "addr_in_0")],
+        "e7": [("s4", "ready_out"), ("m5", "ren_in_0")],
     }
 
     bus = {"e0": 16,
@@ -180,7 +180,7 @@ def scanner_test(trace, run_tb):
     config_final = []
     for (f1, f2) in configs_mem:
         config_final.append((f1, f2, 0))
-    mem_x, mem_y = placement["m0"]
+    mem_x, mem_y = placement["m5"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
     config_mem_tile(interconnect, config_data, config_final, mem_x, mem_y, mcore)
@@ -191,7 +191,7 @@ def scanner_test(trace, run_tb):
     config_final = []
     for (f1, f2) in configs_scan:
         config_final.append((f1, f2, 0))
-    scan_x, scan_y = placement["s0"]
+    scan_x, scan_y = placement["s4"]
     scantile = interconnect.tile_circuits[(scan_x, scan_y)]
     score = scantile.core
     config_scan_tile(interconnect, config_data, config_final, scan_x, scan_y, score)
@@ -216,11 +216,11 @@ def scanner_test(trace, run_tb):
     data_out_x, data_out_y = placement["I0"]
     data_out = f"io2glb_16_X{data_out_x:02X}_Y{data_out_y:02X}"
 
-    valid_x, valid_y = placement["i0"]
+    valid_x, valid_y = placement["i1"]
     valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
-    eos_x, eos_y = placement["i1"]
+    eos_x, eos_y = placement["i2"]
     eos = f"io2glb_1_X{eos_x:02X}_Y{eos_y:02X}"
-    readyin_x, readyin_y = placement["i2"]
+    readyin_x, readyin_y = placement["i3"]
     readyin = f"glb2io_1_X{readyin_x:02X}_Y{readyin_y:02X}"
 
     for i in range(50):
