@@ -19,14 +19,6 @@ else:
     from .memtile_util import LakeCoreBase
 
 
-def config_scan_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, score_cfg):
-    for config_reg, val, feat in new_config_data:
-        idx, value = score_cfg.get_config_data(config_reg, val)
-        full_cfg.append((interconnect.get_config_addr(
-                         idx,
-                         feat, x_place, y_place), value))
-
-
 class ScannerCore(LakeCoreBase):
 
     def __init__(self,
@@ -35,9 +27,6 @@ class ScannerCore(LakeCoreBase):
                  config_addr_width=8):
 
         scan_name = "Scanner"
-
-        print("Creating scanner core...")
-
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
@@ -86,15 +75,10 @@ class ScannerCore(LakeCoreBase):
     def get_config_bitstream(self, length):
         configs = []
         config_scanner = [("tile_en", 1)]
+        config_scanner += self.dut.get_bitstream(length)
         for name, v in config_scanner:
             configs = [self.get_config_data(name, v)] + configs
-
-        print("Getting SCAN bitstream...")
-        config_extra = self.get_config_bitstream(length)
-
-        for name, v in config_extra:
-            configs = [self.get_config_data(name, v)] + configs
-
+        print(configs)
         return configs
 
     def pnr_info(self):

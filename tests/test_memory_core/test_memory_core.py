@@ -1,12 +1,12 @@
 import argparse
+from gemstone.common.util import compress_config_data
 import pytest
 from memory_core.memory_core_magma import MemCore
-from memory_core.scanner_core import ScannerCore, config_scan_tile
+from memory_core.scanner_core import ScannerCore
 from lake.utils.test_infra import lake_test_app_args
 from lake.utils.parse_clkwork_csv import generate_data_lists
 from gemstone.common.testers import ResetTester
 from gemstone.common.testers import BasicTester
-from gemstone.common.util import compress_config_data
 from cgra.util import create_cgra
 from canal.util import IOSide
 from memory_core.memory_core_magma import config_mem_tile
@@ -132,17 +132,13 @@ def basic_tb(config_path,
 #              run_tb=run_tb)
 
 
-def scanner_test(trace, run_tb):
-
-    print("Running scanner test...")
+def scanner_test(trace, run_tb, cwd):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
-
-    print("CGRA has been successfully created...")
 
     netlist = {
         # Scanner to I/O
@@ -155,6 +151,8 @@ def scanner_test(trace, run_tb):
         "e5": [("m5", "valid_out_0"), ("s4", "valid_in")],
         "e6": [("s4", "addr_out"), ("m5", "addr_in_0")],
         "e7": [("s4", "ready_out"), ("m5", "ren_in_0")],
+        "e8": [("i6", "io2f_1"), ("s4", "flush")],
+        "e9": [("i6", "io2f_1"), ("m5", "flush")]
     }
 
     bus = {"e0": 16,
@@ -164,53 +162,55 @@ def scanner_test(trace, run_tb):
            "e4": 16,
            "e5": 1,
            "e6": 16,
-           "e7": 1
+           "e7": 1,
+           "e8": 1,
+           "e9": 1
            }
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing = pnr(interconnect, (netlist, bus), cwd=cwd)
     config_data = interconnect.get_route_bitstream(routing)
 
     data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     data_len = len(data)
 
-    # Regular Bootstrap
-    MCore = make_memory_core()
     # Get configuration
-    configs_mem = MCore.get_SRAM_bistream(data)
-    config_final = []
-    for (f1, f2) in configs_mem:
-        config_final.append((f1, f2, 0))
     mem_x, mem_y = placement["m5"]
-    memtile = interconnect.tile_circuits[(mem_x, mem_y)]
-    mcore = memtile.core
-    config_mem_tile(interconnect, config_data, config_final, mem_x, mem_y, mcore)
-
-    SCore = make_scanner_core()
-    # Get Config
-    configs_scan = SCore.get_config_bitstream(data_len)
-    config_final = []
-    for (f1, f2) in configs_scan:
-        config_final.append((f1, f2, 0))
+    mem_data = interconnect.configure_placement(mem_x, mem_y, {"config":["mek", {"init": data}]})
     scan_x, scan_y = placement["s4"]
-    scantile = interconnect.tile_circuits[(scan_x, scan_y)]
-    score = scantile.core
-    config_scan_tile(interconnect, config_data, config_final, scan_x, scan_y, score)
+    scan_data = interconnect.configure_placement(scan_x, scan_y, data_len)
+    config_data += scan_data
+    config_data = compress_config_data(config_data)
+    config_data += mem_data
+
+    print("BITSTREAM START")
+    for addr, config in config_data:
+        print("{0:08X} {1:08X}".format(addr, config))
+    print("BITSTREAM END")
 
     circuit = interconnect.circuit()
-
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     tester.reset()
     tester.zero_inputs()
 
     tester.poke(circuit.interface["stall"], 1)
 
+    flush_x, flush_y = placement["i6"]
+    flush = f"glb2io_1_X{flush_x:02X}_Y{flush_y:02X}"
+
     for addr, index in config_data:
         tester.configure(addr, index)
-        tester.config_read(addr)
+        #  tester.config_read(addr)
         tester.eval()
 
     tester.done_config()
     tester.poke(circuit.interface["stall"], 0)
+    tester.eval()
+
+    # Now flush to synchronize everybody
+    tester.poke(circuit.interface[flush], 1)
+    tester.eval()
+    tester.step(2)
+    tester.poke(circuit.interface[flush], 0)
     tester.eval()
 
     data_out_x, data_out_y = placement["I0"]
@@ -223,18 +223,19 @@ def scanner_test(trace, run_tb):
     readyin_x, readyin_y = placement["i3"]
     readyin = f"glb2io_1_X{readyin_x:02X}_Y{readyin_y:02X}"
 
+    val = 1
     for i in range(50):
-        tester.poke(circuit.interface[readyin], 1)
+        tester.poke(circuit.interface[readyin], val)
+        val = 1 - val
         tester.eval()
         # tester.expect(circuit.interface[data_out], out_data[0][i])
         # toggle the clock
         tester.step(2)
 
-    run_tb(tester, trace=trace, disable_ndarray=True)
+    run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
 
 
 if __name__ == "__main__":
-    print("Am I here?")
     # conv_3_3 - default tb - use command line to override
     from conftest import run_tb_fn
     parser = argparse.ArgumentParser(description='Tile_MemCore TB Generator')
@@ -251,7 +252,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     scanner_test(trace=args.trace,
-                 run_tb=run_tb_fn)
+                 run_tb=run_tb_fn,
+                 cwd="mek_dump")
 
     # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,
