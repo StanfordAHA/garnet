@@ -1,3 +1,4 @@
+from memory_core.scanner_core import ScannerCore
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring,\
     apply_global_fanout_wiring, apply_global_parallel_meso_wiring
@@ -10,6 +11,7 @@ from io_core.io_core_magma import IOCoreValid, IOCore
 from memory_core.memory_core_magma import MemCore
 from memory_core.pond_core import PondCore
 from peak_core.peak_core import PeakCore
+from memory_core.scanner_core import ScannerCore
 from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
 from passes.clk_pass.clk_pass import clk_physical
@@ -92,9 +94,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 if use_mem_core:
                     core = MemCore(use_sram_stub=use_sram_stub)
                 else:
-                    core = PeakCore(PE_fc)
-                    if add_pond:
-                        additional_core[(x, y)] = PondCore()
+                    # Hack in scanner unit rn
+                    core = ScannerCore()
+                    # core = PeakCore(PE_fc)
+                    # if add_pond:
+                    #     additional_core[(x, y)] = PondCore()
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):

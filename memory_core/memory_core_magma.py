@@ -192,6 +192,24 @@ class MemCore(LakeCoreBase):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
+    def get_SRAM_bistream(self, dataZ):
+        configs = []
+        config_mem = [("tile_en", 1),
+                          ("mode", 2),
+                          ("wen_in_0_reg_sel", 1),
+                          ("wen_in_1_reg_sel", 1)]
+        for name, v in config_mem:
+            configs = [self.get_config_data(name, v)] + configs
+        # this is SRAM content
+        for addr, data in enumerate(dataZ):
+            if (not isinstance(data, int)) and len(data) == 2:
+                addr, data = data
+            feat_addr = addr // 256 + 1
+            addr = (addr % 256) >> 2
+            configs.append((addr, feat_addr, data))
+        print(configs)
+        return configs
+
     def get_config_bitstream(self, instr):
         configs = []
         if "init" in instr['config'][1]:
