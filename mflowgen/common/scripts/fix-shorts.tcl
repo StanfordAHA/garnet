@@ -54,7 +54,7 @@ verify_drc -layer_range { M4 M9 }
 set shorts [dbGet top.markers { .subType eq "Metal Short" }]
 if { $shorts == "0x0" } {
     echo "@file_info: No shorts found"
-} {
+} else {
    # Fix shorts 3: Show how many shorts were found
     set nshorts [llength $shorts]
     echo "@file_info: Found $nshorts short circuit(s):"
@@ -73,7 +73,7 @@ if { $shorts == "0x0" } {
     set shorts [dbGet top.markers { .subType eq "Metal Short" }]
     if { $shorts == "0x0" } {
         echo "@file_info: All shorts fixed"
-    } {
+    } else {
 
         # PE requires two tries maybe
         echo "@file_info: Oops looks like I failed; lemme try again"
@@ -102,7 +102,7 @@ if { $shorts == "0x0" } {
             # Save changes *only* if shorts fixed
             saveDesign checkpoints/design.checkpoint/save.enc -user_path
 
-        } {
+        } else {
             echo "@file_info: Oops looks like I failed again oh no"
             echo ""
             echo "**ERROR: Metal shorts exist, see log for details"
