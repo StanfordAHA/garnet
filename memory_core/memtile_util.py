@@ -73,7 +73,7 @@ class LakeCoreBase(ConfigurableCore):
         # The rest of the signals to wire to the underlying representation...
         other_signals = []
 
-        # for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array in core_interface:
+        # for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array, full_bus in core_interface:
         for io_info in core_interface:
             if io_info.port_name in skip_names:
                 continue
@@ -82,6 +82,11 @@ class LakeCoreBase(ConfigurableCore):
             # For our purposes, an explicit array means the inner data HAS to be 16 bits
             if io_info.expl_arr:
                 ind_ports = io_info.port_size[0]
+                intf_type = TData
+            # Due to some tooling weirdness, I've also included a way to explicitly mark
+            # a wire as a "full" (16b) bus...
+            elif io_info.full_bus:
+                ind_ports = 1
                 intf_type = TData
             dir_type = magma.In
             app_list = self.__inputs
@@ -106,13 +111,15 @@ class LakeCoreBase(ConfigurableCore):
                                               io_info.port_dir,
                                               io_info.expl_arr,
                                               i,
-                                              io_info.port_name))
+                                              io_info.port_name,
+                                              io_info.full_bus))
                 else:
                     other_signals.append((io_info.port_name,
                                           io_info.port_dir,
                                           io_info.expl_arr,
                                           0,
-                                          io_info.port_name))
+                                          io_info.port_name,
+                                          io_info.full_bus))
 
         assert(len(self.__outputs) > 0)
 
@@ -148,9 +155,11 @@ class LakeCoreBase(ConfigurableCore):
                     self.wire(mux.ports.O[0], self.underlying.ports[control_signal][i])
 
         # Wire the other signals up...
-        for pname, pdir, expl_arr, ind, uname in other_signals:
+        for pname, pdir, expl_arr, ind, uname, full_bus in other_signals:
             # If we are in an explicit array moment, use the given wire name...
-            if expl_arr is False:
+            if full_bus is True:
+                self.wire(self.ports[pname], self.underlying.ports[pname])
+            elif expl_arr is False:
                 # And if not, use the index
                 self.wire(self.ports[pname][0], self.underlying.ports[uname][ind])
             else:
