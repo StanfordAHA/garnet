@@ -32,8 +32,8 @@ def tile_id_physical(interconnect: Interconnect):
         # wire all lo bits low
         tile.wire(tile.ports.lo, Const(0))
         # Get the correct tile_id value
-        x_bv = BitVector[tile_id_width / 2](x)
-        y_bv = BitVector[tile_id_width / 2](y)
+        x_bv = BitVector[tile_id_width // 2](x)
+        y_bv = BitVector[tile_id_width // 2](y)
         tile_id_bv = BitVector.concat(y_bv, x_bv)
         # Disconnect existing constant from tile_id port
         tile_id_port = tile.ports.tile_id
