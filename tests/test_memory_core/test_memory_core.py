@@ -179,8 +179,8 @@ def scanner_test(trace, run_tb, cwd):
     scan_x, scan_y = placement["s4"]
     scan_data = interconnect.configure_placement(scan_x, scan_y, data_len)
     config_data += scan_data
-    config_data = compress_config_data(config_data)
     config_data += mem_data
+    config_data = compress_config_data(config_data)
 
     print("BITSTREAM START")
     for addr, config in config_data:
@@ -194,8 +194,8 @@ def scanner_test(trace, run_tb, cwd):
 
     tester.poke(circuit.interface["stall"], 1)
 
-    flush_x, flush_y = placement["i6"]
-    flush = f"glb2io_1_X{flush_x:02X}_Y{flush_y:02X}"
+    # flush_x, flush_y = placement["i6"]
+    # flush = f"glb2io_1_X{flush_x:02X}_Y{flush_y:02X}"
 
     for addr, index in config_data:
         tester.configure(addr, index)
@@ -207,11 +207,11 @@ def scanner_test(trace, run_tb, cwd):
     tester.eval()
 
     # Now flush to synchronize everybody
-    tester.poke(circuit.interface[flush], 1)
-    tester.eval()
-    tester.step(2)
-    tester.poke(circuit.interface[flush], 0)
-    tester.eval()
+    # tester.poke(circuit.interface[flush], 1)
+    # tester.eval()
+    # tester.step(2)
+    # tester.poke(circuit.interface[flush], 0)
+    # tester.eval()
 
     data_out_x, data_out_y = placement["I0"]
     data_out = f"io2glb_16_X{data_out_x:02X}_Y{data_out_y:02X}"

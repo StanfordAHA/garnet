@@ -103,6 +103,7 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
                                **runtime_kwargs)
 
 
+
 @pytest.fixture
 def run_tb():
     return run_tb_fn
