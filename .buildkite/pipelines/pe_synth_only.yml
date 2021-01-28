@@ -10,9 +10,12 @@ steps:
 # 
 - label: 'PE synth 45m'
   commands:
-  - pwd
+  - echo "+++BEGIN"
+  - echo "I am here: `pwd`"
+  - ls -l ./.buildkite/pipelines/check_pe_pe.sh
+  - echo ""
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-  - pwd
+  - echo "I am here: `pwd`"
   - ./.buildkite/pipelines/check_pe_pe.sh
 
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
