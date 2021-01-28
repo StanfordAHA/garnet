@@ -112,7 +112,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                             additional_core[(x, y)] = PondCore()
                     else:
                         altcore_used = True
-                        print(f"altcore_ind: {altcore_ind}")
                         core = altcore[altcore_ind]()
 
             cores[(x, y)] = core
