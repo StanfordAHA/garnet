@@ -177,7 +177,7 @@ def scanner_test(trace, run_tb, cwd):
 
     # Get configuration
     mem_x, mem_y = placement["m5"]
-    mem_data = interconnect.configure_placement(mem_x, mem_y, {"config":["mek", {"init": data}]})
+    mem_data = interconnect.configure_placement(mem_x, mem_y, {"config": ["mek", {"init": data}]})
     scan_x, scan_y = placement["s4"]
     scan_data = interconnect.configure_placement(scan_x, scan_y, data_len)
     config_data += scan_data
@@ -334,7 +334,6 @@ def intersect_test(trace, run_tb, cwd):
     coord1_x, coord1_y = placement["I10"]
     coord1 = f"glb2io_16_X{coord1_x:02X}_Y{coord1_y:02X}"
 
-
     valid0_x, valid0_y = placement["i11"]
     valid0 = f"glb2io_1_X{valid0_x:02X}_Y{valid0_y:02X}"
     valid1_x, valid1_y = placement["i12"]
@@ -390,12 +389,12 @@ def intersect_test(trace, run_tb, cwd):
             if v1[i1] == 0 and (i1 < len(v1) - 1):
                 i1 += 1
 
-        
         # tester.expect(circuit.interface[data_out], out_data[0][i])
         # toggle the clock
         tester.step(2)
 
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
+
 
 def scanner_intersect_test(trace, run_tb, cwd):
 
@@ -484,11 +483,11 @@ def scanner_intersect_test(trace, run_tb, cwd):
 
     # Get configuration
     mem0_x, mem0_y = placement["m3"]
-    mem0_data = interconnect.configure_placement(mem0_x, mem0_y, {"config":["mek", {"init": data0}]})
+    mem0_data = interconnect.configure_placement(mem0_x, mem0_y, {"config": ["mek", {"init": data0}]})
     scan0_x, scan0_y = placement["s1"]
     scan0_data = interconnect.configure_placement(scan0_x, scan0_y, data0_len)
     mem1_x, mem1_y = placement["m4"]
-    mem1_data = interconnect.configure_placement(mem1_x, mem1_y, {"config":["mek", {"init": data1}]})
+    mem1_data = interconnect.configure_placement(mem1_x, mem1_y, {"config": ["mek", {"init": data1}]})
     scan0_x, scan0_y = placement["s2"]
     scan1_data = interconnect.configure_placement(scan0_x, scan0_y, data1_len)
     isect_x, isect_y = placement["j0"]
@@ -547,7 +546,6 @@ def scanner_intersect_test(trace, run_tb, cwd):
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
 
 
-
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
     from conftest import run_tb_fn
@@ -564,9 +562,9 @@ if __name__ == "__main__":
     parser.add_argument('--trace', action="store_true")
     args = parser.parse_args()
 
-    scanner_test(trace=args.trace,
-                 run_tb=run_tb_fn,
-                 cwd="mek_dump")
+    scanner_intersect_test(trace=args.trace,
+                           run_tb=run_tb_fn,
+                           cwd="mek_dump")
 
     # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,
