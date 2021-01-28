@@ -32,7 +32,7 @@ class IntersectCore(LakeCoreBase):
                          data_width=data_width,
                          name="IntersectCore")
 
-        print("Making they ISECT")
+        print("Creating IntersectCore")
 
         # Capture everything to the tile object
         self.data_width = data_width
