@@ -216,7 +216,8 @@ class MemCore(LakeCoreBase):
             config_mem = [("tile_en", 1),
                           ("mode", 2),
                           ("wen_in_0_reg_sel", 1),
-                          ("wen_in_1_reg_sel", 1)]
+                          ("wen_in_1_reg_sel", 1),
+                          ("ren_in_1_reg_sel", 1)]
             for name, v in config_mem:
                 configs = [self.get_config_data(name, v)] + configs
             # this is SRAM content
@@ -279,7 +280,8 @@ class MemCore(LakeCoreBase):
             config_mem = [("tile_en", 1),
                           ("mode", 2),
                           ("wen_in_0_reg_sel", 1),
-                          ("wen_in_1_reg_sel", 1)]
+                          ("wen_in_1_reg_sel", 1),
+                          ("ren_in_1_reg_sel", 1)]
             for name, v in config_mem:
                 configs = [self.get_config_data(name, v)] + configs
         print(configs)

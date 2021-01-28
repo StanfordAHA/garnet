@@ -51,7 +51,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
                 port_conn_override: Dict[str,
                                          List[Tuple[SwitchBoxSide,
-                                                    SwitchBoxIO]]] = None):
+                                                    SwitchBoxIO]]] = None,
+                altcore=None):
     # currently only add 16bit io cores
     bit_widths = [1, 16]
     track_length = 1
@@ -95,10 +96,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     core = MemCore(use_sram_stub=use_sram_stub)
                 else:
                     # Hack in scanner unit rn
-                    core = ScannerCore()
-                    # core = PeakCore(PE_fc)
-                    # if add_pond:
-                    #     additional_core[(x, y)] = PondCore()
+                    if altcore is None:
+                        core = PeakCore(PE_fc)
+                        if add_pond:
+                            additional_core[(x, y)] = PondCore()
+                    else:
+                        core = altcore()
+
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
