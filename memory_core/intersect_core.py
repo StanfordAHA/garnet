@@ -40,7 +40,9 @@ class IntersectCore(LakeCoreBase):
         self.config_addr_width = config_addr_width
 
         cache_key = (self.data_width,
-                     self.config_data_width, self.config_addr_width)
+                     self.config_data_width,
+                     self.config_addr_width,
+                     "IntersectCore")
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
@@ -75,6 +77,7 @@ class IntersectCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, idk):
+        print("Config isect core.....!")
         cfg_length = idk
         configs = []
         config_scanner = [("tile_en", 1)]

@@ -564,7 +564,7 @@ if __name__ == "__main__":
     parser.add_argument('--trace', action="store_true")
     args = parser.parse_args()
 
-    scanner_intersect_test(trace=args.trace,
+    scanner_test(trace=args.trace,
                  run_tb=run_tb_fn,
                  cwd="mek_dump")
 
