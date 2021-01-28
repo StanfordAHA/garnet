@@ -40,7 +40,9 @@ class ScannerCore(LakeCoreBase):
         self.config_addr_width = config_addr_width
 
         cache_key = (self.data_width,
-                     self.config_data_width, self.config_addr_width)
+                     self.config_data_width,
+                     self.config_addr_width,
+                     "ScannerCore")
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
