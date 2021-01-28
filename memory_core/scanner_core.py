@@ -32,6 +32,8 @@ class ScannerCore(LakeCoreBase):
                          data_width=data_width,
                          name="ScannerCore")
 
+        print("Using tha scan")
+
         # Capture everything to the tile object
         self.data_width = data_width
         self.config_data_width = config_data_width

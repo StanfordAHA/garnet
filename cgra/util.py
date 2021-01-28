@@ -1,4 +1,3 @@
-from memory_core.scanner_core import ScannerCore
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring,\
     apply_global_fanout_wiring, apply_global_parallel_meso_wiring
@@ -12,6 +11,7 @@ from memory_core.memory_core_magma import MemCore
 from memory_core.pond_core import PondCore
 from peak_core.peak_core import PeakCore
 from memory_core.scanner_core import ScannerCore
+from memory_core.intersect_core import IntersectCore
 from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
 from passes.clk_pass.clk_pass import clk_physical
@@ -70,7 +70,17 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     # graphs
     cores = {}
     additional_core = {}
+    altcore_ind = 0
+    altcorelen = len(altcore) if altcore is not None else 0
+    altcore_used = False
     for x in range(width):
+        # Only update the altcore if it had been used actually.
+        if altcore_used:
+            if altcore_ind == (altcorelen - 1):
+                altcore_ind = 0
+            else:
+                altcore_ind += 1
+            altcore_used = False
         for y in range(height):
             # empty corner
             if x in range(x_min) and y in range(y_min):
@@ -101,7 +111,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                         if add_pond:
                             additional_core[(x, y)] = PondCore()
                     else:
-                        core = altcore()
+                        altcore_used = True
+                        print(f"altcore_ind: {altcore_ind}")
+                        core = altcore[altcore_ind]()
 
             cores[(x, y)] = core
 
