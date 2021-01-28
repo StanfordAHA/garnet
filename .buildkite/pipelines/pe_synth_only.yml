@@ -1,0 +1,22 @@
+agents: { jobsize: "hours" }
+
+env:
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+
+steps:
+
+##############################################################################
+# INDIVIDUAL TILE RUNS
+# 
+- label: 'PE synth 45m'
+  commands:
+  - pwd
+  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
+  - .buildkite/pipelines/check_pe_pe.sh
+
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+########################################################################
+# FULL CHIP RUNS - see pipeline_fullchip.yml
+
+# For more see pipeline_notes.yml
