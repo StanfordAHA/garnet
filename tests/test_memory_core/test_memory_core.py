@@ -980,8 +980,8 @@ def spVspV_test(trace, run_tb, cwd):
     
     return out_coord, out_data
 
-
-def check_results()
+def check_results():
+    return 1
 
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
