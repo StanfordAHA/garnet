@@ -212,6 +212,17 @@ class MemCore(LakeCoreBase):
 
     def get_config_bitstream(self, instr):
         configs = []
+
+        # Add FIFO mode...
+        if instr == "fifo":
+            configs_fifo = [("fifo_ctrl_fifo_depth", 32),
+                            ("mode", 1)
+                            ("tile_en", 1)]
+            for name, v in configs_fifo:
+                configs += [self.get_config_data(name, v)]
+            print(configs)
+            return configs
+
         if "init" in instr['config'][1]:
             config_mem = [("tile_en", 1),
                           ("mode", 2),

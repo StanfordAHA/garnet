@@ -729,7 +729,7 @@ def spVspV_test(trace, run_tb, cwd):
     netlist = {
         # Intersect to DATA MEM
         "e0": [("j0", "coord_out"), ("r15", "reg")],
-        "e1": [("r15", "reg"), ("I6", "f2io_16")],
+        "e1": [("r15", "reg"), ("m32", "data_in_0")],
         "e2": [("j0", "pos_out_0"), ("m13", "addr_in_0")],
         "e3": [("j0", "pos_out_1"), ("m14", "addr_in_0")],
         "e4": [("j0", "valid_out"), ("m13", "ren_in_0"), ("m14", "ren_in_0")],
@@ -759,12 +759,14 @@ def spVspV_test(trace, run_tb, cwd):
         "e22": [("s2", "addr_out"), ("m4", "addr_in_0")],
         "e23": [("s1", "ready_out"), ("m3", "ren_in_0")],
         "e24": [("s2", "ready_out"), ("m4", "ren_in_0")],
-        # Data mem to IO (data, valid)
-        "e25": [("m13", "data_out_0"), ("I17", "f2io_16")],
-        "e26": [("m14", "data_out_0"), ("I18", "f2io_16")],
-        "e27": [("m13", "valid_out_0"), ("i19", "f2io_1")],
-        "e28": [("m14", "valid_out_0"), ("i20", "f2io_1")],
-
+        # Data mem to PE
+        "e25": [("m13", "data_out_0"), ("p20", "data0")],
+        "e26": [("m14", "data_out_0"), ("p20", "data1")],
+        # MEM Fifo result...
+        "e27": [("p20", "O0"), ("m31", "data_in_0")],
+        "e28": [("m14", "valid_out_0"), ("m31", "push")],
+        "e29": [("m14", "valid_out_0"), ("m32", "push")],
+        "e30": [("i35", "io2f_1"), ("m31", "pop"), ("m32", "pop")]
     }
 
     bus = {
@@ -795,8 +797,9 @@ def spVspV_test(trace, run_tb, cwd):
         "e24": 1,
         "e25": 16,
         "e26": 16,
-        "e27": 1,
-        "e28": 1
+        "e27": 16,
+        "e28": 1,
+        "e29": 1
     }
 
     placement, routing = pnr(interconnect, (netlist, bus), cwd=cwd)
@@ -828,6 +831,16 @@ def spVspV_test(trace, run_tb, cwd):
     memd1_x, memd1_y = placement["m14"]
     memd1_data = interconnect.configure_placement(memd1_x, memd1_y, {"config": ["mek", {"init": datad1}]})
 
+    # Configure these guys as fifos...
+    memcf_x, memcf_y = placement["m32"]
+    memcf_data = interconnect.configure_placement(memcf_x, memcf_y, "fifo")
+    memdf_x, memdf_y = placement["m31"]
+    memdf_data = interconnect.configure_placement(memdf_x, memdf_y, "fifo")
+
+    # PE as mul
+    pemul_x, pemul_y = placement["p20"]
+    pemul_data = interconnect.configure_placement(pemul_x, pemul_y, "mul")
+
     config_data += mem0_data
     config_data += scan0_data
     config_data += mem1_data
@@ -835,6 +848,11 @@ def spVspV_test(trace, run_tb, cwd):
     config_data += isect_data
     config_data += memd0_data
     config_data += memd1_data
+
+    config_data += memcf_data
+    config_data += memdf_data
+    config_data += pemul_data
+
     skip_addr = interconnect.get_skip_addr()
     config_data = compress_config_data(config_data, skip_compression=skip_addr)
 
@@ -874,8 +892,12 @@ def spVspV_test(trace, run_tb, cwd):
     readyin_x, readyin_y = placement["i12"]
     readyin = f"glb2io_1_X{readyin_x:02X}_Y{readyin_y:02X}"
 
+    pop_x, pop_y = placement["i35"]
+    pop = f"glb2io_1_X{pop_x:02X}_Y{pop_y:02X}"
+
     for i in range(50):
         tester.poke(circuit.interface[readyin], 1)
+        tester.poke(circuit.interface[pop], 1)
         tester.eval()
         # tester.expect(circuit.interface[data_out], out_data[0][i])
         # toggle the clock
