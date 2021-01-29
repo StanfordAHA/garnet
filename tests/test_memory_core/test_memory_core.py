@@ -17,6 +17,7 @@ from canal.util import IOSide
 from memory_core.memory_core_magma import config_mem_tile
 from archipelago import pnr
 import lassen.asm as asm
+import random as rand
 
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
@@ -189,10 +190,10 @@ def scanner_test(trace, run_tb, cwd):
     skip_addr = interconnect.get_skip_addr()
     config_data = compress_config_data(config_data, skip_compression=skip_addr)
 
-    print("BITSTREAM START")
-    for addr, config in config_data:
-        print("{0:08X} {1:08X}".format(addr, config))
-    print("BITSTREAM END")
+    #print("BITSTREAM START")
+    #for addr, config in config_data:
+    #    print("{0:08X} {1:08X}".format(addr, config))
+    #print("BITSTREAM END")
 
     circuit = interconnect.circuit()
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
@@ -716,9 +717,62 @@ def mem_scanner_intersect_test(trace, run_tb, cwd):
 
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
 
+def align_data(data, alignment):
+    to_add = alignment - (len(data) - (len(data) // alignment) * alignment)
+    if to_add == alignment:
+        return data
+    data += [0] * to_add
+    return data
+
+def random_data(length):
+    retlist = []
+    for i in range(length):
+        retlist.append(rand.randint(0,2 ** 6 - 1))
+    return retlist
 
 def spVspV_test(trace, run_tb, cwd):
 
+    # Streams and code to create them and align them
+    data0 = [1, 2, 6, 10]
+    data1 = [3, 6, 8, 0]
+
+
+    # Fill data with random, align to 4
+    datad0 = [11, 12, 13, 14]#random_data(len(data0))
+    data0_len = len(data0)
+    datad1 = [15, 16, 17, 18]#random_data(len(data1))
+    data1_len = len(data1) - 1
+
+    out_data = []
+    out_coord = []
+
+    both = set(data0).intersection(data1)
+    ind0 = [data0.index(x) for x in both]
+    ind1 = [data1.index(x) for x in both]
+
+    out_coord = both
+    for i in range(len(ind0)):
+        out_data.append(datad0[ind0[i]] * datad1[ind1[i]])
+
+    print(f"DATA0: {data0}")
+    print(f"DATAD0: {datad0}")
+    print(f"DATA1: {data1}")
+    print(f"DATAD1: {datad1}")
+    print(f"common coords: {both}")
+    print(f"result data: {out_data}")
+
+    # Align these guys after the fact...
+    data0 = align_data(data0, 4)
+    datad0 = align_data(datad0, 4)
+    data1 = align_data(data1, 4)
+    datad1 = align_data(datad1, 4)
+
+    print(f"ALIGNED LENGTH 0: {len(data0)}")
+    print(f"ALIGNED LENGTH 1: {len(data1)}")
+    print(f"ADATA0: {data0}")
+    print(f"ADATAD0: {datad0}")
+    print(f"ADATA1: {data1}")
+    print(f"ADATAD1: {datad1}")
     chip_size = 6
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
                                num_tracks=3,
@@ -727,7 +781,6 @@ def spVspV_test(trace, run_tb, cwd):
                                altcore=[ScannerCore, IntersectCore, PeakCore])
 
     # Created CGRA with all cores!
-    print("Made full CGRA! Hurray Heterogeneity!")
 
     netlist = {
         # Intersect to DATA MEM
@@ -818,15 +871,6 @@ def spVspV_test(trace, run_tb, cwd):
     placement, routing = pnr(interconnect, (netlist, bus), cwd=cwd)
     config_data = interconnect.get_route_bitstream(routing)
 
-    data0 = [1, 2, 6, 10]
-    data0_len = len(data0)
-    data1 = [3, 6, 8, 0]
-    # Need to provide 4 or else the machine doesn't work, so subtracting 1 here...
-    data1_len = len(data1) - 1
-
-    datad0 = [11, 12, 13, 14]
-    datad1 = [15, 16, 17, 18]
-
     # Get configuration
     mem0_x, mem0_y = placement["m3"]
     mem0_data = interconnect.configure_placement(mem0_x, mem0_y, {"config": ["mek", {"init": data0}]})
@@ -869,10 +913,10 @@ def spVspV_test(trace, run_tb, cwd):
     skip_addr = interconnect.get_skip_addr()
     config_data = compress_config_data(config_data, skip_compression=skip_addr)
 
-    print("BITSTREAM START")
-    for addr, config in config_data:
-        print("{0:08X} {1:08X}".format(addr, config))
-    print("BITSTREAM END")
+    #print("BITSTREAM START")
+    #for addr, config in config_data:
+    #    print("{0:08X} {1:08X}".format(addr, config))
+    #print("BITSTREAM END")
 
     # Create tester and perform init routine...
     circuit = interconnect.circuit()
@@ -913,12 +957,10 @@ def spVspV_test(trace, run_tb, cwd):
     cdata_x, cdata_y = placement["I53"]
     cdata = f"io2glb_16_X{cdata_x:02X}_Y{cdata_y:02X}"
 
-
     dvalid_x, dvalid_y = placement["i50"]
     dvalid = f"io2glb_1_X{dvalid_x:02X}_Y{dvalid_y:02X}"
     ddata_x, ddata_y = placement["I52"]
     ddata = f"io2glb_16_X{ddata_x:02X}_Y{ddata_y:02X}"
-
 
     for i in range(50):
         tester.poke(circuit.interface[readyin], 1)
@@ -927,13 +969,15 @@ def spVspV_test(trace, run_tb, cwd):
 
         # If we have valid, print the two datas
         tester_if = tester._if(circuit.interface[cvalid])
-        tester_if.print("COORD: %08x, VAL: %08x", circuit.interface[cdata], circuit.interface[ddata])
+        tester_if.print("COORD: %d, VAL: %d\n", circuit.interface[cdata], circuit.interface[ddata])
         # tester_if._else().print("")
         # tester.expect(circuit.interface[data_out], out_data[0][i])
         # toggle the clock
         tester.step(2)
 
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
+    
+    return out_coord, out_data
 
 
 if __name__ == "__main__":
@@ -952,9 +996,14 @@ if __name__ == "__main__":
     parser.add_argument('--trace', action="store_true")
     args = parser.parse_args()
 
-    spVspV_test(trace=args.trace,
+    scanner_intersect_test(trace=args.trace,
+    #out_coord, out_data = spVspV_test(trace=args.trace,
                                run_tb=run_tb_fn,
                                cwd="mek_dump")
+
+    out_coord = list(out_coord)
+    for i in range(len(out_coord)):
+        print(f"EXP_COORD: {out_coord[i]}, EXP_DATA {out_data[i]}")
 
     # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,
