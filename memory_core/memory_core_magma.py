@@ -216,7 +216,7 @@ class MemCore(LakeCoreBase):
         # Add FIFO mode...
         if instr == "fifo":
             configs_fifo = [("fifo_ctrl_fifo_depth", 32),
-                            ("mode", 1)
+                            ("mode", 1),
                             ("tile_en", 1)]
             for name, v in configs_fifo:
                 configs += [self.get_config_data(name, v)]
