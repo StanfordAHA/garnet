@@ -1,4 +1,7 @@
 import argparse
+from os import pathconf
+
+from archipelago.place import place
 from peak_core.peak_core import PeakCore
 from memory_core.intersect_core import IntersectCore
 from gemstone.common.util import compress_config_data
@@ -766,7 +769,12 @@ def spVspV_test(trace, run_tb, cwd):
         "e27": [("p20", "O0"), ("m31", "data_in_0")],
         "e28": [("m14", "valid_out_0"), ("m31", "wen_in_0")],
         "e29": [("m14", "valid_out_0"), ("m32", "wen_in_0")],
-        "e30": [("i35", "io2f_1"), ("m31", "ren_in_0"), ("m32", "ren_in_0")]
+        "e30": [("i35", "io2f_1"), ("m31", "ren_in_0"), ("m32", "ren_in_0")],
+        # Get mem outputs
+        "e31": [("m31", "valid_out_0"), ("i50", "f2io_1")],
+        "e32": [("m32", "valid_out_0"), ("i51", "f2io_1")],
+        "e33": [("m31", "data_out_0"), ("I52", "f2io_16")],
+        "e34": [("m32", "data_out_0"), ("I53", "f2io_16")]
     }
 
     bus = {
@@ -800,7 +808,11 @@ def spVspV_test(trace, run_tb, cwd):
         "e27": 16,
         "e28": 1,
         "e29": 1,
-        "e30": 1
+        "e30": 1,
+        "e31": 1,
+        "e32": 1,
+        "e33": 16,
+        "e34": 16
     }
 
     placement, routing = pnr(interconnect, (netlist, bus), cwd=cwd)
@@ -896,10 +908,27 @@ def spVspV_test(trace, run_tb, cwd):
     pop_x, pop_y = placement["i35"]
     pop = f"glb2io_1_X{pop_x:02X}_Y{pop_y:02X}"
 
+    cvalid_x, cvalid_y = placement["i51"]
+    cvalid = f"io2glb_1_X{cvalid_x:02X}_Y{cvalid_y:02X}"
+    cdata_x, cdata_y = placement["I53"]
+    cdata = f"io2glb_16_X{cdata_x:02X}_Y{cdata_y:02X}"
+
+
+    dvalid_x, dvalid_y = placement["i50"]
+    dvalid = f"io2glb_1_X{dvalid_x:02X}_Y{dvalid_y:02X}"
+    ddata_x, ddata_y = placement["I52"]
+    ddata = f"io2glb_16_X{ddata_x:02X}_Y{ddata_y:02X}"
+
+
     for i in range(50):
         tester.poke(circuit.interface[readyin], 1)
         tester.poke(circuit.interface[pop], 1)
         tester.eval()
+
+        # If we have valid, print the two datas
+        tester_if = tester._if(circuit.interface[cvalid])
+        tester_if.print("COORD: %08x, VAL: %08x", circuit.interface[cdata], circuit.interface[ddata])
+        # tester_if._else().print("")
         # tester.expect(circuit.interface[data_out], out_data[0][i])
         # toggle the clock
         tester.step(2)
