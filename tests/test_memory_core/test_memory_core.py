@@ -981,6 +981,8 @@ def spVspV_test(trace, run_tb, cwd):
     return out_coord, out_data
 
 
+def check_results()
+
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
     from conftest import run_tb_fn
@@ -1013,7 +1015,10 @@ if __name__ == "__main__":
     # Values should be in dump_dir/xrun.log
     loglines = None
     with open(results_file, 'r') as rf:
-        
+        loglines = rf.readlines()
+    
+    assert loglines is not None, "Error extracting simulation log..."
+    print(f"logline...{loglines}")
 
     # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,
@@ -1022,3 +1027,4 @@ if __name__ == "__main__":
     #          cwd=args.tempdir_override,
     #          trace=args.trace,
     #          run_tb=run_tb_fn)
+
