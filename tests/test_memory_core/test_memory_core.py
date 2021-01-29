@@ -16,7 +16,7 @@ from cgra.util import create_cgra
 from canal.util import IOSide
 from memory_core.memory_core_magma import config_mem_tile
 from archipelago import pnr
-
+import lassen.asm as asm
 
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
@@ -766,7 +766,7 @@ def spVspV_test(trace, run_tb, cwd):
         "e25": [("m13", "data_out_0"), ("p20", "data0")],
         "e26": [("m14", "data_out_0"), ("p20", "data1")],
         # MEM Fifo result...
-        "e27": [("p20", "O0"), ("m31", "data_in_0")],
+        "e27": [("p20", "alu_res"), ("m31", "data_in_0")],
         "e28": [("m14", "valid_out_0"), ("m31", "wen_in_0")],
         "e29": [("m14", "valid_out_0"), ("m32", "wen_in_0")],
         "e30": [("i35", "io2f_1"), ("m31", "ren_in_0"), ("m32", "ren_in_0")],
@@ -852,7 +852,7 @@ def spVspV_test(trace, run_tb, cwd):
 
     # PE as mul
     pemul_x, pemul_y = placement["p20"]
-    pemul_data = interconnect.configure_placement(pemul_x, pemul_y, "mul")
+    pemul_data = interconnect.configure_placement(pemul_x, pemul_y, asm.umult0())
 
     config_data += mem0_data
     config_data += scan0_data
