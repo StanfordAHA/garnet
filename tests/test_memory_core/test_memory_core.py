@@ -1,6 +1,6 @@
 import argparse
 from os import pathconf
-
+import os
 from archipelago.place import place
 from peak_core.peak_core import PeakCore
 from memory_core.intersect_core import IntersectCore
@@ -734,14 +734,14 @@ def spVspV_test(trace, run_tb, cwd):
 
     # Streams and code to create them and align them
     data0 = [1, 2, 6, 10]
-    data1 = [3, 6, 8, 0]
+    data1 = [3, 6, 8]
 
 
     # Fill data with random, align to 4
-    datad0 = [11, 12, 13, 14]#random_data(len(data0))
+    datad0 = random_data(len(data0))
     data0_len = len(data0)
-    datad1 = [15, 16, 17, 18]#random_data(len(data1))
-    data1_len = len(data1) - 1
+    datad1 = random_data(len(data1))
+    data1_len = len(data1)
 
     out_data = []
     out_coord = []
@@ -774,8 +774,9 @@ def spVspV_test(trace, run_tb, cwd):
     print(f"ADATA1: {data1}")
     print(f"ADATAD1: {datad1}")
     chip_size = 6
+    num_tracks = 5
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
-                               num_tracks=3,
+                               num_tracks=num_tracks,
                                add_pd=True,
                                mem_ratio=(1, 2),
                                altcore=[ScannerCore, IntersectCore, PeakCore])
@@ -996,14 +997,23 @@ if __name__ == "__main__":
     parser.add_argument('--trace', action="store_true")
     args = parser.parse_args()
 
-    scanner_intersect_test(trace=args.trace,
-    #out_coord, out_data = spVspV_test(trace=args.trace,
+    dump_dir = "mek_dump"
+    log_name = "xrun.log"
+
+    #intersect_test(trace=args.trace,
+    out_coord, out_data = spVspV_test(trace=args.trace,
                                run_tb=run_tb_fn,
-                               cwd="mek_dump")
+                               cwd=dump_dir)
 
     out_coord = list(out_coord)
     for i in range(len(out_coord)):
         print(f"EXP_COORD: {out_coord[i]}, EXP_DATA {out_data[i]}")
+
+    results_file = dump_dir + "/" + log_name
+    # Values should be in dump_dir/xrun.log
+    loglines = None
+    with open(results_file, 'r') as rf:
+        
 
     # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,

@@ -84,7 +84,9 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
                                          "inline": False},
                           "include_verilog_libraries": rtl_lib,
                           "directory": tempdir,
-                          "flags": ["-Wno-fatal"]}
+                          "flags": ["-Wno-fatal"],
+                          "disp_type": "realtime"
+        }
         if not use_verilator:
             target = "system-verilog"
             runtime_kwargs["simulator"] = "xcelium"
@@ -100,6 +102,7 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
 
         tester.compile_and_run(target=target,
                                tmp_dir=False,
+                               skip_compile=True,
                                **runtime_kwargs)
 
 
