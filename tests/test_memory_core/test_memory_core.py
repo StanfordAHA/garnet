@@ -764,9 +764,9 @@ def spVspV_test(trace, run_tb, cwd):
         "e26": [("m14", "data_out_0"), ("p20", "data1")],
         # MEM Fifo result...
         "e27": [("p20", "O0"), ("m31", "data_in_0")],
-        "e28": [("m14", "valid_out_0"), ("m31", "push")],
-        "e29": [("m14", "valid_out_0"), ("m32", "push")],
-        "e30": [("i35", "io2f_1"), ("m31", "pop"), ("m32", "pop")]
+        "e28": [("m14", "valid_out_0"), ("m31", "wen_in_0")],
+        "e29": [("m14", "valid_out_0"), ("m32", "wen_in_0")],
+        "e30": [("i35", "io2f_1"), ("m31", "ren_in_0"), ("m32", "ren_in_0")]
     }
 
     bus = {
@@ -799,7 +799,8 @@ def spVspV_test(trace, run_tb, cwd):
         "e26": 16,
         "e27": 16,
         "e28": 1,
-        "e29": 1
+        "e29": 1,
+        "e30": 1
     }
 
     placement, routing = pnr(interconnect, (netlist, bus), cwd=cwd)
