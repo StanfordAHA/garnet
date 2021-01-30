@@ -2,6 +2,7 @@ import argparse
 from os import pathconf
 import os
 from archipelago.place import place
+from fault.actions import Expect
 from peak_core.peak_core import PeakCore
 from memory_core.intersect_core import IntersectCore
 from gemstone.common.util import compress_config_data
@@ -18,6 +19,7 @@ from memory_core.memory_core_magma import config_mem_tile
 from archipelago import pnr
 import lassen.asm as asm
 import random as rand
+import re
 
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
@@ -980,8 +982,27 @@ def spVspV_test(trace, run_tb, cwd):
     
     return out_coord, out_data
 
-def check_results():
-    return 1
+def check_results(res1, res2):
+    for key, value in res1.items():
+        print(f"RES1\n{key}:\t{value}")
+    for key, value in res2.items():
+        print(f"RES2\n{key}:\t{value}")
+    common_keys = set(res1.keys()).intersection(res2.keys())
+    no_mismatch = True
+    # Go through each signal
+    for key in common_keys:
+        # Check if same length
+        if len(res1[key]) != len(res2[key]):
+            no_mismatch = False
+            print(f"Length mismatch on {key}. {len(res1[key])} != {len(res2[key])}")
+            print("Going to next list")
+        else:
+            for i in range(len(res1[key])):
+                if res1[key][i] != res2[key][i]:
+                    no_mismatch = False
+                    print(f"Value mismatch on {key}. {res1[key][i]} != {res2[key][i]}")
+                    break
+    return no_mismatch
 
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
@@ -1018,7 +1039,26 @@ if __name__ == "__main__":
         loglines = rf.readlines()
     
     assert loglines is not None, "Error extracting simulation log..."
-    print(f"logline...{loglines}")
+    check_lines = [x for x in loglines if "COORD" in x]
+    split_lines = [re.split('[,\s\t]+', x.strip()) for x in check_lines]
+    coord_sim = [int(x[1]) for x in split_lines]
+    data_sim = [int(x[3]) for x in split_lines]
+
+    expected_results = {
+        "coord": out_coord,
+        "data": out_data
+    }
+    sim_results = {
+        "coord": coord_sim,
+        "data": data_sim
+    }
+
+    match = check_results(expected_results, sim_results)
+
+    if match:
+        print("SUCCESS: SIM MATCHES!")
+    else:
+        print("ERROR: MISMATCH BETWEEN SIM AND EXPECTED!")
 
     # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,
