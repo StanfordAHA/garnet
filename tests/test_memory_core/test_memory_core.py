@@ -735,9 +735,18 @@ def random_data(length):
 def spVspV_test(trace, run_tb, cwd):
 
     # Streams and code to create them and align them
-    data0 = [1, 2, 6, 10]
-    data1 = [3, 6, 8]
-
+    # Works
+    #data0 = [1, 2, 6, 10]
+    #data1 = [3, 6, 8]
+    # Works
+    #data0 = [1, 2, 6, 10]
+    #data1 = [1, 3, 6, 8]
+    # Works 
+    data0 = [1, 2, 6, 10, 12]
+    data1 = [1, 3, 6, 8]
+    # 
+    #data0 = [1, 2, 6, 10, 12, 17]
+    #data1 = [1, 3, 6, 8, 16, 18]
 
     # Fill data with random, align to 4
     datad0 = random_data(len(data0))
@@ -798,7 +807,7 @@ def spVspV_test(trace, run_tb, cwd):
         "e7": [("j0", "ready_out_0"), ("s1", "ready_in")],
         "e8": [("j0", "ready_out_1"), ("s2", "ready_in")],
         # Flush
-        "e9": [("i11", "io2f_1"), ("j0", "flush"), ("s1", "flush"), ("s2", "flush"), ("m3", "flush"), ("m4", "flush"), ("m13", "flush"), ("m14", "flush")],
+        "e9": [("i11", "io2f_1"), ("j0", "flush"), ("s1", "flush"), ("s2", "flush"), ("m3", "flush"), ("m4", "flush"), ("m13", "flush"), ("m14", "flush"), ("m31", "flush"), ("m32", "flush")],
         # I/O to Intersect
         "e10": [("s1", "data_out"), ("j0", "coord_in_0")],
         "e11": [("s2", "data_out"), ("j0", "coord_in_1")],
