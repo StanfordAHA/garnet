@@ -217,7 +217,9 @@ class MemCore(LakeCoreBase):
         if instr == "fifo":
             configs_fifo = [("fifo_ctrl_fifo_depth", 32),
                             ("mode", 1),
-                            ("tile_en", 1)]
+                            ("tile_en", 1),
+                            ("wen_in_1_reg_sel", 1),
+                            ("ren_in_1_reg_sel", 1)]
             for name, v in configs_fifo:
                 configs += [self.get_config_data(name, v)]
             print(configs)
