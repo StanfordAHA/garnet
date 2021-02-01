@@ -182,7 +182,9 @@ setAddStripeMode -stacked_via_bottom_layer 3 \
                  -stacked_via_top_layer    $pmesh_top \
                  -ignore_DRC false
 
-# Add the stripes
+#-------------------------------------------------------------------------
+# Add horizontal M8 stripes below phy block
+#-------------------------------------------------------------------------
 #
 # Use -start to offset the stripes slightly away from the core edge.
 # Allow same-layer jogs to connect stripes to the core ring if some
@@ -199,47 +201,10 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -start [expr $pmesh_bot_str_pitch]                            \
     -stop 4000
 
-# Add M8 stripes to connect to dragonphy
-# Stripes for bottom half of phy block
-set bottom 4101.96; set top 4400
-addStripe -nets {VDD VSS } \
-    -layer M8 -direction horizontal -width 2 -spacing 1 \
-    -start $bottom \
-    -set_to_set_distance [expr 12.295 - 0.279 - 0.016]\
-    -switch_layer_over_obs 0 \
-    -max_same_layer_jog_length 2 \
-    -padcore_ring_top_layer_limit AP -padcore_ring_bottom_layer_limit M1 \
-    -block_ring_top_layer_limit M8 -block_ring_bottom_layer_limit M1 \
-    -use_wire_group 0 -snap_wire_center_to_grid none \
-    -stop $top
-
-# Stripes for top half of phy block. There are eight groups of wires,
-# each consisting of four VDD/VSS pairs.
-set bottom 4421.34
-set top [expr $bottom + 34]
-set delta [expr 39.452 - 0.307 + 0.023 ]
-foreach i { 0 1 2 3 4 5 6 7 8 } {
-
-    addStripe -nets {VSS VDD } \
-        -layer M8 -direction horizontal -width 2 -spacing 1 \
-        -start $bottom \
-        -set_to_set_distance [expr 7.15 - 0.15] \
-        -switch_layer_over_obs 0 \
-        -max_same_layer_jog_length 2 \
-        -padcore_ring_top_layer_limit AP -padcore_ring_bottom_layer_limit M1 \
-        -block_ring_top_layer_limit M8 -block_ring_bottom_layer_limit M1 \
-        -use_wire_group 0 -snap_wire_center_to_grid none \
-        -stop $top
-
-    set bottom [expr $bottom + $delta]
-    set top    [expr $bottom + 34]
-}
-
-
-# Delete the two stray wires where pins are missing at the top right.
-set a { 50 4762 1360 4768 }
-editDelete -net VDD -layer M8 -area $a
-editDelete -net VSS -layer M8 -area $a
+#-------------------------------------------------------------------------
+# Add horizontal M8 power stripes on either side of phy block at top of chip
+#-------------------------------------------------------------------------
+source -verbose inputs/phy-stripes.tcl
 
 #-------------------------------------------------------------------------
 # Power mesh top settings (vertical)

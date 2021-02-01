@@ -56,11 +56,12 @@ steps:
      make soc-rtl |& tee make-soc-rtl.log'
 - wait: ~
 
+# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
 - label: 'syn'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 72G;
      echo "--- MAKE SYNOPSYS-DC-SYNTHESIS"; set -o pipefail;
-     make cadence-genus-synthesis |& tee make-syn.log'
+     echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log'
 - wait: ~
 
 - label: 'cts'
@@ -91,11 +92,12 @@ steps:
      make cadence-innovus-postroute |& tee make-postroute.log'
 - wait: ~
 
+# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
 - label: 'hold'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
-     make cadence-innovus-postroute_hold |& tee make-hold.log'
+     echo exit 13 | make cadence-innovus-postroute_hold |& tee make-hold.log'
 - wait: ~
 
 - label: 'lvs'
@@ -105,10 +107,11 @@ steps:
      make mentor-calibre-lvs |& tee make-lvs.log'
 - wait: ~
 
-- label: 'drc'
-  commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 18G;
-     echo "--- MAKE MENTOR-CALIBRE-DRC"; set -o pipefail;
-     make mentor-calibre-drc |& tee make-drc.log'
-- wait: ~
+# Not sure if this is ever useful...
+# - label: 'drc'
+#   commands:
+#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 18G;
+#      echo "--- MAKE MENTOR-CALIBRE-DRC"; set -o pipefail;
+#      make mentor-calibre-drc |& tee make-drc.log'
+# - wait: ~
 

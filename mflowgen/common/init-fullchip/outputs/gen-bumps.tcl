@@ -188,12 +188,28 @@ proc gen_bumps {} {
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDD -pg_insts ${io_root}*VDD_*  -exclude_region {1050 1050 3840 3840}
     #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDD -pg_insts ${io_root}*VDDANA_*  -exclude_region {1050 1050 3840 3840}
 
+    ########################################################################
+    # SIGNAL BUMP ASSIGNMENTS - automatically mostly,
+    # except for a couple special assignments for the PHY...
+    # Ugh yes it's a mixture of stylus and legacy commands :( :(
+
+    # On special assignment from the analog guys...
+    # two new digital signals for the phy with specific bumps requested
+    # FIXME/TODO should do this for all the analog signals (i.e. jtag)
+    # you know build an array or a dictionary or sumpm
+    set cross_bump Bump_620.24.22; set cross_net pad_freq_lvl_cross
+    set ramp_bump  Bump_647.25.23; set ramp_net  pad_ramp_clock
+    
+    assignSigToBump -net $cross_net -bumps $cross_bump
+    assignSigToBump -net $ramp_net  -bumps $ramp_bump
+    
     # Select all signal bumps
-    deselect_bumps
-    select_bumps -bumps [bumps_of_type $bump_types "s"]
-    assign_bumps -selected -exclude_region {1050 1050 3840 3840} -exclude_pg_nets {VDD VSS VDDPST}
+    deselect_bump
+    select_bump -bumps [bumps_of_type $bump_types "s"]
+    assignBump     -selected -exclude_region {1050 1050 3840 3840} -exclude_pgnet   {VDD VSS VDDPST}
     deselect_bumps
 
+    ########################################################################
     ### Select all core power pins and assign as VDD
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "r"]
