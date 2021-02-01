@@ -102,7 +102,7 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
 
         tester.compile_and_run(target=target,
                                tmp_dir=False,
-                               skip_compile=True,
+                               skip_compile=False,
                                **runtime_kwargs)
 
 
