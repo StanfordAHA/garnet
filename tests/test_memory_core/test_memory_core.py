@@ -20,7 +20,7 @@ from archipelago import pnr
 import lassen.asm as asm
 import random as rand
 import re
-from constraints import *
+from memory_core.constraints import *
 
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
@@ -827,6 +827,7 @@ def spVspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     print(f"ADATAD1: {datad1}")
     chip_size = 6
     num_tracks = 5
+
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
                                num_tracks=num_tracks,
                                add_pd=True,
@@ -1060,7 +1061,7 @@ def check_results(res1, res2):
                     break
     return no_mismatch
 
-def run_test(len1, len2, num_match, value_limit=100):
+def run_test(len1, len2, num_match, value_limit=100, dump_dir="mek_dump", log_name="xrun.log"):
     rand.seed(0)
     seqA, seqB = get_sparse_sequences(len1, len2, num_match, value_limit)
     #intersect_test(trace=args.trace,
@@ -1102,7 +1103,45 @@ def run_test(len1, len2, num_match, value_limit=100):
     else:
         print("ERROR: MISMATCH BETWEEN SIM AND EXPECTED!")
 
+def spVspV_regress(dump_dir="muk_dump", log_name="xrun.log"):
 
+    out_file = open("test_results.txt", "w+")
+    value_limit = 4096
+    num_mismatch = 0
+
+    # Create sequence class length generators
+    classA = SparseSequenceGenerator()
+    classB = SparseSequenceGenerator()
+
+    num_per_class = 2
+
+    # Iterate through the different combinations of class constraints
+    for classA_const in range(len(SparseSequenceConstraints)):
+        classA.set_constraint_class(classA_const)
+        for classB_const in range(len(SparseSequenceConstraints)):
+            classB.set_constraint_class(classB_const)
+            # rand.seed(0)
+            for test in range(num_per_class):
+                rand.seed(0)
+                len1 = classA.get_length()
+                len2 = classB.get_length()
+                smaller_len = len1
+                if len2 < len1:
+                    smaller_len = len2
+                num_match = rand.randint(0, smaller_len)
+                print(f"\n\n\n\n\n\nNEW TEST\nlen1={len1}\nlen2={len2}\nnum_match={num_match}")
+                success = run_test(len1, len2, num_match, value_limit, dump_dir=dump_dir, log_name=log_name)
+                report_msg = ""
+                if success is False:
+                    report_msg = f"REPORT: FAILURE: len1={len1}, len2={len2}, num_match={num_match}"
+                    num_mismatch += 1
+                else:
+                    report_msg = f"REPORT: SUCCESS: len1={len1}, len2={len2}, num_match={num_match}"
+
+                print(report_msg)
+                out_file.write(report_msg + "\n")
+
+    print(f"\n\n\nNum Mismatches: {num_mismatch}\n\n\n")
 
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
@@ -1120,34 +1159,8 @@ if __name__ == "__main__":
     parser.add_argument('--trace', action="store_true")
     args = parser.parse_args()
 
-    dump_dir = "mek_dump"
-    log_name = "xrun.log"
-
-    out_file = open("test_results.txt", "w+")
-
-#    len1 = [220]
-    #len1 = [4, 16, 14, 1, 1]
-    #len2 = [5, 3, 29, 5, 1]
-#    len2 = [124]
-#    num_match = [124]
-    #num_match = [3, 2, 9, 0, 1]
-#    value_limit = 300
-    value_limit = 4096
-    for test in range(5):
-        rand.seed(0)
-        len1 = rand.randint(0, 300)
-        len2 = rand.randint(0, 300)
-        smaller_len = len1
-        if len2 < len1:
-            smaller_len = len2
-        num_match = rand.randint(0, smaller_len)
-        print(f"\n\n\n\n\n\n\n\nNEW TEST\nlen1={len1}\nlen2={len2}\nnum_match={num_match}")
-        success = run_test(len1, len2, num_match, value_limit)
-        
-        if success is False:
-            print(f"REPORT: FAILURE: len1={len1}, len2={len2}, num_match={num_match}")
-        else:
-            print(f"REPORT: SUCCESS: len1={len1}, len2={len2}, num_match={num_match}")
+    spVspV_regress(dump_dir="mek_dump",
+                   log_name="xrun.log")
         # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,
     #          in_file_name=args.in_file_name,

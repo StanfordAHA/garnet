@@ -9,7 +9,10 @@ class SparseSequenceConstraints(Enum):
 
 class SparseSequenceGenerator():
     const_class = SparseSequenceConstraints.ZERO
-    def __init__(constraint_class):
+    def __init__(self, constraint_class=SparseSequenceConstraints.ZERO):
+        self.const_class = constraint_class
+
+    def set_constraint_class(self, constraint_class):
         self.const_class = constraint_class
 
     def get_length(self):
@@ -20,6 +23,6 @@ class SparseSequenceGenerator():
         elif self.const_class == SparseSequenceConstraints.LT100:
             return random.randint(0, 100)
         elif self.const_class == SparseSequenceConstraints.LT250:
-            return random.randint(0, 100)
+            return random.randint(0, 250)
         else:
             return 0
