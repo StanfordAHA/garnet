@@ -10,7 +10,7 @@ steps:
 # 
 - label: 'PE synth 45m'
   commands:
-  - echo "" x
+  - echo "+++" x
 
 
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
