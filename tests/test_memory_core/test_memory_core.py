@@ -20,6 +20,7 @@ from archipelago import pnr
 import lassen.asm as asm
 import random as rand
 import re
+from constraints import *
 
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
@@ -803,7 +804,7 @@ def spVspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     for i in range(len(ind0)):
         out_data.append(datad0[ind0[i]] * datad1[ind1[i]])
     
-    num_cycles = data0_len + data1_len + 50
+    num_cycles = data0_len + data1_len + 200
 
     print(f"DATA0: {data0}")
     print(f"DATAD0: {datad0}")
@@ -1122,16 +1123,31 @@ if __name__ == "__main__":
     dump_dir = "mek_dump"
     log_name = "xrun.log"
 
-    len1 = [89]
+    out_file = open("test_results.txt", "w+")
+
+#    len1 = [220]
     #len1 = [4, 16, 14, 1, 1]
     #len2 = [5, 3, 29, 5, 1]
-    len2 = [124]
-    num_match = [27]
+#    len2 = [124]
+#    num_match = [124]
     #num_match = [3, 2, 9, 0, 1]
-    value_limit = 300
-    for test in range(len(len1)):
-        print(f"\n\n\n\n\n\n\n\nNEW TEST\nlen1={len1[test]}\nlen2={len2[test]}\nnum_match={num_match[test]}")
-        run_test(len1[test], len2[test], num_match[test], value_limit)
+#    value_limit = 300
+    value_limit = 4096
+    for test in range(5):
+        rand.seed(0)
+        len1 = rand.randint(0, 300)
+        len2 = rand.randint(0, 300)
+        smaller_len = len1
+        if len2 < len1:
+            smaller_len = len2
+        num_match = rand.randint(0, smaller_len)
+        print(f"\n\n\n\n\n\n\n\nNEW TEST\nlen1={len1}\nlen2={len2}\nnum_match={num_match}")
+        success = run_test(len1, len2, num_match, value_limit)
+        
+        if success is False:
+            print(f"REPORT: FAILURE: len1={len1}, len2={len2}, num_match={num_match}")
+        else:
+            print(f"REPORT: SUCCESS: len1={len1}, len2={len2}, num_match={num_match}")
         # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,
     #          in_file_name=args.in_file_name,
