@@ -1,7 +1,7 @@
 agents: { jobsize: "hours" }
 
 env:
-  TEST: 'echo exit 13 | echo mflowgen/test/test_module.sh'
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
 
 steps:
 
