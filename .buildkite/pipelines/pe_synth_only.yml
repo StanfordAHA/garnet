@@ -16,7 +16,7 @@ steps:
   - echo ""
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
   - echo "I am here: `pwd`"
-  - ./.buildkite/pipelines/check_pe_pe.sh
+  - ./.buildkite/pipelines/check_pe_area.sh
 
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
