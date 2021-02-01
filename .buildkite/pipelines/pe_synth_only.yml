@@ -11,6 +11,9 @@ steps:
 - label: 'PE synth 45m'
   commands:
   - 'echo +++BEGIN'
+  - 'echo I am here: `pwd`'
+  - 'ls -l ./.buildkite/pipelines/check_pe_pe.sh'
+  - echo ''
 
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
