@@ -10,8 +10,8 @@ steps:
 # 
 - label: 'PE synth 45m'
   commands:
-  - echo "+++BEGIN"
-  - echo I am here: `pwd`
+  - echo "+++BEGIN";
+  - echo I am here: `pwd`;
   - ls -l ./.buildkite/pipelines/check_pe_area.sh
 
 
