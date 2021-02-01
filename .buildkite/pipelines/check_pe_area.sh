@@ -7,15 +7,15 @@ if [ "$1" != "" ]; then cd /build/gold.$1; fi
 
 cat <<EOF
 
-==============================================================================
-FINAL CHECK: Tile_PE total area must be < 7500 u^2
++++ FINAL CHECK: Tile_PE total area must be < 7500 u^2
 
 EOF
 
 # Designed to run from $garnet directory
 
 pe_dir=full_chip/*tile_array/*Tile_PE
-echo "`pwd`/`echo $pe_dir`"
+echo `pwd`/
+echo $pe_dir
 
 # "echo" to unglob why not
 resdir=`echo $pe_dir/*synthesis/results_syn`
@@ -23,7 +23,7 @@ egrep ^Tile_PE $resdir/final_area.rpt | awk '
 { printf("Tile_PE total area: %d\n", $NF);
   if ($NF > 7500) {
     print ""
-    print    "**ERROR '`pwd`/$resdir/final_area.rpt'"
+    print  "**ERROR '$resdir/final_area.rpt'"
     printf("**ERROR TILE area %d TOO BIG, should be < 7500\n", $NF);
     print ""; exit 13; }}
 '
@@ -38,6 +38,26 @@ egrep ^Tile_PE $resdir/final_area.rpt | awk '
 # Tile_PE                                      10188   4772.442  2214.860     6987.303 
 #   PE_inst0              Tile_PE_PE_unq1       2955   1226.431   655.597     1882.028 
 #     WrappedPE_inst0...  Tile_PE_PE            2770   1089.521   622.730     1712.252 
+
+
+
+#######################################################################################
+# Sample output:
+# 
+# /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/full_chip/17-tile_array/17-Tile_PE
+# -rw-r--r-- 1 buildkite-agent buildkite-agent 0 Feb  1 08:34 .stamp
+# Time now: Mon Feb  1 09:20:47 PST 2021
+# I am here: /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen
+# 
+# ==============================================================================
+# FINAL CHECK: Tile_PE total area must be < 7500 u^2
+# 
+# /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/full_chip/17-tile_array/17-Tile_PE
+# Tile_PE total area: 8573
+# 
+# **ERROR /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/full_chip/17-tile_array/17-Tile_PE/13-cadence-genus-synthesis/results_syn/final_area.rpt
+# **ERROR TILE area 8573 TOO BIG, should be < 7500
+
 
 
 
