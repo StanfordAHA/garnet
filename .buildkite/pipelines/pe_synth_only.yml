@@ -13,8 +13,8 @@ steps:
   - 'echo +++BEGIN'
   - 'echo I am here: `pwd`'
   - 'ls -l ./.buildkite/pipelines/check_pe_pe.sh'
-  - echo ''
-  - echo I am here: `pwd`
+  - 'echo ""'
+  - 'echo I am here: `pwd`'
   - ./.buildkite/pipelines/check_pe_area.sh
 
 
