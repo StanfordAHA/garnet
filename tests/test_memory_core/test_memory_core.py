@@ -1061,11 +1061,11 @@ def check_results(res1, res2):
                     break
     return no_mismatch
 
-def run_test(len1, len2, num_match, value_limit=100, dump_dir="mek_dump", log_name="xrun.log"):
+def run_test(len1, len2, num_match, value_limit=100, dump_dir="mek_dump", log_name="xrun.log", trace=False):
     rand.seed(0)
     seqA, seqB = get_sparse_sequences(len1, len2, num_match, value_limit)
     #intersect_test(trace=args.trace,
-    out_coord, out_data = spVspV_test(trace=args.trace,
+    out_coord, out_data = spVspV_test(trace=trace,
                                run_tb=run_tb_fn,
                                cwd=dump_dir,
                                data0=seqA,
@@ -1103,7 +1103,7 @@ def run_test(len1, len2, num_match, value_limit=100, dump_dir="mek_dump", log_na
     else:
         print("ERROR: MISMATCH BETWEEN SIM AND EXPECTED!")
 
-def spVspV_regress(dump_dir="muk_dump", log_name="xrun.log"):
+def spVspV_regress(dump_dir="muk_dump", log_name="xrun.log", trace=False):
 
     out_file = open("test_results.txt", "w+")
     value_limit = 4096
@@ -1130,7 +1130,7 @@ def spVspV_regress(dump_dir="muk_dump", log_name="xrun.log"):
                     smaller_len = len2
                 num_match = rand.randint(0, smaller_len)
                 print(f"\n\n\n\n\n\nNEW TEST\nlen1={len1}\nlen2={len2}\nnum_match={num_match}")
-                success = run_test(len1, len2, num_match, value_limit, dump_dir=dump_dir, log_name=log_name)
+                success = run_test(len1, len2, num_match, value_limit, dump_dir=dump_dir, log_name=log_name, trace=trace)
                 report_msg = ""
                 if success is False:
                     report_msg = f"REPORT: FAILURE: len1={len1}, len2={len2}, num_match={num_match}"
@@ -1160,7 +1160,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     spVspV_regress(dump_dir="mek_dump",
-                   log_name="xrun.log")
+                   log_name="xrun.log",
+                   trace=args.trace)
         # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,
     #          in_file_name=args.in_file_name,
