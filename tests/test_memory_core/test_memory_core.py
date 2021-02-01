@@ -732,8 +732,42 @@ def random_data(length):
         retlist.append(rand.randint(0,2 ** 6 - 1))
     return retlist
 
-def spVspV_test(trace, run_tb, cwd):
+def get_sparse_sequences(len1, len2, num_match, value_limit):
+    '''
+        Returns seqA, seqB: sparse sequences of len1 and len2, respectively, num_match
+    '''
+    if num_match > len1 or num_match > len2:
+        num_match = len1
+        if len1 > len2:
+            num_match = len2
+        printf(f"Requested num match too high - setting it to smallest length: {num_match}")
+    matching_numbers = []
+    while len(matching_numbers) < num_match:
+        new_rand = rand.randint(0, value_limit)
+        if new_rand not in matching_numbers:
+            matching_numbers.append(new_rand)
+    seqA = []
+    seqB = []
+    seqA += matching_numbers
+    seqB += matching_numbers
 
+    while len(seqA) < len1:
+        new_rand = rand.randint(0, value_limit)
+        if new_rand not in seqA:
+            seqA.append(new_rand)
+    while len(seqB) < len2:
+        new_rand = rand.randint(0, value_limit)
+        if new_rand not in seqB and new_rand not in seqA:
+            seqB.append(new_rand)
+
+    seqA.sort()
+    seqB.sort()
+    print(f"SEQA: {seqA}\nSEQB: {seqB}")
+    return seqA, seqB
+    
+
+
+def spVspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     # Streams and code to create them and align them
     # Works
     #data0 = [1, 2, 6, 10]
@@ -742,11 +776,11 @@ def spVspV_test(trace, run_tb, cwd):
     #data0 = [1, 2, 6, 10]
     #data1 = [1, 3, 6, 8]
     # Works 
-    data0 = [1, 2, 6, 10, 12]
-    data1 = [1, 3, 6, 8]
+    #data0 = [1, 2, 6, 10, 12]
+    #data1 = [1, 3, 6, 8]
     # 
-    #data0 = [1, 2, 6, 10, 12, 17]
-    #data1 = [1, 3, 6, 8, 16, 18]
+#    data0 = [1, 2, 6, 10, 12, 17]
+#    data1 = [1, 3, 6, 8, 16, 18]
 
     # Fill data with random, align to 4
     datad0 = random_data(len(data0))
@@ -758,12 +792,18 @@ def spVspV_test(trace, run_tb, cwd):
     out_coord = []
 
     both = set(data0).intersection(data1)
+    both = list(both)
+    both.sort()
     ind0 = [data0.index(x) for x in both]
     ind1 = [data1.index(x) for x in both]
 
     out_coord = both
+    #out_coord = list(out_coord)
+    #out_coord.sort()
     for i in range(len(ind0)):
         out_data.append(datad0[ind0[i]] * datad1[ind1[i]])
+    
+    num_cycles = data0_len + data1_len + 50
 
     print(f"DATA0: {data0}")
     print(f"DATAD0: {datad0}")
@@ -974,7 +1014,10 @@ def spVspV_test(trace, run_tb, cwd):
     ddata_x, ddata_y = placement["I52"]
     ddata = f"io2glb_16_X{ddata_x:02X}_Y{ddata_y:02X}"
 
-    for i in range(50):
+    eos_out_x, eos_out_y = placement["i10"]
+    eos_out = f"io2glb_1_X{eos_out_x:02X}_Y{eos_out_y:02X}"
+
+    for i in range(num_cycles):
         tester.poke(circuit.interface[readyin], 1)
         tester.poke(circuit.interface[pop], 1)
         tester.eval()
@@ -982,6 +1025,9 @@ def spVspV_test(trace, run_tb, cwd):
         # If we have valid, print the two datas
         tester_if = tester._if(circuit.interface[cvalid])
         tester_if.print("COORD: %d, VAL: %d\n", circuit.interface[cdata], circuit.interface[ddata])
+        if_eos_finish = tester._if(circuit.interface[eos_out])
+        if_eos_finish.print("EOS IS HIGH\n");
+        
         # tester_if._else().print("")
         # tester.expect(circuit.interface[data_out], out_data[0][i])
         # toggle the clock
@@ -1013,29 +1059,15 @@ def check_results(res1, res2):
                     break
     return no_mismatch
 
-if __name__ == "__main__":
-    # conv_3_3 - default tb - use command line to override
-    from conftest import run_tb_fn
-    parser = argparse.ArgumentParser(description='Tile_MemCore TB Generator')
-    parser.add_argument('--config_path',
-                        type=str,
-                        default="conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf")
-    parser.add_argument('--stream_path',
-                        type=str,
-                        default="conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf_0_top_SMT.csv")
-    parser.add_argument('--in_file_name', type=str, default="input")
-    parser.add_argument('--out_file_name', type=str, default="output")
-    parser.add_argument('--tempdir_override', action="store_true")
-    parser.add_argument('--trace', action="store_true")
-    args = parser.parse_args()
-
-    dump_dir = "mek_dump"
-    log_name = "xrun.log"
-
+def run_test(len1, len2, num_match, value_limit=100):
+    rand.seed(0)
+    seqA, seqB = get_sparse_sequences(len1, len2, num_match, value_limit)
     #intersect_test(trace=args.trace,
     out_coord, out_data = spVspV_test(trace=args.trace,
                                run_tb=run_tb_fn,
-                               cwd=dump_dir)
+                               cwd=dump_dir,
+                               data0=seqA,
+                               data1=seqB)
 
     out_coord = list(out_coord)
     for i in range(len(out_coord)):
@@ -1069,7 +1101,38 @@ if __name__ == "__main__":
     else:
         print("ERROR: MISMATCH BETWEEN SIM AND EXPECTED!")
 
-    # basic_tb(config_path=args.config_path,
+
+
+if __name__ == "__main__":
+    # conv_3_3 - default tb - use command line to override
+    from conftest import run_tb_fn
+    parser = argparse.ArgumentParser(description='Tile_MemCore TB Generator')
+    parser.add_argument('--config_path',
+                        type=str,
+                        default="conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf")
+    parser.add_argument('--stream_path',
+                        type=str,
+                        default="conv_3_3_recipe/buf_inst_input_10_to_buf_inst_output_3_ubuf_0_top_SMT.csv")
+    parser.add_argument('--in_file_name', type=str, default="input")
+    parser.add_argument('--out_file_name', type=str, default="output")
+    parser.add_argument('--tempdir_override', action="store_true")
+    parser.add_argument('--trace', action="store_true")
+    args = parser.parse_args()
+
+    dump_dir = "mek_dump"
+    log_name = "xrun.log"
+
+    len1 = [89]
+    #len1 = [4, 16, 14, 1, 1]
+    #len2 = [5, 3, 29, 5, 1]
+    len2 = [124]
+    num_match = [27]
+    #num_match = [3, 2, 9, 0, 1]
+    value_limit = 300
+    for test in range(len(len1)):
+        print(f"\n\n\n\n\n\n\n\nNEW TEST\nlen1={len1[test]}\nlen2={len2[test]}\nnum_match={num_match[test]}")
+        run_test(len1[test], len2[test], num_match[test], value_limit)
+        # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,
     #          in_file_name=args.in_file_name,
     #          out_file_name=args.out_file_name,

@@ -113,10 +113,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     else:
                         altcore_used = True
                         if altcore[altcore_ind] == PeakCore:
-                            print("Using PE")
+                            #print("Using PE")
                             core = PeakCore(PE_fc)
                         else:
-                            print(f"Using {altcore[altcore_ind].__name__}")
+                            #print(f"Using {altcore[altcore_ind].__name__}")
                             core = altcore[altcore_ind]()
 
             cores[(x, y)] = core
