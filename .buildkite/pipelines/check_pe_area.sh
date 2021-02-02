@@ -60,7 +60,7 @@ egrep ^Tile_PE $resdir/final_area.rpt | awk '
 # Previous runs and errors
 # 
 # 
-# BEFORE: /build/gold.211/full_chip/\
+# BEFORE peak update, size=7282: /build/gold.211/full_chip/\
 # 17-tile_array/17-Tile_PE/14-cadence-genus-synthesis/results_syn
 # =======================================================================
 # Instance                        Module          Cell Count   Total Area 
@@ -71,7 +71,7 @@ egrep ^Tile_PE $resdir/final_area.rpt | awk '
 # =======================================================================
 # 
 # 
-# AFTER: /build/gold.214/full_chip/\
+# AFTER peak update, size=8619 (TOO BIG): /build/gold.214/full_chip/\
 # 17-tile_array/17-Tile_PE/14-cadence-genus-synthesis/results_syn
 # =======================================================================
 # Instance                        Module          Cell Count   Total Area 
@@ -81,28 +81,12 @@ egrep ^Tile_PE $resdir/final_area.rpt | awk '
 #     WrappedPE_inst0$PE_inst0    Tile_PE_PE            4438     2845.712 
 # =======================================================================
 # 
-# # Rerun 214/AFTER except @ 4ns instead of 1.1:
-# # =======================================================================
-# # Instance                        Module          Cell Count   Total Area 
-# # -----------------------------------------------------------------------
-# # Tile_PE                                              10137     6985.531 
-# #   PE_inst0                       Tile_PE_PE_unq1      2930     1887.316 
-# #     WrappedPE_inst0$PE_inst0     Tile_PE_PE           2746     1717.927 
-# # =======================================================================
-
-
-
-
-# grep PE_PE $resdir/final_area.rpt | awk '
-# { printf("Found %4d cells of type \"%s\"\n", $3, $2) 
-#   if ($3 > 3000) { print "**ERROR - TOO MANY CELLS!"; exit 13; }
-# }
-# '
-
-
-#  grep PE_PE $far | sed 's/  */ /g'
-#  PE_inst0 Tile_PE_PE_unq1 4623 2072.926 941.491 3014.417 
-#  WrappedPE_inst0$PE_inst0 Tile_PE_PE 4438 1936.380 909.332 2845.712 
-
-
-
+# 
+# Rerun 214/AFTER except @ 4ns instead of 1.1, size=6985
+# =======================================================================
+# Instance                        Module          Cell Count   Total Area 
+# -----------------------------------------------------------------------
+# Tile_PE                                              10137     6985.531 
+#   PE_inst0                       Tile_PE_PE_unq1      2930     1887.316 
+#     WrappedPE_inst0$PE_inst0     Tile_PE_PE           2746     1717.927 
+# =======================================================================
