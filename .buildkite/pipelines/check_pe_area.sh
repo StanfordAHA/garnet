@@ -7,7 +7,7 @@ if [ "$1" != "" ]; then cd /build/gold.$1; fi
 
 cat <<EOF
 
-+++ FINAL CHECK: Tile_PE total area must be < 7500 u^2
+--- FINAL CHECK: Tile_PE total area must be < 7500 u^2
 
 EOF
 
@@ -20,11 +20,12 @@ echo $pe_dir
 # "echo" to unglob why not
 resdir=`echo $pe_dir/*synthesis/results_syn`
 egrep ^Tile_PE $resdir/final_area.rpt | awk '
-{ printf("Tile_PE total area: %d\n", $NF);
+{ printf("Total area: %d\n", $NF);
   if ($NF > 7500) {
     print ""
     print  "**ERROR '$resdir/final_area.rpt'"
     printf("**ERROR TILE area %d TOO BIG, should be < 7500\n", $NF);
+    printf("+++ FAIL TILE area %d TOO BIG, should be < 7500\n", $NF);
     print ""; exit 13; }}
 '
 
@@ -44,25 +45,21 @@ egrep ^Tile_PE $resdir/final_area.rpt | awk '
 #######################################################################################
 # Sample output:
 # 
-# /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/full_chip/17-tile_array/17-Tile_PE
-# -rw-r--r-- 1 buildkite-agent buildkite-agent 0 Feb  1 08:34 .stamp
-# Time now: Mon Feb  1 09:20:47 PST 2021
-# I am here: /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen
+# +++ FINAL CHECK: Tile_PE total area must be < 7500 u^2
 # 
-# ==============================================================================
-# FINAL CHECK: Tile_PE total area must be < 7500 u^2
+# /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/
+# full_chip/17-tile_array/17-Tile_PE
+# Total area: 8573
 # 
-# /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/full_chip/17-tile_array/17-Tile_PE
-# Tile_PE total area: 8573
-# 
-# **ERROR /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/full_chip/17-tile_array/17-Tile_PE/13-cadence-genus-synthesis/results_syn/final_area.rpt
+# **ERROR full_chip/17-tile_array/17-Tile_PE/13-cadence-genus-synthesis/results_syn/final_area.rpt
 # **ERROR TILE area 8573 TOO BIG, should be < 7500
 
 
 
-
-
-
+##############################################################################
+# Previous runs and errors
+# 
+# 
 # BEFORE: /build/gold.211/full_chip/\
 # 17-tile_array/17-Tile_PE/14-cadence-genus-synthesis/results_syn
 # =======================================================================
