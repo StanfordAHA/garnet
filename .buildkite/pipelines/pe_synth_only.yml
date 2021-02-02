@@ -13,13 +13,4 @@ steps:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
   - .buildkite/pipelines/check_pe_area.sh
 
-
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-########################################################################
-# FULL CHIP RUNS - see pipeline_fullchip.yml
-
-# For more see pipeline_notes.yml
-
-# /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/mflowgen/
-
