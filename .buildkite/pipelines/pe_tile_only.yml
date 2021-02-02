@@ -19,5 +19,5 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 30G;
      set -o pipefail;
      make Tile_PE |& tee make-pe.log;
-     $$GARNET_HOME/.buildkite/pipelines/check_pe_pe.sh
+     $$GARNET_HOME/.buildkite/pipelines/check_pe_area.sh
      '
