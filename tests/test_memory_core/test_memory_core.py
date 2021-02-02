@@ -730,7 +730,8 @@ def align_data(data, alignment):
 def random_data(length):
     retlist = []
     for i in range(length):
-        retlist.append(rand.randint(0,2 ** 6 - 1))
+        # Don't include 0
+        retlist.append(rand.randint(1, 2 ** 6 - 1))
     return retlist
 
 def get_sparse_sequences(len1, len2, num_match, value_limit):
@@ -741,7 +742,7 @@ def get_sparse_sequences(len1, len2, num_match, value_limit):
         num_match = len1
         if len1 > len2:
             num_match = len2
-        printf(f"Requested num match too high - setting it to smallest length: {num_match}")
+        print(f"Requested num match too high - setting it to smallest length: {num_match}")
     matching_numbers = []
     while len(matching_numbers) < num_match:
         new_rand = rand.randint(0, value_limit)
@@ -1113,16 +1114,15 @@ def spVspV_regress(dump_dir="muk_dump", log_name="xrun.log", trace=False):
     classA = SparseSequenceGenerator()
     classB = SparseSequenceGenerator()
 
-    num_per_class = 2
+    num_per_class = 5
+    rand.seed(0)
 
     # Iterate through the different combinations of class constraints
     for classA_const in range(len(SparseSequenceConstraints)):
-        classA.set_constraint_class(classA_const)
+        classA.set_constraint_class(SparseSequenceConstraints(classA_const + 1))
         for classB_const in range(len(SparseSequenceConstraints)):
-            classB.set_constraint_class(classB_const)
-            # rand.seed(0)
+            classB.set_constraint_class(SparseSequenceConstraints(classB_const + 1))
             for test in range(num_per_class):
-                rand.seed(0)
                 len1 = classA.get_length()
                 len2 = classB.get_length()
                 smaller_len = len1
