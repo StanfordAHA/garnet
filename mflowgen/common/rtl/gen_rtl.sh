@@ -64,22 +64,22 @@ else
          echo PIP PIP HOORAY BEGIN ----------------
          pip list -v | egrep 'ast|peak|magma'
          echo PIP PIP HOORAY MIDDLE ----------------
-         echo ast_tools check; (cd /aha/ast_tools; git log | head) || echo FAIL
-         echo magma     check; (cd /aha/magma;     git log | head) || echo FAIL
-         echo peak      check; (cd /aha/peak;      git log | head) || echo FAIL
+         echo ast_tools check; (cd /aha/ast_tools; git log | head -6) || echo FAIL
+         echo magma     check; (cd /aha/magma;     git log | head -6) || echo FAIL
+         echo peak      check; (cd /aha/peak;      git log | head -6) || echo FAIL
          echo PIP PIP HOORAY END --------------------
 
-pip install -U --exists-action s -e git://github.com/phanrahan/magma.git@cst#egg=magma-lang
-pip install -U --exists-action s -e git://github.com/cdonovan/peak.git@cst#egg=peak
 pip install -U --exists-action s -e git://github.com/leonardt/ast_tools.git@cst#egg=ast_tools
+pip install -U --exists-action s -e git://github.com/phanrahan/magma.git@cst#egg=magma-lang
+pip install -U --exists-action s -e git://github.com/cdonovick/peak.git@cst#egg=peak
 
 
          echo PIP PIP HOORAY BEGIN2 ----------------
          pip list -v | egrep 'ast|peak|magma'
          echo PIP PIP HOORAY MIDDLE2 ----------------
-         echo ast_tools check; (cd /aha/src/ast-tools; git log | head) || echo FAIL
-         echo magma     check; (cd /aha/src/magma;     git log | head) || echo FAIL
-         echo peak      check; (cd /aha/peak;          git log | head) || echo FAIL
+         echo ast_tools check; (cd /aha/src/ast-tools; git log | head -6) || echo FAIL
+         echo magma     check; (cd /aha/src/magma-lang;git log | head -6) || echo FAIL
+         echo peak      check; (cd /aha/peak;          git log | head -6) || echo FAIL
          echo PIP PIP HOORAY END2 --------------------
 
          aha garnet $flags;
@@ -88,9 +88,9 @@ pip install -U --exists-action s -e git://github.com/leonardt/ast_tools.git@cst#
          echo PIP PIP HOORAY BEGIN3 ----------------
          pip list -v | egrep 'ast|peak|magma'
          echo PIP PIP HOORAY MIDDLE3 ----------------
-         echo ast_tools check; (cd /aha/src/ast-tools; git log | head) || echo FAIL
-         echo magma     check; (cd /aha/src/magma;     git log | head) || echo FAIL
-         echo peak      check; (cd /aha/peak;          git log | head) || echo FAIL
+         echo ast_tools check; (cd /aha/src/ast-tools; git log | head -6) || echo FAIL
+         echo magma     check; (cd /aha/src/magma-lang;git log | head -6) || echo FAIL
+         echo peak      check; (cd /aha/peak;          git log | head -6) || echo FAIL
          echo PIP PIP HOORAY END3 --------------------
 
 
