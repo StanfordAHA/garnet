@@ -1143,6 +1143,109 @@ def spVspV_regress(dump_dir="muk_dump", log_name="xrun.log", trace=False):
 
     print(f"\n\n\nNum Mismatches: {num_mismatch}\n\n\n")
 
+def scanner_test_new(trace, run_tb, cwd):
+
+    chip_size = 2
+    interconnect = create_cgra(chip_size, chip_size, io_sides(),
+                               num_tracks=3,
+                               add_pd=True,
+                               mem_ratio=(1, 2),
+                               altcore=[ScannerCore])
+
+    netlist = {
+        # Scanner to I/O
+        "e0": [("s4", "data_out"), ("I0", "f2io_16")],
+        "e1": [("s4", "valid_out"), ("i1", "f2io_1")],
+        "e2": [("s4", "eos_out"), ("i2", "f2io_1")],
+        "e3": [("i3", "io2f_1"), ("s4", "ready_in")],
+        # Scanner to Mem
+        "e4": [("m5", "data_out_0"), ("s4", "data_in")],
+        "e5": [("m5", "valid_out_0"), ("s4", "valid_in")],
+        "e6": [("s4", "addr_out"), ("m5", "addr_in_0")],
+        "e7": [("s4", "ready_out"), ("m5", "ren_in_0")],
+        "e8": [("i6", "io2f_1"), ("s4", "flush")],
+        "e9": [("i6", "io2f_1"), ("m5", "flush")]
+    }
+
+    bus = {"e0": 16,
+           "e1": 1,
+           "e2": 1,
+           "e3": 1,
+           "e4": 16,
+           "e5": 1,
+           "e6": 16,
+           "e7": 1,
+           "e8": 1,
+           "e9": 1
+           }
+
+    placement, routing = pnr(interconnect, (netlist, bus), cwd=cwd)
+    config_data = interconnect.get_route_bitstream(routing)
+
+    data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    data_len = len(data)
+
+    # Get configuration
+    mem_x, mem_y = placement["m5"]
+    mem_data = interconnect.configure_placement(mem_x, mem_y, {"config": ["mek", {"init": data}]})
+    scan_x, scan_y = placement["s4"]
+    scan_data = interconnect.configure_placement(scan_x, scan_y, data_len)
+    config_data += scan_data
+    config_data += mem_data
+    skip_addr = interconnect.get_skip_addr()
+    config_data = compress_config_data(config_data, skip_compression=skip_addr)
+
+    #print("BITSTREAM START")
+    #for addr, config in config_data:
+    #    print("{0:08X} {1:08X}".format(addr, config))
+    #print("BITSTREAM END")
+
+    circuit = interconnect.circuit()
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+    tester.zero_inputs()
+
+    tester.poke(circuit.interface["stall"], 1)
+
+    flush_x, flush_y = placement["i6"]
+    flush = f"glb2io_1_X{flush_x:02X}_Y{flush_y:02X}"
+
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        #  tester.config_read(addr)
+        tester.eval()
+
+    tester.done_config()
+    tester.poke(circuit.interface["stall"], 0)
+    tester.eval()
+
+    # Now flush to synchronize everybody
+    tester.poke(circuit.interface[flush], 1)
+    tester.eval()
+    tester.step(2)
+    tester.poke(circuit.interface[flush], 0)
+    tester.eval()
+
+    data_out_x, data_out_y = placement["I0"]
+    data_out = f"io2glb_16_X{data_out_x:02X}_Y{data_out_y:02X}"
+
+    valid_x, valid_y = placement["i1"]
+    valid = f"io2glb_1_X{valid_x:02X}_Y{valid_y:02X}"
+    eos_x, eos_y = placement["i2"]
+    eos = f"io2glb_1_X{eos_x:02X}_Y{eos_y:02X}"
+    readyin_x, readyin_y = placement["i3"]
+    readyin = f"glb2io_1_X{readyin_x:02X}_Y{readyin_y:02X}"
+
+    val = 1
+    for i in range(50):
+        tester.poke(circuit.interface[readyin], (i > 25))
+        tester.eval()
+        # tester.expect(circuit.interface[data_out], out_data[0][i])
+        # toggle the clock
+        tester.step(2)
+
+    run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
+
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
     from conftest import run_tb_fn
@@ -1158,6 +1261,9 @@ if __name__ == "__main__":
     parser.add_argument('--tempdir_override', action="store_true")
     parser.add_argument('--trace', action="store_true")
     args = parser.parse_args()
+
+    scanner_test_new(trace=True, run_tb=run_tb_fn, cwd="mek_dump")
+    exit()
 
     spVspV_regress(dump_dir="mek_dump",
                    log_name="xrun.log",
