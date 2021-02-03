@@ -27,7 +27,7 @@ else
     # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
       # Clone AHA repo
-      git clone https://github.com/StanfordAHA/aha.git
+      git clone -b cst https://github.com/StanfordAHA/aha.git
       cd aha
       # install the aha wrapper script
       pip install -e .
@@ -54,6 +54,15 @@ else
       # run garnet.py in container and concat all verilog outputs
       docker exec $container_name /bin/bash -c \
         "source /aha/bin/activate && aha garnet $flags;
+
+         echo PIP PIP HOORAY BEGIN ----------------
+         pip list -v
+         echo PIP PIP HOORAY MIDDLE ----------------
+         echo peak      check; (cd /aha/peak;      git log | head) || echo FAIL
+         echo magma     check; (cd /aha/magma;     git log | head) || echo FAIL
+         echo ast_tools check; (cd /aha/ast_tools; git log | head) || echo FAIL
+         echo PIP PIP HOORAY END --------------------
+
          cd garnet
          if [ -d "genesis_verif" ]; then
            cp garnet.v genesis_verif/garnet.v
