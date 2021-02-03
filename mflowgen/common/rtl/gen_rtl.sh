@@ -79,7 +79,7 @@ pip install -U --exists-action s -e git://github.com/cdonovick/peak.git@cst#egg=
          echo PIP PIP HOORAY MIDDLE2 ----------------
          echo ast_tools check; (cd /aha/src/ast-tools; git log | head -6) || echo FAIL
          echo magma     check; (cd /aha/src/magma-lang;git log | head -6) || echo FAIL
-         echo peak      check; (cd /aha/peak;          git log | head -6) || echo FAIL
+         echo peak      check; (cd /aha/src/peak;      git log | head -6) || echo FAIL
          echo PIP PIP HOORAY END2 --------------------
 
          aha garnet $flags;
@@ -90,7 +90,7 @@ pip install -U --exists-action s -e git://github.com/cdonovick/peak.git@cst#egg=
          echo PIP PIP HOORAY MIDDLE3 ----------------
          echo ast_tools check; (cd /aha/src/ast-tools; git log | head -6) || echo FAIL
          echo magma     check; (cd /aha/src/magma-lang;git log | head -6) || echo FAIL
-         echo peak      check; (cd /aha/peak;          git log | head -6) || echo FAIL
+         echo peak      check; (cd /aha/src/peak;      git log | head -6) || echo FAIL
          echo PIP PIP HOORAY END3 --------------------
 
 
