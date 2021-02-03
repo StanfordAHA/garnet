@@ -53,7 +53,13 @@ else
 
       # run garnet.py in container and concat all verilog outputs
       docker exec $container_name /bin/bash -c \
-        "source /aha/bin/activate && aha garnet $flags;
+        "
+
+         # source /aha/bin/activate && aha garnet $flags;
+         source /aha/bin/activate
+
+
+
 
          echo PIP PIP HOORAY BEGIN ----------------
          pip list -v
@@ -62,6 +68,32 @@ else
          echo magma     check; (cd /aha/magma;     git log | head) || echo FAIL
          echo ast_tools check; (cd /aha/ast_tools; git log | head) || echo FAIL
          echo PIP PIP HOORAY END --------------------
+
+pip install -U --exists-action s -e git://github.com/phanrahan/magma.git@cst#egg=magma-lang
+pip install -U --exists-action s -e git://github.com/cdonovan/peak.git@cst#egg=peak
+pip install -U --exists-action s -e git://github.com/leonardt/ast_tools.git@cst#egg=ast_tools
+
+
+         echo PIP PIP HOORAY BEGIN2 ----------------
+         pip list -v
+         echo PIP PIP HOORAY MIDDLE2 ----------------
+         echo peak      check; (cd /aha/peak;      git log | head) || echo FAIL
+         echo magma     check; (cd /aha/magma;     git log | head) || echo FAIL
+         echo ast_tools check; (cd /aha/ast_tools; git log | head) || echo FAIL
+         echo PIP PIP HOORAY END2 --------------------
+
+         aha garnet $flags;
+
+
+         echo PIP PIP HOORAY BEGIN3 ----------------
+         pip list -v
+         echo PIP PIP HOORAY MIDDLE3 ----------------
+         echo peak      check; (cd /aha/peak;      git log | head) || echo FAIL
+         echo magma     check; (cd /aha/magma;     git log | head) || echo FAIL
+         echo ast_tools check; (cd /aha/ast_tools; git log | head) || echo FAIL
+         echo PIP PIP HOORAY END3 --------------------
+
+
 
          cd garnet
          if [ -d "genesis_verif" ]; then
