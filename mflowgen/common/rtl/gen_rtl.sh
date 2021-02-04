@@ -160,6 +160,13 @@ fi
   fi
 fi
 
-cp outputs/design.v /tmp/design.v.${which_container}.deleteme$$
-cp mflowgen-run.log /tmp/cstlog.${which_container}.deleteme$$
-
+current_dir=$(pwd)
+cd $START_DIR
+  # cp outputs/design.v /tmp/design.v.$$
+  # cp mflowgen-run.log /tmp/log.$$
+  pwd; ls -l outputs/design.v mflowgen-run.log
+  set -x
+  cp outputs/design.v /tmp/design.v.${which_container}.deleteme$$
+  cp mflowgen-run.log /tmp/cstlog.${which_container}.deleteme$$
+  set +x
+cd $current_dir
