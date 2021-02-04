@@ -38,8 +38,8 @@ else
 
 
 ##############################################################################
-#which_container=cst
-which_container=latest
+#which_container=latest
+which_container=cst
 if [ "$which_container" == "latest" ]; then
 
    # ORIGINAL CODE
