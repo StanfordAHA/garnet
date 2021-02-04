@@ -27,7 +27,7 @@ else
     # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
       # Clone AHA repo
-      git clone -b cst https://github.com/StanfordAHA/aha.git
+      git clone https://github.com/StanfordAHA/aha.git
       cd aha
       # install the aha wrapper script
       pip install -e .
@@ -36,7 +36,8 @@ else
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
 
       # pull docker image from docker hub
-      docker pull stanfordaha/garnet:latest
+      # docker pull stanfordaha/garnet:latest
+      docker pull stanfordaha/garnet:cst
 
       # run the container in the background and delete it when it exits
       # (this will print out the name of the container to attach to)
@@ -58,9 +59,6 @@ else
          # source /aha/bin/activate && aha garnet $flags;
          source /aha/bin/activate
 
-
-
-
          echo PIP PIP HOORAY BEGIN ----------------
          pip list -v | egrep 'ast|peak|magma'
          echo PIP PIP HOORAY MIDDLE ----------------
@@ -69,31 +67,19 @@ else
          echo peak      check; (cd /aha/peak;      git log | head -6) || echo FAIL
          echo PIP PIP HOORAY END --------------------
 
-pip install -U --exists-action s -e git://github.com/leonardt/ast_tools.git@cst#egg=ast_tools
-pip install -U --exists-action s -e git://github.com/phanrahan/magma.git@cst#egg=magma-lang
-pip install -U --exists-action s -e git://github.com/cdonovick/peak.git@cst#egg=peak
+# pip install -U --exists-action s -e git://github.com/leonardt/ast_tools.git@cst#egg=ast_tools
+# pip install -U --exists-action s -e git://github.com/phanrahan/magma.git@cst#egg=magma-lang
+# pip install -U --exists-action s -e git://github.com/cdonovick/peak.git@cst#egg=peak
 
+         aha garnet $flags;
 
          echo PIP PIP HOORAY BEGIN2 ----------------
          pip list -v | egrep 'ast|peak|magma'
          echo PIP PIP HOORAY MIDDLE2 ----------------
-         echo ast_tools check; (cd /aha/src/ast-tools; git log | head -6) || echo FAIL
-         echo magma     check; (cd /aha/src/magma-lang;git log | head -6) || echo FAIL
-         echo peak      check; (cd /aha/src/peak;      git log | head -6) || echo FAIL
+         echo ast_tools check; (cd /aha/ast_tools; git log | head -6) || echo FAIL
+         echo magma     check; (cd /aha/magma;     git log | head -6) || echo FAIL
+         echo peak      check; (cd /aha/peak;      git log | head -6) || echo FAIL
          echo PIP PIP HOORAY END2 --------------------
-
-         aha garnet $flags;
-
-
-         echo PIP PIP HOORAY BEGIN3 ----------------
-         pip list -v | egrep 'ast|peak|magma'
-         echo PIP PIP HOORAY MIDDLE3 ----------------
-         echo ast_tools check; (cd /aha/src/ast-tools; git log | head -6) || echo FAIL
-         echo magma     check; (cd /aha/src/magma-lang;git log | head -6) || echo FAIL
-         echo peak      check; (cd /aha/src/peak;      git log | head -6) || echo FAIL
-         echo PIP PIP HOORAY END3 --------------------
-
-
 
          cd garnet
          if [ -d "genesis_verif" ]; then
