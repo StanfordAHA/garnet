@@ -153,3 +153,6 @@ else
     cd $current_dir
   fi
 fi
+
+cp outputs/design.v /tmp/design.v.deleteme$$
+
