@@ -39,10 +39,20 @@ else
       # docker pull stanfordaha/garnet:latest
       docker pull stanfordaha/garnet:cst
 
-      # run the container in the background and delete it when it exits
-      # (this will print out the name of the container to attach to)
-      container_name=$(aha docker)
-      echo "container-name: $container_name"
+
+
+
+#       # run the container in the background and delete it when it exits
+#       # (this will print out the name of the container to attach to)
+#       container_name=$(aha docker)
+#       echo "container-name: $container_name"
+
+
+
+      container_name=cst-test
+      # mount the /cad and name it, also run it as a daemon in background
+      docker run -d --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
+
 
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
