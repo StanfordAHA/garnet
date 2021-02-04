@@ -1260,28 +1260,32 @@ def scanner_test_new(trace, run_tb, cwd):
 def compress_matrix(matrix, row=True):
     size = len(matrix)
     compressed_rows = []
+    compressed_indices = []
 
     addr = 0
     outer = []
     ptr = []
     inner = []
+    data = []
 
     for i in range(size):
+        compressed_indices.append([x for x, y in enumerate(matrix[i]) if y > 0])
         compressed_rows.append([x for x in matrix[i] if x > 0])
         if len(compressed_rows[i]) != 0:
             outer.append(i)
             ptr.append(addr)
             for j in range(len(compressed_rows[i])):
-                inner.append(compressed_rows[i][j])
+                data.append(compressed_rows[i][j])
+                inner.append(compressed_indices[i][j])
             addr += len(compressed_rows[i])
             # inner.append(i)
 
     # Append end of stream
     outer.append(0)
     ptr.append(0)
-    print(f"{outer}, {ptr}, {inner}")
+    print(f"{outer}, {ptr}, {inner}, {data}")
 
-    return (outer, ptr, inner)
+    return (outer, ptr, inner, data)
 
 def prep_matrix_2_sram(outer, ptr, inner, compressed=True):
      
@@ -1297,8 +1301,6 @@ def prep_matrix_2_sram(outer, ptr, inner, compressed=True):
     # Align once more so it goes to sram
     stream_aligned = align_data(stream_aligned)
     return (inner_offset, stream_aligned)
-
-
 
 def scanner_test_new_matrix(trace, run_tb, cwd):
 
@@ -1350,7 +1352,7 @@ def scanner_test_new_matrix(trace, run_tb, cwd):
 
     matrix_size = 4
     matrix = [[1, 2, 0, 0],[3, 0, 0, 4],[0, 0, 0, 0],[0, 1, 0, 2]]
-    (outer, ptr, inner) = compress_matrix(matrix, row=True)
+    (outer, ptr, inner, matrix_vals) = compress_matrix(matrix, row=True)
     (inner_offset, data) = prep_matrix_2_sram(outer, ptr, inner)
     # data_len = len(data)
     inner_dim_offset = inner_offset
