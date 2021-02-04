@@ -1282,7 +1282,7 @@ def compress_matrix(matrix, row=True):
 
     # Append end of stream
     outer.append(0)
-    ptr.append(0)
+    ptr.append(addr)
     print(f"{outer}, {ptr}, {inner}, {data}")
 
     return (outer, ptr, inner, data)
