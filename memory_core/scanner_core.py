@@ -74,7 +74,8 @@ class ScannerCore(LakeCoreBase):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
-    def get_config_bitstream(self, inner_offset, max_outer_dim):
+    def get_config_bitstream(self, config_tuple):
+        inner_offset, max_outer_dim = config_tuple
         configs = []
         config_scanner = [("tile_en", 1)]
         config_scanner += self.dut.get_bitstream(inner_offset, max_outer_dim)

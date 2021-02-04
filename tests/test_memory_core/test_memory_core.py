@@ -1200,7 +1200,7 @@ def scanner_test_new(trace, run_tb, cwd):
     mem_x, mem_y = placement["m5"]
     mem_data = interconnect.configure_placement(mem_x, mem_y, {"config": ["mek", {"init": data}]})
     scan_x, scan_y = placement["s4"]
-    scan_data = interconnect.configure_placement(scan_x, scan_y, inner_dim_offset, max_outer_dim)
+    scan_data = interconnect.configure_placement(scan_x, scan_y, (inner_dim_offset, max_outer_dim))
     config_data += scan_data
     config_data += mem_data
     skip_addr = interconnect.get_skip_addr()
