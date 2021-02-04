@@ -38,16 +38,21 @@ else
 
 
 ##############################################################################
-# ORIGINAL CODE
-#       # pull docker image from docker hub
-#       docker pull stanfordaha/garnet:latest
-# 
-#       # run the container in the background and delete it when it exits
-#       # (this will print out the name of the container to attach to)
-#       container_name=$(aha docker)
-#       echo "container-name: $container_name"
+# which_container=latest
+which_container=cst
+if [ "$which_container" == "latest" ]; then
 
-# TEMPORARY CST-CHECK HACK
+   # ORIGINAL CODE
+      # pull docker image from docker hub
+      docker pull stanfordaha/garnet:latest
+
+      # run the container in the background and delete it when it exits
+      # (this will print out the name of the container to attach to)
+      container_name=$(aha docker)
+      echo "container-name: $container_name"
+else
+
+   # TEMPORARY CST-CHECK HACK
       # pull docker image from docker hub
       docker pull stanfordaha/garnet:cst
 
@@ -57,6 +62,7 @@ else
       echo "container-name: $container_name"
       # mount the /cad and name it, also run it as a daemon in background
       docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
+fi
 ##############################################################################
 
 
@@ -154,5 +160,6 @@ else
   fi
 fi
 
-cp outputs/design.v /tmp/design.v.deleteme$$
+cp outputs/design.v /tmp/design.v.${which_container}.deleteme$$
+cp mflowgen-run.log /tmp/cstlog.${which_container}.deleteme$$
 
