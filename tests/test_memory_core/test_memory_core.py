@@ -1182,14 +1182,25 @@ def scanner_test_new(trace, run_tb, cwd):
     placement, routing = pnr(interconnect, (netlist, bus), cwd=cwd)
     config_data = interconnect.get_route_bitstream(routing)
 
-    data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    data_len = len(data)
+    ptr_0 = 0
+    val_0 = 0
+
+    ptr_eos = 12
+    val_eos = 0
+
+    data_0 = (ptr_0 << 8) | val_0
+    data_1 = (ptr_eos << 8) | val_eos
+
+    data = [data_0, data_1, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    # data_len = len(data)
+    inner_dim_offset = 4
+    max_outer_dim = 1
 
     # Get configuration
     mem_x, mem_y = placement["m5"]
     mem_data = interconnect.configure_placement(mem_x, mem_y, {"config": ["mek", {"init": data}]})
     scan_x, scan_y = placement["s4"]
-    scan_data = interconnect.configure_placement(scan_x, scan_y, data_len)
+    scan_data = interconnect.configure_placement(scan_x, scan_y, inner_dim_offset, max_outer_dim)
     config_data += scan_data
     config_data += mem_data
     skip_addr = interconnect.get_skip_addr()
