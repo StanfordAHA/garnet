@@ -1295,11 +1295,11 @@ def prep_matrix_2_sram(outer, ptr, inner, compressed=True):
     for i in range(len(outer)):
         stream.append((outer[i] | (ptr[i] << 8)))
     # Align after the control words to get inner_offset
-    stream_aligned = align_data(stream)
+    stream_aligned = align_data(stream, 4)
     inner_offset = len(stream_aligned)
     stream_aligned += inner
     # Align once more so it goes to sram
-    stream_aligned = align_data(stream_aligned)
+    stream_aligned = align_data(stream_aligned, 4)
     return (inner_offset, stream_aligned)
 
 def scanner_test_new_matrix(trace, run_tb, cwd):
