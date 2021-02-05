@@ -36,36 +36,48 @@ else
       # Prune docker images...
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
 
-
-
 ##############################################################################
-#which_container=cst
-which_container=latest
+which_container=cst
+#which_container=latest
 
-if [ "$which_container" == "latest" ]; then
+# if [ "$which_container" == "latest" ]; then
+# 
+#    # ORIGINAL CODE
+#       # pull docker image from docker hub
+#       docker pull stanfordaha/garnet:latest
+# 
+#       # run the container in the background and delete it when it exits
+#       # (this will print out the name of the container to attach to)
+#       container_name=$(aha docker)
+#       echo "container-name: $container_name"
+# else
+# 
+#    # TEMPORARY CST-CHECK HACK
+#       # pull docker image from docker hub
+#       docker pull stanfordaha/garnet:cst
+# 
+#       # run the container in the background and delete it when it exits
+#       # (this will print out the name of the container to attach to)
+#       container_name=cst
+#       echo "container-name: $container_name"
+#       # mount the /cad and name it, also run it as a daemon in background
+#       docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
+# fi
+##############################################################################
+
+
+
+
+# So...does this even work?
 
    # ORIGINAL CODE
-      # pull docker image from docker hub
-      docker pull stanfordaha/garnet:latest
-
-      # run the container in the background and delete it when it exits
-      # (this will print out the name of the container to attach to)
-      container_name=$(aha docker)
-      echo "container-name: $container_name"
-else
-
-   # TEMPORARY CST-CHECK HACK
       # pull docker image from docker hub
       docker pull stanfordaha/garnet:cst
 
       # run the container in the background and delete it when it exits
       # (this will print out the name of the container to attach to)
-      container_name=cst
+      container_name=$(aha docker)
       echo "container-name: $container_name"
-      # mount the /cad and name it, also run it as a daemon in background
-      docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
-fi
-##############################################################################
 
 
 
@@ -79,36 +91,32 @@ fi
       fi
 
       # run garnet.py in container and concat all verilog outputs
-      docker exec $container_name /bin/bash -c \
-        "
-         # source /aha/bin/activate && aha garnet $flags;
+      docker exec $container_name /bin/bash -c "
+
+         # Func to check python package creds
+         function checkpip {
+             # Example: checkpip ast.t 'peak '
+             #   ast-tools              0.0.18    /usr/local/venv_garnet/src/ast-tools
+             #   ee46bd4    Merged master into fork
+             #   ---             
+             for p in \"$@\"; do 
+                 if ! pip list -v |& egrep \"$p\";
+                 then echo \"Cannot find package '$p'\"; continue; fi
+                 src_dir=$(pip list -v |& grep $p | awk '{print $NF}')
+                 echo -n $(cd $src_dir; git log | head -1 | awk '{print substr($2,1,6)}' )
+                 (cd $src_dir; git log | egrep '^ ' | head -1)
+                 echo '---'
+             done
+         }
          source /aha/bin/activate
 
-         echo PIPCHECK BEGIN ----------------
-         pip list -v |& egrep 'ast.t|peak|magma'
-         echo ----------------
-         echo ast_tools check; (cd /aha/ast_tools; git log | grep . | head -6); echo "---"
-         echo magma     check; (cd /aha/magma;     git log | grep . | head -6); echo "---"
-         echo peak      check; (cd /aha/peak;      git log | grep . | head -6); echo "---"
-         echo PIPCHECK END --------------------
-
-# alias piu='pip install -U --exists-action s -e'
-# piu git://github.com/leonardt/ast_tools.git@cst#egg=ast_tools
-# piu git://github.com/phanrahan/magma.git@cst#egg=magma-lang
-# piu git://github.com/cdonovick/peak.git@cst#egg=peak
-
+         # Build garnet verilog; check to see that the right packages get used
+         echo 'PIPCHECK1-BEFORE'; checkpip ast.t magma 'peak '
          aha garnet $flags;
-
-         echo PIPCHECK BEGIN2 ----------------
-         pip list -v |& egrep 'ast.t|peak|magma'
-         echo ----------------
-         echo ast_tools check; (cd /aha/ast_tools; git log | grep . | head -6); echo "---"
-         echo magma     check; (cd /aha/magma;     git log | grep . | head -6); echo "---"
-         echo peak      check; (cd /aha/peak;      git log | grep . | head -6); echo "---"
-         echo PIPCHECK END2 --------------------
+         echo 'PIPCHECK2-AFTER';  checkpip ast.t magma 'peak '
 
          cd garnet
-         if [ -d "genesis_verif" ]; then
+         if [ -d \"genesis_verif\" ]; then
            cp garnet.v genesis_verif/garnet.v
            cat genesis_verif/* >> design.v
          else
@@ -121,6 +129,7 @@ fi
          cat global_buffer/rtl/*.sv >> design.v
          make -C global_controller rtl
          cat global_controller/systemRDL/output/*.sv >> design.v"
+
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       # Kill the container
