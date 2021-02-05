@@ -91,27 +91,23 @@ which_container=cst
       fi
 
       # run garnet.py in container and concat all verilog outputs
-      docker exec $container_name /bin/bash -c "
-
-         set -x
-         # Func to check python package creds
+      docker exec $container_name /bin/bash -c \
+        '# Func to check python package creds
          function checkpip {
-             # Example: checkpip ast.t 'peak '
+             # Example: checkpip ast.t "peak "
              #   ast-tools              0.0.18    /usr/local/venv_garnet/src/ast-tools
              #   ee46bd4    Merged master into fork
              #   ---             
-             set -x
-             for p in \"$@\"; do
-                 echo .$p.
-                 if ! pip list -v |& egrep \"$p\";
-                 then echo \"Cannot find package '$p'\"; continue; fi
-                 src_dir=$(pip list -v |& grep $p | awk '{print $NF}')
-                 echo -n $(cd $src_dir; git log | head -1 | awk '{print substr($2,1,6)}' )
-                 (cd $src_dir; git log | egrep '^ ' | head -1)
-                 echo '---'
+             for p in "$@"; do
+                 if ! pip list -v |& egrep "$p";
+                 then echo "Cannot find package \"$p\""; continue; fi
+                 src_dir=$(pip list -v |& grep $p | awk "{print \$NF}")
+                 echo -n $(cd $src_dir; git log | head -1 | awk "{print substr(\$2,1,6)}" )
+                 (cd $src_dir; git log | egrep "^ " | head -1)
+                 echo "---"
              done
-         }
-         source /aha/bin/activate
+         }'\
+        "source /aha/bin/activate
 
          # Build garnet verilog; check to see that the right packages get used
          echo 'PIPCHECK1-BEFORE'; checkpip ast.t magma 'peak '
