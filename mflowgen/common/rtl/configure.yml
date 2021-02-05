@@ -22,7 +22,7 @@ parameters:
 
   # Use this to try new images e.g. 'cst' for image 'stanfordaha/garnet:cst'
   # If 'which_image' not set, defaults to "latest"
-  # which_image: cst
+  which_image: cst
 
 
 postconditions:

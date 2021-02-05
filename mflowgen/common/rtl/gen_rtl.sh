@@ -96,9 +96,9 @@ else
          source /aha/bin/activate
 
          # Build garnet verilog; check and double-check cst packages
-         echo 'PIPCHECK1-BEFORE'; checkpip ast.t magma 'peak '
+         echo '+++ PIPCHECK1-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
          aha garnet $flags;
-         echo 'PIPCHECK2-AFTER';  checkpip ast.t magma 'peak '
+         echo '+++ PIPCHECK2-AFTER';  checkpip ast.t magma 'peak '; echo '--- Continue build'
 
          cd garnet
          if [ -d 'genesis_verif' ]; then
