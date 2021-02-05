@@ -17,7 +17,7 @@ steps:
 # 
 - label: 'MemCore synth 17m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps rtl --debug
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 # - label: 'PE synth 23m'
@@ -32,3 +32,4 @@ steps:
 
 
 #   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
+#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug

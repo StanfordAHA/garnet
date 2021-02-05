@@ -27,6 +27,7 @@ else
 
     # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
+        set -x
       # Clone AHA repo
       git clone https://github.com/StanfordAHA/aha.git
       cd aha
@@ -68,16 +69,22 @@ which_container=cst
 
 
 
-# So...does this even work?
+# So...does this even work? No it does not!
 
    # ORIGINAL CODE
       # pull docker image from docker hub
       docker pull stanfordaha/garnet:cst
 
-      # run the container in the background and delete it when it exits
-      # (this will print out the name of the container to attach to)
-      container_name=$(aha docker)
+#       # run the container in the background and delete it when it exits
+#       # (this will print out the name of the container to attach to)
+#       container_name=$(aha docker)
+#       echo "container-name: $container_name"
+
+
+      container_name=cst
       echo "container-name: $container_name"
+      # mount the /cad and name it, also run it as a daemon in background
+      docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
 
 
 
