@@ -1,5 +1,5 @@
 #!/bin/bash
-DIR0=$(pwd)
+START_DIR=$(pwd)
 # Hierarchical flows can accept RTL as an input from parent graph
 if [ -f ../inputs/design.v ]; then
   echo "Using RTL from parent graph"
@@ -120,10 +120,21 @@ else
       # Kill the container
       docker kill $container_name
       echo "killed docker container $container_name"
-      echo PWD=$(pwd)
-      cd ..
-      echo PWD=$(pwd)
+      cd .. ; # pop out from e.g. "9-rtl/aha/" back to "9-rtl/"
 
+      # Set "True" if want to e.g. capture the output design from buildkite
+      save_verilog_to_tmpdir=True
+      if [ "$save_verilog_to_tmpdir" ]; then
+          echo "+++ ENDGAME - Save verilog to /tmp before buildkite deletes it"
+          # cp outputs/design.v /tmp/design.v.$$
+          # cp mflowgen-run.log /tmp/log.$$
+          ls -l outputs/design.v mflowgen-run.log
+          set -x
+          cp outputs/design.v /tmp/design.v.${which_image}.deleteme$$
+          cp mflowgen-run.log /tmp/cstlog.${which_image}.deleteme$$
+          set +x
+      fi
+      
     # Else we want to use local python env to generate rtl
     else
       current_dir=$(pwd)
@@ -152,22 +163,9 @@ else
       # make to generate systemRDL RTL files for global controller
       make -C $GARNET_HOME/global_controller rtl CGRA_WIDTH=${array_width}
       cat global_controller/systemRDL/output/*.sv >> $current_dir/outputs/design.v
-    fi
 
-    cd $current_dir
+      cd $current_dir ; # why? all we do after this is exit back to calling dir...?
+    fi
   fi
 fi
 
-# Uncomment if you want to e.g. capture the output design from buildkite
-echo +++ ENDGAME
-echo PWD=$(pwd)
-
-set -x
-pushd $START_DIR
-  # cp outputs/design.v /tmp/design.v.$$
-  # cp mflowgen-run.log /tmp/log.$$
-  ls -l outputs/design.v mflowgen-run.log
-  cp outputs/design.v /tmp/design.v.${which_image}.deleteme$$
-  cp mflowgen-run.log /tmp/cstlog.${which_image}.deleteme$$
-popd
-set +x
