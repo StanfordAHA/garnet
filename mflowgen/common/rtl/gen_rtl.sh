@@ -93,6 +93,7 @@ which_container=cst
       # run garnet.py in container and concat all verilog outputs
       docker exec $container_name /bin/bash -c "
 
+         set -x
          # Func to check python package creds
          function checkpip {
              # Example: checkpip ast.t 'peak '
