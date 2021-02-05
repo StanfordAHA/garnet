@@ -17,19 +17,15 @@ steps:
 # 
 - label: 'MemCore synth 17m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps rtl --debug
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
-# - label: 'PE synth 23m'
-#   commands:
-#   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps rtl --debug
-# - wait: { continue_on_failure: true } # One step at a time + continue on failure
+- label: 'PE synth 23m'
+  commands:
+  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 ########################################################################
 # FULL CHIP RUNS - see pipeline_fullchip.yml
 
 # For more see pipeline_notes.yml
-
-
-#   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
