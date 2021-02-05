@@ -99,8 +99,10 @@ which_container=cst
 
       # run garnet.py in container and concat all verilog outputs
       docker exec $container_name /bin/bash -c \
-        '# Func to check python package creds
-        set -x
+        '# Single-quote regime
+         echo sq
+         # Func to check python package creds
+         set -x
          function checkpip {
              # Example: checkpip ast.t "peak "
              #   ast-tools              0.0.18    /usr/local/venv_garnet/src/ast-tools
@@ -114,8 +116,10 @@ which_container=cst
                  (cd $src_dir; git log | egrep "^ " | head -1)
                  echo "---"
              done
-         }'\
-        "source /aha/bin/activate
+         }'"
+         # Double-quote regime
+         echo dq
+         source /aha/bin/activate
 
          # Build garnet verilog; check to see that the right packages get used
          echo 'PIPCHECK1-BEFORE'; checkpip ast.t magma 'peak '
