@@ -99,7 +99,9 @@ which_container=cst
              #   ast-tools              0.0.18    /usr/local/venv_garnet/src/ast-tools
              #   ee46bd4    Merged master into fork
              #   ---             
-             for p in \"$@\"; do 
+             set -x
+             for p in \"$@\"; do
+                 echo .$p.
                  if ! pip list -v |& egrep \"$p\";
                  then echo \"Cannot find package '$p'\"; continue; fi
                  src_dir=$(pip list -v |& grep $p | awk '{print $NF}')
@@ -112,6 +114,9 @@ which_container=cst
 
          # Build garnet verilog; check to see that the right packages get used
          echo 'PIPCHECK1-BEFORE'; checkpip ast.t magma 'peak '
+         exit
+
+
          aha garnet $flags;
          echo 'PIPCHECK2-AFTER';  checkpip ast.t magma 'peak '
 
