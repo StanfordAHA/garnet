@@ -1,4 +1,5 @@
 #!/bin/bash
+DIR0=$(pwd)
 # Hierarchical flows can accept RTL as an input from parent graph
 if [ -f ../inputs/design.v ]; then
   echo "Using RTL from parent graph"
@@ -27,6 +28,7 @@ else
     # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
       # Clone AHA repo
+      echo PWD=$(pwd)
       git clone https://github.com/StanfordAHA/aha.git
       cd aha
       # install the aha wrapper script
@@ -36,23 +38,26 @@ else
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
 
       ##############################################################################
-      # steveri 02/2021 - Original code only supported container "latest";
-      # new code (below) allows use of any container
+      # steveri 02/2021 - Original code only supported image "latest";
+      # new code (below) allows use of any image
 
-      which_container=cst
-      #which_container=latest
+      # See common/rtl/configure.yml for default "which_image" setting
+      # Default is "latest"
+      if [ "$which_image" == "" ]; then which_image=latest; fi
+
+      # which_image=cst; # Uncomment to e.g. use image 'stanfordaha/garnet:cst'
 
       # pull docker image from docker hub
-      docker pull stanfordaha/garnet:${which_container}
+      docker pull stanfordaha/garnet:${which_image}
 
-      if [ "$which_container" == "latest" ]; then
+      if [ "$which_image" == "latest" ]; then
           # run the container in the background and delete it when it exits
           # ("aha docker" will print out the name of the container to attach to)
           container_name=$(aha docker)
       else
           # run the container in the background and delete it when it exits (--rm)
           # mount /cad and name it, and run container as a daemon in background
-          container_name=${which_container}
+          container_name=${which_image}
           docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
       fi
       echo "container-name: $container_name"
@@ -65,7 +70,7 @@ else
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
       fi
-
+      echo PWD=$(pwd)
       # run garnet.py in container and concat all verilog outputs
       docker exec $container_name /bin/bash -c \
         '# Single-quote regime
@@ -115,7 +120,9 @@ else
       # Kill the container
       docker kill $container_name
       echo "killed docker container $container_name"
+      echo PWD=$(pwd)
       cd ..
+      echo PWD=$(pwd)
 
     # Else we want to use local python env to generate rtl
     else
@@ -150,3 +157,17 @@ else
     cd $current_dir
   fi
 fi
+
+# Uncomment if you want to e.g. capture the output design from buildkite
+echo +++ ENDGAME
+echo PWD=$(pwd)
+
+set -x
+pushd $START_DIR
+  # cp outputs/design.v /tmp/design.v.$$
+  # cp mflowgen-run.log /tmp/log.$$
+  ls -l outputs/design.v mflowgen-run.log
+  cp outputs/design.v /tmp/design.v.${which_image}.deleteme$$
+  cp mflowgen-run.log /tmp/cstlog.${which_image}.deleteme$$
+popd
+set +x

@@ -13,8 +13,17 @@ parameters:
   interconnect_only: False
   soc_only: False
   PWR_AWARE: True
+
+  # If true, use docker container for python environment
   use_container: True
+
+  # If true, clone garnet locally and copy into the container
   use_local_garnet: True
+
+  # Use this to try new images e.g. 'cst' for image 'stanfordaha/garnet:cst'
+  # If 'which_image' not set, defaults to "latest"
+  # which_image: cst
+
 
 postconditions:
   - assert File( 'outputs/design.v' )        # must exist
