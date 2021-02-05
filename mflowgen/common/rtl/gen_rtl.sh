@@ -93,6 +93,7 @@ which_container=cst
       # run garnet.py in container and concat all verilog outputs
       docker exec $container_name /bin/bash -c \
         '# Func to check python package creds
+        set -x
          function checkpip {
              # Example: checkpip ast.t "peak "
              #   ast-tools              0.0.18    /usr/local/venv_garnet/src/ast-tools
@@ -116,7 +117,7 @@ which_container=cst
 
          aha garnet $flags;
          echo 'PIPCHECK2-AFTER';  checkpip ast.t magma 'peak '
-
+         exit
          cd garnet
          if [ -d \"genesis_verif\" ]; then
            cp garnet.v genesis_verif/garnet.v
