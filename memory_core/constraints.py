@@ -1,11 +1,13 @@
 from enum import Enum
 import random
 
+
 class SparseSequenceConstraints(Enum):
     ZERO = 1
     ONE = 2
     LT100 = 3
     LT250 = 4
+
 
 class SparseOpMatchDensity(Enum):
     NONE = 1
@@ -14,8 +16,11 @@ class SparseOpMatchDensity(Enum):
     HIGH = 4
     ALL = 5
 
+
 class SparseSequenceGenerator():
+
     const_class = SparseSequenceConstraints.ZERO
+
     def __init__(self, constraint_class=SparseSequenceConstraints.ZERO):
         self.const_class = constraint_class
 
@@ -35,6 +40,7 @@ class SparseSequenceGenerator():
         else:
             return 0
 
-class  SparseOpMatchGenerator():
+
+class SparseOpMatchGenerator():
     def __init__(self):
         return
