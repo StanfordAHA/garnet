@@ -1200,7 +1200,7 @@ def scanner_test_new(trace, run_tb, cwd):
     mem_x, mem_y = placement["m5"]
     mem_data = interconnect.configure_placement(mem_x, mem_y, {"config": ["mek", {"init": data}]})
     scan_x, scan_y = placement["s4"]
-    scan_data = interconnect.configure_placement(scan_x, scan_y, (inner_dim_offset, max_outer_dim))
+    scan_data = interconnect.configure_placement(scan_x, scan_y, (inner_dim_offset, max_outer_dim, 1, 1))
     config_data += scan_data
     config_data += mem_data
     skip_addr = interconnect.get_skip_addr()
@@ -1362,7 +1362,7 @@ def scanner_test_new_matrix(trace, run_tb, cwd):
     mem_x, mem_y = placement["m5"]
     mem_data = interconnect.configure_placement(mem_x, mem_y, {"config": ["mek", {"init": data}]})
     scan_x, scan_y = placement["s4"]
-    scan_data = interconnect.configure_placement(scan_x, scan_y, (inner_dim_offset, max_outer_dim))
+    scan_data = interconnect.configure_placement(scan_x, scan_y, (inner_dim_offset, max_outer_dim, 1, 4))
     config_data += scan_data
     config_data += mem_data
     skip_addr = interconnect.get_skip_addr()
@@ -1526,11 +1526,11 @@ def mem_scanner_intersect_test_new_matrix(trace, run_tb, cwd):
     mem0_x, mem0_y = placement["m3"]
     mem0_data = interconnect.configure_placement(mem0_x, mem0_y, {"config": ["mek", {"init": data_r}]})
     scan0_x, scan0_y = placement["s1"]
-    scan0_data = interconnect.configure_placement(scan0_x, scan0_y, (inner_offset_r, max_outer_dim))
+    scan0_data = interconnect.configure_placement(scan0_x, scan0_y, (inner_offset_r, max_outer_dim, 1, 4))
     mem1_x, mem1_y = placement["m4"]
     mem1_data = interconnect.configure_placement(mem1_x, mem1_y, {"config": ["mek", {"init": data_c}]})
     scan0_x, scan0_y = placement["s2"]
-    scan1_data = interconnect.configure_placement(scan0_x, scan0_y, (inner_offset_c, max_outer_dim))
+    scan1_data = interconnect.configure_placement(scan0_x, scan0_y, (inner_offset_c, max_outer_dim, 1, 4))
     isect_x, isect_y = placement["j0"]
     isect_data = interconnect.configure_placement(isect_x, isect_y, 5)
 
