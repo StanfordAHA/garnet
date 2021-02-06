@@ -1466,6 +1466,8 @@ def mem_scanner_intersect_test_new_matrix(trace, run_tb, cwd):
         "e26": [("m14", "data_out_0"), ("I18", "f2io_16")],
         "e27": [("m13", "valid_out_0"), ("i19", "f2io_1")],
         "e28": [("m14", "valid_out_0"), ("i20", "f2io_1")],
+        "e29": [("s1", "payload_ptr"), ("j0", "payload_ptr_0")],
+        "e30": [("s2", "payload_ptr"), ("j0", "payload_ptr_1")],
 
     }
 
@@ -1498,7 +1500,9 @@ def mem_scanner_intersect_test_new_matrix(trace, run_tb, cwd):
         "e25": 16,
         "e26": 16,
         "e27": 1,
-        "e28": 1
+        "e28": 1,
+        "e29": 16,
+        "e30": 16,
     }
 
     placement, routing = pnr(interconnect, (netlist, bus), cwd=cwd)
