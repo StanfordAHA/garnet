@@ -1,5 +1,4 @@
 #!/bin/bash
-START_DIR=$(pwd)
 # Hierarchical flows can accept RTL as an input from parent graph
 if [ -f ../inputs/design.v ]; then
   echo "Using RTL from parent graph"
@@ -28,7 +27,6 @@ else
     # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
       # Clone AHA repo
-      echo PWD=$(pwd)
       git clone https://github.com/StanfordAHA/aha.git
       cd aha
       # install the aha wrapper script
@@ -39,13 +37,13 @@ else
 
       ##############################################################################
       # steveri 02/2021 - Original code only supported image "latest";
-      # new code (below) allows use of any image
+      # new code (below) allows use of any image based on new "which_image" parm
 
-      # See common/rtl/configure.yml for default "which_image" setting
-      # Default is "latest"
+      # See common/rtl/configure.yml for "which_image" setting; default = "latest"
       if [ "$which_image" == "" ]; then which_image=latest; fi
 
-      # which_image=cst; # Uncomment to e.g. use image 'stanfordaha/garnet:cst'
+      # Or can simply uncomment below to e.g. use image 'stanfordaha/garnet:cst'
+      # which_image=cst
 
       # pull docker image from docker hub
       docker pull stanfordaha/garnet:${which_image}
@@ -70,13 +68,11 @@ else
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
       fi
-      echo PWD=$(pwd)
+
       # run garnet.py in container and concat all verilog outputs
       docker exec $container_name /bin/bash -c \
-        '# Single-quote regime
-
-         ###########################################################################
-         # Func to check python package creds (Added 02/2021 as part of cst vetting)
+        '# Func to check python package creds (Added 02/2021 as part of cst vetting)
+         # (Single-quote regime)
 
          function checkpip {
              # Example: checkpip ast.t "peak "
@@ -92,14 +88,18 @@ else
                  echo "---"
              done
          }'"
-         # Double-quote regime
-         source /aha/bin/activate
+         # (Double-quote regime)
+         source /aha/bin/activate; # Set up the build environment
 
+         # Double-check the current build environment.
+         # Example: say you want to double-check ast_tools, magma, and peak
+         # This will display the version, location and latest commit hash for each.
          # Build garnet verilog; check and double-check cst packages
-         echo '+++ PIPCHECK1-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
-         aha garnet $flags;
-         echo '+++ PIPCHECK2-AFTER';  checkpip ast.t magma 'peak '; echo '--- Continue build'
+         # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
+         
+         aha garnet $flags; # Here is where we build the verilog for the main chip
 
+         # Rename output verilog, final name must be 'design.v'
          cd garnet
          if [ -d 'genesis_verif' ]; then
            cp garnet.v genesis_verif/garnet.v
@@ -107,6 +107,8 @@ else
          else
            cp garnet.v design.v
          fi
+
+         # Looks like we build GB separately and concat to design.v (??)
          make -C global_buffer rtl CGRA_WIDTH=${array_width} NUM_GLB_TILES=$((array_width / 2))
          cat global_buffer/rtl/global_buffer_param.svh >> design.v
          cat global_buffer/rtl/global_buffer_pkg.svh >> design.v
@@ -122,16 +124,15 @@ else
       echo "killed docker container $container_name"
       cd .. ; # pop out from e.g. "9-rtl/aha/" back to "9-rtl/"
 
-      # Set "True" if want to e.g. capture the output design from buildkite
-      save_verilog_to_tmpdir=True
-      if [ "$save_verilog_to_tmpdir" ]; then
+      # Set 'save_verilog_to_tmpdir' "True" if want to capture the output
+      # design from buildkite, e.g. to compare before-and-after versions of
+      # docker images "latest" and "new" (also see notes in configure.yml)
+
+      if [ "$save_verilog_to_tmpdir" == "True" ]; then
           echo "+++ ENDGAME - Save verilog to /tmp before buildkite deletes it"
-          # cp outputs/design.v /tmp/design.v.$$
-          # cp mflowgen-run.log /tmp/log.$$
-          ls -l outputs/design.v mflowgen-run.log
-          set -x
+          set -x; # so user will know where the files are going
           cp outputs/design.v /tmp/design.v.${which_image}.deleteme$$
-          cp mflowgen-run.log /tmp/cstlog.${which_image}.deleteme$$
+          cp mflowgen-run.log /tmp/log.${which_image}.deleteme$$
           set +x
       fi
       
