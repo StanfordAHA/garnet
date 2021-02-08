@@ -76,9 +76,11 @@ else
 
          function checkpip {
              # Example: checkpip ast.t "peak "
-             #   ast-tools              0.0.18    /usr/local/venv_garnet/src/ast-tools
-             #   ee46bd4    Merged master into fork
-             #   ---             
+             #   ast-tools           0.0.30    /aha/ast_tools
+             #   6b779e    Merge pull request #70 from leonardt/arg-fix
+             #   ---
+             #   peak                0.0.1     /aha/peak
+             #   fa4635    Move to libcst
              for p in "$@"; do
                  if ! pip list -v |& egrep "$p";
                  then echo "Cannot find package \"$p\""; continue; fi
