@@ -93,10 +93,9 @@ else
          # (Double-quote regime)
          source /aha/bin/activate; # Set up the build environment
 
-         # Double-check the current build environment.
-         # Example: say you want to double-check ast_tools, magma, and peak
-         # This will display the version, location and latest commit hash for each.
-         # Build garnet verilog; check and double-check cst packages
+         # Example: say you want to double-check packages 'ast_tools', 'magma', and 'peak'.
+         # Uncomment the line below; This will display the version,
+         # location and latest commit hash for each.
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
          
          aha garnet $flags; # Here is where we build the verilog for the main chip
