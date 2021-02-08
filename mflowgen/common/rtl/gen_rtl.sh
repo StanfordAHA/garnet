@@ -48,6 +48,12 @@ else
       # pull docker image from docker hub
       docker pull stanfordaha/garnet:${which_image}
 
+      # Display ID info for image e.g.
+      #     RepoTags    [stanfordaha/garnet:latest]
+      #     RepoDigests [stanfordaha/garnet@sha256:e43c853b4068992...]
+      docker inspect --format='RepoTags    {{.RepoTags}}'    stanfordaha/garnet:${which_image}
+      docker inspect --format='RepoDigests {{.RepoDigests}}' stanfordaha/garnet:${which_image}
+
       if [ "$which_image" == "latest" ]; then
           # run the container in the background and delete it when it exits
           # ("aha docker" will print out the name of the container to attach to)
