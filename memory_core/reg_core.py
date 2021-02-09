@@ -78,10 +78,7 @@ class RegCore(LakeCoreBase):
         inner_offset, max_outer_dim, outer_stride, outer_range = config_tuple
         configs = []
         config_reg = [("tile_en", 1)]
-        # config_scanner += self.dut.get_bitstream(inner_offset=inner_offset,
-        #                                          max_out=max_outer_dim,
-        #                                          outer_stride=outer_stride,
-        #                                          outer_range=outer_range)
+        config_reg += self.dut.get_bitstream()
         for name, v in config_reg:
             configs = [self.get_config_data(name, v)] + configs
         print(configs)
