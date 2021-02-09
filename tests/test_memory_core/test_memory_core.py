@@ -1888,6 +1888,9 @@ if __name__ == "__main__":
     parser.add_argument('--trace', action="store_true")
     args = parser.parse_args()
 
+    # Make sure DISABLE_GP=1
+    os.environ['DISABLE_GP'] = "1"
+
     spMspV_test(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
     exit()
     # mem_scanner_intersect_test_new_matrix(trace=True, run_tb=run_tb_fn, cwd="mek_dump")
