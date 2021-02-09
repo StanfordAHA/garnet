@@ -110,17 +110,12 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     if altcore is None:
                         core = PeakCore(PE_fc)
                         if add_pond:
-                            additional_core[(x, y)] = []
-                            additional_core[(x, y)].append(PondCore())
-                            additional_core[(x, y)].append(RegCore())
+                            additional_core[(x, y)] = PondCore()
                     else:
                         altcore_used = True
                         if altcore[altcore_ind] == PeakCore:
                             #print("Using PE")
                             core = PeakCore(PE_fc)
-                            additional_core[(x, y)] = RegCore()
-                            # additional_core[(x, y)].append(PondCore())
-                            # additional_core[(x, y)].append(RegCore())
                         else:
                             #print(f"Using {altcore[altcore_ind].__name__}")
                             core = altcore[altcore_ind]()
@@ -152,8 +147,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         inputs |= {i.qualified_name() for i in core.inputs()}
         outputs |= {o.qualified_name() for o in core.outputs()}
 
-    if True:
-    # if add_pond:
+    if add_pond:
         print("Adding inputs")
         for core in additional_core.values():
             print(f"core: {core}")
