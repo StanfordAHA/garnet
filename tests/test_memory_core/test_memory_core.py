@@ -23,6 +23,7 @@ import random as rand
 import re
 from memory_core.constraints import *
 
+
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
@@ -193,11 +194,6 @@ def scanner_test(trace, run_tb, cwd):
     config_data += mem_data
     skip_addr = interconnect.get_skip_addr()
     config_data = compress_config_data(config_data, skip_compression=skip_addr)
-
-    #print("BITSTREAM START")
-    #for addr, config in config_data:
-    #    print("{0:08X} {1:08X}".format(addr, config))
-    #print("BITSTREAM END")
 
     circuit = interconnect.circuit()
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
@@ -577,7 +573,14 @@ def mem_scanner_intersect_test(trace, run_tb, cwd):
         "e7": [("j0", "ready_out_0"), ("s1", "ready_in")],
         "e8": [("j0", "ready_out_1"), ("s2", "ready_in")],
         # Flush
-        "e9": [("i11", "io2f_1"), ("j0", "flush"), ("s1", "flush"), ("s2", "flush"), ("m3", "flush"), ("m4", "flush"), ("m13", "flush"), ("m14", "flush")],
+        "e9": [("i11", "io2f_1"),
+               ("j0", "flush"),
+               ("s1", "flush"),
+               ("s2", "flush"),
+               ("m3", "flush"),
+               ("m4", "flush"),
+               ("m13", "flush"),
+               ("m14", "flush")],
         # I/O to Intersect
         "e10": [("s1", "data_out"), ("j0", "coord_in_0")],
         "e11": [("s2", "data_out"), ("j0", "coord_in_1")],
@@ -721,6 +724,7 @@ def mem_scanner_intersect_test(trace, run_tb, cwd):
 
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
 
+
 def align_data(data, alignment):
     to_add = alignment - (len(data) - (len(data) // alignment) * alignment)
     if to_add == alignment:
@@ -728,12 +732,14 @@ def align_data(data, alignment):
     data += [0] * to_add
     return data
 
+
 def random_data(length):
     retlist = []
     for i in range(length):
         # Don't include 0
         retlist.append(rand.randint(1, 2 ** 6 - 1))
     return retlist
+
 
 def get_sparse_sequences(len1, len2, num_match, value_limit):
     '''
@@ -767,24 +773,10 @@ def get_sparse_sequences(len1, len2, num_match, value_limit):
     seqB.sort()
     print(f"SEQA: {seqA}\nSEQB: {seqB}")
     return seqA, seqB
-    
 
 
-def spVspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
+def spVspV_test(trace, run_tb, cwd, data0=[1, 2, 6, 10], data1=[3, 6, 8]):
     # Streams and code to create them and align them
-    # Works
-    #data0 = [1, 2, 6, 10]
-    #data1 = [3, 6, 8]
-    # Works
-    #data0 = [1, 2, 6, 10]
-    #data1 = [1, 3, 6, 8]
-    # Works 
-    #data0 = [1, 2, 6, 10, 12]
-    #data1 = [1, 3, 6, 8]
-    # 
-#    data0 = [1, 2, 6, 10, 12, 17]
-#    data1 = [1, 3, 6, 8, 16, 18]
-
     # Fill data with random, align to 4
     datad0 = random_data(len(data0))
     data0_len = len(data0)
@@ -801,11 +793,9 @@ def spVspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     ind1 = [data1.index(x) for x in both]
 
     out_coord = both
-    #out_coord = list(out_coord)
-    #out_coord.sort()
     for i in range(len(ind0)):
         out_data.append(datad0[ind0[i]] * datad1[ind1[i]])
-    
+
     num_cycles = data0_len + data1_len + 200
 
     print(f"DATA0: {data0}")
@@ -851,7 +841,16 @@ def spVspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
         "e7": [("j0", "ready_out_0"), ("s1", "ready_in")],
         "e8": [("j0", "ready_out_1"), ("s2", "ready_in")],
         # Flush
-        "e9": [("i11", "io2f_1"), ("j0", "flush"), ("s1", "flush"), ("s2", "flush"), ("m3", "flush"), ("m4", "flush"), ("m13", "flush"), ("m14", "flush"), ("m31", "flush"), ("m32", "flush")],
+        "e9": [("i11", "io2f_1"),
+               ("j0", "flush"),
+               ("s1", "flush"),
+               ("s2", "flush"),
+               ("m3", "flush"),
+               ("m4", "flush"),
+               ("m13", "flush"),
+               ("m14", "flush"),
+               ("m31", "flush"),
+               ("m32", "flush")],
         # I/O to Intersect
         "e10": [("s1", "data_out"), ("j0", "coord_in_0")],
         "e11": [("s2", "data_out"), ("j0", "coord_in_1")],
@@ -969,11 +968,6 @@ def spVspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     skip_addr = interconnect.get_skip_addr()
     config_data = compress_config_data(config_data, skip_compression=skip_addr)
 
-    #print("BITSTREAM START")
-    #for addr, config in config_data:
-    #    print("{0:08X} {1:08X}".format(addr, config))
-    #print("BITSTREAM END")
-
     # Create tester and perform init routine...
     circuit = interconnect.circuit()
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
@@ -1030,16 +1024,17 @@ def spVspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
         tester_if = tester._if(circuit.interface[cvalid])
         tester_if.print("COORD: %d, VAL: %d\n", circuit.interface[cdata], circuit.interface[ddata])
         if_eos_finish = tester._if(circuit.interface[eos_out])
-        if_eos_finish.print("EOS IS HIGH\n");
-        
+        if_eos_finish.print("EOS IS HIGH\n")
+
         # tester_if._else().print("")
         # tester.expect(circuit.interface[data_out], out_data[0][i])
         # toggle the clock
         tester.step(2)
 
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
-    
+
     return out_coord, out_data
+
 
 def check_results(res1, res2):
     for key, value in res1.items():
@@ -1063,15 +1058,15 @@ def check_results(res1, res2):
                     break
     return no_mismatch
 
+
 def run_test(len1, len2, num_match, value_limit=100, dump_dir="mek_dump", log_name="xrun.log", trace=False):
     rand.seed(0)
     seqA, seqB = get_sparse_sequences(len1, len2, num_match, value_limit)
-    #intersect_test(trace=args.trace,
     out_coord, out_data = spVspV_test(trace=trace,
-                               run_tb=run_tb_fn,
-                               cwd=dump_dir,
-                               data0=seqA,
-                               data1=seqB)
+                                      run_tb=run_tb_fn,
+                                      cwd=dump_dir,
+                                      data0=seqA,
+                                      data1=seqB)
 
     out_coord = list(out_coord)
     for i in range(len(out_coord)):
@@ -1082,7 +1077,7 @@ def run_test(len1, len2, num_match, value_limit=100, dump_dir="mek_dump", log_na
     loglines = None
     with open(results_file, 'r') as rf:
         loglines = rf.readlines()
-    
+
     assert loglines is not None, "Error extracting simulation log..."
     check_lines = [x for x in loglines if "COORD" in x]
     split_lines = [re.split('[,\s\t]+', x.strip()) for x in check_lines]
@@ -1104,6 +1099,7 @@ def run_test(len1, len2, num_match, value_limit=100, dump_dir="mek_dump", log_na
         print("SUCCESS: SIM MATCHES!")
     else:
         print("ERROR: MISMATCH BETWEEN SIM AND EXPECTED!")
+
 
 def spVspV_regress(dump_dir="muk_dump", log_name="xrun.log", trace=False):
 
@@ -1131,7 +1127,8 @@ def spVspV_regress(dump_dir="muk_dump", log_name="xrun.log", trace=False):
                     smaller_len = len2
                 num_match = rand.randint(0, smaller_len)
                 print(f"\n\n\n\n\n\nNEW TEST\nlen1={len1}\nlen2={len2}\nnum_match={num_match}")
-                success = run_test(len1, len2, num_match, value_limit, dump_dir=dump_dir, log_name=log_name, trace=trace)
+                success = run_test(len1, len2, num_match, value_limit,
+                                   dump_dir=dump_dir, log_name=log_name, trace=trace)
                 report_msg = ""
                 if success is False:
                     report_msg = f"REPORT: FAILURE: len1={len1}, len2={len2}, num_match={num_match}"
@@ -1143,6 +1140,7 @@ def spVspV_regress(dump_dir="muk_dump", log_name="xrun.log", trace=False):
                 out_file.write(report_msg + "\n")
 
     print(f"\n\n\nNum Mismatches: {num_mismatch}\n\n\n")
+
 
 def scanner_test_new(trace, run_tb, cwd):
 
@@ -1207,11 +1205,6 @@ def scanner_test_new(trace, run_tb, cwd):
     skip_addr = interconnect.get_skip_addr()
     config_data = compress_config_data(config_data, skip_compression=skip_addr)
 
-    #print("BITSTREAM START")
-    #for addr, config in config_data:
-    #    print("{0:08X} {1:08X}".format(addr, config))
-    #print("BITSTREAM END")
-
     circuit = interconnect.circuit()
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
     tester.reset()
@@ -1258,6 +1251,7 @@ def scanner_test_new(trace, run_tb, cwd):
 
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
 
+
 def compress_matrix(matrix, row=True):
     size = len(matrix)
     compressed_rows = []
@@ -1288,8 +1282,9 @@ def compress_matrix(matrix, row=True):
 
     return (outer, ptr, inner, data)
 
+
 def prep_matrix_2_sram(outer, ptr, inner, compressed=True):
-     
+
     assert compressed is True, "Only compressed, compressed format supported"
     stream = []
     # Assemble the control words as (ptr,outer) in memory
@@ -1302,6 +1297,7 @@ def prep_matrix_2_sram(outer, ptr, inner, compressed=True):
     # Align once more so it goes to sram
     stream_aligned = align_data(stream_aligned, 4)
     return (inner_offset, stream_aligned)
+
 
 def scanner_test_new_matrix(trace, run_tb, cwd):
 
@@ -1352,7 +1348,7 @@ def scanner_test_new_matrix(trace, run_tb, cwd):
     # data_1 = (ptr_eos << 8) | val_eos
 
     matrix_size = 4
-    matrix = [[1, 2, 0, 0],[3, 0, 0, 4],[0, 0, 0, 0],[0, 1, 0, 2]]
+    matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 1, 0, 2]]
     (outer, ptr, inner, matrix_vals) = compress_matrix(matrix, row=True)
     (inner_offset, data) = prep_matrix_2_sram(outer, ptr, inner)
     # data_len = len(data)
@@ -1368,11 +1364,6 @@ def scanner_test_new_matrix(trace, run_tb, cwd):
     config_data += mem_data
     skip_addr = interconnect.get_skip_addr()
     config_data = compress_config_data(config_data, skip_compression=skip_addr)
-
-    #print("BITSTREAM START")
-    #for addr, config in config_data:
-    #    print("{0:08X} {1:08X}".format(addr, config))
-    #print("BITSTREAM END")
 
     circuit = interconnect.circuit()
     tester = BasicTester(circuit, circuit.clk, circuit.reset)
@@ -1420,6 +1411,7 @@ def scanner_test_new_matrix(trace, run_tb, cwd):
 
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
 
+
 def mem_scanner_intersect_test_new_matrix(trace, run_tb, cwd):
 
     chip_size = 4
@@ -1442,7 +1434,14 @@ def mem_scanner_intersect_test_new_matrix(trace, run_tb, cwd):
         "e7": [("j0", "ready_out_0"), ("s1", "ready_in")],
         "e8": [("j0", "ready_out_1"), ("s2", "ready_in")],
         # Flush
-        "e9": [("i11", "io2f_1"), ("j0", "flush"), ("s1", "flush"), ("s2", "flush"), ("m3", "flush"), ("m4", "flush"), ("m13", "flush"), ("m14", "flush")],
+        "e9": [("i11", "io2f_1"),
+               ("j0", "flush"),
+               ("s1", "flush"),
+               ("s2", "flush"),
+               ("m3", "flush"),
+               ("m4", "flush"),
+               ("m13", "flush"),
+               ("m14", "flush")],
         # I/O to Intersect
         "e10": [("s1", "data_out"), ("j0", "coord_in_0")],
         "e11": [("s2", "data_out"), ("j0", "coord_in_1")],
@@ -1519,7 +1518,7 @@ def mem_scanner_intersect_test_new_matrix(trace, run_tb, cwd):
     # datad1 = [15, 16, 17, 18]
 
     matrix_size = 4
-    matrix = [[1, 2, 0, 0],[3, 0, 0, 4],[0, 0, 0, 0],[0, 5, 0, 6]]
+    matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
     (outer_r, ptr_r, inner_r, matrix_vals_r) = compress_matrix(matrix, row=True)
     (inner_offset_r, data_r) = prep_matrix_2_sram(outer_r, ptr_r, inner_r)
     (outer_c, ptr_c, inner_c, matrix_vals_c) = compress_matrix(matrix, row=False)
@@ -1541,9 +1540,13 @@ def mem_scanner_intersect_test_new_matrix(trace, run_tb, cwd):
     isect_data = interconnect.configure_placement(isect_x, isect_y, 5)
 
     memd0_x, memd0_y = placement["m13"]
-    memd0_data = interconnect.configure_placement(memd0_x, memd0_y, {"config": ["mek", {"init": align_data(matrix_vals_r, 4)}]})
+    memd0_data = interconnect.configure_placement(memd0_x,
+                                                  memd0_y,
+                                                  {"config": ["mek", {"init": align_data(matrix_vals_r, 4)}]})
     memd1_x, memd1_y = placement["m14"]
-    memd1_data = interconnect.configure_placement(memd1_x, memd1_y, {"config": ["mek", {"init": align_data(matrix_vals_c, 4)}]})
+    memd1_data = interconnect.configure_placement(memd1_x,
+                                                  memd1_y,
+                                                  {"config": ["mek", {"init": align_data(matrix_vals_c, 4)}]})
 
     config_data += mem0_data
     config_data += scan0_data
@@ -1601,63 +1604,9 @@ def mem_scanner_intersect_test_new_matrix(trace, run_tb, cwd):
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
 
 
-def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
+def spMspV_test(trace, run_tb, cwd):
     # Streams and code to create them and align them
-    # Works
-    #data0 = [1, 2, 6, 10]
-    #data1 = [3, 6, 8]
-    # Works
-    #data0 = [1, 2, 6, 10]
-    #data1 = [1, 3, 6, 8]
-    # Works 
-    #data0 = [1, 2, 6, 10, 12]
-    #data1 = [1, 3, 6, 8]
-    # 
-#    data0 = [1, 2, 6, 10, 12, 17]
-#    data1 = [1, 3, 6, 8, 16, 18]
-
-    # Fill data with random, align to 4
-    datad0 = random_data(len(data0))
-    data0_len = len(data0)
-    datad1 = random_data(len(data1))
-    data1_len = len(data1)
-
-    out_data = []
-    out_coord = []
-
-    both = set(data0).intersection(data1)
-    both = list(both)
-    both.sort()
-    ind0 = [data0.index(x) for x in both]
-    ind1 = [data1.index(x) for x in both]
-
-    out_coord = both
-    #out_coord = list(out_coord)
-    #out_coord.sort()
-    for i in range(len(ind0)):
-        out_data.append(datad0[ind0[i]] * datad1[ind1[i]])
-    
-    num_cycles = data0_len + data1_len + 200
-
-    print(f"DATA0: {data0}")
-    print(f"DATAD0: {datad0}")
-    print(f"DATA1: {data1}")
-    print(f"DATAD1: {datad1}")
-    print(f"common coords: {both}")
-    print(f"result data: {out_data}")
-
-    # Align these guys after the fact...
-    data0 = align_data(data0, 4)
-    datad0 = align_data(datad0, 4)
-    data1 = align_data(data1, 4)
-    datad1 = align_data(datad1, 4)
-
-    print(f"ALIGNED LENGTH 0: {len(data0)}")
-    print(f"ALIGNED LENGTH 1: {len(data1)}")
-    print(f"ADATA0: {data0}")
-    print(f"ADATAD0: {datad0}")
-    print(f"ADATA1: {data1}")
-    print(f"ADATAD1: {datad1}")
+    num_cycles = 50
     chip_size = 8
     num_tracks = 5
 
@@ -1677,12 +1626,21 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
         "e3": [("j0", "pos_out_1"), ("m14", "addr_in_0")],
         "e4": [("j0", "valid_out"), ("m13", "ren_in_0"), ("m14", "ren_in_0")],
         "e5": [("j0", "eos_out"), ("r16", "reg")],
-        "e6": [("r16", "reg"), ("i10", "f2io_1"), ("R99", "flush"), ("p101", "bit0")],
+        "e6": [("r16", "reg"), ("i10", "f2io_1"), ("R99", "flush"), ("p101", "bit2")],
         # Intersect to SCAN
         "e7": [("j0", "ready_out_0"), ("s1", "ready_in")],
         "e8": [("j0", "ready_out_1"), ("s2", "ready_in")],
         # Flush
-        "e9": [("i11", "io2f_1"), ("j0", "flush"), ("s1", "flush"), ("s2", "flush"), ("m3", "flush"), ("m4", "flush"), ("m13", "flush"), ("m14", "flush"), ("m31", "flush"), ("m32", "flush")],
+        "e9": [("i11", "io2f_1"),
+               ("j0", "flush"),
+               ("s1", "flush"),
+               ("s2", "flush"),
+               ("m3", "flush"),
+               ("m4", "flush"),
+               ("m13", "flush"),
+               ("m14", "flush"),
+               ("m31", "flush"),
+               ("m32", "flush")],
         # I/O to Intersect
         "e10": [("s1", "data_out"), ("j0", "coord_in_0")],
         "e11": [("s2", "data_out"), ("j0", "coord_in_1")],
@@ -1707,8 +1665,7 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
         "e26": [("m14", "data_out_0"), ("p20", "data1")],
         # MEM Fifo result...
         "e27": [("p100", "alu_res"), ("m31", "data_in_0")],
-        # "e28": [("m14", "valid_out_0"), ("m31", "wen_in_0")],
-        "e29": [("m14", "valid_out_0"), ("p101", "bit1")],
+        "e29": [("R99", "valid_out"), ("p101", "bit1")],
         "e30": [("i35", "io2f_1"), ("m31", "ren_in_0"), ("m32", "ren_in_0")],
         # Get mem outputs
         "e31": [("m31", "valid_out_0"), ("i50", "f2io_1")],
@@ -1754,7 +1711,7 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
         "e25": 16,
         "e26": 16,
         "e27": 16,
-        "e28": 1,
+        # "e28": 1,
         "e29": 1,
         "e30": 1,
         "e31": 1,
@@ -1775,7 +1732,7 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     config_data = interconnect.get_route_bitstream(routing)
 
     matrix_size = 4
-    matrix = [[1, 2, 0, 0],[3, 0, 0, 4],[0, 0, 0, 0],[0, 5, 0, 6]]
+    matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
     (outer_r, ptr_r, inner_r, matrix_vals_r) = compress_matrix(matrix, row=True)
     (inner_offset_r, data_r) = prep_matrix_2_sram(outer_r, ptr_r, inner_r)
     (outer_c, ptr_c, inner_c, matrix_vals_c) = compress_matrix(matrix, row=False)
@@ -1797,9 +1754,13 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     isect_data = interconnect.configure_placement(isect_x, isect_y, 5)
 
     memd0_x, memd0_y = placement["m13"]
-    memd0_data = interconnect.configure_placement(memd0_x, memd0_y, {"config": ["mek", {"init": align_data(matrix_vals_r, 4)}]})
+    memd0_data = interconnect.configure_placement(memd0_x,
+                                                  memd0_y,
+                                                  {"config": ["mek", {"init": align_data(matrix_vals_r, 4)}]})
     memd1_x, memd1_y = placement["m14"]
-    memd1_data = interconnect.configure_placement(memd1_x, memd1_y, {"config": ["mek", {"init": align_data(matrix_vals_c, 4)}]})
+    memd1_data = interconnect.configure_placement(memd1_x,
+                                                  memd1_y,
+                                                  {"config": ["mek", {"init": align_data(matrix_vals_c, 4)}]})
 
     # This app should basically emit all the rows * + eos, then we can make accum in network
 
@@ -1814,17 +1775,16 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     pemul_data = interconnect.configure_placement(pemul_x, pemul_y, asm.umult0())
 
     # PE as add
-    peadd_x, peeadd_y = placement["p100"]
-    peadd_data = interconnect.configure_placement(peadd_x, peeadd_y, asm.add())
+    peadd_x, peadd_y = placement["p100"]
+    peadd_data = interconnect.configure_placement(peadd_x, peadd_y, asm.add())
 
     # PE as AND
-    peand_x, peeand_y = placement["p101"]
-    peand_data = interconnect.configure_placement(peand_x, peeand_y, asm.lut_and())
+    peand_x, peand_y = placement["p101"]
+    peand_data = interconnect.configure_placement(peand_x, peand_y, asm.lut_and())
 
     # REG
     reg_x, reg_y = placement["R99"]
     reg_data = interconnect.configure_placement(reg_x, reg_y, (0, 0, 0, 0), pnr_tag="R")
-
 
     config_data += mem0_data
     config_data += scan0_data
@@ -1833,22 +1793,15 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     config_data += isect_data
     config_data += memd0_data
     config_data += memd1_data
-
     config_data += memcf_data
     config_data += memdf_data
     config_data += pemul_data
-
     config_data += peadd_data
     config_data += peand_data
     config_data += reg_data
 
     skip_addr = interconnect.get_skip_addr()
     config_data = compress_config_data(config_data, skip_compression=skip_addr)
-
-    #print("BITSTREAM START")
-    #for addr, config in config_data:
-    #    print("{0:08X} {1:08X}".format(addr, config))
-    #print("BITSTREAM END")
 
     # Create tester and perform init routine...
     circuit = interconnect.circuit()
@@ -1906,16 +1859,18 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
         tester_if = tester._if(circuit.interface[cvalid])
         tester_if.print("COORD: %d, VAL: %d\n", circuit.interface[cdata], circuit.interface[ddata])
         if_eos_finish = tester._if(circuit.interface[eos_out])
-        if_eos_finish.print("EOS IS HIGH\n");
-        
+        if_eos_finish.print("EOS IS HIGH\n")
+
         # tester_if._else().print("")
         # tester.expect(circuit.interface[data_out], out_data[0][i])
         # toggle the clock
+
         tester.step(2)
 
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
-    
-    return out_coord, out_data
+
+    # return out_coord, out_data
+
 
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
@@ -1933,7 +1888,7 @@ if __name__ == "__main__":
     parser.add_argument('--trace', action="store_true")
     args = parser.parse_args()
 
-    spMspV_test(trace=True, run_tb=run_tb_fn, cwd="mek_dump")
+    spMspV_test(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
     exit()
     # mem_scanner_intersect_test_new_matrix(trace=True, run_tb=run_tb_fn, cwd="mek_dump")
     # scanner_test_new_matrix(trace=True, run_tb=run_tb_fn, cwd="mek_dump")
@@ -1941,11 +1896,10 @@ if __name__ == "__main__":
     spVspV_regress(dump_dir="mek_dump",
                    log_name="xrun.log",
                    trace=args.trace)
-        # basic_tb(config_path=args.config_path,
+    # basic_tb(config_path=args.config_path,
     #          stream_path=args.stream_path,
     #          in_file_name=args.in_file_name,
     #          out_file_name=args.out_file_name,
     #          cwd=args.tempdir_override,
     #          trace=args.trace,
     #          run_tb=run_tb_fn)
-

@@ -193,7 +193,6 @@ class PeakCore(ConfigurableCore):
         self._setup_config()
 
     def get_config_bitstream(self, instr):
-        print(f"PE INST: {instr}")
         if not isinstance(instr, self.wrapper.instruction_type()):
             return
         assert isinstance(instr, self.wrapper.instruction_type())
