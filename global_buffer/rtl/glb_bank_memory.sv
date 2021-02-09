@@ -40,6 +40,7 @@ glb_bank_sram_gen #(
     .DATA_WIDTH(BANK_DATA_WIDTH),
     .ADDR_WIDTH(BANK_ADDR_WIDTH-BANK_BYTE_OFFSET)
 ) glb_bank_sram_gen (
+    .reset(reset),
     .CLK(clk),
     .CEB(~sram_cen_d1),
     .WEB(~sram_wen_d1),
