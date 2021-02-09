@@ -26,6 +26,7 @@ interface proc_ifc(input logic clk);
     );
 
     clocking cbd @(posedge clk);
+        default input #4 output #4;
         input  clk;
         output wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr;
         input  rd_data, rd_data_valid;
@@ -33,6 +34,7 @@ interface proc_ifc(input logic clk);
     modport driver (clocking cbd);
 
     clocking cbm @(posedge clk);
+        default input #3 output #3;
         input  clk, wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr, rd_data, rd_data_valid;
     endclocking : cbm
     modport monitor (clocking cbm);

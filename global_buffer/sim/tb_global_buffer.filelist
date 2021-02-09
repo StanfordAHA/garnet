@@ -18,5 +18,6 @@ reg_generator.sv
 reg_monitor.sv
 sequence.sv
 scoreboard.sv
+column.sv
 environment.sv
 glb_test.sv

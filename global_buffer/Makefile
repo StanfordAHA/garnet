@@ -5,9 +5,10 @@ TB_DIR := ./sim
 
 TOP_MODULE := global_buffer
 
-CGRA_WIDTH ?= 12
+CGRA_WIDTH ?= 32
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
-GLB_TILE_MEM_SIZE ?= 64
+GLB_TILE_MEM_SIZE ?= 256
+XRUNARGS = 
 
 GLB_TILE_NETLIST := ./netlist/glb_tile.vcs.v
 GLB_TOP_NETLIST := ./netlist/global_buffer.vcs.v
@@ -27,14 +28,12 @@ XRUN = xrun \
 	   -sv \
 	   -sysv \
 	   -l xrun.log \
+	   -debug \
 	   -covoverwrite \
 	   -top top \
 	   -timescale 100ps/1ps \
-	   +loadpli1=debpli:deb_PLIPtr \
-	   -initmem0 \
-	   -initreg0 \
-	   +access+rw \
-	   +maxdelays \
+	   -unbuffered \
+	   -svseed random \
 	   $(XRUNARGS) \
 	   $(DESIGNARGS)
 
@@ -121,18 +120,32 @@ sim-tile-gl: $(GLB_TILE_NETLIST)
 .PHONY: sim
 sim: XRUNARGS+= -notimingchecks
 sim: DESIGNARGS += -v $(SRAM_STUB) -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist 
-sim: rtl
+# sim: XRUNARGS += +TEST_PROC_SIMPLE
+# sim: XRUNARGS += +TEST_JTAG
+# sim: XRUNARGS += +TEST_CONFIG
+# sim: XRUNARGS += +TEST_PCFG
+sim: XRUNARGS += +TEST_STRM
+sim: XRUNARGS += +VCD_ON
+sim:
 	$(XRUN)
 
+# gate-level simulation
 .PHONY: sim-gl
 sim-gl: DESIGNARGS += \
 	$(RTL_DIR)/global_buffer_param.svh \
 	$(RTL_DIR)/global_buffer_pkg.svh \
 	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist \
 	-F netlist/netlist.filelist
-sim-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING -ALLOWREDEFINITION
+sim-gl: XRUNARGS += +VCD_ON
+# sim-gl: XRUNARGS += +define+PWR
+sim-gl: XRUNARGS += +TEST_PROC_SIMPLE
+sim-gl: XRUNARGS += +define+NON_STOP_IF_INPUT_Z
+sim-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING
+sim-gl: XRUNARGS += +define+TSMC_CM_UNIT_DELAY
 sim-gl: XRUNARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS +define+TSMC_MEM_LOAD_0
+sim-gl: XRUNARGS += -negdelay
 sim-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
+sim-gl: XRUNARGS += -sdfstats sdf_stats.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
 sim-gl:
 	$(XRUN)
 

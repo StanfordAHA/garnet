@@ -5,12 +5,13 @@ module glb_bank_sram_gen #(
     parameter integer DATA_WIDTH = 64,
     parameter integer ADDR_WIDTH = 14
 )
-(A,CEB,BWEB,CLK,WEB,D,Q);
+(reset,A,CEB,BWEB,CLK,WEB,D,Q);
 localparam integer WORD_DEPTH = (1 << ADDR_WIDTH);
 localparam integer PER_MEM_ADDR_WIDTH = 11;
 localparam integer PER_MEM_WORD_DEPTH = (1 << PER_MEM_ADDR_WIDTH);
 localparam integer NUM_INST = (WORD_DEPTH + PER_MEM_WORD_DEPTH - 1)/PER_MEM_WORD_DEPTH;
 
+input                           reset;
 input                           CLK;
 input                           CEB;
 input                           WEB;
@@ -59,45 +60,90 @@ logic [ADDR_WIDTH-PER_MEM_ADDR_WIDTH-1:0] mem_select_d1;
 logic [PER_MEM_ADDR_WIDTH-1:0] A_to_mem_d1;
 
 
-always_ff @(posedge CLK) begin
-    WEB_d1 <= WEB;
+always_ff @(posedge CLK or posedge reset) begin
+    if(reset) begin
+        WEB_d1 <= 1;
+    end
+    else begin
+        WEB_d1 <= WEB;
+    end
 end
 
-always_ff @(posedge CLK) begin
-    CEB_d1 <= CEB;
+always_ff @(posedge CLK or posedge reset) begin
+    if(reset) begin
+        CEB_d1 <= 1;
+    end
+    else begin
+        CEB_d1 <= CEB;
+    end
 end
     
-always_ff @ (posedge CLK) begin
-    if (CEB_d1 == 0) begin
-        if (WEB_d1 == 1) begin
-            output_select <= mem_select_d1;
+always_ff @ (posedge CLK or posedge reset) begin
+    if(reset) begin
+        output_select <= 0;
+    end
+    else begin
+        if (CEB_d1 == 0) begin
+            if (WEB_d1 == 1) begin
+                output_select <= mem_select_d1;
+            end
         end
     end
 end
 
-always_ff @(posedge CLK) begin
-    mem_select_d1 <= mem_select;
+always_ff @(posedge CLK or posedge reset) begin
+    if (reset) begin
+        mem_select_d1 <= 0;
+    end
+    else begin
+        mem_select_d1 <= mem_select;
+    end
 end
 
 // pipeline registers
-always_ff @(posedge CLK) begin
-    D_d1 <= D;
+always_ff @(posedge CLK or posedge reset) begin
+    if (reset) begin
+        D_d1 <= 0;
+    end
+    else begin
+        D_d1 <= D;
+    end
 end
 
-always_ff @(posedge CLK) begin
-    WEB_array_d1 <= WEB_array;
+always_ff @(posedge CLK or posedge reset) begin
+    if (reset) begin
+        WEB_array_d1 <= {NUM_INST{1'b1}};
+    end
+    else begin
+        WEB_array_d1 <= WEB_array;
+    end
 end
 
-always_ff @(posedge CLK) begin
-    A_to_mem_d1 <= A_to_mem;
+always_ff @(posedge CLK or posedge reset) begin
+    if (reset) begin
+        A_to_mem_d1 <= '0;
+    end
+    else begin
+        A_to_mem_d1 <= A_to_mem;
+    end
 end
 
-always_ff @(posedge CLK) begin
-    CEB_array_d1 <= CEB_array;
+always_ff @(posedge CLK or posedge reset) begin
+    if (reset) begin
+        CEB_array_d1 <= {NUM_INST{1'b1}};
+    end
+    else begin
+        CEB_array_d1 <= CEB_array;
+    end
 end
 
-always_ff @(posedge CLK) begin
-    BWEB_d1 <= BWEB;
+always_ff @(posedge CLK or posedge reset) begin
+    if (reset) begin
+        BWEB_d1 <= {DATA_WIDTH{1'b1}};
+    end
+    else begin
+        BWEB_d1 <= BWEB;
+    end
 end
 
 //Use parameters to decide which width of memory to instantiate and how many

@@ -169,124 +169,242 @@ program glb_test
 
     bit [AXI_ADDR_WIDTH-1:0] addr_dic[string];
 
-    initial begin
-        $srandom(3);
+    logic [4:0] cfg_col;
+    logic [7:0] cfg_reg_addr;
+    logic [CGRA_CFG_ADDR_WIDTH-1:0] cfg_addr;
+    logic [CGRA_CFG_DATA_WIDTH-1:0] cfg_data;
+    logic [CGRA_CFG_DATA_WIDTH-1:0] cfg_data_expected;
 
+    int NUM_JTAG_TEST = 10;
+    int fd;
+    int status;
+    bit [AXI_ADDR_WIDTH-1:0] glb_cfg_addr;
+    bit [AXI_DATA_WIDTH-1:0] glb_cfg_data;
+
+    initial begin
+        wait(!reset);
         seq = new();
 
         //=============================================================================
-        // processor write
+        // processor write/read first 256Byte for each bank 
         //=============================================================================
-        seq.empty();
-        p_cnt = 0;
-        p_trans_q[p_cnt++] = new(0, 128);
-        p_trans_q[p_cnt++] = new(0, 128, 1);
+        if ($test$plusargs("TEST_PROC_SIMPLE")) begin
+            empty_queues();
 
-        foreach(p_trans_q[i]) begin
-            seq.add(p_trans_q[i]);
+            for (int i=0; i<NUM_GLB_TILES*CGRA_PER_GLB; i=i+1) begin
+                p_trans_q[p_cnt++] = new(i*(1<<BANK_ADDR_WIDTH), 32);
+                p_trans_q[p_cnt++] = new(i*(1<<BANK_ADDR_WIDTH), 32, 1);
+            end
+
+            foreach(p_trans_q[i]) begin
+                seq.add(p_trans_q[i]);
+            end
+
+            env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
+            env.build();
+            env.run();
+
+            repeat(30) @(posedge clk);
         end
 
-        env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
-        env.build();
-        env.run();
+        // //=============================================================================
+        // // processor write/read exhaustive
+        // //=============================================================================
+        // if ($test$plusargs("TEST_PROC_SIMPLE")) begin
+        //     seq.empty();
+        //     p_cnt = 0;
+        //     for (int i=0; i < NUM_GLB_TILES*2; i=i+1) begin
+        //         p_trans_q[p_cnt++] = new(i, 32);
+        //         p_trans_q[p_cnt++] = new(i, 32, 1);
+        //     end
+        //     p_trans_q[p_cnt++] = new(0, 32);
+        //     p_trans_q[p_cnt++] = new(0, 32, 1);
 
-        repeat(300) @(posedge clk);
+        //     foreach(p_trans_q[i]) begin
+        //         seq.add(p_trans_q[i]);
+        //     end
+
+        //     env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
+        //     env.build();
+        //     env.run();
+
+        //     repeat(300) @(posedge clk);
+        // end
 
         //=============================================================================
-        // register read/write
+        // JTAG configuration
         //=============================================================================
-        seq.empty();
-        r_cnt = 0;
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h44);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h44, 1);
+        if ($test$plusargs("TEST_JTAG")) begin
+            empty_queues();
 
-        foreach(r_trans_q[i]) begin
-            seq.add(r_trans_q[i]);
+            for (int i=0; i<NUM_JTAG_TEST; i=i+1) begin
+                cfg_col = $urandom_range(0, 31);
+                cfg_reg_addr = $urandom_range(0, 2**8-1);
+                cfg_addr = (cfg_reg_addr << 8) | cfg_col; 
+                cfg_data = $urandom;
+                jtag_write(cfg_addr, cfg_data);
+                jtag_read(cfg_addr, cfg_data);
+            end
+
+            repeat(30) @(posedge clk);
         end
 
-        env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
-        env.build();
-        env.run();
-        repeat(300) @(posedge clk);
-
         //=============================================================================
-        // sram read/write
+        // configuration register read/write
         //=============================================================================
-        seq.empty();
-        m_cnt = 0;
-        m_trans_q[m_cnt++] = new('h10, 100);
-        m_trans_q[m_cnt++] = new('h10, 100, 1);
+        if ($test$plusargs("TEST_CONFIG")) begin
+            empty_queues();
 
-        m_trans_q[m_cnt++] = new('h40000, 100);
-        m_trans_q[m_cnt++] = new('h40000, 100, 1);
+            fd = $fopen("glb.regpair", "r");
+            status = $fscanf(fd, "0x%h,%d", glb_cfg_addr, glb_cfg_data);
+            if(status != 2) $error("glb register pair read failed");
 
-        foreach(m_trans_q[i]) begin
-            seq.add(m_trans_q[i]);
+            for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
+                r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, glb_cfg_data);
+                r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, glb_cfg_data, 1);
+                r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, 0);
+                r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, 0, 1);
+            end
+
+            foreach(r_trans_q[i]) begin
+                seq.add(r_trans_q[i]);
+            end
+
+            env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
+            env.build();
+            env.run();
+            repeat(30) @(posedge clk);
         end
 
-        env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
-        env.build();
-        env.run();
-        repeat(300) @(posedge clk);
+        // //=============================================================================
+        // // sram read/write
+        // //=============================================================================
+        // seq.empty();
+        // m_cnt = 0;
+        // m_trans_q[m_cnt++] = new('h10, 100);
+        // m_trans_q[m_cnt++] = new('h10, 100, 1);
+
+        // m_trans_q[m_cnt++] = new('h40000, 100);
+        // m_trans_q[m_cnt++] = new('h40000, 100, 1);
+
+        // foreach(m_trans_q[i]) begin
+        //     seq.add(m_trans_q[i]);
+        // end
+
+        // env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
+        // env.build();
+        // env.run();
+        // repeat(300) @(posedge clk);
+
+        // //=============================================================================
+        // // stream write tile 0-1, read tile 0
+        // //=============================================================================
+        // seq.empty();
+        // r_cnt = 0;
+        // r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h155);
+        // r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LATENCY"], 'h4);
+        // r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_START_ADDR"], (1 << (BANK_ADDR_WIDTH+$clog2(BANKS_PER_TILE)))-64);
+        // r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
+        // r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
+        // r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_START_ADDR"], (1 << (BANK_ADDR_WIDTH+$clog2(BANKS_PER_TILE)))-64);
+        // r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (128 << MAX_STRIDE_WIDTH) + 1);
+        // r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
+
+        // s_cnt = 0;
+        // s_trans_q[s_cnt++] = new(0, (1 << 18) - 64, 128, 1);
+        // s_trans_q[s_cnt++] = new(0, (1 << 18) - 64, 128);
+
+        // foreach(r_trans_q[i]) begin
+        //     seq.add(r_trans_q[i]);
+        // end
+        // foreach(s_trans_q[i]) begin
+        //     seq.add(s_trans_q[i]);
+        // end
+
+        // env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
+        // env.build();
+        // env.run();
+        // repeat(300) @(posedge clk);
+
+        //=============================================================================
+        // parallel config tile 0-1, read tile 0
+        //=============================================================================
+        if ($test$plusargs("TEST_PCFG")) begin
+            empty_queues();
+
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], (1 << 10));
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LATENCY"], 'h4);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["PC_DMA_HEADER_0_START_ADDR"], 0);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["PC_DMA_HEADER_0_NUM_CFG"], 'd128);
+
+            p_trans_q.delete();
+            p_cnt = 0;
+            p_trans_q[p_cnt++] = new(0, 128);
+
+            foreach(p_trans_q[i]) begin
+                seq.add(p_trans_q[i]);
+            end
+            foreach(r_trans_q[i]) begin
+                seq.add(r_trans_q[i]);
+            end
+
+            env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
+            env.build();
+            env.run();
+
+            repeat(10) @(posedge clk);
+            top.pc_start_pulse[0] <= 1;
+            @(posedge clk);
+            top.pc_start_pulse[0] <= 0;
+            wait(top.pcfg_g2f_interrupt_pulse[0]);
+
+            repeat(300) @(posedge clk);
+        end
 
         //=============================================================================
         // stream write tile 0, read tile 0
         //=============================================================================
-        seq.empty();
-        r_cnt = 0;
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h154);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_START_ADDR"], 'h0);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_START_ADDR"], 'h0);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (128 << MAX_STRIDE_WIDTH) + 1);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
+        if ($test$plusargs("TEST_STRM")) begin
+            empty_queues();
 
-        s_cnt = 0;
-        s_trans_q[s_cnt++] = new(0, 0, 128, 1);
-        s_trans_q[s_cnt++] = new(0, 0, 128);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h154);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_START_ADDR"], 'h0);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_START_ADDR"], 'h0);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (128 << MAX_STRIDE_WIDTH) + 1);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
 
-        foreach(r_trans_q[i]) begin
-            seq.add(r_trans_q[i]);
-        end
-        foreach(s_trans_q[i]) begin
-            seq.add(s_trans_q[i]);
-        end
+            s_trans_q[s_cnt++] = new(0, 0, 128, 1);
+            s_trans_q[s_cnt++] = new(0, 0, 128);
 
-        env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
-        env.build();
-        env.run();
-        repeat(300) @(posedge clk);
+            foreach(r_trans_q[i]) begin
+                seq.add(r_trans_q[i]);
+            end
+            foreach(s_trans_q[i]) begin
+                seq.add(s_trans_q[i]);
+            end
 
-        //=============================================================================
-        // stream write tile 0-1, read tile 0
-        //=============================================================================
-        seq.empty();
-        r_cnt = 0;
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], 'h155);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LATENCY"], 'h4);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_START_ADDR"], (1 << (BANK_ADDR_WIDTH+$clog2(BANKS_PER_TILE)))-64);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_NUM_WORDS"], 'd128);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["ST_DMA_HEADER_0_VALIDATE"], 'h1);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_START_ADDR"], (1 << (BANK_ADDR_WIDTH+$clog2(BANKS_PER_TILE)))-64);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_ITER_CTRL_0"], (128 << MAX_STRIDE_WIDTH) + 1);
-        r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LD_DMA_HEADER_0_VALIDATE"], 'h1);
-
-        s_cnt = 0;
-        s_trans_q[s_cnt++] = new(0, (1 << 18) - 64, 128, 1);
-        s_trans_q[s_cnt++] = new(0, (1 << 18) - 64, 128);
-
-        foreach(r_trans_q[i]) begin
-            seq.add(r_trans_q[i]);
-        end
-        foreach(s_trans_q[i]) begin
-            seq.add(s_trans_q[i]);
+            env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
+            env.build();
+            fork : strm
+                env.run();
+                begin
+                    while(1) begin
+                        if (top.stream_data_valid_f2g[0]) begin
+                            break;
+                        end
+                        @(vif.cbd);
+                    end
+                    for (int i=0; i<j; i++) begin
+                        trans.ld_data[i] = vif.cbd.data_g2f;
+                        @(vif.cbd);
+                    end
+                end
+            join
+            repeat(300) @(posedge clk);
         end
 
-        env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
-        env.build();
-        env.run();
-        repeat(300) @(posedge clk);
     end
 
     //=============================================================================
@@ -338,5 +456,66 @@ program glb_test
         addr_dic["PC_DMA_HEADER_0_START_ADDR"]  = 'hA8;
         addr_dic["PC_DMA_HEADER_0_NUM_CFG"]     = 'hAC;
     end
+
+    function void empty_queues;
+        // empty queue
+        seq.empty();
+        p_trans_q.delete();
+        r_trans_q.delete();
+        m_trans_q.delete();
+        s_trans_q.delete();
+        p_cnt = 0;
+        r_cnt = 0;
+        m_cnt = 0;
+        s_cnt = 0;
+    endfunction
+
+    task jtag_write (input bit [CGRA_CFG_ADDR_WIDTH-1:0] addr, bit [CGRA_CFG_DATA_WIDTH-1:0] data);
+        $display("[JTAG-WR] @%0t: addr: 0x%0h, data: 0x%0h", $time, addr, data);
+        @(posedge clk);
+        top.cgra_cfg_jtag_gc2glb_wr_en <= 1;
+        top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
+        top.cgra_cfg_jtag_gc2glb_addr <= addr;
+        top.cgra_cfg_jtag_gc2glb_data <= data;
+        @(posedge clk);
+        top.cgra_cfg_jtag_gc2glb_wr_en <= 0;
+        top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
+        top.cgra_cfg_jtag_gc2glb_addr <= 0;
+        top.cgra_cfg_jtag_gc2glb_data <= 0;
+        repeat(30) @(posedge clk);
+    endtask
+
+    task jtag_read (input bit [CGRA_CFG_ADDR_WIDTH-1:0] addr, bit [CGRA_CFG_DATA_WIDTH-1:0] data);
+        @(posedge clk);
+        top.cgra_cfg_jtag_gc2glb_wr_en <= 0;
+        top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
+        top.cgra_cfg_jtag_gc2glb_addr <= addr;
+        top.cgra_cfg_jtag_gc2glb_data <= 0;
+        @(posedge clk);
+        top.cgra_cfg_jtag_gc2glb_wr_en <= 0;
+        top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
+        top.cgra_cfg_jtag_gc2glb_addr <= 0;
+        top.cgra_cfg_jtag_gc2glb_data <= 0;
+        fork : jtag_timeout
+            begin
+                while (1) begin
+                    @(posedge clk);
+                    if (top.cgra_cfg_rd_data_valid) begin
+                        if (data != top.cgra_cfg_rd_data) begin
+                            $error("[JTAG-FAIL] #JTAG addr: 0x%0h, data expected: 0x%0h, data real: 0x%0h", addr, data, top.cgra_cfg_rd_data);
+                        end
+                        $display("[JTAG-RD] @%0t: addr: 0x%0h, data: 0x%0h", $time, addr, data);
+                        break;
+                    end
+                end
+            end
+            begin
+                repeat (30) @(posedge clk);
+                $display("@%0t: %m ERROR: jtag read timeout ", $time);
+            end
+        join_any
+        disable fork;
+        @(posedge clk);
+    endtask
 
 endprogram
