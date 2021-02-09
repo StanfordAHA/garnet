@@ -1533,8 +1533,9 @@ def mem_scanner_intersect_test_new_matrix(trace, run_tb, cwd):
     scan0_data = interconnect.configure_placement(scan0_x, scan0_y, (inner_offset_r, max_outer_dim, 1, 4))
     mem1_x, mem1_y = placement["m4"]
     mem1_data = interconnect.configure_placement(mem1_x, mem1_y, {"config": ["mek", {"init": data_c}]})
-    scan0_x, scan0_y = placement["s2"]
-    scan1_data = interconnect.configure_placement(scan0_x, scan0_y, (inner_offset_c, max_outer_dim, 1, 4))
+    scan1_x, scan1_y = placement["s2"]
+    # Now scan just the first row as a pretend column...
+    scan1_data = interconnect.configure_placement(scan1_x, scan1_y, (inner_offset_c, max_outer_dim, 0, 4))
     isect_x, isect_y = placement["j0"]
     isect_data = interconnect.configure_placement(isect_x, isect_y, 5)
 
@@ -1598,6 +1599,314 @@ def mem_scanner_intersect_test_new_matrix(trace, run_tb, cwd):
 
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
 
+
+def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
+    # Streams and code to create them and align them
+    # Works
+    #data0 = [1, 2, 6, 10]
+    #data1 = [3, 6, 8]
+    # Works
+    #data0 = [1, 2, 6, 10]
+    #data1 = [1, 3, 6, 8]
+    # Works 
+    #data0 = [1, 2, 6, 10, 12]
+    #data1 = [1, 3, 6, 8]
+    # 
+#    data0 = [1, 2, 6, 10, 12, 17]
+#    data1 = [1, 3, 6, 8, 16, 18]
+
+    # Fill data with random, align to 4
+    datad0 = random_data(len(data0))
+    data0_len = len(data0)
+    datad1 = random_data(len(data1))
+    data1_len = len(data1)
+
+    out_data = []
+    out_coord = []
+
+    both = set(data0).intersection(data1)
+    both = list(both)
+    both.sort()
+    ind0 = [data0.index(x) for x in both]
+    ind1 = [data1.index(x) for x in both]
+
+    out_coord = both
+    #out_coord = list(out_coord)
+    #out_coord.sort()
+    for i in range(len(ind0)):
+        out_data.append(datad0[ind0[i]] * datad1[ind1[i]])
+    
+    num_cycles = data0_len + data1_len + 200
+
+    print(f"DATA0: {data0}")
+    print(f"DATAD0: {datad0}")
+    print(f"DATA1: {data1}")
+    print(f"DATAD1: {datad1}")
+    print(f"common coords: {both}")
+    print(f"result data: {out_data}")
+
+    # Align these guys after the fact...
+    data0 = align_data(data0, 4)
+    datad0 = align_data(datad0, 4)
+    data1 = align_data(data1, 4)
+    datad1 = align_data(datad1, 4)
+
+    print(f"ALIGNED LENGTH 0: {len(data0)}")
+    print(f"ALIGNED LENGTH 1: {len(data1)}")
+    print(f"ADATA0: {data0}")
+    print(f"ADATAD0: {datad0}")
+    print(f"ADATA1: {data1}")
+    print(f"ADATAD1: {datad1}")
+    chip_size = 6
+    num_tracks = 5
+
+    interconnect = create_cgra(chip_size, chip_size, io_sides(),
+                               num_tracks=num_tracks,
+                               add_pd=True,
+                               mem_ratio=(1, 2),
+                               altcore=[ScannerCore, IntersectCore, PeakCore])
+
+    # Created CGRA with all cores!
+
+    netlist = {
+        # Intersect to DATA MEM
+        "e0": [("j0", "coord_out"), ("r15", "reg")],
+        "e1": [("r15", "reg"), ("m32", "data_in_0")],
+        "e2": [("j0", "pos_out_0"), ("m13", "addr_in_0")],
+        "e3": [("j0", "pos_out_1"), ("m14", "addr_in_0")],
+        "e4": [("j0", "valid_out"), ("m13", "ren_in_0"), ("m14", "ren_in_0")],
+        "e5": [("j0", "eos_out"), ("r16", "reg")],
+        "e6": [("r16", "reg"), ("i10", "f2io_1"), ("R99", "flush")],
+        # Intersect to SCAN
+        "e7": [("j0", "ready_out_0"), ("s1", "ready_in")],
+        "e8": [("j0", "ready_out_1"), ("s2", "ready_in")],
+        # Flush
+        "e9": [("i11", "io2f_1"), ("j0", "flush"), ("s1", "flush"), ("s2", "flush"), ("m3", "flush"), ("m4", "flush"), ("m13", "flush"), ("m14", "flush"), ("m31", "flush"), ("m32", "flush")],
+        # I/O to Intersect
+        "e10": [("s1", "data_out"), ("j0", "coord_in_0")],
+        "e11": [("s2", "data_out"), ("j0", "coord_in_1")],
+        "e12": [("s1", "valid_out"), ("j0", "valid_in_0")],
+        "e13": [("s2", "valid_out"), ("j0", "valid_in_1")],
+        "e14": [("s1", "eos_out"), ("j0", "eos_in_0")],
+        "e15": [("s2", "eos_out"), ("j0", "eos_in_1")],
+        # This should technically be the only input I/O
+        "e16": [("i12", "io2f_1"), ("j0", "ready_in")],
+        # Mem to Scanner
+        "e17": [("m3", "data_out_0"), ("s1", "data_in")],
+        "e18": [("m4", "data_out_0"), ("s2", "data_in")],
+        "e19": [("m3", "valid_out_0"), ("s1", "valid_in")],
+        "e20": [("m4", "valid_out_0"), ("s2", "valid_in")],
+        # Scanner to Mem
+        "e21": [("s1", "addr_out"), ("m3", "addr_in_0")],
+        "e22": [("s2", "addr_out"), ("m4", "addr_in_0")],
+        "e23": [("s1", "ready_out"), ("m3", "ren_in_0")],
+        "e24": [("s2", "ready_out"), ("m4", "ren_in_0")],
+        # Data mem to PE
+        "e25": [("m13", "data_out_0"), ("p20", "data0")],
+        "e26": [("m14", "data_out_0"), ("p20", "data1")],
+        # MEM Fifo result...
+        "e27": [("p100", "alu_res"), ("m31", "data_in_0")],
+        "e28": [("m14", "valid_out_0"), ("m31", "wen_in_0")],
+        "e29": [("m14", "valid_out_0"), ("m32", "wen_in_0")],
+        "e30": [("i35", "io2f_1"), ("m31", "ren_in_0"), ("m32", "ren_in_0")],
+        # Get mem outputs
+        "e31": [("m31", "valid_out_0"), ("i50", "f2io_1")],
+        "e32": [("m32", "valid_out_0"), ("i51", "f2io_1")],
+        "e33": [("m31", "data_out_0"), ("I52", "f2io_16")],
+        "e34": [("m32", "data_out_0"), ("I53", "f2io_16")],
+        "e35": [("s1", "payload_ptr"), ("j0", "payload_ptr_0")],
+        "e36": [("s2", "payload_ptr"), ("j0", "payload_ptr_1")],
+        "e37": [("p100", "alu_res"), ("R99", "data_in")],
+        "e38": [("R99", "data_out"), ("p100", "data0")],
+        "e39": [("p20", "alu_res"), ("p100", "data1")],
+        "e40": [("m14", "valid_out_0"), ("R99", "write_en")],
+    }
+
+    bus = {
+        "e0": 16,
+        "e1": 16,
+        "e2": 16,
+        "e3": 16,
+        "e4": 1,
+        "e5": 1,
+        "e6": 1,
+        "e7": 1,
+        "e8": 1,
+        "e9": 1,
+        "e10": 16,
+        "e11": 16,
+        "e12": 1,
+        "e13": 1,
+        "e14": 1,
+        "e15": 1,
+        "e16": 1,
+        "e17": 16,
+        "e18": 16,
+        "e19": 1,
+        "e20": 1,
+        "e21": 16,
+        "e22": 16,
+        "e23": 1,
+        "e24": 1,
+        "e25": 16,
+        "e26": 16,
+        "e27": 16,
+        "e28": 1,
+        "e29": 1,
+        "e30": 1,
+        "e31": 1,
+        "e32": 1,
+        "e33": 16,
+        "e34": 16,
+        "e35": 16,
+        "e36": 16,
+        "e37": 16,
+        "e38": 16,
+        "e39": 16,
+        "e40": 1
+    }
+
+    placement, routing = pnr(interconnect, (netlist, bus), cwd=cwd)
+    config_data = interconnect.get_route_bitstream(routing)
+
+    matrix_size = 4
+    matrix = [[1, 2, 0, 0],[3, 0, 0, 4],[0, 0, 0, 0],[0, 5, 0, 6]]
+    (outer_r, ptr_r, inner_r, matrix_vals_r) = compress_matrix(matrix, row=True)
+    (inner_offset_r, data_r) = prep_matrix_2_sram(outer_r, ptr_r, inner_r)
+    (outer_c, ptr_c, inner_c, matrix_vals_c) = compress_matrix(matrix, row=False)
+    (inner_offset_c, data_c) = prep_matrix_2_sram(outer_c, ptr_c, inner_c)
+    # data_len = len(data)
+    max_outer_dim = matrix_size
+
+    # Get configuration
+    mem0_x, mem0_y = placement["m3"]
+    mem0_data = interconnect.configure_placement(mem0_x, mem0_y, {"config": ["mek", {"init": data_r}]})
+    scan0_x, scan0_y = placement["s1"]
+    scan0_data = interconnect.configure_placement(scan0_x, scan0_y, (inner_offset_r, max_outer_dim, 1, 4))
+    mem1_x, mem1_y = placement["m4"]
+    mem1_data = interconnect.configure_placement(mem1_x, mem1_y, {"config": ["mek", {"init": data_c}]})
+    scan1_x, scan1_y = placement["s2"]
+    # Now scan just the first row as a pretend column...
+    scan1_data = interconnect.configure_placement(scan1_x, scan1_y, (inner_offset_c, max_outer_dim, 0, 4))
+    isect_x, isect_y = placement["j0"]
+    isect_data = interconnect.configure_placement(isect_x, isect_y, 5)
+
+    memd0_x, memd0_y = placement["m13"]
+    memd0_data = interconnect.configure_placement(memd0_x, memd0_y, {"config": ["mek", {"init": align_data(matrix_vals_r, 4)}]})
+    memd1_x, memd1_y = placement["m14"]
+    memd1_data = interconnect.configure_placement(memd1_x, memd1_y, {"config": ["mek", {"init": align_data(matrix_vals_c, 4)}]})
+
+    # This app should basically emit all the rows * + eos, then we can make accum in network
+
+    # Configure these guys as fifos...
+    memcf_x, memcf_y = placement["m32"]
+    memcf_data = interconnect.configure_placement(memcf_x, memcf_y, "fifo")
+    memdf_x, memdf_y = placement["m31"]
+    memdf_data = interconnect.configure_placement(memdf_x, memdf_y, "fifo")
+
+    # PE as mul
+    pemul_x, pemul_y = placement["p20"]
+    pemul_data = interconnect.configure_placement(pemul_x, pemul_y, asm.umult0())
+
+    # PE as add
+    peadd_x, peeadd_y = placement["p100"]
+    peadd_data = interconnect.configure_placement(peadd_x, peeadd_y, asm.add())
+
+    # REG
+    reg_x, reg_y = placement["R99"]
+    reg_data = interconnect.configure_placement(reg_x, reg_y, (0, 0, 0, 0), pnr_tag="R")
+
+
+    config_data += mem0_data
+    config_data += scan0_data
+    config_data += mem1_data
+    config_data += scan1_data
+    config_data += isect_data
+    config_data += memd0_data
+    config_data += memd1_data
+
+    config_data += memcf_data
+    config_data += memdf_data
+    config_data += pemul_data
+
+    config_data += peadd_data
+    # config_data += reg_data
+
+    skip_addr = interconnect.get_skip_addr()
+    config_data = compress_config_data(config_data, skip_compression=skip_addr)
+
+    #print("BITSTREAM START")
+    #for addr, config in config_data:
+    #    print("{0:08X} {1:08X}".format(addr, config))
+    #print("BITSTREAM END")
+
+    # Create tester and perform init routine...
+    circuit = interconnect.circuit()
+    tester = BasicTester(circuit, circuit.clk, circuit.reset)
+    tester.reset()
+    tester.zero_inputs()
+
+    # Stall during config
+    tester.poke(circuit.interface["stall"], 1)
+
+    for addr, index in config_data:
+        tester.configure(addr, index)
+        #  tester.config_read(addr)
+        tester.eval()
+
+    tester.done_config()
+    tester.poke(circuit.interface["stall"], 0)
+    tester.eval()
+
+    # Get flush handle and apply flush to start off app
+    flush_x, flush_y = placement["i11"]
+    flush = f"glb2io_1_X{flush_x:02X}_Y{flush_y:02X}"
+    tester.poke(circuit.interface[flush], 1)
+    tester.eval()
+    tester.step(2)
+    tester.poke(circuit.interface[flush], 0)
+    tester.eval()
+
+    # Just set final ready to always 1 for simplicity...
+    readyin_x, readyin_y = placement["i12"]
+    readyin = f"glb2io_1_X{readyin_x:02X}_Y{readyin_y:02X}"
+
+    pop_x, pop_y = placement["i35"]
+    pop = f"glb2io_1_X{pop_x:02X}_Y{pop_y:02X}"
+
+    cvalid_x, cvalid_y = placement["i51"]
+    cvalid = f"io2glb_1_X{cvalid_x:02X}_Y{cvalid_y:02X}"
+    cdata_x, cdata_y = placement["I53"]
+    cdata = f"io2glb_16_X{cdata_x:02X}_Y{cdata_y:02X}"
+
+    dvalid_x, dvalid_y = placement["i50"]
+    dvalid = f"io2glb_1_X{dvalid_x:02X}_Y{dvalid_y:02X}"
+    ddata_x, ddata_y = placement["I52"]
+    ddata = f"io2glb_16_X{ddata_x:02X}_Y{ddata_y:02X}"
+
+    eos_out_x, eos_out_y = placement["i10"]
+    eos_out = f"io2glb_1_X{eos_out_x:02X}_Y{eos_out_y:02X}"
+
+    for i in range(num_cycles):
+        tester.poke(circuit.interface[readyin], 1)
+        tester.poke(circuit.interface[pop], 1)
+        tester.eval()
+
+        # If we have valid, print the two datas
+        tester_if = tester._if(circuit.interface[cvalid])
+        tester_if.print("COORD: %d, VAL: %d\n", circuit.interface[cdata], circuit.interface[ddata])
+        if_eos_finish = tester._if(circuit.interface[eos_out])
+        if_eos_finish.print("EOS IS HIGH\n");
+        
+        # tester_if._else().print("")
+        # tester.expect(circuit.interface[data_out], out_data[0][i])
+        # toggle the clock
+        tester.step(2)
+
+    run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
+    
+    return out_coord, out_data
+
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
     from conftest import run_tb_fn
@@ -1614,8 +1923,10 @@ if __name__ == "__main__":
     parser.add_argument('--trace', action="store_true")
     args = parser.parse_args()
 
-    scanner_test_new_matrix(trace=True, run_tb=run_tb_fn, cwd="mek_dump")
+    spMspV_test(trace=True, run_tb=run_tb_fn, cwd="mek_dump")
     exit()
+    # mem_scanner_intersect_test_new_matrix(trace=True, run_tb=run_tb_fn, cwd="mek_dump")
+    # scanner_test_new_matrix(trace=True, run_tb=run_tb_fn, cwd="mek_dump")
 
     spVspV_regress(dump_dir="mek_dump",
                    log_name="xrun.log",

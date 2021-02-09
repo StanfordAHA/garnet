@@ -57,7 +57,7 @@ def fp_files(use_dw=True):
 
 
 def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
-    use_verilator = not cad_available()
+    use_verilator = False #not cad_available()
     use_dw = False
     root_dir = os.path.dirname(__file__)
     with tempfile.TemporaryDirectory() as tempdir:
