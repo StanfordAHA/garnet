@@ -9,6 +9,7 @@ from gemstone.common.util import compress_config_data
 import pytest
 from memory_core.memory_core_magma import MemCore
 from memory_core.scanner_core import ScannerCore
+from memory_core.reg_core import RegCore
 from lake.utils.test_infra import lake_test_app_args
 from lake.utils.parse_clkwork_csv import generate_data_lists
 from gemstone.common.testers import ResetTester
@@ -1657,14 +1658,14 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     print(f"ADATAD0: {datad0}")
     print(f"ADATA1: {data1}")
     print(f"ADATAD1: {datad1}")
-    chip_size = 6
+    chip_size = 8
     num_tracks = 5
 
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
                                num_tracks=num_tracks,
                                add_pd=True,
                                mem_ratio=(1, 2),
-                               altcore=[ScannerCore, IntersectCore, PeakCore])
+                               altcore=[ScannerCore, IntersectCore, PeakCore, RegCore])
 
     # Created CGRA with all cores!
 
@@ -1676,7 +1677,7 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
         "e3": [("j0", "pos_out_1"), ("m14", "addr_in_0")],
         "e4": [("j0", "valid_out"), ("m13", "ren_in_0"), ("m14", "ren_in_0")],
         "e5": [("j0", "eos_out"), ("r16", "reg")],
-        "e6": [("r16", "reg"), ("i10", "f2io_1"), ("R99", "flush")],
+        "e6": [("r16", "reg"), ("i10", "f2io_1"), ("R99", "flush"), ("p101", "bit0")],
         # Intersect to SCAN
         "e7": [("j0", "ready_out_0"), ("s1", "ready_in")],
         "e8": [("j0", "ready_out_1"), ("s2", "ready_in")],
@@ -1706,8 +1707,8 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
         "e26": [("m14", "data_out_0"), ("p20", "data1")],
         # MEM Fifo result...
         "e27": [("p100", "alu_res"), ("m31", "data_in_0")],
-        "e28": [("m14", "valid_out_0"), ("m31", "wen_in_0")],
-        "e29": [("m14", "valid_out_0"), ("m32", "wen_in_0")],
+        # "e28": [("m14", "valid_out_0"), ("m31", "wen_in_0")],
+        "e29": [("m14", "valid_out_0"), ("p101", "bit1")],
         "e30": [("i35", "io2f_1"), ("m31", "ren_in_0"), ("m32", "ren_in_0")],
         # Get mem outputs
         "e31": [("m31", "valid_out_0"), ("i50", "f2io_1")],
@@ -1720,6 +1721,8 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
         "e38": [("R99", "data_out"), ("p100", "data0")],
         "e39": [("p20", "alu_res"), ("p100", "data1")],
         "e40": [("m14", "valid_out_0"), ("R99", "write_en")],
+        "e41": [("p101", "res_p"), ("m31", "wen_in_0")],
+        "e42": [("p101", "res_p"), ("m32", "wen_in_0")],
     }
 
     bus = {
@@ -1763,7 +1766,9 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
         "e37": 16,
         "e38": 16,
         "e39": 16,
-        "e40": 1
+        "e40": 1,
+        "e41": 1,
+        "e42": 1,
     }
 
     placement, routing = pnr(interconnect, (netlist, bus), cwd=cwd)
@@ -1812,6 +1817,10 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     peadd_x, peeadd_y = placement["p100"]
     peadd_data = interconnect.configure_placement(peadd_x, peeadd_y, asm.add())
 
+    # PE as AND
+    peand_x, peeand_y = placement["p101"]
+    peand_data = interconnect.configure_placement(peand_x, peeand_y, asm.lut_and())
+
     # REG
     reg_x, reg_y = placement["R99"]
     reg_data = interconnect.configure_placement(reg_x, reg_y, (0, 0, 0, 0), pnr_tag="R")
@@ -1830,7 +1839,8 @@ def spMspV_test(trace, run_tb, cwd, data0 = [1, 2, 6, 10], data1 = [3, 6, 8]):
     config_data += pemul_data
 
     config_data += peadd_data
-    # config_data += reg_data
+    config_data += peand_data
+    config_data += reg_data
 
     skip_addr = interconnect.get_skip_addr()
     config_data = compress_config_data(config_data, skip_compression=skip_addr)
