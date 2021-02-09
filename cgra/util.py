@@ -14,6 +14,7 @@ from memory_core.scanner_core import ScannerCore
 from memory_core.intersect_core import IntersectCore
 from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
+from memory_core.reg_core import RegCore
 from passes.clk_pass.clk_pass import clk_physical
 from passes.pipeline_config_pass.pipeline_config_pass import pipeline_config_signals
 from gemstone.common.util import compress_config_data
@@ -109,12 +110,17 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     if altcore is None:
                         core = PeakCore(PE_fc)
                         if add_pond:
-                            additional_core[(x, y)] = PondCore()
+                            additional_core[(x, y)] = []
+                            additional_core[(x, y)].append(PondCore())
+                            additional_core[(x, y)].append(RegCore())
                     else:
                         altcore_used = True
                         if altcore[altcore_ind] == PeakCore:
                             #print("Using PE")
                             core = PeakCore(PE_fc)
+                            additional_core[(x, y)] = RegCore()
+                            # additional_core[(x, y)].append(PondCore())
+                            # additional_core[(x, y)].append(RegCore())
                         else:
                             #print(f"Using {altcore[altcore_ind].__name__}")
                             core = altcore[altcore_ind]()
@@ -146,10 +152,19 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         inputs |= {i.qualified_name() for i in core.inputs()}
         outputs |= {o.qualified_name() for o in core.outputs()}
 
-    if add_pond:
+    if True:
+    # if add_pond:
+        print("Adding inputs")
         for core in additional_core.values():
-            inputs |= {i.qualified_name() for i in core.inputs()}
-            outputs |= {o.qualified_name() for o in core.outputs()}
+            print(f"core: {core}")
+            if isinstance(core, list):
+                print("IS LIST")
+                for actual_core in core:
+                    inputs |= {i.qualified_name() for i in actual_core.inputs()}
+                    outputs |= {o.qualified_name() for o in actual_core.outputs()}
+            else:
+                inputs |= {i.qualified_name() for i in core.inputs()}
+                outputs |= {o.qualified_name() for o in core.outputs()}
 
             # Pond outputs will be connected to the SBs
             # outputs.remove("data_out_pond")
