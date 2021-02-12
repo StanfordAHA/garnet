@@ -81,7 +81,6 @@ timeprecision 1ps;
     end
 `elsif PNR 
     initial begin
-        // $sdf_annotate("netlist/glb_top.sdf",top.dut);
         if ($test$plusargs("VCD_ON")) begin
             $dumpfile("glb_pnr.vcd");
             $dumpvars(0, top);
@@ -201,9 +200,11 @@ timeprecision 1ps;
     generate
         for (i=0; i<NUM_GLB_TILES; i=i+1) begin: group_gen
             for (j=0; j<CGRA_PER_GLB; j=j+1) begin: col_gen
-                column col (
+                localparam CGRA_TILE_WIDTH = $clog2(NUM_CGRA_TILES);
+                localparam bit [CGRA_TILE_WIDTH-1:0] id = i*CGRA_PER_GLB+j;
+                column #(.CGRA_TILE_WIDTH(CGRA_TILE_WIDTH)) col (
                     .rst_n (!reset),
-                    .id (i*CGRA_PER_GLB + j),
+                    .id (id),
                     .rf_rd_en (c_ifc[i].cgra_cfg_rd_en[j]),
                     .rf_wr_en (c_ifc[i].cgra_cfg_wr_en[j]),
                     .rf_addr (c_ifc[i].cgra_cfg_addr[j]),

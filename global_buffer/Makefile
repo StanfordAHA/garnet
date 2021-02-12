@@ -120,12 +120,14 @@ sim-tile-gl: $(GLB_TILE_NETLIST)
 .PHONY: sim
 sim: XRUNARGS+= -notimingchecks
 sim: DESIGNARGS += -v $(SRAM_STUB) -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist 
-# sim: XRUNARGS += +TEST_PROC_SIMPLE
-# sim: XRUNARGS += +TEST_JTAG
-# sim: XRUNARGS += +TEST_CONFIG
-# sim: XRUNARGS += +TEST_PCFG
+sim: XRUNARGS += +TEST_PROC_SIMPLE
+sim: XRUNARGS += +TEST_PROC_ALL
+sim: XRUNARGS += +TEST_JTAG
+sim: XRUNARGS += +TEST_CONFIG
+sim: XRUNARGS += +TEST_PCFG
 sim: XRUNARGS += +TEST_STRM
-sim: XRUNARGS += +VCD_ON
+sim: XRUNARGS += +TEST_STRM_CHAIN
+# sim: XRUNARGS += +VCD_ON
 sim:
 	$(XRUN)
 

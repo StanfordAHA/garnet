@@ -1,7 +1,9 @@
-module column (
+module column #(
+    parameter CGRA_TILE_WIDTH = 5
+) (
     input  logic                            clk,
     input  logic                            rst_n,
-    input  logic [4:0]                      id,
+    input  logic [CGRA_TILE_WIDTH-1:0]      id,
 
     input  logic                            rf_wr_en,
     input  logic                            rf_rd_en,
