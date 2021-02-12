@@ -149,7 +149,7 @@ end
 //Use parameters to decide which width of memory to instantiate and how many
 genvar i;
 generate
-    for (i = 0; i < NUM_INST; i = i + 1) begin
+    for (i = 0; i < NUM_INST; i = i + 1) begin: sram_gen
         logic [63:0] Q_temp;
         TS1N16FFCLLSBLVTC2048X64M8SW
         sram_array (.CLK(CLK), .A(A_to_mem_d1), .BWEB(BWEB_d1), .CEB(CEB_array_d1[i]), .WEB(WEB_array_d1[i]), .D(D_d1), .Q(Q_temp), .RTSEL(2'b01), .WTSEL(2'b00));
