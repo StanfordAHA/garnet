@@ -124,9 +124,6 @@ def construct():
 
   """)
 
-
-
-
 #   custom_init          = Step( this_dir + '/custom-init'                           )
 #   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
 #   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                  )
@@ -142,20 +139,44 @@ def construct():
       power_domains = Step( this_dir + '/../common/power-domains' )
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
+
+
+
   # Default steps
-  info         = Step( 'info',                          default=True )
+  # g.add_default_steps("info - info")
+
+  g.add_default_steps("""
+    info         - info
+    init         - cadence-innovus-init          -> power
+    power        - cadence-innovus-power         -> place
+    place        - cadence-innovus-place         -> cts
+    cts          - cadence-innovus-cts           -> postcts_hold
+    postcts_hold - cadence-innovus-postcts_hold  -> route
+    route        - cadence-innovus-route         -> postroute
+    postroute    - cadence-innovus-postroute     -> signoff
+    pt_signoff   - synopsys-pt-timing-signoff    -> post_pnr_power
+    genlibdb     - cadence-genus-genlib
+  """)
+
+  # Default steps
+#   info         = Step( 'info',                          default=True )
+#   init         = Step( 'cadence-innovus-init',          default=True )
+#   power        = Step( 'cadence-innovus-power',         default=True )
+#   place        = Step( 'cadence-innovus-place',         default=True )
+#   cts          = Step( 'cadence-innovus-cts',           default=True )
+#   postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
+#   route        = Step( 'cadence-innovus-route',         default=True )
+#   postroute    = Step( 'cadence-innovus-postroute',     default=True )
+#   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
+#   genlibdb     = Step( 'cadence-genus-genlib',          default=True )
   synth        = Step( 'cadence-genus-synthesis',       default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
-  init         = Step( 'cadence-innovus-init',          default=True )
-  power        = Step( 'cadence-innovus-power',         default=True )
-  place        = Step( 'cadence-innovus-place',         default=True )
-  cts          = Step( 'cadence-innovus-cts',           default=True )
-  postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
-  route        = Step( 'cadence-innovus-route',         default=True )
-  postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
-  pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb     = Step( 'cadence-genus-genlib',          default=True )
+
+
+
+
+
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -214,12 +235,7 @@ def construct():
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_step( info                     )
-  g.add_step( synth                    )
-  g.add_step( iflow                    )
-  g.add_step( init                     )
-  g.add_step( power                    )
-
+# Custom
 #   g.add_step( custom_init              )
 #   g.add_step( custom_power             )
 #   g.add_step( custom_genus_scripts     )
@@ -228,19 +244,27 @@ def construct():
 #   g.add_step( short_fix                )
 #   g.add_step( custom_timing_assert     )
 
-  g.add_step( place                    )
-  g.add_step( cts                      )
-  g.add_step( postcts_hold             )
-  g.add_step( route                    )
-  g.add_step( postroute                )
+# Default
+#   g.add_step( info                     )
+#   g.add_step( init                     )
+#   g.add_step( power                    )
+#   g.add_step( place                    )
+#   g.add_step( cts                      )
+#   g.add_step( postcts_hold             )
+#   g.add_step( route                    )
+#   g.add_step( postroute                )
+#   g.add_step( pt_signoff               )
+#   g.add_step( genlibdb                 )
+  g.add_step( synth                    )
+  g.add_step( iflow                    )
   g.add_step( signoff                  )
-  g.add_step( pt_signoff               )
-  g.add_step( genlibdb                 )
+
+
+
+
   g.add_step( drc                      )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
-
-
 
   if synth_power:
     g.add_step( post_synth_power       )
@@ -249,10 +273,13 @@ def construct():
   if pwr_aware:
       g.add_step( power_domains        )
       g.add_step( pwr_aware_gls        )
-
+                      
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
+
+  print("FINALCONNECT")
+  g.connect_outstanding_nodes(DBG=1)
 
   # Dynamically add edges
 
@@ -270,20 +297,6 @@ def construct():
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
-
-  if which_version == "orig":
-    g.connect_by_name( rtl,         synth          )
-    g.connect_by_name( constraints, synth          )
-    g.connect_by_name( constraints, iflow          )
-    g.connect_by_name( custom_dc_scripts, iflow    )
-    g.connect_by_name( application, testbench       )
-    g.connect_by_name( application, post_pnr_power )
-    g.connect_by_name( testbench,   post_pnr_power )
-
-  # else:
-  # FIXME/TODO should not be in an if-else clause maybe
-  print("FINALCONNECT")
-  g.connect_outstanding_nodes(DBG=1)
 
   g.connect_by_name( synth,       iflow                )
   g.connect_by_name( synth,       init                 )
@@ -313,13 +326,14 @@ def construct():
 #   for c_step in custom_timing_steps:
 #     g.connect_by_name( custom_timing_assert, c_step )
 
-  g.connect_by_name( init,         power        )
-  g.connect_by_name( power,        place        )
-  g.connect_by_name( place,        cts          )
-  g.connect_by_name( cts,          postcts_hold )
-  g.connect_by_name( postcts_hold, route        )
-  g.connect_by_name( route,        postroute    )
-  g.connect_by_name( postroute,    signoff      )
+# default nodes
+#   g.connect_by_name( init,         power        )
+#   g.connect_by_name( power,        place        )
+#   g.connect_by_name( place,        cts          )
+#   g.connect_by_name( cts,          postcts_hold )
+#   g.connect_by_name( postcts_hold, route        )
+#   g.connect_by_name( route,        postroute    )
+#   g.connect_by_name( postroute,    signoff      )
 
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
@@ -336,8 +350,9 @@ def construct():
       g.connect_by_name( application, post_synth_power )
       g.connect_by_name( synth,       post_synth_power )
       g.connect_by_name( testbench,   post_synth_power )
+
   g.connect_by_name( signoff,     post_pnr_power )
-  g.connect_by_name( pt_signoff,  post_pnr_power )
+#   g.connect_by_name( pt_signoff,  post_pnr_power )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
