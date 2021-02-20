@@ -158,6 +158,17 @@ def construct():
     genlibdb     - cadence-genus-genlib
   """)
 
+  g.add_default_steps("""
+    synth - cadence-genus-synthesis       
+         -> iflow init power place cts custom_flowgen_setup
+
+    iflow - cadence-innovus-flowsetup     
+         -> init power place cts postcts_hold route postroute signoff
+
+    signoff - cadence-innovus-signoff       
+           -> drc lvs genlibdb post_pnr_power pt_signoff
+  """)
+
   # Default steps
 #   info         = Step( 'info',                          default=True )
 #   init         = Step( 'cadence-innovus-init',          default=True )
@@ -169,9 +180,10 @@ def construct():
 #   postroute    = Step( 'cadence-innovus-postroute',     default=True )
 #   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
 #   genlibdb     = Step( 'cadence-genus-genlib',          default=True )
-  synth        = Step( 'cadence-genus-synthesis',       default=True )
-  iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
-  signoff      = Step( 'cadence-innovus-signoff',       default=True )
+
+#   synth        = Step( 'cadence-genus-synthesis',       default=True )
+#   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
+#   signoff      = Step( 'cadence-innovus-signoff',       default=True )
 
 
 
@@ -200,9 +212,6 @@ def construct():
 #   custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
 #   for c_step in custom_timing_steps:
 #     c_step.extend_inputs( custom_timing_assert.all_outputs() )
-
-
-
 
   # Extra input to DC for constraints
   synth.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl", "report_alu.py", "parse_alu.py"] )
@@ -255,9 +264,10 @@ def construct():
 #   g.add_step( postroute                )
 #   g.add_step( pt_signoff               )
 #   g.add_step( genlibdb                 )
-  g.add_step( synth                    )
-  g.add_step( iflow                    )
-  g.add_step( signoff                  )
+
+#   g.add_step( synth                    )
+#   g.add_step( iflow                    )
+#   g.add_step( signoff                  )
 
 
 
@@ -298,21 +308,30 @@ def construct():
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
 
-  g.connect_by_name( synth,       iflow                )
-  g.connect_by_name( synth,       init                 )
-  g.connect_by_name( synth,       power                )
-  g.connect_by_name( synth,       place                )
-  g.connect_by_name( synth,       cts                  )
-  g.connect_by_name( synth,       custom_flowgen_setup )
+#   g.connect_by_name( rtl,         synth          )
+#   g.connect_by_name( constraints, synth          )
+#   g.connect_by_name( custom_genus_scripts, synth )
+#   g.connect_by_name( constraints, iflow          )
+#   g.connect_by_name( custom_dc_scripts, iflow    )
 
-  g.connect_by_name( iflow,    init         )
-  g.connect_by_name( iflow,    power        )
-  g.connect_by_name( iflow,    place        )
-  g.connect_by_name( iflow,    cts          )
-  g.connect_by_name( iflow,    postcts_hold )
-  g.connect_by_name( iflow,    route        )
-  g.connect_by_name( iflow,    postroute    )
-  g.connect_by_name( iflow,    signoff      )
+
+
+
+#   g.connect_by_name( synth,       iflow                )
+#   g.connect_by_name( synth,       init                 )
+#   g.connect_by_name( synth,       power                )
+#   g.connect_by_name( synth,       place                )
+#   g.connect_by_name( synth,       cts                  )
+#   g.connect_by_name( synth,       custom_flowgen_setup )
+
+#   g.connect_by_name( iflow,    init         )
+#   g.connect_by_name( iflow,    power        )
+#   g.connect_by_name( iflow,    place        )
+#   g.connect_by_name( iflow,    cts          )
+#   g.connect_by_name( iflow,    postcts_hold )
+#   g.connect_by_name( iflow,    route        )
+#   g.connect_by_name( iflow,    postroute    )
+#   g.connect_by_name( iflow,    signoff      )
 
 #   g.connect_by_name( custom_init,  init     )
 #   g.connect_by_name( custom_power, power    )
@@ -335,23 +354,24 @@ def construct():
 #   g.connect_by_name( route,        postroute    )
 #   g.connect_by_name( postroute,    signoff      )
 
-  g.connect_by_name( signoff,      drc          )
-  g.connect_by_name( signoff,      lvs          )
+#   g.connect_by_name( signoff,      drc          )
+#   g.connect_by_name( signoff,      lvs          )
+
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  g.connect_by_name( signoff,              genlibdb )
-  g.connect_by_name( adk,                  genlibdb )
-
+  g.connect_by_name( adk,          genlibdb )
   g.connect_by_name( adk,          pt_signoff   )
-  g.connect_by_name( signoff,      pt_signoff   )
+
+#   g.connect_by_name( signoff,      genlibdb )
+#   g.connect_by_name( signoff,      pt_signoff   )
 
   if synth_power:
       g.connect_by_name( application, post_synth_power )
       g.connect_by_name( synth,       post_synth_power )
       g.connect_by_name( testbench,   post_synth_power )
 
-  g.connect_by_name( signoff,     post_pnr_power )
+#   g.connect_by_name( signoff,     post_pnr_power )
 #   g.connect_by_name( pt_signoff,  post_pnr_power )
 
   g.connect_by_name( adk,      debugcalibre )
