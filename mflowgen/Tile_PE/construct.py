@@ -122,7 +122,7 @@ def construct():
     # Add custom timing scripts
     custom_timing_assert - ../common/custom-timing-assert -> synth postcts_hold signoff
 
-  """)
+  """, DBG=1)
 
 #   custom_init          = Step( this_dir + '/custom-init'                           )
 #   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
@@ -156,7 +156,8 @@ def construct():
     postroute    - cadence-innovus-postroute     -> signoff
     pt_signoff   - synopsys-pt-timing-signoff    -> post_pnr_power
     genlibdb     - cadence-genus-genlib
-  """)
+  """, DBG=1)
+
 
   g.add_default_steps("""
     synth - cadence-genus-synthesis       
