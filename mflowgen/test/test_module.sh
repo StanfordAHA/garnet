@@ -135,7 +135,7 @@ export TMPDIR=/sim/tmp
 
 ##############################################################################
 # Set up the build environment
-echo Sourcing $garnet/mflowgen/bin/setup-buildkite.sh ...
+echo "--- Sourcing $garnet/mflowgen/bin/setup-buildkite.sh ..."
 source $garnet/mflowgen/bin/setup-buildkite.sh \
        --dir $build_dir \
        --need_space $need_space \

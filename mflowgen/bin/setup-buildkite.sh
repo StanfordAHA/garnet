@@ -344,10 +344,13 @@ echo "--- Building in destination dir `pwd`"
 # NEW MFLOWGEN --- see far below for old setup
 ##############################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds why not
-echo "--- INSTALL LATEST MFLOWGEN"
+mflowgen_branch=master
+mflowgen_branch=easysteps
+echo "--- INSTALL LATEST MFLOWGEN, use branch '$mflowgen_branch'"
 mflowgen=/sim/buildkite-agent/mflowgen
 pushd $mflowgen
-  git checkout master
+  # git checkout master
+  git checkout $mflowgen_branch
   git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
 popd
