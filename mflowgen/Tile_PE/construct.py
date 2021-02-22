@@ -16,8 +16,6 @@ def construct():
 
   g = Graph()
 
-  # g.testparser("foo - bar/baz -> foozy")
-
   #-----------------------------------------------------------------------
   # Parameters
   #-----------------------------------------------------------------------
@@ -86,10 +84,6 @@ def construct():
 
   # Custom steps
 
-  # which_version = "orig";  # pe0
-  which_version = "new";  # pe1
-  print("WHICH=new")
-
   g.add_custom_steps("""
 
         rtl                - ../common/rtl                  -> synth
@@ -104,9 +98,9 @@ def construct():
   if synth_power:
     add_custom_steps("post_synth_power ../common/tile-post-synth-power")
 
-#   g.extend_steps("custom_init - custom-init -> init", DBG=1)
 
-  # Extension steps connect *all* their outputs to successor node inputs
+  # Extension steps (steps that connect *all* outputs to each successor node)
+
   g.extend_steps("""
 
     # Add extra input edges to innovus steps that need custom tweaks
@@ -124,14 +118,6 @@ def construct():
 
   """, DBG=1)
 
-#   custom_init          = Step( this_dir + '/custom-init'                           )
-#   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
-#   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                  )
-#   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
-#   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
-#   short_fix            = Step( this_dir + '/../common/custom-short-fix'  )
-#   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
-
   # Power aware setup
   power_domains = None
   pwr_aware_gls = None
@@ -139,11 +125,7 @@ def construct():
       power_domains = Step( this_dir + '/../common/power-domains' )
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
-
-
-
   # Default steps
-  # g.add_default_steps("info - info")
 
   g.add_default_steps("""
     info         - info
@@ -158,37 +140,16 @@ def construct():
     genlibdb     - cadence-genus-genlib
   """, DBG=1)
 
-
   g.add_default_steps("""
-    synth - cadence-genus-synthesis       
-         -> iflow init power place cts custom_flowgen_setup
+    synth   - cadence-genus-synthesis       
+            -> iflow init power place cts custom_flowgen_setup
 
-    iflow - cadence-innovus-flowsetup     
-         -> init power place cts postcts_hold route postroute signoff
+    iflow   - cadence-innovus-flowsetup     
+            -> init power place cts postcts_hold route postroute signoff
 
     signoff - cadence-innovus-signoff       
-           -> drc lvs genlibdb post_pnr_power pt_signoff
+            -> drc lvs genlibdb post_pnr_power pt_signoff
   """)
-
-  # Default steps
-#   info         = Step( 'info',                          default=True )
-#   init         = Step( 'cadence-innovus-init',          default=True )
-#   power        = Step( 'cadence-innovus-power',         default=True )
-#   place        = Step( 'cadence-innovus-place',         default=True )
-#   cts          = Step( 'cadence-innovus-cts',           default=True )
-#   postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
-#   route        = Step( 'cadence-innovus-route',         default=True )
-#   postroute    = Step( 'cadence-innovus-postroute',     default=True )
-#   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-#   genlibdb     = Step( 'cadence-genus-genlib',          default=True )
-
-#   synth        = Step( 'cadence-genus-synthesis',       default=True )
-#   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
-#   signoff      = Step( 'cadence-innovus-signoff',       default=True )
-
-
-
-
 
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
@@ -198,21 +159,6 @@ def construct():
       lvs          = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
-
-#   # Add extra input edges to innovus steps that need custom tweaks
-#   init.extend_inputs( custom_init.all_outputs() )
-#   power.extend_inputs( custom_power.all_outputs() )
-#   synth.extend_inputs( custom_genus_scripts.all_outputs() )
-#   iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
-#   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
-
-#   # Add short_fix script(s) to list of available postroute scripts
-#   postroute.extend_inputs( short_fix.all_outputs() )
-
-#   # Add custom timing scripts
-#   custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
-#   for c_step in custom_timing_steps:
-#     c_step.extend_inputs( custom_timing_assert.all_outputs() )
 
   # Extra input to DC for constraints
   synth.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl", "report_alu.py", "parse_alu.py"] )
@@ -245,34 +191,6 @@ def construct():
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-# Custom
-#   g.add_step( custom_init              )
-#   g.add_step( custom_power             )
-#   g.add_step( custom_genus_scripts     )
-#   g.add_step( custom_flowgen_setup     )
-#   g.add_step( genlibdb_constraints     )
-#   g.add_step( short_fix                )
-#   g.add_step( custom_timing_assert     )
-
-# Default
-#   g.add_step( info                     )
-#   g.add_step( init                     )
-#   g.add_step( power                    )
-#   g.add_step( place                    )
-#   g.add_step( cts                      )
-#   g.add_step( postcts_hold             )
-#   g.add_step( route                    )
-#   g.add_step( postroute                )
-#   g.add_step( pt_signoff               )
-#   g.add_step( genlibdb                 )
-
-#   g.add_step( synth                    )
-#   g.add_step( iflow                    )
-#   g.add_step( signoff                  )
-
-
-
-
   g.add_step( drc                      )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
@@ -289,10 +207,10 @@ def construct():
   # Graph -- Add edges
   #-----------------------------------------------------------------------
 
-  print("FINALCONNECT")
-  g.connect_outstanding_nodes(DBG=1)
-
   # Dynamically add edges
+
+  # Complete all easysteps connections
+  g.connect_outstanding_nodes(DBG=1)
 
   # Connect by name
 
@@ -309,71 +227,16 @@ def construct():
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
 
-#   g.connect_by_name( rtl,         synth          )
-#   g.connect_by_name( constraints, synth          )
-#   g.connect_by_name( custom_genus_scripts, synth )
-#   g.connect_by_name( constraints, iflow          )
-#   g.connect_by_name( custom_dc_scripts, iflow    )
-
-
-
-
-#   g.connect_by_name( synth,       iflow                )
-#   g.connect_by_name( synth,       init                 )
-#   g.connect_by_name( synth,       power                )
-#   g.connect_by_name( synth,       place                )
-#   g.connect_by_name( synth,       cts                  )
-#   g.connect_by_name( synth,       custom_flowgen_setup )
-
-#   g.connect_by_name( iflow,    init         )
-#   g.connect_by_name( iflow,    power        )
-#   g.connect_by_name( iflow,    place        )
-#   g.connect_by_name( iflow,    cts          )
-#   g.connect_by_name( iflow,    postcts_hold )
-#   g.connect_by_name( iflow,    route        )
-#   g.connect_by_name( iflow,    postroute    )
-#   g.connect_by_name( iflow,    signoff      )
-
-#   g.connect_by_name( custom_init,  init     )
-#   g.connect_by_name( custom_power, power    )
-#   g.connect_by_name( custom_genus_scripts, synth )
-#   g.connect_by_name( custom_flowgen_setup, iflow )
-#   g.connect_by_name( genlibdb_constraints, genlibdb )
-# 
-#   # Fetch short-fix script in prep for eventual use by postroute
-#   g.connect_by_name( short_fix, postroute )
-# 
-#   for c_step in custom_timing_steps:
-#     g.connect_by_name( custom_timing_assert, c_step )
-
-# default nodes
-#   g.connect_by_name( init,         power        )
-#   g.connect_by_name( power,        place        )
-#   g.connect_by_name( place,        cts          )
-#   g.connect_by_name( cts,          postcts_hold )
-#   g.connect_by_name( postcts_hold, route        )
-#   g.connect_by_name( route,        postroute    )
-#   g.connect_by_name( postroute,    signoff      )
-
-#   g.connect_by_name( signoff,      drc          )
-#   g.connect_by_name( signoff,      lvs          )
-
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( adk,          genlibdb )
   g.connect_by_name( adk,          pt_signoff   )
 
-#   g.connect_by_name( signoff,      genlibdb )
-#   g.connect_by_name( signoff,      pt_signoff   )
-
   if synth_power:
       g.connect_by_name( application, post_synth_power )
       g.connect_by_name( synth,       post_synth_power )
       g.connect_by_name( testbench,   post_synth_power )
-
-#   g.connect_by_name( signoff,     post_pnr_power )
-#   g.connect_by_name( pt_signoff,  post_pnr_power )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
