@@ -2170,7 +2170,7 @@ def scan_matrx_hierarchical(trace, run_tb, cwd):
     ]
 
     scan_rows_to_mem_rows = [
-        ([(scanner_rows, "coord_out"), (mem_rows, "addr_in_0")], 16),
+        ([(scanner_rows, "addr_out"), (mem_rows, "addr_in_0")], 16),
         ([(scanner_rows, "ready_out"), (mem_rows, "ren_in_0")], 1),
         ([(mem_rows, "data_out_0"), (scanner_rows, "data_in")], 16),
         ([(mem_rows, "valid_out_0"), (scanner_rows, "valid_in")], 1)
@@ -2216,18 +2216,27 @@ def scan_matrx_hierarchical(trace, run_tb, cwd):
 
     matrix_size = 4
     matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
-    (outer_r, ptr_r, inner_r, matrix_vals_r) = compress_matrix(matrix, row=True)
-    (inner_offset_r, data_r) = prep_matrix_2_sram(outer_r, ptr_r, inner_r)
-    (outer_c, ptr_c, inner_c, matrix_vals_c) = compress_matrix(matrix, row=False)
-    (inner_offset_c, data_c) = prep_matrix_2_sram(outer_c, ptr_c, inner_c)
+    (outer, ptr, inner, matrix_vals) = compress_matrix(matrix, row=True)
+    root = [0, 3]
+    root = align_data(root, 4)
+    outer = align_data(outer, 4)
+    ptr = align_data(ptr, 4)
+    inner = align_data(inner, 4)
+    inner_offset_root = len(root)
+    matrix_vals = align_data(matrix_vals, 4)
+
+    root_data = root + outer
+    inner_offset_row = len(ptr)
+    row_data = ptr + inner
+
     # data_len = len(data)
     max_outer_dim = matrix_size
 
-    nlb.configure_tile(scanner_root, (inner_offset_c, max_outer_dim, 0, 4, 1))
-    nlb.configure_tile(scanner_rows, (inner_offset_c, max_outer_dim, 0, 4, 0))
-    nlb.configure_tile(mem_root, {"config": ["mek", {"init": data_r}]})
-    nlb.configure_tile(mem_rows, {"config": ["mek", {"init": data_c}]})
-    nlb.configure_tile(mem_vals, {"config": ["mek", {"init": data_c}]})
+    nlb.configure_tile(scanner_root, (inner_offset_root, max_outer_dim, 0, 1, 1))
+    nlb.configure_tile(scanner_rows, (inner_offset_row, max_outer_dim, 0, 4, 0))
+    nlb.configure_tile(mem_root, {"config": ["mek", {"init": root_data}]})
+    nlb.configure_tile(mem_rows, {"config": ["mek", {"init": row_data}]})
+    nlb.configure_tile(mem_vals, {"config": ["mek", {"init": matrix_vals}]})
     # This does some cleanup like partitioning into compressed/uncompressed space
     nlb.finalize_config()
 
