@@ -342,7 +342,7 @@ class LakeCoreBase(ConfigurableCore):
 
 class NetlistBuilder():
 
-    def __init__(self, interconnect: Interconnect=None, cwd=None) -> None:
+    def __init__(self, interconnect: Interconnect = None, cwd=None) -> None:
         # self._registered_cores = {}
         self._netlist = {}
         self._bus = {}
@@ -361,11 +361,11 @@ class NetlistBuilder():
         ''' Register the core/primitive with the
             data structure and return unique ID
         '''
-        if core  == "register":
+        if core == "register":
             tag = "r"
-        elif core  == "io_16":
+        elif core == "io_16":
             tag = "I"
-        elif core  == "io_1":
+        elif core == "io_1":
             tag = "i"
         elif core == "pe":
             tag = "p"
@@ -414,7 +414,7 @@ class NetlistBuilder():
         self._placement_up_to_date = True
 
     def get_route_config(self):
-        if self._placement_up_to_date == False:
+        if self._placement_up_to_date is False:
             print("Routing/Placement out of date...updating")
             self.generate_placement()
         if len(self._config_data) > 0:
@@ -443,7 +443,7 @@ class NetlistBuilder():
         kwargs = {}
         if pnr_tag is not None:
             kwargs["pnr_tag"] = pnr_tag
-        if self._placement_up_to_date == False:
+        if self._placement_up_to_date is False:
             print("Routing/Placement out of date...updating")
             self.generate_placement()
             self.get_route_config()
@@ -454,4 +454,3 @@ class NetlistBuilder():
     def finalize_config(self):
         skip_addr = self._interconnect.get_skip_addr()
         self._config_data = compress_config_data(self._config_data, skip_compression=skip_addr)
-
