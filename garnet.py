@@ -114,7 +114,7 @@ def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
         config_port_pass(interconnect)
 
         if not interconnect_only:
-            self.add_ports(
+            io = magma.IO(
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
@@ -125,23 +125,23 @@ def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
             )
 
             # top <-> global controller ports connection
-            self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
-            self.wire(self.ports.reset_in,
-                      self.global_controller.ports.reset_in)
-            self.wire(self.ports.jtag, self.global_controller.ports.jtag)
-            self.wire(self.ports.axi4_slave,
-                      self.global_controller.ports.axi4_slave)
-            self.wire(self.ports.interrupt,
-                      self.global_controller.ports.interrupt)
-            self.wire(self.ports.cgra_running_clk_out,
-                      self.global_controller.ports.clk_out)
+            magma.wire(io.clk_in, global_controller.clk_in)
+            magma.wire(io.reset_in,
+                      global_controller.reset_in)
+            magma.wire(io.jtag, global_controller.jtag)
+            magma.wire(io.axi4_slave,
+                      global_controller.axi4_slave)
+            magma.wire(io.interrupt,
+                      global_controller.interrupt)
+            magma.wire(io.cgra_running_clk_out,
+                      global_controller.clk_out)
 
             # top <-> global buffer ports connection
-            self.wire(self.ports.clk_in, self.global_buffer.ports.clk)
-            self.wire(self.ports.proc_packet, self.global_buffer.ports.proc_packet)
+            magma.wire(io.clk_in, global_buffer.clk)
+            magma.wire(io.proc_packet, global_buffer.proc_packet)
 
             # Top -> Interconnect clock port connection
-            self.wire(self.ports.clk_in, self.interconnect.ports.clk)
+            magma.wire(io.clk_in, interconnect.clk)
 
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
