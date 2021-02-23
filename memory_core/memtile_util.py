@@ -1,3 +1,4 @@
+from gemstone.common.util import compress_config_data
 import magma
 import tempfile
 import mantle
@@ -23,6 +24,7 @@ import lake.utils.parse_clkwork_config as lake_parse_conf
 from lake.utils.util import get_configs_dict, set_configs_sv, extract_formal_annotation
 import math
 import kratos as kts
+from archipelago import pnr
 
 
 class LakeCoreBase(ConfigurableCore):
@@ -336,3 +338,120 @@ class LakeCoreBase(ConfigurableCore):
 
     def num_data_outputs(self):
         return self.interconnect_output_ports
+
+
+class NetlistBuilder():
+
+    def __init__(self, interconnect: Interconnect=None, cwd=None) -> None:
+        # self._registered_cores = {}
+        self._netlist = {}
+        self._bus = {}
+        self._connection_num = 0
+        self._core_num = 0
+        assert interconnect is not None, "Can't build on blank interconnect"
+        self._interconnect = interconnect
+        self._placement = None
+        self._routing = None
+        self._placement_up_to_date = False
+        self._config_data = None
+        self._cwd = cwd
+        self._config_data = []
+
+    def register_core(self, core):
+        ''' Register the core/primitive with the
+            data structure and return unique ID
+        '''
+        if core  == "register":
+            tag = "r"
+        elif core  == "io_16":
+            tag = "I"
+        elif core  == "io_1":
+            tag = "i"
+        elif core == "pe":
+            tag = "p"
+        elif core == "scanner":
+            tag = "s"
+        elif core == "intersect":
+            tag = "j"
+        elif core == "memtile":
+            tag = "m"
+        elif core == "regcore":
+            tag = "R"
+        else:
+            tag = core.pnr_info().tag_name
+
+        ret_str = f"{tag}{self._core_num}"
+        self._core_num += 1
+        return ret_str
+
+    def add_connections(self, connections, cwd=None):
+        for connection, width in connections:
+            self.add_connection(connection, width)
+        self._placement_up_to_date = False
+        print("Used add connections...automatically updating placement + routing")
+        self.generate_placement()
+
+    def add_connection(self, connection, width):
+        conn_name = f"e{self._connection_num}"
+        self._connection_num += 1
+        self._netlist[conn_name] = connection
+        self._bus[conn_name] = width
+        self._placement_up_to_date = False
+
+    def get_netlist(self):
+        return self._netlist
+
+    def get_bus(self):
+        return self._bus
+
+    def get_full_info(self):
+        return (self.get_netlist(), self.get_bus())
+
+    def generate_placement(self):
+        if self._placement_up_to_date:
+            return
+        self._placement, self._routing = pnr(self._interconnect, (self._netlist, self._bus), cwd=self._cwd)
+        self._placement_up_to_date = True
+
+    def get_route_config(self):
+        if self._placement_up_to_date == False:
+            print("Routing/Placement out of date...updating")
+            self.generate_placement()
+        if len(self._config_data) > 0:
+            print("Clearing config data - it was previously not empty")
+            self._config_data = []
+        self._config_data += self._interconnect.get_route_bitstream(self._routing)
+        return self._config_data
+
+    def get_config_data(self):
+        return self._config_data
+
+    def get_placement(self):
+        if self._placement_up_to_date is False:
+            self.generate_placement()
+        return self._placement
+
+    def get_handle(self, core, prefix="glb2io_1_X"):
+        self.get_placement()
+        core_x, core_y = self._placement[core]
+        return f"{prefix}X{core_x:02X}_Y{core_y:02X}"
+
+    def add_config(self, new_config):
+        self._config_data += new_config
+
+    def configure_tile(self, core, config, pnr_tag=None):
+        kwargs = {}
+        if pnr_tag is not None:
+            kwargs["pnr_tag"] = pnr_tag
+        if self._placement_up_to_date == False:
+            print("Routing/Placement out of date...updating")
+            self.generate_placement()
+            self.get_route_config()
+        core_x, core_y = self._placement[core]
+        core_config_data = self._interconnect.configure_placement(core_x, core_y, config, **kwargs)
+        self._config_data += core_config_data
+
+    def finalize_config(self):
+        skip_addr = self._interconnect.get_skip_addr()
+        self._config_data = compress_config_data(self._config_data, skip_compression=skip_addr)
+
