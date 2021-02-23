@@ -1891,29 +1891,29 @@ def spMspV_hierarchical_test(trace, run_tb, cwd):
     # Created CGRA with all cores!
     nlb = NetlistBuilder(interconnect)
 
-    intersect0 = nlb.register_core("intersect") # j0
-    reg0 = nlb.register_core("register") # r15
-    reg1 = nlb.register_core("register") # r16
-    fifo_vals = nlb.register_core("memtile") # m31
-    fifo_coord = nlb.register_core("memtile") # m32
-    data_a = nlb.register_core("memtile") # m13
-    data_b = nlb.register_core("memtile") # m14
-    eos_out_cr = nlb.register_core("io_1") # i10
-    i11 = nlb.register_core("io_1") # i11
-    i12 = nlb.register_core("io_1") # i12
-    i35 = nlb.register_core("io_1") # i35
-    i50 = nlb.register_core("io_1") # i50
-    i51 = nlb.register_core("io_1") # i51
-    I52 = nlb.register_core("io_16") # I52
-    I53 = nlb.register_core("io_16") # I53
-    accum_reg = nlb.register_core("regcore") # R99
-    p101 = nlb.register_core("pe") # p101
-    p100 = nlb.register_core("pe") # p100
-    p20 = nlb.register_core("pe") # p20
-    scanA = nlb.register_core("scanner") # s1
-    scanB = nlb.register_core("scanner") # s2
-    mdata_a = nlb.register_core("memtile") # m3
-    mdata_b = nlb.register_core("memtile") # m4
+    intersect0 = nlb.register_core("intersect")  # j0
+    reg0 = nlb.register_core("register")  # r15
+    reg1 = nlb.register_core("register")  # r16
+    fifo_vals = nlb.register_core("memtile")  # m31
+    fifo_coord = nlb.register_core("memtile")  # m32
+    data_a = nlb.register_core("memtile")  # m13
+    data_b = nlb.register_core("memtile")  # m14
+    eos_out_cr = nlb.register_core("io_1")  # i10
+    i11 = nlb.register_core("io_1")  # i11
+    i12 = nlb.register_core("io_1")  # i12
+    i35 = nlb.register_core("io_1")  # i35
+    i50 = nlb.register_core("io_1")  # i50
+    i51 = nlb.register_core("io_1")  # i51
+    I52 = nlb.register_core("io_16")  # I52
+    I53 = nlb.register_core("io_16")  # I53
+    accum_reg = nlb.register_core("regcore")  # R99
+    p101 = nlb.register_core("pe")  # p101
+    p100 = nlb.register_core("pe")  # p100
+    p20 = nlb.register_core("pe")  # p20
+    scanA = nlb.register_core("scanner")  # s1
+    scanB = nlb.register_core("scanner")  # s2
+    mdata_a = nlb.register_core("memtile")  # m3
+    mdata_b = nlb.register_core("memtile")  # m4
 
     connections = [
         ([(intersect0, "coord_out"), (reg0, "reg")], 16),
@@ -1957,7 +1957,7 @@ def spMspV_hierarchical_test(trace, run_tb, cwd):
         # Data mem to PE
         ([(data_a, "data_out_0"), (p20, "data0")], 16),
         ([(data_b, "data_out_0"), (p20, "data1")], 16),
-         # MEM Fifo result...
+        # MEM Fifo result...
         ([(p100, "alu_res"), (fifo_vals, "data_in_0")], 16),
         ([(accum_reg, "valid_out"), (p101, "bit1")], 1),
         ([(i35, "io2f_1"), (fifo_vals, "ren_in_0"), (fifo_coord, "ren_in_0")], 1),
