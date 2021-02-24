@@ -120,7 +120,7 @@ class Garnet(m.Generator2):
         config_port_pass(self.interconnect)
 
         if not interconnect_only:
-            io = m.IO(
+            self.io = m.IO(
                 jtag=JTAGType,
                 clk_in=m.In(m.Clock),
                 reset_in=m.In(m.AsyncReset),
@@ -131,35 +131,35 @@ class Garnet(m.Generator2):
             )
 
             # top <-> global controller ports connection
-            m.wire(io.clk_in, global_controller.clk_in)
-            m.wire(io.reset_in,
+            m.wire(self.io.clk_in, global_controller.clk_in)
+            m.wire(self.io.reset_in,
                   global_controller.reset_in)
-            m.wire(io.jtag, global_controller.jtag)
-            m.wire(io.axi4_slave,
+            m.wire(self.io.jtag, global_controller.jtag)
+            m.wire(self.io.axi4_slave,
                   global_controller.axi4_slave)
-            m.wire(io.interrupt,
+            m.wire(self.io.interrupt,
                   global_controller.interrupt)
-            m.wire(io.cgra_running_clk_out,
+            m.wire(self.io.cgra_running_clk_out,
                       global_controller.clk_out)
 
             # top <-> global buffer ports connection
-            m.wire(io.clk_in, global_buffer.clk)
-            m.wire(io.proc_packet, global_buffer.proc_packet)
+            m.wire(self.io.clk_in, global_buffer.clk)
+            m.wire(self.io.proc_packet, global_buffer.proc_packet)
 
             # Top -> Interconnect clock port connection
-            m.wire(io.clk_in, self.interconnect.clk)
+            m.wire(self.io.clk_in, self.interconnect.clk)
 
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
             glc_interconnect_wiring(self)
         else:
             # lift all the interconnect ports up
-            io = m.IO()
+            self.io = m.IO()
             for name in self.interconnect.interface():
-                io += m.IO(name=self.interconnect.ports[name].type())
-                io.wire(self.ports[name], self.interconnect.ports[name])
+                self.io += m.IO(name=self.interconnect.ports[name].type())
+                m.wire(self.ports[name], self.interconnect.ports[name])
 
-            io += m.IO(
+            self.io += m.IO(
                 clk=m.In(m.Clock),
                 reset=m.In(m.AsyncReset),
                 config=m.In(m.Array[width,
