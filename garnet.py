@@ -1,5 +1,5 @@
 import argparse
-import magma
+import magma as m
 from canal.util import IOSide
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
@@ -40,7 +40,7 @@ def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
         # width must be even number
         assert (width % 2) == 0
 
-    class Garnet(magma.Circuit):
+    class Garnet(m.Circuit):
         # configuration parameters
         config_addr_width = 32
         config_data_width = 32
@@ -68,8 +68,8 @@ def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
             banks_per_tile = 2
 
             glb_addr_width = (bank_addr_width
-                              + magma.bitutils.clog2(banks_per_tile)
-                              + magma.bitutils.clog2(num_glb_tiles))
+                              + m.bitutils.clog2(banks_per_tile)
+                              + m.bitutils.clog2(num_glb_tiles))
 
             # bank_data_width must be the size of bitstream
             assert bank_data_width == config_addr_width + config_data_width
@@ -114,34 +114,34 @@ def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
         config_port_pass(interconnect)
 
         if not interconnect_only:
-            io = magma.IO(
+            io = m.IO(
                 jtag=JTAGType,
-                clk_in=magma.In(magma.Clock),
-                reset_in=magma.In(magma.AsyncReset),
+                clk_in=m.In(m.Clock),
+                reset_in=m.In(m.AsyncReset),
                 proc_packet=ProcPacketIfc(glb_addr_width, bank_data_width).slave,
                 axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
-                interrupt=magma.Out(magma.Bit),
-                cgra_running_clk_out=magma.Out(magma.Clock),
+                interrupt=m.Out(m.Bit),
+                cgra_running_clk_out=m.Out(m.Clock),
             )
 
             # top <-> global controller ports connection
-            magma.wire(io.clk_in, global_controller.clk_in)
-            magma.wire(io.reset_in,
-                      global_controller.reset_in)
-            magma.wire(io.jtag, global_controller.jtag)
-            magma.wire(io.axi4_slave,
-                      global_controller.axi4_slave)
-            magma.wire(io.interrupt,
-                      global_controller.interrupt)
-            magma.wire(io.cgra_running_clk_out,
+            m.wire(io.clk_in, global_controller.clk_in)
+            m.wire(io.reset_in,
+                  global_controller.reset_in)
+            m.wire(io.jtag, global_controller.jtag)
+            m.wire(io.axi4_slave,
+                  global_controller.axi4_slave)
+            m.wire(io.interrupt,
+                  global_controller.interrupt)
+            m.wire(io.cgra_running_clk_out,
                       global_controller.clk_out)
 
             # top <-> global buffer ports connection
-            magma.wire(io.clk_in, global_buffer.clk)
-            magma.wire(io.proc_packet, global_buffer.proc_packet)
+            m.wire(io.clk_in, global_buffer.clk)
+            m.wire(io.proc_packet, global_buffer.proc_packet)
 
             # Top -> Interconnect clock port connection
-            magma.wire(io.clk_in, interconnect.clk)
+            m.wire(io.clk_in, interconnect.clk)
 
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
@@ -153,13 +153,13 @@ def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
                 self.wire(self.ports[name], self.interconnect.ports[name])
 
             self.add_ports(
-                clk=magma.In(magma.Clock),
-                reset=magma.In(magma.AsyncReset),
-                config=magma.In(magma.Array[width,
+                clk=m.In(m.Clock),
+                reset=m.In(m.AsyncReset),
+                config=m.In(m.Array[width,
                                 ConfigurationType(config_data_width,
                                                   config_data_width)]),
-                stall=magma.In(magma.Bits[self.width * self.interconnect.stall_signal_width]),
-                read_config_data=magma.Out(magma.Bits[config_data_width])
+                stall=m.In(m.Bits[self.width * self.interconnect.stall_signal_width]),
+                read_config_data=m.Out(m.Bits[config_data_width])
             )
 
             self.wire(self.ports.clk, self.interconnect.ports.clk)
@@ -361,7 +361,7 @@ def main():
 
     if args.verilog:
         garnet_circ = garnet.circuit()
-        magma.compile("garnet", garnet_circ, output="coreir-verilog",
+        m.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_CW"},
                       passes = ["rungenerators", "inline_single_instances", "clock_gate"],
                       disable_ndarray=True,
