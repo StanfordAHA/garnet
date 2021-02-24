@@ -12,10 +12,10 @@ from shutil import which
 
 from mflowgen.components import Graph, Step
 
-from mflowgen.components.easysteps import extend_steps
-from mflowgen.components.easysteps import add_custom_steps
-from mflowgen.components.easysteps import add_default_steps
-from mflowgen.components.easysteps import connect_outstanding_nodes
+from mflowgen.easysteps.easysteps import extend_steps
+from mflowgen.easysteps.easysteps import add_custom_steps
+from mflowgen.easysteps.easysteps import add_default_steps
+from mflowgen.easysteps.easysteps import connect_outstanding_nodes
 
 def construct():
 
