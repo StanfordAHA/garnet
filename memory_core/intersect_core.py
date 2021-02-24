@@ -75,14 +75,12 @@ class IntersectCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, idk):
-        print("Config isect core.....!")
         cfg_length = idk
         configs = []
         config_scanner = [("tile_en", 1)]
         config_scanner += self.dut.get_bitstream()
         for name, v in config_scanner:
             configs = [self.get_config_data(name, v)] + configs
-        print(configs)
         return configs
 
     def pnr_info(self):

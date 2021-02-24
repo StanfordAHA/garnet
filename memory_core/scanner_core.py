@@ -86,7 +86,6 @@ class ScannerCore(LakeCoreBase):
                                                  outer_range=outer_range)
         for name, v in config_scanner:
             configs = [self.get_config_data(name, v)] + configs
-        print(configs)
         return configs
 
     def pnr_info(self):
