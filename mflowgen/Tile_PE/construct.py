@@ -37,13 +37,13 @@ except:
       garnet_home = script_dir[ 0 : i ]
       print(f"FOO2 found GARNET_HOME='{garnet_home}'")
       
-    print("FOO3 adding path " + garnet_home + 'mflowgen/easysteps')
-    sys.path.append(garnet_home + 'mflowgen/easysteps')
-    from easysteps import extend_steps
-    from easysteps import add_custom_steps
-    from easysteps import add_default_steps
-    from easysteps import connect_outstanding_nodes
-    print("FOO2 successfully(?) imported easysteps")
+  print("FOO3 adding path " + garnet_home + 'mflowgen/easysteps')
+  sys.path.append(garnet_home + 'mflowgen/easysteps')
+  from easysteps import extend_steps
+  from easysteps import add_custom_steps
+  from easysteps import add_default_steps
+  from easysteps import connect_outstanding_nodes
+  print("FOO2 successfully(?) imported easysteps")
 
 def construct():
 
