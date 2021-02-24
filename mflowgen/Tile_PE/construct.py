@@ -12,10 +12,31 @@ from shutil import which
 
 from mflowgen.components import Graph, Step
 
-from mflowgen.easysteps.easysteps import extend_steps
-from mflowgen.easysteps.easysteps import add_custom_steps
-from mflowgen.easysteps.easysteps import add_default_steps
-from mflowgen.easysteps.easysteps import connect_outstanding_nodes
+# Find and import easysteps
+
+try:
+  from easysteps import extend_steps
+  from easysteps import add_custom_steps
+  from easysteps import add_default_steps
+  from easysteps import connect_outstanding_nodes
+  
+except:
+  garnet_home = os.environ.get('GARNET_HOME')
+
+  # Assumes this script lives somewhere under "$GARNET_HOME/mflowgen"
+  if not garnet_home:
+    script_dir=os.path.realpath(__file__)
+    i = script_dir.rfind('mflowgen')
+    if i == -1:
+      print("**ERROR cannot find easysteps"); assert False
+    else:
+      garnet_home = script_dir[ 0 : i ]
+      
+    sys.path.append(garnet_home + 'mflowgen/easysteps')
+    from easysteps import extend_steps
+    from easysteps import add_custom_steps
+    from easysteps import add_default_steps
+    from easysteps import connect_outstanding_nodes
 
 def construct():
 
