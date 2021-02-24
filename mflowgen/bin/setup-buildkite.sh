@@ -344,8 +344,8 @@ echo "--- Building in destination dir `pwd`"
 # NEW MFLOWGEN --- see far below for old setup
 ##############################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds why not
+# mflowgen_branch=easysteps
 mflowgen_branch=master
-mflowgen_branch=easysteps
 echo "--- INSTALL LATEST MFLOWGEN, use branch '$mflowgen_branch'"
 mflowgen=/sim/buildkite-agent/mflowgen
 pushd $mflowgen

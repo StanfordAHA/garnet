@@ -19,24 +19,30 @@ try:
   from easysteps import add_custom_steps
   from easysteps import add_default_steps
   from easysteps import connect_outstanding_nodes
+  print("FOO successfully(?) imported easysteps")
   
 except:
   garnet_home = os.environ.get('GARNET_HOME')
+  print(f"FOO successfully(?) found GARNET_HOME='{garnet_home}'")
+  print("FOO successfully(?) found GARNET_HOME='${garnet_home}'")
 
   # Assumes this script lives somewhere under "$GARNET_HOME/mflowgen"
   if not garnet_home:
+    print("FOO looking for GARNET_HOME=")
     script_dir=os.path.realpath(__file__)
     i = script_dir.rfind('mflowgen')
     if i == -1:
       print("**ERROR cannot find easysteps"); assert False
     else:
       garnet_home = script_dir[ 0 : i ]
+      print(f"FOO2 found GARNET_HOME='{garnet_home}'")
       
     sys.path.append(garnet_home + 'mflowgen/easysteps')
     from easysteps import extend_steps
     from easysteps import add_custom_steps
     from easysteps import add_default_steps
     from easysteps import connect_outstanding_nodes
+    print("FOO2 successfully(?) imported easysteps")
 
 def construct():
 
