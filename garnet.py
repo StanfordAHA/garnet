@@ -155,7 +155,7 @@ class Garnet(m.Generator2):
         else:
             # lift all the interconnect ports up
             self.io = m.IO()
-            for name, port in self.interconnect.interface.ports:
+            for name, port in self.interconnect.interface.ports.items():
                 # Create new lifted port
                 self.io += m.IO(name=type(port))
                 # Connect original port to lifted port
