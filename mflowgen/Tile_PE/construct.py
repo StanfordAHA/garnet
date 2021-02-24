@@ -39,6 +39,7 @@ except:
       
   print("FOO3 adding path " + garnet_home + '/mflowgen/easysteps')
   sys.path.append(garnet_home + '/mflowgen/easysteps')
+  print(  os.environ.get('PATH') )
   from easysteps import extend_steps
   from easysteps import add_custom_steps
   from easysteps import add_default_steps
