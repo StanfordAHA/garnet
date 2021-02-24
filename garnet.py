@@ -367,8 +367,7 @@ def main():
                     standalone=args.standalone)
 
     if args.verilog:
-        garnet_circ = garnet.circuit()
-        m.compile("garnet", garnet_circ, output="coreir-verilog",
+        m.compile("garnet", garnet, output="coreir-verilog",
                       coreir_libs={"float_CW"},
                       passes = ["rungenerators", "inline_single_instances", "clock_gate"],
                       disable_ndarray=True,
