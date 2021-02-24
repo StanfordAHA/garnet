@@ -38,8 +38,17 @@ except:
       print(f"FOO2 found GARNET_HOME='{garnet_home}'")
       
   print("FOO3 adding path " + garnet_home + '/mflowgen/easysteps')
+
   sys.path.append(garnet_home + '/mflowgen/easysteps')
+
+#   sys.path.append(garnet_home + '/mflowgen/easysteps')
+  sys.path = [ garnet_home + '/mflowgen/easysteps') ] + sys.path
+
+
   print(  os.environ.get('PATH') )
+  print('---')
+  print(sys.path)
+  print('---')
   from easysteps import extend_steps
   from easysteps import add_custom_steps
   from easysteps import add_default_steps
