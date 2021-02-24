@@ -25,22 +25,22 @@ import archipelago.io
 # set the debug mode to false to speed up construction
 set_debug_mode(False)
 
-def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
+class Garnet(m.Generator2):
+    def __init__(self, width, height, add_pd, interconnect_only: bool = False,
                  use_sram_stub: bool = True, standalone: bool = False,
                  add_pond: bool = True,
                  use_io_valid: bool = False,
                  pipeline_config_interval: int = 8):
-    # Check consistency of @standalone and @interconnect_only parameters. If
-    # @standalone is True, then interconnect_only must also be True.
-    if standalone:
-        assert interconnect_only
-    
-    if not interconnect_only:
-        # global buffer parameters
-        # width must be even number
-        assert (width % 2) == 0
+        # Check consistency of @standalone and @interconnect_only parameters. If
+        # @standalone is True, then interconnect_only must also be True.
+        if standalone:
+            assert interconnect_only
+        
+        if not interconnect_only:
+            # global buffer parameters
+            # width must be even number
+            assert (width % 2) == 0
 
-    class Garnet(m.Circuit):
         # configuration parameters
         config_addr_width = 32
         config_data_width = 32
@@ -54,6 +54,12 @@ def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
         config_addr_reg_width = 8
         num_tracks = 5
 
+        # Create attributes for params we want to query later
+        self.config_addr_width = config_addr_width
+        self.config_data_width = config_data_width
+        self.width = width
+        self.height = height
+
         # only north side has IO
         if standalone:
             io_side = IOSide.None_
@@ -61,7 +67,7 @@ def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
             io_side = IOSide.North
 
         if not interconnect_only:
-            num_glb_tiles = width // 2
+            num_glb_tiles = self.width // 2
 
             bank_addr_width = 17
             bank_data_width = 64
@@ -75,43 +81,43 @@ def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
             assert bank_data_width == config_addr_width + config_data_width
 
             wiring = GlobalSignalWiring.ParallelMeso
-            global_controller = GlobalController(addr_width=config_addr_width,
-                                                 data_width=config_data_width,
-                                                 axi_addr_width=axi_addr_width,
-                                                 axi_data_width=axi_data_width,
-                                                 num_glb_tiles=num_glb_tiles,
-                                                 glb_addr_width=glb_addr_width,
-                                                 block_axi_addr_width=glb_axi_addr_width)
+            self.global_controller = GlobalController(addr_width=config_addr_width,
+                                                      data_width=config_data_width,
+                                                      axi_addr_width=axi_addr_width,
+                                                      axi_data_width=axi_data_width,
+                                                      num_glb_tiles=num_glb_tiles,
+                                                      glb_addr_width=glb_addr_width,
+                                                      block_axi_addr_width=glb_axi_addr_width)
 
-            global_buffer = GlobalBuffer(num_glb_tiles=num_glb_tiles,
-                                         num_cgra_cols=width,
-                                         bank_addr_width=bank_addr_width,
-                                         bank_data_width=bank_data_width,
-                                         cfg_addr_width=config_addr_width,
-                                         cfg_data_width=config_data_width,
-                                         axi_addr_width=glb_axi_addr_width,
-                                         axi_data_width=axi_data_width)
+            self.global_buffer = GlobalBuffer(num_glb_tiles=num_glb_tiles,
+                                              num_cgra_cols=width,
+                                              bank_addr_width=bank_addr_width,
+                                              bank_data_width=bank_data_width,
+                                              cfg_addr_width=config_addr_width,
+                                              cfg_data_width=config_data_width,
+                                              axi_addr_width=glb_axi_addr_width,
+                                              axi_data_width=axi_data_width)
         else:
             wiring = GlobalSignalWiring.Meso
 
-        interconnect = create_cgra(width, height, io_side,
-                                   reg_addr_width=config_addr_reg_width,
-                                   config_data_width=config_data_width,
-                                   tile_id_width=tile_id_width,
-                                   num_tracks=num_tracks,
-                                   add_pd=add_pd,
-                                   add_pond=add_pond,
-                                   use_io_valid=use_io_valid,
-                                   use_sram_stub=use_sram_stub,
-                                   global_signal_wiring=wiring,
-                                   pipeline_config_interval=pipeline_config_interval,
-                                   mem_ratio=(1, 4),
-                                   standalone=standalone)
+        self.interconnect = create_cgra(width, height, io_side,
+                                        reg_addr_width=config_addr_reg_width,
+                                        config_data_width=config_data_width,
+                                        tile_id_width=tile_id_width,
+                                        num_tracks=num_tracks,
+                                        add_pd=add_pd,
+                                        add_pond=add_pond,
+                                        use_io_valid=use_io_valid,
+                                        use_sram_stub=use_sram_stub,
+                                        global_signal_wiring=wiring,
+                                        pipeline_config_interval=pipeline_config_interval,
+                                        mem_ratio=(1, 4),
+                                        standalone=standalone)
 
         # make multiple stall ports
-        stall_port_pass(interconnect)
+        stall_port_pass(self.interconnect)
         # make multiple configuration ports
-        config_port_pass(interconnect)
+        config_port_pass(self.interconnect)
 
         if not interconnect_only:
             io = m.IO(
@@ -141,7 +147,7 @@ def DefineGarnet(width, height, add_pd, interconnect_only: bool = False,
             m.wire(io.proc_packet, global_buffer.proc_packet)
 
             # Top -> Interconnect clock port connection
-            m.wire(io.clk_in, interconnect.clk)
+            m.wire(io.clk_in, self.interconnect.clk)
 
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
