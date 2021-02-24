@@ -1,6 +1,7 @@
 from gemstone.common.util import compress_config_data
 import magma
 import tempfile
+from magma.logging import flush
 import mantle
 import urllib.request
 import collections
@@ -356,8 +357,11 @@ class NetlistBuilder():
         self._config_data = None
         self._cwd = cwd
         self._config_data = []
+        self._flushable = []
+        self._cores = []
+        self._core_config = {}
 
-    def register_core(self, core):
+    def register_core(self, core, flushable=False, config=None):
         ''' Register the core/primitive with the
             data structure and return unique ID
         '''
@@ -381,12 +385,26 @@ class NetlistBuilder():
             tag = core.pnr_info().tag_name
 
         ret_str = f"{tag}{self._core_num}"
+        if flushable:
+            self._flushable.append(ret_str)
+        self._cores.append(ret_str)
         self._core_num += 1
+        if config is not None:
+            self._core_config[ret_str] = (config, 0)
         return ret_str
 
-    def add_connections(self, connections, cwd=None):
-        for connection, width in connections:
-            self.add_connection(connection, width)
+    def add_connections_dict(self, connection_dict):
+        for conn_block_name, connections_list in connection_dict.items():
+            print(f"Adding connection block: {conn_block_name}")
+            assert isinstance(connections_list, list), f"Expecting list of connections at: {conn_block_name}"
+            self.add_connections(connections_list)
+
+    def add_connections(self, connections):
+        if isinstance(connections, dict):
+            self.add_connections_dict(connections)
+        else:
+            for connection, width in connections:
+                self.add_connection(connection, width)
         self._placement_up_to_date = False
         print("Used add connections...automatically updating placement + routing")
         self.generate_placement()
@@ -439,7 +457,14 @@ class NetlistBuilder():
     def add_config(self, new_config):
         self._config_data += new_config
 
+    def get_flushable(self):
+        return self._flushable
+
+    def emit_flush_connection(self, flush_handle):
+        return [([(flush_handle, "io2f_1"), *[(x, "flush") for x in self._flushable]], 1)]
+
     def configure_tile(self, core, config, pnr_tag=None):
+        # print(f"cores: {self._cores}")
         kwargs = {}
         if pnr_tag is not None:
             kwargs["pnr_tag"] = pnr_tag

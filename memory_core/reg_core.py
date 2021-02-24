@@ -81,7 +81,6 @@ class RegCore(LakeCoreBase):
         config_reg += self.dut.get_bitstream()
         for name, v in config_reg:
             configs = [self.get_config_data(name, v)] + configs
-        print(configs)
         return configs
 
     def pnr_info(self):
