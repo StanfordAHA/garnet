@@ -154,11 +154,12 @@ class Garnet(m.Generator2):
             glc_interconnect_wiring(self)
         else:
             # lift all the interconnect ports up
+            io = m.IO()
             for name in self.interconnect.interface():
-                self.add_port(name, self.interconnect.ports[name].type())
-                self.wire(self.ports[name], self.interconnect.ports[name])
+                io += m.IO(name=self.interconnect.ports[name].type())
+                io.wire(self.ports[name], self.interconnect.ports[name])
 
-            self.add_ports(
+            io += m.IO(
                 clk=m.In(m.Clock),
                 reset=m.In(m.AsyncReset),
                 config=m.In(m.Array[width,
@@ -168,16 +169,16 @@ class Garnet(m.Generator2):
                 read_config_data=m.Out(m.Bits[config_data_width])
             )
 
-            self.wire(self.ports.clk, self.interconnect.ports.clk)
-            self.wire(self.ports.reset, self.interconnect.ports.reset)
+            m.wire(io.clk, self.interconnect.clk)
+            m.wire(io.reset, self.interconnect.reset)
 
-            self.wire(self.ports.config,
-                      self.interconnect.ports.config)
-            self.wire(self.ports.stall,
-                      self.interconnect.ports.stall)
+            m.wire(io.config,
+                   self.interconnect.config)
+            m.wire(io.stall,
+                   self.interconnect.stall)
 
-            self.wire(self.interconnect.ports.read_config_data,
-                      self.ports.read_config_data)
+            m.wire(self.interconnect.read_config_data,
+                   io.read_config_data)
 
     def map(self, halide_src):
         return map_app(halide_src)
