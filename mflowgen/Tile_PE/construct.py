@@ -8,9 +8,14 @@
 
 import os
 import sys
+from shutil import which
 
 from mflowgen.components import Graph, Step
-from shutil import which
+
+from mflowgen.components.easysteps import extend_steps
+from mflowgen.components.easysteps import add_custom_steps
+from mflowgen.components.easysteps import add_default_steps
+from mflowgen.components.easysteps import connect_outstanding_nodes
 
 def construct():
 
@@ -84,7 +89,7 @@ def construct():
 
   # Custom steps
 
-  g.add_custom_steps("""
+  add_custom_steps(g, """
 
         rtl                - ../common/rtl                  -> synth
         constraints        - constraints                    -> synth iflow
@@ -96,12 +101,12 @@ def construct():
   """, DBG=1)
 
   if synth_power:
-    add_custom_steps("post_synth_power ../common/tile-post-synth-power")
+    add_custom_steps(g, "post_synth_power ../common/tile-post-synth-power")
 
 
   # Extension steps (steps that connect *all* outputs to each successor node)
 
-  g.extend_steps("""
+  extend_steps(g, """
 
     # Add extra input edges to innovus steps that need custom tweaks
     custom_init          - custom-init                           -> init
@@ -127,7 +132,7 @@ def construct():
 
   # Default steps
 
-  g.add_default_steps("""
+  add_default_steps(g, """
     info         - info
     init         - cadence-innovus-init          -> power
     power        - cadence-innovus-power         -> place
@@ -140,7 +145,7 @@ def construct():
     genlibdb     - cadence-genus-genlib
   """, DBG=1)
 
-  g.add_default_steps("""
+  add_default_steps(g, """
     synth   - cadence-genus-synthesis       
             -> iflow init power place cts custom_flowgen_setup
 
@@ -210,7 +215,7 @@ def construct():
   # Dynamically add edges
 
   # Complete all easysteps connections
-  g.connect_outstanding_nodes(DBG=1)
+  connect_outstanding_nodes(g, DBG=1)
 
   # Connect by name
 
