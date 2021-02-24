@@ -42,7 +42,7 @@ except:
   sys.path.append(garnet_home + '/mflowgen/easysteps')
 
 #   sys.path.append(garnet_home + '/mflowgen/easysteps')
-  sys.path = [ garnet_home + '/mflowgen/easysteps') ] + sys.path
+  sys.path = [ garnet_home + '/mflowgen/easysteps' ] + sys.path
 
 
   print(  os.environ.get('PATH') )
