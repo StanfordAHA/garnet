@@ -7,7 +7,8 @@
 import os
 import inspect
 
-from mflowgen.easysteps.parse import ParseNodes
+from parse import ParseNodes
+
 from mflowgen.components.step import Step
 
 # Persistent storage for todo list
