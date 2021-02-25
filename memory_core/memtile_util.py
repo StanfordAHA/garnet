@@ -36,6 +36,7 @@ class LakeCoreBase(ConfigurableCore):
                  name="LakeBase_inst"):
 
         self.name = name
+        self.io = m.IO()
         self.__inputs = []
         self.__outputs = []
         self.__features = []
@@ -90,10 +91,10 @@ class LakeCoreBase(ConfigurableCore):
                 app_list = self.__outputs
             if ind_ports > 1:
                 for i in range(ind_ports):
-                    self.add_port(f"{io_info.port_name}_{i}", dir_type(intf_type))
+                    self.io += m.IO(f"{io_info.port_name}_{i}"=dir_type(intf_type))
                     app_list.append(self.ports[f"{io_info.port_name}_{i}"])
             else:
-                self.add_port(io_info.port_name, dir_type(intf_type))
+                self.io += m.IO(io_info.port_name=dir_type(intf_type))
                 app_list.append(self.ports[io_info.port_name])
 
             # classify each signal for wiring to underlying representation...
@@ -117,9 +118,7 @@ class LakeCoreBase(ConfigurableCore):
         assert(len(self.__outputs) > 0)
 
         # We call clk_en stall at this level for legacy reasons????
-        self.add_ports(
-            stall=m.In(TBit),
-        )
+        self.io += m.IO(stall=m.In(TBit))
 
         # put a 1-bit register and a mux to select the control signals
         for control_signal, width in control_signals:
@@ -217,7 +216,6 @@ class LakeCoreBase(ConfigurableCore):
         # read data out
         for idx, core_feature in enumerate(self.__features):
             if(idx > 0):
-                # self.add_port(f"read_config_data_{idx}",
                 self.io += m.IO(f"read_config_data_{idx}"=m.Out(m.Bits[self.config_data_width]))
                 # port aliasing
                 core_feature.read_config_data = \
