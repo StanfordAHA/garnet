@@ -157,8 +157,7 @@ class Garnet(m.Generator2):
             self.io = m.IO()
             for name, port in self.interconnect.interface.ports.items():
                 # Create new lifted port
-                # FIXME: this creates a port named "name". Need to use value of name variable
-                self.io += m.IO(name=type(port))
+                self.io += m.IO(**{name: type(port)})
                 # Connect original port to lifted port
                 m.wire(getattr(self.io, name), port)
             

@@ -91,11 +91,11 @@ class LakeCoreBase(ConfigurableCore):
                 app_list = self.__outputs
             if ind_ports > 1:
                 for i in range(ind_ports):
-                    self.io += m.IO(f"{io_info.port_name}_{i}"=dir_type(intf_type))
-                    app_list.append(self.ports[f"{io_info.port_name}_{i}"])
+                    self.io += m.IO(**{f"{io_info.port_name}_{i}": dir_type(intf_type)})
+                    app_list.append(getattr(self.io, f"{io_info.port_name}_{i}"))
             else:
-                self.io += m.IO(io_info.port_name=dir_type(intf_type))
-                app_list.append(self.ports[io_info.port_name])
+                self.io += m.IO(**{io_info.port_name: dir_type(intf_type)})
+                app_list.append(getattr(self.io io_info.port_name))
 
             # classify each signal for wiring to underlying representation...
             if io_info.is_ctrl:
@@ -187,11 +187,11 @@ class LakeCoreBase(ConfigurableCore):
         # Wire the config
         for idx, core_feature in enumerate(self.__features):
             if(idx > 0):
-                self.io += m.IO(f"config_{idx}",
-                                m.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
+                self.io += m.IO(**{f"config_{idx}":
+                                m.In(ConfigurationType(self.config_addr_width, self.config_data_width))})
                 # port aliasing
                 core_feature.config = getattr(self.io, f"config_{idx}")
-        self.io += m.IO("config", m.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
+        self.io += m.IO(config=m.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
 
         if self.num_sram_features > 0:
             # or the signal up
@@ -216,7 +216,7 @@ class LakeCoreBase(ConfigurableCore):
         # read data out
         for idx, core_feature in enumerate(self.__features):
             if(idx > 0):
-                self.io += m.IO(f"read_config_data_{idx}"=m.Out(m.Bits[self.config_data_width]))
+                self.io += m.IO(**{f"read_config_data_{idx}": m.Out(m.Bits[self.config_data_width])})
                 # port aliasing
                 core_feature.read_config_data = \
                     getattr(self.io, f"read_config_data_{idx}")
@@ -260,7 +260,7 @@ class LakeCoreBase(ConfigurableCore):
 
             for sram_index in range(self.num_sram_features):
                 core_feature = self.__features[sram_index + 1]
-                self.io += m.IO(f"config_en_{sram_index}"=m.In(m.Bit))
+                self.io += m.IO(**{f"config_en_{sram_index}": m.In(m.Bit)})
                 # port aliasing
                 core_feature.config_en = \
                     getattr(self.io, f"config_en_{sram_index}")
