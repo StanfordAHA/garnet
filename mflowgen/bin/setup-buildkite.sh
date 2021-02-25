@@ -349,7 +349,6 @@ mflowgen_branch=master
 echo "--- INSTALL LATEST MFLOWGEN, use branch '$mflowgen_branch'"
 mflowgen=/sim/buildkite-agent/mflowgen
 pushd $mflowgen
-  # git checkout master
   git checkout $mflowgen_branch
   git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
