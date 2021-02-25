@@ -160,27 +160,28 @@ class Garnet(m.Generator2):
                 self.io += m.IO(name=type(port))
                 # Connect original port to lifted port
                 m.wire(self.ports[name], port)
+            
+            # Pretty sure this stuff is redundant...
+            #self.io += m.IO(
+            #    clk=m.In(m.Clock),
+            #    reset=m.In(m.AsyncReset),
+            #    config=m.In(m.Array[width,
+            #                    ConfigurationType(config_data_width,
+            #                                      config_data_width)]),
+            #    stall=m.In(m.Bits[self.width * self.interconnect.stall_signal_width]),
+            #    read_config_data=m.Out(m.Bits[config_data_width])
+            #)
 
-            self.io += m.IO(
-                clk=m.In(m.Clock),
-                reset=m.In(m.AsyncReset),
-                config=m.In(m.Array[width,
-                                ConfigurationType(config_data_width,
-                                                  config_data_width)]),
-                stall=m.In(m.Bits[self.width * self.interconnect.stall_signal_width]),
-                read_config_data=m.Out(m.Bits[config_data_width])
-            )
+            #m.wire(io.clk, self.interconnect.clk)
+            #m.wire(io.reset, self.interconnect.reset)
 
-            m.wire(io.clk, self.interconnect.clk)
-            m.wire(io.reset, self.interconnect.reset)
+            #m.wire(io.config,
+            #       self.interconnect.config)
+            #m.wire(io.stall,
+            #       self.interconnect.stall)
 
-            m.wire(io.config,
-                   self.interconnect.config)
-            m.wire(io.stall,
-                   self.interconnect.stall)
-
-            m.wire(self.interconnect.read_config_data,
-                   io.read_config_data)
+            #m.wire(self.interconnect.read_config_data,
+            #       io.read_config_data)
 
     def map(self, halide_src):
         return map_app(halide_src)
