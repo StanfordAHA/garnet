@@ -1,9 +1,8 @@
 from canal.interconnect import Interconnect
-import magma
+import magma as m
 from mantle import FF
 from mantle import DefineRegister
 from gemstone.generator.generator import Generator
-from gemstone.generator.from_magma import FromMagma
 from gemstone.common.configurable import ConfigurationType
 
 # This pass inserts pipeline registers on the pass
@@ -11,39 +10,37 @@ from gemstone.common.configurable import ConfigurationType
 # <interval> rows of tiles.
 
 # Circuit Definition for set of pipeline registers
-class PipelineStage(Generator):
+class PipelineStage(m.Generator2):
     def __init__(self, config_addr_width: int,
                  config_data_width: int):
-        super().__init__()
+        self.name = "ConfigPipeStage"
         self.config_addr_width = config_addr_width
         self.config_data_width = config_data_width
         config_type = ConfigurationType(config_addr_width,
                                         config_data_width)
-        self.add_ports(
-            clk=magma.In(magma.Clock),
-            config=magma.In(config_type),
-            config_out=magma.Out(config_type)
+        self.io = m.IO(
+            clk=m.In(m.Clock),
+            config=m.In(config_type),
+            config_out=m.Out(config_type)
         )
         # Pipeline registers
-        config_addr_reg = FromMagma(DefineRegister(config_addr_width))
-        config_data_reg = FromMagma(DefineRegister(config_data_width))
-        config_read_reg = FromMagma(DefineRegister(1))
-        config_write_reg = FromMagma(DefineRegister(1))
+        config_addr_reg = DefineRegister(config_addr_width)
+        config_data_reg = DefineRegister(config_data_width)
+        config_read_reg = DefineRegister(1)
+        config_write_reg = DefineRegister(1)
 
         # Wire pipeline reg inputs
-        self.wire(self.ports.config.config_addr, config_addr_reg.ports.I)
-        self.wire(self.ports.config.config_data, config_data_reg.ports.I)
-        self.wire(self.ports.config.read, config_read_reg.ports.I)
-        self.wire(self.ports.config.write, config_write_reg.ports.I)
+        m.wire(self.io.config.config_addr, config_addr_reg.io.I)
+        m.wire(self.io.config.config_data, config_data_reg.io.I)
+        m.wire(self.io.config.read, config_read_reg.io.I)
+        m.wire(self.io.config.write, config_write_reg.io.I)
 
         # Wire pipeline reg outputs
-        self.wire(config_addr_reg.ports.O, self.ports.config_out.config_addr)
-        self.wire(config_data_reg.ports.O, self.ports.config_out.config_data)
-        self.wire(config_read_reg.ports.O, self.ports.config_out.read)
-        self.wire(config_write_reg.ports.O, self.ports.config_out.write)
+        m.wire(config_addr_reg.O, self.io.config_out.config_addr)
+        m.wire(config_data_reg.O, self.io.config_out.config_data)
+        m.wire(config_read_reg.O, self.io.config_out.read)
+        m.wire(config_write_reg.O, self.io.config_out.write)
 
-    def name(self):
-        return "ConfigPipeStage"
 
 # Pass to insert pipeline registers
 def pipeline_config_signals(interconnect: Interconnect, interval):
@@ -59,13 +56,14 @@ def pipeline_config_signals(interconnect: Interconnect, interval):
             continue
         else:
             if interval != 0 and y % interval == 0 and ((x, y+1) in interconnect.tile_circuits):
-                tile_below = interconnect.tile_circuits[(x, y+1)]
-                pipe_stage = PipelineStage(config_addr_width, config_data_width)
-                # remove existing config wire
-                interconnect.remove_wire(tile.ports.config_out, tile_below.ports.config)
-                # Now, wire config through the pipe stage
-                interconnect.wire(tile.ports.config_out, pipe_stage.ports.config)
-                interconnect.wire(pipe_stage.ports.config_out, tile_below.ports.config)
-                # Wire up pipe stage clock input to output clock
-                interconnect.wire(tile.ports.clk_out, pipe_stage.ports.clk)
+                with interconnect.open():
+                    tile_below = interconnect.tile_circuits[(x, y+1)]
+                    pipe_stage = PipelineStage(config_addr_width, config_data_width)
+                    # remove existing config wire
+                    tile_below.io.config.unwire(tile.io.config_out)
+                    # Now, wire config through the pipe stage
+                    m.wire(tile.io.config_out, pipe_stage.io.config)
+                    m.wire(pipe_stage.io.config_out, tile_below.io.config)
+                    # Wire up pipe stage clock input to output clock
+                    m.wire(tile.io.clk_out, pipe_stage.io.clk)
             
