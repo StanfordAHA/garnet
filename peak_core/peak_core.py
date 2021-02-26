@@ -1,7 +1,7 @@
 import math
 import hwtypes
 from hwtypes.modifiers import strip_modifiers
-import magma
+import magma as m
 import peak
 from peak.assembler import Assembler
 from peak.family import PyFamily, MagmaFamily
@@ -22,8 +22,8 @@ class HashableDict(dict):
 
 def _convert_type(typ):
     if issubclass(typ, hwtypes.AbstractBit):
-        return magma.Bits[1]
-    return magma.Bits[typ.size]
+        return m.Bits[1]
+    return m.Bits[typ.size]
 
 
 class _PeakWrapperMeta(type):
@@ -88,16 +88,16 @@ class PassThroughReg(Generator):
     def __init__(self, name: str):
         super().__init__(name=name)
         self.add_ports(
-            config_addr=magma.In(magma.Bits[8]),
-            config_addr_out=magma.Out(magma.Bits[8]),
-            config_data=magma.In(magma.Bits[32]),
-            config_data_out=magma.Out(magma.Bits[32]),
-            config_en=magma.In(magma.Bit),
-            config_en_out=magma.Out(magma.Bit),
-            reset=magma.In(magma.AsyncReset),
-            reset_out=magma.Out(magma.AsyncReset),
-            O=magma.Out(magma.Out(magma.Bits[32])),
-            O_in=magma.In(magma.In(magma.Bits[32]))
+            config_addr=m.In(m.Bits[8]),
+            config_addr_out=m.Out(m.Bits[8]),
+            config_data=m.In(m.Bits[32]),
+            config_data_out=m.Out(m.Bits[32]),
+            config_en=m.In(m.Bit),
+            config_en_out=m.Out(m.Bit),
+            reset=m.In(m.AsyncReset),
+            reset_out=m.Out(m.AsyncReset),
+            O=m.Out(m.Out(m.Bits[32])),
+            O_in=m.In(m.In(m.Bits[32]))
         )
         self.width = 32
 
@@ -139,21 +139,21 @@ class PeakCore(ConfigurableCore):
         # Add input/output ports and wire them.
         inputs = self.wrapper.inputs()
         outputs = self.wrapper.outputs()
-        for ports, dir_ in ((inputs, magma.In), (outputs, magma.Out),):
+        for ports, dir_ in ((inputs, m.In), (outputs, m.Out),):
             for i, (name, typ) in enumerate(ports.items()):
                 if name in self.ignored_ports:
                     continue
                 magma_type = _convert_type(typ)
                 self.add_port(name, dir_(magma_type))
                 my_port = self.ports[name]
-                if magma_type is magma.Bits[1]:
+                if magma_type is m.Bits[1]:
                     my_port = my_port[0]
-                magma_name = name if dir_ is magma.In else f"O{i}"
+                magma_name = name if dir_ is m.In else f"O{i}"
                 self.wire(my_port, self.peak_circuit.ports[magma_name])
 
         self.add_ports(
-            config=magma.In(ConfigurationType(8, 32)),
-            stall=magma.In(magma.Bits[1])
+            config=m.In(ConfigurationType(8, 32)),
+            stall=m.In(m.Bits[1])
         )
 
         # Set up configuration for PE instruction. Currently, we perform a naive
