@@ -5,9 +5,9 @@
 # To use:
 #    with Capturing() as output: do_something()
 #    for o in output: print(o)
-
-from io import StringIO
+# 
 import sys
+from io import StringIO
 class Capturing(list):
     def __enter__(self):
         self._stdout = sys.stdout
@@ -20,7 +20,7 @@ class Capturing(list):
 
 ##############################################################################
 # Compare node list to expected result
-
+# 
 import re
 def canonicalize(string):
     # Replace each lines leading space with canonical "  "
@@ -34,14 +34,15 @@ def canonicalize(string):
     return string
 
 
-
-# import inspect
+########################################################################
+# See if list of nodes matches expected list
+# 
 def do_test(nodes, expect, skip_assert=0):
 
     # For nice output do 'pytest -v' or 'pytest -vs'
-    #    pytest -vs | sed 's/^test_parse.py/------------------------------------------------------------------------\ntest_parse.py/' |& less
-
-    # callee_name = inspect.stack()[1].function
+    #    line32='--------------------------------'
+    #    pytest -vs | sed 's/^test_parse.py/'$line$line'\ntest_parse.py/' |& less
+    # 
     # print(f'\n================ TEST: {callee_name} ================')
     print('\n')
 
@@ -53,32 +54,31 @@ def do_test(nodes, expect, skip_assert=0):
     # Canonicalize the strings
     output = canonicalize(output)
     expect = canonicalize(expect)
-#     output = re.sub('\n *', '\n  ', output); output = re.sub(' *\n', '\n  ', output)
-#     expect = re.sub('\n *', '\n  ', expect); expect = re.sub(' *\n', '\n  ', expect)
 
-    # print("------------------------------------------------------------------------")
     print(f'expect=\n{expect}')
-    # print("------------------------------------------------------------------------")
     print(f'output=\n{output}')
-    # print("------------------------------------------------------------------------")
 
     if not skip_assert: assert output == expect
 
-
-
+##############################################################################
 ##############################################################################
 # The tests
 
-from mflowgen.utils           import ParseNodes
+from parse import ParseNodes
+
 def test_e1():
+    # INPUT
     e1="""
         custom_init - custom-init     -> init
     """
+    # EXPECTED OUTPUT
     expect = """
         00 custom_init ( custom-init ) -> ['init']
     """
-    # Parse the nodelist string
-    nodes = ParseNodes(e1); do_test(nodes, expect)
+    # TEST
+    nodes = ParseNodes(e1)
+    do_test(nodes, expect)
+
 
 
 def test_simple():
@@ -87,7 +87,8 @@ def test_simple():
       00 a  ( b  ) -> ['c', 'd', 'e']
       01 a1 ( b2 ) -> ['x', 'y', 'zz']
     """
-    nodes = ParseNodes(nodelist); do_test(nodes, expect)
+    nodes = ParseNodes(nodelist)
+    do_test(nodes, expect)
 
 
 def test_custom_two_parts():
@@ -102,6 +103,7 @@ def test_custom_two_parts():
 
     """)
     
+    # How to debug
     # custom_nodes.show_all_nodes()
     # for n in custom_nodes.node_array:
     #     print(f'{n.name} - {n.step} -> {n.successors}')
@@ -141,7 +143,7 @@ def test_extend():
       05 short_fix            ( ../common/custom-short-fix            ) -> ['postroute']
       06 custom_timing_assert ( ../common/custom-timing-assert        ) -> ['synth', 'postcts_hold', 'signoff']
     """
-    # do_test(nodes, expect, 1)
+    # do_test(nodes, expect, skip_assert=1)
     do_test(nodes, expect)
 
 def test_default():
@@ -198,83 +200,3 @@ def test_quickies():
     dic = { e1:r1, e2:r2, e3:r3, e4:r4 }
     for key in dic:
         nodes=ParseNodes(key); do_test(nodes, dic[key])
-
-#     for example in [ ex1, ex2, ex3, ex4 ]:
-#         nodes = ParseNodes(example); do_test(nodes, expect)
-
-
-
-
-
-
-
-
-
-
-
-
-
-##############################################################################
-
-
-# with Capturing() as output:
-#     test_custom()
-#     
-# 
-# print("FOOJ")
-# output = '\n'.join(output); print(output)
-# output = '\n' + output + '\n'
-# 
-# expect = """
-#   00 rtl            ( ../common/rtl                 ) -> ['synth']
-#   01 constraints    ( constraints                   ) -> ['synth', 'iflow']
-#   02 testbench      ( ../common/testbench           ) -> ['post_pnr_power']
-#   03 application    ( ../common/application         ) -> ['post_pnr_power', 'testbench']
-#   04 post_pnr_power ( ../common/tile-post-pnr-power ) -> []
-# """
-# 
-# print("------------------------------------------------------------------------")
-# print(f'expect=.{expect}.')
-# print("------------------------------------------------------------------------")
-# print(f'output=.{output}.')
-# print("------------------------------------------------------------------------")
-# 
-# 
-# assert output == expect
-
-
-
-
-##############################################################################
-# OLD
-# def do_test():
-#     P = ParseNodes();
-#     P.do_all_tests()
-# 
-# 
-# def test_answer():
-#     assert 1 == 1
-#     assert 0 == 1
-#     assert do_test() == 5
-# 
-# def test_test():
-#     assert 4 == 4
-# 
-# 
-# def do_test(nodelist, DBG=1):
-#     P = ParseNodes();
-#     print("\n------------------------------------------------------------------------")
-#     # global NODES; NODES = []
-#     node_array = []
-#     P.parse_nodelist(nodelist, node_array, DBG)
-#     print("------------------------------------------------------------------------\n")
-#     return node_array
-
-
-    # print('\n========================================================================')
-    # print(callee_name)
-
-    # print("-1-----------------------------------------------------------------------\n")
-    # print("\n-1.1---------------------------------------------------------------------\n")
-    # print("\n-1.2---------------------------------------------------------------------\n")
-    # print("-2----------------------------------------------------------------------")
