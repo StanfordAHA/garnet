@@ -72,8 +72,50 @@ class ParseNodes:
 
         return()
 
-    def parse_error(self, errmsg):
+    def _parse_error(self, errmsg):
         print(f"**ERROR {errmsg}"); assert False
+
+    def parse_nodelist(self, nodelist, node_array, DBG=0):
+        """
+        Given a nodelist string
+          - parse the string
+          - add the resulting list of nodes to array "nodes"
+          - return the final array
+        """
+        i=-1
+        max_nodes=999
+        nodelist = self._canonicalize(nodelist)
+        if nodelist == ' ':
+            print('no nodelist'); return []
+
+        # Build a dictionary of nodes, steps, and successor nodes
+        while re.search(r'\S', nodelist): # Repeat until string is empty
+
+            # Prevent infinite loops
+            i = i + 1
+            if (i > max_nodes):
+                self._parse_error(f"too many nodes! max = {max_nodes}"); break
+
+            if DBG>2: print(f"\n{i:03} nodelist = '{nodelist}'")
+
+            # Grab first (word-dash-word) pair e.g. "lvs - cadence-pegasus-lvs"
+            (nodename, step, nodelist) = self._find_wdw_group(nodelist)
+            if DBG>1: print(f"{i:02} found nodename '{nodename}', step '{step}'")
+            if DBG>2: print(f"    remainder '{nodelist}'")
+
+            # Process the node
+            node = self._ParseNode(nodename, step, [])
+            node_array.append(node)
+
+            if re.search(r'\S', nodelist):
+                # Not done yet. Look for successor nodes
+                nodelist = self._build_successor_list(node, nodelist, DBG=4)
+
+        if DBG:
+            print("RESULT")
+            self.show_all_nodes()
+
+        return(node_array)
 
     # Private data structure for nodes
     class _ParseNode:
@@ -100,95 +142,50 @@ class ParseNodes:
         nodelist = nodelist.replace(";", " ");          # Get rid of semicolons why not
         nodelist = re.sub(r'\s+', ' ', " " + nodelist + " "); # Whitespace inc. newlines
         if DBG: print(f'nodelist1="{nodelist}"')
-
         return nodelist
 
-
-    def parse_nodelist(s, nodelist, node_array, DBG=0):
-        """
-        Given a nodelist string
-          - parse the string
-          - add the resulting list of nodes to array "nodes"
-          - return the final array
-        """
-
-        nodelist = s._canonicalize(nodelist)
-
-
-        if nodelist == ' ':
-            print('no nodelist')
-            return []
-
-        # Build a dictionary of nodes, steps, and successor nodes
-        i=-1
-        while (nodelist != ""):  # Repeat until string is empty
-
-            # Prevent infinite loops
-            i = i + 1
-            max_nodes=1000
-            if (i > max_nodes):
-                parse_error(f"too many nodes! max = {max_nodes}")
-                break
-
-            # Little debugging
-            if DBG>2: print("")
-            if DBG>2: print(f"{i:03} nodelist = '{nodelist}'")
-
-            # Grab first (word-dash-word) pair e.g. "lvs - cadence-pegasus-lvs"
+    def _find_wdw_group(self, nodelist):
+            # Grab first (word-dash-word) pair in nodelist
+            # e.g. look for "lvs - cadence-pegasus-lvs"
             wdw_dotstar = r"^ (\S+) [-] (\S+)(.*)$"
             f = re.search(wdw_dotstar, nodelist)
-            if not f: 
-                s.parse_error("malformed string?")
-            nodename = f.group(1)
-            step     = f.group(2)
-            remain   = f.group(3)
-            if DBG>1: print(f"{i:02} found nodename '{nodename}', step '{step}'")
-            if DBG>2: print(f"    remainder '{remain}'")
+            if not f:
+                return False
+            else:
+                nodename = f.group(1)
+                step     = f.group(2)
+                remain   = f.group(3)
+                return (nodename, step, remain)
 
-            #         node_array.append("foo"); 
+    def _build_successor_list(self, node, remain, DBG=0):
 
-            node = s._ParseNode(nodename, step, [])
-            node_array.append(node)
+        # If 'remain' string starts with a successor list, attach them to 'node'
+        # Return remainder of string after processing
 
-            # Are we done?
-            if (remain == " "):
-                if DBG: print("DONE!")
-                break
-
-            # Not done. Look for optional successor list.
-            # While remainder contains (word <not-dash>) pattern, add word to list
-            ww = r'^ (\S+)( [^-].*)$'
+        # While remainder contains (word <not-dash>) pattern, add word to list
+        ww = r'^ (\S+)( [^-].*)$'
+        f = re.search(ww, remain)
+        while (f):
+            succ=f.group(1); node.successors.append(succ)
+            if DBG>1: print(f"  found successor '{succ}'")
+            remain = f.group(2)
             f = re.search(ww, remain)
-            while (f):
-                succ=f.group(1); node.successors.append(succ)
-                if DBG>1: print(f"  found successor '{succ}'")
-                remain = f.group(2)
-                f = re.search(ww, remain)
-                if DBG>2: print(f"    remain= '{remain}'\n    {f}")
+            if DBG>2: print(f"    remain= '{remain}'\n    f={f}")
 
+        # If next pattern is (word - word), then it's time to loop back
+        if DBG>2: print(f"  searching '{remain}' for w-w")
+        if self._find_wdw_group(remain):
+            if DBG: print("found wdw! continue processing remainder string")
 
-            # If next pattern is (word - word), then it's time to loop back
-            if DBG>2: print(f"  searching '{remain}' for w-w")
-            if re.search(wdw_dotstar, remain):
-                nodelist = remain
-                continue
-
-            # Else we might be done, or almost
-
+        else:
             # Should be one final optional successor node in list
-            f = re.search(r'^ (\S+) $', remain)
+            f = re.search(r'^ (\S+) $', remain); remain=''
             if f:
                 succ=f.group(1); node.successors.append(succ)
-                if DBG>1: print(f"  found successor '{succ}' (final)")
-                break
-
+                if DBG>1: print(f"  found final successor '{succ}' (final)")
             else:
-                parse_error("malformed string? missing final successor node")
+                self._parse_error("malformed string? missing final successor node")
 
-        if DBG:
-            print("RESULT")
-            # s.show_all_nodes(node_array)
-            s.show_all_nodes()
-            # print(f"-- END   parse_node ----------------------------------------")
+        return remain
 
-        return(node_array)
+
