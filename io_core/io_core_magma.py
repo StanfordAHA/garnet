@@ -1,4 +1,4 @@
-import magma
+import magma as m
 from gemstone.common.core import ConfigurableCore, PnRTag, ConfigurationType, Core
 from gemstone.generator import FromMagma
 from kratos import Generator, posedge, always_ff, mux
@@ -75,24 +75,29 @@ class IOCoreBase(Core):
         super().__init__()
 
     def _add_ports(self):
-        self.add_ports(
-            glb2io_16=magma.In(magma.Bits[16]),
-            glb2io_1=magma.In(magma.Bits[1]),
-            io2glb_16=magma.Out(magma.Bits[16]),
-            io2glb_1=magma.Out(magma.Bits[1]),
-            f2io_16=magma.In(magma.Bits[16]),
-            f2io_1=magma.In(magma.Bits[1]),
-            io2f_16=magma.Out(magma.Bits[16]),
-            io2f_1=magma.Out(magma.Bits[1])
+        ports = m.IO(
+            glb2io_16=m.In(m.Bits[16]),
+            glb2io_1=m.In(m.Bits[1]),
+            io2glb_16=m.Out(m.Bits[16]),
+            io2glb_1=m.Out(m.Bits[1]),
+            f2io_16=m.In(m.Bits[16]),
+            f2io_1=m.In(m.Bits[1]),
+            io2f_16=m.Out(m.Bits[16]),
+            io2f_1=m.Out(m.Bits[1])
         )
+        try:
+            self.io += ports
+        except AttributeError:
+            self.io = ports
+        
 
     def inputs(self):
-        return [self.ports.glb2io_16, self.ports.glb2io_1,
-                self.ports.f2io_16, self.ports.f2io_1]
+        return [self.io.glb2io_16, self.io.glb2io_1,
+                self.io.f2io_16, self.io.f2io_1]
 
     def outputs(self):
-        return [self.ports.io2glb_16, self.ports.io2glb_1,
-                self.ports.io2f_16, self.ports.io2f_1]
+        return [self.io.io2glb_16, self.io.io2glb_1,
+                self.io.io2f_16, self.io.io2f_1]
 
     def name(self):
         return "io_core"
@@ -107,10 +112,10 @@ class IOCore(IOCoreBase):
         super().__init__()
         self._add_ports()
 
-        self.wire(self.ports.glb2io_16, self.ports.io2f_16)
-        self.wire(self.ports.glb2io_1, self.ports.io2f_1)
-        self.wire(self.ports.f2io_16, self.ports.io2glb_16)
-        self.wire(self.ports.f2io_1, self.ports.io2glb_1)
+        m.wire(self.io.glb2io_16, self.io.io2f_16)
+        m.wire(self.io.glb2io_1, self.io.io2f_1)
+        m.wire(self.io.f2io_16, self.io.io2glb_16)
+        m.wire(self.io.f2io_1, self.io.io2glb_1)
 
 
 class IOCoreValid(ConfigurableCore, IOCoreBase):
@@ -120,27 +125,27 @@ class IOCoreValid(ConfigurableCore, IOCoreBase):
 
         max_cycle_width = 22
 
-        self.add_ports(
-            stall=magma.In(magma.Bits[1])
+        self.io += m.IO(
+            stall=m.In(m.Bits[1])
         )
 
-        self.add_port("config", magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
+        self.io += m.IO(config=m.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
 
-        self.wire(self.ports.glb2io_16, self.ports.io2f_16)
-        self.wire(self.ports.glb2io_1, self.ports.io2f_1)
-        self.wire(self.ports.f2io_16, self.ports.io2glb_16)
+        m.wire(self.io.glb2io_16, self.io.io2f_16)
+        m.wire(self.io.glb2io_1, self.io.io2f_1)
+        m.wire(self.io.f2io_16, self.io.io2glb_16)
 
         self.core = FromMagma(KratosValidIOCore.get_core(22))
         for p in {"clk", "reset", "stall"}:
-            self.wire(self.ports[p], self.core.ports[p])
+            m.wire(self.io[p], self.core.ports[p])
         self.add_config("max_cycle", max_cycle_width)
         self.add_config("mode", 1)
 
-        self.wire(self.registers["max_cycle"].ports.O, self.core.ports.max_cycle)
-        self.wire(self.registers["mode"].ports.O, self.core.ports.mode)
-        self.wire(self.ports.f2io_1, self.core.ports.f2io_1)
-        self.wire(self.ports.io2glb_1, self.core.ports.out)
-        self.wire(self.ports.glb2io_1, self.core.ports.start)
+        m.wire(self.registers["max_cycle"].O, self.core.max_cycle)
+        m.wire(self.registers["mode"].O, self.core.mode)
+        m.wire(self.io.f2io_1, self.core.f2io_1)
+        m.wire(self.io.io2glb_1, self.core.out)
+        m.wire(self.io.glb2io_1, self.core.start)
 
         self._setup_config()
 
@@ -153,4 +158,4 @@ class IOCoreValid(ConfigurableCore, IOCoreBase):
 
 if __name__ == "__main__":
     core = IOCoreValid(8, 32)
-    magma.compile("io", core.circuit(), inline=False)
+    m.compile("io", core, inline=False)
