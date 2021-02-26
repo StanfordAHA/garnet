@@ -70,80 +70,63 @@ class GlobalController(m.Generator2):
         self.underlying = FromMagma(generator())
 
         # wire clk and reset
-        m.wire(self.io.clk_in, self.underlying.ports.clk_in)
-        m.wire(self.io.reset_in, self.underlying.ports.reset_in)
+        m.wire(self.io.clk_in, self.underlying.clk_in)
+        m.wire(self.io.reset_in, self.underlying.reset_in)
 
         # cgra control signals
-        m.wire(self.underlying.ports.clk_out, self.io.clk_out)
-        m.wire(self.underlying.ports.reset_out, self.io.reset_out)
-        m.wire(self.underlying.ports.cgra_stall, self.io.cgra_stall)
-        m.wire(self.underlying.ports.glb_stall, self.io.glb_stall)
-        m.wire(self.underlying.ports.soft_reset,
-                  self.io.soft_reset)
+        m.wire(self.underlying.clk_out, self.io.clk_out)
+        m.wire(self.underlying.reset_out, self.io.reset_out)
+        m.wire(self.underlying.cgra_stall, self.io.cgra_stall)
+        m.wire(self.underlying.glb_stall, self.io.glb_stall)
+        m.wire(self.underlying.soft_reset, self.io.soft_reset)
 
         # global buffer configuration
-        m.wire(self.io.glb_cfg.wr_en,
-                  self.underlying.ports.glb_cfg_wr_en)
-        m.wire(self.io.glb_cfg.wr_clk_en,
-                  self.underlying.ports.glb_cfg_wr_clk_en)
-        m.wire(self.io.glb_cfg.wr_addr,
-                  self.underlying.ports.glb_cfg_wr_addr)
-        m.wire(self.io.glb_cfg.wr_data,
-                  self.underlying.ports.glb_cfg_wr_data)
-        m.wire(self.io.glb_cfg.rd_en,
-                  self.underlying.ports.glb_cfg_rd_en)
-        m.wire(self.io.glb_cfg.rd_clk_en,
-                  self.underlying.ports.glb_cfg_rd_clk_en)
-        m.wire(self.io.glb_cfg.rd_addr,
-                  self.underlying.ports.glb_cfg_rd_addr)
-        m.wire(self.underlying.ports.glb_cfg_rd_data,
-                  self.io.glb_cfg.rd_data)
-        m.wire(self.underlying.ports.glb_cfg_rd_data_valid,
-                  self.io.glb_cfg.rd_data_valid)
+        m.wire(self.io.glb_cfg.wr_en, self.underlying.glb_cfg_wr_en)
+        m.wire(self.io.glb_cfg.wr_clk_en, self.underlying.glb_cfg_wr_clk_en)
+        m.wire(self.io.glb_cfg.wr_addr, self.underlying.glb_cfg_wr_addr)
+        m.wire(self.io.glb_cfg.wr_data, self.underlying.glb_cfg_wr_data)
+        m.wire(self.io.glb_cfg.rd_en, self.underlying.glb_cfg_rd_en)
+        m.wire(self.io.glb_cfg.rd_clk_en, self.underlying.glb_cfg_rd_clk_en)
+        m.wire(self.io.glb_cfg.rd_addr, self.underlying.glb_cfg_rd_addr)
+        m.wire(self.underlying.glb_cfg_rd_data, self.io.glb_cfg.rd_data)
+        m.wire(self.underlying.glb_cfg_rd_data_valid,
+               self.io.glb_cfg.rd_data_valid)
 
         # global buffer sram configuration
-        m.wire(self.io.sram_cfg.wr_en,
-                  self.underlying.ports.sram_cfg_wr_en)
-        m.wire(self.io.sram_cfg.wr_clk_en,
-                  self.underlying.ports.sram_cfg_wr_clk_en)
-        m.wire(self.io.sram_cfg.wr_addr,
-                  self.underlying.ports.sram_cfg_wr_addr)
-        m.wire(self.io.sram_cfg.wr_data,
-                  self.underlying.ports.sram_cfg_wr_data)
-        m.wire(self.io.sram_cfg.rd_en,
-                  self.underlying.ports.sram_cfg_rd_en)
-        m.wire(self.io.sram_cfg.rd_clk_en,
-                  self.underlying.ports.sram_cfg_rd_clk_en)
-        m.wire(self.io.sram_cfg.rd_addr,
-                  self.underlying.ports.sram_cfg_rd_addr)
-        m.wire(self.underlying.ports.sram_cfg_rd_data,
-                  self.io.sram_cfg.rd_data)
-        m.wire(self.underlying.ports.sram_cfg_rd_data_valid,
-                  self.io.sram_cfg.rd_data_valid)
+        m.wire(self.io.sram_cfg.wr_en, self.underlying.sram_cfg_wr_en)
+        m.wire(self.io.sram_cfg.wr_clk_en, self.underlying.sram_cfg_wr_clk_en)
+        m.wire(self.io.sram_cfg.wr_addr, self.underlying.sram_cfg_wr_addr)
+        m.wire(self.io.sram_cfg.wr_data, self.underlying.sram_cfg_wr_data)
+        m.wire(self.io.sram_cfg.rd_en, self.underlying.sram_cfg_rd_en)
+        m.wire(self.io.sram_cfg.rd_clk_en, self.underlying.sram_cfg_rd_clk_en)
+        m.wire(self.io.sram_cfg.rd_addr, self.underlying.sram_cfg_rd_addr)
+        m.wire(self.underlying.sram_cfg_rd_data, self.io.sram_cfg.rd_data)
+        m.wire(self.underlying.sram_cfg_rd_data_valid,
+               self.io.sram_cfg.rd_data_valid)
 
         # start/done pulse
-        m.wire(self.underlying.ports.strm_f2g_interrupt_pulse,
-                  self.io.strm_f2g_interrupt_pulse)
-        m.wire(self.underlying.ports.strm_g2f_interrupt_pulse,
-                  self.io.strm_g2f_interrupt_pulse)
-        m.wire(self.underlying.ports.pcfg_g2f_interrupt_pulse,
-                  self.io.pcfg_g2f_interrupt_pulse)
+        m.wire(self.underlying.strm_f2g_interrupt_pulse,
+               self.io.strm_f2g_interrupt_pulse)
+        m.wire(self.underlying.strm_g2f_interrupt_pulse,
+               self.io.strm_g2f_interrupt_pulse)
+        m.wire(self.underlying.pcfg_g2f_interrupt_pulse,
+               self.io.pcfg_g2f_interrupt_pulse)
         m.wire(self.io.strm_start_pulse,
-                  self.underlying.ports.strm_start_pulse)
+               self.underlying.strm_start_pulse)
         m.wire(self.io.pc_start_pulse,
-                  self.underlying.ports.pc_start_pulse)
+               self.underlying.pc_start_pulse)
 
         # cgra configuration interface
-        m.wire(self.underlying.ports.cgra_cfg_addr,
-                  self.io.cgra_config.config_addr)
-        m.wire(self.underlying.ports.cgra_cfg_wr_data,
-                  self.io.cgra_config.config_data)
-        m.wire(self.underlying.ports.cgra_cfg_read,
-                  self.io.cgra_config.read[0])
-        m.wire(self.underlying.ports.cgra_cfg_write,
-                  self.io.cgra_config.write[0])
+        m.wire(self.underlying.cgra_cfg_addr,
+               self.io.cgra_config.config_addr)
+        m.wire(self.underlying.cgra_cfg_wr_data,
+               self.io.cgra_config.config_data)
+        m.wire(self.underlying.cgra_cfg_read,
+               self.io.cgra_config.read[0])
+        m.wire(self.underlying.cgra_cfg_write,
+               self.io.cgra_config.write[0])
         m.wire(self.io.read_data_in,
-                  self.underlying.ports.cgra_cfg_rd_data)
+               self.underlying.cgra_cfg_rd_data)
 
         # axi4-lite slave interface
         m.wire(self.io.axi4_slave.awaddr,
