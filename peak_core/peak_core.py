@@ -84,10 +84,10 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
         return self.__asm.assemble(instr)
 
 
-class PassThroughReg(Generator):
+class PassThroughReg(m.Generator2):
     def __init__(self, name: str):
-        super().__init__(name=name)
-        self.add_ports(
+        self.name = name
+        self.io = m.IO(
             config_addr=m.In(m.Bits[8]),
             config_addr_out=m.Out(m.Bits[8]),
             config_data=m.In(m.Bits[32]),
@@ -101,11 +101,11 @@ class PassThroughReg(Generator):
         )
         self.width = 32
 
-        self.wire(self.ports.config_addr, self.ports.config_addr_out)
-        self.wire(self.ports.config_data, self.ports.config_data_out)
-        self.wire(self.ports.config_en, self.ports.config_en_out)
-        self.wire(self.ports.reset, self.ports.reset_out)
-        self.wire(self.ports.O_in, self.ports.O)
+        m.wire(self.io.config_addr, self.io.config_addr_out)
+        m.wire(self.io.config_data, self.io.config_data_out)
+        m.wire(self.io.config_en, self.io.config_en_out)
+        m.wire(self.io.reset, self.io.reset_out)
+        m.wire(self.io.O_in, self.io.O)
 
         self.addr = 0
 
@@ -128,13 +128,14 @@ class PassThroughReg(Generator):
 class PeakCore(ConfigurableCore):
     def __init__(self, peak_generator):
         super().__init__(8, 32)
+        self.name = "PE"
         self.ignored_ports = {"clk_en", "reset", "config_addr", "config_data",
                               "config_en", "read_config_data"}
 
         self.wrapper = _PeakWrapper(peak_generator)
 
-        # Generate core RTL (as magma).
-        self.peak_circuit = FromMagma(self.wrapper.rtl())
+        # Generate core RTL
+        self.peak_circuit = self.wrapper.rtl()
 
         # Add input/output ports and wire them.
         inputs = self.wrapper.inputs()
@@ -144,14 +145,14 @@ class PeakCore(ConfigurableCore):
                 if name in self.ignored_ports:
                     continue
                 magma_type = _convert_type(typ)
-                self.add_port(name, dir_(magma_type))
-                my_port = self.ports[name]
+                self.io += m.IO(**{name: dir_(magma_type)})
+                my_port = getattr(self.io, name)
                 if magma_type is m.Bits[1]:
                     my_port = my_port[0]
                 magma_name = name if dir_ is m.In else f"O{i}"
-                self.wire(my_port, self.peak_circuit.ports[magma_name])
+                m.wire(my_port, getattr(self.peak_circuit, magma_name)
 
-        self.add_ports(
+        self.io += m.IO(
             config=m.In(ConfigurationType(8, 32)),
             stall=m.In(m.Bits[1])
         )
@@ -169,26 +170,26 @@ class PeakCore(ConfigurableCore):
             ub = min(i * 32 + 32, config_width)
             len_ = ub - lb
             self.reg_width[name] = len_
-            self.wire(self.registers[name].ports.O[:len_],
-                      self.peak_circuit.ports[instr_name][lb:ub])
+            m.wire(self.registers[name].O[:len_],
+                   getattr(self.peak_circuit, instr_name)[lb:ub])
 
         # connecting the wires
         # TODO: connect this wire once lassen has async reset
-        self.wire(self.ports.reset, self.peak_circuit.ports.ASYNCRESET)
+        m.wire(self.io.reset, self.peak_circuit.ASYNCRESET)
 
         # wire the fake register to the actual lassen core
         ports = ["config_data", "config_addr"]
         for port in ports:
-            self.wire(self.ports.config[port], self.peak_circuit.ports[port])
+            m.wire(self.io.config[port], getattr(self.peak_circuit, port))
             # self.wire(reg1.ports[reg_port], self.peak_circuit.ports[port])
 
         # wire it to 0, since we'll never going to use it
-        self.wire(Const(0), self.peak_circuit.ports.config_en)
+        m.wire(0, self.peak_circuit.config_en)
 
         # PE core uses clk_en (essentially active low stall)
-        self.stallInverter = FromMagma(mantle.DefineInvert(1))
-        self.wire(self.stallInverter.ports.I, self.ports.stall)
-        self.wire(self.stallInverter.ports.O[0], self.peak_circuit.ports.clk_en)
+        self.stallInverter = mantle.DefineInvert(1)
+        m.wire(self.stallInverter.I, self.io.stall)
+        m.wire(self.stallInverter.O[0], self.peak_circuit.clk_en)
 
         self._setup_config()
 
@@ -221,5 +222,3 @@ class PeakCore(ConfigurableCore):
         # PE has highest priority
         return PnRTag("p", self.DEFAULT_PRIORITY, self.DEFAULT_PRIORITY)
 
-    def name(self):
-        return "PE"
