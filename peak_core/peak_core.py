@@ -8,7 +8,6 @@ from peak.family import PyFamily, MagmaFamily
 import mantle
 from gemstone.common.core import ConfigurableCore, PnRTag
 from gemstone.common.configurable import ConfigurationType
-from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.const import Const
 from gemstone.generator.generator import Generator
 from collections import OrderedDict
