@@ -4,7 +4,7 @@ from io_core.io_core_magma import IOCoreValid
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import Configurable, ConfigurationType
 from canal.circuit import flatten_mux
-import magma
+import magma as m
 import mantle
 
 
@@ -12,19 +12,18 @@ class PowerDomainConfigReg(Configurable):
     def __init__(self, config_addr_width: int,
                  config_data_width: int):
         super().__init__(config_addr_width, config_data_width)
+        self.name = "PowerDomainConfigReg"
         ps_config_name = "ps_en"
         # ps
         self.add_config(ps_config_name, 1)
-        self.add_ports(
-            config=magma.In(ConfigurationType(config_addr_width,
-                                              config_data_width)),
+        self.io += m.IO(
+            config=m.In(ConfigurationType(config_addr_width,
+                                          config_data_width)),
+            ps_en_out=m.Out(m.Bits[1])
         )
-        self.add_port("ps_en_out", magma.Out(magma.Bits[1]))
-        self.wire(self.ports.ps_en_out, self.registers.ps_en.ports.O)
+        m.wire(self.io.ps_en_out, self.registers.ps_en.O)
         self._setup_config()
 
-    def name(self):
-        return "PowerDomainConfigReg"
 
     def configure(self, turn_off: bool):
         assert turn_off in {0, 1, True, False}
@@ -100,39 +99,36 @@ def add_power_domain(interconnect: Interconnect):
             replace(cb, old_mux, new_mux)
 
 
-class PowerDomainOR(Generator):
+class PowerDomainOR(m.Generator2):
     def __init__(self, config_data_width: int):
-        super().__init__("PowerDomainOR")
+        self.name = "PowerDomainOR"
 
-        self.not_gate = FromMagma(mantle.DefineInvert(1))
+        self.not_gate = mantle.DefineInvert(1)
         self._and_gate = [None] * config_data_width
 
         for i in range(config_data_width):
-            self._and_gate[i] = FromMagma(mantle.DefineAnd(2, 1))
+            self._and_gate[i] = mantle.DefineAnd(2, 1)
 
         for i in range(config_data_width):
-            self.wire(self._and_gate[i].ports.I1[0], self.not_gate.ports.O[0])
+            m.wire(self._and_gate[i].I1[0], self.not_gate.O[0])
 
-        self._or_gate = FromMagma(mantle.DefineOr(2, config_data_width))
+        self._or_gate = mantle.DefineOr(2, config_data_width)
 
         for i in range(config_data_width):
-            self.wire(self._and_gate[i].ports.O[0], self._or_gate.ports.I0[i])
+            m.wire(self._and_gate[i].O[0], self._or_gate.I0[i])
 
         # only add necessary ports here so that we can replace without
         # problem
-        self.add_ports(
-            I0=magma.In(magma.Bits[config_data_width]),
-            I1=magma.In(magma.Bits[config_data_width]),
-            O=magma.Out(magma.Bits[config_data_width])
+        self.io = m.IO(
+            I0=m.In(m.Bits[config_data_width]),
+            I1=m.In(m.Bits[config_data_width]),
+            O=m.Out(m.Bits[config_data_width])
         )
         for i in range(config_data_width):
-            self.wire(self.ports.I0[i], self._and_gate[i].ports.I0[0])
+            m.wire(self.io.I0[i], self._and_gate[i].I0[0])
 
-        self.wire(self.ports.I1, self._or_gate.ports.I1)
-        self.wire(self._or_gate.ports.O, self.ports.O)
-
-    def name(self):
-        return "PowerDomainOR"
+        m.wire(self.io.I1, self._or_gate.I1)
+        m.wire(self._or_gate.O, self.io.O)
 
 
 def add_aon_read_config_data(interconnect: Interconnect):
@@ -156,7 +152,7 @@ def add_aon_read_config_data(interconnect: Interconnect):
                 replace(tile, child, pd_or)
 
                 # add config input to the the module
-                pd_or.add_port("I_not", magma.In(magma.Bits[1]))
+                pd_or.add_port("I_not", m.In(m.Bits[1]))
                 tile.wire(pd_or.ports.I_not, pd_feature.ports.ps_en_out)
                 pd_or.wire(pd_or.ports.I_not, pd_or.not_gate.ports.I)
                 break
