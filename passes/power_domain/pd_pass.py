@@ -130,7 +130,9 @@ def add_aon_read_config_data(interconnect: Interconnect):
                 replace(tile, child, pd_or)
 
                 # add config input to the the module
+                # TODO: Find a way to include this port in original
+                # description without breaking replacement pass
                 pd_or.add_port("I_not", m.In(m.Bits[1]))
-                tile.wire(pd_or.ports.I_not, pd_feature.ports.ps_en_out)
-                pd_or.wire(pd_or.ports.I_not, pd_or.not_gate.ports.I)
+                m.wire(pd_or.I_not, pd_feature.ps_en_out)
+                m.wire(pd_or.I_not, pd_or.not_gate.I)
                 break
