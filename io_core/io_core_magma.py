@@ -1,6 +1,5 @@
 import magma as m
 from gemstone.common.core import ConfigurableCore, PnRTag, ConfigurationType, Core
-from gemstone.generator import FromMagma
 from kratos import Generator, posedge, always_ff, mux
 from kratos.util import to_magma
 
@@ -135,7 +134,7 @@ class IOCoreValid(ConfigurableCore, IOCoreBase):
         m.wire(self.io.glb2io_1, self.io.io2f_1)
         m.wire(self.io.f2io_16, self.io.io2glb_16)
 
-        self.core = FromMagma(KratosValidIOCore.get_core(22))
+        self.core = KratosValidIOCore.get_core(22)
         for p in {"clk", "reset", "stall"}:
             m.wire(self.io[p], self.core.ports[p])
         self.add_config("max_cycle", max_cycle_width)
