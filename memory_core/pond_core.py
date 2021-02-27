@@ -1,10 +1,8 @@
 import magma
-from gemstone.generator.from_magma import FromMagma
 from typing import List
 from lake.top.pond import Pond
 from lake.top.extract_tile_info import *
 import kratos as kts
-from gemstone.generator.from_magma import FromMagma
 from typing import List
 from lake.top.pond import Pond
 from lake.top.extract_tile_info import *
@@ -85,7 +83,7 @@ class PondCore(LakeCoreBase):
             circ, self.dut = LakeCoreBase._circuit_cache[cache_key]
 
         # Save as underlying circuit object
-        self.underlying = FromMagma(circ)
+        self.underlying = circ
 
         self.wrap_lake_core()
 
