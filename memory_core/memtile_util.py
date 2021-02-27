@@ -9,7 +9,6 @@ from gemstone.common.configurable import ConfigurationType, \
 from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
 from gemstone.common.mux_wrapper import MuxWrapper
 from gemstone.generator.const import Const
-from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.from_verilog import FromVerilog
 from typing import List
 from lake.top.lake_top import LakeTop
@@ -251,7 +250,7 @@ class LakeCoreBase(ConfigurableCore):
 
         # SRAM
         # These should also account for num features
-        # or_all_cfg_rd = FromMagma(mantle.DefineOr(4, 1))
+        # or_all_cfg_rd = mantle.DefineOr(4, 1)
         if self.num_sram_features > 0:
             or_all_cfg_rd = mantle.DefineOr(self.num_sram_features, 1)
             or_all_cfg_rd.instance_name = f"OR_CONFIG_WR_SRAM"

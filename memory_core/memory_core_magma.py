@@ -3,7 +3,6 @@ import tempfile
 import urllib.request
 from canal.interconnect import Interconnect
 from gemstone.generator.const import Const
-from gemstone.generator.from_magma import FromMagma
 from gemstone.common.core import PnRTag
 from typing import List
 from lake.top.lake_top import LakeTop
@@ -177,7 +176,7 @@ class MemCore(LakeCoreBase):
             circ, self.dut = LakeCoreBase._circuit_cache[cache_key]
 
         # Save as underlying circuit object
-        self.underlying = FromMagma(circ)
+        self.underlying = circ
 
         self.wrap_lake_core()
 
