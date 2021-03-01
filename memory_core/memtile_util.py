@@ -1,31 +1,19 @@
-from gemstone.common.util import compress_config_data
+from gemstone.common.testers import BasicTester
+from canal.util import IOSide
 import magma
-import tempfile
-from magma.logging import flush
 import mantle
-import urllib.request
-import collections
 from canal.interconnect import Interconnect
-from gemstone.common.configurable import ConfigurationType, \
-    ConfigRegister, _generate_config_register
+from gemstone.common.configurable import ConfigurationType
 from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
 from gemstone.common.mux_wrapper import MuxWrapper
-from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
-from gemstone.generator.from_verilog import FromVerilog
 from typing import List
-from lake.top.lake_top import LakeTop
-from lake.top.pond import Pond
-from lake.passes.passes import change_sram_port_names
-from lake.passes.passes import lift_config_reg
-from lake.utils.sram_macro import SRAMMacroInfo
+# from memory_core.intersect_core import IntersectCore
+from gemstone.common.util import compress_config_data
+# from memory_core.scanner_core import ScannerCore
 from lake.top.extract_tile_info import *
-from lake.utils.parse_clkwork_csv import generate_data_lists
-import lake.utils.parse_clkwork_config as lake_parse_conf
-from lake.utils.util import get_configs_dict, set_configs_sv, extract_formal_annotation
-import math
-import kratos as kts
 from archipelago import pnr
+# from cgra.util import create_cgra
 
 
 class LakeCoreBase(ConfigurableCore):
@@ -360,6 +348,8 @@ class NetlistBuilder():
         self._flushable = []
         self._cores = []
         self._core_config = {}
+        self._config_finalized = False
+        self._circuit = None
 
     def register_core(self, core, flushable=False, config=None):
         ''' Register the core/primitive with the
@@ -442,7 +432,17 @@ class NetlistBuilder():
         return self._config_data
 
     def get_config_data(self):
-        return self._config_data
+        """Returns the final configuration stream for programming the app
+
+        Returns:
+            list: final bitstream to plug into the chip
+        """
+        if self._config_finalized:
+            return self._config_data
+        else:
+            print("Config not finalized...finalizing")
+            self.finalize_config()
+            return self._config_data
 
     def get_placement(self):
         if self._placement_up_to_date is False:
@@ -452,13 +452,32 @@ class NetlistBuilder():
     def get_handle(self, core, prefix="glb2io_1_X"):
         self.get_placement()
         core_x, core_y = self._placement[core]
-        return f"{prefix}X{core_x:02X}_Y{core_y:02X}"
+        return self._circuit.interface[f"{prefix}X{core_x:02X}_Y{core_y:02X}"]
+
+    def get_handle_str(self, base_sig):
+        return self._circuit.interface[base_sig]
 
     def add_config(self, new_config):
         self._config_data += new_config
 
     def get_flushable(self):
         return self._flushable
+
+    def connections_from_json(self, conn_json):
+        """Returns high-level connections for building netlist from json
+
+        Args:
+            conn_json (list): List of connections to use
+
+        Returns:
+            list: concatenated list from json
+        """
+        ret_conns = []
+        for conn_block_name, connections_list in conn_json.items():
+            print(f"Adding connection block: {conn_block_name}")
+            assert isinstance(connections_list, list), f"Expecting list of connections at: {conn_block_name}"
+            ret_conns += connections_list
+        return ret_conns
 
     def emit_flush_connection(self, flush_handle):
         return [([(flush_handle, "io2f_1"), *[(x, "flush") for x in self._flushable]], 1)]
@@ -479,3 +498,25 @@ class NetlistBuilder():
     def finalize_config(self):
         skip_addr = self._interconnect.get_skip_addr()
         self._config_data = compress_config_data(self._config_data, skip_compression=skip_addr)
+        self._config_finalized = True
+
+    def get_tester(self):
+        assert self._interconnect is not None, "Need to define the interconnect first..."
+        self._circuit = self._interconnect.circuit()
+        self._tester = BasicTester(self._circuit, self._circuit.clk, self._circuit.reset)
+        return self._tester
+
+    def get_circuit(self):
+        return self._circuit
+
+    def configure_circuit(self, readback=False):
+        cfgdat = self._config_data
+        for addr, index in cfgdat:
+            self._tester.configure(addr, index)
+            if readback is True:
+                self._tester.config_read(addr)
+            self._tester.eval()
+
+    @staticmethod
+    def io_sides():
+        return IOSide.North | IOSide.East | IOSide.South | IOSide.West
