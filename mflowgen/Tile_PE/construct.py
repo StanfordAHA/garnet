@@ -15,12 +15,18 @@ from mflowgen.components import Graph, Step
 # Find and import easysteps
 # E.g. curdir='/foo/garnet_repo/mflowgen/Tile_PE' => easysteps='../easysteps'
 script_dir=os.path.dirname(os.path.realpath(__file__))
-sys.path.append(script_dir + '/../easysteps')
 
+sys.path.append(script_dir + '/../easysteps')
 from easysteps import extend_steps
 from easysteps import add_custom_steps
 from easysteps import add_default_steps
-from easysteps import connect_outstanding_nodes
+# from easysteps import connect_outstanding_nodes
+
+sys.path.append(script_dir + '/../esteps2')
+from esteps2 import CStep
+from esteps2 import DStep
+from esteps2 import EStep
+from esteps2 import connect_outstanding_nodes
 
 def construct():
 
@@ -94,39 +100,22 @@ def construct():
 
   # Custom steps
 
-  add_custom_steps(g, """
-
-        rtl                - ../common/rtl                  -> synth
-        constraints        - constraints                    -> synth iflow
-        custom_dc_scripts  - custom-dc-scripts              -> iflow
-        testbench          - ../common/testbench            -> post_pnr_power
-        application        - ../common/application          -> post_pnr_power testbench
-        post_pnr_power     - ../common/tile-post-pnr-power
-
-  """, DBG=1)
-
+  rtl                  = CStep( g, '/../common/rtl',                ['synth'] )
+  constraints          = CStep( g, "constraints",                   ['synth','iflow'] )
+  custom_init          = EStep( g, 'custom-init',                   ['init'] )
+  custom_genus_scripts = EStep( g, 'custom-genus-scripts',          [ 'synth' ] )
+  custom_flowgen_setup = EStep( g, 'custom-flowgen-setup',          [ 'iflow' ] )
+  custom_power         = EStep( g, '../common/custom-power-leaf',   [ 'power' ] )
+  short_fix            = EStep( g, '../common/custom-short-fix',    [ 'postroute' ] )
+  genlibdb_constraints = EStep( g, '../common/custom-genlibdb-constraints', [ 'genlibdb' ] )
+  custom_timing_assert = EStep( g, '../common/custom-timing-assert',[ 'synth','postcts_hold','signoff' ] )
+  custom_dc_scripts    = CStep( g, "custom-dc-scripts",             ['iflow'] )
+  testbench            = CStep( g, "../common/testbench",           ['post_pnr_power'] )
+  application          = CStep( g, "../common/application",         ['post_pnr_power', 'testbench'] )
   if synth_power:
-    add_custom_steps(g, "post_synth_power ../common/tile-post-synth-power")
-
-
-  # Extension steps (steps that connect *all* outputs to each successor node)
-
-  extend_steps(g, """
-
-    # Add extra input edges to innovus steps that need custom tweaks
-    custom_init          - custom-init                           -> init
-    custom_power         - ../common/custom-power-leaf           -> power
-    custom_genus_scripts - custom-genus-scripts                  -> synth
-    custom_flowgen_setup - custom-flowgen-setup                  -> iflow
-    genlibdb_constraints - ../common/custom-genlibdb-constraints -> genlibdb
-
-    # Provides script for fixing shorts caused by steps up to and including postroute
-    short_fix - ../common/custom-short-fix -> postroute
-
-    # Add custom timing scripts
-    custom_timing_assert - ../common/custom-timing-assert -> synth postcts_hold signoff
-
-  """, DBG=1)
+    # add_custom_steps(g, "post_synth_power ../common/tile-post-synth-power")
+    post_synth_power = CStep(g, "../common/tile-post-synth-power", [] )
+  post_pnr_power = CStep(g, "../common/tile-post-pnr-power", [] )
 
   # Power aware setup
   power_domains = None
@@ -136,39 +125,26 @@ def construct():
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
   # Default steps
-
-  add_default_steps(g, """
-    info         - info
-    init         - cadence-innovus-init          -> power
-    power        - cadence-innovus-power         -> place
-    place        - cadence-innovus-place         -> cts
-    cts          - cadence-innovus-cts           -> postcts_hold
-    postcts_hold - cadence-innovus-postcts_hold  -> route
-    route        - cadence-innovus-route         -> postroute
-    postroute    - cadence-innovus-postroute     -> signoff
-    pt_signoff   - synopsys-pt-timing-signoff    -> post_pnr_power
-    genlibdb     - cadence-genus-genlib
-  """, DBG=1)
-
-  add_default_steps(g, """
-    synth   - cadence-genus-synthesis       
-            -> iflow init power place cts custom_flowgen_setup
-
-    iflow   - cadence-innovus-flowsetup     
-            -> init power place cts postcts_hold route postroute signoff
-
-    signoff - cadence-innovus-signoff       
-            -> drc lvs genlibdb post_pnr_power pt_signoff
-  """)
-
+  info         = DStep( g, 'info', [] )
+  synth        = DStep( g, 'cadence-genus-synthesis',     ['iflow','init','power','place','cts','custom_flowgen_setup'])
+  iflow        = DStep( g, 'cadence-innovus-flowsetup',   ['init','power','place','cts','postcts_hold','route','postroute','signoff'])
+  init         = DStep( g, 'cadence-innovus-init',        ['power'] )
+  power        = DStep( g, 'cadence-innovus-power',       ['place'] )
+  place        = DStep( g, 'cadence-innovus-place',       ['cts'] )
+  cts          = DStep( g, 'cadence-innovus-cts',         ['postcts_hold'] )
+  postcts_hold = DStep( g, 'cadence-innovus-postcts_hold',['route'] )
+  route        = DStep( g, 'cadence-innovus-route',       ['postroute'] )
+  postroute    = DStep( g, 'cadence-innovus-postroute',   ['signoff'] )
+  signoff      = DStep( g, 'cadence-innovus-signoff',     ['drc','lvs','genlibdb','post_pnr_power','pt_signoff'])
+  pt_signoff   = DStep( g, 'synopsys-pt-timing-signoff',  ['post_pnr_power'] )
+  genlibdb     = DStep( g, 'cadence-genus-genlib',        [] )
   if which("calibre") is not None:
-      drc          = Step( 'mentor-calibre-drc',            default=True )
-      lvs          = Step( 'mentor-calibre-lvs',            default=True )
+      drc = Step( 'mentor-calibre-drc', default=True )
+      lvs = Step( 'mentor-calibre-lvs', default=True )
   else:
-      drc          = Step( 'cadence-pegasus-drc',           default=True )
-      lvs          = Step( 'cadence-pegasus-lvs',           default=True )
+      drc = Step( 'cadence-pegasus-drc', default=True )
+      lvs = Step( 'cadence-pegasus-lvs', default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
-
 
   # Extra input to DC for constraints
   synth.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl", "report_alu.py", "parse_alu.py"] )
