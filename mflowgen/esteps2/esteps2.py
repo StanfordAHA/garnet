@@ -42,18 +42,6 @@ def EStep(graph, stepdir, successors, DBG=1):
     _extnodes.append(step)  ;# Mark this step as an "extend" step
     return step
 
-
-# NOW:  step = _add_step_with_handle(graph, frame, n, is_default=False, DBG=DBG)
-# - uses n.name to name the step        
-
-# WANT: step = _add_step_with_handle(graph, frame, n, is_default=False, DBG=DBG)
-# - just returns a step
-
-
-
-
-# def _add_step_with_handle(graph, frame, node, is_default, DBG=0):
-# def _add_step_with_handle(graph, node, is_default, DBG=0):
 def _add_step_with_handle(graph, stepdir, successors, which, DBG=0):
       '''
       # Given a node with a stepname and associated dir, build the
@@ -70,61 +58,25 @@ def _add_step_with_handle(graph, stepdir, successors, which, DBG=0):
       #
       # Also: after step is built, add successors to todo list for later processing
       '''
-      frame = sys._getframe(2)
-
-
+      assert which in ['custom','default','extension']
       if DBG: print(f"Adding {which} step '{stepdir}' -> {successors}")
-      if which == 'custom':
-          is_default = False
-      elif which == 'default':
-          if DBG: print("Adding default step '{stepdir}' -> {successors}")
+
+      if which == 'default':
           is_default = True
-      elif which == 'extension':
-          if DBG: print("Adding exgtension step '{stepdir}' -> {successors}")
+      else:
           is_default = False
-
-
-
-#       stepname   = node.name
-#       assert stepname == 'e2'
-
-#       stepdir    = node.stepdir
-
-
-      # Start a todo list for connections from this node to yet-unresolved nodes
-#       if stepname != 'e2':
-#           _todo[stepname] = [] ; # Initialize todo list
-
-#       # Check for global/local collision etc
-#       if stepname in frame.f_locals:
-#         print(f'**ERROR local var "{stepname}" exists already; cannot build step via parsenode')
-#         print(f"rtl='{frame[0].f_locals[stepname]}'")
-#         assert False
-
-
-
 
       # Build the step and assign the handle
       if not is_default:
-        this_file = os.path.abspath( frame.f_globals['__file__'] )
-        this_dir  = os.path.dirname( this_file )
-
-        stepdir = this_dir + '/' + stepdir
-      # step = Step( this_dir + '/' + stepdir, default=is_default)
+          frame = sys._getframe(2)
+          this_file = os.path.abspath( frame.f_globals['__file__'] )
+          this_dir  = os.path.dirname( this_file )
+          stepdir   = this_dir + '/' + stepdir
 
       step = Step( stepdir, default=is_default)
 
-#       if stepname != 'e2':
-#           frame.f_globals[stepname] = step
-#       else:
-#           stepname = step
-#           _todo[stepname] = [] ; # Initialize todo list
-
-
       stepname = step
       _todo[stepname] = [] ; # Initialize todo list
-
-
 
       # Add step to graph
       graph.add_step(step)
