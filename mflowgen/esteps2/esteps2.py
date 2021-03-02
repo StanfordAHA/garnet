@@ -12,9 +12,10 @@ from mflowgen.components.step import Step
 
 # Private data structure for nodes
 class _Node:
-    def __init__(self, name, step, successors):
-        self.name = name
-        self.step = step
+    # def __init__(self, name, step, successors):
+    def __init__(self, stepdir, successors):
+        # self.name = name
+        self.stepdir = stepdir
         self.successors = successors
 
     def __repr__(self):
@@ -28,31 +29,16 @@ _todo    = {}   ;# Connections waiting to be made, used only by easysteps
 _extnodes= []   ;# List of extension nodes, used only by easysteps
 
 #   rtl = CStep(g, '/../common/rtl', 'synth')
-def CStep(graph, step, successors, DBG=1):
-    # node=ParseNodes._Node("e2", step, successors)
-    node=_Node("e2", step, successors)
-    frame = sys._getframe(1)
-    if DBG: print(f"Adding custom step {node.name}")
-    if DBG: print(f"  Found '{node.name}' - '{node.step}' -> {node.successors}   ")
-    step = _add_step_with_handle(graph, frame, node, is_default=False, DBG=DBG)
+def CStep(graph, stepdir, successors, DBG=1):
+    step = _add_step_with_handle(graph, stepdir, successors, 'custom', DBG=DBG)
     return step
 
-def DStep(graph, step, successors, DBG=1):
-    # node=ParseNodes._Node("e2", step, successors)
-    node=_Node("e2", step, successors)
-    frame = sys._getframe(1)
-    if DBG: print(f"Adding default step {node.name}")
-    if DBG: print(f"  Found '{node.name}' - '{node.step}' -> {node.successors}   ")
-    step = _add_step_with_handle(graph, frame, node, is_default=True, DBG=DBG)
+def DStep(graph, stepdir, successors, DBG=1):
+    step = _add_step_with_handle(graph, stepdir, successors, 'default', DBG=DBG)
     return step
 
-def EStep(graph, step, successors, DBG=1):
-    node=_Node("e2", step, successors)
-#     node=ParseNodes._Node("e2", step, successors)
-    frame = sys._getframe(1)
-    if DBG: print(f"Adding extension step {node.name}")
-    if DBG: print(f"  Found '{node.name}' - '{node.step}' -> {node.successors}   ")
-    step = _add_step_with_handle(graph, frame, node, is_default=False, DBG=DBG)
+def EStep(graph, stepdir, successors, DBG=1):
+    step = _add_step_with_handle(graph, stepdir, successors, 'extension', DBG=DBG)
     _extnodes.append(step)  ;# Mark this step as an "extend" step
     return step
 
@@ -66,7 +52,9 @@ def EStep(graph, step, successors, DBG=1):
 
 
 
-def _add_step_with_handle(graph, frame, node, is_default, DBG=0):
+# def _add_step_with_handle(graph, frame, node, is_default, DBG=0):
+# def _add_step_with_handle(graph, node, is_default, DBG=0):
+def _add_step_with_handle(graph, stepdir, successors, which, DBG=0):
       '''
       # Given a node with a stepname and associated dir, build the
       # step and make a handle for the step in the calling frame
@@ -82,19 +70,39 @@ def _add_step_with_handle(graph, frame, node, is_default, DBG=0):
       #
       # Also: after step is built, add successors to todo list for later processing
       '''
-      stepname   = node.name
-      stepdir    = node.step
-      print('foo', stepdir)
+      frame = sys._getframe(2)
+
+
+      if DBG: print(f"Adding {which} step '{stepdir}' -> {successors}")
+      if which == 'custom':
+          is_default = False
+      elif which == 'default':
+          if DBG: print("Adding default step '{stepdir}' -> {successors}")
+          is_default = True
+      elif which == 'extension':
+          if DBG: print("Adding exgtension step '{stepdir}' -> {successors}")
+          is_default = False
+
+
+
+#       stepname   = node.name
+#       assert stepname == 'e2'
+
+#       stepdir    = node.stepdir
+
 
       # Start a todo list for connections from this node to yet-unresolved nodes
-      if stepname != 'e2':
-          _todo[stepname] = [] ; # Initialize todo list
+#       if stepname != 'e2':
+#           _todo[stepname] = [] ; # Initialize todo list
 
-      # Check for global/local collision etc
-      if stepname in frame.f_locals:
-        print(f'**ERROR local var "{stepname}" exists already; cannot build step via parsenode')
-        print(f"rtl='{frame[0].f_locals[stepname]}'")
-        assert False
+#       # Check for global/local collision etc
+#       if stepname in frame.f_locals:
+#         print(f'**ERROR local var "{stepname}" exists already; cannot build step via parsenode')
+#         print(f"rtl='{frame[0].f_locals[stepname]}'")
+#         assert False
+
+
+
 
       # Build the step and assign the handle
       if not is_default:
@@ -105,17 +113,25 @@ def _add_step_with_handle(graph, frame, node, is_default, DBG=0):
       # step = Step( this_dir + '/' + stepdir, default=is_default)
 
       step = Step( stepdir, default=is_default)
-      if stepname != 'e2':
-          frame.f_globals[stepname] = step
-      else:
-          stepname = step
-          _todo[stepname] = [] ; # Initialize todo list
+
+#       if stepname != 'e2':
+#           frame.f_globals[stepname] = step
+#       else:
+#           stepname = step
+#           _todo[stepname] = [] ; # Initialize todo list
+
+
+      stepname = step
+      _todo[stepname] = [] ; # Initialize todo list
+
+
 
       # Add step to graph
       graph.add_step(step)
 
       # Add successors to todo list
-      for succ_name in node.successors:
+      # for succ_name in node.successors:
+      for succ_name in successors:
         if DBG: print(f"    Adding {stepname}->{succ_name} to todo list")
         _todo[stepname].append(succ_name)
 
