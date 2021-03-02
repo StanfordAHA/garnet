@@ -1,160 +1,132 @@
 #=========================================================================
-# easysteps.py
+# easysteps.py (esteps2 for now)
 #=========================================================================
 # Author : S. Richardson
 # Date   : February, 2021
 
 import os
 import sys
-
-# from parse import ParseNodes
 from mflowgen.components.step import Step
-
-# Private data structure for nodes
-class _Node:
-    # def __init__(self, name, step, successors):
-    def __init__(self, stepdir, successors):
-        # self.name = name
-        self.stepdir = stepdir
-        self.successors = successors
-
-    def __repr__(self):
-        s=f"({self.step})"
-        w=16
-        return(f"{self.name:{w}} {s:25} -> {self.successors}")
-
 
 # Persistent storage for todo list
 _todo    = {}   ;# Connections waiting to be made, used only by easysteps
 _extnodes= []   ;# List of extension nodes, used only by easysteps
 
-#   rtl = CStep(g, '/../common/rtl', 'synth')
-def CStep(graph, stepdir, successors, DBG=1):
-    step = _add_step_with_handle(graph, stepdir, successors, 'custom', DBG=DBG)
-    return step
+# C/D/EStep could be ?improved? with...what? decorators? kwargs?
 
-def DStep(graph, stepdir, successors, DBG=1):
-    step = _add_step_with_handle(graph, stepdir, successors, 'default', DBG=DBG)
-    return step
+def CStep(graph, stepdir, successors, DBG=0):
+    "E.g. rtl = CStep(g, '/../common/rtl', ['synth'])"
+    return _add_step_with_handle(graph, stepdir, successors, 'custom', DBG)
 
-def EStep(graph, stepdir, successors, DBG=1):
-    step = _add_step_with_handle(graph, stepdir, successors, 'extension', DBG=DBG)
-    _extnodes.append(step)  ;# Mark this step as an "extend" step
-    return step
+def DStep(graph, stepdir, successors, DBG=0):
+    return _add_step_with_handle(graph, stepdir, successors, 'default', DBG)
+
+def EStep(graph, stepdir, successors, DBG=0):
+    return _add_step_with_handle(graph, stepdir, successors, 'extension', DBG)
+
+
 
 def _add_step_with_handle(graph, stepdir, successors, which, DBG=0):
-      '''
-      # Given a node with a stepname and associated dir, build the
-      # step and make a handle for the step in the calling frame
-      # Nota bene: the handle will be a GLOBAL variable!
-      #
-      # Example:
-      #     frame = sys._getframe(1)
-      #     g.add_step_with_handle( 'rtl',  '/../common/rtl' )
-      #
-      # Does this:
-      #     rtl = Step( this_dir + '/../common/rtl' )
-      #     g.add_step( rtl )
-      #
-      # Also: after step is built, add successors to todo list for later processing
-      '''
-      assert which in ['custom','default','extension']
-      if DBG: print(f"Adding {which} step '{stepdir}' -> {successors}")
+    '''
+        # Build a step using the indicated step-defining directory.
+        # Add names of successors to a list for later processing.
+    '''
+    DBG=1 # for now, ABD (Always Be Debuggin)
+    assert which in ['custom','default','extension']
+    if DBG: print(f"Adding {which} step '{stepdir}' -> {successors}")
+    if which == 'default':
+        step_obj  = Step( stepdir, default=True)
+    else:
+        frame     = sys._getframe(2)
+        this_file = os.path.abspath( frame.f_globals['__file__'] )
+        this_dir  = os.path.dirname( this_file )
+        step_dir  = this_dir + '/' + stepdir
+        step_obj  = Step( step_dir, default=False)
 
-      if which == 'default':
-          is_default = True
-      else:
-          is_default = False
+    # Add step to graph
+    graph.add_step(step_obj)
 
-      # Build the step and assign the handle
-      if not is_default:
-          frame = sys._getframe(2)
-          this_file = os.path.abspath( frame.f_globals['__file__'] )
-          this_dir  = os.path.dirname( this_file )
-          stepdir   = this_dir + '/' + stepdir
+    # Build todo list
+    _todo[step_obj] = successors
 
-      step = Step( stepdir, default=is_default)
+    # Extension?
+    if which == 'extension':
+        _extnodes.append(step_obj)  ;# Mark this step as an "extend" step
 
-      stepname = step
-      _todo[stepname] = [] ; # Initialize todo list
+    if DBG: print('')
+    return step_obj
 
-      # Add step to graph
-      graph.add_step(step)
-
-      # Add successors to todo list
-      # for succ_name in node.successors:
-      for succ_name in successors:
-        if DBG: print(f"    Adding {stepname}->{succ_name} to todo list")
-        _todo[stepname].append(succ_name)
-
-      if DBG: print('')
-      return step
 
 def connect_outstanding_nodes(graph, DBG=0):
     '''
     # construct.py should call this method after all steps have been built,
     # to clear out the todo list.
     '''
-    print("PROCESSING CONNECTIONS IN TODO LIST")
+    DBG=1
+    if DBG: print("PROCESSING CONNECTIONS IN TODO LIST")
+
+    # Quick shortcut to avoid further problems
+    if _todo == {}: return
+
+    # Build dictionaries that map steps to names
+    # e.g. step_dict['adk'] = <mflowgen.components.step.Step object at 0x7f113f1f4490>
+    # step_dict_rev[<mflowgen.components.step.Step object at 0x7f113f1f4490>] = 'adk'
     frame = sys._getframe(1)
-    for from_name in _todo:
+    if DBG: print("Looking for step defs in caller")
+    (step_dict,step_dict_rev) = _build_step_dicts(frame, DBG)
 
-        try:
-            # Only global vars end up on the todo list, so 'from' node must be global
-            from_node = frame.f_globals[from_name]
-            from_key = from_name
-        except:
-            # Huh. not global. Must be that new thing
-            for lname in frame.f_locals:
-                lval = frame.f_locals[lname]
-                print(f'LOCAL {lname} = {lval}; =? {from_name} ?')
-                if lval == from_name: break
+    for from_step in _todo:
 
-            assert lval == from_name, "OOOOPS"
-            print("FOUNDIT")
-
-            from_key  = from_name
-            from_name = lname
-            from_node = lval
+        from_name = step_dict_rev[from_step]
+        if DBG: print(f'\nPROCESSING step {from_name}')
 
         # Must make shallow copy b/c we may be deleting elements in situ
-        to_list = _todo[from_key].copy() ;
+        to_list = _todo[from_step].copy() ;
 
         for to_name in to_list:
             if DBG: print(f"  CONNECTING {from_name} -> {to_name}")
 
-            # Don't know (yet) whether to_node is local or global to calling frame (construct.py)
-            to_node = _findvar(frame, to_name, DBG)
+            # to_node = _findvar(frame, to_name, DBG)
+
+            to_node = step_dict[to_name]
 
             # If "from" is an "extension" node, connect all "from" outputs as "to" inputs
-            if from_key in list(_extnodes):
+            if from_step in list(_extnodes):
               if DBG: print('    Extnode: connecting all outputs to dest node')
-              to_node.extend_inputs( from_node.all_outputs() )
+              to_node.extend_inputs( from_step.all_outputs() )
 
             # Connect "from" -> "to" nodes
-            graph.connect_by_name(from_node, to_node)
-            # if DBG: print(f'    CONNECTED {from_key} -> {to_name}')
-            if DBG: print('')
-            _todo[from_key].remove(to_name)
+            graph.connect_by_name(from_step, to_node)
+            # if DBG: print(f'    CONNECTED {from_step} -> {to_name}')
+            # if DBG: print('')
+            _todo[from_step].remove(to_name)
 
-            # if DBG: print(f'    REMOVED from todo list: {from_key} -> {to_name}\n')
+            # if DBG: print(f'    REMOVED from todo list: {from_step} -> {to_name}\n')
 
-def _findvar(frame, varname, DBG=0):
-    "Search given frame for local or global var 'varname'"
+def _build_step_dicts(frame, DBG=0):
+    """
+    Build a dictionary that maps steps to names
+    e.g. step_dict['adk'] = <mflowgen.components.step.Step object at 0x7f113f1f4490>
+    """
 
-    # print(f"Look for varname '{varname}' among list of frame's locals")
-    try:
-        value = frame.f_locals[varname] ;# This will fail if local not exists
-        if DBG: print(f"    Found local var '{varname}'")
-        return value
-    except: pass
+    # Get a handle on the step type using first item in the populated _todo list
+    # e.g. step_type=<class 'mflowgen.components.step.Step'>
+    step_type = type( list(_todo.keys())[0] )
 
-    # print(f"    {varname} not local, is it global perchance? ", end='')
-    try:
-        value = frame.f_globals[varname] ;# This will fail if global not exists
-        if DBG: print(f"    Found global var '{varname}'")
-        return value
-    except: pass
+    # Search calling frame for steps, build a dictionary
+    step_dict = {}
+    step_dict_rev = {}
+    for lname in frame.f_locals:
+        lval = frame.f_locals[lname]
+        if type(lval) == step_type:
+            if DBG>9: print(f"  FOUND step {lname:20} = {lval}")
+            step_dict[lname]    = lval
+            step_dict_rev[lval] = lname
 
-    # Give up
-    print(f"**ERROR Could not find '{varname}'"); assert False
+    # Sort main dictionary by key why not
+    step_dict = dict(sorted(step_dict.items()))
+    if DBG>1:
+        print('Sorted list of steps')
+        for k in step_dict: print(f"  {k:20} = {step_dict[k]}")
+
+    return (step_dict, step_dict_rev)
