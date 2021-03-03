@@ -11,7 +11,7 @@ sram_name+="_130a"
 
 ##############################################################################
 USE_CACHED=True
-if [ USE_CACHED == True ]; then
+if [ $USE_CACHED == True ]; then
     GOLD=/build/gold.222/full_chip/17-tile_array/16-Tile_MemCore/12-gen_sram_macro
     ln -s $GOLD/outputs
     ln -s $GOLD/lib2db
