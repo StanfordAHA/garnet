@@ -8,22 +8,33 @@ if [ $partial_write == True ]; then
 fi
 
 sram_name+="_130a"
-cmd="./inputs/adk/mc/${mc_name}/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
-if [ ! $partial_write == True ]; then
-  cmd+=" -NonBWEB"
+
+##############################################################################
+USE_CACHED=True
+if [ USE_CACHED == True ]; then
+    GOLD=/build/gold.222/full_chip/17-tile_array/16-Tile_MemCore/12-gen_sram_macro
+    ln -s $GOLD/outputs
+    ln -s $GOLD/lib2db
+
+else
+    cmd="./inputs/adk/mc/${mc_name}/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
+    if [ ! $partial_write == True ]; then
+        cmd+=" -NonBWEB"
+    fi
+    eval $cmd
+
+    ln -s ../$sram_name/NLDM/${sram_name}_${corner}.lib outputs/sram_tt.lib
+    ln -s ../$sram_name/NLDM/${sram_name}_${bc_corner}.lib outputs/sram_ff.lib
+    ln -s ../$sram_name/GDSII/${sram_name}_m4xdh.gds outputs/sram.gds
+    ln -s ../$sram_name/LEF/${sram_name}_m4xdh.lef outputs/sram.lef
+    ln -s ../$sram_name/VERILOG/${sram_name}_pwr.v outputs/sram-pwr.v
+    ln -s ../$sram_name/VERILOG/${sram_name}.v outputs/sram.v
+    ln -s ../$sram_name/SPICE/${sram_name}.spi outputs/sram.spi
+
+    cd lib2db/
+    make
 fi
+##############################################################################
 
-eval $cmd
-
-ln -s ../$sram_name/NLDM/${sram_name}_${corner}.lib outputs/sram_tt.lib
-ln -s ../$sram_name/NLDM/${sram_name}_${bc_corner}.lib outputs/sram_ff.lib
-ln -s ../$sram_name/GDSII/${sram_name}_m4xdh.gds outputs/sram.gds
-ln -s ../$sram_name/LEF/${sram_name}_m4xdh.lef outputs/sram.lef
-ln -s ../$sram_name/VERILOG/${sram_name}_pwr.v outputs/sram-pwr.v
-ln -s ../$sram_name/VERILOG/${sram_name}.v outputs/sram.v
-ln -s ../$sram_name/SPICE/${sram_name}.spi outputs/sram.spi
-
-cd lib2db/
-make
 cd ..
 
