@@ -165,3 +165,73 @@ def _build_step_dicts(frame, DBG=0):
         for k in step_dict: print(f"  {k:20} = {step_dict[k]}")
 
     return (step_dict, step_dict_rev)
+
+
+#       reorder(place,
+#               'before main.tcl: conn-aon-cells-vdd.tcl',
+#               'after  main.tcl: check-clamp-logic-structure.tcl'
+#               'last           : check-clamp-logic-structure.tcl'
+#       )
+# 
+#       reorder(cts,
+#               'first: conn-aon-cells-vdd.tcl',
+#               'last:  check-clamp-logic-structure.tcl'
+#       )
+
+
+
+def reorder(step, *args, DBG=0):
+    DBG=1
+    order = step.get_param('order')
+
+    for a in args:
+        # Separate "where" ('begin') and "what" ('foo.tcl')
+        # where e.g. a="begin : conn-aon-cells-vdd.tcl"
+        (where,what) = a.split(':')
+
+        # Strip out all whitespace (trust me)
+        where = re.sub(r'\s+', '', where)
+        what = re.sub(r'\s+', '', what)
+        if DBG>9: print(f'where="{where}", what="{what}" foozey')
+
+        # 'where' can be one of:
+        #    "first"
+        #    "last"
+        #    "before <filename>"
+        #    "after <filename>"
+        #    "then"
+
+        if where == "first":
+            if DBG: print(f"reorder: add '{what}' as FIRST in order list")
+            order.insert( 0, what ) # add here
+
+        elif where == "last":
+            if DBG: print(f"reorder: add '{what}' as LAST in order list")
+            order.append(what)
+
+        elif where[0:5] == "after":
+            filename = where[5:]
+            if DBG: print(f"reorder: add '{what}' AFTER '{filename}'")
+            read_idx = order.index( filename )
+            order.insert(read_idx + 1, what)
+
+        elif where[0:6] == "before":
+            filename = where[6:]
+            if DBG: print(f"reorder: add '{what}' BEFORE '{filename}'")
+            read_idx = order.index( filename )
+            order.insert(read_idx - 1, what)
+
+        elif where == "then":
+            if DBG: print(f"reorder: add '{what}' AFTER '{prev}'")
+            read_idx = order.index( prev )
+            order.insert(read_idx + 1, what)
+
+        elif where == "remove" or where == 'delete':
+            if DBG: print(f"reorder: remove '{what}' from list")
+            order.remove(what)
+
+        else:
+            assert False, \
+                print(f"**ERROR bad keyword '{where}'")
+
+        prev = what

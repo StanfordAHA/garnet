@@ -26,6 +26,7 @@ if [ $USE_CACHED == True ]; then
         ln -s $GOLD/outputs/sram-pwr.v
         ln -s $GOLD/outputs/sram.v
         ln -s $GOLD/outputs/sram.spi
+        cp -p $GOLD/outputs/sram_tt.db .
     cd ..
     mv lib2db lib2db.orig; ln -s $GOLD/lib2db
 

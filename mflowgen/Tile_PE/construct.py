@@ -16,17 +16,12 @@ from mflowgen.components import Graph, Step
 # E.g. curdir='/foo/garnet_repo/mflowgen/Tile_PE' => easysteps='../easysteps'
 script_dir=os.path.dirname(os.path.realpath(__file__))
 
-sys.path.append(script_dir + '/../easysteps')
-from easysteps import extend_steps
-from easysteps import add_custom_steps
-from easysteps import add_default_steps
-# from easysteps import connect_outstanding_nodes
-
 sys.path.append(script_dir + '/../esteps2')
 from esteps2 import CStep
 from esteps2 import DStep
 from esteps2 import EStep
 
+from esteps2 import reorder
 from esteps2 import econnect
 from esteps2 import connect_outstanding_nodes
 
@@ -177,9 +172,13 @@ def construct():
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
 
-  order = synth.get_param( 'order' )
-  order.append( 'copy_sdc.tcl' )
-  synth.set_param( 'order', order )
+#   order = synth.get_param( 'order' )
+#   order.append( 'copy_sdc.tcl' )
+#   synth.set_param( 'order', order )
+# 
+  reorder(synth, 'last: copy_sdc.tcl' )
+
+
 
   # Power aware setup
   if pwr_aware:
@@ -323,38 +322,37 @@ def construct():
 
   # Pwr aware steps:
   if pwr_aware:
+
       # init node
-      order = init.get_param('order')
-      read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
-      order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
-      order.insert( read_idx + 2, 'pd-pe-floorplan.tcl' ) # add here
-      order.insert( read_idx + 3, 'pe-add-endcaps-welltaps-setup.tcl' ) # add here
-      order.insert( read_idx + 4, 'pd-add-endcaps-welltaps.tcl' ) # add here
-      order.insert( read_idx + 5, 'pe-power-switches-setup.tcl') # add here
-      order.insert( read_idx + 6, 'add-power-switches.tcl' ) # add here
-      order.remove('add-endcaps-welltaps.tcl')
-      order.append('check-clamp-logic-structure.tcl')
-      init.update_params( { 'order': order } )
+      reorder(init,
+              'after floorplan.tcl: pe-load-upf.tcl',
+              'then  : pd-pe-floorplan.tcl',
+              'then  : pe-add-endcaps-welltaps-setup.tcl',
+              'then  : pd-add-endcaps-welltaps.tcl',
+              'then  : pe-power-switches-setup.tcl',
+              'then  : add-power-switches.tcl',
+              'remove: add-endcaps-welltaps.tcl',
+              'last  : check-clamp-logic-structure.tcl'
+      )
 
       # power node
-      order = power.get_param('order')
-      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
-      order.remove('globalnetconnect.tcl')
-      power.update_params( { 'order': order } )
+      reorder(power,
+              'first : pd-globalnetconnect.tcl',
+              'delete: globalnetconnect.tcl'
+      )
 
       # place node
-      order = place.get_param('order')
-      read_idx = order.index( 'main.tcl' ) # find main.tcl
-      order.insert(read_idx + 1, 'add-aon-tie-cells.tcl')
-      order.insert(read_idx - 1, 'place-dont-use-constraints.tcl')
-      order.append('check-clamp-logic-structure.tcl')
-      place.update_params( { 'order': order } )
+      reorder(place,
+              'after  main.tcl: add-aon-tie-cells.tcl',
+              'before main.tcl: place-dont-use-constraints.tcl',
+              'last           : check-clamp-logic-structure.tcl'
+      )
 
       # cts node
-      order = cts.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
-      order.append('check-clamp-logic-structure.tcl')
-      cts.update_params( { 'order': order } )
+      reorder(cts,
+              'first: conn-aon-cells-vdd.tcl',
+              'last:  check-clamp-logic-structure.tcl'
+      )
 
       # postcts_hold node
       order = postcts_hold.get_param('order')
