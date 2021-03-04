@@ -27,7 +27,7 @@ if [ $USE_CACHED == True ]; then
         ln -s $GOLD/outputs/sram.v
         ln -s $GOLD/outputs/sram.spi
     cd ..
-    unlink lib2db;  ln -s $GOLD/lib2db
+    mv lib2db lib2db.orig; ln -s $GOLD/lib2db
 
     ls -l outputs/sram_tt.lib
     head outputs/sram_tt.lib || exit 13
