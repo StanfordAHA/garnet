@@ -5,6 +5,7 @@
 # Date   : February, 2021
 
 import os
+import re
 import sys
 from mflowgen.components.step import Step
 
@@ -32,8 +33,10 @@ def _add_step_with_handle(graph, stepdir, successors, which, DBG=0):
         # Add names of successors to a list for later processing.
     '''
     DBG=1 # for now, ABD (Always Be Debuggin)
+
+    # Define the step
     assert which in ['custom','default','extension']
-    if DBG: print(f"Adding {which} step '{stepdir}' -> {successors}")
+    if DBG: print(f"Adding {which} step '{stepdir}' -> '{successors}'")
     if which == 'default':
         step_obj  = Step( stepdir, default=True)
     else:
@@ -46,8 +49,20 @@ def _add_step_with_handle(graph, stepdir, successors, which, DBG=0):
     # Add step to graph
     graph.add_step(step_obj)
 
-    # Build todo list
-    _todo[step_obj] = successors
+
+#     # Convert 'successors' string into a list
+#     # Example string: '  genlibdb,pt_signoff,    debugcalibre' )
+#     successors = re.sub(r'\s+', '', successors) ;# Eliminate whitespace
+#     if successors == '': successors = []
+#     else:                successors = successors.split(',')
+# 
+#     # Build todo list
+#     _todo[step_obj] = successors
+
+
+    econnect(step_obj, successors)
+
+
 
     # Extension?
     if which == 'extension':
@@ -57,24 +72,16 @@ def _add_step_with_handle(graph, stepdir, successors, which, DBG=0):
     return step_obj
 
 
-# def econnect(from_step, *args, DBG=1):
-# 
-#     try: _todo[from_step]
-#     except NameError: _todo[from_step] = []
-# 
-#     # Build todo list
-#     for to_stepname in args:
-#         _todo[from_step].append(to_stepname)
-        
 def econnect(from_step, to_steps, DBG=1):
 
+    # Ensure that todo list exists
     try: _todo[from_step]
-    except NameError: _todo[from_step] = []
-
+    except KeyError: _todo[from_step] = []
 
     # Convert 'to_steps' string into a list
     # Example string: '  genlibdb,pt_signoff,    debugcalibre' )
     to_steps = re.sub(r'\s+', '', to_steps) ;# Eliminate whitespace
+    if to_steps == '': return
     to_list = to_steps.split(',')
 
     # Build todo list
