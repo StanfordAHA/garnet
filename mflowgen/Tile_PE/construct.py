@@ -96,7 +96,8 @@ def construct():
   adk = g.get_adk_step()
 
   # Could build 'AStep' to do the connections all-in-one like CStep etc.
-  # or, here's another way to do the connections
+  # Or, here's another way to do the connections:
+  # 'econnect' allows connections to be declared up here with the step definition.
   econnect( adk, 'synth'        )
   econnect( adk, 'iflow'        )
   econnect( adk, 'init'         )
@@ -113,6 +114,8 @@ def construct():
 
 
   # Custom steps
+  # New alternative CStep() allows connections to be declared at same time as step is defined.
+  # EStep() also connects the new step's outputs to the successor-node inputs.
 
   rtl                  = CStep( g, '/../common/rtl',              'synth' )
   constraints          = CStep( g, "constraints",                 'synth,iflow' )
@@ -122,13 +125,12 @@ def construct():
   custom_power         = EStep( g, '../common/custom-power-leaf', 'power'  )
   short_fix            = EStep( g, '../common/custom-short-fix',  'postroute'  )
   genlibdb_constraints = EStep( g, '../common/custom-genlibdb-constraints', 'genlibdb' )
-  custom_timing_assert = EStep( g, '../common/custom-timing-assert', 'synth,postcts_hold,signoff'  )
+  custom_timing_assert = EStep( g, '../common/custom-timing-assert',        'synth,postcts_hold,signoff'  )
   custom_dc_scripts    = CStep( g, "custom-dc-scripts",     'iflow' )
   testbench            = CStep( g, "../common/testbench",   'post_pnr_power' )
   application          = CStep( g, "../common/application", 'post_pnr_power,testbench' )
 
   if synth_power:
-    # add_custom_steps(g, "post_synth_power ../common/tile-post-synth-power")
     post_synth_power = CStep(g, "../common/tile-post-synth-power", '' )
   post_pnr_power = CStep(g, "../common/tile-post-pnr-power", '' )
 
@@ -136,6 +138,7 @@ def construct():
   power_domains = None
   pwr_aware_gls = None
   if pwr_aware:
+      # Note can still use old-style step declares interleaved with new style.
       power_domains = Step( this_dir + '/../common/power-domains' )
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
@@ -155,12 +158,18 @@ def construct():
   genlibdb     = DStep( g, 'cadence-genus-genlib',        '' )
 
   if which("calibre") is not None:
-      drc = Step( 'mentor-calibre-drc', default=True )
-      lvs = Step( 'mentor-calibre-lvs', default=True )
+      drc          = Step( 'mentor-calibre-drc',            default=True )
+      lvs          = Step( 'mentor-calibre-lvs',            default=True )
   else:
-      drc = Step( 'cadence-pegasus-drc', default=True )
-      lvs = Step( 'cadence-pegasus-lvs', default=True )
+      drc          = Step( 'cadence-pegasus-drc',           default=True )
+      lvs          = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
+
+  # Add custom timing scripts
+  # (No longer needed because done by EStep() above)
+
+  # Add extra input edges to innovus steps that need custom tweaks
+  # (No longer needed because done by EStep() above)
 
   # Extra input to DC for constraints
   synth.extend_inputs( ["common.tcl", "reporting.tcl", "generate-results.tcl", "scenarios.tcl", "report_alu.py", "parse_alu.py"] )
@@ -172,13 +181,7 @@ def construct():
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
 
-#   order = synth.get_param( 'order' )
-#   order.append( 'copy_sdc.tcl' )
-#   synth.set_param( 'order', order )
-# 
   reorder(synth, 'last: copy_sdc.tcl' )
-
-
 
   # Power aware setup
   if pwr_aware:
@@ -196,6 +199,8 @@ def construct():
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
+
+  # (Can still do old-style add_step() if desired)
 
   g.add_step( drc                      )
   g.add_step( lvs                      )
@@ -220,40 +225,25 @@ def construct():
 
   # Connect by name
 
-#   g.connect_by_name( adk,      synth        )
-#   g.connect_by_name( adk,      iflow        )
-#   g.connect_by_name( adk,      init         )
-#   g.connect_by_name( adk,      power        )
-#   g.connect_by_name( adk,      place        )
-#   g.connect_by_name( adk,      cts          )
-#   g.connect_by_name( adk,      postcts_hold )
-#   g.connect_by_name( adk,      route        )
-#   g.connect_by_name( adk,      postroute    )
-#   g.connect_by_name( adk,      signoff      )
-#   g.connect_by_name( adk,      drc          )
-#   g.connect_by_name( adk,      lvs          )
-# 
-#   g.connect_by_name( adk,          genlibdb )
-#   g.connect_by_name( adk,          pt_signoff   )
-#   g.connect_by_name( adk,      debugcalibre )
-
-
+  # I guess...this is another way to do extend_inputs/outputs()?
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
 
+  # Old-style connect syntax still allowed...
   if synth_power:
       g.connect_by_name( application, post_synth_power )
       g.connect_by_name( synth,       post_synth_power )
       g.connect_by_name( testbench,   post_synth_power )
 
+  # Old-style connect syntax still allowed...
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
-  # Pwr aware steps:
+  # Pwr aware steps (old-style syntax):
   if pwr_aware:
       g.connect_by_name( power_domains,        synth        )
       g.connect_by_name( power_domains,        init         )
@@ -278,9 +268,7 @@ def construct():
 
   custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
   for c_step in custom_timing_steps:
-    order = c_step.get_param( 'order' )
-    order.append( 'report-special-timing.tcl' )
-    c_step.set_param( 'order', order )
+    reorder(c_step, 'last: report-special-timing.tcl' )
     c_step.extend_postconditions( [{ 'pytest': 'inputs/test_timing.py' }] )
 
   # Update PWR_AWARE variable
@@ -307,18 +295,12 @@ def construct():
   # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
   # and 'additional-path-groups' after 'make_path_groups'
 
-  order = init.get_param('order') # get the default script run order
-  path_group_idx = order.index( 'make-path-groups.tcl' )
-  order.insert( path_group_idx + 1, 'additional-path-groups.tcl' )
-  pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
-  order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
-  init.update_params( { 'order': order } )
+  reorder(init,
+          'after make-path-groups.tcl : additional-path-groups.tcl',
+          'after pin-assignments.tcl  : edge-blockages.tcl')
 
   # Adding new input for genlibdb node to run
-  order = genlibdb.get_param('order') # get the default script run order
-  read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
-  order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
-  genlibdb.update_params( { 'order': order } )
+  reorder(genlibdb, 'after read_design.tcl : genlibdb-constraints.tcl')
 
   # Pwr aware steps:
   if pwr_aware:
@@ -332,59 +314,47 @@ def construct():
               'then  : pe-power-switches-setup.tcl',
               'then  : add-power-switches.tcl',
               'remove: add-endcaps-welltaps.tcl',
-              'last  : check-clamp-logic-structure.tcl'
-      )
+              'last  : check-clamp-logic-structure.tcl')
 
       # power node
       reorder(power,
               'first : pd-globalnetconnect.tcl',
-              'delete: globalnetconnect.tcl'
-      )
+              'delete: globalnetconnect.tcl')
 
       # place node
       reorder(place,
               'after  main.tcl: add-aon-tie-cells.tcl',
               'before main.tcl: place-dont-use-constraints.tcl',
-              'last           : check-clamp-logic-structure.tcl'
-      )
+              'last           : check-clamp-logic-structure.tcl')
 
       # cts node
       reorder(cts,
               'first: conn-aon-cells-vdd.tcl',
-              'last:  check-clamp-logic-structure.tcl'
-      )
+              'last:  check-clamp-logic-structure.tcl')
 
       # postcts_hold node
-      order = postcts_hold.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
-      order.append('check-clamp-logic-structure.tcl')
-      postcts_hold.update_params( { 'order': order } )
+      reorder(postcts_hold,
+              'first: conn-aon-cells-vdd.tcl',
+              'last:  check-clamp-logic-structure.tcl')
 
       # route node
-      order = route.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
-      order.append('check-clamp-logic-structure.tcl')
-      route.update_params( { 'order': order } )
+      reorder(route,
+              'first: conn-aon-cells-vdd.tcl',
+              'last:  check-clamp-logic-structure.tcl')
 
       # postroute node
-      order = postroute.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
-      order.append('check-clamp-logic-structure.tcl')
-      postroute.update_params( { 'order': order } )
+      reorder(postroute,
+              'first: conn-aon-cells-vdd.tcl',
+              'last:  check-clamp-logic-structure.tcl')
 
       # Add fix-shorts as the last thing to do in postroute
-      order = postroute.get_param('order') ; # get the default script run order
-      order.append('fix-shorts.tcl' )      ; # Add fix-shorts at the end
-      postroute.update_params( { 'order': order } ) ; # Update
+      reorder(postroute, 'last:  fix-shorts.tcl')
 
       # signoff node
-      order = signoff.get_param('order')
-      order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
-      read_idx = order.index( 'generate-results.tcl' ) # find generate_results.tcl
-      order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
-      order.append('check-clamp-logic-structure.tcl')
-      signoff.update_params( { 'order': order } )
-
+      reorder(signoff,
+              'first                     : conn-aon-cells-vdd.tcl',
+              'after generate-results.tcl: pd-generate-lvs-netlist.tcl',
+              'last                      : check-clamp-logic-structure.tcl')
   return g
 
 if __name__ == '__main__':
