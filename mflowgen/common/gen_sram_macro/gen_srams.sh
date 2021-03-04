@@ -15,8 +15,20 @@ if [ $USE_CACHED == True ]; then
     echo '+++ HACK TIME! Using cached srams...'
     set -x
     GOLD=/build/gold.219/full_chip/17-tile_array/16-Tile_MemCore/12-gen_sram_macro
-    ln -s $GOLD/outputs
-    ln -s $GOLD/lib2db
+
+    # unlink outputs; ln -s $GOLD/outputs
+    cd outputs
+        ln -s $GOLD/
+        ln -s $GOLD/outputs/sram_tt.lib
+        ln -s $GOLD/outputs/sram_ff.lib
+        ln -s $GOLD/outputs/sram.gds
+        ln -s $GOLD/outputs/sram.lef
+        ln -s $GOLD/outputs/sram-pwr.v
+        ln -s $GOLD/outputs/sram.v
+        ln -s $GOLD/outputs/sram.spi
+    cd ..
+    unlink lib2db;  ln -s $GOLD/lib2db
+
     ls -l outputs/sram_tt.lib
     head outputs/sram_tt.lib || exit 13
     set +x
