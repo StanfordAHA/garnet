@@ -26,6 +26,8 @@ sys.path.append(script_dir + '/../esteps2')
 from esteps2 import CStep
 from esteps2 import DStep
 from esteps2 import EStep
+
+from esteps2 import econnect
 from esteps2 import connect_outstanding_nodes
 
 def construct():
@@ -97,6 +99,22 @@ def construct():
 
   g.set_adk( adk_name )
   adk = g.get_adk_step()
+
+  econnect( g, adk, 'synth'        )
+  econnect( g, adk, 'iflow'        )
+  econnect( g, adk, 'init'         )
+  econnect( g, adk, 'power'        )
+  econnect( g, adk, 'place'        )
+  econnect( g, adk, 'cts'          )
+  econnect( g, adk, 'postcts_hold' )
+  econnect( g, adk, 'route'        )
+  econnect( g, adk, 'postroute'    )
+  econnect( g, adk, 'signoff'      )
+  econnect( g, adk, 'drc'          )
+  econnect( g, adk, 'lvs'          )
+  econnect( g, adk, 'genlibdb, pt_signoff, debugcalibre' )
+
+
 
   # Custom steps
 
@@ -200,31 +218,33 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      synth        )
-  g.connect_by_name( adk,      iflow        )
-  g.connect_by_name( adk,      init         )
-  g.connect_by_name( adk,      power        )
-  g.connect_by_name( adk,      place        )
-  g.connect_by_name( adk,      cts          )
-  g.connect_by_name( adk,      postcts_hold )
-  g.connect_by_name( adk,      route        )
-  g.connect_by_name( adk,      postroute    )
-  g.connect_by_name( adk,      signoff      )
-  g.connect_by_name( adk,      drc          )
-  g.connect_by_name( adk,      lvs          )
+#   g.connect_by_name( adk,      synth        )
+#   g.connect_by_name( adk,      iflow        )
+#   g.connect_by_name( adk,      init         )
+#   g.connect_by_name( adk,      power        )
+#   g.connect_by_name( adk,      place        )
+#   g.connect_by_name( adk,      cts          )
+#   g.connect_by_name( adk,      postcts_hold )
+#   g.connect_by_name( adk,      route        )
+#   g.connect_by_name( adk,      postroute    )
+#   g.connect_by_name( adk,      signoff      )
+#   g.connect_by_name( adk,      drc          )
+#   g.connect_by_name( adk,      lvs          )
+# 
+#   g.connect_by_name( adk,          genlibdb )
+#   g.connect_by_name( adk,          pt_signoff   )
+#   g.connect_by_name( adk,      debugcalibre )
+
 
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  g.connect_by_name( adk,          genlibdb )
-  g.connect_by_name( adk,          pt_signoff   )
 
   if synth_power:
       g.connect_by_name( application, post_synth_power )
       g.connect_by_name( synth,       post_synth_power )
       g.connect_by_name( testbench,   post_synth_power )
 
-  g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )

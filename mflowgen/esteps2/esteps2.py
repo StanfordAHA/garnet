@@ -57,6 +57,34 @@ def _add_step_with_handle(graph, stepdir, successors, which, DBG=0):
     return step_obj
 
 
+# def econnect(from_step, *args, DBG=1):
+# 
+#     try: _todo[from_step]
+#     except NameError: _todo[from_step] = []
+# 
+#     # Build todo list
+#     for to_stepname in args:
+#         _todo[from_step].append(to_stepname)
+        
+def econnect(from_step, to_steps, DBG=1):
+
+    try: _todo[from_step]
+    except NameError: _todo[from_step] = []
+
+
+    # Convert 'to_steps' string into a list
+    # Example string: '  genlibdb,pt_signoff,    debugcalibre' )
+    to_steps = re.sub(r'\s+', '', to_steps) ;# Eliminate whitespace
+    to_list = to_steps.split(',')
+
+    # Build todo list
+    for to_stepname in to_list:
+        _todo[from_step].append(to_stepname)
+        
+
+
+
+
 def connect_outstanding_nodes(graph, DBG=0):
     '''
     # construct.py should call this method after all steps have been built,
