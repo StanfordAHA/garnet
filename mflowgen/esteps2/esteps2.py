@@ -28,17 +28,16 @@ def get_step_name(step_obj):
 
 def CStep(graph, stepdir, successors, DBG=0):
     "E.g. rtl = CStep(g, '/../common/rtl', ['synth'])"
-    return _add_step_with_handle(graph, stepdir, successors, 'custom', DBG)
+    return _add_step(graph, stepdir, successors, 'custom', DBG)
 
 def DStep(graph, stepdir, successors, DBG=0):
-    return _add_step_with_handle(graph, stepdir, successors, 'default', DBG)
+    return _add_step(graph, stepdir, successors, 'default', DBG)
 
 def EStep(graph, stepdir, successors, DBG=0):
-    return _add_step_with_handle(graph, stepdir, successors, 'extension', DBG)
+    return _add_step(graph, stepdir, successors, 'extension', DBG)
 
 
-
-def _add_step_with_handle(graph, stepdir, successors, which, DBG=0):
+def _add_step(graph, stepdir, successors, which, DBG=0):
     '''
         # Build a step using the indicated step-defining directory.
         # Add names of successors to a list for later processing.
