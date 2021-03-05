@@ -8,9 +8,9 @@
 
 import os
 import sys
-from shutil import which
 
 from mflowgen.components import Graph, Step
+from shutil import which
 
 # Find and import easysteps
 # E.g. curdir='/foo/garnet_repo/mflowgen/Tile_PE' => easysteps='../easysteps'
