@@ -95,9 +95,8 @@ def construct():
   g.set_adk( adk_name )
   adk = g.get_adk_step()
 
-  # Could build 'AStep' to do the connections all-in-one like CStep etc.
-  # Or, here's another way to do the connections:
   # 'econnect' allows connections to be declared up here with the step definition.
+  # Or: could implement 'AStep' to do the connections all-in-one like CStep etc.
   econnect( adk, 'synth'        )
   econnect( adk, 'iflow'        )
   econnect( adk, 'init'         )
@@ -114,8 +113,10 @@ def construct():
 
 
   # Custom steps
-  # New alternative CStep() allows connections to be declared at same time as step is defined.
-  # EStep() also connects the new step's outputs to the successor-node inputs.
+
+  # New alternative CStep() allows step define, add and connect to
+  # happen all in one place. In addition, EStep() automatically
+  # connects all outputs as successor-node inputs.
 
   rtl                  = CStep( g, '/../common/rtl',              'synth' )
   constraints          = CStep( g, "constraints",                 'synth,iflow' )
@@ -143,6 +144,9 @@ def construct():
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
   # Default steps
+
+  # New DStep() allows default-step define, add and connect to happen all in one place.
+
   info         = DStep( g, 'info', '' )
   synth        = DStep( g, 'cadence-genus-synthesis',     'iflow, init, power, place, cts, custom_flowgen_setup')
   iflow        = DStep( g, 'cadence-innovus-flowsetup',   'init, power, place, cts, postcts_hold, route, postroute, signoff')
@@ -181,7 +185,10 @@ def construct():
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
 
-  reorder(synth, 'last: copy_sdc.tcl' )
+  # New 'reorder()' method simplifies this common task...
+  # Or: could e.g. implement something more generic like
+  #    modify_parmlist( synth, 'order', 'last: copy_sdc.tcl' )
+  reorder( synth, 'last: copy_sdc.tcl' )
 
   # Power aware setup
   if pwr_aware:
@@ -226,8 +233,8 @@ def construct():
   # Connect by name
 
   # I guess...this is another way to do extend_inputs/outputs()?
-  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
+  g.connect( signoff.o('design-merged.gds'), drc.i('design_merged.gds') )
+  g.connect( signoff.o('design-merged.gds'), lvs.i('design_merged.gds') )
 
 
   # Old-style connect syntax still allowed...
@@ -268,7 +275,7 @@ def construct():
 
   custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
   for c_step in custom_timing_steps:
-    reorder(c_step, 'last: report-special-timing.tcl' )
+    reorder( c_step, 'last: report-special-timing.tcl' )
     c_step.extend_postconditions( [{ 'pytest': 'inputs/test_timing.py' }] )
 
   # Update PWR_AWARE variable
@@ -300,7 +307,7 @@ def construct():
           'after pin-assignments.tcl  : edge-blockages.tcl')
 
   # Adding new input for genlibdb node to run
-  reorder(genlibdb, 'after read_design.tcl : genlibdb-constraints.tcl')
+  reorder( genlibdb, 'after read_design.tcl : genlibdb-constraints.tcl' )
 
   # Pwr aware steps:
   if pwr_aware:
