@@ -112,11 +112,11 @@ def construct():
   econnect( adk, 'genlibdb, pt_signoff, debugcalibre' )
 
 
-  # Custom steps
-
   # New alternative CStep() allows step define, add and connect to
   # happen all in one place. In addition, EStep() automatically
   # connects all outputs as successor-node inputs.
+
+  # Custom steps
 
   rtl                  = CStep( g, '/../common/rtl',              'synth' )
   constraints          = CStep( g, "constraints",                 'synth,iflow' )
