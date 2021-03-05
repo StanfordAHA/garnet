@@ -12,6 +12,9 @@ sram_name+="_130a"
 ##############################################################################
 USE_CACHED=True
 if [ $USE_CACHED == True ]; then
+
+    # Mar 2102 Temporary(?) fix for expired memory-compiler license
+
     echo '+++ HACK TIME! Using cached srams...'
     set -x
     GOLD=/build/gold.219/full_chip/17-tile_array/16-Tile_MemCore/12-gen_sram_macro
@@ -34,7 +37,6 @@ if [ $USE_CACHED == True ]; then
     head outputs/sram_tt.lib || exit 13
     set +x
     echo '--- continue...'
-
 
 else
     cmd="./inputs/adk/mc/${mc_name}/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
