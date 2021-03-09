@@ -10,7 +10,7 @@ on:
   # Every morning at 3am
   schedule:
   - cron "0 3 * * *"
-    branches: [ master ]
+    branches: master
 
 
 jobs:
