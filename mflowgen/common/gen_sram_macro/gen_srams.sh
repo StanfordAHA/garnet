@@ -13,15 +13,25 @@ sram_name+="_130a"
 USE_CACHED=True
 if [ $USE_CACHED == True ]; then
 
-    # Mar 2102 Temporary(?) fix for expired memory-compiler license
+    # Mar 2021 Temporary(?) fix for expired memory-compiler license
 
     echo '+++ HACK TIME! Using cached srams...'
     set -x
-    GOLD=/build/gold.219/full_chip/17-tile_array/16-Tile_MemCore/12-gen_sram_macro
 
-    # unlink outputs; ln -s $GOLD/outputs
+    # E.g. this_dir=/build/gold.223/full_chip/13-gen_sram_macro
+    this_dir=`pwd`
+    echo this_dir=$this_dir
+
+    # E.g. tail=full_chip/13-gen_sram_macro
+    tail=`echo $this_dir | sed 's/^.*full_chip/full_chip/'`
+    echo tail=$tail
+
+    # E.g. GOLD=/build/gold.219/full_chip/13-gen_sram_macro
+    GOLD=$(cd /sim/buildkite-agent/gold; pwd)
+    GOLD=$GOLD/$tail
+    echo GOLD=$GOLD
+
     cd outputs
-        ln -s $GOLD/
         ln -s $GOLD/outputs/sram_tt.lib
         ln -s $GOLD/outputs/sram_ff.lib
         ln -s $GOLD/outputs/sram.gds
@@ -29,12 +39,12 @@ if [ $USE_CACHED == True ]; then
         ln -s $GOLD/outputs/sram-pwr.v
         ln -s $GOLD/outputs/sram.v
         ln -s $GOLD/outputs/sram.spi
+        # Not sure why this one is copied, just mimicking what I see in the cache...
         cp -p $GOLD/outputs/sram_tt.db .
     cd ..
-    mv lib2db lib2db.orig; ln -s $GOLD/lib2db
+    mv lib2db lib2db.orig
+    ln -s $GOLD/lib2db
 
-    ls -l outputs/sram_tt.lib
-    head outputs/sram_tt.lib || exit 13
     set +x
     echo '--- continue...'
 
@@ -55,8 +65,15 @@ else
 
     cd lib2db/
     make
+    cd ..
 fi
-##############################################################################
 
-cd ..
+# Emit findable error message and die HERE if SRAMs are missing
+sram_exists=True
+head outputs/sram_tt.lib > /dev/null || sram_exists=False
+if [ $sram_exists == "False" ]; then
+    echo "**ERROR Could not build SRAMs...memory compiler error maybe?"
+    echo exit 13
+fi
+
 
