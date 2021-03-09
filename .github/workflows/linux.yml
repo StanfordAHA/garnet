@@ -1,6 +1,17 @@
 name: CI Test
 
-on: [push]
+on:
+  # Every push
+  push:
+
+  # When requested manually
+  workflow_dispatch:
+
+  # Every morning at 3am
+  schedule:
+  - cron "0 3 * * *"
+    branches: [ master ]
+
 
 jobs:
   build:
