@@ -27,8 +27,7 @@ if [ $USE_CACHED == True ]; then
     echo tail=$tail
 
     # E.g. GOLD=/build/gold.219/full_chip/13-gen_sram_macro
-    GOLD=$(cd /sim/buildkite-agent/gold; pwd)
-    GOLD=$GOLD/$tail
+    GOLD=$(cd -P /sim/buildkite-agent/gold; pwd)/$tail
     echo GOLD=$GOLD
 
     cd outputs
