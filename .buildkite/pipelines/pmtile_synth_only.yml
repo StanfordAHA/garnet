@@ -20,7 +20,12 @@ steps:
 # TEMPORARY GLB-TILE TEST. RESTORE ORIG TESTS BELOW before merging with master
 - label: 'glb tile 2h'
   commands:
-  - mkdir -p full_chip; cp -rp /build/gold.225/full_chip/9-rtl full_chip/
+  - set -x; mkdir -p full_chip; cp -rp /build/gold.225/full_chip/9-rtl full_chip/
+  - set -x; pwd
+  - set -x; ls full_chip/9-rtl
+  - set -x; mkdir -p full_chip/14-glb_top/inputs
+  - set -x; pushd full_chip/14-glb_top/inputs; ln -s ../../9-rtl/outputs/design.v; popd
+  - set -x; pwd
   - $TEST --need_space 3G full_chip glb_top --steps rtl --debug
   - $TEST --need_space 3G full_chip glb_top --steps glb_tile --debug
 
