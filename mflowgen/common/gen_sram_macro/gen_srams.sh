@@ -18,16 +18,21 @@ if [ $USE_CACHED == True ]; then
     echo '+++ HACK TIME! Using cached srams...'
     set -x
 
-    # E.g. this_dir=/build/gold.223/full_chip/13-gen_sram_macro
+    # E.g. this_dir=/build/gold.223/full_chip/14-glb_top/9-glb_tile/8-gen_sram_macro
     this_dir=`pwd`
     echo this_dir=$this_dir
 
-    # E.g. tail=full_chip/13-gen_sram_macro
+    # E.g. tail=full_chip/14-glb_top/9-glb_tile/8-gen_sram_macro
     tail=`echo $this_dir | sed 's/^.*full_chip/full_chip/'`
     echo tail=$tail
 
-    # E.g. GOLD=/build/gold.219/full_chip/13-gen_sram_macro
-    GOLD=$(cd -P /sim/buildkite-agent/gold; pwd)/$tail
+    # E.g. stars=full_chip/*glb_top/*glb_tile/*gen_sram_macro
+    stars=$(echo $tail | sed 's|/[0-9]*-|/\*|g')
+    echo stars=$stars
+
+    # E.g. GOLD=/build/gold.219/full_chip/14-glb_top/9-glb_tile/8-gen_sram_macro
+    g=$(cd -P /sim/buildkite-agent/gold; pwd)
+    GOLD=`echo $g/$stars`
     echo GOLD=$GOLD
 
     cd outputs
