@@ -62,6 +62,7 @@ else
     ln -s ../$sram_name/VERILOG/${sram_name}.v outputs/sram.v
     ln -s ../$sram_name/SPICE/${sram_name}.spi outputs/sram.spi
 
+    # Why?? Pretty sure this (lib2db make) does nothing...?
     cd lib2db/
     make
     cd ..
