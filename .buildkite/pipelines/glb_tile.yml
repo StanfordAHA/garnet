@@ -15,15 +15,12 @@ env:
 steps:
 
 ##############################################################################
-# INDIVIDUAL TILE RUNS
-
-- label: '250MHz PE synth 12m'
+# COMPLETE GLB-TILE BUILD (ish) (uses cached rtl step)
+- label: 'glb tile 2h'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-  - .buildkite/pipelines/check_pe_area.sh
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-- label: 'MemCore synth 17m'
-  commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
+  - set -x; mkdir -p full_chip; cp -rp /sim/buildkite-agent/gold/full_chip/*-rtl full_chip/
+  - set -x; mkdir -p full_chip/14-glb_top/inputs
+  - set -x; pushd full_chip/14-glb_top/inputs; ln -s ../../9-rtl/outputs/design.v; popd
+  - $TEST --need_space 3G full_chip glb_top --steps rtl --debug
+  - $TEST --need_space 3G full_chip glb_top --steps glb_tile --debug
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
