@@ -187,8 +187,9 @@ function build_subgraph {
     dirname=$modpfx$modname; # E.g. "1-Tile_PE"
     echo "--- ...BUILD SUBGRAPH '$dirname'"
     
-    echo "mkdir $dirname; cd $dirname"
-    mkdir $dirname; cd $dirname
+    # '-p' means we won't die if dir already exists; this won't break anything will it?
+    echo "mkdir -p $dirname; cd $dirname"
+    mkdir -p $dirname; cd $dirname
     
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
