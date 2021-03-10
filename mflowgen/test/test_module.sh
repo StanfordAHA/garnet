@@ -168,8 +168,9 @@ function build_module {
     modname="$1"; # E.g. "full_chip"
     echo "--- ...BUILD MODULE '$modname'"
 
-    echo "mkdir $modname; cd $modname"
-    mkdir $modname; cd $modname
+    # '-p' means we won't die if dir already exists; this won't break anything will it?
+    echo "mkdir -p $modname; cd $modname"
+    mkdir -p $modname; cd $modname
 
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
