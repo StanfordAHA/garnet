@@ -168,7 +168,7 @@ function build_module {
     modname="$1"; # E.g. "full_chip"
     echo "--- ...BUILD MODULE '$modname'"
 
-    # '-p' means we won't die if dir already exists; this won't break anything will it?
+    # '-p' means we won't die if dir already exists
     echo "mkdir -p $modname; cd $modname"
     mkdir -p $modname; cd $modname
 
@@ -187,7 +187,7 @@ function build_subgraph {
     dirname=$modpfx$modname; # E.g. "1-Tile_PE"
     echo "--- ...BUILD SUBGRAPH '$dirname'"
     
-    # '-p' means we won't die if dir already exists; this won't break anything will it?
+    # '-p' means we won't die if dir already exists
     echo "mkdir -p $dirname; cd $dirname"
     mkdir -p $dirname; cd $dirname
     
