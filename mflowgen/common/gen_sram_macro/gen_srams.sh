@@ -18,36 +18,16 @@ if [ $USE_CACHED == True ]; then
     echo '+++ HACK TIME! Using cached srams...'
     set -x
 
-    # E.g. this_dir=/build/gold.223/full_chip/14-glb_top/9-glb_tile/8-gen_sram_macro
-    this_dir=`pwd`
-    echo this_dir=$this_dir
-
-    # E.g. tail=full_chip/14-glb_top/9-glb_tile/8-gen_sram_macro
-    tail=`echo $this_dir | sed 's/^.*full_chip/full_chip/'`
-    echo tail=$tail
-
-    # E.g. stars=full_chip/*glb_top/*glb_tile/*gen_sram_macro
-    stars=$(echo $tail | sed 's|/[0-9]*-|/\*|g')
-    echo stars=$stars
-
-    # E.g. GOLD=/build/gold.219/full_chip/14-glb_top/9-glb_tile/8-gen_sram_macro
+    # Use latest gold build as the cache
+    # If this hack were less temporary, would use parm / env var
     g=$(cd -P /sim/buildkite-agent/gold; pwd)
-    GOLD=`echo $g/$stars`
-    echo GOLD=$GOLD
+    echo "Using gold cache '$g'"
 
-    cd outputs
-        ln -s $GOLD/outputs/sram_tt.lib
-        ln -s $GOLD/outputs/sram_ff.lib
-        ln -s $GOLD/outputs/sram.gds
-        ln -s $GOLD/outputs/sram.lef
-        ln -s $GOLD/outputs/sram-pwr.v
-        ln -s $GOLD/outputs/sram.v
-        ln -s $GOLD/outputs/sram.spi
-        # Not sure why this one is copied, just mimicking what I see in the cache...
-        cp -p $GOLD/outputs/sram_tt.db .
-    cd ..
-    mv lib2db lib2db.orig
-    ln -s $GOLD/lib2db
+    # Use first sram found in cache, so long as it has the right name
+    # E.g. sram_name='ts1n16ffcllsblvtc2048x64m8sw_130a'
+    sram_dir=$(find $g -name ${sram_name} | head -1)
+    echo "Using srams found in dir '$sram_dir'"
+    cp -rp ${sram_dir} .
 
     set +x
     echo '--- continue...'
@@ -58,20 +38,20 @@ else
         cmd+=" -NonBWEB"
     fi
     eval $cmd
-
-    ln -s ../$sram_name/NLDM/${sram_name}_${corner}.lib outputs/sram_tt.lib
-    ln -s ../$sram_name/NLDM/${sram_name}_${bc_corner}.lib outputs/sram_ff.lib
-    ln -s ../$sram_name/GDSII/${sram_name}_m4xdh.gds outputs/sram.gds
-    ln -s ../$sram_name/LEF/${sram_name}_m4xdh.lef outputs/sram.lef
-    ln -s ../$sram_name/VERILOG/${sram_name}_pwr.v outputs/sram-pwr.v
-    ln -s ../$sram_name/VERILOG/${sram_name}.v outputs/sram.v
-    ln -s ../$sram_name/SPICE/${sram_name}.spi outputs/sram.spi
-
-    # Why?? Pretty sure this (lib2db make) does nothing...?
-    cd lib2db/
-    make
-    cd ..
 fi
+
+ln -s ../$sram_name/NLDM/${sram_name}_${corner}.lib outputs/sram_tt.lib
+ln -s ../$sram_name/NLDM/${sram_name}_${bc_corner}.lib outputs/sram_ff.lib
+ln -s ../$sram_name/GDSII/${sram_name}_m4xdh.gds outputs/sram.gds
+ln -s ../$sram_name/LEF/${sram_name}_m4xdh.lef outputs/sram.lef
+ln -s ../$sram_name/VERILOG/${sram_name}_pwr.v outputs/sram-pwr.v
+ln -s ../$sram_name/VERILOG/${sram_name}.v outputs/sram.v
+ln -s ../$sram_name/SPICE/${sram_name}.spi outputs/sram.spi
+
+# This builds sram_tt.db
+cd lib2db/
+make
+cd ..
 
 # Emit findable error message and die HERE if SRAMs are missing
 sram_exists=True
@@ -81,4 +61,5 @@ if [ $sram_exists == "False" ]; then
     echo exit 13
 fi
 
+echo '--- continue...'
 
