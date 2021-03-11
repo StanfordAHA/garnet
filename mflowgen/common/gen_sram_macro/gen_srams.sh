@@ -13,24 +13,20 @@ sram_name+="_130a"
 USE_CACHED=True
 if [ $USE_CACHED == True ]; then
 
-    # Mar 2021 Temporary(?) fix for expired memory-compiler license
+    # Mar 2021 Temporary fix to get around expired memory-compiler license
+    echo '+++ HACK TIME! Using cached srams...'; set -x
 
-    echo '+++ HACK TIME! Using cached srams...'
-    set -x
-
-    # Use latest gold build as the cache
-    # If this hack were less temporary, would use parm / env var
+    # Use latest gold build as the cache (if hack were less temporary, would use parm / env var here)
     g=$(cd -P /sim/buildkite-agent/gold; pwd)
     echo "Using gold cache '$g'"
 
-    # Use first sram found in cache, so long as it has the right name
-    # E.g. sram_name='ts1n16ffcllsblvtc2048x64m8sw_130a'
+    # Use first sram found in cache, so long as it has the right name (e.g. sram_name='ts1n16ffcllsblvtc2048x64m8sw_130a')
     sram_dir=$(find $g -name ${sram_name} | head -1)
     echo "Using srams found in dir '$sram_dir'"
     cp -rp ${sram_dir} .
 
-    set +x
-    echo '--- continue...'
+    # Done w/hack
+    set +x; echo '--- continue...'
 
 else
     cmd="./inputs/adk/mc/${mc_name}/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
