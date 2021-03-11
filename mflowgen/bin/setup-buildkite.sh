@@ -342,17 +342,25 @@ echo "--- Building in destination dir `pwd`"
 
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds why not
+# 
 # Mar2102 Added option to use a different mflowgen branch when/if desired
+# 
+# Without building a separate mflowgen, cannot guarantee persistance
+# of non-master branch through to end of run; b/c steps are built
+# on demand using whichever mflowgen existed at 'mflowgen run' time,
+# when mflowgen created the Makefile for all the steps.
+# 
+# The cost of building these separate mflowgens is about 200M per branch.
 
 # mflowgen_branch=master
 mflowgen_branch=fix_spurious_error
 echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
-mflowgen=/sim/buildkite-agent/mflowgen
-pushd $mflowgen
-  git checkout $mflowgen_branch; git pull
-  TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
-popd
-echo ""
+
+if [ "$mflowbranch" == "master" ]; then
+    mflowgen=/sim/buildkite-agent/mflowgen
+else
+    mflowgen=/sim/buildkite-agent/mflowgen.$mflowgen_branch
+fi
   
 # Okay. Ick. If we leave it here, we get all these weird and very
 # non-portable relative links e.g.
@@ -368,6 +376,11 @@ mflowgen_orig=$mflowgen
 test -e mflowgen || ln -s $mflowgen_orig
 mflowgen=`pwd`/mflowgen
 
+pushd $mflowgen
+  git checkout $mflowgen_branch; git pull
+  TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+popd
+echo ""
 
 
 ########################################################################
