@@ -363,6 +363,12 @@ else
     mflowgen=/sim/buildkite-agent/mflowgen.$mflowgen_branch
 fi
 
+# Build repo if not exists yet
+if ! test -e $mflowgen; then
+    git clone -b $mflowgen_branch \
+        -- https://github.com/mflowgen/mflowgen.git $mflowgen
+fi
+
 # I dunno this is probably not worth the trouble...right...?
 # # Okay. Ick. If we leave it here, we get all these weird and very
 # # non-portable relative links e.g.
@@ -378,8 +384,7 @@ fi
 # test -e mflowgen || ln -s $mflowgen_orig
 # mflowgen=`pwd`/mflowgen
 
-echo "Install to dir '$mflowgen'"
-mkdir -p $mflowgen
+echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
