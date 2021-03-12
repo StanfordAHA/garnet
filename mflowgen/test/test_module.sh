@@ -172,14 +172,8 @@ function build_module {
     echo "mkdir -p $modname; cd $modname"
     mkdir -p $modname; cd $modname
 
-    echo "Current mflowgen branch maybe:";\
-    (cd /sim/buildkite-agent/mflowgen; git branch)
-
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
-
-    echo "Current mflowgen branch maybe:";\
-    (cd /sim/buildkite-agent/mflowgen; git branch)
 }
 function build_subgraph {
     modname="$1" ; # E.g. "Tile_PE"
@@ -197,14 +191,8 @@ function build_subgraph {
     echo "mkdir -p $dirname; cd $dirname"
     mkdir -p $dirname; cd $dirname
     
-    echo "Current mflowgen branch maybe:";\
-    (cd /sim/buildkite-agent/mflowgen; git branch)
-
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
-
-    echo "Current mflowgen branch maybe:";\
-    (cd /sim/buildkite-agent/mflowgen; git branch)
 }
 
 # FIXME where does this belong?

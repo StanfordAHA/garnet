@@ -341,25 +341,19 @@ echo "--- Building in destination dir `pwd`"
 
 
 ########################################################################
-# MFLOWGEN: Use a single common mflowgen for all builds why not
+# MFLOWGEN: Use a single common mflowgen for all builds of a given branch
 # 
-# Mar2102 Added option to use a different mflowgen branch when/if desired
+# Mar 2102 - Added option to use a different mflowgen branch when/if desired
 # 
-# Without building a separate mflowgen, cannot guarantee persistance
-# of non-master branch through to end of run; b/c steps are built
-# on demand using whichever mflowgen existed at 'mflowgen run' time,
-# when mflowgen created the Makefile for all the steps.
-# 
-# The cost of building these separate mflowgens is about 200M per branch.
+# Mar 2103 - Without building a separate mflowgen, cannot guarantee
+# persistance of non-master branch through to end of run.  The cost of
+# building these separate mflowgens is currently about 200M per branch.
 
-# mflowgen_branch=master
-mflowgen_branch=fix_spurious_error
+mflowgen_branch=master
 echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
-set -x
-if [ "$mflowbranch" == "master" ]; then
-    mflowgen=/sim/buildkite-agent/mflowgen
-else
+mflowgen=/sim/buildkite-agent/mflowgen
+if [ "$mflowbranch" != "master" ]; then
     mflowgen=/sim/buildkite-agent/mflowgen.$mflowgen_branch
 fi
 
@@ -369,27 +363,12 @@ if ! test -e $mflowgen; then
         -- https://github.com/mflowgen/mflowgen.git $mflowgen
 fi
 
-# I dunno this is probably not worth the trouble...right...?
-# # Okay. Ick. If we leave it here, we get all these weird and very
-# # non-portable relative links e.g.
-# #    % ls -l /build/gold.112/full_chip/17-tile_array/10-tsmc16/
-# #    % multivt -> ../../../../../sim/buildkite-agent/mflowgen/adks/tsmc16/multivt/
-# # 
-# # So we make a local symlink to contain the damage. It still builds
-# # an ugly relative link but now maybe it's more contained, something like
-# #    % ls -l /build/gold.112/full_chip/17-tile_array/10-tsmc16/
-# #    % multivt -> ../../../mflowgen/adks/tsmc16/multivt/
-# 
-# mflowgen_orig=$mflowgen
-# test -e mflowgen || ln -s $mflowgen_orig
-# mflowgen=`pwd`/mflowgen
-
 echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
 popd
-set +x
+
 echo ""
 
 
