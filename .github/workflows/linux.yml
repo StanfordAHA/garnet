@@ -1,16 +1,6 @@
 name: CI Test
 
-on:
-  # Every push
-  push:
-
-  # When requested manually
-  workflow_dispatch:
-
-  # Every morning at 3am -- how does it know which branch to run??
-  schedule:
-  - cron: '0 3 * * *'
-
+on: [push]
 
 jobs:
   build:
