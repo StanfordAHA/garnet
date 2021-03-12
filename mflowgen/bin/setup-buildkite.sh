@@ -364,7 +364,7 @@ else
 fi
 
 # Build repo if not exists yet
-if ! test -e $mflowgen; then
+if ! test -e $mflowgen/.git; then
     git clone -b $mflowgen_branch \
         -- https://github.com/mflowgen/mflowgen.git $mflowgen
 fi
