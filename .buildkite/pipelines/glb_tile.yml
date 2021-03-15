@@ -1,0 +1,26 @@
+agents: { jobsize: "hours" }
+
+##############################################################################
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
+
+##############################################################################
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
+env:
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+
+steps:
+
+##############################################################################
+# COMPLETE GLB-TILE BUILD (ish) (uses cached rtl step)
+- label: 'glb tile 2h'
+  commands:
+  - set -x; mkdir -p full_chip; cp -rp /sim/buildkite-agent/gold/full_chip/*-rtl full_chip/
+  - set -x; mkdir -p full_chip/14-glb_top/inputs
+  - set -x; pushd full_chip/14-glb_top/inputs; ln -s ../../9-rtl/outputs/design.v; popd
+  - $TEST --need_space 3G full_chip glb_top --steps rtl --debug
+  - $TEST --need_space 3G full_chip glb_top --steps glb_tile --debug
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
