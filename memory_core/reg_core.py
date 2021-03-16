@@ -75,9 +75,9 @@ class RegCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        inner_offset, max_outer_dim, outer_stride, outer_range = config_tuple
+        config_tuple += 6
         configs = []
-        config_reg = [("tile_en", 1)]
+        config_reg = []
         config_reg += self.dut.get_bitstream()
         for name, v in config_reg:
             configs = [self.get_config_data(name, v)] + configs

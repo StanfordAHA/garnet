@@ -350,8 +350,9 @@ class NetlistBuilder():
         self._core_config = {}
         self._config_finalized = False
         self._circuit = None
+        self._core_names = {}
 
-    def register_core(self, core, flushable=False, config=None):
+    def register_core(self, core, flushable=False, config=None, name=""):
         ''' Register the core/primitive with the
             data structure and return unique ID
         '''
@@ -379,6 +380,8 @@ class NetlistBuilder():
             self._flushable.append(ret_str)
         self._cores.append(ret_str)
         self._core_num += 1
+        self._core_names[ret_str] = name
+
         if config is not None:
             self._core_config[ret_str] = (config, 0)
         return ret_str
@@ -405,6 +408,14 @@ class NetlistBuilder():
         self._netlist[conn_name] = connection
         self._bus[conn_name] = width
         self._placement_up_to_date = False
+
+    def get_name(self, prim_name):
+        assert prim_name in self._core_names.keys(), f"{prim_name} not a valid primitive in this netlist"
+        return self._core_names[prim_name]
+
+    def display_names(self):
+        for key, val in self._core_names.items():
+            print(f"{key}\t===>\t{val}")
 
     def get_netlist(self):
         return self._netlist
