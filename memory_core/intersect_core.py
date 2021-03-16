@@ -24,7 +24,8 @@ class IntersectCore(LakeCoreBase):
     def __init__(self,
                  data_width=16,  # CGRA Params
                  config_data_width=32,
-                 config_addr_width=8):
+                 config_addr_width=8,
+                 use_merger=False):
 
         scan_name = "Intersector"
         super().__init__(config_data_width=config_data_width,
@@ -36,10 +37,12 @@ class IntersectCore(LakeCoreBase):
         self.data_width = data_width
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
+        self.use_merger = use_merger
 
         cache_key = (self.data_width,
                      self.config_data_width,
                      self.config_addr_width,
+                     use_merger,
                      "IntersectCore")
 
         # Check for circuit caching
@@ -47,7 +50,8 @@ class IntersectCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = Intersect(data_width=data_width)
+            self.dut = Intersect(data_width=self.data_width,
+                                 use_merger=self.use_merger)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -74,11 +78,10 @@ class IntersectCore(LakeCoreBase):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
-    def get_config_bitstream(self, idk):
-        cfg_length = idk
+    def get_config_bitstream(self, num_levels):
         configs = []
-        config_scanner = [("tile_en", 1)]
-        config_scanner += self.dut.get_bitstream()
+        config_scanner = []
+        config_scanner += self.dut.get_bitstream(num_levels)
         for name, v in config_scanner:
             configs = [self.get_config_data(name, v)] + configs
         return configs

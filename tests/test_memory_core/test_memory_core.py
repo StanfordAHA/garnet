@@ -3179,6 +3179,517 @@ def spM_spM_elementwise_hierarchical_json(trace, run_tb, cwd):
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
 
 
+def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
+    """This performs elementwise multiply of two sparse matrices but includes all coords
+
+    Args:
+        trace (bool): [description]
+        run_tb (function): [description]
+        cwd (str): [description]
+    """
+    # Streams and code to create them and align them
+    num_cycles = 50
+    chip_size = 6
+    num_tracks = 5
+    altcore = [ScannerCore, IntersectCore]
+
+    interconnect = create_cgra(width=chip_size, height=chip_size,
+                               io_sides=NetlistBuilder.io_sides(),
+                               num_tracks=num_tracks,
+                               add_pd=True,
+                               mem_ratio=(1, 2),
+                               altcore=altcore)
+
+    nlb = NetlistBuilder(interconnect=interconnect, cwd=cwd)
+    # Create netlist builder and register the needed cores...
+
+    # Matrix A
+    scan_aroot = nlb.register_core("scanner", flushable=True)
+    scan_arows = nlb.register_core("scanner", flushable=True)
+    mem_aroot = nlb.register_core("memtile", flushable=True)
+    mem_arows = nlb.register_core("memtile", flushable=True)
+    mem_avals = nlb.register_core("memtile", flushable=True)
+
+    # Matrix B
+    scan_broot = nlb.register_core("scanner", flushable=True)
+    scan_brows = nlb.register_core("scanner", flushable=True)
+    mem_broot = nlb.register_core("memtile", flushable=True)
+    mem_brows = nlb.register_core("memtile", flushable=True)
+    mem_bvals = nlb.register_core("memtile", flushable=True)
+
+    # Intersect the two...
+    isect_row = nlb.register_core("intersect", flushable=True)
+    isect_col = nlb.register_core("intersect", flushable=True)
+
+    coord_isect = nlb.register_core("intersect", flushable=True)
+
+    reg_coord = nlb.register_core("register")
+    reg_eos_out = nlb.register_core("register")
+    reg_valid_out = nlb.register_core("register")
+
+    valid_out = nlb.register_core("io_1")
+    eos_out = nlb.register_core("io_1")
+    coord_out = nlb.register_core("io_16")
+    o_coord_out = nlb.register_core("io_16")
+    val_out_0 = nlb.register_core("io_16")
+    val_out_1 = nlb.register_core("io_16")
+
+    ready_in = nlb.register_core("io_1")
+    flush_in = nlb.register_core("io_1")
+
+    conn_dict = {
+        # Set up streaming out matrix from scan_mrows
+        'scan_aroot_to_mem_aroot': [
+            ([(scan_aroot, "addr_out"), (mem_aroot, "addr_in_0")], 16),
+            ([(scan_aroot, "ready_out"), (mem_aroot, "ren_in_0")], 1),
+            ([(mem_aroot, "data_out_0"), (scan_aroot, "data_in")], 16),
+            ([(mem_aroot, "valid_out_0"), (scan_aroot, "valid_in")], 1)
+        ],
+
+        'scan_broot_to_mem_broot': [
+            ([(scan_broot, "addr_out"), (mem_broot, "addr_in_0")], 16),
+            ([(scan_broot, "ready_out"), (mem_broot, "ren_in_0")], 1),
+            ([(mem_broot, "data_out_0"), (scan_broot, "data_in")], 16),
+            ([(mem_broot, "valid_out_0"), (scan_broot, "valid_in")], 1)
+        ],
+
+        # top level intersection
+        'root_scans_to_intersect': [
+            ([(scan_aroot, "coord_out"), (isect_row, "coord_in_0")], 16),
+            ([(scan_broot, "coord_out"), (isect_row, "coord_in_1")], 16),
+            ([(scan_aroot, "payload_ptr"), (isect_row, "payload_ptr_0")], 16),
+            ([(scan_broot, "payload_ptr"), (isect_row, "payload_ptr_1")], 16),
+            ([(scan_aroot, "valid_out"), (isect_row, "valid_in_0")], 1),
+            ([(scan_broot, "valid_out"), (isect_row, "valid_in_1")], 1),
+            ([(scan_aroot, "eos_out"), (isect_row, "eos_in_0")], 1),
+            ([(scan_broot, "eos_out"), (isect_row, "eos_in_1")], 1),
+            ([(isect_row, "ready_out_0"), (scan_aroot, "ready_in")], 1),
+            ([(isect_row, "ready_out_1"), (scan_broot, "ready_in")], 1)
+        ],
+
+        # top intersect to the next level of scanners
+        'intersect_to_scan_rows': [
+            ([(isect_row, "pos_out_0"), (scan_arows, "us_pos_in")], 16),
+            ([(isect_row, "pos_out_1"), (scan_brows, "us_pos_in")], 16),
+            # Bring intersect coord to the scanner to emit final coords
+            ([(isect_row, "coord_out"), (scan_arows, "us_coord_in"), (scan_brows, "us_coord_in")], 16),
+            ([(isect_row, "valid_out"), (scan_arows, "us_valid_in"), (scan_brows, "us_valid_in")], 1),
+            ([(isect_row, "eos_out"), (scan_arows, "us_eos_in"), (scan_brows, "us_eos_in")], 1),
+            ([(scan_arows, "us_ready_out"), (isect_row, "ready_in")], 1)
+        ],
+
+        'scan_arows_to_mem_arows': [
+            ([(scan_arows, "addr_out"), (mem_arows, "addr_in_0")], 16),
+            ([(scan_arows, "ready_out"), (mem_arows, "ren_in_0")], 1),
+            ([(mem_arows, "data_out_0"), (scan_arows, "data_in")], 16),
+            ([(mem_arows, "valid_out_0"), (scan_arows, "valid_in")], 1)
+        ],
+
+        'scan_brows_to_mem_brows': [
+            ([(scan_brows, "addr_out"), (mem_brows, "addr_in_0")], 16),
+            ([(scan_brows, "ready_out"), (mem_brows, "ren_in_0")], 1),
+            ([(mem_brows, "data_out_0"), (scan_brows, "data_in")], 16),
+            ([(mem_brows, "valid_out_0"), (scan_brows, "valid_in")], 1)
+        ],
+
+        # row scanners to intersect
+        'row_scans_to_intersect': [
+            ([(scan_arows, "coord_out"), (isect_col, "coord_in_0")], 16),
+            ([(scan_brows, "coord_out"), (isect_col, "coord_in_1")], 16),
+            ([(scan_arows, "payload_ptr"), (isect_col, "payload_ptr_0")], 16),
+            ([(scan_brows, "payload_ptr"), (isect_col, "payload_ptr_1")], 16),
+            ([(scan_arows, "valid_out"), (isect_col, "valid_in_0")], 1),
+            ([(scan_brows, "valid_out"), (isect_col, "valid_in_1")], 1),
+            ([(scan_arows, "eos_out"), (isect_col, "eos_in_0")], 1),
+            ([(scan_brows, "eos_out"), (isect_col, "eos_in_1")], 1),
+            ([(isect_col, "ready_out_0"), (scan_arows, "ready_in")], 1),
+            ([(isect_col, "ready_out_1"), (scan_brows, "ready_in")], 1)
+        ],
+
+        # Basically apply ready_in to the isect
+        'isect_to_io': [
+            ([(ready_in, "io2f_1"), (isect_col, "ready_in"), ()], 1),
+            # Register coord_out
+            ([(isect_col, "coord_out"), (reg_coord, "reg")], 16),
+            ([(reg_coord, "reg"), (coord_out, "f2io_16")], 16),
+            # Register valid_out
+            # ([(isect, "valid_out"), (reg_valid_out, "reg")], 1),
+            ([(reg_valid_out, "reg"), (valid_out, "f2io_1")], 1),
+            # Register eos_out
+            ([(isect_col, "eos_out"), (reg_eos_out, "reg")], 1),
+            ([(reg_eos_out, "reg"), (eos_out, "f2io_1")], 1),
+        ],
+
+        # Read from the corresponding memories to get actual values
+        'isect_to_value_mems': [
+            ([(isect_col, "pos_out_0"), (mem_avals, "addr_in_0")], 16),
+            ([(isect_col, "pos_out_1"), (mem_bvals, "addr_in_0")], 16),
+            ([(isect_col, "valid_out"), (mem_avals, "ren_in_0"), (mem_bvals, "ren_in_0"), (reg_valid_out, "reg")], 1),
+        ],
+
+        'value_mems_to_io': [
+            ([(mem_avals, "data_out_0"), (val_out_0, "f2io_16")], 16),
+            ([(mem_bvals, "data_out_0"), (val_out_1, "f2io_16")], 16),
+        ]
+    }
+
+    connections = nlb.connections_from_json(conn_dict)
+    connections += nlb.emit_flush_connection(flush_in)
+    # Add all flushes...
+    nlb.add_connections(connections=connections)
+    nlb.get_route_config()
+
+    # App data
+    matrix_size = 4
+    matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
+    (mouter, mptr, minner, mmatrix_vals) = compress_matrix(matrix, row=True)
+    mroot = [0, 3]
+    mroot = align_data(mroot, 4)
+    mouter = align_data(mouter, 4)
+    mptr = align_data(mptr, 4)
+    minner = align_data(minner, 4)
+    minner_offset_root = len(mroot)
+    mmatrix_vals = align_data(mmatrix_vals, 4)
+    mroot_data = mroot + mouter
+    minner_offset_row = len(mptr)
+    mrow_data = mptr + minner
+    max_outer_dim = matrix_size
+    mmatrix_vals_alt = [x + 5 for x in mmatrix_vals]
+
+    nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, 0, 1, 1))
+    nlb.configure_tile(scan_arows, (minner_offset_row, max_outer_dim, 0, 4, 0))
+    nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, 0, 1, 1))
+    nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, 0, 4, 0))
+    nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_data}]})
+    nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_data}]})
+    nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_vals}]})
+    nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_data}]})
+    nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_data}]})
+    nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}]})
+    nlb.configure_tile(isect_row, 0)
+    nlb.configure_tile(isect_col, 0)
+    nlb.configure_tile(coord_isect, 2)
+
+    # This does some cleanup like partitioning into compressed/uncompressed space
+    nlb.finalize_config()
+
+    # Create tester and perform init routine...
+    tester = nlb.get_tester()
+
+    h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
+    h_ready_in = nlb.get_handle(ready_in, prefix="glb2io_1_")
+    h_valid_out = nlb.get_handle(valid_out, prefix="io2glb_1_")
+    h_eos_out = nlb.get_handle(eos_out, prefix="io2glb_1_")
+    h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
+    h_coord_out = nlb.get_handle(coord_out, prefix="io2glb_16_")
+    h_val_out_0 = nlb.get_handle(val_out_0, prefix="io2glb_16_")
+    h_val_out_1 = nlb.get_handle(val_out_1, prefix="io2glb_16_")
+    stall_in = nlb.get_handle_str("stall")
+
+    tester.reset()
+    tester.zero_inputs()
+    # Stall during config
+    tester.poke(stall_in, 1)
+
+    # After stalling, we can configure the circuit
+    # with its configuration bitstream
+    nlb.configure_circuit()
+
+    tester.done_config()
+    tester.poke(stall_in, 0)
+    tester.eval()
+
+    # Get flush handle and apply flush to start off app
+    tester.poke(h_flush_in, 1)
+    tester.eval()
+    tester.step(2)
+    tester.poke(h_flush_in, 0)
+    tester.eval()
+
+    for i in range(num_cycles):
+        tester.poke(h_ready_in, 1)
+        # tester.poke(circuit.interface[pop], 1)
+        tester.eval()
+
+        # If we have valid, print the two datas
+        tester_if = tester._if(h_valid_out)
+        tester_if.print("COORD: %d, VAL0: %d, VAL1: %d\n",
+                        h_coord_out,
+                        h_val_out_0,
+                        h_val_out_1)
+        if_eos_finish = tester._if(h_eos_out)
+        if_eos_finish.print("EOS IS HIGH\n")
+
+        tester.step(2)
+
+    run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
+
+
+def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
+    # Streams and code to create them and align them
+    num_cycles = 50
+    chip_size = 8
+    num_tracks = 5
+    altcore = [ScannerCore, IntersectCore, PeakCore, RegCore]
+
+    interconnect = create_cgra(width=chip_size, height=chip_size,
+                               io_sides=NetlistBuilder.io_sides(),
+                               num_tracks=num_tracks,
+                               add_pd=True,
+                               mem_ratio=(1, 2),
+                               altcore=altcore)
+
+    nlb = NetlistBuilder(interconnect=interconnect, cwd=cwd)
+    # Create netlist builder and register the needed cores...
+
+    # Matrix A
+    scan_aroot = nlb.register_core("scanner", flushable=True, name="scan_aroot")
+    scan_arows = nlb.register_core("scanner", flushable=True, name="scan_arows")
+    mem_aroot = nlb.register_core("memtile", flushable=True, name="mem_aroot")
+    mem_arows = nlb.register_core("memtile", flushable=True, name="mem_arows")
+    mem_avals = nlb.register_core("memtile", flushable=True, name="mem_avals")
+
+    # Matrix B
+    scan_broot = nlb.register_core("scanner", flushable=True, name="scan_broot")
+    scan_brows = nlb.register_core("scanner", flushable=True, name="scan_brows")
+    mem_broot = nlb.register_core("memtile", flushable=True, name="mem_broot")
+    mem_brows = nlb.register_core("memtile", flushable=True, name="mem_brows")
+    mem_bvals = nlb.register_core("memtile", flushable=True, name="mem_bvals")
+
+    # Intersect the two...
+    isect_row = nlb.register_core("intersect", flushable=True, name="isect_row")
+    isect_col = nlb.register_core("intersect", flushable=True, name="isect_col")
+
+    reg_coord = nlb.register_core("register", name="reg_coord")
+    reg_eos_out = nlb.register_core("register", name="reg_eos_out")
+    reg_valid_out = nlb.register_core("register", name="reg_valid_out")
+
+    valid_out = nlb.register_core("io_1", name="valid_out")
+    eos_out = nlb.register_core("io_1", name="eos_out")
+    coord_out = nlb.register_core("io_16", name="coord_out")
+    val_out_0 = nlb.register_core("io_16", name="val_out_0")
+    val_out_1 = nlb.register_core("io_16", name="val_out_1")
+    accum_data_out = nlb.register_core("io_16", name="accum_data_out")
+    accum_valid_out = nlb.register_core("io_1", name="accum_valid_out")
+
+    ready_in = nlb.register_core("io_1", name="ready_in")
+    flush_in = nlb.register_core("io_1", name="flush_in")
+
+    accum_reg = nlb.register_core("regcore", flushable=True, name="accum_reg")
+    pe_mul = nlb.register_core("pe", name="pe_mul")
+
+    conn_dict = {
+        # Set up streaming out matrix from scan_mrows
+        'scan_aroot_to_mem_aroot': [
+            ([(scan_aroot, "addr_out"), (mem_aroot, "addr_in_0")], 16),
+            ([(scan_aroot, "ready_out"), (mem_aroot, "ren_in_0")], 1),
+            ([(mem_aroot, "data_out_0"), (scan_aroot, "data_in")], 16),
+            ([(mem_aroot, "valid_out_0"), (scan_aroot, "valid_in")], 1)
+        ],
+
+        'scan_broot_to_mem_broot': [
+            ([(scan_broot, "addr_out"), (mem_broot, "addr_in_0")], 16),
+            ([(scan_broot, "ready_out"), (mem_broot, "ren_in_0")], 1),
+            ([(mem_broot, "data_out_0"), (scan_broot, "data_in")], 16),
+            ([(mem_broot, "valid_out_0"), (scan_broot, "valid_in")], 1)
+        ],
+
+        # top level intersection
+        'root_scans_to_intersect': [
+            ([(scan_aroot, "coord_out"), (isect_row, "coord_in_0")], 16),
+            ([(scan_broot, "coord_out"), (isect_row, "coord_in_1")], 16),
+            ([(scan_aroot, "payload_ptr"), (isect_row, "payload_ptr_0")], 16),
+            ([(scan_broot, "payload_ptr"), (isect_row, "payload_ptr_1")], 16),
+            ([(scan_aroot, "valid_out"), (isect_row, "valid_in_0")], 1),
+            ([(scan_broot, "valid_out"), (isect_row, "valid_in_1")], 1),
+            ([(scan_aroot, "eos_out"), (isect_row, "eos_in_0")], 1),
+            ([(scan_broot, "eos_out"), (isect_row, "eos_in_1")], 1),
+            ([(isect_row, "ready_out_0"), (scan_aroot, "ready_in")], 1),
+            ([(isect_row, "ready_out_1"), (scan_broot, "ready_in")], 1)
+        ],
+
+        # top intersect to the next level of scanners
+        'intersect_to_scan_rows': [
+            ([(isect_row, "pos_out_0"), (scan_arows, "us_pos_in")], 16),
+            ([(isect_row, "pos_out_1"), (scan_brows, "us_pos_in")], 16),
+            ([(isect_row, "valid_out"), (scan_arows, "us_valid_in"), (scan_brows, "us_valid_in")], 1),
+            ([(isect_row, "eos_out"), (scan_arows, "us_eos_in"), (scan_brows, "us_eos_in")], 1),
+            ([(scan_arows, "us_ready_out"), (isect_row, "ready_in")], 1)
+        ],
+
+        'scan_arows_to_mem_arows': [
+            ([(scan_arows, "addr_out"), (mem_arows, "addr_in_0")], 16),
+            ([(scan_arows, "ready_out"), (mem_arows, "ren_in_0")], 1),
+            ([(mem_arows, "data_out_0"), (scan_arows, "data_in")], 16),
+            ([(mem_arows, "valid_out_0"), (scan_arows, "valid_in")], 1)
+        ],
+
+        'scan_brows_to_mem_brows': [
+            ([(scan_brows, "addr_out"), (mem_brows, "addr_in_0")], 16),
+            ([(scan_brows, "ready_out"), (mem_brows, "ren_in_0")], 1),
+            ([(mem_brows, "data_out_0"), (scan_brows, "data_in")], 16),
+            ([(mem_brows, "valid_out_0"), (scan_brows, "valid_in")], 1)
+        ],
+
+        # row scanners to intersect
+        'row_scans_to_intersect': [
+            ([(scan_arows, "coord_out"), (isect_col, "coord_in_0")], 16),
+            ([(scan_brows, "coord_out"), (isect_col, "coord_in_1")], 16),
+            ([(scan_arows, "payload_ptr"), (isect_col, "payload_ptr_0")], 16),
+            ([(scan_brows, "payload_ptr"), (isect_col, "payload_ptr_1")], 16),
+            ([(scan_arows, "valid_out"), (isect_col, "valid_in_0")], 1),
+            ([(scan_brows, "valid_out"), (isect_col, "valid_in_1")], 1),
+            ([(scan_arows, "eos_out"), (isect_col, "eos_in_0")], 1),
+            ([(scan_brows, "eos_out"), (isect_col, "eos_in_1")], 1),
+            ([(isect_col, "ready_out_0"), (scan_arows, "ready_in")], 1),
+            ([(isect_col, "ready_out_1"), (scan_brows, "ready_in")], 1)
+        ],
+
+        # Basically apply ready_in to the isect
+        'isect_to_io': [
+            ([(ready_in, "io2f_1"), (isect_col, "ready_in"), (accum_reg, "ready_in")], 1),
+            # Register coord_out
+            ([(isect_col, "coord_out"), (reg_coord, "reg")], 16),
+            ([(reg_coord, "reg"), (coord_out, "f2io_16")], 16),
+            # Register valid_out
+            # ([(isect, "valid_out"), (reg_valid_out, "reg")], 1),
+            ([(reg_valid_out, "reg"), (valid_out, "f2io_1"), (accum_reg, "valid_in")], 1),
+            # Register eos_out
+            ([(isect_col, "eos_out"), (reg_eos_out, "reg")], 1),
+            ([(reg_eos_out, "reg"), (eos_out, "f2io_1"), (accum_reg, "eos_in")], 1),
+        ],
+
+        # Read from the corresponding memories to get actual values
+        'isect_to_value_mems': [
+            ([(isect_col, "pos_out_0"), (mem_avals, "addr_in_0")], 16),
+            ([(isect_col, "pos_out_1"), (mem_bvals, "addr_in_0")], 16),
+            ([(isect_col, "valid_out"), (mem_avals, "ren_in_0"), (mem_bvals, "ren_in_0"), (reg_valid_out, "reg")], 1),
+        ],
+
+        # Pass values to multiplier and accum reg...
+
+        'value_mems_to_io': [
+            ([(mem_avals, "data_out_0"), (val_out_0, "f2io_16"), (pe_mul, "data0")], 16),
+            ([(mem_bvals, "data_out_0"), (val_out_1, "f2io_16"), (pe_mul, "data1")], 16),
+        ],
+
+        'pe_mul_to_accum_reg': [
+            ([(pe_mul, "alu_res"), (accum_reg, "data_in")], 16),
+        ],
+
+        'accum_reg_to_io': [
+            ([(accum_reg, "data_out"), (accum_data_out, "f2io_16")], 16),
+            ([(accum_reg, "valid_out"), (accum_valid_out, "f2io_1")], 1),
+        ]
+    }
+
+    connections = nlb.connections_from_json(conn_dict)
+    connections += nlb.emit_flush_connection(flush_in)
+    # Add all flushes...
+    nlb.add_connections(connections=connections)
+    nlb.get_route_config()
+
+    # App data
+    matrix_size = 4
+    matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
+    (mouter, mptr, minner, mmatrix_vals) = compress_matrix(matrix, row=True)
+    mroot = [0, 3]
+    mroot = align_data(mroot, 4)
+    mouter = align_data(mouter, 4)
+    mptr = align_data(mptr, 4)
+    minner = align_data(minner, 4)
+    minner_offset_root = len(mroot)
+    mmatrix_vals = align_data(mmatrix_vals, 4)
+    mroot_data = mroot + mouter
+    minner_offset_row = len(mptr)
+    mrow_data = mptr + minner
+    max_outer_dim = matrix_size
+    mmatrix_vals_alt = [x + 5 for x in mmatrix_vals]
+
+    matA_strides = [0, 1]
+    matA_ranges = [4, 4]
+
+    matB_strides = [1, 0]
+    matB_ranges = [4, 4]
+
+    nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, matA_strides, matA_ranges, 1))
+    # nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, 0, 1, 1))
+    nlb.configure_tile(scan_arows, (minner_offset_row, max_outer_dim, [0], [4], 0))
+    nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, matB_strides, matB_ranges, 1))
+    # nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, 0, 1, 1))
+    nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, [0], [4], 0))
+    nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_data}]})
+    nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_data}]})
+    nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_vals}]})
+    nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_data}]})
+    nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_data}]})
+    nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}]})
+    nlb.configure_tile(isect_row, 5)
+    nlb.configure_tile(isect_col, 5)
+    nlb.configure_tile(accum_reg, 5)
+    nlb.configure_tile(pe_mul, asm.umult0())
+
+    accum_reg = nlb.register_core("regcore", flushable=True, name="accum_reg")
+    pe_mul = nlb.register_core("pe", name="pe_mul")
+
+    # This does some cleanup like partitioning into compressed/uncompressed space
+    nlb.finalize_config()
+
+    # Create tester and perform init routine...
+    tester = nlb.get_tester()
+
+    h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
+    h_ready_in = nlb.get_handle(ready_in, prefix="glb2io_1_")
+    h_valid_out = nlb.get_handle(valid_out, prefix="io2glb_1_")
+    h_eos_out = nlb.get_handle(eos_out, prefix="io2glb_1_")
+    h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
+    h_coord_out = nlb.get_handle(coord_out, prefix="io2glb_16_")
+    h_val_out_0 = nlb.get_handle(val_out_0, prefix="io2glb_16_")
+    h_val_out_1 = nlb.get_handle(val_out_1, prefix="io2glb_16_")
+    stall_in = nlb.get_handle_str("stall")
+
+    tester.reset()
+    tester.zero_inputs()
+    # Stall during config
+    tester.poke(stall_in, 1)
+
+    # After stalling, we can configure the circuit
+    # with its configuration bitstream
+    nlb.configure_circuit()
+
+    tester.done_config()
+    tester.poke(stall_in, 0)
+    tester.eval()
+
+    # Get flush handle and apply flush to start off app
+    tester.poke(h_flush_in, 1)
+    tester.eval()
+    tester.step(2)
+    tester.poke(h_flush_in, 0)
+    tester.eval()
+
+    for i in range(num_cycles):
+        tester.poke(h_ready_in, 1)
+        # tester.poke(circuit.interface[pop], 1)
+        tester.eval()
+
+        # If we have valid, print the two datas
+        tester_if = tester._if(h_valid_out)
+        tester_if.print("COORD: %d, VAL0: %d, VAL1: %d\n",
+                        h_coord_out,
+                        h_val_out_0,
+                        h_val_out_1)
+        if_eos_finish = tester._if(h_eos_out)
+        if_eos_finish.print("EOS IS HIGH\n")
+
+        tester.step(2)
+
+    run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
+
+    # Get the primitive mapping so it's easy to read the design.place
+    nlb.display_names()
+
+
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
     from conftest import run_tb_fn
@@ -3198,7 +3709,7 @@ if __name__ == "__main__":
     # Make sure DISABLE_GP=1
     os.environ['DISABLE_GP'] = "1"
 
-    spM_spM_elementwise_hierarchical_json(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
+    spM_spM_multiplication_hierarchical_json(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
     exit()
 
     spVspV_regress(dump_dir="mek_dump",
