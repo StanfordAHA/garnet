@@ -5,9 +5,10 @@ env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
 
 steps:
-- label: 'QRC test 5h'
+- label: 'qrc test 5h'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir . --need_space 1G;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      set -x;
        ln -s $$GOLD/12-tsmc16;
        ln -s $$GOLD/20-cadence-innovus-flowsetup;
@@ -18,9 +19,10 @@ steps:
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 
-- label: 'QRC II'
+- label: 'qrc-2'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir . --need_space 1G;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      set -x;
        ln -s $$GOLD/12-tsmc16;
        ln -s $$GOLD/20-cadence-innovus-flowsetup;
