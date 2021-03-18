@@ -1,0 +1,34 @@
+agents: { jobsize: "hours" }
+
+env:
+  GOLD: /build/gold.219
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+
+steps:
+- label: 'QRC test 5h'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir . --need_space 1G;
+     set -x;
+       ln -s $$GOLD/12-tsmc16;
+       ln -s $$GOLD/20-cadence-innovus-flowsetup;
+       ln -s $$GOLD/28-cadence-innovus-postroute;
+     set +x;
+     echo "--- MAKE PRHOLD"; set -o pipefail;
+     make cadence-innovus-postroute_hold |& tee make-prhold.log'
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+
+- label: 'QRC II'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir . --need_space 1G;
+     set -x;
+       ln -s $$GOLD/12-tsmc16;
+       ln -s $$GOLD/20-cadence-innovus-flowsetup;
+       ln -s $$GOLD/28-cadence-innovus-postroute;
+     set +x;
+     echo "--- MAKE PRHOLD"; set -o pipefail;
+     make cadence-innovus-postroute_hold |& tee make-prhold.log'
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+
+
