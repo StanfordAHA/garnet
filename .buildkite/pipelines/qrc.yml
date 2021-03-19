@@ -1,9 +1,48 @@
-agents: { jobsize: "hours" }
+# agents: { jobsize: "hours" }
 
 steps:
-- label:    'qrc test 5h'
+
+- label:    'qrc0 5h'
   commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
 - wait:     { continue_on_failure: true }
+
+- label:    'qrc1'
+  commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
+- wait:     { continue_on_failure: true }
+
+- label:    'qrc2'
+  commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
+- wait:     { continue_on_failure: true }
+
+- label:    'qrc3'
+  commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
+- wait:     { continue_on_failure: true }
+
+- label:    'qrc4'
+  commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
+- wait:     { continue_on_failure: true }
+
+- label:    'qrc5'
+  commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
+- wait:     { continue_on_failure: true }
+
+- label:    'qrc6'
+  commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
+- wait:     { continue_on_failure: true }
+
+- label:    'qrc7'
+  commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
+- wait:     { continue_on_failure: true }
+
+- label:    'qrc8'
+  commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
+- wait:     { continue_on_failure: true }
+
+- label:    'qrc9'
+  commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
+- wait:     { continue_on_failure: true }
+
+
 
 
 

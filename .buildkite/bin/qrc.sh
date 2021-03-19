@@ -21,7 +21,7 @@ set -x;
     d=$REF/full_chip/*-${step};
 
     # log dir
-    mkdir -p logs;
+    mkdir -p logs; mkdir -p outputs
 
     # symlinks
     cp -rp $d/innovus-foundation-flow         . ;
@@ -44,3 +44,6 @@ echo "--- MAKE PRHOLD"; set -o pipefail;
 pwd
 ls -l ./mflowgen-run
 echo exit 13 | ./mflowgen-run |& tee mflowgen-run.log;
+
+# Clean up
+/bin/rm -rf checkpoints
