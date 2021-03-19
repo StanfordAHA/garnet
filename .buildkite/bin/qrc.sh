@@ -7,7 +7,7 @@ GOLD=/build/qrc.${BUILDKITE_BUILD_NUMBER};
 source mflowgen/bin/setup-buildkite.sh --dir $GOLD --need_space 1G;
 mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
-echo "--- SETUP";
+echo "--- QRC SETUP";
 set -x;
 
     ln -s $REF/full_chip/12-tsmc16;
@@ -41,4 +41,6 @@ set +x;
 
 # DO IT MAN!
 echo "--- MAKE PRHOLD"; set -o pipefail;
-echo exit 13 | mflowgen-run |& tee mflowgen-run.log;
+pwd
+ls -l ./mflowgen-run
+echo exit 13 | ./mflowgen-run |& tee mflowgen-run.log;
