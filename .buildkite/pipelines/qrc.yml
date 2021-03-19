@@ -1,4 +1,4 @@
-# agents: { jobsize: "hours" }
+agents: { queue: "papers" }
 
 steps:
 

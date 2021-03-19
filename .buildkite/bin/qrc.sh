@@ -4,6 +4,14 @@
 
 REF=/build/gold.228;
 GOLD=/build/qrc.${BUILDKITE_BUILD_NUMBER};
+
+for i in 0 1 2 3 4 5 6 7 8 9; do
+    if ! test -e ${GOLD}-$i; then
+        GOLD=${GOLD}-$i
+        break
+    fi
+done
+
 source mflowgen/bin/setup-buildkite.sh --dir $GOLD --need_space 1G;
 mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
