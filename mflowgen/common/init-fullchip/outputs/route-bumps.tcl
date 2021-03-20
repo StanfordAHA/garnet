@@ -10,6 +10,7 @@ if {0} {
     # Procs needed to run these scripts:
     source inputs/stylus-compatibility-procs.tcl
     source inputs/check-bumps.tcl
+    set route_cmd route_bumps_within_region; # PREFERRED!!
 }
 
 proc route_bumps_main {} {
@@ -66,28 +67,26 @@ proc route_bumps { route_cmd} {
     #     puts "@file_info: Route bumps group 3: top row exc. right corner, 37 bumps"
     #     select_bumpring_section  24 99 1 22; deselect_obj Bump_619.24.21; select_obj   Bump_673.26.23
 
+    # FIXME could/should insert blockage here and eliminate fix_jtag later, see 'proc fix_jtag'
     puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
     select_bumpring_section  24 99 18 22
-    deselect_obj Bump_619.24.21; # Remove this,
-    select_obj   Bump_673.26.23; # add that...
+    # deselect_obj Bump_619.24.21; # Remove this,
+    select_obj     Bump_673.26.23;   # add that (pad_ext_dump_start)...
+    select_obj     Bump_647.25.23;   # and this (pad_ramp_clock maybe) 
+    select_obj     Bump_648.25.24;   # and this (VSS)
     sleep 1; $route_cmd
 
-    # Top right corner is tricky b/c logo displaces a bunch of pads; FIXME/TODO should do this section FIRST?
-    # Five bumps overlap prev region but guess that's okay
-    # 05/16/2020 15-99 => 14-99
     puts "@file_info: Route bumps group 4a: top right corner"
-    select_bumpring_section 14 99 21 99; sleep 1; $route_cmd; # top right corner
+    select_bumpring_section 14 99 23 99; sleep 1; $route_cmd; # top right corner
 
-    # 05/16/2020 11-14 => 11-15 (oops but seems to have worked anyway)
     puts "@file_info: Route bumps group 4b: right center top"
-    # select_bumpring_section 11 14 21 99; sleep 1; $route_cmd; # right center top
-    # FIXME low priority - Overlaps prev group by two rows but seems okay
-    select_bumpring_section 11 15 21 99; sleep 1; $route_cmd; # right center top
+    select_bumpring_section 11 13 21 99; sleep 1; $route_cmd; # right center top
 
     puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
     select_bumpring_section  7 10 21 99; sleep 1; $route_cmd;  # right center bottom
 
     # Last minute hack: reroute JTAG bump that shorts with SJK hand routes
+    puts "@file_info: Last minute hack to fix jtag routes"
     fix_jtag
 
     ########################################################################
@@ -308,21 +307,24 @@ proc fix_jtag {} {
     # Rip up and reroute JTAG wire that otherwise
     # shorts with sjk analog phy routing
 
-    # Delete old route
-    set net pad_jtag_intf_i_phy_tck
-    editDelete -net $net
+    # Clean slate
+    deselectAll
+    
+    # Delete old routes b/c default router runs wires over PHY rdl region
+    set net pad_jtag_intf_i_phy_tck; editDelete -net $net
+    set net pad_jtag_intf_i_phy_tdi; editDelete -net $net
 
-    # Insert blockage
+    # Insert blockage over forbidden PHY rdl region
     create_route_blockage -layer AP  -name temp -box "3125 4690  3353 4900"
     redraw; sleep 1
 
-    # Select bump
-    deselectAll
-    set bump Bump_668.26.18
-    select_obj $bump
-    viewBumpConnection -bump $bump; redraw; sleep 1
+    # Rebuild deleted routes for tck and tdi
+    # Select tck and tdi bump(s)
+    set bump1 Bump_668.26.18; select_obj $bump1
+    set bump2 Bump_643.25.19; select_obj $bump2
 
-    # Build new route
+    # Build new tck and tdi routes
+    viewBumpConnection -selected; sleep 1
     myfcroute -incremental -selected_bump
 
     # Delete blockage

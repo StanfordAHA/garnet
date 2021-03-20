@@ -67,7 +67,8 @@ def construct():
   gen_sram     = Step( this_dir + '/../common/gen_sram_macro'    )
   custom_init  = Step( this_dir + '/custom-init'                 )
   custom_power = Step( this_dir + '/../common/custom-power-leaf' )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules' )
+  short_fix    = Step( this_dir + '/../common/custom-short-fix'  )
+  custom_lvs   = Step( this_dir + '/custom-lvs-rules'            )
 
   # Default steps
 
@@ -125,6 +126,12 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
 
   #-----------------------------------------------------------------------
+  # Add short_fix script(s) to list of available postroute_hold scripts
+  #-----------------------------------------------------------------------
+
+  postroute_hold.extend_inputs( short_fix.all_outputs() )
+
+  #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
@@ -143,6 +150,7 @@ def construct():
   g.add_step( postcts_hold   )
   g.add_step( route          )
   g.add_step( postroute      )
+  g.add_step( short_fix      )
   g.add_step( postroute_hold )
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
@@ -208,10 +216,12 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    signoff        )
 
+  # Fetch short-fix script in prep for eventual use by postroute_hold
+  g.connect_by_name( short_fix, postroute_hold )
+
   g.connect_by_name( custom_init,  init       )
   g.connect_by_name( custom_power, power      )
   g.connect_by_name( custom_lvs,   lvs        )
-
   g.connect_by_name( init,           power          )
   g.connect_by_name( power,          place          )
   g.connect_by_name( place,          cts            )
@@ -264,6 +274,11 @@ def construct():
 
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
+
+  # Add fix-shorts as the last thing to do in postroute_hold
+  order = postroute_hold.get_param('order') ; # get the default script run order
+  order.append('fix-shorts.tcl' )           ; # Add fix-shorts at the end
+  postroute_hold.update_params( { 'order': order } ) ; # Update
 
   # useful_skew
   cts.update_params( { 'useful_skew': False }, allow_new=True )

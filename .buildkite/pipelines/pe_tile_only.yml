@@ -1,0 +1,23 @@
+agents: { jobsize: "hours" }
+
+env:
+  GOLD: /build/bdgtc-pe.${BUILDKITE_BUILD_NUMBER}
+
+steps:
+
+##############################################################################
+# INDIVIDUAL TILE RUNS - PE tile only
+
+- label: 'setup'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/tile_array'
+- wait: ~
+
+- label: 'PE'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 30G;
+     set -o pipefail;
+     make Tile_PE |& tee make-pe.log;
+     $$GARNET_HOME/.buildkite/pipelines/check_pe_area.sh
+     '

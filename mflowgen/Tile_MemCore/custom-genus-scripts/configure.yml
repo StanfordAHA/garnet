@@ -10,4 +10,4 @@ name: custom-genus-scripts
 
 outputs:
   - copy_sdc.tcl
-
+  - generate-results.tcl
