@@ -32,6 +32,8 @@ FIX_SYSTEMRDL = \
     sed -i '/endmodule/d' ./systemRDL/output/glb_jrdl_decode.sv; \
     printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glb_jrdl_decode.sv
 
+GENERATE_TV = python glb_test_gen.py
+
 XRUN = xrun \
 	   -64bit \
 	   -sv \
@@ -130,6 +132,7 @@ sim-tile-gl: $(GLB_TILE_NETLIST)
 sim: XRUNARGS+= -notimingchecks
 sim: DESIGNARGS += -v $(SRAM_STUB) -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist 
 sim:
+	$(GENERATE_TV); 
 	$(XRUN)
 
 # gate-level simulation
