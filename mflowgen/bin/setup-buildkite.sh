@@ -195,6 +195,15 @@ if [ "$DO_UNIT_TESTS" == "true" ]; then # cut'n'paste for unit tests
     find_existing_dir /
 fi
 
+# If server dies and reboots, agent can lose access to file system(!)
+if expr $build_dir : /build > /dev/null; then
+  if ! test -d /build; then
+      echo "**ERROR: Cannot find dir '/build'; may need to restart buildkite agent(s)"
+      return 13 || exit 13
+  fi
+fi
+
+
 # Find currently-existing portion of target build dir
 dest_dir=`find_existing_dir $build_dir`
 
@@ -429,20 +438,36 @@ else
     echo "I will try and fix it for you"
     echo ""
     FIXED=
-    for d in $( echo $PATH | sed 's/:/ /g' ); do 
-        if test -x $d/tclsh; then
-            tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
-            echo -n "  Found tclsh v$tclsh_version: $d/tclsh"
-            if (( $(echo "$tclsh_version < 8.5" | bc -l) )); then
-                echo "  - no good"
-            else
-                echo '  - GOOD!'
-                eval 'function tclsh { '$d/tclsh' $* ; }'
-                FIXED=true
-                break
+    # Lowest impact solution is maybe to give tclsh its own little directory
+    TBIN=~/bin-tclsh-fix
+    export PATH=${TBIN}:${PATH}
+    tclsh_version=`echo 'puts $tcl_version; exit 0' | tclsh`
+    if (( $(echo "$tclsh_version >= 8.5" | bc -l) )); then
+        echo "  - FIXED! Found good $TBIN/tclsh"
+        ls -l $TBIN/tclsh
+        FIXED=true
+    else
+        echo "  - ${TBIN}/tclsh no good; looking for a new one"
+        test -d $TBIN && /bin/rm -rf $TBIN; mkdir -p $TBIN
+        for d in $( echo $PATH | sed 's/:/ /g' ); do 
+            if test -x $d/tclsh; then
+                tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
+                echo -n "  Found tclsh v$tclsh_version: $d/tclsh"
+                if (( $(echo "$tclsh_version < 8.5" | bc -l) )); then
+                    echo "  - no good"
+                else
+                    # Clever! But...functions don't survive into called scripts :(
+                    # eval 'function tclsh { '$d/tclsh' $* ; }'
+
+                    # So add it to ~/bin I guess
+                    echo '  - GOOD! Adding to ~/bin'
+                    (cd $TBIN; ln -s $d/tclsh; ls -l)
+                    FIXED=true
+                    break
+                fi
             fi
-        fi
-    done
+        done
+    fi
     if [ ! $FIXED ]; then
         echo "**ERROR could not find tclsh with version >= 8.5!"
         return 13 || exit 13

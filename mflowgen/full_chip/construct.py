@@ -71,9 +71,13 @@ def construct():
     'signoff_engine' : True,
     'hold_target_slack'  : 0.060,
     # LVS
+    # - need lvs2 because dragonphy uses LVT cells
+    'lvs_extra_spice_include' : 'inputs/adk_lvs2/*.cdl',
     'lvs_hcells_file'   : 'inputs/adk/hcells.inc',
     'lvs_connect_names' : '"VDD VSS VDDPST"',
     'lvs_verify_netlist' : 0,
+    # TSMC16 support for LVS - need lvs2 because dragonphy uses LVT cells
+    'adk_view_lvs2'     : 'multivt',
     # TLX Ports Partitions
     'TLX_FWD_DATA_LO_WIDTH' : 16,
     'TLX_REV_DATA_LO_WIDTH' : 45,
@@ -224,6 +228,7 @@ def construct():
   lvs.extend_inputs( ['global_controller.lvs.v'] )
   lvs.extend_inputs( ['sram.spi'] )
   lvs.extend_inputs( ['dragonphy_top.spi'] )
+  lvs.extend_inputs( ['adk_lvs2'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 

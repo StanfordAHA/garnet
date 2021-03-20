@@ -22,7 +22,7 @@ if $::env(PWR_AWARE) {
 
 # Case analysis/scenarios
 
-set alu_path PE_inst0/WrappedPE_inst0\$PE_inst0/ALU_inst0\$ALU_comb_inst0
+set alu_path PE_inst0/WrappedPE_inst0\$PE_inst0/ALU_inst0
 set fp_add_path $alu_path/magma_BFloat_16_add_inst0
 set fp_mul_path $alu_path/magma_BFloat_16_mul_inst0
 set mul_path $alu_path/magma_Bits_32_mul_inst0
@@ -39,12 +39,18 @@ set_constraint_mode default_c
 # Constraints are also valid for baseline PE, but these false paths are
 # not a concern for timing for the baseline PE
 
+##############################################################################
+# steveri 01/2101 FIXME some of these set_false_path commands throw warnings e.g.
+# Warning : At least one of the provided to-point is not a timing endpoint. [TIM-317]
+#         : Provided to_point is '/designs/Tile_PE/instances_hier/PE_inst0/instances_hier/WrappedPE_inst0$PE_inst0/pins_in/inst[66]'.
+# /designs/Tile_PE/modes/default_c/exceptions/path_disables/dis_3
+##############################################################################
+
 # Paths from config input ports to SB output ports
 set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
 
 # Paths from config input ports to SB registers
 set sb_reg_path SB_ID0_5TRACKS_B*_PE/REG_T*_B*/value__CE/value_reg*/*
-set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
 
 # Paths from config input ports to PE registers
 set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
@@ -62,10 +68,31 @@ set_multicycle_path 1 -from [get_ports config_* -filter direction==in] -to [get_
 
 source -echo -verbose inputs/common.tcl
 
-set_false_path -from [all_inputs] -through [get_pins [list $fp_mul_path/*]]
-set_false_path -to [all_outputs] -through [get_pins [list $fp_mul_path/*]]
-set_false_path -from [all_inputs] -through [get_pins [list $fp_add_path/*]]
-set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
+##############################################################################
+# steveri 01/2101 Error b/c sometimes [get_pins] returns null...see fix below
+# 
+# set_false_path -from [all_inputs] -through [get_pins [list $fp_mul_path/*]]
+# set_false_path -to [all_outputs] -through [get_pins [list $fp_mul_path/*]]
+# set_false_path -from [all_inputs] -through [get_pins [list $fp_add_path/*]]
+# set_false_path -to [all_outputs] -through [get_pins [list $fp_add_path/*]]
+# 
+##############################################################################
+
+proc set_false_path_if_pins_exist { path } {
+    set all_paths [list $path/*]; echo "all_paths=$all_paths"
+    set pins [get_pins $all_paths]; echo "pins=$pins"
+    if { $pins == "" } {
+        echo "WARNING: No pins exist in path(s) $path"
+        echo "WARNING: Cannot set false path"
+    } {
+        echo set_false_path -to [all_outputs] -through $pins
+        set_false_path -to [all_outputs] -through $pins
+        echo set_false_path -from [all_inputs] -through $pins
+        set_false_path -from [all_inputs] -through $pins
+    }
+}
+set_false_path_if_pins_exist $fp_mul_path
+set_false_path_if_pins_exist $fp_add_path
 
 ########################################################################
 # ALU OP SCENARIOS

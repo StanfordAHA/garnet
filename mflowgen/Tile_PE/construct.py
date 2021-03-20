@@ -25,20 +25,14 @@ def construct():
   pwr_aware = True
 
   flatten = 3
-  os_flatten = os.environ.get('FLATTEN')
-  if os_flatten:
-      flatten = os_flatten
+  if os.environ.get('FLATTEN'):
+      flatten = os.environ.get('FLATTEN')
 
-  # RTL power estimation
-  rtl_power = False
-  if os.environ.get('RTL_POWER') == 'True':
-      pwr_aware = False
-      rtl_power = True
-
-  # DC power estimation
   synth_power = False
   if os.environ.get('SYNTH_POWER') == 'True':
       synth_power = True
+  # power domains do not work with post-synth power
+  if synth_power:
       pwr_aware = False
 
   parameters = {
@@ -55,10 +49,27 @@ def construct():
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
     'core_density_target': 0.63,
-    'saif_instance'     : 'TilePETb/Tile_PE_inst',
-    'testbench_name'    : 'TilePETb',
-    'strip_path'        : 'TilePETb/Tile_PE_inst'
+    # Power analysis
+    "use_sdf"           : False, # uses sdf but not the way it is in xrun node
+    'app_to_run'        : 'tests/conv_3_3',
+    'saif_instance'     : 'testbench/dut',
+    'testbench_name'    : 'testbench',
+    'strip_path'        : 'testbench/dut'
     }
+
+  # steveri 2101: Hoping this is temporary.
+  # But for now, 1.1ns pe tile is too big and full-chip CI test FAILS
+  if (os.getenv('USER') == "buildkite-agent"):
+      parameters['clock_period'] = 4.0; # 4ns = 250 MHz
+
+  # User-level option to change clock frequency
+  # E.g. 'export clock_period_PE="4.0"' to target 250MHz
+  # Optionally could restrict to bk only: if (os.getenv('USER') == "buildkite-agent")
+  cp=os.getenv('clock_period_PE')
+  if (cp != None):
+      print("@file_info: WARNING found env var 'clock_period_PE'")
+      print("@file_info: WARNING setting PE clock period to '%s'" % cp)
+      parameters['clock_period'] = cp;
 
   #-----------------------------------------------------------------------
   # Create nodes
@@ -79,28 +90,15 @@ def construct():
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                  )
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
+  short_fix            = Step( this_dir + '/../common/custom-short-fix'  )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
-  testbench            = Step( this_dir + '/testbench'                             )
-  xcelium_sim          = Step( this_dir + '/../common/cadence-xcelium-sim'         )
-  if rtl_power:
-    rtl_sim              = xcelium_sim.clone()
-    rtl_sim.set_name( 'rtl-sim' )
-    pt_power_rtl         = Step( this_dir + '/../common/synopsys-ptpx-rtl'         )
-    rtl_sim.extend_inputs( testbench.all_outputs() )
-  gl_sim               = xcelium_sim.clone()
-  gl_sim.set_name( 'gl-sim' )
-  gl_sim.extend_inputs( testbench.all_outputs() )
-  pt_power_gl          = Step( this_dir + '/../common/synopsys-ptpx-gl'            )
-  parse_power_gl       = Step( this_dir + '/parse-power-gl'                        )
-
+  testbench            = Step( this_dir + '/../common/testbench'                   )
+  application          = Step( this_dir + '/../common/application'                 )
   if synth_power:
-    synth_sim               = xcelium_sim.clone()
-    synth_sim.set_name( 'synth-sim' )
-    synth_sim.extend_inputs( testbench.all_outputs() )
-    synth_sim.extend_inputs( ['design.v'] )
-    pt_power_synth          = Step( this_dir + '/../common/synopsys-ptpx-synth'    )
+    post_synth_power     = Step( this_dir + '/../common/tile-post-synth-power'     )
+  post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'         )
 
   # Power aware setup
   power_domains = None
@@ -108,13 +106,11 @@ def construct():
   if pwr_aware:
       power_domains = Step( this_dir + '/../common/power-domains' )
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
-  # Default steps
 
+  # Default steps
   info         = Step( 'info',                          default=True )
   synth        = Step( 'cadence-genus-synthesis',       default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
-  if synth_power:
-      synth.extend_outputs( ['design.spef.gz'] )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
   place        = Step( 'cadence-innovus-place',         default=True )
@@ -134,13 +130,11 @@ def construct():
   debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
 
   # Add custom timing scripts
-
   custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
   for c_step in custom_timing_steps:
     c_step.extend_inputs( custom_timing_assert.all_outputs() )
 
   # Add extra input edges to innovus steps that need custom tweaks
-
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
@@ -173,16 +167,16 @@ def construct():
       postroute.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
-
-      gl_sim.extend_inputs( ["design.vcs.pg.v"] )
   
+  # Add short_fix script(s) to list of available postroute scripts
+  postroute.extend_inputs( short_fix.all_outputs() )
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
   g.add_step( info                     )
   g.add_step( rtl                      )
-  g.add_step( testbench                )
   g.add_step( constraints              )
   g.add_step( custom_dc_scripts        )
   g.add_step( synth                    )
@@ -199,6 +193,7 @@ def construct():
   g.add_step( postcts_hold             )
   g.add_step( route                    )
   g.add_step( postroute                )
+  g.add_step( short_fix                )
   g.add_step( signoff                  )
   g.add_step( pt_signoff               )
   g.add_step( genlibdb_constraints     )
@@ -207,20 +202,16 @@ def construct():
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
 
-  if rtl_power:
-    g.add_step( rtl_sim                )
-    g.add_step( pt_power_rtl           )
-  g.add_step( gl_sim                   )
-  g.add_step( pt_power_gl              )
-  g.add_step( parse_power_gl           )
+  g.add_step( application              )
+  g.add_step( testbench                )
   if synth_power:
-    g.add_step( synth_sim              )
-    g.add_step( pt_power_synth            )
+    g.add_step( post_synth_power       )
+  g.add_step( post_pnr_power           )
 
   # Power aware step
   if pwr_aware:
-      g.add_step( power_domains            )
-      g.add_step( pwr_aware_gls            )
+      g.add_step( power_domains        )
+      g.add_step( pwr_aware_gls        )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -242,19 +233,6 @@ def construct():
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
-  g.connect_by_name( adk,      pt_power_gl  )
-
-  if rtl_power:
-    rtl_sim.extend_inputs(['design.v'])
-    g.connect_by_name( adk,      rtl_sim      )
-    g.connect_by_name( adk,      pt_power_rtl )
-    # To generate namemap
-    g.connect_by_name( rtl_sim,     dc       ) # run.saif
-    g.connect_by_name( rtl,          rtl_sim      ) # design.v
-    g.connect_by_name( testbench,    rtl_sim      ) # testbench.sv
-    g.connect_by_name( dc,       pt_power_rtl ) # design.namemap
-    g.connect_by_name( signoff,      pt_power_rtl ) # design.vcs.v, design.spef.gz, design.pt.sdc
-    g.connect_by_name( rtl_sim,      pt_power_rtl ) # run.saif
 
   g.connect_by_name( rtl,         synth          )
   g.connect_by_name( constraints, synth          )
@@ -285,6 +263,9 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
 
+  # Fetch short-fix script in prep for eventual use by postroute
+  g.connect_by_name( short_fix, postroute )
+
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
   g.connect_by_name( place,        cts          )
@@ -292,6 +273,7 @@ def construct():
   g.connect_by_name( postcts_hold, route        )
   g.connect_by_name( route,        postroute    )
   g.connect_by_name( postroute,    signoff      )
+
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
@@ -304,23 +286,15 @@ def construct():
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
-  g.connect_by_name( signoff,      pt_power_gl  )
-  g.connect_by_name( gl_sim,       pt_power_gl  ) # run.saif
-
-  g.connect_by_name( adk,          gl_sim       )
-  g.connect_by_name( signoff,      gl_sim       ) # design.vcs.v, design.spef.gz, design.pt.sdc
-  g.connect_by_name( pt_signoff,   gl_sim       ) # design.sdf
-  g.connect_by_name( testbench,    gl_sim       ) # testbench.sv
-  g.connect_by_name( pt_power_gl,  parse_power_gl ) # power.hier
-
+  g.connect_by_name( application, testbench       )
   if synth_power:
-    g.connect_by_name( adk,          pt_power_synth  )
-    g.connect_by_name( synth,        pt_power_synth  )
-    g.connect_by_name( synth_sim,    pt_power_synth  )
-  
-    g.connect_by_name( adk,          synth_sim       )
-    g.connect_by_name( synth,        synth_sim       )
-    g.connect_by_name( testbench,    synth_sim       )
+      g.connect_by_name( application, post_synth_power )
+      g.connect_by_name( synth,       post_synth_power )
+      g.connect_by_name( testbench,   post_synth_power )
+  g.connect_by_name( application, post_pnr_power )
+  g.connect_by_name( signoff,     post_pnr_power )
+  g.connect_by_name( pt_signoff,  post_pnr_power )
+  g.connect_by_name( testbench,   post_pnr_power )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
@@ -447,6 +421,11 @@ def construct():
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
       postroute.update_params( { 'order': order } )
+
+      # Add fix-shorts as the last thing to do in postroute
+      order = postroute.get_param('order') ; # get the default script run order
+      order.append('fix-shorts.tcl' )      ; # Add fix-shorts at the end
+      postroute.update_params( { 'order': order } ) ; # Update
 
       # signoff node
       order = signoff.get_param('order')
