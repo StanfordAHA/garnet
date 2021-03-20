@@ -66,10 +66,10 @@ task ProcMonitor::run();
             trans.rd_en   = vif.cbm.rd_en;
             trans.rd_addr = vif.cbm.rd_addr;
             while (1) begin
-                @(vif.cbm);
                 if (vif.cbm.rd_data_valid) begin
                     break;
                 end
+                @(vif.cbm);
             end
             while (1) begin
                 if (!vif.cbm.rd_data_valid) begin

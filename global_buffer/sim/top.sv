@@ -6,7 +6,7 @@
 ** Change history:
 **  09/19/2020 - Implement first version of uvm-style testbench
 **===========================================================================*/
-`define CLK_PERIOD 1100ps
+`define CLK_PERIOD 1200ps
 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
