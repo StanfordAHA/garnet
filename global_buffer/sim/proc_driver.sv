@@ -85,7 +85,6 @@ task ProcDriver::read(input ProcTransaction trans);
     fork
         begin
             @(vif.cbd);
-            #3
             for (int i=0; i<j; i++) begin
                 vif.cbd.rd_en   <= trans.rd_en;
                 // address increases by 8 every write

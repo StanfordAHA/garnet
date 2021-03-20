@@ -217,6 +217,7 @@ program glb_test
 
     initial begin
         wait(!reset);
+        repeat(10) @(posedge clk);
         seq = new();
 
         //=============================================================================
@@ -226,8 +227,8 @@ program glb_test
             empty_queues();
 
             for (int i=0; i<NUM_GLB_TILES*CGRA_PER_GLB; i=i+1) begin
-                p_trans_q[p_cnt++] = new(i*(1<<BANK_ADDR_WIDTH), 32);
-                p_trans_q[p_cnt++] = new(i*(1<<BANK_ADDR_WIDTH), 32, 1);
+                p_trans_q[p_cnt++] = new(i*(1<<BANK_ADDR_WIDTH), 2);
+                p_trans_q[p_cnt++] = new(i*(1<<BANK_ADDR_WIDTH), 2, 1);
             end
 
             foreach(p_trans_q[i]) begin
@@ -292,16 +293,21 @@ program glb_test
         if ($test$plusargs("TEST_CONFIG")) begin
             empty_queues();
 
-            fd = $fopen("glb.regpair", "r");
-            status = $fscanf(fd, "0x%h,%d", glb_cfg_addr, glb_cfg_data);
-            if(status != 2) $error("glb register pair read failed");
-            $fclose(fd);
+            // for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
+            for (int i=0; i<1; i=i+1) begin
+                fd = $fopen("glb.regpair", "r");
+                $fscanf(fd, "%d", num);
+                // for (int j=0; j<num; j++) begin
+                for (int j=0; j<3; j++) begin
+                    status = $fscanf(fd, "%h %d", glb_cfg_addr, glb_cfg_data);
+                    if(status != 2) $error("glb register pair read failed");
+                    r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, glb_cfg_data);
+                    r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, glb_cfg_data, 1);
+                    // r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, 0);
+                    // r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, 0, 1);
+                end
 
-            for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
-                r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, glb_cfg_data);
-                r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, glb_cfg_data, 1);
-                r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, 0);
-                r_trans_q[r_cnt++] = new((i << (AXI_ADDR_WIDTH-TILE_SEL_ADDR_WIDTH))|glb_cfg_addr, 0, 1);
+                $fclose(fd);
             end
 
             foreach(r_trans_q[i]) begin
@@ -414,16 +420,22 @@ program glb_test
             env.run();
 
             repeat(10) @(posedge clk);
-            top.pc_start_pulse[0] <= 1;
+            #300ps top.pc_start_pulse[0] <= 1;
             @(posedge clk);
-            top.pc_start_pulse[0] <= 0;
-            wait(top.pcfg_g2f_interrupt_pulse[0]);
+            #300ps top.pc_start_pulse[0] <= 0;
+            // while(1) begin
+            //     @(posedge clk);
+            //     if (top.pcfg_g2f_interrupt_pulse[0]) begin
+            //         break;
+            //     end
+            // end
 
-            for (int i=0; i<num; i++) begin
-                cfg_addr = cfg_addr_arr[i];
-                cfg_data = cfg_data_arr[i];
-                jtag_read(cfg_addr, cfg_data);
-            end
+            repeat(50) @(posedge clk);
+            // for (int i=0; i<num; i++) begin
+            //     cfg_addr = cfg_addr_arr[i];
+            //     cfg_data = cfg_data_arr[i];
+            //     jtag_read(cfg_addr, cfg_data);
+            // end
 
             repeat(30) @(posedge clk);
         end
@@ -539,7 +551,7 @@ program glb_test
         top.cgra_cfg_jtag_gc2glb_rd_en <= 1;
         top.cgra_cfg_jtag_gc2glb_addr <= addr;
         top.cgra_cfg_jtag_gc2glb_data <= 0;
-        @(posedge clk);
+        repeat(10) @(posedge clk);
         top.cgra_cfg_jtag_gc2glb_wr_en <= 0;
         top.cgra_cfg_jtag_gc2glb_rd_en <= 0;
         top.cgra_cfg_jtag_gc2glb_addr <= 0;

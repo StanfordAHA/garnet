@@ -47,7 +47,12 @@ task RegMonitor::run();
             trans.rd_en   = vif.cbm.rd_en;
             trans.rd_addr = vif.cbm.rd_addr;
 
-            wait(vif.cbm.rd_data_valid);
+            while (1) begin
+                @(vif.cbm);
+                if (vif.cbm.rd_data_valid) begin
+                    break;
+                end
+            end
             trans.rd_data = vif.cbm.rd_data;
             trans.rd_data_valid = vif.cbm.rd_data_valid;
             @(vif.cbm);

@@ -114,10 +114,8 @@ task Scoreboard::strm_run(int i);
                     int m = k / 4;
                     int n = k % 4;
                     mem[(st_start_addr >> 3) + m][16*n+:16] = s_trans.st_data[k];
-                    `ifdef DEBUG
                         $display("[SCB-LOG] STRM WRITE 2Bytes :: Addr = 0x%0h, \tData = 0x%0h",
                                  st_start_addr+2*k, s_trans.st_data[k]); 
-                    `endif
                 end
             end
         end
@@ -132,14 +130,9 @@ task Scoreboard::strm_run(int i);
                     assert (s_trans.ld_data[k] == mem[(ld_start_addr >> 3)+m][16*n+:16])
                     else    $error("[SCB-FAIL] STRM READ 2Bytes :: Addr = 0x%0h, \tData :: Expected = 0x%0h Actual = 0x%0h",
                                    ld_start_addr+2*k, mem[(ld_start_addr >> 3)+m][16*n+:16], s_trans.ld_data[k]); 
-                    `ifdef DEBUG
                         $display("[SCB-LOG] STRM READ 2Bytes :: Addr = 0x%0h, \tData = 0x%0h",
                                  ld_start_addr+2*k, s_trans.ld_data[k]); 
-                    `endif
                 end
-                $display("[SCB-PASS] Transaction type: %s READ \n \
-                         size: %0d Bytes, start_addr: 0x%0h \n",
-                         s_trans.trans_type.name(), s_trans.ld_length*CGRA_DATA_WIDTH/8, s_trans.ld_addr);
             end
         end
         no_trans++;

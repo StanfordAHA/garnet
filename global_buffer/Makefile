@@ -9,6 +9,15 @@ CGRA_WIDTH ?= 32
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
 XRUNARGS = 
+# XRUNARGS += +TEST_PROC_SIMPLE
+# XRUNARGS += +TEST_PROC_ALL
+# XRUNARGS += +TEST_JTAG
+# XRUNARGS += +TEST_CONFIG
+XRUNARGS += +TEST_PCFG
+# XRUNARGS += +TEST_STRM
+# XRUNARGS += +TEST_STRM_CHAIN
+XRUNARGS += +VCD_ON
+
 
 GLB_TILE_NETLIST := ./netlist/glb_tile.vcs.v
 GLB_TOP_NETLIST := ./netlist/global_buffer.vcs.v
@@ -120,14 +129,6 @@ sim-tile-gl: $(GLB_TILE_NETLIST)
 .PHONY: sim
 sim: XRUNARGS+= -notimingchecks
 sim: DESIGNARGS += -v $(SRAM_STUB) -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist 
-sim: XRUNARGS += +TEST_PROC_SIMPLE
-sim: XRUNARGS += +TEST_PROC_ALL
-sim: XRUNARGS += +TEST_JTAG
-sim: XRUNARGS += +TEST_CONFIG
-sim: XRUNARGS += +TEST_PCFG
-sim: XRUNARGS += +TEST_STRM
-sim: XRUNARGS += +TEST_STRM_CHAIN
-# sim: XRUNARGS += +VCD_ON
 sim:
 	$(XRUN)
 
@@ -138,9 +139,7 @@ sim-gl: DESIGNARGS += \
 	$(RTL_DIR)/global_buffer_pkg.svh \
 	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist \
 	-F netlist/netlist.filelist
-sim-gl: XRUNARGS += +VCD_ON
 # sim-gl: XRUNARGS += +define+PWR
-sim-gl: XRUNARGS += +TEST_PROC_SIMPLE
 sim-gl: XRUNARGS += +define+NON_STOP_IF_INPUT_Z
 sim-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING
 sim-gl: XRUNARGS += +define+TSMC_CM_UNIT_DELAY
