@@ -20,9 +20,9 @@ AXI_DATA_WIDTH ?= 32
 GLB_TILE_MEM_SIZE ?= 256
 CLK_PERIOD ?= 1.1ns
 TOP_NAME ?= top
-# RTL_FILES ?= -v $(garnet_dir)/garnet.v -v $(glb_dir)/rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
-# 			 -F $(glb_dir)/rtl/global_buffer.filelist -F $(glc_dir)/global_controller.filelist
-RTL_FILES ?= -v /home/kongty/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/ts1n16ffcllsblvtc2048x64m8sw_130a.v -v /home/kongty/mc/ts1n16ffcllsblvtc512x32m4s_130a/VERILOG/ts1n16ffcllsblvtc512x32m4s_130a.v -v $(garnet_dir)/virtual_conv33_harris/18-rtl/outputs/design.v -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv
+RTL_FILES ?= -v $(garnet_dir)/garnet.v -v $(glb_dir)/rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
+			 -F $(glb_dir)/rtl/global_buffer.filelist -F $(glc_dir)/global_controller.filelist
+# RTL_FILES ?= -v /home/kongty/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/ts1n16ffcllsblvtc2048x64m8sw_130a.v -v /home/kongty/mc/ts1n16ffcllsblvtc512x32m4s_130a/VERILOG/ts1n16ffcllsblvtc512x32m4s_130a.v -v $(garnet_dir)/virtual_conv33_harris/18-rtl/outputs/design.v -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv
 COMPILE_ARGS ?= -elaborate
 
 # -------------------------------------------------------------------
