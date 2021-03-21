@@ -2,7 +2,7 @@ agents: { queue: "papers" }
 
 steps:
 
-- label:    'qrc0 5h'
+- label:    'qrc0'
   commands: ${GARNET_HOME}/.buildkite/bin/qrc.sh
 - wait:     { continue_on_failure: true }
 
