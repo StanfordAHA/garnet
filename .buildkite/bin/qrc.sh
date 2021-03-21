@@ -77,7 +77,7 @@ generateRCFactor
 
 
 # Run the final postroute hold fixing
-# optDesign -postRoute -outDir reports -prefix postroute_hold -hold
+optDesign -postRoute -outDir reports -prefix postroute_hold -hold
 '
 echo "$main_tcl_new" > scripts/main.tcl
 echo '========================================================================'
