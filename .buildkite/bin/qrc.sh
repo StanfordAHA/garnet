@@ -72,11 +72,15 @@ echo "BEGIN SYSENV"
 printenv
 echo "END SYSENV"
 
-echo ""
-echo "--- BEGIN generateRCFactor"
+# echo ""
+# echo "--- BEGIN generateRCFactor"
 # Hope setExtractRCMode is sufficient to handle all the parms
-generateRCFactor
+# generateRCFactor
 
+echo ""
+echo "--- BEGIN optDesign -postRoute -hold"
+setDistributeHost -local
+setMultiCpuUsage -localCpu 8
 
 # Run the final postroute hold fixing
 optDesign -postRoute -outDir reports -prefix postroute_hold -hold
