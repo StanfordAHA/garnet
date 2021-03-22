@@ -3,7 +3,7 @@
 # Assumes a lot of assume-o's
 
 REF=/build/gold.228;
-GOLD=/build/qrc.${BUILDKITE_BUILD_NUMBER};
+GOLD=/build/high.${BUILDKITE_BUILD_NUMBER};
 
 for i in 0 1 2 3 4 5 6 7 8 9; do
     if ! test -e ${GOLD}-$i; then
@@ -62,9 +62,11 @@ setOptMode -setupTargetSlack $::env(setup_target_slack)
 
 puts "Info: Using signoff engine = $::env(signoff_engine)"
 
-if { $::env(signoff_engine) } {
-  setExtractRCMode -engine postRoute -effortLevel signoff
-}
+# if { $::env(signoff_engine) } {
+#   setExtractRCMode -engine postRoute -effortLevel signoff
+# }
+setExtractRCMode -engine postRoute -effortLevel high
+
 
 echo "BEGIN SYSENV"
 printenv
@@ -96,21 +98,28 @@ echo "--- restore-design and setup-session"; # set -o pipefail;
 pwd
 ls -l ./mflowgen-run
 set -x
-(set -x; echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL) \
-    |& tee mflowgen-run.log
+(
+    set -x
+    echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
+) |& tee mflowgen-run.log
 
 # (./mflowgen-run || echo ENDSTATUS=FAIL) >& mflowgen-run.log.1 &
 
 
 # bug out if errors
 echo "+++ ERRORS? And end-game"
-egrep '^ Error messages' mflowgen-run.log
+egrep '^ Error messages' qrc*.log
 
+
+
+grep ENDSTATUS mflowgen-run.log
 grep ENDSTATUS=FAIL mflowgen-run.log && exit 13
+
 n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
-if [ "$n_errors" -gt 0 ]; then exit 13; fi
-
-
+# e.g. n_errors='0\n0\n0\n0\n'
+for i in $n_errors; do 
+    if [ "$n_errors" -gt 0 ]; then exit 13; fi
+done
 
 # Clean up
 /bin/rm -rf checkpoints
