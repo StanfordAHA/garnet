@@ -48,10 +48,10 @@ set -x;
 set +x;
 
 echo "--- QRC TEST RIG SETUP - main.tcl";
-##############################################################################
-##############################################################################
-##############################################################################
-# Swap in main.tcl modified for test rig:
+
+########################################################################
+# Build a new main.tcl
+
 main_tcl_new='
 setOptMode -verbose true
 
@@ -79,22 +79,25 @@ generateRCFactor
 # Run the final postroute hold fixing
 optDesign -postRoute -outDir reports -prefix postroute_hold -hold
 '
+
+########################################################################
+# Write the new main.tcl
+
 echo "$main_tcl_new" > scripts/main.tcl
-echo '========================================================================'
+echo '=================================================================='
 echo 'cat scripts/main.tcl'
 cat scripts/main.tcl
-echo '========================================================================'
-##############################################################################
-##############################################################################
-##############################################################################
+echo '=================================================================='
 
 
 
 # DO IT MAN!
-echo "--- restore-design and setup-session"; set -o pipefail;
+echo "--- restore-design and setup-session"; # set -o pipefail;
 pwd
 ls -l ./mflowgen-run
-(echo exit 13 | ./mflowgen-run || echo ENDSTATUS=FAIL) |& tee mflowgen-run.log
+set -x
+(set -x; echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL) \
+    |& tee mflowgen-run.log
 
 # (./mflowgen-run || echo ENDSTATUS=FAIL) >& mflowgen-run.log.1 &
 
