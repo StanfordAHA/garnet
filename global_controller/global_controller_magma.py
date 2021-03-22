@@ -12,7 +12,7 @@ class GlobalController(Generator):
     def __init__(self, addr_width=32, data_width=32,
                  axi_addr_width=12, axi_data_width=32,
                  num_glb_tiles=16, glb_addr_width=22,
-                 block_axi_addr_width=12):
+                 block_axi_addr_width=12, glb_tile_mem_size=256):
         super().__init__()
 
         self.addr_width = addr_width
@@ -20,11 +20,12 @@ class GlobalController(Generator):
         self.axi_addr_width = axi_addr_width
         self.axi_data_width = axi_data_width
         self.num_glb_tiles = num_glb_tiles
+        self.glb_addr_width = glb_addr_width
+        self.glb_tile_mem_size = glb_tile_mem_size
         self.block_axi_addr_width = block_axi_addr_width
         # Control logic assumes cgra config_data_width is same as axi_data_width
         assert self.axi_data_width == self.data_width
 
-        self.glb_addr_width = glb_addr_width
         self.config_type = ConfigurationType(self.addr_width, self.data_width)
 
         self.add_ports(
@@ -59,6 +60,7 @@ class GlobalController(Generator):
                                         axi_addr_width=self.axi_addr_width,
                                         axi_data_width=self.axi_data_width,
                                         num_glb_tiles=self.num_glb_tiles,
+                                        glb_tile_mem_size=self.glb_tile_mem_size,
                                         block_axi_addr_width=(
                                             self.block_axi_addr_width))
 

@@ -34,6 +34,8 @@ def construct():
     'topographical'  : True,
     # Floorplan
     'bank_height'    : 8,
+    # Memory size (unit: KB)
+    'glb_tile_mem_size' : 256,
     # SRAM macros
     'num_words'      : 2048,
     'word_size'      : 64,

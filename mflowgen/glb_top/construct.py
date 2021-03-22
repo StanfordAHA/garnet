@@ -33,7 +33,11 @@ def construct():
     'flatten_effort' : 3,
     'topographical'  : True,
     # hold target slack
-    'hold_target_slack' : 0.045,
+    'hold_target_slack'   : 0.045,
+    'num_tile_array_cols' : 32,
+    'num_glb_tiles'       : 16,
+    # glb tile memory size (unit: KB)
+    'glb_tile_mem_size' : 256
   }
 
   #-----------------------------------------------------------------------
@@ -258,6 +262,10 @@ def construct():
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
+
+  # pin assignment parameters update
+  init.update_params( { 'num_tile_array_cols': parameters['num_tile_array_cols'] }, allow_new=True )
+  init.update_params( { 'num_glb_tiles': parameters['num_glb_tiles'] }, allow_new=True )
 
   # Change nthreads
   synth.update_params( { 'nthreads': 4 } )

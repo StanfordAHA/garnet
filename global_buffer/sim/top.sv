@@ -6,7 +6,7 @@
 ** Change history:
 **  09/19/2020 - Implement first version of uvm-style testbench
 **===========================================================================*/
-`define CLK_PERIOD 1ns
+`define CLK_PERIOD 1200ps
 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
@@ -14,6 +14,11 @@ import global_buffer_param::*;
 module top;
 timeunit 1ps;
 timeprecision 1ps;
+
+`ifdef PWR
+    supply1 VDD;
+    supply0 VSS;
+`endif
 
     logic                           clk;
     logic [NUM_GLB_TILES-1:0]       stall;
@@ -52,6 +57,13 @@ timeprecision 1ps;
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr;
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data;
 
+    // for jtag simulation
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_f2g_rd_data;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_f2g_rd_data_valid;
+
+    logic [CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_rd_data;
+    logic                           cgra_cfg_rd_data_valid;
+
     // max cycle set
     initial begin
         repeat(10000000) @(posedge clk);
@@ -62,25 +74,30 @@ timeprecision 1ps;
     // back-annotation and dump
 `ifdef SYNTHESIS
     initial begin
-        $sdf_annotate("/sim/kongty/syn_annotate/global_buffer.sdf",top.dut);
-        $dumpfile("glb_syn.vcd");
-        $dumpvars(0, top);
+        if ($test$plusargs("VCD_ON")) begin
+            $dumpfile("glb_syn.vcd");
+            $dumpvars(0, top);
+        end
     end
 `elsif PNR 
     initial begin
-        $sdf_annotate("/sim/kongty/pnr_annotate/global_buffer.sdf",top.dut);
-        $dumpfile("glb_pnr.vcd");
-        $dumpvars(0, top);
+        if ($test$plusargs("VCD_ON")) begin
+            $dumpfile("glb_pnr.vcd");
+            $dumpvars(0, top);
+        end
     end
 `else
     initial begin
-        $dumpfile("glb.vcd");
-        $dumpvars(0, top);
+        if ($test$plusargs("VCD_ON")) begin
+            $dumpfile("glb.vcd");
+            $dumpvars(0, top);
+        end
     end
 `endif
 
     // clk generation
     initial begin
+        #0.5ns
         clk = 0;
         forever
         #(`CLK_PERIOD/2.0) clk = !clk;
@@ -89,8 +106,17 @@ timeprecision 1ps;
     // reset and stall generation
     initial begin
         reset <= 1;
-        stall = '0;
-        repeat(3) @(posedge clk);
+        stall <= '0;
+        cgra_stall_in <= '0;
+        cgra_cfg_jtag_gc2glb_wr_en <= 0;
+        cgra_cfg_jtag_gc2glb_rd_en <= 0;
+        cgra_cfg_jtag_gc2glb_addr <= 0;
+        cgra_cfg_jtag_gc2glb_data <= 0;
+        for(int i=0; i<NUM_GLB_TILES; i++) begin
+            pc_start_pulse[i] <= 0;
+        end
+
+        repeat(10) @(posedge clk);
         reset <= 0;
     end
 
@@ -125,14 +151,13 @@ timeprecision 1ps;
             assign s_ifc[i].strm_g2f_interrupt  = strm_g2f_interrupt_pulse[i];
 
             //pcfg
-            assign pc_start_pulse[i]            = c_ifc[i].pcfg_start_pulse;
             assign c_ifc[i].cgra_cfg_wr_en      = cgra_cfg_g2f_cfg_wr_en[i];
             assign c_ifc[i].cgra_cfg_rd_en      = cgra_cfg_g2f_cfg_rd_en[i];
             assign c_ifc[i].cgra_cfg_addr       = cgra_cfg_g2f_cfg_addr[i];
             assign c_ifc[i].cgra_cfg_data       = cgra_cfg_g2f_cfg_data[i];
-            assign c_ifc[i].pcfg_interrupt      = pcfg_g2f_interrupt_pulse[i];
         end
     endgenerate
+
 
     // instantiate dut
     global_buffer dut (
@@ -165,6 +190,41 @@ timeprecision 1ps;
         .if_sram_cfg_rd_addr        ( m_ifc.rd_addr[GLB_ADDR_WIDTH-1:0] ),
         .if_sram_cfg_rd_data        ( m_ifc.rd_data         ),
         .if_sram_cfg_rd_data_valid  ( m_ifc.rd_data_valid   ),
+`ifdef PWR
+        .VDD (VDD),
+        .VSS (VSS),
+`endif
         .*);
+
+    genvar j;
+    generate
+        for (i=0; i<NUM_GLB_TILES; i=i+1) begin: group_gen
+            for (j=0; j<CGRA_PER_GLB; j=j+1) begin: col_gen
+                localparam CGRA_TILE_WIDTH = $clog2(NUM_CGRA_TILES);
+                localparam bit [CGRA_TILE_WIDTH-1:0] id = i*CGRA_PER_GLB+j;
+                column #(.CGRA_TILE_WIDTH(CGRA_TILE_WIDTH)) col (
+                    .rst_n (!reset),
+                    .id (id),
+                    .rf_rd_en (c_ifc[i].cgra_cfg_rd_en[j]),
+                    .rf_wr_en (c_ifc[i].cgra_cfg_wr_en[j]),
+                    .rf_addr (c_ifc[i].cgra_cfg_addr[j]),
+                    .rf_wr_data (c_ifc[i].cgra_cfg_data[j]),
+                    .rf_rd_data (cgra_cfg_f2g_rd_data[i][j]),
+                    .rf_rd_data_valid (cgra_cfg_f2g_rd_data_valid[i][j]),
+                    .*);
+            end
+        end
+    endgenerate
+
+    always_comb begin
+        cgra_cfg_rd_data_valid = 0;
+        cgra_cfg_rd_data = 0;
+        for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
+            for (int j=0; j<CGRA_PER_GLB; j=j+1) begin
+                cgra_cfg_rd_data_valid |= cgra_cfg_f2g_rd_data_valid[i][j];
+                cgra_cfg_rd_data |= cgra_cfg_f2g_rd_data[i][j];
+            end
+        end
+    end
 
 endmodule

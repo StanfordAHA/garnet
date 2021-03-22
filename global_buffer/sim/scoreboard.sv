@@ -114,27 +114,24 @@ task Scoreboard::strm_run(int i);
                     int m = k / 4;
                     int n = k % 4;
                     mem[(st_start_addr >> 3) + m][16*n+:16] = s_trans.st_data[k];
-                    `ifdef DEBUG
                         $display("[SCB-LOG] STRM WRITE 2Bytes :: Addr = 0x%0h, \tData = 0x%0h",
                                  st_start_addr+2*k, s_trans.st_data[k]); 
-                    `endif
                 end
             end
         end
         else begin
             if (reg_rf[(i<<8)+0][7:6] == 2'b01) begin
                 bit[GLB_ADDR_WIDTH-1:0] ld_start_addr = reg_rf[(i<<8)+'h3C][GLB_ADDR_WIDTH-1:0];
-                bit[20:0] ld_length = reg_rf[(i<<8)+'h44][20:0];
+                bit[20:0] ld_length = reg_rf[(i<<8)+'h44][30:10];
+                $display("ld_length %d", ld_length);
                 for (int k=0; k<ld_length; k++) begin
                     int m = k / 4;
                     int n = k % 4;
                     assert (s_trans.ld_data[k] == mem[(ld_start_addr >> 3)+m][16*n+:16])
                     else    $error("[SCB-FAIL] STRM READ 2Bytes :: Addr = 0x%0h, \tData :: Expected = 0x%0h Actual = 0x%0h",
                                    ld_start_addr+2*k, mem[(ld_start_addr >> 3)+m][16*n+:16], s_trans.ld_data[k]); 
-                    `ifdef DEBUG
                         $display("[SCB-LOG] STRM READ 2Bytes :: Addr = 0x%0h, \tData = 0x%0h",
                                  ld_start_addr+2*k, s_trans.ld_data[k]); 
-                    `endif
                 end
             end
         end
@@ -180,15 +177,16 @@ task Scoreboard::reg_run();
             reg_rf[r_trans.wr_addr] = r_trans.wr_data;
         end
         else if (r_trans.rd_en) begin
+            $display("[REG-READ] #Reg Trans = %0d, Addr = 0x%0h", r_trans.no_trans, r_trans.rd_addr);
             if(reg_rf[r_trans.rd_addr] != r_trans.rd_data) begin
-                $error("[SCB-FAIL] #Reg Trans = %0d, Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
+                $error("[SCB-FAIL] #Reg Trans = %0d, Addr = 0x%0h, Data :: Expected = 0x%0h Actual = 0x%0h",
                       r_trans.no_trans, r_trans.rd_addr, reg_rf[r_trans.rd_addr], r_trans.rd_data);
             end
             else if (~r_trans.rd_data_valid) begin
                 $error("[SCB-FAIL] #Reg Trans = %0d, rd_data_valid signal is not asserted", r_trans.no_trans);
             end
             else begin
-                $display("[SCB-PASS] #Reg Trans = %0d, Addr = 0x%0h, \n \t Data :: Expected = 0x%0h Actual = 0x%0h",
+                $display("[SCB-PASS] #Reg Trans = %0d, Addr = 0x%0h, Data :: Expected = 0x%0h Actual = 0x%0h",
                          r_trans.no_trans, r_trans.rd_addr, reg_rf[r_trans.rd_addr], r_trans.rd_data);
             end
         end

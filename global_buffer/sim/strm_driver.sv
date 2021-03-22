@@ -95,7 +95,12 @@ task StrmDriver::load(input StrmTransaction trans);
     @(vif.cbd);
     vif.cbd.strm_start_pulse <= 0;
     
-    wait (vif.cbd.data_valid_g2f);
+    while(1) begin
+        if (vif.cbd.data_valid_g2f) begin
+            break;
+        end
+        @(vif.cbd);
+    end
     for (int i=0; i<j; i++) begin
         trans.ld_data[i] = vif.cbd.data_g2f;
         @(vif.cbd);
