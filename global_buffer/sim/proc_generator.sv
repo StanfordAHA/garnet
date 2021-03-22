@@ -34,7 +34,9 @@ task ProcGenerator::run();
     $cast(trans, blueprint.copy());
 
     // print transaction info
+`ifdef DEBUG
     trans.display();
+`endif
 
     // increase the number of transaction
     trans.no_trans++;

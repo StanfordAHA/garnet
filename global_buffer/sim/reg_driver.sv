@@ -92,7 +92,12 @@ task RegDriver::read(input RegTransaction trans);
 
     fork
         begin
-            wait (vif.cbd.rd_data_valid);
+            while(1) begin
+                if (vif.cbd.rd_data_valid) begin
+                    break;
+                end
+                @(vif.cbd);
+            end
             trans.rd_data       <= vif.cbd.rd_data;
             trans.rd_data_valid <= vif.cbd.rd_data_valid;
         end
