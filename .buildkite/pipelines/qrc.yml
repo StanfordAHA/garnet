@@ -3,43 +3,43 @@ agents: { queue: "papers" }
 steps:
 
 - label:    'qrc0'
-  commands: 'set -o pipefail; $${GARNET_HOME}/.buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
 - wait:     { continue_on_failure: true }
 
 - label:    'qrc1'
-  commands: 'set -o pipefail; $${GARNET_HOME}/.buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
 - wait:     { continue_on_failure: true }
 
 - label:    'qrc2'
-  commands: 'set -o pipefail; $${GARNET_HOME}/.buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
 - wait:     { continue_on_failure: true }
 
 - label:    'qrc3'
-  commands: 'set -o pipefail; $${GARNET_HOME}/.buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
 - wait:     { continue_on_failure: true }
 
 - label:    'qrc4'
-  commands: 'set -o pipefail; $${GARNET_HOME}/.buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
 - wait:     { continue_on_failure: true }
 
 - label:    'qrc5'
-  commands: 'set -o pipefail; $${GARNET_HOME}/.buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
 - wait:     { continue_on_failure: true }
 
 - label:    'qrc6'
-  commands: 'set -o pipefail; $${GARNET_HOME}/.buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
 - wait:     { continue_on_failure: true }
 
 - label:    'qrc7'
-  commands: 'set -o pipefail; $${GARNET_HOME}/.buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
 - wait:     { continue_on_failure: true }
 
 - label:    'qrc8'
-  commands: 'set -o pipefail; $${GARNET_HOME}/.buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
 - wait:     { continue_on_failure: true }
 
 - label:    'qrc9'
-  commands: 'set -o pipefail; $${GARNET_HOME}/.buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
 - wait:     { continue_on_failure: true }
 
 
