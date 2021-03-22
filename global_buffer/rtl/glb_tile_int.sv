@@ -110,6 +110,7 @@ logic [1:0]                 cfg_strm_f2g_mux;
 logic [1:0]                 cfg_ld_dma_mode;
 logic [1:0]                 cfg_st_dma_mode;
 logic                       cfg_pc_dma_mode;
+logic [$clog2(NUM_CGRA_TILES)-1:0] cfg_pc_offset;
 logic [LATENCY_WIDTH-1:0]   cfg_latency;
 logic [LATENCY_WIDTH-1:0]   cfg_pc_latency;
 dma_st_header_t cfg_st_dma_header [QUEUE_DEPTH];

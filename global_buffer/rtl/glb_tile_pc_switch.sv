@@ -15,6 +15,8 @@ import global_buffer_param::*;
 
     // parallel config ctrl on
     input  logic                            cfg_pc_dma_mode,
+    // parallel config offset
+    input  logic [$clog2(NUM_CGRA_TILES)-1:0] cfg_pc_offset,
 
     // parallel configuration
     input  cgra_cfg_t                       cgra_cfg_c2sw,

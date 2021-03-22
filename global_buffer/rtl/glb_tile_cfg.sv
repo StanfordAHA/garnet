@@ -30,6 +30,7 @@ import global_buffer_param::*;
     output logic [1:0]                      cfg_ld_dma_mode,
     output logic [1:0]                      cfg_st_dma_mode,
     output logic                            cfg_pc_dma_mode,
+    output logic [$clog2(NUM_CGRA_TILES)-1:0] cfg_pc_offset,
     output logic [1:0]                      cfg_soft_reset_mux,
     output logic                            cfg_use_valid,
     output logic [LATENCY_WIDTH-1:0]        cfg_latency,
@@ -143,6 +144,7 @@ logic  [MAX_STRIDE_WIDTH-1:0] l2h_ld_dma_header_3_iter_ctrl_3_stride_r;
 logic l2h_pc_dma_header_validate_validate_r;
 logic  [GLB_ADDR_WIDTH-1:0] l2h_pc_dma_header_start_addr_start_addr_r;
 logic  [MAX_NUM_CFGS_WIDTH-1:0] l2h_pc_dma_header_num_cfg_num_cfgs_r;
+logic  [TILE_SEL_ADDR_WIDTH:0] l2h_pc_offset_pc_offset_r;
 
 //============================================================================//
 // assigns
@@ -233,6 +235,7 @@ assign cfg_ld_dma_header[3].iteration[3].stride = l2h_ld_dma_header_3_iter_ctrl_
 
 assign cfg_pc_dma_header.start_addr             = l2h_pc_dma_header_start_addr_start_addr_r;
 assign cfg_pc_dma_header.num_cfgs               = l2h_pc_dma_header_num_cfg_num_cfgs_r;
+assign cfg_pc_offset                            = l2h_pc_offset_pc_offset_r;
 
 //============================================================================//
 // Instantiation

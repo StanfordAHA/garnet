@@ -123,6 +123,12 @@ addrmap glb {
         num_cfg_r num_cfg;
     };
 
+    reg pc_offset_r {
+        name = "Configuration Offset Register";
+        desc = "Offset added to bitstream";
+        field {} pc_offset[<%=TILE_SEL_ADDR_WIDTH+1%>] = 0;
+    };
+
     tile_ctrl_r tile_ctrl;
     latency_r latency;
     <% for ($i = 0; $i < QUEUE_DEPTH; $i += 1) { %>
@@ -132,4 +138,5 @@ addrmap glb {
     ld_dma_header_rf ld_dma_header_<%=$i%>;
     <% } %>
     pc_dma_header_rf pc_dma_header;
+    pc_offset_r pc_offset;
 };
