@@ -18,16 +18,16 @@ def gen_reg_pair(f_reglist, f_regpair):
             data = 2**int(bits) - 1
             regpair.write(f"{addr} {data}\n")
 
-def gen_bs_sample(filename, num):
+def gen_bs_sample(filename, col, reg_num):
     with open(filename, 'w') as f:
-        f.write(f"{num}\n")
-        for i in range(num):
-            # addr = random.randrange(0, 2**32)
-            col = random.randrange(0, 32)
-            reg = random.randrange(0, 2**8)
-            data = random.randrange(0, 2**32)
-            f.write(f"{(reg << 8 ) | col} ")
-            f.write(f"{data}\n")
+        f.write(f"{reg_num*col}\n")
+        for i in range(col):
+            reg = random.sample(range(2**8), reg_num)
+            for addr in reg:
+                # addr = random.randrange(0, 2**32)
+                data = random.randrange(0, 2**32)
+                f.write(f"{(addr << 8 ) | i} ")
+                f.write(f"{data}\n")
 
 def gen_data_sample(filename, num):
     with open(filename, 'w') as f:
@@ -39,4 +39,5 @@ def gen_data_sample(filename, num):
 if __name__ == "__main__":
     gen_reg_pair("systemRDL/output/glb.reglist", "glb.regpair")
     gen_data_sample("glb.test.data16", 32)
-    gen_bs_sample("glb.test.bs", 32)
+    gen_bs_sample("glb.test.bs", 32, 10)
+    gen_bs_sample("glb.test.bs.half", 16, 10)

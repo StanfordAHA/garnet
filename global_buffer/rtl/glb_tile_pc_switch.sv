@@ -39,7 +39,10 @@ import global_buffer_param::*;
 cgra_cfg_t cgra_cfg_g2f_internal_d1 [CGRA_PER_GLB];
 cgra_cfg_t cgra_cfg_g2f_internal [CGRA_PER_GLB];
 cgra_cfg_t cgra_cfg_pc_switched;
-assign cgra_cfg_pc_switched = (cfg_pc_dma_mode == 1) ? cgra_cfg_c2sw : cgra_cfg_pc_wsti;
+always_comb begin
+    cgra_cfg_pc_switched = (cfg_pc_dma_mode == 1) ? cgra_cfg_c2sw : cgra_cfg_pc_wsti;
+    cgra_cfg_pc_switched.cfg_addr = (cfg_pc_dma_mode == 1) ? (cgra_cfg_c2sw.cfg_addr + cfg_pc_offset) : cgra_cfg_pc_wsti.cfg_addr;
+end
 
 // just bypass configuration packet
 always_comb begin

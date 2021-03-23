@@ -11,35 +11,6 @@ class MyProcTransaction extends ProcTransaction;
     bit [BANK_DATA_WIDTH-1:0] data_internal [];
     int length_internal;
 
-    // constraint rd_en_c {
-    //     rd_en == is_read;
-    // }
-
-    // constraint addr_c {
-    //     solve wr_en before wr_addr;
-    //     solve rd_en before rd_addr;
-    //     length == length_internal;
-    //     if (wr_en) {
-    //         wr_addr == addr_internal;
-    //         rd_addr == 0;
-    //     } else {
-    //         wr_addr == 0;
-    //         wr_data.size() == 0;
-    //         rd_addr == addr_internal;
-    //     }
-    // }
-
-    // constraint data_c {
-    //     solve wr_en before wr_addr;
-    //     solve rd_en before rd_addr;
-    //     length == length_internal;
-    //     if (wr_en) {
-    //         wr_strb.size() == length;
-    //         wr_data == data_internal;
-    //         foreach(wr_strb[i]) wr_strb[i] == 8'hFF;
-    //     }
-    // }
-
     function new(bit[GLB_ADDR_WIDTH-1:0] addr=0, int length=128, bit is_read=0, bit[BANK_DATA_WIDTH-1:0] data []= {});
         this.length = length;
         if (is_read) begin
@@ -214,6 +185,7 @@ program glb_test
     localparam SRAM_MACRO_ADDR_WIDTH = 14;
     localparam SRAM_MACRO_SEL_WIDTH = BANK_ADDR_WIDTH - SRAM_MACRO_ADDR_WIDTH;
     localparam NUM_SRAM_MACRO_PER_TILE = 2 ** (BANK_ADDR_WIDTH - SRAM_MACRO_ADDR_WIDTH + $clog2(BANKS_PER_TILE)); // 16
+    localparam int NUM_REG_TEST = 10;
 
     initial begin
         wait(!reset);
@@ -401,11 +373,23 @@ program glb_test
             end
             $fclose(fd);
 
+            // num = NUM_CGRA_TILES*NUM_REG_TEST;
+            // cfg_addr_arr = new [num];
+            // cfg_data_arr = new [num];
+            // data64_arr = new [num];
+            // for (int i=0; i<NUM_CGRA_TILES; i++) begin
+            //     for (int j=0; j<NUM_REG_TEST; j++) begin
+            //         cfg_addr_arr[i*NUM_REG_TEST+j] = i + ($urandom_range(0, 2**8-1) << 8);
+            //         cfg_data_arr[i*NUM_REG_TEST+j] = $urandom_range(0, 2**32-1);
+            //         data64_arr[i*NUM_REG_TEST+j] = (cfg_addr_arr[i*NUM_REG_TEST+j] << 32) | cfg_data_arr[i*NUM_REG_TEST+j];
+            //         $display("addr: %h, data: %h", cfg_addr_arr[i*NUM_REG_TEST+j], cfg_data_arr[i*NUM_REG_TEST+j]);
+            //     end
+            // end
+
             r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], (1 << 10));
             r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LATENCY"], 'h4);
             r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["PC_DMA_HEADER_0_START_ADDR"], 0);
             r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["PC_DMA_HEADER_0_NUM_CFG"], num);
-
             p_trans_q[p_cnt++] = new(0, num, 0, data64_arr);
 
             foreach(p_trans_q[i]) begin
@@ -423,19 +407,77 @@ program glb_test
             #300ps top.pc_start_pulse[0] <= 1;
             @(posedge clk);
             #300ps top.pc_start_pulse[0] <= 0;
-            // while(1) begin
-            //     @(posedge clk);
-            //     if (top.pcfg_g2f_interrupt_pulse[0]) begin
-            //         break;
-            //     end
-            // end
+            while(1) begin
+                @(posedge clk);
+                if (top.pcfg_g2f_interrupt_pulse[0]) begin
+                    break;
+                end
+            end
 
             repeat(50) @(posedge clk);
-            // for (int i=0; i<num; i++) begin
-            //     cfg_addr = cfg_addr_arr[i];
-            //     cfg_data = cfg_data_arr[i];
-            //     jtag_read(cfg_addr, cfg_data);
-            // end
+            for (int i=0; i<num; i++) begin
+                cfg_addr = cfg_addr_arr[i];
+                cfg_data = cfg_data_arr[i];
+                cfg_check(cfg_addr, cfg_data);
+            end
+
+            repeat(30) @(posedge clk);
+        end
+
+        //=============================================================================
+        // parallel config tile 0 bitstream relocation
+        //=============================================================================
+        if ($test$plusargs("TEST_BS_RELOCATION")) begin
+            empty_queues();
+
+            fd = $fopen("glb.test.bs.half", "r");
+            $fscanf(fd, "%d", num);
+            cfg_addr_arr = new [num];
+            cfg_data_arr = new [num];
+            data64_arr = new [num];
+            for (int i=0; i<num; i++) begin
+                $fscanf(fd, "%d %d", cfg_addr, cfg_data);
+                cfg_addr_arr[i] = cfg_addr;
+                cfg_data_arr[i] = cfg_data;
+                data64_arr[i] = (cfg_addr << 32) | cfg_data;
+            end
+            $fclose(fd);
+
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["TILE_CTRL"], (1 << 10));
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["LATENCY"], 'h4);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["PC_DMA_HEADER_0_START_ADDR"], 0);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["PC_DMA_HEADER_0_NUM_CFG"], num);
+            r_trans_q[r_cnt++] = new((0 << 8) + addr_dic["PC_DMA_BS_RELOCATION"], 16);
+            p_trans_q[p_cnt++] = new(0, num, 0, data64_arr);
+
+            foreach(p_trans_q[i]) begin
+                seq.add(p_trans_q[i]);
+            end
+            foreach(r_trans_q[i]) begin
+                seq.add(r_trans_q[i]);
+            end
+
+            env = new(seq, p_ifc, r_ifc, s_ifc, m_ifc);
+            env.build();
+            env.run();
+
+            repeat(10) @(posedge clk);
+            #300ps top.pc_start_pulse[0] <= 1;
+            @(posedge clk);
+            #300ps top.pc_start_pulse[0] <= 0;
+            while(1) begin
+                @(posedge clk);
+                if (top.pcfg_g2f_interrupt_pulse[0]) begin
+                    break;
+                end
+            end
+
+            repeat(50) @(posedge clk);
+            for (int i=0; i<num; i++) begin
+                cfg_addr = cfg_addr_arr[i] + 16;
+                cfg_data = cfg_data_arr[i];
+                cfg_check(cfg_addr, cfg_data);
+            end
 
             repeat(30) @(posedge clk);
         end
@@ -459,7 +501,6 @@ program glb_test
         // env.build();
         // env.run();
         // repeat(300) @(posedge clk);
-
     end
 
     //=============================================================================
@@ -510,6 +551,7 @@ program glb_test
         addr_dic["LD_DMA_HEADER_3_ITER_CTRL_3"] = 'hA4;
         addr_dic["PC_DMA_HEADER_0_START_ADDR"]  = 'hA8;
         addr_dic["PC_DMA_HEADER_0_NUM_CFG"]     = 'hAC;
+        addr_dic["PC_DMA_BS_RELOCATION"]        = 'hB0;
     end
 
     function void empty_queues;
@@ -527,8 +569,19 @@ program glb_test
         cfg_data_arr.delete();
         data64_arr.delete();
         data16_arr.delete();
-
     endfunction
+
+    function void cfg_check(input bit[CGRA_CFG_ADDR_WIDTH-1:0] cfg_addr, bit[CGRA_CFG_DATA_WIDTH-1:0] cfg_data);
+        bit[7:0] col_id;
+        bit[7:0] reg_id;
+        int cgra_reg; 
+        col_id = cfg_addr[7:0];
+        reg_id = cfg_addr[15:8];
+        cgra_reg = top.cgra.reg_file[col_id][reg_id];
+        assert(cgra_reg == cfg_data) 
+        else $error("cgra register value: %h, expected value: %h", cgra_reg, cfg_data);
+    endfunction
+
 
     task jtag_write (input bit [CGRA_CFG_ADDR_WIDTH-1:0] addr, bit [CGRA_CFG_DATA_WIDTH-1:0] data);
         $display("[JTAG-WR] @%0t: addr: 0x%0h, data: 0x%0h", $time, addr, data);

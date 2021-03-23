@@ -196,25 +196,12 @@ timeprecision 1ps;
 `endif
         .*);
 
-    genvar j;
-    generate
-        for (i=0; i<NUM_GLB_TILES; i=i+1) begin: group_gen
-            for (j=0; j<CGRA_PER_GLB; j=j+1) begin: col_gen
-                localparam CGRA_TILE_WIDTH = $clog2(NUM_CGRA_TILES);
-                localparam bit [CGRA_TILE_WIDTH-1:0] id = i*CGRA_PER_GLB+j;
-                column #(.CGRA_TILE_WIDTH(CGRA_TILE_WIDTH)) col (
-                    .rst_n (!reset),
-                    .id (id),
-                    .rf_rd_en (c_ifc[i].cgra_cfg_rd_en[j]),
-                    .rf_wr_en (c_ifc[i].cgra_cfg_wr_en[j]),
-                    .rf_addr (c_ifc[i].cgra_cfg_addr[j]),
-                    .rf_wr_data (c_ifc[i].cgra_cfg_data[j]),
-                    .rf_rd_data (cgra_cfg_f2g_rd_data[i][j]),
-                    .rf_rd_data_valid (cgra_cfg_f2g_rd_data_valid[i][j]),
-                    .*);
-            end
-        end
-    endgenerate
+        cgra #(
+            .NUM_GLB_TILES          ( NUM_GLB_TILES ),
+            .NUM_CGRA_TILES         ( NUM_CGRA_TILES ),
+            .CGRA_CFG_DATA_WIDTH    ( CGRA_CFG_DATA_WIDTH ),
+            .CGRA_PER_GLB           ( CGRA_PER_GLB )
+        ) cgra (.*);
 
     always_comb begin
         cgra_cfg_rd_data_valid = 0;
