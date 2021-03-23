@@ -3,7 +3,7 @@
 # Assumes a lot of assume-o's
 
 REF=/build/gold.228;
-GOLD=/build/high.${BUILDKITE_BUILD_NUMBER};
+GOLD=/build/qtry.${BUILDKITE_BUILD_NUMBER};
 
 for i in 0 1 2 3 4 5 6 7 8 9; do
     if ! test -e ${GOLD}-$i; then
@@ -62,10 +62,10 @@ setOptMode -setupTargetSlack $::env(setup_target_slack)
 
 puts "Info: Using signoff engine = $::env(signoff_engine)"
 
-# if { $::env(signoff_engine) } {
-#   setExtractRCMode -engine postRoute -effortLevel signoff
-# }
-setExtractRCMode -engine postRoute -effortLevel high
+if { $::env(signoff_engine) } {
+  setExtractRCMode -engine postRoute -effortLevel signoff
+}
+# setExtractRCMode -engine postRoute -effortLevel high
 
 
 echo "BEGIN SYSENV"
@@ -106,33 +106,46 @@ set -x
     set -x
     echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
 ) |& tee mflowgen-run.log
+set +x
 
 # (./mflowgen-run || echo ENDSTATUS=FAIL) >& mflowgen-run.log.1 &
 
 
 # bug out if errors
 echo "+++ ERRORS? And end-game"
+
+set -x
 egrep '^ Error messages' qrc*.log
 
 
 
 grep ENDSTATUS mflowgen-run.log
+
+grep ENDSTATUS=FAIL mflowgen-run.log && echo "FAILED endstatus, could initiate retry here"
 grep ENDSTATUS=FAIL mflowgen-run.log && exit 13
 
 n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
 # e.g. n_errors='0\n0\n0\n0\n'
 for i in $n_errors; do 
-    if [ "$n_errors" -gt 0 ]; then exit 13; fi
+    # if [ "$n_errors" -gt 0 ]; then exit 13; fi
+    if [ "$n_errors" -gt 0 ]; then 
+        echo "FAILED n_errors, could initiate retry here"
+        exit 13;
+    fi
 done
 
 # Clean up
-/bin/rm -rf checkpoints
+echo "--- save disk space, delete output design (?)"
+set -x
+ls -lR checkpoints/
+/bin/rm -rf checkpoints/*
+touch checkpoints/'deleted to save space'
 
 exit
 
 
 
-# THIS IS WHAT THE BAD OUTPUT LOOKS LIKE
+# THIS IS WHAT FAILED QRC LOOKS LIKE
 # 
 #  Tool:                    Cadence Quantus Extraction 64-bit
 #  Version:                 19.1.1-s086 Mon Mar 25 09:39:10 PDT 2019
