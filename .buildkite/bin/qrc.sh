@@ -43,11 +43,11 @@ DESTDIR=$1
 # done
 
 set -x
-  mkdir -p $DESTDIR; cd $DESTDIR
+  mkdir -p $DESTDIR
 set +x
 
 # Tee stdout to a log file
-exec > >(tee -i make-qrc.log) || exit 13
+exec > >(tee -i $DESTDIR/make-qrc.log) || exit 13
 exec 2>&1 || exit 13
 
 
