@@ -1,39 +1,43 @@
 agents: { queue: "papers" }
 
+env:
+  DESTDIR : /build/qtry${BUILDKITE_BUILD_NUMBER}
+
+
 steps:
 
 - label:    'qrc0'
-  commands: '.buildkite/bin/qrc.sh'
+  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-0'
 - label:    'qrc1'
-  commands: 'sleep 300; .buildkite/bin/qrc.sh'
+  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-1'
 - wait:     { continue_on_failure: true }
 
 
 - label:    'qrc2'
-  commands: '.buildkite/bin/qrc.sh'
+  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-2'
 - label:    'qrc3'
-  commands: 'sleep 300; .buildkite/bin/qrc.sh'
+  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-3'
 - wait:     { continue_on_failure: true }
 
 
 - label:    'qrc4'
-  commands: '.buildkite/bin/qrc.sh'
+  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-4'
 - label:    'qrc5'
-  commands: 'sleep 300; .buildkite/bin/qrc.sh'
+  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-5'
 - wait:     { continue_on_failure: true }
 
 
 - label:    'qrc6'
-  commands: '.buildkite/bin/qrc.sh'
+  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-6'
 - label:    'qrc7'
-  commands: 'sleep 300; .buildkite/bin/qrc.sh'
+  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-7'
 - wait:     { continue_on_failure: true }
 
 
 - label:    'qrc8'
-  commands: '.buildkite/bin/qrc.sh'
+  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-8'
 - label:    'qrc9'
-  commands: 'sleep 300; .buildkite/bin/qrc.sh'
+  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-9'
 - wait:     { continue_on_failure: true }
 
 

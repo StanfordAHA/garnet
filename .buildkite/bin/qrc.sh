@@ -5,18 +5,23 @@
 # 
 # Designed to be called from a buildkite yml script something like:
 # 
+#     env:
+#       DESTDIR : /build/qtry${BUILDKITE_BUILD_NUMBER}
+# 
+#     steps:
+# 
 #     - label:    'qrc0'
-#       commands: '.buildkite/bin/qrc.sh'
+#       commands: '.buildkite/bin/qrc.sh $${DESTDIR}-0'
 #     - wait:     { continue_on_failure: true }
 #     
 #     - label:    'qrc1'
-#       commands: '.buildkite/bin/qrc.sh'
+#       commands: '.buildkite/bin/qrc.sh $${DESTDIR}-1'
 #     - wait:     { continue_on_failure: true }
 # 
 #     ...
 #     
 #     - label:    'qrc9'
-#       commands: '.buildkite/bin/qrc.sh'
+#       commands: '.buildkite/bin/qrc.sh $${DESTDIR}-9'
 #     - wait:     { continue_on_failure: true }
 # 
 # Assumes a lot of assume-o's
@@ -25,14 +30,21 @@
 REF=/build/gold.228
 
 # Results will go to dirs e.g. /build/qtry.3549-{0,1,2,3,4,5,6,7,8,9}
-DESTDIR=/build/qtry.${BUILDKITE_BUILD_NUMBER}
+DESTDIR=$1
 
-for i in 0 1 2 3 4 5 6 7 8 9; do
-    if ! test -e ${DESTDIR}-$i; then
-        DESTDIR=${DESTDIR}-$i
-        break
-    fi
-done
+
+# DESTDIR=/build/qtry.${BUILDKITE_BUILD_NUMBER}
+# 
+# for i in 0 1 2 3 4 5 6 7 8 9; do
+#     if ! test -e ${DESTDIR}-$i; then
+#         DESTDIR=${DESTDIR}-$i
+#         break
+#     fi
+# done
+
+set -x
+  mkdir -p $DESTDIR; cd $DESTDIR
+set +x
 
 # Tee stdout to a log file
 exec > >(tee -i make-qrc.log) || exit 13
