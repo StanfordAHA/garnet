@@ -49,7 +49,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
                 port_conn_override: Dict[str,
                                          List[Tuple[SwitchBoxSide,
-                                                    SwitchBoxIO]]] = None):
+                                                    SwitchBoxIO]]] = None,
+                double_buffer: bool = False):
     # currently only add 16bit io cores
     bit_widths = [1, 16]
     track_length = 1
@@ -175,7 +176,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     interconnect = Interconnect(ics, reg_addr_width, config_data_width,
                                 tile_id_width,
                                 lift_ports=standalone,
-                                stall_signal_width=1)
+                                stall_signal_width=1,
+                                double_buffer=double_buffer)
     if hi_lo_tile_id:
         tile_id_physical(interconnect)
     if add_pd:
@@ -193,7 +195,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     if pass_through_clk:
         clk_physical(interconnect)
-    
+
     pipeline_config_signals(interconnect, pipeline_config_interval)
 
     return interconnect

@@ -31,6 +31,7 @@ class Garnet(Generator):
                  use_sram_stub: bool = True, standalone: bool = False,
                  add_pond: bool = True,
                  use_io_valid: bool = False,
+                 double_buffer: bool = False,
                  pipeline_config_interval: int = 8,
                  glb_tile_mem_size: int = 256):
         super().__init__()
@@ -116,7 +117,8 @@ class Garnet(Generator):
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
                                    mem_ratio=(1, 4),
-                                   standalone=standalone)
+                                   standalone=standalone,
+                                   double_buffer=double_buffer)
 
         self.interconnect = interconnect
 
@@ -184,6 +186,17 @@ class Garnet(Generator):
 
             self.wire(self.interconnect.ports.read_config_data,
                       self.ports.read_config_data)
+
+            if double_buffer:
+                self.add_ports(
+                    config_db=magma.In(magma.Array[width, magma.Bit]),
+                    use_db=magma.In(magma.Array[width, magma.Bit])
+                )
+                self.wire(self.ports.config_db,
+                          self.interconnect.ports.config_db)
+                self.wire(self.ports.use_db,
+                          self.interconnect.ports.use_db)
+
 
     def map(self, halide_src):
         return map_app(halide_src)
@@ -312,6 +325,11 @@ module Interconnect (
             result += f"   input [31:0] config_{i}_config_data,\n"
             result += f"   input [0:0] config_{i}_read,\n"
             result += f"   input [0:0] config_{i}_write,\n"
+
+        if self.interconnect.double_buffer is True:
+            result += f"   input [{self.width-1}:0] config_db,\n"
+            result += f"   input [{self.width-1}:0] use_db,\n"
+
         # loop through the interfaces
         ports = []
         for port_name, port_node in self.interconnect.interface().items():
@@ -356,6 +374,7 @@ def main():
     parser.add_argument("--virtualize-group-size", type=int, default=4)
     parser.add_argument("--virtualize", action="store_true")
     parser.add_argument("--use-io-valid", action="store_true")
+    parser.add_argument("--double-buffer", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -371,7 +390,8 @@ def main():
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
-                    standalone=args.standalone)
+                    standalone=args.standalone,
+                    double_buffer=args.double_buffer)
 
     if args.verilog:
         garnet_circ = garnet.circuit()

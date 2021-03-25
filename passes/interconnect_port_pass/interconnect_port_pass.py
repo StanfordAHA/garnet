@@ -13,6 +13,10 @@ def config_port_pass(interconnect: Interconnect):
     assert "config" in interconnect.ports
 
     interconnect.remove_port("config")
+    if interconnect.double_buffer is True:
+        interconnect.remove_port("config_db")
+        interconnect.remove_port("use_db")
+
     config_data_width = interconnect.config_data_width
     # config_addr_width is same as config_data_width
     interconnect.add_port(
@@ -20,6 +24,10 @@ def config_port_pass(interconnect: Interconnect):
             magma.In(magma.Array[width,
                                  ConfigurationType(config_data_width,
                                                    config_data_width)]))
+    if interconnect.double_buffer is True:
+        interconnect.add_ports(
+            config_db=magma.In(magma.Array[width, magma.Bit]),
+            use_db=magma.In(magma.Array[width, magma.Bit]))
 
     # looping through on a per-column bases
     for x_coor in range(x_min, x_min + width):
@@ -29,6 +37,11 @@ def config_port_pass(interconnect: Interconnect):
         # wire configuration ports to first tile in column
         interconnect.wire(interconnect.ports.config[x_coor],
                           column[0].ports.config)
+        if interconnect.double_buffer is True:
+            interconnect.wire(interconnect.ports.config_db[x_coor],
+                              column[0].ports.config_db)
+            interconnect.wire(interconnect.ports.use_db[x_coor],
+                              column[0].ports.use_db)
 
 
 def stall_port_pass(interconnect: Interconnect):
