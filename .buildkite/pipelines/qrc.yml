@@ -6,7 +6,7 @@ steps:
   commands: '.buildkite/bin/qrc.sh'
 - label:    'qrc1'
   commands: 'sleep 300; .buildkite/bin/qrc.sh'
-  wait:     { continue_on_failure: true }
+- wait:     { continue_on_failure: true }
 
 
 - label:    'qrc2'
@@ -41,7 +41,8 @@ steps:
 # {
 #  'agents' : { 'jobsize' : 'hours' },
 #  'steps'  : [ 
-#               { 'label' : 'qrc' , 'commands' : 'qrc.sh' },
-#               { 'wait' : { 'cf' : 'true' } }
+#               { 'label' : 'qrc0' , 'commands' : 'qrc.sh' },
+#               { 'label' : 'qrc1' , 'commands' : 'qrc.sh' },
+#               { 'wait'  : { 'cf' : 'true' } }
 #             ]
 # }
