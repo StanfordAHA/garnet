@@ -281,6 +281,21 @@ addrmap glc {
         read_r      read;
         rd_data_r   rd_data;
     };
+
+    reg use_db_en_r {
+        name = "Use Double Buffered Register";
+        desc = "Use double buffering of configuration";
+        field { 
+			desc = "use double buffered registers";
+		} use_db_en[<%=NUM_GLB_TILES*2%>] = 0x0;
+    };
+    reg config_db_en_r {
+        name = "Double Buffering Control Register";
+        desc = "Control double buffering of configuration";
+        field { 
+			desc = "config double buffered registers";
+		} config_db_en[<%=NUM_GLB_TILES*2%>] = 0x0;
+    };
     
     // ========================================================================
     // Register Instantiation and Connection
@@ -319,5 +334,8 @@ addrmap glc {
 
     // cgra configuration register file
     cgra_config_rf          cgra_config;
+    
+    use_db_en_r use_db_en;
+    config_db_en_r config_db_en;
 };
 

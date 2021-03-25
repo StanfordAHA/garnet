@@ -14,6 +14,7 @@
 //; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
 //; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
 //; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
+//; my $cfg_double_buffer = parameter(NAME => 'cfg_double_buffer', VAL => 0, DOC => 'double buffer configuration space');
 
 // local parameter
 //; my $reg_addr_width = 5;
@@ -61,6 +62,11 @@ module `mname` (
     output logic [`$cfg_addr_width-1`:0]        axi_cgra_cfg_addr,
     output logic [`$cfg_data_width-1`:0]        axi_cgra_cfg_wr_data,
     input  logic [`$cfg_data_width-1`:0]        axi_cgra_cfg_data_in,
+
+//; if ($cfg_double_buffer > 0) {
+    output     [`$num_glb_tiles*2-1`:0] config_db_en,
+    output     [`$num_glb_tiles*2-1`:0] use_db_en,
+//; }
 
     output logic                                interrupt
 );
@@ -184,6 +190,11 @@ module `mname` (
     logic    d2h_dec_pio_ack;
     logic    d2h_dec_pio_nack;
 
+//; if ($cfg_double_buffer > 0) {
+    logic [`$num_glb_tiles*2-1`:0] l2h_use_db_en_use_db_en_r;
+    logic [`$num_glb_tiles*2-1`:0] l2h_config_db_en_config_db_en_r;
+//; }
+
     // internal logic
     logic [`$axi_data_width-1`:0] wr_data_internal;
     logic [`$reg_addr_width-1`:0] addr_internal;
@@ -202,6 +213,11 @@ module `mname` (
 //============================================================================//
 // assigns
 //============================================================================//
+//; if ($cfg_double_buffer > 0) {
+// double buffer
+    assign config_db_en = l2h_config_db_en_config_db_en_r;
+    assign use_db_en = l2h_use_db_en_use_db_en_r;
+//; }
 // read/write control logic
 assign h2d_pio_dec_write_data = wr_data_internal;
 assign h2d_pio_dec_address = addr_internal;

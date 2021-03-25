@@ -72,5 +72,11 @@ def glc_interconnect_wiring(garnet):
                 garnet.interconnect.ports.reset)
     garnet.wire(garnet.interconnect.ports.read_config_data,
                 garnet.global_controller.ports.read_data_in)
+    if garnet.interconnect.double_buffer:
+        garnet.wire(garnet.interconnect.ports.config_db,
+                    garnet.global_controller.ports.config_db)
+        garnet.wire(garnet.interconnect.ports.use_db,
+                    garnet.global_controller.ports.use_db)
+
 
     return garnet

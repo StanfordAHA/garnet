@@ -12,7 +12,8 @@ class GlobalController(Generator):
     def __init__(self, addr_width=32, data_width=32,
                  axi_addr_width=12, axi_data_width=32,
                  num_glb_tiles=16, glb_addr_width=22,
-                 block_axi_addr_width=12, glb_tile_mem_size=256):
+                 block_axi_addr_width=12, glb_tile_mem_size=256,
+                 double_buffer=False):
         super().__init__()
 
         self.addr_width = addr_width
@@ -23,6 +24,7 @@ class GlobalController(Generator):
         self.glb_addr_width = glb_addr_width
         self.glb_tile_mem_size = glb_tile_mem_size
         self.block_axi_addr_width = block_axi_addr_width
+        self.double_buffer = double_buffer
         # Control logic assumes cgra config_data_width is same as axi_data_width
         assert self.axi_data_width == self.data_width
 
@@ -55,6 +57,14 @@ class GlobalController(Generator):
             interrupt=magma.Out(magma.Bit)
         )
 
+        if self.double_buffer is True:
+            self.add_ports(
+                    config_db=magma.Out(magma.Array[self.num_glb_tiles*2,
+                                                    magma.Bit]),
+                    use_db=magma.Out(magma.Array[self.num_glb_tiles*2,
+                                                 magma.Bit]))
+
+
         params = GlobalControllerParams(cfg_data_width=self.data_width,
                                         cfg_addr_width=self.addr_width,
                                         axi_addr_width=self.axi_addr_width,
@@ -62,11 +72,16 @@ class GlobalController(Generator):
                                         num_glb_tiles=self.num_glb_tiles,
                                         glb_tile_mem_size=self.glb_tile_mem_size,
                                         block_axi_addr_width=(
-                                            self.block_axi_addr_width))
+                                            self.block_axi_addr_width),
+                                        cfg_double_buffer=int(self.double_buffer))
 
         wrapper = gen_wrapper(params)
         generator = wrapper.generator(mode="declare")
         self.underlying = FromMagma(generator())
+
+        if self.double_buffer is True:
+            self.wire(self.ports.config_db, self.underlying.ports.config_db_en)
+            self.wire(self.ports.use_db, self.underlying.ports.use_db_en)
 
         # wire clk and reset
         self.wire(self.ports.clk_in, self.underlying.ports.clk_in)

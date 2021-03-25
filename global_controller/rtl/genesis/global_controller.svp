@@ -18,6 +18,7 @@
 //; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
 //; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
 //; my $glb_tile_mem_size = parameter(NAME => 'glb_tile_mem_size', VAL => 256, DOC => 'size of global buffer tile memory size in KB');
+//; my $cfg_double_buffer = parameter(NAME => 'cfg_double_buffer', VAL => 0, DOC => 'double buffer configuration space');
 
 //============================================================================//
 // Genesis object generation
@@ -26,7 +27,7 @@
 //; my $jtag_obj = generate_base("jtag", "jtag_controller", SYSCLK_CFG_BUS_WIDTH => $cfg_data_width, SYSCLK_CFG_ADDR_WIDTH => $cfg_addr_width, SYSCLK_CFG_OPCODE_WIDTH =>$cfg_op_width);
 //; my $jtag_ctrl = generate_base("glc_jtag_ctrl", "jtag_ctrl", cfg_data_width => $cfg_data_width, cfg_addr_width => $cfg_addr_width, cfg_op_width=>$cfg_op_width, axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles,glb_addr_width=>$glb_addr_width);
 //; my $axi_obj = generate_base("glc_axi_ctrl", "axi_controller", axi_addr_width=>$axi_addr_width, axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles);
-//; my $axi_addrmap = generate_base("glc_axi_addrmap", "axi_addressmap", cfg_data_width => $cfg_data_width, cfg_addr_width => $cfg_addr_width,axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles, glb_addr_width=>$glb_addr_width);
+//; my $axi_addrmap = generate_base("glc_axi_addrmap", "axi_addressmap", cfg_data_width => $cfg_data_width, cfg_addr_width => $cfg_addr_width,axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles, glb_addr_width=>$glb_addr_width, cfg_double_buffer=>$cfg_double_buffer);
 
 module `mname` (
     input  logic                                clk_in,
@@ -94,6 +95,11 @@ module `mname` (
     input  logic                                axi_rready,
 
     output logic                                interrupt,
+
+//;	if ($cfg_double_buffer > 0) {
+    output logic [`$num_glb_tiles*2-1`:0]       config_db_en,
+    output logic [`$num_glb_tiles*2-1`:0]       use_db_en,
+//; }
 
     // jtag interface signals
     input  logic                                tck,
@@ -383,6 +389,11 @@ assign axi_cgra_cfg_data_in         = cgra_cfg_rd_data;
     .axi_cgra_cfg_addr(axi_cgra_cfg_addr),
     .axi_cgra_cfg_wr_data(axi_cgra_cfg_wr_data),
     .axi_cgra_cfg_data_in(axi_cgra_cfg_data_in),
+
+//;	if ($cfg_double_buffer > 0) {
+    .config_db_en(config_db_en),
+    .use_db_en(use_db_en),
+//; }
 
     .interrupt(interrupt)
 );

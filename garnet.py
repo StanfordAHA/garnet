@@ -92,7 +92,8 @@ class Garnet(Generator):
                                                       num_glb_tiles=num_glb_tiles,
                                                       glb_addr_width=glb_addr_width,
                                                       glb_tile_mem_size=glb_tile_mem_size,
-                                                      block_axi_addr_width=glb_axi_addr_width)
+                                                      block_axi_addr_width=glb_axi_addr_width,
+                                                      double_buffer=double_buffer)
 
             self.global_buffer = GlobalBuffer(num_glb_tiles=num_glb_tiles,
                                               num_cgra_cols=width,
