@@ -3,51 +3,41 @@ agents: { queue: "papers" }
 steps:
 
 - label:    'qrc0'
-  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
-- wait:     { continue_on_failure: true }
-
+  commands: '.buildkite/bin/qrc.sh'
 - label:    'qrc1'
-  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
-- wait:     { continue_on_failure: true }
+  commands: 'sleep 300; .buildkite/bin/qrc.sh'
+  wait:     { continue_on_failure: true }
+
 
 - label:    'qrc2'
-  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: '.buildkite/bin/qrc.sh'
+- label:    'qrc3'
+  commands: 'sleep 300; .buildkite/bin/qrc.sh'
 - wait:     { continue_on_failure: true }
 
-- label:    'qrc3'
-  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
-- wait:     { continue_on_failure: true }
 
 - label:    'qrc4'
-  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: '.buildkite/bin/qrc.sh'
+- label:    'qrc5'
+  commands: 'sleep 300; .buildkite/bin/qrc.sh'
 - wait:     { continue_on_failure: true }
 
-- label:    'qrc5'
-  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
-- wait:     { continue_on_failure: true }
 
 - label:    'qrc6'
-  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: '.buildkite/bin/qrc.sh'
+- label:    'qrc7'
+  commands: 'sleep 300; .buildkite/bin/qrc.sh'
 - wait:     { continue_on_failure: true }
 
-- label:    'qrc7'
-  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
-- wait:     { continue_on_failure: true }
 
 - label:    'qrc8'
-  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
-- wait:     { continue_on_failure: true }
-
+  commands: '.buildkite/bin/qrc.sh'
 - label:    'qrc9'
-  commands: 'set -o pipefail; .buildkite/bin/qrc.sh |& tee make-qrc.log'
+  commands: 'sleep 300; .buildkite/bin/qrc.sh'
 - wait:     { continue_on_failure: true }
 
 
-
-
-
-
-# Builds...?
+# Builds this data structure...?
 # {
 #  'agents' : { 'jobsize' : 'hours' },
 #  'steps'  : [ 

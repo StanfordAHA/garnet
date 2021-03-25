@@ -1,21 +1,48 @@
 #!/bin/bash
 
+# Helper script for the process of running postroute_hold step ten
+# times in a row to try and see how often QRC fails.
+# 
+# Designed to be called from a buildkite yml script something like:
+# 
+#     - label:    'qrc0'
+#       commands: '.buildkite/bin/qrc.sh'
+#     - wait:     { continue_on_failure: true }
+#     
+#     - label:    'qrc1'
+#       commands: '.buildkite/bin/qrc.sh'
+#     - wait:     { continue_on_failure: true }
+# 
+#     ...
+#     
+#     - label:    'qrc9'
+#       commands: '.buildkite/bin/qrc.sh'
+#     - wait:     { continue_on_failure: true }
+# 
 # Assumes a lot of assume-o's
 
-REF=/build/gold.228;
-GOLD=/build/qtry.${BUILDKITE_BUILD_NUMBER};
+# Cached design for postroute_hold inputs lives here
+REF=/build/gold.228
+
+# Results will go to dirs e.g. /build/qtry.3549-{0,1,2,3,4,5,6,7,8,9}
+DESTDIR=/build/qtry.${BUILDKITE_BUILD_NUMBER}
 
 for i in 0 1 2 3 4 5 6 7 8 9; do
-    if ! test -e ${GOLD}-$i; then
-        GOLD=${GOLD}-$i
+    if ! test -e ${DESTDIR}-$i; then
+        DESTDIR=${DESTDIR}-$i
         break
     fi
 done
 
-source mflowgen/bin/setup-buildkite.sh --dir $GOLD --need_space 1G;
+# Tee stdout to a log file
+exec > >(tee -i make-qrc.log) || exit 13
+exec 2>&1 || exit 13
+
+
+source mflowgen/bin/setup-buildkite.sh --dir $DESTDIR --need_space 1G;
 mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
-echo "--- QRC TEST RIG SETUP";
+echo "--- QRC TEST RIG SETUP - copy/link cached info";
 set -x;
 
     ln -s $REF/full_chip/12-tsmc16;
@@ -47,7 +74,7 @@ set -x;
     cp -rp $d/scripts . ;
 set +x;
 
-echo "--- QRC TEST RIG SETUP - main.tcl";
+echo "--- QRC TEST RIG SETUP - swap in new main.tcl";
 
 ########################################################################
 # Build a new main.tcl
