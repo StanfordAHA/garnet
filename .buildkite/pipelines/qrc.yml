@@ -1,11 +1,14 @@
+# To test QRC robustness, uses helper script qrc.sh to do ten
+# consecutive postroute_hold runs, two at a time; this test
+# takes about five hours for each run pair, so about 25 hours
+# for the entire test.
+
 agents: { queue: "papers" }
 
 env:
   DESTDIR : /build/qtry${BUILDKITE_BUILD_NUMBER}
 
-
 steps:
-
 - label:    'qrc0'
   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-0'
 - label:    'qrc1'
@@ -41,9 +44,11 @@ steps:
 - wait:     { continue_on_failure: true }
 
 
+########################################################################
 # Builds this data structure...?
 # {
-#  'agents' : { 'jobsize' : 'hours' },
+#  'agents' : { 'queue' : 'papers' },
+#  'env'    : { 'DESTDIR' : '/build/qtry3456' },
 #  'steps'  : [ 
 #               { 'label' : 'qrc0' , 'commands' : 'qrc.sh' },
 #               { 'label' : 'qrc1' , 'commands' : 'qrc.sh' },

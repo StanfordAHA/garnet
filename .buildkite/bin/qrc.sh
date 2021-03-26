@@ -104,17 +104,14 @@ puts "Info: Using signoff engine = $::env(signoff_engine)"
 if { $::env(signoff_engine) } {
   setExtractRCMode -engine postRoute -effortLevel signoff
 }
-# setExtractRCMode -engine postRoute -effortLevel high
 
-
-echo "BEGIN SYSENV"
-printenv
-echo "END SYSENV"
-
-# echo ""
-# echo "--- BEGIN generateRCFactor"
-# Hope setExtractRCMode is sufficient to handle all the parms
-# generateRCFactor
+# SR Mar 2021 changed multiCpuUsage from 16 back to 8.
+# It seems to have helped the QRC core-dump problem
+# (twenty-ish consecutive runs with no error). Also,
+# from Innovus User Guide Product Version 19.10,
+# dated April 2019, p. 1057:
+# 
+# "Generally, performance improvement will start to diminish beyond 8 CPUs."
 
 echo ""
 echo "--- BEGIN optDesign -postRoute -hold"
@@ -135,41 +132,40 @@ cat scripts/main.tcl
 echo '=================================================================='
 
 
-
+########################################################################
 # DO IT MAN!
+# 
+# Note
+# - 'exit 13' prevents hang at prompt on innovus failure
+# - 'tee' prevents error exit status but
+# - ENDSTATUS lets us process errors later
+# 
 echo "--- restore-design and setup-session"; # set -o pipefail;
-pwd
-ls -l ./mflowgen-run
-set -x
-(
-    set -x
-    echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
+( echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
 ) |& tee mflowgen-run.log
-set +x
-
-# (./mflowgen-run || echo ENDSTATUS=FAIL) >& mflowgen-run.log.1 &
 
 
+########################################################################
 # bug out if errors
 echo "+++ ERRORS? And end-game"
 
-set -x
+echo "egrep '^ Error messages'" qrc*.log
 egrep '^ Error messages' qrc*.log
 
-
-
 grep ENDSTATUS mflowgen-run.log
+if grep ENDSTATUS=FAIL mflowgen-run.log; then
+  echo "FAILED endstatus, could initiate retry here"
+  exit 13
+fi
 
-grep ENDSTATUS=FAIL mflowgen-run.log && echo "FAILED endstatus, could initiate retry here"
-grep ENDSTATUS=FAIL mflowgen-run.log && exit 13
-
-n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
 # e.g. n_errors='0\n0\n0\n0\n'
+n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
 for i in $n_errors; do 
     # if [ "$n_errors" -gt 0 ]; then exit 13; fi
-    if [ "$n_errors" -gt 0 ]; then 
+    if [ "$i" -gt 0 ]; then 
         echo "FAILED n_errors, could initiate retry here"
-        exit 13;
+        echo exit 13
+        exit 13
     fi
 done
 
