@@ -90,7 +90,7 @@ def get_core_registers(interconnect: Interconnect):
                     width = core.reg_width[reg_name]
                     addr = interconnect.get_config_addr(reg_addr, feat_addr, x, y)
                     result.append({
-                        "name": reg_name,
+                        "name": f"PE_{reg_name}",
                         "addr": addr,
                         "range": (1 << width) - 1,
                         "lo": 0,
@@ -106,7 +106,7 @@ def get_core_registers(interconnect: Interconnect):
                     addr = interconnect.get_config_addr(reg_addr, base_feat_addr,
                                                         x, y)
                     result.append({
-                        "name": reg_name,
+                        "name": f"MEM_{reg_name}",
                         "addr": addr,
                         "range": 1 << width,
                         "lo": lo,
