@@ -126,8 +126,8 @@ class PassThroughReg(Generator):
 
 
 class PeakCore(ConfigurableCore):
-    def __init__(self, peak_generator):
-        super().__init__(8, 32)
+    def __init__(self, peak_generator, double_buffer=False):
+        super().__init__(8, 32, double_buffer=double_buffer)
         self.ignored_ports = {"clk_en", "reset", "config_addr", "config_data",
                               "config_en", "read_config_data"}
 

@@ -86,14 +86,16 @@ class MemCore(LakeCoreBase):
                  add_clk_enable=True,
                  add_flush=True,
                  override_name=None,
-                 gen_addr=True):
+                 gen_addr=True,
+                 double_buffer=False):
 
         lake_name = "LakeTop"
 
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
-                         name="MemCore")
+                         name="MemCore",
+                         double_buffer=double_buffer)
 
         # Capture everything to the tile object
         # self.data_width = data_width
