@@ -152,22 +152,36 @@ echo "+++ ERRORS? And end-game"
 echo "egrep '^ Error messages'" qrc*.log
 egrep '^ Error messages' qrc*.log
 
-grep ENDSTATUS mflowgen-run.log
-if grep ENDSTATUS=FAIL mflowgen-run.log; then
-  echo "FAILED endstatus, could initiate retry here"
-  exit 13
-fi
-
 # e.g. n_errors='0\n0\n0\n0\n'
 n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
 for i in $n_errors; do 
     # if [ "$n_errors" -gt 0 ]; then exit 13; fi
     if [ "$i" -gt 0 ]; then 
         echo "FAILED n_errors, could initiate retry here"
-        echo exit 13
+        stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
         exit 13
     fi
 done
+
+grep ENDSTATUS mflowgen-run.log
+if grep ENDSTATUS=FAIL mflowgen-run.log; then
+  echo "FAILED endstatus, could initiate retry here"
+  # exit 13
+
+  echo "Oh what the heck."
+  echo "--- FAILED first attempt, going for a retry"
+  ( echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
+  ) |& tee mflowgen-run-retry.log
+
+  echo "+++ RETRY ERRORS? And end-game"
+
+  grep ENDSTATUS mflowgen-run-retry.log
+  if grep ENDSTATUS=FAIL mflowgen-run-retry.log; then
+    echo "FAILED endstatus on retry; giving up."
+    stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
+    exit 13
+  fi
+fi
 
 # Clean up
 echo "--- save disk space, delete output design (?)"
