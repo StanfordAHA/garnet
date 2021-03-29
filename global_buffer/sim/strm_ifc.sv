@@ -28,7 +28,6 @@ interface strm_ifc(input logic clk);
     );
 
     clocking cbd @(posedge clk);
-        input  clk;
         output strm_start_pulse;
         output data_f2g, data_valid_f2g;
         input  data_g2f, data_valid_g2f;
@@ -37,7 +36,7 @@ interface strm_ifc(input logic clk);
     modport driver (clocking cbd);
 
     clocking cbm @(posedge clk);
-        input clk, strm_start_pulse, strm_f2g_interrupt, strm_g2f_interrupt, data_f2g, data_valid_f2g, data_g2f, data_valid_g2f;
+        input strm_start_pulse, strm_f2g_interrupt, strm_g2f_interrupt, data_f2g, data_valid_f2g, data_g2f, data_valid_g2f;
     endclocking : cbm
     modport monitor (clocking cbm);
 
