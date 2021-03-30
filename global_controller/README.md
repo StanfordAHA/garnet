@@ -24,8 +24,8 @@
 |  GLB_CONFIG_READ   | 19 |  | :heavy_check_mark: |  :heavy_check_mark: |
 |  GLB_SRAM_CONFIG_WRITE   | 20 |:heavy_check_mark:  |  :heavy_check_mark: |  |
 |  GLB_SRAM_CONFIG_READ   | 21 |  | :heavy_check_mark:  |  :heavy_check_mark: |
-|  AXI_CTRL_WRITE   | 21 |  :heavy_check_mark: |:heavy_check_mark: |  |
-|  AXI_CTRL_READ   | 22 |  |  :heavy_check_mark: |  :heavy_check_mark: |
+|  AXI_CTRL_WRITE   | 22 |  :heavy_check_mark: |:heavy_check_mark: |  |
+|  AXI_CTRL_READ   | 23 |  |  :heavy_check_mark: |  :heavy_check_mark: |
 
 
 ## Global Controller ops by AXI-Lite:
