@@ -135,7 +135,7 @@ echo '=================================================================='
 # Define the watcher, watches for 'slow or hanging' jobs warning
 function watch_for_hang {
     # sleep_period=1 ;  # Every second for testing
-    sleep_period=570; # Check every fifteen minutes I guess
+    sleep_period=750; # Check every fifteen minutes I guess
     while [ true ]; do
         tag="HANG MONITOR $(date +%H:%M)" ; # per-loop tag
 
