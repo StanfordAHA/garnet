@@ -181,16 +181,20 @@ trap 'kill $(jobs -p)' EXIT
 watch_for_hang |& tee hang-watcher.log &
 
 ########################################################################
-# DO IT MAN!
-# 
-# Note
-# - 'exit 13' prevents hang at prompt on innovus failure
-# - 'tee' prevents error exit status but
-# - ENDSTATUS lets us process errors later
-# 
-echo "--- restore-design and setup-session"; # set -o pipefail;
-( echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
-) |& tee mflowgen-run.log
+# DO IT MAN! Run the step.
+
+function RUN_THE_STEP {
+    # Executes mflowgen-run, which basically does 
+    # - 'exit 13' prevents hang at prompt on innovus failure
+    # - '||' prevents exit on error
+    # - ENDSTATUS notification lets us process errors later
+    # echo "--- restore-design and setup-session"; # set -o pipefail;
+    echo "--- DO MFLOWGEN-RUN"
+    echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
+}
+RUN_THE_STEP |& tee mflowgen-run.log
+
+
 
 ########################################################################
 echo "+++ ERRORS? And end-game"
@@ -201,9 +205,25 @@ echo "+++ ERRORS? And end-game"
 #   2. qrc died, resulting in ENDSTATUS=FAIL
 #   3. job succeeded w/ENDSTATUS=PASS
 
+# Set FOUND_ERROR to
+#     "NONE" : no errors found
+#     "FAIL" : innovus failed, don't know why
+#     "HUNG" : qrc stopped with hanged-jog warning
+#     "QRC"  : qrc flagged one or more errors
+
+
+########################################################################
+# Set to FAIL if ENDSTATUS=FAIL
+if   grep ENDSTATUS=FAIL mflowgen-run.log; then FOUND_ERROR=FAIL
+else grep ENDSTATUS mflowgen-run.log;           FOUND_ERROR=NONE
+fi
+
+########################################################################
+# Check for hung job
 echo ''; echo 'Check for hung job'
 pid=$(grep 'found hung process' hang-watcher.log | awk '{print $NF}')
 if [ "$pid" ]; then
+    FOUND_ERROR=HUNG
     echo "oooo looks like the job got hunged"
     echo "hunged job is number $pid maybe"
     echo "ps --pid=$pid"
@@ -215,10 +235,8 @@ if [ "$pid" ]; then
     exit 13
 fi
 
-
 ########################################################################
-# bug out if errors
-
+# Override "FAIL" w/ "QRC" if find specific qrc errors
 echo "egrep '^ Error messages'" qrc*.log
 egrep '^ Error messages' qrc*.log
 
@@ -227,41 +245,135 @@ n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
 for i in $n_errors; do 
     # if [ "$n_errors" -gt 0 ]; then exit 13; fi
     if [ "$i" -gt 0 ]; then 
-        echo "FAILED n_errors, could initiate retry here"
+        # echo "FAILED n_errors, could initiate retry here"
+        echo "FAILED n_errors, flagging QRC for retry"
         # My attempt at fflush(stdout) :(
-        stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
-        exit 13
+        # stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
+        FOUND_ERROR=QRC
+        break
+
+        #         echo "Oh what the heck."
+        #         echo "--- FAILED first attempt, going for a retry"
+        #         # ( echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
+        #         # ) |& tee mflowgen-run-retry.log
+        #         RUN_THE_STEP |& tee mflowgen-run-retry.log
+        #         # exit 13
+
     fi
 done
 
-grep ENDSTATUS mflowgen-run.log
-if grep ENDSTATUS=FAIL mflowgen-run.log; then
-  echo "FAILED endstatus, could initiate retry here"
-  # exit 13
+########################################################################
+# Process FOUND_ERROR codes
 
-  echo "Oh what the heck."
-  echo "--- FAILED first attempt, going for a retry"
-  ( echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
-  ) |& tee mflowgen-run-retry.log
+function cleanup {
+    echo "--- save disk space, delete output design (?)"
+    set -x
+    ls -lR checkpoints/
+    /bin/rm -rf checkpoints/*
+    touch checkpoints/'deleted to save space'
+}
 
-  echo "+++ RETRY ERRORS? And end-game"
 
-  grep ENDSTATUS mflowgen-run-retry.log
-  if grep ENDSTATUS=FAIL mflowgen-run-retry.log; then
-    echo "FAILED endstatus on retry; giving up."
-    stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
+if [ "$FOUND_ERROR" == "NONE" ]; then
+    echo "+++ PASSED mflowgen first attempt"
+    echo "Hey looks like we got away with it"
+    cleanup; exit
+
+elif [ "$FOUND_ERROR" == "QRC" ]; then
+    echo "Looks like QRC failed, will attempt one retry"
+
+elif [ "$FOUND_ERROR" == "HUNG" ]; then
+    echo "TBD (not ready to retry on this error yet)"
+    echo "For now, this should have resulted in 'exit 13' above"
+    echo "ERROR should never be here (for now)!"
     exit 13
-  fi
+
+elif [ "$FOUND_ERROR" == "FAIL" ]; then
+    echo "Looks like innovus failed, dunno why"
+    echo "Will attempt one retry anyway"
+
+else
+    echo "ERROR unknown code, should never be here!"
+    exit 13
 fi
 
-# Clean up
-echo "--- save disk space, delete output design (?)"
-set -x
-ls -lR checkpoints/
-/bin/rm -rf checkpoints/*
-touch checkpoints/'deleted to save space'
+########################################################################
+# If we get this far, need a retry
+echo "--- FAILED first attempt, going for a retry"
+RUN_THE_STEP |& tee mflowgen-run-retry.log
 
-exit
+if grep ENDSTATUS=FAIL mflowgen-run.log; then
+    echo "+++ FAILED mflowgen retry, giving up now"
+    # My attempt at fflush(stdout) :(
+    stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
+    exit 13
+
+else
+    echo "+++ PASSED mflowgen retry, hooray I guess"
+    cleanup; exit
+
+fi
+
+
+
+# else
+#     if grep ENDSTATUS=FAIL mflowgen-run.log; then
+#         echo "--- FAILED first attempt, going for a retry"
+#         echo "Looks like innovus failed, but maybe not from qrc(?)"
+#         echo "We'll do one retry anyway:"
+# 
+#         #       echo "FAILED endstatus, could initiate retry here"
+#         #       # exit 13
+#         # 
+#         #       echo "Oh what the heck."
+#         #       echo "--- FAILED first attempt, going for a retry"
+#         #       # ( echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
+#         #       # ) |& tee mflowgen-run-retry.log
+#         
+#         RUN_THE_STEP |& tee mflowgen-run-retry.log
+#         
+#         echo "+++ RETRY ERRORS? And end-game"
+#         
+#         grep ENDSTATUS mflowgen-run-retry.log
+#         if grep ENDSTATUS=FAIL mflowgen-run-retry.log; then
+#             echo "FAILED endstatus on retry; giving up."
+#             stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
+#             exit 13
+#         fi
+#     fi
+# 
+# 
+# grep ENDSTATUS mflowgen-run.log
+# if grep ENDSTATUS=FAIL mflowgen-run.log; then
+#   echo "FAILED endstatus, could initiate retry here"
+#   # exit 13
+# 
+#   echo "Oh what the heck."
+#   echo "--- FAILED first attempt, going for a retry"
+#   # ( echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
+#   # ) |& tee mflowgen-run-retry.log
+#   RUN_THE_STEP |& tee mflowgen-run-retry.log
+# 
+# 
+# 
+#   echo "+++ RETRY ERRORS? And end-game"
+# 
+#   grep ENDSTATUS mflowgen-run-retry.log
+#   if grep ENDSTATUS=FAIL mflowgen-run-retry.log; then
+#     echo "FAILED endstatus on retry; giving up."
+#     stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
+#     exit 13
+#   fi
+# fi
+# 
+# # Clean up
+# echo "--- save disk space, delete output design (?)"
+# set -x
+# ls -lR checkpoints/
+# /bin/rm -rf checkpoints/*
+# touch checkpoints/'deleted to save space'
+# 
+# exit
 
 
 
