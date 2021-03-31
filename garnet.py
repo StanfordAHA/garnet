@@ -442,22 +442,15 @@ def main():
         ic = garnet.interconnect
         ic_reg = get_interconnect_regs(ic)
         core_reg = get_core_registers(ic)
+
         with open("config.info", "w+") as f:
-            ic_addr_list = [reg['addr'] for reg in ic_reg]
-            pe_addr_list = [reg['addr'] for reg in core_reg if reg['name'][0:3] == 'PE_']
-            mem_addr_list = [reg['addr'] for reg in core_reg if reg['name'][0:4] == 'MEM_']
-            sram_addr_list = [reg['addr'] for reg in core_reg if reg['name'][0:5] == 'SRAM_']
+            ic_cfg_list = [(reg['hi']-reg['lo']) for reg in ic_reg]
+            pe_cfg_list = [(reg['hi']-reg['lo']) for reg in core_reg if reg['name'][0:3] == 'PE_']
+            mem_cfg_list = [(reg['hi']-reg['lo']) for reg in core_reg if reg['name'][0:4] == 'MEM_']
 
-            # remove duplicates
-            ic_addr_list = list(dict.fromkeys(ic_addr_list))
-            pe_addr_list = list(dict.fromkeys(pe_addr_list))
-            mem_addr_list = list(dict.fromkeys(mem_addr_list))
-            sram_addr_list = list(dict.fromkeys(sram_addr_list))
-
-            f.write(f"interconnect: {len(ic_addr_list)}\n")
-            f.write(f"PE: {len(pe_addr_list)}\n")
-            f.write(f"MEM: {len(mem_addr_list)}\n")
-            f.write(f"SRAM: {len(sram_addr_list)}\n")
+            f.write(f"interconnect: {sum(ic_cfg_list)} bits in {int(args.width*args.height)} tiles\n")
+            f.write(f"PE: {sum(pe_cfg_list)} bits in {int(args.width*args.height*3/4)} PE tiles\n")
+            f.write(f"MEM: {sum(mem_cfg_list)} bits in {int(args.width*args.height/4)} MEM tiles\n")
 
         with open("config.json", "w+") as f:
             json.dump(ic_reg + core_reg, f)
