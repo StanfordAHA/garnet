@@ -23,7 +23,7 @@ cat > $makelist
 nmin=60
 find /tmp \
      -mmin +$nmin \
-     -name deleteme.step_alias.* \
+     -name deleteme.step_alias.\* \
      -exec ls -l {} \; \
      -exec /bin/rm {} \; \
      |& grep -v 'Permission denied'
@@ -111,7 +111,7 @@ test_steps="constraints MemCore PE rtl synthesis custom-dc-postcompile tsmc16 sy
 listfile=deleteme.makelist.fullchip.$$
 test_steps="dragon syn init cts place route postroute gds tape merge gdsmerge lvs drc"
 
-for s in $test_steps; do 
+for s in $test_steps; do
     a=$(cat $listfile | step_alias.sh $s )
     printf "%-30s ==> %s\n" "$s" "$a"
 done
