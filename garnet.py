@@ -421,6 +421,16 @@ def main():
         ic = garnet.interconnect
         ic_reg = get_interconnect_regs(ic)
         core_reg = get_core_registers(ic)
+
+        with open("config.info", "w+") as f:
+            ic_cfg_list = [(reg['hi']-reg['lo']) for reg in ic_reg]
+            pe_cfg_list = [(reg['hi']-reg['lo']) for reg in core_reg if reg['name'][0:3] == 'PE_']
+            mem_cfg_list = [(reg['hi']-reg['lo']) for reg in core_reg if reg['name'][0:4] == 'MEM_']
+
+            f.write(f"interconnect: {sum(ic_cfg_list)} bits in {int(args.width*args.height)} tiles\n")
+            f.write(f"PE: {sum(pe_cfg_list)} bits in {int(args.width*args.height*3/4)} PE tiles\n")
+            f.write(f"MEM: {sum(mem_cfg_list)} bits in {int(args.width*args.height/4)} MEM tiles\n")
+
         with open("config.json", "w+") as f:
             json.dump(ic_reg + core_reg, f)
 
