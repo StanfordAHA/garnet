@@ -197,7 +197,8 @@ RUN_THE_STEP |& tee mflowgen-run.log
 
 
 ########################################################################
-echo "+++ ERRORS? And end-game"
+########################################################################
+echo "+++ QCHECK QRC CHECK"
 
 # If we reach this point, then one of three things has happened:
 #   1. watcher detected slow hanger and killed the innovus job
@@ -219,10 +220,12 @@ else grep ENDSTATUS mflowgen-run.log;           FOUND_ERROR=NONE
 fi
 
 ########################################################################
-# Check for hung job
-echo ''; echo 'Check for hung job'
+# Check for hung job (less likely error cause)
+echo ''
+echo 'Check for hung job'
 pid=$(grep 'found hung process' hang-watcher.log | awk '{print $NF}')
 if [ "$pid" ]; then
+    echo "+++ QCHECK RESULT: HUNG JOB"
     FOUND_ERROR=HUNG
     echo "oooo looks like the job got hunged"
     echo "hunged job is number $pid maybe"
@@ -232,38 +235,30 @@ if [ "$pid" ]; then
     echo "kill -9 $pid"
     echo "and then we'd initiate a retry, see below"
     echo "but for now we gonna err out"
-    exit 13
+    # exit 13
+    # FIXME/TODO: Check to see if job is really hung (how??)
+
+
+########################################################################
+# Override "FAIL" w/ "QRC" if find specific qrc errors (most likely error cause)
+else
+    echo ''
+    echo "egrep '^ Error messages'" qrc*.log
+    egrep '^ Error messages' qrc*.log
+    n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
+    for i in $n_errors; do 
+        if [ "$i" -gt 0 ]; then 
+            echo ''
+            echo "+++ QCHECK RESULT: QRC ERRORS"
+            echo "FAILED n_errors, flagging QRC for retry"
+            FOUND_ERROR=QRC
+            break
+        fi
+    done
 fi
 
-########################################################################
-# Override "FAIL" w/ "QRC" if find specific qrc errors
-echo "egrep '^ Error messages'" qrc*.log
-egrep '^ Error messages' qrc*.log
-
-# e.g. n_errors='0\n0\n0\n0\n'
-n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
-for i in $n_errors; do 
-    # if [ "$n_errors" -gt 0 ]; then exit 13; fi
-    if [ "$i" -gt 0 ]; then 
-        # echo "FAILED n_errors, could initiate retry here"
-        echo "FAILED n_errors, flagging QRC for retry"
-        # My attempt at fflush(stdout) :(
-        # stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
-        FOUND_ERROR=QRC
-        break
-
-        #         echo "Oh what the heck."
-        #         echo "--- FAILED first attempt, going for a retry"
-        #         # ( echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
-        #         # ) |& tee mflowgen-run-retry.log
-        #         RUN_THE_STEP |& tee mflowgen-run-retry.log
-        #         # exit 13
-
-    fi
-done
-
-########################################################################
-# Process FOUND_ERROR codes
+##################################################################
+# Process FOUND_ERROR codes, retry if warranted
 
 function cleanup {
     echo "--- save disk space, delete output design (?)"
@@ -273,14 +268,16 @@ function cleanup {
     touch checkpoints/'deleted to save space'
 }
 
-
 if [ "$FOUND_ERROR" == "NONE" ]; then
+    echo "+++ QCHECK: NO ERRORS FOUND, HOORAY!"
     echo "+++ PASSED mflowgen first attempt"
     echo "Hey looks like we got away with it"
     cleanup; exit
 
 elif [ "$FOUND_ERROR" == "QRC" ]; then
+    echo ''
     echo "Looks like QRC failed, will attempt one retry"
+    echo "+++ QCHECK: INITIATING RETRY"
 
 elif [ "$FOUND_ERROR" == "HUNG" ]; then
     echo "TBD (not ready to retry on this error yet)"
@@ -302,150 +299,21 @@ fi
 echo "--- FAILED first attempt, going for a retry"
 RUN_THE_STEP |& tee mflowgen-run-retry.log
 
-if grep ENDSTATUS=FAIL mflowgen-run.log; then
-    echo "+++ FAILED mflowgen retry, giving up now"
+if grep ENDSTATUS=FAIL mflowgen-run-retry.log; then
+    echo "+++ QCHECK: FAILED mflowgen retry, giving up now"
     # My attempt at fflush(stdout) :(
     stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
     exit 13
 
 else
-    echo "+++ PASSED mflowgen retry, hooray I guess"
+    echo "+++ QCHECK: PASSED mflowgen retry, hooray I guess"
     cleanup; exit
 
 fi
 
+exit
+
+########################################################################
+# TRASH, see qrc.sh.trash
 
 
-# else
-#     if grep ENDSTATUS=FAIL mflowgen-run.log; then
-#         echo "--- FAILED first attempt, going for a retry"
-#         echo "Looks like innovus failed, but maybe not from qrc(?)"
-#         echo "We'll do one retry anyway:"
-# 
-#         #       echo "FAILED endstatus, could initiate retry here"
-#         #       # exit 13
-#         # 
-#         #       echo "Oh what the heck."
-#         #       echo "--- FAILED first attempt, going for a retry"
-#         #       # ( echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
-#         #       # ) |& tee mflowgen-run-retry.log
-#         
-#         RUN_THE_STEP |& tee mflowgen-run-retry.log
-#         
-#         echo "+++ RETRY ERRORS? And end-game"
-#         
-#         grep ENDSTATUS mflowgen-run-retry.log
-#         if grep ENDSTATUS=FAIL mflowgen-run-retry.log; then
-#             echo "FAILED endstatus on retry; giving up."
-#             stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
-#             exit 13
-#         fi
-#     fi
-# 
-# 
-# grep ENDSTATUS mflowgen-run.log
-# if grep ENDSTATUS=FAIL mflowgen-run.log; then
-#   echo "FAILED endstatus, could initiate retry here"
-#   # exit 13
-# 
-#   echo "Oh what the heck."
-#   echo "--- FAILED first attempt, going for a retry"
-#   # ( echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
-#   # ) |& tee mflowgen-run-retry.log
-#   RUN_THE_STEP |& tee mflowgen-run-retry.log
-# 
-# 
-# 
-#   echo "+++ RETRY ERRORS? And end-game"
-# 
-#   grep ENDSTATUS mflowgen-run-retry.log
-#   if grep ENDSTATUS=FAIL mflowgen-run-retry.log; then
-#     echo "FAILED endstatus on retry; giving up."
-#     stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
-#     exit 13
-#   fi
-# fi
-# 
-# # Clean up
-# echo "--- save disk space, delete output design (?)"
-# set -x
-# ls -lR checkpoints/
-# /bin/rm -rf checkpoints/*
-# touch checkpoints/'deleted to save space'
-# 
-# exit
-
-
-
-# THIS IS WHAT FAILED QRC LOOKS LIKE
-# 
-#  Tool:                    Cadence Quantus Extraction 64-bit
-#  Version:                 19.1.1-s086 Mon Mar 25 09:39:10 PDT 2019
-#  IR Build No:             086 
-#  Techfile:                Unknown ; version: Unknown 
-#  License(s) used:         0 of Unknown 
-#  User Name:               buildkite-agent
-#  Host Name:               r7arm-aha
-#  Host OS Release:         Linux 3.10.0-862.11.6.el7.x86_64
-#  Host OS Version:         #1 SMP Tue Aug 14 21:49:04 UTC 2018
-#  Run duration:            00:00:00 CPU time, 00:01:19 clock time
-#  Max (Total) memory used: 0 MB
-#  Max (CPU) memory used:   0 MB
-#  Max Temp-Directory used: 0 MB
-#  Nets/hour:               0K nets/CPU-hr, 0K nets/clock-hr
-#  Design data:
-#     Components:           0
-#     Phy components:       0
-#     Nets:                 0
-#     Unconnected pins:     0
-#  Warning messages:        430
-#  Error messages:          2
-
-
-
-
-
-
-# ##############################################################################
-# main_tcl_orig='''
-# setOptMode -verbose true
-# 
-# setOptMode -usefulSkewPostRoute true
-# 
-# setOptMode -holdTargetSlack  $$::env(hold_target_slack)
-# setOptMode -setupTargetSlack $$::env(setup_target_slack)
-# 
-# puts "Info: Using signoff engine = $$::env(signoff_engine)"
-# 
-# if { $$::env(signoff_engine) } {
-#   setExtractRCMode -engine postRoute -effortLevel signoff
-# }
-# 
-# # Run the final postroute hold fixing
-# optDesign -postRoute -outDir reports -prefix postroute_hold -hold
-# '''
-# 
-# ##############################################################################
-# main_tcl_new='
-# setOptMode -verbose true
-# 
-# setOptMode -usefulSkewPostRoute true
-# 
-# setOptMode -holdTargetSlack  $$::env(hold_target_slack)
-# setOptMode -setupTargetSlack $$::env(setup_target_slack)
-# 
-# puts "Info: Using signoff engine = $$::env(signoff_engine)"
-# 
-# if { $$::env(signoff_engine) } {
-#   setExtractRCMode -engine postRoute -effortLevel signoff
-# }
-# 
-# # Hope setExtractRCMode is sufficient to handle all the parms
-# generateRCFactor
-# 
-# 
-# # Run the final postroute hold fixing
-# # optDesign -postRoute -outDir reports -prefix postroute_hold -hold
-# '
-# 
-# echo "$main_tcl_new"
