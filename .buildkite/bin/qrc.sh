@@ -225,7 +225,7 @@ echo ''
 echo 'Check for hung job'
 pid=$(grep 'found hung process' hang-watcher.log | awk '{print $NF}')
 if [ "$pid" ]; then
-    echo "+++ QCHECK RESULT: HUNG JOB"
+    echo "+++ QCHECK PROBLEM: HUNG JOB"
     FOUND_ERROR=HUNG
     echo "oooo looks like the job got hunged"
     echo "hunged job is number $pid maybe"
@@ -249,7 +249,7 @@ else
     for i in $n_errors; do 
         if [ "$i" -gt 0 ]; then 
             echo ''
-            echo "+++ QCHECK RESULT: QRC ERRORS"
+            echo "+++ QCHECK PROBLEM: QRC ERRORS"
             echo "FAILED n_errors, flagging QRC for retry"
             FOUND_ERROR=QRC
             break
@@ -277,7 +277,7 @@ if [ "$FOUND_ERROR" == "NONE" ]; then
 elif [ "$FOUND_ERROR" == "QRC" ]; then
     echo ''
     echo "Looks like QRC failed, will attempt one retry"
-    echo "+++ QCHECK: INITIATING RETRY"
+    echo "+++ QCHECK PROBLEM: INITIATING RETRY"
 
 elif [ "$FOUND_ERROR" == "HUNG" ]; then
     echo "TBD (not ready to retry on this error yet)"
@@ -306,7 +306,7 @@ if grep ENDSTATUS=FAIL mflowgen-run-retry.log; then
     exit 13
 
 else
-    echo "+++ QCHECK: PASSED mflowgen retry, hooray I guess"
+    echo "+++ QCHECK RETRY: PASSED mflowgen retry, hooray I guess"
     cleanup; exit
 
 fi

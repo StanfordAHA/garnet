@@ -6,38 +6,64 @@ function show_help {
 cat <<EOF
 
 Usage: $0 [ -slrtgeah ] <build_dir>
-  -h     help
-  -a     do all checks
-  -s     do_sizes
-  -l     do_lvs
-  -r     do_runtimes
-  -t,g   do_logs      (log update times)
-  -e     do_err
+  -h,--help     help
+  -a,--all     do all checks
+  -s,--size    do_sizes
+  -L,--lvs     do_lvs
+  -r,--run     do_runtimes
+  -l,--do_logs (log update times)
+  -e,--err     do_err
 
 EOF
     exit
 }
 
-
 ########################################################################
 # Process command-line args
-bd=.          ; # default = current directory
-opstring='-a' ; # default = do all checks
+bd=.        ; # default = current directory
+opstring=''
+
+# DBG=1
+DBG=
 while [ $# -gt 0 ] ; do
+    test $DBG && echo "Processing arg '$1'"
     case "$1" in
-        -*) opstring="$1" ;;
-         *) bd=$1        ;;
+        --help)  show_help; exit  ;;
+        --size*) opstring="${opstring}s" ;;
+        --lvs)   opstring="${opstring}L" ;;
+        --run*)  opstring="${opstring}r" ;;
+        --log*)  opstring="${opstring}l" ;;
+        --err*)  opstring="${opstring}e" ;;
+
+        --all)   opstring="-a";  break  ;;
+        -a)      opstring="-a";  break  ;;
+
+#         --size*) do_sizes=true    ;;
+#         --lvs)   do_lvs=true      ;;
+#         --run*)  do_runtimes=true ;;
+#         --log*)  do_logs=true     ;;
+#         --err*)  do_err=true      ;;
+#         --all)   opstring="-a"; break  ;;
+
+        --*) show_help; exit ;;         # Unknwon '--' arg
+         -*) opstring="$opstring$1" ;;  # Add to opstring
+          *) bd=$1        ;;            # Target directory
     esac
     shift
 done
-if [ "$opstring" == "-a" ]; then opstring="-slrtge"; fi
+test $DBG && (echo "DONE processing args"; echo '---')
+
+# DEFAULT = do all checks
+if [ "$opstring" == ""   ]; then opstring="-a"    ; fi
+if [ "$opstring" == "-a" ]; then opstring="-sLrle"; fi
+
 
 ##############################################################################
 # Initialize options array "optons"
 # 
 # Example: opstring="-slrtge"
-#   keys=(e g l - r s t)
-#   vals=(e g l - r s t)
+#   keys=(e g l - r s t) = ${!options[*]}
+#   vals=(e g l - r s t) =  ${options[*]}
 
 unset options; declare -A options
 for (( i=0; i<${#opstring}; i++ )); do
@@ -53,11 +79,20 @@ done
 
 [ "${options[h]}" ] && show_help
 [ "${options[s]}" ] && do_sizes=true
-[ "${options[l]}" ] && do_lvs=true
+[ "${options[L]}" ] && do_lvs=true
 [ "${options[r]}" ] && do_runtimes=true
-[ "${options[t]}" ] && do_logs=true
-[ "${options[g]}" ] && do_logs=true
+[ "${options[l]}" ] && do_logs=true
 [ "${options[e]}" ] && do_err=true
+
+if [ "$DBG" ]; then
+    test "$do_sizes"    == true && echo DO_SIZES
+    test "$do_lvs"      == true && echo DO_LVS
+    test "$do_runtimes" == true && echo DO_RUNTIMES
+    test "$do_logs"     == true && echo DO_LOGS
+    test "$do_err"      == true && echo DO_ERR
+    # exit
+fi
+
 
 
 ########################################################################
@@ -147,6 +182,17 @@ if [ "$do_logs" ]; then
 fi
 
 if [ "$do_err" ]; then
+    ########################################################################
+    # Check to see if we had to restart/retry anywhere
+    echo ''; echo '+++ RETRIES REQUIRED?'
+    logfiles=$(find * -name \*.log)
+
+    # OLD/DEPRECATED
+    grep -H QCHECK $logfiles | egrep 'QCHECK QRC CHECK'; # '-H' ==> print filename
+
+    # NEW
+    grep -H QCHECK $logfiles | egrep 'PROBLEM|RETRY'; # '-H' ==> print filename
+
     ########################################################################
     # Error check
     echo ''; echo '--- ERROR CHECK'
