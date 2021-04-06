@@ -44,10 +44,12 @@ DESTDIR=$1
 
 set -x
   mkdir -p $DESTDIR
+
+  touch $DESTDIR/foo
+  exit 13
+
 set +x
 
-touch $DESTDIR/foo
-exit 13
 
 
 # Tee stdout to a log file

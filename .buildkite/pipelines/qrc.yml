@@ -7,7 +7,7 @@ agents: { queue: "papers" }
 
 env:
   DESTDIR : /build/qtry${BUILDKITE_BUILD_NUMBER}
-  QRC     : ".buildkite/bin/qrc.sh qtry${BUILDKITE_BUILD_NUMBER}"
+  QRC     : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
 
 steps:
 - label:    'qrc0'
