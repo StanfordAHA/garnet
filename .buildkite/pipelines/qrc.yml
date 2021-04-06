@@ -9,12 +9,14 @@ env:
   DESTDIR : /build/qtry${BUILDKITE_BUILD_NUMBER}
 
 steps:
-  - command: "
-        export FOO=barzy;
-    "
-  - wait: ~
-    continue_on_failure: true
-  - command: "echo f1=$FOO f2=$$FOO"
+  - command: '
+  (exit 13) || set ENDSTATUS=FAIL;
+  if [ "$$ENDSTATUS" == "FAIL" ]; then echo try again; else echo guess we good; fi
+  '
+  - command: '
+  (exit 0) || set ENDSTATUS=FAIL;
+  if [ "$$ENDSTATUS" == "FAIL" ]; then echo try again; else echo guess we good; fi
+  '
 
 
 
