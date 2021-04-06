@@ -9,22 +9,36 @@ env:
   DESTDIR : /build/qtry${BUILDKITE_BUILD_NUMBER}
 
 steps:
-- label:    'qrc0'
-  commands: 
-  - '
+  - command: '
     echo foo; export FOO=barzy;
     echo fi;
   '
-  - 'echo $$FOO ; exit 13'
-  - wait: { continue_on_failure: true }
-  - 'if [ $$FOO' == 'barzy' ] ; then echo barzyyyy; fi'
+  - command: 'echo $$FOO ; exit 13'
+  - wait: ~
+    continue_on_failure: true
+  - command: 'if [ $$FOO' == 'barzy' ] ; then echo barzyyyy; fi'
 
 
-- label:    'qrc1'
-  commands: 'echo faw'
 
+
+
+
+# - label:    'qrc0'
+#   commands: 
+#   - '
+#     echo foo; export FOO=barzy;
+#     echo fi;
+#   '
+#   - 'echo $$FOO ; exit 13'
+#   - wait: { continue_on_failure: true }
+#   - 'if [ $$FOO' == 'barzy' ] ; then echo barzyyyy; fi'
 # 
 # 
+# - label:    'qrc1'
+#   commands: 'echo faw'
+# 
+# # 
+# # 
 # 
 # # - label:    'qrc1'
 # #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-1'
