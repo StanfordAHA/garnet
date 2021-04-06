@@ -139,46 +139,55 @@ function watch_for_hang {
     while [ true ]; do
         tag="HANG MONITOR $(date +%H:%M)" ; # per-loop tag
 
-        if ! grep -s 'slow or hanging' qrc*.log; then
-            echo $tag No slow hangers yet...; sleep $sleep_period; continue
-        fi
-        
-        # Find name of hanging log
+        # grep -l
+        #   Suppress normal output; instead print the name of each input
+        #   file from which output would normally have been printed.  The
+        #   scanning will stop on the first match.
 
-        # grep -l, --files-with-matches
-        # Suppress normal output; instead print the name of each input
-        # file from which output would normally have been printed.  The
-        # scanning will stop on the first match.
+        hunglogs=$(grep -ls 'slow or hanging' qrc*.log)
+        for log_name in $hunglogs; do
 
-        log_name=$(grep -l 'slow or hanging' qrc*log | tail -1)
-        echo "$tag Found slow hanging log '$log_name'"
-        echo $tag $log_name
+            echo "$tag Found slow hanging log '$log_name'"
+            echo $tag $log_name
+            
+            # Find innovus process id where 
+            # e.g. if log_name=qrc_6717_20210326_21:19:09.log then pid=6717
+            pid=$(echo $log_name | sed 's/^qrc_//' | sed 's/_.*//')
+            echo "$tag process id=? $pid ?"
+            echo "$tag found hung process $pid"
 
-        # Find innovus process id where 
-        # e.g. if log_name=qrc_6717_20210326_21:19:09.log then pid=6717
-        pid=$(echo $log_name | sed 's/^qrc_//' | sed 's/_.*//')
-        echo "$tag process id=? $pid ?"
-        echo "$tag found hung process $pid"
-
-        echo ""
-        echo "$tag Did we find it?"
-        echo "$tag ps --pid=$pid"
-        ps --pid=$pid
-
-        echo ""
-        echo "$tag KILL AND RESTART $pid !"
-        echo "kill $pid"
-        break
-
+            # See if process exists (still)
+            ps -p $pid || continue
+            
+            # Found a hung process; now kill it
+            echo "Process $pid is (still) valid / running"
+            echo ""
+            echo 'List of hung processes:'
+            echo 'ps -xo "%p %P %y %x %c" --sort ppid | grep $pid'
+            ps -xo "%p %P %y %x %c" --sort ppid | grep $pid
+            echo ""
+            echo "$tag KILL AND RESTART $pid !"
+            echo "kill $pid"
+            kill $pid
+            echo "$tag DONE"
+            return
+        done
+        echo $tag No slow hangers yet...; sleep $sleep_period; continue
     done
-    echo '$tag DONE'
 }
 
 # Kill all background jobs (i.e. the watcher) when this script exits
-trap 'kill $(jobs -p)' EXIT
+# (May not be strcitly necessary...?)
+trap '
+  echo ""
+  echo "kill hung jobs"
+  sleep 1; # Wait a sec, see if they die on their own
+  [ "$(jobs -p)" ] && echo "no hung jobs to kill"
+  [ "$(jobs -p)" ] && kill $(jobs -p)
+' EXIT
 
 # Launch the watcher
-watch_for_hang |& tee hang-watcher.log &
+watch_for_hang |& tee -i hang-watcher.log &
 
 ########################################################################
 # DO IT MAN! Run the step.
@@ -192,7 +201,7 @@ function RUN_THE_STEP {
     echo "--- DO MFLOWGEN-RUN"
     echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
 }
-RUN_THE_STEP |& tee mflowgen-run.log
+RUN_THE_STEP |& tee -i mflowgen-run.log
 
 
 
@@ -228,13 +237,17 @@ if [ "$pid" ]; then
     echo "+++ QCHECK PROBLEM: HUNG JOB"
     FOUND_ERROR=HUNG
     echo "oooo looks like the job got hunged"
-    echo "hunged job is number $pid maybe"
+    echo "hunged job was number $pid maybe"
+    echo 'hang watcher should have killed the hung job by now'
     echo "ps --pid=$pid"
-    ps --pid=$pid
-    echo "if we were brave this is where we would do this:"
-    echo "kill -9 $pid"
-    echo "and then we'd initiate a retry, see below"
-    echo "but for now we gonna err out"
+    ps --pid=$pid  || echo 'yep looks like hanged job was killed okay'
+    echo "should we retry???"
+
+
+#     echo "if we were brave this is where we would do this:"
+#     echo "kill -9 $pid"
+#     echo "and then we'd initiate a retry, see below"
+#     echo "but for now we gonna err out"
     # exit 13
     # FIXME/TODO: Check to see if job is really hung (how??)
 
@@ -297,7 +310,7 @@ fi
 ########################################################################
 # If we get this far, need a retry
 echo "--- FAILED first attempt, going for a retry"
-RUN_THE_STEP |& tee mflowgen-run-retry.log
+RUN_THE_STEP |& tee -i mflowgen-run-retry.log
 
 if grep ENDSTATUS=FAIL mflowgen-run-retry.log; then
     echo "+++ QCHECK: FAILED mflowgen retry, giving up now"

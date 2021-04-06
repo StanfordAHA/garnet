@@ -10,48 +10,81 @@ env:
 
 steps:
 - label:    'qrc0'
-  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-0'
+  commands: '
+    echo foo
+    echo fi
+    exit 13
+  '
+- wait:     { continue_on_failure: true }
+
 - label:    'qrc1'
-  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-1'
-- wait:     { continue_on_failure: true }
+  commands: 'echo $$BUILDKITE_COMMAND_EXIT_STATUS; echo $BUILDKITE_COMMAND_EXIT_STATUS'
 
 
-- label:    'qrc2'
-  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-2'
-- label:    'qrc3'
-  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-3'
-- wait:     { continue_on_failure: true }
+
+# - label:    'qrc1'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-1'
+# - wait:     { continue_on_failure: true }
+# 
 
 
-- label:    'qrc4'
-  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-4'
-- label:    'qrc5'
-  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-5'
-- wait:     { continue_on_failure: true }
 
 
-- label:    'qrc6'
-  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-6'
-- label:    'qrc7'
-  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-7'
-- wait:     { continue_on_failure: true }
 
 
-- label:    'qrc8'
-  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-8'
-- label:    'qrc9'
-  commands: '.buildkite/bin/qrc.sh $${DESTDIR}-9'
-- wait:     { continue_on_failure: true }
 
 
-########################################################################
-# Builds this data structure...?
-# {
-#  'agents' : { 'queue' : 'papers' },
-#  'env'    : { 'DESTDIR' : '/build/qtry3456' },
-#  'steps'  : [ 
-#               { 'label' : 'qrc0' , 'commands' : 'qrc.sh' },
-#               { 'label' : 'qrc1' , 'commands' : 'qrc.sh' },
-#               { 'wait'  : { 'cf' : 'true' } }
-#             ]
-# }
+
+
+
+
+
+
+
+# steps:
+# - label:    'qrc0'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-0'
+# - label:    'qrc1'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-1'
+# - wait:     { continue_on_failure: true }
+# 
+# 
+# - label:    'qrc2'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-2'
+# - label:    'qrc3'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-3'
+# - wait:     { continue_on_failure: true }
+# 
+# 
+# - label:    'qrc4'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-4'
+# - label:    'qrc5'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-5'
+# - wait:     { continue_on_failure: true }
+# 
+# 
+# - label:    'qrc6'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-6'
+# - label:    'qrc7'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-7'
+# - wait:     { continue_on_failure: true }
+# 
+# 
+# - label:    'qrc8'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-8'
+# - label:    'qrc9'
+#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-9'
+# - wait:     { continue_on_failure: true }
+# 
+# 
+# ########################################################################
+# # Builds this data structure...?
+# # {
+# #  'agents' : { 'queue' : 'papers' },
+# #  'env'    : { 'DESTDIR' : '/build/qtry3456' },
+# #  'steps'  : [ 
+# #               { 'label' : 'qrc0' , 'commands' : 'qrc.sh' },
+# #               { 'label' : 'qrc1' , 'commands' : 'qrc.sh' },
+# #               { 'wait'  : { 'cf' : 'true' } }
+# #             ]
+# # }
