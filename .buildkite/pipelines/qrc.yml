@@ -7,18 +7,35 @@ agents: { queue: "papers" }
 
 env:
   DESTDIR : /build/qtry${BUILDKITE_BUILD_NUMBER}
+  QRC     : ".buildkite/bin/qrc.sh qtry${BUILDKITE_BUILD_NUMBER}"
 
 steps:
-  - command: '
-  (echo foo | grep bar) || ENDSTATUS=FAIL;
-  if [ "$$ENDSTATUS" == "FAIL" ]; then echo try again; else echo guess we good; fi
-  '
-  - command: '
-  (echo foo | grep foo) || ENDSTATUS=FAIL;
-  if [ "$$ENDSTATUS" == "FAIL" ]; then echo try again; else echo guess we good; fi
-  '
+- label:    'qrc0'
+  commands:
+  - set -x; ${QRC}-0 || ${QRC}-0a || ${QRC}-0b || ${QRC}-0c
 
 
+
+# '.buildkite/bin/qrc.sh $${DESTDIR}-0  ||
+#              .buildkite/bin/qrc.sh $${DESTDIR}-0a ||
+#              .buildkite/bin/qrc.sh $${DESTDIR}-0b ||
+#              .buildkite/bin/qrc.sh $${DESTDIR}-0c'
+# 
+# 
+# 
+# 
+# 
+# steps:
+#   - command: '
+#   (echo foo | grep bar) || ENDSTATUS=FAIL;
+#   if [ "$$ENDSTATUS" == "FAIL" ]; then echo try again; else echo guess we good; fi
+#   '
+#   - command: '
+#   (echo foo | grep foo) || ENDSTATUS=FAIL;
+#   if [ "$$ENDSTATUS" == "FAIL" ]; then echo try again; else echo guess we good; fi
+#   '
+# 
+# 
 
 
 

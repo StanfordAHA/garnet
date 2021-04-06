@@ -29,6 +29,8 @@
 # Cached design for postroute_hold inputs lives here
 REF=/build/gold.228
 
+echo $1; exit
+
 # Results will go to dirs e.g. /build/qtry.3549-{0,1,2,3,4,5,6,7,8,9}
 DESTDIR=$1
 
@@ -177,7 +179,7 @@ function watch_for_hang {
 }
 
 # Kill all background jobs (i.e. the watcher) when this script exits
-# (May not be strcitly necessary...?)
+# (May not be strictly necessary...?)
 trap '
   echo ""
   echo "kill hung jobs"
@@ -202,6 +204,21 @@ function RUN_THE_STEP {
     echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
 }
 RUN_THE_STEP |& tee -i mflowgen-run.log
+
+
+########################################################################
+echo "+++ QCHECK: PASS or FAIL?"
+
+# If we reach this point, then one of three things has happened:
+#   1. watcher detected slow hanger and killed the innovus job
+#      (which I think results in ENDSTATUS=PASS(?))
+#   2. qrc died, resulting in ENDSTATUS=FAIL
+#   3. job succeeded w/ENDSTATUS=PASS
+
+
+
+
+
 
 
 
