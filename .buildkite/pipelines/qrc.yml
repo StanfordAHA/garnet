@@ -14,10 +14,10 @@ steps:
   - '
     echo foo;
     echo fi;
-    exit 13
   '
   - 'echo b1=$$BUILDKITE_COMMAND_EXIT_STATUS; echo b2=$BUILDKITE_COMMAND_EXIT_STATUS'
-
+  - 'echo fum; exit 13'
+  - 'echo b1=$$BUILDKITE_COMMAND_EXIT_STATUS; echo b2=$BUILDKITE_COMMAND_EXIT_STATUS'
 
 - wait:     { continue_on_failure: true }
 
