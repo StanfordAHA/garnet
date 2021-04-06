@@ -6,60 +6,43 @@
 # Designed to be called from a buildkite yml script something like:
 # 
 #     env:
-#       DESTDIR : /build/qtry${BUILDKITE_BUILD_NUMBER}
-# 
+#       QRC : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
+#     
 #     steps:
 # 
 #     - label:    'qrc0'
-#       commands: '.buildkite/bin/qrc.sh $${DESTDIR}-0'
-#     - wait:     { continue_on_failure: true }
-#     
-#     - label:    'qrc1'
-#       commands: '.buildkite/bin/qrc.sh $${DESTDIR}-1'
-#     - wait:     { continue_on_failure: true }
+#       commands:
+#       - set -x; ${QRC}-0a || ${QRC}-0b || ${QRC}-0c
 # 
-#     ...
-#     
-#     - label:    'qrc9'
-#       commands: '.buildkite/bin/qrc.sh $${DESTDIR}-9'
-#     - wait:     { continue_on_failure: true }
+#     - label:    'qrc1'
+#       commands:
+#       - set -x; ${QRC}-1a || ${QRC}-1b || ${QRC}-1c
+# 
+# If all goes well, builds a single dir e.g. '/build/qtry3574-0a'
+# Otherwise, can retry up to two more times, in e.g.
+#   '/build/qtry3574-0b' and '0c' respectively
 # 
 # Assumes a lot of assume-o's
 
 # Cached design for postroute_hold inputs lives here
-REF=/build/gold.228
+REF=/sim/buildkite-agent/gold
 
-# Results will go to dirs e.g. /build/qtry.3549-{0,1,2,3,4,5,6,7,8,9}
+# Results will go to dirs e.g. /build/qtry.3549-{0,1,2,3,4,5,6,7,8,9}{a,b,c}
 DESTDIR=$1
-
-
-# DESTDIR=/build/qtry.${BUILDKITE_BUILD_NUMBER}
-# 
-# for i in 0 1 2 3 4 5 6 7 8 9; do
-#     if ! test -e ${DESTDIR}-$i; then
-#         DESTDIR=${DESTDIR}-$i
-#         break
-#     fi
-# done
 
 set -x
   mkdir -p $DESTDIR
-
-  touch $DESTDIR/foo
-  exit 13
-
 set +x
 
-
-
-# Tee stdout to a log file
+# Tee stdout to a log file 'make-qrc.log'
 exec > >(tee -i $DESTDIR/make-qrc.log) || exit 13
 exec 2>&1 || exit 13
 
-
+# Set up the environment for the run
 source mflowgen/bin/setup-buildkite.sh --dir $DESTDIR --need_space 1G;
 mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
+# Build necessary dirs and link to cached info
 echo "--- QRC TEST RIG SETUP - copy/link cached info";
 set -x;
 
@@ -96,6 +79,8 @@ echo "--- QRC TEST RIG SETUP - swap in new main.tcl";
 
 ########################################################################
 # Build a new main.tcl
+# Until we can fix mflowgen repo, will need to fix main.tcl here.
+# Mainly changing multi-cpu from 16 back to 8.
 
 main_tcl_new='
 setOptMode -verbose true
@@ -146,9 +131,8 @@ function watch_for_hang {
         tag="HANG MONITOR $(date +%H:%M)" ; # per-loop tag
 
         # grep -l
-        #   Suppress normal output; instead print the name of each input
-        #   file from which output would normally have been printed.  The
-        #   scanning will stop on the first match.
+        #   Suppress normal output; instead print the name of each matching file.
+        #   Scanning stops on the first match [for each file?].
 
         hunglogs=$(grep -ls 'slow or hanging' qrc*.log)
         for log_name in $hunglogs; do
@@ -168,11 +152,11 @@ function watch_for_hang {
             # Found a hung process; now kill it
             echo "Process $pid is (still) valid / running"
             echo ""
-            echo 'List of hung processes:'
+            echo 'List of hung processes dependent on $pid'
             echo 'ps -xo "%p %P %y %x %c" --sort ppid | grep $pid'
             ps -xo "%p %P %y %x %c" --sort ppid | grep $pid
             echo ""
-            echo "$tag KILL AND RESTART $pid !"
+            echo "$tag KILL $pid !"
             echo "kill $pid"
             kill $pid
             echo "$tag DONE"
@@ -182,15 +166,15 @@ function watch_for_hang {
     done
 }
 
-# Kill all background jobs (i.e. the watcher) when this script exits
-# (May not be strictly necessary...?)
-trap '
-  echo ""
-  echo "kill hung jobs"
-  sleep 1; # Wait a sec, see if they die on their own
-  [ "$(jobs -p)" ] && echo "no hung jobs to kill"
-  [ "$(jobs -p)" ] && kill $(jobs -p)
-' EXIT
+# # Kill all background jobs (i.e. the watcher) when this script exits
+# # (May not be strictly necessary...?)
+# trap '
+#   echo ""
+#   echo "kill hung jobs"
+#   sleep 1; # Wait a sec, see if they die on their own
+#   [ "$(jobs -p)" ] && echo "no hung jobs to kill"
+#   [ "$(jobs -p)" ] && kill $(jobs -p)
+# ' EXIT
 
 # Launch the watcher
 watch_for_hang |& tee -i hang-watcher.log &
@@ -213,141 +197,57 @@ RUN_THE_STEP |& tee -i mflowgen-run.log
 ########################################################################
 echo "+++ QCHECK: PASS or FAIL?"
 
-# If we reach this point, then one of three things has happened:
-#   1. watcher detected slow hanger and killed the innovus job
-#      (which I think results in ENDSTATUS=PASS(?))
-#   2. qrc died, resulting in ENDSTATUS=FAIL
-#   3. job succeeded w/ENDSTATUS=PASS
-
-
-
-
-
-
-
-
-########################################################################
-########################################################################
-echo "+++ QCHECK QRC CHECK"
-
-# If we reach this point, then one of three things has happened:
-#   1. watcher detected slow hanger and killed the innovus job
-#      (which I think results in ENDSTATUS=PASS(?))
-#   2. qrc died, resulting in ENDSTATUS=FAIL
-#   3. job succeeded w/ENDSTATUS=PASS
-
-# Set FOUND_ERROR to
-#     "NONE" : no errors found
-#     "FAIL" : innovus failed, don't know why
-#     "HUNG" : qrc stopped with hanged-jog warning
-#     "QRC"  : qrc flagged one or more errors
-
-
-########################################################################
-# Set to FAIL if ENDSTATUS=FAIL
-if   grep ENDSTATUS=FAIL mflowgen-run.log; then FOUND_ERROR=FAIL
-else grep ENDSTATUS mflowgen-run.log;           FOUND_ERROR=NONE
-fi
-
-########################################################################
-# Check for hung job (less likely error cause)
+# Hung job
 echo ''
 echo 'Check for hung job'
 pid=$(grep 'found hung process' hang-watcher.log | awk '{print $NF}')
 if [ "$pid" ]; then
-    echo "+++ QCHECK PROBLEM: HUNG JOB"
+    echo "+++ QCHECK PROBLEM: HUNG JOB $pid"
     FOUND_ERROR=HUNG
-    echo "oooo looks like the job got hunged"
-    echo "hunged job was number $pid maybe"
-    echo 'hang watcher should have killed the hung job by now'
-    echo "ps --pid=$pid"
-    ps --pid=$pid  || echo 'yep looks like hanged job was killed okay'
-    echo "should we retry???"
-
-
-#     echo "if we were brave this is where we would do this:"
-#     echo "kill -9 $pid"
-#     echo "and then we'd initiate a retry, see below"
-#     echo "but for now we gonna err out"
-    # exit 13
-    # FIXME/TODO: Check to see if job is really hung (how??)
-
-
-########################################################################
-# Override "FAIL" w/ "QRC" if find specific qrc errors (most likely error cause)
-else
-    echo ''
-    echo "egrep '^ Error messages'" qrc*.log
-    egrep '^ Error messages' qrc*.log
-    n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
-    for i in $n_errors; do 
-        if [ "$i" -gt 0 ]; then 
-            echo ''
-            echo "+++ QCHECK PROBLEM: QRC ERRORS"
-            echo "FAILED n_errors, flagging QRC for retry"
-            FOUND_ERROR=QRC
-            break
-        fi
-    done
-fi
-
-##################################################################
-# Process FOUND_ERROR codes, retry if warranted
-
-function cleanup {
-    echo "--- save disk space, delete output design (?)"
-    set -x
-    ls -lR checkpoints/
-    /bin/rm -rf checkpoints/*
-    touch checkpoints/'deleted to save space'
-}
-
-if [ "$FOUND_ERROR" == "NONE" ]; then
-    echo "+++ QCHECK: NO ERRORS FOUND, HOORAY!"
-    echo "+++ PASSED mflowgen first attempt"
-    echo "Hey looks like we got away with it"
-    cleanup; exit
-
-elif [ "$FOUND_ERROR" == "QRC" ]; then
-    echo ''
-    echo "Looks like QRC failed, will attempt one retry"
-    echo "+++ QCHECK PROBLEM: INITIATING RETRY"
-
-elif [ "$FOUND_ERROR" == "HUNG" ]; then
-    echo "TBD (not ready to retry on this error yet)"
-    echo "For now, this should have resulted in 'exit 13' above"
-    echo "ERROR should never be here (for now)!"
-    exit 13
-
-elif [ "$FOUND_ERROR" == "FAIL" ]; then
-    echo "Looks like innovus failed, dunno why"
-    echo "Will attempt one retry anyway"
-
-else
-    echo "ERROR unknown code, should never be here!"
     exit 13
 fi
 
-########################################################################
-# If we get this far, need a retry
-echo "--- FAILED first attempt, going for a retry"
-RUN_THE_STEP |& tee -i mflowgen-run-retry.log
+# Other QRC problems
+echo ''
+echo 'Check for QRC error(s)'
+echo "egrep '^ Error messages'" qrc*.log
+egrep '^ Error messages' qrc*.log
+n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
+for i in $n_errors; do 
+    if [ "$i" -gt 0 ]; then 
+        echo ''
+        echo "+++ QCHECK PROBLEM: QRC ERRORS"
+        echo "FAILED n_errors, flagging QRC for retry"
+        FOUND_ERROR=QRC
+        exit 13
+    fi
+done
 
-if grep ENDSTATUS=FAIL mflowgen-run-retry.log; then
-    echo "+++ QCHECK: FAILED mflowgen retry, giving up now"
-    # My attempt at fflush(stdout) :(
-    stdbuf -oL echo exit 13; stdbuf -o0 echo exit 13
+# Unknown error
+echo ''
+echo 'Check for other / unknown error(s)'
+if grep ENDSTATUS=FAIL mflowgen-run.log; then
+    echo "+++ QCHECK: FAILED mflowgen with unknown cause, giving up now"
+    FOUND_ERROR=FAIL
     exit 13
-
-else
-    echo "+++ QCHECK RETRY: PASSED mflowgen retry, hooray I guess"
-    cleanup; exit
-
 fi
 
-exit
+# Huh, must have passed.
+echo "+++ QCHECK: NO ERRORS FOUND, HOORAY!"
+echo "+++ PASSED mflowgen first attempt"
+echo "Hey looks like we got away with it"
+
+# Clean up
+echo ''
+echo "--- save disk space, delete output design (?)"
+set -x
+ls -lR checkpoints/
+/bin/rm -rf checkpoints/*
+touch checkpoints/'deleted to save space'
+
+
 
 ########################################################################
-# TRASH, see qrc.sh.trash
+# TRASH, see qrc.sh.trash, savedir/qrc*
 
 
