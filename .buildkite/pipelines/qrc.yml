@@ -12,31 +12,31 @@ steps:
 - label:    'qrc0'
   commands: 
   - '
-    echo foo;
+    echo foo; export FOO=barzy;
     echo fi;
   '
-  - 'echo b1=$$BUILDKITE_COMMAND_EXIT_STATUS; echo b2=$BUILDKITE_COMMAND_EXIT_STATUS'
-  - 'echo fum; exit 13'
-  - 'echo b1=$$BUILDKITE_COMMAND_EXIT_STATUS; echo b2=$BUILDKITE_COMMAND_EXIT_STATUS'
+  - 'echo $$FOO ; exit 13'
+  - wait: { continue_on_failure: true }
+  - 'if [ $$FOO' == 'barzy' ] ; then echo barzyyyy; fi'
 
-- wait:     { continue_on_failure: true }
 
 - label:    'qrc1'
-  commands: 'echo b1=$$BUILDKITE_COMMAND_EXIT_STATUS; echo b2=$BUILDKITE_COMMAND_EXIT_STATUS'
+  commands: 'echo faw'
 
-
-
-# - label:    'qrc1'
-#   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-1'
-# - wait:     { continue_on_failure: true }
 # 
-
-
-
-
-
-
-
+# 
+# 
+# # - label:    'qrc1'
+# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-1'
+# # - wait:     { continue_on_failure: true }
+# # 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
 
 
 
