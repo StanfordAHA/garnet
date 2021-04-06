@@ -10,15 +10,19 @@ env:
 
 steps:
 - label:    'qrc0'
-  commands: '
-    echo foo
-    echo fi
+  commands: 
+  - '
+    echo foo;
+    echo fi;
     exit 13
   '
+  - 'echo b1=$$BUILDKITE_COMMAND_EXIT_STATUS; echo b2=$BUILDKITE_COMMAND_EXIT_STATUS'
+
+
 - wait:     { continue_on_failure: true }
 
 - label:    'qrc1'
-  commands: 'echo $$BUILDKITE_COMMAND_EXIT_STATUS; echo $BUILDKITE_COMMAND_EXIT_STATUS'
+  commands: 'echo b1=$$BUILDKITE_COMMAND_EXIT_STATUS; echo b2=$BUILDKITE_COMMAND_EXIT_STATUS'
 
 
 
