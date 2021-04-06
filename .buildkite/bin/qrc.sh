@@ -29,8 +29,6 @@
 # Cached design for postroute_hold inputs lives here
 REF=/build/gold.228
 
-echo $1; exit
-
 # Results will go to dirs e.g. /build/qtry.3549-{0,1,2,3,4,5,6,7,8,9}
 DESTDIR=$1
 
@@ -47,6 +45,10 @@ DESTDIR=$1
 set -x
   mkdir -p $DESTDIR
 set +x
+
+touch $DESTDIR/foo
+exit 13
+
 
 # Tee stdout to a log file
 exec > >(tee -i $DESTDIR/make-qrc.log) || exit 13
