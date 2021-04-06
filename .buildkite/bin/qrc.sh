@@ -25,7 +25,8 @@
 # Assumes a lot of assume-o's
 
 # Cached design for postroute_hold inputs lives here
-REF=/sim/buildkite-agent/gold
+# REF=/sim/buildkite-agent/gold ; # no good, may have wrong numberings
+REF=/build/gold.228
 
 # Results will go to dirs e.g. /build/qtry.3549-{0,1,2,3,4,5,6,7,8,9}{a,b,c}
 DESTDIR=$1
