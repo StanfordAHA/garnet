@@ -9,10 +9,12 @@ env:
   DESTDIR : /build/qtry${BUILDKITE_BUILD_NUMBER}
 
 steps:
-  - command: "export FOO=barzy"
+  - command: "
+        export FOO=barzy;
+    "
   - wait: ~
     continue_on_failure: true
-  - command: "echo $$FOO"
+  - command: "echo f1=$FOO f2=$$FOO"
 
 
 
