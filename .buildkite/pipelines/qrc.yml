@@ -10,11 +10,11 @@ env:
 
 steps:
   - command: '
-  (exit 13) || set ENDSTATUS=FAIL;
+  (echo foo | grep bar) || ENDSTATUS=FAIL;
   if [ "$$ENDSTATUS" == "FAIL" ]; then echo try again; else echo guess we good; fi
   '
   - command: '
-  (exit 0) || set ENDSTATUS=FAIL;
+  (echo foo | grep foo) || ENDSTATUS=FAIL;
   if [ "$$ENDSTATUS" == "FAIL" ]; then echo try again; else echo guess we good; fi
   '
 
