@@ -10,7 +10,7 @@ agents: { queue: "papers" }
 env:
   # Builds in e.g. "/build/qtry-3574*"
   QRC     : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
-  GOLD    : /sim/buildkite-agent/gold
+  GOLD    : /sim/buildkite-agent/gold/full_chip
   MYBUILD : /sim/tmp/deleteme-qrctest/full_chip
 
 steps:
@@ -25,9 +25,10 @@ steps:
 - label: 'hold'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$MYBUILD --need_space 70G;
-     echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
+     echo "+++ MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
      set -x;
-     for s in $$GOLD/full_chip/[0-9]*; do cp -rp $s .; done;
+     echo $$GOLD/[0-9]*;
+     for s in $$GOLD/[0-9]*; do cp -rp $$s .; done;
      mv *postroute_hold postroute_hold.orig;
      echo exit 13 | make -n cadence-innovus-postroute_hold |& tee make-hold.log'
 - wait: ~
