@@ -11,7 +11,7 @@ env:
   # Builds in e.g. "/build/qtry-3574*"
   QRC     : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
   GOLD    : /sim/buildkite-agent/gold
-  MYBUILD : /sim/tmp/deleteme-qrctest
+  MYBUILD : /sim/tmp/deleteme-qrctest/full_chip
 
 steps:
 
@@ -27,7 +27,7 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$MYBUILD --need_space 70G;
      echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
      set -x;
-     cp -rp $$GOLD/full_chip .;
+     for s in $$GOLD/full_chip/[0-9]*; do cp -rp $s .; done;
      mv *postroute_hold postroute_hold.orig;
      echo exit 13 | make -n cadence-innovus-postroute_hold |& tee make-hold.log'
 - wait: ~
