@@ -35,6 +35,7 @@ set -x
   mkdir -p $DESTDIR
 set +x
 
+# What the *hell* is this?
 # Tee stdout to a log file 'make-qrc.log'
 exec > >(tee -i $DESTDIR/make-qrc.log) || exit 13
 exec 2>&1 || exit 13

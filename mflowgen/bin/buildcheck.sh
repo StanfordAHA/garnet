@@ -13,57 +13,66 @@ Usage: $0 [ -slrtgeah ] <build_dir>
   -r,--run     do_runtimes
   -l,--do_logs (log update times)
   -e,--err     do_err
+  -R, --retry  do_retries
 
 EOF
     exit
 }
 
-########################################################################
-# Process command-line args
-bd=.        ; # default = current directory
-opstring=''
-
+# Debugging?
 # DBG=1
 DBG=
+
+########################################################################
+# Process command-line args
+build_dirs=()
+opstring=''
+
 while [ $# -gt 0 ] ; do
     test $DBG && echo "Processing arg '$1'"
     case "$1" in
         --help)  show_help; exit  ;;
+
         --size*) opstring="${opstring}s" ;;
         --lvs)   opstring="${opstring}L" ;;
         --run*)  opstring="${opstring}r" ;;
         --log*)  opstring="${opstring}l" ;;
         --err*)  opstring="${opstring}e" ;;
+        --retr*) opstring="${opstring}R" ;; # retry or retries e.g.
 
-        --all)   opstring="-a";  break  ;;
-        -a)      opstring="-a";  break  ;;
-
-#         --size*) do_sizes=true    ;;
-#         --lvs)   do_lvs=true      ;;
-#         --run*)  do_runtimes=true ;;
-#         --log*)  do_logs=true     ;;
-#         --err*)  do_err=true      ;;
-#         --all)   opstring="-a"; break  ;;
+        --all)   opstring="${opstring}sLrleR";  break  ;;
+         -a)     opstring="${opstring}sLrleR";  break  ;;
 
         --*) show_help; exit ;;         # Unknwon '--' arg
          -*) opstring="$opstring$1" ;;  # Add to opstring
-          *) bd=$1        ;;            # Target directory
+
+          *) build_dirs+=($1)       ;;  # Target directory(s)
     esac
     shift
 done
 test $DBG && (echo "DONE processing args"; echo '---')
 
-# DEFAULT = do all checks
-if [ "$opstring" == ""   ]; then opstring="-a"    ; fi
-if [ "$opstring" == "-a" ]; then opstring="-sLrle"; fi
+# Default: "do all checks" in "current directory"
+[ "$opstring"       == "" ] && opstring="sLrle"
+[ ${#build_dirs[@]} == 0  ] && build_dirs=(.)
 
+
+[ $DBG ] && echo Build dirs: ${build_dirs[@]}
+if [ ${#build_dirs[@]} -ne 1 ]; then
+    for bd in ${build_dirs[@]}; do
+        $0 -$opstring $bd
+    done
+    exit
+fi
+bd=${build_dirs[0]}
+[ $DBG ] && echo FOUND BUILD DIR $bd
 
 ##############################################################################
-# Initialize options array "optons"
+# Initialize "options" dictionary
 # 
-# Example: opstring="-slrtge"
-#   keys=(e g l - r s t) = ${!options[*]}
-#   vals=(e g l - r s t) =  ${options[*]}
+# Example: opstring="slrtge"
+#   keys=(e g l r s t) = ${!options[*]}
+#   vals=(e g l r s t) =  ${options[*]}
 
 unset options; declare -A options
 for (( i=0; i<${#opstring}; i++ )); do
@@ -83,6 +92,7 @@ done
 [ "${options[r]}" ] && do_runtimes=true
 [ "${options[l]}" ] && do_logs=true
 [ "${options[e]}" ] && do_err=true
+[ "${options[R]}" ] && do_retries=true
 
 if [ "$DBG" ]; then
     test "$do_sizes"    == true && echo DO_SIZES
@@ -90,6 +100,7 @@ if [ "$DBG" ]; then
     test "$do_runtimes" == true && echo DO_RUNTIMES
     test "$do_logs"     == true && echo DO_LOGS
     test "$do_err"      == true && echo DO_ERR
+    test "$do_retries"  == true && echo DO_RETRIES
     # exit
 fi
 
@@ -181,18 +192,30 @@ if [ "$do_logs" ]; then
     # echo '--------------------------------------------------------------------------------'
 fi
 
-if [ "$do_err" ]; then
+if [ "$do_retries" ]; then
     ########################################################################
     # Check to see if we had to restart/retry anywhere
     echo ''; echo '+++ RETRIES REQUIRED?'
     logfiles=$(find * -name \*.log)
+    found_retry=false
 
-    # OLD/DEPRECATED
-    grep -H QCHECK $logfiles | egrep 'QCHECK QRC CHECK'; # '-H' ==> print filename
+    # 'grep -H' => print filename along w/ match e.g.
+    #      make-qrc.log:+++ QCHECK QRC CHECK
+    #      make-qrc.log:+++ QCHECK: INITIATING RETRY
 
-    # NEW
-    grep -H QCHECK $logfiles | egrep 'PROBLEM|RETRY'; # '-H' ==> print filename
+#     # OLD/DEPRECATED
+#     # grep -H QCHECK $logfiles | egrep 'QCHECK QRC CHECK' && found_retry=true
+    grep -H QCHECK $logfiles | grep 'QCHECK' && found_retry=true
 
+#     # NEW
+#     grep -H QCHECK $logfiles | egrep 'PROBLEM|RETRY' && found_retry=true
+
+    [ $found_retry == false ] && echo 'No qcheck info found.'
+    echo ''
+fi
+
+
+if [ "$do_err" ]; then
     ########################################################################
     # Error check
     echo ''; echo '--- ERROR CHECK'
@@ -303,39 +326,8 @@ done | less
 ##############################################################################
 # OLD:
 
-# # Optional error check
-# if [ '' ]; then
-# echo ''; echo ''
-# grep -i error `find . -name \*.log` \
-#     | egrep -v ': *#' \
-#     | grep -v ' 0 error' \
-#     | grep -v 'Error=0' \
-#     | uniq \
-#     | cat
-# fi
-
-# grep -i error \`find . -name \*.log\` \\
-#   | egrep -v ': *#' | grep -v ' 0 error' \\
-#   | grep -v 'Error=0' | uniq
-# 
-# egrep '(^Error|^\*\*ERROR)' \`find . -name \*.log\` | chop 80 | wc -l
-# egrep '(^Error|^\*\*ERROR)' \`find . -name \*.log\` | chop 80 | less
-# egrep '(^Error|^\*\*ERROR)' \`find . -name \*.log\` | sort | uniq -c
-# 
-# find . -name \*.log -exec egrep '(^Error|^\*\*ERROR)' {} \; \
-# | chop 80 | sort | uniq -c | sort -rn
-#   14280 Error   : Could not interpret SDC command. [SDC-202] [read_sdc]
-#      85 **ERROR: (IMPSP-2021):  Could not legalize <2> instances in the design. Check war
-#      80 **ERROR: (IMPSP-9022):  Command 'refinePlace' completed with some error(s).
-#      60 **ERROR: (IMPSP-2021):  Could not legalize <7> instances in the design. Check war
-#      20 **ERROR: (IMPSP-2021):  Could not legalize <1> instances in the design. Check war
-#      20 **ERROR: (IMPSP-2021):  Could not legalize <11> instances in the design. Check wa
-#      15 **ERROR: (IMPSP-2021):  Could not legalize <8> instances in the design. Check war
-#      14 Error Limit = 1000; Warning Limit = 50
-#      10 Error   : Invalid SDC command option combination. [SDC-204] [set_driving_cell]
-#      10 **ERROR: (IMPSP-2021):  Could not legalize <6> instances in the design. Check war
-#       5 **ERROR: (IMPSP-2021):  Could not legalize <9> instances in the design. Check war
-
-
-
+# # Remove extraneous dashes from opstring
+# [ $DBG ] && echo "opstring BEFORE = '$opstring'"
+# opstring=$(echo $opstring | tr -d '-')
+# [ $DBG ] && echo "opstring AFTER  = '$opstring'"
 
