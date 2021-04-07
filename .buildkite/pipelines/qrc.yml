@@ -10,99 +10,55 @@ agents: { queue: "papers" }
 env:
   # Builds in e.g. "/build/qtry-3574*"
   QRC     : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
+  GOLD    : /sim/buildkite-agent/gold
+  MYBUILD : /sim/tmp/deleteme-qrctest
 
 steps:
 
-- label:    'qrc0'
-  commands: 'set -x; $${QRC}-0a || $${QRC}-0b || $${QRC}-0c'
-- label:    'qrc1'
-  commands: 'set -x; $${QRC}-1a || $${QRC}-1b || $${QRC}-1c'
-- wait:     { continue_on_failure: true }
+- label: 'setup'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$MYBUILD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
+- wait: ~
+
+# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
+- label: 'hold'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$MYBUILD --need_space 70G;
+     echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
+     set -x;
+     cp -rp $$GOLD/full_chip .;
+     mv *postroute_hold postroute_hold.orig;
+     echo exit 13 | make -n cadence-innovus-postroute_hold |& tee make-hold.log'
+- wait: ~
 
 
-- label:    'qrc2'
-  commands: 'set -x; $${QRC}-2a || $${QRC}-2b || $${QRC}-2c'
-- label:    'qrc3'
-  commands: 'set -x; $${QRC}-3a || $${QRC}-3b || $${QRC}-3c'
-- wait:     { continue_on_failure: true }
-
-- label:    'qrc4'
-  commands: 'set -x; $${QRC}-4a || $${QRC}-4b || $${QRC}-4c'
-- label:    'qrc5'
-  commands: 'set -x; $${QRC}-5a || $${QRC}-5b || $${QRC}-5c'
-- wait:     { continue_on_failure: true }
-
-- label:    'qrc6'
-  commands: 'set -x; $${QRC}-6a || $${QRC}-6b || $${QRC}-6c'
-- label:    'qrc7'
-  commands: 'set -x; $${QRC}-7a || $${QRC}-7b || $${QRC}-7c'
-- wait:     { continue_on_failure: true }
-
-- label:    'qrc8'
-  commands: 'set -x; $${QRC}-8a || $${QRC}-8b || $${QRC}-8c'
-- label:    'qrc9'
-  commands: 'set -x; $${QRC}-9a || $${QRC}-9b || $${QRC}-9c'
-
-
-# for i in 1 2 3 4 5 6 7 8 9; do cat << eof
-# - label:    'qrc$i'
-#   commands: 'set -x; \$\${QRC}-${i}a || \$\${QRC}-${i}b || \$\${QRC}-${i}c'
-# eof
-# echo ""
-# done
-# 
-# # steps:
-# # - label:    'qrc0'
-# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-0'
-# # - label:    'qrc1'
-# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-1'
-# # - wait:     { continue_on_failure: true }
-# # 
-# # 
-# # - label:    'qrc2'
-# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-2'
-# # - label:    'qrc3'
-# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-3'
-# # - wait:     { continue_on_failure: true }
-# # 
-# # 
-# # - label:    'qrc4'
-# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-4'
-# # - label:    'qrc5'
-# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-5'
-# # - wait:     { continue_on_failure: true }
-# # 
-# # 
-# # - label:    'qrc6'
-# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-6'
-# # - label:    'qrc7'
-# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-7'
-# # - wait:     { continue_on_failure: true }
-# # 
-# # 
-# # - label:    'qrc8'
-# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-8'
-# # - label:    'qrc9'
-# #   commands: '.buildkite/bin/qrc.sh $${DESTDIR}-9'
-# # - wait:     { continue_on_failure: true }
-# # 
-# # 
-# # ########################################################################
-# # # Builds this data structure...?
-# # # {
-# # #  'agents' : { 'queue' : 'papers' },
-# # #  'env'    : { 'DESTDIR' : '/build/qtry3456' },
-# # #  'steps'  : [ 
-# # #               { 'label' : 'qrc0' , 'commands' : 'qrc.sh' },
-# # #               { 'label' : 'qrc1' , 'commands' : 'qrc.sh' },
-# # #               { 'wait'  : { 'cf' : 'true' } }
-# # #             ]
-# # # }
+# - label:    'qrc0'
+#   commands: 'set -x; $${QRC}-0a || $${QRC}-0b || $${QRC}-0c'
+# - label:    'qrc1'
+#   commands: 'set -x; $${QRC}-1a || $${QRC}-1b || $${QRC}-1c'
+# - wait:     { continue_on_failure: true }
 # 
 # 
+# - label:    'qrc2'
+#   commands: 'set -x; $${QRC}-2a || $${QRC}-2b || $${QRC}-2c'
+# - label:    'qrc3'
+#   commands: 'set -x; $${QRC}-3a || $${QRC}-3b || $${QRC}-3c'
+# - wait:     { continue_on_failure: true }
 # 
-# # GOOD
-# # steps:
-# # - label:    'qrc0'
-# #   commands:
-# #   - set -x; ${QRC}-0a || ${QRC}-0b || ${QRC}-0c
+# - label:    'qrc4'
+#   commands: 'set -x; $${QRC}-4a || $${QRC}-4b || $${QRC}-4c'
+# - label:    'qrc5'
+#   commands: 'set -x; $${QRC}-5a || $${QRC}-5b || $${QRC}-5c'
+# - wait:     { continue_on_failure: true }
+# 
+# - label:    'qrc6'
+#   commands: 'set -x; $${QRC}-6a || $${QRC}-6b || $${QRC}-6c'
+# - label:    'qrc7'
+#   commands: 'set -x; $${QRC}-7a || $${QRC}-7b || $${QRC}-7c'
+# - wait:     { continue_on_failure: true }
+# 
+# - label:    'qrc8'
+#   commands: 'set -x; $${QRC}-8a || $${QRC}-8b || $${QRC}-8c'
+# - label:    'qrc9'
+#   commands: 'set -x; $${QRC}-9a || $${QRC}-9b || $${QRC}-9c'
