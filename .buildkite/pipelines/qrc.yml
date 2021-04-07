@@ -9,22 +9,23 @@ agents: { queue: "papers" }
 
 env:
   # Builds in e.g. "/build/qtry-3574*"
-  QRC     : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
-  GOLD    : /sim/buildkite-agent/gold/full_chip
-  MYBUILD : /sim/tmp/deleteme-qrctest/full_chip
+  QRC  : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
+  GOLD : /sim/buildkite-agent/gold/full_chip
+  TMP  : /sim/tmp/deleteme-qrctest/full_chip
 
 steps:
 
 - label: 'setup'
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$MYBUILD;
+  - 'test -e $$TMP && /bin/rm -rf $$TMP'
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$TMP;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
 - wait: ~
 
 # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
 - label: 'hold'
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$MYBUILD --need_space 70G;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$TMP --need_space 70G;
      echo "+++ MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
      set -x;
      echo $$GOLD/[0-9]*;
