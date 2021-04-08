@@ -126,6 +126,7 @@ echo '=================================================================='
 
 ########################################################################
 # Define the watcher, watches for 'slow or hanging' jobs warning
+# Also see ~steveri/0notes/vto/qrc-slow-or-hanging.txt
 function watch_for_hang {
     # sleep_period=1 ;  # Every second for testing
     sleep_period=750; # Check every fifteen minutes I guess
