@@ -48,8 +48,8 @@ mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
 # Build the necessary context to run postroute_hold step only
 GOLD=/sim/buildkite-agent/gold/full_chip
-echo "+++ PRH TEST RIG SETUP - stash pull context from $GOLD";
-$GARNET_HOME/mflowgen/bin/prh-setup.sh $GOLD
+echo "+++ PRH TEST RIG SETUP - stash-pull context from $GOLD";
+$GARNET_HOME/.buildkite/bin/prh-setup.sh $GOLD || exit 13
 
 # See if things are okay so far...
 echo CHECK1
