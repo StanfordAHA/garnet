@@ -23,8 +23,7 @@ steps:
 # - wait: ~
 
 - label: 'prh0'
-  commands:
-  - 'i=0; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}
+  commands: 'i=0; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
 
 
 # 
