@@ -182,17 +182,62 @@ if ! [ "$stashdir" ]; then
     echo "ERROR cannot find stashdir '$stashdir'"
 
 else
+    steps=$(find $stashdir -name .mflowgen.stash.node.yml | sed 's,/.mflowgen.stash.node.yml$,,')
+#     for f in `/bin/ls -R $stashdir`; do
 
-    for f in `/bin/ls -R $stashdir`; do
-        pid=$$
+
+    for f in $steps; do
+#         set -x
+        # Find pid of each step in stash
         yml=$f/.mflowgen.stash.node.yml
-        if egrep "msg: *$pid-" $f/.mflowgen.stash.node.yml; then
-            echo Found a baddie = $f
-            cat $yml
-            echo Deleting the baddie
-            /bin/rm -rf $f
+        grep 'msg: ' $yml
+        pid=$(grep 'msg: ' $yml | sed 's/-/ /' | awk '{print $2}')
+
+
+# e.g. msg: 12012-12-soc-rtl
+
+
+
+
+#         pid=$(echo $f | sed 's/^.*[-]\([^-]*\)$/\1/' )
+        echo found pid=$pid
+        VALID=
+        echo "$pid" | egrep '^[0-9]+$' && VALID=true
+        if [ "$VALID" ]; then
+            echo found pid=$pid
+            FOUND_PROCESS=
+            (ps --pid $pid | grep $pid >& /dev/null) && FOUND_PROCESS=true
+            if ! [ "$FOUND_PROCESS" ]; then
+                echo Found orphan step $f
+                echo to do: /bin/rm -rf $f
+            else
+                echo not an orphan -- step has valid process attached
+            fi
         fi
+        
+        set +x
     done
+
+
+#     done |& less
+    
+
+
+
+
+
+
+#         pid=$$
+#         yml=$f/.mflowgen.stash.node.yml
+#         if egrep "msg: *$pid-" $f/.mflowgen.stash.node.yml; then
+#             echo Found a baddie = $f
+#             cat $yml
+#             echo Deleting the baddie
+#             /bin/rm -rf $f
+#         fi
+
+
+
 fi
 
 exit 13
