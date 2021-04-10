@@ -9,39 +9,24 @@ agents: { queue: "papers" }
 
 env:
   # Builds in e.g. "/build/qtry-3574*"
-  PRH  : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip"
-  QRC  : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
-  GOLD : /sim/buildkite-agent/gold/full_chip
-  TMP  : /sim/tmp/deleteme-qrctest/full_chip
+  PRH  : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
 
-steps:
-# - label: 'setup'
-#   commands:
-#   - 'test -e $$TMP && /bin/rm -rf $$PRH'
-#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$PRH;
-#      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
-# - wait: ~
-
+# Makes e.g. /build/prh3598-{0,1}?
 - label: 'prh0'
   commands: 'i=0; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+- label: 'prh1'
+  commands: 'i=1; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+- wait:     { continue_on_failure: true }
+
+- label: 'prh2'
+  commands: 'i=2; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+- label: 'prh3'
+  commands: 'i=3; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+- wait:     { continue_on_failure: true }
 
 
-# 
-# 
-# # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
-# - label: 'hold'
-#   commands:
-#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$TMP --need_space 70G;
-#      echo "+++ MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
-#      set -x;
-#      echo $$GOLD/[0-9]*;
-#      for s in $$GOLD/[0-9]*; do cp -rp $$s .; done;
-#      mv *postroute_hold postroute_hold.orig;
-#      echo exit 13 | make -n cadence-innovus-postroute_hold |& tee make-hold.log'
-# - wait: ~
 
 
-# gcam 'first prh attempt' ; git push
 
 
 
@@ -86,3 +71,50 @@ steps:
 #   commands: 'set -x; $${QRC}-8a || $${QRC}-8b || $${QRC}-8c'
 # - label:    'qrc9'
 #   commands: 'set -x; $${QRC}-9a || $${QRC}-9b || $${QRC}-9c'
+
+
+########################################################################
+# OLD
+# 
+# env:
+#   # Builds in e.g. "/build/qtry-3574*"
+#   PRH  : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
+#   QRC  : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
+#   GOLD : /sim/buildkite-agent/gold/full_chip
+#   TMP  : /sim/tmp/deleteme-qrctest/full_chip
+# 
+# 
+# 
+# # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
+# - label: 'hold'
+#   commands:
+#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$TMP --need_space 70G;
+#      echo "+++ MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
+#      set -x;
+#      echo $$GOLD/[0-9]*;
+#      for s in $$GOLD/[0-9]*; do cp -rp $$s .; done;
+#      mv *postroute_hold postroute_hold.orig;
+#      echo exit 13 | make -n cadence-innovus-postroute_hold |& tee make-hold.log'
+# - wait: ~
+# 
+# 
+# gcam 'first prh attempt' ; git push
+########################################################################
+# env:
+#   # Builds in e.g. "/build/qtry-3574*"
+#   PRH  : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip"
+#   QRC  : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
+#   GOLD : /sim/buildkite-agent/gold/full_chip
+#   TMP  : /sim/tmp/deleteme-qrctest/full_chip
+# 
+# steps:
+# # - label: 'setup'
+# #   commands:
+# #   - 'test -e $$TMP && /bin/rm -rf $$PRH'
+# #   - 'source mflowgen/bin/setup-buildkite.sh --dir $$PRH;
+# #      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
+# # - wait: ~
+# 
+# # Makes e.g. /build/prh3598/full_chip-0/
+# - label: 'prh0'
+#   commands: 'i=0; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
