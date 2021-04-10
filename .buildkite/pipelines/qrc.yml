@@ -16,20 +16,30 @@ steps:
 
   # Makes e.g. /build/prh3598-{0,1}?
   - label: 'prh0'
-    commands: 'i=0; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+    commands: 'i=0; set -x; $${PRH}-$${i}
   - label: 'prh1'
-    commands: 'i=1; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
-  - wait:     { continue_on_failure: true }
-
-  - label: 'prh2'
-    commands: 'i=2; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
-  - label: 'prh3'
-    commands: 'i=3; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+    commands: 'i=1; set -x; $${PRH}-$${i}
   - wait:     { continue_on_failure: true }
 
 
 
 
+#   # Makes e.g. /build/prh3598-{0,1}?
+#   - label: 'prh0'
+#     commands: 'i=0; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+#   - label: 'prh1'
+#     commands: 'i=1; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+#   - wait:     { continue_on_failure: true }
+# 
+#   - label: 'prh2'
+#     commands: 'i=2; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+#   - label: 'prh3'
+#     commands: 'i=3; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+#   - wait:     { continue_on_failure: true }
+# 
+# 
+# 
+# 
 
 
 
