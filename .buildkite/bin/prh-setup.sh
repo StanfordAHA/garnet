@@ -43,7 +43,7 @@ gold=$1
 function STASH {
     echo "mflowgen stash link --path $stash; mflowgen $*"
     echo okay now do it
-    mflowgen stash link --path $stash; mflowgen $*
+    mflowgen stash link --path $stash; mflowgen stash $*
 }
 STASH list --all
 
