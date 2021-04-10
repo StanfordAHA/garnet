@@ -17,9 +17,9 @@ steps:
   # Makes e.g. /build/prh3598-{0,1}?
   - label: 'prh0'
     commands: 'i=0; set -x; $${PRH}-$${i}'
-  - label: 'prh1'
-    commands: 'i=1; set -x; $${PRH}-$${i}'
 
+#   - label: 'prh1'
+#     commands: 'i=1; set -x; $${PRH}-$${i}'
 #   - wait:     { continue_on_failure: true }
 
 

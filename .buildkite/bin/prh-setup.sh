@@ -89,6 +89,9 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
 
     echo step=$step num=$stepnum name=$stepname # id=$stepid
 
+    echo "Looking for step $step"
+    STASH list
+
     # See if step is already stashed
     # E.g. " - 435de6 [ 2021-0410 ] buildkite-agent sealring -- 17827-11-sealring"
     # stepname=sealring
