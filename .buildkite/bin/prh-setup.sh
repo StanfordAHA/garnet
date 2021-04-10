@@ -72,11 +72,6 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
     #    hash: d56728
     #    msg: 10695-10-rtl
     #    step: rtl
-    # ...
-    #  - author buildkite-agent
-    #    hash: d56728
-    #    msg: 10695-10-rtl
-    #    step: rtl
 
 
 
@@ -84,21 +79,46 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
     function find_hash {
         python3 << EOF
 import yaml
-with open('$1', 'r') as f: data = yaml.safe_load(f)
-for dict in data:
-  if dict['msg']=='$2':
-      print(dict['hash']); exit()
+with open('$1', 'r') as f: dict = yaml.safe_load(f)
+# print(dict)
+if dict['msg']=='$2':
+    print(dict['hash']); exit()
+
+
+# for dict in data
+#   if dict['msg']=='$2':
+#       print(dict['hash']); exit()
+
 EOF
 }
+# find_hash $f $stepid
+
+
 
 # Testing
 # stepid='10695-10-rtl'
-find_hash tmp $stepid
+# find_hash tmp $stepid
+
+#     f=/sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-66183e/.mflowgen.stash.yml
+#     stepid='8393-9-pre-route'
+#     find_hash $f $stepid
 
 
 
-    for yml in $stashdir/*/.mflowgen.stash.yml; do
+
+#     for yml in $stashdir/*/.mflowgen.stash.yml; do
+#     /bin/ls -ld  \
+
+    for yml in $stashdir/*/*-${stepname}-*/.mflowgen.stash.node.yml
         echo searching $yml...
+
+        echo ---
+        echo $stepid
+        cat $yml
+        echo $stepid
+        echo ---
+
+
         hash=$(find_hash $yml $stepid)
         if [ "$hash" ]; then
             echo "FOUND hash $hash"
