@@ -8,43 +8,55 @@
 # Caller did this I think
 # echo "+++ PRH TEST RIG SETUP - stash pull context from $GOLD";
 
-# Initialize the stash in tmp dir
-
-# okay that didn't work :(
-stashdir=/sim/tmp/deleteme.prh_stash$$
-
-# stashdir=/sim/tmp/deleteme.prh_stash
-
-# stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
-# echo "Created stash '$stash'"
-# # E.g. stash=/sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-3e0809
-
-# What does this do?
-stash=$(/bin/ls -d $stashdir/* | head -1)
-if [ "$stash" ]; then
-    echo "Use existing stash '$stash'"
-else
-    stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
-    echo "Created stash '$stash'"
-fi
-
-
-
-
-# mflowgen stash list
-
 # Identify a gold dir
 # gold=/sim/buildkite-agent/gold/full_chip
 gold=$1
 
+# One stash to rule them all...
+yml=$gold/.mflowgen.stash.yml
+if test -e $yml; then
+    stash=$(cat $yml | awk '{print $NF; exit}')
+    echo "Use existing gold stash '$stash'"
+else
+    echo "$gold not linked yet"
+
+    echo "First delete old stash dir if exists"
+    stashdir=/sim/tmp/deleteme.prh_stash
+    if test -e $stashdir; then
+        echo "delete existing stash $stashdir..."
+        /bin/rm -rf $stashdir
+    fi
+    
+    echo "make and initialize a new one"
+    echo mflowgen stash init -p $stashdir
+    stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
+    echo "Created stash '$stash'"
+fi
+
+echo "Using stash '$stash'"
+
+
+# Already done did...as part of init...right...?
 # Link up
-(cd $gold; mflowgen stash link --path $stash); echo ''
+# (cd $gold; mflowgen stash link --path $stash); echo ''
 
 function STASH {
-    echo "mflowgen stash link --path $stash; mflowgen $*"
-    echo okay now do it
-    mflowgen stash link --path $stash; mflowgen stash $*
+
+    # Not necessary no more...right?
+    #     echo "mflowgen stash link --path $stash; mflowgen $*"
+    #     echo okay now do it
+    #     mflowgen stash link --path $stash; mflowgen stash $*
+
+    echo DOING mflowgen stash $*
+    mflowgen stash $* |& tr -cd "[:print:][:blank:]\n" | sed 's/\[[0-9]*m//g'
 }
+STASH list
+
+mflowgen stash list |& tr -cd "[:ctl:]"
+
+
+
+STASH link --path $stash
 STASH list --all
 
 
@@ -70,87 +82,37 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
     echo $step
     stepnum=$(echo $step | sed 's/-.*//')
     stepname=$(echo $step | sed 's/^[0-9]*-//')
-    stepid=$$-${step}
+
+    # stepid=$$-${step}
+
     echo step=$step num=$stepnum name=$stepname id=$stepid
 
-    (cd $gold; STASH push -s $stepnum -m $stepid)
+    # See if step is already stashed
+    # E.g. " - 435de6 [ 2021-0410 ] buildkite-agent sealring -- 17827-11-sealring"
+    # stepname=sealring
+    STASH list | awk '$1=="-" && $7=="'$stepname'" { print $7; exit }'
+    hash=$(STASH list | awk '$1=="-" && $7=="'$stepname'" { print $2; exit }')
+    if ! [ "$hash" ]; then
+        # need to grap the step from goldie
+        (cd $gold; STASH push -s $stepnum -m $stepid)
 
-    echo DBG50 --------------------------------------------------------
-    (cd $gold; STASH list --all)
-    echo DBG50 --------------------------------------------------------
+        # stepname=pre-route
+               STASH list | awk '$1=="-" && $NF=="'$step'" { print $2; exit }'
+        hash=$(STASH list | awk '$1=="-" && $NF=="'$step'" { print $2; exit }')
+        echo $hash
 
-    ################################################################
-    # Find hash num of what we just pushed ('list' doesn't show it) (WHY???)
-    # Name of stashed step is something like
-    # $stashdir/2021-0407-mflowgen-stash-772a46/2021-0407-rtl-137bce
-
-    # 'mflowgen stash list' is unreliable, hash field is blank sometimes (!)
-    #
-    # BUT can search $stashdir/*/.mflowgen.stash.yml
-    #
-    # cat /sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-3e0809/.mflowgen.stash.yml 
-    #  - author buildkite-agent
-    #    hash: d56728
-    #    msg: 10695-10-rtl
-    #    step: rtl
-
-
-
-
-    function find_hash {
-        python3 << EOF
-import yaml
-with open('$1', 'r') as f: dict = yaml.safe_load(f)
-# print(dict)
-if dict['msg']=='$2':
-    print(dict['hash']); exit()
-
-
-# for dict in data
-#   if dict['msg']=='$2':
-#       print(dict['hash']); exit()
-
-EOF
-}
-# find_hash $f $stepid
-
-# Testing
-# stepid='10695-10-rtl'
-# find_hash tmp $stepid
-
-# Testing
-# f=/sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-66183e/.mflowgen.stash.yml
-# stepid='8393-9-pre-route'
-# find_hash $f $stepid
-
-
-    for yml in $stashdir/*/*-${stepname}-*/.mflowgen.stash.node.yml; do
-        echo searching $yml...
-
-        echo ---
-        echo $stepid
-        cat $yml
-        echo $stepid
-        echo ---
-
-
-        hash=$(find_hash $yml $stepid)
-        if [ "$hash" ]; then
-            echo "FOUND hash $hash"
-            break
-        fi
-    done
-
-
+    fi
     
     # Pull the step into our new context
     echo STASH pull --hash $hash
+
     ERROR=
     if [ "$hash" ]; then
         STASH pull --hash $hash |& grep Error && ERROR=true
         if [ "$ERROR" ]; then 
             echo yes i see it
             echo could not find $hash
+
             STASH list
             echo could not find $hash
             STASH list --all
@@ -158,6 +120,7 @@ EOF
             STASH list --verbose
             echo could not find $hash
             exit 13; 
+
         fi
     else
         echo could not find hash for stepid $stepid
@@ -167,21 +130,21 @@ EOF
 
 
 
-    # Okay buh-bye don't need you no more
-    STASH drop --hash $hash
+#     # Okay buh-bye don't need you no more
+#     STASH drop --hash $hash
 
-    # Here's the tricky part
-    d=/sim/tmp/deleteme.prh_stash/*/*-$hash
-    ls -d $d
-    ls $d
-    echo deleting $d
-
-    echo STASH drop --hash $hash
-    STASH drop --hash $hash
-
-    echo deleted $d
-    ls -d $d
-    ls $d
+#     # Here's the tricky part
+#     d=/sim/tmp/${stashdir}/*/*-$hash
+#     ls -d $d
+#     ls $d
+#     echo deleting $d
+# 
+#     echo STASH drop --hash $hash
+#     STASH drop --hash $hash
+# 
+#     echo deleted $d
+#     ls -d $d
+#     ls $d
 
     # /bin/rm -rf $d
 
@@ -195,50 +158,50 @@ done
 # Let's see what we done did
 (cd $gold; STASH list --all)
 
-# Clean up
-echo "CLEANING UP"
-set -x
-# ls -l $stashdir
-# /bin/rm -rf $stashdir
-
-echo looking for big baddies
-if ! [ "$stashdir" ]; then
-    echo "ERROR cannot find stashdir '$stashdir'"
-
-else
-    steps=$(
-        find $stashdir -name .mflowgen.stash.node.yml \
-        | sed 's,/.mflowgen.stash.node.yml$,,'
-    )
-    for f in $steps; do
-
-#         set -x
-        # Find pid of each step in stash
-        yml=$f/.mflowgen.stash.node.yml
-        grep 'msg: ' $yml
-        pid=$(grep 'msg: ' $yml | sed 's/-/ /' | awk '{print $2}')
-
-# e.g. msg: 12012-12-soc-rtl
-
-        echo I am $$
-        echo found candidate pid=$pid
-        VALID=
-        echo "$pid" | egrep '^[0-9]+$' >& /dev/null && VALID=true
-        if [ "$VALID" ]; then
-            echo found pid=$pid
-            FOUND_PROCESS=
-            (ps --pid $pid | grep $pid >& /dev/null) && FOUND_PROCESS=true
-            if ! [ "$FOUND_PROCESS" ]; then
-                echo Found orphan step $f
-                echo to do: /bin/rm -rf $f
-            else
-                echo not an orphan -- step has valid process attached
-            fi
-        fi
-        
-        set +x
-    done
-
-fi
-
+# # Clean up
+# echo "CLEANING UP"
+# set -x
+# # ls -l $stashdir
+# # /bin/rm -rf $stashdir
+# 
+# echo looking for big baddies
+# if ! [ "$stashdir" ]; then
+#     echo "ERROR cannot find stashdir '$stashdir'"
+# 
+# else
+#     steps=$(
+#         find $stashdir -name .mflowgen.stash.node.yml \
+#         | sed 's,/.mflowgen.stash.node.yml$,,'
+#     )
+#     for f in $steps; do
+# 
+# #         set -x
+#         # Find pid of each step in stash
+#         yml=$f/.mflowgen.stash.node.yml
+#         grep 'msg: ' $yml
+#         pid=$(grep 'msg: ' $yml | sed 's/-/ /' | awk '{print $2}')
+# 
+# # e.g. msg: 12012-12-soc-rtl
+# 
+#         echo I am $$
+#         echo found candidate pid=$pid
+#         VALID=
+#         echo "$pid" | egrep '^[0-9]+$' >& /dev/null && VALID=true
+#         if [ "$VALID" ]; then
+#             echo found pid=$pid
+#             FOUND_PROCESS=
+#             (ps --pid $pid | grep $pid >& /dev/null) && FOUND_PROCESS=true
+#             if ! [ "$FOUND_PROCESS" ]; then
+#                 echo Found orphan step $f
+#                 echo to do: /bin/rm -rf $f
+#             else
+#                 echo not an orphan -- step has valid process attached
+#             fi
+#         fi
+#         
+#         set +x
+#     done
+# 
+# fi
+# 
 exit 13
