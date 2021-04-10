@@ -79,10 +79,12 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
     #    step: rtl
 
 
+
+
     function find_hash {
-        python << EOF
+        python3 << EOF
 import yaml
-with open('$1', 'r') as f: data = yaml.load(f)
+with open('$1', 'r') as f: data = yaml.safe_load(f)
 for dict in data:
   if dict['msg']=='$2':
       print(dict['hash']); exit()
@@ -91,7 +93,9 @@ EOF
 
 # Testing
 # stepid='10695-10-rtl'
-# find_hash tmp $stepid
+find_hash tmp $stepid
+
+
 
     for yml in $stashdir/*/.mflowgen.stash.yml; do
         echo searching $yml...
