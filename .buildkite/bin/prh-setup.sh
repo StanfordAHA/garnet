@@ -156,6 +156,13 @@ EOF
     # Okay buh-bye don't need you no more
     mflowgen stash drop --hash $hash
 
+    # Here's the tricky part
+    d=/sim/tmp/deleteme.prh_stash/*/*-$hash
+    ls -d $d
+    ls $d
+    echo deleting $d
+    /bin/rm -rf $d
+
     # Done!
     echo ''
 
@@ -174,15 +181,18 @@ echo looking for big baddies
 if ! [ "$stashdir" ]; then
     echo "ERROR cannot find stashdir '$stashdir'"
 
-for f in `/bin/ls -R $stashdir`; do
-    pid=$$
-    yml=$f/.mflowgen.stash.node.yml
-    if egrep "msg: *$pid-" $f/.mflowgen.stash.node.yml; then
-        echo Found a baddie = $f
-        cat $yml
-        echo Deleting the baddie
-        /bin/rm -rf $f
-    fi
-done
+else
+
+    for f in `/bin/ls -R $stashdir`; do
+        pid=$$
+        yml=$f/.mflowgen.stash.node.yml
+        if egrep "msg: *$pid-" $f/.mflowgen.stash.node.yml; then
+            echo Found a baddie = $f
+            cat $yml
+            echo Deleting the baddie
+            /bin/rm -rf $f
+        fi
+    done
+fi
 
 exit 13
