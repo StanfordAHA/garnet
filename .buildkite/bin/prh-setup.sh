@@ -128,7 +128,15 @@ EOF
     
     # Pull the step into our new context
     echo mflowgen stash pull --hash $hash
-    mflowgen stash pull --hash $hash
+    ERROR=
+    mflowgen stash pull --hash $hash |& grep Error && ERROR=true
+    if [ "$ERROR" ]; then 
+        echo yes i see it
+        exit 13; 
+    fi
+
+
+
 
     # Okay buh-bye don't need you no more
     mflowgen stash drop --hash $hash
@@ -148,6 +156,9 @@ set -x
 # /bin/rm -rf $stashdir
 
 echo looking for big baddies
+if ! [ "$stashdir" ]; then
+    echo "ERROR cannot find stashdir '$stashdir'"
+
 for f in `/bin/ls -R $stashdir`; do
     pid=$$
     yml=$f/.mflowgen.stash.node.yml
