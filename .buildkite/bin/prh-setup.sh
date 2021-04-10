@@ -42,6 +42,8 @@ gold=$1
 
 function STASH {
     echo "mflowgen stash link --path $stash; mflowgen $*"
+    echo okay now do it
+    mflowgen stash link --path $stash; mflowgen $*
 }
 STASH list --all
 
@@ -112,23 +114,17 @@ EOF
 }
 # find_hash $f $stepid
 
-
-
 # Testing
 # stepid='10695-10-rtl'
 # find_hash tmp $stepid
 
-#     f=/sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-66183e/.mflowgen.stash.yml
-#     stepid='8393-9-pre-route'
-#     find_hash $f $stepid
+# Testing
+# f=/sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-66183e/.mflowgen.stash.yml
+# stepid='8393-9-pre-route'
+# find_hash $f $stepid
 
 
-
-
-#     for yml in $stashdir/*/.mflowgen.stash.yml; do
-#     /bin/ls -ld  \
-
-    for yml in $stashdir/*/*-${stepname}-*/.mflowgen.stash.node.yml; do
+    (for yml in $stashdir/*/*-${stepname}-*/.mflowgen.stash.node.yml; do
         echo searching $yml...
 
         echo ---
@@ -143,7 +139,9 @@ EOF
             echo "FOUND hash $hash"
             break
         fi
-    done
+    done) |& less
+
+
     
     # Pull the step into our new context
     echo STASH pull --hash $hash
@@ -158,7 +156,7 @@ EOF
             exit 13; 
         fi
     else
-        echo could not find hash
+        echo could not find hash for stepid $stepid
         exit 13
     fi
     
