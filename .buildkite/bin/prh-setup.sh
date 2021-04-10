@@ -50,9 +50,11 @@ function STASH {
     echo DOING mflowgen stash $*
     mflowgen stash $* |& tr -cd "[:print:][:blank:]\n" | sed 's/\[[0-9]*m//g'
 }
-STASH list
 
-mflowgen stash list |& tr -cd "[:ctl:]"
+# It's not linked in yet
+# STASH list
+
+# mflowgen stash list |& tr -cd "[:ctl:]"
 
 
 
@@ -85,7 +87,7 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
 
     # stepid=$$-${step}
 
-    echo step=$step num=$stepnum name=$stepname id=$stepid
+    echo step=$step num=$stepnum name=$stepname # id=$stepid
 
     # See if step is already stashed
     # E.g. " - 435de6 [ 2021-0410 ] buildkite-agent sealring -- 17827-11-sealring"
@@ -94,7 +96,7 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
     hash=$(STASH list | awk '$1=="-" && $7=="'$stepname'" { print $2; exit }')
     if ! [ "$hash" ]; then
         # need to grap the step from goldie
-        (cd $gold; STASH push -s $stepnum -m $stepid)
+        (cd $gold; STASH push -s $stepnum -m $step)
 
         # stepname=pre-route
                STASH list | awk '$1=="-" && $NF=="'$step'" { print $2; exit }'
@@ -123,7 +125,8 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
 
         fi
     else
-        echo could not find hash for stepid $stepid
+        # echo could not find hash for stepid $stepid
+        echo could not find hash for step $step
         exit 13
     fi
     
