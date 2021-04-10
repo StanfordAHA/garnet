@@ -48,7 +48,9 @@ function STASH {
     #     mflowgen stash link --path $stash; mflowgen stash $*
 
     echo DOING mflowgen stash $*
+    set -x
     mflowgen stash $* |& tr -cd "[:print:][:blank:]\n" | sed 's/\[[0-9]*m//g'
+    set +x
 }
 
 # It's not linked in yet
@@ -58,7 +60,9 @@ function STASH {
 
 
 
+
 STASH link --path $stash
+pwd
 STASH list --all
 
 
