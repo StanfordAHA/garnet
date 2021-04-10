@@ -141,15 +141,20 @@ EOF
     # Pull the step into our new context
     echo mflowgen stash pull --hash $hash
     ERROR=
-    mflowgen stash pull --hash $hash |& grep Error && ERROR=true
-    if [ "$ERROR" ]; then 
-        echo yes i see it
-        mflowgen stash list
-        mflowgen stash list --all
-        mflowgen stash list --verbose
-        exit 13; 
+    if [ "$hash" ]; then
+        mflowgen stash pull --hash $hash |& grep Error && ERROR=true
+        if [ "$ERROR" ]; then 
+            echo yes i see it
+            mflowgen stash list
+            mflowgen stash list --all
+            mflowgen stash list --verbose
+            exit 13; 
+        fi
+    else
+        echo could not find hash
+        exit 13
     fi
-
+    
 
 
 
@@ -161,7 +166,17 @@ EOF
     ls -d $d
     ls $d
     echo deleting $d
-    /bin/rm -rf $d
+
+    echo mflowgen stash drop --hash $hash
+    mflowgen stash drop --hash $hash
+
+    echo deleted $d
+    ls -d $d
+    ls $d
+
+    # /bin/rm -rf $d
+
+
 
     # Done!
     echo ''
@@ -182,27 +197,24 @@ if ! [ "$stashdir" ]; then
     echo "ERROR cannot find stashdir '$stashdir'"
 
 else
-    steps=$(find $stashdir -name .mflowgen.stash.node.yml | sed 's,/.mflowgen.stash.node.yml$,,')
-#     for f in `/bin/ls -R $stashdir`; do
-
-
+    steps=$(
+        find $stashdir -name .mflowgen.stash.node.yml \
+        | sed 's,/.mflowgen.stash.node.yml$,,'
+    )
     for f in $steps; do
+
 #         set -x
         # Find pid of each step in stash
         yml=$f/.mflowgen.stash.node.yml
         grep 'msg: ' $yml
         pid=$(grep 'msg: ' $yml | sed 's/-/ /' | awk '{print $2}')
 
-
 # e.g. msg: 12012-12-soc-rtl
 
-
-
-
-#         pid=$(echo $f | sed 's/^.*[-]\([^-]*\)$/\1/' )
-        echo found pid=$pid
+        echo I am $$
+        echo found candidate pid=$pid
         VALID=
-        echo "$pid" | egrep '^[0-9]+$' && VALID=true
+        echo "$pid" | egrep '^[0-9]+$' >& /dev/null && VALID=true
         if [ "$VALID" ]; then
             echo found pid=$pid
             FOUND_PROCESS=
@@ -217,26 +229,6 @@ else
         
         set +x
     done
-
-
-#     done |& less
-    
-
-
-
-
-
-
-#         pid=$$
-#         yml=$f/.mflowgen.stash.node.yml
-#         if egrep "msg: *$pid-" $f/.mflowgen.stash.node.yml; then
-#             echo Found a baddie = $f
-#             cat $yml
-#             echo Deleting the baddie
-#             /bin/rm -rf $f
-#         fi
-
-
 
 fi
 
