@@ -11,9 +11,9 @@
 # Initialize the stash in tmp dir
 
 # okay that didn't work :(
-# stashdir=/sim/tmp/deleteme.prh_stash$$
+stashdir=/sim/tmp/deleteme.prh_stash$$
 
-stashdir=/sim/tmp/deleteme.prh_stash
+# stashdir=/sim/tmp/deleteme.prh_stash
 
 # stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
 # echo "Created stash '$stash'"
@@ -150,9 +150,13 @@ EOF
         STASH pull --hash $hash |& grep Error && ERROR=true
         if [ "$ERROR" ]; then 
             echo yes i see it
+            echo could not find $hash
             STASH list
+            echo could not find $hash
             STASH list --all
+            echo could not find $hash
             STASH list --verbose
+            echo could not find $hash
             exit 13; 
         fi
     else
