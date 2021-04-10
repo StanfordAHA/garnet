@@ -132,9 +132,9 @@ EOF
     mflowgen stash pull --hash $hash |& grep Error && ERROR=true
     if [ "$ERROR" ]; then 
         echo yes i see it
-        mflowgen list
-        mflowgen list --all
-        mflowgen list --verbose
+        mflowgen stash list
+        mflowgen stash list --all
+        mflowgen stash list --verbose
         exit 13; 
     fi
 
