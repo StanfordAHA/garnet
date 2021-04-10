@@ -21,7 +21,10 @@ gold=$1
 
 # Link up
 (cd $gold; mflowgen stash link --path $stash); echo ''
+
+echo DBG25 --------------------------------------------------------
 (cd $gold; mflowgen stash list --all)
+echo DBG25 --------------------------------------------------------
 
 DBG=
 # for step in `(cd $gold; /bin/ls -d [0-9]*) | head -3`; do
@@ -41,18 +44,23 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
     stepnum=$(echo $step | sed 's/-.*//')
     stepname=$(echo $step | sed 's/^[0-9]*-//')
     (cd $gold; mflowgen stash push -s $stepnum -m $stepnum)
+
+    echo DBG50 --------------------------------------------------------
     (cd $gold; mflowgen stash list --all)
+    echo DBG50 --------------------------------------------------------
 
     # Find hash num of what we just pushed ('list' doesn't show it) (WHY???)
     # Name of stashed step is something like
     # $stashdir/2021-0407-mflowgen-stash-772a46/2021-0407-rtl-137bce
 
     
+    echo DBG51 --------------------------------------------------------
     mflowgen stash list --all
 
     echo DBG53 --------------------------------------------------------
     echo $stashdir/*/*-${stepname}-*
     /bin/ls -ld $stashdir/*/*-${stepname}-* | sed 's/^.*-\([^-]*\)$/\1/'
+    echo DBG53 --------------------------------------------------------
 
 
     [ "$DBG" ] && /bin/ls -1d $stashdir/*/*-${stepname}-*
