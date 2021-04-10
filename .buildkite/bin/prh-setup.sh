@@ -68,56 +68,40 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
     # BUT can search $stashdir/*/.mflowgen.stash.yml
     #
     # cat /sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-3e0809/.mflowgen.stash.yml 
-    #     hash: d56728
-    #     msg: 10695-10-rtl
-    #     step: rtl
+    #  - author buildkite-agent
+    #    hash: d56728
+    #    msg: 10695-10-rtl
+    #    step: rtl
+    # ...
+    #  - author buildkite-agent
+    #    hash: d56728
+    #    msg: 10695-10-rtl
+    #    step: rtl
+
+
+    function find_hash {
+        python << EOF
+import yaml
+with open('$1', 'r') as f: data = yaml.load(f)
+for dict in data:
+  if dict['msg']=='$2':
+      print(dict['hash']); exit()
+EOF
+}
+
+# Testing
+# stepid='10695-10-rtl'
+# find_hash tmp $stepid
 
     for yml in $stashdir/*/.mflowgen.stash.yml; do
         echo searching $yml...
-        if grep "msg: $stepid" $yml; then
-            echo "FOUND yml file $yml"
-            sed 's/:/ /' $yml
-            sed 's/:/ /' $yml | awk '$1=="hash" { print $NF }'
-            hash=$(sed 's/:/ /' $yml | awk '$1=="hash" { print $NF }')
+        $hash=$(find_hash $yml $stepid)
+        if [ "$hash" ]; then
             echo "FOUND hash $hash"
             break
         fi
     done
     
-
-
-# 
-#     echo DBG51 --------------------------------------------------------
-#     mflowgen stash list --all
-# 
-#     echo DBG53 --------------------------------------------------------
-#     echo $stashdir/*/*-${stepname}-*
-#     /bin/ls -ld $stashdir/*/*-${stepname}-*
-# 
-# 
-#     # Almost but not quite
-#     # /bin/ls -ld $stashdir/*/*-${stepname}-* | sed 's/^.*-\([^-]*\)$/\1/'
-# 
-# 
-#     mflowgen stash list --all | egrep ${stepid}\$
-# 
-# 
-#     /bin/ls -ld $stashdir/*/*-${stepname}-* \
-#         | egrep ^$stepid\$ \
-#         | sed 's/^.*-\([^-]*\)$/\1/'
-# 
-#     echo DBG53 --------------------------------------------------------
-# 
-# 
-#     [ "$DBG" ] && /bin/ls -1d $stashdir/*/*-${stepname}-*
-#     hash=$(/bin/ls -ld $stashdir/*/*-${stepname}-* | sed 's/^.*-\([^-]*\)$/\1/')
-
-
-
-
-
-
-
     # Pull the step into our new context
     echo mflowgen stash pull --hash $hash
     mflowgen stash pull --hash $hash
