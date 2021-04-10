@@ -9,7 +9,7 @@
 # echo "+++ PRH TEST RIG SETUP - stash pull context from $GOLD";
 
 # Initialize the stash in tmp dir
-stashdir=/sim/tmp/srstash
+stashdir=/sim/tmp/deleteme.prh_stash$$
 stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
 echo "Created stash '$stash'"
 
@@ -65,5 +65,5 @@ done
 # Clean up
 echo "CLEANING UP"
 set -x
-ls -l /sim/tmp/srstash
-/bin/rm -rf /sim/tmp/srstash
+ls -l $stashdir
+/bin/rm -rf $stashdir
