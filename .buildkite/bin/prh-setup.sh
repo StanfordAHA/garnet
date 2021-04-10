@@ -144,5 +144,18 @@ done
 # Clean up
 echo "CLEANING UP"
 set -x
-ls -l $stashdir
-/bin/rm -rf $stashdir
+# ls -l $stashdir
+# /bin/rm -rf $stashdir
+
+echo looking for big baddies
+for f in `/bin/ls -R $stashdir`; do
+    pid=$$
+    yml=$f/.mflowgen.stash.node.yml
+    if egrep "msg: *$pid-" $f/.mflowgen.stash.node.yml; then
+        echo Found a baddie = $f
+        cat $yml
+        echo Deleting the baddie
+        /bin/rm -rf $f
+    fi
+done
+
