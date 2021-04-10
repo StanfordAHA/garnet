@@ -109,7 +109,7 @@ EOF
 #     for yml in $stashdir/*/.mflowgen.stash.yml; do
 #     /bin/ls -ld  \
 
-    for yml in $stashdir/*/*-${stepname}-*/.mflowgen.stash.node.yml
+    for yml in $stashdir/*/*-${stepname}-*/.mflowgen.stash.node.yml; do
         echo searching $yml...
 
         echo ---
