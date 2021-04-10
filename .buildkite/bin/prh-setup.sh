@@ -12,6 +12,19 @@
 # gold=/sim/buildkite-agent/gold/full_chip
 gold=$1
 
+function STASH {
+
+    # Not necessary no more...right?
+    #     echo "mflowgen stash link --path $stash; mflowgen $*"
+    #     echo okay now do it
+    #     mflowgen stash link --path $stash; mflowgen stash $*
+
+    echo DOING mflowgen stash $*
+    set -x
+    mflowgen stash $* |& tr -cd "[:print:][:blank:]\n" | sed 's/\[[0-9]*m//g'
+    set +x
+}
+
 # One stash to rule them all...
 yml=$gold/.mflowgen.stash.yml
 if test -e $yml; then
@@ -31,6 +44,11 @@ else
     echo mflowgen stash init -p $stashdir
     stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
     echo "Created stash '$stash'"
+
+    STASH link -p $stashdir
+    (cd $gold; STASH link -p $stashdir)
+
+
 fi
 
 echo "Using stash '$stash'"
@@ -40,19 +58,6 @@ echo "Using stash '$stash'"
 # Link up
 # (cd $gold; mflowgen stash link --path $stash); echo ''
 
-function STASH {
-
-    # Not necessary no more...right?
-    #     echo "mflowgen stash link --path $stash; mflowgen $*"
-    #     echo okay now do it
-    #     mflowgen stash link --path $stash; mflowgen stash $*
-
-    echo DOING mflowgen stash $*
-    set -x
-    mflowgen stash $* |& tr -cd "[:print:][:blank:]\n" | sed 's/\[[0-9]*m//g'
-    set +x
-}
-
 # It's not linked in yet
 # STASH list
 
@@ -61,7 +66,7 @@ function STASH {
 
 
 
-STASH link --path $stash
+# STASH link --path $stash
 pwd
 STASH list --all
 
