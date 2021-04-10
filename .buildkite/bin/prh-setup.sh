@@ -20,7 +20,7 @@ stashdir=/sim/tmp/deleteme.prh_stash
 # # E.g. stash=/sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-3e0809
 
 # What does this do?
-stash=$(/bin/ls -1 $stashdir | head -1)
+stash=$(/bin/ls -d $stashdir/* | head -1)
 if [ "$stash" ]; then
     echo "Use existing stash '$stash'"
 else
