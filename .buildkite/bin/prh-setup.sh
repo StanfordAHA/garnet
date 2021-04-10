@@ -9,9 +9,15 @@
 # echo "+++ PRH TEST RIG SETUP - stash pull context from $GOLD";
 
 # Initialize the stash in tmp dir
-stashdir=/sim/tmp/deleteme.prh_stash$$
+
+# okay that didn't work :(
+# stashdir=/sim/tmp/deleteme.prh_stash$$
+
+stashdir=/sim/tmp/deleteme.prh_stash
 stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
 echo "Created stash '$stash'"
+# E.g. stash=/sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-3e0809
+
 
 # mflowgen stash list
 
@@ -43,28 +49,74 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
     echo $step
     stepnum=$(echo $step | sed 's/-.*//')
     stepname=$(echo $step | sed 's/^[0-9]*-//')
-    (cd $gold; mflowgen stash push -s $stepnum -m $stepnum)
+    stepid=$$-${step}
+    echo step=$step num=$stepnum name=$stepname id=$stepid
+
+    (cd $gold; mflowgen stash push -s $stepnum -m $stepid)
 
     echo DBG50 --------------------------------------------------------
     (cd $gold; mflowgen stash list --all)
     echo DBG50 --------------------------------------------------------
 
+    ################################################################
     # Find hash num of what we just pushed ('list' doesn't show it) (WHY???)
     # Name of stashed step is something like
     # $stashdir/2021-0407-mflowgen-stash-772a46/2021-0407-rtl-137bce
 
+    # 'mflowgen stash list' is unreliable, hash field is blank sometimes (!)
+    #
+    # BUT can search $stashdir/*/.mflowgen.stash.yml
+    #
+    # cat /sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-3e0809/.mflowgen.stash.yml 
+    #     hash: d56728
+    #     msg: 10695-10-rtl
+    #     step: rtl
+
+    for yml in $stashdir/*/.mflowgen.stash.yml; do
+        echo searching $yml...
+        if grep "msg: $stepid" $yml; then
+            echo "FOUND yml file $yml"
+            sed 's/:/ /' $yml
+            sed 's/:/ /' $yml | awk '$1=="hash" { print $NF }'
+            hash=$(sed 's/:/ /' $yml | awk '$1=="hash" { print $NF }')
+            echo "FOUND hash $hash"
+            break
+        fi
+    done
     
-    echo DBG51 --------------------------------------------------------
-    mflowgen stash list --all
-
-    echo DBG53 --------------------------------------------------------
-    echo $stashdir/*/*-${stepname}-*
-    /bin/ls -ld $stashdir/*/*-${stepname}-* | sed 's/^.*-\([^-]*\)$/\1/'
-    echo DBG53 --------------------------------------------------------
 
 
-    [ "$DBG" ] && /bin/ls -1d $stashdir/*/*-${stepname}-*
-    hash=$(/bin/ls -ld $stashdir/*/*-${stepname}-* | sed 's/^.*-\([^-]*\)$/\1/')
+# 
+#     echo DBG51 --------------------------------------------------------
+#     mflowgen stash list --all
+# 
+#     echo DBG53 --------------------------------------------------------
+#     echo $stashdir/*/*-${stepname}-*
+#     /bin/ls -ld $stashdir/*/*-${stepname}-*
+# 
+# 
+#     # Almost but not quite
+#     # /bin/ls -ld $stashdir/*/*-${stepname}-* | sed 's/^.*-\([^-]*\)$/\1/'
+# 
+# 
+#     mflowgen stash list --all | egrep ${stepid}\$
+# 
+# 
+#     /bin/ls -ld $stashdir/*/*-${stepname}-* \
+#         | egrep ^$stepid\$ \
+#         | sed 's/^.*-\([^-]*\)$/\1/'
+# 
+#     echo DBG53 --------------------------------------------------------
+# 
+# 
+#     [ "$DBG" ] && /bin/ls -1d $stashdir/*/*-${stepname}-*
+#     hash=$(/bin/ls -ld $stashdir/*/*-${stepname}-* | sed 's/^.*-\([^-]*\)$/\1/')
+
+
+
+
+
+
 
     # Pull the step into our new context
     echo mflowgen stash pull --hash $hash
