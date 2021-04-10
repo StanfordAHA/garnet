@@ -40,8 +40,15 @@ gold=$1
 # Link up
 (cd $gold; mflowgen stash link --path $stash); echo ''
 
+function STASH {
+    echo "mflowgen stash link --path $stash; mflowgen $*"
+}
+STASH list --all
+
+
+
 echo DBG25 --------------------------------------------------------
-(cd $gold; mflowgen stash list --all)
+(cd $gold; STASH list --all)
 echo DBG25 --------------------------------------------------------
 
 DBG=
@@ -64,10 +71,10 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
     stepid=$$-${step}
     echo step=$step num=$stepnum name=$stepname id=$stepid
 
-    (cd $gold; mflowgen stash push -s $stepnum -m $stepid)
+    (cd $gold; STASH push -s $stepnum -m $stepid)
 
     echo DBG50 --------------------------------------------------------
-    (cd $gold; mflowgen stash list --all)
+    (cd $gold; STASH list --all)
     echo DBG50 --------------------------------------------------------
 
     ################################################################
@@ -139,15 +146,15 @@ EOF
     done
     
     # Pull the step into our new context
-    echo mflowgen stash pull --hash $hash
+    echo STASH pull --hash $hash
     ERROR=
     if [ "$hash" ]; then
-        mflowgen stash pull --hash $hash |& grep Error && ERROR=true
+        STASH pull --hash $hash |& grep Error && ERROR=true
         if [ "$ERROR" ]; then 
             echo yes i see it
-            mflowgen stash list
-            mflowgen stash list --all
-            mflowgen stash list --verbose
+            STASH list
+            STASH list --all
+            STASH list --verbose
             exit 13; 
         fi
     else
@@ -159,7 +166,7 @@ EOF
 
 
     # Okay buh-bye don't need you no more
-    mflowgen stash drop --hash $hash
+    STASH drop --hash $hash
 
     # Here's the tricky part
     d=/sim/tmp/deleteme.prh_stash/*/*-$hash
@@ -167,8 +174,8 @@ EOF
     ls $d
     echo deleting $d
 
-    echo mflowgen stash drop --hash $hash
-    mflowgen stash drop --hash $hash
+    echo STASH drop --hash $hash
+    STASH drop --hash $hash
 
     echo deleted $d
     ls -d $d
@@ -184,7 +191,7 @@ EOF
 done
 
 # Let's see what we done did
-(cd $gold; mflowgen stash list --all)
+(cd $gold; STASH list --all)
 
 # Clean up
 echo "CLEANING UP"
