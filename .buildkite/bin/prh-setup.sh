@@ -124,7 +124,7 @@ EOF
 # find_hash $f $stepid
 
 
-    (for yml in $stashdir/*/*-${stepname}-*/.mflowgen.stash.node.yml; do
+    for yml in $stashdir/*/*-${stepname}-*/.mflowgen.stash.node.yml; do
         echo searching $yml...
 
         echo ---
@@ -139,7 +139,7 @@ EOF
             echo "FOUND hash $hash"
             break
         fi
-    done) |& less
+    done
 
 
     
