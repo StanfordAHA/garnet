@@ -14,9 +14,21 @@
 # stashdir=/sim/tmp/deleteme.prh_stash$$
 
 stashdir=/sim/tmp/deleteme.prh_stash
-stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
-echo "Created stash '$stash'"
-# E.g. stash=/sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-3e0809
+
+# stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
+# echo "Created stash '$stash'"
+# # E.g. stash=/sim/tmp/deleteme.prh_stash/2021-0410-mflowgen-stash-3e0809
+
+# What does this do?
+stash=$(/bin/ls $stashdir | head)
+if [ "$stash" ]; then
+    echo "Use existing stash '$stash'"
+else
+    stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
+    echo "Created stash '$stash'"
+fi
+
+
 
 
 # mflowgen stash list
@@ -173,3 +185,4 @@ for f in `/bin/ls -R $stashdir`; do
     fi
 done
 
+exit 13
