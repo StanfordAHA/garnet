@@ -99,7 +99,7 @@ find_hash tmp $stepid
 
     for yml in $stashdir/*/.mflowgen.stash.yml; do
         echo searching $yml...
-        $hash=$(find_hash $yml $stepid)
+        hash=$(find_hash $yml $stepid)
         if [ "$hash" ]; then
             echo "FOUND hash $hash"
             break
