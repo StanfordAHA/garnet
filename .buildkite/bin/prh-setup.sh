@@ -45,13 +45,13 @@ else
     stash=`mflowgen stash init -p $stashdir | awk '{print $NF}'`
     echo "Created stash '$stash'"
 
-    STASH link -p $stashdir
     (cd $gold; STASH link -p $stashdir)
 
 
 fi
 
 echo "Using stash '$stash'"
+STASH link -p $stashdir
 
 
 # Already done did...as part of init...right...?
