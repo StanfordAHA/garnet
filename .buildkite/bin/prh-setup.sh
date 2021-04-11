@@ -59,9 +59,9 @@ echo "Using stash '$stash'"
 # (cd $gold; mflowgen stash link --path $stash); echo ''
 
 # It's not linked in yet
-# STASH list
+# STASH list --all
 
-# mflowgen stash list |& tr -cd "[:ctl:]"
+# mflowgen stash list --all |& tr -cd "[:ctl:]"
 
 
 
@@ -99,20 +99,20 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
     echo step=$step num=$stepnum name=$stepname # id=$stepid
 
     echo "Looking for step $step"
-    STASH list
+    STASH list --all
 
     # See if step is already stashed
     # E.g. " - 435de6 [ 2021-0410 ] buildkite-agent sealring -- 17827-11-sealring"
     # stepname=sealring
-    STASH list | awk '$1=="-" && $7=="'$stepname'" { print $7; exit }'
-    hash=$(STASH list | awk '$1=="-" && $7=="'$stepname'" { print $2; exit }')
+    STASH list --all | awk '$1=="-" && $7=="'$stepname'" { print $7; exit }'
+    hash=$(STASH list --all | awk '$1=="-" && $7=="'$stepname'" { print $2; exit }')
     if ! [ "$hash" ]; then
         # need to grap the step from goldie
         (cd $gold; STASH push -s $stepnum -m $step)
 
         # stepname=pre-route
-               STASH list | awk '$1=="-" && $NF=="'$step'" { print $2; exit }'
-        hash=$(STASH list | awk '$1=="-" && $NF=="'$step'" { print $2; exit }')
+               STASH list --all | awk '$1=="-" && $NF=="'$step'" { print $2; exit }'
+        hash=$(STASH list --all | awk '$1=="-" && $NF=="'$step'" { print $2; exit }')
         echo $hash
 
     fi
@@ -127,8 +127,6 @@ for step in `(cd $gold; /bin/ls -d [0-9]*)`; do
             echo yes i see it
             echo could not find $hash
 
-            STASH list
-            echo could not find $hash
             STASH list --all
             echo could not find $hash
             STASH list --verbose
@@ -219,4 +217,4 @@ done
 # 
 # fi
 # 
-exit 13
+# exit 13
