@@ -30,6 +30,7 @@ yml=$gold/.mflowgen.stash.yml
 if test -e $yml; then
     stash=$(cat $yml | awk '{print $NF; exit}')
     echo "Use existing gold stash '$stash'"
+    stashdir=$stash
 else
     echo "$gold not linked yet"
 
