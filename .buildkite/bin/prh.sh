@@ -69,14 +69,14 @@ for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
     echo $step
     stepnum=$(cd $REF/full_chip; make list |& egrep ": $step\$" | awk '{print $2}')
     ref_step=$REF/full_chip/$stepnum-$step
-    echo Found ref step $ref_step; echo ''
+    echo Found ref step $ref_step
     if ! test -d $ref_step; then
         echo "hm look like $ref_step don't exist after all..."
         exit 13
     fi
 
     # Oh wotthehell archy
-    set -x ; touch $ref_step/.prebuilt; set +x
+    set -x ; touch $ref_step/.prebuilt; set +x; echo ''
 
 
     make list |& egrep ": $step\$"
@@ -86,8 +86,6 @@ for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
 
     echo "Ready to do: ln -s $REF/$ref_step $local_step"
     set -x; ln -s $ref_step $local_step; set +x
-
-    ls -d $local_step/*
 
 done
 
@@ -292,10 +290,13 @@ fi
 
 # Other QRC problems
 echo ''
-echo 'Check for QRC error(s)'
-echo "egrep '^ Error messages'" qrc*.log
-egrep '^ Error messages' qrc*.log
-n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
+log='make-prh.log'
+echo "Check for QRC error(s) in '$log'"
+pwd
+
+
+egrep '^ Error messages' $log
+n_errors=$(egrep '^ Error messages' $log | awk '{print $NF}')
 for i in $n_errors; do 
     if [ "$i" -gt 0 ]; then 
         echo ''
@@ -309,7 +310,7 @@ done
 # Unknown error
 echo ''
 echo 'Check for other / unknown error(s)'
-if grep ENDSTATUS=FAIL mflowgen-run.log; then
+if grep ENDSTATUS=FAIL $log; then
     echo "+++ QCHECK: FAILED mflowgen with unknown cause, giving up now"
     FOUND_ERROR=FAIL
     exit 13
