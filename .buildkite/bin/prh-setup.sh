@@ -1,3 +1,27 @@
+cat <<EOF
+
+
+WE DON' USE THIS NO MO
+
+WE USE SYMLINKS INSTEAD
+
+EOF
+exit
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #!/bin/bash
 
 # Usage: prh-setup <GOLD>

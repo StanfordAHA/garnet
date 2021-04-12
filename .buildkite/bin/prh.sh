@@ -3,35 +3,46 @@
 # Helper script for the process of running postroute_hold 
 # with the possibility of one or more retries in case of failure
 # 
-# - Creates and runs from dir /build/prh<buildnum>
-# - Runs prh-setup.sh to create enough context for the 'make' command (14G)
-# - Runs 'make postroute_hold' and checks for failure
-# - Records progress in make-prh.log file
-# - Deletes 14G context
-# - On failure:
-#   - copies *postroute_hold to *postroute_hold-fail-<num>
-#   - copies make-prh.log to make-prh-fail-<num>.log
+# Example: prh.sh /build/prh3647 0
 # 
-# Designed to be called from a buildkite yml script something like:
+# - Creates and runs from next dir bd="$1/try$2" e.g. "/build/prh3647/try0"
+# -- if $bd exists, copies e.g. "/build/prh3647/try0" to "/build/prh3647/try0.fail1"
+# 
+# - links to gold dir steps
+#     *-cadence-innovus-postroute
+#     *-cadence-innovus-flowsetup
+# 
+# - Runs 'make postroute_hold' and checks for failure
+# 
+# - Records progress in make-prh.log file
+# 
+# - Designed to be called from a buildkite yml script something like:
 #     env:
-#       PRH : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip"
+#       PRH : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
 #     steps:
 #       commands:
-#       - 'set -x; $$PRH || $$PRH || $$PRH'
-# 
-# If all goes well, builds a single dir e.g. '/build/prh3574/full_chip/*postroute_hold'
-# 
-# Otherwise, can retry up to two more times, with failures in e.g.
-# '/build/prh3574/full_chip/*postroute_hold-fail-[01]'
-# '/build/prh3574/full_chip/*postroute_hold-fail-[01]/make-prh.log'
-# '/build/prh3574/full_chip/*postroute_hold-fail-[01]/hang-watcher.log'
+#       - 'set -x; i=0; $$PRH $$i || $$PRH $$i || $$PRH' $$i
 
 # Cached design for postroute_hold inputs lives here
 REF=/sim/buildkite-agent/gold
 # REF=/build/gold.228
 
-# Results will go to designated dir e.g. /build/qrh3549
-DESTDIR=$1
+# Results will go to designated build dir e.g. /build/qrh3549/try0
+DESTDIR=$1/try$2
+
+# if DESTDIR exists, copy e.g. "/build/prh3647/try0" to "/build/prh3647/try0.fail1"
+if test -e $DESTDIR; then
+    echo "Found already-existing build dir '$DESTDIR'"
+    echo "Assume it's a fail; look for a place to stash it"
+    for i in 1 2 3 4 5 6 7 8 9; do
+        nextfail=$DESTDIR.fail$i
+        test -e $nextfail || break
+    done
+    echo "Found candidate fail dir name '$nextfail'"
+    set -x; mv $DESTDIR $nextfail; set +x
+fi
+
+# Create new build dir
 set -x
   mkdir -p $DESTDIR
 set +x
@@ -48,8 +59,30 @@ mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
 # Build the necessary context to run postroute_hold step only
 GOLD=/sim/buildkite-agent/gold/full_chip
-echo "+++ PRH TEST RIG SETUP - stash-pull context from $GOLD";
-$GARNET_HOME/.buildkite/bin/prh-setup.sh $GOLD || exit 13
+
+# Want two steps
+#     *-cadence-innovus-postroute
+#     *-cadence-innovus-flowsetup
+
+echo "+++ PRH TEST RIG SETUP - symlink to steps in $GOLD";
+for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
+    echo $step
+    stepnum=$(cd $REF/full_chip; make list |& egrep ": $step\$" | awk '{print $2}')
+    ref_step=$stepnum-$step
+    echo Found ref step $ref_step; echo ''
+
+    make list |& egrep ": $step\$"
+    stepnum=$(make list |& egrep ": $step\$" | awk '{print $2}')
+    local_step=$stepnum-$step
+    echo Found local step $local_step; echo ''
+
+    echo "Ready to do: ln -s $REF/$ref_step $local_step"
+    set -x; ln -s $REF/$ref_step $local_step; set +x
+done
+
+
+# echo "+++ PRH TEST RIG SETUP - stash-pull context from $GOLD";
+# $GARNET_HOME/.buildkite/bin/prh-setup.sh $GOLD || exit 13
 
 # See if things are okay so far...
 echo CHECK1
@@ -227,26 +260,6 @@ echo ''
 ########################################################################
 echo "+++ QCHECK: PASS or FAIL?"
 
-function save-failure-and-exit13 {
-    # E.g. prname='32-cadence-innovus-postroute_hold'
-    prhname=$(/bin/ls -d *postroute_hold); echo $prhname
-
-    # Find a place to put failed postroute_hold step,
-    # e.g. 32-cadence-innovus-postroute_hold.failed-3
-    for i in 0 1 2 3 4 5 6 7 8 9; do
-        failname=${prhname}-failed-$i
-        echo $failname
-        test -e $failname || break
-    done
-    echo "Found target fail dir $failname"
-    set -x
-      echo mv ${prhname} $failname
-      mv hang-watcher.log $failname || echo nope
-      mv make-prh.log $failname || echo nope
-      exit 13
-    set +x
-}
-
 # Hung job
 echo ''
 echo 'Check for hung job'
@@ -254,7 +267,6 @@ pid=$(grep 'found hung process' hang-watcher.log | awk '{print $NF}')
 if [ "$pid" ]; then
     echo "+++ QCHECK PROBLEM: HUNG JOB $pid"
     FOUND_ERROR=HUNG
-    save-failure-and-exit13
     exit 13
 fi
 
@@ -270,7 +282,6 @@ for i in $n_errors; do
         echo "+++ QCHECK PROBLEM: QRC ERRORS"
         echo "FAILED n_errors, flagging QRC for retry"
         FOUND_ERROR=QRC
-        save-failure-and-exit13
         exit 13
     fi
 done
@@ -281,7 +292,6 @@ echo 'Check for other / unknown error(s)'
 if grep ENDSTATUS=FAIL mflowgen-run.log; then
     echo "+++ QCHECK: FAILED mflowgen with unknown cause, giving up now"
     FOUND_ERROR=FAIL
-    save-failure-and-exit13
     exit 13
 fi
 
