@@ -68,8 +68,12 @@ echo "+++ PRH TEST RIG SETUP - symlink to steps in $GOLD";
 for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
     echo $step
     stepnum=$(cd $REF/full_chip; make list |& egrep ": $step\$" | awk '{print $2}')
-    ref_step=$stepnum-$step
+    ref_step=$REF/full_chip/$stepnum-$step
     echo Found ref step $ref_step; echo ''
+    if ! test -d $ref_step; then
+        echo "hm look like $ref_step don't exist after all..."
+        exit 13
+    fi
 
     make list |& egrep ": $step\$"
     stepnum=$(make list |& egrep ": $step\$" | awk '{print $2}')
@@ -77,18 +81,30 @@ for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
     echo Found local step $local_step; echo ''
 
     echo "Ready to do: ln -s $REF/$ref_step $local_step"
-    set -x; ln -s $REF/$ref_step $local_step; set +x
+    set -x; ln -s $ref_step $local_step; set +x
+
+    ls -d $local_step/*
+
 done
+
+
+# echo did we get away with it?
+echo "+++ TODO LIST"
+function make-n-filter { egrep '^mkdir.*output' | sed 's/output.*//' | egrep -v ^Make ;}
+make -n cadence-innovus-postroute_hold |& make-n-filter
+
+# echo "+++ continue"
+
 
 
 # echo "+++ PRH TEST RIG SETUP - stash-pull context from $GOLD";
 # $GARNET_HOME/.buildkite/bin/prh-setup.sh $GOLD || exit 13
 
-# See if things are okay so far...
-echo CHECK1
-echo pwd=`pwd`
-/bin/ls -1
-echo ''
+# # See if things are okay so far...
+# echo CHECK1
+# echo pwd=`pwd`
+# /bin/ls -1
+# echo ''
 
 
 echo "--- QRC TEST RIG SETUP - swap in new main.tcl";
