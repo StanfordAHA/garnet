@@ -75,6 +75,10 @@ for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
         exit 13
     fi
 
+    # Oh wotthehell archy
+    set -x ; touch $ref_step/.prebuilt; set +x
+
+
     make list |& egrep ": $step\$"
     stepnum=$(make list |& egrep ": $step\$" | awk '{print $2}')
     local_step=$stepnum-$step
