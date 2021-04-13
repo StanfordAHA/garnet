@@ -255,7 +255,6 @@ echo "+++ CLEAN UP, delete 14G of context"
 # Clean up
 echo ''
 echo "--- save disk space, delete output design (?)"
-set -x
 if test -d checkpoints; then
     ls -lR checkpoints/
     /bin/rm -rf checkpoints/*
@@ -283,7 +282,7 @@ echo ''
 echo 'Check for hung job'
 pid=$(grep 'found hung process' hang-watcher.log | awk '{print $NF}')
 if [ "$pid" ]; then
-    echo "+++ QCHECK PROBLEM: HUNG JOB $pid"
+    echo "QCHECK PROBLEM: HUNG JOB $pid - FAIL"
     FOUND_ERROR=HUNG
     exit 13
 fi
@@ -300,7 +299,7 @@ n_errors=$(egrep '^ Error messages' $log | awk '{print $NF}')
 for i in $n_errors; do 
     if [ "$i" -gt 0 ]; then 
         echo ''
-        echo "+++ QCHECK PROBLEM: QRC ERRORS"
+        echo "QCHECK PROBLEM: QRC ERRORS - FAIL"
         echo "FAILED n_errors, flagging QRC for retry"
         FOUND_ERROR=QRC
         exit 13
@@ -310,15 +309,41 @@ done
 # Unknown error
 echo ''
 echo 'Check for other / unknown error(s)'
-if grep ENDSTATUS=FAIL $log; then
-    echo "+++ QCHECK: FAILED mflowgen with unknown cause, giving up now"
+if (grep -v grep $log | grep ENDSTATUS=FAIL); then
+    echo "QCHECK PROBLEM: FAILED mflowgen with unknown cause, giving up now"
     FOUND_ERROR=FAIL
     exit 13
 fi
 
 # Huh, must have passed.
-echo "+++ QCHECK: NO ERRORS FOUND, HOORAY!"
-echo "+++ PASSED mflowgen first attempt"
+echo "QCHECK: NO ERRORS FOUND, HOORAY! - PASS"
 echo "Hey looks like we got away with it"
+
+########################################################################
+# How many tries?
+echo ""
+echo "How many tries did it take?"
+# Curdir should be something like "/build/prh3658/try0"
+# Fail dir(s) should be something like "/build/prh3658/try0.fail[12]"
+
+# E.g. dirs=
+#   /build/prh3658/try0
+#   /build/prh3658/try0.fail1
+dirs=`pwd`*
+
+# E.g. output=
+# /build/prh3658/try0:
+#    QCHECK: NO ERRORS FOUND, HOORAY! - PASS"
+echo ''
+for d in $dirs; do
+    echo "${d}:"
+    echo -n '    '
+    egrep '^QCHECK.*(PASS|FAIL)$' ${d}*/make-prh.log
+    # egrep '^\+++ QCHECK.*PASS' $d/make-prh.log
+done
+
+
+
+
 
 # (exit 0)
