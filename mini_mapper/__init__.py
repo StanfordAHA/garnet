@@ -1165,6 +1165,7 @@ def map_app(pre_map):
             elif mem_mode == "pond":
                 instr["depth"] = 0
                 instr.update(instance["modargs"])
+                instr["mode"] = MemoryMode.UNIFIED_BUFFER
             elif mem_mode == "lb":
                 instr["mode"] = MemoryMode.UNIFIED_BUFFER
                 instr["depth"] = int(args[-1])
