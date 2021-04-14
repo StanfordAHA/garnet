@@ -11,15 +11,15 @@ env:
 
   # Builds in e.g. "/build/prh-3574/{run0,run1,run2...}"
   PRH       : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
-  # buildpipe : ".buildkite/prh-pipeline.sh /build/prh3555"
-  buildpipe : ".buildkite/prh-pipeline.sh"
+  # buildpipe : ".buildkite/prh-twostep.sh /build/prh3555"
+  buildpipe : ".buildkite/prh-twostep.sh"
 
 steps:
-  - command: .buildkite/bin/pipeline-prh.sh 1 | buildkite-agent pipeline upload
+  - command: .buildkite/bin/prh-twostep.sh 1 | buildkite-agent pipeline upload
     label:   ":pipeline: Upload"
   - wait: { continue_on_failure: true }
 
-  - command: .buildkite/bin/pipeline-prh.sh 1 | buildkite-agent pipeline upload
+  - command: .buildkite/bin/prh-twostep.sh 1 | buildkite-agent pipeline upload
     label:   ":pipeline: Upload"
   - wait: { continue_on_failure: true }
 
