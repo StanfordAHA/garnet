@@ -1,5 +1,4 @@
 import pytest
-from magma import clear_cachedFunctions
 import magma
 from gemstone.generator import clear_generator_cache
 import tempfile
@@ -22,9 +21,10 @@ def cad_available():
 
 @pytest.fixture(autouse=True)
 def magma_test():
-    clear_cachedFunctions()
-    magma.frontend.coreir_.ResetCoreIR()
     clear_generator_cache()
+    magma.clear_cachedFunctions()
+    magma.frontend.coreir_.ResetCoreIR()
+    magma.generator.reset_generator_cache()
 
 
 def pytest_addoption(parser):
