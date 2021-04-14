@@ -2,12 +2,14 @@
 
 # Odd runs pass, even runs fail
 
-# .buildkite/bin/prh.sh /tmp/deleteme/run1 else fail2
-
+# .buildkite/bin/prh.sh /build/prh3683/run1 else fail2
 
 set -x
+rundir=$1; failname=$3
+echo $rundir
+echo $failname
+[ "$rundir" ] || exit 13
 ls ${rundir}*
-
 
     if [ $[RANDOM%2] -eq 0 ]; then 
         echo PASS; 
