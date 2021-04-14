@@ -112,7 +112,7 @@ function build_step {
     cat<<EOF
 
     label:   $label
-    command: '.buildkite/bin/prh.sh $rundir else $failname'
+    command: .buildkite/bin/prh.sh $rundir else $failname
 EOF
 }
 
