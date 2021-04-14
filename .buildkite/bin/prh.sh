@@ -1,5 +1,28 @@
 #!/bin/bash
 
+# Odd runs pass, even runs fail
+
+# .buildkite/bin/prh.sh /tmp/deleteme/run1 else fail2
+
+
+    if [ $[RANDOM%2] -eq 0 ]; then 
+        touch ${rundir}-pass
+        echo yes PASS; exit 0;
+    else
+        touch ${rundir}-${failname}
+        echo no FAIL; exit 13;
+    fi
+
+# for i in 1 2 3 4 5 6 7 8 9 0; do
+# done
+# 
+exit
+
+rand=$[RANDOM%2]
+echo $[RANDOM%2]
+
+
+
 notes="
   E.g. prh.sh /build/prh3555/run0 does this:
 

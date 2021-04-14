@@ -12,14 +12,14 @@ env:
   # Builds in e.g. "/build/prh-3574/{run0,run1,run2...}"
   PRH       : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
   # buildpipe : ".buildkite/prh-twostep.sh /build/prh3555"
-  buildpipe : ".buildkite/prh-twostep.sh"
+  buildpipe : ".buildkite/prh-twostep.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
 
 steps:
-  - command: .buildkite/bin/prh-twostep.sh 1 | buildkite-agent pipeline upload
-    label:   "gensteps"
+  - command: '$$buildpipe | buildkite-agent pipeline upload'
+    # label:   "gensteps"
   - wait: { continue_on_failure: true }
 
-  - command: .buildkite/bin/prh-twostep.sh 1 | buildkite-agent pipeline upload
+  - command: '$$buildpipe | buildkite-agent pipeline upload'
     label:   "gensteps"
   - wait: { continue_on_failure: true }
 
