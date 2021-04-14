@@ -26,7 +26,7 @@ def _make_random(cls):
 
 
 _EXPENSIVE = {
-    "bits32.mul": ((umult0(),), "magma_Bits_32_mul_inst0", hwtypes.UIntVector[16]),  # noqa
+    "bits32.mul": ((umult0(),), "magma_UInt_32_mul_inst0", hwtypes.UIntVector[16]),  # noqa
     "bfloat16.mul": ((fp_mul(),), "magma_BFloat_16_mul_inst0", BFloat16_fc(PyFamily())),  # noqa
     "bfloat16.add": ((fp_add(),), "magma_BFloat_16_add_inst0", BFloat16_fc(PyFamily())),  # noqa
 }
