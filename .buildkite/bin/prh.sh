@@ -1,12 +1,25 @@
 #!/bin/bash
 
+notes="
+  E.g. prh.sh /build/prh3555/run0 does this:
+
+    # build and run in dir rundir=/build/prh3555/run0
+    if PASS then mv $rundir ${rundir}-pass
+    else for i in 1 2 3 4 5 6 7 8 9; do
+      failname=${rundir}-fail$i
+      if ! -e $failname; then mv $rundir $failname; break; fi
+    fi
+"
+
+
+
 # Helper script for the process of running postroute_hold 
 # with the possibility of one or more retries in case of failure
 # 
 # Example: prh.sh /build/prh3647 0
 # 
-# - Creates and runs from next dir bd="$1/try$2" e.g. "/build/prh3647/try0"
-# -- if $bd exists, copies e.g. "/build/prh3647/try0" to "/build/prh3647/try0.fail1"
+# - Creates and runs from next dir bd="$1/run$2" e.g. "/build/prh3647/run0"
+# -- if $bd exists, copies e.g. "/build/prh3647/run0" to "/build/prh3647/run0.fail1"
 # 
 # - links to gold dir steps
 #     *-cadence-innovus-postroute
@@ -27,10 +40,10 @@
 REF=/sim/buildkite-agent/gold
 # REF=/build/gold.228
 
-# Results will go to designated build dir e.g. /build/qrh3549/try0
-DESTDIR=$1/try$2
+# Results will go to designated build dir e.g. /build/qrh3549/run0
+DESTDIR=$1/run$2
 
-# if DESTDIR exists, copy e.g. "/build/prh3647/try0" to "/build/prh3647/try0.fail1"
+# if DESTDIR exists, copy e.g. "/build/prh3647/run0" to "/build/prh3647/run0.fail1"
 if test -e $DESTDIR; then
     echo "Found already-existing build dir '$DESTDIR'"
     echo "Assume it's a fail; look for a place to stash it"
@@ -323,16 +336,16 @@ echo "Hey looks like we got away with it"
 # How many tries?
 echo ""
 echo "How many tries did it take?"
-# Curdir should be something like "/build/prh3658/try0"
-# Fail dir(s) should be something like "/build/prh3658/try0.fail[12]"
+# Curdir should be something like "/build/prh3658/run0"
+# Fail dir(s) should be something like "/build/prh3658/run0.fail[12]"
 
 # E.g. dirs=
-#   /build/prh3658/try0
-#   /build/prh3658/try0.fail1
+#   /build/prh3658/run0
+#   /build/prh3658/run0.fail1
 dirs=`pwd`*
 
 # E.g. output=
-# /build/prh3658/try0:
+# /build/prh3658/run0:
 #    QCHECK: NO ERRORS FOUND, HOORAY! - PASS"
 echo ''
 for d in $dirs; do
