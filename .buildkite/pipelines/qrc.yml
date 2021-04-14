@@ -23,6 +23,18 @@ steps:
     label:   "gen2"
   - wait: { continue_on_failure: true }
 
+  - command: '$$buildpipe | buildkite-agent pipeline upload'
+    label:   "gen2"
+  - wait: { continue_on_failure: true }
+
+  - command: '$$buildpipe | buildkite-agent pipeline upload'
+    label:   "gen2"
+  - wait: { continue_on_failure: true }
+
+  - command: '$$buildpipe | buildkite-agent pipeline upload'
+    label:   "gen2"
+  - wait: { continue_on_failure: true }
+
 
 
 

@@ -4,22 +4,21 @@
 
 # .buildkite/bin/prh.sh /build/prh3683/run1 else fail2
 
-set -x
 rundir=$1; failname=$3
-echo $rundir
-echo $failname
+# echo $rundir
+# echo $failname
 [ "$rundir" ] || exit 13
-ls ${rundir}*
+ls -1 ${rundir}*/..
 
     if [ $[RANDOM%2] -eq 0 ]; then 
         echo PASS; 
-        mkdir -p ${rundir}-pass
-        ls ${rundir}*
+        set -x; mkdir -p ${rundir}-pass; set +x
+        ls -1 ${rundir}*/..
         exit 0;
     else
         echo FAIL; 
-        mkdir -p ${rundir}-${failname}
-        ls ${rundir}*
+        set -x; mkdir -p ${rundir}-${failname}; set +x
+        ls -1 ${rundir}*/..
         exit 13;
     fi
 
