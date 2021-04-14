@@ -8,36 +8,43 @@
 agents: { queue: "papers" }
 
 env:
-
   # Builds in e.g. "/build/prh-3574/{run0,run1,run2...}"
-  PRH       : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
-  # buildpipe : ".buildkite/prh-twostep.sh /build/prh3555"
-  buildpipe : ".buildkite/bin/prh-twostep.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
+  BUILDPIPE : ".buildkite/bin/prh-twostep.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
 
 steps:
-  - command: '$$buildpipe | buildkite-agent pipeline upload'
+
+  # Each upload inserts the next two steps into the pipeline
+  # Steps run in parallel, pipeline does not continue until both are done.
+  # Repeat five times for ten total tests including retries
+
+  - command: '$$BUILDPIPE | buildkite-agent pipeline upload'
     label:   "gen1"
   - wait: { continue_on_failure: true }
 
-  - command: '$$buildpipe | buildkite-agent pipeline upload'
+  - command: '$$BUILDPIPE | buildkite-agent pipeline upload'
     label:   "gen2"
   - wait: { continue_on_failure: true }
 
-  - command: '$$buildpipe | buildkite-agent pipeline upload'
-    label:   "gen2"
+  - command: '$$BUILDPIPE | buildkite-agent pipeline upload'
+    label:   "gen3"
   - wait: { continue_on_failure: true }
 
-  - command: '$$buildpipe | buildkite-agent pipeline upload'
-    label:   "gen2"
+  - command: '$$BUILDPIPE | buildkite-agent pipeline upload'
+    label:   "gen4"
   - wait: { continue_on_failure: true }
 
-  - command: '$$buildpipe | buildkite-agent pipeline upload'
-    label:   "gen2"
+  - command: '$$BUILDPIPE | buildkite-agent pipeline upload'
+    label:   "gen5"
   - wait: { continue_on_failure: true }
 
 
 
 
+
+
+
+#   PRH       : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
+# 
 # steps:
 # 
 #   # Makes e.g. /build/prh3598/run[01]?

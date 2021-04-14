@@ -1,57 +1,12 @@
 #!/bin/bash
 
-# Odd runs pass, even runs fail
-
-# .buildkite/bin/prh.sh /build/prh3683/run1 else fail2
-
-rundir=$1; failname=$3
-# echo $rundir
-# echo $failname
-[ "$rundir" ] || exit 13
-ls -1 ${rundir}*/..
-
-    if [ $[RANDOM%2] -eq 0 ]; then 
-        echo PASS; 
-        set -x; mkdir -p ${rundir}-pass; set +x
-        ls -1 ${rundir}*/..
-        exit 0;
-    else
-        echo FAIL; 
-        set -x; mkdir -p ${rundir}-${failname}; set +x
-        ls -1 ${rundir}*/..
-        exit 13;
-    fi
-
-# for i in 1 2 3 4 5 6 7 8 9 0; do
-# done
+########################################################################
+# Helper script for running postroute_hold standalone.
+# Renames build dir with "pass" or "fail" extensions.
 # 
-exit
-
-rand=$[RANDOM%2]
-echo $[RANDOM%2]
-
-
-
-notes="
-  E.g. prh.sh /build/prh3555/run0 does this:
-
-    # build and run in dir rundir=/build/prh3555/run0
-    if PASS then mv $rundir ${rundir}-pass
-    else for i in 1 2 3 4 5 6 7 8 9; do
-      failname=${rundir}-fail$i
-      if ! -e $failname; then mv $rundir $failname; break; fi
-    fi
-"
-
-
-
-# Helper script for the process of running postroute_hold 
-# with the possibility of one or more retries in case of failure
+# Example: "prh.sh /build/prh3647/run0 else fail1"
 # 
-# Example: prh.sh /build/prh3647 0
-# 
-# - Creates and runs from next dir bd="$1/run$2" e.g. "/build/prh3647/run0"
-# -- if $bd exists, copies e.g. "/build/prh3647/run0" to "/build/prh3647/run0.fail1"
+# - Creates and runs from dir "/build/prh3647/run0"
 # 
 # - links to gold dir steps
 #     *-cadence-innovus-postroute
@@ -61,31 +16,48 @@ notes="
 # 
 # - Records progress in make-prh.log file
 # 
+# - On success, renames dir to e.g. "run0-pass"
+# - On failure, renames dir to e.g. "run0-fail1" according to "else" cmd-line parm
+# 
 # - Designed to be called from a buildkite yml script something like:
-#     env:
-#       PRH : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
 #     steps:
-#       commands:
-#       - 'set -x; i=0; $$PRH $$i || $$PRH $$i || $$PRH' $$i
+#       - command: '.buildkite/bin/prh.sh /build/prh3555/run1 else fail2'
+#       - command: '.buildkite/bin/prh.sh /build/prh3555/run2 else fail1'
+# 
+# Final directory structure should look something like this:
+# 
+#   % ls -1 /build/prh3555/
+#       run0-pass
+#       run1-fail1
+#       run1-fail2
+#       run1-pass
 
+########################################################################
 # Cached design for postroute_hold inputs lives here
 REF=/sim/buildkite-agent/gold
 # REF=/build/gold.228
 
-# Results will go to designated build dir e.g. /build/qrh3549/run0
-DESTDIR=$1/run$2
+# Example: "prh.sh /build/prh3647/run0 else fail1"
 
-# if DESTDIR exists, copy e.g. "/build/prh3647/run0" to "/build/prh3647/run0.fail1"
-if test -e $DESTDIR; then
-    echo "Found already-existing build dir '$DESTDIR'"
-    echo "Assume it's a fail; look for a place to stash it"
-    for i in 1 2 3 4 5 6 7 8 9; do
-        nextfail=$DESTDIR.fail$i
-        test -e $nextfail || break
-    done
-    echo "Found candidate fail dir name '$nextfail'"
-    set -x; mv $DESTDIR $nextfail; set +x
-fi
+# Results will go to designated build dir e.g. /build/qrh3549/run0
+DESTDIR=$1
+
+# On failure, rename curdir to <curdir>-$failname
+failname=$3
+
+# # if DESTDIR exists, copy e.g. "/build/prh3647/run0" to "/build/prh3647/run0.fail1"
+# if test -e $DESTDIR; then
+#     echo "Found already-existing build dir '$DESTDIR'"
+#     echo "Assume it's a fail; look for a place to stash it"
+#     for i in 1 2 3 4 5 6 7 8 9; do
+#         nextfail=$DESTDIR.fail$i
+#         test -e $nextfail || break
+#     done
+#     echo "Found candidate fail dir name '$nextfail'"
+#     set -x; mv $DESTDIR $nextfail; set +x
+# fi
+
+
 
 # Create new build dir
 set -x
@@ -142,8 +114,6 @@ make -n cadence-innovus-postroute_hold |& make-n-filter
 
 # echo "+++ continue"
 
-
-
 # echo "+++ PRH TEST RIG SETUP - stash-pull context from $GOLD";
 # $GARNET_HOME/.buildkite/bin/prh-setup.sh $GOLD || exit 13
 
@@ -154,65 +124,19 @@ make -n cadence-innovus-postroute_hold |& make-n-filter
 # echo ''
 
 
-echo "--- QRC TEST RIG SETUP - swap in new main.tcl";
-echo "temporarily changed setup-buildkite.sh to use mfg branch 'qrc-crash-fix'"
-echo '========================================================================'
-echo '========================================================================'
-echo '========================================================================'
-set -x
-  (cd ../mflowgen; git branch) || echo nope
-  cat ../mflowgen/steps/cadence-innovus-postroute_hold/scripts/main.tcl || echo nope
-set +x
-echo '========================================================================'
-echo '========================================================================'
-echo '========================================================================'
+# echo "--- QRC TEST RIG SETUP - swap in new main.tcl";
+# echo "temporarily changed setup-buildkite.sh to use mfg branch 'qrc-crash-fix'"
+# echo '========================================================================'
+# echo '========================================================================'
+# echo '========================================================================'
+# set -x
+#   (cd ../mflowgen; git branch) || echo nope
+#   cat ../mflowgen/steps/cadence-innovus-postroute_hold/scripts/main.tcl || echo nope
+# set +x
+# echo '========================================================================'
+# echo '========================================================================'
+# echo '========================================================================'
 
-
-
-# ########################################################################
-# # Build a new main.tcl
-# # Until we can fix mflowgen repo, will need to fix main.tcl here.
-# # Mainly changing multi-cpu from 16 back to 8.
-# 
-# main_tcl_new='
-# setOptMode -verbose true
-# 
-# setOptMode -usefulSkewPostRoute true
-# 
-# setOptMode -holdTargetSlack  $::env(hold_target_slack)
-# setOptMode -setupTargetSlack $::env(setup_target_slack)
-# 
-# puts "Info: Using signoff engine = $::env(signoff_engine)"
-# 
-# if { $::env(signoff_engine) } {
-#   setExtractRCMode -engine postRoute -effortLevel signoff
-# }
-# 
-# # SR Mar 2021 changed multiCpuUsage from 16 back to 8.
-# # It seems to have helped the QRC core-dump problem
-# # (twenty-ish consecutive runs with no error). Also,
-# # from Innovus User Guide Product Version 19.10,
-# # dated April 2019, p. 1057:
-# # 
-# # "Generally, performance improvement will start to diminish beyond 8 CPUs."
-# 
-# echo ""
-# echo "--- BEGIN optDesign -postRoute -hold"
-# setDistributeHost -local
-# setMultiCpuUsage -localCpu 8
-# 
-# # Run the final postroute hold fixing
-# optDesign -postRoute -outDir reports -prefix postroute_hold -hold
-# '
-# 
-# ########################################################################
-# # Write the new main.tcl
-# 
-# echo "$main_tcl_new" > scripts/main.tcl
-# echo '=================================================================='
-# echo 'cat scripts/main.tcl'
-# cat scripts/main.tcl
-# echo '=================================================================='
 
 ########################################################################
 # Define the watcher, watches for 'slow or hanging' jobs warning
@@ -322,6 +246,24 @@ echo ''
 ########################################################################
 echo "+++ QCHECK: PASS or FAIL?"
 
+# Could alternatively do this with a trap i guess...
+function rename_and_exit {
+    # Examples:
+    #    rename_and_exit PASS
+    #    rename_and_exit FAIL
+    #     
+    # Depending on exit status, rename <curdir> to either '<curdir>-pass'
+    # or '<curdir>-<failname>', where <failname> might be "fail1" or "fail2" etc.
+    d=`pwd`; cd ..
+    # set -x; mv $d ${d}-$1; exit $2
+    exit_status=$1
+    if [ "$exit_status" == "PASS" ]; then
+        set -x; mv $d ${d}-pass     ; /bin/ls -1; exit 0
+    else
+        set -x; mv $d ${d}-$failname; /bin/ls -1; exit 13
+    fi
+}
+
 # Hung job
 echo ''
 echo 'Check for hung job'
@@ -329,7 +271,7 @@ pid=$(grep 'found hung process' hang-watcher.log | awk '{print $NF}')
 if [ "$pid" ]; then
     echo "QCHECK PROBLEM: HUNG JOB $pid - FAIL"
     FOUND_ERROR=HUNG
-    exit 13
+    rename_and_exit FAIL
 fi
 
 # Other QRC problems
@@ -347,7 +289,7 @@ for i in $n_errors; do
         echo "QCHECK PROBLEM: QRC ERRORS - FAIL"
         echo "FAILED n_errors, flagging QRC for retry"
         FOUND_ERROR=QRC
-        exit 13
+        rename_and_exit FAIL
     fi
 done
 
@@ -357,7 +299,7 @@ echo 'Check for other / unknown error(s)'
 if (grep -v grep $log | grep ENDSTATUS=FAIL); then
     echo "QCHECK PROBLEM: FAILED mflowgen with unknown cause, giving up now"
     FOUND_ERROR=FAIL
-    exit 13
+    rename_and_exit FAIL
 fi
 
 # Huh, must have passed.
@@ -387,8 +329,55 @@ for d in $dirs; do
     # egrep '^\+++ QCHECK.*PASS' $d/make-prh.log
 done
 
-
+rename_and_exit PASS
 
 
 
 # (exit 0)
+########################################################################
+# TO TEST: Move this code to the top and set TEST_ONLY=true
+TEST_ONLY=
+if [ "$TEST_ONLY" ]; then
+    # for i in 1 2 3 4 5 6 7 8 9 0; do
+    # Create dirs; fail or pass at random dice roll
+    rundir=$1; failname=$3
+    [ "$rundir" ] || exit 13
+    ls -1 ${rundir}*/..
+
+    # Odd runs pass, even runs fail
+    if [ $[RANDOM%2] -eq 0 ]; then 
+        echo PASS; 
+        set -x; mkdir -p ${rundir}-pass; set +x
+        ls -1 ${rundir}*/..
+        exit 0;
+    else
+        echo FAIL; 
+        set -x; mkdir -p ${rundir}-${failname}; set +x
+        ls -1 ${rundir}*/..
+        exit 13;
+    fi
+    exit
+done
+
+
+#OLD
+# 
+# notes="
+#   E.g. prh.sh /build/prh3555/run0 does this:
+# 
+#     # build and run in dir rundir=/build/prh3555/run0
+#     if PASS then mv $rundir ${rundir}-pass
+#     else for i in 1 2 3 4 5 6 7 8 9; do
+#       failname=${rundir}-fail$i
+#       if ! -e $failname; then mv $rundir $failname; break; fi
+#     fi
+# "
+
+# "prh.sh /build/prh3555/run2 else fail1" should do something like this:
+#  - build new dir "/build/prh355/run2" and run qrc
+#  - if prc succeeds, rename "/build/prh355/run2" => "/build/prh355/run2-pass
+#  - if prc fails, rename "/build/prh355/run2" => "/build/prh355/run2-fail1"
+# 
+
+
+
