@@ -91,8 +91,8 @@ def data_gate(pe):
 
     expensive = (("magma_BFloat_16_mul_inst0", None),
                  ("magma_BFloat_16_add_inst0", None),
-                 ("magma_Bits_16_mul_inst0", _make_bits_16_mul_gate),
-                 ("magma_Bits_32_mul_inst0", None),)
+                 ("magma_UInt_16_mul_inst0", _make_bits_16_mul_gate),
+                 ("magma_UInt_32_mul_inst0", None),)
 
     for name, make_gate in expensive:
         insts = _find(pe, name)
