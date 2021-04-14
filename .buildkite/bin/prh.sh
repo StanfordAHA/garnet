@@ -5,12 +5,20 @@
 # .buildkite/bin/prh.sh /tmp/deleteme/run1 else fail2
 
 
+set -x
+ls ${rundir}*
+
+
     if [ $[RANDOM%2] -eq 0 ]; then 
-        touch ${rundir}-pass
-        echo yes PASS; exit 0;
+        echo PASS; 
+        mkdir -p ${rundir}-pass
+        ls ${rundir}*
+        exit 0;
     else
-        touch ${rundir}-${failname}
-        echo no FAIL; exit 13;
+        echo FAIL; 
+        mkdir -p ${rundir}-${failname}
+        ls ${rundir}*
+        exit 13;
     fi
 
 # for i in 1 2 3 4 5 6 7 8 9 0; do
