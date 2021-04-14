@@ -16,11 +16,11 @@ env:
 
 steps:
   - command: .buildkite/bin/prh-twostep.sh 1 | buildkite-agent pipeline upload
-    label:   ":pipeline: Upload"
+    label:   "gensteps"
   - wait: { continue_on_failure: true }
 
   - command: .buildkite/bin/prh-twostep.sh 1 | buildkite-agent pipeline upload
-    label:   ":pipeline: Upload"
+    label:   "gensteps"
   - wait: { continue_on_failure: true }
 
 
