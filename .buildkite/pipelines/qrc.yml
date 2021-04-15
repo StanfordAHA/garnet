@@ -9,7 +9,7 @@ agents: { queue: "papers" }
 
 env:
   # Builds in e.g. "/build/prh-3574/{run0,run1,run2...}"
-  BUILDPIPE : ".buildkite/bin/prh-onetep.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
+  BUILDPIPE : ".buildkite/bin/prh-onestep.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
 
 steps:
 
