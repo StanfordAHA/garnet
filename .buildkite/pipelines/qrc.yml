@@ -9,7 +9,7 @@ agents: { queue: "papers" }
 
 env:
   # Builds in e.g. "/build/prh-3574/{run0,run1,run2...}"
-  BUILDPIPE : ".buildkite/bin/prh-gensteps.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
+  BUILDPIPE : ".buildkite/bin/prh-onetep.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
 
 steps:
 
@@ -17,23 +17,23 @@ steps:
   # Steps run in parallel, pipeline does not continue until both are done.
   # Repeat five times for ten total tests including retries
 
-  - command: '$$BUILDPIPE | buildkite-agent pipeline upload'
+  - command: '$$BUILDPIPE/run0 | buildkite-agent pipeline upload'
     label:   "gen1"
   - wait: { continue_on_failure: true }
 
-  - command: '$$BUILDPIPE | buildkite-agent pipeline upload'
+  - command: '$$BUILDPIPE/run1 | buildkite-agent pipeline upload'
     label:   "gen2"
   - wait: { continue_on_failure: true }
 
-  - command: '$$BUILDPIPE | buildkite-agent pipeline upload'
+  - command: '$$BUILDPIPE/run2 | buildkite-agent pipeline upload'
     label:   "gen3"
   - wait: { continue_on_failure: true }
 
-  - command: '$$BUILDPIPE | buildkite-agent pipeline upload'
+  - command: '$$BUILDPIPE/run3 | buildkite-agent pipeline upload'
     label:   "gen4"
   - wait: { continue_on_failure: true }
 
-  - command: '$$BUILDPIPE | buildkite-agent pipeline upload'
+  - command: '$$BUILDPIPE/run4 | buildkite-agent pipeline upload'
     label:   "gen5"
   - wait: { continue_on_failure: true }
 

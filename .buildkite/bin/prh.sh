@@ -39,30 +39,21 @@ REF=/sim/buildkite-agent/gold
 
 # Example: "prh.sh /build/prh3647/run0 else fail1"
 
-# Results will go to designated build dir e.g. /build/qrh3549/run0
+# Build postroute_hold step in designated dir e.g. /build/qrh3549/run0
 DESTDIR=$1
 
 # On failure, rename curdir to <curdir>-$failname
 failname=$3
 
-# # if DESTDIR exists, copy e.g. "/build/prh3647/run0" to "/build/prh3647/run0.fail1"
-# if test -e $DESTDIR; then
-#     echo "Found already-existing build dir '$DESTDIR'"
-#     echo "Assume it's a fail; look for a place to stash it"
-#     for i in 1 2 3 4 5 6 7 8 9; do
-#         nextfail=$DESTDIR.fail$i
-#         test -e $nextfail || break
-#     done
-#     echo "Found candidate fail dir name '$nextfail'"
-#     set -x; mv $DESTDIR $nextfail; set +x
-# fi
-
-
-
-# Create new build dir
-set -x
-  mkdir -p $DESTDIR
-set +x
+# Use existing or build new?
+USE_CACHE=true
+if [ "$USE_CACHE" ]; then
+    # Create new build dir
+    set -x; mkdir -p $DESTDIR; set +x
+else
+    # Use existing build dir
+    echo "$DESTDIR and context should already exist...riiiight?"
+fi
 
 # Replace current process image with one that tees output to log file
 exec > >(tee -i $DESTDIR/make-prh.log) || exit 13
@@ -76,6 +67,11 @@ mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
 # Build the necessary context to run postroute_hold step only
 GOLD=/sim/buildkite-agent/gold/full_chip
+
+##############################################################################
+##############################################################################
+##############################################################################
+if [ "$USE_CACHE" ]; then
 
 # Want two steps
 #     *-cadence-innovus-postroute
@@ -106,37 +102,14 @@ for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
 
 done
 
-
 # echo did we get away with it?
 echo "+++ TODO LIST"
 function make-n-filter { egrep '^mkdir.*output' | sed 's/output.*//' | egrep -v ^Make ;}
 make -n cadence-innovus-postroute_hold |& make-n-filter
-
-# echo "+++ continue"
-
-# echo "+++ PRH TEST RIG SETUP - stash-pull context from $GOLD";
-# $GARNET_HOME/.buildkite/bin/prh-setup.sh $GOLD || exit 13
-
-# # See if things are okay so far...
-# echo CHECK1
-# echo pwd=`pwd`
-# /bin/ls -1
-# echo ''
+fi
 
 
-# echo "--- QRC TEST RIG SETUP - swap in new main.tcl";
-# echo "temporarily changed setup-buildkite.sh to use mfg branch 'qrc-crash-fix'"
-# echo '========================================================================'
-# echo '========================================================================'
-# echo '========================================================================'
-# set -x
-#   (cd ../mflowgen; git branch) || echo nope
-#   cat ../mflowgen/steps/cadence-innovus-postroute_hold/scripts/main.tcl || echo nope
-# set +x
-# echo '========================================================================'
-# echo '========================================================================'
-# echo '========================================================================'
-
+# TODO? Could be separate script 'hang-watcher.sh'?
 
 ########################################################################
 # Define the watcher, watches for 'slow or hanging' jobs warning
@@ -379,5 +352,54 @@ done
 #  - if prc fails, rename "/build/prh355/run2" => "/build/prh355/run2-fail1"
 # 
 
+
+
+# # if DESTDIR exists, copy e.g. "/build/prh3647/run0" to "/build/prh3647/run0.fail1"
+# if test -e $DESTDIR; then
+#     echo "Found already-existing build dir '$DESTDIR'"
+#     echo "Assume it's a fail; look for a place to stash it"
+#     for i in 1 2 3 4 5 6 7 8 9; do
+#         nextfail=$DESTDIR.fail$i
+#         test -e $nextfail || break
+#     done
+#     echo "Found candidate fail dir name '$nextfail'"
+#     set -x; mv $DESTDIR $nextfail; set +x
+# fi
+
+
+
+
+
+
+
+##############################################################################
+##############################################################################
+##############################################################################
+
+
+# echo "+++ continue"
+
+# echo "+++ PRH TEST RIG SETUP - stash-pull context from $GOLD";
+# $GARNET_HOME/.buildkite/bin/prh-setup.sh $GOLD || exit 13
+
+# # See if things are okay so far...
+# echo CHECK1
+# echo pwd=`pwd`
+# /bin/ls -1
+# echo ''
+
+
+# echo "--- QRC TEST RIG SETUP - swap in new main.tcl";
+# echo "temporarily changed setup-buildkite.sh to use mfg branch 'qrc-crash-fix'"
+# echo '========================================================================'
+# echo '========================================================================'
+# echo '========================================================================'
+# set -x
+#   (cd ../mflowgen; git branch) || echo nope
+#   cat ../mflowgen/steps/cadence-innovus-postroute_hold/scripts/main.tcl || echo nope
+# set +x
+# echo '========================================================================'
+# echo '========================================================================'
+# echo '========================================================================'
 
 
