@@ -35,7 +35,8 @@
 ########################################################################
 # Setup
 ########################################################################
-echo "--- BEGIN $*"
+
+echo "--- BEGIN '$*'"
 
 # Cached design for postroute_hold inputs lives here
 REF=/sim/buildkite-agent/gold
@@ -79,6 +80,7 @@ exec 2>&1 || exit 13
 source mflowgen/bin/setup-buildkite.sh --dir $DESTDIR --need_space 1G;
 mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
+echo "--- CONTINUE '$*'"
 if [ "$USE_CACHE" == 'true' ]; then
 
     # Build the necessary context to run postroute_hold step only.
@@ -86,12 +88,12 @@ if [ "$USE_CACHE" == 'true' ]; then
     #     *-cadence-innovus-postroute
     #     *-cadence-innovus-flowsetup
 
-    $GARNET_HOME/mflowgen/bin/get-step-context.sh $REF
+    $GARNET_HOME/mflowgen/bin/get-step-context.sh $REF || exit 13
+else
+    echo "+++ TODO LIST"
+    function make-n-filter { egrep '^mkdir.*output' | sed 's/output.*//' | egrep -v ^Make ;}
+    make -n cadence-innovus-postroute_hold |& make-n-filter
 fi
-
-echo "+++ TODO LIST"
-function make-n-filter { egrep '^mkdir.*output' | sed 's/output.*//' | egrep -v ^Make ;}
-make -n cadence-innovus-postroute_hold |& make-n-filter
 
 
 ########################################################################
