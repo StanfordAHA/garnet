@@ -13,9 +13,16 @@ if [ "$action" == "run" ]; then
     pstep=$1/*-cadence-innovus-postroute_hold
 
     function build_step {
-        echo "steps:"
-        echo "- label:   '$1'"
-        echo "  command: '$2'"
+
+        $2 || exit 13
+        exit 0
+        
+
+#         echo "steps:"
+#         echo "- label:   '$1'"
+#         echo "  command: '$2'"
+
+
     }
     if test -e $pstep; then
         echo "# success! hold step '$pstep' already exists."

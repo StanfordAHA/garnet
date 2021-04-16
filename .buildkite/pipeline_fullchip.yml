@@ -92,6 +92,11 @@ steps:
      make cadence-innovus-postroute |& tee make-postroute.log'
 - wait: ~
 
+
+
+
+
+
 # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
 - label: 'hold'
   commands:
@@ -99,6 +104,38 @@ steps:
      echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
      echo exit 13 | make cadence-innovus-postroute_hold |& tee make-hold.log'
 - wait: ~
+
+
+# postroute_hold fails occasionally, thus all this infrastructure for retry.
+
+  # "buildpipe" does the following (i think):
+  # - if postroute_hold does not exist yet, build it
+  # - if postroute_hold does exist, do nothing (further) and exit
+  # - if postroute_hold.fail1 exists, try again with a new build
+  # - if postroute_hold.fail2 exists, try again with a new build
+  # - if postroute_hold.fail3 exists, give up and exit with error to halt pipeline
+
+
+
+
+  commands:
+  - 'buildpipe=.buildkite/bin/prh-onestep.sh $$GOLD;
+     $$buildpipe | buildkite-agent pipeline upload'
+
+
+source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
+     echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
+     echo exit 13 | make cadence-innovus-postroute_hold |& tee make-hold.log'
+
+
+
+
+
+
+
+
+
+
 
 - label: 'lvs'
   commands:

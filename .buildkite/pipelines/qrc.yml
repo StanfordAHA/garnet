@@ -13,39 +13,126 @@ env:
 
 steps:
 
-  # Each upload inserts the next two steps into the pipeline
-  # Steps run in parallel, pipeline does not continue until both are done.
-  # Repeat five times for ten total tests including retries
-
-  - label:   "run0"
-    command: '$$BUILDPIPE/run0 | buildkite-agent pipeline upload'
-  - label:   "run1"
-    command: '$$BUILDPIPE/run1 | buildkite-agent pipeline upload'
+  - label:   "run0a"
+    command: '$$BUILDPIPE/run0
   - wait: { continue_on_failure: true }
 
-  - label:   "run2"
-    command: '$$BUILDPIPE/run2 | buildkite-agent pipeline upload'
-  - label:   "run3"
-    command: '$$BUILDPIPE/run3 | buildkite-agent pipeline upload'
+  - label:   "run0b"
+    command: '$$BUILDPIPE/run0
   - wait: { continue_on_failure: true }
 
-  - label:   "run4"
-    command: '$$BUILDPIPE/run4 | buildkite-agent pipeline upload'
-  - label:   "run5"
-    command: '$$BUILDPIPE/run5 | buildkite-agent pipeline upload'
+  - label:   "run0c"
+    command: '$$BUILDPIPE/run0
   - wait: { continue_on_failure: true }
 
-  - label:   "run6"
-    command: '$$BUILDPIPE/run6 | buildkite-agent pipeline upload'
-  - label:   "run7"
-    command: '$$BUILDPIPE/run7 | buildkite-agent pipeline upload'
+
+
+  - label:   "run1a"
+    command: '$$BUILDPIPE/run1
   - wait: { continue_on_failure: true }
 
-  - label:   "run8"
-    command: '$$BUILDPIPE/run8 | buildkite-agent pipeline upload'
-  - label:   "run9"
-    command: '$$BUILDPIPE/run9 | buildkite-agent pipeline upload'
+  - label:   "run1b"
+    command: '$$BUILDPIPE/run1
   - wait: { continue_on_failure: true }
+
+  - label:   "run1c"
+    command: '$$BUILDPIPE/run1
+  - wait: { continue_on_failure: true }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#   # Each upload group inserts the next two steps into the pipeline
+#   # Steps run in parallel, pipeline does not continue until both are done.
+#   # Repeat five times for ten total tests including retries
+# 
+#   - label:   "run0"
+#     command: '$$BUILDPIPE/run0 | buildkite-agent pipeline upload'
+#   - label:   "run1"
+#     command: '$$BUILDPIPE/run1 | buildkite-agent pipeline upload'
+#   - wait: { continue_on_failure: true }
+# 
+#   - label:   "run0"
+#     command: '$$BUILDPIPE/run0 | buildkite-agent pipeline upload'
+#   - label:   "run1"
+#     command: '$$BUILDPIPE/run1 | buildkite-agent pipeline upload'
+#   - wait: { continue_on_failure: true }
+# 
+# 
+# 
+#   - label:   "run2"
+#     command: '$$BUILDPIPE/run2 | buildkite-agent pipeline upload'
+#   - label:   "run3"
+#     command: '$$BUILDPIPE/run3 | buildkite-agent pipeline upload'
+#   - wait: { continue_on_failure: true }
+# 
+#   - label:   "run2"
+#     command: '$$BUILDPIPE/run2 | buildkite-agent pipeline upload'
+#   - label:   "run3"
+#     command: '$$BUILDPIPE/run3 | buildkite-agent pipeline upload'
+#   - wait: { continue_on_failure: true }
+# 
+# 
+# 
+#   - label:   "run4"
+#     command: '$$BUILDPIPE/run4 | buildkite-agent pipeline upload'
+#   - label:   "run5"
+#     command: '$$BUILDPIPE/run5 | buildkite-agent pipeline upload'
+#   - wait: { continue_on_failure: true }
+# 
+#   - label:   "run4"
+#     command: '$$BUILDPIPE/run4 | buildkite-agent pipeline upload'
+#   - label:   "run5"
+#     command: '$$BUILDPIPE/run5 | buildkite-agent pipeline upload'
+#   - wait: { continue_on_failure: true }
+# 
+# 
+# 
+#   - label:   "run6"
+#     command: '$$BUILDPIPE/run6 | buildkite-agent pipeline upload'
+#   - label:   "run7"
+#     command: '$$BUILDPIPE/run7 | buildkite-agent pipeline upload'
+#   - wait: { continue_on_failure: true }
+# 
+#   - label:   "run6"
+#     command: '$$BUILDPIPE/run6 | buildkite-agent pipeline upload'
+#   - label:   "run7"
+#     command: '$$BUILDPIPE/run7 | buildkite-agent pipeline upload'
+#   - wait: { continue_on_failure: true }
+# 
+# 
+# 
+#   - label:   "run8"
+#     command: '$$BUILDPIPE/run8 | buildkite-agent pipeline upload'
+#   - label:   "run9"
+#     command: '$$BUILDPIPE/run9 | buildkite-agent pipeline upload'
+#   - wait: { continue_on_failure: true }
+# 
+#   - label:   "run8"
+#     command: '$$BUILDPIPE/run8 | buildkite-agent pipeline upload'
+#   - label:   "run9"
+#     command: '$$BUILDPIPE/run9 | buildkite-agent pipeline upload'
+#   - wait: { continue_on_failure: true }
 
 
 
