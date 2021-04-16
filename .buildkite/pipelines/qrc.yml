@@ -14,29 +14,29 @@ env:
 steps:
 
   - label:   "run0a"
-    command: '$$BUILDPIPE/run0
+    command: '$$BUILDPIPE/run0'
   - wait: { continue_on_failure: true }
 
   - label:   "run0b"
-    command: '$$BUILDPIPE/run0
+    command: '$$BUILDPIPE/run0'
   - wait: { continue_on_failure: true }
 
   - label:   "run0c"
-    command: '$$BUILDPIPE/run0
+    command: '$$BUILDPIPE/run0'
   - wait: { continue_on_failure: true }
 
 
 
   - label:   "run1a"
-    command: '$$BUILDPIPE/run1
+    command: '$$BUILDPIPE/run1'
   - wait: { continue_on_failure: true }
 
   - label:   "run1b"
-    command: '$$BUILDPIPE/run1
+    command: '$$BUILDPIPE/run1'
   - wait: { continue_on_failure: true }
 
   - label:   "run1c"
-    command: '$$BUILDPIPE/run1
+    command: '$$BUILDPIPE/run1'
   - wait: { continue_on_failure: true }
 
 
