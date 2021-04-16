@@ -13,7 +13,9 @@ Usage: $0 [ -slrtgeah ] <build_dir>
   -r,--run     do_runtimes
   -l,--do_logs (log update times)
   -e,--err     do_err
-  -R, --retry  do_retries
+  -R, --retry  do_qcheck
+  -q, --qrc    do_qcheck
+
 
 EOF
     exit
@@ -39,6 +41,8 @@ while [ $# -gt 0 ] ; do
         --log*)  opstring="${opstring}l" ;;
         --err*)  opstring="${opstring}e" ;;
         --retr*) opstring="${opstring}R" ;; # retry or retries e.g.
+        --qrc*)  opstring="${opstring}q" ;; # qrc check
+        --QRC*)  opstring="${opstring}q" ;; # qrc check
 
         --all)   opstring="${opstring}sLrleR";  break  ;;
          -a)     opstring="${opstring}sLrleR";  break  ;;
@@ -92,7 +96,8 @@ done
 [ "${options[r]}" ] && do_runtimes=true
 [ "${options[l]}" ] && do_logs=true
 [ "${options[e]}" ] && do_err=true
-[ "${options[R]}" ] && do_retries=true
+[ "${options[R]}" ] && do_qcheck=true
+[ "${options[q]}" ] && do_qcheck=true
 
 if [ "$DBG" ]; then
     test "$do_sizes"    == true && echo DO_SIZES
@@ -100,7 +105,7 @@ if [ "$DBG" ]; then
     test "$do_runtimes" == true && echo DO_RUNTIMES
     test "$do_logs"     == true && echo DO_LOGS
     test "$do_err"      == true && echo DO_ERR
-    test "$do_retries"  == true && echo DO_RETRIES
+    test "$do_qcheck"   == true && echo DO_QCHECK
     # exit
 fi
 
@@ -173,9 +178,9 @@ if [ "$do_runtimes" ]; then
         | grep -vi warning | sed '1d; s/Runtimes/+++ CURRENT STATUS (runtimes)/'
 fi
 
+########################################################################
+# log check (check latest log update time to see if we might be stuck)
 if [ "$do_logs" ]; then
-    ########################################################################
-    # log check (check latest log update time to see if we might be stuck)
     echo ''; echo "+++ LOG CHECK"
     log=`ls -t */mflowgen-run.log | head -1`
     echo -n "LOG: "; date -d@`stat $log -c %Y`
@@ -192,32 +197,27 @@ if [ "$do_logs" ]; then
     # echo '--------------------------------------------------------------------------------'
 fi
 
-if [ "$do_retries" ]; then
-    ########################################################################
-    # Check to see if we had to restart/retry anywhere
+########################################################################
+# Check to see if we had to restart/retry anywhere b/c of QRC failures
+if [ "$do_qcheck" ]; then
+
     echo ''; echo '+++ RETRIES REQUIRED?'
     logfiles=$(find * -name \*.log)
     found_retry=false
 
-    # 'grep -H' => print filename along w/ match e.g.
-    #      make-qrc.log:+++ QCHECK QRC CHECK
-    #      make-qrc.log:+++ QCHECK: INITIATING RETRY
-
-#     # OLD/DEPRECATED
-#     # grep -H QCHECK $logfiles | egrep 'QCHECK QRC CHECK' && found_retry=true
-    grep -H QCHECK $logfiles | grep 'QCHECK' && found_retry=true
-
-#     # NEW
-#     grep -H QCHECK $logfiles | egrep 'PROBLEM|RETRY' && found_retry=true
+    grep -H QCHECK $logfiles \
+        | sed 's,/make-prh.log.,: ,' \
+        | grep ': QCHECK' \
+        && found_retry=true
 
     [ $found_retry == false ] && echo 'No qcheck info found.'
     echo ''
 fi
 
 
+########################################################################
+# Error check
 if [ "$do_err" ]; then
-    ########################################################################
-    # Error check
     echo ''; echo '--- ERROR CHECK'
     echo "ERROR SUMMARY:"
 
@@ -331,3 +331,12 @@ done | less
 # opstring=$(echo $opstring | tr -d '-')
 # [ $DBG ] && echo "opstring AFTER  = '$opstring'"
 
+    # 'grep -H' => print filename along w/ match e.g.
+    #      make-qrc.log:+++ QCHECK QRC CHECK
+    #      make-qrc.log:+++ QCHECK: INITIATING RETRY
+
+#     # OLD/DEPRECATED
+#     # grep -H QCHECK $logfiles | egrep 'QCHECK QRC CHECK' && found_retry=true
+# 
+#     # NEW
+#     grep -H QCHECK $logfiles | egrep 'PROBLEM|RETRY' && found_retry=true
