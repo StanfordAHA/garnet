@@ -36,7 +36,7 @@ foreach bc_lib $corner_libs {
 set ptpx_gl_netlist         inputs/design.v
 
 set ptpx_sdc                inputs/design.sdc
-set ptpx_spef               inputs/design.spef.gz
+set ptpx_spef               inputs/design.spef
 set ptpx_saif               inputs/run.saif
 
 # The strip path must be defined!
