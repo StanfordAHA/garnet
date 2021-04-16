@@ -85,7 +85,7 @@ if [ "$USE_CACHE" == 'true' ]; then
     #     *-cadence-innovus-postroute
     #     *-cadence-innovus-flowsetup
 
-    $GARNET_HOME/mflowgen/get_step_context.sh
+    $GARNET_HOME/mflowgen/get-step-context.sh
 fi
 
 ########################################################################
