@@ -35,6 +35,7 @@
 ########################################################################
 # Setup
 ########################################################################
+echo "--- BEGIN $*"
 
 # Cached design for postroute_hold inputs lives here
 REF=/sim/buildkite-agent/gold
@@ -87,6 +88,11 @@ if [ "$USE_CACHE" == 'true' ]; then
 
     $GARNET_HOME/mflowgen/get-step-context.sh
 fi
+
+echo "+++ TODO LIST"
+function make-n-filter { egrep '^mkdir.*output' | sed 's/output.*//' | egrep -v ^Make ;}
+make -n cadence-innovus-postroute_hold |& make-n-filter
+
 
 ########################################################################
 # Start a background process to watch for hung job(s)
