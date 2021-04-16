@@ -2,6 +2,9 @@
 
 # LATER want this to work for any step. But...for now...
 
+# Usage: $0 <refdir>
+REF=$1
+
 # Build the necessary context to run postroute_hold step only.
 # Want two steps
 #     *-cadence-innovus-postroute

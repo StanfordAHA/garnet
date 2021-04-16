@@ -86,8 +86,7 @@ if [ "$USE_CACHE" == 'true' ]; then
     #     *-cadence-innovus-postroute
     #     *-cadence-innovus-flowsetup
 
-    test -e $GARNET_HOME/mflowgen/bin/get-step-context.sh || exit 13
-    $GARNET_HOME/mflowgen/bin/get-step-context.sh
+    $GARNET_HOME/mflowgen/bin/get-step-context.sh $REF
 fi
 
 echo "+++ TODO LIST"
