@@ -14,7 +14,7 @@ env:
 # BIG TEST - run two at a time
 steps:
   - label:   "tst0"
-    command: '$$BUILDPIPE/tst0 || $$BUILDPIPE/tst0 || $$BUILDPIPE/tst0'
+    command: 'set -x; $$BUILDPIPE/tst0 || $$BUILDPIPE/tst0 || $$BUILDPIPE/tst0'
   - label:   "tst1"
     command: '$$BUILDPIPE/tst1 || $$BUILDPIPE/tst1 || $$BUILDPIPE/tst1'
   - wait: { continue_on_failure: true }

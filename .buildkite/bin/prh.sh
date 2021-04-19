@@ -61,7 +61,6 @@ if [ "$1" == "--help" ]; then cat << '  EOF' | sed 's/^  //'
   EOF
   exit
 fi
-exit
 
 echo "--- BEGIN '$*'"
 
