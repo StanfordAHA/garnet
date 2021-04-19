@@ -1,86 +1,100 @@
 #!/bin/bash
 
-########################################################################
-# Helper script for running postroute_hold standalone.
-# Renames build dir with "pass" or "fail" extensions.
-# 
-# Usage:   "prh.sh <DESTDIR> else <failname>"
-# Example: "prh.sh /build/prh3647/run0 else fail1"
-# 
-# - If <DESTDIR> does not exist, creates <DESTDIR> along with sufficient
-#   context to run postroute_hold by linking to gold dir steps
-#       *-cadence-innovus-postroute
-#       *-cadence-innovus-flowsetup
-# 
-# - Otherwise, assumes context already exists
-# 
-# - Runs 'make postroute_hold' and checks for failure
-# 
-# - Records progress in make-prh.log file
-# 
-# - On failure, renames postroute_hold dir according to "else" cmd-line
-#   parm e.g. "29-cadence-innovus-postroute_hold-fail1"
-# 
-# - Designed to be called from a buildkite yml script something like:
-#       - command: 'prh.sh /build/gold230 else fail2'
-# 
-# Final directory structure should look something like this
-# (failed twice, then passed):
-# 
-#   % ls -1 /build/gold230
-#       29-cadence-innovus-postroute_hold-fail1
-#       29-cadence-innovus-postroute_hold-fail2
-#       29-cadence-innovus-postroute_hold
+# TODO SOMEDAY maybe: make it generic e.g.
+# make cadence-innovus-postroute_hold | check-for-qrc-errors.sh || rename-for-failure
 
-########################################################################
-# Setup
-########################################################################
+if [ "$1" == "--help" ]; then cat << '  EOF' | sed 's/^  //'
+  Usage:
+      prh.sh <rundir>
+
+  Example:
+      prh.sh /build/gold230/full_chip
+
+  Summary:
+      Runs postroute_hold step and checks for errors.
+      On error, renames e.g. "*postroute_hold" => "*postroute_hold.fail1"
+
+  Details:
+  - If <rundir> does not exist, create <rundir> along with sufficient
+    context to run postroute_hold by linking to gold dir steps
+        *-cadence-innovus-postroute
+        *-cadence-innovus-flowsetup
+  
+  - cd to <rundir> and look for existence of step "postroute_hold".
+  
+  - If step exists, we're done, exit without doing anything (step already passed).
+  
+  - If step does not exist (yet), do "make postroute_hold | tee make-prh.log"
+  
+  - On failure, copy logs to postroute_hold/ directory and rename
+    postroute_hold => postroute_hold-fail1 or {fail2,fail3...} as appropriate.
+  
+  Final directory structure should look something like this
+  (failed twice, then passed):
+  
+    % ls -1 /build/gold230/full_chip
+        29-cadence-innovus-postroute_hold-fail1
+        29-cadence-innovus-postroute_hold-fail2
+        29-cadence-innovus-postroute_hold
+  
+  ------------------------------------------------------------------
+  Example buildkite pipeline usage (three strikes you're out):
+  
+     env:
+         PRH : "set -o pipefail; .buildkite/prh.sh /build/gold230/full_chip"
+  
+     steps:
+       # postroute_hold attempt 1
+       - command: '\$\$PRH |& tee make-prh.log0'
+       - wait: { continue_on_failure: true }
+  
+       # postroute_hold attempt 2
+       - command: '\$\$PRH |& tee make-prh.log1'
+       - wait: { continue_on_failure: true }
+  
+       # postroute_hold final attempt
+       - command: '\$\$PRH |& tee make-prh.log2'
+       - wait: ~
+  
+  ------------------------------------------------------------------
+
+  EOF
+  exit
+fi
+exit
 
 echo "--- BEGIN '$*'"
 
-# Cached design for postroute_hold inputs lives here
-REF=/sim/buildkite-agent/gold
+# If step exists already, exit without error
 
-# Examples:
-#    prh.sh /build/gold230      else fail1
-#    prh.sh /build/prh3647/run0 else fail2
-# 
-# Build postroute_hold step in designated dir e.g. /build/qrh3549/run0
-# On failure, rename curdir to <curdir>-$failname
-DESTDIR=$1
-failname=$3
+pstep=$1/*-cadence-innovus-postroute_hold
+if test -e $pstep; then
+    echo "Success! hold step '$pstep' already exists."
+    exit 0
+fi
 
-# Use existing or build new?
-if test -e "$DESTDIR"; then
-    echo "--- Using existing context in '$DESTDIR'"
-    USE_CACHE=
+# Use existing <rundir> or build new?
+
+rundir=$1
+USE_CACHE=
+if test -e "$rundir"; then
+    echo "--- Using existing context in '$rundir'"
 else
-    echo "--- Building '$DESTDIR' using cached context from '$REF'"
-    set -x; echo mkdir -p $DESTDIR; set +x
+    echo "--- Will build '$rundir' using cached context from '$REF'"
+    set -x; echo mkdir -p $rundir; set +x
     USE_CACHE=true
 fi
 
-# Avoid collisions
-if test -e make-prh.log; then
-    for failno in 1 2 3 4 5 6 7 8 9; do
-        if ! test -e make-prh-fail{$i}.log; then
-            mv make-prh.log make-prh-fail{$i}.log
-            break
-        fi
-    done
-fi
-
-# Replace current process image with one that tees output to log file
-exec > >(tee -i $DESTDIR/make-prh.log) || exit 13
-
-# Replace (new) current process image with one that sends stderr to stdout
-exec 2>&1 || exit 13
-
 # Set up the environment for the run
-source mflowgen/bin/setup-buildkite.sh --dir $DESTDIR --need_space 1G;
+
+echo "--- source mflowgen/bin/setup-buildkite.sh"
+source mflowgen/bin/setup-buildkite.sh --dir $rundir --need_space 1G;
 mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
 echo "--- CONTINUE '$*'"
+
+# Build context from cache if none exists yet
+
 if [ "$USE_CACHE" == 'true' ]; then
 
     # Build the necessary context to run postroute_hold step only.
@@ -88,13 +102,16 @@ if [ "$USE_CACHE" == 'true' ]; then
     #     *-cadence-innovus-postroute
     #     *-cadence-innovus-flowsetup
 
+    REF=/sim/buildkite-agent/gold
     $GARNET_HOME/mflowgen/bin/get-step-context.sh $REF || exit 13
-else
-    echo "+++ TODO LIST"
-    function make-n-filter { egrep '^mkdir.*output' | sed 's/output.*//' | egrep -v ^Make ;}
-    make -n cadence-innovus-postroute_hold |& make-n-filter
+
 fi
 
+# Little sanity check; list all the steps that will be taken.
+
+echo "+++ TODO LIST"
+function make-n-filter { egrep '^mkdir.*output' | sed 's/output.*//' | egrep -v ^Make ;}
+make -n cadence-innovus-postroute_hold |& make-n-filter
 
 ########################################################################
 # Start a background process to watch for hung job(s)
@@ -110,7 +127,7 @@ function watch_for_hang {
     while [ true ]; do
         tag="HANG MONITOR $(date +%H:%M)" ; # per-loop tag
 
-        # grep -l
+        # grep -l:
         #   Suppress normal output; instead print the name of each matching file.
         #   Scanning stops on the first match [for each file?].
 
@@ -146,16 +163,6 @@ function watch_for_hang {
     done
 }
 
-# # Kill all background jobs (i.e. the watcher) when this script exits
-# # (May not be strictly necessary...?)
-# trap '
-#   echo ""
-#   echo "kill hung jobs"
-#   sleep 1; # Wait a sec, see if they die on their own
-#   [ "$(jobs -p)" ] && echo "no hung jobs to kill"
-#   [ "$(jobs -p)" ] && kill $(jobs -p)
-# ' EXIT
-
 # Launch the watcher
 watch_for_hang |& tee -i hang-watcher.log &
 
@@ -163,24 +170,14 @@ watch_for_hang |& tee -i hang-watcher.log &
 # DO IT MAN! Run the step.
 ########################################################################
 
-function RUN_THE_STEP {
-    # Executes mflowgen-run, which basically does 
-    # - 'exit 13' prevents hang at prompt on innovus failure
-    # - '||' prevents exit on error
-    # - ENDSTATUS notification lets us process errors later
-    # echo "--- restore-design and setup-session"; # set -o pipefail;
+# - 'exit 13' prevents hang at prompt on innovus failure
+# - '||' prevents exit on error
+# - ENDSTATUS notification lets us process errors later
+# echo "--- restore-design and setup-session"; # set -o pipefail;
 
-
-    # echo "--- DO MFLOWGEN-RUN"
-    # echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
-
-    echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"
-
-    echo exit 13 | make cadence-innovus-postroute_hold \
-        && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
-
-}
-RUN_THE_STEP |& tee -i make-prh.log
+echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"
+echo exit 13 | make cadence-innovus-postroute_hold \
+    && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
 
 ########################################################################
 # Check to see if succeeded or not
@@ -194,15 +191,37 @@ function rename_and_exit {
     # Examples:
     #    rename_and_exit PASS
     #    rename_and_exit FAIL
-    #     
-    # If step failed, rename it to <step>-<failname> e.g.
-    # "29-cadence-innovus-postroute_hold-fail1"
-    result=$1
-    step=`echo *cadence-innovus-postroute_hold`; echo $step
-    if [ "$result" == "PASS" ]; then
+
+    if [ "$1" == "PASS" ]; then
         exit 0
     else
-        set -x; mv ${step} ${step}-$failname; /bin/ls -1; exit 13
+
+        # Step failed; rename it to <step>-<failname> e.g.
+        # "29-cadence-innovus-postroute_hold-fail1"
+
+        step=`echo *cadence-innovus-postroute_hold | head -1`
+        if ! test -e $step; then
+            echo "ERROR cannot find step '$step'"
+            exit 13
+        fi
+
+        # Find next unused fail extension -fail1, -fail2, -fail3 etc.
+        # Note: if fail9 exists, we probably get an error on the "mv"
+        for failnum in 1 2 3 4 5 6 7 8 9; do
+            (ls -d ${step}-fail${failnum} >& /dev/null) || break
+        done
+
+        set -x ; # Make a record of the final actions
+
+        # Move logs to (failed) step dir
+        mv make-prh.log $step; mv hang-watcher.log $step
+
+        # Rename step dir with failure extension e.g. 'fail1' or 'fail2'
+        mv ${step} ${step}-fail${failnum}
+
+        # Show failures so far and error out.
+        /bin/ls -1d ${step}*
+        exit 13
     fi
 }
 
@@ -248,7 +267,6 @@ echo ""; echo "How many tries did it take?"
 #       29-cadence-innovus-postroute_hold-fail1
 #       29-cadence-innovus-postroute_hold-fail2
 /bin/ls -1 | grep cadence-innovus-postroute_hold; echo ''
-/bin/ls -1 | grep make-prh
 
 echo ""; echo "What happened?"
 # E.g.
@@ -263,154 +281,3 @@ egrep -H '^QCHECK.*(PASS|FAIL)$' make-prh*.log | sed 's/:/ - /'
 ########################################################################
 
 rename_and_exit PASS
-
-
-
-# (exit 0)
-
-#OLD
-# 
-# notes="
-#   E.g. prh.sh /build/prh3555/run0 does this:
-# 
-#     # build and run in dir rundir=/build/prh3555/run0
-#     if PASS then mv $rundir ${rundir}-pass
-#     else for i in 1 2 3 4 5 6 7 8 9; do
-#       failname=${rundir}-fail$i
-#       if ! -e $failname; then mv $rundir $failname; break; fi
-#     fi
-# "
-
-# "prh.sh /build/prh3555/run2 else fail1" should do something like this:
-#  - build new dir "/build/prh355/run2" and run qrc
-#  - if prc succeeds, rename "/build/prh355/run2" => "/build/prh355/run2-pass
-#  - if prc fails, rename "/build/prh355/run2" => "/build/prh355/run2-fail1"
-# 
-
-
-
-# # if DESTDIR exists, copy e.g. "/build/prh3647/run0" to "/build/prh3647/run0.fail1"
-# if test -e $DESTDIR; then
-#     echo "Found already-existing build dir '$DESTDIR'"
-#     echo "Assume it's a fail; look for a place to stash it"
-#     for i in 1 2 3 4 5 6 7 8 9; do
-#         nextfail=$DESTDIR.fail$i
-#         test -e $nextfail || break
-#     done
-#     echo "Found candidate fail dir name '$nextfail'"
-#     set -x; mv $DESTDIR $nextfail; set +x
-# fi
-
-
-
-
-
-
-
-##############################################################################
-##############################################################################
-##############################################################################
-
-
-# echo "+++ continue"
-
-# echo "+++ PRH TEST RIG SETUP - stash-pull context from $GOLD";
-# $GARNET_HOME/.buildkite/bin/prh-setup.sh $GOLD || exit 13
-
-# # See if things are okay so far...
-# echo CHECK1
-# echo pwd=`pwd`
-# /bin/ls -1
-# echo ''
-
-
-# echo "--- QRC TEST RIG SETUP - swap in new main.tcl";
-# echo "temporarily changed setup-buildkite.sh to use mfg branch 'qrc-crash-fix'"
-# echo '========================================================================'
-# echo '========================================================================'
-# echo '========================================================================'
-# set -x
-#   (cd ../mflowgen; git branch) || echo nope
-#   cat ../mflowgen/steps/cadence-innovus-postroute_hold/scripts/main.tcl || echo nope
-# set +x
-# echo '========================================================================'
-# echo '========================================================================'
-# echo '========================================================================'
-
-
-#     if [ "$exit_status" == "PASS" ]; then
-#         # If running standalone, rename top-level dir with "pass"
-#         # New regime means no rename
-#         # set -x; mv $d ${d}-pass     ; /bin/ls -1; exit 0
-#         exit 0
-#     else
-#         set -x; mv $d ${d}-$failname; /bin/ls -1; exit 13
-#     fi
-
-
-# 
-# #   /build/prh3658/run0
-# #   /build/prh3658/run0.fail1
-# dirs=`pwd`*
-# 
-# # E.g. output=
-# # /build/prh3658/run0:
-# #    QCHECK: NO ERRORS FOUND, HOORAY! - PASS"
-# echo ''
-# for d in $dirs; do
-#     echo "${d}:"
-#     echo -n '    '
-#     egrep '^QCHECK.*(PASS|FAIL)$' ${d}*/make-prh.log
-#     # egrep '^\+++ QCHECK.*PASS' $d/make-prh.log
-# done
-
-
-# ########################################################################
-# # TO TEST: Move this code to the top and set TEST_ONLY=true
-# TEST_ONLY=
-# if [ "$TEST_ONLY" ]; then
-#     # for i in 1 2 3 4 5 6 7 8 9 0; do
-#     # Create dirs; fail or pass at random dice roll
-#     rundir=$1; failname=$3
-#     [ "$rundir" ] || exit 13
-#     ls -1 ${rundir}*/..
-# 
-#     # Odd runs pass, even runs fail
-#     if [ $[RANDOM%2] -eq 0 ]; then 
-#         echo PASS; 
-#         set -x; mkdir -p ${rundir}-pass; set +x
-#         ls -1 ${rundir}*/..
-#         exit 0;
-#     else
-#         echo FAIL; 
-#         set -x; mkdir -p ${rundir}-${failname}; set +x
-#         ls -1 ${rundir}*/..
-#         exit 13;
-#     fi
-#     exit
-# done
-
-
-# echo "+++ CLEAN UP, delete 14G of context"
-# 
-# # Clean up
-# echo ''
-# echo "--- save disk space, delete output design (?)"
-# if test -d checkpoints; then
-#     ls -lR checkpoints/
-#     /bin/rm -rf checkpoints/*
-#     touch checkpoints/'deleted to save space'
-# fi
-# echo ''
-# 
-# echo "--- save disk space, delete copied gold steps"
-# prhname=$(/bin/ls -d *postroute_hold); echo $prhname
-# for step in $(/bin/ls -d [0-9]*); do
-#     if [ "$step" == "$prhname" ]; then
-#         echo "SKIP '$prhname' (obviously)"; continue
-#     else
-#         echo "/bin/rm -rf $step"
-#         /bin/rm -rf $step
-#     fi
-# done
-

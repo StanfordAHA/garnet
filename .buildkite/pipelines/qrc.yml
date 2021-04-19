@@ -11,267 +11,64 @@ env:
   # Builds in e.g. "/build/prh-3574/{run0,run1,run2...}"
   BUILDPIPE : ".buildkite/bin/prh-onestep.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
 
+# BIG TEST - run two at a time
 steps:
-
-  - label:   "run0a"
-    command: '$$BUILDPIPE/run0'
+  - label:   "tst0"
+    command: '$$BUILDPIPE/tst0 || $$BUILDPIPE/tst0 || $$BUILDPIPE/tst0'
+  - label:   "tst1"
+    command: '$$BUILDPIPE/tst1 || $$BUILDPIPE/tst1 || $$BUILDPIPE/tst1'
   - wait: { continue_on_failure: true }
 
-  - label:   "run0b"
-    command: '$$BUILDPIPE/run0'
+  - label:   "tst2"
+    command: '$$BUILDPIPE/tst2 || $$BUILDPIPE/tst2 || $$BUILDPIPE/tst2'
+  - label:   "tst3"
+    command: '$$BUILDPIPE/tst3 || $$BUILDPIPE/tst3 || $$BUILDPIPE/tst3'
   - wait: { continue_on_failure: true }
 
-  - label:   "run0c"
-    command: '$$BUILDPIPE/run0'
+  - label:   "tst4"
+    command: '$$BUILDPIPE/tst4 || $$BUILDPIPE/tst4 || $$BUILDPIPE/tst4'
+  - label:   "tst5"
+    command: '$$BUILDPIPE/tst5 || $$BUILDPIPE/tst5 || $$BUILDPIPE/tst5'
+  - wait: { continue_on_failure: true }
+
+  - label:   "tst6"
+    command: '$$BUILDPIPE/tst6 || $$BUILDPIPE/tst6 || $$BUILDPIPE/tst6'
+  - label:   "tst7"
+    command: '$$BUILDPIPE/tst7 || $$BUILDPIPE/tst7 || $$BUILDPIPE/tst7'
+  - wait: { continue_on_failure: true }
+
+  - label:   "tst8"
+    command: '$$BUILDPIPE/tst8 || $$BUILDPIPE/tst8 || $$BUILDPIPE/tst8'
+  - label:   "tst9"
+    command: '$$BUILDPIPE/tst9 || $$BUILDPIPE/tst9 || $$BUILDPIPE/tst9'
   - wait: { continue_on_failure: true }
 
 
-
-  - label:   "run1a"
-    command: '$$BUILDPIPE/run1'
-  - wait: { continue_on_failure: true }
-
-  - label:   "run1b"
-    command: '$$BUILDPIPE/run1'
-  - wait: { continue_on_failure: true }
-
-  - label:   "run1c"
-    command: '$$BUILDPIPE/run1'
-  - wait: { continue_on_failure: true }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#   # Each upload group inserts the next two steps into the pipeline
-#   # Steps run in parallel, pipeline does not continue until both are done.
-#   # Repeat five times for ten total tests including retries
-# 
-#   - label:   "run0"
-#     command: '$$BUILDPIPE/run0 | buildkite-agent pipeline upload'
-#   - label:   "run1"
-#     command: '$$BUILDPIPE/run1 | buildkite-agent pipeline upload'
-#   - wait: { continue_on_failure: true }
-# 
-#   - label:   "run0"
-#     command: '$$BUILDPIPE/run0 | buildkite-agent pipeline upload'
-#   - label:   "run1"
-#     command: '$$BUILDPIPE/run1 | buildkite-agent pipeline upload'
-#   - wait: { continue_on_failure: true }
-# 
-# 
-# 
-#   - label:   "run2"
-#     command: '$$BUILDPIPE/run2 | buildkite-agent pipeline upload'
-#   - label:   "run3"
-#     command: '$$BUILDPIPE/run3 | buildkite-agent pipeline upload'
-#   - wait: { continue_on_failure: true }
-# 
-#   - label:   "run2"
-#     command: '$$BUILDPIPE/run2 | buildkite-agent pipeline upload'
-#   - label:   "run3"
-#     command: '$$BUILDPIPE/run3 | buildkite-agent pipeline upload'
-#   - wait: { continue_on_failure: true }
-# 
-# 
-# 
-#   - label:   "run4"
-#     command: '$$BUILDPIPE/run4 | buildkite-agent pipeline upload'
-#   - label:   "run5"
-#     command: '$$BUILDPIPE/run5 | buildkite-agent pipeline upload'
-#   - wait: { continue_on_failure: true }
-# 
-#   - label:   "run4"
-#     command: '$$BUILDPIPE/run4 | buildkite-agent pipeline upload'
-#   - label:   "run5"
-#     command: '$$BUILDPIPE/run5 | buildkite-agent pipeline upload'
-#   - wait: { continue_on_failure: true }
-# 
-# 
-# 
-#   - label:   "run6"
-#     command: '$$BUILDPIPE/run6 | buildkite-agent pipeline upload'
-#   - label:   "run7"
-#     command: '$$BUILDPIPE/run7 | buildkite-agent pipeline upload'
-#   - wait: { continue_on_failure: true }
-# 
-#   - label:   "run6"
-#     command: '$$BUILDPIPE/run6 | buildkite-agent pipeline upload'
-#   - label:   "run7"
-#     command: '$$BUILDPIPE/run7 | buildkite-agent pipeline upload'
-#   - wait: { continue_on_failure: true }
-# 
-# 
-# 
-#   - label:   "run8"
-#     command: '$$BUILDPIPE/run8 | buildkite-agent pipeline upload'
-#   - label:   "run9"
-#     command: '$$BUILDPIPE/run9 | buildkite-agent pipeline upload'
-#   - wait: { continue_on_failure: true }
-# 
-#   - label:   "run8"
-#     command: '$$BUILDPIPE/run8 | buildkite-agent pipeline upload'
-#   - label:   "run9"
-#     command: '$$BUILDPIPE/run9 | buildkite-agent pipeline upload'
-#   - wait: { continue_on_failure: true }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#   PRH       : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
-# 
+# SMALL TEST - two tests only, two potential retries each,  run one thing at a time
 # steps:
 # 
-#   # Makes e.g. /build/prh3598/run[01]?
-#   - label: 'prh0'
-#     commands: 'i=0; set -x; $${PRH} $${i} || $${PRH} $${i} || $${PRH} $${i}'
-#   - label: 'prh1'
-#     commands: 'i=1; set -x; $${PRH} $${i} || $${PRH} $${i} || $${PRH} $${i}'
-#   - wait:     { continue_on_failure: true }
+#   - label:   "tst0"
+#     command: '$$BUILDPIPE/tst0'
+#   - wait: { continue_on_failure: true }
 # 
+#   - label:   "tst0"
+#     command: '$$BUILDPIPE/tst0'
+#   - wait: { continue_on_failure: true }
 # 
-#   - label: 'prh2'
-#     commands: 'i=2; set -x; $${PRH} $${i} || $${PRH} $${i} || $${PRH} $${i}'
-#   - label: 'prh3'
-#     commands: 'i=3; set -x; $${PRH} $${i} || $${PRH} $${i} || $${PRH} $${i}'
-#   - wait:     { continue_on_failure: true }
-
-
-
-
-#   # Makes e.g. /build/prh3598-{0,1}?
-#   - label: 'prh0'
-#     commands: 'i=0; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
-#   - label: 'prh1'
-#     commands: 'i=1; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
-#   - wait:     { continue_on_failure: true }
-# 
-#   - label: 'prh2'
-#     commands: 'i=2; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
-#   - label: 'prh3'
-#     commands: 'i=3; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
-#   - wait:     { continue_on_failure: true }
+#   - label:   "tst0"
+#     command: '$$BUILDPIPE/tst0'
+#   - wait: { continue_on_failure: true }
 # 
 # 
 # 
+#   - label:   "tst1"
+#     command: '$$BUILDPIPE/tst1'
+#   - wait: { continue_on_failure: true }
 # 
-
-
-
-
-
-
-
-
-
-
-
-
-########################################################################
-# Original qrc test
+#   - label:   "tst1"
+#     command: '$$BUILDPIPE/tst1'
+#   - wait: { continue_on_failure: true }
 # 
-# - label:    'qrc0'
-#   commands: 'set -x; $${QRC}-0a || $${QRC}-0b || $${QRC}-0c'
-# - label:    'qrc1'
-#   commands: 'set -x; $${QRC}-1a || $${QRC}-1b || $${QRC}-1c'
-# - wait:     { continue_on_failure: true }
-# 
-# 
-# - label:    'qrc2'
-#   commands: 'set -x; $${QRC}-2a || $${QRC}-2b || $${QRC}-2c'
-# - label:    'qrc3'
-#   commands: 'set -x; $${QRC}-3a || $${QRC}-3b || $${QRC}-3c'
-# - wait:     { continue_on_failure: true }
-# 
-# - label:    'qrc4'
-#   commands: 'set -x; $${QRC}-4a || $${QRC}-4b || $${QRC}-4c'
-# - label:    'qrc5'
-#   commands: 'set -x; $${QRC}-5a || $${QRC}-5b || $${QRC}-5c'
-# - wait:     { continue_on_failure: true }
-# 
-# - label:    'qrc6'
-#   commands: 'set -x; $${QRC}-6a || $${QRC}-6b || $${QRC}-6c'
-# - label:    'qrc7'
-#   commands: 'set -x; $${QRC}-7a || $${QRC}-7b || $${QRC}-7c'
-# - wait:     { continue_on_failure: true }
-# 
-# - label:    'qrc8'
-#   commands: 'set -x; $${QRC}-8a || $${QRC}-8b || $${QRC}-8c'
-# - label:    'qrc9'
-#   commands: 'set -x; $${QRC}-9a || $${QRC}-9b || $${QRC}-9c'
-
-
-########################################################################
-# OLD
-# 
-# env:
-#   # Builds in e.g. "/build/qtry-3574*"
-#   PRH  : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
-#   QRC  : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
-#   GOLD : /sim/buildkite-agent/gold/full_chip
-#   TMP  : /sim/tmp/deleteme-qrctest/full_chip
-# 
-# 
-# 
-# # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
-# - label: 'hold'
-#   commands:
-#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$TMP --need_space 70G;
-#      echo "+++ MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
-#      set -x;
-#      echo $$GOLD/[0-9]*;
-#      for s in $$GOLD/[0-9]*; do cp -rp $$s .; done;
-#      mv *postroute_hold postroute_hold.orig;
-#      echo exit 13 | make -n cadence-innovus-postroute_hold |& tee make-hold.log'
-# - wait: ~
-# 
-# 
-# gcam 'first prh attempt' ; git push
-########################################################################
-# env:
-#   # Builds in e.g. "/build/qtry-3574*"
-#   PRH  : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip"
-#   QRC  : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
-#   GOLD : /sim/buildkite-agent/gold/full_chip
-#   TMP  : /sim/tmp/deleteme-qrctest/full_chip
-# 
-# steps:
-# # - label: 'setup'
-# #   commands:
-# #   - 'test -e $$TMP && /bin/rm -rf $$PRH'
-# #   - 'source mflowgen/bin/setup-buildkite.sh --dir $$PRH;
-# #      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
-# # - wait: ~
-# 
-# # Makes e.g. /build/prh3598/full_chip-0/
-# - label: 'prh0'
-#   commands: 'i=0; set -x; $${PRH}-$${i} || $${PRH}-$${i} || $${PRH}-$${i}'
+#   - label:   "tst1"
+#     command: '$$BUILDPIPE/tst1'
+#   - wait: { continue_on_failure: true }
