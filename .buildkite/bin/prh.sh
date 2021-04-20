@@ -81,11 +81,10 @@ else
     set -x; mkdir -p $rundir; set +x
     USE_CACHE=true
 fi
-cd $rundir
 
 # If step exists already, exit without error
 
-pstep=$1/*-cadence-innovus-postroute_hold
+pstep=$rundir/*-cadence-innovus-postroute_hold
 if test -e $pstep; then
     echo "--- Success! hold step '$pstep' already exists."
     exit 0
@@ -118,7 +117,7 @@ exec 2>&1 || exit 13
 # Set up the environment for the run
 
 echo "--- source mflowgen/bin/setup-buildkite.sh"
-source mflowgen/bin/setup-buildkite.sh --dir $rundir --need_space 1G;
+source  mflowgen/bin/setup-buildkite.sh --dir $rundir --need_space 1G;
 mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
 echo "--- CONTINUE '$*'"
