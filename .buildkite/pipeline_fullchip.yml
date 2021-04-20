@@ -99,6 +99,8 @@ steps:
 #   - if step "*-postroute_hold" exists already, do nothing and exit 0
 #   - if step does not exist yet, build it
 #   - if build fails, rename step to <step>-fail<i> and exit 13
+#   - meanwhile tees all outputs to make-prh.log
+#   - (if build fails, moves make-prh.log to step dir)
 
 # postroute_hold, retry if fail
 - label:   "hold1"

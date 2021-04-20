@@ -8,7 +8,7 @@
 agents: { queue: "papers" }
 
 env:
-  # Builds in e.g. "/build/prh-3574/{run0,run1,run2...}"
+  # Builds in e.g. "/build/prh-3574/{run0,run1,run2...}", output to "make-prh.log"
   BUILDPIPE : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
 
 # BIG TEST - run two at a time

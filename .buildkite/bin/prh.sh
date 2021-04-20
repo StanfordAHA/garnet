@@ -15,6 +15,8 @@ if [ "$1" == "--help" ]; then cat << '  EOF' | sed 's/^  //'
       On error, renames e.g. "*postroute_hold" => "*postroute_hold.fail1"
 
   Details:
+  - Logs output to ./make-prh.log; if log exists already, rename it.
+
   - If <rundir> does not exist, create <rundir> along with sufficient
     context to run postroute_hold by linking to gold dir steps
         *-cadence-innovus-postroute
@@ -24,7 +26,7 @@ if [ "$1" == "--help" ]; then cat << '  EOF' | sed 's/^  //'
   
   - If step exists, we're done, exit without doing anything (step already passed).
   
-  - If step does not exist (yet), do "make postroute_hold | tee make-prh.log"
+  - If step does not exist (yet), do "make postroute_hold"
   
   - On failure, copy logs to postroute_hold/ directory and rename
     postroute_hold => postroute_hold-fail1 or {fail2,fail3...} as appropriate.
@@ -62,7 +64,31 @@ if [ "$1" == "--help" ]; then cat << '  EOF' | sed 's/^  //'
   exit
 fi
 
+########################################################################
+# Send all output to log file 'make-prh.log'
+# (Maybe smart. Maybe not smart. But imma do it anyway.)
+########################################################################
+
+# Find an unused log name in case we need it.
+for i in 0 1 2 3 4 5 6 7 8 9; do
+    # Stop at first unused logfile name
+    test -e make-prh-$i.log || break
+done
+
+# If log file exists already, rename it
+test -e make-prh.log && mv make-prh.log make-prh-$i.log
+
+# Tee stdout to a log file 'make-prh.log'
+# First exec sends stdout to log file i guess?
+# Second exec sends stderr to stdout i guess?
+exec > >(tee -i ./make-qrc.log) || exit 13
+exec 2>&1 || exit 13
+
 echo "--- BEGIN '$*'"
+
+########################################################################
+# Setup
+########################################################################
 
 # If step exists already, exit without error
 
