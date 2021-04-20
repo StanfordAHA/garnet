@@ -64,39 +64,11 @@ if [ "$1" == "--help" ]; then cat << '  EOF' | sed 's/^  //'
   exit
 fi
 
-########################################################################
-# Send all output to log file 'make-prh.log'
-# (Maybe smart. Maybe not smart. But imma do it anyway.)
-########################################################################
-
-# Find an unused log name in case we need it.
-for i in 0 1 2 3 4 5 6 7 8 9; do
-    # Stop at first unused logfile name
-    test -e make-prh-$i.log || break
-done
-
-# If log file exists already, rename it
-test -e make-prh.log && mv make-prh.log make-prh-$i.log
-
-# Tee stdout to a log file 'make-prh.log'
-# First exec sends stdout to log file i guess?
-# Second exec sends stderr to stdout i guess?
-exec > >(tee -i ./make-qrc.log) || exit 13
-exec 2>&1 || exit 13
-
 echo "--- BEGIN '$*'"
 
 ########################################################################
-# Setup
+# Find build directory $rundir
 ########################################################################
-
-# If step exists already, exit without error
-
-pstep=$1/*-cadence-innovus-postroute_hold
-if test -e $pstep; then
-    echo "Success! hold step '$pstep' already exists."
-    exit 0
-fi
 
 # Use existing <rundir> or build new?
 
@@ -109,6 +81,39 @@ else
     set -x; echo mkdir -p $rundir; set +x
     USE_CACHE=true
 fi
+cd $rundir
+
+# If step exists already, exit without error
+
+pstep=$1/*-cadence-innovus-postroute_hold
+if test -e $pstep; then
+    echo "--- Success! hold step '$pstep' already exists."
+    exit 0
+fi
+
+########################################################################
+# Log file make-prh.log
+########################################################################
+
+# Find an unused log name in case we need it.
+for i in 0 1 2 3 4 5 6 7 8 9; do
+    # Stop at first unused logfile name
+    test -e make-prh-$i.log || break
+done
+
+# If log file exists already, rename it
+test -e make-prh.log && mv make-prh.log make-prh-$i.log
+
+# Tee stdout to a log file 'make-prh.log'
+# (Maybe smart. Maybe not smart. But imma do it anyway.)
+# First exec sends stdout to log file i guess?
+# Second exec sends stderr to stdout i guess?
+exec > >(tee -i ./make-qrc.log) || exit 13
+exec 2>&1 || exit 13
+
+########################################################################
+# Setup
+########################################################################
 
 # Set up the environment for the run
 
