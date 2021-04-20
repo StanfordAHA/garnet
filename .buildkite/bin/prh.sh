@@ -78,7 +78,7 @@ if test -e "$rundir"; then
     echo "--- Using existing context in '$rundir'"
 else
     echo "--- Will build '$rundir' using cached context from '$REF'"
-    set -x; echo mkdir -p $rundir; set +x
+    set -x; mkdir -p $rundir; set +x
     USE_CACHE=true
 fi
 cd $rundir
