@@ -107,7 +107,7 @@ test -e make-prh.log && mv make-prh.log make-prh-$i.log
 # (Maybe smart. Maybe not smart. But imma do it anyway.)
 # First exec sends stdout to log file i guess?
 # Second exec sends stderr to stdout i guess?
-exec > >(tee -i ./make-qrc.log) || exit 13
+exec > >(tee -i $rundir/make-qrc.log) || exit 13
 exec 2>&1 || exit 13
 
 ########################################################################
