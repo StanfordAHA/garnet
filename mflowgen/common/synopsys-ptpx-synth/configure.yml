@@ -17,7 +17,7 @@ inputs:
   - adk
   - design.v
   - design.sdc
-  - design.spef.gz
+  - design.spef
   - run.saif
 
 outputs:
