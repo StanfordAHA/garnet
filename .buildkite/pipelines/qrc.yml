@@ -15,7 +15,7 @@ env:
 steps:
   - label:   "tst0"
     # command: '$$BUILDPIPE/tst0'
-    command: 'sleep 4; exit 13'
+    command: 'sleep 10; exit 13'
     key: "0a"
 
   - label:   "tst0"
@@ -24,11 +24,9 @@ steps:
     depends_on: [ { step: 0a , allow_failure: true } ]
 
   - label:   "tst0"
-    command: 'sleep 4; exit 0'
+    command: 'sleep 4; exit 13'
     key: "0c"
-    depends_on:
-      - step: 0b
-        allow_failure: true
+    depends_on: [ { step: 0b , allow_failure: true } ]
 
 
   - label:   "tst1"
@@ -39,17 +37,33 @@ steps:
   - label:   "tst1"
     command: 'sleep 4; exit 13'
     key: "1b"
-    depends_on:
-      - step: 1a
-        allow_failure: true
+    depends_on: [ { step: 1a , allow_failure: true } ]
 
   - label:   "tst1"
-    command: 'sleep 4; exit 1'
+    command: 'sleep 4; exit 0'
     key: "1c"
-    depends_on:
-      - step: 1b
+    depends_on: [ { step: 1b , allow_failure: true } ]
 
 
+  - label:   "tst2"
+    # command: '$$BUILDPIPE/tst1'
+    command: 'sleep 4; exit 13'
+    key: "2a"
+
+  - label:   "tst2"
+    command: 'sleep 4; exit 13'
+    key: "2b"
+    depends_on: [ { step: 2a , allow_failure: true } ]
+
+  - label:   "tst2"
+    command: 'sleep 4; exit 0'
+    key: "2c"
+    depends_on: [ { step: 2b , allow_failure: true } ]
+
+  - wait: ~
+
+  - label:   "END"
+    command: 'echo END'
 
 
 
