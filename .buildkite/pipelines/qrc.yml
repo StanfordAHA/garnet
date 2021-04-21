@@ -38,7 +38,7 @@ steps:
   - label:   "tst1"
     command: 'sleep 4; exit 13'
     key: "1b"
-    depends_on: { step: 1a , allow_failure: true }
+    depends_on: [ { step: 1a , allow_failure: true } ]
 
   - label:   "tst1"
     command: 'sleep 4; exit 1'
