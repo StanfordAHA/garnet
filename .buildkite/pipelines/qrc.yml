@@ -14,61 +14,67 @@ env:
 # BIG TEST - run two at a time
 steps:
   - label:   "tst0"
-    command: 'set -x; $$BUILDPIPE/tst0 || $$BUILDPIPE/tst0 || $$BUILDPIPE/tst0'
-  - label:   "tst1"
-    command: '$$BUILDPIPE/tst1 || $$BUILDPIPE/tst1 || $$BUILDPIPE/tst1'
-  - wait: { continue_on_failure: true }
+    # command: '$$BUILDPIPE/tst0'
+    command: 'sleep 13; exit 13'
+    key: "0a"
 
-  - label:   "tst2"
-    command: '$$BUILDPIPE/tst2 || $$BUILDPIPE/tst2 || $$BUILDPIPE/tst2'
-  - label:   "tst3"
-    command: '$$BUILDPIPE/tst3 || $$BUILDPIPE/tst3 || $$BUILDPIPE/tst3'
-  - wait: { continue_on_failure: true }
+  - label:   "tst0"
+    command: 'sleep 13; exit 13'
+    key: "0b"
+    depends_on:
+      - step: 0a
+        allow_failure: true
 
-  - label:   "tst4"
-    command: '$$BUILDPIPE/tst4 || $$BUILDPIPE/tst4 || $$BUILDPIPE/tst4'
-  - label:   "tst5"
-    command: '$$BUILDPIPE/tst5 || $$BUILDPIPE/tst5 || $$BUILDPIPE/tst5'
-  - wait: { continue_on_failure: true }
-
-  - label:   "tst6"
-    command: '$$BUILDPIPE/tst6 || $$BUILDPIPE/tst6 || $$BUILDPIPE/tst6'
-  - label:   "tst7"
-    command: '$$BUILDPIPE/tst7 || $$BUILDPIPE/tst7 || $$BUILDPIPE/tst7'
-  - wait: { continue_on_failure: true }
-
-  - label:   "tst8"
-    command: '$$BUILDPIPE/tst8 || $$BUILDPIPE/tst8 || $$BUILDPIPE/tst8'
-  - label:   "tst9"
-    command: '$$BUILDPIPE/tst9 || $$BUILDPIPE/tst9 || $$BUILDPIPE/tst9'
-  - wait: { continue_on_failure: true }
+  - label:   "tst0"
+    command: 'sleep 13; exit 0'
+    key: "0c"
+    depends_on:
+      - step: 0b
+        allow_failure: true
 
 
-# SMALL TEST - two tests only, two potential retries each,  run one thing at a time
-# steps:
-# 
-#   - label:   "tst0"
-#     command: '$$BUILDPIPE/tst0'
-#   - wait: { continue_on_failure: true }
-# 
-#   - label:   "tst0"
-#     command: '$$BUILDPIPE/tst0'
-#   - wait: { continue_on_failure: true }
-# 
-#   - label:   "tst0"
-#     command: '$$BUILDPIPE/tst0'
-#   - wait: { continue_on_failure: true }
-# 
-# 
-# 
+
+
 #   - label:   "tst1"
-#     command: '$$BUILDPIPE/tst1'
+#     command: '$$BUILDPIPE/tst1 || $$BUILDPIPE/tst1 || $$BUILDPIPE/tst1'
 #   - wait: { continue_on_failure: true }
 # 
-#   - label:   "tst1"
-#     command: '$$BUILDPIPE/tst1'
+#   - label:   "tst2"
+#     command: '$$BUILDPIPE/tst2 || $$BUILDPIPE/tst2 || $$BUILDPIPE/tst2'
+#   - label:   "tst3"
+#     command: '$$BUILDPIPE/tst3 || $$BUILDPIPE/tst3 || $$BUILDPIPE/tst3'
 #   - wait: { continue_on_failure: true }
 # 
-#   - label:   "tst1"
-#     command: '$$BUILDPIPE/tst1'
+#   - label:   "tst4"
+#     command: '$$BUILDPIPE/tst4 || $$BUILDPIPE/tst4 || $$BUILDPIPE/tst4'
+#   - label:   "tst5"
+#     command: '$$BUILDPIPE/tst5 || $$BUILDPIPE/tst5 || $$BUILDPIPE/tst5'
 #   - wait: { continue_on_failure: true }
+# 
+#   - label:   "tst6"
+#     command: '$$BUILDPIPE/tst6 || $$BUILDPIPE/tst6 || $$BUILDPIPE/tst6'
+#   - label:   "tst7"
+#     command: '$$BUILDPIPE/tst7 || $$BUILDPIPE/tst7 || $$BUILDPIPE/tst7'
+#   - wait: { continue_on_failure: true }
+# 
+#   - label:   "tst8"
+#     command: '$$BUILDPIPE/tst8 || $$BUILDPIPE/tst8 || $$BUILDPIPE/tst8'
+#   - label:   "tst9"
+#     command: '$$BUILDPIPE/tst9 || $$BUILDPIPE/tst9 || $$BUILDPIPE/tst9'
+#   - wait: { continue_on_failure: true }
+# 
+# 
+# # SMALL TEST - One test only, plus two retries
+# # steps:
+# # 
+# #   - label:   "tst0"
+# #     command: '$$BUILDPIPE/tst0'
+# #   - wait: { continue_on_failure: true }
+# # 
+# #   - label:   "tst0"
+# #     command: '$$BUILDPIPE/tst0'
+# #   - wait: { continue_on_failure: true }
+# # 
+# #   - label:   "tst0"
+# #     command: '$$BUILDPIPE/tst0'
+# #   - wait: { continue_on_failure: true }

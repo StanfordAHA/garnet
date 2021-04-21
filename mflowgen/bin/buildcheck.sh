@@ -200,13 +200,11 @@ fi
 ########################################################################
 # Check to see if we had to restart/retry anywhere b/c of QRC failures
 if [ "$do_qcheck" ]; then
-
     echo ''; echo '+++ RETRIES REQUIRED?'
-    logfiles=$(find * -name \*.log)
+    logfiles=$(find * -name make-\*.log)
     found_retry=false
-
-    grep -H QCHECK $logfiles \
-        | sed 's,/make-prh.log.,: ,' \
+    grep -H QCHECK /dev/null $logfiles \
+        | sed 's/:/: /' \
         | grep ': QCHECK' \
         && found_retry=true
 
