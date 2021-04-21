@@ -60,10 +60,10 @@ steps:
     key: "2c"
     depends_on: [ { step: 2b , allow_failure: true } ]
 
-  - wait: ~
+  - wait: { continue_on_failure: true }
 
   - label:   "END"
-    command: 'echo END'
+    command: 'echo END ; exit 13'
 
 
 
