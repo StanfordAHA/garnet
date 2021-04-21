@@ -18,54 +18,46 @@ steps:
     # command: '$$BUILDPIPE/tst0'
     command: 'sleep 10; exit 13'
     key: "0a"
-    concurrency: 2
 
   - label:   "tst0"
-    concurrency: 2
     command: 'sleep 4; exit 13'
     key: "0b"
     depends_on: [ { step: 0a , allow_failure: true } ]
 
   - label:   "tst0"
-    concurrency: 2
     command: 'sleep 4; exit 13'
     key: "0c"
     depends_on: [ { step: 0b , allow_failure: true } ]
 
 
   - label:   "tst1"
-    concurrency: 2
     # command: '$$BUILDPIPE/tst1'
     command: 'sleep 4; exit 13'
     key: "1a"
 
   - label:   "tst1"
-    concurrency: 2
     command: 'sleep 4; exit 13'
     key: "1b"
     depends_on: [ { step: 1a , allow_failure: true } ]
 
   - label:   "tst1"
-    concurrency: 2
     command: 'sleep 4; exit 0'
     key: "1c"
     depends_on: [ { step: 1b , allow_failure: true } ]
 
+  - wait: { continue_on_failure: true }
 
   - label:   "tst2"
-    concurrency: 2
     # command: '$$BUILDPIPE/tst1'
     command: 'sleep 4; exit 13'
     key: "2a"
 
   - label:   "tst2"
-    concurrency: 2
     command: 'sleep 4; exit 13'
     key: "2b"
     depends_on: [ { step: 2a , allow_failure: true } ]
 
   - label:   "tst2"
-    concurrency: 2
     command: 'sleep 4; exit 0'
     key: "2c"
     depends_on: [ { step: 2b , allow_failure: true } ]
