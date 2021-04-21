@@ -107,7 +107,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD - FIRST ATTEMPT";
-     .buildkite/bin/prh.sh $$GOLD'
+     $$GARNET_HOME/.buildkite/bin/prh.sh $$GOLD'
 - wait: { continue_on_failure: true }
 
 # first retry, continue with another retry on failure
@@ -115,7 +115,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD - SECOND ATTEMPT";
-     .buildkite/bin/prh.sh $$GOLD'
+     $$GARNET_HOME/.buildkite/bin/prh.sh $$GOLD'
 - wait: { continue_on_failure: true }
 
 # Final postroute_hold attempt, fail pipeline if this one bombs
@@ -123,7 +123,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD - SECOND ATTEMPT";
-     .buildkite/bin/prh.sh $$GOLD'
+     $$GARNET_HOME/.buildkite/bin/prh.sh $$GOLD'
 - wait: ~
 
 ########################################################################
