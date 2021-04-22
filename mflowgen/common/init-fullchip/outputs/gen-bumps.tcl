@@ -116,7 +116,7 @@ proc gen_bumps {} {
 	"osbssrr444555555666rrssbso"
 	"gsssgsssssbssssbsssssgsssg"
 	"sssgssssgssssssssgssssgsss"
-	"sgossbssssoobboosssgbssogs"
+	"sgossbgsssoobboosssgbssogs"
 	"bogsssssssggssggsssssssgob"
 	".b.sgosbsgssggssgsbsogssb."
     }
