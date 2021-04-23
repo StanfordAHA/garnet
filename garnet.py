@@ -31,7 +31,8 @@ class Garnet(Generator):
                  use_sram_stub: bool = True, standalone: bool = False,
                  add_pond: bool = True,
                  use_io_valid: bool = False,
-                 pipeline_config_interval: int = 8):
+                 pipeline_config_interval: int = 8,
+                 glb_tile_mem_size: int = 256):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -70,9 +71,10 @@ class Garnet(Generator):
             assert (self.width % 2) == 0
             num_glb_tiles = self.width // 2
 
-            bank_addr_width = 17
             bank_data_width = 64
             banks_per_tile = 2
+            bank_addr_width = (magma.bitutils.clog2(glb_tile_mem_size)
+                               - magma.bitutils.clog2(banks_per_tile) + 10)
 
             glb_addr_width = (bank_addr_width
                               + magma.bitutils.clog2(banks_per_tile)
@@ -88,11 +90,12 @@ class Garnet(Generator):
                                                       axi_data_width=axi_data_width,
                                                       num_glb_tiles=num_glb_tiles,
                                                       glb_addr_width=glb_addr_width,
+                                                      glb_tile_mem_size=glb_tile_mem_size,
                                                       block_axi_addr_width=glb_axi_addr_width)
 
             self.global_buffer = GlobalBuffer(num_glb_tiles=num_glb_tiles,
                                               num_cgra_cols=width,
-                                              bank_addr_width=bank_addr_width,
+                                              glb_tile_mem_size=glb_tile_mem_size,
                                               bank_data_width=bank_data_width,
                                               cfg_addr_width=config_addr_width,
                                               cfg_data_width=config_data_width,
@@ -335,6 +338,7 @@ def main():
     parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument('--pipeline_config_interval', type=int, default=8)
+    parser.add_argument('--glb_tile_mem_size', type=int, default=256)
     parser.add_argument("--input-app", type=str, default="", dest="app")
     parser.add_argument("--input-file", type=str, default="", dest="input")
     parser.add_argument("--output-file", type=str, default="", dest="output")
@@ -360,6 +364,7 @@ def main():
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")
     garnet = Garnet(width=args.width, height=args.height,
+                    glb_tile_mem_size=args.glb_tile_mem_size,
                     add_pd=not args.no_pd,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,

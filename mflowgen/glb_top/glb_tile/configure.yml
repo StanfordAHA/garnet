@@ -11,12 +11,25 @@ outputs:
   - glb_tile.lef
   - glb_tile.gds
   - glb_tile.lvs.v
-  - sram.spi
+  - glb_tile.vcs.v
+  - glb_tile.sdf
+  - glb_tile_sram.spi
+  - glb_tile_sram.v
+  - glb_tile_sram_pwr.v
+  - glb_tile_sram_tt.lib
+  - glb_tile_sram_ff.lib
+  - glb_tile_sram_tt.db
 
 postconditions:
   - assert File( 'outputs/glb_tile_tt.lib' ) # must exist
   - assert File( 'outputs/glb_tile.lef' ) # must exist
   - assert File( 'outputs/glb_tile.gds' ) # must exist
   - assert File( 'outputs/glb_tile.lvs.v' ) # must exist
-  - assert File( 'outputs/sram.spi' ) # must exist
-
+  - assert File( 'outputs/glb_tile.vcs.v' ) # must exist
+  - assert File( 'outputs/glb_tile.sdf' ) # must exist
+  - assert File( 'outputs/glb_tile_sram.spi' ) # must exist
+  - assert File( 'outputs/glb_tile_sram.v' ) # must exist
+  - assert File( 'outputs/glb_tile_sram_pwr.v' ) # must exist
+  - assert File( 'outputs/glb_tile_sram_tt.lib' ) # must exist
+  - assert File( 'outputs/glb_tile_sram_ff.lib' ) # must exist
+  - assert File( 'outputs/glb_tile_sram_tt.db' ) # must exist

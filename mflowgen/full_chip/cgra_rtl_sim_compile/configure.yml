@@ -1,0 +1,26 @@
+name: cgra_rtl_sim_compile
+
+commands:
+  - bash compile_rtl_testbench.sh
+
+inputs:
+  - design.v
+
+outputs:
+  - xcelium.d
+  - xrun.log
+  - libcgra.so
+
+parameters:
+  array_width: 12
+  array_height: 12
+  axi_addr_width: 13
+  axi_data_width: 32
+  glb_tile_mem_size: 256
+  clock_period: 1.2
+  top_name: top
+
+postconditions:
+  - assert File( 'outputs/xcelium.d' )
+  - assert File( 'outputs/xrun.log'  )
+  - assert File( 'outputs/libcgra.so'  )

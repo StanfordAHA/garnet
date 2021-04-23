@@ -24,11 +24,11 @@ def construct():
   adk_view = 'stdview'
 
   if which("calibre") is not None:
-      drc_rule_deck = 'calibre-drc-chip.rule' 
+      drc_rule_deck = 'calibre-drc-chip.rule'
       antenna_drc_rule_deck = 'calibre-drc-antenna.rule'
       power_drc_rule_deck = 'calibre-drc-block.rule'
   else:
-      drc_rule_deck = 'pegasus-drc-chip.rule' 
+      drc_rule_deck = 'pegasus-drc-chip.rule'
       antenna_drc_rule_deck = 'pegasus-drc-antenna.rule'
       power_drc_rule_deck = 'pegasus-drc-block.rule'
 
@@ -45,6 +45,8 @@ def construct():
     'array_width'       : 32,
     'array_height'      : 16,
     'interconnect_only' : False,
+    # glb tile memory size (unit: KB)
+    'glb_tile_mem_size' : 64,
     # Power Domains
     'PWR_AWARE'         : True,
     # Include Garnet?
@@ -83,7 +85,9 @@ def construct():
     'drc_rule_deck'         : drc_rule_deck,
     'antenna_drc_rule_deck' : antenna_drc_rule_deck,
     'power_drc_rule_deck'   : power_drc_rule_deck,
-    'nthreads'              : 16
+    'nthreads'              : 16,
+    # Testbench
+    'cgra_apps' : ["tests/conv_1_2", "tests/conv_2_1"]
   }
 
   #-----------------------------------------------------------------------
@@ -119,6 +123,17 @@ def construct():
   glb_top           = Step( this_dir + '/glb_top'           )
   global_controller = Step( this_dir + '/global_controller' )
   dragonphy         = Step( this_dir + '/dragonphy'         )
+
+  # CGRA simulation
+
+  cgra_rtl_sim_compile  = Step( this_dir + '/cgra_rtl_sim_compile' )
+  cgra_rtl_sim_run      = Step( this_dir + '/cgra_rtl_sim_run'     )
+  cgra_sim_build        = Step( this_dir + '/cgra_sim_build'       )
+  # cgra_gl_sim_compile   = Step( this_dir + '/cgra_gl_sim_compile'  )
+  # cgra_gl_sim_run       = Step( this_dir + '/cgra_gl_sim_run'      )
+  # cgra_gl_ptpx          = Step( this_dir + '/cgra_gl_ptpx'         )
+  # cgra_rtl_sim_verdict  = Step( this_dir + '/cgra_rtl_sim_verdict' )
+  # cgra_gl_sim_verdict   = Step( this_dir + '/cgra_gl_sim_verdict'  )
 
   # Default steps
 
@@ -161,7 +176,6 @@ def construct():
   # Antenna DRC Check
   antenna_drc = drc.clone()
   antenna_drc.set_name( 'antenna-drc' )
-
 
   # Add cgra tile macro inputs to downstream nodes
 
@@ -273,6 +287,12 @@ def construct():
   # Post-Power DRC check
   g.add_step( power_drc         )
 
+  # App test nodes
+  g.add_step( cgra_rtl_sim_compile )
+  g.add_step( cgra_sim_build       )
+  g.add_step( cgra_rtl_sim_run     )
+  # g.add_step( cgra_gl_sim_compile )
+
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
@@ -300,6 +320,14 @@ def construct():
 
   # Post-Power DRC check
   g.connect_by_name( adk,      power_drc )
+
+  # Connect RTL verification nodes
+  g.connect_by_name( rtl, cgra_rtl_sim_compile )
+  g.connect_by_name( cgra_sim_build, cgra_rtl_sim_run )
+  g.connect_by_name( cgra_rtl_sim_compile, cgra_rtl_sim_run )
+
+  # Connect GL verification nodes
+  # g.connect_by_name( signoff, cgra_gl_sim_compile )
 
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
@@ -385,8 +413,8 @@ def construct():
   g.connect_by_name( signoff,        lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
-  
-  # Skipping 
+
+  # Skipping
   g.connect( signoff.o('design-merged.gds'), merge_rdl.i('design.gds') )
   g.connect( dragonphy.o('dragonphy_RDL.gds'), merge_rdl.i('child.gds') )
   g.connect_by_name( merge_rdl, lvs )
@@ -421,7 +449,6 @@ def construct():
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
-
   g.update_params( parameters )
 
   # Since we are adding an additional input script to the generic Innovus
@@ -441,12 +468,24 @@ def construct():
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'alignment-cells.tcl',
       'analog-bumps/route-phy-bumps.tcl',
-      'analog-bumps/bump-connect.tcl', 
+      'analog-bumps/bump-connect.tcl',
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
       'place-macros.tcl', 'dont-touch.tcl'
     ]}
   )
 
+  # glb_top parameters update
+  glb_top.update_params({'num_tile_array_cols': parameters['array_width']}, True)
+  glb_top.update_params({'num_glb_tiles': int(parameters['array_width']/2)}, True)
+  glb_top.update_params({'glb_tile_mem_size': parameters['glb_tile_mem_size']}, True)
+
+  # App test parameters update
+  cgra_rtl_sim_compile.update_params({'array_width': parameters['array_width']}, True)
+  cgra_rtl_sim_compile.update_params({'array_height': parameters['array_height']}, True)
+  cgra_rtl_sim_compile.update_params({'clock_period': parameters['clock_period']}, True)
+  cgra_rtl_sim_compile.update_params({'glb_tile_mem_size': parameters['glb_tile_mem_size']}, True)
+
+  cgra_rtl_sim_run.update_params({'cgra_apps': parameters['cgra_apps']}, True)
 
   # Power node order manipulation
   order = power.get_param('order')
