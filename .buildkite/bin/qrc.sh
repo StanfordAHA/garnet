@@ -1,256 +1,203 @@
 #!/bin/bash
 
-# Helper script for the process of running postroute_hold step ten
-# times in a row to try and see how often QRC fails.
-# 
-# Designed to be called from a buildkite yml script something like:
-# 
-#     env:
-#       QRC : ".buildkite/bin/qrc.sh /build/qtry${BUILDKITE_BUILD_NUMBER}"
-#     
-#     steps:
-# 
-#     - label:    'qrc0'
-#       commands:
-#       - set -x; ${QRC}-0a || ${QRC}-0b || ${QRC}-0c
-# 
-#     - label:    'qrc1'
-#       commands:
-#       - set -x; ${QRC}-1a || ${QRC}-1b || ${QRC}-1c
-# 
-# If all goes well, builds a single dir e.g. '/build/qtry3574-0a'
-# Otherwise, can retry up to two more times, in e.g.
-#   '/build/qtry3574-0b' and '0c' respectively
-# 
-# Assumes a lot of assume-o's
+# TODO SOMEDAY maybe: make it generic e.g.
+# make cadence-innovus-postroute_hold | check-for-qrc-errors.sh || rename-for-failure
 
-# Cached design for postroute_hold inputs lives here
-# REF=/sim/buildkite-agent/gold ; # no good, may have wrong numberings
-REF=/build/gold.228
+if [ "$1" == "--help" ]; then cat << '  EOF' | sed 's/^  //'
+  Usage:
+      qrc.sh <rundir>
 
-# Results will go to dirs e.g. /build/qtry.3549-{0,1,2,3,4,5,6,7,8,9}{a,b,c}
-DESTDIR=$1
+  Example:
+      prh.sh /build/gold230/full_chip
 
-set -x
-  mkdir -p $DESTDIR
-set +x
+  Summary:
+      Runs postroute_hold step and checks for errors.
+      On error, renames e.g. "*postroute_hold" => "*postroute_hold.fail1"
 
-# What the *hell* is this?
-# Tee stdout to a log file 'make-qrc.log'
-exec > >(tee -i $DESTDIR/make-qrc.log) || exit 13
+  Details:
+  - Logs output to ./make-prh.log; if log exists already, rename it.
+
+  - If <rundir> does not exist, create <rundir> along with sufficient
+    context to run postroute_hold by linking to gold dir steps
+        *-cadence-innovus-postroute
+        *-cadence-innovus-flowsetup
+  
+  - cd to <rundir> and look for existence of step "postroute_hold".
+  
+  - If step exists, we're done, exit without doing anything (step already passed).
+  
+  - If step does not exist (yet), do "make postroute_hold"
+  
+  - On failure, copy logs to postroute_hold/ directory and rename
+    postroute_hold => postroute_hold-fail1 or {fail2,fail3...} as appropriate.
+  
+  Final directory structure should look something like this
+  (failed twice, then passed):
+  
+    % ls -1 /build/gold230/full_chip
+        29-cadence-innovus-postroute_hold-fail1
+        29-cadence-innovus-postroute_hold-fail2
+        29-cadence-innovus-postroute_hold
+  
+  ------------------------------------------------------------------
+  Example buildkite pipeline usage (three strikes you're out):
+  
+     env:
+         PRH : "set -o pipefail; .buildkite/prh.sh /build/gold230/full_chip"
+  
+     steps:
+       # postroute_hold attempt 1
+       - command: '\$\$PRH |& tee make-prh.log0'
+       - wait: { continue_on_failure: true }
+  
+       # postroute_hold attempt 2
+       - command: '\$\$PRH |& tee make-prh.log1'
+       - wait: { continue_on_failure: true }
+  
+       # postroute_hold final attempt
+       - command: '\$\$PRH |& tee make-prh.log2'
+       - wait: ~
+  
+  ------------------------------------------------------------------
+
+  EOF
+  exit
+fi
+
+echo "--- BEGIN '$*'"
+
+########################################################################
+# Find build directory $rundir
+########################################################################
+
+# Use existing <rundir> or build new?
+
+rundir=$1
+
+USE_CACHE=
+if test -e "$rundir"; then
+    echo "--- Using existing context in '$rundir'"
+else
+    echo "--- Will build '$rundir' using cached context from '$REF'"
+    set -x; mkdir -p $rundir; set +x
+    USE_CACHE=true
+fi
+
+# If step exists already, exit without error
+
+pstep=$rundir/*-cadence-innovus-postroute_hold
+if test -e $pstep; then
+    echo "--- Success! hold step '$pstep' already exists."
+    exit 0
+fi
+
+########################################################################
+# Log file make-prh.log
+########################################################################
+
+# Tee stdout to a log file 'make-prh.log'
+# (Maybe smart. Maybe not smart. But imma do it anyway.)
+
+# If log file exists already, rename it
+if test -e make-prh.log; then
+    for i in 0 1 2 3 4 5 6 7 8 9; do
+        test -e make-prh-$i.log || break
+    done
+    mv make-prh.log make-prh-$i.log
+fi
+
+# First exec sends stdout to log file i guess?
+# Second exec sends stderr to stdout i guess?
+exec > >(tee -i $rundir/make-prh.log) || exit 13
 exec 2>&1 || exit 13
 
+########################################################################
+# Setup
+########################################################################
+
 # Set up the environment for the run
-source mflowgen/bin/setup-buildkite.sh --dir $DESTDIR --need_space 1G;
+
+echo "--- source mflowgen/bin/setup-buildkite.sh"
+source  mflowgen/bin/setup-buildkite.sh --dir $rundir --need_space 1G;
 mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
 
-# Build necessary dirs and link to cached info
-echo "--- QRC TEST RIG SETUP - copy/link cached info";
-set -x;
+echo "--- CONTINUE '$*'"
 
-    ln -s $REF/full_chip/12-tsmc16;
-    ln -s $REF/full_chip/20-cadence-innovus-flowsetup;
-    ln -s $REF/full_chip/28-cadence-innovus-postroute;
+# Build context from cache if none exists yet
 
-    step=cadence-innovus-postroute_hold;
+if [ "$USE_CACHE" == 'true' ]; then
 
-    mkdir -p 29-${step}; cd 29-${step};
+    # Build the necessary context to run postroute_hold step only.
+    # Want two steps
+    #     *-cadence-innovus-postroute
+    #     *-cadence-innovus-flowsetup
 
-    d=$REF/full_chip/*-${step};
+    REF=/sim/buildkite-agent/gold
+    $GARNET_HOME/mflowgen/bin/get-step-context.sh $REF || exit 13
 
-    # log dir
-    mkdir -p logs; mkdir -p outputs
+fi
 
-    # symlinks
-    cp -rp $d/innovus-foundation-flow         . ;
-
-    # plain files
-    cp -p $d/mflowgen-check-postconditions.py . ;
-    cp -p $d/mflowgen-check-preconditions.py  . ;
-    cp -p $d/mflowgen-debug                   . ;
-    cp -p $d/mflowgen-run                     . ;
-    cp -p $d/configure.yml                    . ;
-    cp -p $d/START.tcl                        . ;
-
-    # dirs
-    cp -rp $d/inputs  . ;
-    cp -rp $d/scripts . ;
-set +x;
-
-echo "--- QRC TEST RIG SETUP - swap in new main.tcl";
-
-########################################################################
-# Build a new main.tcl
-# Until we can fix mflowgen repo, will need to fix main.tcl here.
-# Mainly changing multi-cpu from 16 back to 8.
-
-main_tcl_new='
-setOptMode -verbose true
-
-setOptMode -usefulSkewPostRoute true
-
-setOptMode -holdTargetSlack  $::env(hold_target_slack)
-setOptMode -setupTargetSlack $::env(setup_target_slack)
-
-puts "Info: Using signoff engine = $::env(signoff_engine)"
-
-if { $::env(signoff_engine) } {
-  setExtractRCMode -engine postRoute -effortLevel signoff
-}
-
-# SR Mar 2021 changed multiCpuUsage from 16 back to 8.
-# It seems to have helped the QRC core-dump problem
-# (twenty-ish consecutive runs with no error). Also,
-# from Innovus User Guide Product Version 19.10,
-# dated April 2019, p. 1057:
-# 
-# "Generally, performance improvement will start to diminish beyond 8 CPUs."
-
-echo ""
-echo "--- BEGIN optDesign -postRoute -hold"
-setDistributeHost -local
-setMultiCpuUsage -localCpu 8
-
-# Run the final postroute hold fixing
-optDesign -postRoute -outDir reports -prefix postroute_hold -hold
-'
-
-########################################################################
-# Write the new main.tcl
-
-echo "$main_tcl_new" > scripts/main.tcl
-echo '=================================================================='
-echo 'cat scripts/main.tcl'
-cat scripts/main.tcl
-echo '=================================================================='
-
-########################################################################
-# Define the watcher, watches for 'slow or hanging' jobs warning
-# Also see ~steveri/0notes/vto/qrc-slow-or-hanging.txt
-function watch_for_hang {
-    # sleep_period=1 ;  # Every second for testing
-    sleep_period=750; # Check every fifteen minutes I guess
-    while [ true ]; do
-        tag="HANG MONITOR $(date +%H:%M)" ; # per-loop tag
-
-        # grep -l
-        #   Suppress normal output; instead print the name of each matching file.
-        #   Scanning stops on the first match [for each file?].
-
-        hunglogs=$(grep -ls 'slow or hanging' qrc*.log)
-        for log_name in $hunglogs; do
-
-            echo "$tag Found slow hanging log '$log_name'"
-            echo $tag $log_name
-            
-            # Find innovus process id where 
-            # e.g. if log_name=qrc_6717_20210326_21:19:09.log then pid=6717
-            pid=$(echo $log_name | sed 's/^qrc_//' | sed 's/_.*//')
-            echo "$tag process id=? $pid ?"
-            echo "$tag found hung process $pid"
-
-            # See if process exists (still)
-            ps -p $pid || continue
-            
-            # Found a hung process; now kill it
-            echo "Process $pid is (still) valid / running"
-            echo ""
-            echo 'List of hung processes dependent on $pid'
-            echo 'ps -xo "%p %P %y %x %c" --sort ppid | grep $pid'
-            ps -xo "%p %P %y %x %c" --sort ppid | grep $pid
-            echo ""
-            echo "$tag KILL $pid !"
-            echo "kill $pid"
-            kill $pid
-            echo "$tag DONE"
-            return
-        done
-        echo $tag No slow hangers yet...; sleep $sleep_period; continue
-    done
-}
-
-# # Kill all background jobs (i.e. the watcher) when this script exits
-# # (May not be strictly necessary...?)
-# trap '
-#   echo ""
-#   echo "kill hung jobs"
-#   sleep 1; # Wait a sec, see if they die on their own
-#   [ "$(jobs -p)" ] && echo "no hung jobs to kill"
-#   [ "$(jobs -p)" ] && kill $(jobs -p)
-# ' EXIT
-
-# Launch the watcher
-watch_for_hang |& tee -i hang-watcher.log &
-
-########################################################################
-# DO IT MAN! Run the step.
-
-function RUN_THE_STEP {
-    # Executes mflowgen-run, which basically does 
-    # - 'exit 13' prevents hang at prompt on innovus failure
-    # - '||' prevents exit on error
-    # - ENDSTATUS notification lets us process errors later
-    # echo "--- restore-design and setup-session"; # set -o pipefail;
-    echo "--- DO MFLOWGEN-RUN"
-    echo exit 13 | ./mflowgen-run && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
-}
-RUN_THE_STEP |& tee -i mflowgen-run.log
+# okay now
+$GARNET_HOME/.buildkite/bin/prh.sh && RESULT=PASS || RESULT=FAIL
 
 
-########################################################################
 echo "+++ QCHECK: PASS or FAIL?"
 
-# Hung job
-echo ''
-echo 'Check for hung job'
-pid=$(grep 'found hung process' hang-watcher.log | awk '{print $NF}')
-if [ "$pid" ]; then
-    echo "+++ QCHECK PROBLEM: HUNG JOB $pid"
-    FOUND_ERROR=HUNG
-    exit 13
-fi
+if [ "$RESULT" == "PASS" ]; then
 
-# Other QRC problems
-echo ''
-echo 'Check for QRC error(s)'
-echo "egrep '^ Error messages'" qrc*.log
-egrep '^ Error messages' qrc*.log
-n_errors=$(egrep '^ Error messages' mflowgen-run.log | awk '{print $NF}')
-for i in $n_errors; do 
-    if [ "$i" -gt 0 ]; then 
-        echo ''
-        echo "+++ QCHECK PROBLEM: QRC ERRORS"
-        echo "FAILED n_errors, flagging QRC for retry"
-        FOUND_ERROR=QRC
+    ########################################################################
+    # Post-mortem
+    ########################################################################
+    
+    echo ""; echo "How many tries did it take?"
+    # E.g.
+    #       29-cadence-innovus-postroute_hold
+    #       29-cadence-innovus-postroute_hold-fail1
+    #       29-cadence-innovus-postroute_hold-fail2
+    /bin/ls -1 | grep cadence-innovus-postroute_hold; echo ''
+    
+    echo ""; echo "What happened?"
+    # E.g.
+    #     make-prh.log - QCHECK: NO ERRORS FOUND, HOORAY! - PASS
+    #     make-prh-fail1.log - QCHECK: NO ERRORS FOUND, HOORAY! - PASS
+    #
+    egrep -H '^QCHECK.*(PASS|FAIL)$' make-prh*.log | sed 's/:/ - /'
+    
+    
+    ########################################################################
+    # DONE!
+    ########################################################################
+    
+    exit 0
+fi
+    
+if [ "$RESULT" == "FAIL" ]; then
+    
+    # Step failed; rename it to <step>-<failname> e.g.
+    # "29-cadence-innovus-postroute_hold-fail1"
+    
+    step=`echo *cadence-innovus-postroute_hold | head -1`
+    if ! test -e $step; then
+        echo "ERROR cannot find step '$step'"
         exit 13
     fi
-done
-
-# Unknown error
-echo ''
-echo 'Check for other / unknown error(s)'
-if grep ENDSTATUS=FAIL mflowgen-run.log; then
-    echo "+++ QCHECK: FAILED mflowgen with unknown cause, giving up now"
-    FOUND_ERROR=FAIL
+    
+    # Find next unused fail extension -fail1, -fail2, -fail3 etc.
+    # Note: if fail9 exists, we probably get an error on the "mv"
+    for failnum in 1 2 3 4 5 6 7 8 9; do
+        (ls -d ${step}-fail${failnum} >& /dev/null) || break
+    done
+    
+    set -x ; # Make a record of the final actions
+    
+    # Move logs to (failed) step dir
+    mv make-prh.log $step; mv hang-watcher.log $step
+    
+    # Rename step dir with failure extension e.g. 'fail1' or 'fail2'
+    mv ${step} ${step}-fail${failnum}
+    
+    # Show failures so far and error out.
+    /bin/ls -1d ${step}*
     exit 13
 fi
-
-# Huh, must have passed.
-echo "+++ QCHECK: NO ERRORS FOUND, HOORAY!"
-echo "+++ PASSED mflowgen first attempt"
-echo "Hey looks like we got away with it"
-
-# Clean up
-echo ''
-echo "--- save disk space, delete output design (?)"
-set -x
-ls -lR checkpoints/
-/bin/rm -rf checkpoints/*
-touch checkpoints/'deleted to save space'
-
-
-
-########################################################################
-# TRASH, see qrc.sh.trash, savedir/qrc*
-
 

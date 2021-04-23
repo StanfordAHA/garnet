@@ -9,43 +9,42 @@ agents: { queue: "papers" }
 
 env:
   # Builds in e.g. "/build/prh-3574/{run0,run1,run2...}", output to "make-prh.log"
-  BUILDPIPE : ".buildkite/bin/prh.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
+  QRC : ".buildkite/bin/qrc.sh /build/prh${BUILDKITE_BUILD_NUMBER}"
 
 # BIG TEST - run two at a time
 steps:
   - label:   "tst0"
-    command: '$$BUILDPIPE/tst0 || $$BUILDPIPE/tst0 || $$BUILDPIPE/tst0'
+    command: '$$QRC/tst0 || $$QRC/tst0 || $$QRC/tst0'
   - label:   "tst1"
-    command: '$$BUILDPIPE/tst1 || $$BUILDPIPE/tst1 || $$BUILDPIPE/tst1'
+    command: '$$QRC/tst1 || $$QRC/tst1 || $$QRC/tst1'
   - wait: { continue_on_failure: true }
 
-  - label:   "STOP HERE"
+  - label:   "FAIL SUCCESFULLY AND END HERE"
     command: 'exit 13'
   - wait: ~
 
-
   - label:   "tst2"
-    command: '$$BUILDPIPE/tst2 || $$BUILDPIPE/tst2 || $$BUILDPIPE/tst2'
+    command: '$$QRC/tst2 || $$QRC/tst2 || $$QRC/tst2'
   - label:   "tst3"
-    command: '$$BUILDPIPE/tst3 || $$BUILDPIPE/tst3 || $$BUILDPIPE/tst3'
+    command: '$$QRC/tst3 || $$QRC/tst3 || $$QRC/tst3'
   - wait: { continue_on_failure: true }
 
   - label:   "tst4"
-    command: '$$BUILDPIPE/tst4 || $$BUILDPIPE/tst4 || $$BUILDPIPE/tst4'
+    command: '$$QRC/tst4 || $$QRC/tst4 || $$QRC/tst4'
   - label:   "tst5"
-    command: '$$BUILDPIPE/tst5 || $$BUILDPIPE/tst5 || $$BUILDPIPE/tst5'
+    command: '$$QRC/tst5 || $$QRC/tst5 || $$QRC/tst5'
   - wait: { continue_on_failure: true }
 
   - label:   "tst6"
-    command: '$$BUILDPIPE/tst6 || $$BUILDPIPE/tst6 || $$BUILDPIPE/tst6'
+    command: '$$QRC/tst6 || $$QRC/tst6 || $$QRC/tst6'
   - label:   "tst7"
-    command: '$$BUILDPIPE/tst7 || $$BUILDPIPE/tst7 || $$BUILDPIPE/tst7'
+    command: '$$QRC/tst7 || $$QRC/tst7 || $$QRC/tst7'
   - wait: { continue_on_failure: true }
 
   - label:   "tst8"
-    command: '$$BUILDPIPE/tst8 || $$BUILDPIPE/tst8 || $$BUILDPIPE/tst8'
+    command: '$$QRC/tst8 || $$QRC/tst8 || $$QRC/tst8'
   - label:   "tst9"
-    command: '$$BUILDPIPE/tst9 || $$BUILDPIPE/tst9 || $$BUILDPIPE/tst9'
+    command: '$$QRC/tst9 || $$QRC/tst9 || $$QRC/tst9'
   - wait: { continue_on_failure: true }
 
 
@@ -53,15 +52,15 @@ steps:
 # steps:
 # 
 #   - label:   "tst0"
-#     command: '$$BUILDPIPE/tst0'
+#     command: '$$QRC/tst0'
 #   - wait: { continue_on_failure: true }
 # 
 #   - label:   "tst0"
-#     command: '$$BUILDPIPE/tst0'
+#     command: '$$QRC/tst0'
 #   - wait: { continue_on_failure: true }
 # 
 #   - label:   "tst0"
-#     command: '$$BUILDPIPE/tst0'
+#     command: '$$QRC/tst0'
 #   - wait: { continue_on_failure: true }
 
 
@@ -72,7 +71,7 @@ steps:
 # steps:
 # 
 #   - label:   "tst0"
-#     # command: '$$BUILDPIPE/tst0'
+#     # command: '$$QRC/tst0'
 #     command: 'sleep 10; exit 13'
 #     key: "0a"
 # 
@@ -88,7 +87,7 @@ steps:
 # 
 # 
 #   - label:   "tst1"
-#     # command: '$$BUILDPIPE/tst1'
+#     # command: '$$QRC/tst1'
 #     command: 'sleep 4; exit 13'
 #     key: "1a"
 # 
@@ -105,7 +104,7 @@ steps:
 #   - wait: { continue_on_failure: true }
 # 
 #   - label:   "tst2"
-#     # command: '$$BUILDPIPE/tst1'
+#     # command: '$$QRC/tst1'
 #     command: 'sleep 4; exit 13'
 #     key: "2a"
 # 

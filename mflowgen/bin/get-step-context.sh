@@ -10,6 +10,15 @@ REF=$1
 #     *-cadence-innovus-postroute
 #     *-cadence-innovus-flowsetup
 
+# Example usage
+# 
+#     RUNDIR=/build/run230/full_chip
+#     REFDIR=/build/gold
+# 
+#     source mflowgen/bin/setup-buildkite.sh --dir $RUNDIR
+#     mflowgen/bin/get-step-context.sh $REFDIR
+#     make cadence-innovus-postroute_hold
+
 DBG=
 echo "+++ PRH TEST RIG SETUP - symlink to steps in $REF/full_chip";
 for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
