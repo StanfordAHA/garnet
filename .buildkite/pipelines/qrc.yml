@@ -19,7 +19,7 @@ steps:
     command: '$$BUILDPIPE/tst1 || $$BUILDPIPE/tst1 || $$BUILDPIPE/tst1'
   - wait: { continue_on_failure: true }
 
-  - label:   "ENDKILL"
+  - label:   "STOP HERE"
     command: 'exit 13'
   - wait: ~
 
