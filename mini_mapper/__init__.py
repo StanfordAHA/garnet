@@ -783,7 +783,8 @@ def wire_reset_to_flush(netlist, id_to_name, bus):
     io_blk = None
     for blk_id, name in id_to_name.items():
         if "cgramem" in name or "rom" in name or "lakemem" in name:
-            assert blk_id[0] in {"m", "M"}
+            if blk_id[0] not in {"m", "M"}:
+                continue
             mems.append(blk_id)
         if "reset" in name and blk_id[0] in {"i", "I"}:
             io_blk = blk_id
@@ -1233,8 +1234,6 @@ def map_app(pre_map):
 
     netlist = port_rename(netlist)
     insert_valid(id_to_name, netlist, bus)
-    if has_rom(id_to_name):
-        insert_valid_delay(id_to_name, instance_to_instr, netlist, bus)
 
     wire_reset_to_flush(netlist, id_to_name, bus)
     remove_dead_regs(netlist, bus)
