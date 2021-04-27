@@ -1153,6 +1153,7 @@ def map_app(pre_map):
             instr["app_name"] = get_app_name(pre_map)
             if mem_mode == "lake":
                 instr["depth"] = 0
+                instr["mode"] = MemoryMode.UNIFIED_BUFFER
                 instr.update(instance["modargs"])
             elif mem_mode == "lb":
                 instr["mode"] = MemoryMode.UNIFIED_BUFFER
