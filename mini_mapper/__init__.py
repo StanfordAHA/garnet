@@ -11,7 +11,7 @@ import os
 import six
 import subprocess
 import tempfile
-from memory_core.memory_mode import Mode as MemoryMode
+from memory_core.memory_mode import MemoryMode as MemoryMode
 import copy
 
 family = PyFamily()
