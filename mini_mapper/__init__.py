@@ -1145,6 +1145,7 @@ def map_app(pre_map):
             else:
                 assert "const" in pin_name
                 return Mode.CONST, int(pin_name.split("_")[-1])
+                
         if "mem" in tile_op:
             args = tile_op.split("_")
             mem_mode = args[1]
@@ -1153,8 +1154,8 @@ def map_app(pre_map):
             instr["app_name"] = get_app_name(pre_map)
             if mem_mode == "lake":
                 instr["depth"] = 0
-                instr["mode"] = MemoryMode.UNIFIED_BUFFER
                 instr.update(instance["modargs"])
+                instr["mode"] = MemoryMode.UNIFIED_BUFFER
             elif mem_mode == "lb":
                 instr["mode"] = MemoryMode.UNIFIED_BUFFER
                 instr["depth"] = int(args[-1])
