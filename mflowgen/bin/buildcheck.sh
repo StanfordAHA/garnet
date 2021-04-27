@@ -29,6 +29,7 @@ DBG=
 # Process command-line args
 build_dirs=()
 opstring=''
+ALL="sLrleRq"
 
 while [ $# -gt 0 ] ; do
     test $DBG && echo "Processing arg '$1'"
@@ -44,8 +45,8 @@ while [ $# -gt 0 ] ; do
         --qrc*)  opstring="${opstring}q" ;; # qrc check
         --QRC*)  opstring="${opstring}q" ;; # qrc check
 
-        --all)   opstring="${opstring}sLrleR";  break  ;;
-         -a)     opstring="${opstring}sLrleR";  break  ;;
+        --all)   opstring="${ALL}";  break  ;;
+         -a)     opstring="${ALL}";  break  ;;
 
         --*) show_help; exit ;;         # Unknwon '--' arg
          -*) opstring="$opstring$1" ;;  # Add to opstring
@@ -57,7 +58,7 @@ done
 test $DBG && (echo "DONE processing args"; echo '---')
 
 # Default: "do all checks" in "current directory"
-[ "$opstring"       == "" ] && opstring="sLrle"
+[ "$opstring"       == "" ] && opstring="$ALL"
 [ ${#build_dirs[@]} == 0  ] && build_dirs=(.)
 
 
@@ -108,8 +109,6 @@ if [ "$DBG" ]; then
     test "$do_qcheck"   == true && echo DO_QCHECK
     # exit
 fi
-
-
 
 ########################################################################
 # Find target build directory
@@ -212,7 +211,6 @@ if [ "$do_qcheck" ]; then
     echo ''
 fi
 
-
 ########################################################################
 # Error check
 if [ "$do_err" ]; then
@@ -256,85 +254,3 @@ egrep '(^Error|^\*\*ERROR)' \`find . -name \*.log\` | less
 
 EOF
 fi
-
-
-exit
-
-# experiments
-
-egrep '(^Error|^\*\*ERROR)' `find * -name \*.log` \
-  | grep -v 'Error Limit' \
-  | chop 80 | sort | uniq -c | sort -rn | head
-
-find * -name \*.log -exec egrep '(^Error|^\*\*ERROR)' {} \; \
-  -exec printf "9999999 %s\n" {} \; \
-  | grep -v 'Error Limit' \
-  | chop 80 | sort | uniq -c | sort -rn | head
-
-
-function has_errors {
-   egrep '(^Error|^\*\*ERROR)' $1 > /dev/null && return 0 || return 13
-}
-has_errors make-tile_array.log && echo YES || echo NO
-
-errfiles=`find * -name \*.log \
-     -exec bash -c \
-       "cat {} | grep -v 'Error Limit' | egrep '(^Error|^\*\*ERROR)' > /dev/null" \
-     \; \
-     -print`
-echo $errfiles
-
-for f in $errfiles; do
-
-    # egrep filters below should find only the lowest-level log file
-    # e.g. "17-tile_array/17-Tile_PE/24-cadence-genus-genlib/logs/genus.log"
-    # but not "make-GLC.log" or "17-tile_array/mflowgen-run.log"
-
-    # Filename must include a toolname
-    echo $f | egrep 'cadence|innovus' > /dev/null || continue
-
-    # Filename should be e.g. "genus.log" not "mflowgen-run.log"
-    echo $f | egrep 'mflowgen'        > /dev/null && continue
-
-    echo $f
-    cat $f | egrep '(^Error|^\*\*ERROR)' \
-        | grep -v 'Error Limit' \
-        | chop 80 | sort | uniq -c | sort -rn | head
-    echo ""
-done | less
-
-# f=14-glb_top/mflowgen-run.log
-# 
-# f=22-cadence-genus-genlib/.execstamp
-# echo $f | egrep 'cadence|innovus' > /dev/null && echo yes || echo no
-
-# egrep 'cadence|innovus' 14-glb_top/mflowgen-run.log && echo yes || echo no
-
-
-
-
-# find * -name \*.log -exec egrep '(^Error|^\*\*ERROR)' {} \; \
-#   -exec printf "9999999 %s\n" {} \; \
-#   | grep -v 'Error Limit' \
-#   | chop 80 | sort | uniq -c | sort -rn | head
-
-
-##############################################################################
-##############################################################################
-##############################################################################
-# OLD:
-
-# # Remove extraneous dashes from opstring
-# [ $DBG ] && echo "opstring BEFORE = '$opstring'"
-# opstring=$(echo $opstring | tr -d '-')
-# [ $DBG ] && echo "opstring AFTER  = '$opstring'"
-
-    # 'grep -H' => print filename along w/ match e.g.
-    #      make-qrc.log:+++ QCHECK QRC CHECK
-    #      make-qrc.log:+++ QCHECK: INITIATING RETRY
-
-#     # OLD/DEPRECATED
-#     # grep -H QCHECK $logfiles | egrep 'QCHECK QRC CHECK' && found_retry=true
-# 
-#     # NEW
-#     grep -H QCHECK $logfiles | egrep 'PROBLEM|RETRY' && found_retry=true

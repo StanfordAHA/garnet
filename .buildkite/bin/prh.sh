@@ -113,6 +113,32 @@ echo exit 13 | make cadence-innovus-postroute_hold \
     && echo ENDSTATUS=PASS || echo ENDSTATUS=FAIL
 
 ########################################################################
+# Kill hang-watcher; specifically, kill its dangling "tee" job
+########################################################################
+# 
+# Want to kill BOTH jobs 19769 and 19772
+# ------------------------------------------------------------------
+# % jobs -l | sed 's/^/X/'
+# X[1]+ 19769 Running                 watch_for_hang 2>&1
+# X     19772                       | tee -i hang-watcher.log &
+# ------------------------------------------------------------------
+
+echo "+++ KILL HANGWATCHER"
+[ $DBG ] && (ps ax | grep hang | grep -v grep)
+[ $DBG ] && jobs -l
+
+echo ''
+echo "Hoping to terminate these background jobs:"
+jobs -l
+echo ''
+
+for j in $(jobs -l | sed 's/^/X/' | awk '{print $2}'); do
+  echo kill $j
+  kill $j || echo "no such process but that's okay"
+done
+[ $DBG ] && (ps ax | grep hang | grep -v grep)
+
+########################################################################
 # Check to see if succeeded or not
 ########################################################################
 
@@ -126,16 +152,21 @@ if [ "$pid" ]; then
 fi
 
 echo ''; echo "Check for QRC error(s) in '$log'"
-log='make-prh.log'
-egrep '^ Error messages' $log
-n_errors=$(egrep '^ Error messages' $log | awk '{print $NF}')
-for i in $n_errors; do 
-    if [ "$i" -gt 0 ]; then 
-        echo ''
-        echo "QCHECK PROBLEM: QRC ERRORS - FAIL"
-        echo "FAILED n_errors, flagging QRC for retry"
-        FOUND_ERROR=QRC; exit 13
-    fi
+
+logs=$(ls *-cadence-innovus-postroute_hold/qrc*.log)
+for log in $logs; do
+    echo $log
+    egrep '^ Error messages' $log
+    echo ''
+    n_errors=$(egrep '^ Error messages' $log | awk '{print $NF}')
+    for i in $n_errors; do 
+        if [ "$i" -gt 0 ]; then 
+            echo ''
+            echo "QCHECK PROBLEM: QRC ERRORS - FAIL"
+            echo "FAILED n_errors, flagging QRC for retry"
+            FOUND_ERROR=QRC; exit 13
+        fi
+    done
 done
 
 echo ''; echo 'Check for other / unknown error(s)'
@@ -146,9 +177,5 @@ fi
 
 echo "QCHECK: NO ERRORS FOUND, HOORAY! - PASS"
 echo "Hey looks like we got away with it"
-
-########################################################################
-# DONE!
-########################################################################
 
 exit 0

@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# LATER want this to work for any step. But...for now...
-
 # Usage: $0 <refdir>
-REF=$1
 
 # Build the necessary context to run postroute_hold step only.
-# Want two steps
+# TODO/LATER maybe want this to work for any step.
+
+REF=$1
+
+# Want to link two steps from <refdir> into current (build) dir
 #     *-cadence-innovus-postroute
 #     *-cadence-innovus-flowsetup
 
@@ -15,6 +16,7 @@ REF=$1
 #     RUNDIR=/build/run230/full_chip
 #     REFDIR=/build/gold
 # 
+#     # Note setup script leaves you in RUNDIR as a side effect
 #     source mflowgen/bin/setup-buildkite.sh --dir $RUNDIR
 #     mflowgen/bin/get-step-context.sh $REFDIR
 #     make cadence-innovus-postroute_hold
@@ -48,7 +50,7 @@ for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
 
 done
 
-# Did we get away with it?
-echo "+++ TODO LIST"
-function make-n-filter { egrep '^mkdir.*output' | sed 's/output.*//' | egrep -v ^Make ;}
-make -n cadence-innovus-postroute_hold |& make-n-filter
+# # Did we get away with it? Example of how to check:
+# echo "+++ TODO LIST"
+# function make-n-filter { egrep '^mkdir.*output' | sed 's/output.*//' | egrep -v ^Make ;}
+# make -n cadence-innovus-postroute_hold |& make-n-filter

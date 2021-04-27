@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Nondestructive script for helping to clean out /tmp after buildkite run(s)
+# Must be used interactively; echoes a bunch of commands that you then have
+# to cut'n'paste or source or something by hand ish.
+
 function hour_old {
     find /tmp -mindepth 1 -maxdepth 1 -user buildkite-agent -name "$1" \
          -mmin +1 |& grep -v 'Permission denied'

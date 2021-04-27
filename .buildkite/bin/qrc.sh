@@ -137,10 +137,11 @@ if [ "$USE_CACHE" == 'true' ]; then
 
 fi
 
-# okay now
+########################################################################
+# RUN THE STEP! Then check for pass/fail criteria
+########################################################################
+
 $GARNET_HOME/.buildkite/bin/prh.sh && RESULT=PASS || RESULT=FAIL
-
-
 echo "+++ QCHECK: PASS or FAIL?"
 
 if [ "$RESULT" == "PASS" ]; then
@@ -162,7 +163,6 @@ if [ "$RESULT" == "PASS" ]; then
     #     make-prh-fail1.log - QCHECK: NO ERRORS FOUND, HOORAY! - PASS
     #
     egrep -H '^QCHECK.*(PASS|FAIL)$' make-prh*.log | sed 's/:/ - /'
-    
     
     ########################################################################
     # DONE!

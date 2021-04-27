@@ -87,9 +87,7 @@ fi
 # Note: returns null ("") if no alias found
 echo $s1; # return value = $s1
 
-# SILENTLY clean up and exit
-# (Result of 'step_alias' must be only the single-word alias!!)
-# (test -f $makelist && /bin/rm $makelist) >& /dev/null || echo -n ""
+# Clean up and exit
 test -f $makelist && /bin/rm $makelist
 exit
 

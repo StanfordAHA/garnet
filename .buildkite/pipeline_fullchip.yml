@@ -93,7 +93,7 @@ steps:
 - wait: ~
 
 ########################################################################
-# postroute_hold fails occasionally, thus all this infrastructure for retry.
+# postroute_hold fails sometimes, thus all this infrastructure for retry.
 # 
 # "prh.sh" does the following:
 #   - if step "*-postroute_hold" exists already, do nothing and exit 0
@@ -103,8 +103,8 @@ steps:
 #   - (if build fails, moves make-prh.log to step dir)
 ########################################################################
 
-# postroute_hold, retry if fail
-- label:   "hold"
+# postroute_hold, retry if fail.
+- label: "hold"
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
@@ -112,7 +112,7 @@ steps:
 - wait: { continue_on_failure: true }
 
 # First retry, continue with another retry on failure.
-- label:   "hold'"
+- label: "hold'"
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- POSTROUTE_HOLD - SECOND ATTEMPT"; set -o pipefail;
@@ -120,12 +120,12 @@ steps:
 - wait: { continue_on_failure: true }
 
 # Final postroute_hold attempt, fail pipeline if this one bombs.
-- label:   "hold''"
+- label: "hold''"
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- POSTROUTE_HOLD - FINAL ATTEMPT"; set -o pipefail;
      $$GARNET_HOME/.buildkite/bin/prh.sh |& tee make-prh3.log'
-- wait: { continue_on_failure: true }
+- wait: ~
   
 ########################################################################
 # continue
@@ -138,7 +138,6 @@ steps:
      make mentor-calibre-lvs |& tee make-lvs.log'
 - wait: ~
 
-########################################################################
 # Not sure if this is ever useful...
 # - label: 'drc'
 #   commands:
@@ -146,14 +145,4 @@ steps:
 #      echo "--- MAKE MENTOR-CALIBRE-DRC"; set -o pipefail;
 #      make mentor-calibre-drc |& tee make-drc.log'
 # - wait: ~
-
-# OLD postroute_hold
-# # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
-# - label: 'hold'
-#   commands:
-#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
-#      echo "--- MAKE CADENCE-INNOVUS-POSTROUTE_HOLD"; set -o pipefail;
-#      echo exit 13 | make cadence-innovus-postroute_hold |& tee make-hold.log'
-# - wait: ~
-
 
