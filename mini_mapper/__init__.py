@@ -1152,6 +1152,9 @@ def map_app(pre_map):
             instr = {}
             instr["name"] = name
             instr["app_name"] = get_app_name(pre_map)
+            if "is_rom" in instance["genargs"] and instance["genargs"]["is_rom"][1] is True:
+                instr.update(instance["modargs"])
+                instr["mode"] = MemoryMode.ROM
             if mem_mode == "lake":
                 instr["depth"] = 0
                 instr.update(instance["modargs"])
