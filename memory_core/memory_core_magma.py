@@ -219,7 +219,8 @@ class MemCore(LakeCoreBase):
                 configs.append((addr, feat_addr, data))
 
         # Extract mode to the enum
-        mode = mode_map[instr['mode'][1]]
+        # mode = mode_map[instr['mode'][1]]
+        mode = instr['mode']
 
         if mode == MemoryMode.UNIFIED_BUFFER:
             config_runtime = self.dut.get_static_bitstream_json(top_config)
