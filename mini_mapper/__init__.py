@@ -996,7 +996,7 @@ def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, instr_orig):
         instr = {}
         instr.update(instr_orig)
         instr["depth"] = depth
-        instr["mode"] = MemoryMode.DB
+        instr["mode"] = MemoryMode.UNIFIED_BUFFER
         instr["chain_en"] = 1
         instr["chain_idx"] = index
         if index == 0:
@@ -1155,7 +1155,7 @@ def map_app(pre_map):
                 instr["depth"] = 0
                 instr.update(instance["modargs"])
             elif mem_mode == "lb":
-                instr["mode"] = MemoryMode.DB
+                instr["mode"] = MemoryMode.UNIFIED_BUFFER
                 instr["depth"] = int(args[-1])
                 if instr["depth"] > 512:
                     split_ub(blk_id, netlist, id_to_name, bus,
@@ -1168,7 +1168,7 @@ def map_app(pre_map):
                 instr["content"] = content
             elif mem_mode == "ub":
                 instr["is_ub"] = True
-                instr["mode"] = MemoryMode.DB
+                instr["mode"] = MemoryMode.UNIFIED_BUFFER
                 params = json.loads("_".join(args[2:]))
                 instr.update(params)
                 if "depth" in instr and instr["depth"] > 512:
