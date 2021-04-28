@@ -1,5 +1,16 @@
 #!/bin/bash
 
+########################################################################
+# postroute_hold fails sometimes, thus all this infrastructure for retry.
+# 
+# "prh.sh" does the following:
+#   - make postroute_hold
+#   - check for errors; exit 13 if errors found
+#
+# Note if "make postroute_hold" did error-checking correctly, we would
+# not need prh.sh. Maybe a subject for a future github issue.
+########################################################################
+
 if [ "$1" == "--help" ]; then cat << '  EOF' | sed 's/^  //'
   Usage:
       prh.sh <rundir>
@@ -38,7 +49,7 @@ if [ "$1" == "--help" ]; then cat << '  EOF' | sed 's/^  //'
   exit
 fi
 
-echo "--- BEGIN '$*'"
+echo "--- BEGIN $0 $*"
 
 # Little sanity check; list all the steps that will be taken.
 
@@ -123,19 +134,19 @@ echo exit 13 | make cadence-innovus-postroute_hold \
 # X     19772                       | tee -i hang-watcher.log &
 # ------------------------------------------------------------------
 
-echo "+++ KILL HANGWATCHER"
+echo "--- KILL HANGWATCHER"
 [ $DBG ] && (ps ax | grep hang | grep -v grep)
 [ $DBG ] && jobs -l
 
 echo ''
-echo "Hoping to terminate these background jobs:"
-jobs -l
+echo "Background jobs to kill:"; jobs -l
 echo ''
-
 for j in $(jobs -l | sed 's/^/X/' | awk '{print $2}'); do
-  echo kill $j
+  echo -n "kill ${j}..."
   kill $j || echo "no such process but that's okay"
 done
+# Give em a sec to die
+echo ''; sleep 1; echo ''
 [ $DBG ] && (ps ax | grep hang | grep -v grep)
 
 ########################################################################
@@ -144,18 +155,20 @@ done
 
 echo "+++ QCHECK: PASS or FAIL?"
 
-echo ''; echo 'Check for hung job'
+# Hung job?
+echo ''; echo 'Check for hung job...'
 pid=$(grep 'found hung process' hang-watcher.log | awk '{print $NF}')
 if [ "$pid" ]; then
     echo "QCHECK PROBLEM: HUNG JOB $pid - FAIL"
     FOUND_ERROR=HUNG; exit 13
+else
+    echo '...no hung job.'; echo ''
 fi
 
-echo ''; echo "Check for QRC error(s) in '$log'"
-
+# QRC errors?
 logs=$(ls *-cadence-innovus-postroute_hold/qrc*.log)
 for log in $logs; do
-    echo $log
+    echo ''; echo "Check for QRC error(s) in '$log'"
     egrep '^ Error messages' $log
     echo ''
     n_errors=$(egrep '^ Error messages' $log | awk '{print $NF}')
@@ -169,12 +182,14 @@ for log in $logs; do
     done
 done
 
-echo ''; echo 'Check for other / unknown error(s)'
+# Other errors?
+echo 'Check for other / unknown error(s)...'
 if (grep -v grep $log | grep ENDSTATUS=FAIL); then
     echo "QCHECK PROBLEM: FAILED mflowgen with unknown cause, giving up now"
     FOUND_ERROR=FAIL; exit 13
 fi
 
+# Done!
 echo "QCHECK: NO ERRORS FOUND, HOORAY! - PASS"
 echo "Hey looks like we got away with it"
 

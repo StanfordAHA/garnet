@@ -22,6 +22,7 @@ REF=$1
 #     make cadence-innovus-postroute_hold
 
 DBG=
+echo "--- BEGIN $0 $*"
 echo "+++ PRH TEST RIG SETUP - symlink to steps in $REF/full_chip";
 for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
 
