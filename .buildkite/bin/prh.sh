@@ -162,19 +162,19 @@ if [ "$pid" ]; then
     echo "QCHECK PROBLEM: HUNG JOB $pid - FAIL"
     FOUND_ERROR=HUNG; exit 13
 else
-    echo '...no hung job.'; echo ''
+    echo '...no hung job.'
 fi
+echo ''
 
 # QRC errors?
 logs=$(ls *-cadence-innovus-postroute_hold/qrc*.log)
 for log in $logs; do
-    echo ''; echo "Check for QRC error(s) in '$log'"
+    echo "Check for QRC error(s) in '$log'"
     egrep '^ Error messages' $log
-    echo ''
     n_errors=$(egrep '^ Error messages' $log | awk '{print $NF}')
+    echo ''
     for i in $n_errors; do 
         if [ "$i" -gt 0 ]; then 
-            echo ''
             echo "QCHECK PROBLEM: QRC ERRORS - FAIL"
             echo "FAILED n_errors, flagging QRC for retry"
             FOUND_ERROR=QRC; exit 13
@@ -188,6 +188,7 @@ if (grep -v grep $log | grep ENDSTATUS=FAIL); then
     echo "QCHECK PROBLEM: FAILED mflowgen with unknown cause, giving up now"
     FOUND_ERROR=FAIL; exit 13
 fi
+echo ''
 
 # Done!
 echo "QCHECK: NO ERRORS FOUND, HOORAY! - PASS"
