@@ -3,11 +3,11 @@
 agents: { queue: "papers" }
 
 env:
-  GOLD:      /build/gold.${BUILDKITE_BUILD_NUMBER}/full_chip
+  GOLD:      /build/prh.${BUILDKITE_BUILD_NUMBER}/full_chip
   SETUP_BK:  source mflowgen/bin/setup-buildkite.sh --dir $GOLD --need_space
   PHREF:     /sim/buildkite-agent/gold
-  SETUP_PRH: $GARNET_HOME/mflowgen/bin/get-step-context.sh $$PHREF
-  RUN_PRH:   $GARNET_HOME/.buildkite/bin/prh.sh |& tee
+  SETUP_PRH: $$GARNET_HOME/mflowgen/bin/get-step-context.sh $$PHREF
+  RUN_PRH:   $$GARNET_HOME/.buildkite/bin/prh.sh |& tee
 
 steps:
   - label: 'setup'
