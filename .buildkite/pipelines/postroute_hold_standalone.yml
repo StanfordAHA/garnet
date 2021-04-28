@@ -3,16 +3,13 @@
 agents: { queue: "papers" }
 
 env:
-  GOLD:      foo
-  SETUP_BK:  echo 1. $$GOLD
-  PHREF:     echo 2. $GOLD
-  SETUP_PRH: /bin/bash -c "echo 3. $$GOLD"
-  RUN_PRH:   echo 
+  GOLD:  foo
+  CMD1:  echo 1. $$GOLD
+  CMD2: 'echo 2. $$GOLD'
 
 steps:
 
   # postroute_hold, retry if fail.
   - label: "hold"
     commands:
-    - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
-       $$SETUP_BK 1G; $$SETUP_PRH; $$RUN_PRH make-prh1.log'
+    - set -x; echo $GOLD; $CMD1; $CMD2
