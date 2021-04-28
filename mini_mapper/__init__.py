@@ -21,9 +21,9 @@ LUT = LUT_t_fc(family)
 Cond = Cond_t
 
 # LUT constants
-B0 = BitVector[8]([0,1,0,1,0,1,0,1])
-B1 = BitVector[8]([0,0,1,1,0,0,1,1])
-B2 = BitVector[8]([0,0,0,0,1,1,1,1])
+B0 = BitVector[8]([0, 1, 0, 1, 0, 1, 0, 1])
+B1 = BitVector[8]([0, 0, 1, 1, 0, 0, 1, 1])
+B2 = BitVector[8]([0, 0, 0, 0, 1, 1, 1, 1])
 
 
 def __get_alu_mapping(op_str):
@@ -393,9 +393,7 @@ def pack_netlists(raw_netlists, name_to_id, fold_reg=True):
                 if next_blk is None:
                     nets_to_remove.add(net_id)
                     break
-                assert (next_blk is not None and
-                        next_blk[0] != "c" and next_blk[0] != "r"
-                        and next_blk[0] != "b")
+                assert (next_blk is not None and next_blk[0] != "c" and next_blk[0] != "r" and next_blk[0] != "b")
                 # absorb blk to the next one
                 remove_blks.add((blk_id, id_to_name[next_blk], port))
                 folded_blocks[(blk_id, port)] = (next_blk, id_to_name[blk_id],
@@ -663,8 +661,7 @@ def get_const_value(instance):
 
 def get_lut_pins(instance):
     assert ("genref" in instance and instance["genref"] == "cgralib.PE")
-    assert ("genargs" in instance and
-            instance["genargs"]["op_kind"][-1] == "bit")
+    assert ("genargs" in instance and instance["genargs"]["op_kind"][-1] == "bit")
     assert ("modargs" in instance)
     modargs = instance["modargs"]
     bit0_value = modargs["bit0_value"][-1]
@@ -1012,7 +1009,7 @@ def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, instr_orig):
                     net.append((new_mem_blk_id, "wdata"))
                 elif blk_id == mem_blk and port == "wen":
                     net.append((new_mem_blk_id, "wen"))
-                elif blk_id == mem_blk and port =="ren":
+                elif blk_id == mem_blk and port == "ren":
                     net.append((new_mem_blk_id, "ren"))
 
         # chain the new block together
@@ -1145,7 +1142,7 @@ def map_app(pre_map):
             else:
                 assert "const" in pin_name
                 return Mode.CONST, int(pin_name.split("_")[-1])
-                
+
         if "mem" in tile_op:
             args = tile_op.split("_")
             mem_mode = args[1]
@@ -1155,7 +1152,7 @@ def map_app(pre_map):
             if "is_rom" in instance["genargs"] and instance["genargs"]["is_rom"][1] is True:
                 instr.update(instance["modargs"])
                 instr["mode"] = MemoryMode.ROM
-            if mem_mode == "lake":
+            elif mem_mode == "lake":
                 instr["depth"] = 0
                 instr.update(instance["modargs"])
                 instr["mode"] = MemoryMode.UNIFIED_BUFFER
@@ -1178,8 +1175,8 @@ def map_app(pre_map):
                 instr.update(params)
                 if "depth" in instr and instr["depth"] > 512:
                     new_ub_names, idx = split_ub(blk_id, netlist, id_to_name,
-                                           bus, instance_to_instr,
-                                           instr)
+                                                 bus, instance_to_instr,
+                                                 instr)
                     instr["chain_en"] = 1
                     instr["chain_idx"] = idx
         else:
