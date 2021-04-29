@@ -3,7 +3,7 @@ agents: { queue: "papers" }
 env:
   BAD:  /build/gold.240/full_chip
   GOOD: /sim/buildkite-agent/gold
-  LVS_CHECK: $$GARNET_HOME/mflowgen/bin/buildcheck.sh --lvs
+  LVS_CHECK: ./mflowgen/bin/buildcheck.sh --lvs
 
 steps:
   # Check LVS results but don't halt pipeline regardless of outcome
