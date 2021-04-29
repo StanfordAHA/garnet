@@ -30,7 +30,7 @@ steps:
 - wait: ~
 
 # Check tile_array LVS results but don't halt pipeline regardless of outcome
-- label: "CORRECT?"
+- label: "lvs?"
   commands:
     - $LVS_CHECK $GOLD
     - ($LVS_CHECK $GOLD | grep INCORRECT > /dev/null) && exit 13 || exit 0
@@ -116,7 +116,7 @@ steps:
 - wait: ~
 
 # Check LVS results and FAIL pipeline if results bad
-- label: "CORRECT?"
+- label: "lvs?"
   commands:
     - $LVS_CHECK $GOLD
     - ($LVS_CHECK $GOLD | grep INCORRECT > /dev/null) && exit 13 || exit 0
