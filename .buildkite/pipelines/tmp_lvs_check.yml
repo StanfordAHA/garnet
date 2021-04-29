@@ -1,3 +1,5 @@
+agents: { queue: "papers" }
+
 env:
   BAD:  /build/gold.240/full_chip
   GOOD: /sim/buildkite-agent/gold
