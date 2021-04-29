@@ -21,16 +21,23 @@ steps:
   - wait: ~
 
 
-#   # Check LVS results but don't halt pipeline regardless of outcome
-#   - label: "test bad || continue"
-#     commands:
-#       - $LVS_CHECK $BAD
-#       - ($LVS_CHECK $BAD | grep INCORRECT > /dev/null) && exit 13 || exit 0
-#   - wait: { continue_on_failure: true }
-# 
+  # Check LVS results but don't halt pipeline regardless of outcome
+  - label: "test bad || continue"
+    commands:
+      - $LVS_CHECK $BAD
+      - ($LVS_CHECK $BAD | grep INCORRECT > /dev/null) && exit 13 || exit 0
+  - wait: { continue_on_failure: true }
+ 
 #   # Check LVS results and FAIL pipeline if results bad
 #   - label: "test bad || fail"
 #     commands:
 #       - $LVS_CHECK $BAD
 #       - ($LVS_CHECK $BAD | grep INCORRECT > /dev/null) && exit 13 || exit 0
 #   - wait: ~
+
+  # Check LVS results and FAIL pipeline if results bad
+  - label: "test good || fail"
+    commands:
+      - $LVS_CHECK $GOOD
+      - ($LVS_CHECK $GOOD | grep INCORRECT > /dev/null) && exit 13 || exit 0
+  - wait: ~
