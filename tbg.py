@@ -239,6 +239,7 @@ class TestBenchGenerator:
             self.gold_filename = output_filename
 
     def _convert_pgm_to_raw(self, input_filename, output_filename):
+        from functools import reduce
         eight_bit = (1 << 8) - 1
         sixteen_bit = (1 << 16) - 1
         # convert the pgm into raws and keep track of the input size as well as
@@ -246,12 +247,13 @@ class TestBenchGenerator:
         with open(input_filename, "rb") as f:
             pgm_format = f.readline().decode("ascii").strip()
             assert pgm_format in {"P5", "P6"}
-            width, height = [int(i) for i in f.readline().decode("ascii").split()]
+            shape = [int(i) for i in f.readline().decode("ascii").split()]
+            wxh = reduce(lambda x, y: x * y, shape)
             depth = int(f.readline().decode("ascii"))
             assert depth in [eight_bit, sixteen_bit]
             input_size = 1 if depth == eight_bit else 2
             self.pixel_size = 1 if pgm_format == "P5" else 3
-            loop_size = width * height * self.pixel_size
+            loop_size = wxh * self.pixel_size
             # convert it to a raw file
             with open(output_filename, "wb+") as out_f:
                 for i in range(loop_size):
