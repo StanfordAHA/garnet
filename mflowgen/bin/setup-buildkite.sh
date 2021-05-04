@@ -340,33 +340,36 @@ fi
 echo "--- Building in destination dir `pwd`"
 
 
-##############################################################################
-# NEW MFLOWGEN --- see far below for old setup
-##############################################################################
-# MFLOWGEN: Use a single common mflowgen for all builds why not
-echo "--- INSTALL LATEST MFLOWGEN"
+########################################################################
+# MFLOWGEN: Use a single common mflowgen for all builds of a given branch
+# 
+# Mar 2102 - Added option to use a different mflowgen branch when/if desired
+
+mflowgen_branch=master
+echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
+
 mflowgen=/sim/buildkite-agent/mflowgen
+if [ "$mflowbranch" != "master" ]; then
+    mflowgen=/sim/buildkite-agent/mflowgen.$mflowgen_branch
+fi
+
+# Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
+# persistence of non-master branch through to end of run.  The cost
+# of making local mflowgen clones is currently about 200M build.
+
+# Build repo if not exists yet
+if ! test -e $mflowgen; then
+    git clone -b $mflowgen_branch \
+        -- https://github.com/mflowgen/mflowgen.git $mflowgen
+fi
+
+echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
-  git checkout master
-  git pull
+  git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
 popd
+
 echo ""
-  
-# Okay. Ick. If we leave it here, we get all these weird and very
-# non-portable relative links e.g.
-#    % ls -l /build/gold.112/full_chip/17-tile_array/10-tsmc16/
-#    % multivt -> ../../../../../sim/buildkite-agent/mflowgen/adks/tsmc16/multivt/
-# 
-# So we make a local symlink to contain the damage. It still builds
-# an ugly relative link but now maybe it's more contained, something like
-#    % ls -l /build/gold.112/full_chip/17-tile_array/10-tsmc16/
-#    % multivt -> ../../../mflowgen/adks/tsmc16/multivt/
-
-mflowgen_orig=$mflowgen
-test -e mflowgen || ln -s $mflowgen_orig
-mflowgen=`pwd`/mflowgen
-
 
 
 ########################################################################
@@ -374,7 +377,7 @@ mflowgen=`pwd`/mflowgen
 ########################################################################
 echo "--- ADK SETUP / CHECK"
 
-echo COPY LATEST ADK TO MFLOWGEN REPO
+echo 'COPY LATEST ADK TO MFLOWGEN REPO'
 
 # Copy the latest tsmc16 adk from a nearby repo; we'll use the one in steveri.
 # 
@@ -476,132 +479,3 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
-
-##############################################################################
-##############################################################################
-##############################################################################
-# END; everything from here down is to be deleted later
-##############################################################################
-##############################################################################
-##############################################################################
-#   update_cache=/build/gold.100/full_chip/17-tile_array
-#   source mflowgen/test/bin/bk_setup.sh full_chip
-#   cd $update_cache
-#   pwd
-#   ./mflowgen-run > mflowgen_run.log.$$PPID
-# 
-# 
-# 
-#   - 'mflowgen/test/test_module.sh full_chip
-#        --debug
-#        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-#        --setup_only;
-#      cd /build/gold.100/full_chip/17-tile_array
-# 
-# 
-#   build_dir=/build/gold.100/full_chip/17-tile_array;
-# 
-#   '
-#   cd $$build_dir; source 
-#   
-
-# OLD:
-#     if test -d $venv; then
-#         echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT"
-#         source $venv/bin/activate
-#     else
-#         echo "CANNOT FIND PRE-BUILT PYTHON VIRTUAL ENVIRONMENT"
-#         echo "- building a new one from scratch"
-#         # JOBDIR should be per-buildstep environment e.g.
-#         # /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
-#         JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
-#         pushd $JOBDIR
-#           /usr/local/bin/python3 -m venv venv ;# Builds "$JOBDIR/venv" maybe
-#           source $JOBDIR/venv/bin/activate
-#         popd
-#     fi
-# 
-#     check_pyversions
-# 
-#     # pip install -r $garnet/requirements.txt
-#     # Biting the bullet and updating to the latest everything;
-#     # also, it's the right thing to do I guess
-#     pip install -U -r $garnet/requirements.txt
-
-########################################################################
-# OLD MFLOWGEN - delete after new code (below) has successfully
-# completed a build or two...
-# ########################################################################
-# # Make a build space for mflowgen; clone mflowgen
-# echo "--- CLONE *AND INSTALL* MFLOWGEN REPO"
-# [ "$VERBOSE" == "true" ] && (echo ""; echo "--- pwd="`pwd`; echo "")
-# if [ "$USER" == "buildkite-agent" ]; then
-#     build=$garnet/mflowgen/test
-# else
-#     build=/sim/$USER
-# fi
-# 
-# # CLONE
-# test  -d $build || mkdir $build; cd $build
-# test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
-# mflowgen=$build/mflowgen
-# 
-# # INSTALL
-# pushd $mflowgen
-#   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
-# popd
-# echo ""
-########################################################################
-
-
-########################################################################
-# OLD ADK SETUP - delete after new code (below) has successfully
-# completed a build or two...
-########################################################################
-# echo "--- ADK SETUP / CHECK"
-# 
-# # Copy the tsmc16 views into the adks directory.  Note the adks must
-# # be touchable by current user, thus must copy locally and cannot
-# # e.g. use symlink to someone else's existing adk.
-# 
-# # Find the tsmc16 libraries
-# 
-# # Check out official adk repo?
-# #   test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
-# # Yeah, no, that ain't gonna fly. gitlab repo requires username/pwd permissions and junk
-# # Instead, let's just use a cached copy
-# 
-# # FIXME/TODO check to see if user can use official repo,
-# # if so use that instead of cached copy, e.g.
-# 
-# # FIXME/TODO give buildkite-agent permission to use official repo
-# 
-# # tsmc16=/sim/steveri/mflowgen/adks/tsmc16-adk
-# tsmc16=/sim/steveri/mflowgen/adks/tsmc16
-# echo copying adk from $tsmc16
-# ls -l $tsmc16
-# 
-# # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
-# # test -e tsmc16 || ln -s ${tsmc16} tsmc16
-# 
-# set -x
-# echo COPYING IN A FRESH ADK
-# 
-# # Copy to cache (gold) dir if that was requested, else use default
-# if [ "$build_dir" ]; then
-#     test -d $build_dir/mflowgen/adks || mkdir -p $build_dir/mflowgen/adks
-#     # cp -rpf $build/mflowgen/adks $build_dir/mflowgen
-#     adks=$build_dir/mflowgen/adks
-# else
-#     adks=$build/mflowgen/adks
-# fi
-# 
-# if test -d $adks/tsmc16; then
-#     echo Using existing adks $adks/tsmc16
-# else
-#     echo "Copying adks from '$tscm16' to '$adks'"
-#     set -x; cp -rpH $tsmc16 $adks; set +x
-# fi
-# 
-# export MFLOWGEN_PATH=$adks
-# echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
