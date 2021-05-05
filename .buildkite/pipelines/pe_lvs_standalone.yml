@@ -23,13 +23,24 @@ steps:
 - label: 'PE lvs check'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps lvs --debug --use_cache constraints,custom-genus-scripts,custom-timing-assert,power-domains,rtl,tsmc16,cadence-genus-synthesis,custom-flowgen-setup,cadence-innovus-flowsetup,custom-init,cadence-innovus-init,custom-power-leaf,cadence-innovus-power,cadence-innovus-place,cadence-innovus-cts,cadence-innovus-postcts_hold,cadence-innovus-route,custom-short-fix,cadence-innovus-postroute,cadence-innovus-signoff
-  - set -x; pwd; find full_chip -name svdb -exec echo echo /bin/rm -rf {} \;
-  - set -x; pwd; find full_chip -name svdb -exec echo ls -ld {} \;
-  - set -x; pwd; find full_chip -name svdb -exec echo ls -l {} \;
-  - set -x; pwd; ls -l full_chip/19-tile_array/17-Tile_PE/27-mentor-calibre-lvs
-  - set -x; pwd; ls -l full_chip/19-tile_array/17-Tile_PE/27-mentor-calibre-lvs/svdb
-  - set -x; pwd; find full_chip -name svdb -exec /bin/rm -rf {} \;
+  - set -x; pwd
+  - set -x; ls -l full_chip/19-tile_array/17-Tile_PE/27-mentor-calibre-lvs
+  - set -x; ls -l full_chip/19-tile_array/17-Tile_PE/27-mentor-calibre-lvs/svdb
+  - set -x; find full_chip -name svdb -exec echo /bin/rm -rf {} \;
+  - set -x; find full_chip -name svdb -exec echo /bin/rm -rf {} \; > /tmp/tmp$$.sh
+  - set -x; source /tmp/tmp$$.sh
+  - set -x; ls -l full_chip/19-tile_array/17-Tile_PE/27-mentor-calibre-lvs
+  - set -x; ls -l full_chip/19-tile_array/17-Tile_PE/27-mentor-calibre-lvs/svdb
 
+
+#   - set -x; pwd; find full_chip -name svdb -exec echo ls -ld {} \;
+#   - set -x; pwd; find full_chip -name svdb -exec echo ls -l {} \;
+#   - set -x; /bin/rm -rf `
+# 
+# 
+# 
+#   - set -x; pwd; find full_chip -name svdb -exec /bin/rm -rf {} \;
+# 
 # - wait: { continue_on_failure: true } # One step at a time + continue on failure
 # 
 # - label: 'MemCore synth 17m'
