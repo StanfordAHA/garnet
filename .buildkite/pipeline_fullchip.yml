@@ -28,8 +28,7 @@ steps:
      make tile_array |& tee make-tile_array.log'
   - 'echo "--- DELETE SVDB DIRS"; set -x;
      find full_chip -name svdb -exec echo /bin/rm -rf {} \; > /tmp/tmp$$.sh;
-     source /tmp/tmp$$.sh'
-  - /bin/rm /tmp/tmp$$.sh
+     source /tmp/tmp$$.sh; /bin/rm /tmp/tmp$$.sh'
 - wait: ~
 
 # Check tile_array LVS results but don't halt pipeline regardless of outcome
