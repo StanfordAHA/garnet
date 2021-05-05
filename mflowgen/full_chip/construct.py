@@ -90,11 +90,6 @@ def construct():
     'cgra_apps' : ["tests/conv_1_2", "tests/conv_2_1"]
   }
 
-  # svdb in CI takes up too much space, so turn it off
-  # Rerun LVS manually when/if want svdb
-  if (os.getenv('USER') == "buildkite-agent"):
-      g.update_params( { 'lvs_create_svdb' : '0' } )
-
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------

@@ -62,13 +62,6 @@ def construct():
   if (os.getenv('USER') == "buildkite-agent"):
       parameters['clock_period'] = 4.0; # 4ns = 250 MHz
 
-  # svdb in CI takes up too much space, so turn it off
-  # Rerun LVS manually when/if want svdb
-  if (os.getenv('USER') == "buildkite-agent"):
-      # g.update_params( { 'lvs_create_svdb' : '0' } )
-      parameters['lvs_create_svdb'] = 0
-
-
   # User-level option to change clock frequency
   # E.g. 'export clock_period_PE="4.0"' to target 250MHz
   # Optionally could restrict to bk only: if (os.getenv('USER') == "buildkite-agent")
