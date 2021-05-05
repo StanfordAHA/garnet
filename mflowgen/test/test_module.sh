@@ -206,16 +206,6 @@ function build_subgraph {
 firstmod=${modlist[0]}
 build_module $firstmod
 
-
-  # tsmc16
-  echo "+++ Jimmy up the adks"
-  set -x; pwd
-  ls -l mflowgen/adks || echo NOPE not yet
-  ln -s /sim/buildkite-agent/gold/full_chip/mflowgen
-  ls -l mflowgen/adks
-  set +x
-  echo "--- Continue"
-
 # Subgraphs
 subgraphs=${modlist[@]:1}
 for sg in $subgraphs; do
