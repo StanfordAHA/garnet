@@ -368,13 +368,6 @@ echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
-
-  # tsmc16
-  echo "+++ Jimmy up the adks"
-  (set -x; pwd; ls adks; cd adks; ln -s /sim/buildkite-agent/gold/mflowgen/tsmc16)
-  echo "--- Continue"
-
-
 popd
 
 echo ""
