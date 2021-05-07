@@ -21,7 +21,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'stdview'
+  adk_view = 'view-standard'
 
   if which("calibre") is not None:
       drc_rule_deck = 'calibre-drc-chip.rule'
