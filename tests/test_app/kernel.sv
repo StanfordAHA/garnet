@@ -210,7 +210,14 @@ endfunction
 function data_array_t Kernel::parse_input_data(int idx);
     data_array_t result = new[input_size[idx]];
     int fp = $fopen(input_filenames[idx], "rb");
+    int name_len = input_filenames[idx].len();
     assert_(fp != 0, "Unable to read input file");
+    if (input_filenames[idx].substr(name_len-3, name_len-1) == "pgm") begin
+        // just skip the first three lines
+        for (int i = 0; i < 3; i++) begin
+             $fscanf(fp, "%*[^\n]\n");
+        end
+    end
     for (int i = 0; i < input_size[idx]; i++) begin
         byte unsigned value;
         int code;
@@ -225,7 +232,14 @@ endfunction
 function data_array_t Kernel::parse_gold_data(int idx);
     data_array_t result = new[output_size[idx]];
     int fp = $fopen(output_filenames[idx], "rb");
+    int name_len = output_filenames[idx].len();
     assert_(fp != 0, "Unable to read output file");
+    if (output_filenames[idx].substr(name_len-3, name_len-1) == "pgm") begin
+        // just skip the first three lines
+        for (int i = 0; i < 3; i++) begin
+             $fscanf(fp, "%*[^\n]\n");
+        end
+    end
     for (int i = 0; i < output_size[idx]; i++) begin
         byte unsigned value;
         int code;
