@@ -181,7 +181,8 @@ function Kernel::new(string app_dir);
         output_filenames[i] = get_output_filename(kernel_info, i);
         output_size[i] = get_output_size(place_info, i);
         gold_data[i] = parse_gold_data(i);
-        output_data[i] = new[output_size[i]];
+	// convert 8bit size to 16bit size
+        output_data[i] = new[(output_size[i]>>1)];
     end
 
     bs_size = get_bs_size(bs_info);
@@ -208,45 +209,55 @@ function bitstream_t Kernel::parse_bitstream();
 endfunction
 
 function data_array_t Kernel::parse_input_data(int idx);
-    data_array_t result = new[input_size[idx]];
+    int num_pixel = (input_size[idx] >> 1); // Pixel is 2byte (16bit) size
+    data_array_t result = new[num_pixel];
     int fp = $fopen(input_filenames[idx], "rb");
     int name_len = input_filenames[idx].len();
+    string tmp;
+    int code;
     assert_(fp != 0, "Unable to read input file");
     if (input_filenames[idx].substr(name_len-3, name_len-1) == "pgm") begin
         // just skip the first three lines
         for (int i = 0; i < 3; i++) begin
-             $fscanf(fp, "%*[^\n]\n");
+             $fgets(tmp, fp);
         end
     end
-    for (int i = 0; i < input_size[idx]; i++) begin
-        byte unsigned value;
-        int code;
-        code = $fread(value, fp);
-        assert_(code == 1, $sformatf("Unable to read input data"));
-        result[i] = value;
-    end
+    code = $fread(result, fp);
+    assert_(code == input_size[idx], $sformatf("Unable to read input data"));
+    // for (int i = 0; i < input_size[idx]; i++) begin
+    //     byte unsigned value;
+    //     int code;
+    //     code = $fread(value, fp);
+    //     assert_(code == 1, $sformatf("Unable to read input data"));
+    //     result[i] = value;
+    // end
     $fclose(fp);
     return result;
 endfunction
 
 function data_array_t Kernel::parse_gold_data(int idx);
-    data_array_t result = new[output_size[idx]];
+    int num_pixel = (output_size[idx] >> 1); // Pixel is 2byte (16bit) size
+    data_array_t result = new[num_pixel];
     int fp = $fopen(output_filenames[idx], "rb");
     int name_len = output_filenames[idx].len();
+    string tmp;
+    int code;
     assert_(fp != 0, "Unable to read output file");
     if (output_filenames[idx].substr(name_len-3, name_len-1) == "pgm") begin
         // just skip the first three lines
         for (int i = 0; i < 3; i++) begin
-             $fscanf(fp, "%*[^\n]\n");
+             $fgets(tmp, fp);
         end
     end
-    for (int i = 0; i < output_size[idx]; i++) begin
-        byte unsigned value;
-        int code;
-        code = $fread(value, fp);
-        assert_(code == 1, $sformatf("Unable to read output data"));
-        result[i] = value;
-    end
+    code = $fread(result, fp);
+    assert_(code == output_size[idx], $sformatf("Unable to read output data"));
+    // for (int i = 0; i < output_size[idx]; i++) begin
+    //     byte unsigned value;
+    //     int code;
+    //     code = $fread(value, fp);
+    //     assert_(code == 1, $sformatf("Unable to read output data"));
+    //     result[i] = value;
+    // end
     $fclose(fp);
     return result;
 endfunction

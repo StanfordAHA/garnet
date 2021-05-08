@@ -129,7 +129,8 @@ void update_io_configuration(struct IOInfo *io_info) {
     struct ConfigInfo *config_info = &io_info->config;
     int tile = io_info->tile;
     int start_addr = io_info->start_addr;
-    int size = io_info->size;
+    // convert 8bit size to 16bit size
+    int size = ((io_info->size) >> 1);
     if (io_info->io == Input) {
         update_tile_config_table(tile, 1 << 6);
         update_tile_config_table(tile, 1 << 2);
