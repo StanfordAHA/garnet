@@ -7,11 +7,15 @@ env:
   SETUP_BK  : source mflowgen/bin/setup-buildkite.sh --dir $GOLD --need_space
   PHREF     : /sim/buildkite-agent/gold
   SETUP_PRH : $$GARNET_HOME/mflowgen/bin/get-step-context.sh $$PHREF
-  RUN_PRH   : $$GARNET_HOME/.buildkite/bin/prh.sh |& tee
+  # RUN_PRH   : $$GARNET_HOME/.buildkite/bin/prh.sh |& tee
+  RUN_PRH   : grep foo /dev/null |& tee
+
+  # To support postroute_hold retries
+  UPLOAD : 'buildkite-agent pipeline upload'
 
   # Insert "FAIL" labels into mflowgen pipeline
-  FAIL1: 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
-  FAIL2: 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
+  FAIL1  : 'echo steps : [ { label : FAIL->retry1 , command : exit } ]'
+  FAIL2  : 'echo steps : [ { label : FAIL->retry2 , command : exit } ]'
 
   # Set slack to -0.3 to make postroute_hold much faster.
   # Default targ slack for full_chip @ 0.06 takes 6 hours atm.
@@ -41,19 +45,23 @@ steps:
   - label: "hold"
     commands:
       - echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"
-      - set -o pipefail; $SETUP_BK 1G; $SETUP_PRH; $RUN_PRH make-prh1.log 
+      - 'set -o pipefail; $$SETUP_BK 1G; $$SETUP_PRH;
+         $$RUN_PRH make-prh0.log || $$FAIL1 | $$UPLOAD'
+
   - wait: { continue_on_failure: true }
 
   # First retry, continue with another retry on failure.
   - label: "hold'"
     commands:
       - echo "--- POSTROUTE_HOLD - SECOND ATTEMPT"
-      - set -o pipefail; $SETUP_BK 1G; $SETUP_PRH; $RUN_PRH make-prh2.log
+      - 'set -o pipefail; $$SETUP_BK 1G; $$SETUP_PRH;
+         $$RUN_PRH make-prh1.log || $$FAIL2 | $$UPLOAD'
   - wait: { continue_on_failure: true }
 
   # Final postroute_hold attempt, fail pipeline if this one bombs.
   - label: "hold''"
     commands:
       - echo "--- POSTROUTE_HOLD - FINAL ATTEMPT"
-      - set -o pipefail; $SETUP_BK 1G; $SETUP_PRH; $RUN_PRH make-prh3.log
+      - 'set -o pipefail; $$SETUP_BK 1G; $$SETUP_PRH;
+         $$RUN_PRH make-prh2.log || exit 13'
   - wait: ~

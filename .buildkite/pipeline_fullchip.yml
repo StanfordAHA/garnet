@@ -7,6 +7,12 @@ env:
   GOLD: /build/gold.${BUILDKITE_BUILD_NUMBER}/full_chip
   LVS_CHECK: ./mflowgen/bin/buildcheck.sh --lvs
 
+  # To support postroute_hold retries
+  PRH    : $$GARNET_HOME/.buildkite/bin/prh.sh
+  FAIL1  : 'echo steps : [ { label : FAIL->retry1 , command : exit } ]'
+  FAIL2  : 'echo steps : [ { label : FAIL->retry2 , command : exit } ]'
+  UPLOAD : 'buildkite-agent pipeline upload'
+
 steps:
 - label: 'setup'
   commands:
@@ -99,7 +105,7 @@ steps:
      make cadence-innovus-postroute |& tee make-postroute.log'
 - wait: ~
 
-########################################################################
+##########################################################################
 # postroute_hold fails sometimes, thus all this infrastructure for retry.
 # 
 # "prh.sh" does the following:
@@ -107,14 +113,14 @@ steps:
 #   - else if (presumably failed) dir "*-postroute_hold" exists, rename it
 #   - build new step postroute_hold
 # 
-########################################################################
+##########################################################################
 
 # postroute_hold, retry if fail.
 - label: "hold"
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
-     $$GARNET_HOME/.buildkite/bin/prh.sh |& tee make-prh1.log'
+     $$PRH |& tee make-prh0.log || $$FAIL1 | $$UPLOAD'
 - wait: { continue_on_failure: true }
 
 # First retry, continue with another retry on failure.
@@ -122,7 +128,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- POSTROUTE_HOLD - SECOND ATTEMPT"; set -o pipefail;
-     $$GARNET_HOME/.buildkite/bin/prh.sh |& tee make-prh2.log'
+     $$PRH |& tee make-prh1.log || $$FAIL2 | $UPLOAD'
 - wait: { continue_on_failure: true }
 
 # Final postroute_hold attempt, fail pipeline if this one bombs.
@@ -130,7 +136,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- POSTROUTE_HOLD - FINAL ATTEMPT"; set -o pipefail;
-     $$GARNET_HOME/.buildkite/bin/prh.sh |& tee make-prh3.log'
+     $$PRH |& tee make-prh2.log || exit 13'
 - wait: ~
   
 ########################################################################
