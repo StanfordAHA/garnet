@@ -6,8 +6,12 @@ env:
   GOLD      : /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip
   SETUP_BK  : source mflowgen/bin/setup-buildkite.sh --dir $GOLD --need_space
   PHREF     : /sim/buildkite-agent/gold
-  SETUP_PRH : $$GARNET_HOME/mflowgen/bin/get-step-context.sh $$PHREF
+
+  # SETUP_PRH : $$GARNET_HOME/mflowgen/bin/get-step-context.sh $$PHREF
   # RUN_PRH   : $$GARNET_HOME/.buildkite/bin/prh.sh |& tee
+
+
+  SETUP_PRH : echo fooooo
   RUN_PRH   : grep foo /dev/null |& tee
 
   # To support postroute_hold retries
