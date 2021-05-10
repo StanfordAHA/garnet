@@ -16,19 +16,17 @@ steps:
 
 - label: test1
   commands:
-  - 'echo -e "steps:\n- label: FAIL\n  command: exit"'
-  - 'echo -e "steps:\n- label: FAIL\n  command: exit" | buildkite-agent pipeline upload'
 
+  # Insrt failure label
+  - 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
+
+  - echo But then go on and tdo other stuff
+
+  # Another failure label
   - 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
 
-
-  - echo "steps:[{'label':'FAIL','command':'echo'}]"
-  - echo "steps:[{'label':'FAIL','command':'echo'}]" | buildkite-agent pipeline upload
-
-  - echo "steps:{label:FAIL,command:echo}"
-  - echo "steps:{label:FAIL,command:echo}" | buildkite-agent pipeline upload
-
-  - exit 13
+  - echo And then even more dumb stuff
+  - exit 1
 
 - label: exit13
   commands:
