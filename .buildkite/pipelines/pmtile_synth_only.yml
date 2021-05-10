@@ -38,6 +38,7 @@ steps:
   - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
      $$PRH || echo FAIL;
      echo "$$CMD1";
+     $$CMD1 | buildkite-agent pipeline upload;
      $$CMD1;'
 - wait: { continue_on_failure: true }
 
