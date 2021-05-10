@@ -15,8 +15,9 @@ env:
   #  PRH: $$GARNET_HOME/.buildkite/bin/prh.sh
   PRH: 'grep foo /dev/null'
 
-  FAIL1: 'set -x; echo -e steps:\n- label: FAIL1\n  command: exit | buildkite-agent pipeline upload'
-  # FAIL1: 'steps:\n- label: FAIL1\n  command: exit'
+  # FAIL1: 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
+  FAIL1a: 'steps:\n- label: FAIL1\n  command: exit'
+  FAIL1: 'set -x; echo -e $$FAIL1a | buildkite-agent pipeline upload'
 
 
   FAIL2: 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
@@ -30,7 +31,7 @@ steps:
 - label: "hold"
   commands:
   - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
-     $$PRH |& tee make-prh0.log || $$FAIL1'
+     $$PRH |& tee make-prh0.log || ($$FAIL1) '
 - wait: { continue_on_failure: true }
 
 #     $$PRH |& tee make-prh0.log || echo -n $$FAIL1 | buildkite-agent pipeline upload'
