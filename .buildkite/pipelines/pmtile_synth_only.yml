@@ -16,7 +16,11 @@ env:
   PRH: 'grep foo /dev/null'
 
   FAIL1: 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
+  # FAIL1: 'steps:\n- label: FAIL1\n  command: exit'
+
+
   FAIL2: 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
+
 
 
 
@@ -26,8 +30,13 @@ steps:
 - label: "hold"
   commands:
   - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
-     $$PRH |& tee make-prh0.log || echo FAIL'
+     $$PRH |& tee make-prh0.log || ($$FAIL1)'
 - wait: { continue_on_failure: true }
+
+#     $$PRH |& tee make-prh0.log || echo -n $$FAIL1 | buildkite-agent pipeline upload'
+
+
+
 
 # First retry, continue with another retry on failure.
 - label: "hold'"

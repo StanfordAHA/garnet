@@ -103,11 +103,10 @@ steps:
 # postroute_hold fails sometimes, thus all this infrastructure for retry.
 # 
 # "prh.sh" does the following:
-#   - if step "*-postroute_hold" exists already, do nothing and exit 0
-#   - if step does not exist yet, build it
-#   - if build fails, rename step to <step>-fail<i> and exit 13
-#   - meanwhile tees all outputs to make-prh.log
-#   - (if build fails, moves make-prh.log to step dir)
+#   - if "*-postroute_hold" already done and passed, do nothing and exit 0
+#   - else if (presumably failed) dir "*-postroute_hold" exists, rename it
+#   - build new step postroute_hold
+# 
 ########################################################################
 
 # postroute_hold, retry if fail.
