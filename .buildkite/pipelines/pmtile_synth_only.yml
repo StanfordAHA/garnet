@@ -20,16 +20,14 @@ steps:
   - 'echo -e "steps:\n- label: FAIL\n  command: echo" | cat'
   - 'echo -e "steps:\n- label: FAIL\n  command: echo" | buildkite-agent pipeline upload'
 
-
-
-  - echo steps:{'label':'FAIL','command':'echo'}
-  - echo steps:{'label':'FAIL','command':'echo'} | buildkite-agent pipeline upload
-
-  - echo steps:{label:FAIL,command:echo}
-  - echo steps:{label:FAIL,command:echo} | buildkite-agent pipeline upload
-
   - 'echo -e "steps:\n- label: FAIL"'
   - 'echo -e "steps:\n- label: FAIL" | buildkite-agent pipeline upload'
+
+  - echo "steps:{'label':'FAIL','command':'echo'}"
+  - echo "steps:{'label':'FAIL','command':'echo'}" | buildkite-agent pipeline upload
+
+  - echo "steps:{label:FAIL,command:echo}"
+  - echo "steps:{label:FAIL,command:echo}" | buildkite-agent pipeline upload
 
   - exit 13
 
