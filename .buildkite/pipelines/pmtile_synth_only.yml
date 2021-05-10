@@ -25,11 +25,9 @@ steps:
 - label: "hold"
   commands:
   - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
-     $$PRH || echo FAIL;
-     $$FAIL1 | $$UPLOAD'
+     $$PRH |& tee make-prh0.log || $$FAIL1 | $$UPLOAD'
 - wait: { continue_on_failure: true }
 
-# #     $$PRH |& tee make-prh0.log || echo -n $$FAIL1 | $$UPLOAD'
 
 
 # First retry, continue with another retry on failure.
@@ -118,11 +116,13 @@ steps:
 
 # steps : [ { label : FAIL1 , command : exit } ]
 
-
-
-
-
 #      echo "$$FAIL1";
 #      $$FAIL1;
 #      $$FAIL1 | $$UPLOAD;
 #      $$FAIL1;'
+
+# #     $$PRH |& tee make-prh0.log || echo -n $$FAIL1 | $$UPLOAD'
+
+#   - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
+#      $$PRH || echo FAIL;
+#      $$FAIL1 | $$UPLOAD'
