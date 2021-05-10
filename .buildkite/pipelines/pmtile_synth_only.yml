@@ -14,8 +14,10 @@ env:
   GOLD: /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip
   #  PRH: $$GARNET_HOME/.buildkite/bin/prh.sh
   PRH: 'grep foo /dev/null'
-  CMD1: "set -x; echo 'foo bar'"
-  CMD2: 'echo mol'
+  STRING: 'foo bar'
+  CMD1: 'set -x; echo $$STRING'
+  CMD2: 'set -x; echo $STRING'
+
 
 
 #   # FAIL1: 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
