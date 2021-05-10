@@ -11,8 +11,51 @@ agents: { jobsize: "hours" }
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  GOLD: /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip
+  #  PRH: $$GARNET_HOME/.buildkite/bin/prh.sh
+  PRH: 'echo FAIL; exit 13'
+
+  FAIL1: 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
+  FAIL2: 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
+
+
 
 steps:
+
+# postroute_hold, retry if fail.
+- label: "hold"
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
+     echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
+     $$PRH |& tee make-prh0.log || $$FAIL1'
+- wait: { continue_on_failure: true }
+
+# First retry, continue with another retry on failure.
+- label: "hold'"
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
+     echo "--- POSTROUTE_HOLD - SECOND ATTEMPT"; set -o pipefail;
+     $$PRH |& tee make-prh1.log || $$FAIL2'
+- wait: { continue_on_failure: true }
+
+# Final postroute_hold attempt, fail pipeline if this one bombs.
+- label: "hold''"
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
+     echo "--- POSTROUTE_HOLD - FINAL ATTEMPT"; set -o pipefail;
+     $$PRH |& tee make-prh2.log || exit 13'
+- wait: ~
+
+
+- label: exit13
+  commands:
+  - exit 13
+- wait: ~
+
+
+
+
+
 
 - label: test1
   commands:
