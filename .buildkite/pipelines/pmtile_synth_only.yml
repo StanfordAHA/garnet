@@ -15,7 +15,7 @@ env:
   #  PRH: $$GARNET_HOME/.buildkite/bin/prh.sh
   PRH: 'grep foo /dev/null'
   STRING: 'foo bar'
-  CMD1: 'echo -e steps:\n- label: FAIL1\n  command: exit'
+  CMD1: 'echo -e steps:\n- label: FAIL1\n  \ command: exit'
   CMD2: 'set -x ; echo $STRING'
 
 
@@ -38,6 +38,7 @@ steps:
   - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
      $$PRH || echo FAIL;
      echo "$$CMD1";
+     $$CMD1;
      $$CMD1 | buildkite-agent pipeline upload;
      $$CMD1;'
 - wait: { continue_on_failure: true }
