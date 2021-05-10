@@ -37,7 +37,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- POSTROUTE_HOLD - SECOND ATTEMPT"; set -o pipefail;
-     $$PRH |& tee make-prh1.log || $$FAIL2'
+     $$PRH |& tee make-prh1.log || $$FAIL2 | $UPLOAD'
 - wait: { continue_on_failure: true }
 
 # Final postroute_hold attempt, fail pipeline if this one bombs.
