@@ -49,7 +49,7 @@ steps:
 
 
 
-(exit 13) |& tee make-prh0.log || echo FAIL
+# (exit 13) |& tee make-prh0.log || echo FAIL
 
 
 
