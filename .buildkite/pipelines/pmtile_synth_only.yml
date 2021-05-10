@@ -13,7 +13,7 @@ env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
   GOLD: /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip
   #  PRH: $$GARNET_HOME/.buildkite/bin/prh.sh
-  PRH: 'echo FAIL && exit 13'
+  PRH: 'grep foo /dev/null'
 
   FAIL1: 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
   FAIL2: 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
@@ -25,9 +25,8 @@ steps:
 # postroute_hold, retry if fail.
 - label: "hold"
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
-     echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
-     $$PRH |& tee make-prh0.log || $$FAIL1'
+  - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
+     exit 13 |& tee make-prh0.log || echo FAIL'
 - wait: { continue_on_failure: true }
 
 # First retry, continue with another retry on failure.
@@ -47,50 +46,58 @@ steps:
 - wait: ~
 
 
-- label: exit13
-  commands:
-  - exit 13
-- wait: ~
+
+
+
+(exit 13) |& tee make-prh0.log || echo FAIL
 
 
 
 
-
-
-- label: test1
-  commands:
-
-  # Insrt failure label
-  - 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
-
-  - echo But then go on and tdo other stuff
-
-  # Another failure label
-  - 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
-
-  - echo And then even more dumb stuff
-  - exit 1
-
-- label: exit13
-  commands:
-  - exit 13
-- wait: ~
-
-
-
-
-
-
-##############################################################################
-# INDIVIDUAL TILE RUNS
-
-- label: '250MHz PE synth 12m'
-  commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-  - .buildkite/pipelines/check_pe_area.sh
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-- label: 'MemCore synth 17m'
-  commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
+# - label: exit13
+#   commands:
+#   - exit 13
+# - wait: ~
+# 
+# 
+# 
+# 
+# 
+# 
+# - label: test1
+#   commands:
+# 
+#   # Insrt failure label
+#   - 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
+# 
+#   - echo But then go on and tdo other stuff
+# 
+#   # Another failure label
+#   - 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
+# 
+#   - echo And then even more dumb stuff
+#   - exit 1
+# 
+# - label: exit13
+#   commands:
+#   - exit 13
+# - wait: ~
+# 
+# 
+# 
+# 
+# 
+# 
+# ##############################################################################
+# # INDIVIDUAL TILE RUNS
+# 
+# - label: '250MHz PE synth 12m'
+#   commands:
+#   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
+#   - .buildkite/pipelines/check_pe_area.sh
+# - wait: { continue_on_failure: true } # One step at a time + continue on failure
+# 
+# - label: 'MemCore synth 17m'
+#   commands:
+#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
+# - wait: { continue_on_failure: true } # One step at a time + continue on failure
