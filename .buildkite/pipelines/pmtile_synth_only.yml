@@ -16,9 +16,9 @@ steps:
 
 - label: test1
   commands:
-  - 'echo -e "steps:\n- label:FAIL\n  command:exit"'
-  - 'echo -e "steps:\n- label:FAIL\n  command:exit" | cat'
-  - 'echo -e "steps:\n- label:FAIL\n  command:exit" | buildkite-agent pipeline upload'
+  - 'echo -e "steps:\n- label: FAIL\n  command: exit"'
+  - 'echo -e "steps:\n- label: FAIL\n  command: exit" | cat'
+  - 'echo -e "steps:\n- label: FAIL\n  command: exit" | buildkite-agent pipeline upload'
 
   - echo "steps:{'label':'FAIL','command':'echo'}"
   - echo "steps:{'label':'FAIL','command':'echo'}" | buildkite-agent pipeline upload
