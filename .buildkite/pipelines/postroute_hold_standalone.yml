@@ -44,9 +44,10 @@ steps:
   - label: "hold"
     commands:
       - echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"
-      - 'set -o pipefail; $$SETUP_BK 1G; $$SETUP_PRH;
+      - 'set -o pipefail; $$SETUP_BK 1G;
          set -x; ls $$GARNET_HOME;
          ls $$GARNET_HOME/mflowgen/bin;
+         $$SETUP_PRH;
          $$RUN_PRH make-prh0.log || $$FAIL1 | $$UPLOAD'
 
   - wait: { continue_on_failure: true }
