@@ -16,8 +16,8 @@ env:
   PRH: 'grep foo /dev/null'
   UPLOAD : 'buildkite-agent pipeline upload'
 
-  FAIL1: 'echo steps : [ { label : FAIL1 , command : exit } ]'
-  FAIL2: 'echo steps : [ { label : FAIL2 , command : exit } ]'
+  FAIL1: 'echo steps : [ { label : FAIL->retry1 , command : exit } ]'
+  FAIL2: 'echo steps : [ { label : FAIL->retry2 , command : exit } ]'
 
 steps:
 
