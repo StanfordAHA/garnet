@@ -15,7 +15,10 @@ env:
   #  PRH: $$GARNET_HOME/.buildkite/bin/prh.sh
   PRH: 'grep foo /dev/null'
   STRING: 'foo bar'
-  CMD1: 'echo -e steps:\n- label: FAIL1\n  \ command: exit'
+
+  #  CMD1: 'echo -e steps:\n- label: FAIL1\n  \ command: exit'
+  CMD1: 'echo steps : [ { label : FAIL1 , command : exit } ]'
+
   CMD2: 'set -x ; echo $STRING'
 
 
@@ -28,25 +31,41 @@ env:
 # #   FAIL2: 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
 
 
-steps : [ { label : FAIL1 , command : exit } ]
+# steps : [ { label : FAIL1 , command : exit } ]
 
 
 
-# steps:
-# 
-# # postroute_hold, retry if fail.
-# - label: "hold"
-#   commands:
-#   - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
-#      $$PRH || echo FAIL;
-#      echo "$$CMD1";
-#      $$CMD1;
-#      $$CMD1 | buildkite-agent pipeline upload;
-#      $$CMD1;'
+steps:
+
+# postroute_hold, retry if fail.
+- label: "hold"
+  commands:
+  - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
+     $$PRH || echo FAIL;
+     echo "$$CMD1";
+     $$CMD1;
+     $$CMD1 | buildkite-agent pipeline upload;
+     $$CMD1;'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # - wait: { continue_on_failure: true }
 # 
 # #     $$PRH |& tee make-prh0.log || echo -n $$FAIL1 | buildkite-agent pipeline upload'
-
+# 
 
 
 
