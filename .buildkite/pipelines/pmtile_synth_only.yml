@@ -28,7 +28,7 @@ env:
 # #   FAIL2: 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
 
 
-steps : { label : FAIL1 , command : exit }
+steps : [ { label : FAIL1 , command : exit } ]
 
 
 
