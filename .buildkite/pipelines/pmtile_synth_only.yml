@@ -14,6 +14,20 @@ env:
 
 steps:
 
+- label: test1
+  commands:
+  - printf 'steps:\n-label: FAIL\n' |  buildkite-agent pipeline upload'
+  - exit 13
+
+- label: exit13
+  commands:
+  - exit 13
+
+
+
+
+
+
 ##############################################################################
 # INDIVIDUAL TILE RUNS
 
