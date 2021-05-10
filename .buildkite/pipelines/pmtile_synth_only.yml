@@ -14,8 +14,8 @@ env:
   GOLD: /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip
   #  PRH: $$GARNET_HOME/.buildkite/bin/prh.sh
   PRH: 'grep foo /dev/null'
-  CMD1: 'echo "foo bar"'
-  CMD2: 'echo \"foo bar\"'
+  CMD1: 'set -x; echo \'foo bar\''
+  CMD2: set -x; echo 'foo bar'
 
 
 #   # FAIL1: 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
@@ -41,23 +41,23 @@ steps:
 #     $$PRH |& tee make-prh0.log || echo -n $$FAIL1 | buildkite-agent pipeline upload'
 
 
-
-
-# First retry, continue with another retry on failure.
-- label: "hold'"
-  commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
-     echo "--- POSTROUTE_HOLD - SECOND ATTEMPT"; set -o pipefail;
-     $$PRH |& tee make-prh1.log || $$FAIL2'
-- wait: { continue_on_failure: true }
-
-# Final postroute_hold attempt, fail pipeline if this one bombs.
-- label: "hold''"
-  commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
-     echo "--- POSTROUTE_HOLD - FINAL ATTEMPT"; set -o pipefail;
-     $$PRH |& tee make-prh2.log || exit 13'
-- wait: ~
+# 
+# 
+# # First retry, continue with another retry on failure.
+# - label: "hold'"
+#   commands:
+#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
+#      echo "--- POSTROUTE_HOLD - SECOND ATTEMPT"; set -o pipefail;
+#      $$PRH |& tee make-prh1.log || $$FAIL2'
+# - wait: { continue_on_failure: true }
+# 
+# # Final postroute_hold attempt, fail pipeline if this one bombs.
+# - label: "hold''"
+#   commands:
+#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
+#      echo "--- POSTROUTE_HOLD - FINAL ATTEMPT"; set -o pipefail;
+#      $$PRH |& tee make-prh2.log || exit 13'
+# - wait: ~
 
 
 
