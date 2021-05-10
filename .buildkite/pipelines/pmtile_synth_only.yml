@@ -26,7 +26,7 @@ steps:
 - label: "hold"
   commands:
   - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
-     exit 13 |& tee make-prh0.log || echo FAIL'
+     $$PRH |& tee make-prh0.log || echo FAIL'
 - wait: { continue_on_failure: true }
 
 # First retry, continue with another retry on failure.
