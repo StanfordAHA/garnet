@@ -14,13 +14,16 @@ env:
   GOLD: /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip
   #  PRH: $$GARNET_HOME/.buildkite/bin/prh.sh
   PRH: 'grep foo /dev/null'
-
-  # FAIL1: 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
-  FAIL1a: 'steps:\n- label: FAIL1\n  command: exit'
-  FAIL1: 'set -x; echo -e $$FAIL1a | buildkite-agent pipeline upload'
+  CMD1: 'echo "foo bar"'
+  CMD2: 'echo \"foo bar\"'
 
 
-#   FAIL2: 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
+#   # FAIL1: 'echo -e "steps:\n- label: FAIL1\n  command: exit" | buildkite-agent pipeline upload'
+#   FAIL1a: 'steps:\n- label: FAIL1\n  command: exit'
+#   FAIL1: 'set -x; echo -e $$FAIL1a | buildkite-agent pipeline upload'
+# 
+# 
+# #   FAIL2: 'echo -e "steps:\n- label: FAIL2\n  command: exit" | buildkite-agent pipeline upload'
 
 
 
@@ -31,7 +34,8 @@ steps:
 - label: "hold"
   commands:
   - 'echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
-     $$PRH |& tee make-prh0.log || (set -x; $$FAIL1) '
+     $$PRH || echo FAIL;
+     $$CMD1; $$CMD2'
 - wait: { continue_on_failure: true }
 
 #     $$PRH |& tee make-prh0.log || echo -n $$FAIL1 | buildkite-agent pipeline upload'
