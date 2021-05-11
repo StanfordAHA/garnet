@@ -206,6 +206,20 @@ function build_subgraph {
 firstmod=${modlist[0]}
 build_module $firstmod
 
+# Little hack to get local tsmc16 libs in among the cached info
+# FIXME/TODO would it work for the caller to simply include "mflowgen" in the copy_list?
+if [ "$use_cached" ]; then
+    if [ "$firstmod" == "full_chip" ]; then
+        echo "+++ Jimmy up the adks"
+        set -x; pwd
+        ls -l mflowgen/adks || echo NOPE adks not connected yet
+        ln -s /sim/buildkite-agent/gold/full_chip/mflowgen
+        ls -l mflowgen/adks
+        set +x
+        echo "--- Continue"
+    fi
+fi
+
 # Subgraphs
 subgraphs=${modlist[@]:1}
 for sg in $subgraphs; do
