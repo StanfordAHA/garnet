@@ -8,10 +8,15 @@ env:
   LVS_CHECK: ./mflowgen/bin/buildcheck.sh --lvs
 
   # To support postroute_hold retries
-  PRH    : $$GARNET_HOME/.buildkite/bin/prh.sh
+  PRH    : 'eval $$GARNET_HOME/.buildkite/bin/prh.sh'
   FAIL1  : 'echo steps : [ { label : FAIL->retry1 , command : exit } ]'
   FAIL2  : 'echo steps : [ { label : FAIL->retry2 , command : exit } ]'
   UPLOAD : 'buildkite-agent pipeline upload'
+
+  # Set slack to -0.3 to make postroute_hold much faster.
+  # Default targ slack for full_chip @ 0.06 takes 6 hours atm.
+  # With hack target -0.3, should be about 2.5 hours (saves 3.5 hours)
+  MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
 
 steps:
 - label: 'setup'

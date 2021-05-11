@@ -12,6 +12,29 @@ import sys
 from mflowgen.components import Graph, Step
 from shutil import which
 
+def sr_override_parms(parmdict):
+  '''
+  # A mechanism whereby e.g. buildkite can alter parms at the last minute
+  # by way of environmental variables e.g. for faster postroute_hold step
+  # could do something like
+  #    export MFLOWGEN_PARM_OVERRIDE_hold_target_slack=0.6
+  #    mflowgen run --design $$GARNET_HOME/mflowgen/full_chip
+  #    make cadence-innovus-postroute_hold
+'''
+  import os
+  for e in os.environ:
+    # e.g. e="MFLOWGEN_PARM_OVERRIDE_hold_target_slack"
+    if e[0:22]=="MFLOWGEN_PARM_OVERRIDE":
+      parm=e[23:99];     # e.g. parm="hold_target_slack"
+      print(f'+++ FOUND MFLOWGEN PARAMETER OVERRIDE "{parm}={os.environ[e]}"')
+      print(f'BEFOR: parmdict["hold_target_slack"]={parmdict["hold_target_slack"]}')
+      parmdict[parm]=os.environ[e]
+  print(f'AFTER: parmdict["hold_target_slack"]={parmdict["hold_target_slack"]}')
+
+
+  return(parmdict)
+
+
 def construct():
 
   g = Graph()
@@ -449,6 +472,10 @@ def construct():
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
+
+  # Allow user to override parms with env in a limited sort of way
+  parameters = sr_override_parms( parameters )
+  print(f'parameters["hold_target_slack"]={parameters["hold_target_slack"]}')
   g.update_params( parameters )
 
   # Since we are adding an additional input script to the generic Innovus

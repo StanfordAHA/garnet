@@ -75,8 +75,9 @@ if test -e $stepdir; then
             break
         fi
     done
-    if test -e $stepdir; then echo 'Too many renames'; fi
-    exit 13
+    if test -e $stepdir; then 
+        echo 'Too many renames'; exit 13
+    fi
 fi
 
 
