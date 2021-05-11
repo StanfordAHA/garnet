@@ -212,9 +212,8 @@ if [ "$use_cached" ]; then
     if [ "$firstmod" == "full_chip" ]; then
         echo "+++ Jimmy up the adks"
         set -x; pwd
-        ls -l mflowgen/adks || echo NOPE not yet
-        gold=/sim/buildkite-agent/gold
-        ln -s $gold/full_chip/mflowgen
+        ls -l mflowgen/adks || echo NOPE adks not connected yet
+        ln -s /sim/buildkite-agent/gold/full_chip/mflowgen
         ls -l mflowgen/adks
         set +x
         echo "--- Continue"
