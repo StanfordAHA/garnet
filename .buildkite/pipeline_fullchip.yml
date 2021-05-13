@@ -7,6 +7,17 @@ env:
   GOLD: /build/gold.${BUILDKITE_BUILD_NUMBER}/full_chip
   LVS_CHECK: ./mflowgen/bin/buildcheck.sh --lvs
 
+  # To support postroute_hold retries
+  PRH    : 'eval $$GARNET_HOME/.buildkite/bin/prh.sh'
+  FAIL1  : 'echo steps : [ { label : FAIL->retry1 , command : exit } ]'
+  FAIL2  : 'echo steps : [ { label : FAIL->retry2 , command : exit } ]'
+  UPLOAD : 'buildkite-agent pipeline upload'
+
+  # Set slack to -0.3 to make postroute_hold much faster.
+  # Default targ slack for full_chip @ 0.06 takes 6 hours atm.
+  # With hack target -0.3, should be about 2.5 hours (saves 3.5 hours)
+  # MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
+
 steps:
 - label: 'setup'
   commands:
@@ -102,23 +113,22 @@ steps:
      make cadence-innovus-postroute |& tee make-postroute.log'
 - wait: ~
 
-########################################################################
+##########################################################################
 # postroute_hold fails sometimes, thus all this infrastructure for retry.
 # 
 # "prh.sh" does the following:
-#   - if step "*-postroute_hold" exists already, do nothing and exit 0
-#   - if step does not exist yet, build it
-#   - if build fails, rename step to <step>-fail<i> and exit 13
-#   - meanwhile tees all outputs to make-prh.log
-#   - (if build fails, moves make-prh.log to step dir)
-########################################################################
+#   - if "*-postroute_hold" already done and passed, do nothing and exit 0
+#   - else if (presumably failed) dir "*-postroute_hold" exists, rename it
+#   - build new step postroute_hold
+# 
+##########################################################################
 
 # postroute_hold, retry if fail.
 - label: "hold"
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"; set -o pipefail;
-     $$GARNET_HOME/.buildkite/bin/prh.sh |& tee make-prh1.log'
+     $$PRH |& tee make-prh0.log || $$FAIL1 | $$UPLOAD'
 - wait: { continue_on_failure: true }
 
 # First retry, continue with another retry on failure.
@@ -126,7 +136,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- POSTROUTE_HOLD - SECOND ATTEMPT"; set -o pipefail;
-     $$GARNET_HOME/.buildkite/bin/prh.sh |& tee make-prh2.log'
+     $$PRH |& tee make-prh1.log || $$FAIL2 | $UPLOAD'
 - wait: { continue_on_failure: true }
 
 # Final postroute_hold attempt, fail pipeline if this one bombs.
@@ -134,7 +144,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 70G;
      echo "--- POSTROUTE_HOLD - FINAL ATTEMPT"; set -o pipefail;
-     $$GARNET_HOME/.buildkite/bin/prh.sh |& tee make-prh3.log'
+     $$PRH |& tee make-prh2.log || exit 13'
 - wait: ~
   
 ########################################################################
