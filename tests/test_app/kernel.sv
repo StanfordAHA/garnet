@@ -224,13 +224,6 @@ function data_array_t Kernel::parse_input_data(int idx);
     end
     code = $fread(result, fp);
     assert_(code == input_size[idx], $sformatf("Unable to read input data"));
-    // for (int i = 0; i < input_size[idx]; i++) begin
-    //     byte unsigned value;
-    //     int code;
-    //     code = $fread(value, fp);
-    //     assert_(code == 1, $sformatf("Unable to read input data"));
-    //     result[i] = value;
-    // end
     $fclose(fp);
     return result;
 endfunction
@@ -251,13 +244,6 @@ function data_array_t Kernel::parse_gold_data(int idx);
     end
     code = $fread(result, fp);
     assert_(code == output_size[idx], $sformatf("Unable to read output data"));
-    // for (int i = 0; i < output_size[idx]; i++) begin
-    //     byte unsigned value;
-    //     int code;
-    //     code = $fread(value, fp);
-    //     assert_(code == 1, $sformatf("Unable to read output data"));
-    //     result[i] = value;
-    // end
     $fclose(fp);
     return result;
 endfunction
