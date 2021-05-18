@@ -394,13 +394,14 @@ if [ "$USER" == "buildkite-agent" ]; then
         # d=/sim/steveri/mflowgen/adks/tsmc16-adk
         d=$1
         pushd $d
-            git branch -v | cut -b 1-40
+            git branch -v
             ba=`git branch -v | awk '{print $4}'` # E.g. '[ahead' or '[behind'
             if [ "$ba" == "[ahead" -o  "$ba" == "[behind" ]; then
-                echo "ERROR oops looks like tsmc16 libs are not up to date."
-                echo "Need to do a git pull on $d ."
-                echo "Please remedy this and try again."
-                echo "Also see 'help adk' ."
+                echo "---------------------------------------------------------"
+                echo "**ERROR oops looks like tsmc16 libs are not up to date."
+                echo "  - Need to do a git pull on '$d'"
+                echo "  - Also see 'help adk'."
+                echo "---------------------------------------------------------"
                 exit 13
             fi
         popd

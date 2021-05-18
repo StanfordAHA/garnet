@@ -18,9 +18,16 @@ steps:
 # COMPLETE GLB-TILE BUILD (ish) (uses cached rtl step)
 - label: 'glb tile 2h'
   commands:
+
+  # Copy existing rtl collateral
   - set -x; mkdir -p full_chip; cp -rp /sim/buildkite-agent/gold/full_chip/*-rtl full_chip/
+
+  # Link to existing rtl result
   - set -x; mkdir -p full_chip/14-glb_top/inputs
   - set -x; pushd full_chip/14-glb_top/inputs; ln -s ../../9-rtl/outputs/design.v; popd
+
+  # (Re?)run RTL, then do glb tile
   - $TEST --need_space 3G full_chip glb_top --steps rtl --debug
   - $TEST --need_space 3G full_chip glb_top --steps glb_tile --debug
+
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
