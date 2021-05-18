@@ -388,10 +388,27 @@ echo 'COPY LATEST ADK TO MFLOWGEN REPO'
 if [ "$USER" == "buildkite-agent" ]; then
 
     tsmc16=/sim/steveri/mflowgen/adks/tsmc16
-    echo Copying adk from $tsmc16
-    ls -l $tsmc16
 
-    adks=$mflowgen/adks
+    # Check to see that we have the latest copy
+    function check_adk {
+        # d=/sim/steveri/mflowgen/adks/tsmc16-adk
+        d=$1
+        pushd $d
+            git branch -v | cut -b 1-40
+            ba=`git branch -v | awk '{print $4}'` # E.g. '[ahead' or '[behind'
+            if [ "$ba" == "[ahead" -o  "$ba" == "[behind" ]; then
+                echo "ERROR oops looks like tsmc16 libs are not up to date."
+                echo "Need to do a git pull on $d ."
+                echo "Please remedy this and try again."
+                echo "Also see 'help adk' ."
+                echo exit 13
+            fi
+        popd
+    }
+    check_adk $tsmc16
+
+    # Copy the adk to test rig
+    echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
     echo "Copying adks from '$tsmc16' to '$adks'"
     # Need '-f' to e.g. copy over existing read-only .git objects
     set -x; cp -frpH $tsmc16 $adks; set +x
