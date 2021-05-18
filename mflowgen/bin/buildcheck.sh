@@ -30,12 +30,14 @@ DBG=
 build_dirs=()
 opstring=''
 ALL="sLrleRq"
+show_all_errs=false
 
 while [ $# -gt 0 ] ; do
     test $DBG && echo "Processing arg '$1'"
     case "$1" in
         --help)  show_help; exit  ;;
 
+        --show_all_err*) show_all_errs=true; ;;
         --size*) opstring="${opstring}s" ;;
         --lvs)   opstring="${opstring}L" ;;
         --run*)  opstring="${opstring}r" ;;
@@ -45,8 +47,8 @@ while [ $# -gt 0 ] ; do
         --qrc*)  opstring="${opstring}q" ;; # qrc check
         --QRC*)  opstring="${opstring}q" ;; # qrc check
 
-        --all)   opstring="${ALL}";  break  ;;
-         -a)     opstring="${ALL}";  break  ;;
+        --all)   opstring="${opstring}${ALL}";  ;;
+         -a)     opstring="${opstring}${ALL}";  ;;
 
         --*) show_help; exit ;;         # Unknwon '--' arg
          -*) opstring="$opstring$1" ;;  # Add to opstring
@@ -215,7 +217,12 @@ fi
 # Error check
 if [ "$do_err" ]; then
     echo ''; echo '--- ERROR CHECK'
-    echo "ERROR SUMMARY:"
+
+    if [ "$show_all_errs" == "true" ]; then 
+        echo "ALL ERRORS:"; filter=cat
+    else 
+        echo "ERROR SUMMARY:"; filter=head
+    fi
 
     errfiles=`find * -name \*.log \
      -exec bash -c \
@@ -224,6 +231,7 @@ if [ "$do_err" ]; then
      -print`
     # echo $errfiles
 
+    function chop { cut -b 1-$1; }
     for f in $errfiles; do
 
         # egrep filters below should find only the lowest-level log file
@@ -241,7 +249,7 @@ if [ "$do_err" ]; then
             | grep -v 'Error Limit' \
             | chop 80 | sort | uniq -c | sort -rn | head
         echo ""
-    done | head
+    done | $filter
 
     # find * -name \*.log -exec egrep '(^Error|^\*\*ERROR)' {} \; \
     #   | grep -v 'Error Limit' \
@@ -250,7 +258,11 @@ if [ "$do_err" ]; then
     cat <<EOF
 
 SEE ALL ERRORS (cut-n-paste):
-egrep '(^Error|^\*\*ERROR)' \`find . -name \*.log\` | less
+
+    logs=\`find $bd -name \*.log\`
+    pat='(^Error ^(or Limit)|^\*\*ERROR)'
+    for L in \$logs; do
+      egrep -l "\$pat" \$L && egrep "\$pat" \$L && echo ''; done | less -S
 
 EOF
 fi

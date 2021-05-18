@@ -16,7 +16,9 @@ env:
   # Set slack to -0.3 to make postroute_hold much faster.
   # Default targ slack for full_chip @ 0.06 takes 6 hours atm.
   # With hack target -0.3, should be about 2.5 hours (saves 3.5 hours)
-  # MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
+  MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
+
+  OVERRIDE_MFLOWGEN_BRANCH: glob-prob
 
 steps:
 - label: 'setup'
@@ -85,18 +87,18 @@ steps:
      echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log'
 - wait: ~
 
-- label: 'cts'
-  commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
-     echo "--- MAKE CADENCE-INNOVUS-CTS"; set -o pipefail;
-     make cadence-innovus-cts |& tee make-cts.log'
-- wait: ~
-
 - label: 'place'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
      echo "--- MAKE CADENCE-INNOVUS-PLACE"; set -o pipefail;
      make cadence-innovus-place |& tee make-place.log'
+- wait: ~
+
+- label: 'cts'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 71G;
+     echo "--- MAKE CADENCE-INNOVUS-CTS"; set -o pipefail;
+     make cadence-innovus-cts |& tee make-cts.log'
 - wait: ~
 
 - label: 'route'

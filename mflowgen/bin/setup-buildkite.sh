@@ -346,6 +346,7 @@ echo "--- Building in destination dir `pwd`"
 # Mar 2102 - Added option to use a different mflowgen branch when/if desired
 
 mflowgen_branch=master
+[ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
 mflowgen=/sim/buildkite-agent/mflowgen
