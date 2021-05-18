@@ -401,11 +401,11 @@ if [ "$USER" == "buildkite-agent" ]; then
                 echo "Need to do a git pull on $d ."
                 echo "Please remedy this and try again."
                 echo "Also see 'help adk' ."
-                echo exit 13
+                exit 13
             fi
         popd
     }
-    check_adk $tsmc16
+    check_adk $tsmc16 || exit 13
 
     # Copy the adk to test rig
     echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
