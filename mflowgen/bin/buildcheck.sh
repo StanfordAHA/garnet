@@ -37,7 +37,8 @@ while [ $# -gt 0 ] ; do
     case "$1" in
         --help)  show_help; exit  ;;
 
-        --show_all_err*) show_all_errs=true; ;;
+        --show*) show_all_errs=true; ;;
+        --show*) show_all_errs=true; ;;
         --size*) opstring="${opstring}s" ;;
         --lvs)   opstring="${opstring}L" ;;
         --run*)  opstring="${opstring}r" ;;
