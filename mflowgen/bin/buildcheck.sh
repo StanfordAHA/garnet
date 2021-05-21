@@ -217,7 +217,7 @@ fi
 ########################################################################
 # Error check
 if [ "$do_err" ]; then
-    echo ''; echo '--- ERROR CHECK'
+    echo ''; echo '+++ ERROR CHECK'
 
     if [ "$show_all_errs" == "true" ]; then 
         echo "ALL ERRORS:"; filter=cat
