@@ -80,7 +80,7 @@ program glb_test (
         if ($test$plusargs("TEST_GLB_MEM_SIMPLE")) begin
             logic [BANK_DATA_WIDTH-1:0] data_arr [];
             logic [BANK_DATA_WIDTH-1:0] data_arr_out [];
-            int size = 128;
+            static int size = 128;
             data_arr = new [size];
             data_arr_out = new [size];
             foreach(data_arr[i]) begin
@@ -97,12 +97,12 @@ program glb_test (
             compare_cfg('hff, cfg_data);
         end
         if ($test$plusargs("TEST_GLB_G2F_STREAM")) begin
-            int tile_id = 0;
-            int start_addr = 'h40000 * tile_id;
+            static int tile_id = 0;
+            static int start_addr = 'h40000 * tile_id;
             logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr [];
             logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr_out [];
             logic [BANK_DATA_WIDTH-1:0] glb_data_arr [];
-            int size = 64;
+            static int size = 64;
             cgra_data_arr = new [size];
             cgra_data_arr_out = new [size];
             foreach(cgra_data_arr[i]) begin
@@ -115,12 +115,12 @@ program glb_test (
             compare_16b_arr(cgra_data_arr, cgra_data_arr_out);
         end
         if ($test$plusargs("TEST_GLB_F2G_STREAM")) begin
-            int tile_id = 0;
-            int start_addr = 'h40000 * tile_id;
+            static int tile_id = 0;
+            static int start_addr = 'h40000 * tile_id;
             logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr [];
             logic [BANK_DATA_WIDTH-1:0] glb_data_arr[];
             logic [BANK_DATA_WIDTH-1:0] glb_data_arr_out [];
-            int size = 64;
+            static int size = 64;
             cgra_data_arr = new [size];
             foreach(cgra_data_arr[i]) begin
                 cgra_data_arr[i] = i;
@@ -132,6 +132,22 @@ program glb_test (
             glb_data_arr_out = new[glb_data_arr.size()];
             proc_read_burst(start_addr, glb_data_arr_out);
             compare_64b_arr(glb_data_arr, glb_data_arr_out);
+        end
+        if ($test$plusargs("TEST_PCFG_STREAM")) begin
+            static int tile_id = 0;
+            static int start_addr = 'h40000 * tile_id;
+            logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr [];
+            logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr_out [];
+            static int size = 64;
+            bs_arr = new [size];
+            bs_arr_out = new [size];
+            foreach(bs_arr[i]) begin
+                bs_arr[i] = i;
+            end
+            proc_write_burst(start_addr, bs_arr);
+            pcfg_dma_configure(tile_id, start_addr, size);
+            pcfg_start(tile_id, bs_arr_out);
+            compare_64b_arr(bs_arr, bs_arr_out);
         end
     end
 
@@ -309,7 +325,7 @@ program glb_test (
         @(posedge  clk);
         strm_start_pulse <= 0;
 
-        fork : g2f_get_result
+        fork : g2f_start
         begin
             fork : data_valid_timeout
             begin
@@ -341,7 +357,7 @@ program glb_test (
         end
         join
         repeat(5) @(posedge clk);
-        $display("f2g streaming done.");
+        $display("g2f streaming done.");
     endtask
 
     task automatic f2g_start(input int tile_id, ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr []);
@@ -368,6 +384,48 @@ program glb_test (
         disable fork;
         repeat(5) @(posedge clk);
         $display("f2g streaming done.");
+    endtask
+
+    task automatic pcfg_start(input int tile_id, ref [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr_out []);
+        int bs_size = bs_arr_out.size();
+        $display("pcfg streaming start. tile: %0d, num_bs: %0d", tile_id, bs_size);
+        repeat(5) @(posedge clk);
+        pc_start_pulse <= (1 << tile_id);
+        @(posedge  clk);
+        pc_start_pulse <= 0;
+
+        fork : pcfg_start
+        begin
+            fork : data_valid_timeout
+            begin
+                wait(cgra_cfg_g2f_cfg_wr_en[tile_id][0]);
+                for(int i=0; i < bs_size; i++) begin
+                    bs_arr_out[i] = {cgra_cfg_g2f_cfg_addr[tile_id][0], cgra_cfg_g2f_cfg_data[tile_id][0]};
+                    @(posedge clk);
+                end
+            end
+            begin
+                repeat (bs_size + 30) @(posedge clk);
+                $display("@%0t: %m ERROR: glb stream pcfg timeout ", $time);
+            end
+            join_any
+            disable fork;
+        end
+        begin
+            fork : interrupt_timeout
+            begin
+                wait(pcfg_g2f_interrupt_pulse[tile_id]);
+            end
+            begin
+                repeat (bs_size + 50) @(posedge clk);
+                $display("@%0t: %m ERROR: glb stream pcfg interrupt timeout ", $time);
+            end
+            join_any
+            disable fork;
+        end
+        join
+        repeat(5) @(posedge clk);
+        $display("pcfg streaming done.");
     endtask
 
     function automatic int compare_64b_arr(ref [63:0] data_arr_0 [], ref [63:0] data_arr_1 []);
