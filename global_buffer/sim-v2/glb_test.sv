@@ -80,7 +80,7 @@ program glb_test (
         if ($test$plusargs("TEST_GLB_MEM_SIMPLE")) begin
             logic [BANK_DATA_WIDTH-1:0] data_arr [];
             logic [BANK_DATA_WIDTH-1:0] data_arr_out [];
-            static int size = 128;
+            static int size = 8;
             data_arr = new [size];
             data_arr_out = new [size];
             foreach(data_arr[i]) begin
@@ -102,7 +102,7 @@ program glb_test (
             logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr [];
             logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr_out [];
             logic [BANK_DATA_WIDTH-1:0] glb_data_arr [];
-            static int size = 64;
+            static int size = 8;
             cgra_data_arr = new [size];
             cgra_data_arr_out = new [size];
             foreach(cgra_data_arr[i]) begin
@@ -120,7 +120,7 @@ program glb_test (
             logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr [];
             logic [BANK_DATA_WIDTH-1:0] glb_data_arr[];
             logic [BANK_DATA_WIDTH-1:0] glb_data_arr_out [];
-            static int size = 64;
+            static int size = 8;
             cgra_data_arr = new [size];
             foreach(cgra_data_arr[i]) begin
                 cgra_data_arr[i] = i;
@@ -138,7 +138,7 @@ program glb_test (
             static int start_addr = 'h40000 * tile_id;
             logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr [];
             logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr_out [];
-            static int size = 64;
+            static int size = 8;
             bs_arr = new [size];
             bs_arr_out = new [size];
             foreach(bs_arr[i]) begin
@@ -203,6 +203,7 @@ program glb_test (
     endtask
 
     task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
+        // glb_cfg_write((tile_id << 8) + `GLB_CFG_TILE_CTRL, ((1 << 6) | (2'b01 << 2)));
         glb_cfg_write((tile_id << 8) + `GLB_CFG_TILE_CTRL, ((1 << 6) | (2'b01 << 2)));
         glb_cfg_write((tile_id << 8) + `GLB_CFG_LD_DMA_HEADER_0_START_ADDR, start_addr);
         glb_cfg_write((tile_id << 8) + `GLB_CFG_LD_DMA_HEADER_0_ITER_CTRL_0, ((num_word << 10) | (1 << 0)));
@@ -210,6 +211,7 @@ program glb_test (
     endtask
 
     task f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
+        // glb_cfg_write((tile_id << 8) + `GLB_CFG_TILE_CTRL, ((1 << 8) | (2'b10 << 4)));
         glb_cfg_write((tile_id << 8) + `GLB_CFG_TILE_CTRL, ((1 << 8) | (2'b10 << 4)));
         glb_cfg_write((tile_id << 8) + `GLB_CFG_ST_DMA_HEADER_0_START_ADDR, start_addr);
         glb_cfg_write((tile_id << 8) + `GLB_CFG_ST_DMA_HEADER_0_NUM_WORDS, num_word);
@@ -431,15 +433,19 @@ program glb_test (
     function automatic int compare_64b_arr(ref [63:0] data_arr_0 [], ref [63:0] data_arr_1 []);
         int size_0 = data_arr_0.size();
         int size_1 = data_arr_1.size();
+        int err;
         if (size_0 != size_1) begin
             $display("Data array size is different. data_arr_0: %0d, data_arr_1: %0d", size_0, size_1);
-            return 1;
+            err++;
         end
         foreach(data_arr_0[i]) begin
             if(data_arr_0[i] != data_arr_1[i]) begin
                 $display("Data array different. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
-                return 1;
+                err++;
             end
+        end
+        if (err > 0) begin
+            return 1;
         end
         $display("Two data array are same");
         return 0;
@@ -448,15 +454,19 @@ program glb_test (
     function automatic int compare_16b_arr(ref [15:0] data_arr_0 [], ref [15:0] data_arr_1 []);
         int size_0 = data_arr_0.size();
         int size_1 = data_arr_1.size();
+        int err;
         if (size_0 != size_1) begin
             $display("Data array size is different. data_arr_0: %0d, data_arr_1: %0d", size_0, size_1);
-            return 1;
+            err++;
         end
         foreach(data_arr_0[i]) begin
             if(data_arr_0[i] != data_arr_1[i]) begin
                 $display("Data array different. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
-                return 1;
+                err++;
             end
+        end
+        if (err > 0) begin
+            return 1;
         end
         $display("Two data array are same");
         return 0;
