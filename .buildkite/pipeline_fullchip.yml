@@ -177,5 +177,5 @@ steps:
 # - wait: ~
 
 # Final summary
-  - label: 'summary'
-    command: 'mflowgen/bin/buildcheck.sh $$GOLD --show-all-errors'
+- label: 'summary'
+  command: 'mflowgen/bin/buildcheck.sh $$GOLD --show-all-errors'
