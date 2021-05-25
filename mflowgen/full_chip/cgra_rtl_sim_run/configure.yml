@@ -1,0 +1,13 @@
+name: cgra_rtl_sim_run
+
+commands:
+  - bash run_rtl_testbench.sh
+
+inputs:
+  - xcelium.d
+  - libcgra.so
+  - meta
+
+parameters:
+  waveform: False
+  cgra_apps: ["tests/conv_3_3", "apps/cascade"]

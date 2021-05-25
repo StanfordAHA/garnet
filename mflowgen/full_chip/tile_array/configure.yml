@@ -14,6 +14,9 @@ outputs:
   - tile_array.sdf
   - tile_array.lvs.v
   - tile_array.sram.spi
+  - tile_array.sram.v
+  - tile_array.sram.pwr.v
+  - tile_array.sram_tt.db
 
 postconditions:
   - assert File( 'outputs/tile_array_tt.lib' ) # must exist
@@ -23,4 +26,7 @@ postconditions:
   - assert File( 'outputs/tile_array.sdf' ) # must exist
   - assert File( 'outputs/tile_array.lvs.v' ) # must exist
   - assert File( 'outputs/tile_array.sram.spi' ) # must exist
+  - assert File( 'outputs/tile_array.sram.v' ) # must exist
+  - assert File( 'outputs/tile_array.sram.pwr.v' ) # must exist
+  - assert File( 'outputs/tile_array.sram_tt.db' ) # must exist
 

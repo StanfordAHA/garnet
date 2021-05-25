@@ -4,12 +4,13 @@ from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.generator import Generator
 from cgra.ifc_struct import ProcPacketIfc, GlbCfgIfc
 from .global_buffer_magma_helper import *
+import math
 
 
 class GlobalBuffer(Generator):
-    def __init__(self, num_glb_tiles, num_cgra_cols, banks_per_tile=2,
-                 bank_addr_width=17, bank_data_width=64, cgra_data_width=16,
-                 axi_addr_width=12, axi_data_width=32,
+    def __init__(self, num_glb_tiles, num_cgra_cols, glb_tile_mem_size=256,
+                 banks_per_tile=2, bank_data_width=64,
+                 cgra_data_width=16, axi_addr_width=12, axi_data_width=32,
                  cfg_addr_width=32, cfg_data_width=32,
                  parameter_only: bool = False):
 
@@ -17,13 +18,23 @@ class GlobalBuffer(Generator):
 
         self.num_glb_tiles = num_glb_tiles
         self.num_cgra_cols = num_cgra_cols
+        self.glb_tile_mem_size = glb_tile_mem_size
 
         # the number of glb tiles is half the number of cgra columns
         assert 2 * self.num_glb_tiles == self.num_cgra_cols
 
+        def _power_of_two(n):
+            if n == 1:
+                return True
+            elif n%2 != 0 or n == 0:
+                return False
+            return _power_of_two(n/2)
+        assert _power_of_two(self.glb_tile_mem_size) is True
+
         self.col_per_tile = num_cgra_cols // num_glb_tiles
         self.banks_per_tile = banks_per_tile
-        self.bank_addr_width = bank_addr_width
+        self.bank_addr_width = (magma.bitutils.clog2(self.glb_tile_mem_size)
+                               - magma.bitutils.clog2(self.banks_per_tile) + 10)
         self.bank_data_width = bank_data_width
         self.bank_byte_offset = magma.bitutils.clog2(self.bank_data_width // 8)
         self.cgra_data_width = cgra_data_width

@@ -8,7 +8,12 @@
 #define MAX_NUM_GLB_TILES 16
 #define GROUP_SIZE 4
 #define MAX_NUM_GROUPS MAX_NUM_COLS / GROUP_SIZE
-#define BANK_SIZE 131072
+
+#ifndef GLB_TILE_MEM_SIZE
+#define GLB_TILE_MEM_SIZE 256
+#endif
+
+#define BANK_SIZE GLB_TILE_MEM_SIZE / 2 * 1024
 
 // Hacky way to cache tile control configuration
 int tile_config_table[MAX_NUM_GLB_TILES];
@@ -124,7 +129,8 @@ void update_io_configuration(struct IOInfo *io_info) {
     struct ConfigInfo *config_info = &io_info->config;
     int tile = io_info->tile;
     int start_addr = io_info->start_addr;
-    int size = io_info->size;
+    // convert 8bit size to 16bit size
+    int size = ((io_info->size) >> 1);
     if (io_info->io == Input) {
         update_tile_config_table(tile, 1 << 6);
         update_tile_config_table(tile, 1 << 2);

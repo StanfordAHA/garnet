@@ -17,7 +17,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'stdview'
+  adk_view = 'view-standard'
 
   parameters = {
     'construct_path'    : __file__,
@@ -32,7 +32,7 @@ def construct():
     #
     # drc
     # drc_rule_deck: /sim/steveri/runsets/ruleset_icovl # NO GOOD instead do:
-    # cd ../adks/tsmc16-adk/stdview; ln -s /sim/steveri/runsets/ruleset_icovl
+    # cd ../adks/tsmc16-adk/view-standard; ln -s /sim/steveri/runsets/ruleset_icovl
     'drc_rule_deck'     : 'ruleset_icovl',
   }
 

@@ -213,10 +213,24 @@ void *parse_metadata(char *filename) {
         if (info->input_filenames[i][0] != '\0') {
             fp = fopen(info->input_filenames[i], "r");
             if (fp) {
-                fseek(fp, 0L, SEEK_END);
-                info->place_info->input_size[i] = (int) ftell(fp);
-                fclose(fp);
+                int name_len = strlen(info->input_filenames[i]);
+                if (strncmp(&info->input_filenames[i][name_len-3], "raw", strlen("raw")) == 0) {
+                    fseek(fp, 0L, SEEK_END);
+                    info->place_info->input_size[i] = (int) ftell(fp);
+                }
+                else {
+                    char c;
+                    int cnt = 0;
+                    while (cnt < 3) {
+                        c = fgetc(fp);
+                        if (c == '\n') cnt++;
+                    } 
+                    int header_size = (int) ftell(fp);
+                    fseek(fp, 0L, SEEK_END);
+                    info->place_info->input_size[i] = (int) ftell(fp) - header_size;
+                }
             }
+            fclose(fp);
         }
     }
 
@@ -225,9 +239,23 @@ void *parse_metadata(char *filename) {
         if (info->output_filenames[i][0] != '\0') {
             fp = fopen(info->output_filenames[i], "r");
             if (fp) {
-                fseek(fp, 0L, SEEK_END);
-                info->place_info->output_size[i] = (int) ftell(fp);
-                fclose(fp);
+                int name_len = strlen(info->output_filenames[i]);
+                if (strncmp(&info->output_filenames[i][name_len-3], "raw", strlen("raw")) == 0) {
+                    fseek(fp, 0L, SEEK_END);
+                    info->place_info->output_size[i] = (int) ftell(fp);
+                }
+		// pgm format
+                else {
+                    char c;
+                    int cnt = 0;
+                    while (cnt < 3) {
+                        c = fgetc(fp);
+                        if (c == '\n') cnt++;
+                    } 
+                    int header_size = (int) ftell(fp);
+                    fseek(fp, 0L, SEEK_END);
+                    info->place_info->output_size[i] = (int) ftell(fp) - header_size;
+                }
             }
         }
     }
