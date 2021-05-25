@@ -134,13 +134,62 @@ if [ "$do_sizes" ]; then
     # 17-tile_array/16-Tile_MemCore  SIZE  279 BY   88 ;
     # 17-tile_array/17-Tile_PE       SIZE  102 BY   88 ;
     # 17-tile_array                  SIZE 4749 BY 1632 ;
-    echo ''; echo '+++ SIZE CHECK'
+    echo ''; echo '+++ SIZE CHECK (lef)'
     for f in `find * -name 'design.lef'`; do
       # e.g. "17-Tile_PE/24-cadence-innovus-signoff/outputs/design.lef" => "17-Tile_PE"
       f1=`echo $f | sed 's/\/[0-9]*-cadence-innovus.*//'`
       # in case e.g. pwd="17-tile-array" and f="28-cadence-innovus-signoff/outputs/design.lef"
+      # aka full_chip area has no substep so just use e.g. "full_chip"
       expr $f1 : '.*lef' > /dev/null && f1=$(basename `pwd`)
       printf "%-30s %s %4.0f %s %4.0f %s\n" $f1 `grep SIZE $f`
+    done
+
+    # But *first* area indication comes from synthesis report e.g.
+    # two hours earlier in below example:
+    # 
+    # % lsl 14-cadence-genus-synthesis/results_syn/final_area.rpt 
+    # May  4 08:07 14-cadence-genus-synthesis/results_syn/final_area.rpt
+    # 
+    # % lsl 24-cadence-innovus-signoff/results/Tile_PE.lef
+    # May  4 10:16 24-cadence-innovus-signoff/results/Tile_PE.lef
+    # ------------------------------------------------------------------------
+    # % cat 14-cadence-genus-synthesis/results_syn/final_area.rpt
+    #     Instance Module  Cell Count  Cell Area  Net Area   Total Area 
+    #     -------------------------------------------------------------
+    #     Tile_PE            10176      4774.620  2214.236     6988.855 
+    # ------------------------------------------------------------------------
+    # Latest "correct" sizes:
+    #     16-glb_top/9-glb_tile               69069
+    #     16-glb_top                        2839952
+    #     17-global_controller                 3702
+    #     19-tile_array/17-Tile_PE             6989
+    #     19-tile_array/16-Tile_MemCore       20500
+    #     19-tile_array                       29914
+    #     full_chip                        11765284
+
+    echo ''; echo '+++ SIZE CHECK (synthesis report)'
+    declare -A size
+      size[glb_tile]=69069
+      size[glb_top]=2839952
+      size[global_controller]=3702
+      size[Tile_PE]=6989
+      size[Tile_MemCore]=20500
+      size[tile_array]=29914
+      size[full_chip]=11765284
+    for f in `find * -path '*results_syn/final_area.rpt'`; do
+      msg=''
+      # e.g. "17-Tile_PE/24-cadence-innovus-signoff/outputs/design.lef" => "17-Tile_PE"
+      # e.g. "17-Tile_PE/14-cadence-genus-synthesis/results_syn/final_area.rpt" => "17-Tile_PE"
+      f1=`echo $f | sed 's/\/[0-9]*-cadence-genus.*//'`
+      # full_chip area has no substep so just use e.g. "full_chip"
+      expr $f1 : '.*rpt' > /dev/null && f1=$(basename `pwd`)
+      area=`cat $f | awk '/^---/ {next}; FOUND {print $NF;exit}; /^ *Instance/{FOUND=1}'`
+      # echo $area $f1
+      for key in "${!size[@]}"; do
+          expr $f1 : ".*${key}$" > /dev/null \
+          && msg=$(printf " (should be ? %8.0f ?)" ${size[$key]})
+      done
+      printf "%-30s %8.0f$msg\n" $f1 $area
     done
 fi
 
