@@ -1,0 +1,44 @@
+#=========================================================================
+# Synopsys PTPX -- Gate-Level Power Estimation
+#=========================================================================
+# This step runs gate-level average power analysis with Synopsys PrimeTime
+#
+# Author : Christopher Torng
+# Date   : March 3, 2020
+#
+
+name: synopsys-ptpx-gl
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - adk
+  - design.vcs.v
+  - design.vcs.pg.v
+  - design.pt.sdc
+  - design.spef.gz
+  - run.saif
+
+outputs:
+  - power.hier
+  - power.cell
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - source run_step.sh
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+  strip_path: tb/dut
+  PWR_AWARE: True
+  batch: False
+  chkpt: False # Turn this on to save periodically during ptpx flow

@@ -1,0 +1,44 @@
+#=========================================================================
+# Synopsys PTPX -- Gate-Level Power Estimation
+#=========================================================================
+# This step runs gate-level average power analysis with Synopsys PrimeTime
+#
+# Author : Christopher Torng
+# Date   : March 3, 2020
+#
+
+name: synopsys-ptpx-synth
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - adk
+  - design.v
+  - design.sdc
+  - design.spef
+  - run.saif
+
+outputs:
+  - power.hier
+  - power.cell
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - mkdir -p reports logs
+  - pt_shell -f ptpx.tcl | tee logs/pt.log
+  - cp reports/{design_name}.power.hier.rpt outputs/power.hier
+  - cp reports/{design_name}.power.cell.rpt outputs/power.cell
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+  strip_path: tb/dut
+  PWR_AWARE: True
