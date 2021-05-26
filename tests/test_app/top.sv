@@ -6,7 +6,10 @@
 ** Change history:
 **  10/14/2020 - Implement the first version
 **===========================================================================*/
+`ifndef CLK_PERIOD
 `define CLK_PERIOD 1ns
+`endif
+
 `include "garnet_regmap.svh"
 
 import garnet_param::*;

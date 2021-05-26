@@ -63,11 +63,11 @@ task ProcDriver::write(input ProcTransaction trans);
 
     @(vif.cbd);
     for (int i=0; i<j; i++) begin
+        vif.cbd.wr_data <= trans.wr_data[i];
         vif.cbd.wr_en   <= trans.wr_en;
         vif.cbd.wr_strb <= trans.wr_strb[i];
         // address increases by 8 every write
         vif.cbd.wr_addr <= (trans.wr_addr + (2**BANK_BYTE_OFFSET)*i);
-        vif.cbd.wr_data <= trans.wr_data[i];
         @(vif.cbd);
     end
 
@@ -95,8 +95,13 @@ task ProcDriver::read(input ProcTransaction trans);
             vif.cbd.rd_addr <= 0;
         end
         begin
+            while(1) begin
+                if (vif.cbd.rd_data_valid) begin
+                    break;
+                end
+                @(vif.cbd);
+            end
             for (int i=0; i<j; i++) begin
-                wait (vif.cbd.rd_data_valid);
                 trans.rd_data[i] = vif.cbd.rd_data;
                 trans.rd_data_valid[i] = vif.cbd.rd_data_valid;
                 @(vif.cbd);

@@ -168,8 +168,9 @@ function build_module {
     modname="$1"; # E.g. "full_chip"
     echo "--- ...BUILD MODULE '$modname'"
 
-    echo "mkdir $modname; cd $modname"
-    mkdir $modname; cd $modname
+    # '-p' means we won't die if dir already exists
+    echo "mkdir -p $modname; cd $modname"
+    mkdir -p $modname; cd $modname
 
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
@@ -186,8 +187,9 @@ function build_subgraph {
     dirname=$modpfx$modname; # E.g. "1-Tile_PE"
     echo "--- ...BUILD SUBGRAPH '$dirname'"
     
-    echo "mkdir $dirname; cd $dirname"
-    mkdir $dirname; cd $dirname
+    # '-p' means we won't die if dir already exists
+    echo "mkdir -p $dirname; cd $dirname"
+    mkdir -p $dirname; cd $dirname
     
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
@@ -203,6 +205,20 @@ function build_subgraph {
 # Top level
 firstmod=${modlist[0]}
 build_module $firstmod
+
+# Little hack to get local tsmc16 libs in among the cached info
+# FIXME/TODO would it work for the caller to simply include "mflowgen" in the copy_list?
+if [ "$use_cached" ]; then
+    if [ "$firstmod" == "full_chip" ]; then
+        echo "+++ Jimmy up the adks"
+        set -x; pwd
+        ls -l mflowgen/adks || echo NOPE adks not connected yet
+        ln -s /sim/buildkite-agent/gold/full_chip/mflowgen
+        ls -l mflowgen/adks
+        set +x
+        echo "--- Continue"
+    fi
+fi
 
 # Subgraphs
 subgraphs=${modlist[@]:1}

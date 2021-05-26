@@ -341,32 +341,36 @@ echo "--- Building in destination dir `pwd`"
 
 
 ########################################################################
-# MFLOWGEN: Use a single common mflowgen for all builds why not
-# Mar2102 Added option to use a different mflowgen branch when/if desired
+# MFLOWGEN: Use a single common mflowgen for all builds of a given branch
+# 
+# Mar 2102 - Added option to use a different mflowgen branch when/if desired
 
 mflowgen_branch=master
+[ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
+
 mflowgen=/sim/buildkite-agent/mflowgen
+if [ "$mflowbranch" != "master" ]; then
+    mflowgen=/sim/buildkite-agent/mflowgen.$mflowgen_branch
+fi
+
+# Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
+# persistence of non-master branch through to end of run.  The cost
+# of making local mflowgen clones is currently about 200M build.
+
+# Build repo if not exists yet
+if ! test -e $mflowgen; then
+    git clone -b $mflowgen_branch \
+        -- https://github.com/mflowgen/mflowgen.git $mflowgen
+fi
+
+echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
 popd
+
 echo ""
-  
-# Okay. Ick. If we leave it here, we get all these weird and very
-# non-portable relative links e.g.
-#    % ls -l /build/gold.112/full_chip/17-tile_array/10-tsmc16/
-#    % multivt -> ../../../../../sim/buildkite-agent/mflowgen/adks/tsmc16/multivt/
-# 
-# So we make a local symlink to contain the damage. It still builds
-# an ugly relative link but now maybe it's more contained, something like
-#    % ls -l /build/gold.112/full_chip/17-tile_array/10-tsmc16/
-#    % multivt -> ../../../mflowgen/adks/tsmc16/multivt/
-
-mflowgen_orig=$mflowgen
-test -e mflowgen || ln -s $mflowgen_orig
-mflowgen=`pwd`/mflowgen
-
 
 
 ########################################################################
@@ -374,7 +378,7 @@ mflowgen=`pwd`/mflowgen
 ########################################################################
 echo "--- ADK SETUP / CHECK"
 
-echo COPY LATEST ADK TO MFLOWGEN REPO
+echo 'COPY LATEST ADK TO MFLOWGEN REPO'
 
 # Copy the latest tsmc16 adk from a nearby repo; we'll use the one in steveri.
 # 
@@ -384,10 +388,28 @@ echo COPY LATEST ADK TO MFLOWGEN REPO
 if [ "$USER" == "buildkite-agent" ]; then
 
     tsmc16=/sim/steveri/mflowgen/adks/tsmc16
-    echo Copying adk from $tsmc16
-    ls -l $tsmc16
 
-    adks=$mflowgen/adks
+    # Check to see that we have the latest copy
+    function check_adk {
+        # d=/sim/steveri/mflowgen/adks/tsmc16-adk
+        d=$1
+        pushd $d
+            git branch -v
+            ba=`git branch -v | awk '{print $4}'` # E.g. '[ahead' or '[behind'
+            if [ "$ba" == "[ahead" -o  "$ba" == "[behind" ]; then
+                echo "---------------------------------------------------------"
+                echo "**ERROR oops looks like tsmc16 libs are not up to date."
+                echo "  - Need to do a git pull on '$d'"
+                echo "  - Also see 'help adk'."
+                echo "---------------------------------------------------------"
+                exit 13
+            fi
+        popd
+    }
+    check_adk $tsmc16 || exit 13
+
+    # Copy the adk to test rig
+    echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
     echo "Copying adks from '$tsmc16' to '$adks'"
     # Need '-f' to e.g. copy over existing read-only .git objects
     set -x; cp -frpH $tsmc16 $adks; set +x
