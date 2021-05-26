@@ -1,0 +1,26 @@
+# Complete from-scratch glb_tile build
+
+agents: { jobsize: "hours" }
+
+##############################################################################
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
+env:
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  GOLD: /build/master-pe.${BUILDKITE_BUILD_NUMBER}
+
+##############################################################################
+# INDIVIDUAL TILE RUNS: glb tile
+# 
+- label: 'setup'
+  commands:
+  # - pwd; git branch; git checkout $$NOV11
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/glb_top'
+- wait: ~
+
+- label: 'glb_tile'
+  commands:
+  # - pwd; git branch; git checkout $$NOV11
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 30G;
+     set -o pipefail;
+     make glb_tile |& tee make-gtile.log'
