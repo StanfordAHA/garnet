@@ -1,0 +1,37 @@
+#=========================================================================
+# Custom Scripts -- power
+#=========================================================================
+
+name: power-domains 
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+
+outputs:
+  - conn-aon-cells-vdd.tcl 
+  - add-power-switches.tcl
+  - pe-load-upf.tcl
+  - mem-load-upf.tcl 
+  - pd-mem-floorplan.tcl
+  - pd-globalnetconnect.tcl        
+  - pe-constraints.tcl
+  - pe-constraints-2.tcl
+  - mem-add-endcaps-welltaps-setup.tcl  
+  - mem-power-switches-setup.tcl  
+  - pd-pe-floorplan.tcl        
+  - pe-power-switches-setup.tcl
+  - dc-dont-use-constraints.tcl  
+  - mem-constraints.tcl 
+  - mem-constraints-2.tcl 
+  - pd-add-endcaps-welltaps.tcl   
+  - pe-add-endcaps-welltaps-setup.tcl 
+  - place-dont-use-constraints.tcl
+  - dont-touch-constraints.tcl
+  - pd-generate-lvs-netlist.tcl
+  - check-clamp-logic-structure.tcl
+  - upf_Tile_MemCore.tcl
+  - upf_Tile_PE.tcl
+  - add-aon-tie-cells.tcl
+ 

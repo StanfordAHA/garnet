@@ -1,0 +1,16 @@
+#=========================================================================
+# Custom Scripts -- timing assertions
+#=========================================================================
+# This node adds a timing reporting script and a pytest suite to check
+# the timing of those reports.
+
+name: custom-timing-assert
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+outputs:
+  - report-special-timing.tcl  # special timing reports
+  - test_timing.py             # pytest assertions on the reports
+
