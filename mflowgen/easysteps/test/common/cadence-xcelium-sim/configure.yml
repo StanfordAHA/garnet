@@ -1,0 +1,48 @@
+
+name: cadence-xcelium-sim
+
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - adk
+  - design.vcs.v
+  - testbench.sv
+  - design.sdf
+  - cmd.tcl
+
+outputs:
+  - waves.shm
+  - run.saif
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - mkdir -p logs
+  - source ./all_tiles_sdf.sh
+  - source ./run_sim.sh 
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  clock_period: 1.0
+  design_name: undefined
+  testbench_name: tb
+  waves: True
+  PWR_AWARE: True
+  use_sdf: True
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+postconditions:
+
+  - assert 'has failed' not in File( 'mflowgen-run.log' )
+
