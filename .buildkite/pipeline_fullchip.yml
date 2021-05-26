@@ -13,7 +13,7 @@ env:
   # Set slack to -0.3 to make postroute_hold much faster.
   # Default targ slack for full_chip @ 0.06 takes 6 hours atm.
   # With hack target -0.3, should be about 2.5 hours (saves 3.5 hours)
-  MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
+  # MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
 
   # Can use this to change target mflowgen branch
   # OVERRIDE_MFLOWGEN_BRANCH: glob-prob

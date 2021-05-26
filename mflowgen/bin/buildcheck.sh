@@ -38,7 +38,6 @@ while [ $# -gt 0 ] ; do
         --help)  show_help; exit  ;;
 
         --show*) show_all_errs=true; ;;
-        --show*) show_all_errs=true; ;;
         --size*) opstring="${opstring}s" ;;
         --lvs)   opstring="${opstring}L" ;;
         --run*)  opstring="${opstring}r" ;;
