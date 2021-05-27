@@ -8,15 +8,21 @@
 
 import os
 import sys
-
-from mflowgen.components import Graph, Step
 from shutil import which
 
-# Find and import easysteps
-# E.g. curdir='/foo/garnet_repo/mflowgen/Tile_PE' => easysteps='../easysteps'
-script_dir=os.path.dirname(os.path.realpath(__file__))
+from mflowgen.components import Graph, Step
 
-sys.path.append(script_dir + '/../esteps2')
+# # Find and import easysteps
+# # E.g. curdir='/foo/garnet_repo/mflowgen/Tile_PE' => easysteps='../easysteps'
+# script_dir=os.path.dirname(os.path.realpath(__file__))
+# sys.path.append(script_dir + '/../esteps2')
+
+# Find and import easysteps; should be in $MFLOWGEN_TOP/easysteps (really?)
+mpath = os.environ.get('MFLOWGEN_TOP')
+sys.path.append(mpath + '/esteps2')
+
+
+
 from esteps2 import CStep
 from esteps2 import DStep
 from esteps2 import EStep
@@ -33,8 +39,8 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'tsmc16'
-  adk_view = 'multicorner-multivt'
+  adk_name = 'freepdk-45nm'
+  adk_view = 'view-tiny'
   pwr_aware = True
 
   flatten = 3
