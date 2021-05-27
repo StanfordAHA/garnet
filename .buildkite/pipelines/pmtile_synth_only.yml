@@ -20,7 +20,10 @@ steps:
 
 - label: '250MHz PE synth 12m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps rtl --debug
+  - $TEST --need_space 30G full_chip tile_array --steps rtl --debug
   - pwd
-  - 'rtl_dir=mflowgen/full_chip/*-tile_array/*-Tile_PE/*-rtl;
+  - 'rtl_dir=mflowgen/full_chip/*-tile_array/*-rtl;
+     echo rtl_dir=$$rtl_dir;
+     ls $$rtl_dir;
+     ls $$rtl_dir/outputs;
      test -f $$rtl_dir/outputs/design.v || echo oh no failed silently oh no'
