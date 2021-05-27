@@ -112,7 +112,7 @@ else
 
          # Here is where we build the verilog for the main chip
          echo Here is where we build the verilog for the main chip
-         aha garnet $flags || echo FAILED
+         aha garnet $flags
 
          # Rename output verilog, final name must be 'design.v'
          cd garnet
