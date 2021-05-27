@@ -1,7 +1,5 @@
 #!/bin/bash
-
-# DIE if any of the below commands exits with error status
-# set -e; do i need both of these?
+set -e; # DIE if any of the below commands exits with error status
 
 # Hierarchical flows can accept RTL as an input from parent graph
 if [ -f ../inputs/design.v ]; then
@@ -84,8 +82,6 @@ else
         '# Func to check python package creds (Added 02/2021 as part of cst vetting)
          # (Single-quote regime)
 
-         set -e
-
          function checkpip {
              # Example: checkpip ast.t "peak "
              #   ast-tools           0.0.30    /aha/ast_tools
@@ -103,6 +99,8 @@ else
              done
          }'"
          # (Double-quote regime)
+         set -e; # DIE if any single commands exits with error status
+
          source /aha/bin/activate; # Set up the build environment
 
          # Example: say you want to double-check packages 'ast_tools', 'magma', and 'peak'.
@@ -110,9 +108,7 @@ else
          # location and latest commit hash for each.
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
 
-         # Here is where we build the verilog for the main chip
-         echo Here is where we build the verilog for the main chip
-         aha garnet $flags
+         aha garnet $flags; # Here is where we build the verilog for the main chip
 
          # Rename output verilog, final name must be 'design.v'
          cd garnet
