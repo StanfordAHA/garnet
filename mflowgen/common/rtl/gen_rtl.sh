@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# DIE is any of the below commands exits with error status
+set -e
+
 # Hierarchical flows can accept RTL as an input from parent graph
 if [ -f ../inputs/design.v ]; then
   echo "Using RTL from parent graph"

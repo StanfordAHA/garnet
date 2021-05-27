@@ -21,19 +21,5 @@ steps:
 - label: '250MHz PE synth 12m'
   commands:
   - $TEST --need_space 30G full_chip --steps rtl --debug
-  - 'pwd;
-     ls full_chip;
-     ls full_chip/*-rtl;
-     rtl_dir=full_chip/*-rtl;
+  - 'rtl_dir=full_chip/*-rtl;
      grep Traceback $$rtl_dir/mflowgen-run.log && echo oh no failed silently oh no'
-
-
-#      ls full_chip;
-#      ls full_chip/*-tile_array;
-#      ls full_chip/*-tile_array/*-rtl;
-#      ls mflowgen;
-#      rtl_dir=mflowgen/full_chip/*-tile_array/*-rtl;
-#      echo rtl_dir=$$rtl_dir;
-#      ls $$rtl_dir;
-#      ls $$rtl_dir/outputs;
-#      test -f $$rtl_dir/outputs/design.v || echo oh no failed silently oh no'
