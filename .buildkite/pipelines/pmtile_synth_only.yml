@@ -25,12 +25,7 @@ steps:
      ls full_chip;
      ls full_chip/*-rtl;
      rtl_dir=full_chip/*-rtl;
-     echo rtl_dir=$$rtl_dir;
-     ls $$rtl_dir;
-     ls $$rtl_dir/outputs;
-     test -f $$rtl_dir/outputs/design.v || echo oh no failed silently oh no'
-
-
+     grep Traceback $$rtl_dir/mflowgen-run.log && echo oh no failed silently oh no'
 
 
 #      ls full_chip;
