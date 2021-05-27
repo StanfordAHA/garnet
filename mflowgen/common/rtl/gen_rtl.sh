@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # DIE if any of the below commands exits with error status
-set -e
+# set -e; do i need both of these?
 
 # Hierarchical flows can accept RTL as an input from parent graph
 if [ -f ../inputs/design.v ]; then
