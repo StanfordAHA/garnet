@@ -211,6 +211,8 @@ class MemCore(LakeCoreBase):
         if "init" in top_config:
             # this is SRAM content
             content = top_config['init']
+            len_dat = len(content) % self.dut
+            assert len_dat % self.fw_int == 0, f"ROM content size must be a multiple of {self.fw_int}"
             for addr, data in enumerate(content):
                 if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
