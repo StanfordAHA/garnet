@@ -22,4 +22,7 @@ steps:
   commands:
   - $TEST --need_space 30G full_chip --steps rtl --debug
   - 'rtl_dir=full_chip/*-rtl;
-     grep Traceback $$rtl_dir/mflowgen-run.log && echo oh no failed silently oh no'
+     if grep Traceback $$rtl_dir/mflowgen-run.log;
+     then echo oh no failed silently oh no;
+     else exit 0;
+     fi'
