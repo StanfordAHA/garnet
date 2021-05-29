@@ -1,1 +1,3 @@
+glb_reg_map.svh
 top.sv
+glb_tile_test.sv

@@ -15,7 +15,7 @@ XRUNARGS += +CFG_TEST_NUM_TILE=4
 XRUNARGS += +TEST_GLB_G2F_STREAM
 XRUNARGS += +TEST_GLB_F2G_STREAM
 XRUNARGS += +TEST_PCFG_STREAM
-# XRUNARGS += +VCD_ON
+XRUNARGS += +VCD_ON
 
 
 GLB_TILE_NETLIST := ./netlist/glb_tile.vcs.v
@@ -103,9 +103,8 @@ html: $(rdl_post)
 # sim-tile
 # run testbench of glb-tile with xcelium
 .PHONY: sim-tile
-sim-tile: TOP_MODULE=glb_tile
 sim-tile: TB_DIR=sim-tile
-sim-tile: DESIGNARGS += -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist -v $(SRAM_STUB)
+sim-tile: DESIGNARGS += -F $(RTL_DIR)/global_buffer.filelist -F $(TB_DIR)/tb_glb_tile.filelist -v $(SRAM_STUB)
 sim-tile: rtl
 	$(XRUN)
 

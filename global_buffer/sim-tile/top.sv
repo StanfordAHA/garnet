@@ -6,12 +6,18 @@
 ** Change history:  04/03/2020 - Implement first version of testbench
 **===========================================================================*/
 `define CLK_PERIOD 1ns
+`define GLB_TILE_ID 0
 
 import global_buffer_param::*;
 
 module top;
 timeunit 1ps;
 timeprecision 1ps;
+
+`ifdef PWR
+    supply1 VDD;
+    supply0 VSS;
+`endif
 
     logic                                                clk;
     logic                                                clk_en;
@@ -231,9 +237,21 @@ timeprecision 1ps;
     logic                                                strm_g2f_interrupt_pulse;
     logic                                                pcfg_g2f_interrupt_pulse;
 
-    // max cycle set
+    // set tile id
     initial begin
-        int max_cycle = 10000;
+        glb_tile_id = `GLB_TILE_ID;
+    end
+
+    // we do not use chaining
+    initial begin
+        cfg_tile_connected_wsti = 0;
+        cfg_tile_connected_esto = 0;
+        cfg_pc_tile_connected_wsti = 0;
+        cfg_pc_tile_connected_esto = 0;
+    end
+
+    initial begin
+        int max_cycle = 10000000;
         repeat(max_cycle) @(posedge clk);
         $display("\n%0t\tERROR: The %7d cycles marker has passed!", $time, max_cycle);
         $finish(2);
@@ -242,116 +260,53 @@ timeprecision 1ps;
     // back-annotation and dump
 `ifdef SYNTHESIS
     initial begin
-        $sdf_annotate("/sim/kongty/syn_annotate/glb_tile.sdf",top.dut);
-        $dumpfile("glb_tile_syn.vcd");
-        $dumpvars(0, top);
+        if ($test$plusargs("VCD_ON")) begin
+            $dumpfile("glb_tile_syn.vcd");
+            $dumpvars(0, top);
+        end
     end
 `elsif PNR 
     initial begin
-        $sdf_annotate("/sim/kongty/pnr_annotate/glb_tile.sdf",top.dut);
-        $dumpfile("glb_tile_pnr.vcd");
-        $dumpvars(0, top);
+        if ($test$plusargs("VCD_ON")) begin
+            $dumpfile("glb_tile_pnr.vcd");
+            $dumpvars(0, top);
+        end
     end
 `else
     initial begin
-        $dumpfile("glb_tile.vcd");
-        $dumpvars(0, top);
+        if ($test$plusargs("VCD_ON")) begin
+            $dumpfile("glb_tile.vcd");
+            $dumpvars(0, top);
+        end
     end
 `endif
 
     // clk generation
     initial begin
+        #0.5ns
         clk = 0;
-        clk_en = 1;
         forever
         #(`CLK_PERIOD/2.0) clk = !clk;
     end
 
-    // initialize all inputs to 0
+    // reset generation
     initial begin
-        glb_tile_id = 0;
-
-        proc_wr_en_e2w_esti = '0;
-        proc_wr_strb_e2w_esti = '0;
-        proc_wr_addr_e2w_esti = '0;
-        proc_wr_data_e2w_esti = '0;
-        proc_rd_en_e2w_esti = '0;
-        proc_rd_addr_e2w_esti = '0;
-        proc_rd_data_e2w_esti = '0;
-        proc_rd_data_valid_e2w_esti = '0;
-
-        proc_wr_en_w2e_wsti = '0;
-        proc_wr_strb_w2e_wsti = '0;
-        proc_wr_addr_w2e_wsti = '0;
-        proc_wr_data_w2e_wsti = '0;
-        proc_rd_en_w2e_wsti = '0;
-        proc_rd_addr_w2e_wsti = '0;
-        proc_rd_data_w2e_wsti = '0;
-        proc_rd_data_valid_w2e_wsti = '0;
-
-    end
-
-    initial begin
-        bit [BANK_DATA_WIDTH-1:0] data;
-
         reset <= 1;
-        repeat(3) @(posedge clk);
+        repeat(10) @(posedge clk);
         reset <= 0;
-
-        wait(!reset)
-        @(posedge clk);
-
-        proc_write(0, 1);
-        repeat(3) @(posedge clk);
-        proc_read(0, data);
-
-        repeat(3) @(posedge clk);
-        $finish;
     end
+
+    // instantiate test
+    glb_tile_test test(
+        .*
+    );
 
     // instantiate dut
     glb_tile dut (
+`ifdef PWR
+        .VDD (VDD),
+        .VSS (VSS),
+`endif
         .*);
-    
-    task automatic proc_write(input bit[GLB_ADDR_WIDTH-1:0] addr, input bit[BANK_DATA_WIDTH-1:0] data);
-    begin
-        proc_wr_en_w2e_wsti = '1;
-        proc_wr_strb_w2e_wsti = {(BANK_DATA_WIDTH/8){1'b1}};
-        proc_wr_addr_w2e_wsti = addr;
-        proc_wr_data_w2e_wsti = data;
-        proc_rd_en_w2e_wsti = '0;
-        proc_rd_addr_w2e_wsti = '0;
-        @(posedge clk);
-        proc_wr_en_w2e_wsti = '0;
-        proc_wr_strb_w2e_wsti = '0;
-        proc_wr_addr_w2e_wsti = '0;
-        proc_wr_data_w2e_wsti = '0;
-    end
-    endtask
-
-    task automatic proc_read(input bit[GLB_ADDR_WIDTH-1:0] addr, output bit[BANK_DATA_WIDTH-1:0] data);
-    begin
-        fork
-            begin
-                proc_wr_en_w2e_wsti = '0;
-                proc_wr_strb_w2e_wsti = '0;
-                proc_wr_addr_w2e_wsti = '0;
-                proc_wr_data_w2e_wsti = '0;
-                proc_rd_en_w2e_wsti = '1;
-                proc_rd_addr_w2e_wsti = addr;
-                @(posedge clk);
-                proc_rd_en_w2e_wsti = '0;
-                proc_rd_addr_w2e_wsti = '0;
-            end
-            begin
-                while (!proc_rd_data_valid_w2e_esto) begin
-                    @(posedge clk);
-                end
-                $display("\n%0t\tREAD done", $time);
-                data = proc_rd_data_w2e_esto;
-            end
-        join
-    end
-    endtask
 
 endmodule
