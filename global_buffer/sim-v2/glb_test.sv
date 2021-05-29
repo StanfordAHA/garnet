@@ -92,9 +92,26 @@ program glb_test (
         end
         if ($test$plusargs("TEST_GLB_CFG")) begin
             logic [AXI_DATA_WIDTH-1:0] cfg_data;
-            glb_cfg_write(0, 'hff);
-            glb_cfg_read(0, cfg_data);
-            compare_cfg('hff, cfg_data);
+            logic [AXI_DATA_WIDTH-1:0] cfg_data_out;
+            int num_tile;
+            if (!($value$plusargs("CFG_TEST_NUM_TILE=%0d", num_tile)))
+                num_tile = 16;
+            for(int i=0; i < num_tile; i++) begin
+                cfg_data = 'hff;
+                glb_cfg_write(((i << 8) | `GLB_CFG_TILE_CTRL), cfg_data);
+                glb_cfg_read(((i << 8) | `GLB_CFG_TILE_CTRL), cfg_data_out);
+                compare_cfg(cfg_data, cfg_data_out);
+
+                cfg_data = 'hfff;
+                glb_cfg_write(((i << 8) | `GLB_CFG_LATENCY), cfg_data);
+                glb_cfg_read(((i << 8) | `GLB_CFG_LATENCY), cfg_data_out);
+                compare_cfg(cfg_data, cfg_data_out);
+
+                cfg_data = 'hff;
+                glb_cfg_write(((i << 8) | `GLB_CFG_ST_DMA_HEADER_0_START_ADDR), cfg_data);
+                glb_cfg_read(((i << 8) | `GLB_CFG_ST_DMA_HEADER_0_START_ADDR), cfg_data_out);
+                compare_cfg(cfg_data, cfg_data_out);
+            end
         end
         if ($test$plusargs("TEST_GLB_G2F_STREAM")) begin
             static int tile_id = 0;
@@ -252,7 +269,7 @@ program glb_test (
             end
         end
         begin
-            repeat (30) @(posedge clk);
+            repeat (50) @(posedge clk);
             $display("@%0t: %m ERROR: glb cfg read timeout ", $time);
         end
         join_any
@@ -439,9 +456,12 @@ program glb_test (
             err++;
         end
         foreach(data_arr_0[i]) begin
-            if(data_arr_0[i] != data_arr_1[i]) begin
-                $display("Data array different. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
+            if(data_arr_0[i] !== data_arr_1[i]) begin
+                $display("Data array different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i, data_arr_0[i], data_arr_1[i]);
                 err++;
+            end
+            else begin
+                $display("Data array same. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i, data_arr_0[i], data_arr_1[i]);
             end
         end
         if (err > 0) begin
@@ -460,9 +480,12 @@ program glb_test (
             err++;
         end
         foreach(data_arr_0[i]) begin
-            if(data_arr_0[i] != data_arr_1[i]) begin
+            if(data_arr_0[i] !== data_arr_1[i]) begin
                 $display("Data array different. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
                 err++;
+            end
+            else begin
+                $display("Data array same. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
             end
         end
         if (err > 0) begin
@@ -473,7 +496,7 @@ program glb_test (
     endfunction
 
     function int compare_cfg(logic [BANK_DATA_WIDTH-1:0] cfg_0, logic [AXI_DATA_WIDTH-1:0] cfg_1); 
-        if(cfg_0 != cfg_1) begin
+        if(cfg_0 !== cfg_1) begin
             $display("cfg data is different. cfg_0: 0x%0h, cfg_1: 0x%0h", cfg_0, cfg_1);
             return 1;
         end
