@@ -1,0 +1,4 @@
+-v glb_tile.vcs.pg.v
+-v sram-pwr2.v
+-v stdcells-pwr.v
+-v stdcells-pm-pwr.v
