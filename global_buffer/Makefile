@@ -15,7 +15,7 @@ XRUNARGS += +CFG_TEST_NUM_TILE=4
 XRUNARGS += +TEST_GLB_G2F_STREAM
 XRUNARGS += +TEST_GLB_F2G_STREAM
 XRUNARGS += +TEST_PCFG_STREAM
-XRUNARGS += +VCD_ON
+# XRUNARGS += +VCD_ON
 
 
 GLB_TILE_NETLIST := ./netlist/glb_tile.vcs.v
@@ -114,13 +114,17 @@ sim-tile: rtl
 sim-tile-gl: TOP_MODULE=glb_tile
 sim-tile-gl: TB_DIR=sim-tile
 sim-tile-gl: XRUNARGS += +define+PNR
+sim-tile-gl: XRUNARGS += +define+NON_STOP_IF_INPUT_Z
+sim-tile-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING
+sim-tile-gl: XRUNARGS += +define+TSMC_CM_UNIT_DELAY
+sim-tile-gl: XRUNARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS +define+TSMC_MEM_LOAD_0
+sim-tile-gl: XRUNARGS += -negdelay
+sim-tile-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd_tile.cmd
 sim-tile-gl: DESIGNARGS += \
-	`find /tsmc16/TSMCHOME/digital/Front_End/verilog/ -name '*.v' | grep -v "pwr" | sed -e 's/^/-v /' | xargs` \
-	-v $(SRAM_RTL) \
-	$(GLB_TILE_NETLIST) \
 	$(RTL_DIR)/global_buffer_param.svh \
-	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist
-sim-tile-gl: $(GLB_TILE_NETLIST)
+	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist \
+	-F netlist/netlist-tile.filelist
+sim-tile-gl:
 	$(XRUN)
 
 # -------------------------------------------------------------------
