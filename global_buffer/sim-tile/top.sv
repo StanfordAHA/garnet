@@ -251,7 +251,7 @@ timeprecision 1ps;
     end
 
     initial begin
-        int max_cycle = 10000000;
+        static int max_cycle = 10000000;
         repeat(max_cycle) @(posedge clk);
         $display("\n%0t\tERROR: The %7d cycles marker has passed!", $time, max_cycle);
         $finish(2);
