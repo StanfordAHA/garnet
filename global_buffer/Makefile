@@ -15,7 +15,7 @@ XRUNARGS += +CFG_TEST_NUM_TILE=4
 XRUNARGS += +TEST_GLB_G2F_STREAM
 XRUNARGS += +TEST_GLB_F2G_STREAM
 XRUNARGS += +TEST_PCFG_STREAM
-# XRUNARGS += +VCD_ON
+XRUNARGS += +VCD_ON
 
 
 GLB_TILE_NETLIST := ./netlist/glb_tile.vcs.v
@@ -120,6 +120,7 @@ sim-tile-gl: XRUNARGS += +define+TSMC_CM_UNIT_DELAY
 sim-tile-gl: XRUNARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS +define+TSMC_MEM_LOAD_0
 sim-tile-gl: XRUNARGS += -negdelay
 sim-tile-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd_tile.cmd
+sim-tile-gl: XRUNARGS += -sdfstats sdf_stats_tile.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
 sim-tile-gl: DESIGNARGS += \
 	$(RTL_DIR)/global_buffer_param.svh \
 	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist \

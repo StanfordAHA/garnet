@@ -212,11 +212,13 @@ program glb_tile_test (
 
     task glb_cfg_write(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
         repeat(5) @(posedge clk);
+        #(`CLK_PERIOD*0.3)
         if_cfg_wst_s_wr_en <= 1;
         if_cfg_wst_s_wr_clk_en <= 1;
         if_cfg_wst_s_wr_addr <= addr;
         if_cfg_wst_s_wr_data <= data;
         @(posedge clk);
+        #(`CLK_PERIOD*0.3)
         if_cfg_wst_s_wr_en <= 0;
         if_cfg_wst_s_wr_clk_en <= 0;
         if_cfg_wst_s_wr_addr <= 0;
@@ -226,10 +228,12 @@ program glb_tile_test (
 
     task glb_cfg_read(input [AXI_ADDR_WIDTH-1:0] addr, output [AXI_DATA_WIDTH-1:0] data);
         repeat(5) @(posedge clk);
+        #(`CLK_PERIOD*0.3)
         if_cfg_wst_s_rd_en <= 1;
         if_cfg_wst_s_rd_clk_en <= 1;
         if_cfg_wst_s_rd_addr <= addr;
         @(posedge clk);
+        #(`CLK_PERIOD*0.3)
         if_cfg_wst_s_rd_en <= 0;
         if_cfg_wst_s_rd_clk_en <= 0;
         if_cfg_wst_s_rd_addr <= 0;
@@ -263,6 +267,7 @@ program glb_tile_test (
                 proc_write_e2w(addr + 8*i, data[i]);
             end
         end
+        #(`CLK_PERIOD*0.3)
         proc_wr_en_w2e_wsti <= 0;
         proc_wr_strb_w2e_wsti <= 0;
         proc_wr_en_e2w_esti <= 0;
@@ -272,6 +277,7 @@ program glb_tile_test (
     endtask
 
     task automatic proc_write_w2e(input [GLB_ADDR_WIDTH-1:0] addr, [BANK_DATA_WIDTH-1:0] data);
+        #(`CLK_PERIOD*0.3)
         proc_wr_en_w2e_wsti <= 1;
         proc_wr_strb_w2e_wsti <= {(BANK_DATA_WIDTH/8){1'b1}};
         proc_wr_addr_w2e_wsti <= addr;
@@ -280,6 +286,7 @@ program glb_tile_test (
     endtask
 
     task automatic proc_write_e2w(input [GLB_ADDR_WIDTH-1:0] addr, [BANK_DATA_WIDTH-1:0] data);
+        #(`CLK_PERIOD*0.3)
         proc_wr_en_e2w_esti <= 1;
         proc_wr_strb_e2w_esti <= {(BANK_DATA_WIDTH/8){1'b1}};
         proc_wr_addr_e2w_esti <= addr;
@@ -294,6 +301,7 @@ program glb_tile_test (
         fork : proc_read
         begin
             for(int i = 0; i < size; i++) begin
+                #(`CLK_PERIOD*0.3)
                 if ((glb_tile_id % 2) == 0) begin
                     proc_rd_en_w2e_wsti <= 1;
                     proc_rd_addr_w2e_wsti <= addr + 8*i;
@@ -303,6 +311,7 @@ program glb_tile_test (
                 end
                 @(posedge clk);
             end
+            #(`CLK_PERIOD*0.3)
             proc_rd_en_w2e_wsti <= 0;
             proc_rd_en_e2w_esti <= 0;
         end
@@ -312,6 +321,7 @@ program glb_tile_test (
                 int cnt = 0;
                 while (1) begin
                     @(posedge clk);
+                    #(`CLK_PERIOD*0.3)
                     if ((glb_tile_id % 2) == 0) begin
                         if (proc_rd_data_valid_w2e_esto) begin
                             data[cnt] = proc_rd_data_w2e_esto;
