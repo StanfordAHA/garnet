@@ -99,7 +99,7 @@ else
              done
          }'"
          # (Double-quote regime)
-         set -e; # DIE if any single commands exits with error status
+         set -e; # DIE if any single command exits with error status
 
          source /aha/bin/activate; # Set up the build environment
 
