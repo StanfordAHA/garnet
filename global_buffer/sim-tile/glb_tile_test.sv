@@ -321,7 +321,6 @@ program glb_tile_test (
                 int cnt = 0;
                 while (1) begin
                     @(posedge clk);
-                    #(`CLK_PERIOD*0.3)
                     if ((glb_tile_id % 2) == 0) begin
                         if (proc_rd_data_valid_w2e_esto) begin
                             data[cnt] = proc_rd_data_w2e_esto;

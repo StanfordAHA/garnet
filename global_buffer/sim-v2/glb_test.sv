@@ -102,7 +102,7 @@ program glb_test (
                 glb_cfg_read(((i << 8) | `GLB_CFG_TILE_CTRL), cfg_data_out);
                 compare_cfg(cfg_data, cfg_data_out);
 
-                cfg_data = 'hfff;
+                cfg_data = 'h3ff;
                 glb_cfg_write(((i << 8) | `GLB_CFG_LATENCY), cfg_data);
                 glb_cfg_read(((i << 8) | `GLB_CFG_LATENCY), cfg_data_out);
                 compare_cfg(cfg_data, cfg_data_out);
@@ -237,11 +237,13 @@ program glb_test (
 
     task glb_cfg_write(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
         repeat(5) @(posedge clk);
+        #(`CLK_PERIOD*0.3)
         if_cfg_wr_en <= 1;
         if_cfg_wr_clk_en <= 1;
         if_cfg_wr_addr <= addr;
         if_cfg_wr_data <= data;
         @(posedge clk);
+        #(`CLK_PERIOD*0.3)
         if_cfg_wr_en <= 0;
         if_cfg_wr_clk_en <= 0;
         if_cfg_wr_addr <= 0;
@@ -251,10 +253,12 @@ program glb_test (
 
     task glb_cfg_read(input [AXI_ADDR_WIDTH-1:0] addr, output [AXI_DATA_WIDTH-1:0] data);
         repeat(5) @(posedge clk);
+        #(`CLK_PERIOD*0.3)
         if_cfg_rd_en <= 1;
         if_cfg_rd_clk_en <= 1;
         if_cfg_rd_addr <= addr;
         @(posedge clk);
+        #(`CLK_PERIOD*0.3)
         if_cfg_rd_en <= 0;
         if_cfg_rd_clk_en <= 0;
         if_cfg_rd_addr <= 0;
@@ -284,6 +288,7 @@ program glb_test (
         foreach(data[i]) begin
             proc_write(addr + 8*i, data[i]);
         end
+        #(`CLK_PERIOD*0.3)
         proc_wr_en <= 0;
         proc_wr_strb <= 0;
         $display("Finish glb-mem burst write");
@@ -291,6 +296,7 @@ program glb_test (
     endtask
 
     task automatic proc_write(input [GLB_ADDR_WIDTH-1:0] addr, [BANK_DATA_WIDTH-1:0] data);
+        #(`CLK_PERIOD*0.3)
         proc_wr_en <= 1;
         proc_wr_strb <= {(BANK_DATA_WIDTH/8){1'b1}};
         proc_wr_addr <= addr;
@@ -305,10 +311,12 @@ program glb_test (
         fork : proc_read
         begin
             for(int i = 0; i < size; i++) begin
+                #(`CLK_PERIOD*0.4)
                 proc_rd_en <= 1;
                 proc_rd_addr <= addr + 8*i;
                 @(posedge clk);
             end
+            #(`CLK_PERIOD*0.4)
             proc_rd_en <= 0;
         end
         begin
@@ -340,17 +348,25 @@ program glb_test (
         int cgra_data_arr_size = cgra_data_arr_out.size();
         $display("g2f streaming start. tile: %0d", tile_id);
         repeat(5) @(posedge clk);
+        #(`CLK_PERIOD*0.3)
         strm_start_pulse <= (1 << tile_id);
         @(posedge  clk);
+        #(`CLK_PERIOD*0.3)
         strm_start_pulse <= 0;
 
         fork : g2f_start
         begin
             fork : data_valid_timeout
             begin
-                wait(stream_data_valid_g2f[tile_id][0]);
+                while (1) begin
+                    @(posedge clk);
+                    if(stream_data_valid_g2f[tile_id][0]) begin
+                        break;
+                    end
+                end
                 @(posedge clk);
                 for(int i=0; i < cgra_data_arr_size; i++) begin
+                    #(`CLK_PERIOD*0.3)
                     cgra_data_arr_out[i] = stream_data_g2f[tile_id][0];
                     @(posedge clk);
                 end
@@ -384,10 +400,12 @@ program glb_test (
         $display("f2g streaming start. tile: %0d", tile_id);
         repeat(5) @(posedge clk);
         for(int i=0; i < cgra_data_arr_size; i++) begin
+            #(`CLK_PERIOD*0.3)
             stream_data_f2g[tile_id][1] <= cgra_data_arr[i];
             stream_data_valid_f2g[tile_id][1] <= 1;
             @(posedge clk);
         end
+        #(`CLK_PERIOD*0.3)
         stream_data_f2g[tile_id][1] <= 0;
         stream_data_valid_f2g[tile_id][1] <= 0;
 
@@ -409,8 +427,10 @@ program glb_test (
         int bs_size = bs_arr_out.size();
         $display("pcfg streaming start. tile: %0d, num_bs: %0d", tile_id, bs_size);
         repeat(5) @(posedge clk);
+        #(`CLK_PERIOD*0.3)
         pc_start_pulse <= (1 << tile_id);
         @(posedge  clk);
+        #(`CLK_PERIOD*0.3)
         pc_start_pulse <= 0;
 
         fork : pcfg_start
@@ -419,6 +439,7 @@ program glb_test (
             begin
                 wait(cgra_cfg_g2f_cfg_wr_en[tile_id][0]);
                 for(int i=0; i < bs_size; i++) begin
+                    #(`CLK_PERIOD*0.3)
                     bs_arr_out[i] = {cgra_cfg_g2f_cfg_addr[tile_id][0], cgra_cfg_g2f_cfg_data[tile_id][0]};
                     @(posedge clk);
                 end

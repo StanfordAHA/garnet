@@ -37,12 +37,12 @@ set_driving_cell -no_design_rule \
 ###############################
 
 # set min delay for all inputs
-set_min_delay -from [all_inputs] [expr ${clock_period}*0.45]
+set_min_delay -from [all_inputs -no_clocks] [expr ${clock_period}*0.45]
 set_min_delay -from [get_ports proc_wr_data] [expr ${clock_period}*0.50]
 set_min_delay -from [get_ports if_sram_cfg_rd_addr] [expr ${clock_period}*0.50]
 
 # default input delay is 0.30
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.30] [all_inputs]
+set_input_delay -clock ${clock_name} [expr ${clock_period}*0.30] [all_inputs -no_clocks]
 
 # reset input delay is 0.2
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.20] [get_ports reset]

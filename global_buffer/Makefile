@@ -11,11 +11,11 @@ GLB_TILE_MEM_SIZE ?= 256
 XRUNARGS = 
 XRUNARGS += +TEST_GLB_MEM_SIMPLE
 XRUNARGS += +TEST_GLB_CFG
-XRUNARGS += +CFG_TEST_NUM_TILE=4
+XRUNARGS += +CFG_TEST_NUM_TILE=2
 XRUNARGS += +TEST_GLB_G2F_STREAM
 XRUNARGS += +TEST_GLB_F2G_STREAM
 XRUNARGS += +TEST_PCFG_STREAM
-XRUNARGS += +VCD_ON
+XRUNARGS += -input shm.tcl
 
 
 GLB_TILE_NETLIST := ./netlist/glb_tile.vcs.v
@@ -151,9 +151,8 @@ sim-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING
 sim-gl: XRUNARGS += +define+TSMC_CM_UNIT_DELAY
 sim-gl: XRUNARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS +define+TSMC_MEM_LOAD_0
 sim-gl: XRUNARGS += -negdelay
-# sim-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
-# sim-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd_minimum.cmd
-# sim-gl: XRUNARGS += -sdfstats sdf_stats.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
+sim-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
+sim-gl: XRUNARGS += -sdfstats sdf_stats.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
 sim-gl:
 	$(XRUN)
 
