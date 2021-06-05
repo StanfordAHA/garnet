@@ -5,7 +5,7 @@
 ** Author: Taeyoung Kong
 ** Change history:  04/03/2020 - Implement first version of testbench
 **===========================================================================*/
-`define CLK_PERIOD 10ns
+`define CLK_PERIOD 1500ps
 `define GLB_TILE_ID 0
 
 import global_buffer_param::*;

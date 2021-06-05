@@ -5,7 +5,7 @@
 ** Author: Taeyoung Kong
 ** Change history:  05/22/2021 - Implement first version of testbench
 **===========================================================================*/
-`define CLK_PERIOD 1200ps
+`define CLK_PERIOD 1400ps
 
 import global_buffer_pkg::*;
 import global_buffer_param::*;
