@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e; # DIE if any of the below commands exits with error status
+
 # Hierarchical flows can accept RTL as an input from parent graph
 if [ -f ../inputs/design.v ]; then
   echo "Using RTL from parent graph"
@@ -97,6 +99,8 @@ else
              done
          }'"
          # (Double-quote regime)
+         set -e; # DIE if any single command exits with error status
+
          source /aha/bin/activate; # Set up the build environment
 
          # Example: say you want to double-check packages 'ast_tools', 'magma', and 'peak'.
