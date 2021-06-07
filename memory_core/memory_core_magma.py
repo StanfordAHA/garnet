@@ -215,8 +215,9 @@ class MemCore(LakeCoreBase):
             for addr, data in enumerate(content):
                 if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
+                addr = addr >> 2
                 feat_addr = addr // 256 + 1
-                addr = (addr % 256) >> 2
+                addr = addr % 256
                 configs.append((addr, feat_addr, data))
 
         # Extract mode to the enum
