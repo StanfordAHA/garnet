@@ -63,7 +63,7 @@ fi
 
 # Rename existing (presumably failed) step if one exists
 
-stepdir=*-$step
+stepdir=`echo *-$step`
 if test -e $stepdir; then
     echo "+++ RENAMING FAILED STEP"
     echo "Looks like a failed step '*-$step' exists already"
