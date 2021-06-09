@@ -2,11 +2,12 @@ agents: { jobsize: "hours" }
 
 env:
   GOLD: /build/mem_tile_only.${BUILDKITE_BUILD_NUMBER}
+  OVERRIDE_MFLOWGEN_BRANCH: silent_fail
 
 steps:
 
 ##############################################################################
-# INDIVIDUAL TILE RUNS - PE tile only
+# INDIVIDUAL TILE RUNS - Mem tile only
 
 - label: 'setup'
   commands:
