@@ -1,7 +1,7 @@
 agents: { jobsize: "hours" }
 
 env:
-  GOLD: /build/bdgtc-memtile.${BUILDKITE_BUILD_NUMBER}
+  GOLD: /build/mem_tile_only.${BUILDKITE_BUILD_NUMBER}
 
 steps:
 
