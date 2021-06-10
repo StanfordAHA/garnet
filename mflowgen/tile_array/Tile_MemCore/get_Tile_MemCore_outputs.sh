@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e;    # FAIL if any individual command fails
+
 mflowgen run --design $GARNET_HOME/mflowgen/Tile_MemCore/
 make cadence-genus-genlib
 if command -v calibre &> /dev/null
