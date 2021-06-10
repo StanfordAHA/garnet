@@ -63,7 +63,7 @@ fi
 
 # Rename existing (presumably failed) step if one exists
 
-stepdir=*-$step
+stepdir=`echo *-$step`
 if test -e $stepdir; then
     echo "+++ RENAMING FAILED STEP"
     echo "Looks like a failed step '*-$step' exists already"
@@ -100,6 +100,7 @@ function watch_for_hang {
     # sleep_period=1 ;  # Every second for testing
     sleep_period=750; # Check every fifteen minutes I guess
     while [ true ]; do
+        set +x
         tag="HANG MONITOR $(date +%H:%M)" ; # per-loop tag
 
         # grep -l:
@@ -109,18 +110,19 @@ function watch_for_hang {
         hunglogs=$(grep -ls 'slow or hanging' *postroute_hold/qrc*.log)
         for log_name in $hunglogs; do
 
+            set -x
             echo "$tag Found slow hanging log '$log_name'"
             echo $tag $log_name
             
-            # Find innovus process id where 
-            # e.g. if log_name=qrc_6717_20210326_21:19:09.log then pid=6717
-            pid=$(echo $log_name | sed 's/^qrc_//' | sed 's/_.*//')
+            # Find innovus process id where e.g. log_name is 
+            # 32-cadence-innovus-postroute_hold/qrc_2934_20210606_01:55:44.log'
+            # and so pid=2934
+            pid=$(echo $log_name | sed 's/^.*qrc_//' | sed 's/_.*//')
             echo "$tag process id=? $pid ?"
             echo "$tag found hung process $pid"
 
             # See if process exists (still)
             ps -p $pid || continue
-            
             # Found a hung process; now kill it
             echo "Process $pid is (still) valid / running"
             echo ""
@@ -128,10 +130,49 @@ function watch_for_hang {
             echo 'ps -xo "%p %P %y %x %c" --sort ppid | grep $pid'
             ps -xo "%p %P %y %x %c" --sort ppid | grep $pid
             echo ""
-            echo "$tag KILL $pid !"
+            em='!'; echo "$tag KILL $pid$em"
             echo "kill $pid"
             kill $pid
             echo "$tag DONE"
+
+            # But that's not all!
+            # QDIR=/cad/cadence/EXT-ISR1_19.11.000_lnx86/tools.lnx86/extraction/bin/64bit
+            # ITMP=/sim/tmp/innovus/sim/tmp/innovus
+            # CMD1=r7arm-aha_buildkite-agent_MR0fEJ/tmp_qrc_QWq3Uu/qrc.cmd
+            # CMD2=r7arm-aha_buildkite-agent_MR0fEJ/tmp_qrc_QWq3Uu/__qrc.qrc.cmd
+            # GZ=$ITMP_temp_2934_r7arm-aha_buildkite-agent_MR0fEJ/tmp_qrc_QWq3Uu/qrc.def.gz
+            # 24253 pts/17   Sl+    0:13 $QDIR/qrc -cmd $ITMP_temp_2934_$CMD1 $GZ
+            # 24461 pts/17   Sl+    0:15 $QDIR/qrc -cmd $ITMP_temp_2934_$CMD2 $GZ
+            # 24823 pts/17   Sl+    0:06 $QDIR/qrc -cmd $ITMP_temp_2934_$CMD2 $GZ
+            # 25109 pts/17   Sl+    0:06 $QDIR/qrc -cmd $ITMP_temp_2934_$CMD2 $GZ
+            # 25594 pts/17   Sl+    0:06 $QDIR/qrc -cmd $ITMP_temp_2934_$CMD2 $GZ
+            # 25595 pts/17   Sl+    0:06 $QDIR/qrc -cmd $ITMP_temp_2934_$CMD2 $GZ
+            # 25596 pts/17   Sl+    0:06 $QDIR/qrc -cmd $ITMP_temp_2934_$CMD2 $GZ
+            # 25597 pts/17   Sl+    0:06 $QDIR/qrc -cmd $ITMP_temp_2934_$CMD2 $GZ
+            # 25599 pts/17   Sl+    0:06 $QDIR/qrc -cmd $ITMP_temp_2934_$CMD2 $GZ
+            echo "Haha no not even"
+            echo "kill dangling qrc -cmd jobs"; echo ""
+            ps ax | egrep temp_${pid}_ | grep -v grep
+            bad_pids=`ps ax | egrep temp_${pid}_ | grep -v grep | awk '{print $1}'`
+            echo kill $bad_pids
+            kill $bad_pids; echo ""
+            
+            # ...and still more processes to kill :(
+            # QDIR=/cad/cadence/EXT-ISR1_19.11.000_lnx86/tools.lnx86/extraction/bin/64bit
+            # 24360 pts/17   S+     1:20 $QDIR/qrc -srv r7arm-aha 36989 0 -1
+            # 24462 pts/17   S+     1:18 $QDIR/qrc -srv r7arm-aha 36989 1 -1
+            # 24671 pts/17   S+     1:15 $QDIR/qrc -srv r7arm-aha 36989 2 -1
+            # 24824 pts/17   S+     1:16 $QDIR/qrc -srv r7arm-aha 36989 3 -1
+            # 25012 pts/17   S+     1:15 $QDIR/qrc -srv r7arm-aha 36989 4 -1
+            # 25110 pts/17   S+     1:16 $QDIR/qrc -srv r7arm-aha 36989 5 -1
+            # 25286 pts/17   S+     1:15 $QDIR/qrc -srv r7arm-aha 36989 6 -1
+            # 25478 pts/17   S+     1:16 $QDIR/qrc -srv r7arm-aha 36989 7 -1
+            echo "kill dangling qrc -srv jobs"
+            ps x | grep 'qrc..srv'; echo ""
+            bad_pids=`ps x | grep 'qrc..srv' | awk '{print $1}'`
+            echo kill $bad_pids
+            kill $bad_pids; echo ""
+
             return
         done
         echo $tag No slow hangers yet...; sleep $sleep_period; continue
