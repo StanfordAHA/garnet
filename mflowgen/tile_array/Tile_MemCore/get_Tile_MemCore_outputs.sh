@@ -12,7 +12,7 @@ else
 fi
 
 # 6/11/2021 Deleting this line, hopefully temporarily, so as not to break master.
-# See https://github.com/StanfordAHA/garnet/issues/791
+# See https://github.com/StanfordAHA/garnet/issues/791 .
 # make pwr-aware-gls
 
 mkdir -p outputs
