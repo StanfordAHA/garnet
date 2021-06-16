@@ -330,7 +330,7 @@ def test_pond_pe_acc(run_tb):
 
     run_tb(tester)
 
-
+"""
 def test_pond_config(run_tb):
     # 1x1 interconnect with only PE tile
     interconnect = create_cgra(1, 1, IOSide.None_, standalone=True,
@@ -365,3 +365,4 @@ def test_pond_config(run_tb):
         tester.expect(circuit.read_config_data, data)
 
     run_tb(tester)
+"""
