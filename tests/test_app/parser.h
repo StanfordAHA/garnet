@@ -9,6 +9,7 @@
 #define MAX_NUM_KERNEL 16
 #define MAX_JSON_FIELDS 512
 #define MAX_CONFIG 20
+#define MAX_ADDR_GEN_LOOP 5
 
 #define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = \
                                     (struct KernelInfo *) info
@@ -35,24 +36,6 @@ struct ConfigInfo {
     int num_config;
     struct Configuration config[MAX_CONFIG];
 };
- 
-struct Position {
-    int x;
-    int y;
-};
-
-enum IO {Input = 0, Output = 1}; 
-
-struct IOTileInfo {
-    struct Position pos; 
-
-    int tile;
-    int size; 
-    int start_addr;
-
-    struct ConfigInfo config;
-};
- 
 struct BitstreamInfo {
     int tile;
     int size;
@@ -62,6 +45,28 @@ struct BitstreamInfo {
     struct ConfigInfo config;
 };
  
+struct Position {
+    int x;
+    int y;
+};
+
+enum IO {Input = 0, Output = 1}; 
+
+struct IOTileInfo {
+
+    int tile;
+    // TODO: we do not need size anymore as we have extent
+    int size; 
+    int start_addr;
+
+    struct Position pos; 
+    int loop_dim;
+    int stride[MAX_ADDR_GEN_LOOP];
+    int extent[MAX_ADDR_GEN_LOOP];
+
+    struct ConfigInfo config;
+};
+
 struct IOInfo {
     enum IO io;
     int num_io_tiles;
@@ -84,7 +89,8 @@ struct KernelInfo {
     char bitstream_filename[BUFFER_SIZE];
     char placement_filename[BUFFER_SIZE];
 
-    //TODO: input_info + output_info should be less than MAX_NUM_IO
+    // TODO: input_info + output_info should be less than MAX_NUM_IO
+    // TODO: Is static global variable better or local variable better?
     struct IOInfo *input_info[MAX_NUM_IO];
     struct IOInfo *output_info[MAX_NUM_IO];
     struct BitstreamInfo *bitstream_info;
