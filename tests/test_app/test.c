@@ -1,11 +1,12 @@
 #include "parser.h"
+#include "map.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
 int main() {
+    // parse.c test
     struct KernelInfo *info = parse_metadata("bin/design_meta.json");
-
     assert(info->num_inputs == 1);
     assert(info->num_outputs == 1);
     assert(info->num_groups == 1);
@@ -33,4 +34,26 @@ int main() {
     assert(info->output_info[0]->io_tiles[0].stride[1] == 64);
     assert(info->output_info[0]->io_tiles[0].extent[0] == 63);
     assert(info->output_info[0]->io_tiles[0].extent[1] == 64);
+
+    // map.c test
+    assert(initialize_monitor(32) == 1);
+    assert(glb_map(info) == 1);
+    assert(info->config.num_config == 7);
+    // for (int i=0; i<7; i++) {
+    //     printf("addr: %x, data: %x\n", info->config.config[i].addr, info->config.config[i].data);
+    // }
+    assert(info->config.config[0].addr == 0x103c);
+    assert(info->config.config[0].data == 0x100);
+    assert(info->config.config[1].addr == 0x1044);
+    assert(info->config.config[1].data == 0x400001);
+    assert(info->config.config[2].addr == 0x1038);
+    assert(info->config.config[2].data == 0x1);
+    assert(info->config.config[3].addr == 0x100c);
+    assert(info->config.config[3].data == 0x20000);
+    assert(info->config.config[4].addr == 0x1010);
+    assert(info->config.config[4].data == 0xfc0);
+    assert(info->config.config[5].addr == 0x1008);
+    assert(info->config.config[5].data == 0x1);
+    assert(info->config.config[6].addr == 0x1000);
+    assert(info->config.config[6].data == 0x564);
 }

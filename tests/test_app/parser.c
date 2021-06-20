@@ -173,6 +173,7 @@ void *parse_io(json_t const *io_json, enum IO io) {
     for(io_tile_json = json_getChild( io_tile_list_json ); 
             io_tile_json != 0; io_tile_json = json_getSibling( io_tile_json )) {
         if ( JSON_OBJ == json_getType( io_tile_json ) ) {
+            io_info->io_tiles[cnt].io = io;
             parse_io_tile_info(&io_info->io_tiles[cnt], io_tile_json);
             cnt++;
         }
@@ -390,55 +391,64 @@ void *parse_metadata(char *filename) {
     return info;
 }
 
-// void *get_place_info(void *info) {
-//     GET_KERNEL_INFO(info);
-//     return kernel_info->place_info;
-// }
-// 
-// void *get_bs_info(void *info) {
-//     GET_KERNEL_INFO(info);
-//     return kernel_info->bitstream_info;
-// }
-// 
-// void *get_input_info(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     return &place_info->inputs[index];
-// }
-// 
-// void *get_output_info(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     return &place_info->outputs[index];
-// }
-// 
-// int get_num_groups(void *info) {
-//     GET_PLACE_INFO(info);
-//     return place_info->num_groups;
-// }
-// 
-// int get_group_start(void *info) {
-//     GET_PLACE_INFO(info);
-//     return place_info->group_start;
-// }
-// 
-// int get_num_inputs(void *info) {
-//     GET_PLACE_INFO(info);
-//     return place_info->num_inputs;
-// }
-// 
-// int get_num_outputs(void *info) {
-//     GET_PLACE_INFO(info);
-//     return place_info->num_outputs;
-// }
-// 
-// int get_input_x(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     if (index >= place_info->num_inputs) {
-//         return -1;
-//     } else {
-//         return place_info->inputs[index].pos.x;
-//     }
-// }
-// 
+void *get_bs_info(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->bitstream_info;
+}
+
+void *get_input_info(void *info, int index) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->input_info[index];
+}
+
+void *get_output_info(void *info, int index) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->output_info[index];
+}
+
+int get_num_groups(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->num_groups;
+}
+
+int get_group_start(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->group_start;
+}
+
+int get_num_inputs(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->num_inputs;
+}
+
+int get_num_outputs(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->num_outputs;
+}
+
+void *get_io_tile_info(void *info, int index) {
+    GET_IO_INFO(info);
+    return &io_info->io_tiles[index];
+}
+
+int get_io_tile_x(void *info, int index) {
+    GET_IO_INFO(info);
+    if (index >= io_info->num_io_tiles) {
+        return -1;
+    } else {
+        return io_info->io_tiles[index].pos.x;
+    }
+}
+
+int get_io_tile_y(void *info, int index) {
+    GET_IO_INFO(info);
+    if (index >= io_info->num_io_tiles) {
+        return -1;
+    } else {
+        return io_info->io_tiles[index].pos.y;
+    }
+}
+
 // int get_input_y(void *info, int index) {
 //     GET_PLACE_INFO(info);
 //     if (index >= place_info->num_inputs) {
@@ -466,31 +476,31 @@ void *parse_metadata(char *filename) {
 //     }
 // }
 // 
-// int get_reset_index(void *info) {
-//     GET_PLACE_INFO(info);
-//     return place_info->reset_port;
-// }
-// 
-// char *get_placement_filename(void *info) {
-//     GET_KERNEL_INFO(info);
-//     return kernel_info->placement_filename;
-// }
-// 
-// char *get_bitstream_filename(void *info) {
-//     GET_KERNEL_INFO(info);
-//     return kernel_info->bitstream_filename;
-// }
-// 
-// char *get_input_filename(void *info, int index) {
-//     GET_KERNEL_INFO(info);
-//     return kernel_info->input_filenames[index];
-// }
-// 
-// char *get_output_filename(void *info, int index) {
-//     GET_KERNEL_INFO(info);
-//     return kernel_info->output_filenames[index];
-// }
-// 
+int get_reset_index(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->reset_port;
+}
+
+char *get_placement_filename(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->placement_filename;
+}
+
+char *get_bitstream_filename(void *info) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->bitstream_filename;
+}
+
+char *get_input_filename(void *info, int index) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->input_info[index]->filename;
+}
+
+char *get_output_filename(void *info, int index) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->output_info[index]->filename;
+}
+
 // int get_input_size(void *info, int index) {
 //     GET_PLACE_INFO(info);
 //     return place_info->input_size[index];
@@ -521,21 +531,21 @@ void *parse_metadata(char *filename) {
 //     return place_info->outputs[index].tile;
 // }
 // 
-// int get_bs_start_addr(void *info) {
-//     GET_BS_INFO(info);
-//     return bs_info->start_addr;
-// }
-// 
-// int get_bs_size(void *info) {
-//     GET_BS_INFO(info);
-//     return bs_info->size;
-// }
-// 
-// int get_bs_tile(void *info) {
-//     GET_BS_INFO(info);
-//     return bs_info->tile;
-// }
-// 
+int get_bs_start_addr(void *info) {
+    GET_BS_INFO(info);
+    return bs_info->start_addr;
+}
+
+int get_bs_size(void *info) {
+    GET_BS_INFO(info);
+    return bs_info->size;
+}
+
+int get_bs_tile(void *info) {
+    GET_BS_INFO(info);
+    return bs_info->tile;
+}
+
 static char *get_prefix(const char *s, char t)
 {
     // store the last word after 't' to last (including 't')
