@@ -59,9 +59,9 @@ int parse_num_group(struct KernelInfo *info) {
         } while (c != EOF && c != '\n' && idx < read);
         if (buf_index < 4) continue;
         char *s_x = buffer[1];
-        char *s_y = buffer[2];
+        // char *s_y = buffer[2];
         int x = atoi(s_x); // NOLINT
-        int y = atoi(s_y); // NOLINT
+        // int y = atoi(s_y); // NOLINT
 
         if (x > max_x) max_x = x;
     }
@@ -143,7 +143,6 @@ void *parse_io(json_t const *io_json, enum IO io) {
     struct IOInfo *io_info = &io_info_list[io_info_index++];
 
     io_info->io = io;
-    int num_input_tiles = 0, num_output_tiles = 0;
 
 	json_t const* shape_json = json_getProperty( io_json, "shape" );
     if ( !shape_json || JSON_ARRAY != json_getType( shape_json ) ) {
@@ -224,8 +223,6 @@ void *parse_metadata(char *filename) {
 
     FILE *fp;
     char *json_buffer = NULL;
-    size_t len = 0;
-    ssize_t read;
     long l_size;
     int cnt;
 
@@ -358,6 +355,40 @@ void *parse_metadata(char *filename) {
         }
     }
 
+    // Parse file byte size by reading pgm image file
+    // TODO: Make this as a function
+    FILE *fp2;
+    for(int i=0; i < info->num_inputs; i++) {
+        if (*info->input_info[i]->filename != '\0') {
+            fp2 = fopen(info->input_info[i]->filename, "r");
+            if (fp2) {
+                int name_len = strlen(info->input_info[i]->filename);
+                if (strncmp(&info->input_info[i]->filename[name_len-3], "raw", strlen("raw")) == 0) {
+                    fseek(fp2, 0L, SEEK_END);
+                    info->input_info[i]->filesize = (int) ftell(fp2);
+                }
+                else {
+                    char c;
+                    int ch1, ch2, bitwidth, filesize;
+                    // skip the first line
+                    while (true) {
+                        c = fgetc(fp2);
+                        if (c == '\n') break;
+                    } 
+                    fscanf(fp2, "%d %d\n%d", &ch1, &ch2, &bitwidth);
+                    if (bitwidth == 65535) {
+                        filesize = ch1 * ch2 * 2;
+                    } else {
+                        filesize = ch1 * ch2;
+                    }
+                    info->input_info[i]->filesize = filesize;
+                }
+            }
+            fclose(fp2);
+        }
+    }
+
+
     // parse interleaved_output field
 	json_t const* gold_data_list_json = json_getProperty( testing_json, "interleaved_output" );
     if ( !gold_data_list_json || JSON_ARRAY != json_getType( gold_data_list_json ) ) {
@@ -370,6 +401,37 @@ void *parse_metadata(char *filename) {
 		 gold_data_json != 0; gold_data_json = json_getSibling( gold_data_json ), cnt++ ) {
         if ( JSON_TEXT == json_getType( gold_data_json ) ) {
             strncpy(info->output_info[cnt]->filename, json_getValue(gold_data_json), BUFFER_SIZE);
+        }
+    }
+
+    // TODO: Make this as a function
+    for(int i=0; i < info->num_outputs; i++) {
+        if (*info->output_info[i]->filename != '\0') {
+            fp2 = fopen(info->output_info[i]->filename, "r");
+            if (fp2) {
+                int name_len = strlen(info->output_info[i]->filename);
+                if (strncmp(&info->output_info[i]->filename[name_len-3], "raw", strlen("raw")) == 0) {
+                    fseek(fp2, 0L, SEEK_END);
+                    info->output_info[i]->filesize = (int) ftell(fp2);
+                }
+                else {
+                    char c;
+                    int ch1, ch2, bitwidth, filesize;
+                    // skip the first line
+                    while (true) {
+                        c = fgetc(fp2);
+                        if (c == '\n') break;
+                    } 
+                    fscanf(fp2, "%d %d\n%d", &ch1, &ch2, &bitwidth);
+                    if (bitwidth == 65535) {
+                        filesize = ch1 * ch2 * 2;
+                    } else {
+                        filesize = ch1 * ch2;
+                    }
+                    info->output_info[i]->filesize = filesize;
+                }
+            }
+            fclose(fp2);
         }
     }
 
@@ -431,6 +493,11 @@ void *get_io_tile_info(void *info, int index) {
     return &io_info->io_tiles[index];
 }
 
+int get_num_io_tiles(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->num_io_tiles;
+}
+
 int get_io_tile_x(void *info, int index) {
     GET_IO_INFO(info);
     if (index >= io_info->num_io_tiles) {
@@ -449,33 +516,6 @@ int get_io_tile_y(void *info, int index) {
     }
 }
 
-// int get_input_y(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     if (index >= place_info->num_inputs) {
-//         return -1;
-//     } else {
-//         return place_info->inputs[index].pos.y;
-//     }
-// }
-// 
-// int get_output_x(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     if (index >= place_info->num_outputs) {
-//         return -1;
-//     } else {
-//         return place_info->outputs[index].pos.x;
-//     }
-// }
-// 
-// int get_output_y(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     if (index >= place_info->num_outputs) {
-//         return -1;
-//     } else {
-//         return place_info->outputs[index].pos.y;
-//     }
-// }
-// 
 int get_reset_index(void *info) {
     GET_KERNEL_INFO(info);
     return kernel_info->reset_port;
@@ -501,36 +541,26 @@ char *get_output_filename(void *info, int index) {
     return kernel_info->output_info[index]->filename;
 }
 
-// int get_input_size(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     return place_info->input_size[index];
-// }
-// 
-// int get_input_start_addr(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     return place_info->inputs[index].start_addr;
-// }
-// 
-// int get_input_tile(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     return place_info->inputs[index].tile;
-// }
-// 
-// int get_output_size(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     return place_info->output_size[index];
-// }
-// 
-// int get_output_start_addr(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     return place_info->outputs[index].start_addr;
-// }
-// 
-// int get_output_tile(void *info, int index) {
-//     GET_PLACE_INFO(info);
-//     return place_info->outputs[index].tile;
-// }
-// 
+int get_input_size(void *info, int index) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->input_info[index]->filesize;
+}
+
+int get_io_tile_start_addr(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].start_addr;
+}
+
+int get_io_tile_map_tile(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].tile;
+}
+
+int get_output_size(void *info, int index) {
+    GET_KERNEL_INFO(info);
+    return kernel_info->output_info[index]->filesize;
+}
+
 int get_bs_start_addr(void *info) {
     GET_BS_INFO(info);
     return bs_info->start_addr;
@@ -546,7 +576,7 @@ int get_bs_tile(void *info) {
     return bs_info->tile;
 }
 
-static char *get_prefix(const char *s, char t)
+char *get_prefix(const char *s, char t)
 {
     // store the last word after 't' to last (including 't')
     const char * last = strrchr(s, t);

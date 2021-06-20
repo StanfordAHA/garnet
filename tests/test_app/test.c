@@ -17,6 +17,7 @@ int main() {
 
     assert(info->input_info[0]->io == Input);
     assert(strcmp(info->input_info[0]->filename, "bin/input.pgm") == 0);
+    assert(info->input_info[0]->filesize == 8192);
     assert(info->input_info[0]->num_io_tiles == 1);
     assert(info->input_info[0]->io_tiles[0].pos.x == 0);
     assert(info->input_info[0]->io_tiles[0].pos.y == 0);
@@ -26,6 +27,7 @@ int main() {
 
     assert(info->output_info[0]->io == Output);
     assert(strcmp(info->output_info[0]->filename, "bin/gold.pgm") == 0);
+    assert(info->output_info[0]->filesize == 8064);
     assert(info->output_info[0]->num_io_tiles == 1);
     assert(info->output_info[0]->io_tiles[0].pos.x == 1);
     assert(info->output_info[0]->io_tiles[0].pos.y == 0);

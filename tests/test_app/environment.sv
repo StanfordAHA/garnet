@@ -103,8 +103,8 @@ task Environment::kernel_test(Kernel kernel);
     $display("[%s] kernel start", kernel.name);
     cfg = kernel.get_strm_start_config();
     axil_drv.write(cfg.addr, cfg.data);
-    foreach(kernel.input_tile[i]) begin
-        tile_mask |= (1 << kernel.input_tile[i]);
+    foreach(kernel.output_tile[i]) begin
+        tile_mask |= (1 << kernel.output_tile[i]);
     end
 
     wait_interrupt(GLB_STRM_F2G_CTRL, tile_mask);
