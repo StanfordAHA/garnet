@@ -1,91 +1,103 @@
 #ifndef VIRTUALIZE_META_LIBRARY_H
 #define VIRTUALIZE_META_LIBRARY_H
 
-// #define MAX_NUM_IO 32
+#include "common/tiny-json.h"
+
+#define MAX_NUM_IO 4
+#define MAX_NUM_IO_TILES 8
 #define BUFFER_SIZE 1024
 #define MAX_NUM_KERNEL 16
-// #define GET_PLACE_INFO(info) struct PlaceInfo *place_info = \
-//                                     (struct PlaceInfo *) info
-// 
+#define MAX_JSON_FIELDS 512
+#define MAX_CONFIG 20
+
+#define GET_PLACE_INFO(info) struct ScheduleInfo *place_info = \
+                                    (struct ScheduleInfo *) info
+
 #define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = \
                                     (struct KernelInfo *) info
 
-// #define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = \
-//                                     (struct ConfigInfo *) info
-// 
-// #define GET_BS_INFO(info) struct BitstreamInfo *bs_info = \
-//                                     (struct BitstreamInfo *) info
-// 
-// #define GET_IO_INFO(info) struct IOInfo *io_info = \
-//                                     (struct IOInfo *) info
-// 
-// #define MAX_CONFIG 20
-// 
-// struct Configuration {
-//     int addr;
-//     int data;
-// };
-// 
-// struct ConfigInfo {
-//     int num_config;
-//     struct Configuration config[MAX_CONFIG];
-// };
-// 
-// struct Position {
-//     int x;
-//     int y;
-// };
-// enum IO {Input = 0, Output = 1}; 
-// struct IOInfo {
-//     struct Position pos; 
-//     enum IO io;
-// 
-//     int tile;
-//     int size; 
-//     int start_addr;
-// 
-//     struct ConfigInfo config;
-// };
-// 
-// struct BitstreamInfo {
-//     int tile;
-//     int size;
-//     int start_addr;
-// 
-//     struct ConfigInfo config;
-// };
-// 
-// struct PlaceInfo {
-//     int num_groups;
-//     int num_inputs;
-//     int num_outputs;
-//     int group_start;
-// 
-//     struct IOInfo inputs[MAX_NUM_IO];
-//     struct IOInfo outputs[MAX_NUM_IO];
-// 
-//     struct ConfigInfo config;
-// 
-//     int input_size[MAX_NUM_IO];
-//     int output_size[MAX_NUM_IO];
-// 
-//     // index to the inputs, need to multiply by 2
-//     int reset_port;
-// };
-// 
-struct KernelInfo {
-    char placement_filename[BUFFER_SIZE];
-    // char bitstream_filename[BUFFER_SIZE];
+#define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = \
+                                    (struct ConfigInfo *) info
 
-    // char input_filenames[MAX_NUM_IO][BUFFER_SIZE];
-    // char output_filenames[MAX_NUM_IO][BUFFER_SIZE];
+#define GET_BS_INFO(info) struct BitstreamInfo *bs_info = \
+                                    (struct BitstreamInfo *) info
 
-    // struct PlaceInfo *place_info;
-    // struct BitstreamInfo *bitstream_info;
+#define GET_IO_TILE_INFO(info) struct IOTileInfo *io_info = \
+                                    (struct IOTileInfo *) info
+
+   
+struct Configuration {
+    int addr;
+    int data;
 };
-// 
-// void *parse_placement(char *filename);
+
+struct ConfigInfo {
+    int num_config;
+    struct Configuration config[MAX_CONFIG];
+};
+ 
+struct Position {
+    int x;
+    int y;
+};
+enum IO {Input = 0, Output = 1}; 
+
+struct IOTileInfo {
+    struct Position pos; 
+    enum IO io;
+
+    int tile;
+    int size; 
+    int start_addr;
+
+    struct ConfigInfo config;
+};
+ 
+struct BitstreamInfo {
+    int tile;
+    int size;
+    int start_addr;
+
+    // TODO: Store glb control information separately
+    struct ConfigInfo config;
+};
+ 
+struct ScheduleInfo {
+    int num_groups;
+    int group_start;
+    int num_input_tiles;
+    int num_output_tiles;
+
+    struct IOTileInfo input_tiles[MAX_NUM_IO_TILES];
+    struct IOTileInfo output_tiles[MAX_NUM_IO_TILES];
+
+    struct ConfigInfo config;
+
+    int input_tile_size[MAX_NUM_IO_TILES];
+    int output_tile_size[MAX_NUM_IO_TILES];
+
+    // index to the inputs, need to multiply by 2
+    int reset_port;
+};
+
+struct KernelInfo {
+    int num_inputs;
+    int num_outputs;
+
+    char coreir_filename[BUFFER_SIZE];
+    char bitstream_filename[BUFFER_SIZE];
+    char placement_filename[BUFFER_SIZE];
+    char input_filenames[MAX_NUM_IO][BUFFER_SIZE];
+    char gold_filenames[MAX_NUM_IO][BUFFER_SIZE];
+
+    struct ScheduleInfo *schedule_info;
+    struct BitstreamInfo *bitstream_info;
+};
+ 
+
 void *parse_metadata(char *filename);
+void *parse_schedule(json_t const* IOs_json);
+int parse_num_group(char *filename, int *num_groups);
 // void *get_place_info(void *info);
 // void *get_bs_info(void *info);
 // void *get_input_info(void *info, int index);
