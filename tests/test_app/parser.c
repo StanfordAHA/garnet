@@ -8,15 +8,18 @@
 #define GROUP_SIZE 4
 
 // statically allocated to avoid calling
-static struct ScheduleInfo schedule_info_list[MAX_NUM_KERNEL];
-static int schedule_info_index = 0;
 static struct KernelInfo kernel_info_list[MAX_NUM_KERNEL];
 static int kernel_info_index = 0;
 static struct BitstreamInfo bitstream_info_list[MAX_NUM_KERNEL];
 static int bitstream_info_index = 0;
+static struct IOInfo io_info_list[MAX_NUM_KERNEL * MAX_NUM_IO];
+static int io_info_index = 0;
 
 // parse the place file to calculate the number of columns used
-int parse_num_group(char *filename, int *num_groups) {
+int parse_num_group(struct KernelInfo *info) {
+
+    char *filename = info->placement_filename;
+
     FILE *fp;
     char *line = NULL;
     size_t len = 0;
@@ -62,7 +65,7 @@ int parse_num_group(char *filename, int *num_groups) {
         if (x > max_x) max_x = x;
     }
 
-    *num_groups = (max_x + GROUP_SIZE - 1) / GROUP_SIZE;
+    info->num_groups = (max_x + GROUP_SIZE - 1) / GROUP_SIZE;
 
     // clean up
     fclose(fp);
@@ -70,27 +73,62 @@ int parse_num_group(char *filename, int *num_groups) {
     return SUCCESS;
 }
 
-void *parse_schedule(json_t const* IOs_json) {
-    if (schedule_info_index >= MAX_NUM_KERNEL) return NULL;
-    struct ScheduleInfo *schedule_info = &schedule_info_list[schedule_info_index++];
+void *parse_io(json_t const* io_json, enum IO io) {
+    if (io_info_index >= MAX_NUM_KERNEL*MAX_NUM_IO) return NULL;
+    struct IOInfo *io_info = &io_info_list[io_info_index++];
 
+    io_info->io = io;
     int num_input_tiles = 0, num_output_tiles = 0;
 
+	json_t const* shape_json = json_getProperty( io_json, "shape" );
+    if ( !shape_json || JSON_ARRAY != json_getType( shape_json ) ) {
+        puts("Error, the shape property is not found.");
+        exit(1);
+    }
+
+    int dim[8];
+    int innermost_dim;
+    int cnt = 0;
+    json_t const* dim_json;
+    for(dim_json = json_getChild( shape_json ); 
+            dim_json != 0; dim_json = json_getSibling( dim_json )) {
+        dim[cnt] = json_getValue(dim_json);
+        cnt++;
+    }
+
+    // If the number of io_tiles is larger than 1, then the number of io_tiles
+    // should be equal to the innermost_dim
+
+    // parse io_tile list
+	json_t const* io_tile_list_json = json_getProperty( io_json, "io_tiles" );
+    if ( !io_tile_list_json || JSON_ARRAY != json_getType( io_tile_list_json ) ) {
+        puts("Error, the io_tiles property is not found.");
+        exit(1);
+    }
+
+    // parse each io_tile
+    int cnt = 0;
+    json_t const* io_tile_json;
+    for(io_tile_json = json_getChild( io_tile_list_json ); 
+            io_tile_json != 0; io_tile_json = json_getSibling( io_tile_json )) {
+        if ( JSON_OBJ == json_getType( input_json ) ) {
+        dim[cnt] = json_getValue(dim_json);
+        cnt++;
+    }
+
+    // TODO: 
 
 
-    // for now we assume soft reset is always placed to the fist column by pnr
-    schedule_info->reset_port = 0;
-
-    return schedule_info;
+    return io_info;
 }
 
 
 void *parse_bitstream(char *filename) {
     if (bitstream_info_index >= MAX_NUM_KERNEL) return NULL;
-
-    int num_bs = 0;
     struct BitstreamInfo *bs_info = &bitstream_info_list[bitstream_info_index++];
     FILE *fp;
+
+    int num_bs = 0;
 
     // count the number of lines in bitstream file and store it to bs_info->size
     if (filename[0] != '\0') {
@@ -122,6 +160,7 @@ void *parse_metadata(char *filename) {
     size_t len = 0;
     ssize_t read;
     long l_size;
+    int cnt;
 
     fp = fopen(filename, "rb");
     if (fp == NULL) {
@@ -177,39 +216,6 @@ void *parse_metadata(char *filename) {
     strncpy(info->coreir_filename, json_getValue(coreir_json), BUFFER_SIZE);
 
 
-    int cnt;
-    // parse interleaved_input field
-	json_t const* input_list_json = json_getProperty( testing_json, "interleaved_input" );
-    if ( !input_list_json || JSON_ARRAY != json_getType( input_list_json ) ) {
-        puts("Error, the interleaved_input property is not found.");
-        exit(1);
-    }
-
-    json_t const* input_data_json;
-    for(input_data_json = json_getChild( input_list_json ), cnt = 0;
-		input_data_json != 0; input_data_json = json_getSibling( input_data_json ), cnt++) {
-        if ( JSON_TEXT == json_getType( input_data_json ) ) {
-            strncpy(info->input_filenames[cnt], json_getValue(input_data_json), BUFFER_SIZE);
-        }
-    }
-    info->num_inputs = cnt;
-
-    // parse interleaved_output field
-	json_t const* gold_list_json = json_getProperty( testing_json, "interleaved_output" );
-    if ( !gold_list_json || JSON_ARRAY != json_getType( gold_list_json ) ) {
-        puts("Error, the interleaved_output property is not found.");
-        exit(1);
-    }
-
-    json_t const* gold_data_json;
-    for( gold_data_json = json_getChild( gold_list_json ), cnt = 0; \
-		 gold_data_json != 0; gold_data_json = json_getSibling( gold_data_json ), cnt++ ) {
-        if ( JSON_TEXT == json_getType( gold_data_json ) ) {
-            strncpy(info->gold_filenames[cnt], json_getValue(gold_data_json), BUFFER_SIZE);
-        }
-    }
-    info->num_outputs = cnt;
-
     // parse bistream field
 	json_t const* bs_json = json_getProperty( testing_json, "bitstream" );
     if ( !bs_json || JSON_TEXT != json_getType( bs_json ) ) {
@@ -237,11 +243,78 @@ void *parse_metadata(char *filename) {
 
     // Parse IO scheduling information 
 	json_t const* IOs_json = json_getProperty( json, "IOs" );
-    info->schedule_info = parse_schedule(IOs_json);
 
+    // parse inputs
+	json_t const* input_list_json = json_getProperty( IOs_json, "inputs" );
+    if ( !input_list_json || JSON_ARRAY != json_getType( input_list_json ) ) {
+        puts("Error, the input list property is not found.");
+        exit(1);
+    }
+
+    json_t const* input_json;
+    for( input_json = json_getChild( input_list_json ), cnt = 0;
+         input_json != 0; input_json = json_getSibling( input_json ), cnt++) {
+        if ( JSON_OBJ == json_getType( input_json ) ) {
+            info->input_info[cnt] = parse_io(input_json, Input);
+        }
+    }
+    info->num_inputs = cnt;
+
+    // parse outputs
+	json_t const* output_list_json = json_getProperty( IOs_json, "outputs" );
+    if ( !output_list_json || JSON_ARRAY != json_getType( output_list_json ) ) {
+        puts("Error, the output list property is not found.");
+        exit(1);
+    }
+
+    json_t const* output_json;
+    for( output_json = json_getChild( output_list_json ), cnt = 0;
+         output_json != 0; output_json = json_getSibling( output_json ), cnt++) {
+        if ( JSON_OBJ == json_getType( output_json ) ) {
+            info->output_info[cnt] = parse_io(output_json, Output);
+        }
+    }
+    info->num_outputs = cnt;
+
+    // parse interleaved_input field
+	json_t const* input_data_list_json = json_getProperty( testing_json, "interleaved_input" );
+    if ( !input_data_list_json || JSON_ARRAY != json_getType( input_data_list_json ) ) {
+        puts("Error, the interleaved_input property is not found.");
+        exit(1);
+    }
+
+    json_t const* input_data_json;
+    for(input_data_json = json_getChild( input_data_list_json ), cnt = 0;
+		input_data_json != 0; input_data_json = json_getSibling( input_data_json ), cnt++) {
+        if ( JSON_TEXT == json_getType( input_data_json ) ) {
+            strncpy(info->input_info[cnt]->filename, json_getValue(input_data_json), BUFFER_SIZE);
+        }
+    }
+
+    // parse interleaved_output field
+	json_t const* gold_data_list_json = json_getProperty( testing_json, "interleaved_output" );
+    if ( !gold_data_list_json || JSON_ARRAY != json_getType( gold_data_list_json ) ) {
+        puts("Error, the interleaved_output property is not found.");
+        exit(1);
+    }
+
+    json_t const* gold_data_json;
+    for( gold_data_json = json_getChild( gold_data_list_json ), cnt = 0; \
+		 gold_data_json != 0; gold_data_json = json_getSibling( gold_data_json ), cnt++ ) {
+        if ( JSON_TEXT == json_getType( gold_data_json ) ) {
+            strncpy(info->output_info[cnt]->filename, json_getValue(gold_data_json), BUFFER_SIZE);
+        }
+    }
+
+    // parse number of groups
     // TODO: make a better way to calculate number of groups used
     // update scheduling group size by parsing place file
-    parse_num_group(info->placement_filename, &info->schedule_info->num_groups);
+    parse_num_group(info);
+
+    // set reset_port
+    // for now we assume soft reset is always placed to the fist column by pnr
+    info->reset_port = 0;
+
     
     // free up the buffer and close fp
     fclose(fp);
