@@ -14,8 +14,8 @@
 #define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = \
                                     (struct KernelInfo *) info
 
-#define GET_PLACE_INFO(info) struct ScheduleInfo *place_info = \
-                                    (struct ScheduleInfo *) info
+#define GET_IO_INFO(info) struct IOInfo *io_info = \
+                                    (struct IOInfo *) info
 
 #define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = \
                                     (struct ConfigInfo *) info
@@ -53,7 +53,7 @@ struct Position {
 enum IO {Input = 0, Output = 1}; 
 
 struct IOTileInfo {
-
+    enum IO io;
     int tile;
     // TODO: we do not need size anymore as we have extent
     int size; 
@@ -63,8 +63,6 @@ struct IOTileInfo {
     int loop_dim;
     int stride[MAX_ADDR_GEN_LOOP];
     int extent[MAX_ADDR_GEN_LOOP];
-
-    struct ConfigInfo config;
 };
 
 struct IOInfo {
@@ -73,7 +71,9 @@ struct IOInfo {
     char filename[BUFFER_SIZE];
 
     struct IOTileInfo io_tiles[MAX_NUM_IO_TILES];
-    struct ConfigInfo config;
+
+    // TODO: We do not use it
+    // struct ConfigInfo config;
 };
 
 struct KernelInfo {
@@ -94,35 +94,42 @@ struct KernelInfo {
     struct IOInfo *input_info[MAX_NUM_IO];
     struct IOInfo *output_info[MAX_NUM_IO];
     struct BitstreamInfo *bitstream_info;
+
+    // TODO: What is the best place to store config information
+    // configuration registers are stored in this struct
+    // Most config should go into each IOInfo by having separate 
+    // configuration registers for each DMA
+    struct ConfigInfo config;
 };
  
-
 void *parse_metadata(char *filename);
 void *parse_schedule(json_t const* IOs_json);
 int parse_num_group(struct KernelInfo *info);
-// void *get_place_info(void *info);
-// void *get_bs_info(void *info);
-// void *get_input_info(void *info, int index);
-// void *get_output_info(void *info, int index);
-// 
-// // helper functions to access data from SV
-// int get_num_groups(void *info);
-// int get_group_start(void *info);
-// int get_num_inputs(void *info);
-// int get_num_outputs(void *info);
+void *get_bs_info(void *info);
+void *get_input_info(void *info, int index);
+void *get_output_info(void *info, int index);
+void *get_io_tile_info(void *info, int index);
+
+// helper functions to access data from SV testbench
+int get_num_groups(void *info);
+int get_group_start(void *info);
+int get_num_inputs(void *info);
+int get_num_outputs(void *info);
 // int get_input_x(void *info, int index);
 // int get_input_y(void *info, int index);
 // int get_output_x(void *info, int index);
 // int get_output_y(void *info, int index);
-// int get_reset_index(void *info);
-// 
-// char *get_placement_filename(void *info);
-// char *get_bitstream_filename(void *info);
-// char *get_input_filename(void *info, int index);
-// char *get_output_filename(void *info, int index);
-// int get_input_size(void *info, int index);
-// int get_output_size(void *info, int index);
-// 
+int get_io_tile_x(void *info, int index);
+int get_io_tile_y(void *info, int index);
+int get_reset_index(void *info);
+
+char *get_placement_filename(void *info);
+char *get_bitstream_filename(void *info);
+char *get_input_filename(void *info, int index);
+char *get_output_filename(void *info, int index);
+int get_input_size(void *info, int index);
+int get_output_size(void *info, int index);
+
 // int get_input_start_addr(void *info, int index);
 // int get_input_size(void *info, int index);
 // int get_input_tile(void *info, int index);
@@ -130,9 +137,9 @@ int parse_num_group(struct KernelInfo *info);
 // int get_output_size(void *info, int index);
 // int get_output_tile(void *info, int index);
 // 
-// int get_bs_start_addr(void *info);
-// int get_bs_size(void *info);
-// int get_bs_tile(void *info);
+int get_bs_start_addr(void *info);
+int get_bs_size(void *info);
+int get_bs_tile(void *info);
 static char *get_prefix(const char *s, char t);
 
 #endif//VIRTUALIZE_META_LIBRARY_H
