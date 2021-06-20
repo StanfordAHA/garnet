@@ -2,147 +2,122 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "common/tiny-json.h"
 
 #define ERROR 1
 #define SUCCESS 0
 #define GROUP_SIZE 4
 
 // statically allocated to avoid calling
-// char buffer[16][BUFFER_SIZE];
-// static struct PlaceInfo place_values[MAX_NUM_KERNEL];
-// static int place_info_index = 0;
-static struct KernelInfo kernel_info[MAX_NUM_KERNEL];
+static struct ScheduleInfo schedule_info_list[MAX_NUM_KERNEL];
+static int schedule_info_index = 0;
+static struct KernelInfo kernel_info_list[MAX_NUM_KERNEL];
 static int kernel_info_index = 0;
-// static struct BitstreamInfo bitstream_values[MAX_NUM_PARSER];
-// static int bitstream_info_index = 0;
+static struct BitstreamInfo bitstream_info_list[MAX_NUM_KERNEL];
+static int bitstream_info_index = 0;
 
-// int parse_placement_(char *filename, int *num_inputs, struct IOInfo *inputs,
-//                      int *num_outputs, struct IOInfo *outputs, int *num_groups,
-//                      int *reset) {
-//     FILE *fp;
-//     char *line = NULL;
-//     size_t len = 0;
-//     ssize_t read;
-//     int max_x = 0;
-// 
-//     *num_inputs = 0;
-//     *num_outputs = 0;
-//     // for now we assume reset is always the fist one
-//     // since it's set during the pre-fix IO placement
-//     *reset = 0;
-// 
-//     fp = fopen(filename, "r");
-//     if (fp == NULL) {
-//         return ERROR;
-//     }
-// 
-//     while ((read = getline(&line, &len, fp)) != -1) {
-//         if (read == 0) continue;
-//         if (line[0] == '-' || line[0] == 'B') continue;
-// 
-//         // we parse one char at a time
-//         int idx = 0, buf_index = 0;
-//         char c;
-//         int count = 0;
-//         do {
-//             c = line[idx];
-//             if (c == ' ' || c == '\t' || c == '\n') {
-//                 // this is one token
-//                 if (count > 0) {
-//                     buffer[buf_index][count] = '\0';
-//                     buf_index++;
-//                     count = 0;
-//                 }
-//             } else {
-//                 buffer[buf_index][count] = c;
-//                 count++;
-//             }
-//             idx++;
-//         } while (c != EOF && c != '\n' && idx < read);
-//         if (buf_index < 4) continue;
-//         char *s_x = buffer[1];
-//         char *s_y = buffer[2];
-//         int x = atoi(s_x);// NOLINT
-//         int y = atoi(s_y);// NOLINT
-// 
-//         if (x > max_x) max_x = x;
-// 
-//         char *id = buffer[3];
-//         char *name = buffer[0];
-//         if (id[1] == 'I') {
-//             // this is a data port
-//             if (strstr(name, "out") != NULL) {
-//                 // it's output
-//                 outputs[*num_outputs].io = Output;
-//                 outputs[*num_outputs].pos.x = x;
-//                 outputs[*num_outputs].pos.y = y;
-//                 *num_outputs = *num_outputs + 1;
-//             } else {
-//                 // it's input
-//                 inputs[*num_inputs].io = Input;
-//                 inputs[*num_inputs].pos.x = x;
-//                 inputs[*num_inputs].pos.y = y;
-//                 *num_inputs = *num_inputs + 1;
-//             }
-//         }
-//     }
-// 
-//     *num_groups = 0;
-//     while (max_x > 0) {
-//         *num_groups = *num_groups + 1;
-//         max_x -= GROUP_SIZE;
-//     }
-// 
-// 
-//     // clean up
-//     fclose(fp);
-//     if (line) free(line);
-//     return SUCCESS;
-// }
-// 
-// void *parse_placement(char *filename) {
-//     // TODO: use arena-based allocator?
-//     if (place_info_index >= MAX_NUM_PARSER) return NULL;
-//     struct PlaceInfo *place_info = &place_values[place_info_index++];
-// 
-//     parse_placement_(filename, &place_info->num_inputs, place_info->inputs, &place_info->num_outputs,
-//                      place_info->outputs, &place_info->num_groups, &place_info->reset_port);
-// 
-//     return place_info;
-// }
-// 
-// void *parse_bitstream(char *filename) {
-//     if (bitstream_info_index >= MAX_NUM_PARSER) return NULL;
-// 
-//     int num_bs = 0;
-//     struct BitstreamInfo *bs_info = &bitstream_values[bitstream_info_index++];
-//     FILE *fp;
-//     if (filename[0] != '\0') {
-//         fp = fopen(filename, "r");
-//         if (fp == NULL) {
-//             printf("Could not open file %s", filename);
-//             return 0;
-//         }
-//         for (char c = getc(fp); c != EOF; c = getc(fp)) {
-//             if (c == '\n') // Increment count if this character is newline
-//                 num_bs++;
-//         }
-//         fclose(fp);
-//     }
-//     // add 1 because the last line does not have new line
-//     num_bs++;
-//     bs_info->size = num_bs;
-// 
-//     return bs_info;
-// }
+// parse the place file to calculate the number of columns used
+int parse_num_group(char *filename, int *num_groups) {
+    FILE *fp;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    int max_x = 0;
+    char buffer[8][BUFFER_SIZE];
+
+    fp = fopen(filename, "r");
+    if (fp == NULL) {
+        printf("Could not open file %s", filename);
+        return ERROR;
+    }
+
+    while ((read = getline(&line, &len, fp)) != -1) {
+        if (read == 0) continue;
+        if (line[0] == '-' || line[0] == 'B') continue;
+
+        // we parse one char at a time
+        int idx = 0, buf_index = 0;
+        char c;
+        int count = 0;
+        do {
+            c = line[idx];
+            if (c == ' ' || c == '\t' || c == '\n') {
+                // this is one token
+                if (count > 0) {
+                    buffer[buf_index][count] = '\0';
+                    buf_index++;
+                    count = 0;
+                }
+            } else {
+                buffer[buf_index][count] = c;
+                count++;
+            }
+            idx++;
+        } while (c != EOF && c != '\n' && idx < read);
+        if (buf_index < 4) continue;
+        char *s_x = buffer[1];
+        char *s_y = buffer[2];
+        int x = atoi(s_x);// NOLINT
+        int y = atoi(s_y);// NOLINT
+
+        if (x > max_x) max_x = x;
+    }
+
+    *num_groups = (max_x + GROUP_SIZE - 1) / GROUP_SIZE;
+
+    // clean up
+    fclose(fp);
+    if (line) free(line);
+    return SUCCESS;
+}
+
+void *parse_schedule(json_t const* IOs_json) {
+    if (schedule_info_index >= MAX_NUM_KERNEL) return NULL;
+    struct ScheduleInfo *schedule_info = &schedule_info_list[schedule_info_index++];
+
+    int num_input_tiles = 0, num_output_tiles = 0;
+
+
+
+    // for now we assume soft reset is always placed to the fist column by pnr
+    schedule_info->reset_port = 0;
+
+    return schedule_info;
+}
+
+
+void *parse_bitstream(char *filename) {
+    if (bitstream_info_index >= MAX_NUM_KERNEL) return NULL;
+
+    int num_bs = 0;
+    struct BitstreamInfo *bs_info = &bitstream_info_list[bitstream_info_index++];
+    FILE *fp;
+
+    // count the number of lines in bitstream file and store it to bs_info->size
+    if (filename[0] != '\0') {
+        fp = fopen(filename, "r");
+        if (fp == NULL) {
+            printf("Could not open file %s", filename);
+            return 0;
+        }
+        for (char c = getc(fp); c != EOF; c = getc(fp)) {
+            if (c == '\n') // Increment count if this character is newline
+                num_bs++;
+        }
+        fclose(fp);
+    }
+    // add 1 because the last line does not have new line
+    num_bs++;
+    bs_info->size = num_bs;
+
+    return bs_info;
+}
 
 >>>>>>> [WIP] inside docker
 
 
 void *parse_metadata(char *filename) {
     if (kernel_info_index >= MAX_NUM_KERNEL) return NULL;
-    struct KernelInfo *info = &kernel_info[kernel_info_index++];
+    struct KernelInfo *info = &kernel_info_list[kernel_info_index++];
 
     FILE *fp;
     char *json_buffer = NULL;
@@ -157,7 +132,7 @@ void *parse_metadata(char *filename) {
 
     // get current directory
     char *dir;
-    // Need to free
+    // Need to free directory
     dir = get_prefix(filename, '/');
 
     // calculate metadata file size and save it to l_size
@@ -180,21 +155,103 @@ void *parse_metadata(char *filename) {
         exit(1);
     }
     
-    // free up the buffer and close fp
-    fclose(fp);
-    free(json_buffer);
+    // parse json file
+    json_t pool[MAX_JSON_FIELDS];
+    json_t const* json = json_create(json_buffer, pool, MAX_JSON_FIELDS);
+    if (!json) {
+        fputs("Error json create", stderr);
+        exit(1);
+    }
 
-    strncpy(info->placement_filename, dir,
-            strnlen(dir, BUFFER_SIZE));
+    // Parse testing field
+	json_t const* testing_json = json_getProperty( json, "testing" );
+    if ( !testing_json || JSON_OBJ != json_getType( testing_json ) ) {
+        puts("Error, the testing property is not found.");
+        exit(1);
+    }
 
-    // info->place_info = parse_placement(info->placement_filename);
-    // info->bitstream_info = parse_bitstream(info->bitstream_filename);
+    // parse coreir field
+	json_t const* coreir_json = json_getProperty( testing_json, "coreir" );
+    if ( !coreir_json || JSON_TEXT != json_getType( coreir_json ) ) {
+        puts("Error, the coreir property is not found.");
+        exit(1);
+    }
+    strncpy(info->coreir_filename, json_getValue(coreir_json), BUFFER_SIZE);
 
-    // parse number of groups
+
+    int cnt;
+    // parse interleaved_input field
+	json_t const* input_list_json = json_getProperty( testing_json, "interleaved_input" );
+    if ( !input_list_json || JSON_ARRAY != json_getType( input_list_json ) ) {
+        puts("Error, the interleaved_input property is not found.");
+        exit(1);
+    }
+
+    json_t const* input_data_json;
+    for(input_data_json = json_getChild( input_list_json ), cnt = 0;
+		input_data_json != 0; input_data_json = json_getSibling( input_data_json ), cnt++) {
+        if ( JSON_TEXT == json_getType( input_data_json ) ) {
+            strncpy(info->input_filenames[cnt], json_getValue(input_data_json), BUFFER_SIZE);
+        }
+    }
+    info->num_inputs = cnt;
+
+    // parse interleaved_output field
+	json_t const* gold_list_json = json_getProperty( testing_json, "interleaved_output" );
+    if ( !gold_list_json || JSON_ARRAY != json_getType( gold_list_json ) ) {
+        puts("Error, the interleaved_output property is not found.");
+        exit(1);
+    }
+
+    json_t const* gold_data_json;
+    for( gold_data_json = json_getChild( gold_list_json ), cnt = 0; \
+		 gold_data_json != 0; gold_data_json = json_getSibling( gold_data_json ), cnt++ ) {
+        if ( JSON_TEXT == json_getType( gold_data_json ) ) {
+            strncpy(info->gold_filenames[cnt], json_getValue(gold_data_json), BUFFER_SIZE);
+        }
+    }
+    info->num_outputs = cnt;
+
+    // parse bistream field
+	json_t const* bs_json = json_getProperty( testing_json, "bitstream" );
+    if ( !bs_json || JSON_TEXT != json_getType( bs_json ) ) {
+        puts("Error, the bitstream property is not found.");
+        exit(1);
+    }
+    strncpy(info->bitstream_filename, json_getValue(bs_json), BUFFER_SIZE);
+
+    // parse placement field
+	json_t const* place_json = json_getProperty( testing_json, "placement" );
+    if ( !place_json || JSON_TEXT != json_getType( place_json ) ) {
+        puts("Error, the placement property is not found.");
+        exit(1);
+    }
+    strncpy(info->placement_filename, json_getValue(place_json), BUFFER_SIZE);
+
+    // store placement to bitstream_info
+    strncpy(info->bitstream_filename, json_getValue(bs_json), BUFFER_SIZE);
+
+    // store bitstream to bitstream_info
+
+    // TODO: bitstream Config info should be stored elsewhere
+    // the size of bitstream will be saved in bitstrea_info
+    info->bitstream_info = parse_bitstream(info->bitstream_filename);
+
+    // Parse IO scheduling information 
+	json_t const* IOs_json = json_getProperty( json, "IOs" );
+    info->schedule_info = parse_schedule(IOs_json);
+
     // TODO: make a better way to calculate number of groups used
     // update scheduling group size by parsing place file
-    parse_num_group(info);
+    parse_num_group(info->placement_filename, &info->schedule_info->num_groups);
+    
+    // free up the buffer and close fp
+    fclose(fp);
+    free(dir);
+    free(json_buffer);
 
+    return info;
+}
 
 // void *get_place_info(void *info) {
 //     GET_KERNEL_INFO(info);
