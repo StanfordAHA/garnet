@@ -52,11 +52,12 @@ struct Position {
 
 enum IO {Input = 0, Output = 1}; 
 
+// TODO: Change IOTile name to IOBlock
 struct IOTileInfo {
     enum IO io;
     int tile;
     // TODO: we do not need size anymore as we have extent
-    int size; 
+    // int size; 
     int start_addr;
 
     struct Position pos; 
@@ -69,6 +70,7 @@ struct IOInfo {
     enum IO io;
     int num_io_tiles;
     char filename[BUFFER_SIZE];
+    int filesize;
 
     struct IOTileInfo io_tiles[MAX_NUM_IO_TILES];
 
@@ -115,10 +117,7 @@ int get_num_groups(void *info);
 int get_group_start(void *info);
 int get_num_inputs(void *info);
 int get_num_outputs(void *info);
-// int get_input_x(void *info, int index);
-// int get_input_y(void *info, int index);
-// int get_output_x(void *info, int index);
-// int get_output_y(void *info, int index);
+int get_num_io_tiles(void *info, int index);
 int get_io_tile_x(void *info, int index);
 int get_io_tile_y(void *info, int index);
 int get_reset_index(void *info);
@@ -130,16 +129,12 @@ char *get_output_filename(void *info, int index);
 int get_input_size(void *info, int index);
 int get_output_size(void *info, int index);
 
-// int get_input_start_addr(void *info, int index);
-// int get_input_size(void *info, int index);
-// int get_input_tile(void *info, int index);
-// int get_output_start_addr(void *info, int index);
-// int get_output_size(void *info, int index);
-// int get_output_tile(void *info, int index);
-// 
+int get_io_tile_start_addr(void *info, int index);
+// TODO: Change function name to get_io_block_tile
+int get_io_tile_map_tile(void *info, int index);
 int get_bs_start_addr(void *info);
 int get_bs_size(void *info);
 int get_bs_tile(void *info);
-static char *get_prefix(const char *s, char t);
+char *get_prefix(const char *s, char t);
 
 #endif//VIRTUALIZE_META_LIBRARY_H

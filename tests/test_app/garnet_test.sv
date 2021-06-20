@@ -22,11 +22,11 @@ program garnet_test #(
 
     initial begin
         initialize();
-        map(kernels);
+        // map(kernels);
 
-        env = new(kernels, axil_ifc, p_ifc);
-        env.build();
-        env.run();
+        // env = new(kernels, axil_ifc, p_ifc);
+        // env.build();
+        // env.run();
     end
 
     //============================================================================//
@@ -66,12 +66,12 @@ program garnet_test #(
         end
     endfunction
 
-    function void map(Kernel kernels[]);
-        foreach(kernels[i]) begin
-            if (kernels[i].kernel_map() == 0) begin
-                $finish(2);
-            end
-        end
-    endfunction
+    // function void map(Kernel kernels[]);
+    //     foreach(kernels[i]) begin
+    //         if (kernels[i].kernel_map() == 0) begin
+    //             $finish(2);
+    //         end
+    //     end
+    // endfunction
 endprogram
 
