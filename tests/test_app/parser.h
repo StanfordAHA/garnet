@@ -10,11 +10,11 @@
 #define MAX_JSON_FIELDS 512
 #define MAX_CONFIG 20
 
-#define GET_PLACE_INFO(info) struct ScheduleInfo *place_info = \
-                                    (struct ScheduleInfo *) info
-
 #define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = \
                                     (struct KernelInfo *) info
+
+#define GET_PLACE_INFO(info) struct ScheduleInfo *place_info = \
+                                    (struct ScheduleInfo *) info
 
 #define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = \
                                     (struct ConfigInfo *) info
@@ -40,11 +40,11 @@ struct Position {
     int x;
     int y;
 };
+
 enum IO {Input = 0, Output = 1}; 
 
 struct IOTileInfo {
     struct Position pos; 
-    enum IO io;
 
     int tile;
     int size; 
@@ -62,42 +62,38 @@ struct BitstreamInfo {
     struct ConfigInfo config;
 };
  
-struct ScheduleInfo {
-    int num_groups;
-    int group_start;
-    int num_input_tiles;
-    int num_output_tiles;
+struct IOInfo {
+    enum IO io;
+    int num_io_tiles;
+    char filename[BUFFER_SIZE];
 
-    struct IOTileInfo input_tiles[MAX_NUM_IO_TILES];
-    struct IOTileInfo output_tiles[MAX_NUM_IO_TILES];
-
+    struct IOTileInfo io_tiles[MAX_NUM_IO_TILES];
     struct ConfigInfo config;
-
-    int input_tile_size[MAX_NUM_IO_TILES];
-    int output_tile_size[MAX_NUM_IO_TILES];
-
-    // index to the inputs, need to multiply by 2
-    int reset_port;
 };
 
 struct KernelInfo {
     int num_inputs;
     int num_outputs;
 
+    int group_start;
+    int num_groups;
+    // index to the inputs, need to multiply by 2
+    int reset_port;
+
     char coreir_filename[BUFFER_SIZE];
     char bitstream_filename[BUFFER_SIZE];
     char placement_filename[BUFFER_SIZE];
-    char input_filenames[MAX_NUM_IO][BUFFER_SIZE];
-    char gold_filenames[MAX_NUM_IO][BUFFER_SIZE];
 
-    struct ScheduleInfo *schedule_info;
+    //TODO: input_info + output_info should be less than MAX_NUM_IO
+    struct IOInfo *input_info[MAX_NUM_IO];
+    struct IOInfo *output_info[MAX_NUM_IO];
     struct BitstreamInfo *bitstream_info;
 };
  
 
 void *parse_metadata(char *filename);
 void *parse_schedule(json_t const* IOs_json);
-int parse_num_group(char *filename, int *num_groups);
+int parse_num_group(struct KernelInfo *info);
 // void *get_place_info(void *info);
 // void *get_bs_info(void *info);
 // void *get_input_info(void *info, int index);
