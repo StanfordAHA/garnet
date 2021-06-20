@@ -17,6 +17,7 @@ import "DPI-C" function int glb_map(chandle kernel);
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_num_inputs(chandle info);
+import "DPI-C" function int get_num_io_tiles(chandle info, int index);
 import "DPI-C" function int get_num_outputs(chandle info);
 import "DPI-C" function string get_placement_filename(chandle info);
 import "DPI-C" function string get_bitstream_filename(chandle info);
@@ -58,15 +59,14 @@ typedef struct {
 } Config;
 
 typedef struct {
-    int num_io_tiles;
-    IOTile io_tiles[];
-} IO;
-
-typedef struct {
-    int size;
     int tile;
     int start_addr;
 } IOTile;
+
+typedef struct {
+    int num_io_tiles;
+    IOTile io_tiles[];
+} IO;
 
 typedef bit[15:0] data_array_t[];
 typedef bitstream_entry_t bitstream_t[];
@@ -133,6 +133,8 @@ endclass
 
 function Kernel::new(string app_dir);
     string last_str, app_name, meta_filename;
+    chandle io_info;
+    int num_io_tiles;
 
     last_str = app_dir.getc(app_dir.len() - 1) == "/"? app_dir.len() - 2: app_dir.len() - 1;
     for (int i = app_dir.len() - 1; i >= 0; i--) begin
@@ -176,8 +178,6 @@ function Kernel::new(string app_dir);
     output_size = new[num_outputs];
     gold_data = new[num_outputs];
 
-    chandle io_info;
-    int num_io_tiles;
     for (int i = 0; i < num_inputs; i++) begin
         input_filenames[i] = get_input_filename(kernel_info, i);
         input_size[i] = get_input_size(kernel_info, i);
@@ -186,10 +186,6 @@ function Kernel::new(string app_dir);
         num_io_tiles = get_num_io_tiles(io_info, i);
         inputs[i].num_io_tiles = num_io_tiles;
         inputs[i].io_tiles = new[num_io_tiles];
-        for(int j=0; j < num_io_tiles; j++) begin
-            inputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
-            inputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j); 
-        end
     end
 
     // output_start_addr = new[num_outputs];
@@ -197,7 +193,7 @@ function Kernel::new(string app_dir);
 
     for (int i = 0; i < num_outputs; i++) begin
         output_filenames[i] = get_output_filename(kernel_info, i);
-        output_size[i] = get_output_size(place_info, i);
+        output_size[i] = get_output_size(kernel_info, i);
         // convert byte size to 16bit size
         output_data[i] = new[(output_size[i]>>1)];
 
@@ -205,10 +201,6 @@ function Kernel::new(string app_dir);
         num_io_tiles = get_num_io_tiles(io_info, i);
         outputs[i].num_io_tiles = num_io_tiles;
         outputs[i].io_tiles = new[num_io_tiles];
-        for(int j=0; j < num_io_tiles; j++) begin
-            outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
-            outputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j); 
-        end
     end
 
     // parse gold data
@@ -279,81 +271,65 @@ function data_array_t Kernel::parse_gold_data(int idx);
     return result;
 endfunction
 
-// function int Kernel::kernel_map();
-//     chandle cfg;
-//     chandle io_info;
-//     int size;
-// 
-//     int result = glb_map(kernel_info);
-//     if (result == 0) begin
-//         $display("[%s] glb mapping failed", name);
-//         return result;
-//     end
-// 
-//     // update group_start offset and add offset
-//     group_start = get_group_start(kernel_info);
-// 
-//     // TODO: This should be done at the hardware later
-//     add_offset_bitstream(bitstream_data, group_start*4);
-// 
-//     // Set start address after mapping
-//     bs_start_addr = get_bs_start_addr(bs_info);
-//     bs_tile = get_bs_tile(bs_info);
-//     for (int i = 0; i < num_inputs; i++) begin
-//         input_start_addr[i] = get_input_start_addr(place_info, i);
-//         input_tile[i] = get_input_tile(place_info, i);
-//     end
-//     for (int i = 0; i < num_outputs; i++) begin
-//         output_start_addr[i] = get_output_start_addr(place_info, i);
-//         output_tile[i] = get_output_tile(place_info, i);
-//     end
-// 
-//     // set configurations
-//     // bs configuration
-//     cfg = get_pcfg_configuration(bs_info);
-//     size = get_configuration_size(cfg);
-//     bs_cfg = new[size];
-//     for (int i=0; i < size; i++) begin
-//         bs_cfg[i].addr = get_configuration_addr(cfg, i);
-//         bs_cfg[i].data = get_configuration_data(cfg, i);
-//     end
-// 
-//     // tile configuration
-//     cfg = get_tile_configuration(place_info);
-//     size = get_configuration_size(cfg);
-//     tile_cfg = new[size];
-//     for (int i=0; i < size; i++) begin
-//         tile_cfg[i].addr = get_configuration_addr(cfg, i);
-//         tile_cfg[i].data = get_configuration_data(cfg, i);
-//     end
-// 
-//     // input configuration
-//     for (int i = 0; i < num_inputs; i++) begin
-//         io_info = get_input_info(place_info, i);
-//         cfg = get_io_configuration(io_info);
-//         size = get_configuration_size(cfg);
-//         input_cfg[i] = new[size];
-//         for (int j=0; j < size; j++) begin
-//             input_cfg[i][j].addr = get_configuration_addr(cfg, j);
-//             input_cfg[i][j].data = get_configuration_data(cfg, j);
-//         end
-//     end
-// 
-//     // output configuration
-//     for (int i = 0; i < num_outputs; i++) begin
-//         io_info = get_output_info(place_info, i);
-//         cfg = get_io_configuration(io_info);
-//         size = get_configuration_size(cfg);
-//         output_cfg[i] = new[size];
-//         for (int j=0; j < size; j++) begin
-//             output_cfg[i][j].addr = get_configuration_addr(cfg, j);
-//             output_cfg[i][j].data = get_configuration_data(cfg, j);
-//         end
-//     end
-// 
-//     $display("[%s] glb mapping success", name);
-//     return result;
-// endfunction
+function int Kernel::kernel_map();
+    chandle cfg;
+    chandle io_info;
+    int size;
+
+    int result = glb_map(kernel_info);
+    if (result == 0) begin
+        $display("[%s] glb mapping failed", name);
+        return result;
+    end
+
+    // update group_start offset and add offset
+    group_start = get_group_start(kernel_info);
+
+    // TODO: This should be done at the hardware later
+    add_offset_bitstream(bitstream_data, group_start*4);
+
+    // Set start address after mapping
+    bs_start_addr = get_bs_start_addr(bs_info);
+    bs_tile = get_bs_tile(bs_info);
+
+    for (int i = 0; i < num_inputs; i++) begin
+        io_info = get_input_info(kernel_info, i);
+        for(int j=0; j < inputs[i].num_io_tiles; j++) begin
+            inputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
+            inputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j); 
+        end
+    end
+
+    for (int i = 0; i < num_outputs; i++) begin
+        io_info = get_output_info(kernel_info, i);
+        for(int j=0; j < outputs[i].num_io_tiles; j++) begin
+            outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
+            outputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j); 
+        end
+    end
+
+    // set configurations
+    // bs configuration
+    cfg = get_pcfg_configuration(bs_info);
+    size = get_configuration_size(cfg);
+    bs_cfg = new[size];
+    for (int i=0; i < size; i++) begin
+        bs_cfg[i].addr = get_configuration_addr(cfg, i);
+        bs_cfg[i].data = get_configuration_data(cfg, i);
+    end
+
+    // kernel configuration
+    cfg = get_kernel_configuration(kernel_info);
+    size = get_configuration_size(cfg);
+    kernel_cfg = new[size];
+    for (int i=0; i < size; i++) begin
+        kernel_cfg[i].addr = get_configuration_addr(cfg, i);
+        kernel_cfg[i].data = get_configuration_data(cfg, i);
+    end
+
+    $display("[%s] glb mapping success", name);
+    return result;
+endfunction
 
 function void Kernel::add_offset_bitstream(ref bitstream_t bitstream_data, input int offset);
     int addr, new_addr;
