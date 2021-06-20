@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define ERROR 1
 #define SUCCESS 0
@@ -59,8 +60,8 @@ int parse_num_group(struct KernelInfo *info) {
         if (buf_index < 4) continue;
         char *s_x = buffer[1];
         char *s_y = buffer[2];
-        int x = atoi(s_x);// NOLINT
-        int y = atoi(s_y);// NOLINT
+        int x = atoi(s_x); // NOLINT
+        int y = atoi(s_y); // NOLINT
 
         if (x > max_x) max_x = x;
     }
@@ -73,7 +74,71 @@ int parse_num_group(struct KernelInfo *info) {
     return SUCCESS;
 }
 
-void *parse_io(json_t const* io_json, enum IO io) {
+int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_json) {
+    int cnt;
+
+    // parse x position
+	json_t const* x_pos_json = json_getProperty( io_tile_json, "x_pos" );
+    if ( !x_pos_json || JSON_INTEGER != json_getType( x_pos_json ) ) {
+        puts("Error, the x_pos property is not found.");
+        exit(1);
+    }
+    io_tile_info->pos.x = json_getInteger(x_pos_json);
+
+    // parse y position
+	json_t const* y_pos_json = json_getProperty( io_tile_json, "y_pos" );
+    if ( !y_pos_json || JSON_INTEGER != json_getType( y_pos_json ) ) {
+        puts("Error, the y_pos property is not found.");
+        exit(1);
+    }
+    io_tile_info->pos.y = json_getInteger(y_pos_json);
+
+    // parse addr
+	json_t const* addr_json = json_getProperty( io_tile_json, "addr" );
+    if ( !addr_json || JSON_OBJ != json_getType( addr_json ) ) {
+        puts("Error, the addr property is not found.");
+        exit(1);
+    }
+
+    // parse dimensionality
+	json_t const* dim_json = json_getProperty( addr_json, "dimensionality" );
+    if ( !dim_json || JSON_INTEGER != json_getType( dim_json ) ) {
+        puts("Error, the dim property is not found.");
+        exit(1);
+    }
+    io_tile_info->loop_dim = json_getInteger(dim_json);
+
+    // TODO: For now, it only works when cycle_stride == data_stride
+	json_t const* stride_list_json = json_getProperty( addr_json, "cycle_stride" );
+    if ( !stride_list_json || JSON_ARRAY != json_getType( stride_list_json ) ) {
+        puts("Error, the stride_list property is not found.");
+        exit(1);
+    }
+
+    cnt = 0;
+	json_t const* stride_json;
+    for(stride_json = json_getChild( stride_list_json ); stride_json != 0; stride_json = json_getSibling( stride_json )) {
+        io_tile_info->stride[cnt] = json_getInteger(stride_json);
+        cnt++;
+    }
+
+	json_t const* extent_list_json = json_getProperty( addr_json, "extent" );
+    if ( !extent_list_json || JSON_ARRAY != json_getType( extent_list_json ) ) {
+        puts("Error, the extent_list property is not found.");
+        exit(1);
+    }
+
+    cnt = 0;
+	json_t const* extent_json;
+    for(extent_json = json_getChild( extent_list_json ); extent_json != 0; extent_json = json_getSibling( extent_json )) {
+        io_tile_info->extent[cnt] = json_getInteger(extent_json);
+        cnt++;
+    }
+
+    return SUCCESS;
+}
+
+void *parse_io(json_t const *io_json, enum IO io) {
     if (io_info_index >= MAX_NUM_KERNEL*MAX_NUM_IO) return NULL;
     struct IOInfo *io_info = &io_info_list[io_info_index++];
 
@@ -86,18 +151,14 @@ void *parse_io(json_t const* io_json, enum IO io) {
         exit(1);
     }
 
-    int dim[8];
-    int innermost_dim;
+    int channel[8];
     int cnt = 0;
-    json_t const* dim_json;
-    for(dim_json = json_getChild( shape_json ); 
-            dim_json != 0; dim_json = json_getSibling( dim_json )) {
-        dim[cnt] = json_getValue(dim_json);
+    json_t const* channel_json;
+    for(channel_json = json_getChild( shape_json ); 
+            channel_json != 0; channel_json = json_getSibling( channel_json )) {
+        channel[cnt] = json_getInteger(channel_json);
         cnt++;
     }
-
-    // If the number of io_tiles is larger than 1, then the number of io_tiles
-    // should be equal to the innermost_dim
 
     // parse io_tile list
 	json_t const* io_tile_list_json = json_getProperty( io_json, "io_tiles" );
@@ -107,21 +168,26 @@ void *parse_io(json_t const* io_json, enum IO io) {
     }
 
     // parse each io_tile
-    int cnt = 0;
+    cnt = 0;
     json_t const* io_tile_json;
     for(io_tile_json = json_getChild( io_tile_list_json ); 
             io_tile_json != 0; io_tile_json = json_getSibling( io_tile_json )) {
-        if ( JSON_OBJ == json_getType( input_json ) ) {
-        dim[cnt] = json_getValue(dim_json);
-        cnt++;
+        if ( JSON_OBJ == json_getType( io_tile_json ) ) {
+            parse_io_tile_info(&io_info->io_tiles[cnt], io_tile_json);
+            cnt++;
+        }
     }
+    io_info->num_io_tiles = cnt;
 
-    // TODO: 
+    // If the number of io_tiles is larger than 1, then the number of io_tiles
+    // should be equal to the innermost_channel
+    if (io_info->num_io_tiles > 1) {
+        assert(io_info->num_io_tiles == channel[0]);
+    }
 
 
     return io_info;
 }
-
 
 void *parse_bitstream(char *filename) {
     if (bitstream_info_index >= MAX_NUM_KERNEL) return NULL;
