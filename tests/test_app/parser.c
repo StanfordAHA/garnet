@@ -277,7 +277,8 @@ void *parse_metadata(char *filename) {
         puts("Error, the coreir property is not found.");
         exit(1);
     }
-    strncpy(info->coreir_filename, json_getValue(coreir_json), BUFFER_SIZE);
+    strncpy(info->coreir_filename, dir, strnlen(dir, BUFFER_SIZE));
+    strncat(info->coreir_filename, json_getValue(coreir_json), BUFFER_SIZE);
 
 
     // parse bistream field
@@ -286,7 +287,8 @@ void *parse_metadata(char *filename) {
         puts("Error, the bitstream property is not found.");
         exit(1);
     }
-    strncpy(info->bitstream_filename, json_getValue(bs_json), BUFFER_SIZE);
+    strncpy(info->bitstream_filename, dir, strnlen(dir, BUFFER_SIZE));
+    strncat(info->bitstream_filename, json_getValue(bs_json), BUFFER_SIZE);
 
     // parse placement field
 	json_t const* place_json = json_getProperty( testing_json, "placement" );
@@ -295,9 +297,6 @@ void *parse_metadata(char *filename) {
         exit(1);
     }
     strncpy(info->placement_filename, json_getValue(place_json), BUFFER_SIZE);
-
-    // store placement to bitstream_info
-    strncpy(info->bitstream_filename, json_getValue(bs_json), BUFFER_SIZE);
 
     // store bitstream to bitstream_info
 
@@ -351,7 +350,8 @@ void *parse_metadata(char *filename) {
     for(input_data_json = json_getChild( input_data_list_json ), cnt = 0;
 		input_data_json != 0; input_data_json = json_getSibling( input_data_json ), cnt++) {
         if ( JSON_TEXT == json_getType( input_data_json ) ) {
-            strncpy(info->input_info[cnt]->filename, json_getValue(input_data_json), BUFFER_SIZE);
+            strncpy(info->input_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
+            strncat(info->input_info[cnt]->filename, json_getValue(input_data_json), BUFFER_SIZE);
         }
     }
 
@@ -400,7 +400,8 @@ void *parse_metadata(char *filename) {
     for( gold_data_json = json_getChild( gold_data_list_json ), cnt = 0; \
 		 gold_data_json != 0; gold_data_json = json_getSibling( gold_data_json ), cnt++ ) {
         if ( JSON_TEXT == json_getType( gold_data_json ) ) {
-            strncpy(info->output_info[cnt]->filename, json_getValue(gold_data_json), BUFFER_SIZE);
+            strncpy(info->output_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
+            strncat(info->output_info[cnt]->filename, json_getValue(gold_data_json), BUFFER_SIZE);
         }
     }
 
