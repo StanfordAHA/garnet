@@ -128,6 +128,7 @@ class Kernel;
     extern function void print_input(int idx);
     extern function void print_input_block(int idx, int block_idx);
     extern function void print_output(int idx);
+    extern function void print_output_block(int idx, int block_idx);
     extern function void print_gold(int idx);
     extern function void print_bitstream();
     extern function void compare();
@@ -457,6 +458,13 @@ endfunction
 function void Kernel::print_output(int idx);
     foreach(output_data[idx][i]) begin
         $write("%02X ", output_data[idx][i]);
+    end
+    $display("\n");
+endfunction
+
+function void Kernel::print_output_block(int idx, int block_idx);
+    foreach(outputs[idx].io_tiles[block_idx].io_block_data[i]) begin
+        $write("%02X ", outputs[idx].io_tiles[block_idx].io_block_data[i]);
     end
     $display("\n");
 endfunction
