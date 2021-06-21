@@ -556,6 +556,21 @@ int get_io_tile_map_tile(void *info, int index) {
     return io_info->io_tiles[index].tile;
 }
 
+int get_io_tile_loop_dim(void *info, int index) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].loop_dim;
+}
+
+int get_io_tile_stride(void *info, int index, int stride_idx) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].stride[stride_idx];
+}
+
+int get_io_tile_extent(void *info, int index, int extent_idx) {
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].extent[extent_idx];
+}
+
 int get_output_size(void *info, int index) {
     GET_KERNEL_INFO(info);
     return kernel_info->output_info[index]->filesize;

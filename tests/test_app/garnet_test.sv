@@ -18,17 +18,15 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[];
-    // Environment env;
+    Environment env;
 
     initial begin
         initialize();
-        kernels[0].print_input(0);
-        kernels[0].print_input_block(0,0);
         map(kernels);
 
-        // env = new(kernels, axil_ifc, p_ifc);
-        // env.build();
-        // env.run();
+        env = new(kernels, axil_ifc, p_ifc);
+        env.build();
+        env.run();
     end
 
     //============================================================================//
