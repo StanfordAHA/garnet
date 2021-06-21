@@ -67,7 +67,10 @@ typedef bitstream_entry_t bitstream_t[];
 typedef struct {
     int tile;
     int start_addr;
+<<<<<<< 9a783c8b0f3bce5c72490af5552ef63a76b06c41
     int num_data;
+=======
+>>>>>>> Unroll input data to each io_block
     data_array_t io_block_data;
 } IOTile;
 
@@ -235,6 +238,26 @@ function Kernel::new(string app_dir);
     // parse gold data
     for (int i = 0; i < num_outputs; i++) begin
         gold_data[i] = parse_gold_data(i);
+    end
+
+    // TODO: Make below code as separate function after putting IO info to IO struct
+    // Hacky way to unroll input data to each io block
+    for (int i = 0; i < num_inputs; i++) begin
+        num_io_tiles = inputs[i].num_io_tiles;
+        if (num_io_tiles == 1) begin
+            num_pixels = input_data[i].size;
+            // TODO: Is new necessary?
+            inputs[i].io_tiles[0].io_block_data = new[num_pixels];
+            inputs[i].io_tiles[0].io_block_data = input_data[i];
+        end else begin
+            for (int j=0; j < num_io_tiles; j++) begin
+                num_pixels = input_data[i].size / num_io_tiles;
+                inputs[i].io_tiles[j].io_block_data = new[num_pixels];
+                for(int k=0; k<num_pixels; k++) begin
+                    inputs[i].io_tiles[j].io_block_data[k] = input_data[i][j + num_io_tiles * k];
+                end
+            end
+        end
     end
 
     bs_size = get_bs_size(bs_info);
