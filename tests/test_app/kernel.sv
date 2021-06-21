@@ -30,6 +30,9 @@ import "DPI-C" function int get_bs_tile(chandle info);
 import "DPI-C" function int get_bs_start_addr(chandle info);
 import "DPI-C" function int get_io_tile_start_addr(chandle info, int index);
 import "DPI-C" function int get_io_tile_map_tile(chandle info, int index);
+import "DPI-C" function int get_io_tile_loop_dim(chandle info, int index);
+import "DPI-C" function int get_io_tile_extent(chandle info, int index, int extent_idx);
+import "DPI-C" function int get_io_tile_stride(chandle info, int index, int stride_idx);
 import "DPI-C" function chandle get_kernel_configuration(chandle info);
 import "DPI-C" function chandle get_pcfg_configuration(chandle info);
 import "DPI-C" function int get_configuration_size(chandle info);
@@ -64,6 +67,7 @@ typedef bitstream_entry_t bitstream_t[];
 typedef struct {
     int tile;
     int start_addr;
+    int num_data;
     data_array_t io_block_data;
 } IOTile;
 
@@ -139,6 +143,7 @@ function Kernel::new(string app_dir);
     chandle io_info;
     int num_io_tiles;
     int num_pixels;
+    int loop_dim;
 
     last_str = app_dir.getc(app_dir.len() - 1) == "/"? app_dir.len() - 2: app_dir.len() - 1;
     for (int i = app_dir.len() - 1; i >= 0; i--) begin
@@ -157,11 +162,6 @@ function Kernel::new(string app_dir);
 
     kernel_info = parse_metadata(meta_filename);
     assert_(kernel_info != null, $sformatf("Unable to find %s", meta_filename));
-
-    // TODO: Remove. We do not need placement filename
-    // placement_filename = get_placement_filename(kernel_info);
-    // place_info = get_place_info(kernel_info);
-    // assert_(place_info != null, $sformatf("Unable to find %s", placement_filename));
 
     bitstream_filename = get_bitstream_filename(kernel_info);
     bs_info = get_bs_info(kernel_info);
@@ -187,13 +187,25 @@ function Kernel::new(string app_dir);
         input_size[i] = get_input_size(kernel_info, i);
         input_data[i] = parse_input_data(i);
         io_info = get_input_info(kernel_info, i);
+
         num_io_tiles = get_num_io_tiles(io_info, i);
         inputs[i].num_io_tiles = num_io_tiles;
         inputs[i].io_tiles = new[num_io_tiles];
-    end
 
-    // output_start_addr = new[num_outputs];
-    // output_tile = new[num_outputs];
+        if (num_io_tiles == 1) begin
+            inputs[i].io_tiles[0].io_block_data = input_data[i];
+        end else begin
+            for (int j=0; j < num_io_tiles; j++) begin
+                // TODO: We assume only innermost loop is unrolled.
+                // This should be changed to mul(extent)
+                num_pixels = input_data[i].size / num_io_tiles;
+                inputs[i].io_tiles[j].io_block_data = new[num_pixels];
+                for(int k=0; k<num_pixels; k++) begin
+                    inputs[i].io_tiles[j].io_block_data[k] = input_data[i][j + num_io_tiles * k];
+                end
+            end
+        end
+    end
 
     for (int i = 0; i < num_outputs; i++) begin
         output_filenames[i] = get_output_filename(kernel_info, i);
@@ -205,31 +217,23 @@ function Kernel::new(string app_dir);
         num_io_tiles = get_num_io_tiles(io_info, i);
         outputs[i].num_io_tiles = num_io_tiles;
         outputs[i].io_tiles = new[num_io_tiles];
+
+        for (int j = 0; j < num_io_tiles; j++) begin
+            loop_dim = get_io_tile_loop_dim(io_info, j);
+            for (int k = 0; k < loop_dim; k++) begin
+                if (k == 0) begin
+                    num_pixels = get_io_tile_extent(io_info, j, k);
+                end else begin
+                    num_pixels = num_pixels * get_io_tile_extent(io_info, j, k);
+                end
+            end
+            outputs[i].io_tiles[0].io_block_data = new[num_pixels];
+        end
     end
 
     // parse gold data
     for (int i = 0; i < num_outputs; i++) begin
         gold_data[i] = parse_gold_data(i);
-    end
-
-    // TODO: Make below code as separate function after putting IO info to IO struct
-    // Hacky way to unroll input data to each io block
-    for (int i = 0; i < num_inputs; i++) begin
-        num_io_tiles = inputs[i].num_io_tiles;
-        if (num_io_tiles == 1) begin
-            num_pixels = input_data[i].size;
-            // TODO: Is new necessary?
-            inputs[i].io_tiles[0].io_block_data = new[num_pixels];
-            inputs[i].io_tiles[0].io_block_data = input_data[i];
-        end else begin
-            for (int j=0; j < num_io_tiles; j++) begin
-                num_pixels = input_data[i].size / num_io_tiles;
-                inputs[i].io_tiles[j].io_block_data = new[num_pixels];
-                for(int k=0; k<num_pixels; k++) begin
-                    inputs[i].io_tiles[j].io_block_data[k] = input_data[i][j + num_io_tiles * k];
-                end
-            end
-        end
     end
 
     bs_size = get_bs_size(bs_info);
@@ -394,6 +398,23 @@ function void Kernel::display();
 endfunction
 
 function void Kernel::compare();
+    int num_pixels;
+    int num_io_tiles;
+    // Hacky way to interleave output data in io_block to final output
+    // TODO: Make interleave and uninterleave as a function
+    for (int i = 0; i < num_outputs; i++) begin
+        num_io_tiles = outputs[i].num_io_tiles;
+        if (num_io_tiles == 1) begin
+            output_data[i] = outputs[i].io_tiles[0].io_block_data;
+        end else begin
+            for (int j = 0; j < num_io_tiles; j++) begin
+                num_pixels = outputs[i].io_tiles[j].io_block_data.size;
+                for(int k = 0; k < num_pixels; k++) begin
+                     output_data[i][j + num_io_tiles * k] = outputs[i].io_tiles[j].io_block_data[k];
+                end
+            end
+        end
+    end
     for(int i=0; i<num_outputs; i++) begin
         compare_(i);
     end

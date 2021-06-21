@@ -111,6 +111,9 @@ void *get_bs_info(void *info);
 void *get_input_info(void *info, int index);
 void *get_output_info(void *info, int index);
 void *get_io_tile_info(void *info, int index);
+int get_io_tile_loop_dim(void *info, int index);
+int get_io_tile_extent(void *info, int index, int extent_idx);
+int get_io_tile_stride(void *info, int index, int stride_idx);
 
 // helper functions to access data from SV testbench
 int get_num_groups(void *info);
