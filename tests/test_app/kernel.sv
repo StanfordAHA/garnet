@@ -502,6 +502,13 @@ function void Kernel::print_output_block(int idx, int block_idx);
     $display("\n");
 endfunction
 
+function void Kernel::print_output_block(int idx, int block_idx);
+    foreach(outputs[idx].io_tiles[block_idx].io_block_data[i]) begin
+        $write("%02X ", outputs[idx].io_tiles[block_idx].io_block_data[i]);
+    end
+    $display("\n");
+endfunction
+
 function void Kernel::print_bitstream();
     foreach(bitstream_data[i]) begin
         $display("%16X", bitstream_data[i]);
