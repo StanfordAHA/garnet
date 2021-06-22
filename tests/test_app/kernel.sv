@@ -228,7 +228,7 @@ function Kernel::new(string app_dir);
                     num_pixels = num_pixels * get_io_tile_extent(io_info, j, k);
                 end
             end
-            outputs[i].io_tiles[0].io_block_data = new[num_pixels];
+            outputs[i].io_tiles[j].io_block_data = new[num_pixels];
         end
     end
 
@@ -390,7 +390,7 @@ function void Kernel::assert_(bit cond, string msg);
     assert (cond) else begin
         $display("%s", msg);
         $stacktrace;
-        // $finish(1);
+        $finish(1);
     end
 endfunction
 
@@ -459,7 +459,7 @@ function void Kernel::print_output(int idx);
     foreach(output_data[idx][i]) begin
         $write("%02X ", output_data[idx][i]);
     end
-    $display("\n");
+    $display("\n\n");
 endfunction
 
 function void Kernel::print_output_block(int idx, int block_idx);
