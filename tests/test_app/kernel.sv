@@ -413,7 +413,7 @@ function void Kernel::assert_(bit cond, string msg);
     assert (cond) else begin
         $display("%s", msg);
         $stacktrace;
-        $finish(1);
+        // $finish(1);
     end
 endfunction
 
