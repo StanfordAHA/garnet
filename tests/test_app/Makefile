@@ -70,7 +70,7 @@ XRUN_COMPILE = xrun \
 # Simulation
 # -------------------------------------------------------------------
 .PHONY: sim
-sim: glb-rtl glc-rtl libcgra.so compile run
+sim: libcgra.so compile run
 
 # -------------------------------------------------------------------
 # C API
