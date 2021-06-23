@@ -182,16 +182,7 @@ void *parse_io(json_t const *io_json, enum IO io) {
     // If the number of io_tiles is larger than 1, then the number of io_tiles
     // should be equal to the innermost_channel
     if (io_info->num_io_tiles > 1) {
-        if (io_info->io == Input) {
-            assert(io_info->num_io_tiles == channel[0]);
-        } else {
-            for (int j=7; j>=0; j--) {
-                if ( channel[j] != 0 ) {
-                    assert(io_info->num_io_tiles == channel[j]);
-                    break;
-                }
-            }
-        }
+        assert(io_info->num_io_tiles == channel[0]);
     }
 
 
