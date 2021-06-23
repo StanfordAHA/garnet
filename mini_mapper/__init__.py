@@ -35,6 +35,10 @@ def __get_alu_mapping(op_str):
         return ALU.Sub, Signed.unsigned
     elif op_str == "mul" or op_str == "mult_0":
         return ALU.Mult0, Signed.unsigned
+    elif op_str == "mult_1":
+        return ALU.Mult1, Signed.signed
+    elif op_str == "mult_2":
+        return ALU.Mult2, Signed.signed
     elif op_str == "ashr":
         return ALU.SHR, Signed.signed
     elif op_str == "ule":
