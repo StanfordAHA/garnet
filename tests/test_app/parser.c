@@ -30,7 +30,7 @@ int parse_num_group(struct KernelInfo *info) {
 
     fp = fopen(filename, "r");
     if (fp == NULL) {
-        printf("Could not open file %s", filename);
+        printf("Could not open file %s\n", filename);
         return ERROR;
     }
 
@@ -150,7 +150,7 @@ void *parse_io(json_t const *io_json, enum IO io) {
         exit(1);
     }
 
-    int channel[8];
+    int channel[8] = {0};
     int cnt = 0;
     json_t const* channel_json;
     for(channel_json = json_getChild( shape_json ); 
@@ -182,7 +182,16 @@ void *parse_io(json_t const *io_json, enum IO io) {
     // If the number of io_tiles is larger than 1, then the number of io_tiles
     // should be equal to the innermost_channel
     if (io_info->num_io_tiles > 1) {
-        assert(io_info->num_io_tiles == channel[0]);
+        if (io_info->io == Input) {
+            assert(io_info->num_io_tiles == channel[0]);
+        } else {
+            for (int j=7; j>=0; j--) {
+                if ( channel[j] != 0 ) {
+                    assert(io_info->num_io_tiles == channel[j]);
+                    break;
+                }
+            }
+        }
     }
 
 
@@ -296,7 +305,8 @@ void *parse_metadata(char *filename) {
         puts("Error, the placement property is not found.");
         exit(1);
     }
-    strncpy(info->placement_filename, json_getValue(place_json), BUFFER_SIZE);
+    strncpy(info->placement_filename, dir, strnlen(dir, BUFFER_SIZE));
+    strncat(info->placement_filename, json_getValue(place_json), BUFFER_SIZE);
 
     // store bitstream to bitstream_info
 
