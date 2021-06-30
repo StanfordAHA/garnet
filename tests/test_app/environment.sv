@@ -82,7 +82,7 @@ task Environment::cgra_configure(Kernel kernel);
     // define variables
     bit [NUM_GLB_TILES-1:0] tile_mask;
     Config cfg;
-
+    axil_drv.write(`GLC_STALL, 32'hFFFFFFFF);
     $display("[%s] fast configuration start", kernel.name);
     cfg = kernel.get_pcfg_start_config();
     axil_drv.write(cfg.addr, cfg.data);
@@ -91,6 +91,8 @@ task Environment::cgra_configure(Kernel kernel);
     wait_interrupt(GLB_PCFG_CTRL, tile_mask);
     clear_interrupt(GLB_PCFG_CTRL, tile_mask);
     $display("[%s] fast configuration end", kernel.name);
+
+    axil_drv.write(`GLC_STALL, '0);
 endtask
 
 task Environment::kernel_test(Kernel kernel);

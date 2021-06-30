@@ -463,6 +463,9 @@ function int Kernel::compare_(int idx);
             $display("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]);
             result += 1;
         end
+        else begin
+            $display("[%s]-Output[%0d], pixel[%0d] Get %02X matches expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]);
+        end
     end
     return result;
 endfunction
