@@ -233,11 +233,18 @@ fi
 
 ########################################################################
 # Running out of space in /tmp!!?
-export TMPDIR=/sim/tmp
+if test -d /sim/tmp; then
+    export TMPDIR=/sim/tmp
+else
+    echo "***WARNING Cannot find /sim/tmp. Are you sure you're in the right place?"
+    printf "Using default TMPDIR '$TMPDIR'\n\n"
+fi
+
 
 ########################################################################
 # Clean up debris in /sim/tmp
-$garnet/mflowgen/bin/cleanup-buildkite.sh
+echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
+[ "$USER" != "buildkite-agent" ] && $garnet/mflowgen/bin/cleanup-buildkite.sh
 
 
 ########################################################################
@@ -319,7 +326,7 @@ echo "--- REQUIREMENTS CHECK"; echo ""
 
 # Maybe don't need to check python libs and eggs no more...?
 # $garnet/bin/requirements_check.sh -v --debug
-$garnet/bin/requirements_check.sh -v --debug --pd_only
+$garnet/bin/requirements_check.sh -v --debug --pd_only || exit 13
 
 
 ########################################################################
@@ -349,9 +356,18 @@ mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
-mflowgen=/sim/buildkite-agent/mflowgen
+# If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
+# otherwise, install in /tmp/$USER
+if test -e /sim/buildkite-agent; then
+    mflowgen=/sim/buildkite-agent/mflowgen
+else
+    printf "***WARNING cannot find /sim/buildkite-agent\n"
+    printf "   Will install mflowgen in /tmp/$USER/mflowgen\n\n"
+    mkdir -p /tmp/$USER; mflowgen=/tmp/$USER/mflowgen
+fi
+
 if [ "$mflowbranch" != "master" ]; then
-    mflowgen=/sim/buildkite-agent/mflowgen.$mflowgen_branch
+    mflowgen=$mflowgen.$mflowgen_branch
 fi
 
 # Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
@@ -368,6 +384,16 @@ echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+
+  # mflowgen might be hidden in $HOME/.local/bin
+  if ! (type mflowgen >& /dev/null); then
+      echo "***WARNING Cannot find mflowgen after install"
+      echo "   Will try adding '$HOME/.local/bin' to your path why not"
+      echo ""
+      export PATH=${PATH}:$HOME/.local/bin
+      which mflowgen
+  fi
+
 popd
 
 echo ""
