@@ -31,14 +31,14 @@ steps:
   ########################################################################
 
   # postroute_hold, retry if fail.
-  - label: "hold"
+  - label: 'hold'
     commands:
-      - echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"
+      - echo "--- POSTROUTE_HOLD"
       - 'set -o pipefail;
          source mflowgen/bin/setup-buildkite.sh --dir $$BUILD --need_space 1G;
          eval $$GARNET_HOME/mflowgen/bin/get-step-context.sh $$PHREF;
-         make -n cadence-innovus-postroute_hold'
-
+         make -n cadence-innovus-postroute_hold
+         | egrep "^mkdir.*output" | sed "s/output.*//" | egrep -v ^Make'
 
 
 
