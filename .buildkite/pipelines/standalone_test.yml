@@ -37,8 +37,9 @@ steps:
       - 'set -o pipefail;
          source mflowgen/bin/setup-buildkite.sh --dir $$BUILD --need_space 1G;
          eval $$GARNET_HOME/mflowgen/bin/get-step-context.sh $$PHREF;
+         echo "+++ BUILD STEPS";
          make -n cadence-innovus-postroute_hold
-         | egrep "^mkdir.*output" | sed "s/output.*//" | egrep -v ^Make'
+         |& egrep "^mkdir.*output" | sed "s/output.*//" | egrep -v ^Make'
 
 
 
