@@ -38,6 +38,7 @@ echo "  where GARNET_HOME=$GARNET_HOME"
 echo "+++ STANDALONE TEST RIG SETUP - build symlinks to steps in $REF/full_chip";
 
 function find_dependences {
+    set -x
     # Example: 
     #    find_dependences cadence-innovus-postroute_hold
     # 
@@ -63,9 +64,9 @@ function find_dependences {
 
 # Find-dependences came up with this:
 
-set +x
-find_dependences cadence-innovus-postroute_hold
 set -x
+find_dependences cadence-innovus-postroute_hold
+set +x
 echo ""
 echo ""
 echo ""
@@ -111,8 +112,8 @@ done
 
 echo "+++ TODO LIST";
 echo "make -n cadence-innovus-postroute_hold"
-make -n cadence-innovus-postroute_hold
-|& egrep "^mkdir.*output" | sed "s/output.*//" | egrep -v ^Make'
+make -n cadence-innovus-postroute_hold \
+  |& egrep "^mkdir.*output" | sed "s/output.*//" | egrep -v ^Make'
 
 
 # # Did we get away with it? Example of how to check:
