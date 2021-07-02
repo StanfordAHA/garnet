@@ -39,7 +39,8 @@ echo "+++ STANDALONE TEST RIG SETUP - build symlinks to steps in $REF/full_chip"
 
 function find_dependences {
     set -x
-    # Example: 
+
+    # Example:
     #    find_dependences cadence-innovus-postroute_hold
     # 
     # Returns:
@@ -48,14 +49,14 @@ function find_dependences {
     #      cadence-innovus-flowsetup
 
     stepname="$1"
-    stepnum=$(make list | awk '$NF == "'$stepname'"{print $2; exit}')
+    stepnum=$(make list |& awk '$NF == "'$stepname'" {print $2; exit}')
     echo "FOUND $stepnum $stepname"
 
     # Note for some reason it ignores adk dependences.
     # Seems to work anyway I guess?
     deps=$(make info-$stepnum |& grep -v warning | sed 's/|//g' \
          | awk '$NF ~ /^[0-9]/ {print $NF}; /^Parameters/{exit}' \
-         | sed "/$stepname\$/,\\$d" \
+         | sed "/$stepname\$/,\$d" \
          | egrep -v 'freepdk|tsmc' \
          | sed 's/^[0-9]*[-]//')
 
