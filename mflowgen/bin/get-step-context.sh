@@ -30,7 +30,7 @@ target_step=$2
 target_step=cadence-innovus-postroute_hold
 
 
-DBG=0
+DBG=
 
 echo "--- BEGIN $0 $*" | sed "s,$GARNET_HOME,\$GARNET_HOME,"
 echo "  where GARNET_HOME=$GARNET_HOME"
@@ -48,16 +48,16 @@ function find_dependences {
     #      cadence-innovus-flowsetup
 
     stepname="$1"
-    stepnum=`make list | awk '$NF == "'$step'"{print $2; exit}'`
+    stepnum=$(make list | awk '$NF == "'$stepname'"{print $2; exit}')
     echo "FOUND $stepnum $stepname"
 
     # Note for some reason it ignores adk dependences.
     # Seems to work anyway I guess?
-    deps=`make info-$stepnum |& grep -v warning | sed 's/|//g' \
+    deps=$(make info-$stepnum |& grep -v warning | sed 's/|//g' \
          | awk '$NF ~ /^[0-9]/ {print $NF}; /^Parameters/{exit}' \
-         | sed "/$step\$/,\\$d" \
+         | sed "/$stepname\$/,\\$d" \
          | egrep -v 'freepdk|tsmc' \
-         | sed 's/^[0-9]*[-]//'`
+         | sed 's/^[0-9]*[-]//')
 
     echo $deps
 }
@@ -113,7 +113,7 @@ done
 echo "+++ TODO LIST";
 echo "make -n cadence-innovus-postroute_hold"
 make -n cadence-innovus-postroute_hold \
-  |& egrep "^mkdir.*output" | sed "s/output.*//" | egrep -v ^Make'
+  |& egrep "^mkdir.*output" | sed "s/output.*//" | egrep -v ^Make
 
 
 # # Did we get away with it? Example of how to check:
