@@ -38,6 +38,11 @@ function find_dependences {
     # Returns:
     #      cadence-innovus-postroute
     #      cadence-innovus-flowsetup
+    # 
+    # Notes:
+    #   - Ignores adk steps because it's better to redo those from scratch.
+    #   - Must run in a valid mflowgen design dir i.e. one with a '.mflowgen' subdir.
+    #   - Could do "test -e .mflowgen || ERROR"
 
     stepname="$1"
     stepnum=$(make list |& awk '$NF == "'$stepname'" {print $2; exit}')
@@ -127,6 +132,53 @@ echo ""
 ########################################################################
 ########################################################################
 ########################################################################
+
+# Who's the chad now?
+function find_dependences_awk2 {
+
+    # Example:
+    #    find_dependences cadence-innovus-postroute_hold
+    # 
+    # Returns:
+    #      cadence-innovus-postroute
+    #      cadence-innovus-flowsetup
+    # 
+    # Notes:
+    #   - Ignores adk steps because it's better to redo those from scratch.
+    #   - Must run in a valid mflowgen design dir i.e. one with a '.mflowgen' subdir.
+    #   - Could do "test -e .mflowgen || ERROR"
+
+    target_step=${1} ; # E.g. "rtl"
+    stepdir=$(/bin/ls .mflowgen | egrep "^[0-9]*-${target_step}") ; # E.g. "11-rtl"
+    config_file=".mflowgen/${stepdir}/configure.yml"
+
+    # Look in config.yml to find this:
+    #     edges_i:
+    #       adk:
+    #       - f: adk
+    #         step: 7-freepdk-45nm
+    #       design.checkpoint:
+    #       - f: design.checkpoint
+    #         step: 31-cadence-innovus-postroute
+    #       innovus-foundation-flow:
+    #       - f: innovus-foundation-flow
+    #         step: 23-cadence-innovus-flowsetup
+    # 
+    # And then use that to print this:
+    #     cadence-innovus-postroute
+    #     cadence-innovus-flowsetup
+
+    (cat $config_file; echo "xxx") | sed -n '/^edges_i/,/^[^ ]/p' \
+    | awk '
+        $(NF-1) == "f:" { f = $NF }
+        f == "adk" { next }
+        $1 == "step:" { print $2 }' \
+    | sed 's/^[0-9]*[-]//'
+
+echo ""; echo "DEPENDENCES (mega-chad awk script): "
+find_dependences_py_awk2 cadence-innovus-postroute_hold
+echo ""
+echo ""
 
 
 DBG=
