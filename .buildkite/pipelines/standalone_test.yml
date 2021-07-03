@@ -13,7 +13,7 @@ steps:
       - echo "--- POSTROUTE_HOLD"
       - 'set -o pipefail; \
          source mflowgen/bin/setup-buildkite.sh --dir $$BUILD --need_space 1G;
-         mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
+         mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
          $$GARNET_HOME/mflowgen/bin/get-step-context.sh $$GOLD \
            cadence-innovus-postroute_hold'
          # ready to do: make cadence-innovus-postroute_hold
