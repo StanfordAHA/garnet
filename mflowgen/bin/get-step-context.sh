@@ -41,32 +41,88 @@ function find_dependences {
 
     stepname="$1"
     stepnum=$(make list |& awk '$NF == "'$stepname'" {print $2; exit}')
-    echo "FOUND $stepnum $stepname"
+    # echo "FOUND $stepnum $stepname"
 
     # Note for some reason it ignores adk dependences.
     # Seems to work anyway I guess?
-    deps=$(make info-$stepnum |& grep -v warning | sed 's/|//g' \
+    make info-$stepnum |& grep -v warning | sed 's/|//g' \
          | awk '$NF ~ /^[0-9]/ {print $NF}; /^Parameters/{exit}' \
          | sed "/$stepname\$/,\$d" \
          | egrep -v 'freepdk|tsmc' \
-         | sed 's/^[0-9]*[-]//')
-
-    echo $deps
+         | sed 's/^[0-9]*[-]//'
 }
 
 # Find-dependences came up with this:
 
-set -x
 echo -n "DEPENDENCES (virgin awk script): "
 find_dependences cadence-innovus-postroute_hold
-set +x
 echo ""
 
 ########################################################################
 ########################################################################
 ########################################################################
 echo -n "DEPENDENCES (chad python script): "
-echo "TODO *NEXT*"
+
+function find_dependences_py {
+    # Find all dependent steps leading to indicated target step
+    # 
+    # Example:
+    #    find_dependences cadence-innovus-postroute_hold
+    # 
+    # Returns the list
+    #   31-cadence-innovus-postroute
+    #   23-cadence-innovus-flowsetup
+    #
+    # Ignores adk steps because it's better to redo those from scratch.
+    # 
+    # Must run in a valid mflowgen design dir i.e. one with a '.mflowgen' subdir.
+    # Could do "test -e .mflowgen || ERROR"
+    target_step=${1}
+    # TEST: target_step="cadence-innovus-postroute_hold"
+
+    DBG=0
+    pyfile=deleteme.pyfile.$$
+    # Want e.g. stepdir = "32-cadence-innovus-postroute_hold"
+    stepdir=$(/bin/ls .mflowgen | egrep "^[0-9]*-${target_step}")
+
+    # Build and execute a python script
+    # cat << ....EOF | sed 's/        //' > $pyfile
+    cat << ....EOF | sed 's/        //' | python3
+        # 1. Read date from config yaml file
+        import yaml; DBG=${DBG}
+        config_file=".mflowgen/${stepdir}/configure.yml"
+        if DBG: print(f"config file = '{config_file}'\n\n")
+        with open(config_file, 'r') as f: data = yaml.safe_load(f)
+        if DBG: print(data)
+
+        # 2. Find and print input edges; ignore adk edges
+        need_steps={}
+        ei = data['edges_i']
+        if DBG: print("Dependences found:")
+        for edge_name in ei:
+            filename = ei[edge_name][0]['f']    ; # E.g. "design.checkpoint" or "adk"
+            stepname = ei[edge_name][0]['step'] ; # E.g. "23-cadence-innovus-flowsetup"
+            # print(f"Step Found dependence {qf:30} in step '{stepname}/outputs'")
+            if DBG: print(f"STEP {stepname:30} FILE {filename:30}")
+
+            # Dunno if this is important, but I'd like to know when/if it happens...
+            assert filename == edge_name, "Edge name != filename...why?"
+
+            if filename != "adk": need_steps[stepname]=True;
+        if DBG: print("")
+        for s in need_steps: print(s)
+        exit()
+....EOF
+
+#     python3 < $pyfile
+#     /bin/rm ${pyfile}
+    #    return $(python3 < $pyfile; /bin/rm $pyfile)
+}
+
+
+find_dependences_py cadence-innovus-postroute_hold
+
+
 echo ""
 echo ""
 ########################################################################
