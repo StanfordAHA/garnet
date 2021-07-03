@@ -1,50 +1,41 @@
 #!/bin/bash
 
-# Usage: $0 <refdir>
-
-# Using reference/cached build in <refdir>, find and link to the
-# necessary context for running a single target step in an mflowgen
-# build
-
-# E.g. for cadence-innovus-postroute_hold we would link two steps from
-# <refdir> into current (build) dir
+# Usage: $0 <refdir> <step>
+# 
+# Using ref/cached/gold build in <refdir>, find and link to the
+# context needed for a given target <step> node in an mflowgen build graph.
+# 
+# E.g. for cadence-innovus-postroute_hold we might link link these two
+# steps from <refdir> into current (build) dir
 # 
 #     ln -s 23-cadence-innovus-flowsetup <refdir>/23-cadence-innovus-postroute
 #     ln -s 31-cadence-innovus-postroute <refdir>/30-cadence-innovus-postroute
-
-# Example usage: run standalone step "cadence-innovus-postroute_hold"
-# in $RUNDIR using cached information in $REFDIR":
 # 
-#     # 1. Designate a reference directory from which we will pull context.
-#     REFDIR=/build/gold
-#
-#     # 2. Build the design framework
+# Example usage to e.g. run standalone step "cadence-innovus-postroute_hold"
+# in $RUNDIR using cached information in refdir "/build/gold":
+# 
+#     #1. Build the design framework
 #     mflowgen run --design $GARNET_HOME/mflowgen/full_chip
 #
-#     # 3. Build standalone context and execute target step "postroute_hold"
-#     get-step-context.sh $REFDIR cadence-innovus-postroute_hold
+#     #2. Build (link to) standalone context for the build
+#     get-step-context.sh /build/gold cadence-innovus-postroute_hold
+# 
+#     #3. Execute target step "postroute_hold"
 #     make cadence-innovus-postroute_hold
 
 REF=$1
 target_step=$2
-target_step=cadence-innovus-postroute_hold
-
-
-DBG=
+# target_step=cadence-innovus-postroute_hold
 
 echo "--- BEGIN $0 $*" | sed "s,$GARNET_HOME,\$GARNET_HOME,"
 echo "  where GARNET_HOME=$GARNET_HOME"
-
 echo "+++ STANDALONE TEST RIG SETUP - build symlinks to steps in $REF/full_chip";
 
 function find_dependences {
-    set -x
-
     # Example:
     #    find_dependences cadence-innovus-postroute_hold
     # 
     # Returns:
-    #      adk
     #      cadence-innovus-postroute
     #      cadence-innovus-flowsetup
 
@@ -66,15 +57,24 @@ function find_dependences {
 # Find-dependences came up with this:
 
 set -x
+echo -n "DEPENDENCES (virgin awk script): "
 find_dependences cadence-innovus-postroute_hold
 set +x
 echo ""
+
+########################################################################
+########################################################################
+########################################################################
+echo -n "DEPENDENCES (chad python script): "
+echo "TODO *NEXT*"
 echo ""
 echo ""
+########################################################################
+########################################################################
+########################################################################
 
 
-
-
+DBG=
 for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
 
     [ "$DBG" ] && echo Processing step $step
@@ -111,23 +111,15 @@ for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
 
 done
 
-echo "+++ TODO LIST";
-echo "make -n cadence-innovus-postroute_hold"
-make -n cadence-innovus-postroute_hold \
+echo "+++ READY TO BUILD STANDALONE $target_step"
+echo "make -n ${target_step}"
+make -n ${target_step} \
   |& egrep "^mkdir.*output" | sed "s/output.*//" | egrep -v ^Make
 
 
-# # Did we get away with it? Example of how to check:
-# echo "+++ TODO LIST"
-# function make-n-filter { egrep '^mkdir.*output' | sed 's/output.*//' | egrep -v ^Make ;}
-# make -n cadence-innovus-postroute_hold |& make-n-filter
-
-
-
-# NOTES
-
-
 exit
+########################################################################
+########################################################################
 ########################################################################
 # To run locally on kiwi can do this:
 do_this=OFF
