@@ -54,14 +54,13 @@ function find_dependences {
 
 # Find-dependences came up with this:
 
-echo -n "DEPENDENCES (virgin awk script): "
+echo ""; echo "DEPENDENCES (virgin awk script): "
 find_dependences cadence-innovus-postroute_hold
-echo ""
 
 ########################################################################
 ########################################################################
 ########################################################################
-echo -n "DEPENDENCES (chad python script): "
+echo ""; echo "DEPENDENCES (chad python script): "
 
 function find_dependences_py {
     # Find all dependent steps leading to indicated target step
@@ -87,7 +86,7 @@ function find_dependences_py {
 
     # Build and execute a python script
     # cat << ....EOF | sed 's/        //' > $pyfile
-    cat << ....EOF | sed 's/        //' | python3
+    cat << ....EOF | sed 's/        //' | python3 | sed 's/^[0-9]*[-]//'
         # 1. Read date from config yaml file
         import yaml; DBG=${DBG}
         config_file=".mflowgen/${stepdir}/configure.yml"
@@ -114,7 +113,7 @@ function find_dependences_py {
         exit()
 ....EOF
 
-#     python3 < $pyfile
+#     python3 < $pyfile | sed 's/^[0-9]*[-]//'
 #     /bin/rm ${pyfile}
     #    return $(python3 < $pyfile; /bin/rm $pyfile)
 }
