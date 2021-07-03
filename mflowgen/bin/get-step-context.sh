@@ -82,7 +82,6 @@ function get_predecessors {
 echo ""; echo "NODE PREDS"
 get_predecessors cadence-innovus-postroute_hold
 echo ""
-echo ""
 
 
 DBG=
@@ -121,6 +120,7 @@ for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
     [ "$DBG" ] && echo ''
 
 done
+echo ""
 
 echo "+++ READY TO BUILD STANDALONE $target_step"
 echo "make -n ${target_step}"
