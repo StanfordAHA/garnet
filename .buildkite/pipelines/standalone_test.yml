@@ -11,7 +11,7 @@ steps:
   - label: 'hold'
     commands:
       - echo "--- POSTROUTE_HOLD"
-      - 'set -x; set -o pipefail;
+      - 'set -o pipefail;
          source mflowgen/bin/setup-buildkite.sh --dir $$BUILD --need_space 1G;
          mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
          $$GARNET_HOME/mflowgen/bin/get-step-context.sh $$GOLD \
