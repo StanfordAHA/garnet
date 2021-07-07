@@ -1,27 +1,50 @@
 #!/bin/bash
 
-# Usage: $0 <refdir> <step>
-# 
-# Using ref/cached/gold build in <refdir>, find and link to the
-# context needed for a given target <step> node in an mflowgen build graph.
-# 
-# E.g. for cadence-innovus-postroute_hold we might link link these two
-# steps from <refdir> into current (build) dir
-# 
-#     ln -s 23-cadence-innovus-flowsetup <refdir>/23-cadence-innovus-postroute
-#     ln -s 31-cadence-innovus-postroute <refdir>/30-cadence-innovus-postroute
-# 
-# Example usage to e.g. run standalone step "cadence-innovus-postroute_hold"
-# in $RUNDIR using cached information in refdir "/build/gold":
-# 
-#     #1. Build the design framework
-#     mflowgen run --design $GARNET_HOME/mflowgen/full_chip
-#
-#     #2. Build (link to) standalone context for the build
-#     get-step-context.sh /build/gold cadence-innovus-postroute_hold
-# 
-#     #3. Execute target step "postroute_hold"
-#     make cadence-innovus-postroute_hold
+if [ "$1" == "--help" ]; then cat <<EOF
+
+USAGE: $0 <refdir> <step>
+
+
+DESCRIPTION:
+Provides a way to (re)run an mflowgen step in a test directory
+without having to build the predecessor nodes for that step.
+
+So, assuming that
+
+- you are in a valid mflowgen directory with a valid Makefile
+  such that "make list" gives a valid list of steps; and
+
+- you would like to build one of these steps <step> but without
+  having to (re)build existing predecessor steps that already
+  exist in another build directory <refdir>;
+
+This command builds linksthe necessary predecessor nodes in <refdir>
+such that you can do "make <step>" without having to rebuild them
+locally. nodes are renumbered as appropriate to account for changes in
+the graph between <refdir> and local dir.
+
+E.g. for <step> = 'cadence-innovus-postroute_hold' it might link
+these two steps from <refdir> into current (build) dir
+
+    ln -s ./23-cadence-innovus-flowsetup <refdir>/22-cadence-innovus-flowsetup
+    ln -s ./31-cadence-innovus-postroute <refdir>/30-cadence-innovus-postroute
+
+
+EXAMPLE: to e.g. run standalone step "cadence-innovus-postroute_hold"
+using cached information in refdir "/build/gold":
+
+    1 Build the design framework
+    mflowgen run --design $GARNET_HOME/mflowgen/full_chip
+
+    2 Build (link to) standalone context for the build
+    get-step-context.sh /build/gold cadence-innovus-postroute_hold
+
+    3 Execute target step "postroute_hold"
+    make cadence-innovus-postroute_hold
+EOF
+exit
+fi
+
 
 REF=$1
 target_step=$2
