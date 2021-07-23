@@ -35,6 +35,10 @@ def __get_alu_mapping(op_str):
         return ALU.Sub, Signed.unsigned
     elif op_str == "mul" or op_str == "mult_0":
         return ALU.Mult0, Signed.unsigned
+    elif op_str == "mult_1":
+        return ALU.Mult1, Signed.signed
+    elif op_str == "mult_2":
+        return ALU.Mult2, Signed.signed
     elif op_str == "ashr":
         return ALU.SHR, Signed.signed
     elif op_str == "ule":
@@ -356,7 +360,7 @@ def pack_netlists(raw_netlists, name_to_id, fold_reg=True):
                 for b_id, b_port in net:
                     if b_id == blk_id and port == b_port:
                         continue
-                    if b_id[0] == "r":
+                    if b_id[0] == "r" or b_id[0] == 'i' or b_id[0] == 'I':
                         # oh damn
                         dont_absorb.add(blk_id)
                     elif b_id[0] == "p":
