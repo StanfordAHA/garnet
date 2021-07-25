@@ -32,7 +32,8 @@ import "DPI-C" function int get_io_tile_start_addr(chandle info, int index);
 import "DPI-C" function int get_io_tile_map_tile(chandle info, int index);
 import "DPI-C" function int get_io_tile_loop_dim(chandle info, int index);
 import "DPI-C" function int get_io_tile_extent(chandle info, int index, int extent_idx);
-import "DPI-C" function int get_io_tile_stride(chandle info, int index, int stride_idx);
+import "DPI-C" function int get_io_tile_data_stride(chandle info, int index, int stride_idx);
+import "DPI-C" function int get_io_tile_cycle_stride(chandle info, int index, int stride_idx);
 import "DPI-C" function chandle get_kernel_configuration(chandle info);
 import "DPI-C" function chandle get_pcfg_configuration(chandle info);
 import "DPI-C" function int get_configuration_size(chandle info);
@@ -67,10 +68,7 @@ typedef bitstream_entry_t bitstream_t[];
 typedef struct {
     int tile;
     int start_addr;
-<<<<<<< 9a783c8b0f3bce5c72490af5552ef63a76b06c41
     int num_data;
-=======
->>>>>>> Unroll input data to each io_block
     data_array_t io_block_data;
 } IOTile;
 
@@ -240,26 +238,6 @@ function Kernel::new(string app_dir);
         gold_data[i] = parse_gold_data(i);
     end
 
-    // TODO: Make below code as separate function after putting IO info to IO struct
-    // Hacky way to unroll input data to each io block
-    for (int i = 0; i < num_inputs; i++) begin
-        num_io_tiles = inputs[i].num_io_tiles;
-        if (num_io_tiles == 1) begin
-            num_pixels = input_data[i].size;
-            // TODO: Is new necessary?
-            inputs[i].io_tiles[0].io_block_data = new[num_pixels];
-            inputs[i].io_tiles[0].io_block_data = input_data[i];
-        end else begin
-            for (int j=0; j < num_io_tiles; j++) begin
-                num_pixels = input_data[i].size / num_io_tiles;
-                inputs[i].io_tiles[j].io_block_data = new[num_pixels];
-                for(int k=0; k<num_pixels; k++) begin
-                    inputs[i].io_tiles[j].io_block_data[k] = input_data[i][j + num_io_tiles * k];
-                end
-            end
-        end
-    end
-
     bs_size = get_bs_size(bs_info);
     bitstream_data = parse_bitstream();
 endfunction
@@ -413,7 +391,7 @@ function void Kernel::assert_(bit cond, string msg);
     assert (cond) else begin
         $display("%s", msg);
         $stacktrace;
-        // $finish(1);
+        $finish(1);
     end
 endfunction
 
@@ -502,16 +480,10 @@ function void Kernel::print_output_block(int idx, int block_idx);
     $display("\n");
 endfunction
 
-function void Kernel::print_output_block(int idx, int block_idx);
-    foreach(outputs[idx].io_tiles[block_idx].io_block_data[i]) begin
-        $write("%02X ", outputs[idx].io_tiles[block_idx].io_block_data[i]);
-    end
-    $display("\n");
-endfunction
-
 function void Kernel::print_bitstream();
     foreach(bitstream_data[i]) begin
         $display("%16X", bitstream_data[i]);
     end
     $display("\n");
 endfunction
+

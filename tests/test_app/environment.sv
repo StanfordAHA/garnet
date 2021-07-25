@@ -21,6 +21,7 @@ class Environment;
 
     extern function new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc);
     extern function void build();
+    extern task write_bs(Kernel kernel);
     extern task write_data(Kernel kernel);
     extern task glb_configure(Kernel kernel);
     extern task cgra_configure(Kernel kernel);
@@ -45,10 +46,14 @@ function void Environment::build();
     axil_drv = new(vifc_axil.driver, axil_lock);
 endfunction
 
-task Environment::write_data(Kernel kernel);
+task Environment::write_bs(Kernel kernel);
+    repeat (10) @(vifc_proc.cbd);
     $display("[%s] write bitstream to glb start", kernel.name);
     proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
     $display("[%s] write bitstream to glb end", kernel.name);
+endtask
+
+task Environment::write_data(Kernel kernel);
     repeat (10) @(vifc_proc.cbd);
     foreach(kernel.inputs[i]) begin
         foreach(kernel.inputs[i].io_tiles[j]) begin
@@ -193,9 +198,10 @@ task Environment::run();
         automatic int j = i;
         fork
             begin
-                write_data(kernels[j]);
+                write_bs(kernels[j]);
                 glb_configure(kernels[j]);
                 cgra_configure(kernels[j]);
+                write_data(kernels[j]);
                 kernel_test(kernels[j]);
                 read_data(kernels[j]);
             end
@@ -209,4 +215,3 @@ task Environment::run();
     end
 
 endtask
-
