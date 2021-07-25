@@ -18,7 +18,7 @@ program garnet_test #(
     // local variables
     //============================================================================//
     Kernel kernels[];
-    // Environment env;
+    Environment env;
 
     initial begin
         initialize();

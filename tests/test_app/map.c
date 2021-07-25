@@ -96,11 +96,12 @@ int glb_map(void *kernel_) {
             io_tile_info = get_io_tile_info(io_info, j);
             tile = (group_start*GROUP_SIZE + io_tile_info->pos.x) / 2;
             io_tile_info->tile = tile;
-            if (i == 0 && j==0) {
-                io_tile_info->start_addr = (tile * 2) * BANK_SIZE + num_bs*8;
-            } else {
-                io_tile_info->start_addr = (tile * 2) * BANK_SIZE;
-            }
+            // if (i == 0 && j==0) {
+            //     io_tile_info->start_addr = (tile * 2) * BANK_SIZE + num_bs*8;
+            // } else {
+            //     io_tile_info->start_addr = (tile * 2) * BANK_SIZE;
+            // }
+            io_tile_info->start_addr = (tile * 2) * BANK_SIZE;
             update_io_tile_configuration(io_tile_info, &kernel->config);
         }
     }
@@ -142,21 +143,31 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
 
     int loop_dim = io_tile_info->loop_dim;
     int *extent = io_tile_info->extent;
-    int *stride = io_tile_info->stride;
+    int *stride = io_tile_info->data_stride;
+    int *cycle_stride = io_tile_info->cycle_stride;
 
     if (io_tile_info->io == Input) {
         update_tile_config_table(tile, 1 << 6);
         update_tile_config_table(tile, 1 << 2);
         add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_START_ADDR, start_addr); 
-        if (loop_dim > 0) {
-            add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0, (extent[0] << 10) + stride[0]); 
+        // TODO: Some hacky way to support >2D cycle_stride
+        if (cycle_stride[0] > 1 && loop_dim > 1) {
+            add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0), (cycle_stride[0] << 10) + 0); 
+            for (int i = 0; i < loop_dim; i++) {
+                add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0 + 0x04 * (i + 1)), (extent[i] << 10) + stride[i]); 
+            }
+            add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_ACTIVE_CTRL, ((cycle_stride[1] - cycle_stride[0] * extent[0]) << 16) + cycle_stride[0] * extent[0]); 
+        } else {
+            for (int i = 0; i < loop_dim; i++) {
+                // TODO: 0x16 should be variable
+                add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0 + 0x04 * i), (extent[i] << 10) + stride[i]); 
+            }
+            // TODO: only support when loop_dim is 2D
+            if (loop_dim == 2) {
+                add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_ACTIVE_CTRL, ((cycle_stride[1] - stride[1]) << 16) + stride[1]); 
+            }
         }
-        if (loop_dim > 1) {
-            add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_1, (extent[1] << 10) + stride[1]); 
-        }
-        if (loop_dim > 2) {
-            add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_2, (extent[2] << 10) + stride[2]); 
-        }
+
         add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_VALIDATE, 1); 
     } else {
         int size = 1;

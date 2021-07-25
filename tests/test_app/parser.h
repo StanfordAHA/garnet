@@ -52,16 +52,18 @@ struct Position {
 
 enum IO {Input = 0, Output = 1}; 
 
+// TODO: Change IOTile name to IOBlock
 struct IOTileInfo {
     enum IO io;
     int tile;
     // TODO: we do not need size anymore as we have extent
-    int size; 
+    // int size; 
     int start_addr;
 
     struct Position pos; 
     int loop_dim;
-    int stride[MAX_ADDR_GEN_LOOP];
+    int cycle_stride[MAX_ADDR_GEN_LOOP];
+    int data_stride[MAX_ADDR_GEN_LOOP];
     int extent[MAX_ADDR_GEN_LOOP];
 };
 
@@ -69,6 +71,7 @@ struct IOInfo {
     enum IO io;
     int num_io_tiles;
     char filename[BUFFER_SIZE];
+    int filesize;
 
     struct IOTileInfo io_tiles[MAX_NUM_IO_TILES];
 
@@ -109,16 +112,17 @@ void *get_bs_info(void *info);
 void *get_input_info(void *info, int index);
 void *get_output_info(void *info, int index);
 void *get_io_tile_info(void *info, int index);
+int get_io_tile_loop_dim(void *info, int index);
+int get_io_tile_extent(void *info, int index, int extent_idx);
+int get_io_tile_cycle_stride(void *info, int index, int stride_idx);
+int get_io_tile_data_stride(void *info, int index, int stride_idx);
 
 // helper functions to access data from SV testbench
 int get_num_groups(void *info);
 int get_group_start(void *info);
 int get_num_inputs(void *info);
 int get_num_outputs(void *info);
-// int get_input_x(void *info, int index);
-// int get_input_y(void *info, int index);
-// int get_output_x(void *info, int index);
-// int get_output_y(void *info, int index);
+int get_num_io_tiles(void *info, int index);
 int get_io_tile_x(void *info, int index);
 int get_io_tile_y(void *info, int index);
 int get_reset_index(void *info);
@@ -130,16 +134,12 @@ char *get_output_filename(void *info, int index);
 int get_input_size(void *info, int index);
 int get_output_size(void *info, int index);
 
-// int get_input_start_addr(void *info, int index);
-// int get_input_size(void *info, int index);
-// int get_input_tile(void *info, int index);
-// int get_output_start_addr(void *info, int index);
-// int get_output_size(void *info, int index);
-// int get_output_tile(void *info, int index);
-// 
+int get_io_tile_start_addr(void *info, int index);
+// TODO: Change function name to get_io_block_tile
+int get_io_tile_map_tile(void *info, int index);
 int get_bs_start_addr(void *info);
 int get_bs_size(void *info);
 int get_bs_tile(void *info);
-static char *get_prefix(const char *s, char t);
+char *get_prefix(const char *s, char t);
 
 #endif//VIRTUALIZE_META_LIBRARY_H
