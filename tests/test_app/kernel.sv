@@ -186,22 +186,29 @@ function Kernel::new(string app_dir);
 
     for (int i = 0; i < num_inputs; i++) begin
         input_filenames[i] = get_input_filename(kernel_info, i);
+
         input_size[i] = get_input_size(kernel_info, i);
+
         input_data[i] = parse_input_data(i);
+        $display("Parse input_%0d data Done", i);
+
         io_info = get_input_info(kernel_info, i);
 
         num_io_tiles = get_num_io_tiles(io_info, i);
         inputs[i].num_io_tiles = num_io_tiles;
         inputs[i].io_tiles = new[num_io_tiles];
 
+        $display("input_%0d has %0d input blocks", i, num_io_tiles);
+
         if (num_io_tiles == 1) begin
+            inputs[i].io_tiles[0].num_data = input_data[i].size;
             inputs[i].io_tiles[0].io_block_data = input_data[i];
         end else begin
             for (int j=0; j < num_io_tiles; j++) begin
-                // TODO: We assume only innermost loop is unrolled.
-                // This should be changed to mul(extent)
                 num_pixels = input_data[i].size / num_io_tiles;
+                inputs[i].io_tiles[j].num_data = num_pixels;
                 inputs[i].io_tiles[j].io_block_data = new[num_pixels];
+                // NOTE: We assume only innermost loop is unrolled.
                 for(int k=0; k<num_pixels; k++) begin
                     inputs[i].io_tiles[j].io_block_data[k] = input_data[i][j + num_io_tiles * k];
                 end

@@ -68,9 +68,12 @@ program garnet_test #(
 
     function void map(Kernel kernels[]);
         foreach(kernels[i]) begin
+            $display("Start mapping kernel %0d", i);
             if (kernels[i].kernel_map() == 0) begin
+                $display("Mapping kernel %0d Failed", i);
                 $finish(2);
             end
+            $display("Mapping kernel %0d Succeed", i);
         end
     endfunction
 endprogram
