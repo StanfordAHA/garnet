@@ -83,7 +83,7 @@ int glb_map(void *kernel_) {
     bs_info->start_addr = (tile * 2) * BANK_SIZE;
     update_bs_configuration(bs_info);
 
-    int num_bs = bs_info->size;
+    // int num_bs = bs_info->size;
     int num_inputs = kernel->num_inputs;
     int num_outputs = kernel->num_outputs;
 
@@ -142,32 +142,65 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
     int start_addr = io_tile_info->start_addr;
 
     int loop_dim = io_tile_info->loop_dim;
-    int *extent = io_tile_info->extent;
-    int *stride = io_tile_info->data_stride;
-    int *cycle_stride = io_tile_info->cycle_stride;
+
+    int cycle_stride[loop_dim+1];
+    int extent[loop_dim+1];
+    int stride[loop_dim+1];
+    for (int i = 0; i < loop_dim; i++) {
+        cycle_stride[i] = io_tile_info->cycle_stride[i];
+        stride[i] = io_tile_info->data_stride[i];
+        extent[i] = io_tile_info->extent[i];
+    }
+
+    // int *extent = io_tile_info->extent;
+    // int *stride = io_tile_info->data_stride;
+    // int *cycle_stride = io_tile_info->cycle_stride;
+
+    // HACK1: Reduce cycle stride dimension by sending the same data multiple time if the cycle_stride[0] is non zero.
+    if (io_tile_info->io == Input) {
+        if (cycle_stride[0] > 1 && loop_dim > 1) {
+            for (int i=loop_dim; i > 0; i--) {
+                cycle_stride[i] = cycle_stride[i-1]; 
+                extent[i] = extent[i-1]; 
+                stride[i] = stride[i-1]; 
+            }
+            extent[0] = cycle_stride[0];
+            cycle_stride[0] = 1;
+            stride[0] = 0;
+            loop_dim += 1;
+        }
+    }
 
     if (io_tile_info->io == Input) {
+        int cnt_diff = 0;
+        int active = 0;
+        int inactive = 0;
+        int active_acc = 1;
+        // First check if GLB can support this cycle stride pattern
+        for (int i=0; i < loop_dim-1; i++) {
+            active_acc = active_acc * extent[i];
+            if (extent[i] * cycle_stride[i] != cycle_stride[i+1]) {
+                cnt_diff++;
+                active = active_acc;
+                inactive = cycle_stride[i+1] - active;
+            }
+        }
+        if (cnt_diff > 1) {
+            printf("GLB does not support this cycle stride pattern\n");
+            return;
+        }
+
         update_tile_config_table(tile, 1 << 6);
         update_tile_config_table(tile, 1 << 2);
         add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_START_ADDR, start_addr); 
-        // TODO: Some hacky way to support >2D cycle_stride
-        if (cycle_stride[0] > 1 && loop_dim > 1) {
-            add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0), (cycle_stride[0] << 10) + 0); 
-            for (int i = 0; i < loop_dim; i++) {
-                add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0 + 0x04 * (i + 1)), (extent[i] << 10) + stride[i]); 
-            }
-            add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_ACTIVE_CTRL, ((cycle_stride[1] - cycle_stride[0] * extent[0]) << 16) + cycle_stride[0] * extent[0]); 
-        } else {
-            for (int i = 0; i < loop_dim; i++) {
-                // TODO: 0x16 should be variable
-                add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0 + 0x04 * i), (extent[i] << 10) + stride[i]); 
-            }
-            // TODO: only support when loop_dim is 2D
-            if (loop_dim == 2) {
-                add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_ACTIVE_CTRL, ((cycle_stride[1] - stride[1]) << 16) + stride[1]); 
-            }
+        for (int i = 0; i < loop_dim; i++) {
+            add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0 + 0x04 * i), (extent[i] << 10) + stride[i]); 
+            printf("ITER CTRL %0d - stride: %0d, extent: %0d\n", i, stride[i], extent[i]);
         }
-
+        if (cnt_diff == 1) {
+            add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_ACTIVE_CTRL, (inactive << 16) + active); 
+            printf("ACTIVE CTRL - active: %0d, inactive: %0d\n", active, inactive);
+        }
         add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_VALIDATE, 1); 
     } else {
         int size = 1;
