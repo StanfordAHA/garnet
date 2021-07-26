@@ -120,21 +120,39 @@ endtask
 
 task Environment::kernel_test(Kernel kernel);
     Config cfg;
-    realtime start_time, end_time;
+    int total_output_size;
+    realtime start_time, end_time, g2f_end_time, latency;
     $timeformat(-9, 2, " ns");
 
     start_time = $realtime;
     $display("[%s] kernel start at %0t", kernel.name, start_time);
     cfg = kernel.get_strm_start_config();
     axil_drv.write(cfg.addr, cfg.data);
+
+    foreach(kernel.inputs[i]) begin
+        foreach(kernel.inputs[i].io_tiles[j]) begin
+            automatic int ii = i;
+            automatic int jj = j;
+            fork
+                begin
+                    wait_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
+                    clear_interrupt(GLB_STRM_G2F_CTRL, kernel.inputs[ii].io_tiles[jj].tile);
+                end
+            join_none
+        end
+    end
+    wait fork;
+
+    g2f_end_time = $realtime;
+    $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
+
     foreach(kernel.outputs[i]) begin
         foreach(kernel.outputs[i].io_tiles[j]) begin
+            automatic int ii = i;
+            automatic int jj = j;
             fork
-                automatic int ii = i;
-                automatic int jj = j;
                 begin
                     wait_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
-                    clear_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
                 end
             join_none
         end
@@ -142,8 +160,32 @@ task Environment::kernel_test(Kernel kernel);
     wait fork;
 
     end_time = $realtime;
-    $display("[%s] kernel end %0t", kernel.name, end_time);
-    $display("[%s] It takes %0t time to run kernel.", kernel.name, end_time-start_time);
+    $display("[%s] kernel end at %0t", kernel.name, end_time);
+    $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time-start_time);
+
+    total_output_size = 0;
+    foreach(kernel.output_size[i]) begin
+        total_output_size += kernel.output_size[i];
+    end
+    $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size * 2);
+
+    latency = end_time - g2f_end_time;
+    $display("[%s] The latency is %0t.", kernel.name, latency);
+    $display("[%s] The throughput is %.3f (GB/s).", kernel.name, (total_output_size * 2) / (g2f_end_time - start_time));
+
+    foreach(kernel.outputs[i]) begin
+        foreach(kernel.outputs[i].io_tiles[j]) begin
+            automatic int ii = i;
+            automatic int jj = j;
+            fork
+                begin
+                    clear_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
+                end
+            join_none
+        end
+    end
+    wait fork;
+
 endtask
 
 task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:0] tile_num);
@@ -214,6 +256,7 @@ task Environment::set_interrupt_on();
     axil_drv.write(`GLC_GLOBAL_IER, 3'b111);
     axil_drv.write(`GLC_PAR_CFG_G2F_IER, {NUM_GLB_TILES{1'b1}});
     axil_drv.write(`GLC_STRM_F2G_IER, {NUM_GLB_TILES{1'b1}});
+    axil_drv.write(`GLC_STRM_G2F_IER, {NUM_GLB_TILES{1'b1}});
 endtask
 
 task Environment::run();
