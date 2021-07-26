@@ -26,8 +26,8 @@ class Environment;
     extern task glb_configure(Kernel kernel);
     extern task cgra_configure(Kernel kernel);
     extern task set_interrupt_on();
-    extern task wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] tile_mask);
-    extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] tile_mask);
+    extern task wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:0] tile_num);
+    extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:0] tile_num);
     extern task kernel_test(Kernel kernel);
     extern task read_data(Kernel kernel);
     extern task run();
@@ -47,19 +47,29 @@ function void Environment::build();
 endfunction
 
 task Environment::write_bs(Kernel kernel);
+    realtime start_time, end_time;
+    $timeformat(-9, 2, " ns");
     repeat (10) @(vifc_proc.cbd);
-    $display("[%s] write bitstream to glb start", kernel.name);
+    start_time = $realtime;
+    $display("[%s] write bitstream to glb start at %0t", kernel.name, start_time);
     proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
-    $display("[%s] write bitstream to glb end", kernel.name);
+    end_time = $realtime;
+    $display("[%s] write bitstream to glb end at %0t", kernel.name, end_time);
+    $display("[%s] It takes %0t time to write the bitstream to glb.", kernel.name, end_time-start_time);
 endtask
 
 task Environment::write_data(Kernel kernel);
+    realtime start_time, end_time;
+    $timeformat(-9, 2, " ns");
     repeat (10) @(vifc_proc.cbd);
     foreach(kernel.inputs[i]) begin
         foreach(kernel.inputs[i].io_tiles[j]) begin
-            $display("[%s] write input_%0d_block_%0d to glb start", kernel.name, i, j);
+            start_time = $realtime;
+            $display("[%s] write input_%0d_block_%0d to glb start at %0t", kernel.name, i, j, start_time);
             proc_drv.write_data(kernel.inputs[i].io_tiles[j].start_addr, kernel.inputs[i].io_tiles[j].io_block_data);
-            $display("[%s] write input_%0d_block_%0d to glb end", kernel.name, i, j);
+            end_time = $realtime;
+            $display("[%s] write input_%0d_block_%0d to glb end at %0t", kernel.name, i, j, end_time);
+            $display("[%s] It takes %0t time to write %0d Byte data to glb.", kernel.name, end_time-start_time, kernel.inputs[i].io_tiles[j].num_data * 2);
         end
     end
 endtask
@@ -77,49 +87,66 @@ task Environment::read_data(Kernel kernel);
 endtask
 
 task Environment::glb_configure(Kernel kernel);
-    $display("[%s] glb configuration start", kernel.name);
+    realtime start_time, end_time;
+    $timeformat(-9, 2, " ns");
+    start_time = $realtime;
+    $display("[%s] glb configuration start at %0t", kernel.name, start_time);
     axil_drv.config_write(kernel.bs_cfg);
     axil_drv.config_write(kernel.kernel_cfg);
-    $display("[%s] glb configuration end", kernel.name);
+    end_time = $realtime;
+    $display("[%s] glb configuration end at %0t", kernel.name, end_time);
 endtask
 
 task Environment::cgra_configure(Kernel kernel);
-    // define variables
-    bit [NUM_GLB_TILES-1:0] tile_mask;
     Config cfg;
+    realtime start_time, end_time;
+    $timeformat(-9, 2, " ns");
+
     axil_drv.write(`GLC_STALL, 32'hFFFFFFFF);
-    $display("[%s] fast configuration start", kernel.name);
+    start_time = $realtime;
+    $display("[%s] fast configuration start at %0t", kernel.name, start_time);
     cfg = kernel.get_pcfg_start_config();
     axil_drv.write(cfg.addr, cfg.data);
-    tile_mask = (1 << kernel.bs_tile);
 
-    wait_interrupt(GLB_PCFG_CTRL, tile_mask);
-    clear_interrupt(GLB_PCFG_CTRL, tile_mask);
-    $display("[%s] fast configuration end", kernel.name);
+    wait_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
+    clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
+    end_time = $realtime;
+    $display("[%s] fast configuration end at %0t", kernel.name, end_time);
+    $display("[%s] It takes %0t time to do parallel configuration.", kernel.name, end_time-start_time);
 
+    // TODO: STALL only corresponding CGRA columns
     axil_drv.write(`GLC_STALL, '0);
 endtask
 
 task Environment::kernel_test(Kernel kernel);
-    // define variables
-    bit [NUM_GLB_TILES-1:0] tile_mask;
     Config cfg;
+    realtime start_time, end_time;
+    $timeformat(-9, 2, " ns");
 
-    $display("[%s] kernel start", kernel.name);
+    start_time = $realtime;
+    $display("[%s] kernel start at %0t", kernel.name, start_time);
     cfg = kernel.get_strm_start_config();
     axil_drv.write(cfg.addr, cfg.data);
     foreach(kernel.outputs[i]) begin
         foreach(kernel.outputs[i].io_tiles[j]) begin
-            tile_mask |= (1 << kernel.outputs[i].io_tiles[j].tile);
+            fork
+                automatic int ii = i;
+                automatic int jj = j;
+                begin
+                    wait_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
+                    clear_interrupt(GLB_STRM_F2G_CTRL, kernel.outputs[ii].io_tiles[jj].tile);
+                end
+            join_none
         end
     end
+    wait fork;
 
-    wait_interrupt(GLB_STRM_F2G_CTRL, tile_mask);
-    clear_interrupt(GLB_STRM_F2G_CTRL, tile_mask);
-    $display("[%s] kernel end at time: %0t", kernel.name, $time);
+    end_time = $realtime;
+    $display("[%s] kernel end %0t", kernel.name, end_time);
+    $display("[%s] It takes %0t time to run kernel.", kernel.name, end_time-start_time);
 endtask
 
-task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] tile_mask);
+task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:0] tile_num);
     bit [AXI_ADDR_WIDTH-1:0] addr;
     bit [AXI_DATA_WIDTH-1:0] data;
     string reg_name;
@@ -144,8 +171,8 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] til
                 // level sensitive interrupt
                 wait(top.interrupt);
                 axil_drv.read(addr, data);
-                if (&(data | (~tile_mask)) == 1) begin
-                    $display("%s interrupt from %b", reg_name, tile_mask);
+                if (data[tile_num] == 1) begin
+                    $display("%s interrupt from tile %0d", reg_name, tile_num);
                     break;
                 end
             end
@@ -158,9 +185,11 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] til
     disable fork;
 endtask
 
-task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES-1:0] tile_mask);
+task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:0] tile_num);
     bit [AXI_ADDR_WIDTH-1:0] addr;
     string reg_name;
+    bit[NUM_GLB_TILES-1:0] tile_mask;
+    tile_mask = (1 << tile_num);
 
     // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
