@@ -111,7 +111,7 @@ compile: libcgra.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_driver
 # Run
 # -------------------------------------------------------------------
 .PHONY: run
-run: compile
+run: 
 	xrun -R -sv_lib libcgra.so $(RUN_ARGS) $(APP_ARGS)
 
 # -------------------------------------------------------------------
