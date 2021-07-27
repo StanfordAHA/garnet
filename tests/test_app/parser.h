@@ -10,22 +10,6 @@
 #define MAX_JSON_FIELDS 512
 #define MAX_CONFIG 20
 #define MAX_ADDR_GEN_LOOP 5
-
-#define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = \
-                                    (struct KernelInfo *) info
-
-#define GET_IO_INFO(info) struct IOInfo *io_info = \
-                                    (struct IOInfo *) info
-
-#define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = \
-                                    (struct ConfigInfo *) info
-
-#define GET_BS_INFO(info) struct BitstreamInfo *bs_info = \
-                                    (struct BitstreamInfo *) info
-
-#define GET_IO_TILE_INFO(info) struct IOTileInfo *io_info = \
-                                    (struct IOTileInfo *) info
-
    
 struct Configuration {
     int addr;
