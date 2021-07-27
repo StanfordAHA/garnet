@@ -8,6 +8,21 @@
 #define SUCCESS 0
 #define GROUP_SIZE 4
 
+#define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = \
+                                    (struct KernelInfo *) info
+
+#define GET_IO_INFO(info) struct IOInfo *io_info = \
+                                    (struct IOInfo *) info
+
+#define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = \
+                                    (struct ConfigInfo *) info
+
+#define GET_BS_INFO(info) struct BitstreamInfo *bs_info = \
+                                    (struct BitstreamInfo *) info
+
+#define GET_IO_TILE_INFO(info) struct IOTileInfo *io_info = \
+                                    (struct IOTileInfo *) info
+
 // statically allocated to avoid calling
 static struct KernelInfo kernel_info_list[MAX_NUM_KERNEL];
 static int kernel_info_index = 0;
