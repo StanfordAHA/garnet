@@ -7,14 +7,10 @@ void *get_pcfg_configuration(void *info) {
     return &bs_info->config;
 }
 
-void *get_io_configuration(void *info) {
-    GET_IO_INFO(info);
-    return &io_info->config;
-}
-
-void *get_tile_configuration(void *info) {
-    GET_PLACE_INFO(info);
-    return &place_info->config;
+// TODO: All io configuration are stored in KernelInfo
+void *get_kernel_configuration(void *info) {
+    GET_KERNEL_INFO(info);
+    return &kernel_info->config;
 }
 
 int get_configuration_size(void *info) {
@@ -46,11 +42,20 @@ int get_strm_pulse_addr() {
 }
 
 int get_strm_pulse_data(void *info) {
-    int num_inputs = get_num_inputs(info);
-    GET_PLACE_INFO(info);
+    GET_KERNEL_INFO(info);
+    int num_inputs = kernel_info->num_inputs;
+    int num_io_tiles;
+    struct IOInfo *io_info;
     int result = 0;
+
+    // Iterate through all input_io_tiles and store it to result
     for (int i=0; i<num_inputs; i++) {
-        result |= (1 << place_info->inputs[i].tile);
+        io_info = kernel_info->input_info[i];
+        num_io_tiles = io_info->num_io_tiles;
+        for (int j=0; j<num_io_tiles; j++) {
+            result |= (1 << io_info->io_tiles[j].tile);
+        }
     }
+
     return result;
 }
