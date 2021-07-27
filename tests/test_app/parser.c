@@ -78,7 +78,7 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     int cnt;
 
     // parse x position
-	json_t const* x_pos_json = json_getProperty( io_tile_json, "x_pos" );
+    json_t const* x_pos_json = json_getProperty( io_tile_json, "x_pos" );
     if ( !x_pos_json || JSON_INTEGER != json_getType( x_pos_json ) ) {
         puts("Error, the x_pos property is not found.");
         exit(1);
@@ -86,7 +86,7 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     io_tile_info->pos.x = json_getInteger(x_pos_json);
 
     // parse y position
-	json_t const* y_pos_json = json_getProperty( io_tile_json, "y_pos" );
+    json_t const* y_pos_json = json_getProperty( io_tile_json, "y_pos" );
     if ( !y_pos_json || JSON_INTEGER != json_getType( y_pos_json ) ) {
         puts("Error, the y_pos property is not found.");
         exit(1);
@@ -94,14 +94,14 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     io_tile_info->pos.y = json_getInteger(y_pos_json);
 
     // parse addr
-	json_t const* addr_json = json_getProperty( io_tile_json, "addr" );
+    json_t const* addr_json = json_getProperty( io_tile_json, "addr" );
     if ( !addr_json || JSON_OBJ != json_getType( addr_json ) ) {
         puts("Error, the addr property is not found.");
         exit(1);
     }
 
     // parse dimensionality
-	json_t const* dim_json = json_getProperty( addr_json, "dimensionality" );
+    json_t const* dim_json = json_getProperty( addr_json, "dimensionality" );
     if ( !dim_json || JSON_INTEGER != json_getType( dim_json ) ) {
         puts("Error, the dim property is not found.");
         exit(1);
@@ -109,21 +109,21 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     io_tile_info->loop_dim = json_getInteger(dim_json);
 
     // parse cycle stride
-	json_t const* cycle_stride_list_json = json_getProperty( addr_json, "cycle_stride" );
+    json_t const* cycle_stride_list_json = json_getProperty( addr_json, "cycle_stride" );
     if ( !cycle_stride_list_json || JSON_ARRAY != json_getType( cycle_stride_list_json ) ) {
         puts("Error, the cycle_stride_list property is not found.");
         exit(1);
     }
 
     cnt = 0;
-	json_t const* stride_json;
+    json_t const* stride_json;
     for(stride_json = json_getChild( cycle_stride_list_json ); stride_json != 0; stride_json = json_getSibling( stride_json )) {
         io_tile_info->cycle_stride[cnt] = json_getInteger(stride_json);
         cnt++;
     }
 
     // parse data stride
-	json_t const* data_stride_list_json;
+    json_t const* data_stride_list_json;
     if (io_tile_info->io == Input) {
         data_stride_list_json = json_getProperty( addr_json, "read_data_stride" );
     } else {
@@ -135,21 +135,21 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     }
 
     cnt = 0;
-	json_t const* data_stride_json;
+    json_t const* data_stride_json;
     for(data_stride_json = json_getChild( data_stride_list_json ); data_stride_json != 0; data_stride_json = json_getSibling( data_stride_json )) {
         io_tile_info->data_stride[cnt] = json_getInteger(data_stride_json);
         cnt++;
     }
 
     // parse extent
-	json_t const* extent_list_json = json_getProperty( addr_json, "extent" );
+    json_t const* extent_list_json = json_getProperty( addr_json, "extent" );
     if ( !extent_list_json || JSON_ARRAY != json_getType( extent_list_json ) ) {
         puts("Error, the extent_list property is not found.");
         exit(1);
     }
 
     cnt = 0;
-	json_t const* extent_json;
+    json_t const* extent_json;
     for(extent_json = json_getChild( extent_list_json ); extent_json != 0; extent_json = json_getSibling( extent_json )) {
         io_tile_info->extent[cnt] = json_getInteger(extent_json);
         cnt++;
@@ -164,7 +164,7 @@ void *parse_io(json_t const *io_json, enum IO io) {
 
     io_info->io = io;
 
-	json_t const* shape_json = json_getProperty( io_json, "shape" );
+    json_t const* shape_json = json_getProperty( io_json, "shape" );
     if ( !shape_json || JSON_ARRAY != json_getType( shape_json ) ) {
         puts("Error, the shape property is not found.");
         exit(1);
@@ -180,7 +180,7 @@ void *parse_io(json_t const *io_json, enum IO io) {
     }
 
     // parse io_tile list
-	json_t const* io_tile_list_json = json_getProperty( io_json, "io_tiles" );
+    json_t const* io_tile_list_json = json_getProperty( io_json, "io_tiles" );
     if ( !io_tile_list_json || JSON_ARRAY != json_getType( io_tile_list_json ) ) {
         puts("Error, the io_tiles property is not found.");
         exit(1);
@@ -285,14 +285,14 @@ void *parse_metadata(char *filename) {
     }
 
     // Parse testing field
-	json_t const* testing_json = json_getProperty( json, "testing" );
+    json_t const* testing_json = json_getProperty( json, "testing" );
     if ( !testing_json || JSON_OBJ != json_getType( testing_json ) ) {
         puts("Error, the testing property is not found.");
         exit(1);
     }
 
     // parse coreir field
-	json_t const* coreir_json = json_getProperty( testing_json, "coreir" );
+    json_t const* coreir_json = json_getProperty( testing_json, "coreir" );
     if ( !coreir_json || JSON_TEXT != json_getType( coreir_json ) ) {
         puts("Error, the coreir property is not found.");
         exit(1);
@@ -302,7 +302,7 @@ void *parse_metadata(char *filename) {
 
 
     // parse bistream field
-	json_t const* bs_json = json_getProperty( testing_json, "bitstream" );
+    json_t const* bs_json = json_getProperty( testing_json, "bitstream" );
     if ( !bs_json || JSON_TEXT != json_getType( bs_json ) ) {
         puts("Error, the bitstream property is not found.");
         exit(1);
@@ -311,7 +311,7 @@ void *parse_metadata(char *filename) {
     strncat(info->bitstream_filename, json_getValue(bs_json), BUFFER_SIZE);
 
     // parse placement field
-	json_t const* place_json = json_getProperty( testing_json, "placement" );
+    json_t const* place_json = json_getProperty( testing_json, "placement" );
     if ( !place_json || JSON_TEXT != json_getType( place_json ) ) {
         puts("Error, the placement property is not found.");
         exit(1);
@@ -326,10 +326,10 @@ void *parse_metadata(char *filename) {
     info->bitstream_info = parse_bitstream(info->bitstream_filename);
 
     // Parse IO scheduling information 
-	json_t const* IOs_json = json_getProperty( json, "IOs" );
+    json_t const* IOs_json = json_getProperty( json, "IOs" );
 
     // parse inputs
-	json_t const* input_list_json = json_getProperty( IOs_json, "inputs" );
+    json_t const* input_list_json = json_getProperty( IOs_json, "inputs" );
     if ( !input_list_json || JSON_ARRAY != json_getType( input_list_json ) ) {
         puts("Error, the input list property is not found.");
         exit(1);
@@ -347,7 +347,7 @@ void *parse_metadata(char *filename) {
     info->num_inputs = cnt;
 
     // parse outputs
-	json_t const* output_list_json = json_getProperty( IOs_json, "outputs" );
+    json_t const* output_list_json = json_getProperty( IOs_json, "outputs" );
     if ( !output_list_json || JSON_ARRAY != json_getType( output_list_json ) ) {
         puts("Error, the output list property is not found.");
         exit(1);
@@ -365,20 +365,11 @@ void *parse_metadata(char *filename) {
     info->num_outputs = cnt;
 
     // parse interleaved_input field
-	json_t const* input_data_list_json = json_getProperty( testing_json, "interleaved_input" );
+    json_t const* input_data_list_json = json_getProperty( testing_json, "interleaved_input" );
     if ( !input_data_list_json || JSON_ARRAY != json_getType( input_data_list_json ) ) {
         puts("Error, the interleaved_input property is not found.");
         exit(1);
     }
-
-    // json_t const* input_data_json;
-    // for(input_data_json = json_getChild( input_data_list_json ), cnt = 0;
-	// 	input_data_json != 0; input_data_json = json_getSibling( input_data_json ), cnt++) {
-    //     if ( JSON_TEXT == json_getType( input_data_json ) ) {
-    //         strncpy(info->input_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
-    //         strncat(info->input_info[cnt]->filename, json_getValue(input_data_json), BUFFER_SIZE);
-    //     }
-    // }
 
     // Parse file byte size by reading pgm image file
     // TODO: Make this as a function
@@ -413,8 +404,18 @@ void *parse_metadata(char *filename) {
         }
     }
 
+    // TODO: We do not use interleaved input/output. Instead, we use hw_input.raw.
+    // json_t const* input_data_json;
+    // for(input_data_json = json_getChild( input_data_list_json ), cnt = 0;
+    //  input_data_json != 0; input_data_json = json_getSibling( input_data_json ), cnt++) {
+    //     if ( JSON_TEXT == json_getType( input_data_json ) ) {
+    //         strncpy(info->input_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
+    //         strncat(info->input_info[cnt]->filename, json_getValue(input_data_json), BUFFER_SIZE);
+    //     }
+    // }
+
     // // parse interleaved_output field
-	// json_t const* gold_data_list_json = json_getProperty( testing_json, "interleaved_output" );
+    // json_t const* gold_data_list_json = json_getProperty( testing_json, "interleaved_output" );
     // if ( !gold_data_list_json || JSON_ARRAY != json_getType( gold_data_list_json ) ) {
     //     puts("Error, the interleaved_output property is not found.");
     //     exit(1);
@@ -422,7 +423,7 @@ void *parse_metadata(char *filename) {
     //
     // json_t const* gold_data_json;
     // for( gold_data_json = json_getChild( gold_data_list_json ), cnt = 0; \
-	// 	 gold_data_json != 0; gold_data_json = json_getSibling( gold_data_json ), cnt++ ) {
+    //   gold_data_json != 0; gold_data_json = json_getSibling( gold_data_json ), cnt++ ) {
     //     if ( JSON_TEXT == json_getType( gold_data_json ) ) {
     //         strncpy(info->output_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
     //         strncat(info->output_info[cnt]->filename, json_getValue(gold_data_json), BUFFER_SIZE);
