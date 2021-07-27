@@ -26,6 +26,7 @@ task ProcDriver::write_bs(int start_addr, bitstream_t bs_q);
     proc_lock.put(1);
 endtask
 
+// TODO: Change it to const ref
 task ProcDriver::write_data(int start_addr, data_array_t data_q);
     bit [GLB_ADDR_WIDTH-1:0] cur_addr = start_addr;
     bit [BANK_DATA_WIDTH-1:0] data;
