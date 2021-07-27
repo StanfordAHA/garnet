@@ -43,10 +43,6 @@ NETLIST_FILES ?= -v $(garnet_dir)/garnet.v -v $(netlist_dir)/glb_top.vcs.v -v $(
 # Run Parameters
 # -------------------------------------------------------------------
 RUN_ARGS ?= 
-WAVEFORM ?= False
-ifneq (, $(filter $(WAVEFORM), True true))
-	VCD_FLAG := +VCD_ON
-endif
 
 # -------------------------------------------------------------------
 # Command
@@ -63,8 +59,7 @@ XRUN_COMPILE = xrun \
 	   		   -initreg0 \
 	   		   +maxdelays \
 	   		   $(XRUN_ARGS) \
-	   		   $(COMPILE_ARGS) \
-	   		   $(VCD_FLAG)
+	   		   $(COMPILE_ARGS)
 
 # -------------------------------------------------------------------
 # Simulation
