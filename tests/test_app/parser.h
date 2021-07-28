@@ -73,6 +73,8 @@ struct IOInfo {
 };
 
 struct KernelInfo {
+    int temp[100];
+
     int num_inputs;
     int num_outputs;
 
