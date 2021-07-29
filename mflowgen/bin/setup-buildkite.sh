@@ -62,6 +62,8 @@ EOF
 ########################################################################
 # Args / switch processing
 
+if [ "$1" == "--help" ]; then usage; return; fi
+
 if ! [ "$1" == "--dir" ]; then
     echo ""
     echo "**ERROR: missing required arg '--dir' i.e. might want to do something like"
