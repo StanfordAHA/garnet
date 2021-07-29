@@ -4,23 +4,29 @@ if [ "$1" == "--help" ]; then cat <<EOF
 
 USAGE: $0 <refdir> <step>
 
-
 DESCRIPTION:
-Provides a way to (re)run an mflowgen step in a test directory
-without having to build the predecessor nodes for that step.
+Builds symbolic links to the appropriate collateral in reference dir
+<refdir> such that you can locally run mflowgen step <step>.
 
-So, assuming that
+EXAMPLE USE CASE:
+Suppose you have a design with multiple mflowgen steps.
 
-- you are in a valid mflowgen directory with a valid Makefile
-  such that "make list" gives a valid list of steps; and
+A version of the design exists in some directory "/build/chip1",
+but now you are putting together a new version "/build/chip2".
 
-- you would like to build one of these steps <step> but without
-  having to (re)build existing predecessor steps that already
-  exist in another build directory <refdir>;
+You want to reuse the existing chip1 collateral up through step
+"cadence-innovus-postroute_hold" and then rerun that step locally.
 
-This command builds linksthe necessary predecessor nodes in <refdir>
-such that you can do "make <step>" without having to rebuild them
-locally. nodes are renumbered as appropriate to account for changes in
+You can do this:
+  % cd /build/chip2
+  % get-step-context.sh /build/chip1 cadence-innovus-postroute_hold
+  % make *-cadence-innovus-postroute_hold
+
+NOTES:
+To use this command, you should be in a valid mflowgen directory with
+a Makefile such that "make list" gives a valid list of mflowgen steps.
+
+Linked nodes are renumbered as appropriate to account for changes in
 the graph between <refdir> and local dir.
 
 E.g. for <step> = 'cadence-innovus-postroute_hold' it might link
@@ -29,8 +35,8 @@ these two steps from <refdir> into current (build) dir
     ln -s ./23-cadence-innovus-flowsetup <refdir>/22-cadence-innovus-flowsetup
     ln -s ./31-cadence-innovus-postroute <refdir>/30-cadence-innovus-postroute
 
-
-EXAMPLE: to e.g. run standalone step "cadence-innovus-postroute_hold"
+REAL-WORLD EXAMPLE: 
+To e.g. run standalone step "cadence-innovus-postroute_hold"
 using cached information in refdir "/build/gold":
 
     1 Build the design framework
@@ -45,9 +51,12 @@ EOF
 exit
 fi
 
-
+if [ "$1" == "--from" ]; then shift; fi
 REF=$1
+
+if [ "$2" == "--step" ]; then shift; fi
 target_step=$2
+
 # target_step=cadence-innovus-postroute_hold
 
 echo "--- BEGIN $0 $*" | sed "s,$GARNET_HOME,\$GARNET_HOME,"
