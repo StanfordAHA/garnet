@@ -18,7 +18,7 @@ CGRA_WIDTH ?= 32
 AXI_ADDR_WIDTH ?= 13
 AXI_DATA_WIDTH ?= 32
 GLB_TILE_MEM_SIZE ?= 256
-CLK_PERIOD ?= 1.1ns
+CLK_PERIOD ?= 1ns
 TOP_NAME ?= top
 RTL_FILES ?= -v $(garnet_dir)/garnet.v -v $(glb_dir)/rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
 			 -F $(glb_dir)/rtl/global_buffer.filelist -F $(glc_dir)/global_controller.filelist
@@ -43,10 +43,6 @@ NETLIST_FILES ?= -v $(garnet_dir)/garnet.v -v $(netlist_dir)/glb_top.vcs.v -v $(
 # Run Parameters
 # -------------------------------------------------------------------
 RUN_ARGS ?= 
-WAVEFORM ?= False
-ifneq (, $(filter $(WAVEFORM), True true))
-	VCD_FLAG := +VCD_ON
-endif
 
 # -------------------------------------------------------------------
 # Command
@@ -63,21 +59,20 @@ XRUN_COMPILE = xrun \
 	   		   -initreg0 \
 	   		   +maxdelays \
 	   		   $(XRUN_ARGS) \
-	   		   $(COMPILE_ARGS) \
-	   		   $(VCD_FLAG)
+	   		   $(COMPILE_ARGS)
 
 # -------------------------------------------------------------------
 # Simulation
 # -------------------------------------------------------------------
 .PHONY: sim
-sim: glb-rtl glc-rtl libcgra.so compile run
+sim: libcgra.so compile run
 
 # -------------------------------------------------------------------
 # C API
 # -------------------------------------------------------------------
 .PHONY: libcgra.so
-libcgra.so: map.c map.h gen.c gen.h parser.c parser.h
-	gcc -Wno-error -Wall parser.c map.c gen.c -shared -o libcgra.so -fPIC -DGLB_TILE_MEM_SIZE=$(GLB_TILE_MEM_SIZE)
+libcgra.so: map.c map.h gen.c gen.h parser.c parser.h common/tiny-json.c common/tiny-json.h
+	gcc -Wno-error -Wall parser.c map.c gen.c common/tiny-json.c -shared -o libcgra.so -fPIC -DGLB_TILE_MEM_SIZE=$(GLB_TILE_MEM_SIZE)
 
 # -------------------------------------------------------------------
 # RTL
@@ -111,8 +106,8 @@ compile: libcgra.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_driver
 # Run
 # -------------------------------------------------------------------
 .PHONY: run
-run:
-	xrun -R -sv_lib libcgra.so $(RUN_ARGS) $(APP_ARGS) +VCD_ON
+run: 
+	xrun -R -sv_lib libcgra.so $(RUN_ARGS) $(APP_ARGS)
 
 # -------------------------------------------------------------------
 # GLS Compile
@@ -136,3 +131,4 @@ compile-gl: libcgra.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_dri
 .PHONY: clean
 clean:
 	rm -rf xrun.log xrun.history xcelium.d
+

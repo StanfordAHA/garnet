@@ -1,8 +1,7 @@
 #ifndef CONFIG_GEN_LIBRARY_H
 #define CONFIG_GEN_LIBRARY_H
 
-void *get_io_configuration(void *info);
-void *get_tile_configuration(void *info);
+void *get_kernel_configuration(void *info);
 void *get_pcfg_configuration(void *info);
 int get_configuration_size(void *info);
 int get_configuration_addr(void *info, int index);
