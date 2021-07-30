@@ -124,7 +124,6 @@ task Environment::cgra_configure(Kernel kernel);
     $display("[%s] fast configuration end at %0t", kernel.name, end_time);
     $display("[%s] It takes %0t time to do parallel configuration.", kernel.name, end_time-start_time);
 
-    unstall(stall_mask);
 endtask
 
 function bit[NUM_GLB_TILES-1:0] Environment::calculate_mask(int start, int num);
@@ -156,8 +155,15 @@ endtask
 task Environment::kernel_test(Kernel kernel);
     Config cfg;
     int total_output_size;
+    int group_start, num_groups;
+    bit[NUM_GLB_TILES-1:0] stall_mask;
     realtime start_time, end_time, g2f_end_time, latency;
     $timeformat(-9, 2, " ns");
+
+    group_start = kernel.group_start;
+    num_groups = kernel.num_groups;
+    stall_mask = calculate_mask(group_start, num_groups);
+    unstall(stall_mask);
 
     start_time = $realtime;
     $display("[%s] kernel start at %0t", kernel.name, start_time);
@@ -255,7 +261,7 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:
             end
         end
         begin
-            repeat (20_000) @(vifc_axil.cbd);
+            repeat (200_000) @(vifc_axil.cbd);
             $display("@%0t: %m ERROR: Interrupt wait timeout ", $time);
         end
     join_any
