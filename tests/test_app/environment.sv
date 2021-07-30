@@ -30,6 +30,9 @@ class Environment;
     extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:0] tile_num);
     extern task kernel_test(Kernel kernel);
     extern task read_data(Kernel kernel);
+    extern function bit[NUM_GLB_TILES-1:0] calculate_mask(int start, int num);
+    extern task stall(bit[NUM_GLB_TILES-1:0] stall_mask);
+    extern task unstall(bit[NUM_GLB_TILES-1:0] stall_mask);
     extern task run();
 endclass
 
@@ -99,10 +102,17 @@ endtask
 
 task Environment::cgra_configure(Kernel kernel);
     Config cfg;
+    int group_start, num_groups;
+    bit[NUM_GLB_TILES-1:0] stall_mask;
+
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns");
 
-    axil_drv.write(`GLC_STALL, 32'hFFFFFFFF);
+    group_start = kernel.group_start;
+    num_groups = kernel.num_groups;
+    stall_mask = calculate_mask(group_start, num_groups);
+
+    stall(stall_mask);
     start_time = $realtime;
     $display("[%s] fast configuration start at %0t", kernel.name, start_time);
     cfg = kernel.get_pcfg_start_config();
@@ -114,15 +124,46 @@ task Environment::cgra_configure(Kernel kernel);
     $display("[%s] fast configuration end at %0t", kernel.name, end_time);
     $display("[%s] It takes %0t time to do parallel configuration.", kernel.name, end_time-start_time);
 
-    // TODO: STALL only corresponding CGRA columns
-    axil_drv.write(`GLC_STALL, '0);
+endtask
+
+function bit[NUM_GLB_TILES-1:0] Environment::calculate_mask(int start, int num);
+    calculate_mask = '0;
+    for (int i=0; i < num; i++) begin
+        calculate_mask |= ((2'b11) << ((start + i) * 2));
+    end
+endfunction
+
+task Environment::stall(bit[NUM_GLB_TILES-1:0] stall_mask);
+    bit [AXI_DATA_WIDTH-1:0] data;
+    bit [AXI_DATA_WIDTH-1:0] wr_data;
+    axil_drv.read(`GLC_STALL, data);
+    wr_data |= ((stall_mask << NUM_GLB_TILES) | stall_mask);
+    axil_drv.write(`GLC_STALL, wr_data);
+    $display("Stall GLB & CGRA with stall mask %4h", stall_mask);
+endtask
+
+
+task Environment::unstall(bit[NUM_GLB_TILES-1:0] stall_mask);
+    bit [AXI_DATA_WIDTH-1:0] data;
+    bit [AXI_DATA_WIDTH-1:0] wr_data;
+    axil_drv.read(`GLC_STALL, data);
+    wr_data &= (((~stall_mask) << NUM_GLB_TILES) | (~stall_mask));
+    axil_drv.write(`GLC_STALL, wr_data);
+    $display("Unstall GLB & CGRA with stall mask %4h", stall_mask);
 endtask
 
 task Environment::kernel_test(Kernel kernel);
     Config cfg;
     int total_output_size;
+    int group_start, num_groups;
+    bit[NUM_GLB_TILES-1:0] stall_mask;
     realtime start_time, end_time, g2f_end_time, latency;
     $timeformat(-9, 2, " ns");
+
+    group_start = kernel.group_start;
+    num_groups = kernel.num_groups;
+    stall_mask = calculate_mask(group_start, num_groups);
+    unstall(stall_mask);
 
     start_time = $realtime;
     $display("[%s] kernel start at %0t", kernel.name, start_time);
@@ -220,7 +261,7 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:
             end
         end
         begin
-            repeat (20_000) @(vifc_axil.cbd);
+            repeat (200_000) @(vifc_axil.cbd);
             $display("@%0t: %m ERROR: Interrupt wait timeout ", $time);
         end
     join_any
