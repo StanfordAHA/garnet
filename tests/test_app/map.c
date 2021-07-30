@@ -212,6 +212,7 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
         add_config(config_info, (tile * 0x100) + GLB_TILE0_ST_DMA_HEADER_0_START_ADDR, start_addr); 
         add_config(config_info, (tile * 0x100) + GLB_TILE0_ST_DMA_HEADER_0_NUM_WORDS, size); 
         add_config(config_info, (tile * 0x100) + GLB_TILE0_ST_DMA_HEADER_0_VALIDATE, 1); 
+        printf("Output ITER CTRL - size: %0d\n", size);
     }
 }
 
