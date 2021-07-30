@@ -8,7 +8,7 @@
 #define BUFFER_SIZE 1024
 #define MAX_NUM_KERNEL 16
 #define MAX_JSON_FIELDS 512
-#define MAX_CONFIG 20
+#define MAX_CONFIG 40
 #define MAX_ADDR_GEN_LOOP 5
    
 #define GET_BS_INFO(info) struct BitstreamInfo *bs_info = \
@@ -73,8 +73,6 @@ struct IOInfo {
 };
 
 struct KernelInfo {
-    int temp[100];
-
     int num_inputs;
     int num_outputs;
 
