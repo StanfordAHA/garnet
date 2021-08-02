@@ -194,7 +194,8 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
         update_tile_config_table(tile, 1 << 2);
         add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_START_ADDR, start_addr); 
         for (int i = 0; i < loop_dim; i++) {
-            add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0 + 0x04 * i), (extent[i] << 10) + stride[i]); 
+            add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0_STRIDE + 0x08 * i), stride[i]); 
+            add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0_RANGE + 0x08 * i), extent[i]); 
             printf("ITER CTRL %0d - stride: %0d, extent: %0d\n", i, stride[i], extent[i]);
         }
         if (cnt_diff == 1) {
