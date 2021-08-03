@@ -159,10 +159,12 @@ function Kernel::new(string app_dir);
     // meta file name is design_meat.json
     meta_filename = {app_dir, "/bin/", "design_meta.json"};
     $sformat(name, "APP%0d-%0s", cnt++, app_name);
+    $display("[%s]Initilizing the APP Done", name);
 
     app_state = IDLE;
 
     kernel_info = parse_metadata(meta_filename);
+    $display("[%s] Parsing the metadata done", name);
     assert_(kernel_info != null, $sformatf("Unable to find %s", meta_filename));
 
     bitstream_filename = get_bitstream_filename(kernel_info);
@@ -172,6 +174,10 @@ function Kernel::new(string app_dir);
     num_inputs = get_num_inputs(kernel_info);
     num_outputs = get_num_outputs(kernel_info);
     num_groups = get_num_groups(kernel_info);
+
+    $display("[%s] num_inputs: %0d", name, num_inputs);
+    $display("[%s] num_outputs: %0d", name, num_outputs);
+    $display("[%s] num_groups: %0d", name, num_groups);
 
     // IO instantiate
     inputs = new[num_inputs];
