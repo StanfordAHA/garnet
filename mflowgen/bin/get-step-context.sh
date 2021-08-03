@@ -67,7 +67,6 @@ echo "+++ STANDALONE TEST RIG SETUP - build symlinks to steps in $REF/full_chip"
 ########################################################################
 ########################################################################
 
-# Who's the chad now?
 function get_predecessors {
 
     # Example:
