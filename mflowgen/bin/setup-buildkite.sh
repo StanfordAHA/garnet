@@ -38,7 +38,7 @@ fi
 # SO. To keep things honest, will require '--dir'
 
 script=${BASH_SOURCE[0]}
-function usage {
+function setup_buildkite_usage {
     cat <<EOF
 Usage:
     source $script --dir < build-directory > [ OPTIONS ]
@@ -62,14 +62,14 @@ EOF
 ########################################################################
 # Args / switch processing
 
-if [ "$1" == "--help" ]; then usage; return; fi
+if [ "$1" == "--help" ]; then setup_buildkite_usage; return; fi
 
 if ! [ "$1" == "--dir" ]; then
     echo ""
     echo "**ERROR: missing required arg '--dir' i.e. might want to do something like"
     echo "$script --dir ."
     echo ""
-    usage; return 13
+    setup_buildkite_usage; return 13
 fi
 
 # Default is to use pre-built RTL from docker,
@@ -81,7 +81,7 @@ VERBOSE=false
 need_space=100G
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -h|--help)    usage; return;    ;;
+        -h|--help)    setup_buildkite_usage; return;    ;;
         -v|--verbose) VERBOSE=true;  ;;
         -q|--quiet)   VERBOSE=false; ;;
         --dir)        shift; build_dir="$1"; ;;
@@ -94,7 +94,7 @@ while [ $# -gt 0 ] ; do
 
         # Any other 'dashed' arg
         -*)
-            echo "***ERROR: unrecognized arg '$1'"; usage; return 13; ;;
+            echo "***ERROR: unrecognized arg '$1'"; setup_buildkite_usage; return 13; ;;
     esac
     shift
 done
