@@ -69,7 +69,7 @@ if ! [ "$1" == "--dir" ]; then
     echo "**ERROR: missing required arg '--dir' i.e. might want to do something like"
     echo "$script --dir ."
     echo ""
-    setup_buildkite_usage; return 13
+    setup_buildkite_usage; return 13 || exit 13
 fi
 
 # Default is to use pre-built RTL from docker,
@@ -94,7 +94,7 @@ while [ $# -gt 0 ] ; do
 
         # Any other 'dashed' arg
         -*)
-            echo "***ERROR: unrecognized arg '$1'"; setup_buildkite_usage; return 13; ;;
+            echo "***ERROR: unrecognized arg '$1'"; setup_buildkite_usage; return 13 || exit 13; ;;
     esac
     shift
 done
@@ -270,7 +270,7 @@ if [ "$USER" == "buildkite-agent" ]; then
     venv=/usr/local/venv_garnet
     if ! test -d $venv; then
         echo "**ERROR: Cannot find pre-built environment '$venv'"
-        return 13
+        return 13 || exit 13
     fi
     echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT '$venv'"
     source $venv/bin/activate
@@ -328,7 +328,7 @@ echo "--- REQUIREMENTS CHECK"; echo ""
 
 # Maybe don't need to check python libs and eggs no more...?
 # $garnet/bin/requirements_check.sh -v --debug
-$garnet/bin/requirements_check.sh -v --debug --pd_only || exit 13
+$garnet/bin/requirements_check.sh -v --debug --pd_only || return 13 || exit 13
 
 
 ########################################################################
@@ -430,11 +430,11 @@ if [ "$USER" == "buildkite-agent" ]; then
                 echo "  - Need to do a git pull on '$d'"
                 echo "  - Also see 'help adk'."
                 echo "---------------------------------------------------------"
-                exit 13
+                return 13 || exit 13
             fi
         popd
     }
-    check_adk $tsmc16 || exit 13
+    check_adk $tsmc16 || return 13 || exit 13
 
     # Copy the adk to test rig
     echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
