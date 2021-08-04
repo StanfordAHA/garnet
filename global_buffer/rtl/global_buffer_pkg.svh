@@ -76,8 +76,8 @@ localparam [1:0] AUTO_INCR  = 2'b11;
 
 typedef struct packed
 {
-    logic [MAX_NUM_WORDS_WIDTH-1:0]     range;
-    logic [MAX_STRIDE_WIDTH-1:0]    stride;
+    logic [31:0] range;
+    logic [31:0] stride;
 } loop_ctrl_t;
 
 typedef struct packed
