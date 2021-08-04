@@ -77,11 +77,23 @@ addrmap glb {
         field {} num_words[<%=MAX_NUM_WORDS_WIDTH%>] = 0;
     };
 
-    reg iter_ctrl_r {
+    reg stride_r {
+        name = "Stride register";
+        desc = "Iteration control registers";
+        field {} stride[32] = 0;
+    };
+
+    reg range_r {
+        name = "Range register";
+        desc = "range";
+        field {} range[32] = 0;
+    };
+
+    regfile iter_ctrl_r {
         name = "Iteration Control";
         desc = "Iteration control registers";
-        field {} stride[<%=MAX_STRIDE_WIDTH%>] = 0;
-        field {} range[<%=MAX_NUM_WORDS_WIDTH%>] = 0;
+        stride_r stride;
+        range_r range;
     };
 
     reg active_ctrl_r {

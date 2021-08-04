@@ -102,6 +102,7 @@ int glb_map(void *kernel_) {
             //     io_tile_info->start_addr = (tile * 2) * BANK_SIZE;
             // }
             io_tile_info->start_addr = (tile * 2) * BANK_SIZE;
+            printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config);
         }
     }
@@ -114,6 +115,7 @@ int glb_map(void *kernel_) {
             tile = (group_start*GROUP_SIZE + io_tile_info->pos.x) / 2;
             io_tile_info->tile = tile;
             io_tile_info->start_addr = (tile * 2 + 1) * BANK_SIZE;
+            printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
             update_io_tile_configuration(io_tile_info, &kernel->config);
         }
     }
@@ -193,8 +195,11 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
         update_tile_config_table(tile, 1 << 6);
         update_tile_config_table(tile, 1 << 2);
         add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_START_ADDR, start_addr); 
+        printf("Input block mapped to tile: %0d\n", tile);
+        printf("Input block start addr: %0d\n", start_addr);
         for (int i = 0; i < loop_dim; i++) {
-            add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0 + 0x04 * i), (extent[i] << 10) + stride[i]); 
+            add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0_STRIDE + 0x08 * i), stride[i]); 
+            add_config(config_info, (tile * 0x100) + (GLB_TILE0_LD_DMA_HEADER_0_ITER_CTRL_0_RANGE + 0x08 * i), extent[i]); 
             printf("ITER CTRL %0d - stride: %0d, extent: %0d\n", i, stride[i], extent[i]);
         }
         if (cnt_diff == 1) {
@@ -212,6 +217,8 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
         add_config(config_info, (tile * 0x100) + GLB_TILE0_ST_DMA_HEADER_0_START_ADDR, start_addr); 
         add_config(config_info, (tile * 0x100) + GLB_TILE0_ST_DMA_HEADER_0_NUM_WORDS, size); 
         add_config(config_info, (tile * 0x100) + GLB_TILE0_ST_DMA_HEADER_0_VALIDATE, 1); 
+        printf("Output block mapped to tile: %0d\n", tile);
+        printf("Output block start addr: %0d\n", start_addr);
         printf("Output ITER CTRL - size: %0d\n", size);
     }
 }
