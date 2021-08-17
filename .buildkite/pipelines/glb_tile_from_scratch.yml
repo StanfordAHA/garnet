@@ -3,13 +3,21 @@
 agents: { jobsize: "hours" }
 
 ##############################################################################
-# Note: "echo exit 13" prevents hang at genus/innovus prompt
-env:
-  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
-  GOLD: /build/master-pe.${BUILDKITE_BUILD_NUMBER}
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
 
 ##############################################################################
-# INDIVIDUAL TILE RUNS: glb tile
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
+env:
+  GOLD: /build/master-pe.${BUILDKITE_BUILD_NUMBER}
+
+steps:
+
+##############################################################################
+# COMPLETE GLB-TILE BUILD from scratch
 # 
 - label: 'setup'
   commands:
