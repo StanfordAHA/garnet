@@ -1,5 +1,12 @@
 # Complete from-scratch glb_tile build
 
+##############################################################
+# Aug 2021: Tried this pipeline and it did not work, maybe
+# because it tries to build "glb_top" instead of "full_chip".
+# (It failed in the RTL step.) Looks like the cached base
+# version is the one to use (glb_tile.yml)...
+##############################################################
+
 agents: { jobsize: "hours" }
 
 ##############################################################################
