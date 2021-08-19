@@ -30,11 +30,12 @@ steps:
 - wait: ~
 
 # make glb_top
+# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
 - label: 'glb_top'
   commands:
   - 'export OVERRIDE_MFLOWGEN_BRANCH=placementCheck;
      source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
      echo "--- MAKE GLB_TOP"; set -o pipefail;
-     make glb_top |& tee make-glb_top.log'
+     echo exit 13 | make glb_top |& tee make-glb_top.log'
 - wait: ~
 

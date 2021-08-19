@@ -49,11 +49,12 @@ steps:
     - ($LVS_CHECK $GOLD | grep INCORRECT > /dev/null) && exit 13 || exit 0
 - wait: { continue_on_failure: true }
 
+# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
 - label: 'glb_top'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 84G;
      echo "--- MAKE GLB_TOP"; set -o pipefail;
-     make glb_top |& tee make-glb_top.log'
+     echo exit 13 | make glb_top |& tee make-glb_top.log'
 - wait: ~
 
 - label: 'GLC'
