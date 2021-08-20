@@ -68,6 +68,9 @@ puts "SRDEBUG-BEFORE num_even_spacings * sram_spacing_x_even = [expr ($num_even_
 set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_even_spacings * $sram_spacing_x_even)]
 puts "SRDEBUG-BEFORE total_spacing_width= $total_spacing_width"
 
+set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
+set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank_height - 1))]
+
 set core_width [expr $block_width + $sram_margin_l + $sram_margin_r]
 puts "SRDEBUG-BEFORE core_width= $core_width"
 
@@ -87,6 +90,9 @@ puts "SRDEBUG-AFTER num_even_spacings * sram_spacing_x_even = [expr ($num_even_s
 
 set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_even_spacings * $sram_spacing_x_even)]
 puts "SRDEBUG-AFTER total_spacing_width= $total_spacing_width"
+
+set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
+set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank_height - 1))]
 
 set core_width [expr $block_width + $sram_margin_l + $sram_margin_r]
 puts "SRDEBUG-AFTER core_width= $core_width"
