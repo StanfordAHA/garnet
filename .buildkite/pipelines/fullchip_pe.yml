@@ -23,6 +23,7 @@ steps:
 
 - label: 'PE lvs check'
   commands:
+  - $TEST --need_space 30G full_chip tile_array --steps rtl --build_dir $GOLD
   - $TEST --need_space 30G full_chip tile_array Tile_PE --build_dir $GOLD
   - 'echo "--- DELETE SVDB DIRS"; set -x;
      find full_chip -name svdb -exec echo /bin/rm -rf {} \; > /tmp/tmp$$.sh;
