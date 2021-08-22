@@ -70,8 +70,8 @@ def construct():
     'interconnect_only' : False,
 
     # glb tile memory size (unit: KB)
-    'glb_tile_mem_size' : 64,
-    # 'glb_tile_mem_size' : 256,
+    # 'glb_tile_mem_size' : 64,
+    'glb_tile_mem_size' : 256,
 
     # Power Domains
     'PWR_AWARE'         : True,
