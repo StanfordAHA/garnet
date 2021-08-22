@@ -1,1 +1,51 @@
-pipelines/fullchip_pe.yml
+agents: { queue: "papers" }
+
+env:
+  GOLD: /build/gold.${BUILDKITE_BUILD_NUMBER}/full_chip
+  LVS_CHECK: ./mflowgen/bin/buildcheck.sh --lvs
+
+  # To support postroute_hold retries
+  PRH    : 'eval $$GARNET_HOME/.buildkite/bin/prh.sh'
+  FAIL1  : 'echo steps : [ { label : FAIL->retry1 , command : exit } ]'
+  FAIL2  : 'echo steps : [ { label : FAIL->retry2 , command : exit } ]'
+  UPLOAD : 'buildkite-agent pipeline upload'
+
+  # Set slack to -0.3 to make postroute_hold much faster.
+  # Default targ slack for full_chip @ 0.06 takes 6 hours atm.
+  # With hack target -0.3, should be about 2.5 hours (saves 3.5 hours)
+  # MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
+
+  # Can use this to change target mflowgen branch
+  # OVERRIDE_MFLOWGEN_BRANCH: glob-prob
+
+steps:
+- label: 'setup'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
+- wait: ~
+
+- label: 'rtl'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
+     echo "--- MAKE RTL"; set -o pipefail;
+     make rtl |& tee make-rtl.log'
+- wait: ~
+
+# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
+- label: 'tile_array'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
+     echo "--- MAKE TILE_ARRAY"; set -o pipefail;
+     echo exit 13 | make tile_array |& tee make-tile_array.log'
+  - 'echo "--- DELETE SVDB"; set -x;
+     find $$GOLD -name svdb -exec echo /bin/rm -rf {} \; > /tmp/tmp$$.sh;
+     source /tmp/tmp$$.sh; /bin/rm /tmp/tmp$$.sh'
+- wait: ~
+
+# Check tile_array LVS results but don't halt pipeline regardless of outcome
+- label: "lvs?"
+  commands:
+    - $LVS_CHECK $GOLD
+    - ($LVS_CHECK $GOLD | grep INCORRECT > /dev/null) && exit 13 || exit 0
+- wait: { continue_on_failure: true }
