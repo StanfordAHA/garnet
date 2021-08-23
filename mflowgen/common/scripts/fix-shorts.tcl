@@ -63,7 +63,8 @@ if { $shorts == "0x0" } {
     # Fix shorts 4: See if globalDetailRoute can fix the shorts with eco
     echo "@file_info: Fixing short circuits"
     setNanoRouteMode -routeWithEco true
-    setNanoRouteMode -drouteEndIteration 2
+    # setNanoRouteMode -drouteEndIteration 2
+    setNanoRouteMode -drouteEndIteration 10
     globalDetailRoute
 
     # Fix shorts 5: Check your work
