@@ -61,9 +61,10 @@ if { $shorts == "0x0" } {
     echo [ dbGet [dbGet top.markers { .subType eq "Metal Short" }].message ]
 
     # Fix shorts 4: See if globalDetailRoute can fix the shorts with eco
+    #   08/2102 changed num iterations from 2 to 10,
+    #   see garnet issue https://github.com/StanfordAHA/garnet/issues/803
     echo "@file_info: Fixing short circuits"
     setNanoRouteMode -routeWithEco true
-    # setNanoRouteMode -drouteEndIteration 2
     setNanoRouteMode -drouteEndIteration 10
     globalDetailRoute
 

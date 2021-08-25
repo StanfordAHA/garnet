@@ -16,7 +16,7 @@ env:
   # MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
 
   # Can use this to change target mflowgen branch
-  OVERRIDE_MFLOWGEN_BRANCH: placementCheck
+  # OVERRIDE_MFLOWGEN_BRANCH: glob-prob
 
 steps:
 - label: 'setup'

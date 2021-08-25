@@ -33,9 +33,10 @@ set srams [get_cells -hierarchical *sram_array*]
 set sram_width [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_y]
 set sram_spacing_y 0
-set sram_spacing_x_even 0
-# Magic number
-set sram_spacing_x_odd 15
+# Magic numbers, see https://github.com/StanfordAHA/garnet/issues/804
+set sram_spacing_x_odd  15
+set sram_spacing_x_even 15
+# Bank height from env var; currently 8 (see glb_tile/construct.py)
 set bank_height $::env(bank_height)
 
 # Center the SRAMs within the core area of the tile
@@ -47,61 +48,7 @@ set num_banks [expr int(ceil([sizeof_collection $srams] / double($bank_height)))
 set num_spacings [expr $num_banks - 1]
 set num_even_spacings [expr int(ceil($num_spacings/2.0))]
 set num_odd_spacings [expr $num_spacings/2]
-
-
-
-
-
-##############################################################################
-# DEBUGGING etc.
-# set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_even_spacings * $sram_spacing_x_even)]
-
-puts "------------------------------------------------------------------------"
-puts "SRDEBUG-BEFORE num_odd_spacings=   $num_odd_spacings"
-puts "SRDEBUG-BEFORE sram_spacing_x_odd= $sram_spacing_x_odd"
-puts "SRDEBUG-BEFORE num_odd_spacings * sram_spacing_x_odd = [expr ($num_odd_spacings * $sram_spacing_x_odd)]"
-
-puts "SRDEBUG-BEFORE num_even_spacings= $num_even_spacings"
-puts "SRDEBUG-BEFORE sram_spacing_x_even= $sram_spacing_x_even"
-puts "SRDEBUG-BEFORE num_even_spacings * sram_spacing_x_even = [expr ($num_even_spacings * $sram_spacing_x_even)]"
-
 set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_even_spacings * $sram_spacing_x_even)]
-puts "SRDEBUG-BEFORE total_spacing_width= $total_spacing_width"
-
-set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
-set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank_height - 1))]
-
-set core_width [expr $block_width + $sram_margin_l + $sram_margin_r]
-puts "SRDEBUG-BEFORE core_width= $core_width"
-
-# ------------------------------------------------------------------------
-# NEW Magic number
-set sram_spacing_x_even 15
-# ------------------------------------------------------------------------
-
-puts "------------------------------------------------------------------------"
-puts "SRDEBUG-AFTER num_odd_spacings=   $num_odd_spacings"
-puts "SRDEBUG-AFTER sram_spacing_x_odd= $sram_spacing_x_odd"
-puts "SRDEBUG-AFTER num_odd_spacings * sram_spacing_x_odd = [expr ($num_odd_spacings * $sram_spacing_x_odd)]"
-
-puts "SRDEBUG-AFTER num_even_spacings= $num_even_spacings"
-puts "SRDEBUG-AFTER sram_spacing_x_even= $sram_spacing_x_even"
-puts "SRDEBUG-AFTER num_even_spacings * sram_spacing_x_even = [expr ($num_even_spacings * $sram_spacing_x_even)]"
-
-set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_even_spacings * $sram_spacing_x_even)]
-puts "SRDEBUG-AFTER total_spacing_width= $total_spacing_width"
-
-set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
-set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank_height - 1))]
-
-set core_width [expr $block_width + $sram_margin_l + $sram_margin_r]
-puts "SRDEBUG-AFTER core_width= $core_width"
-puts "------------------------------------------------------------------------"
-##############################################################################
-
-
-
-
 set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
 set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank_height - 1))]
 
@@ -109,6 +56,7 @@ set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank
 # Floorplan
 #-------------------------------------------------------------------------
 
+puts "@file_info glb_tile core_width= $core_width, core_height=$core_height"
 set core_width [expr $block_width + $sram_margin_l + $sram_margin_r]
 set core_height [expr $block_height + $sram_margin_t + $sram_margin_b]
 
