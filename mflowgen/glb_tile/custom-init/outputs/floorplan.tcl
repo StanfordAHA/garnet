@@ -56,9 +56,9 @@ set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank
 # Floorplan
 #-------------------------------------------------------------------------
 
-puts "@file_info glb_tile core_width= $core_width, core_height=$core_height"
 set core_width [expr $block_width + $sram_margin_l + $sram_margin_r]
 set core_height [expr $block_height + $sram_margin_t + $sram_margin_b]
+puts "@file_info glb_tile core_width= $core_width, core_height=$core_height"
 
 floorPlan -s $core_width $core_height \
              $core_margin_l $core_margin_b $core_margin_r $core_margin_t
