@@ -55,6 +55,7 @@ while [ $# -gt 0 ] ; do
 
           *) build_dirs+=($1)       ;;  # Target directory(s)
     esac
+    if [ "$1" == "-e" ]; then show_all_errs=true; fi
     shift
 done
 test $DBG && (echo "DONE processing args"; echo '---')
@@ -285,7 +286,7 @@ if [ "$do_err" ]; then
     # echo $errfiles
 
     function chop { cut -b 1-$1; }
-    for f in $errfiles; do
+    for f in $errfiles; do (
 
         # egrep filters below should find only the lowest-level log file
         # e.g. "17-tile_array/17-Tile_PE/24-cadence-genus-genlib/logs/genus.log"
@@ -293,6 +294,16 @@ if [ "$do_err" ]; then
 
         # Filename must include a toolname
         echo $f | egrep 'cadence|innovus|mentor' > /dev/null || continue
+
+        # Hack for metal shorts ugh
+        shorts=`grep "Metal shorts exist" $f | grep -v echo`
+        if [ "$shorts" ]; then
+            echo $f
+            echo $shorts | egrep '(^Error|^\*\*ERROR)' \
+                | grep -v 'Error Limit' \
+                | chop 80 | sort | uniq -c | sort -rn | head
+            echo ""
+        fi
 
         # Filename should be e.g. "genus.log" not "mflowgen-run.log"
         echo $f | egrep 'mflowgen'        > /dev/null && continue
@@ -302,7 +313,7 @@ if [ "$do_err" ]; then
             | grep -v 'Error Limit' \
             | chop 80 | sort | uniq -c | sort -rn | head
         echo ""
-    done | $filter
+    ) done | $filter
 
     # find * -name \*.log -exec egrep '(^Error|^\*\*ERROR)' {} \; \
     #   | grep -v 'Error Limit' \
