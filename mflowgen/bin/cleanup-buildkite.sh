@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Only works for buildkite-agent, duh.
+if [ "$USER" != "buildkite-agent" ]; then
+    printf "***ERROR Cleanup only works for USER=buildkite-agent\n\n"
+    exit 13
+fi
+
 # Nondestructive script for helping to clean out /tmp after buildkite run(s)
 # Must be used interactively; echoes a bunch of commands that you then have
 # to cut'n'paste or source or something by hand ish.
@@ -28,8 +34,10 @@ echo "--- CLEANUP /SIM/TMP: found $nfiles week-old OBJECTS owned by buildkite-ag
 echo "Found $nfiles buildkite-agent files in /sim/tmp older than one week"
 if [ "$nfiles" != "0" ]; then echo "Deleting old files..."; fi
 for f in ${files[@]}; do
-    echo /bin/rm -rf $f; /bin/rm -rf $f
+    test -e $f || printf "Oops cannot locate file '$f'\n"
+    test -e $f && echo /bin/rm -rf $f && /bin/rm -rf $f
 done
+echo ""
 
 
 ########################################################################
@@ -40,8 +48,10 @@ nfiles=${#files[@]}
 echo "--- CLEANUP /TMP: found $nfiles step-alias files > 1 hour old"
 if [ "$nfiles" != "0" ]; then echo "Deleting step-alias files..."; fi
 for f in ${files[@]}; do
-    echo /bin/rm -rf $f; # /bin/rm -rf $f
+    test -e $f || printf "Oops cannot locate file '$f'\n"
+    test -e $f && echo /bin/rm -rf $f && /bin/rm -rf $f
 done
+echo ""
 
 
 ########################################################################
@@ -52,8 +62,10 @@ nfiles=${#files[@]}
 echo "--- CLEANUP /TMP: found $nfiles qrc log files > 1 day old"
 if [ "$nfiles" != "0" ]; then echo "Deleting qrc log files..."; fi
 for f in ${files[@]}; do
-    echo /bin/rm -rf $f; /bin/rm -rf $f
+    test -e $f || printf "Oops cannot locate file '$f'\n"
+    test -e $f && echo /bin/rm -rf $f && /bin/rm -rf $f
 done
+echo ""
 
 
 ########################################################################
@@ -64,7 +76,9 @@ nfiles=${#files[@]}
 echo "--- CLEANUP /TMP: found $nfiles tmp.deleteme files > 1 hour old"
 if [ "$nfiles" != "0" ]; then echo "Deleting tmp.deleteme files..."; fi
 for f in ${files[@]}; do
-    echo /bin/rm -rf $f; /bin/rm -rf $f
+    test -e $f || printf "Oops cannot locate file '$f'\n"
+    test -e $f && echo /bin/rm -rf $f && /bin/rm -rf $f
 done
+echo ""
 
 

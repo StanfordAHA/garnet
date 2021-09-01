@@ -1,0 +1,21 @@
+# Build symlinks necessary to do "make postroute_hold"
+# using pre-cached collateral from dir $GOLD
+
+agents: { queue: "papers" }
+
+env:
+  BUILD : /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip
+  GOLD  : /sim/buildkite-agent/gold
+
+steps:
+  - label: 'hold'
+    commands:
+      - echo "--- POSTROUTE_HOLD"
+      - 'set -o pipefail;
+         source mflowgen/bin/setup-buildkite.sh --dir $$BUILD --need_space 1G;
+         mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+         $$GARNET_HOME/mflowgen/bin/get-step-context.sh $$GOLD \
+           cadence-innovus-postroute_hold'
+         # ready to do: make cadence-innovus-postroute_hold
+
+
