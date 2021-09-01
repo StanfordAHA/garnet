@@ -55,9 +55,13 @@ struct IOTileInfo {
 
     struct Position pos; 
     int loop_dim;
-    int cycle_stride[MAX_ADDR_GEN_LOOP];
-    int data_stride[MAX_ADDR_GEN_LOOP];
-    int extent[MAX_ADDR_GEN_LOOP];
+    uint32_t cycle_stride[MAX_ADDR_GEN_LOOP];
+#ifdef SHUFFLE
+    uint32_t cycle_extent[MAX_ADDR_GEN_LOOP];
+    int cycle_loop_dim;
+#endif
+    uint32_t data_stride[MAX_ADDR_GEN_LOOP];
+    uint32_t extent[MAX_ADDR_GEN_LOOP];
 };
 
 struct IOInfo {
