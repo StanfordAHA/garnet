@@ -1,4 +1,5 @@
 # Use full-chip agents so as not to hamper per-check-in jobs
+# Remember to reset mflowgen branch to master
 agents: { queue: "papers" }
 
 env:
