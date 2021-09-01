@@ -72,7 +72,7 @@ sim: libcgra.so compile run
 # -------------------------------------------------------------------
 .PHONY: libcgra.so
 libcgra.so: map.c map.h gen.c gen.h parser.c parser.h common/tiny-json.c common/tiny-json.h
-	gcc -Wno-error -Wall parser.c map.c gen.c common/tiny-json.c -shared -o libcgra.so -fPIC -DGLB_TILE_MEM_SIZE=$(GLB_TILE_MEM_SIZE)
+	gcc -Wno-error -Wall parser.c map.c gen.c common/tiny-json.c -shared -o libcgra.so -fPIC -DGLB_TILE_MEM_SIZE=$(GLB_TILE_MEM_SIZE) $(LIB_ARGS)
 
 # -------------------------------------------------------------------
 # RTL

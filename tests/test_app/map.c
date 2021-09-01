@@ -96,14 +96,10 @@ int glb_map(void *kernel_) {
             io_tile_info = get_io_tile_info(io_info, j);
             tile = (group_start*GROUP_SIZE + io_tile_info->pos.x) / 2;
             io_tile_info->tile = tile;
-            // if (i == 0 && j==0) {
-            //     io_tile_info->start_addr = (tile * 2) * BANK_SIZE + num_bs*8;
-            // } else {
-            //     io_tile_info->start_addr = (tile * 2) * BANK_SIZE;
-            // }
             io_tile_info->start_addr = (tile * 2) * BANK_SIZE;
             printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
-            update_io_tile_configuration(io_tile_info, &kernel->config);
+            if (update_io_tile_configuration(io_tile_info, &kernel->config) == 0)
+                return 0;
         }
     }
 
@@ -116,7 +112,8 @@ int glb_map(void *kernel_) {
             io_tile_info->tile = tile;
             io_tile_info->start_addr = (tile * 2 + 1) * BANK_SIZE;
             printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
-            update_io_tile_configuration(io_tile_info, &kernel->config);
+            if (update_io_tile_configuration(io_tile_info, &kernel->config) == 0)
+                return 0;
         }
     }
 
@@ -139,19 +136,32 @@ void update_bs_configuration(struct BitstreamInfo *bs_info) {
     add_config(config_info, (tile * 0x100) + GLB_TILE0_PC_DMA_HEADER_NUM_CFG, size); 
 }
 
-void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info) {
+int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info) {
     int tile = io_tile_info->tile;
     int start_addr = io_tile_info->start_addr;
 
     int loop_dim = io_tile_info->loop_dim;
 
-    int cycle_stride[loop_dim+1];
+#ifdef SHUFFLE
+    int cycle_loop_dim = io_tile_info->cycle_loop_dim;
+#else
+    int cycle_loop_dim = io_tile_info->loop_dim;
+#endif
+
+    int cycle_stride[cycle_loop_dim+1];
+    int cycle_extent[cycle_loop_dim+1];
     int extent[loop_dim+1];
     int stride[loop_dim+1];
+
     for (int i = 0; i < loop_dim; i++) {
         cycle_stride[i] = io_tile_info->cycle_stride[i];
         stride[i] = io_tile_info->data_stride[i];
         extent[i] = io_tile_info->extent[i];
+#ifdef SHUFFLE
+        cycle_extent[i] = io_tile_info->cycle_extent[i];
+#else
+        cycle_extent[i] = io_tile_info->extent[i];
+#endif
     }
 
     // int *extent = io_tile_info->extent;
@@ -159,6 +169,7 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
     // int *cycle_stride = io_tile_info->cycle_stride;
 
     // HACK1: Reduce cycle stride dimension by sending the same data multiple time if the cycle_stride[0] is non zero.
+#ifndef SHUFFLE
     if (io_tile_info->io == Input) {
         if (cycle_stride[0] > 1 && loop_dim > 1) {
             for (int i=loop_dim; i > 0; i--) {
@@ -172,6 +183,7 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
             loop_dim += 1;
         }
     }
+#endif
 
     if (io_tile_info->io == Input) {
         int cnt_diff = 0;
@@ -179,17 +191,18 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
         int inactive = 0;
         int active_acc = 1;
         // First check if GLB can support this cycle stride pattern
-        for (int i=0; i < loop_dim-1; i++) {
-            active_acc = active_acc * extent[i];
-            if (extent[i] * cycle_stride[i] != cycle_stride[i+1]) {
+        for (int i=0; i < cycle_loop_dim-1; i++) {
+            active_acc = active_acc * cycle_extent[i];
+            if (cycle_extent[i] * cycle_stride[i] != cycle_stride[i+1]) {
                 cnt_diff++;
                 active = active_acc;
                 inactive = cycle_stride[i+1] - active;
             }
         }
         if (cnt_diff > 1) {
+            printf("cnt_diff: %u\n", cnt_diff);
             printf("GLB does not support this cycle stride pattern\n");
-            return;
+            return 0;
         }
 
         update_tile_config_table(tile, 1 << 6);
@@ -208,7 +221,7 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
         }
         add_config(config_info, (tile * 0x100) + GLB_TILE0_LD_DMA_HEADER_0_VALIDATE, 1); 
     } else {
-        int size = 1;
+        uint32_t size = 1;
         for (int i=0; i < loop_dim; i++) {
             size = size * extent[i];
         }
