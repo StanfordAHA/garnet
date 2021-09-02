@@ -82,11 +82,11 @@ if { $shorts == "0x0" } {
 
         # Fix shorts 3a: Show how many shorts were found
         set nshorts [llength $shorts]
-        echo "@file_info: (2)Found $nshorts short circuit(s):"
+        echo "@file_info: - Found $nshorts short circuit(s):"
         echo [ dbGet [dbGet top.markers { .subType eq "Metal Short" }].message ]
 
         # Fix shorts 4a: See if globalDetailRoute can fix the shorts with eco
-        echo "@file_info: (2)Fixing short circuits"
+        echo "@file_info: - Fixing short circuits"
         setNanoRouteMode -routeWithEco true
         setNanoRouteMode -drouteEndIteration 2
         globalDetailRoute
@@ -105,11 +105,12 @@ if { $shorts == "0x0" } {
             saveDesign checkpoints/design.checkpoint/save.enc -user_path
 
         } else {
-            echo "@file_info: Oops looks like I failed again oh no"
+            echo "@file_info: - Oops looks like I failed again oh no"
             echo ""
-            echo "**ERROR: Metal shorts exist, see log for details"
-            echo "@file_info: Found $nshorts short circuit(s):"
-            echo "@file_info: Giving gup now"
+            echo "**ERROR: Metal shorts exist, see stdout for details"
+            echo "@file_info: -- Found $nshorts short circuit(s):"
+            echo "@file_info: -- Giving up now"
+            exit 13
         }
     }
 }
