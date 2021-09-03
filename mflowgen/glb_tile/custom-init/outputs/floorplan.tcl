@@ -33,9 +33,10 @@ set srams [get_cells -hierarchical *sram_array*]
 set sram_width [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_y]
 set sram_spacing_y 0
-set sram_spacing_x_even 0
-# Magic number
-set sram_spacing_x_odd 15
+# Magic numbers, see https://github.com/StanfordAHA/garnet/issues/804
+set sram_spacing_x_odd  15
+set sram_spacing_x_even 15
+# Bank height from env var; currently 8 (see glb_tile/construct.py)
 set bank_height $::env(bank_height)
 
 # Center the SRAMs within the core area of the tile
@@ -57,6 +58,7 @@ set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank
 
 set core_width [expr $block_width + $sram_margin_l + $sram_margin_r]
 set core_height [expr $block_height + $sram_margin_t + $sram_margin_b]
+puts "@file_info glb_tile core_width= $core_width, core_height=$core_height"
 
 floorPlan -s $core_width $core_height \
              $core_margin_l $core_margin_b $core_margin_r $core_margin_t
