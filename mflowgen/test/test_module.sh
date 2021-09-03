@@ -365,9 +365,12 @@ done
 
 echo '+++ PASS/FAIL info maybe, to make you feel good'
 function PASS { return 0; }
-cat -n make*.log | grep -i error  | tail | tee -a tmp.summary || PASS; echo "-----"
-cat -n make*.log | grep    FAIL   | tail | tee -a tmp.summary || PASS; echo "-----"
-cat -n make*.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
+function sumfilter { 
+    grep -v 'errors: 0, warnings: 0' | awk '$2 == "echo" { next } {print}' | cut -b 1-64
+}
+cat -n $f | grep -i error  | sumfilter | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n $f | grep    FAIL   | sumfilter | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n $f | grep -i passed | sumfilter | tail | tee -a tmp.summary || PASS; echo ""
 
 echo '+++ FAIL if make job failed, duh.'
 egrep '^make: .* Error 1' make*.log && exit 13 || echo 'Did not fail. Right?'
@@ -375,11 +378,15 @@ egrep '^make: .* Error 1' make*.log && exit 13 || echo 'Did not fail. Right?'
 
 ########################################################################
 echo '+++ SUMMARY of what we did'
-f=`/bin/ls -t make*.log`
-cat -n $f | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
+logs=`/bin/ls -t make*.log`
+cat -n $logs | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
     >> tmp.summary \
     || PASS
-cat tmp.summary
+cat tmp.summary \
+    | sort -n | awk '{$1=""}; {print}' \
+    | awk '{if ($1 == "make") print; else print "   " $0;}' \
+    | uniq
+
 
 ########################################################################
 echo '+++ RUNTIMES'; make runtimes
