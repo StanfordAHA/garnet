@@ -23,8 +23,7 @@ steps:
 # Build RTL from scratch
 - label: 'rtl'
   commands:
-  - 'export OVERRIDE_MFLOWGEN_BRANCH=placementCheck;
-     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
      echo "--- MAKE RTL"; set -o pipefail;
      make rtl |& tee make-rtl.log'
 - wait: ~
@@ -33,8 +32,7 @@ steps:
 # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
 - label: 'glb_top'
   commands:
-  - 'export OVERRIDE_MFLOWGEN_BRANCH=placementCheck;
-     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
      echo "--- MAKE GLB_TOP"; set -o pipefail;
      echo exit 13 | make glb_top |& tee make-glb_top.log'
 - wait: ~
