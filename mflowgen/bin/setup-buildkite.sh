@@ -38,7 +38,7 @@ fi
 # SO. To keep things honest, will require '--dir'
 
 script=${BASH_SOURCE[0]}
-function usage {
+function setup_buildkite_usage {
     cat <<EOF
 Usage:
     source $script --dir < build-directory > [ OPTIONS ]
@@ -62,12 +62,14 @@ EOF
 ########################################################################
 # Args / switch processing
 
+if [ "$1" == "--help" ]; then setup_buildkite_usage; return; fi
+
 if ! [ "$1" == "--dir" ]; then
     echo ""
     echo "**ERROR: missing required arg '--dir' i.e. might want to do something like"
     echo "$script --dir ."
     echo ""
-    usage; return 13
+    setup_buildkite_usage; return 13 || exit 13
 fi
 
 # Default is to use pre-built RTL from docker,
@@ -79,7 +81,7 @@ VERBOSE=false
 need_space=100G
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -h|--help)    usage; return;    ;;
+        -h|--help)    setup_buildkite_usage; return;    ;;
         -v|--verbose) VERBOSE=true;  ;;
         -q|--quiet)   VERBOSE=false; ;;
         --dir)        shift; build_dir="$1"; ;;
@@ -92,7 +94,7 @@ while [ $# -gt 0 ] ; do
 
         # Any other 'dashed' arg
         -*)
-            echo "***ERROR: unrecognized arg '$1'"; usage; return 13; ;;
+            echo "***ERROR: unrecognized arg '$1'"; setup_buildkite_usage; return 13 || exit 13; ;;
     esac
     shift
 done
@@ -233,11 +235,18 @@ fi
 
 ########################################################################
 # Running out of space in /tmp!!?
-export TMPDIR=/sim/tmp
+if test -d /sim/tmp; then
+    export TMPDIR=/sim/tmp
+else
+    echo "***WARNING Cannot find /sim/tmp. Are you sure you're in the right place?"
+    printf "Using default TMPDIR '$TMPDIR'\n\n"
+fi
+
 
 ########################################################################
 # Clean up debris in /sim/tmp
-$garnet/mflowgen/bin/cleanup-buildkite.sh
+echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
+[ "$USER" != "buildkite-agent" ] && $garnet/mflowgen/bin/cleanup-buildkite.sh
 
 
 ########################################################################
@@ -261,7 +270,7 @@ if [ "$USER" == "buildkite-agent" ]; then
     venv=/usr/local/venv_garnet
     if ! test -d $venv; then
         echo "**ERROR: Cannot find pre-built environment '$venv'"
-        return 13
+        return 13 || exit 13
     fi
     echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT '$venv'"
     source $venv/bin/activate
@@ -319,7 +328,7 @@ echo "--- REQUIREMENTS CHECK"; echo ""
 
 # Maybe don't need to check python libs and eggs no more...?
 # $garnet/bin/requirements_check.sh -v --debug
-$garnet/bin/requirements_check.sh -v --debug --pd_only
+$garnet/bin/requirements_check.sh -v --debug --pd_only || return 13 || exit 13
 
 
 ########################################################################
@@ -349,9 +358,18 @@ mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
-mflowgen=/sim/buildkite-agent/mflowgen
+# If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
+# otherwise, install in /tmp/$USER
+if test -e /sim/buildkite-agent; then
+    mflowgen=/sim/buildkite-agent/mflowgen
+else
+    printf "***WARNING cannot find /sim/buildkite-agent\n"
+    printf "   Will install mflowgen in /tmp/$USER/mflowgen\n\n"
+    mkdir -p /tmp/$USER; mflowgen=/tmp/$USER/mflowgen
+fi
+
 if [ "$mflowbranch" != "master" ]; then
-    mflowgen=/sim/buildkite-agent/mflowgen.$mflowgen_branch
+    mflowgen=$mflowgen.$mflowgen_branch
 fi
 
 # Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
@@ -368,6 +386,16 @@ echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+
+  # mflowgen might be hidden in $HOME/.local/bin
+  if ! (type mflowgen >& /dev/null); then
+      echo "***WARNING Cannot find mflowgen after install"
+      echo "   Will try adding '$HOME/.local/bin' to your path why not"
+      echo ""
+      export PATH=${PATH}:$HOME/.local/bin
+      which mflowgen
+  fi
+
 popd
 
 echo ""
@@ -402,11 +430,11 @@ if [ "$USER" == "buildkite-agent" ]; then
                 echo "  - Need to do a git pull on '$d'"
                 echo "  - Also see 'help adk'."
                 echo "---------------------------------------------------------"
-                exit 13
+                return 13 || exit 13
             fi
         popd
     }
-    check_adk $tsmc16 || exit 13
+    check_adk $tsmc16 || return 13 || exit 13
 
     # Copy the adk to test rig
     echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks

@@ -6,6 +6,8 @@ env:
 
   # To support postroute_hold retries
   PRH    : 'eval $$GARNET_HOME/.buildkite/bin/prh.sh'
+
+  # ($FAIL|$UPLOAD): Inserts a "fail" bubble in the buildkite pipeline log
   FAIL1  : 'echo steps : [ { label : FAIL->retry1 , command : exit } ]'
   FAIL2  : 'echo steps : [ { label : FAIL->retry2 , command : exit } ]'
   UPLOAD : 'buildkite-agent pipeline upload'

@@ -126,7 +126,12 @@ if [ "$module" == "Tile_MemCore" ] ; then
 fi
 
 # /tmp needs a lot of space
-tmpdir=$TMPDIR; [ "$tmpdir" ] || tmpdir=/tmp
+if ! test -d "$TMPDIR"; then
+    echo "Cannot find designated temp dir TMPDIR='$TMPDIR'"
+    echo "Setting TMPDIR=/tmp instead"
+    export TMPDIR=/tmp
+fi
+tmpdir=$TMPDIR
 avail=`df $tmpdir --output=avail | tail -1`
 avail_human=`df -H $tmpdir --output=avail | tail -1`
 avail_human=`echo $avail_human` ; # Eliminate whitespace?
@@ -141,10 +146,12 @@ G=$(( 1024 * 1024 )) ; # As reported by df in 1024-byte blocks!
 if [[ $avail -lt $(( 3 * $G )) ]]; then
     ERROR "less than 3G definitely NOT ENOUGH for full chip postroute"
     echo "Recommend you do something like 'export TMPDIR=/sim/tmp'"
+    echo ""
     exit 13
 elif [[ $avail -lt $(( 20 * $G )) ]]; then
     ERROR "less than 20G probably NOT ENOUGH for full chip postroute"
     echo "Recommend you do something like 'export TMPDIR=/sim/tmp'"
+    echo ""
     exit 13
 elif [[ $avail -lt $(( 60 * $G )) ]]; then
     echo "***WARNING less than 60G not (yet) proven to be enough"
