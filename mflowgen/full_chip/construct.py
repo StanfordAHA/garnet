@@ -69,7 +69,8 @@ def construct():
     'array_height'      : 16,
     'interconnect_only' : False,
     # glb tile memory size (unit: KB)
-    'glb_tile_mem_size' : 64,
+    # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
+    'glb_tile_mem_size' : 256,   # 256*16 => 4M global buffer
     # Power Domains
     'PWR_AWARE'         : True,
     # Include Garnet?

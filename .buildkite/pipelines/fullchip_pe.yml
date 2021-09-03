@@ -1,0 +1,30 @@
+# run PE LVS ONLY
+
+# agents: { jobsize: "hours" }
+agents: { queue: "papers" }
+
+##############################################################################
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
+
+##############################################################################
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
+env:
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  GOLD: /build/pe${BUILDKITE_BUILD_NUMBER}
+
+steps:
+
+##############################################################################
+# INDIVIDUAL TILE RUNS
+
+- label: 'PE lvs check'
+  commands:
+  - $TEST --need_space 30G full_chip tile_array --steps rtl --build_dir $GOLD
+  - $TEST --need_space 30G full_chip tile_array Tile_PE --build_dir $GOLD
+  - 'echo "--- DELETE SVDB DIRS"; set -x;
+     find $$GOLD/full_chip -name svdb -exec echo /bin/rm -rf {} \; > /tmp/tmp$$.sh;
+     source /tmp/tmp$$.sh; /bin/rm /tmp/tmp$$.sh'

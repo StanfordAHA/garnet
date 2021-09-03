@@ -1,4 +1,4 @@
-# Builds glb_tile ONLY using cached gold collateral
+# Builds glb_tile but not from scratch, uses pre-cached gold collateral
 
 agents: { jobsize: "hours" }
 
@@ -13,16 +13,21 @@ agents: { jobsize: "hours" }
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  GOLD: /sim/buildkite-agent/gold
 
 steps:
 
 ##############################################################################
 # COMPLETE GLB-TILE BUILD (ish) (uses cached rtl step)
+# 
 - label: 'glb tile 2h'
   commands:
 
+  # (Optional) check out branch version
+  # - pwd; git branch; git checkout $$NOV11
+
   # Copy existing rtl collateral
-  - set -x; mkdir -p full_chip; cp -rp /sim/buildkite-agent/gold/full_chip/*-rtl full_chip/
+  - 'set -x; mkdir -p full_chip; cp -rp $$GOLD/full_chip/*-rtl full_chip/'
 
   # Link to existing rtl result
   - set -x; mkdir -p full_chip/14-glb_top/inputs
