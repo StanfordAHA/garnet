@@ -1,32 +1,29 @@
-agents: { jobsize: "hours" }
+agents: { queue: "papers" }
 
-##############################################################################
-# Use this to test a specific branch/commit:
-# Add to env:
-#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
-# Add to commands:
-# - pwd; git branch; git checkout $$NOV11
-
-##############################################################################
-# Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
-  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  GOLD: /build/gold.${BUILDKITE_BUILD_NUMBER}/full_chip
+  LVS_CHECK: ./mflowgen/bin/buildcheck.sh --lvs
+
+  # To support postroute_hold retries
+  PRH    : 'eval $$GARNET_HOME/.buildkite/bin/prh.sh'
+
+  # ($FAIL|$UPLOAD): Inserts a "fail" bubble in the buildkite pipeline log
+  FAIL1  : 'echo steps : [ { label : FAIL->retry1 , command : exit } ]'
+  FAIL2  : 'echo steps : [ { label : FAIL->retry2 , command : exit } ]'
+  UPLOAD : 'buildkite-agent pipeline upload'
+
+  # Set slack to -0.3 to make postroute_hold much faster.
+  # Default targ slack for full_chip @ 0.06 takes 6 hours atm.
+  # With hack target -0.3, should be about 2.5 hours (saves 3.5 hours)
+  # MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
+
+  # Can use this to change target mflowgen branch
+  # OVERRIDE_MFLOWGEN_BRANCH: glob-prob
 
 steps:
-
-##############################################################################
-# INDIVIDUAL TILE RUNS
-# Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
-
-- label: '250MHz PE synth 12m'
+- label: 'setup'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-  - .buildkite/pipelines/check_pe_area.sh
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-- label: 'MemCore synth 17m'
-  commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+     which calibre'
+- wait: ~
