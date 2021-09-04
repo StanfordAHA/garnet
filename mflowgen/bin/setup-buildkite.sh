@@ -266,7 +266,7 @@ function check_pyversions {
 # If you're not "buildkite-agent", you're on your own.
 
 if [ "$USER" == "buildkite-agent" ]; then
-    echo "--- ENVIRONMENT"; echo ""
+    echo "--- ENVIRONMENT - VENV"; echo ""
     venv=/usr/local/venv_garnet
     if ! test -d $venv; then
         echo "**ERROR: Cannot find pre-built environment '$venv'"
@@ -303,6 +303,7 @@ export PATH="$PATH:/usr/local/bin"; hash -r
 # source $garnet/.buildkite/setup.sh
 # source $garnet/.buildkite/setup-calibre.sh
 # Use the new stuff
+echo "--- ENVIRONMENT - CAD TOOLS"; echo ""
 echo Sourcing $garnet/mflowgen/setup-garnet.sh ...
 source $garnet/mflowgen/setup-garnet.sh
 
