@@ -1,5 +1,6 @@
 import sys
 import os
+import argparse
 
 from .netlist_util import parse_and_pack_netlist, port_rename
 
@@ -18,7 +19,7 @@ GLB_DELAY = 1300
 
 class Node:
     def __init__(self, blk_id: str):
-        self.next: Dict[str, List[Tuple["Node",str]]] = {}
+        self.next: Dict[str, List[Tuple["Node", str]]] = {}
         self.parent: Dict[str, Node] = {}
         self.blk_id = blk_id
 
@@ -126,13 +127,28 @@ def get_sink_nets(netlist, blk_id):
     return result
 
 
+def parse_args():
+    parser = argparse.ArgumentParser("CGRA Retiming tool")
+    parser.add_argument("-a", "--app", "-d", required=True, dest="application", type=str, help="Application directory")
+    parser.add_argument("-f", "--min-frequency", default=200, dest="frequency", type=int,
+                        help="Minimum frequency in MHz")
+    args = parser.parse_args()
+    # check filenames
+    assert 1000 > args.frequency > 0, "Frequency must be less than 1GHz"
+    dirname = os.path.join(args.application, "bin")
+    netlist = os.path.join(dirname, "design_top.json")
+    assert os.path.exists(netlist), netlist + " does not exist"
+    placement = os.path.join(dirname, "design.place")
+    assert os.path.exists(placement), placement + " does not exists"
+    route = os.path.join(dirname, "design.route")
+    assert os.path.exists(route), route + " does not exists"
+    # need to load routing files as well
+    # for now we just assume RMUX exists
+    return netlist, placement, route
+
+
 def main():
-    if len(sys.argv) != 4:
-        print("Usage: python -m mini_mapper.timing netlist.json design.place design.route", file=sys.stderr)
-        exit(1)
-    netlist_file = sys.argv[1]
-    placement_file = sys.argv[2]
-    routing_file = sys.argv[3]
+    netlist_file, placement_file, routing_file = parse_args()
 
     netlist, folded_blocks, id_to_name, changed_pe = \
         parse_and_pack_netlist(netlist_file, fold_reg=True)
