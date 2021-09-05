@@ -438,6 +438,8 @@ function void Kernel::compare();
     int result;
     int num_pixels;
     int num_io_tiles;
+    int file_out;
+
     // Hacky way to interleave output data in io_block to final output
     // TODO: Make interleave and uninterleave as a function
     for (int i = 0; i < num_outputs; i++) begin
@@ -453,6 +455,17 @@ function void Kernel::compare();
             end
         end
     end
+
+    // dump output (Assuming one output)
+    file_out = $fopen("output.txt", "w");
+    for (int i = 0; i < output_data[0].size(); i++) begin
+        if (i % 8 == 7) begin
+            $fwrite(file_out, "%4h\n", output_data[0][i]);
+        end else begin
+            $fwrite(file_out, "%4h ", output_data[0][i]);
+        end
+    end
+
     result = 0;
     for(int i=0; i<num_outputs; i++) begin
         result += compare_(i);

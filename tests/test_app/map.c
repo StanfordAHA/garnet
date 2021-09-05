@@ -234,6 +234,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         printf("Output block start addr: %0d\n", start_addr);
         printf("Output ITER CTRL - size: %0d\n", size);
     }
+    return 1;
 }
 
 // TODO: This is hacky way to update tile control configuration reigster
