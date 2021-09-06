@@ -260,6 +260,10 @@ def parse_and_pack_netlist(netlist_filename, fold_reg=True, retiming=False):
     else:
         bus_width = determine_track_bus(netlists, id_to_name)
 
+    name_to_id = {}
+    for blk_id, name in id_to_name.items():
+        name_to_id[name] = blk_id
+
     before_packing = len(netlists)
     netlists, folded_blocks, changed_pe = pack_netlists(netlists, name_to_id,
                                                         fold_reg=fold_reg)
@@ -271,6 +275,15 @@ def parse_and_pack_netlist(netlist_filename, fold_reg=True, retiming=False):
     print("After packing:")
     print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
           len(regs))
+
+    # clean up bus width
+    removed_net = set()
+    for net_id in bus_width:
+        if net_id not in netlists:
+            removed_net.add(net_id)
+
+    for net_id in removed_net:
+        del bus_width[net_id]
     return netlists, folded_blocks, id_to_name, changed_pe, bus_width
 
 
@@ -353,7 +366,7 @@ def pack_netlists(raw_netlists, name_to_id, fold_reg=True):
     for net_id in netlist_ids:
         net = raw_netlists[net_id]
         for index, (blk_id, port) in enumerate(net):
-            if blk_id[0] == "r" and port == "out":
+            if blk_id[0] == "r" and (port == "out" or port == "reg"):
                 for b_id, b_port in net:
                     if b_id == blk_id and port == b_port:
                         continue
@@ -385,7 +398,7 @@ def pack_netlists(raw_netlists, name_to_id, fold_reg=True):
                 next_blk, next_port = net[next_index]
             # replace them if they're already folded
             if (blk_id, port) in folded_blocks:
-                net[index] = folded_blocks[blk_id]
+                net[index] = folded_blocks[(blk_id, port)]
                 continue
             if blk_id[0] == "c" or blk_id[0] == "b":
                 # FIXME:
