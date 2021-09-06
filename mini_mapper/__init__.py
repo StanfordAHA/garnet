@@ -250,15 +250,14 @@ def parse_and_pack_netlist(netlist_filename, fold_reg=True, retiming=False):
     print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
           len(regs))
 
+    bus_width = determine_track_bus(netlists, id_to_name)
     if retiming:
         from archipelago.retime import retime_netlist
-        bus_width = retime_netlist(netlists, id_to_name, type_printout="mi")
+        bus_width = retime_netlist(netlists, id_to_name, bus_width, type_printout="mi")
         pes, ios, mems, regs = compute_stats(netlists)
         print("After retiming:")
         print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
               len(regs))
-    else:
-        bus_width = determine_track_bus(netlists, id_to_name)
 
     name_to_id = {}
     for blk_id, name in id_to_name.items():
