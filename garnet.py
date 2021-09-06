@@ -186,7 +186,7 @@ class Garnet(Generator):
                       self.ports.read_config_data)
 
     def map(self, halide_src):
-        return map_app(halide_src)
+        return map_app(halide_src, retiming=True)
 
     def get_placement_bitstream(self, placement, id_to_name, instrs):
         result = []

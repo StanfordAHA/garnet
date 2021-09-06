@@ -215,18 +215,11 @@ def determine_track_bus(netlists, id_to_name):
     return track_mode
 
 
-def parse_and_pack_netlist(netlist_filename, fold_reg=True):
-    connections, instances = read_netlist_json(netlist_filename)
-    netlists, name_to_id = generate_netlists(connections, instances)
+def compute_stats(netlists):
     pes = set()
     ios = set()
     mems = set()
     regs = set()
-
-    id_to_name = {}
-    for name in name_to_id:
-        blk_id = name_to_id[name]
-        id_to_name[blk_id] = name
 
     for net_id in netlists:
         net = netlists[net_id]
@@ -239,9 +232,33 @@ def parse_and_pack_netlist(netlist_filename, fold_reg=True):
                 mems.add(blk_id)
             elif blk_id[0] == "r":
                 regs.add(blk_id)
+    return pes, ios, mems, regs
+
+
+def parse_and_pack_netlist(netlist_filename, fold_reg=True, retiming=False):
+    connections, instances = read_netlist_json(netlist_filename)
+    netlists, name_to_id = generate_netlists(connections, instances)
+
+    id_to_name = {}
+    for name in name_to_id:
+        blk_id = name_to_id[name]
+        id_to_name[blk_id] = name
+
+    pes, ios, mems, regs = compute_stats(netlists)
+
     print("Before packing:")
     print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
           len(regs))
+
+    if retiming:
+        from archipelago.retime import retime_netlist
+        bus_width = retime_netlist(netlists, id_to_name, type_printout="mi")
+        pes, ios, mems, regs = compute_stats(netlists)
+        print("After retiming:")
+        print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
+              len(regs))
+    else:
+        bus_width = determine_track_bus(netlists, id_to_name)
 
     before_packing = len(netlists)
     netlists, folded_blocks, changed_pe = pack_netlists(netlists, name_to_id,
@@ -250,31 +267,11 @@ def parse_and_pack_netlist(netlist_filename, fold_reg=True):
     print("Before packing: num of netlists:", before_packing,
           "After packing: num of netlists:", after_packing)
 
-    pes = set()
-    ios = set()
-    mems = set()
-    regs = set()
-
-    id_to_name = {}
-    for name in name_to_id:
-        blk_id = name_to_id[name]
-        id_to_name[blk_id] = name
-
-    for net_id in netlists:
-        net = netlists[net_id]
-        for blk_id, _ in net:
-            if blk_id[0] == "p":
-                pes.add(blk_id)
-            elif blk_id[0] == "i" or blk_id[0] == "I":
-                ios.add(blk_id)
-            elif blk_id[0] == "m":
-                mems.add(blk_id)
-            elif blk_id[0] == "r":
-                regs.add(blk_id)
+    pes, ios, mems, regs = compute_stats(netlists)
     print("After packing:")
     print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
           len(regs))
-    return netlists, folded_blocks, id_to_name, changed_pe
+    return netlists, folded_blocks, id_to_name, changed_pe, bus_width
 
 
 def generate_netlists(connections, instances):
@@ -1107,12 +1104,11 @@ def get_total_cycle_from_app(halide_src):
     return 0
 
 
-def map_app(pre_map):
+def map_app(pre_map, retiming=False):
     src_file = pre_map
-    netlist, folded_blocks, id_to_name, changed_pe = \
-        parse_and_pack_netlist(src_file, fold_reg=True)
+    netlist, folded_blocks, id_to_name, changed_pe, bus = \
+        parse_and_pack_netlist(src_file, fold_reg=True, retiming=retiming)
     rename_id_changed(id_to_name, changed_pe)
-    bus = determine_track_bus(netlist, id_to_name)
     blks = get_blks(netlist)
     connections, instances = read_netlist_json(src_file)
 
