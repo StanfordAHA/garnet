@@ -30,7 +30,7 @@ tmp=`lsb_release -i | awk '{print $NF}'`
 if [ "$tmp" == "Ubuntu" ]; then
     echo "Skipping calibre load because its binaries don't work under Ubuntu"
 else
-    echo module load calibre/2019.1
+    module load calibre/2019.1
 fi
 
 module load pts/M-2017.06
