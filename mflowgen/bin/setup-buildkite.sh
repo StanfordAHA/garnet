@@ -15,6 +15,8 @@
 #   - makes local link to mflowgen repo "/sim/buildkite-agent/mflowgen"
 #   - makes local copy of adk
 
+# CHANGE LOG
+# sep 2021 better log output
 
 ##############################################################################
 # Script must be sourced; complain if someone tries to execute it instead.
