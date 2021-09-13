@@ -11,13 +11,24 @@ sram_name+="_130a"
 
 ##############################################################################
 USE_CACHED=True
+USE_CACHED=False
 if [ $USE_CACHED == True ]; then
 
     # Mar 2021 Temporary fix to get around expired memory-compiler license
     echo '+++ HACK TIME! Using cached srams...'; set -x
 
-    # Use latest gold build as the cache (if hack were less temporary, would use parm / env var here)
-    g=$(cd -P /sim/buildkite-agent/gold; pwd)
+    # Use latest gold build as the cache (if hack were less temporary,
+    # would use parm / env var here).
+    # The -P option says to use the physical directory structure
+    # instead of following symbolic links
+    gold=/sim/buildkite-agent/gold
+    if ! test -e $gold; then
+        echo "**ERROR Cannot find gold directory for cached srams"
+        echo "I.e. '$gold' does not exist"
+        echo "Also see $0"
+        exit 13
+    fi
+    g=$(cd -P $gold; pwd)
     echo "Using gold cache '$g'"
 
     # Use first sram found in cache, so long as it has the right name (e.g. sram_name='ts1n16ffcllsblvtc2048x64m8sw_130a')
@@ -54,7 +65,7 @@ sram_exists=True
 head outputs/sram_tt.lib > /dev/null || sram_exists=False
 if [ $sram_exists == "False" ]; then
     echo "**ERROR Could not build SRAMs...memory compiler error maybe?"
-    echo exit 13
+    exit 13
 fi
 
 echo '--- continue...'
