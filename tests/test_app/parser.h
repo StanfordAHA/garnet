@@ -3,11 +3,11 @@
 
 #include "common/tiny-json.h"
 
-#define MAX_NUM_IO 4
-#define MAX_NUM_IO_TILES 8
+#define MAX_NUM_IO 16
+#define MAX_NUM_IO_TILES 16
 #define BUFFER_SIZE 1024
 #define MAX_NUM_KERNEL 16
-#define MAX_JSON_FIELDS 512
+#define MAX_JSON_FIELDS 2048
 #define MAX_CONFIG 40
 #define MAX_ADDR_GEN_LOOP 5
    
