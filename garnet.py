@@ -22,6 +22,20 @@ import archipelago
 import archipelago.power
 import archipelago.io
 
+from peak_gen.peak_wrapper import wrapped_peak_class
+from peak_gen.arch import read_arch
+
+import metamapper.coreir_util as cutil
+from metamapper.node import Nodes
+from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
+from metamapper import CoreIRContext
+from metamapper.irs.coreir import gen_CoreIRNodes
+from metamapper.lake_mem import gen_MEM_fc
+from lassen.sim import PE_fc as lassen_fc
+import metamapper.peak_util as putil
+from mapper.netlist_util import create_netlist_info, print_netlist_info
+from metamapper.coreir_mapper import Mapper
+
 # set the debug mode to false to speed up construction
 set_debug_mode(False)
 
@@ -32,7 +46,8 @@ class Garnet(Generator):
                  add_pond: bool = True,
                  use_io_valid: bool = False,
                  pipeline_config_interval: int = 8,
-                 glb_tile_mem_size: int = 256):
+                 glb_tile_mem_size: int = 256,
+                 pe_fc=lassen_fc):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -64,6 +79,8 @@ class Garnet(Generator):
             io_side = IOSide.None_
         else:
             io_side = IOSide.North
+
+        self.pe_fc = pe_fc
 
         if not interconnect_only:
             # global buffer parameters
@@ -116,7 +133,8 @@ class Garnet(Generator):
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
                                    mem_ratio=(1, 4),
-                                   standalone=standalone)
+                                   standalone=standalone,
+                                   pe_fc=pe_fc)
 
         self.interconnect = interconnect
 
@@ -248,8 +266,48 @@ class Garnet(Generator):
         return input_interface, output_interface,\
                (reset_port_name, valid_port_name, en_port_name)
 
+    def metamapper_map(self,app):
+        app_dir = os.path.dirname(app)
+
+        if self.pe_fc == lassen_fc:
+            pe_header = f"./headers/lassen_header.json"
+        else:
+            pe_header = f"{app_dir}/pe_header.json"
+        mem_header = f"./headers/mem_header.json"
+
+
+        app_file = app
+        c = CoreIRContext(reset=True)
+        cmod = cutil.load_from_json(app_file)
+        c = CoreIRContext()
+        c.run_passes(["flatten"])
+
+        MEM_fc = gen_MEM_fc()
+        # Contains an empty nodes
+        nodes = gen_CoreIRNodes(16)
+        putil.load_and_link_peak(
+            nodes,
+            pe_header,
+            {"global.PE": self.pe_fc},
+        )
+        putil.load_and_link_peak(
+            nodes,
+            mem_header,
+            {"global.MEM": MEM_fc},
+        )
+    
+        dag = cutil.coreir_to_dag(nodes, cmod)
+        print("-"*80)
+        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc}
+        netlist_info = create_netlist_info(dag, tile_info)
+        print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
+        return netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"], netlist_info["buses"]
+
+
+
     def compile(self, halide_src, unconstrained_io=False, compact=False):
-        id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
+        # id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
+        id_to_name, instance_to_instr, netlist, bus = self.metamapper_map(halide_src)
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
@@ -276,7 +334,8 @@ class Garnet(Generator):
                                                        outputs,
                                                        placement,
                                                        id_to_name)
-        delay = 1 if has_rom(id_to_name) else 0
+        # delay = 1 if has_rom(id_to_name) else 0
+        delay = 0
         # also write out the meta file
         archipelago.io.dump_meta_file(halide_src, "design", os.path.dirname(halide_src))
         return bitstream, (input_interface, output_interface, reset, valid, en,
@@ -356,6 +415,7 @@ def main():
     parser.add_argument("--virtualize-group-size", type=int, default=4)
     parser.add_argument("--virtualize", action="store_true")
     parser.add_argument("--use-io-valid", action="store_true")
+    parser.add_argument('--pe', type=str, default="")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -371,7 +431,8 @@ def main():
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
-                    standalone=args.standalone)
+                    standalone=args.standalone,
+                    pe_fc=pe_fc)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
