@@ -9,9 +9,9 @@ fi
 
 sram_name+="_130a"
 
-# Compile the memories and capture the output in a log.
-# Note that the compiler itself apparently never exits with nonzero status,
-# regardless of errors flagged during execution (??)
+# The memory compiler apparently never exits with nonzero status,
+# regardless of whether it encountered "FATAL" errors.
+# So we capture the output in a log and look for the error after the fact :(
 
 cmd="./inputs/adk/mc/${mc_name}/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
 if [ ! $partial_write == True ]; then
@@ -20,9 +20,10 @@ fi
 eval $cmd |& tee mc.log
 
 # Because compiler does not fail properly, we have to look in the log
-# for success/failure. If compiler failed, try and find cached srams to use.
-# In particular, we currently are getting this failure (sep 2021):
+# for success/failure. Then, if we find that the compiler did fail, we
+# try and find cached srams to use.
 # 
+# In particular, we currently get this problem (sep 2021):
 #    FATAL (MC, 044): Failed to get license for feature
 #    MC2-tsn16ffcllhdspsbsram-CLV or MC2-tsn16ffcllhdspsbsram-CPV 
 
@@ -33,9 +34,10 @@ if grep FATAL mc.log; then
     set -x
 
     # Use latest gold build as the cache (if hack were less temporary,
-    # would use parm / env var here).
-    # The -P option says to use the physical directory structure
-    # instead of following symbolic links
+    # would maybe use a parameter for the "gold" variable).
+    # Search the cache for SRAMs we can use.
+    # (The "cd -P" option says to use the physical directory
+    # structure instead of following symbolic links.)
 
     gold=/sim/buildkite-agent/gold
     if ! test -e $gold; then
@@ -47,7 +49,8 @@ if grep FATAL mc.log; then
     g=$(cd -P $gold; pwd)
     echo "Using gold cache '$g'"
 
-    # Use first sram found in cache, so long as it has the right name (e.g. sram_name='ts1n16ffcllsblvtc2048x64m8sw_130a')
+    # Search the cache for *any* SRAM that has the desired name
+    # (e.g. 'ts1n16ffcllsblvtc2048x64m8sw_130a')
 
     sram_dir=$(find $g -name ${sram_name} | head -1)
     echo "Using srams found in dir '$sram_dir'"
@@ -57,48 +60,6 @@ if grep FATAL mc.log; then
 
     set +x; echo '--- continue...'
 fi
-
-
-
-
-# ##############################################################################
-# USE_CACHED=True
-# USE_CACHED=False
-# if [ $USE_CACHED == True ]; then
-# 
-#     # Mar 2021 Temporary fix to get around expired memory-compiler license
-#     echo '+++ HACK TIME! Using cached srams...'; set -x
-# 
-#     # Use latest gold build as the cache (if hack were less temporary,
-#     # would use parm / env var here).
-#     # The -P option says to use the physical directory structure
-#     # instead of following symbolic links
-#     gold=/sim/buildkite-agent/gold
-#     if ! test -e $gold; then
-#         echo "**ERROR Cannot find gold directory for cached srams"
-#         echo "I.e. '$gold' does not exist"
-#         echo "Also see $0"
-#         exit 13
-#     fi
-#     g=$(cd -P $gold; pwd)
-#     echo "Using gold cache '$g'"
-# 
-#     # Use first sram found in cache, so long as it has the right name (e.g. sram_name='ts1n16ffcllsblvtc2048x64m8sw_130a')
-#     sram_dir=$(find $g -name ${sram_name} | head -1)
-#     echo "Using srams found in dir '$sram_dir'"
-#     cp -rp ${sram_dir} .
-# 
-#     # Done w/hack
-#     set +x; echo '--- continue...'
-# 
-# else
-#     cmd="./inputs/adk/mc/${mc_name}/tsn16ffcllhdspsbsram_130a.pl -file config.txt -NonBIST -NonSLP -NonDSLP -NonSD"
-#     if [ ! $partial_write == True ]; then
-#         cmd+=" -NonBWEB"
-#     fi
-#     eval $cmd |& tee mc.log
-#     
-# fi
 
 ln -s ../$sram_name/NLDM/${sram_name}_${corner}.lib outputs/sram_tt.lib
 ln -s ../$sram_name/NLDM/${sram_name}_${bc_corner}.lib outputs/sram_ff.lib
