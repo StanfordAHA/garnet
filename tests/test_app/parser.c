@@ -388,8 +388,10 @@ void *parse_metadata(char *filename) {
                 if (strncmp(&info->input_info[i]->filename[name_len-3], "raw", strlen("raw")) == 0) {
                     fseek(fp2, 0L, SEEK_END);
                     info->input_info[i]->filesize = (int) ftell(fp2);
-                }
-                else {
+                } else if (strncmp(&info->input_info[i]->filename[name_len-3], "hex", strlen("hex")) == 0) {
+                    fseek(fp2, 0L, SEEK_END);
+                    info->input_info[i]->filesize = 2 * (((int) ftell(fp2)) / 5);
+                } else {
                     char c;
                     int ch1, ch2, bitwidth, filesize;
                     // skip the first line
@@ -445,8 +447,11 @@ void *parse_metadata(char *filename) {
                 if (strncmp(&info->output_info[i]->filename[name_len-3], "raw", strlen("raw")) == 0) {
                     fseek(fp2, 0L, SEEK_END);
                     info->output_info[i]->filesize = (int) ftell(fp2);
-                }
-                else {
+                } else if (strncmp(&info->output_info[i]->filename[name_len-3], "hex", strlen("hex")) == 0) {
+                    fseek(fp2, 0L, SEEK_END);
+                    // When in hex format, every character (including whitespace) is considered as one data
+                    info->output_info[i]->filesize = 2 * (((int) ftell(fp2)) / 5);
+                } else {
                     char c;
                     int ch1, ch2, bitwidth, filesize;
                     // skip the first line

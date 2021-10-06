@@ -280,7 +280,7 @@ function data_array_t Kernel::parse_input_data(int idx);
     int fp = $fopen(input_filenames[idx], "rb");
     int name_len = input_filenames[idx].len();
     string tmp;
-    int code;
+    int cnt;
     assert_(fp != 0, "Unable to read input file");
     if (input_filenames[idx].substr(name_len-3, name_len-1) == "pgm") begin
         // just skip the first three lines
@@ -288,8 +288,19 @@ function data_array_t Kernel::parse_input_data(int idx);
              $fgets(tmp, fp);
         end
     end
-    code = $fread(result, fp);
-    assert_(code == input_size[idx], $sformatf("Unable to read input data"));
+    if (input_filenames[idx].substr(name_len-3, name_len-1) == "pgm"
+        | input_filenames[idx].substr(name_len-3, name_len-1) == "raw") begin
+        cnt = $fread(result, fp);
+    end
+    else begin
+        cnt = 0;
+        while ($fscanf(fp,"%h\n", result[cnt]) == 1) begin
+            cnt = cnt + 1;
+        end
+        // The total size in byte is the number of pixels times 2
+        cnt = cnt * 2;
+    end
+    assert_(cnt == input_size[idx], $sformatf("Unable to read input data. Parsed size is %d, while expected size is %d\n", cnt, input_size[idx]));
     $fclose(fp);
     return result;
 endfunction
@@ -300,7 +311,7 @@ function data_array_t Kernel::parse_gold_data(int idx);
     int fp = $fopen(output_filenames[idx], "rb");
     int name_len = output_filenames[idx].len();
     string tmp;
-    int code;
+    int cnt;
     assert_(fp != 0, "Unable to read output file");
     if (output_filenames[idx].substr(name_len-3, name_len-1) == "pgm") begin
         // just skip the first three lines
@@ -308,8 +319,19 @@ function data_array_t Kernel::parse_gold_data(int idx);
              $fgets(tmp, fp);
         end
     end
-    code = $fread(result, fp);
-    assert_(code == output_size[idx], $sformatf("Unable to read output data"));
+    if (output_filenames[idx].substr(name_len-3, name_len-1) == "pgm"
+        | output_filenames[idx].substr(name_len-3, name_len-1) == "raw") begin
+        cnt = $fread(result, fp);
+    end
+    else begin
+        cnt = 0;
+        while ($fscanf(fp,"%h\n", result[cnt]) == 1) begin
+            cnt = cnt + 1;
+        end
+        // The total size in byte is the number of pixels times 2
+        cnt = cnt * 2;
+    end
+    assert_(cnt == output_size[idx], $sformatf("Unable to read output data. Parsed size is %d, while expected size is %d\n", cnt, output_size[idx]));
     $fclose(fp);
     return result;
 endfunction
