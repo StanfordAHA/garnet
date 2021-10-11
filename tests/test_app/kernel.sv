@@ -5,6 +5,7 @@
 ** Author: Taeyoung Kong
 ** Change history:
 **  10/25/2020 - Implement the first version
+**  06/20/2021 - Implement the second version
 **===========================================================================*/
 
 import "DPI-C" function chandle parse_metadata(string filename);
@@ -16,6 +17,7 @@ import "DPI-C" function int glb_map(chandle kernel);
 import "DPI-C" function int get_num_groups(chandle info);
 import "DPI-C" function int get_group_start(chandle info);
 import "DPI-C" function int get_num_inputs(chandle info);
+import "DPI-C" function int get_num_io_tiles(chandle info, int index);
 import "DPI-C" function int get_num_outputs(chandle info);
 import "DPI-C" function string get_placement_filename(chandle info);
 import "DPI-C" function string get_bitstream_filename(chandle info);
@@ -26,12 +28,13 @@ import "DPI-C" function int get_output_size(chandle info, int index);
 import "DPI-C" function int get_bs_size(chandle info);
 import "DPI-C" function int get_bs_tile(chandle info);
 import "DPI-C" function int get_bs_start_addr(chandle info);
-import "DPI-C" function int get_input_start_addr(chandle info, int index);
-import "DPI-C" function int get_input_tile(chandle info, int index);
-import "DPI-C" function int get_output_start_addr(chandle info, int index);
-import "DPI-C" function int get_output_tile(chandle info, int index);
-import "DPI-C" function chandle get_io_configuration(chandle info);
-import "DPI-C" function chandle get_tile_configuration(chandle info);
+import "DPI-C" function int get_io_tile_start_addr(chandle info, int index);
+import "DPI-C" function int get_io_tile_map_tile(chandle info, int index);
+import "DPI-C" function int get_io_tile_loop_dim(chandle info, int index);
+import "DPI-C" function int get_io_tile_extent(chandle info, int index, int extent_idx);
+import "DPI-C" function int get_io_tile_data_stride(chandle info, int index, int stride_idx);
+import "DPI-C" function int get_io_tile_cycle_stride(chandle info, int index, int stride_idx);
+import "DPI-C" function chandle get_kernel_configuration(chandle info);
 import "DPI-C" function chandle get_pcfg_configuration(chandle info);
 import "DPI-C" function int get_configuration_size(chandle info);
 import "DPI-C" function int get_configuration_addr(chandle info, int index);
@@ -62,33 +65,47 @@ typedef struct {
 typedef bit[15:0] data_array_t[];
 typedef bitstream_entry_t bitstream_t[];
 
+typedef struct {
+    int tile;
+    int start_addr;
+    int num_data;
+    data_array_t io_block_data;
+} IOTile;
+
+typedef struct {
+    int num_io_tiles;
+    IOTile io_tiles[];
+} IO;
+
 class Kernel;
     static int cnt = 0;
+    // name stores the index and the name of Kernel
     string name;
 
-    chandle kernel_info, place_info, bs_info;
+    chandle kernel_info, bs_info;
 
     string placement_filename;
     string bitstream_filename;
-    string input_filenames[];
-    string output_filenames[];
 
     int num_groups;
     int group_start;
     int num_inputs;
     int num_outputs;
 
+    // TODO: Put all these into IO inputs/outputs
+    // input/output information for testing
+    string input_filenames[];
+    string output_filenames[];
     int input_size[];
     int output_size[];
-    int input_tile[];
-    int output_tile[];
-    int input_start_addr[];
-    int output_start_addr[];
-
     // queue to store data
     data_array_t input_data[];
     data_array_t output_data[];
     data_array_t gold_data[];
+
+    // IO information
+    IO inputs[];
+    IO outputs[];
 
     // queue to store bitstream
     bitstream_t  bitstream_data;
@@ -100,10 +117,8 @@ class Kernel;
     app_state_t  app_state;
 
     // configuration
-    Config tile_cfg[];
+    Config kernel_cfg[];
     Config bs_cfg[];
-    Config input_cfg[][];
-    Config output_cfg[][];
 
     extern function new(string app_dir);
     extern function void display();
@@ -112,11 +127,13 @@ class Kernel;
     extern function bitstream_t parse_bitstream();
     extern function void add_offset_bitstream(ref bitstream_t bitstream_data, input int offset);
     extern function void print_input(int idx);
+    extern function void print_input_block(int idx, int block_idx);
     extern function void print_output(int idx);
+    extern function void print_output_block(int idx, int block_idx);
     extern function void print_gold(int idx);
     extern function void print_bitstream();
     extern function void compare();
-    extern function void compare_(int idx);
+    extern function int compare_(int idx);
     extern function void assert_(bit cond, string msg);
     extern function int kernel_map();
     extern function Config get_pcfg_start_config();
@@ -125,6 +142,10 @@ endclass
 
 function Kernel::new(string app_dir);
     string last_str, app_name, meta_filename;
+    chandle io_info;
+    int num_io_tiles;
+    int num_pixels;
+    int loop_dim;
 
     last_str = app_dir.getc(app_dir.len() - 1) == "/"? app_dir.len() - 2: app_dir.len() - 1;
     for (int i = app_dir.len() - 1; i >= 0; i--) begin
@@ -135,53 +156,99 @@ function Kernel::new(string app_dir);
     end
     if (app_name.len() == 0) app_name = app_dir;
 
-    meta_filename = {app_dir, "/bin/", "design.meta"};
+    // meta file name is design_meat.json
+    meta_filename = {app_dir, "/bin/", "design_meta.json"};
     $sformat(name, "APP%0d-%0s", cnt++, app_name);
+    $display("[%s]Initilizing the APP Done", name);
 
     app_state = IDLE;
 
     kernel_info = parse_metadata(meta_filename);
+    $display("[%s] Parsing the metadata done", name);
     assert_(kernel_info != null, $sformatf("Unable to find %s", meta_filename));
 
-    placement_filename = get_placement_filename(kernel_info);
     bitstream_filename = get_bitstream_filename(kernel_info);
-
-    place_info = get_place_info(kernel_info);
-    assert_(place_info != null, $sformatf("Unable to find %s", placement_filename));
-
     bs_info = get_bs_info(kernel_info);
     assert_(bs_info != null, $sformatf("Unable to find %s", bitstream_filename));
 
-    num_inputs = get_num_inputs(place_info);
-    num_outputs = get_num_outputs(place_info);
-    num_groups = get_num_groups(place_info);
+    num_inputs = get_num_inputs(kernel_info);
+    num_outputs = get_num_outputs(kernel_info);
+    num_groups = get_num_groups(kernel_info);
 
+    $display("[%s] num_inputs: %0d", name, num_inputs);
+    $display("[%s] num_outputs: %0d", name, num_outputs);
+    $display("[%s] num_groups: %0d", name, num_groups);
+
+    // IO instantiate
+    inputs = new[num_inputs];
+    outputs = new[num_outputs];
     input_filenames = new[num_inputs];
     input_data = new[num_inputs];
     input_size = new[num_inputs];
-    input_start_addr = new[num_inputs];
-    input_tile = new[num_inputs];
-    input_cfg = new[num_inputs];
-
     output_filenames = new[num_outputs];
-    output_size = new[num_outputs];
-    output_start_addr = new[num_outputs];
-    output_tile = new[num_outputs];
-    gold_data = new[num_outputs];
     output_data = new[num_outputs];
-    output_cfg = new[num_outputs];
+    output_size = new[num_outputs];
+    gold_data = new[num_outputs];
 
     for (int i = 0; i < num_inputs; i++) begin
         input_filenames[i] = get_input_filename(kernel_info, i);
-        input_size[i] = get_input_size(place_info, i);
+
+        input_size[i] = get_input_size(kernel_info, i);
+
         input_data[i] = parse_input_data(i);
+        $display("Parse input_%0d data Done", i);
+
+        io_info = get_input_info(kernel_info, i);
+
+        num_io_tiles = get_num_io_tiles(io_info, i);
+        inputs[i].num_io_tiles = num_io_tiles;
+        inputs[i].io_tiles = new[num_io_tiles];
+
+        $display("input_%0d has %0d input blocks", i, num_io_tiles);
+
+        if (num_io_tiles == 1) begin
+            inputs[i].io_tiles[0].num_data = input_data[i].size;
+            inputs[i].io_tiles[0].io_block_data = input_data[i];
+        end else begin
+            for (int j=0; j < num_io_tiles; j++) begin
+                num_pixels = input_data[i].size / num_io_tiles;
+                inputs[i].io_tiles[j].num_data = num_pixels;
+                inputs[i].io_tiles[j].io_block_data = new[num_pixels];
+                // NOTE: We assume only innermost loop is unrolled.
+                for(int k=0; k<num_pixels; k++) begin
+                    inputs[i].io_tiles[j].io_block_data[k] = input_data[i][j + num_io_tiles * k];
+                end
+            end
+        end
     end
 
     for (int i = 0; i < num_outputs; i++) begin
         output_filenames[i] = get_output_filename(kernel_info, i);
-        output_size[i] = get_output_size(place_info, i);
+        output_size[i] = get_output_size(kernel_info, i);
+        // convert byte size to 16bit size
+        output_data[i] = new[(output_size[i]>>1)];
+
+        io_info = get_output_info(kernel_info, i);
+        num_io_tiles = get_num_io_tiles(io_info, i);
+        outputs[i].num_io_tiles = num_io_tiles;
+        outputs[i].io_tiles = new[num_io_tiles];
+
+        for (int j = 0; j < num_io_tiles; j++) begin
+            loop_dim = get_io_tile_loop_dim(io_info, j);
+            for (int k = 0; k < loop_dim; k++) begin
+                if (k == 0) begin
+                    num_pixels = get_io_tile_extent(io_info, j, k);
+                end else begin
+                    num_pixels = num_pixels * get_io_tile_extent(io_info, j, k);
+                end
+            end
+            outputs[i].io_tiles[j].io_block_data = new[num_pixels];
+        end
+    end
+
+    // parse gold data
+    for (int i = 0; i < num_outputs; i++) begin
         gold_data[i] = parse_gold_data(i);
-        output_data[i] = new[output_size[i]];
     end
 
     bs_size = get_bs_size(bs_info);
@@ -208,31 +275,41 @@ function bitstream_t Kernel::parse_bitstream();
 endfunction
 
 function data_array_t Kernel::parse_input_data(int idx);
-    data_array_t result = new[input_size[idx]];
+    int num_pixel = (input_size[idx] >> 1); // Pixel is 2byte (16bit) size
+    data_array_t result = new[num_pixel];
     int fp = $fopen(input_filenames[idx], "rb");
+    int name_len = input_filenames[idx].len();
+    string tmp;
+    int code;
     assert_(fp != 0, "Unable to read input file");
-    for (int i = 0; i < input_size[idx]; i++) begin
-        byte unsigned value;
-        int code;
-        code = $fread(value, fp);
-        assert_(code == 1, $sformatf("Unable to read input data"));
-        result[i] = value;
+    if (input_filenames[idx].substr(name_len-3, name_len-1) == "pgm") begin
+        // just skip the first three lines
+        for (int i = 0; i < 3; i++) begin
+             $fgets(tmp, fp);
+        end
     end
+    code = $fread(result, fp);
+    assert_(code == input_size[idx], $sformatf("Unable to read input data"));
     $fclose(fp);
     return result;
 endfunction
 
 function data_array_t Kernel::parse_gold_data(int idx);
-    data_array_t result = new[output_size[idx]];
+    int num_pixel = (output_size[idx] >> 1); // Pixel is 2byte (16bit) size
+    data_array_t result = new[num_pixel];
     int fp = $fopen(output_filenames[idx], "rb");
+    int name_len = output_filenames[idx].len();
+    string tmp;
+    int code;
     assert_(fp != 0, "Unable to read output file");
-    for (int i = 0; i < output_size[idx]; i++) begin
-        byte unsigned value;
-        int code;
-        code = $fread(value, fp);
-        assert_(code == 1, $sformatf("Unable to read output data"));
-        result[i] = value;
+    if (output_filenames[idx].substr(name_len-3, name_len-1) == "pgm") begin
+        // just skip the first three lines
+        for (int i = 0; i < 3; i++) begin
+             $fgets(tmp, fp);
+        end
     end
+    code = $fread(result, fp);
+    assert_(code == output_size[idx], $sformatf("Unable to read output data"));
     $fclose(fp);
     return result;
 endfunction
@@ -249,19 +326,29 @@ function int Kernel::kernel_map();
     end
 
     // update group_start offset and add offset
-    group_start = get_group_start(place_info);
+    group_start = get_group_start(kernel_info);
+
+    // TODO: This should be done at the hardware later
     add_offset_bitstream(bitstream_data, group_start*4);
 
     // Set start address after mapping
     bs_start_addr = get_bs_start_addr(bs_info);
     bs_tile = get_bs_tile(bs_info);
+
     for (int i = 0; i < num_inputs; i++) begin
-        input_start_addr[i] = get_input_start_addr(place_info, i);
-        input_tile[i] = get_input_tile(place_info, i);
+        io_info = get_input_info(kernel_info, i);
+        for(int j=0; j < inputs[i].num_io_tiles; j++) begin
+            inputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
+            inputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j); 
+        end
     end
+
     for (int i = 0; i < num_outputs; i++) begin
-        output_start_addr[i] = get_output_start_addr(place_info, i);
-        output_tile[i] = get_output_tile(place_info, i);
+        io_info = get_output_info(kernel_info, i);
+        for(int j=0; j < outputs[i].num_io_tiles; j++) begin
+            outputs[i].io_tiles[j].tile = get_io_tile_map_tile(io_info, j);
+            outputs[i].io_tiles[j].start_addr = get_io_tile_start_addr(io_info, j); 
+        end
     end
 
     // set configurations
@@ -274,37 +361,13 @@ function int Kernel::kernel_map();
         bs_cfg[i].data = get_configuration_data(cfg, i);
     end
 
-    // tile configuration
-    cfg = get_tile_configuration(place_info);
+    // kernel configuration
+    cfg = get_kernel_configuration(kernel_info);
     size = get_configuration_size(cfg);
-    tile_cfg = new[size];
+    kernel_cfg = new[size];
     for (int i=0; i < size; i++) begin
-        tile_cfg[i].addr = get_configuration_addr(cfg, i);
-        tile_cfg[i].data = get_configuration_data(cfg, i);
-    end
-
-    // input configuration
-    for (int i = 0; i < num_inputs; i++) begin
-        io_info = get_input_info(place_info, i);
-        cfg = get_io_configuration(io_info);
-        size = get_configuration_size(cfg);
-        input_cfg[i] = new[size];
-        for (int j=0; j < size; j++) begin
-            input_cfg[i][j].addr = get_configuration_addr(cfg, j);
-            input_cfg[i][j].data = get_configuration_data(cfg, j);
-        end
-    end
-
-    // output configuration
-    for (int i = 0; i < num_outputs; i++) begin
-        io_info = get_output_info(place_info, i);
-        cfg = get_io_configuration(io_info);
-        size = get_configuration_size(cfg);
-        output_cfg[i] = new[size];
-        for (int j=0; j < size; j++) begin
-            output_cfg[i][j].addr = get_configuration_addr(cfg, j);
-            output_cfg[i][j].data = get_configuration_data(cfg, j);
-        end
+        kernel_cfg[i].addr = get_configuration_addr(cfg, i);
+        kernel_cfg[i].data = get_configuration_data(cfg, i);
     end
 
     $display("[%s] glb mapping success", name);
@@ -332,7 +395,7 @@ endfunction
 function Config Kernel::get_strm_start_config();
     Config cfg;
     cfg.addr = get_strm_pulse_addr();
-    cfg.data = get_strm_pulse_data(place_info);
+    cfg.data = get_strm_pulse_data(kernel_info);
     return cfg;
 endfunction
 
@@ -350,27 +413,61 @@ function void Kernel::display();
 endfunction
 
 function void Kernel::compare();
-    for(int i=0; i<num_outputs; i++) begin
-        compare_(i);
+    int result;
+    int num_pixels;
+    int num_io_tiles;
+    // Hacky way to interleave output data in io_block to final output
+    // TODO: Make interleave and uninterleave as a function
+    for (int i = 0; i < num_outputs; i++) begin
+        num_io_tiles = outputs[i].num_io_tiles;
+        if (num_io_tiles == 1) begin
+            output_data[i] = outputs[i].io_tiles[0].io_block_data;
+        end else begin
+            for (int j = 0; j < num_io_tiles; j++) begin
+                num_pixels = outputs[i].io_tiles[j].io_block_data.size;
+                for(int k = 0; k < num_pixels; k++) begin
+                     output_data[i][j + num_io_tiles * k] = outputs[i].io_tiles[j].io_block_data[k];
+                end
+            end
+        end
     end
-    $display("%s passed", name);
+    result = 0;
+    for(int i=0; i<num_outputs; i++) begin
+        result += compare_(i);
+    end
+    if (result == 0) begin
+        $display("%s passed", name);
+    end else begin
+        $display("%s failed. %0d number of pixels are different.", name, result);
+    end
 endfunction
 
-function void Kernel::compare_(int idx);
+function int Kernel::compare_(int idx);
+    int result = 0;
     assert (gold_data[idx].size() == output_data[idx].size())
     else begin
         $display("[%s]-Output[%0d], gold data size is %0d, output data size is %0d", name, idx, gold_data[idx].size(), output_data[idx].size());
         $finish(2);
     end
     for (int i = 0; i < gold_data[idx].size(); i++) begin
-        assert_(gold_data[idx][i] == output_data[idx][i],
-                $sformatf("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]));
+        if (gold_data[idx][i] != output_data[idx][i]) begin
+            $display("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]);
+            result += 1;
+        end
     end
+    return result;
 endfunction
 
 function void Kernel::print_input(int idx);
     foreach(input_data[idx][i]) begin
         $write("%02X ", input_data[idx][i]);
+    end
+    $display("\n");
+endfunction
+
+function void Kernel::print_input_block(int idx, int block_idx);
+    foreach(inputs[idx].io_tiles[block_idx].io_block_data[i]) begin
+        $write("%02X ", inputs[idx].io_tiles[block_idx].io_block_data[i]);
     end
     $display("\n");
 endfunction
@@ -386,6 +483,13 @@ function void Kernel::print_output(int idx);
     foreach(output_data[idx][i]) begin
         $write("%02X ", output_data[idx][i]);
     end
+    $display("\n\n");
+endfunction
+
+function void Kernel::print_output_block(int idx, int block_idx);
+    foreach(outputs[idx].io_tiles[block_idx].io_block_data[i]) begin
+        $write("%02X ", outputs[idx].io_tiles[block_idx].io_block_data[i]);
+    end
     $display("\n");
 endfunction
 
@@ -395,3 +499,4 @@ function void Kernel::print_bitstream();
     end
     $display("\n");
 endfunction
+

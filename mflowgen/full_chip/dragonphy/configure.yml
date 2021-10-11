@@ -9,3 +9,5 @@ outputs:
   - dragonphy_RDL.gds
   - dragonphy_RDL.lef
 
+commands:
+  - bash fixup.sh

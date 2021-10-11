@@ -22,7 +22,7 @@ if $::env(PWR_AWARE) {
 
 # Case analysis/scenarios
 
-set alu_path PE_inst0/WrappedPE_inst0\$PE_inst0/ALU_inst0\$ALU_comb_inst0
+set alu_path PE_inst0/WrappedPE_inst0\$PE_inst0/ALU_inst0
 set fp_add_path $alu_path/magma_BFloat_16_add_inst0
 set fp_mul_path $alu_path/magma_BFloat_16_mul_inst0
 set mul_path $alu_path/magma_Bits_32_mul_inst0

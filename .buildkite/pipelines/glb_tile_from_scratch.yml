@@ -1,0 +1,41 @@
+# Complete from-scratch glb_tile build
+
+##############################################################
+# Aug 2021: Tried this pipeline and it did not work, maybe
+# because it tries to build "glb_top" instead of "full_chip".
+# (It failed in the RTL step.) Looks like the cached base
+# version is the one to use (glb_tile.yml)...
+##############################################################
+
+agents: { jobsize: "hours" }
+
+##############################################################################
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
+
+##############################################################################
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
+env:
+  GOLD: /build/master-pe.${BUILDKITE_BUILD_NUMBER}
+
+steps:
+
+##############################################################################
+# COMPLETE GLB-TILE BUILD from scratch
+# 
+- label: 'setup'
+  commands:
+  # - pwd; git branch; git checkout $$NOV11
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/glb_top'
+- wait: ~
+
+- label: 'glb_tile'
+  commands:
+  # - pwd; git branch; git checkout $$NOV11
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 30G;
+     set -o pipefail;
+     make glb_tile |& tee make-gtile.log'

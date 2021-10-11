@@ -1,0 +1,28 @@
+agents: { jobsize: "hours" }
+
+##############################################################################
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
+
+##############################################################################
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
+env:
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+
+steps:
+
+##############################################################################
+# INDIVIDUAL TILE RUNS
+# Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
+
+- label: 'FULL_CHIP RTL'
+  commands:
+  - $TEST --need_space 30G full_chip --steps rtl --debug
+  - 'rtl_dir=full_chip/*-rtl;
+     if grep Traceback $$rtl_dir/mflowgen-run.log;
+     then echo oh no failed silently oh no;
+     else exit 0;
+     fi'

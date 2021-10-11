@@ -168,8 +168,9 @@ function build_module {
     modname="$1"; # E.g. "full_chip"
     echo "--- ...BUILD MODULE '$modname'"
 
-    echo "mkdir $modname; cd $modname"
-    mkdir $modname; cd $modname
+    # '-p' means we won't die if dir already exists
+    echo "mkdir -p $modname; cd $modname"
+    mkdir -p $modname; cd $modname
 
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
@@ -186,8 +187,9 @@ function build_subgraph {
     dirname=$modpfx$modname; # E.g. "1-Tile_PE"
     echo "--- ...BUILD SUBGRAPH '$dirname'"
     
-    echo "mkdir $dirname; cd $dirname"
-    mkdir $dirname; cd $dirname
+    # '-p' means we won't die if dir already exists
+    echo "mkdir -p $dirname; cd $dirname"
+    mkdir -p $dirname; cd $dirname
     
     echo "mflowgen run --design $garnet/mflowgen/$modname"
     mflowgen run --design $garnet/mflowgen/$modname
@@ -203,6 +205,20 @@ function build_subgraph {
 # Top level
 firstmod=${modlist[0]}
 build_module $firstmod
+
+# Little hack to get local tsmc16 libs in among the cached info
+# FIXME/TODO would it work for the caller to simply include "mflowgen" in the copy_list?
+if [ "$use_cached" ]; then
+    if [ "$firstmod" == "full_chip" ]; then
+        echo "+++ Jimmy up the adks"
+        set -x; pwd
+        ls -l mflowgen/adks || echo NOPE adks not connected yet
+        ln -s /sim/buildkite-agent/gold/full_chip/mflowgen
+        ls -l mflowgen/adks
+        set +x
+        echo "--- Continue"
+    fi
+fi
 
 # Subgraphs
 subgraphs=${modlist[@]:1}
@@ -349,9 +365,12 @@ done
 
 echo '+++ PASS/FAIL info maybe, to make you feel good'
 function PASS { return 0; }
-cat -n make*.log | grep -i error  | tail | tee -a tmp.summary || PASS; echo "-----"
-cat -n make*.log | grep    FAIL   | tail | tee -a tmp.summary || PASS; echo "-----"
-cat -n make*.log | grep -i passed | tail | tee -a tmp.summary || PASS; echo ""
+function sumfilter { 
+    grep -v 'errors: 0, warnings: 0' | awk '$2 == "echo" { next } {print}' | cut -b 1-64
+}
+cat -n $f | grep -i error  | sumfilter | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n $f | grep    FAIL   | sumfilter | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n $f | grep -i passed | sumfilter | tail | tee -a tmp.summary || PASS; echo ""
 
 echo '+++ FAIL if make job failed, duh.'
 egrep '^make: .* Error 1' make*.log && exit 13 || echo 'Did not fail. Right?'
@@ -359,11 +378,15 @@ egrep '^make: .* Error 1' make*.log && exit 13 || echo 'Did not fail. Right?'
 
 ########################################################################
 echo '+++ SUMMARY of what we did'
-f=`/bin/ls -t make*.log`
-cat -n $f | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
+logs=`/bin/ls -t make*.log`
+cat -n $logs | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
     >> tmp.summary \
     || PASS
-cat tmp.summary
+cat tmp.summary \
+    | sort -n | awk '{$1=""}; {print}' \
+    | awk '{if ($1 == "make") print; else print "   " $0;}' \
+    | uniq
+
 
 ########################################################################
 echo '+++ RUNTIMES'; make runtimes

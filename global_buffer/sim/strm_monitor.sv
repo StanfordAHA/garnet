@@ -41,7 +41,12 @@ task StrmMonitor::run();
         ld_data_q       = {};
         st_data_q       = {};
 
-        wait(vif.cbm.data_valid_f2g || vif.cbm.data_valid_g2f);
+        while (1) begin
+            @(vif.cbm);
+            if (vif.cbm.data_valid_f2g || vif.cbm.data_valid_g2f ) begin
+                break;
+            end
+        end
         if (vif.cbm.data_valid_f2g) begin
             trans.st_on = 1;
             while (!vif.cbm.strm_f2g_interrupt) begin

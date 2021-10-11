@@ -14,7 +14,7 @@ class GlobalControllerParams:
     axi_data_width: int = 32
     block_axi_addr_width: int = 12
     num_glb_tiles: int = 16
-
+    glb_tile_mem_size: int = 256
 
 def gen_wrapper(params: GlobalControllerParams = None):
     type_map = {

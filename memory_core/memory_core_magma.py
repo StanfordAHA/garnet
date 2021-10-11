@@ -7,7 +7,6 @@ from gemstone.generator.from_magma import FromMagma
 from gemstone.common.core import PnRTag
 from typing import List
 from lake.top.lake_top import LakeTop
-from lake.top.pond import Pond
 from lake.passes.passes import change_sram_port_names
 from lake.utils.sram_macro import SRAMMacroInfo
 from lake.top.extract_tile_info import *
@@ -15,8 +14,10 @@ import kratos as kts
 
 if __name__ == "__main__":
     from memtile_util import LakeCoreBase
+    from memory_mode import MemoryMode
 else:
     from .memtile_util import LakeCoreBase
+    from .memory_mode import MemoryMode
 
 
 def config_mem_tile(interconnect: Interconnect, full_cfg, new_config_data, x_place, y_place, mcore_cfg):
@@ -212,6 +213,7 @@ class MemCore(LakeCoreBase):
 
     def get_config_bitstream(self, instr):
         configs = []
+<<<<<<< HEAD
 
         # Add FIFO mode...
         if instr == "fifo":
@@ -233,14 +235,33 @@ class MemCore(LakeCoreBase):
                           ("ren_in_1_reg_sel", 1)]
             for name, v in config_mem:
                 configs = [self.get_config_data(name, v)] + configs
+=======
+        config_runtime = []
+
+        mode_map = {
+            "lake": MemoryMode.UNIFIED_BUFFER,
+            "rom": MemoryMode.ROM,
+            "sram": MemoryMode.SRAM,
+            "fifo": MemoryMode.FIFO,
+        }
+
+        # Extract the runtime + preload config
+        top_config = instr['config'][1]
+
+        # Add in preloaded memory
+        if "init" in top_config:
+>>>>>>> f276d365867130965dffef884c989b4d92c484df
             # this is SRAM content
-            content = instr['config'][1]['init']
+            content = top_config['init']
+            assert len(content) % self.fw_int == 0, f"ROM content size must be a multiple of {self.fw_int}"
             for addr, data in enumerate(content):
                 if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
+                addr = addr >> 2
                 feat_addr = addr // 256 + 1
-                addr = (addr % 256) >> 2
+                addr = addr % 256
                 configs.append((addr, feat_addr, data))
+<<<<<<< HEAD
             print(configs)
             return configs
 
@@ -297,6 +318,40 @@ class MemCore(LakeCoreBase):
                           ("ren_in_1_reg_sel", 1)]
             for name, v in config_mem:
                 configs = [self.get_config_data(name, v)] + configs
+=======
+
+        # Extract mode to the enum
+        # mode = mode_map[instr['mode'][1]]
+        mode = instr['mode']
+
+        if mode == MemoryMode.UNIFIED_BUFFER:
+            config_runtime = self.dut.get_static_bitstream_json(top_config)
+        elif mode == MemoryMode.ROM:
+            # Rom mode is simply SRAM mode with the writes disabled
+            config_runtime = [("tile_en", 1),
+                              ("mode", 2),
+                              ("wen_in_0_reg_sel", 1),
+                              ("wen_in_1_reg_sel", 1)]
+        elif mode == MemoryMode.SRAM:
+            # SRAM mode gives 1 write port, 1 read port currently
+            config_runtime = [("tile_en", 1),
+                              ("mode", 2),
+                              ("wen_in_1_reg_sel", 1)]
+        elif mode == MemoryMode.FIFO:
+            # FIFO mode gives 1 write port, 1 read port currently
+            assert 'depth' in top_config, "FIFO configuration needs a 'depth' - please include one in the config"
+            fifo_depth = int(top_config['depth'])
+
+            config_runtime = [("tile_en", 1),
+                              ("mode", 1),
+                              ("wen_in_1_reg_sel", 1),
+                              ("strg_fifo_fifo_depth", fifo_depth)]
+
+        # Add the runtime configuration to the final config
+        for name, v in config_runtime:
+            configs = [self.get_config_data(name, v)] + configs
+
+>>>>>>> f276d365867130965dffef884c989b4d92c484df
         print(configs)
         return configs
 

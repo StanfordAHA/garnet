@@ -33,17 +33,19 @@ interface reg_ifc #(
     );
 
     clocking cbd @(posedge clk);
-        input  clk;
+        default input #200ps output #200ps;
         output wr_en, wr_addr, wr_data, rd_en, rd_addr;
         input  rd_data, rd_data_valid;
     endclocking : cbd
     clocking cbd_n @(negedge clk);
+        default input #200ps output #200ps;
         output wr_clk_en, rd_clk_en;
     endclocking : cbd_n
     modport driver (clocking cbd, clocking cbd_n);
 
     clocking cbm @(posedge clk);
-        input  clk, wr_en, wr_clk_en, wr_addr, wr_data, rd_en, rd_clk_en, rd_addr, rd_data, rd_data_valid;
+        default input #200ps output #200ps;
+        input  wr_en, wr_clk_en, wr_addr, wr_data, rd_en, rd_clk_en, rd_addr, rd_data, rd_data_valid;
     endclocking : cbm
     modport monitor (clocking cbm);
 
