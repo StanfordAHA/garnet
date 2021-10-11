@@ -1,0 +1,75 @@
+# Run postroute_hold standalone, with two retry attempts in case of failure.
+
+agents: { queue: "papers" }
+
+env:
+  GOLD      : /build/prh${BUILDKITE_BUILD_NUMBER}/full_chip
+  SETUP_BK  : source mflowgen/bin/setup-buildkite.sh --dir $GOLD --need_space
+  PHREF     : /sim/buildkite-agent/gold
+
+  SETUP_PRH : eval $$GARNET_HOME/mflowgen/bin/get-step-context.sh $PHREF
+  RUN_PRH   : eval $$GARNET_HOME/.buildkite/bin/prh.sh |& tee
+
+  # Insert "FAIL" labels into mflowgen pipeline
+  FAIL1  : 'echo steps : [ { label : FAIL->retry1 , command : exit } ]'
+  FAIL2  : 'echo steps : [ { label : FAIL->retry2 , command : exit } ]'
+  UPLOAD : 'buildkite-agent pipeline upload'
+
+  # Set slack to -0.3 to make postroute_hold much faster.
+  # Default targ slack for full_chip @ 0.06 takes 6 hours atm.
+  # With hack target -0.3, should be about 2.5 hours (saves 3.5 hours)
+  MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
+
+steps:
+  - label: 'setup'
+    commands:
+    - '$$SETUP_BK 1G;
+       mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+       grep slack .mflowgen/*postroute_hold/mflowgen-run;
+       grep slack .mflowgen/*postroute_hold/configure.yml'
+  - wait: ~
+
+  ########################################################################
+  # postroute_hold fails sometimes, thus all this infrastructure for retry.
+  # 
+  # "prh.sh" does the following:
+  #   - if "*-postroute_hold" already done and passed, do nothing and exit 0
+  #   - else if (presumably failed) dir "*-postroute_hold" exists, rename it
+  #   - build new step postroute_hold
+  #
+  ########################################################################
+
+  # postroute_hold, retry if fail.
+  - label: "hold"
+    commands:
+      - echo "--- POSTROUTE_HOLD - FIRST ATTEMPT"
+      - 'set -o pipefail; $$SETUP_BK 1G; $$SETUP_PRH;
+         $$RUN_PRH make-prh0.log || $$FAIL1 | $$UPLOAD'
+
+  - wait: { continue_on_failure: true }
+
+  # First retry, continue with another retry on failure.
+  - label: "hold'"
+    commands:
+      - echo "--- POSTROUTE_HOLD - SECOND ATTEMPT"
+      - 'set -o pipefail; $$SETUP_BK 1G; $$SETUP_PRH;
+         $$RUN_PRH make-prh1.log || $$FAIL2 | $$UPLOAD'
+  - wait: { continue_on_failure: true }
+
+  # Final postroute_hold attempt, fail pipeline if this one bombs.
+  - label: "hold''"
+    commands:
+      - echo "--- POSTROUTE_HOLD - FINAL ATTEMPT"
+      - 'set -o pipefail; $$SETUP_BK 1G; $$SETUP_PRH;
+         $$RUN_PRH make-prh2.log || exit 13'
+  - wait: ~
+
+
+
+########################################################################
+# TRASH/OLD
+
+  # Uncomment for quick test
+  # SETUP_PRH : echo fooooo
+  # RUN_PRH   : grep foo /dev/null |& tee
+

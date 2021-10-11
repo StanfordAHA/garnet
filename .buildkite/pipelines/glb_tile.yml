@@ -1,0 +1,41 @@
+# Builds glb_tile but not from scratch, uses pre-cached gold collateral
+
+agents: { jobsize: "hours" }
+
+##############################################################################
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
+
+##############################################################################
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
+env:
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  GOLD: /sim/buildkite-agent/gold
+
+steps:
+
+##############################################################################
+# COMPLETE GLB-TILE BUILD (ish) (uses cached rtl step)
+# 
+- label: 'glb tile 2h'
+  commands:
+
+  # (Optional) check out branch version
+  # - pwd; git branch; git checkout $$NOV11
+
+  # Copy existing rtl collateral
+  - 'set -x; mkdir -p full_chip; cp -rp $$GOLD/full_chip/*-rtl full_chip/'
+
+  # Link to existing rtl result
+  - set -x; mkdir -p full_chip/14-glb_top/inputs
+  - set -x; pushd full_chip/*-glb_top/inputs; ln -s ../../*[0-9]-rtl/outputs/design.v; popd
+
+  # (Re?)run RTL, then do glb tile
+  - $TEST --need_space 3G full_chip glb_top --steps rtl --debug
+  - $TEST --need_space 3G full_chip glb_top --steps glb_tile --debug
+
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
+

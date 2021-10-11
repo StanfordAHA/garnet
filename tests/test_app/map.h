@@ -3,10 +3,10 @@
 
 int glb_map(void *kernel);
 int initialize_monitor(int num_cols);
-void update_io_configuration(struct IOInfo *io_info);
+void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info);
 void update_bs_configuration(struct BitstreamInfo *bs_info);
 void add_config(struct ConfigInfo *config_info, int addr, int data);
-void update_tile_configuration(struct PlaceInfo *place_info);
+void update_tile_ctrl_configuration(struct KernelInfo *kernel_info);
 void update_tile_config_table(int tile, int data);
 
 #endif

@@ -38,7 +38,7 @@ fi
 # SO. To keep things honest, will require '--dir'
 
 script=${BASH_SOURCE[0]}
-function usage {
+function setup_buildkite_usage {
     cat <<EOF
 Usage:
     source $script --dir < build-directory > [ OPTIONS ]
@@ -62,12 +62,14 @@ EOF
 ########################################################################
 # Args / switch processing
 
+if [ "$1" == "--help" ]; then setup_buildkite_usage; return; fi
+
 if ! [ "$1" == "--dir" ]; then
     echo ""
     echo "**ERROR: missing required arg '--dir' i.e. might want to do something like"
     echo "$script --dir ."
     echo ""
-    usage; return 13
+    setup_buildkite_usage; return 13 || exit 13
 fi
 
 # Default is to use pre-built RTL from docker,
@@ -79,7 +81,7 @@ VERBOSE=false
 need_space=100G
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -h|--help)    usage; return;    ;;
+        -h|--help)    setup_buildkite_usage; return;    ;;
         -v|--verbose) VERBOSE=true;  ;;
         -q|--quiet)   VERBOSE=false; ;;
         --dir)        shift; build_dir="$1"; ;;
@@ -92,7 +94,7 @@ while [ $# -gt 0 ] ; do
 
         # Any other 'dashed' arg
         -*)
-            echo "***ERROR: unrecognized arg '$1'"; usage; return 13; ;;
+            echo "***ERROR: unrecognized arg '$1'"; setup_buildkite_usage; return 13 || exit 13; ;;
     esac
     shift
 done
@@ -195,6 +197,15 @@ if [ "$DO_UNIT_TESTS" == "true" ]; then # cut'n'paste for unit tests
     find_existing_dir /
 fi
 
+# If server dies and reboots, agent can lose access to file system(!)
+if expr $build_dir : /build > /dev/null; then
+  if ! test -d /build; then
+      echo "**ERROR: Cannot find dir '/build'; may need to restart buildkite agent(s)"
+      return 13 || exit 13
+  fi
+fi
+
+
 # Find currently-existing portion of target build dir
 dest_dir=`find_existing_dir $build_dir`
 
@@ -224,11 +235,18 @@ fi
 
 ########################################################################
 # Running out of space in /tmp!!?
-export TMPDIR=/sim/tmp
+if test -d /sim/tmp; then
+    export TMPDIR=/sim/tmp
+else
+    echo "***WARNING Cannot find /sim/tmp. Are you sure you're in the right place?"
+    printf "Using default TMPDIR '$TMPDIR'\n\n"
+fi
+
 
 ########################################################################
 # Clean up debris in /sim/tmp
-$garnet/mflowgen/bin/cleanup-buildkite.sh
+echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
+[ "$USER" != "buildkite-agent" ] && $garnet/mflowgen/bin/cleanup-buildkite.sh
 
 
 ########################################################################
@@ -252,7 +270,7 @@ if [ "$USER" == "buildkite-agent" ]; then
     venv=/usr/local/venv_garnet
     if ! test -d $venv; then
         echo "**ERROR: Cannot find pre-built environment '$venv'"
-        return 13
+        return 13 || exit 13
     fi
     echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT '$venv'"
     source $venv/bin/activate
@@ -310,7 +328,7 @@ echo "--- REQUIREMENTS CHECK"; echo ""
 
 # Maybe don't need to check python libs and eggs no more...?
 # $garnet/bin/requirements_check.sh -v --debug
-$garnet/bin/requirements_check.sh -v --debug --pd_only
+$garnet/bin/requirements_check.sh -v --debug --pd_only || return 13 || exit 13
 
 
 ########################################################################
@@ -331,33 +349,56 @@ fi
 echo "--- Building in destination dir `pwd`"
 
 
-##############################################################################
-# NEW MFLOWGEN --- see far below for old setup
-##############################################################################
-# MFLOWGEN: Use a single common mflowgen for all builds why not
-echo "--- INSTALL LATEST MFLOWGEN"
-mflowgen=/sim/buildkite-agent/mflowgen
-pushd $mflowgen
-  git checkout master
-  git pull
-  TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
-popd
-echo ""
-  
-# Okay. Ick. If we leave it here, we get all these weird and very
-# non-portable relative links e.g.
-#    % ls -l /build/gold.112/full_chip/17-tile_array/10-tsmc16/
-#    % multivt -> ../../../../../sim/buildkite-agent/mflowgen/adks/tsmc16/multivt/
+########################################################################
+# MFLOWGEN: Use a single common mflowgen for all builds of a given branch
 # 
-# So we make a local symlink to contain the damage. It still builds
-# an ugly relative link but now maybe it's more contained, something like
-#    % ls -l /build/gold.112/full_chip/17-tile_array/10-tsmc16/
-#    % multivt -> ../../../mflowgen/adks/tsmc16/multivt/
+# Mar 2102 - Added option to use a different mflowgen branch when/if desired
 
-mflowgen_orig=$mflowgen
-test -e mflowgen || ln -s $mflowgen_orig
-mflowgen=`pwd`/mflowgen
+mflowgen_branch=master
+[ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
+echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
+# If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
+# otherwise, install in /tmp/$USER
+if test -e /sim/buildkite-agent; then
+    mflowgen=/sim/buildkite-agent/mflowgen
+else
+    printf "***WARNING cannot find /sim/buildkite-agent\n"
+    printf "   Will install mflowgen in /tmp/$USER/mflowgen\n\n"
+    mkdir -p /tmp/$USER; mflowgen=/tmp/$USER/mflowgen
+fi
+
+if [ "$mflowbranch" != "master" ]; then
+    mflowgen=$mflowgen.$mflowgen_branch
+fi
+
+# Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
+# persistence of non-master branch through to end of run.  The cost
+# of making local mflowgen clones is currently about 200M build.
+
+# Build repo if not exists yet
+if ! test -e $mflowgen; then
+    git clone -b $mflowgen_branch \
+        -- https://github.com/mflowgen/mflowgen.git $mflowgen
+fi
+
+echo "Install mflowgen using repo in dir '$mflowgen'"
+pushd $mflowgen
+  git checkout $mflowgen_branch; git pull
+  TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+
+  # mflowgen might be hidden in $HOME/.local/bin
+  if ! (type mflowgen >& /dev/null); then
+      echo "***WARNING Cannot find mflowgen after install"
+      echo "   Will try adding '$HOME/.local/bin' to your path why not"
+      echo ""
+      export PATH=${PATH}:$HOME/.local/bin
+      which mflowgen
+  fi
+
+popd
+
+echo ""
 
 
 ########################################################################
@@ -365,7 +406,7 @@ mflowgen=`pwd`/mflowgen
 ########################################################################
 echo "--- ADK SETUP / CHECK"
 
-echo COPY LATEST ADK TO MFLOWGEN REPO
+echo 'COPY LATEST ADK TO MFLOWGEN REPO'
 
 # Copy the latest tsmc16 adk from a nearby repo; we'll use the one in steveri.
 # 
@@ -375,10 +416,28 @@ echo COPY LATEST ADK TO MFLOWGEN REPO
 if [ "$USER" == "buildkite-agent" ]; then
 
     tsmc16=/sim/steveri/mflowgen/adks/tsmc16
-    echo Copying adk from $tsmc16
-    ls -l $tsmc16
 
-    adks=$mflowgen/adks
+    # Check to see that we have the latest copy
+    function check_adk {
+        # d=/sim/steveri/mflowgen/adks/tsmc16-adk
+        d=$1
+        pushd $d
+            git branch -v
+            ba=`git branch -v | awk '{print $4}'` # E.g. '[ahead' or '[behind'
+            if [ "$ba" == "[ahead" -o  "$ba" == "[behind" ]; then
+                echo "---------------------------------------------------------"
+                echo "**ERROR oops looks like tsmc16 libs are not up to date."
+                echo "  - Need to do a git pull on '$d'"
+                echo "  - Also see 'help adk'."
+                echo "---------------------------------------------------------"
+                return 13 || exit 13
+            fi
+        popd
+    }
+    check_adk $tsmc16 || return 13 || exit 13
+
+    # Copy the adk to test rig
+    echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
     echo "Copying adks from '$tsmc16' to '$adks'"
     # Need '-f' to e.g. copy over existing read-only .git objects
     set -x; cp -frpH $tsmc16 $adks; set +x
@@ -429,20 +488,36 @@ else
     echo "I will try and fix it for you"
     echo ""
     FIXED=
-    for d in $( echo $PATH | sed 's/:/ /g' ); do 
-        if test -x $d/tclsh; then
-            tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
-            echo -n "  Found tclsh v$tclsh_version: $d/tclsh"
-            if (( $(echo "$tclsh_version < 8.5" | bc -l) )); then
-                echo "  - no good"
-            else
-                echo '  - GOOD!'
-                eval 'function tclsh { '$d/tclsh' $* ; }'
-                FIXED=true
-                break
+    # Lowest impact solution is maybe to give tclsh its own little directory
+    TBIN=~/bin-tclsh-fix
+    export PATH=${TBIN}:${PATH}
+    tclsh_version=`echo 'puts $tcl_version; exit 0' | tclsh`
+    if (( $(echo "$tclsh_version >= 8.5" | bc -l) )); then
+        echo "  - FIXED! Found good $TBIN/tclsh"
+        ls -l $TBIN/tclsh
+        FIXED=true
+    else
+        echo "  - ${TBIN}/tclsh no good; looking for a new one"
+        test -d $TBIN && /bin/rm -rf $TBIN; mkdir -p $TBIN
+        for d in $( echo $PATH | sed 's/:/ /g' ); do 
+            if test -x $d/tclsh; then
+                tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
+                echo -n "  Found tclsh v$tclsh_version: $d/tclsh"
+                if (( $(echo "$tclsh_version < 8.5" | bc -l) )); then
+                    echo "  - no good"
+                else
+                    # Clever! But...functions don't survive into called scripts :(
+                    # eval 'function tclsh { '$d/tclsh' $* ; }'
+
+                    # So add it to ~/bin I guess
+                    echo '  - GOOD! Adding to ~/bin'
+                    (cd $TBIN; ln -s $d/tclsh; ls -l)
+                    FIXED=true
+                    break
+                fi
             fi
-        fi
-    done
+        done
+    fi
     if [ ! $FIXED ]; then
         echo "**ERROR could not find tclsh with version >= 8.5!"
         return 13 || exit 13
@@ -451,132 +526,3 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
-
-##############################################################################
-##############################################################################
-##############################################################################
-# END; everything from here down is to be deleted later
-##############################################################################
-##############################################################################
-##############################################################################
-#   update_cache=/build/gold.100/full_chip/17-tile_array
-#   source mflowgen/test/bin/bk_setup.sh full_chip
-#   cd $update_cache
-#   pwd
-#   ./mflowgen-run > mflowgen_run.log.$$PPID
-# 
-# 
-# 
-#   - 'mflowgen/test/test_module.sh full_chip
-#        --debug
-#        --update_cache /sim/buildkite-agent/gold.$$BUILDKITE_BUILD_NUMBER
-#        --setup_only;
-#      cd /build/gold.100/full_chip/17-tile_array
-# 
-# 
-#   build_dir=/build/gold.100/full_chip/17-tile_array;
-# 
-#   '
-#   cd $$build_dir; source 
-#   
-
-# OLD:
-#     if test -d $venv; then
-#         echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT"
-#         source $venv/bin/activate
-#     else
-#         echo "CANNOT FIND PRE-BUILT PYTHON VIRTUAL ENVIRONMENT"
-#         echo "- building a new one from scratch"
-#         # JOBDIR should be per-buildstep environment e.g.
-#         # /sim/buildkite-agent/builds/bigjobs-1/tapeout-aha/
-#         JOBDIR=$BUILDKITE_BUILD_CHECKOUT_PATH
-#         pushd $JOBDIR
-#           /usr/local/bin/python3 -m venv venv ;# Builds "$JOBDIR/venv" maybe
-#           source $JOBDIR/venv/bin/activate
-#         popd
-#     fi
-# 
-#     check_pyversions
-# 
-#     # pip install -r $garnet/requirements.txt
-#     # Biting the bullet and updating to the latest everything;
-#     # also, it's the right thing to do I guess
-#     pip install -U -r $garnet/requirements.txt
-
-########################################################################
-# OLD MFLOWGEN - delete after new code (below) has successfully
-# completed a build or two...
-# ########################################################################
-# # Make a build space for mflowgen; clone mflowgen
-# echo "--- CLONE *AND INSTALL* MFLOWGEN REPO"
-# [ "$VERBOSE" == "true" ] && (echo ""; echo "--- pwd="`pwd`; echo "")
-# if [ "$USER" == "buildkite-agent" ]; then
-#     build=$garnet/mflowgen/test
-# else
-#     build=/sim/$USER
-# fi
-# 
-# # CLONE
-# test  -d $build || mkdir $build; cd $build
-# test  -d $build/mflowgen || git clone https://github.com/cornell-brg/mflowgen.git
-# mflowgen=$build/mflowgen
-# 
-# # INSTALL
-# pushd $mflowgen
-#   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
-# popd
-# echo ""
-########################################################################
-
-
-########################################################################
-# OLD ADK SETUP - delete after new code (below) has successfully
-# completed a build or two...
-########################################################################
-# echo "--- ADK SETUP / CHECK"
-# 
-# # Copy the tsmc16 views into the adks directory.  Note the adks must
-# # be touchable by current user, thus must copy locally and cannot
-# # e.g. use symlink to someone else's existing adk.
-# 
-# # Find the tsmc16 libraries
-# 
-# # Check out official adk repo?
-# #   test -d tsmc16-adk || git clone http://gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
-# # Yeah, no, that ain't gonna fly. gitlab repo requires username/pwd permissions and junk
-# # Instead, let's just use a cached copy
-# 
-# # FIXME/TODO check to see if user can use official repo,
-# # if so use that instead of cached copy, e.g.
-# 
-# # FIXME/TODO give buildkite-agent permission to use official repo
-# 
-# # tsmc16=/sim/steveri/mflowgen/adks/tsmc16-adk
-# tsmc16=/sim/steveri/mflowgen/adks/tsmc16
-# echo copying adk from $tsmc16
-# ls -l $tsmc16
-# 
-# # Symlink to steveri no good. Apparently need permission to "touch" adk files(??)
-# # test -e tsmc16 || ln -s ${tsmc16} tsmc16
-# 
-# set -x
-# echo COPYING IN A FRESH ADK
-# 
-# # Copy to cache (gold) dir if that was requested, else use default
-# if [ "$build_dir" ]; then
-#     test -d $build_dir/mflowgen/adks || mkdir -p $build_dir/mflowgen/adks
-#     # cp -rpf $build/mflowgen/adks $build_dir/mflowgen
-#     adks=$build_dir/mflowgen/adks
-# else
-#     adks=$build/mflowgen/adks
-# fi
-# 
-# if test -d $adks/tsmc16; then
-#     echo Using existing adks $adks/tsmc16
-# else
-#     echo "Copying adks from '$tscm16' to '$adks'"
-#     set -x; cp -rpH $tsmc16 $adks; set +x
-# fi
-# 
-# export MFLOWGEN_PATH=$adks
-# echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""

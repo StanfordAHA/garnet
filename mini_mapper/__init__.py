@@ -11,7 +11,7 @@ import os
 import six
 import subprocess
 import tempfile
-from memory_core.memory_mode import Mode as MemoryMode
+from memory_core.memory_mode import MemoryMode as MemoryMode
 import copy
 
 family = PyFamily()
@@ -21,9 +21,9 @@ LUT = LUT_t_fc(family)
 Cond = Cond_t
 
 # LUT constants
-B0 = BitVector[8]([0,1,0,1,0,1,0,1])
-B1 = BitVector[8]([0,0,1,1,0,0,1,1])
-B2 = BitVector[8]([0,0,0,0,1,1,1,1])
+B0 = BitVector[8]([0, 1, 0, 1, 0, 1, 0, 1])
+B1 = BitVector[8]([0, 0, 1, 1, 0, 0, 1, 1])
+B2 = BitVector[8]([0, 0, 0, 0, 1, 1, 1, 1])
 
 
 def __get_alu_mapping(op_str):
@@ -35,6 +35,10 @@ def __get_alu_mapping(op_str):
         return ALU.Sub, Signed.unsigned
     elif op_str == "mul" or op_str == "mult_0":
         return ALU.Mult0, Signed.unsigned
+    elif op_str == "mult_1":
+        return ALU.Mult1, Signed.signed
+    elif op_str == "mult_2":
+        return ALU.Mult2, Signed.signed
     elif op_str == "ashr":
         return ALU.SHR, Signed.signed
     elif op_str == "ule":
@@ -356,7 +360,7 @@ def pack_netlists(raw_netlists, name_to_id, fold_reg=True):
                 for b_id, b_port in net:
                     if b_id == blk_id and port == b_port:
                         continue
-                    if b_id[0] == "r":
+                    if b_id[0] == "r" or b_id[0] == 'i' or b_id[0] == 'I':
                         # oh damn
                         dont_absorb.add(blk_id)
                     elif b_id[0] == "p":
@@ -393,9 +397,7 @@ def pack_netlists(raw_netlists, name_to_id, fold_reg=True):
                 if next_blk is None:
                     nets_to_remove.add(net_id)
                     break
-                assert (next_blk is not None and
-                        next_blk[0] != "c" and next_blk[0] != "r"
-                        and next_blk[0] != "b")
+                assert (next_blk is not None and next_blk[0] != "c" and next_blk[0] != "r" and next_blk[0] != "b")
                 # absorb blk to the next one
                 remove_blks.add((blk_id, id_to_name[next_blk], port))
                 folded_blocks[(blk_id, port)] = (next_blk, id_to_name[blk_id],
@@ -663,8 +665,7 @@ def get_const_value(instance):
 
 def get_lut_pins(instance):
     assert ("genref" in instance and instance["genref"] == "cgralib.PE")
-    assert ("genargs" in instance and
-            instance["genargs"]["op_kind"][-1] == "bit")
+    assert ("genargs" in instance and instance["genargs"]["op_kind"][-1] == "bit")
     assert ("modargs" in instance)
     modargs = instance["modargs"]
     bit0_value = modargs["bit0_value"][-1]
@@ -783,7 +784,8 @@ def wire_reset_to_flush(netlist, id_to_name, bus):
     io_blk = None
     for blk_id, name in id_to_name.items():
         if "cgramem" in name or "rom" in name or "lakemem" in name:
-            assert blk_id[0] in {"m", "M"}
+            if blk_id[0] not in {"m", "M"}:
+                continue
             mems.append(blk_id)
         if "reset" in name and blk_id[0] in {"i", "I"}:
             io_blk = blk_id
@@ -995,7 +997,7 @@ def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, instr_orig):
         instr = {}
         instr.update(instr_orig)
         instr["depth"] = depth
-        instr["mode"] = MemoryMode.DB
+        instr["mode"] = MemoryMode.UNIFIED_BUFFER
         instr["chain_en"] = 1
         instr["chain_idx"] = index
         if index == 0:
@@ -1011,7 +1013,7 @@ def split_ub(mem_blk, netlist, id_to_name, bus, instance_to_instr, instr_orig):
                     net.append((new_mem_blk_id, "wdata"))
                 elif blk_id == mem_blk and port == "wen":
                     net.append((new_mem_blk_id, "wen"))
-                elif blk_id == mem_blk and port =="ren":
+                elif blk_id == mem_blk and port == "ren":
                     net.append((new_mem_blk_id, "ren"))
 
         # chain the new block together
@@ -1144,17 +1146,22 @@ def map_app(pre_map):
             else:
                 assert "const" in pin_name
                 return Mode.CONST, int(pin_name.split("_")[-1])
+
         if "mem" in tile_op:
             args = tile_op.split("_")
             mem_mode = args[1]
             instr = {}
             instr["name"] = name
             instr["app_name"] = get_app_name(pre_map)
-            if mem_mode == "lake":
+            if "is_rom" in instance["genargs"] and instance["genargs"]["is_rom"][1] is True:
+                instr.update(instance["modargs"])
+                instr["mode"] = MemoryMode.ROM
+            elif mem_mode == "lake":
                 instr["depth"] = 0
                 instr.update(instance["modargs"])
+                instr["mode"] = MemoryMode.UNIFIED_BUFFER
             elif mem_mode == "lb":
-                instr["mode"] = MemoryMode.DB
+                instr["mode"] = MemoryMode.UNIFIED_BUFFER
                 instr["depth"] = int(args[-1])
                 if instr["depth"] > 512:
                     split_ub(blk_id, netlist, id_to_name, bus,
@@ -1167,13 +1174,13 @@ def map_app(pre_map):
                 instr["content"] = content
             elif mem_mode == "ub":
                 instr["is_ub"] = True
-                instr["mode"] = MemoryMode.DB
+                instr["mode"] = MemoryMode.UNIFIED_BUFFER
                 params = json.loads("_".join(args[2:]))
                 instr.update(params)
                 if "depth" in instr and instr["depth"] > 512:
                     new_ub_names, idx = split_ub(blk_id, netlist, id_to_name,
-                                           bus, instance_to_instr,
-                                           instr)
+                                                 bus, instance_to_instr,
+                                                 instr)
                     instr["chain_en"] = 1
                     instr["chain_idx"] = idx
         else:
@@ -1233,8 +1240,6 @@ def map_app(pre_map):
 
     netlist = port_rename(netlist)
     insert_valid(id_to_name, netlist, bus)
-    if has_rom(id_to_name):
-        insert_valid_delay(id_to_name, instance_to_instr, netlist, bus)
 
     wire_reset_to_flush(netlist, id_to_name, bus)
     remove_dead_regs(netlist, bus)

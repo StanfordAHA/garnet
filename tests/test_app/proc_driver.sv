@@ -26,6 +26,7 @@ task ProcDriver::write_bs(int start_addr, bitstream_t bs_q);
     proc_lock.put(1);
 endtask
 
+// TODO: Change it to const ref
 task ProcDriver::write_data(int start_addr, data_array_t data_q);
     bit [GLB_ADDR_WIDTH-1:0] cur_addr = start_addr;
     bit [BANK_DATA_WIDTH-1:0] data;
@@ -86,15 +87,15 @@ task ProcDriver::read_data(int start_addr, ref data_array_t data_q);
             for (int i=0; i<num_trans; i++) begin
                 wait (vif.cbd.rd_data_valid);
 
-                data_q[i*4] = vif.cbd.rd_data & 'hFF;
+                data_q[i*4] = vif.cbd.rd_data & 'hFFFF;
                 if ((i*4+1) < num_words) begin
-                    data_q[i*4+1] = (vif.cbd.rd_data & (('hFF) << 16)) >> 16;
+                    data_q[i*4+1] = (vif.cbd.rd_data & (('hFFFF) << 16)) >> 16;
                 end
                 if ((i*4+2) < num_words) begin
-                    data_q[i*4+2] = (vif.cbd.rd_data & (('hFF) << 32)) >> 32;
+                    data_q[i*4+2] = (vif.cbd.rd_data & (('hFFFF) << 32)) >> 32;
                 end
                 if ((i*4+3) < num_words) begin
-                    data_q[i*4+3] = (vif.cbd.rd_data & (('hFF) << 48)) >> 48;
+                    data_q[i*4+3] = (vif.cbd.rd_data & (('hFFFF) << 48)) >> 48;
                 end
 
                 @(vif.cbd);
