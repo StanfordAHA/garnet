@@ -1,22 +1,21 @@
 #!/bin/bash
 RTL_DIR := ./rtl
 RDL_DIR := systemRDL/output
-TB_DIR := ./sim-v2
+TB_DIR := ./sim
 
 TOP_MODULE := global_buffer
 
 CGRA_WIDTH ?= 32
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
-XRUNARGS = 
-XRUNARGS += +TEST_GLB_MEM_SIMPLE
-XRUNARGS += +TEST_GLB_CFG
-XRUNARGS += +CFG_TEST_NUM_TILE=2
-XRUNARGS += +TEST_GLB_G2F_STREAM
-XRUNARGS += +TEST_GLB_F2G_STREAM
-XRUNARGS += +TEST_PCFG_STREAM
-XRUNARGS += -input shm.tcl
 
+RUNARGS = 
+# RUNARGS += +TEST_GLB_MEM_SIMPLE
+# RUNARGS += +TEST_GLB_CFG
+# RUNARGS += +CFG_TEST_NUM_TILE=2
+RUNARGS += +TEST_GLB_G2F_STREAM
+# RUNARGS += +TEST_GLB_F2G_STREAM
+# RUNARGS += +TEST_PCFG_STREAM
 
 GLB_TILE_NETLIST := ./netlist/glb_tile.vcs.v
 GLB_TOP_NETLIST := ./netlist/global_buffer.vcs.v
@@ -51,17 +50,18 @@ VCS = vcs \
 	  -debug_acc+all \
 	  -sverilog \
 	  -timescale=100ps/1ps \
-	  -v2k_generate \
 	  -full64 \
 	  -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
 	  -top top \
+	  -kdb \
 	  +lint=TFIPC-L \
 	  +vcs+lic+wait \
 	  +vcs+initreg+random \
 	  +overlap \
 	  +v2k \
 	  +memcbk \
+	  -l vcs.log \
 	  $(VCSARGS) \
 	  $(DESIGNARGS)
 
@@ -85,17 +85,13 @@ $(rdl_post): $(rdl_pre)
 rdl_gen = $(RDL_DIR)/glb_jrdl_decode.sv $(RDL_DIR)/glb_jrdl_logic.sv $(RDL_DIR)/glb_pio.sv
 $(rdl_gen): $(rdl_post)
 	java -jar ../systemRDL/Ordt.jar -reglist systemRDL/output/glb.reglist -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.post
+	python ../systemRDL/gen_config_addrmap.py --rdl systemRDL/rdl_models/glb.rdl.post --output addrmap --name glb_addrmap --header --html --json
 
 $(RTL_LISTS): $(rdl_gen)
 
 .PHONY: rtl
 rtl: $(RTL_LISTS)
 	$(FIX_SYSTEMRDL)
-
-# html target generates html for systemRDL table
-.PHONY: html
-html: $(rdl_post)
-	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl.post
 
 # -------------------------------------------------------------------
 # GLB TILE
@@ -133,10 +129,15 @@ sim-tile-gl:
 # -------------------------------------------------------------------
 .PHONY: sim
 sim: XRUNARGS+= -notimingchecks
+sim: VCSARGS+= +nospecify
 sim: DESIGNARGS += -v $(SRAM_STUB) -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist 
 sim:
 	$(GENERATE_TV); 
-	$(XRUN)
+	$(VCS)
+
+.PHONY: run
+run: sim
+	./simv -ucli -i vcs_cmd.tcl $(RUNARGS)
 
 # gate-level simulation
 .PHONY: sim-gl
