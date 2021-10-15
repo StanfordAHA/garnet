@@ -87,7 +87,6 @@ glc-rtl:
 # -------------------------------------------------------------------
 # compile testbench of garnet with xcelium
 .PHONY: compile
-compile: glb-rtl glc-rtl
 compile: XRUN_ARGS += -top $(TOP_NAME)
 compile: XRUN_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 compile: XRUN_ARGS += +define+CGRA_WIDTH=$(CGRA_WIDTH) +define+AXI_ADDR_WIDTH=$(AXI_ADDR_WIDTH) +define+AXI_DATA_WIDTH=$(AXI_DATA_WIDTH) +define+GLB_TILE_MEM_SIZE=$(GLB_TILE_MEM_SIZE)
