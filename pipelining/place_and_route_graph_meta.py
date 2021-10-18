@@ -762,8 +762,7 @@ def flush_cycles(graph):
     print("\n")
     return kernel_latencies
 
-def update_kernel_latencies(app_dir, graph):
-    dir_name = os.path.dirname(app_dir)
+def update_kernel_latencies(dir_name, graph):
 
     kernel_latencies_file = glob.glob(f"{dir_name}/*_compute_kernel_latencies.json")[0]
 
@@ -832,8 +831,7 @@ def segment_node_to_string(node):
     elif node[0] == "RMUX":
         return f"{node[0]} {node[1]} ({node[2]}, {node[3]}, {node[4]})"
 
-def dump_routing_result(app_dir, routing):
-    dir_name = os.path.dirname(app_dir)
+def dump_routing_result(dir_name, routing):
 
     route_name = os.path.join(dir_name, "design.route")
 
@@ -850,8 +848,7 @@ def dump_routing_result(app_dir, routing):
         fout.write("\n")
 
 
-def dump_placement_result(app_dir, placement, id_to_name):
-    dir_name = os.path.dirname(app_dir)
+def dump_placement_result(dir_name, placement, id_to_name):
 
     place_name = os.path.join(dir_name, "design.place")
     fout = open(place_name, "w")

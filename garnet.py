@@ -266,7 +266,7 @@ class Garnet(Generator):
         return input_interface, output_interface,\
                (reset_port_name, valid_port_name, en_port_name)
 
-    def metamapper_map(self,app):
+    def load_netlist(self,app):
         app_dir = os.path.dirname(app)
 
         if self.pe_fc == lassen_fc:
@@ -305,21 +305,24 @@ class Garnet(Generator):
 
 
 
-    def compile(self, halide_src, unconstrained_io=False, compact=False):
+    def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False):
         # id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
-        id_to_name, instance_to_instr, netlist, bus = self.metamapper_map(halide_src)
+        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src)
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
         else:
             fixed_io = place_io_blk(id_to_name)
-        placement, routing = archipelago.pnr(self.interconnect, (netlist, bus),
+        placement, routing = archipelago.pnr(self.interconnect, load_only, (netlist, bus),
                                              cwd="temp",
                                              id_to_name=id_to_name,
                                              fixed_pos=fixed_io,
                                              compact=compact,
                                              copy_to_dir=app_dir)
-        
+     #   return placement, routing 
+
+    #def generate_bitstream(self, halide_src, placement, routing, compact=False):
+      #  id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src)
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -416,6 +419,8 @@ def main():
     parser.add_argument("--virtualize-group-size", type=int, default=4)
     parser.add_argument("--virtualize", action="store_true")
     parser.add_argument("--use-io-valid", action="store_true")
+    parser.add_argument("--pipeline-pnr", action="store_true")
+    parser.add_argument("--generate-bitstream-only", action="store_true")
     parser.add_argument('--pe', type=str, default="")
     args = parser.parse_args()
 
@@ -452,8 +457,14 @@ def main():
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
         # do PnR and produce bitstream
+    #    placement, routing = garnet.place_and_route(args.app, args.unconstrained_io, compact=args.compact, load_only=args.generate_bitstream_only)
         bitstream, (inputs, outputs, reset, valid, \
-            en, delay) = garnet.compile(args.app, args.unconstrained_io, compact=args.compact)
+            en, delay)  = garnet.place_and_route(args.app, args.unconstrained_io, compact=args.compact, load_only=args.generate_bitstream_only)  
+        if args.pipeline_pnr:
+            return
+   #     bitstream, (inputs, outputs, reset, valid, \
+   #         en, delay) = garnet.generate_bitstream(args.app, placement, routing, compact=args.compact)
+
         # write out the config file
         if len(inputs) > 1:
             if reset in inputs:
