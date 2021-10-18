@@ -5,7 +5,7 @@ from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
 from canal.interconnect import Interconnect
 from passes.power_domain.pd_pass import add_power_domain, add_aon_read_config_data
-from lassen.sim import lassen_fc
+from lassen.sim import PE_fc as lassen_fc
 from io_core.io_core_magma import IOCoreValid, IOCore
 from memory_core.memory_core_magma import MemCore
 from memory_core.pond_core import PondCore

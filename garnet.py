@@ -319,6 +319,7 @@ class Garnet(Generator):
                                              fixed_pos=fixed_io,
                                              compact=compact,
                                              copy_to_dir=app_dir)
+        
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -423,6 +424,12 @@ def main():
     if args.standalone and not args.interconnect_only:
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")
+
+    pe_fc = lassen_fc
+    if args.pe:
+        arch = read_arch(args.pe)
+        pe_fc = wrapped_peak_class(arch, debug=True)
+
     garnet = Garnet(width=args.width, height=args.height,
                     glb_tile_mem_size=args.glb_tile_mem_size,
                     add_pd=not args.no_pd,
