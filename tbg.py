@@ -315,9 +315,9 @@ class TestBenchGenerator:
                 tester.poke(self.circuit.interface[port], 1)
 
         input_port_names = self.input_port_name[:]
-        input_port_names.sort()
+        #input_port_names.sort()
         output_port_names = self.output_port_name[:]
-        output_port_names.sort()
+        #output_port_names.sort()
 
         loop = tester.loop(self._loop_size * len(input_port_names))
         for input_port_name in input_port_names:
