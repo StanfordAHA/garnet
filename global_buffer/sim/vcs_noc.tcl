@@ -1,4 +1,4 @@
 dump -file noc.fsdb -type fsdb
-dump -add noc_tb -aggregates
+dump -add tb_noc -aggregates
 run
 exit

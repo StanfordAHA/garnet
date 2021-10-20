@@ -3,8 +3,7 @@ from gemstone.generator.from_magma import FromMagma
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.generator import Generator
 from cgra.ifc_struct import ProcPacketIfc, GlbCfgIfc
-from .global_buffer_magma_helper import *
-import math
+from global_buffer.design.global_buffer_magma_helper import *
 
 
 class GlobalBuffer(Generator):
@@ -16,52 +15,7 @@ class GlobalBuffer(Generator):
 
         super().__init__()
 
-        self.num_glb_tiles = num_glb_tiles
-        self.num_cgra_cols = num_cgra_cols
-        self.glb_tile_mem_size = glb_tile_mem_size
-
-        # the number of glb tiles is half the number of cgra columns
-        assert 2 * self.num_glb_tiles == self.num_cgra_cols
-
-        def _power_of_two(n):
-            if n == 1:
-                return True
-            elif n%2 != 0 or n == 0:
-                return False
-            return _power_of_two(n/2)
-        assert _power_of_two(self.glb_tile_mem_size) is True
-
-        self.col_per_tile = num_cgra_cols // num_glb_tiles
-        self.banks_per_tile = banks_per_tile
-        self.bank_addr_width = (magma.bitutils.clog2(self.glb_tile_mem_size)
-                               - magma.bitutils.clog2(self.banks_per_tile) + 10)
-        self.bank_data_width = bank_data_width
-        self.bank_byte_offset = magma.bitutils.clog2(self.bank_data_width // 8)
-        self.cgra_data_width = cgra_data_width
-        self.cgra_byte_offset = magma.bitutils.clog2(self.cgra_data_width // 8)
-        self.axi_addr_width = axi_addr_width
-        self.axi_data_width = axi_data_width
-        self.axi_strb_width = self.axi_data_width // 8
-        self.axi_byte_offset = magma.bitutils.clog2(self.axi_data_width // 8)
-        self.cfg_addr_width = cfg_addr_width
-        self.cfg_data_width = cfg_data_width
-        self.glb_addr_width = (self.bank_addr_width
-                               + magma.bitutils.clog2(self.banks_per_tile)
-                               + magma.bitutils.clog2(self.num_glb_tiles))
-        self.tile_sel_addr_width = m.bitutils.clog2(self.num_glb_tiles)
-        self.cgra_per_glb = self.num_cgra_cols // self.num_glb_tiles
-        self.bank_sel_addr_width = m.bitutils.clog2(self.banks_per_tile)
-
-        self.cgra_cfg_type = ConfigurationType(self.cfg_addr_width,
-                                               self.cfg_data_width)
-        self.max_num_words_width = (self.glb_addr_width - self.bank_byte_offset
-                                    + magma.bitutils.clog2(bank_data_width
-                                                           // cgra_data_width))
-        self.max_stride_width = 10
-        self.max_num_cfgs_width = self.glb_addr_width - self.bank_byte_offset
-        self.queue_depth = 4
-        self.loop_level = 4
-        self.latency_width = 2 + magma.bitutils.clog2(self.num_glb_tiles)
+        self.cgra_cfg_type = ConfigurationType(cfg_addr_width, cfg_data_width)
 
         self.add_ports(
             clk=magma.In(magma.Clock),
