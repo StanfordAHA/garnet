@@ -22,13 +22,16 @@ GLB_TOP_NETLIST := ./netlist/global_buffer.vcs.v
 SRAM_RTL := /sim/kongty/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/ts1n16ffcllsblvtc2048x64m8sw_130a.v
 SRAM_STUB := ./rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv
 
-RTL_LISTS := `cat $(RTL_DIR)/global_buffer.filelist | sed -e 's/^/$(RTL_DIR)\//' | xargs readlink -f`
+RTL_LISTS := `cat $(RTL_DIR)/global_buffer.f | sed -e 's/^/$(RTL_DIR)\//' | xargs readlink -f`
 
 FIX_SYSTEMRDL = \
     sed -i '/pio_dec_write_data_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
     sed -i '/pio_dec_address_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
     sed -i '/endmodule/d' ./systemRDL/output/glb_jrdl_decode.sv; \
     printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glb_jrdl_decode.sv
+
+DUMP_PIO_WRAPPER = \
+    sed '/\.\*/d' ./systemRDL/output/glb_pio.sv > ./systemRDL/output/glb_pio_wrapper.sv
 
 GENERATE_TV = python glb_test_gen.py
 
@@ -85,76 +88,48 @@ $(rdl_post): $(rdl_pre)
 rdl_gen = $(RDL_DIR)/glb_jrdl_decode.sv $(RDL_DIR)/glb_jrdl_logic.sv $(RDL_DIR)/glb_pio.sv
 $(rdl_gen): $(rdl_post)
 	java -jar ../systemRDL/Ordt.jar -reglist systemRDL/output/glb.reglist -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.post
-	python ../systemRDL/gen_config_addrmap.py --rdl systemRDL/rdl_models/glb.rdl.post --output addrmap --name glb_addrmap --header --html --json
+	python ../systemRDL/gen_config_addrmap.py --rdl systemRDL/rdl_models/glb.rdl.post --output systemRDL/output --name glb_addrmap --header --html --json
 
 $(RTL_LISTS): $(rdl_gen)
 
 .PHONY: rtl
 rtl: $(RTL_LISTS)
-	$(FIX_SYSTEMRDL)
+	$(FIX_SYSTEMRDL);
+	$(DUMP_PIO_WRAPPER)
 
 # -------------------------------------------------------------------
-# GLB TILE
+# Compile & Run
 # -------------------------------------------------------------------
-# sim-tile
-# run testbench of glb-tile with xcelium
-.PHONY: sim-tile
-sim-tile: TB_DIR=sim-tile
-sim-tile: DESIGNARGS += -F $(RTL_DIR)/global_buffer.filelist -F $(TB_DIR)/tb_glb_tile.filelist -v $(SRAM_STUB)
-sim-tile: rtl
-	$(XRUN)
-
-# sim-tile-pnr
-# run testbench of glb-tile with xcelium with sdf back annotation
-.PHONY: sim-til-gl
-sim-tile-gl: TOP_MODULE=glb_tile
-sim-tile-gl: TB_DIR=sim-tile
-sim-tile-gl: XRUNARGS += +define+PNR
-sim-tile-gl: XRUNARGS += +define+NON_STOP_IF_INPUT_Z
-sim-tile-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING
-sim-tile-gl: XRUNARGS += +define+TSMC_CM_UNIT_DELAY
-sim-tile-gl: XRUNARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS +define+TSMC_MEM_LOAD_0
-sim-tile-gl: XRUNARGS += -negdelay
-sim-tile-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd_tile.cmd
-sim-tile-gl: XRUNARGS += -sdfstats sdf_stats_tile.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
-sim-tile-gl: DESIGNARGS += \
-	$(RTL_DIR)/global_buffer_param.svh \
-	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist \
-	-F netlist/netlist-tile.filelist
-sim-tile-gl:
-	$(XRUN)
-
-# -------------------------------------------------------------------
-# GLB TOP
-# -------------------------------------------------------------------
-.PHONY: sim
-sim: XRUNARGS+= -notimingchecks
-sim: VCSARGS+= +nospecify
-sim: DESIGNARGS += -v $(SRAM_STUB) -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist 
-sim:
+.PHONY: compile
+compile: XRUNARGS+= -notimingchecks
+compile: VCSARGS+= +nospecify
+compile: DESIGNARGS += -v $(SRAM_STUB) -F $(RTL_DIR)/$(TOP_MODULE).f -F $(TB_DIR)/tb_$(TOP_MODULE).f
+compile:
 	$(GENERATE_TV); 
 	$(VCS)
 
 .PHONY: run
-run: sim
+run: compile
 	./simv -ucli -i vcs_cmd.tcl $(RUNARGS)
 
-# gate-level simulation
-.PHONY: sim-gl
-sim-gl: DESIGNARGS += \
+# -------------------------------------------------------------------
+# GLS Compile & Run
+# -------------------------------------------------------------------
+.PHONY: compile-gl
+compile-gl: DESIGNARGS += \
 	$(RTL_DIR)/global_buffer_param.svh \
 	$(RTL_DIR)/global_buffer_pkg.svh \
 	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist \
 	-F netlist/netlist.filelist
-# sim-gl: XRUNARGS += +define+PWR
-sim-gl: XRUNARGS += +define+NON_STOP_IF_INPUT_Z
-sim-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING
-sim-gl: XRUNARGS += +define+TSMC_CM_UNIT_DELAY
-sim-gl: XRUNARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS +define+TSMC_MEM_LOAD_0
-sim-gl: XRUNARGS += -negdelay
-sim-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
-sim-gl: XRUNARGS += -sdfstats sdf_stats.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
-sim-gl:
+# compile-gl: XRUNARGS += +define+PWR
+compile-gl: XRUNARGS += +define+NON_STOP_IF_INPUT_Z
+compile-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING
+compile-gl: XRUNARGS += +define+TSMC_CM_UNIT_DELAY
+compile-gl: XRUNARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS +define+TSMC_MEM_LOAD_0
+compile-gl: XRUNARGS += -negdelay
+compile-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
+compile-gl: XRUNARGS += -sdfstats sdf_stats.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
+compile-gl:
 	$(XRUN)
 
 .PHONY: clean

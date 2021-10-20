@@ -1,5 +1,5 @@
 module prr (
-    input  logic [PRR_ID_WIDTH-1:0]         prr_id,
+    input  logic [NUM_PRR_WIDTH-1:0]         prr_id,
     input  logic                            clk,
     input  logic                            reset,
     input  logic                            stall,
@@ -8,7 +8,7 @@ module prr (
     input  logic [CGRA_CFG_DATA_WIDTH-1:0]  cfg_wr_data,
     input  logic                            cfg_rd_en,
     input  logic [CGRA_CFG_ADDR_WIDTH-1:0]  cfg_rd_addr,
-    output logic [CGRA_CFG_DATA_WIDTH-1:0]  cfg_rd_data
+    output logic [CGRA_CFG_DATA_WIDTH-1:0]  cfg_rd_data,
     input  logic                            io1_g2io,
     input  logic [15:0]                     io16_g2io,
     output logic                            io1_io2f,
@@ -22,17 +22,17 @@ module prr (
 // ---------------------------------------
 // Configuration
 // ---------------------------------------
-logic [CGRA_CFG_DATA_WIDTH-1:0] cfg_reg [CGRA_CFG_DEPTH];
-localparam int CGRA_CFG_PRR_WIDTH = $clog2(CGRA_CFG_DEPTH);
+logic [CGRA_CFG_DATA_WIDTH-1:0] cfg_reg [PRR_CFG_REG_DEPTH];
+localparam int CGRA_CFG_PRR_WIDTH = $clog2(PRR_CFG_REG_DEPTH);
 
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-        for (int i = 0; i < CGRA_CFG_DEPTH; i++) begin
+        for (int i = 0; i < PRR_CFG_REG_DEPTH; i++) begin
             cfg_reg[i] <= 0;
         end
     end else begin
         if (cfg_wr_en) begin
-            if (cfg_wr_addr[CGRA_CFG_ADDR_WIDTH-1 -: PRR_ID_WIDTH] == prr_id) begin
+            if (cfg_wr_addr[CGRA_CFG_ADDR_WIDTH-1 -: NUM_PRR_WIDTH] == prr_id) begin
                 cfg_reg[cfg_wr_addr[CGRA_CFG_PRR_WIDTH-1:0]] <= cfg_wr_data;
             end
         end
@@ -40,7 +40,7 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 always_comb begin
-    if (cfg_rd_en && cfg_rd_addr[CGRA_CFG_ADDR_WIDTH-1 -:PRR_ID_WIDTH] == prr_id) begin
+    if (cfg_rd_en && cfg_rd_addr[CGRA_CFG_ADDR_WIDTH-1 -:NUM_PRR_WIDTH] == prr_id) begin
         cfg_rd_data = cfg_reg[cfg_rd_addr[CGRA_CFG_PRR_WIDTH-1:0]];
     end else begin
         cfg_rd_data = '0;
