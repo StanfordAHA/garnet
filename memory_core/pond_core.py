@@ -24,9 +24,11 @@ class PondCore(LakeCoreBase):
     def __init__(self,
                  data_width=16,  # CGRA Params
                  mem_depth=32,
-                 default_iterator_support=2,
-                 interconnect_input_ports=1,  # Connection to int
-                 interconnect_output_ports=1,
+                 default_iterator_support=3,
+                 interconnect_input_ports=2,  # Connection to int
+                 interconnect_output_ports=2,
+                 mem_input_ports=1,
+                 mem_output_ports=1,
                  config_data_width=32,
                  config_addr_width=8,
                  cycle_count_width=16,
@@ -43,6 +45,8 @@ class PondCore(LakeCoreBase):
         # Capture everything to the tile object
         self.interconnect_input_ports = interconnect_input_ports
         self.interconnect_output_ports = interconnect_output_ports
+        self.mem_input_ports = mem_input_ports
+        self.mem_output_ports = mem_output_ports
         self.mem_depth = mem_depth
         self.data_width = data_width
         self.config_data_width = config_data_width
@@ -55,6 +59,7 @@ class PondCore(LakeCoreBase):
 
         cache_key = (self.data_width, self.mem_depth,
                      self.interconnect_input_ports, self.interconnect_output_ports,
+                     self.mem_input_ports, self.mem_output_ports,
                      self.config_data_width, self.config_addr_width,
                      self.add_clk_enable, self.add_flush,
                      self.cycle_count_width, self.default_iterator_support)
@@ -69,6 +74,8 @@ class PondCore(LakeCoreBase):
                             default_iterator_support=default_iterator_support,
                             interconnect_input_ports=interconnect_input_ports,  # Connection to int
                             interconnect_output_ports=interconnect_output_ports,
+                            mem_input_ports=mem_input_ports,
+                            mem_output_ports=mem_output_ports,
                             config_data_width=config_data_width,
                             config_addr_width=config_addr_width,
                             cycle_count_width=cycle_count_width,
@@ -102,33 +109,15 @@ class PondCore(LakeCoreBase):
 
     def get_config_bitstream(self, instr):
         configs = []
-        if "init" in instr['config'][1]:
-            config_mem = [("tile_en", 1),
-                          ("mode", 2),
-                          ("wen_in_0_reg_sel", 1),
-                          ("wen_in_1_reg_sel", 1)]
-            for name, v in config_mem:
-                configs = [self.get_config_data(name, v)] + configs
-            # this is SRAM content
-            content = instr['config'][1]['init']
-            for addr, data in enumerate(content):
-                if (not isinstance(data, int)) and len(data) == 2:
-                    addr, data = data
-                feat_addr = addr // 256 + 1
-                addr = addr % 256
-                configs.append((addr, feat_addr, data))
-            print(configs)
-            return configs
-        else:
-            # need to download the csv and get configuration files
-            app_name = instr["app_name"]
-            # hardcode the config bitstream depends on the apps
-            config_mem = []
-            print("app is", app_name)
-            use_json = True
-            if use_json:
-                top_controller_node = instr['config'][1]
-                config_mem = self.dut.get_static_bitstream_json(top_controller_node)
+        # need to download the csv and get configuration files
+        app_name = instr["app_name"]
+        # hardcode the config bitstream depends on the apps
+        config_mem = []
+        print("app is", app_name)
+        use_json = True
+        if use_json:
+            top_controller_node = instr['config'][1]
+            config_mem = self.dut.get_static_bitstream_json(top_controller_node)
         for name, v in config_mem:
             configs += [self.get_config_data(name, v)]
         # gate config signals

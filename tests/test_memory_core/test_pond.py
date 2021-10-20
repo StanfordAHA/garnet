@@ -117,9 +117,9 @@ def test_pond_rd_wr(run_tb):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "data_in_pond")],
+        "e0": [("I0", "io2f_16"), ("p0", "data_in_pond_0")],
         "e1": [("I1", "io2f_16"), ("p0", "data1")],
-        "e2": [("p0", "data_out_pond"), ("I2", "f2io_16")]
+        "e2": [("p0", "data_out_pond_0"), ("I2", "f2io_16")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 16}
 
@@ -188,10 +188,10 @@ def test_pond_pe(run_tb):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "data_in_pond")],
+        "e0": [("I0", "io2f_16"), ("p0", "data_in_pond_0")],
         "e1": [("I1", "io2f_16"), ("p0", "data1")],
         "e2": [("p0", "alu_res"), ("I2", "f2io_16")],
-        "e3": [("p0", "data_out_pond"), ("p0", "data0")]
+        "e3": [("p0", "data_out_pond_0"), ("p0", "data0")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 16}
 
@@ -268,9 +268,9 @@ def test_pond_pe_acc(run_tb):
 
     netlist = {
         "e0": [("I0", "io2f_16"), ("p0", "data0")],
-        "e1": [("p0", "data_out_pond"), ("p0", "data1")],
-        "e2": [("p0", "alu_res"), ("p0", "data_in_pond")],
-        "e3": [("p0", "data_out_pond"), ("I1", "f2io_16")]
+        "e1": [("p0", "data_out_pond_0"), ("p0", "data1")],
+        "e2": [("p0", "alu_res"), ("p0", "data_in_pond_0")],
+        "e3": [("p0", "data_out_pond_0"), ("I1", "f2io_16")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 16}
 
@@ -327,41 +327,5 @@ def test_pond_pe_acc(run_tb):
         tester.expect(circuit.interface[dst_name], total)
         tester.step(2)
         tester.eval()
-
-    run_tb(tester)
-
-
-def test_pond_config(run_tb):
-    # 1x1 interconnect with only PE tile
-    interconnect = create_cgra(1, 1, IOSide.None_, standalone=True,
-                               mem_ratio=(0, 1),
-                               add_pond=True)
-
-    # get pond core
-    pe_tile = interconnect.tile_circuits[0, 0]
-    pond_core = pe_tile.additional_cores[0]
-    pond_feat = pe_tile.features().index(pond_core)
-    sram_feat = pond_feat + pond_core.num_sram_features
-
-    circuit = interconnect.circuit()
-    tester = BasicTester(circuit, circuit.clk, circuit.reset)
-    tester.zero_inputs()
-    tester.reset()
-
-    config_data = []
-    # tile enable
-    reg_addr, value = pond_core.get_config_data("tile_en", 1)
-    config_data.append((interconnect.get_config_addr(reg_addr, pond_feat, 0, 0), value))
-
-    for i in range(32):
-        addr = interconnect.get_config_addr(i, sram_feat, 0, 0)
-        config_data.append((addr, i + 1))
-    for addr, data in config_data:
-        tester.configure(addr, data)
-
-    # read back
-    for addr, data in config_data:
-        tester.config_read(addr)
-        tester.expect(circuit.read_config_data, data)
 
     run_tb(tester)
