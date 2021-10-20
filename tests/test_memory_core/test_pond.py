@@ -330,39 +330,3 @@ def test_pond_pe_acc(run_tb):
 
     run_tb(tester)
 
-"""
-def test_pond_config(run_tb):
-    # 1x1 interconnect with only PE tile
-    interconnect = create_cgra(1, 1, IOSide.None_, standalone=True,
-                               mem_ratio=(0, 1),
-                               add_pond=True)
-
-    # get pond core
-    pe_tile = interconnect.tile_circuits[0, 0]
-    pond_core = pe_tile.additional_cores[0]
-    pond_feat = pe_tile.features().index(pond_core)
-    sram_feat = pond_feat + pond_core.num_sram_features
-
-    circuit = interconnect.circuit()
-    tester = BasicTester(circuit, circuit.clk, circuit.reset)
-    tester.zero_inputs()
-    tester.reset()
-
-    config_data = []
-    # tile enable
-    reg_addr, value = pond_core.get_config_data("tile_en", 1)
-    config_data.append((interconnect.get_config_addr(reg_addr, pond_feat, 0, 0), value))
-
-    for i in range(32):
-        addr = interconnect.get_config_addr(i, sram_feat, 0, 0)
-        config_data.append((addr, i + 1))
-    for addr, data in config_data:
-        tester.configure(addr, data)
-
-    # read back
-    for addr, data in config_data:
-        tester.config_read(addr)
-        tester.expect(circuit.read_config_data, data)
-
-    run_tb(tester)
-"""
