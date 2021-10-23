@@ -22,9 +22,8 @@ class GlbPioWrapper(Generator):
     """GlbPioWrapper generator parses glb_pio_wrapper.sv
     generated from SystemRDL to create a Kratos wrapper"""
 
-    def __init__(self, params, filename='systemRDL/output/glb_pio_wrapper.sv'):
+    def __init__(self, filename='global_buffer/systemRDL/output/glb_pio_wrapper.sv'):
         super().__init__("glb_pio")
-        self.params = params
 
         # get port list from the systemRDL output
         input_ports, output_ports = get_systemrdl_port_list([filename])

@@ -45,14 +45,14 @@ class GlobalBufferParams:
     max_stride_width: int = 10
 
     # max number of bitstream in dma header
-    max_num_cfgs_width: int = glb_addr_width - bank_byte_offset
+    max_num_cfg_width: int = glb_addr_width - bank_byte_offset
 
     # cgra config parameters
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
 
     # dma address generator
-    queue_depth: int = 4
+    queue_depth: int = 2
     loop_level: int = 4
 
     # dma latency
@@ -73,7 +73,7 @@ def gen_global_buffer_params(**kwargs):
     cfg_data_width = kwargs.pop('cfg_data_width', 32)
     cgra_data_width = kwargs.pop('cgra_data_width', 16)
     max_stride_width = kwargs.pop('max_stride_width', 10)
-    queue_depth = kwargs.pop('queue_depth', 4)
+    queue_depth = kwargs.pop('queue_depth', 2)
     loop_level = kwargs.pop('loop_level', 4)
 
     # Check if there is unused kwargs
@@ -110,7 +110,7 @@ def gen_global_buffer_params(**kwargs):
     max_num_words_width = (glb_addr_width - bank_byte_offset
                            + math.ceil(math.log((bank_data_width
                                                  / cgra_data_width), 2)))
-    max_num_cfgs_width = glb_addr_width - bank_byte_offset
+    max_num_cfg_width = glb_addr_width - bank_byte_offset
     latency_width = 2 + math.ceil(math.log(num_glb_tiles, 2))
 
     params = GlobalBufferParams(num_glb_tiles=num_glb_tiles,
@@ -132,7 +132,7 @@ def gen_global_buffer_params(**kwargs):
                                 axi_byte_offset=axi_byte_offset,
                                 max_num_words_width=max_num_words_width,
                                 max_stride_width=max_stride_width,
-                                max_num_cfgs_width=max_num_cfgs_width,
+                                max_num_cfg_width=max_num_cfg_width,
                                 cgra_cfg_addr_width=cfg_addr_width,
                                 cgra_cfg_data_width=cfg_data_width,
                                 queue_depth=queue_depth,

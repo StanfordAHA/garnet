@@ -1,8 +1,9 @@
 from kratos import Interface
+from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
 class GlbConfigInterface(Interface):
-    def __init__(self, params):
+    def __init__(self, params: GlobalBufferParams):
         Interface.__init__(self, "glb_cfg_ifc")
         self.params = params
 
@@ -20,7 +21,8 @@ class GlbConfigInterface(Interface):
         rd_data = self.var("rd_data", data_width)
         rd_data_valid = self.var("rd_data_valid", 1)
 
-        m_to_s = [wr_en, wr_clk_en, wr_addr, wr_data, rd_en, rd_clk_en, rd_addr]
+        m_to_s = [wr_en, wr_clk_en, wr_addr,
+                  wr_data, rd_en, rd_clk_en, rd_addr]
         s_to_m = [rd_data, rd_data_valid]
 
         self.master = self.modport("master")
