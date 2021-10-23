@@ -53,10 +53,10 @@ class GlbTileCfg(Generator):
             "ld_dma_header_clr", width=self.params.queue_depth)
 
         # pcfg dma
-        self.cfg_pc_dma_ctrl = self.output(
-            "cfg_pc_dma_ctrl", self.cfg.cfg_pc_dma_ctrl_t)
-        self.cfg_pc_dma_header = self.output(
-            "cfg_pc_dma_header", self.cfg.cfg_pc_dma_header_t)
+        self.cfg_pcfg_dma_ctrl = self.output(
+            "cfg_pcfg_dma_ctrl", self.cfg.cfg_pcfg_dma_ctrl_t)
+        self.cfg_pcfg_dma_header = self.output(
+            "cfg_pcfg_dma_header", self.cfg.cfg_pcfg_dma_header_t)
 
         self.glb_pio_wrapper = GlbPioWrapper()
         self.add_child("glb_pio", self.glb_pio_wrapper)
@@ -146,12 +146,12 @@ class GlbTileCfg(Generator):
                           self.glb_pio_wrapper.ports[f"h2l_ld_dma_header_{i}_validate_validate_hwclr"])
 
         self.wire(
-            self.cfg_pc_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_pc_dma_ctrl_mode_r"])
+            self.cfg_pcfg_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_mode_r"])
 
-        self.wire(self.cfg_pc_dma_header['start_addr'],
-                  self.glb_pio_wrapper.ports[f"l2h_pc_dma_header_start_addr_start_addr_r"])
-        self.wire(self.cfg_pc_dma_header['num_cfg'],
-                  self.glb_pio_wrapper.ports[f"l2h_pc_dma_header_num_cfg_num_cfg_r"])
+        self.wire(self.cfg_pcfg_dma_header['start_addr'],
+                  self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_header_start_addr_start_addr_r"])
+        self.wire(self.cfg_pcfg_dma_header['num_cfg'],
+                  self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_header_num_cfg_num_cfg_r"])
 
     def wire_ctrl_signals(self):
         self.wire(self.clk, self.glb_tile_cfg_ctrl.clk)

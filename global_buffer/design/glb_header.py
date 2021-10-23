@@ -18,12 +18,16 @@ class GlbHeader():
 
         self.packet_t = PackedStruct(
             "packet_t", wr_packet_list + rdrq_packet_list + rdrs_packet_list)
-        self.wr_packet_t = PackedStruct("wr_packet_t", wr_packet_list)
+        self.rd_packet_t = PackedStruct(
+            "rd_packet_t", rdrq_packet_list + rdrs_packet_list)
         self.rdrq_packet_t = PackedStruct("rdrq_packet_t", rdrq_packet_list)
         self.rdrs_packet_t = PackedStruct("rdrs_packet_t", rdrs_packet_list)
+        self.wr_packet_t = PackedStruct("wr_packet_t", wr_packet_list)
 
         # TODO: Kratos currently does not support struct of struct.
         # This can become cleaner if it does.
         self.wr_packet_ports = [name for (name, _) in wr_packet_list]
         self.rdrq_packet_ports = [name for (name, _) in rdrq_packet_list]
         self.rdrs_packet_ports = [name for (name, _) in rdrs_packet_list]
+        self.rd_packet_ports = [name for (name, _) in (
+            rdrq_packet_list + rdrs_packet_list)]

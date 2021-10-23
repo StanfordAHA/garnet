@@ -38,8 +38,8 @@ class GlbConfig():
         self.cfg_ld_dma_header_t = PackedStruct(
             "ld_dma_header_t", dma_header_struct_list)
 
-        self.cfg_pc_dma_ctrl_t = PackedStruct("pc_dma_ctrl_t",
-                                              [("mode", 1)])
-        self.cfg_pc_dma_header_t = PackedStruct("pc_dma_header_t",
-                                                [("start_addr", self.params.glb_addr_width),
-                                                 ("num_cfg", self.params.max_num_cfg_width)])
+        self.cfg_pcfg_dma_ctrl_t = PackedStruct("pcfg_dma_ctrl_t",
+                                                [("mode", 1)])
+        self.cfg_pcfg_dma_header_t = PackedStruct("pcfg_dma_header_t",
+                                                  [("start_addr", self.params.glb_addr_width),
+                                                   ("num_cfg", self.params.max_num_cfg_width)])
