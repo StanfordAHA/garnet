@@ -1,10 +1,10 @@
-from kratos import Generator, always_comb, always_ff, posedge, verilog, const
-from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
+from kratos import Generator, always_comb, always_ff, posedge
 from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
+from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
 class GlbTileCfgCtrl(Generator):
-    def __init__(self, params):
+    def __init__(self, params: GlobalBufferParams):
         super().__init__("glb_tile_cfg_ctrl")
 
         self.params = params
@@ -71,6 +71,7 @@ class GlbTileCfgCtrl(Generator):
         self.add_always(self.e2w_rd_ifc)
 
         # We do not use clk_en signals
+        # TODO: kratos.wire does not work with interface 
         self.add_stmt(self.if_cfg_est_m.wr_clk_en.assign(1))
         self.add_stmt(self.if_cfg_est_m.rd_clk_en.assign(1))
 
@@ -175,9 +176,3 @@ class GlbTileCfgCtrl(Generator):
         self.wire(self.h2d_pio_dec_address, self.addr_internal)
         self.wire(self.h2d_pio_dec_read, self.read_internal)
         self.wire(self.h2d_pio_dec_write, self.write_internal)
-
-
-if __name__ == "__main__":
-    params = gen_global_buffer_params()
-    test = GlbTileCfgCtrl(params)
-    verilog(test, filename="test.sv")
