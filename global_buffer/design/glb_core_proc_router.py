@@ -112,7 +112,7 @@ class GlbCoreProcRouter(Generator):
         else:
             for port in self.header.rdrq_packet_ports:
                 self.rdrq_packet_pr2sw_filtered[port] = 0
-        
+
         self.wr_packet_pr2sw = self.wr_packet_pr2sw_filtered
         self.rdrq_packet_pr2sw = self.rdrq_packet_pr2sw_filtered
 
@@ -125,7 +125,7 @@ class GlbCoreProcRouter(Generator):
             for port in self.header.rdrs_packet_ports:
                 self.packet_w2e_esto[port] = self.packet_w2e_wsti_d1[port]
 
-        if (self.is_even  == 0) & (self.rdrs_packet_sw2pr_d1['rd_data_valid'] == 1):
+        if (self.is_even == 0) & (self.rdrs_packet_sw2pr_d1['rd_data_valid'] == 1):
             for port in self.header.rdrs_packet_ports:
                 self.packet_e2w_wsto[port] = self.rdrs_packet_sw2pr_d1[port]
         else:
