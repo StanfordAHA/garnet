@@ -58,6 +58,8 @@ class GlobalBufferParams:
     # dma latency
     latency_width: int = 2 + math.ceil(math.log(num_glb_tiles, 2))
 
+    glb_switch_pipeline_depth: int = 4
+
 
 def gen_global_buffer_params(**kwargs):
     # User-defined parameters
@@ -75,6 +77,7 @@ def gen_global_buffer_params(**kwargs):
     max_stride_width = kwargs.pop('max_stride_width', 10)
     queue_depth = kwargs.pop('queue_depth', 2)
     loop_level = kwargs.pop('loop_level', 4)
+    glb_switch_pipeline_depth = kwargs.pop('glb_switch_pipeline_depth', 4)
 
     # Check if there is unused kwargs
     if kwargs:
@@ -137,7 +140,9 @@ def gen_global_buffer_params(**kwargs):
                                 cgra_cfg_data_width=cfg_data_width,
                                 queue_depth=queue_depth,
                                 loop_level=loop_level,
-                                latency_width=latency_width)
+                                latency_width=latency_width,
+                                glb_switch_pipeline_depth=glb_switch_pipeline_depth
+                                )
     return params
 
 
