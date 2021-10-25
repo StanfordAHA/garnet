@@ -1,8 +1,8 @@
 from kratos import Generator, always_comb
+from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.glb_tile_cfg_ctrl import GlbTileCfgCtrl
 from global_buffer.design.glb_pio_wrapper import GlbPioWrapper
-from global_buffer.design.glb_cfg import GlbConfig
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
@@ -10,7 +10,7 @@ class GlbTileCfg(Generator):
     def __init__(self, params: GlobalBufferParams):
         super().__init__("glb_tile_cfg")
         self.params = params
-        self.cfg = GlbConfig(self.params)
+        self.header = GlbHeader(self.params)
         cfg_ifc = GlbConfigInterface(self.params)
 
         # ports
@@ -29,34 +29,34 @@ class GlbTileCfg(Generator):
         # TODO: Can we have a pass for this configuration?
         # TODO: Can we dump configuration struct verilog as external file?
         self.cfg_data_network = self.output(
-            "cfg_data_network", self.cfg.cfg_data_network_t)
+            "cfg_data_network", self.header.cfg_data_network_t)
 
         self.cfg_pcfg_network = self.output(
-            "cfg_pcfg_network", self.cfg.cfg_pcfg_network_t)
+            "cfg_pcfg_network", self.header.cfg_pcfg_network_t)
 
         # st dma
         self.cfg_st_dma_ctrl = self.output(
-            "cfg_st_dma_ctrl", self.cfg.cfg_st_dma_ctrl_t)
+            "cfg_st_dma_ctrl", self.header.cfg_st_dma_ctrl_t)
 
-        self.cfg_st_dma_header = self.output("cfg_st_dma_header", self.cfg.cfg_st_dma_header_t,
+        self.cfg_st_dma_header = self.output("cfg_st_dma_header", self.header.cfg_st_dma_header_t,
                                              size=self.params.queue_depth)
         self.st_dma_header_clr = self.input(
             "st_dma_header_clr", width=self.params.queue_depth)
 
         # ld dma
         self.cfg_ld_dma_ctrl = self.output(
-            "cfg_ld_dma_ctrl", self.cfg.cfg_ld_dma_ctrl_t)
+            "cfg_ld_dma_ctrl", self.header.cfg_ld_dma_ctrl_t)
 
-        self.cfg_ld_dma_header = self.output("cfg_ld_dma_header", self.cfg.cfg_ld_dma_header_t,
+        self.cfg_ld_dma_header = self.output("cfg_ld_dma_header", self.header.cfg_ld_dma_header_t,
                                              size=self.params.queue_depth)
         self.ld_dma_header_clr = self.input(
             "ld_dma_header_clr", width=self.params.queue_depth)
 
         # pcfg dma
         self.cfg_pcfg_dma_ctrl = self.output(
-            "cfg_pcfg_dma_ctrl", self.cfg.cfg_pcfg_dma_ctrl_t)
+            "cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
         self.cfg_pcfg_dma_header = self.output(
-            "cfg_pcfg_dma_header", self.cfg.cfg_pcfg_dma_header_t)
+            "cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
 
         self.glb_pio_wrapper = GlbPioWrapper()
         self.add_child("glb_pio", self.glb_pio_wrapper)
