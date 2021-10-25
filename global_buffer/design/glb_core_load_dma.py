@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, resize
+from kratos import Generator, always_ff, always_comb, posedge, resize, concat
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
@@ -9,7 +9,6 @@ class GlbCoreLoadDma(Generator):
     def __init__(self, params: GlobalBufferParams):
         super().__init__("glb_core_load_dma")
         self.params = params
-        assert(self.params.cgra_data_width * 4 == self.params.bank_data_width)
         self.header = GlbHeader(self.params)
 
         self.clk = self.clock("clk")
@@ -63,6 +62,8 @@ class GlbCoreLoadDma(Generator):
         self.strm_data_valid_r = self.var("strm_data_valid_r", 1)
         self.strm_data_sel = self.var(
             "strm_data_sel", self.params.bank_byte_offset-self.params.cgra_byte_offset)
+        self.strm_data_sel_resize = self.var(
+            "strm_data_sel_resize", 6)
 
         self.last_strm_w = self.var("last_strm_w", 1)
         self.strm_run_r = self.var("strm_run_r", 1)
@@ -429,17 +430,8 @@ class GlbCoreLoadDma(Generator):
         self.strm_data_sel = self.strm_rd_addr_d_arr[self.cfg_data_network_latency +
                                                      self.default_latency][self.params.bank_byte_offset-1, self.params.cgra_byte_offset]
 
-        if self.strm_data_sel == 0:
-            self.strm_data = self.bank_rdrs_data_cache_r[self.params.cgra_data_width - 1, 0]
-        elif self.strm_data_sel == 1:
-            self.strm_data = self.bank_rdrs_data_cache_r[self.params.cgra_data_width *
-                                                         2 - 1, self.params.cgra_data_width]
-        elif self.strm_data_sel == 2:
-            self.strm_data = self.bank_rdrs_data_cache_r[self.params.cgra_data_width *
-                                                         3 - 1, self.params.cgra_data_width * 2]
-        else:
-            self.strm_data = self.bank_rdrs_data_cache_r[self.params.cgra_data_width *
-                                                         4 - 1, self.params.cgra_data_width * 3]
+        self.strm_data = concat(*[self.bank_rdrs_data_cache_r[resize(self.strm_data_sel, math.ceil(math.log(
+            self.params.bank_data_width, 2))) * self.params.cgra_data_width + i] for i in reversed(range(self.params.cgra_data_width))])
 
     @always_comb
     def queue_sel_logic(self):
