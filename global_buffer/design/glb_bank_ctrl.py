@@ -1,0 +1,109 @@
+from kratos import Generator, always_comb, concat, const, ext
+from global_buffer.design.global_buffer_parameter import GlobalBufferParams
+from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
+from global_buffer.design.glb_header import GlbHeader
+from global_buffer.design.pipeline import Pipeline
+
+
+class GlbBankCtrl(Generator):
+    def __init__(self, params: GlobalBufferParams):
+        super().__init__("glb_bank_ctrl")
+        self.params = params
+        self.header = GlbHeader(self.params)
+
+        self.clk = self.clock("clk")
+        self.reset = self.reset("reset")
+
+        self.packet_wr_en = self.input("packet_wr_en", 1)
+        self.packet_wr_addr = self.input(
+            "packet_wr_addr", self.params.bank_addr_width)
+        self.packet_wr_data = self.input(
+            "packet_wr_data", self.params.bank_data_width)
+        self.packet_wr_data_bit_sel = self.input(
+            "packet_wr_data_bit_sel", self.params.bank_data_width)
+
+        self.packet_rd_en = self.input("packet_rd_en", 1)
+        self.packet_rd_addr = self.input(
+            "packet_rd_addr", self.params.bank_addr_width)
+        self.packet_rd_data = self.output(
+            "packet_rd_data", self.params.bank_data_width)
+        self.packet_rd_data_valid = self.output("packet_rd_data_valid", 1)
+
+        self.mem_rd_en = self.output("mem_rd_en", 1)
+        self.mem_wr_en = self.output("mem_wr_en", 1)
+        self.mem_addr = self.output("mem_addr", self.params.bank_addr_width)
+        self.mem_data_in = self.output(
+            "mem_data_in", self.params.bank_data_width)
+        self.mem_data_in_bit_sel = self.output(
+            "mem_data_in_bit_sel", self.params.bank_data_width)
+        self.mem_data_out = self.input(
+            "mem_data_out", self.params.bank_data_width)
+
+        self.bank_cfg_ifc = GlbConfigInterface(
+            addr_width=self.params.bank_addr_width, data_width=self.params.axi_data_width)
+
+        self.if_sram_cfg_s = self.interface(
+            self.bank_cfg_ifc.slave, f"if_sram_cfg_s", is_port=True)
+
+        self.add_always(self.mem_signal_logic)
+        self.add_always(self.temp)
+
+    @always_comb
+    def mem_signal_logic(self):
+        if self.if_sram_cfg_s.wr_en:
+            if self.if_sram_cfg_s.wr_addr[self.params.bank_byte_offset-1] == 0:
+                self.mem_wr_en = 1
+                self.mem_rd_en = 0
+                self.mem_addr = self.if_sram_cfg_s.wr_addr
+                self.mem_data_in = concat(const(
+                    0, self.params.bank_data_width - self.params.axi_data_width), self.if_sram_cfg_s.wr_data)
+                self.mem_data_in_bit_sel = concat(const(
+                    0, self.params.bank_data_width - self.params.axi_data_width), const(2**self.params.axi_data_width-1, self.params.axi_data_width))
+            else:
+                self.mem_wr_en = 1
+                self.mem_rd_en = 0
+                self.mem_addr = self.if_sram_cfg_s.wr_addr
+                self.mem_data_in = concat(
+                    self.if_sram_cfg_s.wr_data[self.params.bank_data_width - self.params.axi_data_width - 1, 0], const(0, self.params.axi_data_width))
+                self.mem_data_in_bit_sel = concat(const(2**(self.params.bank_data_width - self.params.axi_data_width)-1,
+                                                  self.params.bank_data_width - self.params.axi_data_width), const(0, self.params.axi_data_width))
+        elif self.if_sram_cfg_s.rd_en:
+            self.mem_wr_en = 0
+            self.mem_rd_en = 1
+            self.mem_addr = self.if_sram_cfg_s.rd_addr
+            self.mem_data_in = 0
+            self.mem_data_in_bit_sel = 0
+        elif self.packet_wr_en:
+            self.mem_wr_en = 1
+            self.mem_rd_en = 0
+            self.mem_addr = self.packet_wr_addr
+            self.mem_data_in = self.packet_wr_data
+            self.mem_data_in_bit_sel = self.packet_wr_data_bit_sel
+        elif self.packet_rd_en:
+            self.mem_wr_en = 0
+            self.mem_rd_en = 1
+            self.mem_addr = self.packet_rd_addr
+            self.mem_data_in = 0
+            self.mem_data_in_bit_sel = 0
+        else:
+            self.mem_wr_en = 0
+            self.mem_rd_en = 0
+            self.mem_addr = 0
+            self.mem_data_in = 0
+            self.mem_data_in_bit_sel = 0
+
+    @always_comb
+    def temp(self):
+        self.if_sram_cfg_s.rd_data = 0
+        self.if_sram_cfg_s.rd_data_valid = 0
+        self.packet_rd_data = 0
+        self.packet_rd_data_valid = 0
+    
+    def add_pipeline(self):
+        self.done_pulse_pipeline = Pipeline(
+            width=1, depth=self.done_pulse_pipeline_depth)
+        self.add_child("done_pulse_pipeline", self.done_pulse_pipeline,
+                       clk=self.clk,
+                       reset=self.reset,
+                       in_=self.done_pulse_r,
+                       out_=self.pcfg_done_pulse)

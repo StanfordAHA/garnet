@@ -15,23 +15,23 @@ class GlbCoreSramCfgCtrl(Generator):
         self.glb_tile_id = self.input(
             "glb_tile_id", self.params.tile_sel_addr_width)
 
-        cfg_ifc = GlbConfigInterface(
+        self.sram_cfg_ifc = GlbConfigInterface(
             addr_width=self.params.glb_addr_width, data_width=self.params.axi_data_width)
 
-        bank_cfg_ifc = GlbConfigInterface(
+        self.bank_cfg_ifc = GlbConfigInterface(
             addr_width=self.params.bank_addr_width, data_width=self.params.axi_data_width)
 
         # config port
         self.if_sram_cfg_est_m = self.interface(
-            cfg_ifc.master, "if_sram_cfg_est_m", is_port=True)
+            self.sram_cfg_ifc.master, "if_sram_cfg_est_m", is_port=True)
         self.if_sram_cfg_wst_s = self.interface(
-            cfg_ifc.slave, "if_sram_cfg_wst_s", is_port=True)
+            self.sram_cfg_ifc.slave, "if_sram_cfg_wst_s", is_port=True)
 
         # bank_config port
-        self.if_sram_cfg_core2bank = []
+        self.if_sram_cfg_core2bank_m = []
         for i in range(self.params.banks_per_tile):
-            self.if_sram_cfg_core2bank.append(self.interface(
-                bank_cfg_ifc.master, f"if_sram_cfg_core2bank_{i}", is_port=True))
+            self.if_sram_cfg_core2bank_m.append(self.interface(
+                self.bank_cfg_ifc.master, f"if_sram_cfg_core2bank_m_{i}", is_port=True))
 
         self.tile_id_match = self.var("tile_id_match", 1)
 
@@ -56,33 +56,28 @@ class GlbCoreSramCfgCtrl(Generator):
     @always_comb
     def if_sram_cfg_core2bank_logic(self, i):
         if self.tile_id_match:
-            self.if_sram_cfg_core2bank[i].wr_en = ((self.if_sram_cfg_wst_s.wr_addr[self.params.bank_addr_width +
+            self.if_sram_cfg_core2bank_m[i].wr_en = ((self.if_sram_cfg_wst_s.wr_addr[self.params.bank_addr_width +
                                                    self.params.bank_sel_addr_width - 1, self.params.bank_addr_width] == i) & self.if_sram_cfg_wst_s.wr_en)
-            self.if_sram_cfg_core2bank[i].wr_addr = self.if_sram_cfg_wst_s.wr_addr[self.params.bank_addr_width - 1, 0]
-            self.if_sram_cfg_core2bank[i].wr_data = self.if_sram_cfg_wst_s.wr_data
-            self.if_sram_cfg_core2bank[i].rd_en = ((self.if_sram_cfg_wst_s.rd_addr[self.params.bank_addr_width +
+            self.if_sram_cfg_core2bank_m[i].wr_addr = self.if_sram_cfg_wst_s.wr_addr[self.params.bank_addr_width - 1, 0]
+            self.if_sram_cfg_core2bank_m[i].wr_data = self.if_sram_cfg_wst_s.wr_data
+            self.if_sram_cfg_core2bank_m[i].rd_en = ((self.if_sram_cfg_wst_s.rd_addr[self.params.bank_addr_width +
                                                    self.params.bank_sel_addr_width - 1, self.params.bank_addr_width] == i) & self.if_sram_cfg_wst_s.rd_en)
-            self.if_sram_cfg_core2bank[i].rd_addr = self.if_sram_cfg_wst_s.rd_addr[self.params.bank_addr_width - 1, 0]
+            self.if_sram_cfg_core2bank_m[i].rd_addr = self.if_sram_cfg_wst_s.rd_addr[self.params.bank_addr_width - 1, 0]
         else:
-            self.if_sram_cfg_core2bank[i].wr_en = 0
-            self.if_sram_cfg_core2bank[i].wr_addr = 0
-            self.if_sram_cfg_core2bank[i].wr_data = 0
-            self.if_sram_cfg_core2bank[i].rd_en = 0
-            self.if_sram_cfg_core2bank[i].rd_addr = 0
-
-    # @always_comb
-    # def if_sram_cfg_core2bank_logic(self, i):
-    #         self.bank2core_rd_data_w[i] = self.if_sram_cfg_core2bank[i].rd_data
-    #         self.bank2core_rd_data_valid_w[i] = self.if_sram_cfg_core2bank[i].rd_data_valid
+            self.if_sram_cfg_core2bank_m[i].wr_en = 0
+            self.if_sram_cfg_core2bank_m[i].wr_addr = 0
+            self.if_sram_cfg_core2bank_m[i].wr_data = 0
+            self.if_sram_cfg_core2bank_m[i].rd_en = 0
+            self.if_sram_cfg_core2bank_m[i].rd_addr = 0
 
     @always_comb
     def rd_data_mux(self):
         self.rd_data_w = self.if_sram_cfg_est_m.rd_data
         self.rd_data_valid_w = self.if_sram_cfg_est_m.rd_data_valid
         for i in range(self.params.banks_per_tile):
-            if self.if_sram_cfg_core2bank[i].rd_data_valid == 1:
-                self.rd_data_w = self.if_sram_cfg_core2bank[i].rd_data
-                self.rd_data_valid_w = self.if_sram_cfg_core2bank[i].rd_data_valid
+            if self.if_sram_cfg_core2bank_m[i].rd_data_valid == 1:
+                self.rd_data_w = self.if_sram_cfg_core2bank_m[i].rd_data
+                self.rd_data_valid_w = self.if_sram_cfg_core2bank_m[i].rd_data_valid
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def sram_cfg_pipeline(self):
