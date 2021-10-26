@@ -11,7 +11,8 @@ class GlbTileCfg(Generator):
         super().__init__("glb_tile_cfg")
         self.params = params
         self.header = GlbHeader(self.params)
-        cfg_ifc = GlbConfigInterface(self.params)
+        cfg_ifc = GlbConfigInterface(
+            addr_width=self.params.axi_addr_width, data_width=self.params.axi_data_width)
 
         # ports
         self.clk = self.clock("clk")

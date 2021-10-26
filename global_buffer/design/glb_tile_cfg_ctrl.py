@@ -10,7 +10,8 @@ class GlbTileCfgCtrl(Generator):
         self.params = params
         # local parameters
 
-        config = GlbConfigInterface(self.params)
+        config = GlbConfigInterface(
+            addr_width=self.params.axi_addr_width, data_width=self.params.axi_data_width)
 
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
@@ -69,11 +70,6 @@ class GlbTileCfgCtrl(Generator):
         self.add_always(self.w2e_wr_ifc)
         self.add_always(self.w2e_rd_ifc)
         self.add_always(self.e2w_rd_ifc)
-
-        # We do not use clk_en signals
-        # TODO: kratos.wire does not work with interface 
-        self.add_stmt(self.if_cfg_est_m.wr_clk_en.assign(1))
-        self.add_stmt(self.if_cfg_est_m.rd_clk_en.assign(1))
 
         # wire outputs
         self.wire_outputs()
