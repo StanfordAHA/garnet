@@ -7,18 +7,18 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
 class GlbTileCfg(Generator):
-    def __init__(self, params: GlobalBufferParams):
+    def __init__(self, _params: GlobalBufferParams):
         super().__init__("glb_tile_cfg")
-        self.params = params
-        self.header = GlbHeader(self.params)
+        self._params = _params
+        self.header = GlbHeader(self._params)
         cfg_ifc = GlbConfigInterface(
-            addr_width=self.params.axi_addr_width, data_width=self.params.axi_data_width)
+            addr_width=self._params.axi_addr_width, data_width=self._params.axi_data_width)
 
         # ports
         self.clk = self.clock("clk")
         self.reset = self.reset("reset", is_async=True)
         self.glb_tile_id = self.input(
-            "glb_tile_id", self.params.tile_sel_addr_width)
+            "glb_tile_id", self._params.tile_sel_addr_width)
 
         # config port
         self.if_cfg_wst_s = self.interface(
@@ -40,18 +40,18 @@ class GlbTileCfg(Generator):
             "cfg_st_dma_ctrl", self.header.cfg_st_dma_ctrl_t)
 
         self.cfg_st_dma_header = self.output("cfg_st_dma_header", self.header.cfg_st_dma_header_t,
-                                             size=self.params.queue_depth)
+                                             size=self._params.queue_depth)
         self.st_dma_header_clr = self.input(
-            "st_dma_header_clr", width=self.params.queue_depth)
+            "st_dma_header_clr", width=self._params.queue_depth)
 
         # ld dma
         self.cfg_ld_dma_ctrl = self.output(
             "cfg_ld_dma_ctrl", self.header.cfg_ld_dma_ctrl_t)
 
         self.cfg_ld_dma_header = self.output("cfg_ld_dma_header", self.header.cfg_ld_dma_header_t,
-                                             size=self.params.queue_depth)
+                                             size=self._params.queue_depth)
         self.ld_dma_header_clr = self.input(
-            "ld_dma_header_clr", width=self.params.queue_depth)
+            "ld_dma_header_clr", width=self._params.queue_depth)
 
         # pcfg dma
         self.cfg_pcfg_dma_ctrl = self.output(
@@ -61,7 +61,7 @@ class GlbTileCfg(Generator):
 
         self.glb_pio_wrapper = GlbPioWrapper()
         self.add_child("glb_pio", self.glb_pio_wrapper)
-        self.glb_tile_cfg_ctrl = GlbTileCfgCtrl(self.params)
+        self.glb_tile_cfg_ctrl = GlbTileCfgCtrl(self._params)
         self.add_child("glb_tile_cfg_ctrl", self.glb_tile_cfg_ctrl)
 
         self.wire_config_signals()
@@ -87,7 +87,7 @@ class GlbTileCfg(Generator):
         self.wire(
             self.cfg_st_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_mode_r"])
 
-        if self.params.queue_depth == 1:
+        if self._params.queue_depth == 1:
             self.wire(self.cfg_st_dma_header[0]['validate'],
                       self.glb_pio_wrapper.ports[f"l2h_st_dma_header_validate_validate_r"])
             self.wire(self.cfg_st_dma_header[0]['start_addr'],
@@ -97,7 +97,7 @@ class GlbTileCfg(Generator):
             self.wire(self.st_dma_header_clr[0],
                       self.glb_pio_wrapper.ports[f"h2l_st_dma_header_validate_validate_hwclr"])
         else:
-            for i in range(self.params.queue_depth):
+            for i in range(self._params.queue_depth):
                 self.wire(self.cfg_st_dma_header[i]['validate'],
                           self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_validate_validate_r"])
                 self.wire(self.cfg_st_dma_header[i]['start_addr'],
@@ -112,12 +112,12 @@ class GlbTileCfg(Generator):
         self.wire(self.cfg_ld_dma_ctrl['use_valid'],
                   self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_use_valid_r"])
 
-        if self.params.queue_depth == 1:
+        if self._params.queue_depth == 1:
             self.wire(self.cfg_ld_dma_header[0]['validate'],
                       self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_validate_validate_r"])
             self.wire(self.cfg_ld_dma_header[0]['start_addr'],
                       self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_start_addr_start_addr_r"])
-            for j in range(self.params.loop_level):
+            for j in range(self._params.loop_level):
                 self.wire(
                     self.cfg_ld_dma_header[0][f"stride_{j}"], self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_stride_{j}_stride_r"])
                 self.wire(
@@ -129,12 +129,12 @@ class GlbTileCfg(Generator):
             self.wire(self.ld_dma_header_clr[0],
                       self.glb_pio_wrapper.ports[f"h2l_ld_dma_header_validate_validate_hwclr"])
         else:
-            for i in range(self.params.queue_depth):
+            for i in range(self._params.queue_depth):
                 self.wire(self.cfg_ld_dma_header[i]['validate'],
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_validate_validate_r"])
                 self.wire(self.cfg_ld_dma_header[i]['start_addr'],
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_start_addr_start_addr_r"])
-                for j in range(self.params.loop_level):
+                for j in range(self._params.loop_level):
                     self.wire(
                         self.cfg_ld_dma_header[i][f"stride_{j}"], self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_stride_{j}_stride_r"])
                     self.wire(
