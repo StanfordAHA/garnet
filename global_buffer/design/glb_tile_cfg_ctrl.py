@@ -4,19 +4,19 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
 class GlbTileCfgCtrl(Generator):
-    def __init__(self, params: GlobalBufferParams):
+    def __init__(self, _params: GlobalBufferParams):
         super().__init__("glb_tile_cfg_ctrl")
 
-        self.params = params
+        self._params = _params
         # local parameters
 
         config = GlbConfigInterface(
-            addr_width=self.params.axi_addr_width, data_width=self.params.axi_data_width)
+            addr_width=self._params.axi_addr_width, data_width=self._params.axi_data_width)
 
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input(
-            "glb_tile_id", params.tile_sel_addr_width)
+            "glb_tile_id", _params.tile_sel_addr_width)
 
         # config port
         self.if_cfg_wst_s = self.interface(
@@ -25,44 +25,44 @@ class GlbTileCfgCtrl(Generator):
             config.master, "if_cfg_est_m", is_port=True)
 
         self.h2d_pio_dec_write_data = self.output(
-            "h2d_pio_dec_write_data", params.axi_data_width)
+            "h2d_pio_dec_write_data", _params.axi_data_width)
         self.h2d_pio_dec_address = self.output(
-            "h2d_pio_dec_address", params.axi_addr_reg_width)
+            "h2d_pio_dec_address", _params.axi_addr_reg_width)
         self.h2d_pio_dec_read = self.output("h2d_pio_dec_read", 1)
         self.h2d_pio_dec_write = self.output("h2d_pio_dec_write", 1)
 
         self.d2h_dec_pio_read_data = self.input(
-            "d2h_dec_pio_read_data", params.axi_data_width)
+            "d2h_dec_pio_read_data", _params.axi_data_width)
         self.d2h_dec_pio_ack = self.input("d2h_dec_pio_ack", 1)
         self.d2h_dec_pio_nack = self.input("d2h_dec_pio_nack", 1)
 
         # local variables
         self.wr_data_internal = self.var(
-            "wr_data_internal", params.axi_data_width)
+            "wr_data_internal", _params.axi_data_width)
         self.addr_internal = self.var(
-            "addr_internal", params.axi_addr_reg_width)
+            "addr_internal", _params.axi_addr_reg_width)
         self.read_internal = self.var("read_internal", 1)
         self.write_internal = self.var("write_internal", 1)
         self.rd_en_d1 = self.var("rd_en_d1", 1)
         self.rd_en_d2 = self.var("rd_en_d2", 1)
         self.rd_data_internal = self.var(
-            "rd_data_internal", params.axi_data_width)
-        self.rd_data_next = self.var("rd_data_next", params.axi_data_width)
+            "rd_data_internal", _params.axi_data_width)
+        self.rd_data_next = self.var("rd_data_next", _params.axi_data_width)
         self.rd_data_valid_internal = self.var("rd_data_valid_internal", 1)
         self.rd_data_valid_next = self.var("rd_data_vald_next", 1)
         self.wr_tile_id_match = self.var("wr_tile_id_match", 1)
         self.rd_tile_id_match = self.var("rd_tile_id_match", 1)
 
         self.wr_addr_tile_id = self.var(
-            "wr_addr_tile_id", params.tile_sel_addr_width)
+            "wr_addr_tile_id", _params.tile_sel_addr_width)
         self.rd_addr_tile_id = self.var(
-            "rd_addr_tile_id", params.tile_sel_addr_width)
+            "rd_addr_tile_id", _params.tile_sel_addr_width)
 
-        tile_id_msb = (params.axi_addr_reg_width
-                       + params.axi_byte_offset
-                       + params.tile_sel_addr_width
+        tile_id_msb = (_params.axi_addr_reg_width
+                       + _params.axi_byte_offset
+                       + _params.tile_sel_addr_width
                        - 1)
-        tile_id_lsb = params.axi_addr_reg_width + params.axi_byte_offset
+        tile_id_lsb = _params.axi_addr_reg_width + _params.axi_byte_offset
         self.add_always(self.tile_id_match,
                         tile_id_msb=tile_id_msb, tile_id_lsb=tile_id_lsb)
         self.add_always(self.internal_logic)
@@ -89,17 +89,17 @@ class GlbTileCfgCtrl(Generator):
         self.read_internal = 0
         self.write_internal = 0
         if self.if_cfg_wst_s.rd_en and self.rd_tile_id_match:
-            self.addr_internal = self.if_cfg_wst_s.rd_addr[(self.params.axi_byte_offset
-                                                            + self.params.axi_addr_reg_width
+            self.addr_internal = self.if_cfg_wst_s.rd_addr[(self._params.axi_byte_offset
+                                                            + self._params.axi_addr_reg_width
                                                             - 1),
-                                                           self.params.axi_byte_offset]
+                                                           self._params.axi_byte_offset]
             self.read_internal = 1
 
         if self.if_cfg_wst_s.wr_en and self.wr_tile_id_match:
-            self.addr_internal = self.if_cfg_wst_s.wr_addr[(self.params.axi_byte_offset
-                                                            + self.params.axi_addr_reg_width
+            self.addr_internal = self.if_cfg_wst_s.wr_addr[(self._params.axi_byte_offset
+                                                            + self._params.axi_addr_reg_width
                                                             - 1),
-                                                           self.params.axi_byte_offset]
+                                                           self._params.axi_byte_offset]
             self.wr_data_internal = self.if_cfg_wst_s.wr_data
             self.write_internal = 1
 

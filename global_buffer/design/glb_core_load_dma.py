@@ -6,19 +6,17 @@ import math
 
 
 class GlbCoreLoadDma(Generator):
-    def __init__(self, params: GlobalBufferParams):
+    def __init__(self, _params: GlobalBufferParams):
         super().__init__("glb_core_load_dma")
-        self.params = params
-        self.header = GlbHeader(self.params)
+        self._params = _params
+        self.header = GlbHeader(self._params)
 
         self.clk = self.clock("clk")
         self.clk_en = self.clock_en("clk_en")
         self.reset = self.reset("reset")
-        self.glb_tile_id = self.input(
-            "glb_tile_id", self.params.tile_sel_addr_width)
 
         self.data_g2f = self.output(
-            "data_g2f", width=self.params.cgra_data_width)
+            "data_g2f", width=self._params.cgra_data_width)
         self.data_valid_g2f = self.output("data_valid_g2f", width=1)
 
         self.rdrq_packet = self.output(
@@ -29,12 +27,12 @@ class GlbCoreLoadDma(Generator):
             "cfg_ld_dma_ctrl_use_valid", 1)
         self.cfg_ld_dma_ctrl_mode = self.input("cfg_ld_dma_ctrl_mode", 2)
         self.cfg_data_network_latency = self.input(
-            "cfg_data_network_latency", self.params.latency_width)
+            "cfg_data_network_latency", self._params.latency_width)
         self.cfg_ld_dma_header = self.input(
-            "cfg_ld_dma_header", self.header.cfg_ld_dma_header_t, size=self.params.queue_depth)
+            "cfg_ld_dma_header", self.header.cfg_ld_dma_header_t, size=self._params.queue_depth)
 
         self.ld_dma_header_clr = self.output(
-            "ld_dma_header_clr", width=self.params.queue_depth)
+            "ld_dma_header_clr", width=self._params.queue_depth)
 
         self.ld_dma_start_pulse = self.input("ld_dma_start_pulse", 1)
         self.ld_dma_done_pulse = self.output("ld_dma_done_pulse", 1)
@@ -44,24 +42,25 @@ class GlbCoreLoadDma(Generator):
 
         # local variables
         self.dma_header_r = self.var(
-            "dma_header_r", self.header.cfg_ld_dma_header_t, size=self.params.queue_depth)
+            "dma_header_r", self.header.cfg_ld_dma_header_t, size=self._params.queue_depth)
 
         self.dma_validate_r = self.var(
-            "dma_validate_r", width=self.params.queue_depth)
+            "dma_validate_r", width=self._params.queue_depth)
         self.dma_validate_pulse = self.var(
-            "dma_validate_pulse", width=self.params.queue_depth)
+            "dma_validate_pulse", width=self._params.queue_depth)
         self.dma_invalidate_pulse = self.var(
-            "dma_invalidate_pulse", width=self.params.queue_depth)
+            "dma_invalidate_pulse", width=self._params.queue_depth)
 
         self.dma_active_r = self.var("dma_active", 1)
         self.dma_active_next = self.var("dma_active_next", 1)
 
-        self.strm_data = self.var("strm_data", self.params.cgra_data_width)
-        self.strm_data_r = self.var("strm_data_r", self.params.cgra_data_width)
+        self.strm_data = self.var("strm_data", self._params.cgra_data_width)
+        self.strm_data_r = self.var(
+            "strm_data_r", self._params.cgra_data_width)
         self.strm_data_valid = self.var("strm_data_valid", 1)
         self.strm_data_valid_r = self.var("strm_data_valid_r", 1)
         self.strm_data_sel = self.var(
-            "strm_data_sel", self.params.bank_byte_offset-self.params.cgra_byte_offset)
+            "strm_data_sel", self._params.bank_byte_offset-self._params.cgra_byte_offset)
         self.strm_data_sel_resize = self.var(
             "strm_data_sel_resize", 6)
 
@@ -70,50 +69,52 @@ class GlbCoreLoadDma(Generator):
         self.strm_run_next = self.var("strm_run_next", 1)
 
         self.num_active_words_w = self.var(
-            "num_active_words_w", self.params.max_num_words_width)
+            "num_active_words_w", self._params.max_num_words_width)
         self.num_inactive_words_w = self.var(
-            "num_inactive_words_w", self.params.max_num_words_width)
+            "num_inactive_words_w", self._params.max_num_words_width)
 
         self.strm_active_r = self.var("strm_active_r", 1)
         self.strm_active_next = self.var("strm_active_next", 1)
         self.strm_active_cnt_r = self.var(
-            "strm_active_cnt_r", self.params.max_num_words_width)
+            "strm_active_cnt_r", self._params.max_num_words_width)
         self.strm_active_cnt_next = self.var(
-            "strm_active_cnt_next", self.params.max_num_words_width)
+            "strm_active_cnt_next", self._params.max_num_words_width)
         self.strm_inactive_cnt_r = self.var(
-            "strm_inactive_cnt_r", self.params.max_num_words_width)
+            "strm_inactive_cnt_r", self._params.max_num_words_width)
         self.strm_inactive_cnt_next = self.var(
-            "strm_inactive_cnt_next", self.params.max_num_words_width)
+            "strm_inactive_cnt_next", self._params.max_num_words_width)
 
         self.start_addr_r = self.var(
-            "start_addr_r", self.params.glb_addr_width)
+            "start_addr_r", self._params.glb_addr_width)
         self.strm_rd_en_r = self.var("strm_rd_en_r", 1)
         self.strm_rd_addr_r = self.var(
-            "strm_rd_addr_r", self.params.glb_addr_width)
+            "strm_rd_addr_r", self._params.glb_addr_width)
         self.strm_rd_addr_w = self.var(
-            "strm_rd_addr_w", self.params.glb_addr_width)
+            "strm_rd_addr_w", self._params.glb_addr_width)
 
         self.queue_sel_r = self.var("queue_sel_r", math.ceil(
-            math.log(self.params.queue_depth, 2)))
+            math.log(self._params.queue_depth, 2)))
         self.queue_sel_next = self.var("queue_sel_next", math.ceil(
-            math.log(self.params.queue_depth, 2)))
+            math.log(self._params.queue_depth, 2)))
 
         self.iter_cnt_incr = self.var(
-            "iter_cnt_incr", width=1, size=self.params.loop_level)
+            "iter_cnt_incr", width=1, size=self._params.loop_level)
         self.iter_cnt_next = self.var(
-            "iter_cnt_next", width=self.params.max_num_words_width, size=self.params.loop_level)
+            "iter_cnt_next", width=self._params.max_num_words_width, size=self._params.loop_level)
         self.iter_cnt_r = self.var(
-            "iter_cnt_r", width=self.params.max_num_words_width, size=self.params.loop_level)
+            "iter_cnt_r", width=self._params.max_num_words_width, size=self._params.loop_level)
         self.iter_range_r = self.var(
-            "iter_range_r", self.params.axi_data_width, size=self.params.loop_level)
+            "iter_range_r", self._params.axi_data_width, size=self._params.loop_level)
         self.iter_stride_r = self.var(
-            "iter_stride_r", self.params.axi_data_width, size=self.params.loop_level)
+            "iter_stride_r", self._params.axi_data_width, size=self._params.loop_level)
 
         self.ld_dma_start_pulse_next = self.var("ld_dma_start_pulse_next", 1)
         self.ld_dma_start_pulse_r = self.var("ld_dma_start_pulse_r", 1)
         self.ld_dma_start_pulse_d2 = self.var("ld_dma_start_pulse_d2", 1)
-        self.ld_dma_start_pulse_pipeline = Pipeline(
-            width=1, depth=2, is_clk_en=True)
+        self.ld_dma_start_pulse_pipeline = Pipeline(is_clk_en=True)
+        self.ld_dma_start_pulse_pipeline.p_width.value = 1
+        self.ld_dma_start_pulse_pipeline.p_depth.value = 2
+
         self.add_child("ld_dma_start_pulse_pipeline",
                        self.ld_dma_start_pulse_pipeline,
                        clk=self.clk,
@@ -127,9 +128,9 @@ class GlbCoreLoadDma(Generator):
         self.bank_addr_match = self.var("bank_addr_match", 1)
         self.bank_rdrq_rd_en = self.var("bank_rdrq_rd_en", 1)
         self.bank_rdrq_rd_addr = self.var(
-            "bank_rdrq_rd_addr", self.params.glb_addr_width)
+            "bank_rdrq_rd_addr", self._params.glb_addr_width)
         self.bank_rdrs_data_cache_r = self.var(
-            "bank_rdrs_data_cache_r", self.params.bank_data_width)
+            "bank_rdrs_data_cache_r", self._params.bank_data_width)
 
         self.add_strm_data_start_pulse_pipeline()
         self.add_ld_dma_done_pulse_pipeline()
@@ -208,36 +209,36 @@ class GlbCoreLoadDma(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def dma_validate_ff(self):
         if self.reset:
-            for i in range(self.params.queue_depth):
+            for i in range(self._params.queue_depth):
                 self.dma_validate_r[i] = 0
         elif self.clk_en:
-            for i in range(self.params.queue_depth):
+            for i in range(self._params.queue_depth):
                 self.dma_validate_r[i] = self.cfg_ld_dma_header[i]['validate']
 
     @always_comb
     def dma_validate_pulse_gen(self):
-        for i in range(self.params.queue_depth):
+        for i in range(self._params.queue_depth):
             self.dma_validate_pulse[i] = self.cfg_ld_dma_header[i]['validate'] & (
                 ~self.dma_validate_r[i])
 
     @always_comb
     def dma_invalidate_pulse_gen(self):
-        for i in range(self.params.queue_depth):
+        for i in range(self._params.queue_depth):
             self.dma_invalidate_pulse[i] = (
                 self.queue_sel_r == i) & self.ld_dma_start_pulse_r
 
     @always_comb
     def assign_ld_dma_header_hwclr(self):
-        for i in range(self.params.queue_depth):
+        for i in range(self._params.queue_depth):
             self.ld_dma_header_clr[i] = self.dma_invalidate_pulse[i]
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def dma_header_ff(self):
         if self.reset:
-            for i in range(self.params.queue_depth):
+            for i in range(self._params.queue_depth):
                 self.dma_header_r[i] = 0
         elif self.clk_en:
-            for i in range(self.params.queue_depth):
+            for i in range(self._params.queue_depth):
                 if self.dma_validate_pulse[i]:
                     self.dma_header_r[i] = self.cfg_ld_dma_header[i]
                 elif self.dma_invalidate_pulse[i]:
@@ -332,13 +333,13 @@ class GlbCoreLoadDma(Generator):
     def iter_ff(self):
         if self.reset:
             self.start_addr_r = 0
-            for i in range(self.params.loop_level):
+            for i in range(self._params.loop_level):
                 self.iter_range_r[i] = 0
                 self.iter_stride_r[i] = 0
         elif self.clk_en:
             if self.ld_dma_start_pulse_r:
                 self.start_addr_r = self.dma_header_r[self.queue_sel_r]['start_addr']
-                for i in range(self.params.loop_level):
+                for i in range(self._params.loop_level):
                     self.iter_range_r[i] = self.dma_header_r[
                         self.queue_sel_r][f"range_{i}"]
                     self.iter_stride_r[i] = self.dma_header_r[
@@ -346,11 +347,11 @@ class GlbCoreLoadDma(Generator):
 
     @always_comb
     def iter_cnt_logic(self):
-        for i in range(self.params.loop_level):
+        for i in range(self._params.loop_level):
             self.iter_cnt_incr[i] = 0
             self.iter_cnt_next[i] = 0
         if self.strm_run_r:
-            for i in range(self.params.loop_level):
+            for i in range(self._params.loop_level):
                 if i == 0:
                     self.iter_cnt_incr[i] = self.strm_active_r
                 else:
@@ -368,16 +369,16 @@ class GlbCoreLoadDma(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def iter_cnt_ff(self):
         if self.reset:
-            for i in range(self.params.loop_level):
+            for i in range(self._params.loop_level):
                 self.iter_cnt_r[i] = 0
         elif self.clk_en:
-            for i in range(self.params.loop_level):
+            for i in range(self._params.loop_level):
                 self.iter_cnt_r[i] = self.iter_cnt_next[i]
 
     @always_comb
     def last_strm_logic(self):
         self.last_strm_w = 1
-        for i in range(self.params.loop_level):
+        for i in range(self._params.loop_level):
             self.last_strm_w = self.last_strm_w & ((self.iter_range_r[i] == 0) | (
                 self.iter_cnt_r[i] == (self.iter_range_r[i] - 1)))
 
@@ -388,9 +389,9 @@ class GlbCoreLoadDma(Generator):
     @always_comb
     def strm_addr_logic(self):
         self.strm_rd_addr_w = self.start_addr_r
-        for i in range(self.params.loop_level):
+        for i in range(self._params.loop_level):
             self.strm_rd_addr_w = resize(self.strm_rd_addr_w + self.iter_cnt_r[i] * self.iter_stride_r[i] * (
-                self.params.cgra_byte_offset + 1), self.params.glb_addr_width)
+                self._params.cgra_byte_offset + 1), self._params.glb_addr_width)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def strm_rdrq_packet_ff(self):
@@ -406,8 +407,8 @@ class GlbCoreLoadDma(Generator):
 
     @always_comb
     def bank_rdrq_packet_logic(self):
-        self.bank_addr_match = (self.strm_rd_addr_r[self.params.glb_addr_width-1, self.params.bank_byte_offset]
-                                == self.strm_rd_addr_d_arr[0][self.params.glb_addr_width-1, self.params.bank_byte_offset])
+        self.bank_addr_match = (self.strm_rd_addr_r[self._params.glb_addr_width-1, self._params.bank_byte_offset]
+                                == self.strm_rd_addr_d_arr[0][self._params.glb_addr_width-1, self._params.bank_byte_offset])
         self.bank_rdrq_rd_en = self.strm_rd_en_r & (
             self.ld_dma_start_pulse_d2 | (~self.bank_addr_match))
         self.bank_rdrq_rd_addr = self.strm_rd_addr_r
@@ -428,10 +429,10 @@ class GlbCoreLoadDma(Generator):
         self.strm_data_valid = self.strm_rd_en_d_arr[self.cfg_data_network_latency +
                                                      self.default_latency]
         self.strm_data_sel = self.strm_rd_addr_d_arr[self.cfg_data_network_latency +
-                                                     self.default_latency][self.params.bank_byte_offset-1, self.params.cgra_byte_offset]
+                                                     self.default_latency][self._params.bank_byte_offset-1, self._params.cgra_byte_offset]
 
         self.strm_data = concat(*[self.bank_rdrs_data_cache_r[resize(self.strm_data_sel, math.ceil(math.log(
-            self.params.bank_data_width, 2))) * self.params.cgra_data_width + i] for i in reversed(range(self.params.cgra_data_width))])
+            self._params.bank_data_width, 2))) * self._params.cgra_data_width + i] for i in reversed(range(self._params.cgra_data_width))])
 
     @always_comb
     def queue_sel_logic(self):
@@ -452,10 +453,12 @@ class GlbCoreLoadDma(Generator):
 
     def add_strm_rd_en_pipeline(self):
         # TODO: This maximum latency is different from start_pulse maximum latency
-        maximum_latency = 2 * self.params.num_glb_tiles + self.default_latency
+        maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
         self.strm_rd_en_d_arr = self.var("strm_rd_en_d_arr", maximum_latency)
         self.strm_rd_en_pipeline = Pipeline(
-            width=1, depth=maximum_latency, is_clk_en=True, flatten_output=True)
+            is_clk_en=True, flatten_output=True)
+        self.strm_rd_en_pipeline.p_width.value = 1
+        self.strm_rd_en_pipeline.p_depth.value = maximum_latency
         self.add_child("strm_rd_en_pipeline",
                        self.strm_rd_en_pipeline,
                        clk=self.clk,
@@ -466,12 +469,13 @@ class GlbCoreLoadDma(Generator):
 
     def add_strm_rd_addr_pipeline(self):
         # TODO: This maximum latency is different from start_pulse maximum latency
-        maximum_latency = 2 * self.params.num_glb_tiles + self.default_latency
+        maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
         self.strm_rd_addr_d_arr = self.var(
-            "strm_rd_addr_d_arr", width=self.params.glb_addr_width, size=maximum_latency)
+            "strm_rd_addr_d_arr", width=self._params.glb_addr_width, size=maximum_latency)
         self.strm_rd_addr_pipeline = Pipeline(
-            width=self.params.glb_addr_width, depth=maximum_latency,
             is_clk_en=True, flatten_output=True)
+        self.strm_rd_addr_pipeline.p_width.value = self._params.glb_addr_width
+        self.strm_rd_addr_pipeline.p_depth.value = maximum_latency
         self.add_child("strm_rd_addr_pipeline",
                        self.strm_rd_addr_pipeline,
                        clk=self.clk,
@@ -483,11 +487,13 @@ class GlbCoreLoadDma(Generator):
     def add_strm_data_start_pulse_pipeline(self):
         # TODO: Latency calculation should be automatic.
         # self.default_latency set to 8 is error-prone.
-        maximum_latency = 2 * self.params.num_glb_tiles + self.default_latency + 2
+        maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 2
         self.strm_data_start_pulse_d_arr = self.var(
             "strm_data_start_pulse_d_arr", maximum_latency)
         self.strm_data_start_pulse_pipeline = Pipeline(
-            width=1, depth=maximum_latency, is_clk_en=True, flatten_output=True)
+            is_clk_en=True, flatten_output=True)
+        self.strm_data_start_pulse_pipeline.p_width.value = 1
+        self.strm_data_start_pulse_pipeline.p_depth.value = maximum_latency
         self.add_child("strm_dma_start_pulse_pipeline",
                        self.strm_data_start_pulse_pipeline,
                        clk=self.clk,
@@ -501,11 +507,13 @@ class GlbCoreLoadDma(Generator):
 
     def add_ld_dma_done_pulse_pipeline(self):
         # TODO: This maximum latency is different from other maximum latency
-        maximum_latency = 2 * self.params.num_glb_tiles + self.default_latency + 3
+        maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 3
         self.ld_dma_done_pulse_d_arr = self.var(
             "ld_dma_done_pulse_d_arr", maximum_latency)
         self.ld_dma_done_pulse_pipeline = Pipeline(
-            width=1, depth=maximum_latency, is_clk_en=True, flatten_output=True)
+            is_clk_en=True, flatten_output=True)
+        self.ld_dma_done_pulse_pipeline.p_width.value = 1
+        self.ld_dma_done_pulse_pipeline.p_depth.value = maximum_latency
         self.add_child("ld_dma_done_pulse_pipeline",
                        self.ld_dma_done_pulse_pipeline,
                        clk=self.clk,

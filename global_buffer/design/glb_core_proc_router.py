@@ -4,15 +4,15 @@ from global_buffer.design.glb_header import GlbHeader
 
 
 class GlbCoreProcRouter(Generator):
-    def __init__(self, params: GlobalBufferParams):
+    def __init__(self, _params: GlobalBufferParams):
         super().__init__("glb_core_proc_router")
-        self.params = params
-        self.header = GlbHeader(self.params)
+        self._params = _params
+        self.header = GlbHeader(self._params)
 
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input(
-            "glb_tile_id", self.params.tile_sel_addr_width)
+            "glb_tile_id", self._params.tile_sel_addr_width)
 
         self.packet_w2e_wsti = self.input(
             "packet_w2e_wsti", self.header.packet_t)
@@ -47,9 +47,9 @@ class GlbCoreProcRouter(Generator):
             "wr_packet_pr2sw_muxed", self.header.wr_packet_t)
 
         # localparam
-        self.packet_addr_tile_sel_msb = params.bank_addr_width + \
-            params.bank_sel_addr_width + params.tile_sel_addr_width - 1
-        self.packet_addr_tile_sel_lsb = params.bank_addr_width + params.bank_sel_addr_width
+        self.packet_addr_tile_sel_msb = _params.bank_addr_width + \
+            _params.bank_sel_addr_width + _params.tile_sel_addr_width - 1
+        self.packet_addr_tile_sel_lsb = _params.bank_addr_width + _params.bank_sel_addr_width
 
         self.add_is_even_stmt()
         self.add_always(self.packet_pipeline)
