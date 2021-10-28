@@ -349,9 +349,10 @@ class GlbCoreStoreDma(Generator):
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
         self.done_pulse_d_arr = self.var(
             "done_pulse_d_arr", maximum_latency)
-        self.done_pulse_pipeline = Pipeline(is_clk_en=True, flatten_output=True)
-        self.done_pulse_pipeline.p_width.value = 1
-        self.done_pulse_pipeline.p_depth.value = maximum_latency
+        self.done_pulse_pipeline = Pipeline(width=1,
+                                            depth=maximum_latency,
+                                            is_clk_en=True,
+                                            flatten_output=True)
         self.add_child("done_pulse_pipeline",
                        self.done_pulse_pipeline,
                        clk=self.clk,

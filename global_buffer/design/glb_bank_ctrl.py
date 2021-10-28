@@ -114,10 +114,8 @@ class GlbBankCtrl(Generator):
         self.packet_rd_en_d = self.var("packet_rd_en_d", 1)
         self.wire(self.mem_rd_en_w, self.mem_rd_en)
 
-        self.mem_rd_en_pipeline = Pipeline()
-        self.mem_rd_en_pipeline.p_depth.value = self.bank_ctrl_pipeline_depth
-        self.mem_rd_en_pipeline.p_width.value = 1
-
+        self.mem_rd_en_pipeline = Pipeline(width=1,
+                                           depth=self.bank_ctrl_pipeline_depth)
         self.add_child("mem_rd_en_pipeline",
                        self.mem_rd_en_pipeline,
                        clk=self.clk,
@@ -125,9 +123,8 @@ class GlbBankCtrl(Generator):
                        in_=self.mem_rd_en_w,
                        out_=self.mem_rd_en_d)
 
-        self.sram_cfg_rd_en_pipeline = Pipeline()
-        self.sram_cfg_rd_en_pipeline.p_depth.value = self.bank_ctrl_pipeline_depth
-        self.sram_cfg_rd_en_pipeline.p_width.value = 1
+        self.sram_cfg_rd_en_pipeline = Pipeline(width=1,
+                                                depth=self.bank_ctrl_pipeline_depth)
         self.add_child("sram_cfg_rd_en_pipeline",
                        self.sram_cfg_rd_en_pipeline,
                        clk=self.clk,
@@ -135,9 +132,8 @@ class GlbBankCtrl(Generator):
                        in_=self.if_sram_cfg_s.rd_en,
                        out_=self.sram_cfg_rd_en_d)
 
-        self.packet_rd_en_pipeline = Pipeline()
-        self.packet_rd_en_pipeline.p_depth.value = self.bank_ctrl_pipeline_depth
-        self.packet_rd_en_pipeline.p_width.value = 1
+        self.packet_rd_en_pipeline = Pipeline(width=1,
+                                              depth=self.bank_ctrl_pipeline_depth)
         self.add_child("packet_rd_en_pipeline",
                        self.packet_rd_en_pipeline,
                        clk=self.clk,
@@ -162,9 +158,8 @@ class GlbBankCtrl(Generator):
 
     def add_sram_cfg_rd_addr_sel_pipeline(self):
         self.sram_cfg_rd_addr_sel_d = self.var("sram_cfg_rd_addr_sel_d", 1)
-        self.sram_cfg_rd_addr_sel_pipeline = Pipeline()
-        self.sram_cfg_rd_addr_sel_pipeline.p_depth.value = self.bank_ctrl_pipeline_depth
-        self.sram_cfg_rd_addr_sel_pipeline.p_width.value = 1
+        self.sram_cfg_rd_addr_sel_pipeline = Pipeline(width=1,
+                                                      depth=self.bank_ctrl_pipeline_depth)
         self.add_child("sram_cfg_rd_addr_sel_pipeline",
                        self.sram_cfg_rd_addr_sel_pipeline,
                        clk=self.clk,
