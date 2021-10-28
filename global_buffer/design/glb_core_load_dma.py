@@ -111,9 +111,9 @@ class GlbCoreLoadDma(Generator):
         self.ld_dma_start_pulse_next = self.var("ld_dma_start_pulse_next", 1)
         self.ld_dma_start_pulse_r = self.var("ld_dma_start_pulse_r", 1)
         self.ld_dma_start_pulse_d2 = self.var("ld_dma_start_pulse_d2", 1)
-        self.ld_dma_start_pulse_pipeline = Pipeline(is_clk_en=True)
-        self.ld_dma_start_pulse_pipeline.p_width.value = 1
-        self.ld_dma_start_pulse_pipeline.p_depth.value = 2
+        self.ld_dma_start_pulse_pipeline = Pipeline(width=1,
+                                                    depth=2,
+                                                    is_clk_en=True)
 
         self.add_child("ld_dma_start_pulse_pipeline",
                        self.ld_dma_start_pulse_pipeline,
@@ -455,10 +455,10 @@ class GlbCoreLoadDma(Generator):
         # TODO: This maximum latency is different from start_pulse maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
         self.strm_rd_en_d_arr = self.var("strm_rd_en_d_arr", maximum_latency)
-        self.strm_rd_en_pipeline = Pipeline(
-            is_clk_en=True, flatten_output=True)
-        self.strm_rd_en_pipeline.p_width.value = 1
-        self.strm_rd_en_pipeline.p_depth.value = maximum_latency
+        self.strm_rd_en_pipeline = Pipeline(width=1,
+                                            depth=maximum_latency,
+                                            is_clk_en=True,
+                                            flatten_output=True)
         self.add_child("strm_rd_en_pipeline",
                        self.strm_rd_en_pipeline,
                        clk=self.clk,
@@ -472,10 +472,10 @@ class GlbCoreLoadDma(Generator):
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
         self.strm_rd_addr_d_arr = self.var(
             "strm_rd_addr_d_arr", width=self._params.glb_addr_width, size=maximum_latency)
-        self.strm_rd_addr_pipeline = Pipeline(
-            is_clk_en=True, flatten_output=True)
-        self.strm_rd_addr_pipeline.p_width.value = self._params.glb_addr_width
-        self.strm_rd_addr_pipeline.p_depth.value = maximum_latency
+        self.strm_rd_addr_pipeline = Pipeline(width=self._params.glb_addr_width,
+                                              depth=maximum_latency,
+                                              is_clk_en=True,
+                                              flatten_output=True)
         self.add_child("strm_rd_addr_pipeline",
                        self.strm_rd_addr_pipeline,
                        clk=self.clk,
@@ -490,10 +490,10 @@ class GlbCoreLoadDma(Generator):
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 2
         self.strm_data_start_pulse_d_arr = self.var(
             "strm_data_start_pulse_d_arr", maximum_latency)
-        self.strm_data_start_pulse_pipeline = Pipeline(
-            is_clk_en=True, flatten_output=True)
-        self.strm_data_start_pulse_pipeline.p_width.value = 1
-        self.strm_data_start_pulse_pipeline.p_depth.value = maximum_latency
+        self.strm_data_start_pulse_pipeline = Pipeline(width=1,
+                                                       depth=maximum_latency,
+                                                       is_clk_en=True,
+                                                       flatten_output=True)
         self.add_child("strm_dma_start_pulse_pipeline",
                        self.strm_data_start_pulse_pipeline,
                        clk=self.clk,
@@ -510,10 +510,10 @@ class GlbCoreLoadDma(Generator):
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 3
         self.ld_dma_done_pulse_d_arr = self.var(
             "ld_dma_done_pulse_d_arr", maximum_latency)
-        self.ld_dma_done_pulse_pipeline = Pipeline(
-            is_clk_en=True, flatten_output=True)
-        self.ld_dma_done_pulse_pipeline.p_width.value = 1
-        self.ld_dma_done_pulse_pipeline.p_depth.value = maximum_latency
+        self.ld_dma_done_pulse_pipeline = Pipeline(width=1,
+                                                   depth=maximum_latency,
+                                                   is_clk_en=True,
+                                                   flatten_output=True)
         self.add_child("ld_dma_done_pulse_pipeline",
                        self.ld_dma_done_pulse_pipeline,
                        clk=self.clk,
