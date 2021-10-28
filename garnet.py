@@ -266,8 +266,21 @@ class Garnet(Generator):
         return input_interface, output_interface,\
                (reset_port_name, valid_port_name, en_port_name)
 
-    def load_netlist(self,app):
+    def load_netlist(self, app, load_only):
         app_dir = os.path.dirname(app)
+        id_to_name = None
+        if load_only:
+            id_to_name_filename = os.path.join(app_dir, f"design.id_to_name")
+            if os.path.isfile(id_to_name_filename):
+                fin = open(id_to_name_filename, "r")
+                lines = fin.readlines()
+
+                id_to_name = {}
+
+                for line in lines:
+                    id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
+
+   
 
         if self.pe_fc == lassen_fc:
             pe_header = f"./headers/lassen_header.json"
@@ -299,30 +312,29 @@ class Garnet(Generator):
         dag = cutil.coreir_to_dag(nodes, cmod)
         print("-"*80)
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc}
-        netlist_info = create_netlist_info(dag, tile_info)
+        netlist_info = create_netlist_info(dag, tile_info, load_only, id_to_name)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"], netlist_info["buses"]
 
 
 
-    def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False):
-        # id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
-        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src)
+    def place_and_route(self, halide_src, target_frequency, unconstrained_io=False, compact=False, load_only=False):
+        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src, load_only)
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
         else:
             fixed_io = place_io_blk(id_to_name)
-        placement, routing = archipelago.pnr(self.interconnect, load_only, (netlist, bus),
-                                             cwd="temp",
+        placement, routing, id_to_name = archipelago.pnr(self.interconnect, target_frequency, load_only, (netlist, bus),
+                                             cwd=app_dir,
                                              id_to_name=id_to_name,
                                              fixed_pos=fixed_io,
-                                             compact=compact,
-                                             copy_to_dir=app_dir)
-     #   return placement, routing 
+                                             compact=compact)
+        
+        return placement, routing, id_to_name, instance_to_instr, netlist, bus 
 
-    #def generate_bitstream(self, halide_src, placement, routing, compact=False):
-      #  id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src)
+    def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus, compact=False):
+        #id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src)
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -420,6 +432,7 @@ def main():
     parser.add_argument("--virtualize", action="store_true")
     parser.add_argument("--use-io-valid", action="store_true")
     parser.add_argument("--pipeline-pnr", action="store_true")
+    parser.add_argument("--target-frequency", type=int, default=0)
     parser.add_argument("--generate-bitstream-only", action="store_true")
     parser.add_argument('--pe', type=str, default="")
     args = parser.parse_args()
@@ -457,13 +470,15 @@ def main():
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
         # do PnR and produce bitstream
-    #    placement, routing = garnet.place_and_route(args.app, args.unconstrained_io, compact=args.compact, load_only=args.generate_bitstream_only)
-        bitstream, (inputs, outputs, reset, valid, \
-            en, delay)  = garnet.place_and_route(args.app, args.unconstrained_io, compact=args.compact, load_only=args.generate_bitstream_only)  
+        
+        placement, routing, id_to_name, instance_to_instr, netlist, bus = garnet.place_and_route(args.app, args.target_frequency, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact, load_only=args.generate_bitstream_only)
+         #     bitstream, (inputs, outputs, reset, valid, \
+   #         en, delay)  = garnet.place_and_route(args.app, args.unconstrained_io, compact=args.compact, load_only=args.generate_bitstream_only)  
+        
         if args.pipeline_pnr:
             return
-   #     bitstream, (inputs, outputs, reset, valid, \
-   #         en, delay) = garnet.generate_bitstream(args.app, placement, routing, compact=args.compact)
+        bitstream, (inputs, outputs, reset, valid, \
+            en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr, netlist, bus, compact=args.compact)
 
         # write out the config file
         if len(inputs) > 1:
