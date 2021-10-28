@@ -62,7 +62,7 @@ class CreateBuses(Visitor):
         assert node.field in child_bid
         bid = child_bid[node.field]
         self.node_to_bid[node] = bid
-        print(node.field)
+        #print(node.field)
         self.netlist[bid].append((child, node.field))
 
     def visit_RegisterSource(self, node):
@@ -197,7 +197,7 @@ class CreateIDs(Visitor):
 
         if is_bit:
             id = f"i{self.i}"
-            print(node)
+            #print(node)
         else:
             id = f"I{self.i}"
         self.i += 1
@@ -451,7 +451,7 @@ def gen_dag_img(dag, file, info, no_unbound=True):
 from lassen.sim import PE_fc as lassen_fc
 from metamapper. common_passes import print_dag
 
-def create_netlist_info(dag: Dag, tile_info: dict):
+def create_netlist_info(dag: Dag, tile_info: dict, load_only = False, id_to_name = None):
     fdag = FlattenIO().doit(dag)
     # gen_dag_img(fdag, f"img/foo")
     def tile_to_char(t):
@@ -460,8 +460,12 @@ def create_netlist_info(dag: Dag, tile_info: dict):
         elif t.split(".")[1]=="MEM":
             return "m"
     node_info = {t:tile_to_char(t) for t in tile_info}
-
     nodes_to_ids = CreateIDs(node_info).doit(fdag)
+   
+    if load_only:
+        name_to_id = {name:id_ for id_, name in id_to_name.items()}
+        nodes_to_ids = {node:name_to_id[node.iname] for node,_ in nodes_to_ids.items()}
+
     info = {}
     info["id_to_name"] = {id: node.iname for node,id in nodes_to_ids.items()}
 
