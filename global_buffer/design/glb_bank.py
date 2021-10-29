@@ -32,7 +32,8 @@ class GlbBank(Generator):
         self.mem_rd_en = self.var("mem_rd_en", 1)
         self.mem_wr_en = self.var("mem_wr_en", 1)
         self.mem_addr = self.var("mem_addr", self._params.bank_addr_width)
-        self.mem_data_in = self.var("mem_data_in", self._params.bank_data_width)
+        self.mem_data_in = self.var(
+            "mem_data_in", self._params.bank_data_width)
         self.mem_data_in_bit_sel = self.var(
             "mem_data_in_bit_sel", self._params.bank_data_width)
         self.mem_data_out = self.var(
