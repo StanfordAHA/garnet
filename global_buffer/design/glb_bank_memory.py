@@ -1,4 +1,4 @@
-from kratos import Generator, always_comb, concat, always_ff, posedge
+from kratos import Generator, always_comb, concat, always_ff, posedge, const
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_bank_sram_gen import GlbBankSramGen
@@ -59,35 +59,36 @@ class GlbBankMemory(Generator):
         self.add_always(self.data_out_logic)
 
     def add_glb_bank_memory_pipeline(self):
-        sram_signals_in = [self.sram_ren, self.sram_wen, self.sram_cen,
-                           self.sram_addr, self.sram_data_in, self.sram_data_in_bit_sel]
-        sram_signals_out = [self.sram_ren_d, self.sram_wen_d, self.sram_cen_d,
-                            self.sram_addr_d, self.sram_data_in_d, self.sram_data_in_bit_sel_d]
+        sram_signals_in = concat(self.sram_ren, self.sram_wen, self.sram_cen,
+                                 self.sram_addr, self.sram_data_in, self.sram_data_in_bit_sel)
+        sram_signals_out = concat(self.sram_ren_d, self.sram_wen_d, self.sram_cen_d,
+                                  self.sram_addr_d, self.sram_data_in_d, self.sram_data_in_bit_sel_d)
 
-        for in_, out_ in zip(sram_signals_in, sram_signals_out):
-            sram_signals_pipeline = Pipeline(width=in_.width,
-                                             depth=self.glb_bank_memory_pipeline_depth)
-            self.add_child(f"{in_.name}_pipeline",
-                           sram_signals_pipeline,
-                           clk=self.clk,
-                           reset=self.reset,
-                           in_=in_,
-                           out_=out_)
+        sram_signals_pipeline = Pipeline(width=sram_signals_in.width,
+                                         depth=self.glb_bank_memory_pipeline_depth)
+        self.add_child(f"sram_signals_pipeline",
+                       sram_signals_pipeline,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=sram_signals_in,
+                       out_=sram_signals_out)
 
         self.sram_ren_rsp_pipeline = Pipeline(width=1,
                                               depth=self.sram_gen_latency)
         self.add_child("sram_ren_rsp_pipeline",
                        self.sram_ren_rsp_pipeline,
                        clk=self.clk,
+                       clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.sram_ren_d,
                        out_=self.sram_ren_d_vld)
 
     def add_glb_bank_sram_gen(self):
-        self.glb_bank_sram_gen = GlbBankSramGen()
-        self.glb_bank_sram_gen.p_data_width.value = self._params.bank_data_width
-        self.glb_bank_sram_gen.p_addr_width.value = (self._params.bank_addr_width
-                                                     - self._params.bank_byte_offset)
+        self.glb_bank_sram_gen = GlbBankSramGen(addr_width=(self._params.bank_addr_width
+                                                            - self._params.bank_byte_offset),
+                                                sram_macro_width=self._params.bank_data_width,
+                                                sram_macro_depth=self._params.sram_macro_depth)
         self.add_child("glb_bank_sram_gen",
                        self.glb_bank_sram_gen,
                        CLK=self.clk,

@@ -112,8 +112,7 @@ class GlbCoreLoadDma(Generator):
         self.ld_dma_start_pulse_r = self.var("ld_dma_start_pulse_r", 1)
         self.ld_dma_start_pulse_d2 = self.var("ld_dma_start_pulse_d2", 1)
         self.ld_dma_start_pulse_pipeline = Pipeline(width=1,
-                                                    depth=2,
-                                                    is_clk_en=True)
+                                                    depth=2)
 
         self.add_child("ld_dma_start_pulse_pipeline",
                        self.ld_dma_start_pulse_pipeline,
@@ -454,10 +453,9 @@ class GlbCoreLoadDma(Generator):
     def add_strm_rd_en_pipeline(self):
         # TODO: This maximum latency is different from start_pulse maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
-        self.strm_rd_en_d_arr = self.var("strm_rd_en_d_arr", maximum_latency)
+        self.strm_rd_en_d_arr = self.var("strm_rd_en_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.strm_rd_en_pipeline = Pipeline(width=1,
                                             depth=maximum_latency,
-                                            is_clk_en=True,
                                             flatten_output=True)
         self.add_child("strm_rd_en_pipeline",
                        self.strm_rd_en_pipeline,
@@ -471,10 +469,9 @@ class GlbCoreLoadDma(Generator):
         # TODO: This maximum latency is different from start_pulse maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
         self.strm_rd_addr_d_arr = self.var(
-            "strm_rd_addr_d_arr", width=self._params.glb_addr_width, size=maximum_latency)
+            "strm_rd_addr_d_arr", width=self._params.glb_addr_width, size=maximum_latency, explicit_array=True)
         self.strm_rd_addr_pipeline = Pipeline(width=self._params.glb_addr_width,
                                               depth=maximum_latency,
-                                              is_clk_en=True,
                                               flatten_output=True)
         self.add_child("strm_rd_addr_pipeline",
                        self.strm_rd_addr_pipeline,
@@ -489,10 +486,9 @@ class GlbCoreLoadDma(Generator):
         # self.default_latency set to 8 is error-prone.
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 2
         self.strm_data_start_pulse_d_arr = self.var(
-            "strm_data_start_pulse_d_arr", maximum_latency)
+            "strm_data_start_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.strm_data_start_pulse_pipeline = Pipeline(width=1,
                                                        depth=maximum_latency,
-                                                       is_clk_en=True,
                                                        flatten_output=True)
         self.add_child("strm_dma_start_pulse_pipeline",
                        self.strm_data_start_pulse_pipeline,
@@ -509,10 +505,9 @@ class GlbCoreLoadDma(Generator):
         # TODO: This maximum latency is different from other maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 3
         self.ld_dma_done_pulse_d_arr = self.var(
-            "ld_dma_done_pulse_d_arr", maximum_latency)
+            "ld_dma_done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.ld_dma_done_pulse_pipeline = Pipeline(width=1,
                                                    depth=maximum_latency,
-                                                   is_clk_en=True,
                                                    flatten_output=True)
         self.add_child("ld_dma_done_pulse_pipeline",
                        self.ld_dma_done_pulse_pipeline,

@@ -348,10 +348,9 @@ class GlbCoreStoreDma(Generator):
         # TODO: This maximum latency should be automatically set
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
         self.done_pulse_d_arr = self.var(
-            "done_pulse_d_arr", maximum_latency)
+            "done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.done_pulse_pipeline = Pipeline(width=1,
                                             depth=maximum_latency,
-                                            is_clk_en=True,
                                             flatten_output=True)
         self.add_child("done_pulse_pipeline",
                        self.done_pulse_pipeline,

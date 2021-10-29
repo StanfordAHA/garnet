@@ -1,5 +1,5 @@
 import math
-from kratos import Generator, always_ff, always_comb, posedge
+from kratos import Generator, always_ff, always_comb, posedge, const
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
@@ -161,14 +161,14 @@ class GlbCorePcfgDma(Generator):
 
     def add_pcfg_dma_done_pulse_pipeline(self):
         maximum_latency = 3 * self._params.num_glb_tiles + self.default_latency
-        self.done_pulse_d_arr = self.var("done_pulse_d_arr", maximum_latency)
+        self.done_pulse_d_arr = self.var("done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.done_pulse_pipeline = Pipeline(width=1,
                                             depth=maximum_latency,
-                                            is_clk_en=False,
                                             flatten_output=True)
         self.add_child("done_pulse_pipeline",
                        self.done_pulse_pipeline,
                        clk=self.clk,
+                       clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.done_pulse_r,
                        out_=self.done_pulse_d_arr)

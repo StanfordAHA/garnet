@@ -119,6 +119,7 @@ class GlbBankCtrl(Generator):
         self.add_child("mem_rd_en_pipeline",
                        self.mem_rd_en_pipeline,
                        clk=self.clk,
+                       clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.mem_rd_en_w,
                        out_=self.mem_rd_en_d)
@@ -128,6 +129,7 @@ class GlbBankCtrl(Generator):
         self.add_child("sram_cfg_rd_en_pipeline",
                        self.sram_cfg_rd_en_pipeline,
                        clk=self.clk,
+                       clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.if_sram_cfg_s.rd_en,
                        out_=self.sram_cfg_rd_en_d)
@@ -137,6 +139,7 @@ class GlbBankCtrl(Generator):
         self.add_child("packet_rd_en_pipeline",
                        self.packet_rd_en_pipeline,
                        clk=self.clk,
+                       clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.packet_rd_en,
                        out_=self.packet_rd_en_d)
@@ -163,6 +166,7 @@ class GlbBankCtrl(Generator):
         self.add_child("sram_cfg_rd_addr_sel_pipeline",
                        self.sram_cfg_rd_addr_sel_pipeline,
                        clk=self.clk,
+                       clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.if_sram_cfg_s.rd_addr[self._params.bank_byte_offset-1],
                        out_=self.sram_cfg_rd_addr_sel_d)
