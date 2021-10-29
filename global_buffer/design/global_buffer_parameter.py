@@ -18,6 +18,7 @@ class GlobalBufferParams:
     banks_per_tile: int = 2
     bank_sel_addr_width: int = math.ceil(math.log(banks_per_tile, 2))
     bank_data_width: int = 64
+    sram_macro_depth: int = 2048
     bank_addr_width: int = 17
     bank_byte_offset: int = math.ceil(math.log(bank_data_width / 8, 2))
 
@@ -68,6 +69,7 @@ def gen_global_buffer_params(**kwargs):
     glb_tile_mem_size = kwargs.pop('glb_tile_mem_size', 256)
     banks_per_tile = kwargs.pop('banks_per_tile', 2)
     bank_data_width = kwargs.pop('bank_data_width', 64)
+    sram_macro_depth = kwargs.pop('sram_macro_depth', 2048)
     axi_addr_width = kwargs.pop('axi_addr_width', 12)
     axi_addr_reg_width = kwargs.pop('axi_addr_reg_width', 6)
     axi_data_width = kwargs.pop('axi_data_width', 32)
@@ -95,8 +97,6 @@ def gen_global_buffer_params(**kwargs):
 
     assert _power_of_two(glb_tile_mem_size) is True
 
-    col_per_tile = num_cgra_cols // num_glb_tiles
-
     # Unit is KB, so we add 10
     bank_addr_width = (math.ceil(math.log(glb_tile_mem_size, 2))
                        - math.ceil(math.log(banks_per_tile, 2)) + 10)
@@ -123,6 +123,7 @@ def gen_global_buffer_params(**kwargs):
                                 banks_per_tile=banks_per_tile,
                                 bank_sel_addr_width=bank_sel_addr_width,
                                 bank_data_width=bank_data_width,
+                                sram_macro_depth=sram_macro_depth,
                                 bank_addr_width=bank_addr_width,
                                 bank_byte_offset=bank_byte_offset,
                                 glb_addr_width=glb_addr_width,
