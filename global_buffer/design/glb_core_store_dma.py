@@ -52,7 +52,8 @@ class GlbCoreStoreDma(Generator):
 
         self.num_cnt_next = self.var(
             "num_cnt_next", self._params.max_num_words_width)
-        self.num_cnt_r = self.var("num_cnt_r", self._params.max_num_words_width)
+        self.num_cnt_r = self.var(
+            "num_cnt_r", self._params.max_num_words_width)
         self.is_first_word_next = self.var("is_first_word_next", 1)
         self.is_first_word_r = self.var("is_first_word_r", 1)
         self.cur_addr_next = self.var(

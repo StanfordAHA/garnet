@@ -291,18 +291,28 @@ class GlbCore(Generator):
                        cfg_ld_dma_ctrl_mode=self.cfg_ld_dma_ctrl['mode'],
                        cfg_pcfg_dma_ctrl_mode=self.cfg_pcfg_dma_ctrl['mode'])
         for port in self.header.wr_packet_ports:
-            self.wire(self.glb_core_switch.wr_packet_sr2sw[port], self.packet_sr2sw[port])
-            self.wire(self.glb_core_switch.wr_packet_sw2sr[port], self.packet_sw2sr[port])
+            self.wire(
+                self.glb_core_switch.wr_packet_sr2sw[port], self.packet_sr2sw[port])
+            self.wire(
+                self.glb_core_switch.wr_packet_sw2sr[port], self.packet_sw2sr[port])
         for port in self.header.rdrq_packet_ports:
-            self.wire(self.glb_core_switch.rdrq_packet_sr2sw[port], self.packet_sr2sw[port])
-            self.wire(self.glb_core_switch.rdrq_packet_sw2sr[port], self.packet_sw2sr[port])
-            self.wire(self.glb_core_switch.rdrq_packet_pcfgr2sw[port], self.rd_packet_pcfgr2sw[port])
-            self.wire(self.glb_core_switch.rdrq_packet_sw2pcfgr[port], self.rd_packet_sw2pcfgr[port])
+            self.wire(
+                self.glb_core_switch.rdrq_packet_sr2sw[port], self.packet_sr2sw[port])
+            self.wire(
+                self.glb_core_switch.rdrq_packet_sw2sr[port], self.packet_sw2sr[port])
+            self.wire(
+                self.glb_core_switch.rdrq_packet_pcfgr2sw[port], self.rd_packet_pcfgr2sw[port])
+            self.wire(
+                self.glb_core_switch.rdrq_packet_sw2pcfgr[port], self.rd_packet_sw2pcfgr[port])
         for port in self.header.rdrs_packet_ports:
-            self.wire(self.glb_core_switch.rdrs_packet_sr2sw[port], self.packet_sr2sw[port])
-            self.wire(self.glb_core_switch.rdrs_packet_sw2sr[port], self.packet_sw2sr[port])
-            self.wire(self.glb_core_switch.rdrs_packet_pcfgr2sw[port], self.rd_packet_pcfgr2sw[port])
-            self.wire(self.glb_core_switch.rdrs_packet_sw2pcfgr[port], self.rd_packet_sw2pcfgr[port])
+            self.wire(
+                self.glb_core_switch.rdrs_packet_sr2sw[port], self.packet_sr2sw[port])
+            self.wire(
+                self.glb_core_switch.rdrs_packet_sw2sr[port], self.packet_sw2sr[port])
+            self.wire(
+                self.glb_core_switch.rdrs_packet_pcfgr2sw[port], self.rd_packet_pcfgr2sw[port])
+            self.wire(
+                self.glb_core_switch.rdrs_packet_sw2pcfgr[port], self.rd_packet_sw2pcfgr[port])
 
         self.add_child("glb_core_proc_router",
                        GlbCoreProcRouter(_params=self._params),

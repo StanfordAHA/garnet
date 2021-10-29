@@ -161,7 +161,8 @@ class GlbCorePcfgDma(Generator):
 
     def add_pcfg_dma_done_pulse_pipeline(self):
         maximum_latency = 3 * self._params.num_glb_tiles + self.default_latency
-        self.done_pulse_d_arr = self.var("done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
+        self.done_pulse_d_arr = self.var(
+            "done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.done_pulse_pipeline = Pipeline(width=1,
                                             depth=maximum_latency,
                                             flatten_output=True)
