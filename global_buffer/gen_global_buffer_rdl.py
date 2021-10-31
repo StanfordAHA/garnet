@@ -1,4 +1,3 @@
-from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
 from abc import ABC
 import os
 
@@ -241,37 +240,36 @@ def gen_global_buffer_rdl(name, params):
 
     addr_map.add_child(ld_dma_header_rf)
 
-    # PC DMA Ctrl
-    pc_dma_ctrl_r = Reg("pc_dma_ctrl")
-    pc_dma_mode_f = Field("mode", 1)
-    pc_dma_ctrl_r.add_child(pc_dma_mode_f)
-    addr_map.add_child(pc_dma_ctrl_r)
+    # Pcfg DMA Ctrl
+    pcfg_dma_ctrl_r = Reg("pcfg_dma_ctrl")
+    pcfg_dma_mode_f = Field("mode", 1)
+    pcfg_dma_ctrl_r.add_child(pcfg_dma_mode_f)
+    addr_map.add_child(pcfg_dma_ctrl_r)
 
-    # PC DMA Header RegFile
-    pc_dma_header_rf = RegFile("pc_dma_header")
+    # Pcfg DMA Header RegFile
+    pcfg_dma_header_rf = RegFile("pcfg_dma_header")
     # start_addr reg
     start_addr_r = Reg(f"start_addr")
     start_addr_f = Field(f"start_addr", width=params.glb_addr_width)
     start_addr_r.add_child(start_addr_f)
-    pc_dma_header_rf.add_child(start_addr_r)
+    pcfg_dma_header_rf.add_child(start_addr_r)
     # num cfg reg
     num_cfg_r = Reg(f"num_cfg")
     num_cfg_f = Field(f"num_cfg", width=params.max_num_cfg_width)
     num_cfg_r.add_child(num_cfg_f)
-    pc_dma_header_rf.add_child(num_cfg_r)
-    addr_map.add_child(pc_dma_header_rf)
+    pcfg_dma_header_rf.add_child(num_cfg_r)
+    addr_map.add_child(pcfg_dma_header_rf)
     glb_rdl = Rdl(addr_map)
 
     return glb_rdl
 
 
-def run_systemrdl(rdl_file, parms_file, output_folder):
+def run_systemrdl(ordt_path, name, rdl_file, parms_file, output_folder):
     os.system(
-        f"java -jar ./systemRDL/Ordt.jar -parms {parms_file} -systemverilog {output_folder} {rdl_file}")
+        f"java -jar {ordt_path} -reglist {output_folder}/{name}.reglist"
+        f" -parms {parms_file} -systemverilog {output_folder} {rdl_file}")
 
 
-def gen_glb_pio_wrapper(filename):
-    output_filename = filename.rsplit('.', 1)[0] + "_wrapper.sv"
-    os.system(f"sed '/\.\*/d' {filename} > {output_filename}")
-
-    return output_filename
+def gen_glb_pio_wrapper(src_file, dest_file):
+    os.system(f"sed '/\.\*/d' {src_file} > {dest_file}")
+    return dest_file

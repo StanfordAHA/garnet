@@ -75,7 +75,7 @@ program glb_tile_test (
         if ($test$plusargs("TEST_GLB_MEM_SIMPLE")) begin
             logic [BANK_DATA_WIDTH-1:0] data_arr [];
             logic [BANK_DATA_WIDTH-1:0] data_arr_out [];
-            static int size = 8;
+            static int size = 32;
             data_arr = new [size];
             data_arr_out = new [size];
             foreach(data_arr[i]) begin
@@ -85,28 +85,28 @@ program glb_tile_test (
             proc_read_burst(0, data_arr_out); 
             compare_64b_arr(data_arr, data_arr_out);
         end
-        if ($test$plusargs("TEST_GLB_CFG")) begin
-            logic [AXI_DATA_WIDTH-1:0] cfg_data;
-            logic [AXI_DATA_WIDTH-1:0] cfg_data_out;
-            int tile_id;
-            if (!($value$plusargs("CFG_TEST_TILE_ID=%0d", tile_id)))
-                tile_id = 0;
+        // if ($test$plusargs("TEST_GLB_CFG")) begin
+        //     logic [AXI_DATA_WIDTH-1:0] cfg_data;
+        //     logic [AXI_DATA_WIDTH-1:0] cfg_data_out;
+        //     int tile_id;
+        //     if (!($value$plusargs("CFG_TEST_TILE_ID=%0d", tile_id)))
+        //         tile_id = 0;
 
-            cfg_data = 'hff;
-            glb_cfg_write(((tile_id << 8) | `GLB_CFG_TILE_CTRL), cfg_data);
-            glb_cfg_read(((tile_id << 8) | `GLB_CFG_TILE_CTRL), cfg_data_out);
-            compare_cfg(cfg_data, cfg_data_out);
+        //     cfg_data = 'hff;
+        //     glb_cfg_write(((tile_id << 8) | `GLB_CFG_TILE_CTRL), cfg_data);
+        //     glb_cfg_read(((tile_id << 8) | `GLB_CFG_TILE_CTRL), cfg_data_out);
+        //     compare_cfg(cfg_data, cfg_data_out);
 
-            cfg_data = 'hfff;
-            glb_cfg_write(((tile_id << 8) | `GLB_CFG_LATENCY), cfg_data);
-            glb_cfg_read(((tile_id << 8) | `GLB_CFG_LATENCY), cfg_data_out);
-            compare_cfg(cfg_data, cfg_data_out);
+        //     cfg_data = 'hfff;
+        //     glb_cfg_write(((tile_id << 8) | `GLB_CFG_LATENCY), cfg_data);
+        //     glb_cfg_read(((tile_id << 8) | `GLB_CFG_LATENCY), cfg_data_out);
+        //     compare_cfg(cfg_data, cfg_data_out);
 
-            cfg_data = 'hff;
-            glb_cfg_write(((tile_id << 8) | `GLB_CFG_ST_DMA_HEADER_0_START_ADDR), cfg_data);
-            glb_cfg_read(((tile_id << 8) | `GLB_CFG_ST_DMA_HEADER_0_START_ADDR), cfg_data_out);
-            compare_cfg(cfg_data, cfg_data_out);
-        end
+        //     cfg_data = 'hff;
+        //     glb_cfg_write(((tile_id << 8) | `GLB_CFG_ST_DMA_HEADER_0_START_ADDR), cfg_data);
+        //     glb_cfg_read(((tile_id << 8) | `GLB_CFG_ST_DMA_HEADER_0_START_ADDR), cfg_data_out);
+        //     compare_cfg(cfg_data, cfg_data_out);
+        // end
         // if ($test$plusargs("TEST_GLB_G2F_STREAM")) begin
         //     static int tile_id = 0;
         //     static int start_addr = 'h40000 * tile_id;

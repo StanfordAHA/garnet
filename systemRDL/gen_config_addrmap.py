@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
-import sys
-import os
 import json
 import argparse
-
-from systemrdl import RDLCompiler, RDLCompileError, node
-from ralbot.html import HTMLExporter
+from systemrdl import RDLCompiler, node
 from dataclasses import dataclass
+
 
 def convert_field(rdlc: RDLCompiler, obj: node.FieldNode) -> dict:
     json_obj = dict()
@@ -18,6 +15,7 @@ def convert_field(rdlc: RDLCompiler, obj: node.FieldNode) -> dict:
     json_obj['reset'] = obj.get_property('reset')
     json_obj['sw_access'] = obj.get_property('sw').name
     return json_obj
+
 
 def convert_reg(rdlc: RDLCompiler, obj: node.RegNode) -> dict:
     if obj.is_array:
@@ -41,7 +39,8 @@ def convert_reg(rdlc: RDLCompiler, obj: node.RegNode) -> dict:
 
     return json_obj
 
-def convert_addrmap_or_regfile(rdlc: RDLCompiler, obj) -> dict:
+
+def convert_addrmap(rdlc: RDLCompiler, obj) -> dict:
     if obj.is_array:
         rdlc.msg.fatal(
             "JSON export does not support arrays",
@@ -62,7 +61,7 @@ def convert_addrmap_or_regfile(rdlc: RDLCompiler, obj) -> dict:
     json_obj['children'] = []
     for child in obj.children():
         if isinstance(child, (node.AddrmapNode, node.RegfileNode)):
-            json_child = convert_addrmap_or_regfile(rdlc, child)
+            json_child = convert_addrmap(rdlc, child)
         elif isinstance(child, node.RegNode):
             json_child = convert_reg(rdlc, child)
 
@@ -70,15 +69,18 @@ def convert_addrmap_or_regfile(rdlc: RDLCompiler, obj) -> dict:
 
     return json_obj
 
+
 def convert_to_json(rdl_json, path: str):
     # Write to a JSON file
     with open(path, "w") as f:
         json.dump(rdl_json, f, indent=4)
 
+
 @dataclass
 class Reg():
     name: str
     addr: int
+
 
 @dataclass
 class Field():
@@ -86,13 +88,15 @@ class Field():
     lsb: int
     msb: int
 
+
 def convert_to_header(rdl_json, path: str):
     header_list = _convert_to_regmap(rdl_json, "", 0)
     svh_path = path + '.svh'
     with open(svh_path, "w") as f:
         for header in header_list:
             if isinstance(header, Reg):
-                f.write(f"`define {header.name}\t'h{format(header.addr, 'x')}\n")
+                f.write(
+                    f"`define {header.name}\t'h{format(header.addr, 'x')}\n")
             elif isinstance(header, Field):
                 f.write(f"`define {header.name + '_F_LSB'}\t{header.lsb}\n")
                 f.write(f"`define {header.name + '_F_MSB'}\t{header.msb}\n")
@@ -106,6 +110,7 @@ def convert_to_header(rdl_json, path: str):
             elif isinstance(header, Field):
                 f.write(f"#define {header.name + '_F_LSB'}\t{header.lsb}\n")
                 f.write(f"#define {header.name + '_F_MSB'}\t{header.msb}\n")
+
 
 def _convert_to_regmap(rdl_json, base_name, base_addr):
     header_list = []
@@ -138,54 +143,23 @@ def _convert_to_regmap(rdl_json, base_name, base_addr):
 
     return header_list
 
+
 def parse_arguments():
     # Create argument parser
     parser = argparse.ArgumentParser()
 
     # Arguments
     parser.add_argument("--rdl", nargs='+', default=[], required=True)
-    parser.add_argument("--output", help="systemRDL: output directory", type=str, default="")
-    parser.add_argument("--name", help="glb: name of the addrmap", type=str, default="addrmap")
+    parser.add_argument(
+        "--output", help="systemRDL: output directory", type=str, default="")
+    parser.add_argument(
+        "--name", help="glb: name of the addrmap", type=str, default="addrmap")
     parser.add_argument("--json", help="export json", action='store_true')
     parser.add_argument("--html", help="export html", action='store_true')
-    parser.add_argument("--header", help="export h and svh", action='store_true')
+    parser.add_argument("--header", help="export h and svh",
+                        action='store_true')
 
     # Parse arguments
     args = parser.parse_args()
 
     return args
-
-if __name__=="__main__":
-    # Collect SystemRDL input files from the command line arguments
-    args = parse_arguments()
-
-    # Create an instance of the compiler
-    rdlc = RDLCompiler()
-
-    try:
-        # Compile all the files provided
-        for input_file in args.rdl:
-            rdlc.compile_file(input_file)
-        # Elaborate the design
-        root = rdlc.elaborate()
-    except RDLCompileError:
-        # A compilation error occurred. Exit with error code
-        sys.exit(1)
-
-    # Create an HTML exporter
-    exporter = HTMLExporter()
-
-    # Create HTML documentation
-    if args.html is True:
-        exporter.export(root, os.path.join(args.output, "html"))
-
-    # Convert rdl addrmap to json
-    rdl_json = convert_addrmap_or_regfile(rdlc, root.top)
-
-    # Dump the register model to a JSON file
-    if args.json is True:
-        convert_to_json(rdl_json, os.path.join(args.output, f"{args.name}.json"))
-
-    # Dump the register model to a svh and hpp file
-    if args.header is True:
-        convert_to_header(rdl_json, os.path.join(args.output, args.name))
