@@ -220,7 +220,7 @@ class GlbCoreSwitch(Generator):
     @always_comb
     def wr_sw2bankarr_logic(self):
         for i in range(self._params.banks_per_tile):
-            if self.wr_bank_sel == 1:
+            if self.wr_bank_sel == i:
                 self.wr_packet_sw2bankarr[i] = self.wr_packet_sw2bank_filtered
             else:
                 self.wr_packet_sw2bankarr[i] = 0
