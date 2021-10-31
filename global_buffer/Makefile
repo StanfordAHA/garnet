@@ -70,6 +70,7 @@ VCS = vcs \
 # -------------------------------------------------------------------
 .PHONY: rtl
 rtl: export GARNET_HOME := $(current_dir)/..
+rtl: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
 rtl: 
 	python global_buffer_main.py -r -v -p
 	$(FIX_SYSTEMRDL);
