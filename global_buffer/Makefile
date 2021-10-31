@@ -15,7 +15,7 @@ RUNARGS =
 RUNARGS += +TEST_GLB_MEM_SIMPLE
 # RUNARGS += +TEST_GLB_CFG
 # RUNARGS += +CFG_TEST_NUM_TILE=2
-# RUNARGS += +TEST_GLB_G2F_STREAM
+RUNARGS += +TEST_GLB_G2F_STREAM
 # RUNARGS += +TEST_GLB_F2G_STREAM
 # RUNARGS += +TEST_PCFG_STREAM
 
@@ -117,13 +117,13 @@ compile-gl:
 compile-tile: XRUNARGS+= -notimingchecks
 compile-tile: VCSARGS+= +nospecify
 compile-tile: DESIGNARGS += header/global_buffer_param.svh header/glb.svh sim-tile/top.sv sim-tile/glb_tile_test.sv glb_tile.sv
-compile-tile:
+compile-tile: 
 	$(GENERATE_TV); 
 	$(VCS)
 
 .PHONY: run-tile
-run-tile: compile-tile
-	./simv -ucli -i tile-shm.tcl $(RUNARGS)
+run-tile:
+	./simv +vcs+initreg+0 -ucli -i tile-ucli.tcl $(RUNARGS)
 
 .PHONY: clean
 clean:
