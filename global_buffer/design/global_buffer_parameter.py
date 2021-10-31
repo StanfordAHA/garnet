@@ -1,5 +1,6 @@
 import dataclasses
 import math
+import os
 
 
 @dataclasses.dataclass(eq=True, frozen=True)
@@ -146,26 +147,18 @@ def gen_global_buffer_params(**kwargs):
                                 )
     return params
 
-
-def gen_systemrdl_param_files(params, filename):
-    mod_params = dataclasses.asdict(params)
-    # paramter pass to systemRDL
-    with open(filename, "w") as f:
-        f.write(f"// Perl Embedding\n")
-        f.write(f"<%\n")
-        for k, v in mod_params.items():
-            f.write(f"use constant {k} => {v};\n")
-        f.write(f"%>\n")
-
-
 def gen_svh_files(params, filename, header_name):
     mod_params = dataclasses.asdict(params)
+    folder = filename.rsplit('/', 1)[0]
     # parameter pass to systemverilog package
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
     with open(filename, "w") as f:
         f.write(f"`ifndef {header_name.upper()}_PARAM\n")
         f.write(f"`define {header_name.upper()}_PARAM\n")
         f.write(f"package {header_name}_param;\n")
         for k, v in mod_params.items():
-            f.write(f"localparam int {k} = {v};\n")
+            f.write(f"localparam int {k.upper()} = {v};\n")
         f.write(f"endpackage\n")
         f.write(f"`endif\n")
