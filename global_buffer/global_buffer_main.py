@@ -82,7 +82,7 @@ def main():
     if args.verilog:
         glb = GlobalBuffer(_params=params)
         k.verilog(glb, filename=os.path.join(
-            garnet_home, "global_buffer", "glb.sv"))
+            garnet_home, "global_buffer", "global_buffer.sv"))
 
 
 if __name__ == "__main__":
