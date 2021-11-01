@@ -14,5 +14,5 @@ cosa
 -e git://github.com/leonardt/fault.git#egg=fault
 hwtypes
 -e git+git://github.com/Kuree/archipelago.git#egg=archipelago
+systemrdl-compiler
 peakrdl-html
-ralbot-html
