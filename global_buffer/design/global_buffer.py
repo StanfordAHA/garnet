@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, posedge, always_comb, clock_en, ext, clog2, const
+from kratos import Generator, always_ff, posedge, always_comb, clock_en, clog2, const, concat
 from global_buffer.design.glb_tile import GlbTile
 from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
@@ -208,8 +208,8 @@ class GlobalBuffer(Generator):
         self.wire(self.cgra_stall_in_w, self.cgra_stall_in)
 
         for i in range(self._params.num_glb_tiles):
-            self.wire(self.cgra_stall[i], ext(
-                self.cgra_stall_in_d[i], self._params.cgra_per_glb))
+            self.wire(self.cgra_stall[i], concat(
+                *[self.cgra_stall_in_d[i]]*self._params.cgra_per_glb))
 
         self.strm_start_pulse_w = self.var(
             "strm_start_pulse_w", self._params.num_glb_tiles)
