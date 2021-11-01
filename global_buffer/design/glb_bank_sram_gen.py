@@ -111,7 +111,7 @@ class GlbBankSramGen(Generator):
 
     def add_sram_macro(self):
         for i in range(self.num_sram_macros):
-            self.add_child(f"sram_{i}",
+            self.add_child(f"sram_array_{i}",
                            TS1N16FFCLLSBLVTC2048X64M8SW(),
                            CLK=self.CLK,
                            A=self.a_sram_d,

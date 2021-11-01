@@ -453,7 +453,8 @@ class GlbCoreLoadDma(Generator):
     def add_strm_rd_en_pipeline(self):
         # TODO: This maximum latency is different from start_pulse maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
-        self.strm_rd_en_d_arr = self.var("strm_rd_en_d_arr", 1, size=maximum_latency, explicit_array=True)
+        self.strm_rd_en_d_arr = self.var(
+            "strm_rd_en_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.strm_rd_en_pipeline = Pipeline(width=1,
                                             depth=maximum_latency,
                                             flatten_output=True)

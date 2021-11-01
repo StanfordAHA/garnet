@@ -1,4 +1,4 @@
-from kratos import Generator, always_comb
+from kratos import Generator
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.glb_tile_cfg_ctrl import GlbTileCfgCtrl
