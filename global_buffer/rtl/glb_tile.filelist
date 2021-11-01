@@ -1,4 +1,4 @@
-cfg_ifc.sv
+glb_cfg_ifc.sv
 global_buffer_param.svh
 global_buffer_pkg.svh
 glb_tile.sv
