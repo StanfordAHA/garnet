@@ -55,6 +55,7 @@ class GlbCoreStrmRouter(Generator):
         self.add_always(self.packet_wst_logic)
         self.add_always(self.packet_est_logic)
         self.add_always(self.packet_pipeline)
+        self.add_always(self.packet_sw2sr_pipeline)
         self.add_always(self.packet_switch)
 
     def add_is_even_stmt(self):
@@ -74,6 +75,13 @@ class GlbCoreStrmRouter(Generator):
             self.packet_e2w_esti_turned = self.packet_e2w_esti_d1
         else:
             self.packet_e2w_esti_turned = self.packet_w2e_esto
+    
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def packet_sw2sr_pipeline(self):
+        if self.reset:
+            self.packet_sw2sr_d1 = 0
+        elif self.clk_en:
+            self.packet_sw2sr_d1 = self.packet_sw2sr
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def packet_pipeline(self):
@@ -89,8 +97,8 @@ class GlbCoreStrmRouter(Generator):
         if self.is_even:
             self.packet_sr2sw = self.packet_w2e_wsti_turned
             self.packet_w2e_esto = self.packet_sw2sr_d1
-            self.packet_e2w_wsto = self.packet_sw2sr_d1
+            self.packet_e2w_wsto = self.packet_e2w_esti_turned_d1
         else:
             self.packet_sr2sw = self.packet_e2w_esti_turned
             self.packet_w2e_esto = self.packet_w2e_wsti_turned_d1
-            self.packet_e2w_wsto = self.packet_e2w_esti_turned_d1
+            self.packet_e2w_wsto = self.packet_sw2sr_d1

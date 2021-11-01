@@ -37,7 +37,8 @@ class AddrMap(RdlNonLeafNode):
         super().__init__(name=name, size=size)
         self.regwidth = 32
         self.accesswidth = 32
-        self.property = ["default regwidth = 32",
+        self.property = ["addressing = compact",
+                         "default regwidth = 32",
                          "default sw = rw",
                          "default hw = r"]
 

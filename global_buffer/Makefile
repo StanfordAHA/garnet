@@ -117,7 +117,7 @@ compile-gl:
 .PHONY: compile-tile
 compile-tile: XRUNARGS+= -notimingchecks
 compile-tile: VCSARGS+= +nospecify
-compile-tile: DESIGNARGS += header/global_buffer_param.svh header/glb.svh sim-tile/top.sv sim-tile/glb_tile_test.sv glb_tile.sv
+compile-tile: DESIGNARGS += header/global_buffer_param.svh header/glb.svh sim-tile/top.sv sim-tile/glb_tile_test.sv glb_tile.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
 compile-tile: 
 	$(GENERATE_TV); 
 	$(VCS)

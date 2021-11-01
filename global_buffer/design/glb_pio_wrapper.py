@@ -23,6 +23,7 @@ def get_systemrdl_port_list(filelist):
 class GlbPioWrapper(Generator):
     """GlbPioWrapper generator parses glb_pio_wrapper.sv
     generated from SystemRDL to create a Kratos wrapper"""
+    cache = None
 
     def __init__(self):
         super().__init__("glb_pio")
@@ -31,7 +32,11 @@ class GlbPioWrapper(Generator):
         filename = os.path.join(
             garnet_home, 'global_buffer/systemRDL/output/glb_pio_wrapper.sv')
         # get port list from the systemRDL output
-        input_ports, output_ports = get_systemrdl_port_list([filename])
+        if self.__class__.cache:
+            input_ports, output_ports = self.__class__.cache
+        else:
+            input_ports, output_ports = get_systemrdl_port_list([filename])
+            self.__class__.cache = (input_ports, output_ports)
         for name, width in input_ports.items():
             if name == "clk":
                 self.clock(name)
@@ -40,5 +45,6 @@ class GlbPioWrapper(Generator):
             else:
                 self.input(name, width)
         for name, width in output_ports.items():
-            tmp = self.output(name, width)
-            self.wire(tmp, 0)
+            self.output(name, width)
+
+        self.external = True
