@@ -341,11 +341,12 @@ class Garnet(Generator):
             fixed_io = None
         else:
             fixed_io = place_io_blk(id_to_name)
-        placement, routing, id_to_name = archipelago.pnr(self.interconnect, target_frequency, load_only, (netlist, bus),
-                                             cwd=app_dir,
+        placement, routing = archipelago.pnr(self.interconnect, (netlist, bus),
+                                             cwd="temp",
                                              id_to_name=id_to_name,
                                              fixed_pos=fixed_io,
-                                             compact=compact)
+                                             compact=compact,
+                                             copy_to_dir=app_dir)
         
         return placement, routing, id_to_name, instance_to_instr, netlist, bus 
 
