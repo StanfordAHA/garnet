@@ -9,5 +9,5 @@ else
   make -C $GARNET_HOME/global_buffer rtl
 
   rm -f outputs/design.v
-  cp $GARNET_HOME/global_buffer/glb_tile.sv outputs/design.v
+  cp $GARNET_HOME/global_buffer/global_buffer.sv outputs/design.v
 fi

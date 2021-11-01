@@ -73,7 +73,10 @@ rtl: export GARNET_HOME := $(current_dir)/..
 rtl: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
 rtl: 
 	python global_buffer_main.py -r -v -p
-	$(FIX_SYSTEMRDL);
+	$(FIX_SYSTEMRDL)
+	cat systemRDL/output/glb_pio.sv >> global_buffer.sv
+	cat systemRDL/output/glb_jrdl_decode.sv >> global_buffer.sv
+	cat systemRDL/output/glb_jrdl_logic.sv >> global_buffer.sv
 
 # -------------------------------------------------------------------
 # Compile & Run
@@ -81,14 +84,14 @@ rtl:
 .PHONY: compile
 compile: XRUNARGS+= -notimingchecks
 compile: VCSARGS+= +nospecify
-compile: DESIGNARGS += -v $(SRAM_STUB) -F $(RTL_DIR)/$(TOP_MODULE).f -F $(TB_DIR)/tb_$(TOP_MODULE).f
+compile: DESIGNARGS += header/global_buffer_param.svh header/glb.svh -F sim/tb_global_buffer.f global_buffer.sv
 compile:
 	$(GENERATE_TV); 
 	$(VCS)
 
 .PHONY: run
 run: compile
-	./simv -ucli -i top-shm.tcl $(RUNARGS)
+	./simv -ucli -i top-ucli.tcl $(RUNARGS)
 
 # -------------------------------------------------------------------
 # GLS Compile & Run
