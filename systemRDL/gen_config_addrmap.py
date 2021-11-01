@@ -96,20 +96,20 @@ def convert_to_header(rdl_json, path: str):
         for header in header_list:
             if isinstance(header, Reg):
                 f.write(
-                    f"`define {header.name}\t'h{format(header.addr, 'x')}\n")
+                    f"`define {header.name} 'h{format(header.addr, 'x')}\n")
             elif isinstance(header, Field):
-                f.write(f"`define {header.name + '_F_LSB'}\t{header.lsb}\n")
-                f.write(f"`define {header.name + '_F_MSB'}\t{header.msb}\n")
+                f.write(f"`define {header.name + '_F_LSB'} {header.lsb}\n")
+                f.write(f"`define {header.name + '_F_MSB'} {header.msb}\n")
 
     h_path = path + '.h'
     with open(h_path, "w") as f:
         f.write(f"#pragma once\n")
         for header in header_list:
             if isinstance(header, Reg):
-                f.write(f"#define {header.name}\t{hex(header.addr)}\n")
+                f.write(f"#define {header.name} {hex(header.addr)}\n")
             elif isinstance(header, Field):
-                f.write(f"#define {header.name + '_F_LSB'}\t{header.lsb}\n")
-                f.write(f"#define {header.name + '_F_MSB'}\t{header.msb}\n")
+                f.write(f"#define {header.name + '_F_LSB'} {header.lsb}\n")
+                f.write(f"#define {header.name + '_F_MSB'} {header.msb}\n")
 
 
 def _convert_to_regmap(rdl_json, base_name, base_addr):
