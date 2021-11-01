@@ -31,6 +31,7 @@ from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
 from metamapper import CoreIRContext
 from metamapper.irs.coreir import gen_CoreIRNodes
 from metamapper.lake_mem import gen_MEM_fc
+from metamapper.io_tiles import IO_fc, BitIO_fc
 from lassen.sim import PE_fc as lassen_fc
 import metamapper.peak_util as putil
 from mapper.netlist_util import create_netlist_info, print_netlist_info
@@ -287,7 +288,8 @@ class Garnet(Generator):
         else:
             pe_header = f"{app_dir}/pe_header.json"
         mem_header = f"./headers/mem_header.json"
-
+        io_header = f"./headers/io_header.json"
+        bit_io_header = f"./headers/bit_io_header.json"
 
         app_file = app
         c = CoreIRContext(reset=True)
@@ -308,10 +310,24 @@ class Garnet(Generator):
             mem_header,
             {"global.MEM": MEM_fc},
         )
-    
+
+        putil.load_and_link_peak(
+            nodes,
+            io_header,
+            {"global.IO": IO_fc},
+        )
+
+        putil.load_and_link_peak(
+            nodes,
+            bit_io_header,
+            {"global.BitIO": BitIO_fc},
+        )   
+
+ 
         dag = cutil.coreir_to_dag(nodes, cmod)
+        print_dag(dag)
         print("-"*80)
-        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc}
+        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc, "global.IO": IO_fc, "global.BitIO": BitIO_fc}
         netlist_info = create_netlist_info(dag, tile_info, load_only, id_to_name)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"], netlist_info["buses"]
