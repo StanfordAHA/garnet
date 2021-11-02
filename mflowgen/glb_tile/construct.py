@@ -35,6 +35,7 @@ def construct():
     # Floorplan
     'bank_height'    : 8,
     'num_tile_array_cols' : 32,
+    'num_glb_tiles'       : 16,
     # Memory size (unit: KB)
     'glb_tile_mem_size' : 256,
     # SRAM macros
