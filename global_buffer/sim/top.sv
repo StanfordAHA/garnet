@@ -7,9 +7,7 @@
 **===========================================================================*/
 `define CLK_PERIOD 1000ps
 
-import global_buffer_pkg::*;
 import global_buffer_param::*;
-import tb_global_buffer_param::*;
 
 module top;
 
@@ -35,7 +33,7 @@ logic [CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_jtag_gc2glb_data;
 
 // control pulse
 logic [NUM_GLB_TILES-1:0] strm_start_pulse;
-logic [NUM_GLB_TILES-1:0] pc_start_pulse;
+logic [NUM_GLB_TILES-1:0] pcfg_start_pulse;
 logic [NUM_GLB_TILES-1:0] strm_f2g_interrupt_pulse;
 logic [NUM_GLB_TILES-1:0] strm_g2f_interrupt_pulse;
 logic [NUM_GLB_TILES-1:0] pcfg_g2f_interrupt_pulse;
@@ -52,22 +50,18 @@ logic                         proc_rd_data_valid;
 
 // configuration of glb from glc
 logic                      if_cfg_wr_en;
-logic                      if_cfg_wr_clk_en;
 logic [AXI_ADDR_WIDTH-1:0] if_cfg_wr_addr;
 logic [AXI_DATA_WIDTH-1:0] if_cfg_wr_data;
 logic                      if_cfg_rd_en;
-logic                      if_cfg_rd_clk_en;
 logic [AXI_ADDR_WIDTH-1:0] if_cfg_rd_addr;
 logic [AXI_DATA_WIDTH-1:0] if_cfg_rd_data;
 logic                      if_cfg_rd_data_valid;
 
 // configuration of sram from glc
 logic                      if_sram_cfg_wr_en;
-logic                      if_sram_cfg_wr_clk_en;
 logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_wr_addr;
 logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_wr_data;
 logic                      if_sram_cfg_rd_en;
-logic                      if_sram_cfg_rd_clk_en;
 logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_rd_addr;
 logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_rd_data;
 logic                      if_sram_cfg_rd_data_valid;
@@ -94,18 +88,18 @@ logic [NUM_GLB_TILES-1:0][CGRA_CFG_DATA_WIDTH-1:0]                   cgra_cfg_f2
 // ---------------------------------------
 // CGRA signals
 // ---------------------------------------
-logic                            g2c_cgra_stall [NUM_PRR];
-logic                            g2c_cfg_wr_en [NUM_PRR];
-logic [CGRA_CFG_ADDR_WIDTH-1:0]  g2c_cfg_wr_addr [NUM_PRR];
-logic [CGRA_CFG_DATA_WIDTH-1:0]  g2c_cfg_wr_data [NUM_PRR];
-logic                            g2c_cfg_rd_en [NUM_PRR];
-logic [CGRA_CFG_ADDR_WIDTH-1:0]  g2c_cfg_rd_addr [NUM_PRR];
-logic [CGRA_CFG_DATA_WIDTH-1:0]  c2g_cfg_rd_data [NUM_PRR];
+logic [NUM_PRR-1:0]                           g2c_cgra_stall;
+logic [NUM_PRR-1:0]                           g2c_cfg_wr_en;
+logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0]  g2c_cfg_wr_addr;
+logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0]  g2c_cfg_wr_data;
+logic [NUM_PRR-1:0]                           g2c_cfg_rd_en;
+logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0]  g2c_cfg_rd_addr;
+logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0]  c2g_cfg_rd_data;
 
-logic                            g2c_io1 [NUM_PRR];
-logic [15:0]                     g2c_io16 [NUM_PRR];
-logic                            c2g_io1 [NUM_PRR];
-logic [15:0]                     c2g_io16 [NUM_PRR];
+logic [NUM_PRR-1:0]                           g2c_io1;
+logic [NUM_PRR-1:0][15:0]                     g2c_io16;
+logic [NUM_PRR-1:0]                           c2g_io1;
+logic [NUM_PRR-1:0][15:0]                     c2g_io16;
 
 // max cycle set
 initial begin
@@ -144,21 +138,17 @@ glb_test test (
     .proc_rd_data_valid         ( proc_rd_data_valid ),
     // config ifc
     .if_cfg_wr_en               ( if_cfg_wr_en         ),
-    .if_cfg_wr_clk_en           ( if_cfg_wr_clk_en     ),
     .if_cfg_wr_addr             ( if_cfg_wr_addr       ),
     .if_cfg_wr_data             ( if_cfg_wr_data       ),
     .if_cfg_rd_en               ( if_cfg_rd_en         ),
-    .if_cfg_rd_clk_en           ( if_cfg_rd_clk_en     ),
     .if_cfg_rd_addr             ( if_cfg_rd_addr       ),
     .if_cfg_rd_data             ( if_cfg_rd_data       ),
     .if_cfg_rd_data_valid       ( if_cfg_rd_data_valid ),
     // sram config ifc
     .if_sram_cfg_wr_en          ( if_sram_cfg_wr_en         ),
-    .if_sram_cfg_wr_clk_en      ( if_sram_cfg_wr_clk_en     ),
     .if_sram_cfg_wr_addr        ( if_sram_cfg_wr_addr       ),
     .if_sram_cfg_wr_data        ( if_sram_cfg_wr_data       ),
     .if_sram_cfg_rd_en          ( if_sram_cfg_rd_en         ),
-    .if_sram_cfg_rd_clk_en      ( if_sram_cfg_rd_clk_en     ),
     .if_sram_cfg_rd_addr        ( if_sram_cfg_rd_addr       ),
     .if_sram_cfg_rd_data        ( if_sram_cfg_rd_data       ),
     .if_sram_cfg_rd_data_valid  ( if_sram_cfg_rd_data_valid ),
@@ -177,21 +167,17 @@ global_buffer dut (
     .proc_rd_data_valid         ( proc_rd_data_valid ),
     // config ifc
     .if_cfg_wr_en               ( if_cfg_wr_en         ),
-    .if_cfg_wr_clk_en           ( if_cfg_wr_clk_en     ),
     .if_cfg_wr_addr             ( if_cfg_wr_addr       ),
     .if_cfg_wr_data             ( if_cfg_wr_data       ),
     .if_cfg_rd_en               ( if_cfg_rd_en         ),
-    .if_cfg_rd_clk_en           ( if_cfg_rd_clk_en     ),
     .if_cfg_rd_addr             ( if_cfg_rd_addr       ),
     .if_cfg_rd_data             ( if_cfg_rd_data       ),
     .if_cfg_rd_data_valid       ( if_cfg_rd_data_valid ),
     // sram config ifc
     .if_sram_cfg_wr_en          ( if_sram_cfg_wr_en         ),
-    .if_sram_cfg_wr_clk_en      ( if_sram_cfg_wr_clk_en     ),
     .if_sram_cfg_wr_addr        ( if_sram_cfg_wr_addr       ),
     .if_sram_cfg_wr_data        ( if_sram_cfg_wr_data       ),
     .if_sram_cfg_rd_en          ( if_sram_cfg_rd_en         ),
-    .if_sram_cfg_rd_clk_en      ( if_sram_cfg_rd_clk_en     ),
     .if_sram_cfg_rd_addr        ( if_sram_cfg_rd_addr       ),
     .if_sram_cfg_rd_data        ( if_sram_cfg_rd_data       ),
     .if_sram_cfg_rd_data_valid  ( if_sram_cfg_rd_data_valid ),
@@ -211,7 +197,7 @@ cgra cgra (
     .cfg_wr_data    ( g2c_cfg_wr_data ),
     .cfg_rd_en      ( g2c_cfg_rd_en   ),
     .cfg_rd_addr    ( g2c_cfg_rd_addr ),
-    .cfg_rd_data    ( g2c_cfg_data    ),
+    .cfg_rd_data    ( c2g_cfg_rd_data ),
     // data
     .io1_g2io       ( g2c_io1  ),
     .io16_g2io      ( g2c_io16 ),
@@ -239,7 +225,6 @@ always_comb begin
     for (int i=0; i<NUM_PRR; i++) begin
         g2c_io1[i] = stream_data_valid_g2f[i][0];
         g2c_io16[i] = stream_data_g2f[i][0];
-
         stream_data_valid_f2g[i][0] = c2g_io1[i];
         stream_data_f2g[i][0] = c2g_io16[i];
         stream_data_valid_f2g[i][1] = c2g_io1[i];
