@@ -91,16 +91,22 @@ program glb_test (
         end
 
         if ($test$plusargs("TEST_GLB_CFG")) begin
+            int err = 0;
             logic [AXI_DATA_WIDTH-1:0] cfg_data;
             logic [AXI_DATA_WIDTH-1:0] cfg_data_out;
 
             $display("\n**** TEST_GLB_CFG_W/R START ****");
             for(int i=0; i < NUM_GLB_TILES; i++) begin
                 // TODO: Read from glb.pair test
-                cfg_data = {10{1'b1}};
-                glb_cfg_write(((i << 8) | `GLB_DATA_NETWORK_R_ADDR), cfg_data);
-                glb_cfg_read(((i << 8) | `GLB_DATA_NETWORK_R_ADDR), cfg_data_out);
-                compare_cfg(cfg_data, cfg_data_out);
+                cfg_data = {`GLB_DATA_NETWORK_R_MSB{1'b1}};
+                glb_cfg_write(((i << 8) | `GLB_DATA_NETWORK_R), cfg_data);
+                glb_cfg_read(((i << 8) | `GLB_DATA_NETWORK_R), cfg_data_out);
+                err += compare_cfg(cfg_data, cfg_data_out);
+            end
+            if (err > 0) begin
+                $error("glb configuration read/write fail");
+            end else begin
+                $display("glb configuration read/write success");
             end
 
             $display("**** TEST_GLB_CFG_W/R END ****\n");
@@ -258,26 +264,26 @@ program glb_test (
     endtask
 
     task pcfg_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
-        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_CTRL_R_ADDR, (1 << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
-        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_HEADER_START_ADDR_R_ADDR, (start_addr << `GLB_PCFG_DMA_HEADER_START_ADDR_START_ADDR_F_LSB));
-        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_HEADER_NUM_CFG_R_ADDR, (num_word << `GLB_PCFG_DMA_HEADER_NUM_CFG_NUM_CFG_F_LSB));
+        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_CTRL_R, (1 << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
+        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_HEADER_START_ADDR_R, (start_addr << `GLB_PCFG_DMA_HEADER_START_ADDR_START_ADDR_F_LSB));
+        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_HEADER_NUM_CFG_R, (num_word << `GLB_PCFG_DMA_HEADER_NUM_CFG_NUM_CFG_F_LSB));
     endtask
 
     task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_DATA_NETWORK_R_ADDR, (2'b01 << `GLB_DATA_NETWORK_G2F_MUX_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_CTRL_R_ADDR, (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB) | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_START_ADDR_R_ADDR, (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_RANGE_0_R_ADDR, (num_word << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R_ADDR, (1 << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_VALIDATE_R_ADDR, (1 << `GLB_LD_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_DATA_NETWORK_R, (2'b01 << `GLB_DATA_NETWORK_G2F_MUX_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_CTRL_R, (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB) | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_START_ADDR_R, (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_RANGE_0_R, (num_word << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R, (1 << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_VALIDATE_R, (1 << `GLB_LD_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
     endtask
 
     task f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_DATA_NETWORK_R_ADDR, (2'b10 << `GLB_DATA_NETWORK_F2G_MUX_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_CTRL_R_ADDR, (1 << `GLB_ST_DMA_CTRL_MODE_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_START_ADDR_R_ADDR, (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_NUM_WORDS_R_ADDR, (num_word << `GLB_ST_DMA_HEADER_0_NUM_WORDS_NUM_WORDS_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_VALIDATE_R_ADDR, (1 << `GLB_ST_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_DATA_NETWORK_R, (2'b10 << `GLB_DATA_NETWORK_F2G_MUX_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_CTRL_R, (1 << `GLB_ST_DMA_CTRL_MODE_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_START_ADDR_R, (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_NUM_WORDS_R, (num_word << `GLB_ST_DMA_HEADER_0_NUM_WORDS_NUM_WORDS_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_VALIDATE_R, (1 << `GLB_ST_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
     endtask
 
     task glb_cfg_write(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
@@ -550,7 +556,6 @@ program glb_test (
             $display("cfg data is different. cfg_0: 0x%0h, cfg_1: 0x%0h", cfg_0, cfg_1);
             return 1;
         end
-        $display("Two cfg data are same");
         return 0;
     endfunction
 

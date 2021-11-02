@@ -81,6 +81,10 @@ compile:
 
 .PHONY: run
 run: compile
+	./simv $(RUNARGS)
+
+.PHONY: dump
+dump: compile
 	./simv -ucli -i top-ucli.tcl $(RUNARGS)
 
 # -------------------------------------------------------------------
