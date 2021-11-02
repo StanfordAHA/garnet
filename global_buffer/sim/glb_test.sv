@@ -320,7 +320,7 @@ program glb_test (
             end
         end
         begin
-            repeat (50) @(posedge clk);
+            repeat (20 + 2 * NUM_GLB_TILES) @(posedge clk);
             $display("@%0t: %m ERROR: glb cfg read timeout ", $time);
         end
         join_any

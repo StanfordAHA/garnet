@@ -1,8 +1,8 @@
-import math
-from kratos import Generator, always_ff, always_comb, posedge, const
+from kratos import Generator, always_ff, always_comb, posedge, const, clog2, resize
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
+import math
 
 
 class GlbCorePcfgDma(Generator):
@@ -163,6 +163,7 @@ class GlbCorePcfgDma(Generator):
 
     def add_pcfg_dma_done_pulse_pipeline(self):
         maximum_latency = 3 * self._params.num_glb_tiles + self.default_latency
+        latency_width = clog2(maximum_latency)
         self.done_pulse_d_arr = self.var(
             "done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.done_pulse_pipeline = Pipeline(width=1,
@@ -176,6 +177,6 @@ class GlbCorePcfgDma(Generator):
                        in_=self.done_pulse_r,
                        out_=self.done_pulse_d_arr)
         self.wire(self.pcfg_done_pulse,
-                  self.done_pulse_d_arr[(self.cfg_pcfg_network_latency
-                                         + self.default_latency
-                                         + self._params.num_glb_tiles)])
+                  self.done_pulse_d_arr[resize(self.cfg_pcfg_network_latency, latency_width)
+                                        + self.default_latency
+                                        + self._params.num_glb_tiles])

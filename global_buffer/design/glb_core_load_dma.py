@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, resize, concat
+from kratos import Generator, always_ff, always_comb, posedge, resize, concat, clog2
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
@@ -425,11 +425,6 @@ class GlbCoreLoadDma(Generator):
 
     @always_comb
     def strm_data_logic(self):
-        self.strm_data_valid = self.strm_rd_en_d_arr[self.cfg_data_network_latency +
-                                                     self.default_latency]
-        self.strm_data_sel = self.strm_rd_addr_d_arr[self.cfg_data_network_latency +
-                                                     self.default_latency][self._params.bank_byte_offset-1, self._params.cgra_byte_offset]
-
         self.strm_data = concat(*[self.bank_rdrs_data_cache_r[resize(self.strm_data_sel, math.ceil(math.log(
             self._params.bank_data_width, 2))) * self._params.cgra_data_width + i] for i in reversed(range(self._params.cgra_data_width))])
 
@@ -453,6 +448,7 @@ class GlbCoreLoadDma(Generator):
     def add_strm_rd_en_pipeline(self):
         # TODO: This maximum latency is different from start_pulse maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
+        latency_width = clog2(maximum_latency)
         self.strm_rd_en_d_arr = self.var(
             "strm_rd_en_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.strm_rd_en_pipeline = Pipeline(width=1,
@@ -466,9 +462,13 @@ class GlbCoreLoadDma(Generator):
                        in_=self.strm_rd_en_r,
                        out_=self.strm_rd_en_d_arr)
 
+        self.wire(self.strm_data_valid, self.strm_rd_en_d_arr[resize(
+            self.cfg_data_network_latency, latency_width) + self.default_latency])
+
     def add_strm_rd_addr_pipeline(self):
         # TODO: This maximum latency is different from start_pulse maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
+        latency_width = clog2(maximum_latency)
         self.strm_rd_addr_d_arr = self.var(
             "strm_rd_addr_d_arr", width=self._params.glb_addr_width, size=maximum_latency, explicit_array=True)
         self.strm_rd_addr_pipeline = Pipeline(width=self._params.glb_addr_width,
@@ -482,10 +482,14 @@ class GlbCoreLoadDma(Generator):
                        in_=self.strm_rd_addr_r,
                        out_=self.strm_rd_addr_d_arr)
 
+        self.strm_data_sel = self.strm_rd_addr_d_arr[resize(self.cfg_data_network_latency, latency_width) +
+                                                     self.default_latency][self._params.bank_byte_offset-1, self._params.cgra_byte_offset]
+
     def add_strm_data_start_pulse_pipeline(self):
         # TODO: Latency calculation should be automatic.
         # self.default_latency set to 8 is error-prone.
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 2
+        latency_width = clog2(maximum_latency)
         self.strm_data_start_pulse_d_arr = self.var(
             "strm_data_start_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.strm_data_start_pulse_pipeline = Pipeline(width=1,
@@ -500,11 +504,12 @@ class GlbCoreLoadDma(Generator):
                        out_=self.strm_data_start_pulse_d_arr)
         self.strm_data_start_pulse = self.var("strm_data_start_pulse", 1)
         self.wire(self.strm_data_start_pulse,
-                  self.strm_data_start_pulse_d_arr[self.cfg_data_network_latency + self.default_latency + 2])
+                  self.strm_data_start_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width) + self.default_latency + 2])
 
     def add_ld_dma_done_pulse_pipeline(self):
         # TODO: This maximum latency is different from other maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 3
+        latency_width = clog2(maximum_latency)
         self.ld_dma_done_pulse_d_arr = self.var(
             "ld_dma_done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.ld_dma_done_pulse_pipeline = Pipeline(width=1,
@@ -518,4 +523,4 @@ class GlbCoreLoadDma(Generator):
                        in_=self.ld_dma_done_pulse_w,
                        out_=self.ld_dma_done_pulse_d_arr)
         self.wire(self.ld_dma_done_pulse,
-                  self.ld_dma_done_pulse_d_arr[self.cfg_data_network_latency + self.default_latency + 3])
+                  self.ld_dma_done_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width) + self.default_latency + 3])
