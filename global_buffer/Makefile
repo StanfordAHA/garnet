@@ -90,22 +90,20 @@ dump: compile
 # -------------------------------------------------------------------
 # GLS Compile & Run
 # -------------------------------------------------------------------
-# .PHONY: compile-gl
-# compile-gl: DESIGNARGS += \
-# 	$(RTL_DIR)/global_buffer_param.svh \
-# 	$(RTL_DIR)/global_buffer_pkg.svh \
-# 	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist \
-# 	-F netlist/netlist.filelist
-# # compile-gl: XRUNARGS += +define+PWR
-# compile-gl: XRUNARGS += +define+NON_STOP_IF_INPUT_Z
-# compile-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING
-# compile-gl: XRUNARGS += +define+TSMC_CM_UNIT_DELAY
-# compile-gl: XRUNARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS +define+TSMC_MEM_LOAD_0
-# compile-gl: XRUNARGS += -negdelay
-# compile-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
-# compile-gl: XRUNARGS += -sdfstats sdf_stats.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
-# compile-gl:
-# 	$(XRUN)
+.PHONY: compile-gl
+compile-gl: DESIGNARGS += -F netlist/netlist.filelist
+compile-gl: DESIGNARGS += header/global_buffer_param.svh header/glb.svh -F sim/tb_global_buffer.f
+compile-gl: VCSARGS += +define+PWR
+compile-gl: VCSARGS += +define+NON_STOP_IF_INPUT_Z
+compile-gl: VCSARGS += +define+TSMC_CM_NO_WARNING
+compile-gl: VCSARGS += +define+TSMC_CM_UNIT_DELAY
+compile-gl: VCSARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS
+compile-gl: VCSARGS += +define+TSMC_MEM_LOAD_0
+compile-gl: VCSARGS += -negdelay
+compile-gl: VCSARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
+compile-gl: XRUNARGS += -sdfstats sdf_stats.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
+compile-gl:
+	$(VCS)
 
 .PHONY: clean
 clean:
