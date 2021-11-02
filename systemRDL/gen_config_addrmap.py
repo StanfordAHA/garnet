@@ -80,6 +80,8 @@ def convert_to_json(rdl_json, path: str):
 class Reg():
     name: str
     addr: int
+    lsb: int
+    msb: int
 
 
 @dataclass
@@ -95,8 +97,9 @@ def convert_to_header(rdl_json, path: str):
     with open(svh_path, "w") as f:
         for header in header_list:
             if isinstance(header, Reg):
-                f.write(
-                    f"`define {header.name} 'h{format(header.addr, 'x')}\n")
+                f.write(f"`define {header.name} 'h{format(header.addr, 'x')}\n")
+                f.write(f"`define {header.name + '_LSB'} {header.lsb}\n")
+                f.write(f"`define {header.name + '_MSB'} {header.msb}\n")
             elif isinstance(header, Field):
                 f.write(f"`define {header.name + '_F_LSB'} {header.lsb}\n")
                 f.write(f"`define {header.name + '_F_MSB'} {header.msb}\n")
@@ -127,8 +130,10 @@ def _convert_to_regmap(rdl_json, base_name, base_addr):
     elif rdl_json['type'] == 'reg':
         name = base_name + rdl_json['inst_name']
         addr = base_addr + rdl_json['addr_offset']
-        reg_name = (name + '_R_ADDR').upper()
-        reg = Reg(name=reg_name, addr=addr)
+        reg_name = (name + '_R').upper()
+        lsb = rdl_json['children'][0]['lsb']
+        msb = rdl_json['children'][-1]['msb']
+        reg = Reg(name=reg_name, addr=addr, lsb=lsb, msb=msb)
         header_list.append(reg)
         # child
         for child in rdl_json['children']:

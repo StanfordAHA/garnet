@@ -70,6 +70,8 @@ class GlbTileCfgCtrl(Generator):
         self.add_always(self.w2e_wr_ifc)
         self.add_always(self.w2e_rd_ifc)
         self.add_always(self.e2w_rd_ifc)
+        self.add_always(self.rd_en_pipeline)
+        self.add_always(self.rd_data_ff)
 
         # wire outputs
         self.wire_outputs()
@@ -119,9 +121,9 @@ class GlbTileCfgCtrl(Generator):
             self.rd_data_internal = 0
         # TODO: Do we really need rd_en_d2 check?
         # Isn't d2h_dec_pio_ack/nack enough?
-        elif self.rd_en_d2 == 1 & (self.d2h_dec_pio_ack | self.d2h_dec_pio_nack):
-            rd_data_valid_internal = 1
-            rd_data_internal = self.d2h_dec_pio_read_data
+        elif (self.rd_en_d2 == 1) & (self.d2h_dec_pio_ack | self.d2h_dec_pio_nack):
+            self.rd_data_valid_internal = 1
+            self.rd_data_internal = self.d2h_dec_pio_read_data
         else:
             self.rd_data_valid_internal = 0
             self.rd_data_internal = 0
