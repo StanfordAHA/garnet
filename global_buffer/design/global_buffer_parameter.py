@@ -5,6 +5,10 @@ import os
 
 @dataclasses.dataclass(eq=True, frozen=True)
 class GlobalBufferParams:
+    # cgra parameters
+    num_prr: int = 16
+    num_prr_width: int = math.ceil(math.log(num_prr, 2))
+
     # tile parameters
     num_glb_tiles: int = 16
     tile_sel_addr_width: int = math.ceil(math.log(num_glb_tiles, 2))
@@ -65,6 +69,7 @@ class GlobalBufferParams:
 
 def gen_global_buffer_params(**kwargs):
     # User-defined parameters
+    num_prr = kwargs.pop('num_prr', 16)
     num_glb_tiles = kwargs.pop('num_glb_tiles', 16)
     num_cgra_cols = kwargs.pop('num_cgra_cols', 32)
     glb_tile_mem_size = kwargs.pop('glb_tile_mem_size', 256)
@@ -117,7 +122,8 @@ def gen_global_buffer_params(**kwargs):
     max_num_cfg_width = glb_addr_width - bank_byte_offset
     latency_width = 2 + math.ceil(math.log(num_glb_tiles, 2))
 
-    params = GlobalBufferParams(num_glb_tiles=num_glb_tiles,
+    params = GlobalBufferParams(num_prr=num_prr,
+                                num_glb_tiles=num_glb_tiles,
                                 tile_sel_addr_width=tile_sel_addr_width,
                                 num_cgra_tiles=num_cgra_cols,
                                 cgra_per_glb=cgra_per_glb,

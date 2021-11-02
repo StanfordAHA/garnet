@@ -24,22 +24,18 @@ program glb_test (
 
     // configuration of glb from glc
     output logic                      if_cfg_wr_en,
-    output logic                      if_cfg_wr_clk_en,
     output logic [AXI_ADDR_WIDTH-1:0] if_cfg_wr_addr,
     output logic [AXI_DATA_WIDTH-1:0] if_cfg_wr_data,
     output logic                      if_cfg_rd_en,
-    output logic                      if_cfg_rd_clk_en,
     output logic [AXI_ADDR_WIDTH-1:0] if_cfg_rd_addr,
     input  logic [AXI_DATA_WIDTH-1:0] if_cfg_rd_data,
     input  logic                      if_cfg_rd_data_valid,
 
     // configuration of sram from glc
     output logic                      if_sram_cfg_wr_en,
-    output logic                      if_sram_cfg_wr_clk_en,
     output logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_wr_addr,
     output logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_wr_data,
     output logic                      if_sram_cfg_rd_en,
-    output logic                      if_sram_cfg_rd_clk_en,
     output logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_rd_addr,
     input  logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_rd_data,
     input  logic                      if_sram_cfg_rd_data_valid,
@@ -52,20 +48,10 @@ program glb_test (
 
     // control pulse
     output logic [NUM_GLB_TILES-1:0] strm_start_pulse,
-    output logic [NUM_GLB_TILES-1:0] pc_start_pulse,
+    output logic [NUM_GLB_TILES-1:0] pcfg_start_pulse,
     input  logic [NUM_GLB_TILES-1:0] strm_g2f_interrupt_pulse,
     input  logic [NUM_GLB_TILES-1:0] strm_f2g_interrupt_pulse,
     input  logic [NUM_GLB_TILES-1:0] pcfg_g2f_interrupt_pulse,
-
-    // soft reset
-    output  logic cgra_soft_reset,
-
-    // BOTTOM
-    // streaming word
-    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] stream_data_f2g,
-    output logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                      stream_data_valid_f2g,
-    input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] stream_data_g2f,
-    input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                      stream_data_valid_g2f,
 
     // cgra configuration to cgra
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_stall,
@@ -75,21 +61,35 @@ program glb_test (
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data
 );
 
+	int tile_offset = 1 << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+    int tile_id = 0;
+    bit [NUM_GLB_TILES-1:0] tile_id_mask = 0;
+
     initial begin
-        initialize();
-        // if ($test$plusargs("TEST_GLB_MEM_SIMPLE")) begin
-        //     logic [BANK_DATA_WIDTH-1:0] data_arr [];
-        //     logic [BANK_DATA_WIDTH-1:0] data_arr_out [];
-        //     static int size = 8;
-        //     data_arr = new [size];
-        //     data_arr_out = new [size];
-        //     foreach(data_arr[i]) begin
-        //         data_arr[i] = i;
-        //     end
-        //     proc_write_burst(0, data_arr); 
-        //     proc_read_burst(0, data_arr_out); 
-        //     compare_64b_arr(data_arr, data_arr_out);
-        // end
+		initialize();
+
+        if ($test$plusargs("TEST_GLB_MEM_SIMPLE")) begin
+            logic [BANK_DATA_WIDTH-1:0] data_arr [];
+            logic [BANK_DATA_WIDTH-1:0] data_arr_out [];
+            static int size = 256;
+
+            tile_id = 0;
+            tile_id_mask = 0;
+
+            $display("\n**** TEST_GLB_AXI_W/R START ****");
+
+            data_arr = new [size];
+            data_arr_out = new [size];
+            foreach(data_arr[i]) begin
+                data_arr[i] = i;
+            end
+            proc_write_burst(0, data_arr); 
+            proc_read_burst(0, data_arr_out); 
+            compare_64b_arr(data_arr, data_arr_out);
+
+            $display("**** TEST_GLB_AXI_W/R END ****\n");
+        end
+
         // if ($test$plusargs("TEST_GLB_CFG")) begin
         //     logic [AXI_DATA_WIDTH-1:0] cfg_data;
         //     logic [AXI_DATA_WIDTH-1:0] cfg_data_out;
@@ -113,66 +113,113 @@ program glb_test (
         //         compare_cfg(cfg_data, cfg_data_out);
         //     end
         // end
-        // if ($test$plusargs("TEST_GLB_G2F_STREAM")) begin
-        //     static int tile_id = 0;
-        //     static int start_addr = 'h40000 * tile_id;
-        //     logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr [];
-        //     logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr_out [];
-        //     logic [BANK_DATA_WIDTH-1:0] glb_data_arr [];
-        //     static int size = 8;
-        //     cgra_data_arr = new [size];
-        //     cgra_data_arr_out = new [size];
-        //     foreach(cgra_data_arr[i]) begin
-        //         cgra_data_arr[i] = i;
-        //     end
-        //     convert_16b_to_64b(cgra_data_arr, glb_data_arr); 
-        //     proc_write_burst(start_addr, glb_data_arr);
-        //     g2f_dma_configure(tile_id, start_addr, size);
-        //     g2f_start(tile_id, cgra_data_arr_out);
-        //     compare_16b_arr(cgra_data_arr, cgra_data_arr_out);
-        // end
-        // if ($test$plusargs("TEST_GLB_F2G_STREAM")) begin
-        //     static int tile_id = 0;
-        //     static int start_addr = 'h40000 * tile_id;
-        //     logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr [];
-        //     logic [BANK_DATA_WIDTH-1:0] glb_data_arr[];
-        //     logic [BANK_DATA_WIDTH-1:0] glb_data_arr_out [];
-        //     static int size = 8;
-        //     cgra_data_arr = new [size];
-        //     foreach(cgra_data_arr[i]) begin
-        //         cgra_data_arr[i] = i;
-        //     end
-        //     f2g_dma_configure(tile_id, start_addr, size);
-        //     f2g_start(tile_id, cgra_data_arr);
 
-        //     convert_16b_to_64b(cgra_data_arr, glb_data_arr); 
-        //     glb_data_arr_out = new[glb_data_arr.size()];
-        //     proc_read_burst(start_addr, glb_data_arr_out);
-        //     compare_64b_arr(glb_data_arr, glb_data_arr_out);
-        // end
-        // if ($test$plusargs("TEST_PCFG_STREAM")) begin
-        //     static int tile_id = 0;
-        //     static int start_addr = 'h40000 * tile_id;
-        //     logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr [];
-        //     logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr_out [];
-        //     static int size = 8;
-        //     bs_arr = new [size];
-        //     bs_arr_out = new [size];
-        //     foreach(bs_arr[i]) begin
-        //         bs_arr[i] = i;
-        //     end
-        //     proc_write_burst(start_addr, bs_arr);
-        //     pcfg_dma_configure(tile_id, start_addr, size);
-        //     pcfg_start(tile_id, bs_arr_out);
-        //     compare_64b_arr(bs_arr, bs_arr_out);
-        // end
+        if ($test$plusargs("TEST_GLB_G2F_STREAM")) begin
+            static int start_addr;
+            logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr [];
+            logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr_out [];
+            logic [BANK_DATA_WIDTH-1:0] glb_data_arr [];
+            static int size = 8;
+
+            tile_id = 0;
+            tile_id_mask = 0;
+            start_addr = tile_offset * tile_id;
+
+            $display("\n**** TEST_GLB_G2F_STREAM START ****");
+            cgra_data_arr = new [size];
+            cgra_data_arr_out = new [size];
+            foreach(cgra_data_arr[i]) begin
+                cgra_data_arr[i] = i;
+            end
+            convert_16b_to_64b(cgra_data_arr, glb_data_arr); 
+            proc_write_burst(start_addr, glb_data_arr);
+            g2f_dma_configure(tile_id, start_addr, size);
+
+            tile_id_mask = update_tile_mask(tile_id, tile_id_mask);
+
+            // Start
+            g2f_start(tile_id_mask);
+            g2f_run(tile_id, size);
+            // End
+
+            repeat(10) @(posedge clk);
+            read_prr(tile_id, cgra_data_arr_out);
+            compare_16b_arr(cgra_data_arr, cgra_data_arr_out);
+
+            $display("**** TEST_GLB_G2F_STREAM END ****\n");
+        end
+
+        if ($test$plusargs("TEST_GLB_F2G_STREAM")) begin
+            static int start_addr = tile_offset * tile_id;
+            logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr [];
+            logic [BANK_DATA_WIDTH-1:0] glb_data_arr[];
+            logic [BANK_DATA_WIDTH-1:0] glb_data_arr_out [];
+            static int size = 8;
+
+            tile_id = 0;
+            tile_id_mask = 0;
+            start_addr = tile_offset * tile_id;
+
+            $display("\n**** TEST_GLB_F2G_STREAM START ****");
+
+            cgra_data_arr = new [size];
+            foreach(cgra_data_arr[i]) begin
+                cgra_data_arr[i] = i;
+            end
+            f2g_dma_configure(tile_id, start_addr, size);
+
+            tile_id_mask = update_tile_mask(tile_id, tile_id_mask);
+            write_prr(tile_id, cgra_data_arr);
+
+            // start
+            f2g_start(tile_id_mask);
+            f2g_run(tile_id, size);
+            // end
+
+            convert_16b_to_64b(cgra_data_arr, glb_data_arr); 
+            glb_data_arr_out = new[glb_data_arr.size()];
+            proc_read_burst(start_addr, glb_data_arr_out);
+            compare_64b_arr(glb_data_arr, glb_data_arr_out);
+
+            $display("**** TEST_GLB_F2G_STREAM END ****\n");
+        end
+
+        if ($test$plusargs("TEST_PCFG_STREAM")) begin
+            static int start_addr;
+            logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr [];
+            logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr_out [];
+            static int size = 8;
+
+            tile_id = 0;
+            tile_id_mask = 0;
+            start_addr = tile_offset * tile_id;
+
+            $display("\n**** TEST_PCFG START ****");
+            bs_arr = new [size];
+            bs_arr_out = new [size];
+            foreach(bs_arr[i]) begin
+                bs_arr[i] = i;
+            end
+
+            proc_write_burst(start_addr, bs_arr);
+            pcfg_dma_configure(tile_id, start_addr, size);
+
+            tile_id_mask = update_tile_mask(tile_id, tile_id_mask);
+
+            // start
+            pcfg_start(tile_id_mask);
+            pcfg_run(tile_id, size);
+            // compare_64b_arr(bs_arr, bs_arr_out);
+
+            $display("**** TEST_PCFG END ****\n");
+        end
     end
 
     task initialize();
         // control
         stall <= 0;
         cgra_stall_in <= 0;
-        pc_start_pulse <= 0;
+        pcfg_start_pulse <= 0;
         strm_start_pulse <= 0;
 
         // proc
@@ -185,20 +232,16 @@ program glb_test (
         
         // cfg ifc
         if_cfg_wr_en <= 0;
-        if_cfg_wr_clk_en <= 0;
         if_cfg_wr_addr <= 0;
         if_cfg_wr_data <= 0;
         if_cfg_rd_en <= 0;
-        if_cfg_rd_clk_en <= 0;
         if_cfg_rd_addr <= 0;
 
         // sram ifc
         if_sram_cfg_wr_en <= 0;
-        if_sram_cfg_wr_clk_en <= 0;
         if_sram_cfg_wr_addr <= 0;
         if_sram_cfg_wr_data <= 0;
         if_sram_cfg_rd_en <= 0;
-        if_sram_cfg_rd_clk_en <= 0;
         if_sram_cfg_rd_addr <= 0;
 
         // jtag
@@ -210,311 +253,305 @@ program glb_test (
         // wait for reset clear
         wait (reset == 0);
         repeat(10) @(posedge clk);
+
         $display("Initialization done");
     endtask
 
-    // task pcfg_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_TILE_CTRL, (1 << 10));
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_PC_DMA_HEADER_0_START_ADDR, start_addr);
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_PC_DMA_HEADER_0_NUM_CFG, num_word);
-    // endtask
+    task glb_tile_stall(logic [NUM_GLB_TILES-1:0] tile_sel);
 
-    // task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
-    //     // glb_cfg_write((tile_id << 8) + `GLB_CFG_TILE_CTRL, ((1 << 6) | (2'b01 << 2)));
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_TILE_CTRL, ((1 << 6) | (2'b01 << 2)));
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_LD_DMA_HEADER_0_START_ADDR, start_addr);
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_LD_DMA_HEADER_0_ITER_CTRL_0, ((num_word << 10) | (1 << 0)));
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_LD_DMA_HEADER_0_VALIDATE, 1);
-    // endtask
+        $display("Glb tiles are stalled");
+        stall <= tile_sel;
+        repeat(1) @(posedge clk);
 
-    // task f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
-    //     // glb_cfg_write((tile_id << 8) + `GLB_CFG_TILE_CTRL, ((1 << 8) | (2'b10 << 4)));
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_TILE_CTRL, ((1 << 8) | (2'b10 << 4)));
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_ST_DMA_HEADER_0_START_ADDR, start_addr);
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_ST_DMA_HEADER_0_NUM_WORDS, num_word);
-    //     glb_cfg_write((tile_id << 8) + `GLB_CFG_ST_DMA_HEADER_0_VALIDATE, 1);
-    // endtask
+    endtask
 
-    // task glb_cfg_write(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
-    //     repeat(5) @(posedge clk);
-    //     #(`CLK_PERIOD*0.3)
-    //     if_cfg_wr_en <= 1;
-    //     if_cfg_wr_clk_en <= 1;
-    //     if_cfg_wr_addr <= addr;
-    //     if_cfg_wr_data <= data;
-    //     @(posedge clk);
-    //     #(`CLK_PERIOD*0.3)
-    //     if_cfg_wr_en <= 0;
-    //     if_cfg_wr_clk_en <= 0;
-    //     if_cfg_wr_addr <= 0;
-    //     if_cfg_wr_data <= 0;
-    //     repeat(5) @(posedge clk);
-    // endtask
+    task pcfg_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
+        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_CTRL_R_ADDR, (1 << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
+        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_HEADER_START_ADDR_R_ADDR, (start_addr << `GLB_PCFG_DMA_HEADER_START_ADDR_START_ADDR_F_LSB));
+        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_HEADER_NUM_CFG_R_ADDR, (num_word << `GLB_PCFG_DMA_HEADER_NUM_CFG_NUM_CFG_F_LSB));
+    endtask
 
-    // task glb_cfg_read(input [AXI_ADDR_WIDTH-1:0] addr, output [AXI_DATA_WIDTH-1:0] data);
-    //     repeat(5) @(posedge clk);
-    //     #(`CLK_PERIOD*0.3)
-    //     if_cfg_rd_en <= 1;
-    //     if_cfg_rd_clk_en <= 1;
-    //     if_cfg_rd_addr <= addr;
-    //     @(posedge clk);
-    //     #(`CLK_PERIOD*0.3)
-    //     if_cfg_rd_en <= 0;
-    //     if_cfg_rd_clk_en <= 0;
-    //     if_cfg_rd_addr <= 0;
-    //     fork : glb_cfg_read_timeout
-    //     begin
-    //         while (1) begin
-    //             @(posedge clk);
-    //             if (if_cfg_rd_data_valid) begin
-    //                 data = if_cfg_rd_data;
-    //                 break;
-    //             end
-    //         end
-    //     end
-    //     begin
-    //         repeat (50) @(posedge clk);
-    //         $display("@%0t: %m ERROR: glb cfg read timeout ", $time);
-    //     end
-    //     join_any
-    //     disable fork;
-    //     repeat(5) @(posedge clk);
-    // endtask
+    task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_DATA_NETWORK_R_ADDR, (2'b01 << `GLB_DATA_NETWORK_G2F_MUX_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_CTRL_R_ADDR, (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB) | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_START_ADDR_R_ADDR, (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_RANGE_0_R_ADDR, (num_word << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R_ADDR, (1 << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_VALIDATE_R_ADDR, (1 << `GLB_LD_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
+    endtask
 
-    // task automatic proc_write_burst(input [GLB_ADDR_WIDTH-1:0] addr, ref [BANK_DATA_WIDTH-1:0] data[]);
-    //     int size = data.size();
-    //     repeat(5) @(posedge clk);
-    //     $display("Start glb-mem burst write. addr: 0x%0h, size %0d", addr, size);
-    //     foreach(data[i]) begin
-    //         proc_write(addr + 8*i, data[i]);
-    //     end
-    //     #(`CLK_PERIOD*0.3)
-    //     proc_wr_en <= 0;
-    //     proc_wr_strb <= 0;
-    //     $display("Finish glb-mem burst write");
-    //     repeat(5) @(posedge clk);
-    // endtask
+    task f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_DATA_NETWORK_R_ADDR, (2'b10 << `GLB_DATA_NETWORK_F2G_MUX_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_CTRL_R_ADDR, (1 << `GLB_ST_DMA_CTRL_MODE_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_START_ADDR_R_ADDR, (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_NUM_WORDS_R_ADDR, (num_word << `GLB_ST_DMA_HEADER_0_NUM_WORDS_NUM_WORDS_F_LSB));
+        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_VALIDATE_R_ADDR, (1 << `GLB_ST_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
+    endtask
 
-    // task automatic proc_write(input [GLB_ADDR_WIDTH-1:0] addr, [BANK_DATA_WIDTH-1:0] data);
-    //     #(`CLK_PERIOD*0.3)
-    //     proc_wr_en <= 1;
-    //     proc_wr_strb <= {(BANK_DATA_WIDTH/8){1'b1}};
-    //     proc_wr_addr <= addr;
-    //     proc_wr_data <= data;
-    //     @(posedge clk);
-    // endtask
+    task glb_cfg_write(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
+        repeat(5) @(posedge clk);
+        #(`CLK_PERIOD*0.3)
+        if_cfg_wr_en <= 1;
+        if_cfg_wr_addr <= addr;
+        if_cfg_wr_data <= data;
+        @(posedge clk);
+        #(`CLK_PERIOD*0.3)
+        if_cfg_wr_en <= 0;
+        if_cfg_wr_addr <= 0;
+        if_cfg_wr_data <= 0;
+        repeat(5) @(posedge clk);
+    endtask
 
-    // task automatic proc_read_burst(input [GLB_ADDR_WIDTH-1:0] addr, ref [BANK_DATA_WIDTH-1:0] data[]);
-    //     int size = data.size();
-    //     repeat(5) @(posedge clk);
-    //     $display("Start glb-mem burst read. addr: 0x%0h, size %0d", addr, size);
-    //     fork : proc_read
-    //     begin
-    //         for(int i = 0; i < size; i++) begin
-    //             #(`CLK_PERIOD*0.4)
-    //             proc_rd_en <= 1;
-    //             proc_rd_addr <= addr + 8*i;
-    //             @(posedge clk);
-    //         end
-    //         #(`CLK_PERIOD*0.4)
-    //         proc_rd_en <= 0;
-    //     end
-    //     begin
-    //         fork : proc_read_timeout
-    //         begin
-    //             int cnt = 0;
-    //             while (1) begin
-    //                 @(posedge clk);
-    //                 if (proc_rd_data_valid) begin
-    //                     data[cnt] = proc_rd_data;
-    //                     cnt = cnt + 1;
-    //                     if (cnt == size) break;
-    //                 end
-    //             end
-    //         end
-    //         begin
-    //             repeat (size + 100) @(posedge clk);
-    //             $display("@%0t: %m ERROR: glb-mem burst read timeout ", $time);
-    //         end
-    //         join_any
-    //         disable fork;
-    //     end
-    //     join
-    //     repeat(5) @(posedge clk);
-    //     $display("Finish glb-mem burst read");
-    // endtask
+    task glb_cfg_read(input [AXI_ADDR_WIDTH-1:0] addr, output [AXI_DATA_WIDTH-1:0] data);
+        repeat(5) @(posedge clk);
+        #(`CLK_PERIOD*0.3)
+        if_cfg_rd_en <= 1;
+        if_cfg_rd_addr <= addr;
+        @(posedge clk);
+        #(`CLK_PERIOD*0.3)
+        if_cfg_rd_en <= 0;
+        if_cfg_rd_addr <= 0;
+        fork : glb_cfg_read_timeout
+        begin
+            while (1) begin
+                @(posedge clk);
+                if (if_cfg_rd_data_valid) begin
+                    data = if_cfg_rd_data;
+                    break;
+                end
+            end
+        end
+        begin
+            repeat (50) @(posedge clk);
+            $display("@%0t: %m ERROR: glb cfg read timeout ", $time);
+        end
+        join_any
+        disable fork;
+        repeat(5) @(posedge clk);
+    endtask
 
-    // task automatic g2f_start(input int tile_id, ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr_out []);
-    //     int cgra_data_arr_size = cgra_data_arr_out.size();
-    //     $display("g2f streaming start. tile: %0d", tile_id);
-    //     repeat(5) @(posedge clk);
-    //     #(`CLK_PERIOD*0.3)
-    //     strm_start_pulse <= (1 << tile_id);
-    //     @(posedge  clk);
-    //     #(`CLK_PERIOD*0.3)
-    //     strm_start_pulse <= 0;
+    task automatic proc_write_burst(input [GLB_ADDR_WIDTH-1:0] addr, ref [BANK_DATA_WIDTH-1:0] data[]);
+        int size = data.size();
+        repeat(5) @(posedge clk);
+        $display("Start glb-mem burst write. addr: 0x%0h, size %0d", addr, size);
+        foreach(data[i]) begin
+            proc_write(addr + 8*i, data[i]);
+        end
+        #(`CLK_PERIOD*0.3)
+        proc_wr_en <= 0;
+        proc_wr_strb <= 0;
+        $display("Finish glb-mem burst write");
+        repeat(5) @(posedge clk);
+    endtask
 
-    //     fork : g2f_start
-    //     begin
-    //         fork : data_valid_timeout
-    //         begin
-    //             while (1) begin
-    //                 @(posedge clk);
-    //                 if(stream_data_valid_g2f[tile_id][0]) begin
-    //                     break;
-    //                 end
-    //             end
-    //             @(posedge clk);
-    //             for(int i=0; i < cgra_data_arr_size; i++) begin
-    //                 #(`CLK_PERIOD*0.3)
-    //                 cgra_data_arr_out[i] = stream_data_g2f[tile_id][0];
-    //                 @(posedge clk);
-    //             end
-    //         end
-    //         begin
-    //             repeat (cgra_data_arr_size + 30) @(posedge clk);
-    //             $display("@%0t: %m ERROR: glb stream g2f valid timeout ", $time);
-    //         end
-    //         join_any
-    //         disable fork;
-    //     end
-    //     begin
-    //         fork : interrupt_timeout
-    //         begin
-    //             wait(strm_g2f_interrupt_pulse[tile_id]);
-    //         end
-    //         begin
-    //             repeat (cgra_data_arr_size + 30) @(posedge clk);
-    //             $display("@%0t: %m ERROR: glb stream g2f interrupt timeout ", $time);
-    //         end
-    //         join_any
-    //         disable fork;
-    //     end
-    //     join
-    //     repeat(5) @(posedge clk);
-    //     $display("g2f streaming done.");
-    // endtask
+    task automatic proc_write(input [GLB_ADDR_WIDTH-1:0] addr, [BANK_DATA_WIDTH-1:0] data);
+        #(`CLK_PERIOD*0.3)
+        proc_wr_en <= 1;
+        proc_wr_strb <= {(BANK_DATA_WIDTH/8){1'b1}};
+        proc_wr_addr <= addr;
+        proc_wr_data <= data;
+        @(posedge clk);
+    endtask
 
-    // task automatic f2g_start(input int tile_id, ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr []);
-    //     int cgra_data_arr_size = cgra_data_arr.size();
-    //     $display("f2g streaming start. tile: %0d", tile_id);
-    //     repeat(5) @(posedge clk);
-    //     for(int i=0; i < cgra_data_arr_size; i++) begin
-    //         #(`CLK_PERIOD*0.3)
-    //         stream_data_f2g[tile_id][1] <= cgra_data_arr[i];
-    //         stream_data_valid_f2g[tile_id][1] <= 1;
-    //         @(posedge clk);
-    //     end
-    //     #(`CLK_PERIOD*0.3)
-    //     stream_data_f2g[tile_id][1] <= 0;
-    //     stream_data_valid_f2g[tile_id][1] <= 0;
+    task automatic proc_read_burst(input [GLB_ADDR_WIDTH-1:0] addr, ref [BANK_DATA_WIDTH-1:0] data[]);
+        int size = data.size();
+        repeat(5) @(posedge clk);
+        $display("Start glb-mem burst read. addr: 0x%0h, size %0d", addr, size);
+        fork : proc_read
+        begin
+            for(int i = 0; i < size; i++) begin
+                #(`CLK_PERIOD*0.4)
+                proc_rd_en <= 1;
+                proc_rd_addr <= addr + 8*i;
+                @(posedge clk);
+            end
+            #(`CLK_PERIOD*0.4)
+            proc_rd_en <= 0;
+        end
+        begin
+            fork : proc_read_timeout
+            begin
+                int cnt = 0;
+                while (1) begin
+                    @(posedge clk);
+                    if (proc_rd_data_valid) begin
+                        data[cnt] = proc_rd_data;
+                        cnt = cnt + 1;
+                        if (cnt == size) break;
+                    end
+                end
+            end
+            begin
+                repeat (size + 100) @(posedge clk);
+                $display("@%0t: %m ERROR: glb-mem burst read timeout ", $time);
+            end
+            join_any
+            disable fork;
+        end
+        join
+        repeat(5) @(posedge clk);
+        $display("Finish glb-mem burst read");
+    endtask
 
-    //     fork : interrupt_timeout
-    //     begin
-    //         wait(strm_f2g_interrupt_pulse[tile_id]);
-    //     end
-    //     begin
-    //         repeat (30) @(posedge clk);
-    //         $display("@%0t: %m ERROR: glb stream f2g interrupt timeout ", $time);
-    //     end
-    //     join_any
-    //     disable fork;
-    //     repeat(5) @(posedge clk);
-    //     $display("f2g streaming done.");
-    // endtask
+    task automatic g2f_start(input [NUM_GLB_TILES-1:0] tile_id_mask);
+        $display("g2f streaming start. tiles: 0x%4h", tile_id_mask);
 
-    // task automatic pcfg_start(input int tile_id, ref [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr_out []);
-    //     int bs_size = bs_arr_out.size();
-    //     $display("pcfg streaming start. tile: %0d, num_bs: %0d", tile_id, bs_size);
-    //     repeat(5) @(posedge clk);
-    //     #(`CLK_PERIOD*0.3)
-    //     pc_start_pulse <= (1 << tile_id);
-    //     @(posedge  clk);
-    //     #(`CLK_PERIOD*0.3)
-    //     pc_start_pulse <= 0;
+        // Enable glb2prr
+        for (int i=0; i<NUM_PRR; i++) begin
+            if (tile_id_mask[i] == 1) begin
+                $root.top.cgra.glb2prr_on(i);
+            end
+        end
 
-    //     fork : pcfg_start
-    //     begin
-    //         fork : data_valid_timeout
-    //         begin
-    //             wait(cgra_cfg_g2f_cfg_wr_en[tile_id][0]);
-    //             for(int i=0; i < bs_size; i++) begin
-    //                 #(`CLK_PERIOD*0.3)
-    //                 bs_arr_out[i] = {cgra_cfg_g2f_cfg_addr[tile_id][0], cgra_cfg_g2f_cfg_data[tile_id][0]};
-    //                 @(posedge clk);
-    //             end
-    //         end
-    //         begin
-    //             repeat (bs_size + 30) @(posedge clk);
-    //             $display("@%0t: %m ERROR: glb stream pcfg timeout ", $time);
-    //         end
-    //         join_any
-    //         disable fork;
-    //     end
-    //     begin
-    //         fork : interrupt_timeout
-    //         begin
-    //             wait(pcfg_g2f_interrupt_pulse[tile_id]);
-    //         end
-    //         begin
-    //             repeat (bs_size + 50) @(posedge clk);
-    //             $display("@%0t: %m ERROR: glb stream pcfg interrupt timeout ", $time);
-    //         end
-    //         join_any
-    //         disable fork;
-    //     end
-    //     join
-    //     repeat(5) @(posedge clk);
-    //     $display("pcfg streaming done.");
-    // endtask
+        repeat(2) @(posedge clk);
+        #(`CLK_PERIOD*0.3)
+        strm_start_pulse <= tile_id_mask;
+        @(posedge  clk);
+        #(`CLK_PERIOD*0.3)
+        strm_start_pulse <= 0;
+    endtask
 
-    // function automatic int compare_64b_arr(ref [63:0] data_arr_0 [], ref [63:0] data_arr_1 []);
-    //     int size_0 = data_arr_0.size();
-    //     int size_1 = data_arr_1.size();
-    //     int err;
-    //     if (size_0 != size_1) begin
-    //         $display("Data array size is different. data_arr_0: %0d, data_arr_1: %0d", size_0, size_1);
-    //         err++;
-    //     end
-    //     foreach(data_arr_0[i]) begin
-    //         if(data_arr_0[i] !== data_arr_1[i]) begin
-    //             $display("Data array different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i, data_arr_0[i], data_arr_1[i]);
-    //             err++;
-    //         end
-    //         else begin
-    //             // $display("Data array same. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i, data_arr_0[i], data_arr_1[i]);
-    //         end
-    //     end
-    //     if (err > 0) begin
-    //         return 1;
-    //     end
-    //     $display("Two data array are same");
-    //     return 0;
-    // endfunction
+    task automatic g2f_run(input int tile_id, int max_num_data);
+        fork : interrupt_timeout
+        begin
+            wait(strm_g2f_interrupt_pulse[tile_id]);
+            $display("g2f streaming done.");
+        end
+        begin
+            repeat (max_num_data + 30) @(posedge clk);
+            $display("@%0t: %m ERROR: glb stream g2f interrupt timeout ", $time);
+        end
+        join_any
+        disable fork;
+        @(posedge clk);
+    endtask
 
-    // function automatic int compare_16b_arr(ref [15:0] data_arr_0 [], ref [15:0] data_arr_1 []);
-    //     int size_0 = data_arr_0.size();
-    //     int size_1 = data_arr_1.size();
-    //     int err;
-    //     if (size_0 != size_1) begin
-    //         $display("Data array size is different. data_arr_0: %0d, data_arr_1: %0d", size_0, size_1);
-    //         err++;
-    //     end
-    //     foreach(data_arr_0[i]) begin
-    //         if(data_arr_0[i] !== data_arr_1[i]) begin
-    //             $display("Data array different. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
-    //             err++;
-    //         end
-    //         else begin
-    //             $display("Data array same. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
-    //         end
-    //     end
-    //     if (err > 0) begin
-    //         return 1;
-    //     end
-    //     $display("Two data array are same");
-    //     return 0;
-    // endfunction
+    function automatic void read_prr(input int prr_id, ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr_out[]);
+        if (cgra_data_arr_out.size() != $root.top.cgra.glb2prr_q[prr_id].size) begin
+            $error("@%0t: %m FAIL: glb stream to PRR data size is different.\nExpected data size: %d, PRR data size: %d", $time, cgra_data_arr_out.size(), $root.top.cgra.glb2prr_q[prr_id].size);
+        end else begin
+            foreach($root.top.cgra.glb2prr_q[prr_id][i]) begin
+                cgra_data_arr_out[i] = $root.top.cgra.glb2prr_q[prr_id][i];
+			end
+        end
+    endfunction
+
+    function automatic void write_prr(input int prr_id, ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr[]);
+        foreach(cgra_data_arr[i]) begin
+            $root.top.cgra.prr2glb_q[prr_id][i] = cgra_data_arr[i];
+        end
+    endfunction
+
+    task automatic f2g_start(input [NUM_GLB_TILES-1:0] tile_id_mask);
+        $display("f2g streaming start. tiles: 0x%4h", tile_id_mask);
+
+        // Enable glb2prr
+        for (int i=0; i<NUM_PRR; i++) begin
+            if (tile_id_mask[i] == 1) begin
+                $root.top.cgra.prr2glb_on(i);
+            end
+        end
+        @(posedge clk);
+
+    endtask
+
+    task automatic f2g_run(input int tile_id, int max_num_data);
+        fork : interrupt_timeout
+        begin
+            wait(strm_f2g_interrupt_pulse[tile_id]);
+            $display("f2g streaming done.");
+        end
+        begin
+            repeat (max_num_data + 30) @(posedge clk);
+            $display("@%0t: %m ERROR: cgra stream f2g interrupt timeout ", $time);
+        end
+        join_any
+        disable fork;
+        @(posedge clk);
+    endtask
+
+    task automatic pcfg_start(input [NUM_GLB_TILES-1:0] tile_id_mask);
+        $display("pcfg streaming start. tiles: 0x%4h", tile_id_mask);
+        repeat(5) @(posedge clk);
+        #(`CLK_PERIOD*0.3)
+        pcfg_start_pulse <= tile_id_mask;
+        @(posedge clk);
+        #(`CLK_PERIOD*0.3)
+        pcfg_start_pulse <= 0;
+    endtask
+
+    task automatic pcfg_run(input int tile_id, int max_num_data);
+        fork : interrupt_timeout
+        begin
+            wait(pcfg_g2f_interrupt_pulse[tile_id]);
+        end
+        begin
+            repeat (max_num_data + 50) @(posedge clk);
+            $display("@%0t: %m ERROR: glb stream pcfg interrupt timeout ", $time);
+        end
+        join_any
+        disable fork;
+        @(posedge clk);
+        $display("pcfg streaming done.");
+    endtask
+
+    function automatic bit [NUM_GLB_TILES-1:0] update_tile_mask(int tile_id, [NUM_GLB_TILES-1:0] tile_id_mask);
+        bit [NUM_GLB_TILES-1:0] new_tile_id_mask;
+        new_tile_id_mask = tile_id_mask | (1 << tile_id);
+        return new_tile_id_mask;
+    endfunction
+
+    function automatic int compare_64b_arr(ref [63:0] data_arr_0 [], ref [63:0] data_arr_1 []);
+        int size_0 = data_arr_0.size();
+        int size_1 = data_arr_1.size();
+        int err;
+        if (size_0 != size_1) begin
+            $display("Data array size is different. data_arr_0: %0d, data_arr_1: %0d", size_0, size_1);
+            err++;
+        end
+        foreach(data_arr_0[i]) begin
+            if(data_arr_0[i] !== data_arr_1[i]) begin
+                $display("Data array different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i, data_arr_0[i], data_arr_1[i]);
+                err++;
+            end
+            else begin
+				if ($test$plusargs("DEBUG")) begin
+                    $display("Data array same. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i, data_arr_0[i], data_arr_1[i]);
+                end
+            end
+        end
+        if (err > 0) begin
+            return 1;
+        end
+        $display("Two data array are same");
+        return 0;
+    endfunction
+
+    function automatic int compare_16b_arr(ref [15:0] data_arr_0 [], ref [15:0] data_arr_1 []);
+        int size_0 = data_arr_0.size();
+        int size_1 = data_arr_1.size();
+        int err;
+        if (size_0 != size_1) begin
+            $display("Data array size is different. data_arr_0: %0d, data_arr_1: %0d", size_0, size_1);
+            err++;
+        end
+        foreach(data_arr_0[i]) begin
+            if(data_arr_0[i] !== data_arr_1[i]) begin
+                $display("Data array different. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
+                err++;
+            end
+            else begin
+				if ($test$plusargs("DEBUG")) begin
+					$display("Data array same. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
+                end
+            end
+        end
+        if (err > 0) begin
+            return 1;
+        end
+        $display("Two data array are same");
+        return 0;
+    endfunction
 
     // function int compare_cfg(logic [BANK_DATA_WIDTH-1:0] cfg_0, logic [AXI_DATA_WIDTH-1:0] cfg_1); 
     //     if(cfg_0 !== cfg_1) begin
@@ -525,39 +562,39 @@ program glb_test (
     //     return 0;
     // endfunction
 
-    // function automatic void convert_16b_to_64b(ref [15:0] data_in [], ref [63:0] data_out []);
-    //     int num_data_in = data_in.size();
-    //     int num_data_out = (num_data_in + 3) / 4;
-    //     data_out = new [num_data_out];
-    //     for(int i=0; i < num_data_in; i=i+4) begin
-    //         if (i == (num_data_in-1)) begin
-    //             if (num_data_in % 4 == 1) begin
-    //                 data_out[i/4] = {{48{1'b1}}, data_in[i]};
-    //             end
-    //             else if (num_data_in % 4 == 2) begin
-    //                 data_out[i/4] = {{32{1'b1}}, data_in[i+1], data_in[i]};
-    //             end
-    //             else if (num_data_in % 4 == 3) begin
-    //                 data_out[i/4] = {{16{1'b1}}, data_in[i+2], data_in[i+1], data_in[i]};
-    //             end
-    //             else begin
-    //                 data_out[i/4] = {data_in[i+3], data_in[i+2], data_in[i+1], data_in[i]};
-    //             end
-    //         end
-    //         data_out[i/4] = {data_in[i+3], data_in[i+2], data_in[i+1], data_in[i]};
-    //     end
-    // endfunction
+    function automatic void convert_16b_to_64b(ref [15:0] data_in [], ref [63:0] data_out []);
+        int num_data_in = data_in.size();
+        int num_data_out = (num_data_in + 3) / 4;
+        data_out = new [num_data_out];
+        for(int i=0; i < num_data_in; i=i+4) begin
+            if (i == (num_data_in-1)) begin
+                if (num_data_in % 4 == 1) begin
+                    data_out[i/4] = {{48{1'b1}}, data_in[i]};
+                end
+                else if (num_data_in % 4 == 2) begin
+                    data_out[i/4] = {{32{1'b1}}, data_in[i+1], data_in[i]};
+                end
+                else if (num_data_in % 4 == 3) begin
+                    data_out[i/4] = {{16{1'b1}}, data_in[i+2], data_in[i+1], data_in[i]};
+                end
+                else begin
+                    data_out[i/4] = {data_in[i+3], data_in[i+2], data_in[i+1], data_in[i]};
+                end
+            end
+            data_out[i/4] = {data_in[i+3], data_in[i+2], data_in[i+1], data_in[i]};
+        end
+    endfunction
 
-    // function automatic void convert_64b_to_16b(ref [63:0] data_in [], ref [15:0] data_out []);
-    //     int num_data_in = data_in.size();
-    //     int num_data_out = num_data_in * 4;
-    //     data_out = new [num_data_out];
-    //     for(int i=0; i < num_data_in; i++) begin
-    //         data_out[i*4 + 0] = data_in[i][ 0+:16];
-    //         data_out[i*4 + 1] = data_in[i][16+:16];
-    //         data_out[i*4 + 2] = data_in[i][32+:16];
-    //         data_out[i*4 + 3] = data_in[i][48+:16];
-    //     end
-    // endfunction
+    function automatic void convert_64b_to_16b(ref [63:0] data_in [], ref [15:0] data_out []);
+        int num_data_in = data_in.size();
+        int num_data_out = num_data_in * 4;
+        data_out = new [num_data_out];
+        for(int i=0; i < num_data_in; i++) begin
+            data_out[i*4 + 0] = data_in[i][ 0+:16];
+            data_out[i*4 + 1] = data_in[i][16+:16];
+            data_out[i*4 + 2] = data_in[i][32+:16];
+            data_out[i*4 + 3] = data_in[i][48+:16];
+        end
+    endfunction
 
 endprogram
