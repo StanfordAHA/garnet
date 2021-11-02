@@ -40,6 +40,11 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
+function automatic bit [CGRA_CFG_DATA_WIDTH-1:0] cfg_read(bit [CGRA_CFG_ADDR_WIDTH-1:0] addr);
+    int prr_id = addr[CGRA_CFG_ADDR_WIDTH-1 -: NUM_PRR_WIDTH];
+    cfg_read = cfg_reg[prr_id][addr[CGRA_CFG_PRR_WIDTH-1:0]];
+endfunction
+
 always_comb begin
     for (int i = 0; i < NUM_PRR; i++) begin
         if (cfg_rd_en[i] && cfg_rd_addr[i][CGRA_CFG_ADDR_WIDTH-1 -:NUM_PRR_WIDTH] == i) begin

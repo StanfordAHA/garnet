@@ -76,7 +76,7 @@ program glb_test (
             tile_id = 0;
             tile_id_mask = 0;
 
-            $display("\n**** TEST_GLB_AXI_W/R START ****");
+            $display("\n**** TEST_GLB_MEM_W/R START ****");
 
             data_arr = new [size];
             data_arr_out = new [size];
@@ -87,32 +87,24 @@ program glb_test (
             proc_read_burst(0, data_arr_out); 
             compare_64b_arr(data_arr, data_arr_out);
 
-            $display("**** TEST_GLB_AXI_W/R END ****\n");
+            $display("**** TEST_GLB_MEM_W/R END ****\n");
         end
 
-        // if ($test$plusargs("TEST_GLB_CFG")) begin
-        //     logic [AXI_DATA_WIDTH-1:0] cfg_data;
-        //     logic [AXI_DATA_WIDTH-1:0] cfg_data_out;
-        //     int num_tile;
-        //     if (!($value$plusargs("CFG_TEST_NUM_TILE=%0d", num_tile)))
-        //         num_tile = 16;
-        //     for(int i=0; i < num_tile; i++) begin
-        //         cfg_data = 'hff;
-        //         glb_cfg_write(((i << 8) | `GLB_CFG_TILE_CTRL), cfg_data);
-        //         glb_cfg_read(((i << 8) | `GLB_CFG_TILE_CTRL), cfg_data_out);
-        //         compare_cfg(cfg_data, cfg_data_out);
+        if ($test$plusargs("TEST_GLB_CFG")) begin
+            logic [AXI_DATA_WIDTH-1:0] cfg_data;
+            logic [AXI_DATA_WIDTH-1:0] cfg_data_out;
 
-        //         cfg_data = 'h3ff;
-        //         glb_cfg_write(((i << 8) | `GLB_CFG_LATENCY), cfg_data);
-        //         glb_cfg_read(((i << 8) | `GLB_CFG_LATENCY), cfg_data_out);
-        //         compare_cfg(cfg_data, cfg_data_out);
+            $display("\n**** TEST_GLB_CFG_W/R START ****");
+            for(int i=0; i < NUM_GLB_TILES; i++) begin
+                // TODO: Read from glb.pair test
+                cfg_data = {10{1'b1}};
+                glb_cfg_write(((i << 8) | `GLB_DATA_NETWORK_R_ADDR), cfg_data);
+                glb_cfg_read(((i << 8) | `GLB_DATA_NETWORK_R_ADDR), cfg_data_out);
+                compare_cfg(cfg_data, cfg_data_out);
+            end
 
-        //         cfg_data = 'hff;
-        //         glb_cfg_write(((i << 8) | `GLB_CFG_ST_DMA_HEADER_0_START_ADDR), cfg_data);
-        //         glb_cfg_read(((i << 8) | `GLB_CFG_ST_DMA_HEADER_0_START_ADDR), cfg_data_out);
-        //         compare_cfg(cfg_data, cfg_data_out);
-        //     end
-        // end
+            $display("**** TEST_GLB_CFG_W/R END ****\n");
+        end
 
         if ($test$plusargs("TEST_GLB_G2F_STREAM")) begin
             static int start_addr;
@@ -187,7 +179,6 @@ program glb_test (
         if ($test$plusargs("TEST_PCFG_STREAM")) begin
             static int start_addr;
             logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr [];
-            logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr_out [];
             static int size = 8;
 
             tile_id = 0;
@@ -196,9 +187,8 @@ program glb_test (
 
             $display("\n**** TEST_PCFG START ****");
             bs_arr = new [size];
-            bs_arr_out = new [size];
             foreach(bs_arr[i]) begin
-                bs_arr[i] = i;
+                bs_arr[i] = (i << CGRA_CFG_DATA_WIDTH) | i;
             end
 
             proc_write_burst(start_addr, bs_arr);
@@ -209,7 +199,9 @@ program glb_test (
             // start
             pcfg_start(tile_id_mask);
             pcfg_run(tile_id, size);
-            // compare_64b_arr(bs_arr, bs_arr_out);
+            // end
+
+            read_cgra_cfg(bs_arr);
 
             $display("**** TEST_PCFG END ****\n");
         end
@@ -299,7 +291,7 @@ program glb_test (
         if_cfg_wr_en <= 0;
         if_cfg_wr_addr <= 0;
         if_cfg_wr_data <= 0;
-        repeat(5) @(posedge clk);
+        repeat(2) @(posedge clk);
     endtask
 
     task glb_cfg_read(input [AXI_ADDR_WIDTH-1:0] addr, output [AXI_DATA_WIDTH-1:0] data);
@@ -327,7 +319,7 @@ program glb_test (
         end
         join_any
         disable fork;
-        repeat(5) @(posedge clk);
+        repeat(2) @(posedge clk);
     endtask
 
     task automatic proc_write_burst(input [GLB_ADDR_WIDTH-1:0] addr, ref [BANK_DATA_WIDTH-1:0] data[]);
@@ -553,14 +545,14 @@ program glb_test (
         return 0;
     endfunction
 
-    // function int compare_cfg(logic [BANK_DATA_WIDTH-1:0] cfg_0, logic [AXI_DATA_WIDTH-1:0] cfg_1); 
-    //     if(cfg_0 !== cfg_1) begin
-    //         $display("cfg data is different. cfg_0: 0x%0h, cfg_1: 0x%0h", cfg_0, cfg_1);
-    //         return 1;
-    //     end
-    //     $display("Two cfg data are same");
-    //     return 0;
-    // endfunction
+    function int compare_cfg(logic [BANK_DATA_WIDTH-1:0] cfg_0, logic [AXI_DATA_WIDTH-1:0] cfg_1); 
+        if(cfg_0 !== cfg_1) begin
+            $display("cfg data is different. cfg_0: 0x%0h, cfg_1: 0x%0h", cfg_0, cfg_1);
+            return 1;
+        end
+        $display("Two cfg data are same");
+        return 0;
+    endfunction
 
     function automatic void convert_16b_to_64b(ref [15:0] data_in [], ref [63:0] data_out []);
         int num_data_in = data_in.size();
@@ -595,6 +587,27 @@ program glb_test (
             data_out[i*4 + 2] = data_in[i][32+:16];
             data_out[i*4 + 3] = data_in[i][48+:16];
         end
+    endfunction
+
+    function automatic int read_cgra_cfg(ref [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr []);
+        bit [CGRA_CFG_ADDR_WIDTH-1:0] bs_addr;
+        bit [CGRA_CFG_DATA_WIDTH-1:0] bs_data;
+        bit [CGRA_CFG_DATA_WIDTH-1:0] rd_data;
+        int err;
+        for (int i=0; i < bs_arr.size(); i++) begin
+            bs_addr = bs_arr[i][CGRA_CFG_DATA_WIDTH +: CGRA_CFG_ADDR_WIDTH];
+            bs_data = bs_arr[i][0 +: CGRA_CFG_DATA_WIDTH];
+            rd_data = $root.top.cgra.cfg_read(bs_addr);
+            if (rd_data != bs_data) begin
+                $display("bitstream addr :0x%8h is different. Gold: 0x%8h, Read: 0x%8h", bs_addr, bs_data, rd_data);
+                err++;
+            end
+        end
+        if (err > 0) begin
+            return 1;
+        end
+        $display("Bitstream are same");
+        return 0;
     endfunction
 
 endprogram

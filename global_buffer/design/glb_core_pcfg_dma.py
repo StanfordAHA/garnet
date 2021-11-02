@@ -77,6 +77,8 @@ class GlbCorePcfgDma(Generator):
             self.start_pulse_r = 0
         elif ((self.cfg_pcfg_dma_ctrl_mode == 1) & (~self.is_running_r) & (self.pcfg_start_pulse)):
             self.start_pulse_r = 1
+        else:
+            self.start_pulse_r = 0
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def done_pulse_ff(self):
@@ -102,7 +104,7 @@ class GlbCorePcfgDma(Generator):
         if self.start_pulse_r:
             self.num_cfg_cnt_next = self.cfg_pcfg_dma_header['num_cfg']
             self.addr_next = self.cfg_pcfg_dma_header['start_addr']
-        elif ((self.is_running_r == 1) & (self.num_cfg_cnt_r == 0)):
+        elif ((self.is_running_r == 1) & (self.num_cfg_cnt_r > 0)):
             self.num_cfg_cnt_next = self.num_cfg_cnt_r - 1
             self.addr_next = self.addr_r + self.bank_data_byte_offset
         else:
