@@ -6,7 +6,7 @@ if [ -f ../inputs/design.v ]; then
   (cd outputs; ln -s ../../inputs/design.v)
 else
   # SystemRDL run
-  make -C $GARNET_HOME/global_buffer rtl
+  make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${cgra_width} NUM_GLB_TILES=${num_glb_tiles}
 
   rm -f outputs/design.v
   cp $GARNET_HOME/global_buffer/global_buffer.sv outputs/design.v

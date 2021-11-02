@@ -34,6 +34,7 @@ def construct():
     'topographical'  : True,
     # Floorplan
     'bank_height'    : 8,
+    'num_tile_array_cols' : 32,
     # Memory size (unit: KB)
     'glb_tile_mem_size' : 256,
     # SRAM macros
@@ -251,6 +252,8 @@ def construct():
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
+
+  rtl.update_params( { 'cgra_width': parameters['num_tile_array_cols'] }, allow_new=True )
 
   g.update_params( parameters )
 
