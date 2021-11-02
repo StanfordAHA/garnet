@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, concat, const
+from kratos import Generator, always_ff, always_comb, posedge, concat, const, clog2, resize
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
@@ -348,6 +348,7 @@ class GlbCoreStoreDma(Generator):
     def add_done_pulse_pipeline(self):
         # TODO: This maximum latency should be automatically set
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
+        latency_width = clog2(maximum_latency)
         self.done_pulse_d_arr = self.var(
             "done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.done_pulse_pipeline = Pipeline(width=1,
@@ -362,4 +363,4 @@ class GlbCoreStoreDma(Generator):
                        out_=self.done_pulse_d_arr)
 
         self.wire(self.st_dma_done_pulse,
-                  self.done_pulse_d_arr[self.cfg_data_network_latency + self.default_latency])
+                  self.done_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width) + self.default_latency])
