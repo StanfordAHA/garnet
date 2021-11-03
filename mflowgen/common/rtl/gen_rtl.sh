@@ -118,8 +118,9 @@ else
          else
            cp garnet.v design.v
          fi
-         make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${array_width} NUM_GLB_TILES=${num_glb_tiles} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
-         cat global_buffer/global_buffer.sv >> design.v
+         cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
+         cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
+         cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
 
          make -C global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
          cat global_controller/systemRDL/output/*.sv >> design.v"
@@ -161,10 +162,10 @@ else
         cp garnet.v $current_dir/outputs/design.v
       fi
 
-      # make to generate systemRDL RTL files global buffer
-      make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${array_width} NUM_GLB_TILES=${num_glb_tiles} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
-      # Copy global buffer systemverilog from the global buffer folder
-      cat global_buffer/global_buffer.sv >> $current_dir/outputs/design.v
+      # Copy global buffer systemRDL from the global buffer folder
+      cat global_buffer/systemRDL/output/glb_pio.sv >> $current_dir/outputs/design.v
+      cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> $current_dir/outputs/design.v
+      cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> $current_dir/outputs/design.v
 
       # make to generate systemRDL RTL files for global controller
       make -C $GARNET_HOME/global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
