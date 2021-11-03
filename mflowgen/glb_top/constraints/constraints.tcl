@@ -72,21 +72,21 @@ set_output_delay -clock ${clock_name} [expr ${clock_period}*0.4] [get_ports stre
 # glc reading configuration registers is false path
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 # jtag bypass mode is false path
-set_false_path -through [get_pins glb_tile_gen[*].glb_tile/*bypass]
+set_false_path -through [get_pins glb_tile_gen_*.glb_tile/*bypass]
 
 # jtag sram read
 set_multicycle_path -setup 10 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
 set_multicycle_path -hold 9 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
 set_multicycle_path -setup 10 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
 set_multicycle_path -hold 9 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
-set_multicycle_path -setup 10 -through [get_pins glb_tile_gen[*].glb_tile/if_sram*rd*]
-set_multicycle_path -hold 9 -through [get_pins glb_tile_gen[*].glb_tile/if_sram*rd*]
+set_multicycle_path -setup 10 -through [get_pins glb_tile_gen_*.glb_tile/if_sram*rd*]
+set_multicycle_path -hold 9 -through [get_pins glb_tile_gen_*.glb_tile/if_sram*rd*]
 
 # jtag write
 set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
 set_multicycle_path -hold 3 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
-set_multicycle_path -setup 4 -through [get_pins glb_tile_gen[*].glb_tile/if_sram*wr*]
-set_multicycle_path -hold 3 -through [get_pins glb_tile_gen[*].glb_tile/if_sram*wr*]
+set_multicycle_path -setup 4 -through [get_pins glb_tile_gen_*.glb_tile/if_sram*wr*]
+set_multicycle_path -hold 3 -through [get_pins glb_tile_gen_*.glb_tile/if_sram*wr*]
 
 # interrupt is asserted for 4 cycles 
 set_multicycle_path -setup 4 -to [get_ports *interrupt_pulse -filter "direction==out"]
@@ -103,10 +103,10 @@ set_max_transition [expr 0.10*${clock_period}] $design_name
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
 
-set num_tiles [sizeof_collection [get_cells *glb_tile_gen*]]
+set num_tiles [sizeof_collection [get_cells *glb_tile_gen_*]]
 for {set i 1} {$i < $num_tiles} {incr i} {
   # only need to set west since east pins are connected to same nets
-  set nets [get_nets -of_objects [get_pins -of_objects [get_cells *glb_tile_gen[$i]*] -filter {name =~ *_wst*}]]
+  set nets [get_nets -of_objects [get_pins -of_objects [get_cells *glb_tile_gen_$i*] -filter {name =~ *_wst*}]]
   query_objects $nets
   set_dont_touch $nets true
 }

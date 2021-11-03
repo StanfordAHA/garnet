@@ -61,10 +61,10 @@ def main():
         convert_to_header(rdl_json, os.path.join(
             addrmap_output_folder, top_name))
 
-    # if args.verilog:
-    #     glb = GlobalBuffer(_params=params)
-    #     k.verilog(glb, filename=os.path.join(
-    #         garnet_home, "global_buffer", "global_buffer.sv"))
+    if args.verilog:
+        glb = GlobalBuffer(_params=params)
+        k.verilog(glb, filename=os.path.join(
+            garnet_home, "global_buffer", "global_buffer.sv"))
 
 
 if __name__ == "__main__":
