@@ -29,6 +29,8 @@ def main():
                                       num_cgra_cols=args.num_cgra_cols,
                                       glb_tile_mem_size=args.glb_tile_mem_size)
 
+    glb = GlobalBuffer(_params=params)
+
     if args.parameter:
         svh_filename = os.path.join(
             garnet_home, "global_buffer/header/global_buffer_param.svh")
@@ -62,7 +64,6 @@ def main():
             addrmap_output_folder, top_name))
 
     if args.verilog:
-        glb = GlobalBuffer(_params=params)
         k.verilog(glb, filename=os.path.join(
             garnet_home, "global_buffer", "global_buffer.sv"))
 
