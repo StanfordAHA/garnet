@@ -464,7 +464,7 @@ class GlobalBuffer(Generator):
 
     def add_glb_tile(self):
         for i in range(self._params.num_glb_tiles):
-            self.add_child(f"glb_tile_{i}",
+            self.add_child(f"glb_tile_gen_{i}",
                            self.glb_tile[i],
                            clk=self.clk,
                            clk_en=clock_en(~self.stall_d[i]),
