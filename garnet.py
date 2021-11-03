@@ -5,18 +5,18 @@ from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator, set_debug_mode
 from global_buffer.io_placement import place_io_blk
-from global_buffer.global_buffer_magma import GlobalBuffer
+from global_buffer.design.global_buffer import GlobalBufferMagma
 from global_controller.global_controller_magma import GlobalController
+from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, has_rom, get_total_cycle_from_app
 from cgra import glb_glc_wiring, glb_interconnect_wiring, \
-        glc_interconnect_wiring, create_cgra, compress_config_data
+    glc_interconnect_wiring, create_cgra, compress_config_data
 import json
 from passes.collateral_pass.config_register import get_interconnect_regs, \
     get_core_registers
 from passes.interconnect_port_pass import stall_port_pass, config_port_pass
-import math
 import os
 import archipelago
 import archipelago.power
@@ -70,6 +70,7 @@ class Garnet(Generator):
             # width must be even number
             assert (self.width % 2) == 0
             num_glb_tiles = self.width // 2
+            self.num_glb_tiles = num_glb_tiles
 
             bank_data_width = 64
             banks_per_tile = 2
@@ -93,14 +94,17 @@ class Garnet(Generator):
                                                       glb_tile_mem_size=glb_tile_mem_size,
                                                       block_axi_addr_width=glb_axi_addr_width)
 
-            self.global_buffer = GlobalBuffer(num_glb_tiles=num_glb_tiles,
-                                              num_cgra_cols=width,
-                                              glb_tile_mem_size=glb_tile_mem_size,
-                                              bank_data_width=bank_data_width,
-                                              cfg_addr_width=config_addr_width,
-                                              cfg_data_width=config_data_width,
-                                              axi_addr_width=glb_axi_addr_width,
-                                              axi_data_width=axi_data_width)
+            glb_params = gen_global_buffer_params(num_glb_tiles=num_glb_tiles,
+                                                  num_cgra_cols=width,
+                                                  glb_tile_mem_size=glb_tile_mem_size,
+                                                  bank_data_width=bank_data_width,
+                                                  cfg_addr_width=config_addr_width,
+                                                  cfg_data_width=config_addr_width,
+                                                  axi_addr_width=glb_axi_addr_width,
+                                                  axi_data_width=axi_data_width)
+
+            self.global_buffer = GlobalBufferMagma(glb_params)
+
         else:
             wiring = GlobalSignalWiring.Meso
 
@@ -130,7 +134,8 @@ class Garnet(Generator):
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
-                proc_packet=ProcPacketIfc(glb_addr_width, bank_data_width).slave,
+                proc_packet=ProcPacketIfc(
+                    glb_addr_width, bank_data_width).slave,
                 axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
                 interrupt=magma.Out(magma.Bit),
                 cgra_running_clk_out=magma.Out(magma.Clock),
@@ -150,7 +155,14 @@ class Garnet(Generator):
 
             # top <-> global buffer ports connection
             self.wire(self.ports.clk_in, self.global_buffer.ports.clk)
-            self.wire(self.ports.proc_packet, self.global_buffer.ports.proc_packet)
+            self.wire(self.ports.proc_packet.wr_en, self.global_buffer.ports.proc_wr_en[0])
+            self.wire(self.ports.proc_packet.wr_strb, self.global_buffer.ports.proc_wr_strb)
+            self.wire(self.ports.proc_packet.wr_addr, self.global_buffer.ports.proc_wr_addr)
+            self.wire(self.ports.proc_packet.wr_data, self.global_buffer.ports.proc_wr_data)
+            self.wire(self.ports.proc_packet.rd_en, self.global_buffer.ports.proc_rd_en[0])
+            self.wire(self.ports.proc_packet.rd_addr, self.global_buffer.ports.proc_rd_addr)
+            self.wire(self.ports.proc_packet.rd_data, self.global_buffer.ports.proc_rd_data)
+            self.wire(self.ports.proc_packet.rd_data_valid, self.global_buffer.ports.proc_rd_data_valid[0])
 
             # Top -> Interconnect clock port connection
             self.wire(self.ports.clk_in, self.interconnect.ports.clk)
@@ -170,7 +182,8 @@ class Garnet(Generator):
                 config=magma.In(magma.Array[width,
                                 ConfigurationType(config_data_width,
                                                   config_data_width)]),
-                stall=magma.In(magma.Bits[self.width * self.interconnect.stall_signal_width]),
+                stall=magma.In(
+                    magma.Bits[self.width * self.interconnect.stall_signal_width]),
                 read_config_data=magma.Out(magma.Bits[config_data_width])
             )
 
@@ -246,7 +259,7 @@ class Garnet(Generator):
             if "valid" in blk_name:
                 valid_port_name = name
         return input_interface, output_interface,\
-               (reset_port_name, valid_port_name, en_port_name)
+            (reset_port_name, valid_port_name, en_port_name)
 
     def compile(self, halide_src, unconstrained_io=False, compact=False):
         id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
@@ -278,7 +291,8 @@ class Garnet(Generator):
                                                        id_to_name)
         delay = 1 if has_rom(id_to_name) else 0
         # also write out the meta file
-        archipelago.io.dump_meta_file(halide_src, "design", os.path.dirname(halide_src))
+        archipelago.io.dump_meta_file(
+            halide_src, "design", os.path.dirname(halide_src))
         return bitstream, (input_interface, output_interface, reset, valid, en,
                            delay)
 
@@ -293,7 +307,8 @@ class Garnet(Generator):
             bitstream += self.get_placement_bitstream(placement, p_id_to_name,
                                                       instance_to_instr)
             skip_addr = self.interconnect.get_skip_addr()
-            bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
+            bitstream = compress_config_data(
+                bitstream, skip_compression=skip_addr)
             result[c_id] = bitstream
         return result
 
@@ -377,15 +392,16 @@ def main():
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_CW"},
-                      passes = ["rungenerators", "inline_single_instances", "clock_gate"],
+                      passes=["rungenerators",
+                              "inline_single_instances", "clock_gate"],
                       disable_ndarray=True,
                       inline=False)
         garnet.create_stub()
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
         # do PnR and produce bitstream
-        bitstream, (inputs, outputs, reset, valid, \
-            en, delay) = garnet.compile(args.app, args.unconstrained_io, compact=args.compact)
+        bitstream, (inputs, outputs, reset, valid,
+                    en, delay) = garnet.compile(args.app, args.unconstrained_io, compact=args.compact)
         # write out the config file
         if len(inputs) > 1:
             if reset in inputs:
@@ -427,4 +443,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

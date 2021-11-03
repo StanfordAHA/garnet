@@ -1,8 +1,10 @@
 from kratos import Generator, always_ff, posedge, always_comb, clock_en, clog2, const, concat
+from kratos.util import to_magma
 from global_buffer.design.glb_tile import GlbTile
 from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
+from gemstone.generator.from_magma import FromMagma
 
 
 class GlobalBuffer(Generator):
@@ -77,22 +79,22 @@ class GlobalBuffer(Generator):
             "cgra_cfg_jtag_gc2glb_data", self._params.cgra_cfg_data_width)
 
         self.stream_data_f2g = self.input(
-            "stream_data_f2g", self._params.cgra_per_glb * self._params.cgra_data_width, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_f2g", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.stream_data_valid_f2g = self.input(
-            "stream_data_valid_f2g", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_valid_f2g", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.stream_data_g2f = self.output(
-            "stream_data_g2f", self._params.cgra_per_glb * self._params.cgra_data_width, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_g2f", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.stream_data_valid_g2f = self.output(
-            "stream_data_valid_g2f", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_valid_g2f", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
         self.cgra_cfg_g2f_cfg_wr_en = self.output(
-            "cgra_cfg_g2f_cfg_wr_en", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_wr_en", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.cgra_cfg_g2f_cfg_rd_en = self.output(
-            "cgra_cfg_g2f_cfg_rd_en", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_rd_en", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.cgra_cfg_g2f_cfg_addr = self.output(
-            "cgra_cfg_g2f_cfg_addr", self._params.cgra_per_glb * self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_addr", self._params.cgra_cfg_addr_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.cgra_cfg_g2f_cfg_data = self.output(
-            "cgra_cfg_g2f_cfg_data", self._params.cgra_per_glb * self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_data", self._params.cgra_cfg_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
         self.strm_start_pulse = self.input(
             "strm_start_pulse", self._params.num_glb_tiles)
@@ -245,51 +247,51 @@ class GlobalBuffer(Generator):
                   self.pcfg_g2f_interrupt_pulse)
 
         self.cgra_cfg_g2f_cfg_wr_en_w = self.var(
-            "cgra_cfg_g2f_cfg_wr_en_w", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_wr_en_w", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.cgra_cfg_g2f_cfg_wr_en_d = self.var(
-            "cgra_cfg_g2f_cfg_wr_en_d", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_wr_en_d", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.cgra_cfg_g2f_cfg_wr_en_d, self.cgra_cfg_g2f_cfg_wr_en)
 
         self.cgra_cfg_g2f_cfg_rd_en_w = self.var(
-            "cgra_cfg_g2f_cfg_rd_en_w", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_rd_en_w", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.cgra_cfg_g2f_cfg_rd_en_d = self.var(
-            "cgra_cfg_g2f_cfg_rd_en_d", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_rd_en_d", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.cgra_cfg_g2f_cfg_rd_en_d, self.cgra_cfg_g2f_cfg_rd_en)
 
         self.cgra_cfg_g2f_cfg_addr_w = self.var(
-            "cgra_cfg_g2f_cfg_addr_w", self._params.cgra_per_glb * self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_addr_w", self._params.cgra_cfg_addr_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.cgra_cfg_g2f_cfg_addr_d = self.var(
-            "cgra_cfg_g2f_cfg_addr_d", self._params.cgra_per_glb * self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_addr_d", self._params.cgra_cfg_addr_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.cgra_cfg_g2f_cfg_addr_d, self.cgra_cfg_g2f_cfg_addr)
 
         self.cgra_cfg_g2f_cfg_data_w = self.var(
-            "cgra_cfg_g2f_cfg_data_w", self._params.cgra_per_glb * self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_data_w", self._params.cgra_cfg_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.cgra_cfg_g2f_cfg_data_d = self.var(
-            "cgra_cfg_g2f_cfg_data_d", self._params.cgra_per_glb * self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+            "cgra_cfg_g2f_cfg_data_d", self._params.cgra_cfg_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.cgra_cfg_g2f_cfg_data_d, self.cgra_cfg_g2f_cfg_data)
 
         self.stream_data_f2g_w = self.var(
-            "stream_data_f2g_w", self._params.cgra_per_glb * self._params.cgra_data_width, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_f2g_w", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.stream_data_f2g_d = self.var(
-            "stream_data_f2g_d", self._params.cgra_per_glb * self._params.cgra_data_width, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_f2g_d", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.stream_data_f2g, self.stream_data_f2g_w)
 
         self.stream_data_valid_f2g_w = self.var(
-            "stream_data_valid_f2g_w", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_valid_f2g_w", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.stream_data_valid_f2g_d = self.var(
-            "stream_data_valid_f2g_d", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_valid_f2g_d", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.stream_data_valid_f2g, self.stream_data_valid_f2g_w)
 
         self.stream_data_g2f_w = self.var(
-            "stream_data_g2f_w", self._params.cgra_per_glb * self._params.cgra_data_width, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_g2f_w", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.stream_data_g2f_d = self.var(
-            "stream_data_g2f_d", self._params.cgra_per_glb * self._params.cgra_data_width, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_g2f_d", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.stream_data_g2f_d, self.stream_data_g2f)
 
         self.stream_data_valid_g2f_w = self.var(
-            "stream_data_valid_g2f_w", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_valid_g2f_w", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.stream_data_valid_g2f_d = self.var(
-            "stream_data_valid_g2f_d", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "stream_data_valid_g2f_d", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.stream_data_valid_g2f_d, self.stream_data_valid_g2f)
 
         # interface
@@ -722,3 +724,10 @@ class GlobalBuffer(Generator):
                 self.cgra_cfg_g2f_cfg_rd_en_d[i] = self.cgra_cfg_g2f_cfg_rd_en_w[i]
                 self.cgra_cfg_g2f_cfg_addr_d[i] = self.cgra_cfg_g2f_cfg_addr_w[i]
                 self.cgra_cfg_g2f_cfg_data_d[i] = self.cgra_cfg_g2f_cfg_data_w[i]
+
+
+def GlobalBufferMagma(params: GlobalBufferParams):
+    dut = GlobalBuffer(params)
+    circ = to_magma(dut)
+
+    return FromMagma(circ)

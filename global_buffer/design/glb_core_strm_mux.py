@@ -16,18 +16,18 @@ class GlbCoreStrmMux(Generator):
         self.data_valid_g2f_dma = self.input(
             "data_valid_g2f_dma", width=1)
         self.data_g2f = self.output(
-            "data_g2f", width=self._params.cgra_data_width, size=self._params.cgra_per_glb)
+            "data_g2f", width=self._params.cgra_data_width, size=self._params.cgra_per_glb, packed=True)
         self.data_valid_g2f = self.output(
-            "data_valid_g2f", self._params.cgra_per_glb)
+            "data_valid_g2f", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.data_f2g_dma = self.output(
             "data_f2g_dma", width=self._params.cgra_data_width)
         self.data_valid_f2g_dma = self.output(
             "data_valid_f2g_dma", width=1)
         self.data_f2g = self.input(
-            "data_f2g", width=self._params.cgra_data_width, size=self._params.cgra_per_glb)
+            "data_f2g", width=self._params.cgra_data_width, size=self._params.cgra_per_glb, packed=True)
         self.data_valid_f2g = self.input(
-            "data_valid_f2g", self._params.cgra_per_glb)
+            "data_valid_f2g", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.cfg_data_network_g2f_mux = self.input(
             "cfg_data_network_g2f_mux", self._params.cgra_per_glb)
@@ -36,9 +36,9 @@ class GlbCoreStrmMux(Generator):
 
         # local variables
         self.data_g2f_int = self.var(
-            "data_g2f_int", width=self._params.cgra_data_width, size=self._params.cgra_per_glb)
+            "data_g2f_int", width=self._params.cgra_data_width, size=self._params.cgra_per_glb, packed=True)
         self.data_valid_g2f_int = self.var(
-            "data_valid_g2f_int", self._params.cgra_per_glb)
+            "data_valid_g2f_int", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.add_always(self.pipeline)
         self.add_always(self.data_g2f_logic)
