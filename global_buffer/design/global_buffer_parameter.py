@@ -77,6 +77,7 @@ def gen_global_buffer_params(**kwargs):
     bank_data_width = kwargs.pop('bank_data_width', 64)
     sram_macro_depth = kwargs.pop('sram_macro_depth', 2048)
     axi_addr_width = kwargs.pop('axi_addr_width', 12)
+    # TODO: axi_addr_reg_width should be automatically calculated based on configuration space
     axi_addr_reg_width = kwargs.pop('axi_addr_reg_width', 6)
     axi_data_width = kwargs.pop('axi_data_width', 32)
     cfg_addr_width = kwargs.pop('cfg_addr_width', 32)

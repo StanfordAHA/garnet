@@ -60,7 +60,7 @@ class GlbTileCfg(Generator):
             "cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
 
         # TODO: For now, we parse generated glb_pio.sv file. Later this should be auto generated from RDL
-        self.glb_pio_wrapper = GlbPioWrapper()
+        self.glb_pio_wrapper = GlbPioWrapper(self._params)
         self.add_child("glb_pio", self.glb_pio_wrapper)
         self.glb_tile_cfg_ctrl = GlbTileCfgCtrl(self._params)
         self.add_child("glb_tile_cfg_ctrl", self.glb_tile_cfg_ctrl)
