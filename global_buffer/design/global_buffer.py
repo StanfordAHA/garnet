@@ -20,7 +20,7 @@ class GlobalBuffer(Generator):
         self.cgra_stall_in = self.input(
             "cgra_stall_in", self._params.num_glb_tiles)
         self.cgra_stall = self.output(
-            "cgra_stall", self._params.cgra_per_glb, size=self._params.num_glb_tiles, packed=True)
+            "cgra_stall", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
         self.proc_wr_en = self.input(
             "proc_wr_en", 1)
@@ -728,6 +728,6 @@ class GlobalBuffer(Generator):
 
 def GlobalBufferMagma(params: GlobalBufferParams):
     dut = GlobalBuffer(params)
-    circ = to_magma(dut)
+    circ = to_magma(dut, flatten_array=True)
 
     return FromMagma(circ)

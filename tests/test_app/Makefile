@@ -7,7 +7,6 @@ mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
 garnet_dir := $(mkfile_dir)/../..
 netlist_dir := $(mkfile_dir)/netlist
-glb_dir := $(garnet_dir)/global_buffer
 glc_dir := $(garnet_dir)/global_controller
 APP_ARGS ?= +APP0=app0
 
@@ -20,8 +19,8 @@ AXI_DATA_WIDTH ?= 32
 GLB_TILE_MEM_SIZE ?= 256
 CLK_PERIOD ?= 1ns
 TOP_NAME ?= top
-RTL_FILES ?= -v $(garnet_dir)/garnet.v -v $(glb_dir)/rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
-			 -F $(glb_dir)/rtl/global_buffer.filelist -F $(glc_dir)/global_controller.filelist
+RTL_FILES ?= -v $(garnet_dir)/garnet.v -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
+			 -F $(glc_dir)/global_controller.filelist
 COMPILE_ARGS ?= -elaborate
 
 # -------------------------------------------------------------------
@@ -76,9 +75,7 @@ libcgra.so: map.c map.h gen.c gen.h parser.c parser.h common/tiny-json.c common/
 # -------------------------------------------------------------------
 # RTL
 # -------------------------------------------------------------------
-.PHONY: glb-rtl glc-rtl
-glb-rtl: 
-	$(MAKE) -C $(glb_dir) rtl CGRA_WIDTH=$(CGRA_WIDTH)
+.PHONY: glc-rtl
 glc-rtl:
 	$(MAKE) -C $(glc_dir) rtl CGRA_WIDTH=$(CGRA_WIDTH)
 
