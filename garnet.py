@@ -155,14 +155,22 @@ class Garnet(Generator):
 
             # top <-> global buffer ports connection
             self.wire(self.ports.clk_in, self.global_buffer.ports.clk)
-            self.wire(self.ports.proc_packet.wr_en, self.global_buffer.ports.proc_wr_en[0])
-            self.wire(self.ports.proc_packet.wr_strb, self.global_buffer.ports.proc_wr_strb)
-            self.wire(self.ports.proc_packet.wr_addr, self.global_buffer.ports.proc_wr_addr)
-            self.wire(self.ports.proc_packet.wr_data, self.global_buffer.ports.proc_wr_data)
-            self.wire(self.ports.proc_packet.rd_en, self.global_buffer.ports.proc_rd_en[0])
-            self.wire(self.ports.proc_packet.rd_addr, self.global_buffer.ports.proc_rd_addr)
-            self.wire(self.ports.proc_packet.rd_data, self.global_buffer.ports.proc_rd_data)
-            self.wire(self.ports.proc_packet.rd_data_valid, self.global_buffer.ports.proc_rd_data_valid[0])
+            self.wire(self.ports.proc_packet.wr_en,
+                      self.global_buffer.ports.proc_wr_en[0])
+            self.wire(self.ports.proc_packet.wr_strb,
+                      self.global_buffer.ports.proc_wr_strb)
+            self.wire(self.ports.proc_packet.wr_addr,
+                      self.global_buffer.ports.proc_wr_addr)
+            self.wire(self.ports.proc_packet.wr_data,
+                      self.global_buffer.ports.proc_wr_data)
+            self.wire(self.ports.proc_packet.rd_en,
+                      self.global_buffer.ports.proc_rd_en[0])
+            self.wire(self.ports.proc_packet.rd_addr,
+                      self.global_buffer.ports.proc_rd_addr)
+            self.wire(self.ports.proc_packet.rd_data,
+                      self.global_buffer.ports.proc_rd_data)
+            self.wire(self.ports.proc_packet.rd_data_valid,
+                      self.global_buffer.ports.proc_rd_data_valid[0])
 
             # Top -> Interconnect clock port connection
             self.wire(self.ports.clk_in, self.interconnect.ports.clk)

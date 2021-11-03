@@ -73,19 +73,23 @@ def glb_interconnect_wiring(garnet):
     # parallel configuration ports wiring
     for i in range(num_glb_tiles):
         for j in range(col_per_glb):
-            garnet.wire(garnet.global_buffer.ports.cgra_cfg_g2f_cfg_data[i][j],
+            cfg_data_port_name = f"cgra_cfg_g2f_cfg_data_{i}_{j}"
+            cfg_addr_port_name = f"cgra_cfg_g2f_cfg_addr_{i}_{j}"
+            cfg_rd_en_port_name = f"cgra_cfg_g2f_cfg_rd_en_{i}_{j}"
+            cfg_wr_en_port_name = f"cgra_cfg_g2f_cfg_wr_en_{i}_{j}"
+            garnet.wire(garnet.global_buffer.ports[cfg_data_port_name],
                         garnet.interconnect.ports.config[i*col_per_glb+j].config_data)
-            garnet.wire(garnet.global_buffer.ports.cgra_cfg_g2f_cfg_addr[i][j],
+            garnet.wire(garnet.global_buffer.ports[cfg_addr_port_name],
                         garnet.interconnect.ports.config[i*col_per_glb+j].config_addr)
-            garnet.wire(garnet.global_buffer.ports.cgra_cfg_g2f_cfg_rd_en[i][j],
+            garnet.wire(garnet.global_buffer.ports[cfg_rd_en_port_name],
                         garnet.interconnect.ports.config[i*col_per_glb+j].read)
-            garnet.wire(garnet.global_buffer.ports.cgra_cfg_g2f_cfg_wr_en[i][j],
+            garnet.wire(garnet.global_buffer.ports[cfg_wr_en_port_name],
                         garnet.interconnect.ports.config[i*col_per_glb+j].write)
 
     # stall signal wiring
     for i in range(num_glb_tiles):
         for j in range(col_per_glb):
-            garnet.wire(garnet.global_buffer.ports.cgra_stall[i][j],
+            garnet.wire(garnet.global_buffer.ports[f"cgra_stall_{i}_{j}"][0],
                         garnet.interconnect.ports.stall[i*col_per_glb+j])
 
     # input/output stream ports wiring
@@ -96,13 +100,13 @@ def glb_interconnect_wiring(garnet):
             io2glb_1_port = f"io2glb_1_X{x:02X}_Y{0:02X}"
             glb2io_16_port = f"glb2io_16_X{x:02X}_Y{0:02X}"
             glb2io_1_port = f"glb2io_1_X{x:02X}_Y{0:02X}"
-            garnet.wire(garnet.global_buffer.ports.stream_data_f2g[i][j],
+            garnet.wire(garnet.global_buffer.ports[f"stream_data_f2g_{i}_{j}"],
                         garnet.interconnect.ports[io2glb_16_port])
-            garnet.wire(garnet.global_buffer.ports.stream_data_valid_f2g[i][j],
+            garnet.wire(garnet.global_buffer.ports[f"stream_data_valid_f2g_{i}_{j}"],
                         garnet.interconnect.ports[io2glb_1_port])
-            garnet.wire(garnet.global_buffer.ports.stream_data_g2f[i][j],
+            garnet.wire(garnet.global_buffer.ports[f"stream_data_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_16_port])
-            garnet.wire(garnet.global_buffer.ports.stream_data_valid_g2f[i][j],
+            garnet.wire(garnet.global_buffer.ports[f"stream_data_valid_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_1_port])
 
     return garnet
