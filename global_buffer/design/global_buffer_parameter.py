@@ -154,6 +154,7 @@ def gen_global_buffer_params(**kwargs):
                                 )
     return params
 
+
 def gen_svh_files(params, filename, header_name):
     mod_params = dataclasses.asdict(params)
     folder = filename.rsplit('/', 1)[0]
