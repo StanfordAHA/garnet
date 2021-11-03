@@ -24,7 +24,7 @@ class GlbTilePcfgSwitch(Generator):
         self.cgra_cfg_pcfg_esto = self.output(
             "cgra_cfg_pcfg_esto", self.header.cgra_cfg_t)
         self.cgra_cfg_g2f = self.output(
-            "cgra_cfg_g2f", self.header.cgra_cfg_t, size=self._params.cgra_per_glb)
+            "cgra_cfg_g2f", self.header.cgra_cfg_t, size=self._params.cgra_per_glb, packed=True)
 
         self.cgra_cfg_jtag_wsti_rd_en_bypass = self.input(
             "cgra_cfg_jtag_wsti_rd_en_bypass", 1)

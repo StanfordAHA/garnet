@@ -306,22 +306,22 @@ class GlbTile(Generator):
             "cgra_cfg_pcfg_esto_data", self._params.cgra_cfg_data_width)
 
         self.stream_data_f2g = self.input(
-            "stream_data_f2g", self._params.cgra_per_glb * self._params.cgra_data_width)
+            "stream_data_f2g", self._params.cgra_data_width, size=self._params.cgra_per_glb, packed=True)
         self.stream_data_valid_f2g = self.input(
-            "stream_data_valid_f2g", self._params.cgra_per_glb)
+            "stream_data_valid_f2g", 1, size=self._params.cgra_per_glb, packed=True)
         self.stream_data_g2f = self.output(
-            "stream_data_g2f", self._params.cgra_per_glb * self._params.cgra_data_width)
+            "stream_data_g2f", self._params.cgra_data_width, size=self._params.cgra_per_glb, packed=True)
         self.stream_data_valid_g2f = self.output(
-            "stream_data_valid_g2f", self._params.cgra_per_glb)
+            "stream_data_valid_g2f", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.cgra_cfg_g2f_cfg_wr_en = self.output(
-            "cgra_cfg_g2f_cfg_wr_en", self._params.cgra_per_glb)
+            "cgra_cfg_g2f_cfg_wr_en", 1, size=self._params.cgra_per_glb, packed=True)
         self.cgra_cfg_g2f_cfg_rd_en = self.output(
-            "cgra_cfg_g2f_cfg_rd_en", self._params.cgra_per_glb)
+            "cgra_cfg_g2f_cfg_rd_en", 1, size=self._params.cgra_per_glb, packed=True)
         self.cgra_cfg_g2f_cfg_addr = self.output(
-            "cgra_cfg_g2f_cfg_addr", self._params.cgra_per_glb * self._params.cgra_cfg_addr_width)
+            "cgra_cfg_g2f_cfg_addr", self._params.cgra_cfg_addr_width, size=self._params.cgra_per_glb, packed=True)
         self.cgra_cfg_g2f_cfg_data = self.output(
-            "cgra_cfg_g2f_cfg_data", self._params.cgra_per_glb * self._params.cgra_cfg_data_width)
+            "cgra_cfg_g2f_cfg_data", self._params.cgra_cfg_data_width, size=self._params.cgra_per_glb, packed=True)
 
         self.strm_start_pulse = self.input(
             "strm_start_pulse", 1)
@@ -601,11 +601,8 @@ class GlbTile(Generator):
                   self.stream_data_valid_f2g)
         self.wire(self.glb_core.strm_data_valid_g2f,
                   self.stream_data_valid_g2f)
-        for i in range(self._params.cgra_per_glb):
-            self.wire(self.glb_core.strm_data_f2g[i], self.stream_data_f2g[(
-                i+1)*self._params.cgra_data_width-1, i*self._params.cgra_data_width])
-            self.wire(self.glb_core.strm_data_g2f[i], self.stream_data_g2f[(
-                i+1)*self._params.cgra_data_width-1, i*self._params.cgra_data_width])
+        self.wire(self.glb_core.strm_data_f2g, self.stream_data_f2g)
+        self.wire(self.glb_core.strm_data_g2f, self.stream_data_g2f)
 
         self.wire(self.cfg_tile_connected_esto,
                   self.glb_tile_cfg.cfg_data_network['tile_connected'])
@@ -670,10 +667,8 @@ class GlbTile(Generator):
                       self.cgra_cfg_g2f_cfg_wr_en[i])
             self.wire(cgra_cfg_g2f_w[i]['rd_en'],
                       self.cgra_cfg_g2f_cfg_rd_en[i])
-            self.wire(cgra_cfg_g2f_w[i]['addr'], self.cgra_cfg_g2f_cfg_addr[(
-                i+1)*self._params.cgra_cfg_addr_width-1, i*self._params.cgra_cfg_addr_width])
-            self.wire(cgra_cfg_g2f_w[i]['data'], self.cgra_cfg_g2f_cfg_data[(
-                i+1)*self._params.cgra_cfg_data_width-1, i*self._params.cgra_cfg_data_width])
+            self.wire(cgra_cfg_g2f_w[i]['addr'], self.cgra_cfg_g2f_cfg_addr[i])
+            self.wire(cgra_cfg_g2f_w[i]['data'], self.cgra_cfg_g2f_cfg_data[i])
 
         self.wire(
             self.glb_tile_pcfg_switch.cgra_cfg_jtag_wsti['wr_en'], self.cgra_cfg_jtag_wsti_wr_en)

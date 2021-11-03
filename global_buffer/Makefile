@@ -2,7 +2,7 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir := $(abspath $(dir $(mkfile_path)))
 
-CGRA_WIDTH ?= 32
+CGRA_WIDTH ?= 4
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
 

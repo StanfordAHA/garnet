@@ -55,13 +55,13 @@ class GlbCore(Generator):
             "pcfg_packet_w2e_esto", self.header.rd_packet_t)
 
         self.strm_data_f2g = self.input(
-            "strm_data_f2g", width=self._params.cgra_data_width, size=self._params.cgra_per_glb)
+            "strm_data_f2g", self._params.cgra_data_width, size=self._params.cgra_per_glb, packed=True)
         self.strm_data_valid_f2g = self.input(
-            "strm_data_valid_f2g", self._params.cgra_per_glb)
+            "strm_data_valid_f2g", 1, size=self._params.cgra_per_glb, packed=True)
         self.strm_data_g2f = self.output(
-            "strm_data_g2f", width=self._params.cgra_data_width, size=self._params.cgra_per_glb)
+            "strm_data_g2f", self._params.cgra_data_width, size=self._params.cgra_per_glb, packed=True)
         self.strm_data_valid_g2f = self.output(
-            "strm_data_valid_g2f", self._params.cgra_per_glb)
+            "strm_data_valid_g2f", 1, size=self._params.cgra_per_glb, packed=True)
 
         # config port
         self.sram_cfg_ifc = GlbConfigInterface(

@@ -39,25 +39,7 @@ def main():
     if args.rdl:
         # Generate default RDL
         top_name = "glb"
-        glb_rdl = gen_global_buffer_rdl(name=top_name, params=params)
-
-        # Dump rdl file
         rdl_file = os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl")
-        glb_rdl.dump_rdl(rdl_file)
-
-        # Run ORDT to generate RTL
-        ordt_path = os.path.join(garnet_home, 'systemRDL', 'Ordt.jar')
-        rdl_parms_file = os.path.join(
-            garnet_home, "global_buffer/systemRDL/ordt_params/glb.parms")
-        rdl_output_folder = os.path.join(
-            garnet_home, "global_buffer/systemRDL/output/")
-        run_systemrdl(ordt_path, top_name, rdl_file,
-                      rdl_parms_file, rdl_output_folder)
-
-        # Create wrapper of glb_pio.sv
-        pio_file = rdl_output_folder + top_name + "_pio.sv"
-        pio_wrapper_file = rdl_output_folder + top_name + "_pio_wrapper.sv"
-        gen_glb_pio_wrapper(src_file=pio_file, dest_file=pio_wrapper_file)
 
         # Generate HTML and addressmap header
         addrmap_output_folder = os.path.join(
@@ -79,10 +61,10 @@ def main():
         convert_to_header(rdl_json, os.path.join(
             addrmap_output_folder, top_name))
 
-    if args.verilog:
-        glb = GlobalBuffer(_params=params)
-        k.verilog(glb, filename=os.path.join(
-            garnet_home, "global_buffer", "global_buffer.sv"))
+    # if args.verilog:
+    #     glb = GlobalBuffer(_params=params)
+    #     k.verilog(glb, filename=os.path.join(
+    #         garnet_home, "global_buffer", "global_buffer.sv"))
 
 
 if __name__ == "__main__":
