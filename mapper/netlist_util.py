@@ -470,6 +470,28 @@ class RemoveInputsOutputs(Visitor):
                 self.node_map[node] = new_node
 
 
+class CountTiles(Visitor):
+    def __init__(self):
+        pass
+
+    def doit(self, dag: Dag):
+        self.num_pes = 0
+        self.num_mems = 0
+        self.num_ios = 0
+        self.run(dag)
+        print(f"PEs: {self.num_pes}")
+        print(f"MEMs: {self.num_mems}")
+        print(f"IOs: {self.num_ios}")
+
+
+    def generic_visit(self, node: DagNode):
+        Visitor.generic_visit(self, node)
+        if node.node_name == "global.IO" or node.node_name == "global.BitIO":
+            self.num_ios += 1
+        elif node.node_name == "global.PE":
+            self.num_pes += 1
+        elif node.node_name == "global.MEM":
+            self.num_mems += 1
 
 
 from lassen.sim import PE_fc as lassen_fc
@@ -485,8 +507,8 @@ def create_netlist_info(dag: Dag, tile_info: dict, load_only = False, id_to_name
     fdag = RemoveInputsOutputs().doit(dag)
 
 
-    print_dag(fdag)
-    gen_dag_img(fdag, "dag_no_io", None)
+    #print_dag(fdag)
+    #gen_dag_img(fdag, "dag_no_io", None)
 
     def tile_to_char(t):
         if t.split(".")[1]=="PE":
@@ -525,6 +547,8 @@ def create_netlist_info(dag: Dag, tile_info: dict, load_only = False, id_to_name
     info["netlist"] = {}
     for bid, ports in netlist.items():
         info["netlist"][bid] = [(nodes_to_ids[node], field) for node, field in ports]
+
+    CountTiles().doit(fdag)    
 
     return info
 
