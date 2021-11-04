@@ -479,6 +479,7 @@ endfunction
 
 function int Kernel::compare_(int idx);
     int result = 0;
+    int max_mismatch = 20;
     assert (gold_data[idx].size() == output_data[idx].size())
     else begin
         $display("[%s]-Output[%0d], gold data size is %0d, output data size is %0d", name, idx, gold_data[idx].size(), output_data[idx].size());
@@ -486,7 +487,12 @@ function int Kernel::compare_(int idx);
     end
     for (int i = 0; i < gold_data[idx].size(); i++) begin
         if (gold_data[idx][i] != output_data[idx][i]) begin
-            $display("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]);
+            if (result < max_mismatch) begin
+                $display("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]);
+            end
+            else if (result == max_mismatch) begin
+                $display("The number of pixels mismatch is over %0d, so it will not print further.", max_mismatch);
+            end
             result += 1;
         end
     end
