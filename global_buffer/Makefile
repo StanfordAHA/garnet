@@ -36,7 +36,7 @@ XRUN = xrun \
 	   $(DESIGNARGS)
 
 VCS = vcs \
-	  -debug_acc+all \
+	  -debug_acc+r+line \
 	  -sverilog \
 	  -timescale=100ps/1ps \
 	  -full64 \
@@ -44,7 +44,7 @@ VCS = vcs \
 	  -CFLAGS "-m64" \
 	  -top top \
 	  -kdb \
-	  +lint=TFIPC-L \
+	  +lint=all \
 	  +vcs+lic+wait \
 	  +vcs+initreg+random \
 	  +overlap \

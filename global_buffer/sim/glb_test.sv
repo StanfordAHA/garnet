@@ -103,6 +103,13 @@ program glb_test (
                 glb_cfg_read(((i << 8) | `GLB_DATA_NETWORK_R), cfg_data_out);
                 err += compare_cfg(cfg_data, cfg_data_out);
             end
+            for(int i=0; i < NUM_GLB_TILES; i++) begin
+                // TODO: Read from glb.pair test
+                cfg_data = {`GLB_DATA_NETWORK_R_MSB{1'b0}};
+                glb_cfg_write(((i << 8) | `GLB_DATA_NETWORK_R), cfg_data);
+                glb_cfg_read(((i << 8) | `GLB_DATA_NETWORK_R), cfg_data_out);
+                err += compare_cfg(cfg_data, cfg_data_out);
+            end
             if (err > 0) begin
                 $error("glb configuration read/write fail");
             end else begin
