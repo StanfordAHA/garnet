@@ -2,11 +2,15 @@ from kratos import Generator
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.glb_tile_cfg_ctrl import GlbTileCfgCtrl
-from global_buffer.design.glb_pio_wrapper import GlbPioWrapper
+from global_buffer.gen_global_buffer_rdl import gen_global_buffer_rdl, run_systemrdl, gen_glb_pio_wrapper
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
+import pathlib
+import os
 
 
 class GlbTileCfg(Generator):
+    cache = None
+
     def __init__(self, _params: GlobalBufferParams):
         super().__init__("glb_tile_cfg")
         self._params = _params
@@ -60,13 +64,43 @@ class GlbTileCfg(Generator):
             "cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
 
         # TODO: For now, we parse generated glb_pio.sv file. Later this should be auto generated from RDL
-        self.glb_pio_wrapper = GlbPioWrapper(self._params)
+        self.glb_pio_wrapper = self.get_glb_pio_wrapper()
         self.add_child("glb_pio", self.glb_pio_wrapper)
         self.glb_tile_cfg_ctrl = GlbTileCfgCtrl(self._params)
         self.add_child("glb_tile_cfg_ctrl", self.glb_tile_cfg_ctrl)
 
         self.wire_config_signals()
         self.wire_ctrl_signals()
+
+    def get_glb_pio_wrapper(self):
+        # TODO: For now, we run systemRDL to generate SV and parse it.
+        # However, in the future, we need to generate wrapper directly from configuration space.
+        top_name = "glb"
+        garnet_home = pathlib.Path(__file__).parent.parent.parent.resolve()
+        rdl_output_folder = os.path.join(
+            garnet_home, "global_buffer/systemRDL/output/")
+        pio_file = rdl_output_folder + top_name + "_pio.sv"
+        pio_wrapper_file = rdl_output_folder + top_name + "_pio_wrapper.sv"
+
+        if not self.__class__.cache:
+            self.__class__.cache = self._params
+            glb_rdl = gen_global_buffer_rdl(name=top_name, params=self._params)
+
+            # Dump rdl file
+            rdl_file = os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl")
+            glb_rdl.dump_rdl(rdl_file)
+
+            # Run ORDT to generate RTL
+            ordt_path = os.path.join(garnet_home, 'systemRDL', 'Ordt.jar')
+            rdl_parms_file = os.path.join(
+                garnet_home, "global_buffer/systemRDL/ordt_params/glb.parms")
+            run_systemrdl(ordt_path, top_name, rdl_file,
+                          rdl_parms_file, rdl_output_folder)
+
+            # Create wrapper of glb_pio.sv
+            gen_glb_pio_wrapper(src_file=pio_file, dest_file=pio_wrapper_file)
+
+        return self.from_verilog("glb_pio", pio_wrapper_file, [], {})
 
     def wire_config_signals(self):
         self.wire(self.clk, self.glb_pio_wrapper.ports["clk"])
