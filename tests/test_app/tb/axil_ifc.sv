@@ -105,4 +105,3 @@ endinterface
 
 typedef virtual axil_ifc vAxilIfc;
 typedef virtual axil_ifc.driver vAxilIfcDriver;
-typedef virtual axil_ifc.monitor vAxilIfcMonitor;

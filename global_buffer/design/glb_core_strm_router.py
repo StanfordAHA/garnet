@@ -75,7 +75,7 @@ class GlbCoreStrmRouter(Generator):
             self.packet_e2w_esti_turned = self.packet_e2w_esti_d1
         else:
             self.packet_e2w_esti_turned = self.packet_w2e_esto
-    
+
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def packet_sw2sr_pipeline(self):
         if self.reset:

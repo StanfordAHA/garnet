@@ -10,7 +10,8 @@ import "DPI-C" function int initialize_monitor(int num_cols);
 program garnet_test #(
     parameter int MAX_NUM_APPS = 3
 ) (
-    input logic clk, reset,
+    input logic clk,
+    reset,
     proc_ifc p_ifc,
     axil_ifc axil_ifc
 );
@@ -38,8 +39,8 @@ program garnet_test #(
         int result;
         string app_dirs[$], temp_str;
 
-        num_cols = CGRA_WIDTH;
-        result = initialize_monitor(num_cols);
+        num_cols = NUM_CGRA_TILES;
+        result   = initialize_monitor(num_cols);
 
         if (result == 1) begin
             $display("Monitor initialization success");
@@ -53,8 +54,7 @@ program garnet_test #(
             if ($value$plusargs(arg_name, temp_str)) begin
                 // we have it
                 app_dirs.push_back(temp_str);
-            end
-            else begin
+            end else begin
                 num_app = i;
                 break;
             end
@@ -67,7 +67,7 @@ program garnet_test #(
     endfunction
 
     function void map(Kernel kernels[]);
-        foreach(kernels[i]) begin
+        foreach (kernels[i]) begin
             $display("Start mapping kernel %0d", i);
             if (kernels[i].kernel_map() == 0) begin
                 $display("Mapping kernel %0d Failed", i);

@@ -12,7 +12,7 @@
 
 `include "garnet_regmap.svh"
 
-import garnet_param::*;
+import global_buffer_param::*;
 
 module top;
 timeunit 1ns;

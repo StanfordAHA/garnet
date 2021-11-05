@@ -1,4 +1,3 @@
-garnet_param.svh
 top.sv
 axil_ifc.sv
 proc_ifc.sv
