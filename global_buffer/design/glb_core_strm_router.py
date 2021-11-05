@@ -86,9 +86,13 @@ class GlbCoreStrmRouter(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def packet_pipeline(self):
         if self.reset:
+            self.packet_w2e_wsti_d1 = 0
+            self.packet_e2w_esti_d1 = 0
             self.packet_w2e_wsti_turned_d1 = 0
             self.packet_e2w_esti_turned_d1 = 0
         elif self.clk_en:
+            self.packet_w2e_wsti_d1 = self.packet_w2e_wsti
+            self.packet_e2w_esti_d1 = self.packet_e2w_esti
             self.packet_w2e_wsti_turned_d1 = self.packet_w2e_wsti_turned
             self.packet_e2w_esti_turned_d1 = self.packet_e2w_esti_turned
 
