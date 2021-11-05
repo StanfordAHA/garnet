@@ -100,7 +100,7 @@ def gen_global_buffer_params(**kwargs):
             return True
         elif n % 2 != 0 or n == 0:
             return False
-        return _power_of_two(n/2)
+        return _power_of_two(n / 2)
 
     assert _power_of_two(glb_tile_mem_size) is True
 
@@ -155,14 +155,14 @@ def gen_global_buffer_params(**kwargs):
     return params
 
 
-def gen_svh_files(params, filename, header_name):
+def gen_header_files(params, svh_filename, h_filename, header_name):
     mod_params = dataclasses.asdict(params)
-    folder = filename.rsplit('/', 1)[0]
+    folder = svh_filename.rsplit('/', 1)[0]
     # parameter pass to systemverilog package
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-    with open(filename, "w") as f:
+    with open(svh_filename, "w") as f:
         f.write(f"`ifndef {header_name.upper()}_PARAM\n")
         f.write(f"`define {header_name.upper()}_PARAM\n")
         f.write(f"package {header_name}_param;\n")
@@ -170,3 +170,8 @@ def gen_svh_files(params, filename, header_name):
             f.write(f"localparam int {k.upper()} = {v};\n")
         f.write(f"endpackage\n")
         f.write(f"`endif\n")
+
+    with open(h_filename, "w") as f:
+        f.write(f"#pragma once\n")
+        for k, v in mod_params.items():
+            f.write(f"#define {k.upper()} {v}\n")

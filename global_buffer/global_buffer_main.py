@@ -1,7 +1,6 @@
 import argparse
 from global_buffer.design.global_buffer import GlobalBuffer
-from global_buffer.design.global_buffer_parameter import gen_global_buffer_params, gen_svh_files
-from global_buffer.gen_global_buffer_rdl import gen_global_buffer_rdl, run_systemrdl, gen_glb_pio_wrapper
+from global_buffer.design.global_buffer_parameter import gen_global_buffer_params, gen_header_files
 from systemrdl import RDLCompiler, RDLCompileError
 from peakrdl.html import HTMLExporter
 from systemRDL.gen_config_addrmap import convert_addrmap, convert_to_json, convert_to_header
@@ -34,9 +33,12 @@ def main():
     if args.parameter:
         svh_filename = os.path.join(
             garnet_home, "global_buffer/header/global_buffer_param.svh")
-        gen_svh_files(params=params,
-                      filename=svh_filename,
-                      header_name="global_buffer")
+        h_filename = os.path.join(
+            garnet_home, "global_buffer/header/global_buffer_param.h")
+        gen_header_files(params=params,
+                         svh_filename=svh_filename,
+                         h_filename=h_filename,
+                         header_name="global_buffer")
 
     if args.rdl:
         # Generate default RDL

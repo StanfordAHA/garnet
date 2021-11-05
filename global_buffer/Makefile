@@ -36,7 +36,7 @@ XRUN = xrun \
 	   $(DESIGNARGS)
 
 VCS = vcs \
-	  -debug_acc+r+line \
+	  -debug_accss+designer \
 	  -sverilog \
 	  -timescale=100ps/1ps \
 	  -full64 \
@@ -49,8 +49,6 @@ VCS = vcs \
 	  +vcs+initreg+random \
 	  +overlap \
 	  +v2k \
-	  +memcbk \
-	  -cm_seqnoconst \
 	  -l vcs.log \
 	  $(VCSARGS) \
 	  $(DESIGNARGS)
@@ -72,7 +70,6 @@ rtl:
 # Compile & Run
 # -------------------------------------------------------------------
 .PHONY: compile
-compile: XRUNARGS+= -notimingchecks
 compile: VCSARGS+= +nospecify
 compile: DESIGNARGS += header/global_buffer_param.svh header/glb.svh -F sim/tb_global_buffer.f global_buffer.sv
 compile:

@@ -153,10 +153,10 @@ class GlbTileCfg(Generator):
             self.wire(self.cfg_ld_dma_header[0]['start_addr'],
                       self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_start_addr_start_addr_r"])
             for j in range(self._params.loop_level):
-                self.wire(
-                    self.cfg_ld_dma_header[0][f"stride_{j}"], self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_stride_{j}_stride_r"])
-                self.wire(
-                    self.cfg_ld_dma_header[0][f"range_{j}"], self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_range_{j}_range_r"])
+                self.wire(self.cfg_ld_dma_header[0][f"stride_{j}"],
+                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_stride_{j}_stride_r"])
+                self.wire(self.cfg_ld_dma_header[0][f"range_{j}"],
+                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_range_{j}_range_r"])
             self.wire(self.cfg_ld_dma_header[0]['num_active_words'],
                       self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_num_active_words_num_active_words_r"])
             self.wire(self.cfg_ld_dma_header[0]['num_inactive_words'],
@@ -170,10 +170,10 @@ class GlbTileCfg(Generator):
                 self.wire(self.cfg_ld_dma_header[i]['start_addr'],
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_start_addr_start_addr_r"])
                 for j in range(self._params.loop_level):
-                    self.wire(
-                        self.cfg_ld_dma_header[i][f"stride_{j}"], self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_stride_{j}_stride_r"])
-                    self.wire(
-                        self.cfg_ld_dma_header[i][f"range_{j}"], self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_range_{j}_range_r"])
+                    self.wire(self.cfg_ld_dma_header[i][f"stride_{j}"],
+                              self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_stride_{j}_stride_r"])
+                    self.wire(self.cfg_ld_dma_header[i][f"range_{j}"],
+                              self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_range_{j}_range_r"])
                 self.wire(self.cfg_ld_dma_header[i]['num_active_words'],
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_num_active_words_num_active_words_r"])
                 self.wire(self.cfg_ld_dma_header[i]['num_inactive_words'],

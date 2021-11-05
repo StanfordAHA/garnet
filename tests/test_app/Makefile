@@ -13,14 +13,8 @@ APP_ARGS ?= +APP0=app0
 # -------------------------------------------------------------------
 # Compile Parameters
 # -------------------------------------------------------------------
-CGRA_WIDTH ?= 32
-AXI_ADDR_WIDTH ?= 13
-AXI_DATA_WIDTH ?= 32
-GLB_TILE_MEM_SIZE ?= 256
 CLK_PERIOD ?= 1ns
 TOP_NAME ?= top
-RTL_FILES ?= -v $(garnet_dir)/garnet.v -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
-			 -F $(glc_dir)/global_controller.filelist
 COMPILE_ARGS ?= -elaborate
 
 # -------------------------------------------------------------------
@@ -45,6 +39,24 @@ RUN_ARGS ?=
 # -------------------------------------------------------------------
 # Command
 # -------------------------------------------------------------------
+VCS = vcs \
+	  -debug_accss+designer \
+	  -sverilog \
+	  -timescale=100ps/1ps \
+	  -full64 \
+	  -ldflags "-Wl,--no-as-needed" \
+	  -CFLAGS "-m64" \
+	  -top top \
+	  -kdb \
+	  +lint=TFIPC-L \
+	  +vcs+lic+wait \
+	  +vcs+initreg+random \
+	  +overlap \
+	  +v2k \
+	  -l vcs.log \
+	  $(VCSARGS) \
+	  $(DESIGNARGS)
+
 XRUN_COMPILE = xrun \
 	   		   -64bit \
 	   		   -sv \
@@ -60,42 +72,45 @@ XRUN_COMPILE = xrun \
 	   		   $(COMPILE_ARGS)
 
 # -------------------------------------------------------------------
-# Simulation
-# -------------------------------------------------------------------
-.PHONY: sim
-sim: libcgra.so compile run
-
-# -------------------------------------------------------------------
 # C API
 # -------------------------------------------------------------------
 .PHONY: libcgra.so
-libcgra.so: map.c map.h gen.c gen.h parser.c parser.h common/tiny-json.c common/tiny-json.h
-	gcc -Wno-error -Wall parser.c map.c gen.c common/tiny-json.c -shared -o libcgra.so -fPIC -DGLB_TILE_MEM_SIZE=$(GLB_TILE_MEM_SIZE)
+libcgra.so: $(shell find lib -type f) $(garnet_dir)/global_buffer/header/global_buffer_param.h
+	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -shared -o libcgra.so -fPIC
 
 # -------------------------------------------------------------------
-# RTL
+# Compile VCS (Default)
 # -------------------------------------------------------------------
-.PHONY: glc-rtl
-glc-rtl:
-	$(MAKE) -C $(glc_dir) rtl CGRA_WIDTH=$(CGRA_WIDTH)
+# compile testbench of garnet with VCS
+.PHONY: compile
+compile: VCSARGS += -top $(TOP_NAME)
+compile: VCSARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
+compile: VCSARGS += +nospecify
+compile: VCSARGS += +define+NON_STOP_IF_INPUT_PIN_Z
+compile: VCSARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
+				    -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
+					 +libext+.v+.sv 
+compile: DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garnet_dir)/global_buffer/header/glb.svh $(garnet_dir)/garnet.v -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
+			 	       -F $(glc_dir)/global_controller.filelist -F tb/tb_cgra.f
+compile: libcgra.so $(shell find tb -type f)
+	$(VCS)
 
 # -------------------------------------------------------------------
-# Compile
+# Compile Xcelium
 # -------------------------------------------------------------------
 # compile testbench of garnet with xcelium
 .PHONY: compile
-compile: XRUN_ARGS += -top $(TOP_NAME)
-compile: XRUN_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
-compile: XRUN_ARGS += +define+CGRA_WIDTH=$(CGRA_WIDTH) +define+AXI_ADDR_WIDTH=$(AXI_ADDR_WIDTH) +define+AXI_DATA_WIDTH=$(AXI_DATA_WIDTH) +define+GLB_TILE_MEM_SIZE=$(GLB_TILE_MEM_SIZE)
-compile: XRUN_ARGS += -notimingchecks
-compile: XRUN_ARGS += +define+NON_STOP_IF_INPUT_PIN_Z
-compile: XRUN_ARGS += +define+TSMC_CM_NO_WARNING
-compile: XRUN_ARGS += -F tb_garnet.filelist
-compile: XRUN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
+compile-xcel: XRUN_ARGS += -top $(TOP_NAME)
+compile-xcel: XRUN_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
+compile-xcel: XRUN_ARGS += -notimingchecks
+compile-xcel: XRUN_ARGS += +define+NON_STOP_IF_INPUT_PIN_Z
+compile-xcel: XRUN_ARGS += +define+TSMC_CM_NO_WARNING
+compile-xcel: XRUN_ARGS += -F tb_garnet.filelist
+compile-xcel: XRUN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
 				      -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
 					  +libext+.v+.sv 
-compile: XRUN_ARGS += $(RTL_FILES)
-compile: libcgra.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_driver.sv axil_driver.sv axil_ifc.sv proc_ifc.sv environment.sv
+compile-xcel: XRUN_ARGS += $(RTL_FILES)
+compile-xcel: libcgra.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_driver.sv axil_driver.sv axil_ifc.sv proc_ifc.sv environment.sv
 	$(XRUN_COMPILE)
 
 # -------------------------------------------------------------------
@@ -104,6 +119,12 @@ compile: libcgra.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_driver
 .PHONY: run
 run: 
 	xrun -R -sv_lib libcgra.so $(RUN_ARGS) $(APP_ARGS)
+
+# -------------------------------------------------------------------
+# Simulation
+# -------------------------------------------------------------------
+.PHONY: sim
+sim: libcgra.so compile run
 
 # -------------------------------------------------------------------
 # GLS Compile
@@ -126,5 +147,5 @@ compile-gl: libcgra.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_dri
 # -------------------------------------------------------------------
 .PHONY: clean
 clean:
-	rm -rf xrun.log xrun.history xcelium.d
+	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log
 

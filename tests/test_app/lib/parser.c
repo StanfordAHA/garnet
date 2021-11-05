@@ -412,32 +412,6 @@ void *parse_metadata(char *filename) {
         }
     }
 
-    // TODO: We do not use interleaved input/output. Instead, we use hw_input.raw.
-    // json_t const* input_data_json;
-    // for(input_data_json = json_getChild( input_data_list_json ), cnt = 0;
-    //  input_data_json != 0; input_data_json = json_getSibling( input_data_json ), cnt++) {
-    //     if ( JSON_TEXT == json_getType( input_data_json ) ) {
-    //         strncpy(info->input_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
-    //         strncat(info->input_info[cnt]->filename, json_getValue(input_data_json), BUFFER_SIZE);
-    //     }
-    // }
-
-    // // parse interleaved_output field
-    // json_t const* gold_data_list_json = json_getProperty( testing_json, "interleaved_output" );
-    // if ( !gold_data_list_json || JSON_ARRAY != json_getType( gold_data_list_json ) ) {
-    //     puts("Error, the interleaved_output property is not found.");
-    //     exit(1);
-    // }
-    //
-    // json_t const* gold_data_json;
-    // for( gold_data_json = json_getChild( gold_data_list_json ), cnt = 0; \
-    //   gold_data_json != 0; gold_data_json = json_getSibling( gold_data_json ), cnt++ ) {
-    //     if ( JSON_TEXT == json_getType( gold_data_json ) ) {
-    //         strncpy(info->output_info[cnt]->filename, dir, strnlen(dir, BUFFER_SIZE));
-    //         strncat(info->output_info[cnt]->filename, json_getValue(gold_data_json), BUFFER_SIZE);
-    //     }
-    // }
-
     // TODO: Make this as a function
     for(int i=0; i < info->num_outputs; i++) {
         if (*info->output_info[i]->filename != '\0') {

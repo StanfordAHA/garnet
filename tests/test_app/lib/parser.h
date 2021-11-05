@@ -1,7 +1,7 @@
 #ifndef VIRTUALIZE_META_LIBRARY_H
 #define VIRTUALIZE_META_LIBRARY_H
 
-#include "common/tiny-json.h"
+#include "tiny-json.h"
 
 #define MAX_NUM_IO 16
 #define MAX_NUM_IO_TILES 16
@@ -10,26 +10,29 @@
 #define MAX_JSON_FIELDS 2048
 #define MAX_CONFIG 40
 #define MAX_ADDR_GEN_LOOP 5
-   
+
 #define GET_BS_INFO(info) struct BitstreamInfo *bs_info = \
-                                    (struct BitstreamInfo *) info
+                              (struct BitstreamInfo *)info
 
 #define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = \
-                                    (struct KernelInfo *) info
+                                  (struct KernelInfo *)info
 
 #define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = \
-                                    (struct ConfigInfo *) info
+                                  (struct ConfigInfo *)info
 
-struct Configuration {
+struct Configuration
+{
     int addr;
     int data;
 };
 
-struct ConfigInfo {
+struct ConfigInfo
+{
     int num_config;
     struct Configuration config[MAX_CONFIG];
 };
-struct BitstreamInfo {
+struct BitstreamInfo
+{
     int tile;
     int size;
     int start_addr;
@@ -37,30 +40,37 @@ struct BitstreamInfo {
     // TODO: Store glb control information separately
     struct ConfigInfo config;
 };
- 
-struct Position {
+
+struct Position
+{
     int x;
     int y;
 };
 
-enum IO {Input = 0, Output = 1}; 
+enum IO
+{
+    Input = 0,
+    Output = 1
+};
 
 // TODO: Change IOTile name to IOBlock
-struct IOTileInfo {
+struct IOTileInfo
+{
     enum IO io;
     int tile;
     // TODO: we do not need size anymore as we have extent
-    // int size; 
+    // int size;
     int start_addr;
 
-    struct Position pos; 
+    struct Position pos;
     int loop_dim;
     int cycle_stride[MAX_ADDR_GEN_LOOP];
     int data_stride[MAX_ADDR_GEN_LOOP];
     int extent[MAX_ADDR_GEN_LOOP];
 };
 
-struct IOInfo {
+struct IOInfo
+{
     enum IO io;
     int num_io_tiles;
     char filename[BUFFER_SIZE];
@@ -72,7 +82,8 @@ struct IOInfo {
     // struct ConfigInfo config;
 };
 
-struct KernelInfo {
+struct KernelInfo
+{
     int num_inputs;
     int num_outputs;
 
@@ -93,13 +104,13 @@ struct KernelInfo {
 
     // TODO: What is the best place to store config information
     // configuration registers are stored in this struct
-    // Most config should go into each IOInfo by having separate 
+    // Most config should go into each IOInfo by having separate
     // configuration registers for each DMA
     struct ConfigInfo config;
 };
- 
+
 void *parse_metadata(char *filename);
-void *parse_schedule(json_t const* IOs_json);
+void *parse_schedule(json_t const *IOs_json);
 int parse_num_group(struct KernelInfo *info);
 void *get_bs_info(void *info);
 void *get_input_info(void *info, int index);
@@ -135,4 +146,4 @@ int get_bs_size(void *info);
 int get_bs_tile(void *info);
 char *get_prefix(const char *s, char t);
 
-#endif//VIRTUALIZE_META_LIBRARY_H
+#endif //VIRTUALIZE_META_LIBRARY_H
