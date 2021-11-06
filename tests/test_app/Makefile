@@ -93,7 +93,9 @@ compile: VCSARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipwa
 				    -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
 					+libext+.v+.sv 
 compile: DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garnet_dir)/global_buffer/header/glb.svh $(garnet_dir)/garnet.v \
-					   $(garnet_dir)/global_buffer/systemRDL/output/{glb_pio.sv,glb_jrdl_decode.sv,glb_jrdl_logic.sv} \
+					   $(garnet_dir)/global_buffer/systemRDL/output/glb_pio.sv \
+					   $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
+					   $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_logic.sv \
 					   -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
 			 	       -F $(glc_dir)/global_controller.filelist -F tb/tb_cgra.f
 compile: libcgra.so $(shell find tb -type f)
@@ -113,9 +115,11 @@ compile-xcel: XRUN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib
 				      	   -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
 					       +libext+.v+.sv 
 compile-xcel: DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garnet_dir)/global_buffer/header/glb.svh $(garnet_dir)/garnet.v \
-					       $(garnet_dir)/global_buffer/systemRDL/output/{glb_pio.sv,glb_jrdl_decode.sv,glb_jrdl_logic.sv} \
-					       -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
-			 	           -F $(glc_dir)/global_controller.filelist -F tb/tb_cgra.f
+						    $(garnet_dir)/global_buffer/systemRDL/output/glb_pio.sv \
+						    $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
+						    $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_logic.sv \
+					        -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
+			 	            -F $(glc_dir)/global_controller.filelist -F tb/tb_cgra.f
 compile-xcel: libcgra.so $(shell find tb -type f)
 	$(XRUN)
 
