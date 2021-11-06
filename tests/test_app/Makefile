@@ -57,20 +57,21 @@ VCS = vcs \
 	  $(VCSARGS) \
 	  $(DESIGNARGS)
 
-XRUN_COMPILE = xrun \
-	   		   -64bit \
-	   		   -sv \
-	   		   -timescale 100ps/1ps \
-	   		   -debug \
-	   		   -sysv \
-	   		   -l xrun.log \
-	   		   -covoverwrite \
-	   		   -initmem0 \
-	   		   -initreg0 \
-	   		   +maxdelays \
-	   		   $(XRUN_ARGS) \
-			   $(DESIGNARGS) \
-	   		   $(COMPILE_ARGS)
+XRUN = xrun \
+	   -64bit \
+	   -sv \
+	   -timescale 100ps/1ps \
+	   -debug \
+	   -sysv \
+	   -elaborate \
+	   -l xrun.log \
+	   -covoverwrite \
+	   -initmem0 \
+	   -initreg0 \
+	   +maxdelays \
+	   $(XRUN_ARGS) \
+	   $(DESIGNARGS) \
+	   $(COMPILE_ARGS)
 
 # -------------------------------------------------------------------
 # C API
@@ -116,7 +117,7 @@ compile-xcel: DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_par
 					       -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
 			 	           -F $(glc_dir)/global_controller.filelist -F tb/tb_cgra.f
 compile-xcel: libcgra.so $(shell find tb -type f)
-	$(XRUN_COMPILE)
+	$(XRUN)
 
 # -------------------------------------------------------------------
 # Run VCS
@@ -151,7 +152,7 @@ compile-gl: XRUN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/c
 					     +libext+.v+.sv 
 compile-gl: XRUN_ARGS += $(NETLIST_FILES)
 compile-gl: libcgra.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_driver.sv axil_driver.sv axil_ifc.sv proc_ifc.sv environment.sv
-	$(XRUN_COMPILE)
+	$(XRUN)
 
 # -------------------------------------------------------------------
 # Clean

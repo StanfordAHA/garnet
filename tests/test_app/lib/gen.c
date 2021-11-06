@@ -1,6 +1,6 @@
+#include "glc_addrmap.h"
 #include "gen.h"
 #include "parser.h"
-#include "regmap.h"
 
 void *get_pcfg_configuration(void *info)
 {
