@@ -102,6 +102,8 @@ else
          set -e; # DIE if any single command exits with error status
 
          source /aha/bin/activate; # Set up the build environment
+         # FIXME: This need to be removed once the latest docker image is generated
+         pip install systemrdl-compiler peakrdl-html
 
          # Example: say you want to double-check packages 'ast_tools', 'magma', and 'peak'.
          # Uncomment the line below; This will display the version,
