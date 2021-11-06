@@ -7,7 +7,11 @@
 **===========================================================================*/
 
 class Environment;
-    typedef enum int {GLB_PCFG_CTRL, GLB_STRM_G2F_CTRL, GLB_STRM_F2G_CTRL} e_glb_ctrl;
+    typedef enum int {
+        GLB_PCFG_CTRL,
+        GLB_STRM_G2F_CTRL,
+        GLB_STRM_F2G_CTRL
+    } e_glb_ctrl;
 
     vAxilIfcDriver vifc_axil;
     vProcIfcDriver vifc_proc;
@@ -26,18 +30,18 @@ class Environment;
     extern task glb_configure(Kernel kernel);
     extern task cgra_configure(Kernel kernel);
     extern task set_interrupt_on();
-    extern task wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:0] tile_num);
-    extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:0] tile_num);
+    extern task wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
+    extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
     extern task kernel_test(Kernel kernel);
     extern task read_data(Kernel kernel);
-    extern function bit[NUM_GLB_TILES-1:0] calculate_mask(int start, int num);
-    extern task stall(bit[NUM_GLB_TILES-1:0] stall_mask);
-    extern task unstall(bit[NUM_GLB_TILES-1:0] stall_mask);
+    extern function bit [NUM_GLB_TILES-1:0] calculate_mask(int start, int num);
+    extern task stall(bit [NUM_GLB_TILES-1:0] stall_mask);
+    extern task unstall(bit [NUM_GLB_TILES-1:0] stall_mask);
     extern task run();
 endclass
 
 function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc);
-    this.kernels = kernels;
+    this.kernels   = kernels;
     this.vifc_axil = vifc_axil;
     this.vifc_proc = vifc_proc;
 endfunction
@@ -45,8 +49,8 @@ endfunction
 function void Environment::build();
     proc_lock = new(1);
     axil_lock = new(1);
-    proc_drv = new(vifc_proc.driver, proc_lock);
-    axil_drv = new(vifc_axil.driver, axil_lock);
+    proc_drv  = new(vifc_proc, proc_lock);
+    axil_drv  = new(vifc_axil, axil_lock);
 endfunction
 
 task Environment::write_bs(Kernel kernel);
@@ -58,21 +62,26 @@ task Environment::write_bs(Kernel kernel);
     proc_drv.write_bs(kernel.bs_start_addr, kernel.bitstream_data);
     end_time = $realtime;
     $display("[%s] write bitstream to glb end at %0t", kernel.name, end_time);
-    $display("[%s] It takes %0t time to write the bitstream to glb.", kernel.name, end_time-start_time);
+    $display("[%s] It takes %0t time to write the bitstream to glb.", kernel.name,
+             end_time - start_time);
 endtask
 
 task Environment::write_data(Kernel kernel);
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns");
     repeat (10) @(vifc_proc.cbd);
-    foreach(kernel.inputs[i]) begin
-        foreach(kernel.inputs[i].io_tiles[j]) begin
+    foreach (kernel.inputs[i]) begin
+        foreach (kernel.inputs[i].io_tiles[j]) begin
             start_time = $realtime;
-            $display("[%s] write input_%0d_block_%0d to glb start at %0t", kernel.name, i, j, start_time);
-            proc_drv.write_data(kernel.inputs[i].io_tiles[j].start_addr, kernel.inputs[i].io_tiles[j].io_block_data);
+            $display("[%s] write input_%0d_block_%0d to glb start at %0t", kernel.name, i, j,
+                     start_time);
+            proc_drv.write_data(kernel.inputs[i].io_tiles[j].start_addr,
+                                kernel.inputs[i].io_tiles[j].io_block_data);
             end_time = $realtime;
-            $display("[%s] write input_%0d_block_%0d to glb end at %0t", kernel.name, i, j, end_time);
-            $display("[%s] It takes %0t time to write %0d Byte data to glb.", kernel.name, end_time-start_time, kernel.inputs[i].io_tiles[j].num_data * 2);
+            $display("[%s] write input_%0d_block_%0d to glb end at %0t", kernel.name, i, j,
+                     end_time);
+            $display("[%s] It takes %0t time to write %0d Byte data to glb.", kernel.name,
+                     end_time - start_time, kernel.inputs[i].io_tiles[j].num_data * 2);
         end
     end
 endtask
@@ -80,10 +89,11 @@ endtask
 task Environment::read_data(Kernel kernel);
     repeat (20) @(vifc_proc.cbd);
 
-    foreach(kernel.outputs[i]) begin
-        foreach(kernel.outputs[i].io_tiles[j]) begin
+    foreach (kernel.outputs[i]) begin
+        foreach (kernel.outputs[i].io_tiles[j]) begin
             $display("[%s] read output_%0d_block_%0d from glb start", kernel.name, i, j);
-            proc_drv.read_data(kernel.outputs[i].io_tiles[j].start_addr, kernel.outputs[i].io_tiles[j].io_block_data);
+            proc_drv.read_data(kernel.outputs[i].io_tiles[j].start_addr,
+                               kernel.outputs[i].io_tiles[j].io_block_data);
             $display("[%s] read output_%0d_block_%0d from glb end", kernel.name, i, j);
         end
     end
@@ -103,14 +113,14 @@ endtask
 task Environment::cgra_configure(Kernel kernel);
     Config cfg;
     int group_start, num_groups;
-    bit[NUM_GLB_TILES-1:0] stall_mask;
+    bit [NUM_GLB_TILES-1:0] stall_mask;
 
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns");
 
     group_start = kernel.group_start;
-    num_groups = kernel.num_groups;
-    stall_mask = calculate_mask(group_start, num_groups);
+    num_groups  = kernel.num_groups;
+    stall_mask  = calculate_mask(group_start, num_groups);
 
     stall(stall_mask);
     start_time = $realtime;
@@ -122,20 +132,21 @@ task Environment::cgra_configure(Kernel kernel);
     clear_interrupt(GLB_PCFG_CTRL, kernel.bs_tile);
     end_time = $realtime;
     $display("[%s] fast configuration end at %0t", kernel.name, end_time);
-    $display("[%s] It takes %0t time to do parallel configuration.", kernel.name, end_time-start_time);
+    $display("[%s] It takes %0t time to do parallel configuration.", kernel.name,
+             end_time - start_time);
 
 endtask
 
-function bit[NUM_GLB_TILES-1:0] Environment::calculate_mask(int start, int num);
+function bit [NUM_GLB_TILES-1:0] Environment::calculate_mask(int start, int num);
     calculate_mask = '0;
-    for (int i=0; i < num; i++) begin
+    for (int i = 0; i < num; i++) begin
         calculate_mask |= ((2'b11) << ((start + i) * 2));
     end
 endfunction
 
-task Environment::stall(bit[NUM_GLB_TILES-1:0] stall_mask);
-    bit [AXI_DATA_WIDTH-1:0] data;
-    bit [AXI_DATA_WIDTH-1:0] wr_data;
+task Environment::stall(bit [NUM_GLB_TILES-1:0] stall_mask);
+    bit [CGRA_AXI_DATA_WIDTH-1:0] data;
+    bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
     axil_drv.read(`GLC_STALL, data);
     wr_data |= ((stall_mask << NUM_GLB_TILES) | stall_mask);
     axil_drv.write(`GLC_STALL, wr_data);
@@ -143,9 +154,9 @@ task Environment::stall(bit[NUM_GLB_TILES-1:0] stall_mask);
 endtask
 
 
-task Environment::unstall(bit[NUM_GLB_TILES-1:0] stall_mask);
-    bit [AXI_DATA_WIDTH-1:0] data;
-    bit [AXI_DATA_WIDTH-1:0] wr_data;
+task Environment::unstall(bit [NUM_GLB_TILES-1:0] stall_mask);
+    bit [CGRA_AXI_DATA_WIDTH-1:0] data;
+    bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
     axil_drv.read(`GLC_STALL, data);
     wr_data &= (((~stall_mask) << NUM_GLB_TILES) | (~stall_mask));
     axil_drv.write(`GLC_STALL, wr_data);
@@ -156,13 +167,13 @@ task Environment::kernel_test(Kernel kernel);
     Config cfg;
     int total_output_size;
     int group_start, num_groups;
-    bit[NUM_GLB_TILES-1:0] stall_mask;
+    bit [NUM_GLB_TILES-1:0] stall_mask;
     realtime start_time, end_time, g2f_end_time, latency;
     $timeformat(-9, 2, " ns");
 
     group_start = kernel.group_start;
-    num_groups = kernel.num_groups;
-    stall_mask = calculate_mask(group_start, num_groups);
+    num_groups  = kernel.num_groups;
+    stall_mask  = calculate_mask(group_start, num_groups);
     unstall(stall_mask);
 
     start_time = $realtime;
@@ -170,8 +181,8 @@ task Environment::kernel_test(Kernel kernel);
     cfg = kernel.get_strm_start_config();
     axil_drv.write(cfg.addr, cfg.data);
 
-    foreach(kernel.inputs[i]) begin
-        foreach(kernel.inputs[i].io_tiles[j]) begin
+    foreach (kernel.inputs[i]) begin
+        foreach (kernel.inputs[i].io_tiles[j]) begin
             automatic int ii = i;
             automatic int jj = j;
             fork
@@ -187,8 +198,8 @@ task Environment::kernel_test(Kernel kernel);
     g2f_end_time = $realtime;
     $display("[%s] GLB-to-CGRA streaming done at %0t", kernel.name, g2f_end_time);
 
-    foreach(kernel.outputs[i]) begin
-        foreach(kernel.outputs[i].io_tiles[j]) begin
+    foreach (kernel.outputs[i]) begin
+        foreach (kernel.outputs[i].io_tiles[j]) begin
             automatic int ii = i;
             automatic int jj = j;
             fork
@@ -202,20 +213,21 @@ task Environment::kernel_test(Kernel kernel);
 
     end_time = $realtime;
     $display("[%s] kernel end at %0t", kernel.name, end_time);
-    $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time-start_time);
+    $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
 
     total_output_size = 0;
-    foreach(kernel.output_size[i]) begin
+    foreach (kernel.output_size[i]) begin
         total_output_size += kernel.output_size[i];
     end
     $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size * 2);
 
     latency = end_time - g2f_end_time;
     $display("[%s] The latency is %0t.", kernel.name, latency);
-    $display("[%s] The throughput is %.3f (GB/s).", kernel.name, (total_output_size * 2) / (g2f_end_time - start_time));
+    $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
+             (total_output_size * 2) / (g2f_end_time - start_time));
 
-    foreach(kernel.outputs[i]) begin
-        foreach(kernel.outputs[i].io_tiles[j]) begin
+    foreach (kernel.outputs[i]) begin
+        foreach (kernel.outputs[i].io_tiles[j]) begin
             automatic int ii = i;
             automatic int jj = j;
             fork
@@ -229,21 +241,19 @@ task Environment::kernel_test(Kernel kernel);
 
 endtask
 
-task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:0] tile_num);
-    bit [AXI_ADDR_WIDTH-1:0] addr;
-    bit [AXI_DATA_WIDTH-1:0] data;
+task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
+    bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
+    bit [CGRA_AXI_DATA_WIDTH-1:0] data;
     string reg_name;
 
     // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
         addr = `GLC_PAR_CFG_G2F_ISR;
         reg_name = "PCFG";
-    end
-    else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
+    end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
         addr = `GLC_STRM_G2F_ISR;
         reg_name = "STRM_G2F";
-    end
-    else begin
+    end else begin
         addr = `GLC_STRM_F2G_ISR;
         reg_name = "STRM_F2G";
     end
@@ -252,7 +262,7 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:
         begin
             forever begin
                 // level sensitive interrupt
-                wait(top.interrupt);
+                wait (top.interrupt);
                 axil_drv.read(addr, data);
                 if (data[tile_num] == 1) begin
                     $display("%s interrupt from tile %0d", reg_name, tile_num);
@@ -268,22 +278,20 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:
     disable fork;
 endtask
 
-task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit[NUM_GLB_TILES_WIDTH-1:0] tile_num);
-    bit [AXI_ADDR_WIDTH-1:0] addr;
+task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
+    bit [CGRA_AXI_ADDR_WIDTH-1:0] addr;
     string reg_name;
-    bit[NUM_GLB_TILES-1:0] tile_mask;
+    bit [NUM_GLB_TILES-1:0] tile_mask;
     tile_mask = (1 << tile_num);
 
     // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
         addr = `GLC_PAR_CFG_G2F_ISR;
         reg_name = "PCFG";
-    end
-    else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
+    end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
         addr = `GLC_STRM_G2F_ISR;
         reg_name = "STRM_G2F";
-    end
-    else begin
+    end else begin
         addr = `GLC_STRM_F2G_ISR;
         reg_name = "STRM_F2G";
     end
@@ -307,7 +315,7 @@ task Environment::run();
     // turn on interrupt
     set_interrupt_on();
 
-    foreach(kernels[i]) begin
+    foreach (kernels[i]) begin
         automatic int j = i;
         fork
             begin
@@ -323,7 +331,7 @@ task Environment::run();
     wait fork;
     repeat (20) @(vifc_axil.cbd);
 
-    foreach(kernels[i]) begin
+    foreach (kernels[i]) begin
         kernels[i].compare();
     end
 

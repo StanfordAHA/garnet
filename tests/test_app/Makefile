@@ -89,8 +89,10 @@ compile: VCSARGS += +nospecify
 compile: VCSARGS += +define+NON_STOP_IF_INPUT_PIN_Z
 compile: VCSARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
 				    -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
-					 +libext+.v+.sv 
-compile: DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garnet_dir)/global_buffer/header/glb.svh $(garnet_dir)/garnet.v -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
+					+libext+.v+.sv 
+compile: DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garnet_dir)/global_buffer/header/glb.svh $(garnet_dir)/garnet.v \
+					   $(garnet_dir)/global_buffer/systemRDL/output/{glb_pio.sv,glb_jrdl_decode.sv,glb_jrdl_logic.sv} \
+					   -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
 			 	       -F $(glc_dir)/global_controller.filelist -F tb/tb_cgra.f
 compile: libcgra.so $(shell find tb -type f)
 	$(VCS)
@@ -133,7 +135,6 @@ sim: libcgra.so compile run
 .PHONY: compile-gl
 compile-gl: XRUN_ARGS += -top $(TOP_NAME)
 compile-gl: XRUN_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
-compile-gl: XRUN_ARGS += +define+CGRA_WIDTH=$(CGRA_WIDTH) +define+AXI_ADDR_WIDTH=$(AXI_ADDR_WIDTH) +define+AXI_DATA_WIDTH=$(AXI_DATA_WIDTH) +define+GLB_TILE_MEM_SIZE=$(GLB_TILE_MEM_SIZE)
 compile-gl: XRUN_ARGS += -F tb_garnet.filelist
 compile-gl: XRUN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
 				      	 -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \

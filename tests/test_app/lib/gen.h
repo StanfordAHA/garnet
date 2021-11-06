@@ -13,4 +13,3 @@ int get_strm_pulse_addr();
 int get_strm_pulse_data(void *info);
 
 #endif
-

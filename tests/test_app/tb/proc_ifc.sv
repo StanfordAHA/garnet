@@ -7,35 +7,37 @@
 **  04/18/2020 - Implement first version
 **===========================================================================*/
 
-interface proc_ifc(input logic clk);
+interface proc_ifc (
+    input logic clk
+);
 
     // declare the signals
-    logic                           wr_en;
-    logic [BANK_DATA_WIDTH/8-1:0]   wr_strb;
-    logic [GLB_ADDR_WIDTH-1:0]      wr_addr;
-    logic [BANK_DATA_WIDTH-1:0]     wr_data;
-    logic                           rd_en;
-    logic [GLB_ADDR_WIDTH-1:0]      rd_addr;
-    logic [BANK_DATA_WIDTH-1:0]     rd_data;
-    logic                           rd_data_valid;
- 
-    modport glb (
-        input  clk,
-        input  wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr,
+    logic                         wr_en;
+    logic [BANK_DATA_WIDTH/8-1:0] wr_strb;
+    logic [   GLB_ADDR_WIDTH-1:0] wr_addr;
+    logic [  BANK_DATA_WIDTH-1:0] wr_data;
+    logic                         rd_en;
+    logic [   GLB_ADDR_WIDTH-1:0] rd_addr;
+    logic [  BANK_DATA_WIDTH-1:0] rd_data;
+    logic                         rd_data_valid;
+
+    modport glb(
+        input clk,
+        input wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr,
         output rd_data, rd_data_valid
     );
 
     clocking cbd @(posedge clk);
-        input  clk;
+        input clk;
         output wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr;
-        input  rd_data, rd_data_valid;
+        input rd_data, rd_data_valid;
     endclocking : cbd
-    modport driver (clocking cbd);
+    modport driver(clocking cbd);
 
     clocking cbm @(posedge clk);
-        input  clk, wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr, rd_data, rd_data_valid;
+        input clk, wr_en, wr_strb, wr_addr, wr_data, rd_en, rd_addr, rd_data, rd_data_valid;
     endclocking : cbm
-    modport monitor (clocking cbm);
+    modport monitor(clocking cbm);
 
 endinterface
 
