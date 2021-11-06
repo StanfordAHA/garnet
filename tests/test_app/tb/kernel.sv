@@ -337,6 +337,7 @@ function data_array_t Kernel::parse_input_data(int idx);
     string tmp;
     int cnt;
     int f_out;
+    $display("Reading input data %s", input_filenames[idx]);
     assert_(fp != 0, "Unable to read input file");
     if (input_filenames[idx].substr(name_len - 3, name_len - 1) == "pgm") begin
         // just skip the first three lines
@@ -344,24 +345,19 @@ function data_array_t Kernel::parse_input_data(int idx);
             f_out = $fgets(tmp, fp);
         end
     end
-    if (input_filenames[idx].substr(
-            name_len - 3, name_len - 1
-        ) == "pgm" | input_filenames[idx].substr(
-            name_len - 3, name_len - 1
-        ) == "raw") begin
+    if (input_filenames[idx].substr(name_len - 3, name_len - 1) == "pgm"
+        | input_filenames[idx].substr(name_len - 3, name_len - 1) == "raw") begin
         cnt = $fread(result, fp);
     end else begin
         cnt = 0;
-        while ($fscanf(
-            fp, "%h\n", result[cnt]
-        ) == 1) begin
+        while ($fscanf(fp, "%h\n", result[cnt]) == 1) begin
             cnt = cnt + 1;
         end
         // The total size in byte is the number of pixels times 2
         cnt = cnt * 2;
     end
     assert_(cnt == input_size[idx], $sformatf(
-            "Unable to read input data. Parsed size is %d, while expected size is %d\n",
+            "Unable to read input data. Parsed size is %0d, while expected size is %0d\n",
             cnt,
             input_size[idx]
             ));
@@ -512,6 +508,7 @@ function void Kernel::compare();
     int result;
     int num_pixels;
     int num_io_tiles;
+    int file_out;
     // Hacky way to interleave output data in io_block to final output
     // TODO: Make interleave and uninterleave as a function
     for (int i = 0; i < num_outputs; i++) begin
@@ -527,6 +524,15 @@ function void Kernel::compare();
             end
         end
     end
+    // dump output (Assuming one output)
+    file_out = $fopen("output.txt", "w");
+    for (int i = 0; i < output_data[0].size(); i++) begin
+        if (i % 8 == 7) begin
+            $fwrite(file_out, "%4h\n", output_data[0][i]);
+        end else begin
+            $fwrite(file_out, "%4h ", output_data[0][i]);
+        end
+    end
     result = 0;
     for (int i = 0; i < num_outputs; i++) begin
         result += compare_(i);
@@ -540,6 +546,7 @@ endfunction
 
 function int Kernel::compare_(int idx);
     int result = 0;
+    int max_mismatch = 20;
     assert (gold_data[idx].size() == output_data[idx].size())
     else begin
         $display("[%s]-Output[%0d], gold data size is %0d, output data size is %0d", name, idx,
@@ -548,8 +555,12 @@ function int Kernel::compare_(int idx);
     end
     for (int i = 0; i < gold_data[idx].size(); i++) begin
         if (gold_data[idx][i] != output_data[idx][i]) begin
-            $display("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i,
-                     output_data[idx][i], gold_data[idx][i]);
+            if (result < max_mismatch) begin
+                $display("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]);
+            end
+            else if (result == max_mismatch) begin
+                $display("The number of pixels mismatch is over %0d, so it will not print further.", max_mismatch);
+            end
             result += 1;
         end
     end

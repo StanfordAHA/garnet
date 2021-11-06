@@ -69,6 +69,7 @@ XRUN_COMPILE = xrun \
 	   		   -initreg0 \
 	   		   +maxdelays \
 	   		   $(XRUN_ARGS) \
+			   $(DESIGNARGS) \
 	   		   $(COMPILE_ARGS)
 
 # -------------------------------------------------------------------
@@ -107,26 +108,35 @@ compile-xcel: XRUN_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 compile-xcel: XRUN_ARGS += -notimingchecks
 compile-xcel: XRUN_ARGS += +define+NON_STOP_IF_INPUT_PIN_Z
 compile-xcel: XRUN_ARGS += +define+TSMC_CM_NO_WARNING
-compile-xcel: XRUN_ARGS += -F tb_garnet.filelist
 compile-xcel: XRUN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
-				      -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
-					  +libext+.v+.sv 
-compile-xcel: XRUN_ARGS += $(RTL_FILES)
-compile-xcel: libcgra.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_driver.sv axil_driver.sv axil_ifc.sv proc_ifc.sv environment.sv
+				      	   -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
+					       +libext+.v+.sv 
+compile-xcel: DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garnet_dir)/global_buffer/header/glb.svh $(garnet_dir)/garnet.v \
+					       $(garnet_dir)/global_buffer/systemRDL/output/{glb_pio.sv,glb_jrdl_decode.sv,glb_jrdl_logic.sv} \
+					       -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
+			 	           -F $(glc_dir)/global_controller.filelist -F tb/tb_cgra.f
+compile-xcel: libcgra.so $(shell find tb -type f)
 	$(XRUN_COMPILE)
 
 # -------------------------------------------------------------------
-# Run
+# Run VCS
 # -------------------------------------------------------------------
 .PHONY: run
 run: 
+	./simv -sv_lib libcgra $(RUN_ARGS) $(APP_ARGS)
+
+# -------------------------------------------------------------------
+# Run Xcelium
+# -------------------------------------------------------------------
+.PHONY: run-xcel
+run-xcel: 
 	xrun -R -sv_lib libcgra.so $(RUN_ARGS) $(APP_ARGS)
 
 # -------------------------------------------------------------------
 # Simulation
 # -------------------------------------------------------------------
 .PHONY: sim
-sim: libcgra.so compile run
+sim: libcgra.so compile-xcel run-xcel
 
 # -------------------------------------------------------------------
 # GLS Compile

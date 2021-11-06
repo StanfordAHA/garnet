@@ -146,7 +146,7 @@ int glb_map(void *kernel_)
     return 1;
 }
 
-void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info)
+int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info)
 {
     int tile = io_tile_info->tile;
     int start_addr = io_tile_info->start_addr;
@@ -242,6 +242,7 @@ void update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct Config
         printf("Output block start addr: %0d\n", start_addr);
         printf("Output ITER CTRL - size: %0d\n", size);
     }
+    return 1;
 }
 
 // TODO: This is hacky way to update tile control configuration reigster
