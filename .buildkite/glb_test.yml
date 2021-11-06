@@ -3,7 +3,7 @@ steps:
   commands:
   - source /aha/bin/activate
   - source /cad/modules/tcl/init/sh
-  - module load base xcelium/19.03.003
+  - module load base xcelium/19.03.003 vcs
   - echo "--- Pruning Docker Images"
   - yes | docker image prune -a --filter "until=24h" --filter=label='description=garnet' || true
     # use the mounted garnet
@@ -17,10 +17,10 @@ steps:
   - aha halide tests/conv_2_1
   - aha map tests/conv_2_1 --width 4 --height 4 --no-pd
   - echo "--- Testing Single App"
-  - aha glb tests/conv_1_2 --width 8
-  - aha glb tests/conv_2_1 --width 8
+  - aha glb tests/conv_1_2
+  - aha glb tests/conv_2_1
   - echo "--- Testing Two Apps"
-  - aha glb tests/conv_1_2 tests/conv_2_1 --width 8
+  - aha glb tests/conv_1_2 tests/conv_2_1
   plugins:
     - docker#v3.2.0:
         image: stanfordaha/garnet
