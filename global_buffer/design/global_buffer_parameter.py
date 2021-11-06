@@ -8,6 +8,8 @@ class GlobalBufferParams:
     # cgra parameters
     num_prr: int = 16
     num_prr_width: int = math.ceil(math.log(num_prr, 2))
+    cgra_axi_addr_width: int = 13
+    cgra_axi_data_width: int = 32
 
     # tile parameters
     num_glb_tiles: int = 16
@@ -77,6 +79,8 @@ def gen_global_buffer_params(**kwargs):
     bank_data_width = kwargs.pop('bank_data_width', 64)
     sram_macro_depth = kwargs.pop('sram_macro_depth', 2048)
     axi_addr_width = kwargs.pop('axi_addr_width', 12)
+    cgra_axi_addr_width = kwargs.pop('cgra_axi_addr_width', 13)
+    cgra_axi_data_width = kwargs.pop('cgra_axi_data_width', 32)
     # TODO: axi_addr_reg_width should be automatically calculated based on configuration space
     axi_addr_reg_width = kwargs.pop('axi_addr_reg_width', 6)
     axi_data_width = kwargs.pop('axi_data_width', 32)
@@ -137,6 +141,8 @@ def gen_global_buffer_params(**kwargs):
                                 glb_addr_width=glb_addr_width,
                                 cgra_data_width=cgra_data_width,
                                 cgra_byte_offset=cgra_byte_offset,
+                                cgra_axi_addr_width=cgra_axi_addr_width,
+                                cgra_axi_data_width=cgra_axi_data_width,
                                 axi_addr_width=axi_addr_width,
                                 axi_addr_reg_width=axi_addr_reg_width,
                                 axi_data_width=axi_data_width,

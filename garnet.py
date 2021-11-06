@@ -6,8 +6,9 @@ from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator, set_debug_mode
 from global_buffer.io_placement import place_io_blk
 from global_buffer.design.global_buffer import GlobalBufferMagma
+from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
+from global_buffer.global_buffer_main import gen_param_header, gen_rdl_header
 from global_controller.global_controller_magma import GlobalController
-from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, has_rom, get_total_cycle_from_app
@@ -21,6 +22,7 @@ import os
 import archipelago
 import archipelago.power
 import archipelago.io
+import math
 
 # set the debug mode to false to speed up construction
 set_debug_mode(False)
@@ -32,7 +34,7 @@ class Garnet(Generator):
                  add_pond: bool = True,
                  use_io_valid: bool = False,
                  pipeline_config_interval: int = 8,
-                 glb_tile_mem_size: int = 256):
+                 glb_params: GlobalBufferParams = GlobalBufferParams()):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -41,12 +43,12 @@ class Garnet(Generator):
             assert interconnect_only
 
         # configuration parameters
+        self.glb_params = glb_params
         config_addr_width = 32
         config_data_width = 32
         self.config_addr_width = config_addr_width
         self.config_data_width = config_data_width
         axi_addr_width = 13
-        glb_axi_addr_width = 12
         axi_data_width = 32
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
@@ -66,42 +68,23 @@ class Garnet(Generator):
             io_side = IOSide.North
 
         if not interconnect_only:
-            # global buffer parameters
             # width must be even number
             assert (self.width % 2) == 0
-            num_glb_tiles = self.width // 2
-            self.num_glb_tiles = num_glb_tiles
 
-            bank_data_width = 64
-            banks_per_tile = 2
-            bank_addr_width = (magma.bitutils.clog2(glb_tile_mem_size)
-                               - magma.bitutils.clog2(banks_per_tile) + 10)
+            # Bank should be larger than or equal to 1KB
+            assert glb_params.bank_addr_width >= 10
 
-            glb_addr_width = (bank_addr_width
-                              + magma.bitutils.clog2(banks_per_tile)
-                              + magma.bitutils.clog2(num_glb_tiles))
-
-            # bank_data_width must be the size of bitstream
-            assert bank_data_width == config_addr_width + config_data_width
-
+            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
+                math.ceil(math.log(glb_params.banks_per_tile, 2))
             wiring = GlobalSignalWiring.ParallelMeso
             self.global_controller = GlobalController(addr_width=config_addr_width,
                                                       data_width=config_data_width,
                                                       axi_addr_width=axi_addr_width,
                                                       axi_data_width=axi_data_width,
-                                                      num_glb_tiles=num_glb_tiles,
-                                                      glb_addr_width=glb_addr_width,
+                                                      num_glb_tiles=glb_params.num_glb_tiles,
+                                                      glb_addr_width=glb_params.glb_addr_width,
                                                       glb_tile_mem_size=glb_tile_mem_size,
-                                                      block_axi_addr_width=glb_axi_addr_width)
-
-            glb_params = gen_global_buffer_params(num_glb_tiles=num_glb_tiles,
-                                                  num_cgra_cols=width,
-                                                  glb_tile_mem_size=glb_tile_mem_size,
-                                                  bank_data_width=bank_data_width,
-                                                  cfg_addr_width=config_addr_width,
-                                                  cfg_data_width=config_addr_width,
-                                                  axi_addr_width=glb_axi_addr_width,
-                                                  axi_data_width=axi_data_width)
+                                                      block_axi_addr_width=glb_params.axi_addr_width)
 
             self.global_buffer = GlobalBufferMagma(glb_params)
 
@@ -135,7 +118,7 @@ class Garnet(Generator):
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
                 proc_packet=ProcPacketIfc(
-                    glb_addr_width, bank_data_width).slave,
+                    glb_params.glb_addr_width, glb_params.bank_data_width).slave,
                 axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
                 interrupt=magma.Out(magma.Bit),
                 cgra_running_clk_out=magma.Out(magma.Clock),
@@ -386,8 +369,18 @@ def main():
     if args.standalone and not args.interconnect_only:
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")
+
+    glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
+                                          num_cgra_cols=args.width,
+                                          glb_tile_mem_size=args.glb_tile_mem_size,
+                                          bank_data_width=64,
+                                          cfg_addr_width=32,
+                                          cfg_data_width=32,
+                                          axi_addr_width=12,
+                                          axi_data_width=32)
+
     garnet = Garnet(width=args.width, height=args.height,
-                    glb_tile_mem_size=args.glb_tile_mem_size,
+                    glb_params=glb_params,
                     add_pd=not args.no_pd,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
@@ -405,6 +398,12 @@ def main():
                       disable_ndarray=True,
                       inline=False)
         garnet.create_stub()
+        garnet_home = os.getenv('GARNET_HOME')
+        if not garnet_home:
+            garnet_home = os.path.dirname(os.path.abspath(__file__))
+        gen_param_header(garnet_home=garnet_home, params=glb_params)
+        gen_rdl_header(garnet_home=garnet_home)
+
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
         # do PnR and produce bitstream
