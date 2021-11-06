@@ -9,6 +9,8 @@ steps:
     # use the mounted garnet
   - rm -rf /aha/garnet
   - cp -r /workdir /aha/garnet
+  - echo "--- Install requirements"
+  - pip install -r /aha/garnet/requirements.txt
   - echo "--- Generating Garnet"
   - aha garnet -v --width 8 --height 4
   - echo "--- Generating Apps"
