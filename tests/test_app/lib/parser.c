@@ -474,8 +474,14 @@ void *parse_metadata(char *filename)
                     }
                     info->input_info[i]->filesize = filesize;
                 }
+                fclose(fp2);
+                printf("Input %0d: %s - %0d Byte.\n", i, info->input_info[i]->filename, info->input_info[i]->filesize);
             }
-            fclose(fp2);
+            else
+            {
+                printf("Error, input file %s does not exist.\n", info->input_info[i]->filename);
+                exit(1);
+            }
         }
     }
 
@@ -521,8 +527,14 @@ void *parse_metadata(char *filename)
                     }
                     info->output_info[i]->filesize = filesize;
                 }
+                fclose(fp2);
+                printf("Output %0d: %s - %0d Byte.\n", i, info->output_info[i]->filename, info->output_info[i]->filesize);
             }
-            fclose(fp2);
+            else
+            {
+                printf("Error, output file %s does not exist.\n", info->output_info[i]->filename);
+                exit(1);
+            }
         }
     }
 
