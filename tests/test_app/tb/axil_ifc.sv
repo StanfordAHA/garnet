@@ -13,93 +13,93 @@ interface axil_ifc #(
     input clk
 );
     // AW ports
-    logic [ADDR_WIDTH-1:0]      awaddr;
-    logic                       awready;
-    logic                       awvalid;
+    logic [  ADDR_WIDTH-1:0] awaddr;
+    logic                    awready;
+    logic                    awvalid;
 
     // W ports
-    logic [DATA_WIDTH-1:0]      wdata;
-    logic                       wready;
-    logic                       wvalid;
-    logic [DATA_WIDTH/8-1:0]    wstrb;
+    logic [  DATA_WIDTH-1:0] wdata;
+    logic                    wready;
+    logic                    wvalid;
+    logic [DATA_WIDTH/8-1:0] wstrb;
 
     // B ports
-    logic                   bready;
-    logic [1:0]             bresp;
-    logic                   bvalid;
+    logic                    bready;
+    logic [             1:0] bresp;
+    logic                    bvalid;
 
     // AR ports
-    logic [ADDR_WIDTH-1:0]  araddr;
-    logic                   arready;
-    logic                   arvalid;
+    logic [  ADDR_WIDTH-1:0] araddr;
+    logic                    arready;
+    logic                    arvalid;
 
     // R ports
-    logic [DATA_WIDTH-1:0]  rdata;
-    logic                   rready;
-    logic [1:0]             rresp;
-    logic                   rvalid;
+    logic [  DATA_WIDTH-1:0] rdata;
+    logic                    rready;
+    logic [             1:0] rresp;
+    logic                    rvalid;
 
     // unused ports
-    logic [2:0]             arprot;
-    logic [2:0]             awprot;
+    logic [             2:0] arprot;
+    logic [             2:0] awprot;
 
     modport slave(
-        input  clk,
-        input  awaddr,
+        input clk,
+        input awaddr,
         output awready,
-        input  awvalid,
+        input awvalid,
 
-        input  wdata,
+        input wdata,
         output wready,
-        input  wvalid,
-        input  wstrb,
+        input wvalid,
+        input wstrb,
 
-        input  bready,
+        input bready,
         output bresp,
         output bvalid,
 
-        input  araddr,
+        input araddr,
         output arready,
-        input  arvalid,
+        input arvalid,
 
         output rdata,
-        input  rready,
+        input rready,
         output rresp,
         output rvalid,
 
-        input  arprot,
-        input  awprot
+        input arprot,
+        input awprot
     );
-   
+
     clocking cbd @(posedge clk);
-        input  clk;
+        input clk;
 
         output awaddr;
-        input  awready;
+        input awready;
         output awvalid;
 
         output wdata;
-        input  wready;
+        input wready;
         output wvalid;
         output wstrb;
 
         output bready;
-        input  bresp;
-        input  bvalid;
+        input bresp;
+        input bvalid;
 
         output araddr;
-        input  arready;
+        input arready;
         output arvalid;
 
-        input  rdata;
+        input rdata;
         output rready;
-        input  rresp;
-        input  rvalid;
+        input rresp;
+        input rvalid;
 
         output arprot;
         output awprot;
     endclocking : cbd
-    modport driver (clocking cbd);
+    modport driver(clocking cbd);
 
 endinterface
 

@@ -4,8 +4,9 @@ class AxilDriver;
 
     extern function new(vAxilIfcDriver vif, semaphore axil_lock);
     extern task config_write(Config cfg[]);
-    extern task write(bit[AXI_ADDR_WIDTH-1:0] addr, bit[AXI_DATA_WIDTH-1:0] data);
-    extern task read(bit[AXI_ADDR_WIDTH-1:0] addr, ref bit[AXI_DATA_WIDTH-1:0] data);
+    extern task write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, bit [CGRA_AXI_DATA_WIDTH-1:0] data);
+    extern task read(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr,
+                     ref bit [CGRA_AXI_DATA_WIDTH-1:0] data);
 endclass
 
 function AxilDriver::new(vAxilIfcDriver vif, semaphore axil_lock);
@@ -14,39 +15,39 @@ function AxilDriver::new(vAxilIfcDriver vif, semaphore axil_lock);
 endfunction
 
 task AxilDriver::config_write(Config cfg[]);
-    foreach(cfg[i]) begin
+    foreach (cfg[i]) begin
         write(cfg[i].addr, cfg[i].data);
     end
 endtask
 
-task AxilDriver::write(bit[AXI_ADDR_WIDTH-1:0] addr, bit[AXI_DATA_WIDTH-1:0] data);
+task AxilDriver::write(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr, bit [CGRA_AXI_DATA_WIDTH-1:0] data);
     // $display("AXI-Lite Write. Addr: %08h, Data: %08h", addr, data);
     axil_lock.get(1);
     @(vif.cbd);
-    vif.cbd.awaddr <= addr;
+    vif.cbd.awaddr  <= addr;
     vif.cbd.awvalid <= 1'b1;
-    for (int i=0; i<100; i++) begin
-        if (vif.cbd.awready==1) break;
+    for (int i = 0; i < 100; i++) begin
+        if (vif.cbd.awready == 1) break;
         @(vif.cbd);
-        if (i == 99) return; // axi slave is not ready
+        if (i == 99) return;  // axi slave is not ready
     end
     @(vif.cbd);
     vif.cbd.awvalid <= 0;
     @(vif.cbd);
-    this.vif.cbd.wdata <= data;
+    this.vif.cbd.wdata  <= data;
     this.vif.cbd.wvalid <= 1'b1;
-    for (int i=0; i<100; i++) begin
-        if (this.vif.cbd.wready==1) break;
+    for (int i = 0; i < 100; i++) begin
+        if (this.vif.cbd.wready == 1) break;
         @(vif.cbd);
-        if (i == 99) return; // axi slave is not ready
+        if (i == 99) return;  // axi slave is not ready
     end
     @(vif.cbd);
     this.vif.cbd.wvalid <= 0;
     this.vif.cbd.bready <= 1'b1;
-    for (int i=0; i<100; i++) begin
-        if (this.vif.cbd.bvalid == 1) break; 
+    for (int i = 0; i < 100; i++) begin
+        if (this.vif.cbd.bvalid == 1) break;
         @(vif.cbd);
-        if (i == 99) return; // axi slave is not ready
+        if (i == 99) return;  // axi slave is not ready
     end
     @(vif.cbd);
     this.vif.cbd.bready <= 0;
@@ -54,24 +55,25 @@ task AxilDriver::write(bit[AXI_ADDR_WIDTH-1:0] addr, bit[AXI_DATA_WIDTH-1:0] dat
     axil_lock.put(1);
 endtask
 
-task AxilDriver::read(bit[AXI_ADDR_WIDTH-1:0] addr, ref bit[AXI_DATA_WIDTH-1:0] data);
+task AxilDriver::read(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr,
+                      ref bit [CGRA_AXI_DATA_WIDTH-1:0] data);
     axil_lock.get(1);
     @(vif.cbd);
-    this.vif.cbd.araddr <= addr;
+    this.vif.cbd.araddr  <= addr;
     this.vif.cbd.arvalid <= 1'b1;
-    this.vif.cbd.rready <= 1;
-    for (int i=0; i<100; i++) begin
-        if (this.vif.cbd.arready==1) break;
+    this.vif.cbd.rready  <= 1;
+    for (int i = 0; i < 100; i++) begin
+        if (this.vif.cbd.arready == 1) break;
         @(vif.cbd);
-        if (i == 99) return; // axi slave is not ready
+        if (i == 99) return;  // axi slave is not ready
     end
     @(vif.cbd);
     this.vif.cbd.arvalid <= 0;
     @(vif.cbd);
-    for (int i=0; i<100; i++) begin
-        if (this.vif.cbd.rvalid==1) break;
+    for (int i = 0; i < 100; i++) begin
+        if (this.vif.cbd.rvalid == 1) break;
         @(vif.cbd);
-        if (i == 99) return; // axi slave is not ready
+        if (i == 99) return;  // axi slave is not ready
     end
     data = this.vif.cbd.rdata;
     @(vif.cbd);
