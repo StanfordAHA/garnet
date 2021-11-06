@@ -10,6 +10,43 @@ import pathlib
 import kratos as k
 
 
+def gen_param_header(garnet_home, params):
+    svh_filename = os.path.join(
+        garnet_home, "global_buffer/header/global_buffer_param.svh")
+    h_filename = os.path.join(
+        garnet_home, "global_buffer/header/global_buffer_param.h")
+    gen_header_files(params=params,
+                     svh_filename=svh_filename,
+                     h_filename=h_filename,
+                     header_name="global_buffer")
+
+
+def gen_rdl_header(garnet_home):
+    # Generate default RDL
+    top_name = "glb"
+    rdl_file = os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl")
+
+    # Generate HTML and addressmap header
+    addrmap_output_folder = os.path.join(
+        garnet_home, "global_buffer/header")
+    rdlc = RDLCompiler()
+    try:
+        rdlc.compile_file(rdl_file)
+        # Elaborate the design
+        root = rdlc.elaborate()
+    except RDLCompileError:
+        # A compilation error occurred. Exit with error code
+        sys.exit(1)
+    root = rdlc.elaborate()
+    exporter = HTMLExporter()
+    exporter.export(root, os.path.join(addrmap_output_folder, "html"))
+    rdl_json = convert_addrmap(rdlc, root.top)
+    convert_to_json(rdl_json, os.path.join(
+        addrmap_output_folder, f"{top_name}.json"))
+    convert_to_header(rdl_json, os.path.join(
+        addrmap_output_folder, top_name))
+
+
 def main():
     garnet_home = os.getenv('GARNET_HOME')
     if not garnet_home:
@@ -31,39 +68,10 @@ def main():
     glb = GlobalBuffer(_params=params)
 
     if args.parameter:
-        svh_filename = os.path.join(
-            garnet_home, "global_buffer/header/global_buffer_param.svh")
-        h_filename = os.path.join(
-            garnet_home, "global_buffer/header/global_buffer_param.h")
-        gen_header_files(params=params,
-                         svh_filename=svh_filename,
-                         h_filename=h_filename,
-                         header_name="global_buffer")
+        gen_param_header(garnet_home=garnet_home, params=params)
 
     if args.rdl:
-        # Generate default RDL
-        top_name = "glb"
-        rdl_file = os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl")
-
-        # Generate HTML and addressmap header
-        addrmap_output_folder = os.path.join(
-            garnet_home, "global_buffer/header")
-        rdlc = RDLCompiler()
-        try:
-            rdlc.compile_file(rdl_file)
-            # Elaborate the design
-            root = rdlc.elaborate()
-        except RDLCompileError:
-            # A compilation error occurred. Exit with error code
-            sys.exit(1)
-        root = rdlc.elaborate()
-        exporter = HTMLExporter()
-        exporter.export(root, os.path.join(addrmap_output_folder, "html"))
-        rdl_json = convert_addrmap(rdlc, root.top)
-        convert_to_json(rdl_json, os.path.join(
-            addrmap_output_folder, f"{top_name}.json"))
-        convert_to_header(rdl_json, os.path.join(
-            addrmap_output_folder, top_name))
+        gen_rdl_header(garnet_home=garnet_home)
 
     if args.verilog:
         k.verilog(glb, filename=os.path.join(

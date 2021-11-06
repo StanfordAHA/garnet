@@ -62,16 +62,13 @@ rtl: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
 rtl: 
 	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE)
 	$(FIX_SYSTEMRDL)
-	cat systemRDL/output/glb_pio.sv >> global_buffer.sv
-	cat systemRDL/output/glb_jrdl_decode.sv >> global_buffer.sv
-	cat systemRDL/output/glb_jrdl_logic.sv >> global_buffer.sv
 
 # -------------------------------------------------------------------
 # Compile & Run
 # -------------------------------------------------------------------
 .PHONY: compile
 compile: VCSARGS+= +nospecify
-compile: DESIGNARGS += header/global_buffer_param.svh header/glb.svh -F sim/tb_global_buffer.f global_buffer.sv
+compile: DESIGNARGS += header/global_buffer_param.svh header/glb.svh -F sim/tb_global_buffer.f global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
 compile:
 	$(GENERATE_TV); 
 	$(VCS)
