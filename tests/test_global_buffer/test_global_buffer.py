@@ -5,6 +5,6 @@ import pytest
 
 @pytest.mark.skipif(not verilog_sim_available(),
                     reason="verilog simulator not available")
-def test_global_buffer_verilog_sim():
+def test_global_buffer_sim():
     result = os.system("make -C global_buffer rtl; make -C global_buffer run")
     assert result == 0
