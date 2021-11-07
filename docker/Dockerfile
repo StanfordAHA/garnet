@@ -10,7 +10,7 @@ RUN  apt-get update \
      python3-pip verilator cmake clang-8 build-essential curl wget  \
      libigraph0-dev zlib1g-dev libpng-dev libjpeg-dev python3-dev \
      python3-setuptools make python3-wheel libncurses5-dev \
-     csh imagemagick libgmp-dev libmpfr-dev libmpc-dev file \
+     csh imagemagick libgmp-dev libmpfr-dev libmpc-dev file default-jre \
   && ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime \
   && dpkg-reconfigure --frontend noninteractive tzdata \
   && apt-get clean
