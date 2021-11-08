@@ -308,7 +308,7 @@ class Garnet(Generator):
         putil.load_and_link_peak(
             nodes,
             mem_header,
-            {"global.MEM": MEM_fc},
+            {"global.MEM": (MEM_fc, True)},
         )
 
         putil.load_and_link_peak(
