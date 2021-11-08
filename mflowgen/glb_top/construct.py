@@ -265,7 +265,7 @@ def construct():
   rtl.update_params( { 'cgra_width': parameters['num_tile_array_cols'] }, allow_new=True )
 
   # pin assignment parameters update
-  init.update_params( { 'array_width': parameters['num_tile_array_cols'] }, allow_new=True )
+  init.update_params( { 'num_tile_array_cols': parameters['num_tile_array_cols'] }, allow_new=True )
   init.update_params( { 'num_glb_tiles': parameters['num_glb_tiles'] }, allow_new=True )
 
   # Change nthreads
