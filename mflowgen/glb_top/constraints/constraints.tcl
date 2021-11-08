@@ -50,9 +50,6 @@ set_input_delay -clock ${clock_name} [expr ${clock_period}*0.20] [get_ports rese
 # set input delay for cgra to glb 
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
 
-# clk_en is not used
-set_false_path -from [get_ports *_clk_en]
-
 # cgra_cfg_jtag delay is 0.4 (from glc)
 set_input_delay -clock ${clock_name} [expr ${clock_period}*0.40] [get_ports cgra_cfg_jtag*]
 
@@ -72,21 +69,21 @@ set_output_delay -clock ${clock_name} [expr ${clock_period}*0.4] [get_ports stre
 # glc reading configuration registers is false path
 set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 # jtag bypass mode is false path
-set_false_path -through [get_pins glb_tile_gen_*.glb_tile/*bypass]
+set_false_path -through [get_pins glb_tile_gen_*/*bypass]
 
 # jtag sram read
 set_multicycle_path -setup 10 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
 set_multicycle_path -hold 9 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
 set_multicycle_path -setup 10 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
 set_multicycle_path -hold 9 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
-set_multicycle_path -setup 10 -through [get_pins glb_tile_gen_*.glb_tile/if_sram*rd*]
-set_multicycle_path -hold 9 -through [get_pins glb_tile_gen_*.glb_tile/if_sram*rd*]
+set_multicycle_path -setup 10 -through [get_pins glb_tile_gen_*/if_sram*rd*]
+set_multicycle_path -hold 9 -through [get_pins glb_tile_gen_*/if_sram*rd*]
 
 # jtag write
 set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
 set_multicycle_path -hold 3 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
-set_multicycle_path -setup 4 -through [get_pins glb_tile_gen_*.glb_tile/if_sram*wr*]
-set_multicycle_path -hold 3 -through [get_pins glb_tile_gen_*.glb_tile/if_sram*wr*]
+set_multicycle_path -setup 4 -through [get_pins glb_tile_gen_*/if_sram*wr*]
+set_multicycle_path -hold 3 -through [get_pins glb_tile_gen_*/if_sram*wr*]
 
 # interrupt is asserted for 4 cycles 
 set_multicycle_path -setup 4 -to [get_ports *interrupt_pulse -filter "direction==out"]
