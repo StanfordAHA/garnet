@@ -398,11 +398,12 @@ def main():
                       disable_ndarray=True,
                       inline=False)
         garnet.create_stub()
-        garnet_home = os.getenv('GARNET_HOME')
-        if not garnet_home:
-            garnet_home = os.path.dirname(os.path.abspath(__file__))
-        gen_param_header(garnet_home=garnet_home, params=glb_params)
-        gen_rdl_header(garnet_home=garnet_home)
+        if not args.interconnect_only:
+            garnet_home = os.getenv('GARNET_HOME')
+            if not garnet_home:
+                garnet_home = os.path.dirname(os.path.abspath(__file__))
+            gen_param_header(garnet_home=garnet_home, params=glb_params)
+            gen_rdl_header(garnet_home=garnet_home)
 
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
