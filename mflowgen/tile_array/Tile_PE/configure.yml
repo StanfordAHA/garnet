@@ -8,6 +8,7 @@ inputs:
 
 outputs:
   - Tile_PE_tt.lib
+  - Tile_PE_tt.db
   - Tile_PE.lef
   - Tile_PE.gds
   - Tile_PE.vcs.v
@@ -19,6 +20,7 @@ outputs:
 
 postconditions:
   - assert File( 'outputs/Tile_PE_tt.lib' ) # must exist
+  - assert File( 'outputs/Tile_PE_tt.db' ) # must exist
   - assert File( 'outputs/Tile_PE.lef' ) # must exist
   - assert File( 'outputs/Tile_PE.gds' ) # must exist
   - assert File( 'outputs/Tile_PE.vcs.v' ) # must exist
