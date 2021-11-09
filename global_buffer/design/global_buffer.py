@@ -78,34 +78,29 @@ class GlobalBuffer(Generator):
         self.cgra_cfg_jtag_gc2glb_data = self.input(
             "cgra_cfg_jtag_gc2glb_data", self._params.cgra_cfg_data_width)
 
-        self.stream_data_f2g = self.input(
-            "stream_data_f2g", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.stream_data_valid_f2g = self.input(
-            "stream_data_valid_f2g", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.stream_data_g2f = self.output(
-            "stream_data_g2f", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.stream_data_valid_g2f = self.output(
-            "stream_data_valid_g2f", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_f2g = self.input("stream_data_f2g", self._params.cgra_data_width, size=[
+                                          self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_valid_f2g = self.input("stream_data_valid_f2g", 1, size=[
+                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_g2f = self.output("stream_data_g2f", self._params.cgra_data_width, size=[
+                                           self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_valid_g2f = self.output("stream_data_valid_g2f", 1, size=[
+                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
-        self.cgra_cfg_g2f_cfg_wr_en = self.output(
-            "cgra_cfg_g2f_cfg_wr_en", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_rd_en = self.output(
-            "cgra_cfg_g2f_cfg_rd_en", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_addr = self.output(
-            "cgra_cfg_g2f_cfg_addr", self._params.cgra_cfg_addr_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_data = self.output(
-            "cgra_cfg_g2f_cfg_data", self._params.cgra_cfg_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_wr_en = self.output("cgra_cfg_g2f_cfg_wr_en", 1, size=[
+                                                  self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_rd_en = self.output("cgra_cfg_g2f_cfg_rd_en", 1, size=[
+                                                  self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_addr = self.output("cgra_cfg_g2f_cfg_addr", self._params.cgra_cfg_addr_width, size=[
+                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_data = self.output("cgra_cfg_g2f_cfg_data", self._params.cgra_cfg_data_width, size=[
+                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
-        self.strm_start_pulse = self.input(
-            "strm_start_pulse", self._params.num_glb_tiles)
-        self.pcfg_start_pulse = self.input(
-            "pcfg_start_pulse", self._params.num_glb_tiles)
-        self.strm_f2g_interrupt_pulse = self.output(
-            "strm_f2g_interrupt_pulse", self._params.num_glb_tiles)
-        self.strm_g2f_interrupt_pulse = self.output(
-            "strm_g2f_interrupt_pulse", self._params.num_glb_tiles)
-        self.pcfg_g2f_interrupt_pulse = self.output(
-            "pcfg_g2f_interrupt_pulse", self._params.num_glb_tiles)
+        self.strm_start_pulse = self.input("strm_start_pulse", self._params.num_glb_tiles)
+        self.pcfg_start_pulse = self.input("pcfg_start_pulse", self._params.num_glb_tiles)
+        self.strm_f2g_interrupt_pulse = self.output("strm_f2g_interrupt_pulse", self._params.num_glb_tiles)
+        self.strm_g2f_interrupt_pulse = self.output("strm_g2f_interrupt_pulse", self._params.num_glb_tiles)
+        self.pcfg_g2f_interrupt_pulse = self.output("pcfg_g2f_interrupt_pulse", self._params.num_glb_tiles)
 
         # local variables
         self.cgra_cfg_jtag_gc2glb_wr_en_d = self.var(
@@ -148,9 +143,9 @@ class GlobalBuffer(Generator):
             "pcfg_packet_w2e_esto", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
 
         self.cfg_tile_connected = self.var(
-            "cfg_tile_connected", self._params.num_glb_tiles+1)
+            "cfg_tile_connected", self._params.num_glb_tiles + 1)
         self.cfg_pcfg_tile_connected = self.var(
-            "cfg_pcfg_tile_connected", self._params.num_glb_tiles+1)
+            "cfg_pcfg_tile_connected", self._params.num_glb_tiles + 1)
         self.wire(self.cfg_tile_connected[0], 0)
         self.wire(self.cfg_pcfg_tile_connected[0], 0)
 
@@ -172,14 +167,16 @@ class GlobalBuffer(Generator):
         self.cgra_cfg_jtag_esto_data = self.var(
             "cgra_cfg_jtag_esto_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
 
-        self.cgra_cfg_jtag_wsti_rd_en_bypass = self.var(
-            "cgra_cfg_jtag_wsti_rd_en_bypass", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_wsti_addr_bypass = self.var(
-            "cgra_cfg_jtag_wsti_addr_bypass", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_esto_rd_en_bypass = self.var(
-            "cgra_cfg_jtag_esto_rd_en_bypass", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_esto_addr_bypass = self.var(
-            "cgra_cfg_jtag_esto_addr_bypass", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_wsti_rd_en_bypass = self.var("cgra_cfg_jtag_wsti_rd_en_bypass", 1,
+                                                        size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_wsti_addr_bypass = self.var("cgra_cfg_jtag_wsti_addr_bypass",
+                                                       self._params.cgra_cfg_addr_width,
+                                                       size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_esto_rd_en_bypass = self.var("cgra_cfg_jtag_esto_rd_en_bypass", 1,
+                                                        size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_esto_addr_bypass = self.var("cgra_cfg_jtag_esto_addr_bypass",
+                                                       self._params.cgra_cfg_addr_width,
+                                                       size=self._params.num_glb_tiles, packed=True)
 
         self.cgra_cfg_pcfg_wsti_wr_en = self.var(
             "cgra_cfg_pcfg_wsti_wr_en", 1, size=self._params.num_glb_tiles, packed=True)
@@ -211,7 +208,7 @@ class GlobalBuffer(Generator):
 
         for i in range(self._params.num_glb_tiles):
             self.wire(self.cgra_stall[i], concat(
-                *[self.cgra_stall_in_d[i]]*self._params.cgra_per_glb))
+                *[self.cgra_stall_in_d[i]] * self._params.cgra_per_glb))
 
         self.strm_start_pulse_w = self.var(
             "strm_start_pulse_w", self._params.num_glb_tiles)
@@ -219,79 +216,68 @@ class GlobalBuffer(Generator):
             "strm_start_pulse_d", self._params.num_glb_tiles)
         self.wire(self.strm_start_pulse, self.strm_start_pulse_w)
 
-        self.pcfg_start_pulse_w = self.var(
-            "pcfg_start_pulse_w", self._params.num_glb_tiles)
-        self.pcfg_start_pulse_d = self.var(
-            "pcfg_start_pulse_d", self._params.num_glb_tiles)
+        self.pcfg_start_pulse_w = self.var("pcfg_start_pulse_w", self._params.num_glb_tiles)
+        self.pcfg_start_pulse_d = self.var("pcfg_start_pulse_d", self._params.num_glb_tiles)
         self.wire(self.pcfg_start_pulse, self.pcfg_start_pulse_w)
 
-        self.strm_f2g_interrupt_pulse_w = self.var(
-            "strm_f2g_interrupt_pulse_w", self._params.num_glb_tiles)
-        self.strm_f2g_interrupt_pulse_d = self.var(
-            "strm_f2g_interrupt_pulse_d", self._params.num_glb_tiles)
-        self.wire(self.strm_f2g_interrupt_pulse_d,
-                  self.strm_f2g_interrupt_pulse)
+        self.strm_f2g_interrupt_pulse_w = self.var("strm_f2g_interrupt_pulse_w", self._params.num_glb_tiles)
+        self.strm_f2g_interrupt_pulse_d = self.var("strm_f2g_interrupt_pulse_d", self._params.num_glb_tiles)
+        self.wire(self.strm_f2g_interrupt_pulse_d, self.strm_f2g_interrupt_pulse)
 
-        self.strm_g2f_interrupt_pulse_w = self.var(
-            "strm_g2f_interrupt_pulse_w", self._params.num_glb_tiles)
-        self.strm_g2f_interrupt_pulse_d = self.var(
-            "strm_g2f_interrupt_pulse_d", self._params.num_glb_tiles)
-        self.wire(self.strm_g2f_interrupt_pulse_d,
-                  self.strm_g2f_interrupt_pulse)
+        self.strm_g2f_interrupt_pulse_w = self.var("strm_g2f_interrupt_pulse_w", self._params.num_glb_tiles)
+        self.strm_g2f_interrupt_pulse_d = self.var("strm_g2f_interrupt_pulse_d", self._params.num_glb_tiles)
+        self.wire(self.strm_g2f_interrupt_pulse_d, self.strm_g2f_interrupt_pulse)
 
-        self.pcfg_g2f_interrupt_pulse_w = self.var(
-            "pcfg_g2f_interrupt_pulse_w", self._params.num_glb_tiles)
-        self.pcfg_g2f_interrupt_pulse_d = self.var(
-            "pcfg_g2f_interrupt_pulse_d", self._params.num_glb_tiles)
-        self.wire(self.pcfg_g2f_interrupt_pulse_d,
-                  self.pcfg_g2f_interrupt_pulse)
+        self.pcfg_g2f_interrupt_pulse_w = self.var("pcfg_g2f_interrupt_pulse_w", self._params.num_glb_tiles)
+        self.pcfg_g2f_interrupt_pulse_d = self.var("pcfg_g2f_interrupt_pulse_d", self._params.num_glb_tiles)
+        self.wire(self.pcfg_g2f_interrupt_pulse_d, self.pcfg_g2f_interrupt_pulse)
 
-        self.cgra_cfg_g2f_cfg_wr_en_w = self.var(
-            "cgra_cfg_g2f_cfg_wr_en_w", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_wr_en_d = self.var(
-            "cgra_cfg_g2f_cfg_wr_en_d", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_wr_en_w = self.var("cgra_cfg_g2f_cfg_wr_en_w", 1, size=[
+                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_wr_en_d = self.var("cgra_cfg_g2f_cfg_wr_en_d", 1, size=[
+                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.cgra_cfg_g2f_cfg_wr_en_d, self.cgra_cfg_g2f_cfg_wr_en)
 
-        self.cgra_cfg_g2f_cfg_rd_en_w = self.var(
-            "cgra_cfg_g2f_cfg_rd_en_w", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_rd_en_d = self.var(
-            "cgra_cfg_g2f_cfg_rd_en_d", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_rd_en_w = self.var("cgra_cfg_g2f_cfg_rd_en_w", 1, size=[
+                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_rd_en_d = self.var("cgra_cfg_g2f_cfg_rd_en_d", 1, size=[
+                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.cgra_cfg_g2f_cfg_rd_en_d, self.cgra_cfg_g2f_cfg_rd_en)
 
-        self.cgra_cfg_g2f_cfg_addr_w = self.var(
-            "cgra_cfg_g2f_cfg_addr_w", self._params.cgra_cfg_addr_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_addr_d = self.var(
-            "cgra_cfg_g2f_cfg_addr_d", self._params.cgra_cfg_addr_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_addr_w = self.var("cgra_cfg_g2f_cfg_addr_w", self._params.cgra_cfg_addr_width, size=[
+                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_addr_d = self.var("cgra_cfg_g2f_cfg_addr_d", self._params.cgra_cfg_addr_width, size=[
+                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.cgra_cfg_g2f_cfg_addr_d, self.cgra_cfg_g2f_cfg_addr)
 
-        self.cgra_cfg_g2f_cfg_data_w = self.var(
-            "cgra_cfg_g2f_cfg_data_w", self._params.cgra_cfg_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_data_d = self.var(
-            "cgra_cfg_g2f_cfg_data_d", self._params.cgra_cfg_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_data_w = self.var("cgra_cfg_g2f_cfg_data_w", self._params.cgra_cfg_data_width, size=[
+                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.cgra_cfg_g2f_cfg_data_d = self.var("cgra_cfg_g2f_cfg_data_d", self._params.cgra_cfg_data_width, size=[
+                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.cgra_cfg_g2f_cfg_data_d, self.cgra_cfg_g2f_cfg_data)
 
-        self.stream_data_f2g_w = self.var(
-            "stream_data_f2g_w", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.stream_data_f2g_d = self.var(
-            "stream_data_f2g_d", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_f2g_w = self.var("stream_data_f2g_w", self._params.cgra_data_width, size=[
+                                          self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_f2g_d = self.var("stream_data_f2g_d", self._params.cgra_data_width, size=[
+                                          self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.stream_data_f2g, self.stream_data_f2g_w)
 
-        self.stream_data_valid_f2g_w = self.var(
-            "stream_data_valid_f2g_w", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.stream_data_valid_f2g_d = self.var(
-            "stream_data_valid_f2g_d", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_valid_f2g_w = self.var("stream_data_valid_f2g_w", 1, size=[
+                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_valid_f2g_d = self.var("stream_data_valid_f2g_d", 1, size=[
+                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.stream_data_valid_f2g, self.stream_data_valid_f2g_w)
 
-        self.stream_data_g2f_w = self.var(
-            "stream_data_g2f_w", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.stream_data_g2f_d = self.var(
-            "stream_data_g2f_d", self._params.cgra_data_width, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_g2f_w = self.var("stream_data_g2f_w", self._params.cgra_data_width, size=[
+                                          self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_g2f_d = self.var("stream_data_g2f_d", self._params.cgra_data_width, size=[
+                                          self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.stream_data_g2f_d, self.stream_data_g2f)
 
-        self.stream_data_valid_g2f_w = self.var(
-            "stream_data_valid_g2f_w", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.stream_data_valid_g2f_d = self.var(
-            "stream_data_valid_g2f_d", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_valid_g2f_w = self.var("stream_data_valid_g2f_w", 1, size=[
+                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.stream_data_valid_g2f_d = self.var("stream_data_valid_g2f_d", 1, size=[
+                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.wire(self.stream_data_valid_g2f_d, self.stream_data_valid_g2f)
 
         # interface
@@ -408,17 +394,17 @@ class GlobalBuffer(Generator):
             self.cgra_cfg_jtag_gc2glb_data_d = self.cgra_cfg_jtag_gc2glb_data
 
     def tile2tile_e2w_wiring(self):
-        self.wire(self.proc_packet_e2w_esti[self._params.num_glb_tiles-1],
-                  self.proc_packet_w2e_esto[self._params.num_glb_tiles-1])
-        self.wire(self.strm_packet_e2w_esti[self._params.num_glb_tiles-1], 0)
-        self.wire(self.pcfg_packet_e2w_esti[self._params.num_glb_tiles-1], 0)
-        for i in range(self._params.num_glb_tiles-1):
+        self.wire(self.proc_packet_e2w_esti[self._params.num_glb_tiles - 1],
+                  self.proc_packet_w2e_esto[self._params.num_glb_tiles - 1])
+        self.wire(self.strm_packet_e2w_esti[self._params.num_glb_tiles - 1], 0)
+        self.wire(self.pcfg_packet_e2w_esti[self._params.num_glb_tiles - 1], 0)
+        for i in range(self._params.num_glb_tiles - 1):
             self.wire(self.proc_packet_e2w_esti[i],
-                      self.proc_packet_e2w_wsto[i+1])
+                      self.proc_packet_e2w_wsto[i + 1])
             self.wire(self.strm_packet_e2w_esti[i],
-                      self.strm_packet_e2w_wsto[i+1])
+                      self.strm_packet_e2w_wsto[i + 1])
             self.wire(self.pcfg_packet_e2w_esti[i],
-                      self.pcfg_packet_e2w_wsto[i+1])
+                      self.pcfg_packet_e2w_wsto[i + 1])
 
     def tile2tile_w2e_wiring(self):
         self.wire(self.proc_packet_w2e_wsti[0], self.proc_packet_d)
@@ -426,11 +412,11 @@ class GlobalBuffer(Generator):
         self.wire(self.pcfg_packet_w2e_wsti[0], 0)
         for i in range(1, self._params.num_glb_tiles):
             self.wire(self.proc_packet_w2e_wsti[const(i, clog2(self._params.num_glb_tiles))],
-                      self.proc_packet_w2e_esto[const((i-1), clog2(self._params.num_glb_tiles))])
+                      self.proc_packet_w2e_esto[const((i - 1), clog2(self._params.num_glb_tiles))])
             self.wire(self.strm_packet_w2e_wsti[const(i, clog2(self._params.num_glb_tiles))],
-                      self.strm_packet_w2e_esto[const((i-1), clog2(self._params.num_glb_tiles))])
+                      self.strm_packet_w2e_esto[const((i - 1), clog2(self._params.num_glb_tiles))])
             self.wire(self.pcfg_packet_w2e_wsti[const(i, clog2(self._params.num_glb_tiles))],
-                      self.pcfg_packet_w2e_esto[const((i-1), clog2(self._params.num_glb_tiles))])
+                      self.pcfg_packet_w2e_esto[const((i - 1), clog2(self._params.num_glb_tiles))])
 
     @always_comb
     def tile2tile_w2e_cfg_wiring(self):
@@ -449,18 +435,18 @@ class GlobalBuffer(Generator):
                 self.cgra_cfg_pcfg_wsti_addr[i] = 0
                 self.cgra_cfg_pcfg_wsti_data[i] = 0
             else:
-                self.cgra_cfg_jtag_wsti_rd_en[i] = self.cgra_cfg_jtag_esto_rd_en[i-1]
-                self.cgra_cfg_jtag_wsti_wr_en[i] = self.cgra_cfg_jtag_esto_wr_en[i-1]
-                self.cgra_cfg_jtag_wsti_addr[i] = self.cgra_cfg_jtag_esto_addr[i-1]
-                self.cgra_cfg_jtag_wsti_data[i] = self.cgra_cfg_jtag_esto_data[i-1]
+                self.cgra_cfg_jtag_wsti_rd_en[i] = self.cgra_cfg_jtag_esto_rd_en[i - 1]
+                self.cgra_cfg_jtag_wsti_wr_en[i] = self.cgra_cfg_jtag_esto_wr_en[i - 1]
+                self.cgra_cfg_jtag_wsti_addr[i] = self.cgra_cfg_jtag_esto_addr[i - 1]
+                self.cgra_cfg_jtag_wsti_data[i] = self.cgra_cfg_jtag_esto_data[i - 1]
 
-                self.cgra_cfg_jtag_wsti_rd_en_bypass[i] = self.cgra_cfg_jtag_esto_rd_en_bypass[i-1]
-                self.cgra_cfg_jtag_wsti_addr_bypass[i] = self.cgra_cfg_jtag_esto_addr_bypass[i-1]
+                self.cgra_cfg_jtag_wsti_rd_en_bypass[i] = self.cgra_cfg_jtag_esto_rd_en_bypass[i - 1]
+                self.cgra_cfg_jtag_wsti_addr_bypass[i] = self.cgra_cfg_jtag_esto_addr_bypass[i - 1]
 
-                self.cgra_cfg_pcfg_wsti_rd_en[i] = self.cgra_cfg_pcfg_esto_rd_en[i-1]
-                self.cgra_cfg_pcfg_wsti_wr_en[i] = self.cgra_cfg_pcfg_esto_wr_en[i-1]
-                self.cgra_cfg_pcfg_wsti_addr[i] = self.cgra_cfg_pcfg_esto_addr[i-1]
-                self.cgra_cfg_pcfg_wsti_data[i] = self.cgra_cfg_pcfg_esto_data[i-1]
+                self.cgra_cfg_pcfg_wsti_rd_en[i] = self.cgra_cfg_pcfg_esto_rd_en[i - 1]
+                self.cgra_cfg_pcfg_wsti_wr_en[i] = self.cgra_cfg_pcfg_esto_wr_en[i - 1]
+                self.cgra_cfg_pcfg_wsti_addr[i] = self.cgra_cfg_pcfg_esto_addr[i - 1]
+                self.cgra_cfg_pcfg_wsti_data[i] = self.cgra_cfg_pcfg_esto_data[i - 1]
 
     def add_glb_tile(self):
         for i in range(self._params.num_glb_tiles):
@@ -575,14 +561,14 @@ class GlobalBuffer(Generator):
                            pcfg_rd_data_valid_e2w_wsto=self.pcfg_packet_e2w_wsto[
                                i]['rd_data_valid'],
 
-                           if_cfg_est_m_wr_en=self.if_cfg_list[i+1].wr_en,
-                           if_cfg_est_m_wr_addr=self.if_cfg_list[i+1].wr_addr,
-                           if_cfg_est_m_wr_data=self.if_cfg_list[i+1].wr_data,
-                           if_cfg_est_m_rd_en=self.if_cfg_list[i+1].rd_en,
-                           if_cfg_est_m_rd_addr=self.if_cfg_list[i+1].rd_addr,
-                           if_cfg_est_m_rd_data=self.if_cfg_list[i+1].rd_data,
-                           if_cfg_est_m_rd_data_valid=self.if_cfg_list[i +
-                                                                       1].rd_data_valid,
+                           if_cfg_est_m_wr_en=self.if_cfg_list[i + 1].wr_en,
+                           if_cfg_est_m_wr_addr=self.if_cfg_list[i + 1].wr_addr,
+                           if_cfg_est_m_wr_data=self.if_cfg_list[i + 1].wr_data,
+                           if_cfg_est_m_rd_en=self.if_cfg_list[i + 1].rd_en,
+                           if_cfg_est_m_rd_addr=self.if_cfg_list[i + 1].rd_addr,
+                           if_cfg_est_m_rd_data=self.if_cfg_list[i + 1].rd_data,
+                           if_cfg_est_m_rd_data_valid=self.if_cfg_list[i
+                                                                       + 1].rd_data_valid,
 
                            if_cfg_wst_s_wr_en=self.if_cfg_list[i].wr_en,
                            if_cfg_wst_s_wr_addr=self.if_cfg_list[i].wr_addr,
@@ -592,14 +578,14 @@ class GlobalBuffer(Generator):
                            if_cfg_wst_s_rd_data=self.if_cfg_list[i].rd_data,
                            if_cfg_wst_s_rd_data_valid=self.if_cfg_list[i].rd_data_valid,
 
-                           if_sram_cfg_est_m_wr_en=self.if_sram_cfg_list[i+1].wr_en,
-                           if_sram_cfg_est_m_wr_addr=self.if_sram_cfg_list[i+1].wr_addr,
-                           if_sram_cfg_est_m_wr_data=self.if_sram_cfg_list[i+1].wr_data,
-                           if_sram_cfg_est_m_rd_en=self.if_sram_cfg_list[i+1].rd_en,
-                           if_sram_cfg_est_m_rd_addr=self.if_sram_cfg_list[i+1].rd_addr,
-                           if_sram_cfg_est_m_rd_data=self.if_sram_cfg_list[i+1].rd_data,
+                           if_sram_cfg_est_m_wr_en=self.if_sram_cfg_list[i + 1].wr_en,
+                           if_sram_cfg_est_m_wr_addr=self.if_sram_cfg_list[i + 1].wr_addr,
+                           if_sram_cfg_est_m_wr_data=self.if_sram_cfg_list[i + 1].wr_data,
+                           if_sram_cfg_est_m_rd_en=self.if_sram_cfg_list[i + 1].rd_en,
+                           if_sram_cfg_est_m_rd_addr=self.if_sram_cfg_list[i + 1].rd_addr,
+                           if_sram_cfg_est_m_rd_data=self.if_sram_cfg_list[i + 1].rd_data,
                            if_sram_cfg_est_m_rd_data_valid=self.if_sram_cfg_list[
-                               i+1].rd_data_valid,
+                               i + 1].rd_data_valid,
 
                            if_sram_cfg_wst_s_wr_en=self.if_sram_cfg_list[i].wr_en,
                            if_sram_cfg_wst_s_wr_addr=self.if_sram_cfg_list[i].wr_addr,
@@ -611,9 +597,9 @@ class GlobalBuffer(Generator):
                                i].rd_data_valid,
 
                            cfg_tile_connected_wsti=self.cfg_tile_connected[i],
-                           cfg_tile_connected_esto=self.cfg_tile_connected[i+1],
+                           cfg_tile_connected_esto=self.cfg_tile_connected[i + 1],
                            cfg_pcfg_tile_connected_wsti=self.cfg_pcfg_tile_connected[i],
-                           cfg_pcfg_tile_connected_esto=self.cfg_pcfg_tile_connected[i+1],
+                           cfg_pcfg_tile_connected_esto=self.cfg_pcfg_tile_connected[i + 1],
 
                            stream_data_f2g=self.stream_data_f2g_d[i],
                            stream_data_valid_f2g=self.stream_data_valid_f2g_d[i],

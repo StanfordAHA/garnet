@@ -209,7 +209,8 @@ class GlbCoreSwitch(Generator):
 
     @always_comb
     def wr_sw2bank_filtered_logic(self):
-        if self.wr_packet_sw2bank_muxed['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb] == self.glb_tile_id:
+        if self.wr_packet_sw2bank_muxed['wr_addr'][self.packet_addr_tile_sel_msb,
+                                                   self.packet_addr_tile_sel_lsb] == self.glb_tile_id:
             self.wr_packet_sw2bank_filtered = self.wr_packet_sw2bank_muxed
         else:
             self.wr_packet_sw2bank_filtered = 0
@@ -405,7 +406,8 @@ class GlbCoreSwitch(Generator):
 
     @always_comb
     def rdrs_sw2pcfgr_logic(self):
-        if (self.rdrq_sel_d_nostall[-1] == self.packet_src_e.pcfg_rtr) | (self.rdrq_sel_d_nostall[-1] == self.packet_src_e.pcfg_dma):
+        if ((self.rdrq_sel_d_nostall[-1] == self.packet_src_e.pcfg_rtr)
+                | (self.rdrq_sel_d_nostall[-1] == self.packet_src_e.pcfg_dma)):
             self.rdrs_packet_sw2pcfgr = self.rdrs_packet_bankarr2sw_pcfgr_d1[
                 self.rdrq_bank_sel_d_nostall[-1]]
         else:

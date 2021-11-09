@@ -50,7 +50,7 @@ class GlbBank(Generator):
     # TODO: Is there a better way to connect?
     def wr_data_bit_sel_logic(self):
         for i in range(self._params.bank_data_width):
-            self.wire(self.wr_data_bit_sel[i], self.wr_packet['wr_strb'][i//8])
+            self.wire(self.wr_data_bit_sel[i], self.wr_packet['wr_strb'][i // 8])
 
     def add_glb_bank_memory(self):
         self.glb_bank_memory = GlbBankMemory(_params=self._params)
@@ -70,11 +70,11 @@ class GlbBank(Generator):
                        clk=self.clk,
                        reset=self.reset,
                        packet_wr_en=self.wr_packet['wr_en'],
-                       packet_wr_addr=self.wr_packet['wr_addr'][self._params.bank_addr_width-1, 0],
+                       packet_wr_addr=self.wr_packet['wr_addr'][self._params.bank_addr_width - 1, 0],
                        packet_wr_data=self.wr_packet['wr_data'],
                        packet_wr_data_bit_sel=self.wr_data_bit_sel,
                        packet_rd_en=self.rdrq_packet['rd_en'],
-                       packet_rd_addr=self.rdrq_packet['rd_addr'][self._params.bank_addr_width-1, 0],
+                       packet_rd_addr=self.rdrq_packet['rd_addr'][self._params.bank_addr_width - 1, 0],
                        packet_rd_data=self.rdrs_packet['rd_data'],
                        packet_rd_data_valid=self.rdrs_packet['rd_data_valid'],
                        mem_rd_en=self.mem_rd_en,

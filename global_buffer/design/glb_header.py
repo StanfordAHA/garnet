@@ -46,7 +46,7 @@ class GlbHeader():
                                                   [("start_addr", self._params.glb_addr_width),
                                                    ("num_cfg", self._params.max_num_cfg_width)])
         wr_packet_list = [("wr_en", 1),
-                          ("wr_strb", math.ceil(self._params.bank_data_width/8)),
+                          ("wr_strb", math.ceil(self._params.bank_data_width / 8)),
                           ("wr_addr", self._params.glb_addr_width),
                           ("wr_data", self._params.bank_data_width), ]
         rdrq_packet_list = [("rd_en", 1),

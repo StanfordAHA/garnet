@@ -66,22 +66,26 @@ class GlbBankCtrl(Generator):
     @always_comb
     def mem_signal_logic(self):
         if self.if_sram_cfg_s.wr_en:
-            if self.if_sram_cfg_s.wr_addr[self._params.bank_byte_offset-1] == 0:
+            if self.if_sram_cfg_s.wr_addr[self._params.bank_byte_offset - 1] == 0:
                 self.mem_wr_en = 1
                 self.mem_rd_en_w = 0
                 self.mem_addr = self.if_sram_cfg_s.wr_addr
                 self.mem_data_in = concat(const(
                     0, self._params.bank_data_width - self._params.axi_data_width), self.if_sram_cfg_s.wr_data)
-                self.mem_data_in_bit_sel = concat(const(
-                    0, self._params.bank_data_width - self._params.axi_data_width), const(2**self._params.axi_data_width-1, self._params.axi_data_width))
+                self.mem_data_in_bit_sel = concat(const(0, self._params.bank_data_width - self._params.axi_data_width),
+                                                  const(2**self._params.axi_data_width - 1,
+                                                        self._params.axi_data_width))
             else:
                 self.mem_wr_en = 1
                 self.mem_rd_en_w = 0
                 self.mem_addr = self.if_sram_cfg_s.wr_addr
-                self.mem_data_in = concat(
-                    self.if_sram_cfg_s.wr_data[self._params.bank_data_width - self._params.axi_data_width - 1, 0], const(0, self._params.axi_data_width))
-                self.mem_data_in_bit_sel = concat(const(2**(self._params.bank_data_width - self._params.axi_data_width)-1,
-                                                  self._params.bank_data_width - self._params.axi_data_width), const(0, self._params.axi_data_width))
+                self.mem_data_in = concat(self.if_sram_cfg_s.wr_data[self._params.bank_data_width
+                                                                     - self._params.axi_data_width - 1, 0],
+                                          const(0, self._params.axi_data_width))
+                self.mem_data_in_bit_sel = concat(const(2**(self._params.bank_data_width - self._params.axi_data_width)
+                                                        - 1,
+                                                        self._params.bank_data_width - self._params.axi_data_width),
+                                                  const(0, self._params.axi_data_width))
         elif self.if_sram_cfg_s.rd_en:
             self.mem_wr_en = 0
             self.mem_rd_en_w = 1
@@ -168,7 +172,7 @@ class GlbBankCtrl(Generator):
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       in_=self.if_sram_cfg_s.rd_addr[self._params.bank_byte_offset-1],
+                       in_=self.if_sram_cfg_s.rd_addr[self._params.bank_byte_offset - 1],
                        out_=self.sram_cfg_rd_addr_sel_d)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -182,10 +186,10 @@ class GlbBankCtrl(Generator):
     def sram_cfg_rd_data_logic(self):
         if self.sram_cfg_rd_en_d:
             if self.sram_cfg_rd_addr_sel_d == 0:
-                self.if_sram_cfg_s.rd_data = self.mem_data_out[self._params.axi_data_width-1, 0]
+                self.if_sram_cfg_s.rd_data = self.mem_data_out[self._params.axi_data_width - 1, 0]
             else:
-                self.if_sram_cfg_s.rd_data = self.mem_data_out[self._params.axi_data_width *
-                                                               2-1, self._params.axi_data_width]
+                self.if_sram_cfg_s.rd_data = self.mem_data_out[self._params.axi_data_width
+                                                               * 2 - 1, self._params.axi_data_width]
         else:
             self.if_sram_cfg_s.rd_data = self.sram_cfg_rd_data_r
         self.if_sram_cfg_s.rd_data_valid = self.mem_rd_en_d & self.sram_cfg_rd_en_d

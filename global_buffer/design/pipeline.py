@@ -2,7 +2,7 @@ from kratos import Generator, always_ff, posedge, resize, clog2, const
 
 
 class Pipeline(Generator):
-    def __init__(self, width: int,  depth: int, flatten_output=False, reset_high=False):
+    def __init__(self, width: int, depth: int, flatten_output=False, reset_high=False):
         name_suffix = ""
         if flatten_output:
             name_suffix += "_array"
@@ -35,7 +35,7 @@ class Pipeline(Generator):
             if flatten_output:
                 self.wire(self.out_, self.pipeline_r)
             else:
-                self.wire(self.out_, self.pipeline_r[self.depth-1])
+                self.wire(self.out_, self.pipeline_r[self.depth - 1])
             self.add_always(self.pipeline)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -52,4 +52,4 @@ class Pipeline(Generator):
                     self.pipeline_r[i] = self.in_
                 else:
                     self.pipeline_r[i] = self.pipeline_r[resize(
-                        i-1, self.depth_width)]
+                        i - 1, self.depth_width)]

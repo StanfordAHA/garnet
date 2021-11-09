@@ -169,7 +169,8 @@ class GlbCoreStoreDma(Generator):
         elif self.state_r == self.state_e.idle:
             self.num_cnt_next = 0
             self.cur_addr_next = 0
-            if ((self.dma_header_r[self.queue_sel_w]['validate'] == 1) & (self.dma_header_r[self.queue_sel_w]['num_words'] != 0)):
+            if ((self.dma_header_r[self.queue_sel_w]['validate'] == 1)
+                    & (self.dma_header_r[self.queue_sel_w]['num_words'] != 0)):
                 self.cur_addr_next = self.dma_header_r[self.queue_sel_w]['start_addr']
                 self.num_cnt_next = self.dma_header_r[self.queue_sel_w]['num_words']
                 self.is_first_word_next = 1
@@ -188,8 +189,8 @@ class GlbCoreStoreDma(Generator):
                 self.state_next = self.state_e.done
             elif self.data_valid_f2g_d1 == 1:
                 self.is_first_word_next = 0
-                self.cache_data_next[self._params.cgra_data_width -
-                                     1, 0] = self.data_f2g_d1
+                self.cache_data_next[self._params.cgra_data_width
+                                     - 1, 0] = self.data_f2g_d1
                 self.cache_strb_next[1, 0] = 0b11
                 self.num_cnt_next = self.num_cnt_r - 1
                 if ~self.is_first_word_r:
@@ -241,7 +242,7 @@ class GlbCoreStoreDma(Generator):
             elif self.data_valid_f2g_d1 == 1:
                 self.is_first_word_next = 0
                 self.cache_data_next = concat(const(
-                    0, self._params.bank_data_width-self._params.cgra_data_width), self.data_f2g_d1)
+                    0, self._params.bank_data_width - self._params.cgra_data_width), self.data_f2g_d1)
                 self.cache_strb_next = concat(const(0, 6), const(0b11, 2))
                 self.num_cnt_next = self.num_cnt_r - 1
                 if ~self.is_first_word_r:
@@ -300,7 +301,8 @@ class GlbCoreStoreDma(Generator):
         elif self.clk_en:
             if self.state_r == self.state_e.idle:
                 if self.cfg_st_dma_ctrl_mode == 0b11:
-                    if self.dma_header_r[self.queue_sel_r]['validate'] & (self.dma_header_r[self.queue_sel_r]['num_words'] != 0):
+                    if (self.dma_header_r[self.queue_sel_r]['validate']
+                            & (self.dma_header_r[self.queue_sel_r]['num_words'] != 0)):
                         self.queue_sel_r = self.queue_sel_r + 1
                 else:
                     self.queue_sel_r = 0

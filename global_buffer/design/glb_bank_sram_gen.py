@@ -23,8 +23,8 @@ class GlbBankSramGen(Generator):
         # local parameter
         self.sram_pipeline_depth = 1
         self.sram_macro_addr_width = clog2(self.sram_macro_depth)
-        self.num_sram_macros = 2 ** (self.addr_width -
-                                     self.sram_macro_addr_width)
+        self.num_sram_macros = 2 ** (self.addr_width
+                                     - self.sram_macro_addr_width)
 
         # local variables
         self.web_demux = self.var("WEB_DEMUX", self.num_sram_macros)
