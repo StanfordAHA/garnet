@@ -506,6 +506,15 @@ program glb_test (
         return new_tile_id_mask;
     endfunction
 
+    function void assert_(bit cond, string msg);
+        assert (cond)
+        else begin
+            $display("%s", msg);
+            $stacktrace;
+            $finish(1);
+        end
+    endfunction
+
     function automatic int compare_64b_arr(ref [63:0] data_arr_0 [], ref [63:0] data_arr_1 []);
         int size_0 = data_arr_0.size();
         int size_1 = data_arr_1.size();
@@ -606,6 +615,7 @@ program glb_test (
         bit [CGRA_CFG_DATA_WIDTH-1:0] bs_data;
         bit [CGRA_CFG_DATA_WIDTH-1:0] rd_data;
         int err;
+        assert_($root.top.cgra.cfg_wr_en == 0, $sformatf("Configuration wr_en should go 0 after configuration"));
         for (int i=0; i < bs_arr.size(); i++) begin
             bs_addr = bs_arr[i][CGRA_CFG_DATA_WIDTH +: CGRA_CFG_ADDR_WIDTH];
             bs_data = bs_arr[i][0 +: CGRA_CFG_DATA_WIDTH];
