@@ -32,7 +32,7 @@ class GlbCorePcfgDma(Generator):
         # localparam
         self.bank_data_byte_offset = math.ceil(
             self._params.bank_data_width / 8)
-        # TODO: For now, we assume that it takes 8 cycles to finish configuring the chip after sending the last read request
+        # TODO: For now, we assume that it takes 8 cycles to finish configuring the chip after sending the last rdrq
         self.default_latency = 8
         # TODO: Interrupt pulse width can be just one cycle?
         self.interrupt_pulse_width = 4  # This is not used now.
@@ -145,7 +145,10 @@ class GlbCorePcfgDma(Generator):
             self.rdrs_packet_rd_data_valid_r = 0
         elif self.rdrs_packet['rd_data_valid']:
             self.rdrs_packet_rd_data_r = self.rdrs_packet['rd_data']
-            self.rdrs_packet_rd_data_valid_r = self.rdrs_packet['rd_data_valid']
+            self.rdrs_packet_rd_data_valid_r = 1
+        else:
+            self.rdrs_packet_rd_data_r = 0
+            self.rdrs_packet_rd_data_valid_r = 0
 
     def assign_rdrq_packet(self):
         self.wire(self.rdrq_packet['rd_en'], self.rdrq_packet_rd_en_r)

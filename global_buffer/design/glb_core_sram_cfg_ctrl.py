@@ -50,19 +50,30 @@ class GlbCoreSramCfgCtrl(Generator):
 
     @always_comb
     def tile_id_match_logic(self):
-        self.tile_id_match = self.if_sram_cfg_wst_s.wr_addr[self._params.bank_addr_width + self._params.bank_sel_addr_width +
-                                                            self._params.tile_sel_addr_width - 1, self._params.bank_addr_width + self._params.bank_sel_addr_width] == self.glb_tile_id
+        self.tile_id_match = (self.if_sram_cfg_wst_s.wr_addr[self._params.bank_addr_width
+                                                             + self._params.bank_sel_addr_width
+                                                             + self._params.tile_sel_addr_width - 1,
+                                                             self._params.bank_addr_width
+                                                             + self._params.bank_sel_addr_width]
+                              == self.glb_tile_id)
 
     @always_comb
     def if_sram_cfg_core2bank_logic(self, i):
         if self.tile_id_match:
-            self.if_sram_cfg_core2bank_m[i].wr_en = ((self.if_sram_cfg_wst_s.wr_addr[self._params.bank_addr_width +
-                                                                                     self._params.bank_sel_addr_width - 1, self._params.bank_addr_width] == i) & self.if_sram_cfg_wst_s.wr_en)
-            self.if_sram_cfg_core2bank_m[i].wr_addr = self.if_sram_cfg_wst_s.wr_addr[self._params.bank_addr_width - 1, 0]
+            self.if_sram_cfg_core2bank_m[i].wr_en = ((self.if_sram_cfg_wst_s.wr_addr[self._params.bank_addr_width
+                                                                                     + self._params.bank_sel_addr_width
+                                                                                     - 1, self._params.bank_addr_width]
+                                                      == i) & self.if_sram_cfg_wst_s.wr_en)
+            self.if_sram_cfg_core2bank_m[i].wr_addr = self.if_sram_cfg_wst_s.wr_addr[self._params.bank_addr_width - 1,
+                                                                                     0]
             self.if_sram_cfg_core2bank_m[i].wr_data = self.if_sram_cfg_wst_s.wr_data
-            self.if_sram_cfg_core2bank_m[i].rd_en = ((self.if_sram_cfg_wst_s.rd_addr[self._params.bank_addr_width +
-                                                                                     self._params.bank_sel_addr_width - 1, self._params.bank_addr_width] == i) & self.if_sram_cfg_wst_s.rd_en)
-            self.if_sram_cfg_core2bank_m[i].rd_addr = self.if_sram_cfg_wst_s.rd_addr[self._params.bank_addr_width - 1, 0]
+            self.if_sram_cfg_core2bank_m[i].rd_en = ((self.if_sram_cfg_wst_s.rd_addr[self._params.bank_addr_width
+                                                                                     + self._params.bank_sel_addr_width
+                                                                                     - 1,
+                                                                                     self._params.bank_addr_width] == i)
+                                                     & self.if_sram_cfg_wst_s.rd_en)
+            self.if_sram_cfg_core2bank_m[i].rd_addr = self.if_sram_cfg_wst_s.rd_addr[self._params.bank_addr_width - 1,
+                                                                                     0]
         else:
             self.if_sram_cfg_core2bank_m[i].wr_en = 0
             self.if_sram_cfg_core2bank_m[i].wr_addr = 0

@@ -105,8 +105,8 @@ class GlbBankMemory(Generator):
         self.sram_wen = self.wen
         self.sram_ren = self.ren
         self.sram_cen = self.wen | self.ren
-        self.sram_addr = self.addr[self._params.bank_addr_width -
-                                   1, self._params.bank_byte_offset]
+        self.sram_addr = self.addr[self._params.bank_addr_width - 1,
+                                   self._params.bank_byte_offset]
         self.sram_data_in = self.data_in
         self.sram_data_in_bit_sel = self.data_in_bit_sel
 

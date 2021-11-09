@@ -99,14 +99,16 @@ class GlbCoreProcRouter(Generator):
             for port in self.header.rdrq_packet_ports:
                 self.rdrq_packet_pr2sw_muxed[port] = self.packet_e2w_wsto[port]
 
-        if self.wr_packet_pr2sw_muxed['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb] == self.glb_tile_id:
+        if (self.wr_packet_pr2sw_muxed['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
+                == self.glb_tile_id):
             for port in self.header.wr_packet_ports:
                 self.wr_packet_pr2sw_filtered[port] = self.wr_packet_pr2sw_muxed[port]
         else:
             for port in self.header.wr_packet_ports:
                 self.wr_packet_pr2sw_filtered[port] = 0
 
-        if self.rdrq_packet_pr2sw_muxed['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb] == self.glb_tile_id:
+        if (self.rdrq_packet_pr2sw_muxed['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
+                == self.glb_tile_id):
             for port in self.header.rdrq_packet_ports:
                 self.rdrq_packet_pr2sw_filtered[port] = self.rdrq_packet_pr2sw_muxed[port]
         else:
