@@ -85,7 +85,7 @@ dump: compile
 # GLS Compile & Run
 # -------------------------------------------------------------------
 .PHONY: compile-gl
-compile-gl: DESIGNARGS += -F netlist/netlist.filelist
+compile-gl: DESIGNARGS += -F netlist/netlist.f
 compile-gl: DESIGNARGS += header/global_buffer_param.svh header/glb.svh -F sim/tb_global_buffer.f
 compile-gl: VCSARGS += +define+PWR
 compile-gl: VCSARGS += +define+NON_STOP_IF_INPUT_Z

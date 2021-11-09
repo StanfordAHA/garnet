@@ -34,7 +34,7 @@ def construct():
     'topographical'  : True,
     # Floorplan
     'bank_height'    : 8,
-    'num_tile_array_cols' : 32,
+    'array_width' : 32,
     'num_glb_tiles'       : 16,
     # Memory size (unit: KB)
     'glb_tile_mem_size' : 256,
@@ -64,7 +64,7 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/rtl'                         )
+  rtl          = Step( this_dir + '/../common/rtl'                         )
   constraints  = Step( this_dir + '/constraints'                 )
   gen_sram     = Step( this_dir + '/../common/gen_sram_macro'    )
   custom_init  = Step( this_dir + '/custom-init'                 )
@@ -254,7 +254,7 @@ def construct():
   # Parameterize
   #-----------------------------------------------------------------------
 
-  rtl.update_params( { 'cgra_width': parameters['num_tile_array_cols'] }, allow_new=True )
+  rtl.update_params( { 'glb_only': True }, allow_new=True )
 
   g.update_params( parameters )
 
