@@ -4,7 +4,6 @@ commands:
   - make
 
 inputs:
-  - adk
   - design.lib
 
 outputs:
@@ -20,7 +19,6 @@ parameters:
 preconditions:
 
   - assert Tool( 'dc_shell' )                # tool check
-  - assert File( 'inputs/adk' )              # must exist
   - assert File( 'inputs/design.lib' )       # must exist
 
 postconditions:
