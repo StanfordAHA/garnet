@@ -76,6 +76,7 @@ def construct():
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
   gls_args       = Step( this_dir + '/gls_args'                            )
   testbench      = Step( this_dir + '/testbench'                           )
+  lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
 
 
   # Default steps
@@ -220,6 +221,7 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
+  g.add_step( lib2db         )
   g.add_step( drc            )
   g.add_step( custom_lvs     )
   g.add_step( lvs            )
@@ -376,6 +378,8 @@ def construct():
   g.connect_by_name( adk,          genlib   )
   #g.connect_by_name( signoff,      genlibdb   )
   g.connect_by_name( signoff,      genlib   )
+  
+  g.connect_by_name( genlib,       lib2db   )
 
   g.connect_by_name( adk,      debugcalibre )
   #g.connect_by_name( dc,       debugcalibre )
