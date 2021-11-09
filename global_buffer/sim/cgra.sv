@@ -109,19 +109,19 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 function glb2prr_on(int prr_id);
-    is_glb2prr_on[prr_id] = 1;
+    is_glb2prr_on[prr_id] = '1;
 endfunction
 
 function glb2prr_off(int prr_id);
-    is_glb2prr_on[prr_id] = 0;
+    is_glb2prr_on[prr_id] = '0;
 endfunction
 
 function prr2glb_on(int prr_id);
-    is_prr2glb_on[prr_id] = 1;
+    is_prr2glb_on[prr_id] = '1;
 endfunction
 
 function prr2glb_off(int prr_id);
-    is_prr2glb_on[prr_id] = 0;
+    is_prr2glb_on[prr_id] = '0;
 endfunction
 
 endmodule
