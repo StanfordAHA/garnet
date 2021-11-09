@@ -212,7 +212,7 @@ def construct():
   # dragonphy inputs from being tied to 0
   pt_signoff.extend_inputs( ['tile_array.db'] )
   pt_signoff.extend_inputs( ['glb_top_tt.db'] )
-  pt_signoff.extend_inputs( ['global_controller.db'] )
+  pt_signoff.extend_inputs( ['global_controller_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
   pt_signoff.extend_inputs( ['dragonphy_top_tt.db'] )
 
