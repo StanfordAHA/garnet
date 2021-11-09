@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, concat, const, clog2, resize
+from kratos import Generator, always_ff, always_comb, posedge, concat, const, clog2, resize, ext
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
@@ -241,8 +241,7 @@ class GlbCoreStoreDma(Generator):
                 self.state_next = self.state_e.done
             elif self.data_valid_f2g_d1 == 1:
                 self.is_first_word_next = 0
-                self.cache_data_next = concat(const(
-                    0, self._params.bank_data_width - self._params.cgra_data_width), self.data_f2g_d1)
+                self.cache_data_next = ext(self.data_f2g_d1, self._params.bank_data_width)
                 self.cache_strb_next = concat(const(0, 6), const(0b11, 2))
                 self.num_cnt_next = self.num_cnt_r - 1
                 if ~self.is_first_word_r:
