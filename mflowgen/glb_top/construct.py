@@ -96,7 +96,7 @@ def construct():
 
   # Add glb_tile macro inputs to downstream nodes
 
-  pt_signoff.extend_inputs( ['glb_tile.db'] )
+  pt_signoff.extend_inputs( ['glb_tile_tt.db'] )
 
   # These steps need timing info for glb_tiles
   tile_steps = \

@@ -62,13 +62,14 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/rtl'                         )
-  constraints  = Step( this_dir + '/constraints'                 )
-  gen_sram     = Step( this_dir + '/../common/gen_sram_macro'    )
-  custom_init  = Step( this_dir + '/custom-init'                 )
-  custom_power = Step( this_dir + '/../common/custom-power-leaf' )
-  short_fix    = Step( this_dir + '/../common/custom-short-fix'  )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'            )
+  rtl          = Step( this_dir + '/rtl'                          )
+  constraints  = Step( this_dir + '/constraints'                  )
+  gen_sram     = Step( this_dir + '/../common/gen_sram_macro'     )
+  custom_init  = Step( this_dir + '/custom-init'                  )
+  custom_power = Step( this_dir + '/../common/custom-power-leaf'  )
+  short_fix    = Step( this_dir + '/../common/custom-short-fix'   )
+  custom_lvs   = Step( this_dir + '/custom-lvs-rules'             )
+  lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db' )
 
   # Default steps
 
@@ -155,6 +156,7 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
+  g.add_step( lib2db         )
   g.add_step( drc            )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
@@ -237,6 +239,8 @@ def construct():
 
   g.connect_by_name( signoff, genlib )
   g.connect_by_name( adk,     genlib )
+  
+  g.connect_by_name( genlib,  lib2db )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
