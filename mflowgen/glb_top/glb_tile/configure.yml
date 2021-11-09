@@ -8,6 +8,7 @@ inputs:
 
 outputs:
   - glb_tile_tt.lib
+  - glb_tile_tt.db
   - glb_tile.lef
   - glb_tile.gds
   - glb_tile.lvs.v
@@ -22,6 +23,7 @@ outputs:
 
 postconditions:
   - assert File( 'outputs/glb_tile_tt.lib' ) # must exist
+  - assert File( 'outputs/glb_tile_tt.db' ) # must exist
   - assert File( 'outputs/glb_tile.lef' ) # must exist
   - assert File( 'outputs/glb_tile.gds' ) # must exist
   - assert File( 'outputs/glb_tile.lvs.v' ) # must exist
