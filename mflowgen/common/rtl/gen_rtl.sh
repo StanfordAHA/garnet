@@ -98,30 +98,40 @@ else
                  echo "---"
              done
          }'"
-         # (Double-quote regime)
          set -e; # DIE if any single command exits with error status
-
-         source /aha/bin/activate; # Set up the build environment
-         # FIXME: This need to be removed once the latest docker image is generated
-         pip install systemrdl-compiler
-         pip install peakrdl-html
-
+         # (Double-quote regime)
          # Example: say you want to double-check packages 'ast_tools', 'magma', and 'peak'.
          # Uncomment the line below; This will display the version,
          # location and latest commit hash for each.
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
 
-         aha garnet $flags; # Here is where we build the verilog for the main chip
+         source /aha/bin/activate; # Set up the build environment
 
-         # Rename output verilog, final name must be 'design.v'
-         cd garnet
-         if [ -d 'genesis_verif' ]; then
-           cp garnet.v genesis_verif/garnet.v
-           cat genesis_verif/* >> design.v
-         else
+         if [ $interconnect_only == True ]; then
+           aha garnet $flags; # Here is where we build the verilog for the main chip
+           cd garnet
            cp garnet.v design.v
-         fi
-         if [ $interconnect_only == False ]; then
+         elif [ $glb_only == True ]; then
+           # FIXME: This need to be removed once the latest docker image is generated
+           pip install systemrdl-compiler
+           pip install peakrdl-html
+           cd garnet
+
+           make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
+           cp global_buffer/global_buffer.sv design.v
+           cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
+           cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
+           cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
+         else
+           # Rename output verilog, final name must be 'design.v'
+           aha garnet $flags; # Here is where we build the verilog for the main chip
+           cd garnet
+           if [ -d 'genesis_verif' ]; then
+             cp garnet.v genesis_verif/garnet.v
+             cat genesis_verif/* >> design.v
+           else
+             cp garnet.v design.v
+           fi
            cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
