@@ -211,7 +211,7 @@ def construct():
   # Exclude dragonphy_top from synth inputs to prevent floating
   # dragonphy inputs from being tied to 0
   pt_signoff.extend_inputs( ['tile_array.db'] )
-  pt_signoff.extend_inputs( ['glb_top.db'] )
+  pt_signoff.extend_inputs( ['glb_top_tt.db'] )
   pt_signoff.extend_inputs( ['global_controller.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
   pt_signoff.extend_inputs( ['dragonphy_top_tt.db'] )

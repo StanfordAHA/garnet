@@ -62,7 +62,7 @@ def construct():
   custom_init       = Step( this_dir + '/custom-init'                         )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
-
+  lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
   # Default steps
 
   info           = Step( 'info',                            default=True )
@@ -157,6 +157,7 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
+  g.add_step( lib2db         )
   g.add_step( drc            )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
@@ -245,6 +246,8 @@ def construct():
 
   g.connect_by_name( adk,          genlib   )
   g.connect_by_name( signoff,      genlib   )
+  
+  g.connect_by_name( genlib,       lib2db   )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,       debugcalibre )

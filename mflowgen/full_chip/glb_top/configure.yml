@@ -8,6 +8,7 @@ inputs:
 
 outputs:
   - glb_top_tt.lib
+  - glb_top_tt.db
   - glb_top.lef
   - glb_top.gds
   - glb_top.vcs.v
@@ -20,6 +21,7 @@ outputs:
 
 postconditions:
   - assert File( 'outputs/glb_top_tt.lib' ) # must exist
+  - assert File( 'outputs/glb_top_tt.db' ) # must exist
   - assert File( 'outputs/glb_top.lef' ) # must exist
   - assert File( 'outputs/glb_top.gds' ) # must exist
   - assert File( 'outputs/glb_top.vcs.v' ) # must exist
