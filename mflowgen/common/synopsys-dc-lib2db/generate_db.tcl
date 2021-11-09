@@ -12,8 +12,8 @@
 #
 
 enable_write_lib_mode
-read_lib ../../inputs/design.lib
-write_lib -format db $::env(design_name) -output ../../outputs/design.db
+read_lib ../inputs/design.lib
+write_lib -format db $::env(design_name) -output ../outputs/design.db
 
 exit
 
