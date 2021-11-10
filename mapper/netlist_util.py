@@ -1,12 +1,12 @@
 from collections import defaultdict
 from hwtypes.adt import Tuple, Product
-from metamapper.node import Dag, Input, Output, Combine, Select, DagNode, IODag, Constant, Sink
+from metamapper.node import Dag, Input, Output, Combine, Select, DagNode, IODag, Constant, Sink, Common
 from metamapper.common_passes import AddID
 from DagVisitor import Visitor, Transformer
 from hwtypes import Bit, BitVector
 from peak.mapper.utils import Unbound
 from graphviz import Digraph
-
+import random
 
 class CreateBuses(Visitor):
     def __init__(self, inst_info):
@@ -420,18 +420,41 @@ def gen_dag_img(dag, file, info, no_unbound=True):
     DagToPdf(info, no_unbound).doit(dag).render(filename=file)
 
 
-class RemoveInputsOutputs(Visitor):
+class PipelineBroadcasts(Visitor):
     def __init__(self):
+        self.sinks = {}
+        pass
+
+    def doit(self, dag: Dag):
+        self.run(dag)
+        return self.sinks
+
+    def generic_visit(self, node: DagNode):
+            
+        for child in node.children():
+            if child not in self.sinks:
+                self.sinks[child] = []
+            self.sinks[child].append(node)
+        
+        Visitor.generic_visit(self, node)
+        
+RegisterSource, RegisterSink = Common.create_dag_node("Register", 1, True, static_attrs=dict(input_t = BitVector[16], output_t = BitVector[16]))
+
+class RemoveInputsOutputs(Visitor):
+    def __init__(self, sinks):
+        self.sinks = sinks
         pass
 
     def doit(self, dag: Dag):
         self.node_map = {}
+        self.added_regs = 0
         self.inputs = []
         self.outputs = []
+        self.dag_sources = dag.sources
+        self.dag_sinks = dag.sinks
         self.run(dag)
-        real_sources = [self.node_map[s] for s in dag.sources[1:]]
-        real_sinks = [self.node_map[s] for s in dag.sinks[1:]]
-        #breakpoint()
+        real_sources = [self.node_map[s] for s in self.dag_sources[1:]]
+        real_sinks = [self.node_map[s] for s in self.dag_sinks[1:]]
         return IODag(inputs=self.inputs, outputs=self.outputs, sources=real_sources, sinks=real_sinks)
 
 
@@ -442,6 +465,19 @@ class RemoveInputsOutputs(Visitor):
             io_child = new_children[0]
             if "io16in" in io_child.iname:
                 new_node = new_children[0].select("io2f_16")
+                for sink in self.sinks[node]:
+                   new_reg_sink = RegisterSink(new_node, iname=io_child.iname+"$reg"+str(self.added_regs))
+                   self.added_regs += 1
+                   new_reg_source = RegisterSource(iname=io_child.iname+"$reg"+str(self.added_regs))
+                   self.added_regs += 1
+                   self.dag_sources.append(new_reg_source)
+                   self.dag_sinks.append(new_reg_sink)
+                   self.node_map[new_reg_source] = new_reg_source
+                   self.node_map[new_reg_sink] = new_reg_sink
+                   children_temp = list(sink.children())
+                   children_temp.remove(node)
+                   children_temp.append(new_reg_source)
+                   sink.set_children(*children_temp)
             elif "io1in" in io_child.iname:
                 new_node = new_children[0].select("io2f_1")
             else:
@@ -505,12 +541,12 @@ def create_netlist_info(dag: Dag, tile_info: dict, load_only = False, id_to_name
     # Inline IO tiles
 
     #fdag = FlattenIO().doit(dag)
+    sinks = PipelineBroadcasts().doit(dag)
 
-    fdag = RemoveInputsOutputs().doit(dag)
-
+    fdag = RemoveInputsOutputs(sinks).doit(dag)
 
     #print_dag(fdag)
-    #gen_dag_img(fdag, "dag_no_io", None)
+    gen_dag_img(fdag, "dag_reg_io", None)
 
     def tile_to_char(t):
         if t.split(".")[1]=="PE":
