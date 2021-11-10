@@ -8,6 +8,7 @@
 
 import os
 import sys
+import pathlib
 
 from mflowgen.components import Graph, Step
 from shutil import which
@@ -34,8 +35,8 @@ def construct():
     'topographical'  : True,
     # hold target slack
     'hold_target_slack'   : 0.045,
-    'num_tile_array_cols' : 32,
-    'num_glb_tiles'       : 16,
+    'num_tile_array_cols' : 4,
+    'num_glb_tiles'       : 2,
     # glb tile memory size (unit: KB)
     'glb_tile_mem_size' : 256
   }
@@ -56,7 +57,6 @@ def construct():
   rtl               = Step( this_dir + '/rtl'                                 )
   sim               = Step( this_dir + '/sim'                                 )
   glb_tile          = Step( this_dir + '/glb_tile'                            )
-  glb_tile_rtl      = Step( this_dir + '/glb_tile_rtl'                        )
   glb_tile_syn      = Step( this_dir + '/glb_tile_syn'                        )
   constraints       = Step( this_dir + '/constraints'                         )
   custom_init       = Step( this_dir + '/custom-init'                         )
@@ -139,7 +139,6 @@ def construct():
   g.add_step( rtl            )
   g.add_step( sim            )
   g.add_step( glb_tile       )
-  g.add_step( glb_tile_rtl   )
   g.add_step( glb_tile_syn   )
   g.add_step( constraints    )
   g.add_step( synth          )
@@ -199,7 +198,6 @@ def construct():
   g.connect_by_name( glb_tile,      lvs          )
 
   g.connect_by_name( rtl,         sim        )
-  g.connect_by_name( glb_tile_rtl,         sim        )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
@@ -262,6 +260,9 @@ def construct():
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
+
+  # rtl parameters update
+  rtl.update_params( { 'cgra_width': parameters['num_tile_array_cols'] }, allow_new=True )
 
   # pin assignment parameters update
   init.update_params( { 'num_tile_array_cols': parameters['num_tile_array_cols'] }, allow_new=True )

@@ -1,11 +1,12 @@
 import magma
-import dataclasses
+
 
 class ProcPacketIfc:
     """
     This class is like a SystemVerilog interface
     slave and master attributes are classes which can be used as the magma ports
     """
+
     def __init__(self, addr_width, data_width):
         self.addr_width = addr_width
         self.data_width = data_width
@@ -58,6 +59,7 @@ class GlbCfgIfc:
             rd_data=magma.In(magma.Bits[data_width]),
             rd_data_valid=magma.In(magma.Bit)))
 
+
 """
 This class returns a axi4-slave class (parameterized by @addr_width and
 @data_width) which can be used as the magma ports with these inputs
@@ -80,6 +82,8 @@ input  logic                            RREADY,
 output logic                            interrupt,
 
 """
+
+
 class AXI4LiteIfc:
     def __init__(self, addr_width, data_width):
         self.addr_width = addr_width

@@ -67,6 +67,7 @@ def construct():
     # RTL Generation
     'array_width'       : 32,
     'array_height'      : 16,
+    'num_glb_tiles'     : 16,
     'interconnect_only' : False,
     # glb tile memory size (unit: KB)
     # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
@@ -504,8 +505,8 @@ def construct():
 
   # glb_top parameters update
   glb_top.update_params({'num_tile_array_cols': parameters['array_width']}, True)
-  glb_top.update_params({'num_glb_tiles': int(parameters['array_width']/2)}, True)
   glb_top.update_params({'glb_tile_mem_size': parameters['glb_tile_mem_size']}, True)
+  glb_top.update_params({'num_glb_tiles': parameters['num_glb_tiles']}, True)
 
   # App test parameters update
   cgra_rtl_sim_compile.update_params({'array_width': parameters['array_width']}, True)
