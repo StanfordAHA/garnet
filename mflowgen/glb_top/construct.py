@@ -8,6 +8,7 @@
 
 import os
 import sys
+import pathlib
 
 from mflowgen.components import Graph, Step
 from shutil import which
@@ -34,8 +35,8 @@ def construct():
     'topographical'  : True,
     # hold target slack
     'hold_target_slack'   : 0.045,
-    'num_tile_array_cols' : 32,
-    'num_glb_tiles'       : 16,
+    'array_width' : 4,
+    'num_glb_tiles'       : 2,
     # glb tile memory size (unit: KB)
     'glb_tile_mem_size' : 256
   }
@@ -53,10 +54,9 @@ def construct():
 
   # Custom steps
 
-  rtl               = Step( this_dir + '/rtl'                                 )
+  rtl               = Step( this_dir + '/../common/rtl'                                 )
   sim               = Step( this_dir + '/sim'                                 )
   glb_tile          = Step( this_dir + '/glb_tile'                            )
-  glb_tile_rtl      = Step( this_dir + '/glb_tile_rtl'                        )
   glb_tile_syn      = Step( this_dir + '/glb_tile_syn'                        )
   constraints       = Step( this_dir + '/constraints'                         )
   custom_init       = Step( this_dir + '/custom-init'                         )
@@ -86,6 +86,10 @@ def construct():
       drc            = Step( 'cadence-pegasus-drc',           default=True )
       lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
+
+  # Add header files to outputs
+  rtl.extend_outputs( ['header'] )
+  rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
   # Add (dummy) parameters to the default innovus init step
 
@@ -128,9 +132,6 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
-  sim.extend_inputs( ['design.v'] )
-  sim.extend_inputs( ['glb_tile.v'] )
-
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -139,7 +140,6 @@ def construct():
   g.add_step( rtl            )
   g.add_step( sim            )
   g.add_step( glb_tile       )
-  g.add_step( glb_tile_rtl   )
   g.add_step( glb_tile_syn   )
   g.add_step( constraints    )
   g.add_step( synth          )
@@ -200,7 +200,6 @@ def construct():
   g.connect_by_name( glb_tile,      lvs          )
 
   g.connect_by_name( rtl,         sim        )
-  g.connect_by_name( glb_tile_rtl,         sim        )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
@@ -266,8 +265,11 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
+  # rtl parameters update
+  rtl.update_params( { 'glb_only': True }, allow_new=True )
+
   # pin assignment parameters update
-  init.update_params( { 'num_tile_array_cols': parameters['num_tile_array_cols'] }, allow_new=True )
+  init.update_params( { 'array_width': parameters['array_width'] }, allow_new=True )
   init.update_params( { 'num_glb_tiles': parameters['num_glb_tiles'] }, allow_new=True )
 
   # Change nthreads
