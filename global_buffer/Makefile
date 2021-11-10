@@ -2,6 +2,9 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir := $(abspath $(dir $(mkfile_path)))
 
+# -------------------------------------------------------------------
+# Parameters
+# -------------------------------------------------------------------
 CGRA_WIDTH ?= 4
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
@@ -12,6 +15,14 @@ RUNARGS += +TEST_GLB_CFG
 RUNARGS += +TEST_GLB_G2F_STREAM
 RUNARGS += +TEST_GLB_F2G_STREAM
 RUNARGS += +TEST_PCFG_STREAM
+
+HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
+DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
+TB_FILES ?= -F sim/tb_global_buffer.f 
+
+# -------------------------------------------------------------------
+# Commands
+# -------------------------------------------------------------------
 
 FIX_SYSTEMRDL = \
     sed -i '/pio_dec_write_data_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
@@ -51,7 +62,9 @@ VCS = vcs \
 	  +v2k \
 	  -l vcs.log \
 	  $(VCSARGS) \
-	  $(DESIGNARGS)
+	  $(HEADER_FILES) \
+	  $(DESIGN_FILES) \
+	  $(TB_FILES)
 
 # -------------------------------------------------------------------
 # RTL
@@ -68,9 +81,7 @@ rtl:
 # -------------------------------------------------------------------
 .PHONY: compile
 compile: VCSARGS+= +nospecify
-compile: DESIGNARGS += header/global_buffer_param.svh header/glb.svh -F sim/tb_global_buffer.f global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
 compile:
-	$(GENERATE_TV); 
 	$(VCS)
 
 .PHONY: run

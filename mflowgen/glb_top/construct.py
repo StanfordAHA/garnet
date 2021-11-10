@@ -87,6 +87,10 @@ def construct():
       lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
 
+  # Add header files to outputs
+  rtl.extend_outputs( ['header'] )
+  rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
+
   # Add (dummy) parameters to the default innovus init step
 
   init.update_params( {
@@ -127,9 +131,6 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-
-  sim.extend_inputs( ['design.v'] )
-  sim.extend_inputs( ['glb_tile.v'] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes

@@ -256,6 +256,10 @@ def construct():
 
   rtl.update_params( { 'glb_only': True }, allow_new=True )
 
+  # Add header files to outputs
+  rtl.extend_outputs( ['header'] )
+  rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
+
   g.update_params( parameters )
 
   # Add bank height param to init

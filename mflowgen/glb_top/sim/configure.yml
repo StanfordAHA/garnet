@@ -5,7 +5,7 @@ commands:
 
 inputs:
   - design.v
-  - glb_tile.v
+  - header
 
 outputs:
   - sim.log
@@ -14,4 +14,4 @@ postconditions:
   - assert File( 'outputs/sim.log' )      # must exist
 
   # Basic error checking
-  - assert '*E,' not in File( 'outputs/sim.log' )
+  - assert 'Error,' not in File( 'outputs/sim.log' )
