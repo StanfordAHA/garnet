@@ -9,14 +9,23 @@ input jspec {
 }
 
 input rdl {
+    resolve_reg_category = true // if register category is unspecified, try to determine from rdl
+    restrict_defined_property_names = false
     process_component = "glb"
     default_rw_hw_access = false
 }
 
 output systemverilog {
-    leaf_address_size = 12
+    leaf_address_size = 32
     root_decoder_interface = parallel
     generate_child_addrmaps = true
     use_async_resets = true
+    optimize_parallel_externals = false
+    include_sequential_assign_delays = false
 }
 
+output reglist {
+    display_external_regs = true // include external regs in output?
+    show_reg_type = true // show int/ext type for each reg?
+    show_fields = true // show field info for each reg
+}

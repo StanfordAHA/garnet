@@ -34,6 +34,8 @@ def construct():
     'topographical'  : True,
     # Floorplan
     'bank_height'    : 8,
+    'array_width' : 32,
+    'num_glb_tiles'       : 16,
     # Memory size (unit: KB)
     'glb_tile_mem_size' : 256,
     # SRAM macros
@@ -70,6 +72,7 @@ def construct():
   short_fix    = Step( this_dir + '/../common/custom-short-fix'   )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'             )
   lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db' )
+
 
   # Default steps
 
@@ -255,6 +258,12 @@ def construct():
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
+
+  rtl.update_params( { 'glb_only': True }, allow_new=True )
+
+  # Add header files to outputs
+  rtl.extend_outputs( ['header'] )
+  rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
   g.update_params( parameters )
 
