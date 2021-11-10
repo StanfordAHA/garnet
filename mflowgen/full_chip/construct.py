@@ -475,6 +475,10 @@ def construct():
   # Parameterize
   #-----------------------------------------------------------------------
 
+  if parameters['interconnect_only'] is not True:
+    rtl.extend_outputs( ['header'] )
+    rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
+
   # Allow user to override parms with env in a limited sort of way
   parameters = sr_override_parms( parameters )
   print(f'parameters["hold_target_slack"]={parameters["hold_target_slack"]}')
@@ -504,7 +508,7 @@ def construct():
   )
 
   # glb_top parameters update
-  glb_top.update_params({'num_tile_array_cols': parameters['array_width']}, True)
+  glb_top.update_params({'array_width': parameters['array_width']}, True)
   glb_top.update_params({'glb_tile_mem_size': parameters['glb_tile_mem_size']}, True)
   glb_top.update_params({'num_glb_tiles': parameters['num_glb_tiles']}, True)
 

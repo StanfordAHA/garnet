@@ -35,7 +35,7 @@ def construct():
     'topographical'  : True,
     # hold target slack
     'hold_target_slack'   : 0.045,
-    'num_tile_array_cols' : 4,
+    'array_width' : 4,
     'num_glb_tiles'       : 2,
     # glb tile memory size (unit: KB)
     'glb_tile_mem_size' : 256
@@ -54,7 +54,7 @@ def construct():
 
   # Custom steps
 
-  rtl               = Step( this_dir + '/rtl'                                 )
+  rtl               = Step( this_dir + '/../common/rtl'                                 )
   sim               = Step( this_dir + '/sim'                                 )
   glb_tile          = Step( this_dir + '/glb_tile'                            )
   glb_tile_syn      = Step( this_dir + '/glb_tile_syn'                        )
@@ -86,6 +86,10 @@ def construct():
       drc            = Step( 'cadence-pegasus-drc',           default=True )
       lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
+
+  # Add header files to outputs
+  rtl.extend_outputs( ['header'] )
+  rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
   # Add (dummy) parameters to the default innovus init step
 
@@ -127,9 +131,6 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-
-  sim.extend_inputs( ['design.v'] )
-  sim.extend_inputs( ['glb_tile.v'] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -262,10 +263,10 @@ def construct():
   # which scripts get run and when they get run.
 
   # rtl parameters update
-  rtl.update_params( { 'cgra_width': parameters['num_tile_array_cols'] }, allow_new=True )
+  rtl.update_params( { 'glb_only': True }, allow_new=True )
 
   # pin assignment parameters update
-  init.update_params( { 'num_tile_array_cols': parameters['num_tile_array_cols'] }, allow_new=True )
+  init.update_params( { 'array_width': parameters['array_width'] }, allow_new=True )
   init.update_params( { 'num_glb_tiles': parameters['num_glb_tiles'] }, allow_new=True )
 
   # Change nthreads
