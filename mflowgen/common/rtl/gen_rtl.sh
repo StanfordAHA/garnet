@@ -102,6 +102,9 @@ else
          set -e; # DIE if any single command exits with error status
 
          source /aha/bin/activate; # Set up the build environment
+         # FIXME: This need to be removed once the latest docker image is generated
+         pip install systemrdl-compiler
+         pip install peakrdl-html
 
          # Example: say you want to double-check packages 'ast_tools', 'magma', and 'peak'.
          # Uncomment the line below; This will display the version,
@@ -118,13 +121,14 @@ else
          else
            cp garnet.v design.v
          fi
-         make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
-         cat global_buffer/rtl/global_buffer_param.svh >> design.v
-         cat global_buffer/rtl/global_buffer_pkg.svh >> design.v
-         cat global_buffer/systemRDL/output/*.sv >> design.v
-         cat global_buffer/rtl/gl*.sv >> design.v
-         make -C global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
-         cat global_controller/systemRDL/output/*.sv >> design.v"
+         if [ $interconnect_only == False ]; then
+           cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
+           cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
+           cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
+           make -C global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
+           cat global_controller/systemRDL/output/*.sv >> design.v
+         fi"
+
 
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
@@ -163,16 +167,15 @@ else
         cp garnet.v $current_dir/outputs/design.v
       fi
 
-      # make to generate systemRDL RTL files global buffer
-      make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
-      # Copy global buffer systemverilog from the global buffer folder
-      cat global_buffer/rtl/global_buffer_param.svh >> $current_dir/outputs/design.v
-      cat global_buffer/rtl/global_buffer_pkg.svh >> $current_dir/outputs/design.v
-      cat global_buffer/systemRDL/output/*.sv >> $current_dir/outputs/design.v
-      cat global_buffer/rtl/gl*.sv >> $current_dir/outputs/design.v
-      # make to generate systemRDL RTL files for global controller
-      make -C $GARNET_HOME/global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
-      cat global_controller/systemRDL/output/*.sv >> $current_dir/outputs/design.v
+      if [ $interconnect_only == False ]; then
+        # Copy global buffer systemRDL from the global buffer folder
+        cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
+        cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
+        cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
+        # make to generate systemRDL RTL files for global controller
+        make -C global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
+        cat global_controller/systemRDL/output/*.sv >> design.v
+      fi
 
       cd $current_dir ; # why? all we do after this is exit back to calling dir...?
     fi

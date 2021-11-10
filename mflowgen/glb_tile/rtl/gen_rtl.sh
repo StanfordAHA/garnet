@@ -6,12 +6,8 @@ if [ -f ../inputs/design.v ]; then
   (cd outputs; ln -s ../../inputs/design.v)
 else
   # SystemRDL run
-  make -C $GARNET_HOME/global_buffer rtl
-  
+  make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${cgra_width} NUM_GLB_TILES=${num_glb_tiles}
+
   rm -f outputs/design.v
-  
-  while read F  ; do
-      echo "Reading design file: $F"
-      cat $GARNET_HOME/global_buffer/rtl/$F >> outputs/design.v
-  done <$GARNET_HOME/global_buffer/rtl/glb_tile.filelist
+  cp $GARNET_HOME/global_buffer/global_buffer.sv outputs/design.v
 fi
