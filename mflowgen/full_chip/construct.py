@@ -475,6 +475,10 @@ def construct():
   # Parameterize
   #-----------------------------------------------------------------------
 
+  if parameters['interconnect_only'] is not True:
+    rtl.extend_outputs( ['header'] )
+    rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
+
   # Allow user to override parms with env in a limited sort of way
   parameters = sr_override_parms( parameters )
   print(f'parameters["hold_target_slack"]={parameters["hold_target_slack"]}')
