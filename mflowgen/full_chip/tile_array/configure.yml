@@ -8,6 +8,7 @@ inputs:
 
 outputs:
   - tile_array_tt.lib
+  - tile_array_tt.db
   - tile_array.lef
   - tile_array.gds
   - tile_array.vcs.v
@@ -20,6 +21,7 @@ outputs:
 
 postconditions:
   - assert File( 'outputs/tile_array_tt.lib' ) # must exist
+  - assert File( 'outputs/tile_array_tt.db' ) # must exist
   - assert File( 'outputs/tile_array.lef' ) # must exist
   - assert File( 'outputs/tile_array.gds' ) # must exist
   - assert File( 'outputs/tile_array.vcs.v' ) # must exist
