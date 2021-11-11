@@ -282,90 +282,6 @@ class IO_Output_t(Product):
     f2io_16=BitVector[16]
     f2io_1=Bit
 
-class FlattenIO(Visitor):
-    def __init__(self):
-        pass
-
-    def doit(self, dag: Dag):
-        input_t = dag.input.type
-        output_t = dag.output.type
-        ipath_to_type = flatten_adt(input_t)
-        self.node_to_opaths = {}
-        self.node_to_ipaths = {}
-        self.node_map = {}
-        self.opath_to_type = flatten_adt(output_t)
-
-        isel = lambda t: "io2f_1" if t==Bit else "io2f_16"
-        real_inputs = [Input(type=IO_Input_t, iname="_".join(str(field) for field in path)) for path in ipath_to_type]
-        self.inputs = {path: inode.select(isel(t)) for inode, (path, t) in zip(real_inputs, ipath_to_type.items())}
-        #breakpoint()
-        self.outputs = {}
-        self.run(dag)
-        real_sources = [self.node_map[s] for s in dag.sources[1:]]
-        real_sinks = [self.node_map[s] for s in dag.sinks[1:]]
-        return IODag(inputs=real_inputs, outputs=self.outputs.values(), sources=real_sources, sinks=real_sinks)
-
-    def visit_Output(self, node: Output):
-        Visitor.generic_visit(self, node)
-        for field, child in zip(node.type.field_dict, node.children()):
-            child_paths = self.node_to_opaths[child]
-            for child_path, new_child in child_paths.items():
-                new_path = (field, *child_path)
-                assert new_path in self.opath_to_type
-                child_t = self.opath_to_type[new_path]
-                if child_t == Bit:
-                    combine_children = [Constant(type=BitVector[16], value=Unbound), new_child]
-                else:
-                    combine_children = [new_child, Constant(type=Bit, value=Unbound)]
-                cnode = Combine(*combine_children, type=IO_Output_t)
-
-                # Bad hack, read_en signals aren't actually connected to anything, this should be checked
-                if "read_en" not in field:
-                    self.outputs[new_path] = Output(cnode, type=IO_Output_t, iname="_".join(str(field) for field in new_path))
-
-    def visit_Combine(self, node: Combine):
-        Visitor.generic_visit(self, node)
-        adt = node.type
-        assert issubclass(adt, (Product, Tuple))
-        paths = {}
-        for k, child in zip(adt.field_dict.keys(), node.children()):
-            child_paths = self.node_to_opaths[child]
-            for child_path, new_child in child_paths.items():
-                new_path = (k, *child_path)
-                paths[new_path] = new_child
-        self.node_to_opaths[node] = paths
-
-    def visit_Select(self, node: Select):
-        def get_input_node(node, path=()):
-            if isinstance(node, Input):
-                assert path in self.inputs
-                return self.inputs[path]
-            elif isinstance(node, Select):
-                child = list(node.children())[0]
-                return get_input_node(child, (node.field, *path))
-            else:
-                return None
-        input_node = get_input_node(node)
-        if input_node is not None:
-            self.node_map[node] = input_node
-            return
-
-        Visitor.generic_visit(self, node)
-        new_children = [self.node_map[child] for child in node.children()]
-        new_node = node.copy()
-        new_node.set_children(*new_children)
-        self.node_to_opaths[node] = {(): new_node}
-        self.node_map[node] = new_node
-
-    def generic_visit(self, node: DagNode):
-        Visitor.generic_visit(self, node)
-        new_children = [self.node_map[child] for child in node.children()]
-        new_node = node.copy()
-        new_node.set_children(*new_children)
-        self.node_to_opaths[node] = {(): new_node}
-        self.node_map[node] = new_node
-
-
 
 def print_netlist_info(info, filename):
 
@@ -431,7 +347,6 @@ class RemoveInputsOutputs(Visitor):
         self.run(dag)
         real_sources = [self.node_map[s] for s in dag.sources[1:]]
         real_sinks = [self.node_map[s] for s in dag.sinks[1:]]
-        #breakpoint()
         return IODag(inputs=self.inputs, outputs=self.outputs, sources=real_sources, sinks=real_sinks)
 
 
@@ -487,30 +402,32 @@ class CountTiles(Visitor):
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
-        if node.node_name == "global.IO" or node.node_name == "global.BitIO":
+        if node.node_name == "Input" or node.node_name == "Output":
             self.num_ios += 1
         elif node.node_name == "global.PE":
             self.num_pes += 1
         elif node.node_name == "global.MEM":
             self.num_mems += 1
-        elif node.node_name == "coreir.reg":
+        elif node.node_name == "Register":
             self.num_regs += 1
 
 from lassen.sim import PE_fc as lassen_fc
 from metamapper. common_passes import print_dag
 
-def create_netlist_info(dag: Dag, tile_info: dict, load_only = False, id_to_name = None):
-    gen_dag_img(dag, "dag", None)
-    # Extract IO metadata
-    # Inline IO tiles
+def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False):
+    
+	if load_only:
+		id_to_name_filename = os.path.join(app_dir, f"design.id_to_name")
+		if os.path.isfile(id_to_name_filename):
+			fin = open(id_to_name_filename, "r")
+			lines = fin.readlines()
 
-    #fdag = FlattenIO().doit(dag)
+			id_to_name = {}
+
+			for line in lines:
+				id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
 
     fdag = RemoveInputsOutputs().doit(dag)
-
-
-    #print_dag(fdag)
-    #gen_dag_img(fdag, "dag_no_io", None)
 
     def tile_to_char(t):
         if t.split(".")[1]=="PE":
