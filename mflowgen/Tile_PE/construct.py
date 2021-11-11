@@ -96,6 +96,7 @@ def construct():
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
   testbench            = Step( this_dir + '/../common/testbench'                   )
   application          = Step( this_dir + '/../common/application'                 )
+  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
   if synth_power:
     post_synth_power     = Step( this_dir + '/../common/tile-post-synth-power'     )
   post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'         )
@@ -198,6 +199,7 @@ def construct():
   g.add_step( pt_signoff               )
   g.add_step( genlibdb_constraints     )
   g.add_step( genlibdb                 )
+  g.add_step( lib2db                   )
   g.add_step( drc                      )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
@@ -282,6 +284,8 @@ def construct():
   g.connect_by_name( signoff,              genlibdb )
   g.connect_by_name( adk,                  genlibdb )
   g.connect_by_name( genlibdb_constraints, genlibdb )
+  
+  g.connect_by_name( genlibdb,             lib2db   )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
