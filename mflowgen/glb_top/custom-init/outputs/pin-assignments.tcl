@@ -43,7 +43,7 @@ set cgra_cfg_data_width 32
 set all [sort_collection [get_ports] hierarchical_name]
 
 # per cgra tile ports
-for {set j 0} {$j < $arra_width} {incr j} {
+for {set j 0} {$j < $array_width} {incr j} {
     for {set k 0} {$k < $cgra_data_width} {incr k} {
         lappend tile_ports($j) [get_object_name [get_ports "stream_data_f2g[[expr {$j*$cgra_data_width+$k}]]"]]
         lappend tile_ports($j) [get_object_name [get_ports "stream_data_g2f[[expr {$j*$cgra_data_width+$k}]]"]]
