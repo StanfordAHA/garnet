@@ -325,7 +325,7 @@ class Garnet(Generator):
 
  
         dag = cutil.coreir_to_dag(nodes, cmod)
-        print_dag(dag)
+        #print_dag(dag)
         print("-"*80)
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc, "global.IO": IO_fc, "global.BitIO": BitIO_fc}
         netlist_info = create_netlist_info(dag, tile_info, load_only, id_to_name)
