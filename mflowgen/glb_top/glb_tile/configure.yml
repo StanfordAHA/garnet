@@ -5,6 +5,7 @@ commands:
 
 inputs:
   - design.v
+  - header
 
 outputs:
   - glb_tile_tt.lib

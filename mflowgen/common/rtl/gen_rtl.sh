@@ -6,6 +6,10 @@ if [ -f ../inputs/design.v ]; then
   echo "Using RTL from parent graph"
   mkdir -p outputs
   (cd outputs; ln -s ../../inputs/design.v)
+  if [ -d ../inputs/header ]; then
+    echo "Using header from parent graph"
+    (cd outputs; ln -s ../../inputs/header)
+  fi
 else
   if [ $soc_only = True ]; then
     echo "soc_only set to true. Garnet not included"
