@@ -101,6 +101,12 @@ logic [NUM_PRR-1:0][15:0]                     g2c_io16;
 logic [NUM_PRR-1:0]                           c2g_io1;
 logic [NUM_PRR-1:0][15:0]                     c2g_io16;
 
+// SDF annotation
+initial begin
+    $sdf_annotate("netlist/glb.sdf", "top.dut", , "glb_sdf.log", "MAXIMUM");
+    // $sdf_annotate("netlist/glbtile_.sdf", top.dut.glb_tile_gen*, , "glb_tile_sdf.log", "MAXIMUM");
+end
+
 // max cycle set
 initial begin
     repeat(10000000) @(posedge clk);

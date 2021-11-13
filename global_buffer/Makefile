@@ -5,10 +5,20 @@ current_dir := $(abspath $(dir $(mkfile_path)))
 # -------------------------------------------------------------------
 # Parameters
 # -------------------------------------------------------------------
-TOOL ?= XCELIUM
+CLK_PERIOD ?= 800ps
 CGRA_WIDTH ?= 4
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
+
+TOOL ?= XCELIUM
+
+# GLS 
+SDF ?= 0
+MTM ?= MAXIMUM
+SDF_CMD_FILE ?= sdf_cmd.cmd
+SDF_LOG ?= sdf_logs
+GLB_TOP_SDF ?= gls/glb.sdf
+GLB_TILE_SDF ?= gls/glb_tile.sdf
 
 RUNTIME_ARGS += +TEST_GLB_MEM_SIMPLE
 RUNTIME_ARGS += +TEST_GLB_CFG
@@ -18,7 +28,7 @@ RUNTIME_ARGS += +TEST_PCFG_STREAM
 
 HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
-NETLIST_FILES ?= netlist/glb.vcs.v netlist/glb_tile.vcs.v netlist/glb_tile_sram.v netlist/stdcells.v netlist/stdcells-pm.v
+NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-pm.v
 #FIXME: pm cells should be removed!
 TB_FILES ?= -F sim/tb_global_buffer.f 
 
@@ -71,6 +81,9 @@ VCS = vcs \
 	  $(COMPILE_ARGS) \
 	  $(INPUT_ARGS)
 
+GEN_SDF_CMD = python gls/gen_sdf_cmd.py \
+              -f $(SDF_CMD_FILE) -n $(NUM_GLB_TILES) --top $(GLB_TOP_SDF) --tile $(GLB_TILE_SDF) -l $(SDF_LOG) -t $(MTM)
+
 # -------------------------------------------------------------------
 # RTL
 # -------------------------------------------------------------------
@@ -85,20 +98,30 @@ rtl:
 # Compile & Run
 # -------------------------------------------------------------------
 
+COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
+COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 ifeq ($(TOOL), XCELIUM)
     COMPILE = $(XRUN)
+    COMPILE_RTL_ARGS += -xminitialize 0 -xminit_log init.log -nospecify
     RUN = xrun -R
     DUMP_ARGS = -input dump_shm.tcl
 else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
+    COMPILE_RTL_ARGS += +nospecify
     RUN = ./simv
     DUMP_ARGS = -ucli -i dump_fsdb.tcl
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
 
+ifneq ($(SDF), 0)
+    SDF_ARGS += -sdf_cmd_file $(SDF_CMD_FILE)
+    SDF_ARGS += -sdfstats sdf_stats.txt -sdf_verbose
+    COMPILE_GLS_ARGS += $(SDF_ARGS)
+endif
+
 .PHONY: compile
-compile: COMPILE_ARGS += +nospecify
+compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
 compile: INPUT_ARGS = $(HEADER_FILES) $(DESIGN_FILES) $(TB_FILES)
 compile:
 	$(COMPILE)
@@ -118,20 +141,22 @@ dump:
 # -------------------------------------------------------------------
 # GLS Compile & Run
 # -------------------------------------------------------------------
-.PHONY: compile-gl
-compile-gl: COMPILE_ARGS += +define+NON_STOP_IF_INPUT_Z
-compile-gl: COMPILE_ARGS += +define+TSMC_CM_NO_WARNING
-compile-gl: COMPILE_ARGS += +define+TSMC_CM_UNIT_DELAY
-compile-gl: COMPILE_ARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS
-compile-gl: COMPILE_ARGS += +define+TSMC_MEM_LOAD_0
-compile-gl: COMPILE_ARGS += -negdelay
-compile-gl: COMPILE_ARGS += -ALLOWREDEFINITION
-# compile-gl: VCS_ARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
-# compile-gl: XRUN_ARGS += -sdfstats sdf_stats.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
-compile-gl: INPUT_ARGS = $(HEADER_FILES) $(NETLIST_FILES) $(TB_FILES)
-compile-gl:
+.PHONY: compile-gls
+compile-gls: COMPILE_GLS_ARGS += +define+NON_STOP_IF_INPUT_Z
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_CM_NO_WARNING
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_CM_UNIT_DELAY
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_MEM_LOAD_0
+compile-gls: COMPILE_GLS_ARGS += -negdelay
+compile-gls: COMPILE_GLS_ARGS += -ALLOWREDEFINITION
+compile-gls: COMPILE_GLS_ARGS += -xminitialize 0 -xminit_log init.log
+compile-gls: COMPILE_ARGS = $(COMPILE_GLS_ARGS)
+compile-gls: INPUT_ARGS = $(HEADER_FILES) $(NETLIST_FILES) $(TB_FILES)
+compile-gls:
+	@rm -rf $(SDF_LOG); mkdir $(SDF_LOG)
+	@if [ $(SDF) != 0 ]; then $(GEN_SDF_CMD); fi
 	$(COMPILE)
 
 .PHONY: clean
 clean:
-	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log timestamp global_buffer.shm global_buffer.fsdb
+	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log timestamp global_buffer.shm global_buffer.fsdb sdf_stats.txt sdf_logs
