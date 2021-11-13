@@ -42,7 +42,7 @@ FIX_SYSTEMRDL = \
     sed -i '/endmodule/d' ./systemRDL/output/glb_jrdl_decode.sv; \
     printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glb_jrdl_decode.sv
 
-GENERATE_TV = python glb_test_gen.py
+GENERATE_TV = python sim/gen_glb_test.py
 
 XRUN = xrun \
 	   -64bit \
@@ -104,12 +104,12 @@ ifeq ($(TOOL), XCELIUM)
     COMPILE = $(XRUN)
     COMPILE_RTL_ARGS += -xminitialize 0 -xminit_log init.log -nospecify
     RUN = xrun -R
-    DUMP_ARGS = -input dump_shm.tcl
+    DUMP_ARGS = -input sim/dump_shm.tcl
 else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
     RUN = ./simv
-    DUMP_ARGS = -ucli -i dump_fsdb.tcl
+    DUMP_ARGS = -ucli -i sim/dump_fsdb.tcl
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
