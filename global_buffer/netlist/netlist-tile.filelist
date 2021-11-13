@@ -1,4 +1,0 @@
--v glb_tile.vcs.v
--v sram.v
--v stdcells.v
--v stdcells-pm.v

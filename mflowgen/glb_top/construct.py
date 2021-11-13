@@ -57,8 +57,9 @@ def construct():
 
   # Custom steps
 
-  rtl               = Step( this_dir + '/../common/rtl'                                 )
+  rtl               = Step( this_dir + '/../common/rtl'                       )
   sim               = Step( this_dir + '/sim'                                 )
+  sim_gl            = Step( this_dir + '/sim-gl'                              )
   glb_tile          = Step( this_dir + '/glb_tile'                            )
   glb_tile_syn      = Step( this_dir + '/glb_tile_syn'                        )
   constraints       = Step( this_dir + '/constraints'                         )
