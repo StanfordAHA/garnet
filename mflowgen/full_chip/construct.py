@@ -267,6 +267,10 @@ def construct():
 
   power.extend_outputs( ["design-merged.gds"] )
 
+  if parameters['interconnect_only'] is False:
+    rtl.extend_outputs( ['header'] )
+    rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -474,10 +478,6 @@ def construct():
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
-
-  if parameters['interconnect_only'] is not True:
-    rtl.extend_outputs( ['header'] )
-    rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
   # Allow user to override parms with env in a limited sort of way
   parameters = sr_override_parms( parameters )
