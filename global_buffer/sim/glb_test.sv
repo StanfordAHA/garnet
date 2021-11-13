@@ -60,15 +60,17 @@ program glb_test (
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data
 );
+	string timestamp_folder;
 
-	int tile_offset = 1 << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
+    int tile_offset = 1 << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
     int tile_id = 0;
     bit [NUM_GLB_TILES-1:0] tile_id_mask = 0;
 
     initial begin
-		initialize();
+        initialize();
 
         if ($test$plusargs("TEST_GLB_MEM_SIMPLE")) begin
+            static string test_name = "TEST_GLB_MEM_SIMPLE";
             logic [BANK_DATA_WIDTH-1:0] data_arr [];
             logic [BANK_DATA_WIDTH-1:0] data_arr_out [];
             static int size = 256;
@@ -83,15 +85,21 @@ program glb_test (
             foreach(data_arr[i]) begin
                 data_arr[i] = i;
             end
+
+            // start
+            timestamp(test_name);
             proc_write_burst(0, data_arr); 
+            timestamp(test_name);
+            // end
+
             proc_read_burst(0, data_arr_out); 
-            compare_64b_arr(data_arr, data_arr_out);
+            void'(compare_64b_arr(data_arr, data_arr_out));
 
             $display("**** TEST_GLB_MEM_W/R END ****\n");
         end
 
         if ($test$plusargs("TEST_GLB_CFG")) begin
-            int err = 0;
+            static int err = 0;
             logic [AXI_DATA_WIDTH-1:0] cfg_data;
             logic [AXI_DATA_WIDTH-1:0] cfg_data_out;
 
@@ -120,6 +128,7 @@ program glb_test (
         end
 
         if ($test$plusargs("TEST_GLB_G2F_STREAM")) begin
+            static string test_name = "TEST_GLB_G2F";
             static int start_addr;
             logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr [];
             logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr_out [];
@@ -143,18 +152,21 @@ program glb_test (
             tile_id_mask = update_tile_mask(tile_id, tile_id_mask);
 
             // Start
+            timestamp(test_name);
             g2f_start(tile_id_mask);
             g2f_run(tile_id, size);
+            timestamp(test_name);
             // End
 
             repeat(10) @(posedge clk);
             read_prr(tile_id, cgra_data_arr_out);
-            compare_16b_arr(cgra_data_arr, cgra_data_arr_out);
+            void'(compare_16b_arr(cgra_data_arr, cgra_data_arr_out));
 
             $display("**** TEST_GLB_G2F_STREAM END ****\n");
         end
 
         if ($test$plusargs("TEST_GLB_F2G_STREAM")) begin
+            static string test_name = "TEST_GLB_F2G";
             static int start_addr = tile_offset * tile_id;
             logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr [];
             logic [BANK_DATA_WIDTH-1:0] glb_data_arr[];
@@ -177,19 +189,22 @@ program glb_test (
             write_prr(tile_id, cgra_data_arr);
 
             // start
+            timestamp(test_name);
             f2g_start(tile_id_mask);
             f2g_run(tile_id, size);
+            timestamp(test_name);
             // end
 
             convert_16b_to_64b(cgra_data_arr, glb_data_arr); 
             glb_data_arr_out = new[glb_data_arr.size()];
             proc_read_burst(start_addr, glb_data_arr_out);
-            compare_64b_arr(glb_data_arr, glb_data_arr_out);
+            void'(compare_64b_arr(glb_data_arr, glb_data_arr_out));
 
             $display("**** TEST_GLB_F2G_STREAM END ****\n");
         end
 
         if ($test$plusargs("TEST_PCFG_STREAM")) begin
+            static string test_name = "TEST_GLB_PCFG";
             static int start_addr;
             logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr [];
             static int size = 8;
@@ -210,17 +225,34 @@ program glb_test (
             tile_id_mask = update_tile_mask(tile_id, tile_id_mask);
 
             // start
+            timestamp(test_name);
             pcfg_start(tile_id_mask);
             pcfg_run(tile_id, size);
+            timestamp(test_name);
             // end
 
-            read_cgra_cfg(bs_arr);
+            void'(read_cgra_cfg(bs_arr));
 
             $display("**** TEST_PCFG END ****\n");
         end
     end
 
-    task initialize();
+	task initialize();
+        if (!($value$plusargs("TIMESTAMP=%s", timestamp_folder))) begin
+			timestamp_folder = "timestamp";
+		end
+
+		void'($system($sformatf("rm -rf %s", timestamp_folder)));
+		void'($system($sformatf("mkdir %s", timestamp_folder)));
+
+		$display("Timestamp folder is %s", timestamp_folder);
+
+		initialize_signals();
+
+        $display("Initialization done");
+	endtask
+
+    task initialize_signals();
         // control
         stall <= 0;
         cgra_stall_in <= 0;
@@ -258,8 +290,6 @@ program glb_test (
         // wait for reset clear
         wait (reset == 0);
         repeat(10) @(posedge clk);
-
-        $display("Initialization done");
     endtask
 
     task glb_tile_stall(logic [NUM_GLB_TILES-1:0] tile_sel);
@@ -404,7 +434,7 @@ program glb_test (
         // Enable glb2prr
         for (int i=0; i<NUM_PRR; i++) begin
             if (tile_id_mask[i] == 1) begin
-                $root.top.cgra.glb2prr_on(i);
+                void'($root.top.cgra.glb2prr_on(i));
             end
         end
 
@@ -437,7 +467,7 @@ program glb_test (
         end else begin
             foreach($root.top.cgra.glb2prr_q[prr_id][i]) begin
                 cgra_data_arr_out[i] = $root.top.cgra.glb2prr_q[prr_id][i];
-			end
+            end
         end
     endfunction
 
@@ -453,7 +483,7 @@ program glb_test (
         // Enable glb2prr
         for (int i=0; i<NUM_PRR; i++) begin
             if (tile_id_mask[i] == 1) begin
-                $root.top.cgra.prr2glb_on(i);
+                void'($root.top.cgra.prr2glb_on(i));
             end
         end
         @(posedge clk);
@@ -529,7 +559,7 @@ program glb_test (
                 err++;
             end
             else begin
-				if ($test$plusargs("DEBUG")) begin
+                if ($test$plusargs("DEBUG")) begin
                     $display("Data array same. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i, data_arr_0[i], data_arr_1[i]);
                 end
             end
@@ -555,8 +585,8 @@ program glb_test (
                 err++;
             end
             else begin
-				if ($test$plusargs("DEBUG")) begin
-					$display("Data array same. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
+                if ($test$plusargs("DEBUG")) begin
+                    $display("Data array same. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i, data_arr_0[i], data_arr_1[i]);
                 end
             end
         end
@@ -631,5 +661,14 @@ program glb_test (
         $display("Bitstream are same");
         return 0;
     endfunction
-
+    
+    function void timestamp(string test_name);
+        int fd;
+        string filename;
+        filename = {timestamp_folder, "/", test_name, ".timestamp"};
+        fd = $fopen(filename, "a");
+        $fdisplay(fd, "%0t", $time);
+		$fclose(fd);
+    endfunction
+    
 endprogram
