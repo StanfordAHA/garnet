@@ -35,8 +35,11 @@ def construct():
     'topographical'  : True,
     # hold target slack
     'hold_target_slack'   : 0.045,
-    'array_width' : 4,
-    'num_glb_tiles'       : 2,
+    # array_width = width of CGRA below GLB; `pin-assignments.tcl` uses
+    # these parms to set up per-cgra-column ports connecting glb tile
+    # signals in glb_top to corresponding CGRA tile columns below glb_top
+    'array_width'         : 32,
+    'num_glb_tiles'       : 16,
     # glb tile memory size (unit: KB)
     'glb_tile_mem_size' : 256
   }
