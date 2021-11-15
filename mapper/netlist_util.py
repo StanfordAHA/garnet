@@ -461,6 +461,7 @@ class RemoveInputsOutputs(Visitor):
 
 
     def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit):
+        print("creating reg tree for:", new_io_node.node_name)
         num_levels = math.log2(len(sinks))
         levels = [len(sinks)]
         while 1 not in levels:
@@ -472,6 +473,7 @@ class RemoveInputsOutputs(Visitor):
             new_reg_sink = BitRegisterSink(new_select_node, iname=new_io_node.iname+"$reg"+str(self.added_regs))
             new_reg_source = BitRegisterSource(iname=new_io_node.iname+"$reg"+str(self.added_regs))
         else:
+            levels.insert(0, 1)
             levels.insert(0, 1)
             levels.insert(0, 1)
             levels.insert(0, 1)
