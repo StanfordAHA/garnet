@@ -139,6 +139,7 @@ def construct():
 
   # Gate-level ptpx node
   ptpx_gl.set_param("strip_path", "top/dut")
+  ptpx_gl.extend_inputs(glb_tile.all_outputs())
 
 
   #-----------------------------------------------------------------------
@@ -261,6 +262,7 @@ def construct():
   g.connect_by_name( glb_tile,      sim_gl   )
   g.connect_by_name( signoff,       sim_gl   )
   
+  g.connect_by_name( adk,            ptpx_gl   )
   g.connect_by_name( glb_tile,       ptpx_gl   )
   g.connect_by_name( signoff,        ptpx_gl   )
   g.connect_by_name( sim_gl,         ptpx_gl   )

@@ -1,0 +1,37 @@
+name: sim-gl
+
+parameters:
+  sdf: False
+  waveform: False
+  PWR_AWARE: False
+  tool: "XCELIUM"
+
+commands:
+  - bash run_sim.sh
+
+inputs:
+  - adk
+  - design.vcs.v
+  - design.vcs.pg.v
+  - header
+  - design.sdf
+  - glb_tile.vcs.v
+  - glb_tile.vcs.pg.v
+  - glb_tile.sdf
+  - glb_tile_sram.v
+  - glb_tile_sram_pwr.v
+
+outputs:
+  - run.saif
+  - sim.log
+  - run.log
+
+postconditions:
+  - assert File( 'outputs/sim.log' )      # must exist
+  - assert File( 'outputs/run.log' )      # must exist
+
+  # Basic error checking
+  - assert 'Error,' not in File( 'outputs/sim.log' )
+  - assert '*E,' not in File( 'outputs/sim.log' )
+  - assert 'Error,' not in File( 'outputs/run.log' )
+  - assert '*E,' not in File( 'outputs/run.log' )
