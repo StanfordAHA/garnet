@@ -60,7 +60,7 @@ program glb_test (
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data
 );
-	string timestamp_folder;
+    int test_toggle = 0;
 
     int tile_offset = 1 << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
     int tile_id = 0;
@@ -87,9 +87,9 @@ program glb_test (
             end
 
             // start
-            timestamp(test_name);
+            test_toggle = 1;
             proc_write_burst(0, data_arr); 
-            timestamp(test_name);
+            test_toggle = 0;
             // end
 
             proc_read_burst(0, data_arr_out); 
@@ -152,10 +152,8 @@ program glb_test (
             tile_id_mask = update_tile_mask(tile_id, tile_id_mask);
 
             // Start
-            timestamp(test_name);
             g2f_start(tile_id_mask);
             g2f_run(tile_id, size);
-            timestamp(test_name);
             // End
 
             repeat(10) @(posedge clk);
@@ -189,10 +187,8 @@ program glb_test (
             write_prr(tile_id, cgra_data_arr);
 
             // start
-            timestamp(test_name);
             f2g_start(tile_id_mask);
             f2g_run(tile_id, size);
-            timestamp(test_name);
             // end
 
             convert_16b_to_64b(cgra_data_arr, glb_data_arr); 
@@ -225,10 +221,8 @@ program glb_test (
             tile_id_mask = update_tile_mask(tile_id, tile_id_mask);
 
             // start
-            timestamp(test_name);
             pcfg_start(tile_id_mask);
             pcfg_run(tile_id, size);
-            timestamp(test_name);
             // end
 
             void'(read_cgra_cfg(bs_arr));
@@ -237,22 +231,7 @@ program glb_test (
         end
     end
 
-	task initialize();
-        if (!($value$plusargs("TIMESTAMP=%s", timestamp_folder))) begin
-			timestamp_folder = "timestamp";
-		end
-
-		void'($system($sformatf("rm -rf %s", timestamp_folder)));
-		void'($system($sformatf("mkdir %s", timestamp_folder)));
-
-		$display("Timestamp folder is %s", timestamp_folder);
-
-		initialize_signals();
-
-        $display("Initialization done");
-	endtask
-
-    task initialize_signals();
+    task initialize();
         // control
         stall <= 0;
         cgra_stall_in <= 0;
@@ -290,6 +269,8 @@ program glb_test (
         // wait for reset clear
         wait (reset == 0);
         repeat(10) @(posedge clk);
+
+        $display("Initialization done");
     endtask
 
     task glb_tile_stall(logic [NUM_GLB_TILES-1:0] tile_sel);
@@ -660,15 +641,6 @@ program glb_test (
         end
         $display("Bitstream are same");
         return 0;
-    endfunction
-    
-    function void timestamp(string test_name);
-        int fd;
-        string filename;
-        filename = {timestamp_folder, "/", test_name, ".timestamp"};
-        fd = $fopen(filename, "a");
-        $fdisplay(fd, "%0t", $time);
-		$fclose(fd);
     endfunction
     
 endprogram

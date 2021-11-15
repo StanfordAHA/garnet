@@ -27,7 +27,7 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'   : 1.0,
+    'clock_period'   : 1.25,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
@@ -61,12 +61,13 @@ def construct():
   sim               = Step( this_dir + '/sim'                                 )
   sim_gl            = Step( this_dir + '/sim-gl'                              )
   glb_tile          = Step( this_dir + '/glb_tile'                            )
-  glb_tile_syn      = Step( this_dir + '/glb_tile_syn'                        )
   constraints       = Step( this_dir + '/constraints'                         )
   custom_init       = Step( this_dir + '/custom-init'                         )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
   lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
+  ptpx_gl           = Step( this_dir + '/synopsys-ptpx-gl'                    )
+
   # Default steps
 
   info           = Step( 'info',                            default=True )
@@ -136,6 +137,10 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
+  # Gate-level ptpx node
+  ptpx_gl.set_param("strip_path", "top/dut")
+
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -143,8 +148,8 @@ def construct():
   g.add_step( info           )
   g.add_step( rtl            )
   g.add_step( sim            )
+  g.add_step( sim_gl         )
   g.add_step( glb_tile       )
-  g.add_step( glb_tile_syn   )
   g.add_step( constraints    )
   g.add_step( synth          )
   g.add_step( iflow          )
@@ -159,6 +164,7 @@ def construct():
   g.add_step( postroute      )
   g.add_step( postroute_hold )
   g.add_step( signoff        )
+  g.add_step( ptpx_gl        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
   g.add_step( lib2db         )
@@ -249,11 +255,20 @@ def construct():
 
   g.connect_by_name( adk,          genlib   )
   g.connect_by_name( signoff,      genlib   )
+
+  g.connect_by_name( rtl,           sim_gl   )
+  g.connect_by_name( adk,           sim_gl   )
+  g.connect_by_name( glb_tile,      sim_gl   )
+  g.connect_by_name( signoff,       sim_gl   )
   
+  g.connect_by_name( glb_tile,       ptpx_gl   )
+  g.connect_by_name( signoff,        ptpx_gl   )
+  g.connect_by_name( sim_gl,         ptpx_gl   )
+
   g.connect_by_name( genlib,       lib2db   )
 
   g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( synth,       debugcalibre )
+  g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )

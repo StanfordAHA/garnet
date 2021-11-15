@@ -1,4 +1,17 @@
-database -open global_buffer -shm
-probe -create top.dut -depth all -all -shm -database global_buffer
-run 
-exit
+if { $::env(WAVEFORM) != "0" } {
+  database -open global_buffer -shm
+  probe -create top.dut -depth all -all -shm -database global_buffer
+}
+
+if { $::env(SAIF) == "0" } {
+  run
+  exit
+} else {
+  stop -name test_toggle -object top.test.test_toggle
+  run
+  dumpsaif -ewg -scope top.dut -hierarchy -internal -output run.saif -overwrite
+  run
+  dumpsaif -end
+  run
+  exit
+}
