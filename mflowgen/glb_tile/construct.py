@@ -64,7 +64,7 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/rtl'                          )
+  rtl          = Step( this_dir + '/../common/rtl'                          )
   constraints  = Step( this_dir + '/constraints'                  )
   gen_sram     = Step( this_dir + '/../common/gen_sram_macro'     )
   custom_init  = Step( this_dir + '/custom-init'                  )
@@ -128,6 +128,10 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+
+  # Add header files to outputs
+  rtl.extend_outputs( ['header'] )
+  rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
   #-----------------------------------------------------------------------
   # Add short_fix script(s) to list of available postroute_hold scripts
@@ -260,10 +264,6 @@ def construct():
   #-----------------------------------------------------------------------
 
   rtl.update_params( { 'glb_only': True }, allow_new=True )
-
-  # Add header files to outputs
-  rtl.extend_outputs( ['header'] )
-  rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
   g.update_params( parameters )
 
