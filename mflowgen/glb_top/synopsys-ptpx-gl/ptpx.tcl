@@ -120,13 +120,13 @@ update_power
 report_switching_activity \
   > reports/${ptpx_design_name}.activity.post.rpt
 
-report_power -nosplit \
+report_power -nosplit -sort_by total_power \
   > reports/${ptpx_design_name}.power.rpt
 
-report_power -nosplit -hierarchy \
+report_power -nosplit -hierarchy -sort_by total_power \
   > reports/${ptpx_design_name}.power.hier.rpt
 
-report_power -nosplit -hierarchy -leaf -levels 10 \
+report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power \
   > reports/${ptpx_design_name}.power.cell.rpt
 
 ###
