@@ -44,7 +44,6 @@ fi
 
 cd outputs
 
-
 if [ $tool = "XCELIUM" ]; then
   cp ../xrun.log ./sim.log
   cp ../xrun_run.log ./run.log
@@ -63,3 +62,11 @@ if [ $waveform = "True" ]; then
     ln -s ../global_buffer.fsdb global_buffer.fsdb
   fi
 fi
+
+# Quick fix because synopsys requires backslash as an escape key for bracket
+if [ $tool = "XCELIUM" ]; then
+  sed -i 's/\[/\\\[/' run.saif
+  sed -i 's/\]/\\\]/' run.saif
+  sed -i 's/\\\\/\\/' run.saif
+fi
+

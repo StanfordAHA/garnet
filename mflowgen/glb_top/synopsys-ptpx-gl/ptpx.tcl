@@ -120,7 +120,7 @@ update_power
 report_switching_activity \
   > reports/${ptpx_design_name}.activity.post.rpt
 
-report_power -nosplit -sort_by total_power \
+report_power -nosplit \
   > reports/${ptpx_design_name}.power.rpt
 
 report_power -nosplit -hierarchy -sort_by total_power \
