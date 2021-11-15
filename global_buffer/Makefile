@@ -11,6 +11,8 @@ NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
 
 TOOL ?= XCELIUM
+export WAVEFORM ?= 0
+export SAIF ?= 0
 
 # GLS 
 SDF ?= 0
@@ -103,15 +105,19 @@ COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 ifeq ($(TOOL), XCELIUM)
     COMPILE = $(XRUN)
     COMPILE_RTL_ARGS += -xminitialize 0 -xminit_log init.log -nospecify
-    RUN = xrun -R
-    DUMP_ARGS = -input sim/dump_shm.tcl
+    RUN = xrun -R -l xrun_run.log
 else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
     RUN = ./simv
-    DUMP_ARGS = -ucli -i sim/dump_fsdb.tcl
 else
     @echo "TOOL must be either XCELIUM or VCS"
+endif
+
+ifeq ($(TOOL), XCELIUM)
+	DUMP_ARGS = -input sim/dump_shm.tcl
+else ifeq ($(TOOL), VCS)
+	DUMP_ARGS = -ucli -i sim/dump_fsdb.tcl
 endif
 
 ifneq ($(SDF), 0)
@@ -128,18 +134,14 @@ compile:
 
 .PHONY: run
 run:
-	$(RUN) $(RUNTIME_ARGS)
+	$(RUN) $(DUMP_ARGS) $(RUNTIME_ARGS)
 
 .PHONY: sim
 sim: compile
-	$(RUN) $(RUNTIME_ARGS)
-
-.PHONY: dump
-dump:
 	$(RUN) $(DUMP_ARGS) $(RUNTIME_ARGS)
 
 # -------------------------------------------------------------------
-# GLS Compile & Run
+# GLS Compile
 # -------------------------------------------------------------------
 .PHONY: compile-gls
 compile-gls: COMPILE_GLS_ARGS += +define+NON_STOP_IF_INPUT_Z
@@ -159,4 +161,4 @@ compile-gls:
 
 .PHONY: clean
 clean:
-	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log timestamp global_buffer.shm global_buffer.fsdb sdf_stats.txt sdf_logs
+	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log global_buffer.shm global_buffer.fsdb sdf_stats.txt sdf_logs
