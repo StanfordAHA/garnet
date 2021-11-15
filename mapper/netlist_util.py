@@ -6,7 +6,7 @@ from DagVisitor import Visitor, Transformer
 from hwtypes import Bit, BitVector
 from peak.mapper.utils import Unbound
 from graphviz import Digraph
-import random
+import math
 
 class CreateBuses(Visitor):
     def __init__(self, inst_info):
@@ -439,6 +439,8 @@ class PipelineBroadcasts(Visitor):
         Visitor.generic_visit(self, node)
         
 RegisterSource, RegisterSink = Common.create_dag_node("Register", 1, True, static_attrs=dict(input_t = BitVector[16], output_t = BitVector[16]))
+BitRegisterSource, BitRegisterSink = Common.create_dag_node("Register", 1, True, static_attrs=dict(input_t = Bit, output_t = Bit))
+
 
 class RemoveInputsOutputs(Visitor):
     def __init__(self, sinks):
@@ -447,7 +449,7 @@ class RemoveInputsOutputs(Visitor):
 
     def doit(self, dag: Dag):
         self.node_map = {}
-        self.added_regs = 0
+        self.added_regs = 1000
         self.inputs = []
         self.outputs = []
         self.dag_sources = dag.sources
@@ -458,6 +460,60 @@ class RemoveInputsOutputs(Visitor):
         return IODag(inputs=self.inputs, outputs=self.outputs, sources=real_sources, sinks=real_sinks)
 
 
+    def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit):
+        num_levels = math.log2(len(sinks))
+        levels = [len(sinks)]
+        while 1 not in levels:
+            levels.insert(0, math.ceil(levels[0]/2))
+
+        sources = []
+
+        if bit:
+            new_reg_sink = BitRegisterSink(new_select_node, iname=new_io_node.iname+"$reg"+str(self.added_regs))
+            new_reg_source = BitRegisterSource(iname=new_io_node.iname+"$reg"+str(self.added_regs))
+        else:
+            levels.insert(0, 1)
+            levels.insert(0, 1)
+            levels.insert(0, 1)
+            new_reg_sink = RegisterSink(new_select_node, iname=new_io_node.iname+"$reg"+str(self.added_regs))
+            new_reg_source = RegisterSource(iname=new_io_node.iname+"$reg"+str(self.added_regs))        
+        self.added_regs += 1
+        self.dag_sources.append(new_reg_source)
+        self.dag_sinks.append(new_reg_sink)
+        self.node_map[new_reg_source] = new_reg_source
+        self.node_map[new_reg_sink] = new_reg_sink
+        sources.append(new_reg_source)
+       
+
+        for level in levels[1:]:
+            sources_idx = 0
+            new_sources = []
+            for idx in range(level):
+                if bit:
+                    new_reg_sink = BitRegisterSink(sources[sources_idx], iname=new_io_node.iname+"$reg"+str(self.added_regs))
+                    new_reg_source = BitRegisterSource(iname=new_io_node.iname+"$reg"+str(self.added_regs))
+                else:
+                    new_reg_sink = RegisterSink(sources[sources_idx], iname=new_io_node.iname+"$reg"+str(self.added_regs))
+                    new_reg_source = RegisterSource(iname=new_io_node.iname+"$reg"+str(self.added_regs))        
+                self.added_regs += 1
+                self.dag_sources.append(new_reg_source)
+                self.dag_sinks.append(new_reg_sink)
+                self.node_map[new_reg_source] = new_reg_source
+                self.node_map[new_reg_sink] = new_reg_sink
+                new_sources.append(new_reg_source)
+               
+                if (idx + 1) % 2 == 0:
+                    sources_idx += 1 
+
+            sources = new_sources
+
+        for idx, sink in enumerate(sinks):
+            children_temp = list(sink.children())
+            reg_index = children_temp.index(old_select_node)
+            children_temp.remove(old_select_node)
+            children_temp.insert(reg_index, sources[idx])
+            sink.set_children(*children_temp)
+
     def visit_Select(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if not ("hw_output" in [child.iname for child in node.children()] or "self" in [child.iname for child in node.children()]):
@@ -465,23 +521,14 @@ class RemoveInputsOutputs(Visitor):
             io_child = new_children[0]
             if "io16in" in io_child.iname:
                 new_node = new_children[0].select("io2f_16")
-                for sink in self.sinks[node]:
-                   new_reg_sink = RegisterSink(new_node, iname=io_child.iname+"$reg"+str(self.added_regs))
-                   self.added_regs += 1
-                   new_reg_source = RegisterSource(iname=io_child.iname+"$reg"+str(self.added_regs))
-                   self.added_regs += 1
-                   self.dag_sources.append(new_reg_source)
-                   self.dag_sinks.append(new_reg_sink)
-                   self.node_map[new_reg_source] = new_reg_source
-                   self.node_map[new_reg_sink] = new_reg_sink
-                   children_temp = list(sink.children())
-                   children_temp.remove(node)
-                   children_temp.append(new_reg_source)
-                   sink.set_children(*children_temp)
+                self.create_register_tree(io_child, new_node, node, self.sinks[node], False)
             elif "io1in" in io_child.iname:
                 new_node = new_children[0].select("io2f_1")
+                self.create_register_tree(io_child, new_node, node, self.sinks[node], True)
             else:
                 new_node = node.copy()
+                if len(node.children()) > 1:
+                    self.create_register_tree(io_child, new_node, node, self.sinks[node], False)
             new_node.set_children(*new_children)
             self.node_map[node] = new_node
 
