@@ -416,16 +416,16 @@ from metamapper. common_passes import print_dag
 
 def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False):
     
-	if load_only:
-		id_to_name_filename = os.path.join(app_dir, f"design.id_to_name")
-		if os.path.isfile(id_to_name_filename):
-			fin = open(id_to_name_filename, "r")
-			lines = fin.readlines()
-
-			id_to_name = {}
-
-			for line in lines:
-				id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
+    if load_only:
+        id_to_name_filename = os.path.join(app_dir, f"design.id_to_name")
+        if os.path.isfile(id_to_name_filename):
+            fin = open(id_to_name_filename, "r")
+            lines = fin.readlines()
+            
+            id_to_name = {}
+            
+            for line in lines:
+            	id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
 
     fdag = RemoveInputsOutputs().doit(dag)
 
