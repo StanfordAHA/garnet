@@ -15,8 +15,8 @@ set_multicycle_path 9 -hold -to [get_pins -hier *global_controller*/cgra_cfg_rd_
 set_multicycle_path 10 -setup -to [get_pins -hier *global_controller*/sram_cfg_rd_data*]
 set_multicycle_path 9 -hold -to [get_pins -hier *global_controller*/sram_cfg_rd_data*]
 
-set_multicycle_path 5 -setup -through [get_pins -hier *GlobalBuffer*/*interrupt_pulse*]
-set_multicycle_path 4 -hold  -through [get_pins -hier *GlobalBuffer*/*interrupt_pulse*]
+set_multicycle_path 5 -setup -through [get_pins -hier *global_buffer*/*interrupt_pulse*]
+set_multicycle_path 4 -hold  -through [get_pins -hier *global_buffer*/*interrupt_pulse*]
 
 # Dont touch analog nets for dragonphy
 
