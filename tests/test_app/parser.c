@@ -106,6 +106,7 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         exit(1);
     }
 
+#ifndef SHUFFLE
     // parse dimensionality
     json_t const* dim_json = json_getProperty( addr_json, "dimensionality" );
     if ( !dim_json || JSON_INTEGER != json_getType( dim_json ) ) {
@@ -161,6 +162,75 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         cnt++;
     }
 
+#else
+    // parse cycle stride
+    json_t const* cycle_stride_list_json = json_getProperty( addr_json, "new_sched_stride" );
+    if ( !cycle_stride_list_json || JSON_ARRAY != json_getType( cycle_stride_list_json ) ) {
+        puts("Error, the cycle_stride_list property is not found.");
+        exit(1);
+    }
+
+    cnt = 0;
+    json_t const* stride_json;
+    for(stride_json = json_getChild( cycle_stride_list_json ); stride_json != 0; stride_json = json_getSibling( stride_json )) {
+        io_tile_info->cycle_stride[cnt] = json_getInteger(stride_json);
+        cnt++;
+    }
+
+    // parse dimensionality
+    io_tile_info->cycle_loop_dim = cnt;
+
+    // parse cycle_extent
+    json_t const* cycle_extent_list_json = json_getProperty( addr_json, "new_sched_extent" );
+    if ( !cycle_extent_list_json || JSON_ARRAY != json_getType( cycle_extent_list_json ) ) {
+        puts("Error, the new_sched_extent property is not found.");
+        exit(1);
+    }
+
+    cnt = 0;
+    json_t const* cycle_extent_json;
+    for(cycle_extent_json = json_getChild( cycle_extent_list_json ); cycle_extent_json != 0; cycle_extent_json = json_getSibling( cycle_extent_json )) {
+        io_tile_info->cycle_extent[cnt] = json_getInteger(cycle_extent_json);
+        cnt++;
+    }
+
+    // parse data stride
+    json_t const* data_stride_list_json;
+    if (io_tile_info->io == Input) {
+        data_stride_list_json = json_getProperty( addr_json, "new_addr_stride" );
+    } else {
+        data_stride_list_json = json_getProperty( addr_json, "new_addr_stride" );
+    }
+    if ( !data_stride_list_json || JSON_ARRAY != json_getType( data_stride_list_json ) ) {
+        puts("Error, the data_stride_list property is not found.");
+        exit(1);
+    }
+
+    cnt = 0;
+    json_t const* data_stride_json;
+    for(data_stride_json = json_getChild( data_stride_list_json ); data_stride_json != 0; data_stride_json = json_getSibling( data_stride_json )) {
+        io_tile_info->data_stride[cnt] = json_getInteger(data_stride_json);
+        cnt++;
+    }
+
+    // parse dimensionality
+    io_tile_info->loop_dim = cnt;
+
+    // parse extent
+    json_t const* extent_list_json = json_getProperty( addr_json, "new_addr_extent" );
+    if ( !extent_list_json || JSON_ARRAY != json_getType( extent_list_json ) ) {
+        puts("Error, the extent_list property is not found.");
+        exit(1);
+    }
+
+    cnt = 0;
+    json_t const* extent_json;
+    for(extent_json = json_getChild( extent_list_json ); extent_json != 0; extent_json = json_getSibling( extent_json )) {
+        io_tile_info->extent[cnt] = json_getInteger(extent_json);
+        cnt++;
+    }
+
+#endif
     return SUCCESS;
 }
 
@@ -388,8 +458,10 @@ void *parse_metadata(char *filename) {
                 if (strncmp(&info->input_info[i]->filename[name_len-3], "raw", strlen("raw")) == 0) {
                     fseek(fp2, 0L, SEEK_END);
                     info->input_info[i]->filesize = (int) ftell(fp2);
-                }
-                else {
+                } else if (strncmp(&info->input_info[i]->filename[name_len-3], "hex", strlen("hex")) == 0) {
+                    fseek(fp2, 0L, SEEK_END);
+                    info->input_info[i]->filesize = 2 * (((int) ftell(fp2)) / 5);
+                } else {
                     char c;
                     int ch1, ch2, bitwidth, filesize;
                     // skip the first line
@@ -405,8 +477,13 @@ void *parse_metadata(char *filename) {
                     }
                     info->input_info[i]->filesize = filesize;
                 }
+                fclose(fp2);
+                printf("Input %0d: %s - %0d Byte.\n", i, info->input_info[i]->filename, info->input_info[i]->filesize);
             }
-            fclose(fp2);
+            else {
+                printf("Error, input file %s does not exist.\n", info->input_info[i]->filename);
+                exit(1);
+            }
         }
     }
 
@@ -445,8 +522,11 @@ void *parse_metadata(char *filename) {
                 if (strncmp(&info->output_info[i]->filename[name_len-3], "raw", strlen("raw")) == 0) {
                     fseek(fp2, 0L, SEEK_END);
                     info->output_info[i]->filesize = (int) ftell(fp2);
-                }
-                else {
+                } else if (strncmp(&info->output_info[i]->filename[name_len-3], "hex", strlen("hex")) == 0) {
+                    fseek(fp2, 0L, SEEK_END);
+                    // When in hex format, every character (including whitespace) is considered as one data
+                    info->output_info[i]->filesize = 2 * (((int) ftell(fp2)) / 5);
+                } else {
                     char c;
                     int ch1, ch2, bitwidth, filesize;
                     // skip the first line
@@ -462,8 +542,13 @@ void *parse_metadata(char *filename) {
                     }
                     info->output_info[i]->filesize = filesize;
                 }
+                fclose(fp2);
+                printf("Output %0d: %s - %0d Byte.\n", i, info->output_info[i]->filename, info->output_info[i]->filesize);
             }
-            fclose(fp2);
+            else {
+                printf("Error, output file %s does not exist.\n", info->output_info[i]->filename);
+                exit(1);
+            }
         }
     }
 
