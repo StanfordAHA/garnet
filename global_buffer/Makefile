@@ -22,11 +22,11 @@ SDF_LOG ?= sdf_logs
 GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
-RUNTIME_ARGS += +TEST_GLB_MEM_SIMPLE
-RUNTIME_ARGS += +TEST_GLB_CFG
-RUNTIME_ARGS += +TEST_GLB_G2F_STREAM
-RUNTIME_ARGS += +TEST_GLB_F2G_STREAM
-RUNTIME_ARGS += +TEST_PCFG_STREAM
+# RUNTIME_ARGS += +TEST_GLB_MEM_SIMPLE
+# RUNTIME_ARGS += +TEST_GLB_CFG
+# RUNTIME_ARGS += +TEST_GLB_G2F_STREAM
+# RUNTIME_ARGS += +TEST_GLB_F2G_STREAM
+# RUNTIME_ARGS += +TEST_PCFG_STREAM
 
 HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
