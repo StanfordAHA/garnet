@@ -3,7 +3,7 @@
 set -e;    # FAIL if any individual command fails
 
 mflowgen run --design $GARNET_HOME/mflowgen/Tile_PE/
-make cadence-genus-genlib
+make synopsys-dc-lib2db
 if command -v calibre &> /dev/null
 then
     make mentor-calibre-lvs
@@ -15,6 +15,7 @@ make pwr-aware-gls
 
 mkdir -p outputs
 cp -L *cadence-genus-genlib/outputs/design.lib outputs/Tile_PE_tt.lib
+cp -L *synopsys-dc-lib2db/outputs/design.db outputs/Tile_PE_tt.db
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_PE.lef
 cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/Tile_PE.vcs.v
 cp -L *cadence-innovus-signoff/outputs/design.sdf outputs/Tile_PE.sdf

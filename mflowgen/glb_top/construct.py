@@ -8,6 +8,7 @@
 
 import os
 import sys
+import pathlib
 
 from mflowgen.components import Graph, Step
 from shutil import which
@@ -34,7 +35,10 @@ def construct():
     'topographical'  : True,
     # hold target slack
     'hold_target_slack'   : 0.045,
-    'num_tile_array_cols' : 32,
+    # array_width = width of CGRA below GLB; `pin-assignments.tcl` uses
+    # these parms to set up per-cgra-column ports connecting glb tile
+    # signals in glb_top to corresponding CGRA tile columns below glb_top
+    'array_width'         : 32,
     'num_glb_tiles'       : 16,
     # glb tile memory size (unit: KB)
     'glb_tile_mem_size' : 256
@@ -53,16 +57,15 @@ def construct():
 
   # Custom steps
 
-  rtl               = Step( this_dir + '/rtl'                                 )
+  rtl               = Step( this_dir + '/../common/rtl'                                 )
   sim               = Step( this_dir + '/sim'                                 )
   glb_tile          = Step( this_dir + '/glb_tile'                            )
-  glb_tile_rtl      = Step( this_dir + '/glb_tile_rtl'                        )
   glb_tile_syn      = Step( this_dir + '/glb_tile_syn'                        )
   constraints       = Step( this_dir + '/constraints'                         )
   custom_init       = Step( this_dir + '/custom-init'                         )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
-
+  lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
   # Default steps
 
   info           = Step( 'info',                            default=True )
@@ -87,6 +90,10 @@ def construct():
       lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
 
+  # Add header files to outputs
+  rtl.extend_outputs( ['header'] )
+  rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
+
   # Add (dummy) parameters to the default innovus init step
 
   init.update_params( {
@@ -96,7 +103,7 @@ def construct():
 
   # Add glb_tile macro inputs to downstream nodes
 
-  pt_signoff.extend_inputs( ['glb_tile.db'] )
+  pt_signoff.extend_inputs( ['glb_tile_tt.db'] )
 
   # These steps need timing info for glb_tiles
   tile_steps = \
@@ -128,9 +135,6 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
-  sim.extend_inputs( ['design.v'] )
-  sim.extend_inputs( ['glb_tile.v'] )
-
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -139,7 +143,6 @@ def construct():
   g.add_step( rtl            )
   g.add_step( sim            )
   g.add_step( glb_tile       )
-  g.add_step( glb_tile_rtl   )
   g.add_step( glb_tile_syn   )
   g.add_step( constraints    )
   g.add_step( synth          )
@@ -157,6 +160,7 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
+  g.add_step( lib2db         )
   g.add_step( drc            )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
@@ -199,7 +203,6 @@ def construct():
   g.connect_by_name( glb_tile,      lvs          )
 
   g.connect_by_name( rtl,         sim        )
-  g.connect_by_name( glb_tile_rtl,         sim        )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
@@ -245,6 +248,8 @@ def construct():
 
   g.connect_by_name( adk,          genlib   )
   g.connect_by_name( signoff,      genlib   )
+  
+  g.connect_by_name( genlib,       lib2db   )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,       debugcalibre )
@@ -263,8 +268,11 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
+  # rtl parameters update
+  rtl.update_params( { 'glb_only': True }, allow_new=True )
+
   # pin assignment parameters update
-  init.update_params( { 'num_tile_array_cols': parameters['num_tile_array_cols'] }, allow_new=True )
+  init.update_params( { 'array_width': parameters['array_width'] }, allow_new=True )
   init.update_params( { 'num_glb_tiles': parameters['num_glb_tiles'] }, allow_new=True )
 
   # Change nthreads

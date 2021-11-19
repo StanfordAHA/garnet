@@ -67,6 +67,7 @@ def construct():
     # RTL Generation
     'array_width'       : 32,
     'array_height'      : 16,
+    'num_glb_tiles'     : 16,
     'interconnect_only' : False,
     # glb tile memory size (unit: KB)
     # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
@@ -210,9 +211,9 @@ def construct():
   synth.extend_inputs( ['dragonphy_top.lef'] )
   # Exclude dragonphy_top from synth inputs to prevent floating
   # dragonphy inputs from being tied to 0
-  pt_signoff.extend_inputs( ['tile_array.db'] )
-  pt_signoff.extend_inputs( ['glb_top.db'] )
-  pt_signoff.extend_inputs( ['global_controller.db'] )
+  pt_signoff.extend_inputs( ['tile_array_tt.db'] )
+  pt_signoff.extend_inputs( ['glb_top_tt.db'] )
+  pt_signoff.extend_inputs( ['global_controller_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
   pt_signoff.extend_inputs( ['dragonphy_top_tt.db'] )
 
@@ -265,6 +266,10 @@ def construct():
   synth.extend_inputs( ["cons_scripts"] )
 
   power.extend_outputs( ["design-merged.gds"] )
+
+  if parameters['interconnect_only'] is False:
+    rtl.extend_outputs( ['header'] )
+    rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -503,9 +508,9 @@ def construct():
   )
 
   # glb_top parameters update
-  glb_top.update_params({'num_tile_array_cols': parameters['array_width']}, True)
-  glb_top.update_params({'num_glb_tiles': int(parameters['array_width']/2)}, True)
+  glb_top.update_params({'array_width': parameters['array_width']}, True)
   glb_top.update_params({'glb_tile_mem_size': parameters['glb_tile_mem_size']}, True)
+  glb_top.update_params({'num_glb_tiles': parameters['num_glb_tiles']}, True)
 
   # App test parameters update
   cgra_rtl_sim_compile.update_params({'array_width': parameters['array_width']}, True)

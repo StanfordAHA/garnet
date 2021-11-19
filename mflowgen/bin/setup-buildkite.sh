@@ -57,7 +57,7 @@ Options:
 Examples:
     source $script --dir /build/gold.100/full_chip
     source $script --dir /build/gold.100/full_chip --need_space 30G
-    
+
 EOF
 }
 
@@ -76,7 +76,7 @@ fi
 
 # Default is to use pre-built RTL from docker,
 # so no need for elaborate garnet python env
-PIP_INSTALL_REQUIREMENTS=false
+PIP_INSTALL_REQUIREMENTS=true
 
 build_dir=
 VERBOSE=false
@@ -354,7 +354,7 @@ echo "--- Building in destination dir `pwd`"
 
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds of a given branch
-# 
+#
 # Mar 2102 - Added option to use a different mflowgen branch when/if desired
 
 mflowgen_branch=master
@@ -412,7 +412,7 @@ echo "--- ADK SETUP / CHECK"
 echo 'COPY LATEST ADK TO MFLOWGEN REPO'
 
 # Copy the latest tsmc16 adk from a nearby repo; we'll use the one in steveri.
-# 
+#
 # Note the adks must be touchable by current user, thus must copy
 # locally and cannot e.g. use symlink to someone else's existing adk.
 
@@ -462,21 +462,21 @@ fi
 ########################################################################
 # TCLSH VERSION CHECK
 ########################################################################
-# 
+#
 # tclsh version must be >= 8.5!  Because of e.g.
 #    "delay_best" in $vars(delay_corners)
 # in flowgen-setup/setup.tcl
-# 
+#
 # For reference, I can see these versions in my various open windows
 #   kiwi/stever:  tclsh v8.6 (/usr/bin/tclsh)
 #   r7arm/agent:  tclsh v8.5 (/usr/bin/tclsh)
 #   r7arm/stever: tclsh v8.4 (/cad/mentor/2019.1/aoi_cal_2019.1_18.11/bin/tclsh
-# 
+#
 # An example path that breaks tclsh:
 #   % source $garnet/.buildkite/setup-calibre.sh
 #   % which tclsh => 'tclsh is /cad/mentor/2019.1/aoi_cal_2019.1_18.11/bin/tclsh'
 #   % echo 'puts $tcl_version; exit 0' | tclsh => 8.4
-# 
+#
 echo "--- TCLSH VERSION CHECK (must be >= 8.5)"
 
 # Uncomment to reset tclsh for testing
@@ -502,7 +502,7 @@ else
     else
         echo "  - ${TBIN}/tclsh no good; looking for a new one"
         test -d $TBIN && /bin/rm -rf $TBIN; mkdir -p $TBIN
-        for d in $( echo $PATH | sed 's/:/ /g' ); do 
+        for d in $( echo $PATH | sed 's/:/ /g' ); do
             if test -x $d/tclsh; then
                 tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
                 echo -n "  Found tclsh v$tclsh_version: $d/tclsh"
