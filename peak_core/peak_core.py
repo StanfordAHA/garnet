@@ -177,13 +177,16 @@ class PeakCore(ConfigurableCore):
         self.wire(self.ports.reset, self.peak_circuit.ports.ASYNCRESET)
 
         # wire the fake register to the actual lassen core
+        
         ports = ["config_data", "config_addr"]
         for port in ports:
-            self.wire(self.ports.config[port], self.peak_circuit.ports[port])
-            # self.wire(reg1.ports[reg_port], self.peak_circuit.ports[port])
+            if port in self.peak_circuit.ports:
+                self.wire(self.ports.config[port], self.peak_circuit.ports[port])
+                # self.wire(reg1.ports[reg_port], self.peak_circuit.ports[port])
 
         # wire it to 0, since we'll never going to use it
-        self.wire(Const(0), self.peak_circuit.ports.config_en)
+        if "config_en" in self.peak_circuit.ports: 
+            self.wire(Const(0), self.peak_circuit.ports.config_en)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
