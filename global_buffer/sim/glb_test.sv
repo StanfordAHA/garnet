@@ -99,17 +99,18 @@ program glb_test (
                 i_addr = kernels[i].start_addr;
                 i_extent = '{LOOP_LEVEL{0}};
                 done = 0;
+                data_cnt = 0;
                 while (1) begin
                     i_addr = kernels[i].start_addr;
                     for (int j = 0; j < kernels[i].dim; j++) begin
                         i_addr += kernels[i].data_stride[j] * i_extent[j] * 2; // Convert 16bit-word address to byte address
                     end
                     // Update internal counter
-                    for (int j = kernels[i].dim - 1; j >= 0; j--) begin
+                    for (int j = 0; j < kernels[i].dim; j++) begin
                         i_extent[j] += 1;
                         if (i_extent[j] == kernels[i].extent[j]) begin
                             i_extent[j] = 0;
-                            if (j == 0) done = 1;
+                            if (j == kernels[j].dim - 1) done = 1;
                         end else begin
                             break;
                         end
@@ -120,7 +121,20 @@ program glb_test (
                 // FIXME: If you are not lazy, make address pattern related varaibles as a struct.
                 g2f_dma_configure(kernels[i].tile_id, kernels[i].start_addr, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride, kernels[i].data_stride);
             end else if (kernels[i].type_ == F2G) begin
-                $display("TODO");
+                data_cnt = 1;
+                for (int j = 0; j < kernels[i].dim; j++) begin
+                    data_cnt *= kernels[i].extent[j];
+                end
+                kernels[i].data_arr = new[data_cnt];
+                kernels[i].data_arr_out = new[data_cnt];
+                $readmemh(kernels[i].filename, kernels[i].data_arr);
+                kernels[i].data64_arr = convert_16b_to_64b(kernels[i].data_arr);
+                kernels[i].data64_arr_out = new[kernels[i].data64_arr.size()];
+
+                // Store the data to queue
+                write_prr(kernels[i].tile_id, kernels[i].data_arr);
+                void'($root.top.cgra.prr2glb_configure(kernels[i].tile_id, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride));
+                f2g_dma_configure(kernels[i].tile_id, kernels[i].start_addr, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride, kernels[i].data_stride);
             end
         end
 
@@ -153,19 +167,24 @@ program glb_test (
         // end
         test_toggle = 0;
 
+        repeat (10) @(posedge clk);
+
         // compare
         foreach (kernels[i]) begin
-            automatic int j = i;
-            fork
-                if (kernels[j].type_ == WR) begin
-                    proc_read_burst(kernels[j].start_addr, kernels[j].data64_arr_out);
-                    err += compare_64b_arr(kernels[j].data64_arr, kernels[j].data64_arr_out);
-                end else if (kernels[j].type_ == RD) begin
-                    err += compare_64b_arr(kernels[j].data64_arr, kernels[j].data64_arr_out);
-                end
-            join_none
+            if (kernels[i].type_ == WR) begin
+                proc_read_burst(kernels[i].start_addr, kernels[i].data64_arr_out);
+                err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
+            end else if (kernels[i].type_ == RD) begin
+                err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
+            end else if (kernels[i].type_ == G2F) begin
+                // FIXME: Only works with 'use_valid' set in LD_DMA CTRL
+                read_prr(kernels[i].tile_id, kernels[i].data_arr_out);
+                err += compare_16b_arr(kernels[i].data_arr, kernels[i].data_arr_out);
+            end else if (kernels[i].type_ == F2G) begin
+                proc_read_burst(kernels[i].start_addr, kernels[i].data64_arr_out);
+                err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
+            end
         end
-        wait fork;
 
         if (err == 0) begin
             $display("Test passed!");
@@ -181,168 +200,6 @@ program glb_test (
         initialize();
         test = new(test_filename);
         run_test(test);
-
-        // if ($test$plusargs("TEST_GLB_MEM_SIMPLE")) begin
-        //     static string test_name = "TEST_GLB_MEM_SIMPLE";
-        //     logic [BANK_DATA_WIDTH-1:0] data_arr[];
-        //     logic [BANK_DATA_WIDTH-1:0] data_arr_out[];
-        //     static int size = 64 * 64 * 3;
-
-        //     tile_id = 0;
-        //     tile_id_mask = 0;
-
-        //     $display("\n**** TEST_GLB_MEM_W/R START ****");
-
-        //     data_arr = new[size];
-        //     data_arr_out = new[size];
-        //     foreach (data_arr[i]) begin
-        //         data_arr[i] = i;
-        //     end
-
-        //     // start
-        //     test_toggle = 1;
-        //     proc_write_burst(0, data_arr);
-        //     test_toggle = 0;
-        //     // end
-
-        //     proc_read_burst(0, data_arr_out);
-        //     void'(compare_64b_arr(data_arr, data_arr_out));
-
-        //     $display("**** TEST_GLB_MEM_W/R END ****\n");
-        // end
-
-        // if ($test$plusargs("TEST_GLB_CFG")) begin
-        //     static int err = 0;
-        //     logic [AXI_DATA_WIDTH-1:0] cfg_data;
-        //     logic [AXI_DATA_WIDTH-1:0] cfg_data_out;
-
-        //     $display("\n**** TEST_GLB_CFG_W/R START ****");
-        //     for (int i = 0; i < NUM_GLB_TILES; i++) begin
-        //         // TODO: Read from glb.pair test
-        //         cfg_data = {`GLB_DATA_NETWORK_R_MSB{1'b1}};
-        //         glb_cfg_write(((i << 8) | `GLB_DATA_NETWORK_R), cfg_data);
-        //         glb_cfg_read(((i << 8) | `GLB_DATA_NETWORK_R), cfg_data_out);
-        //         err += compare_cfg(cfg_data, cfg_data_out);
-        //     end
-        //     for (int i = 0; i < NUM_GLB_TILES; i++) begin
-        //         // TODO: Read from glb.pair test
-        //         cfg_data = {`GLB_DATA_NETWORK_R_MSB{1'b0}};
-        //         glb_cfg_write(((i << 8) | `GLB_DATA_NETWORK_R), cfg_data);
-        //         glb_cfg_read(((i << 8) | `GLB_DATA_NETWORK_R), cfg_data_out);
-        //         err += compare_cfg(cfg_data, cfg_data_out);
-        //     end
-        //     if (err > 0) begin
-        //         $error("glb configuration read/write fail");
-        //     end else begin
-        //         $display("glb configuration read/write success");
-        //     end
-
-        //     $display("**** TEST_GLB_CFG_W/R END ****\n");
-        // end
-
-        // if ($test$plusargs("TEST_GLB_G2F_STREAM")) begin
-        //     int loop_level;
-        //     static string test_name = "TEST_GLB_G2F";
-        //     static int start_addr;
-        //     logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr[];
-        //     logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr_out[];
-        //     logic [BANK_DATA_WIDTH-1:0] glb_data_arr[];
-        //     static int size = 8;
-
-        //     tile_id = 0;
-        //     tile_id_mask = 0;
-        //     start_addr = tile_offset * tile_id;
-
-        //     $display("\n**** TEST_GLB_G2F_STREAM START ****");
-        //     cgra_data_arr = new[size];
-        //     cgra_data_arr_out = new[size];
-        //     foreach (cgra_data_arr[i]) begin
-        //         cgra_data_arr[i] = i;
-        //     end
-        //     glb_data_arr = convert_16b_to_64b(cgra_data_arr);
-        //     proc_write_burst(start_addr, glb_data_arr);
-        //     g2f_dma_configure(tile_id, start_addr, size);
-
-        //     tile_id_mask = update_tile_mask(tile_id, tile_id_mask);
-
-        //     // Start
-        //     g2f_start(tile_id_mask);
-        //     g2f_run(tile_id, size);
-        //     // End
-
-        //     repeat (10) @(posedge clk);
-        //     read_prr(tile_id, cgra_data_arr_out);
-        //     void'(compare_16b_arr(cgra_data_arr, cgra_data_arr_out));
-
-        //     $display("**** TEST_GLB_G2F_STREAM END ****\n");
-        // end
-
-        // if ($test$plusargs("TEST_GLB_F2G_STREAM")) begin
-        //     static string test_name = "TEST_GLB_F2G";
-        //     static int start_addr = tile_offset * tile_id;
-        //     logic [CGRA_DATA_WIDTH-1:0] cgra_data_arr[];
-        //     logic [BANK_DATA_WIDTH-1:0] glb_data_arr[];
-        //     logic [BANK_DATA_WIDTH-1:0] glb_data_arr_out[];
-        //     static int size = 8;
-
-        //     tile_id = 0;
-        //     tile_id_mask = 0;
-        //     start_addr = tile_offset * tile_id;
-
-        //     $display("\n**** TEST_GLB_F2G_STREAM START ****");
-
-        //     cgra_data_arr = new[size];
-        //     foreach (cgra_data_arr[i]) begin
-        //         cgra_data_arr[i] = i;
-        //     end
-        //     f2g_dma_configure(tile_id, start_addr, size);
-
-        //     tile_id_mask = update_tile_mask(tile_id, tile_id_mask);
-        //     write_prr(tile_id, cgra_data_arr);
-
-        //     // start
-        //     f2g_start(tile_id_mask);
-        //     f2g_run(tile_id, size);
-        //     // end
-
-        //     glb_data_arr = convert_16b_to_64b(cgra_data_arr);
-        //     glb_data_arr_out = new[glb_data_arr.size()];
-        //     proc_read_burst(start_addr, glb_data_arr_out);
-        //     void'(compare_64b_arr(glb_data_arr, glb_data_arr_out));
-
-        //     $display("**** TEST_GLB_F2G_STREAM END ****\n");
-        // end
-
-        // if ($test$plusargs("TEST_PCFG_STREAM")) begin
-        //     static string test_name = "TEST_GLB_PCFG";
-        //     static int start_addr;
-        //     logic [CGRA_CFG_ADDR_WIDTH+CGRA_CFG_DATA_WIDTH-1:0] bs_arr[];
-        //     static int size = 8;
-
-        //     tile_id = 0;
-        //     tile_id_mask = 0;
-        //     start_addr = tile_offset * tile_id;
-
-        //     $display("\n**** TEST_PCFG START ****");
-        //     bs_arr = new[size];
-        //     foreach (bs_arr[i]) begin
-        //         bs_arr[i] = (i << CGRA_CFG_DATA_WIDTH) | i;
-        //     end
-
-        //     proc_write_burst(start_addr, bs_arr);
-        //     pcfg_dma_configure(tile_id, start_addr, size);
-
-        //     tile_id_mask = update_tile_mask(tile_id, tile_id_mask);
-
-        //     // start
-        //     pcfg_start(tile_id_mask);
-        //     pcfg_run(tile_id, size);
-        //     // end
-
-        //     void'(read_cgra_cfg(bs_arr));
-
-        //     $display("**** TEST_PCFG END ****\n");
-        // end
     end
 
     task initialize();
@@ -397,43 +254,49 @@ program glb_test (
 
     task pcfg_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,
                             [AXI_DATA_WIDTH-1:0] num_word);
-        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_CTRL_R, (1 << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
-        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_HEADER_START_ADDR_R,
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_CTRL_R, (1 << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_HEADER_START_ADDR_R,
                       (start_addr << `GLB_PCFG_DMA_HEADER_START_ADDR_START_ADDR_F_LSB));
-        glb_cfg_write((tile_id << 8) + `GLB_PCFG_DMA_HEADER_NUM_CFG_R,
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_HEADER_NUM_CFG_R,
                       (num_word << `GLB_PCFG_DMA_HEADER_NUM_CFG_NUM_CFG_F_LSB));
     endtask
 
     task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, int dim, int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL], int data_stride[LOOP_LEVEL]);
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_DATA_NETWORK_R,
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_R,
                       (2'b01 << `GLB_DATA_NETWORK_G2F_MUX_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_CTRL_R,
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
                       (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB) | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
                       (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
         
         // NOTE: Each stride/range address difference is 'h4
         for (int i = 0; i < dim; i ++) begin
-            glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_RANGE_0_R + i * 'h4,
+            glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_RANGE_0_R + i * 'h4,
                         (extent[0] << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
-            glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
+            glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
                         (data_stride[0] << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
         end
 
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_VALIDATE_R,
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_VALIDATE_R,
                       (1 << `GLB_LD_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
     endtask
 
-    task f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_DATA_NETWORK_R,
+    task f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, int dim, int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL], int data_stride[LOOP_LEVEL]);
+        // NOTE: F2G DMA does not care about access pattern. It just waits for the valid signal. 
+        int num_word = 1;
+        $display("tileid: %d", tile_id);
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_R,
                       (2'b10 << `GLB_DATA_NETWORK_F2G_MUX_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_CTRL_R,
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
                       (1 << `GLB_ST_DMA_CTRL_MODE_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_START_ADDR_R,
+        for (int i = 0; i < dim; i++) begin
+            num_word *= extent[i];
+        end
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_START_ADDR_R,
                       (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_NUM_WORDS_R,
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_NUM_WORDS_R,
                       (num_word << `GLB_ST_DMA_HEADER_0_NUM_WORDS_NUM_WORDS_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_HEADER_0_VALIDATE_R,
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_VALIDATE_R,
                       (1 << `GLB_ST_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
     endtask
 

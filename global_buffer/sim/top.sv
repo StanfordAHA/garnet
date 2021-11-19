@@ -226,9 +226,10 @@ always_comb begin
     for (int i=0; i<NUM_PRR; i++) begin
         g2c_io1[i] = stream_data_valid_g2f[i][0];
         g2c_io16[i] = stream_data_g2f[i][0];
-        stream_data_valid_f2g[i][0] = c2g_io1[i];
-        stream_data_f2g[i][0] = c2g_io16[i];
+
+        stream_data_valid_f2g[i][0] = 0;
         stream_data_valid_f2g[i][1] = c2g_io1[i];
+        stream_data_f2g[i][0] = 0;
         stream_data_f2g[i][1] = c2g_io16[i];
     end
 end

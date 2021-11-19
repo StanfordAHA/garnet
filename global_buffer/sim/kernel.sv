@@ -39,7 +39,7 @@ endclass
 function Test::new(string filename);
     int fd = $fopen(filename, "r");
     string type_, data_filename;
-    int tile_id, start_addr, dim, extent, cycle_stride, data_stride;
+    int tile_id, bank_id, dim, extent, cycle_stride, data_stride;
     string cycle_stride_s, extent_s, data_stride_s, tmp_s;
 
     if (fd) $display("Test file open %s", filename);
@@ -48,14 +48,14 @@ function Test::new(string filename);
     kernels = new[num_kernels];
     for (int i = 0; i < num_kernels; i++) begin
         kernels[i] = new();
-        void'($fscanf(fd, " %s%d%d%d", type_, tile_id, start_addr, dim));
+        void'($fscanf(fd, " %s%d%d%d", type_, tile_id, bank_id, dim));
         if (type_ == "WR") kernels[i].type_ = WR;
         else if (type_ == "RD") kernels[i].type_ = RD;
         else if (type_ == "G2F") kernels[i].type_ = G2F;
         else if (type_ == "F2G") kernels[i].type_ = F2G;
         else $error("This type [%s] is not supported", type_);
         kernels[i].tile_id = tile_id;
-        kernels[i].start_addr = tile_offset * tile_id + start_addr;
+        kernels[i].start_addr = tile_offset * tile_id + bank_offset * bank_id;
         kernels[i].dim = dim;
         for (int j = 0; j < dim; j++) begin
             void'($fscanf(fd, " %d%d%d", extent, cycle_stride, data_stride));
