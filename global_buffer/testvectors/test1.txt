@@ -2,6 +2,6 @@
 WR 0 0 1
 4096 1 1
 testvectors/in_4096.dat
-RD 1 0 1
+RD 0 1 1
 4096 1 1
 testvectors/out_4096.dat
