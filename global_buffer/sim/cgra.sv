@@ -62,10 +62,6 @@ module cgra (
     bit [NUM_PRR-1:0] is_glb2prr_on;
     bit [NUM_PRR-1:0] is_prr2glb_on;
 
-    // bit [NUM_PRR-1:0][LOOP_LEVEL-1:0][AXI_DATA_WIDTH-1:0] glb2prr_extent;
-    // bit [NUM_PRR-1:0][LOOP_LEVEL-1:0][AXI_DATA_WIDTH-1:0] glb2prr_cycle_stride;
-    // bit [NUM_PRR-1:0][LOOP_LEVEL-1:0][AXI_DATA_WIDTH-1:0] glb2prr_data_stride;
-
     bit [NUM_PRR-1:0][99:0] prr2glb_cnt;
     bit [NUM_PRR-1:0] prr2glb_valid;
 

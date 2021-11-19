@@ -42,6 +42,7 @@ function Test::new(string filename);
     int tile_id, bank_id, dim, extent, cycle_stride, data_stride;
     string cycle_stride_s, extent_s, data_stride_s, tmp_s;
 
+    $display("\n**** Test Initialization ****");
     if (fd) $display("Test file open %s", filename);
     else $error("Cannot open %s", filename);
     void'($fscanf(fd, " %d", num_kernels));
