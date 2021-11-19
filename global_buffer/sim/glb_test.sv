@@ -63,58 +63,15 @@ program glb_test (
     int test_toggle = 0;
     int tile_id = 0;
 
-    int tile_offset = 1 << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
     bit [NUM_GLB_TILES-1:0] tile_id_mask = 0;
 
-    task automatic run_test(string filename);
-        int fd = $fopen(filename, "r");
-        int num_kernels;
-        Kernel kernels[];
-        string type_, data_filename;
-        int tile_id, start_addr, dim, extent, cycle_stride, data_stride;
-
-        $display("\n**** TEST START ****");
-        if (fd) $display("Test file open %s", filename);
-        else $error("Cannot open %s", filename);
-        while (!$feof(
-            fd
-        )) begin
-            void'($fscanf(fd, "%d\n", num_kernels));
-            kernels = new[num_kernels];
-            for (int i = 0; i < num_kernels; i++) begin
-                kernels[i] = new();
-                void'($fscanf(fd, "%s %d %d %d\n", type_, tile_id, start_addr, dim));
-                if (type_ == "WR") kernels[i].type_ = WR;
-                else if (type_ == "RD") kernels[i].type_ = RD;
-                else if (type_ == "G2F") kernels[i].type_ = G2F;
-                else if (type_ == "F2G") kernels[i].type_ = F2G;
-                else $error("This type [%s] is not supported", type_);
-                kernels[i].tile_id = tile_id;
-                kernels[i].start_addr = tile_offset * tile_id + start_addr;
-                kernels[i].dim = dim;
-                for (int j = 0; j < dim; j++) begin
-                    void'($fscanf(fd, "%d %d %d\n", extent, cycle_stride, data_stride));
-                    kernels[i].extent[j] = extent;
-                    kernels[i].cycle_stride[j] = cycle_stride;
-                    kernels[i].data_stride[j] = data_stride;
-                end
-                void'($fscanf(fd, "%s\n", data_filename));
-                kernels[i].filename = data_filename;
-            end
-        end
-        $fclose(fd);
-
-        $display("Number of kernels in the app is %0d", num_kernels);
-        foreach (kernels[i]) begin
-            $display("Kernel %0d: Type: %s, Tile_ID: %0d", i, kernels[i].type_.name(),
-                     kernels[i].tile_id);
-        end
-        run_app(kernels);
-        $display("**** TEST END ****\n");
-    endtask
-
-    task automatic run_app(Kernel kernels[]);
+    task automatic run_test(Test test);
         int err = 0;
+        int i_addr = 0;
+        int i_extent[LOOP_LEVEL];
+        int data_cnt = 0;
+        bit done = 0;
+        Kernel kernels[] = test.kernels;
 
         foreach (kernels[i]) begin
             if (kernels[i].type_ == WR) begin
@@ -135,22 +92,63 @@ program glb_test (
                 // In order to test RD, we have to load data to SRAM first.
                 // Since our generator does not support ifdef or inline verilog, we write it to memory
                 proc_write_burst(kernels[i].start_addr, kernels[i].data64_arr);
+            end else if (kernels[i].type_ == G2F) begin
+                kernels[i].data_arr = new[kernels[i].extent[0]];
+                kernels[i].data_arr_out = new[kernels[i].extent[0]];
+                $readmemh(kernels[i].filename, kernels[i].data_arr);
+                i_addr = kernels[i].start_addr;
+                i_extent = '{LOOP_LEVEL{0}};
+                done = 0;
+                while (1) begin
+                    i_addr = kernels[i].start_addr;
+                    for (int j = 0; j < kernels[i].dim; j++) begin
+                        i_addr += kernels[i].data_stride[j] * i_extent[j] * 2; // Convert 16bit-word address to byte address
+                    end
+                    // Update internal counter
+                    for (int j = kernels[i].dim - 1; j >= 0; j--) begin
+                        i_extent[j] += 1;
+                        if (i_extent[j] == kernels[i].extent[j]) begin
+                            i_extent[j] = 0;
+                            if (j == 0) done = 1;
+                        end else begin
+                            break;
+                        end
+                    end
+                    proc_write_partial(i_addr, kernels[i].data_arr[data_cnt++]);
+                    if (done == 1) break;
+                end
+                // FIXME: If you are not lazy, make address pattern related varaibles as a struct.
+                g2f_dma_configure(kernels[i].tile_id, kernels[i].start_addr, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride, kernels[i].data_stride);
+            end else if (kernels[i].type_ == F2G) begin
+                $display("TODO");
             end
         end
 
+        repeat (10) @(posedge clk);
+
         // start
         test_toggle = 1;
-        foreach (kernels[i]) begin
-            automatic int j = i;
-            fork
-                if (kernels[j].type_ == WR) begin
-                    proc_write_burst(kernels[j].start_addr, convert_16b_to_64b(kernels[j].data_arr
-                                     ));
-                end else if (kernels[j].type_ == RD) begin
-                    proc_read_burst(kernels[j].start_addr, kernels[j].data64_arr_out);
+        fork 
+            g2f_start(test.g2f_tile_mask);
+            f2g_start(test.f2g_tile_mask);
+            begin
+                foreach (kernels[i]) begin
+                    automatic int j = i;
+                    fork
+                        if (kernels[j].type_ == WR) begin
+                            proc_write_burst(kernels[j].start_addr, convert_16b_to_64b(kernels[j].data_arr
+                                            ));
+                        end else if (kernels[j].type_ == RD) begin
+                            proc_read_burst(kernels[j].start_addr, kernels[j].data64_arr_out);
+                        end else if (kernels[j].type_ == G2F) begin
+                            g2f_run(kernels[j].tile_id, kernels[j].data_arr.size());
+                        end
+                        // FIXEME: Add F2G
+                    join_none
                 end
-            join_none
-        end
+                wait fork;
+            end
+        join_none
         wait fork;
         // end
         test_toggle = 0;
@@ -178,9 +176,11 @@ program glb_test (
     endtask
 
     initial begin
-        static string test_filename = "./testvectors/test1.txt";
+        Test test;
+        static string test_filename = "./testvectors/test2.txt";
         initialize();
-        run_test(test_filename);
+        test = new(test_filename);
+        run_test(test);
 
         // if ($test$plusargs("TEST_GLB_MEM_SIMPLE")) begin
         //     static string test_name = "TEST_GLB_MEM_SIMPLE";
@@ -404,24 +404,27 @@ program glb_test (
                       (num_word << `GLB_PCFG_DMA_HEADER_NUM_CFG_NUM_CFG_F_LSB));
     endtask
 
-    task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,
-                           [AXI_DATA_WIDTH-1:0] num_word);
+    task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, int dim, int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL], int data_stride[LOOP_LEVEL]);
         glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_DATA_NETWORK_R,
                       (2'b01 << `GLB_DATA_NETWORK_G2F_MUX_F_LSB));
         glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_CTRL_R,
                       (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB) | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB));
         glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
                       (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_RANGE_0_R,
-                      (num_word << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
-        glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R,
-                      (1 << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+        
+        // NOTE: Each stride/range address difference is 'h4
+        for (int i = 0; i < dim; i ++) begin
+            glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_RANGE_0_R + i * 'h4,
+                        (extent[0] << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+            glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
+                        (data_stride[0] << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+        end
+
         glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_LD_DMA_HEADER_0_VALIDATE_R,
                       (1 << `GLB_LD_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
     endtask
 
-    task f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,
-                           [AXI_DATA_WIDTH-1:0] num_word);
+    task f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, [AXI_DATA_WIDTH-1:0] num_word);
         glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_DATA_NETWORK_R,
                       (2'b10 << `GLB_DATA_NETWORK_F2G_MUX_F_LSB));
         glb_cfg_write((tile_id << AXI_ADDR_REG_WIDTH) + `GLB_ST_DMA_CTRL_R,
@@ -486,11 +489,49 @@ program glb_test (
     endtask
 
     task automatic proc_write(input [GLB_ADDR_WIDTH-1:0] addr, [BANK_DATA_WIDTH-1:0] data);
-        #(`CLK_PERIOD * 0.3) proc_wr_en <= 1;
+        proc_wr_en <= 1;
         proc_wr_strb <= {(BANK_DATA_WIDTH / 8) {1'b1}};
         proc_wr_addr <= addr;
         proc_wr_data <= data;
         @(posedge clk);
+        #(`CLK_PERIOD * 0.3) proc_wr_en <= 0;
+        proc_wr_strb <= 0;
+    endtask
+
+    task automatic proc_write_partial(input [GLB_ADDR_WIDTH-1:0] addr,
+                                      [CGRA_DATA_WIDTH-1:0] data);
+        bit [BANK_DATA_WIDTH / 8 - 1:0] strb;
+        bit [BANK_DATA_WIDTH - 1:0] wr_data;
+
+        // FIXME: Lazy to generalize this task.
+        if (BANK_DATA_WIDTH != CGRA_DATA_WIDTH * 4)
+            $error("This task assumes that BANK_DATA_WIDTH is 64bit and CGRA_DATA_WIDTH is 16bit.");
+
+        case (addr[2:1])
+            2'b00: begin
+                strb = {{6{1'b0}}, {2{1'b1}}};
+                wr_data = {48'b0, data};
+            end
+            2'b01: begin
+                strb = {{4{1'b0}}, {2{1'b1}}, {2{1'b0}}};
+                wr_data = {32'b0, data, 16'b0};
+            end
+            2'b10: begin
+                strb = {{2{1'b0}}, {2{1'b1}}, {4{1'b0}}};
+                wr_data = {16'b0, data, 32'b0};
+            end
+            2'b11: begin
+                strb = {{2{1'b1}}, {6{1'b0}}};
+                wr_data = {data, 48'b0};
+            end
+        endcase
+        proc_wr_en <= 1;
+        proc_wr_strb <= strb;
+        proc_wr_addr <= addr;
+        proc_wr_data <= wr_data;
+        @(posedge clk);
+        #(`CLK_PERIOD * 0.3) proc_wr_en <= 0;
+        proc_wr_strb <= 0;
     endtask
 
     task automatic proc_read_burst(input [GLB_ADDR_WIDTH-1:0] addr, ref data64 data);
