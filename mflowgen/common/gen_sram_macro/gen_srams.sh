@@ -1,3 +1,10 @@
+# CHANGE LOG: Sep 2021
+# Mem compiler has no license currently and fails---silently---when we
+# use it.  This change does two things: 1) Make the failure less-silent
+# so we can detect it; and 2) when failure happens, flag a warning and,
+# instead of building new SRAMs, use SRAMs from the latest gold build.
+# This change would have prevented failures in builds 291 and 305.
+
 echo "${num_words}x${word_size}m${mux_size}s" >> config.txt
 mc_name=tsn16ffcllhdspsbsram_20131200_130a
 export MC_HOME=inputs/adk/mc/${mc_name}
@@ -29,7 +36,7 @@ eval $cmd |& tee mc.log
 
 if grep FATAL mc.log; then
     echo "**ERROR Looks like memory compiler flagged a fatal error"
-    echo "Will try using cached SRAMs instead :("
+    echo "**ERROR Will try using cached SRAMs instead :("
     echo '+++ HACK TIME! Using cached srams because mem compiler failed.'
     set -x
 
