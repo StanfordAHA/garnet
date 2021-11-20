@@ -12,6 +12,7 @@ class Kernel;
     static int cnt = 0;
     stream_type type_;
     int tile_id;
+    int bank_id;
     int start_addr;
     int dim;
     int extent[LOOP_LEVEL];
@@ -39,30 +40,35 @@ endclass
 function Test::new(string filename);
     int fd = $fopen(filename, "r");
     string type_, data_filename;
-    int tile_id, bank_id, dim, extent, cycle_stride, data_stride;
+    int tile_id, bank_id, dim;
     string cycle_stride_s, extent_s, data_stride_s, tmp_s;
 
-    $display("\n**** Test Initialization ****");
+    $display("\n---- Test Initialization ----");
     if (fd) $display("Test file open %s", filename);
     else $error("Cannot open %s", filename);
     void'($fscanf(fd, " %d", num_kernels));
     kernels = new[num_kernels];
     for (int i = 0; i < num_kernels; i++) begin
         kernels[i] = new();
-        void'($fscanf(fd, " %s%d%d%d", type_, tile_id, bank_id, dim));
+        void'($fscanf(fd, " %s%d%d", type_, tile_id, bank_id));
         if (type_ == "WR") kernels[i].type_ = WR;
         else if (type_ == "RD") kernels[i].type_ = RD;
         else if (type_ == "G2F") kernels[i].type_ = G2F;
         else if (type_ == "F2G") kernels[i].type_ = F2G;
         else $error("This type [%s] is not supported", type_);
+        void'($fscanf(fd, " %d", dim));
         kernels[i].tile_id = tile_id;
+        kernels[i].bank_id = tile_id;
         kernels[i].start_addr = tile_offset * tile_id + bank_offset * bank_id;
         kernels[i].dim = dim;
         for (int j = 0; j < dim; j++) begin
-            void'($fscanf(fd, " %d%d%d", extent, cycle_stride, data_stride));
-            kernels[i].extent[j] = extent;
-            kernels[i].cycle_stride[j] = cycle_stride;
-            kernels[i].data_stride[j] = data_stride;
+            void'($fscanf(fd, " %d", kernels[i].extent[j]));
+        end
+        for (int j = 0; j < dim; j++) begin
+            void'($fscanf(fd, " %d", kernels[i].cycle_stride[j]));
+        end
+        for (int j = 0; j < dim; j++) begin
+            void'($fscanf(fd, " %d", kernels[i].data_stride[j]));
         end
         void'($fscanf(fd, " %s", data_filename));
         kernels[i].filename = data_filename;
@@ -79,8 +85,8 @@ function Test::new(string filename);
         extent_s = "";
         cycle_stride_s = "";
         data_stride_s = "";
-        $display("Kernel %0d: Type: %s, Tile_ID: %0d", i, kernels[i].type_.name(),
-                 kernels[i].tile_id);
+        $display("Kernel %0d: Type: %s, Tile_ID: %0d, Bank_ID: %0d", i, kernels[i].type_.name(),
+                 kernels[i].tile_id, kernels[i].bank_id);
         for (int j = 0; j < kernels[i].dim; j++) begin
             tmp_s.itoa(kernels[i].extent[j]);
             extent_s = {extent_s, " ", tmp_s};

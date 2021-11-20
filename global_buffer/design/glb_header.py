@@ -8,25 +8,24 @@ class GlbHeader():
         self._params = _params
 
         self.cfg_data_network_t = PackedStruct("cfg_data_network_t",
-                                               [("f2g_mux", 2),
-                                                ("g2f_mux", 2),
-                                                ("tile_connected", 1),
+                                               [("tile_connected", 1),
                                                 ("latency", self._params.latency_width)])
 
         self.cfg_pcfg_network_t = PackedStruct("cfg_pcfg_network_t",
                                                [("tile_connected", 1),
                                                 ("latency", self._params.latency_width)])
         self.cfg_st_dma_ctrl_t = PackedStruct("st_dma_ctrl_t",
-                                              [("mode", 2)])
+                                              [("mode", 2),
+                                               ("f2g_mux", 2)])
 
         self.cfg_st_dma_header_t = PackedStruct("st_dma_header_t",
                                                 [("validate", 1),
-                                                 ("start_addr",
-                                                  self._params.glb_addr_width),
+                                                 ("start_addr", self._params.glb_addr_width),
                                                  ("num_words", self._params.max_num_words_width)])
         self.cfg_ld_dma_ctrl_t = PackedStruct("ld_dma_ctrl_t",
                                               [("mode", 2),
-                                               ("use_valid", 1)])
+                                               ("use_valid", 1),
+                                               ("g2f_mux", 2)])
 
         # TODO: Kratos does not support struct of struct now.
         dma_header_struct_list = [("validate", 1),
