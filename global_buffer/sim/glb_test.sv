@@ -60,6 +60,7 @@ program glb_test (
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data
 );
+    const int MAX_NUM_ERRORS = 20;
     int test_toggle = 0;
     int tile_id = 0;
 
@@ -94,8 +95,12 @@ program glb_test (
                 // to write data to memory
                 proc_write_burst(kernels[i].start_addr, kernels[i].data64_arr);
             end else if (kernels[i].type_ == G2F) begin
-                kernels[i].data_arr = new[kernels[i].extent[0]];
-                kernels[i].data_arr_out = new[kernels[i].extent[0]];
+                data_cnt = 1;
+                for (int j = 0; j < kernels[i].dim; j++) begin
+                    data_cnt *= kernels[i].extent[j];
+                end
+                kernels[i].data_arr = new[data_cnt];
+                kernels[i].data_arr_out = new[data_cnt];
                 $readmemh(kernels[i].filename, kernels[i].data_arr);
                 i_addr = kernels[i].start_addr;
                 i_extent = '{LOOP_LEVEL{0}};
@@ -113,7 +118,7 @@ program glb_test (
                         i_extent[j] += 1;
                         if (i_extent[j] == kernels[i].extent[j]) begin
                             i_extent[j] = 0;
-                            if (j == kernels[j].dim - 1) done = 1;
+                            if (j == kernels[i].dim - 1) done = 1;
                         end else begin
                             break;
                         end
@@ -149,9 +154,9 @@ program glb_test (
             end
         end
 
-        repeat (10) @(posedge clk);
+        repeat (50) @(posedge clk);
 
-        $display("\n**** Test Run ****");
+        $display("\n---- Test Run ----");
         // start
         test_toggle = 1;
         fork
@@ -180,30 +185,35 @@ program glb_test (
         // end
         test_toggle = 0;
 
-        repeat (10) @(posedge clk);
+        repeat (50) @(posedge clk);
 
         // compare
-        $display("\n**** Test Result ****");
+        $display("\n---- Test Result ----");
         foreach (kernels[i]) begin
             if (kernels[i].type_ == WR) begin
                 proc_read_burst(kernels[i].start_addr, kernels[i].data64_arr_out);
+                $display("WR Comparison");
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end else if (kernels[i].type_ == RD) begin
+                $display("RD Comparison");
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end else if (kernels[i].type_ == G2F) begin
                 // FIXME: Only works with 'use_valid' set in LD_DMA CTRL
                 read_prr(kernels[i].tile_id, kernels[i].data_arr_out);
+                $display("G2F Comparison");
                 err += compare_16b_arr(kernels[i].data_arr, kernels[i].data_arr_out);
             end else if (kernels[i].type_ == F2G) begin
                 proc_read_burst(kernels[i].start_addr, kernels[i].data64_arr_out);
+                $display("F2G Comparison");
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end
+            repeat (10) @(posedge clk);
         end
 
         if (err == 0) begin
             $display("Test passed!");
         end else begin
-            $display("Test failed!");
+            $error("Test failed!");
         end
 
     endtask
@@ -211,14 +221,15 @@ program glb_test (
     initial begin
         Test test;
         string test_filename;
+        int num_test;
         initialize();
-        for (int i = 1; i <= 2; i++) begin
-            $display("\n************** Test Start *****************");
-            $sformat(test_filename, "./testvectors/test%0d.txt", i);
-            test = new(test_filename);
-            run_test(test);
-            $display("************** Test End *****************\n");
-        end
+        if (!($value$plusargs("TEST=%d", num_test))) num_test = 1;
+        $display("Test #%0d", num_test);
+        $display("\n************** Test Start *****************");
+        $sformat(test_filename, "./testvectors/test%0d.txt", num_test);
+        test = new(test_filename);
+        run_test(test);
+        $display("************** Test End *****************\n");
     end
 
     task initialize();
@@ -284,10 +295,10 @@ program glb_test (
     task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, int dim,
                            int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
                            int data_stride[LOOP_LEVEL]);
-        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_R,
-                      (2'b01 << `GLB_DATA_NETWORK_G2F_MUX_F_LSB));
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
-                      (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB) | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB));
+                      ((2'b01 << `GLB_LD_DMA_CTRL_G2F_MUX_F_LSB)
+                       | (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB)
+                       | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
@@ -296,10 +307,10 @@ program glb_test (
         for (int i = 0; i < dim; i++) begin
             glb_cfg_write(
                 (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_RANGE_0_R + i * 'h4,
-                (extent[0] << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+                (extent[i] << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
             glb_cfg_write(
                 (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
-                (data_stride[0] << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+                (data_stride[i] << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
         end
 
         glb_cfg_write(
@@ -312,10 +323,9 @@ program glb_test (
                            int data_stride[LOOP_LEVEL]);
         // NOTE: F2G DMA does not care about access pattern. It just waits for the valid signal. 
         static int num_word = 1;
-        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_R,
-                      (2'b10 << `GLB_DATA_NETWORK_F2G_MUX_F_LSB));
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
-                      (1 << `GLB_ST_DMA_CTRL_MODE_F_LSB));
+                      ((1 << `GLB_ST_DMA_CTRL_MODE_F_LSB)
+                       |(2'b10 << `GLB_ST_DMA_CTRL_F2G_MUX_F_LSB)));
         for (int i = 0; i < dim; i++) begin
             num_word *= extent[i];
         end
@@ -594,17 +604,23 @@ program glb_test (
         end
         foreach (data_arr_0[i]) begin
             if (data_arr_0[i] !== data_arr_1[i]) begin
-                $display("Data array different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h",
-                         i, data_arr_0[i], data_arr_1[i]);
                 err++;
+                if (err > MAX_NUM_ERRORS) begin
+                    $display("The number of errors reached %0d. Do not print anymore", MAX_NUM_ERRORS);
+                    break;
+                end
+                $display(
+                    "Data different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
+                    data_arr_0[i], data_arr_1[i]);
             end else begin
                 if ($test$plusargs("DEBUG")) begin
-                    $display("Data array same. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
+                    $display("Data same. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
                              data_arr_0[i], data_arr_1[i]);
                 end
             end
         end
         if (err > 0) begin
+            $error("Two data array are Different");
             return 1;
         end
         $display("Two data array are same");
@@ -617,22 +633,27 @@ program glb_test (
         int err;
         if (size_0 != size_1) begin
             $display("Data array size is different. data_arr_0: %0d, data_arr_1: %0d", size_0,
-                     size_1);
+                        size_1);
             err++;
         end
         foreach (data_arr_0[i]) begin
             if (data_arr_0[i] !== data_arr_1[i]) begin
-                $display("Data array different. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i,
-                         data_arr_0[i], data_arr_1[i]);
                 err++;
+                if (err > MAX_NUM_ERRORS) begin
+                    $display("The number of errors reached %0d. Do not print anymore", MAX_NUM_ERRORS);
+                    break;
+                end
+                $display("Data different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
+                        data_arr_0[i], data_arr_1[i]);
             end else begin
                 if ($test$plusargs("DEBUG")) begin
-                    $display("Data array same. index: %0d, data_arr_0: %0d, data_arr_1: %0d", i,
+                    $display("Data same. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
                              data_arr_0[i], data_arr_1[i]);
                 end
             end
         end
         if (err > 0) begin
+            $error("Two data array are Different");
             return 1;
         end
         $display("Two data array are same");
