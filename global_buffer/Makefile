@@ -22,8 +22,10 @@ SDF_LOG ?= sdf_logs
 GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
-RUN_ARGS += +TEST=3
+RUN_ARGS ?= +TEST=3
 RUN_ARGS += +DEBUG
+
+RUN_LOG ?= run.log
 
 HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
@@ -104,11 +106,11 @@ ifeq ($(TOOL), XCELIUM)
     COMPILE_RTL_ARGS += -xminitialize 0 -xminit_log init.log -nospecify
     COMPILE_GLS_ARGS += -xminitialize 0 -xminit_log init.log
     COMPILE_GLS_ARGS += -ALLOWREDEFINITION
-    RUN = xrun -R -l xrun_run.log
+    RUN = xrun -R -l $(RUN_LOG)
 else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
-    RUN = ./simv -lca -l vcs_run.log
+    RUN = ./simv -lca -l $(RUN_LOG)
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
