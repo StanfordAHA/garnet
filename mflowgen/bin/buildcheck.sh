@@ -233,8 +233,14 @@ if [ "$do_runtimes" ]; then
     # 17-tile_array                       --   13 hr 24 min 37 sec 
     # --------------------------------------------------------------------------------
     # 
+    # Will try to find runtimes even if/when Makefile is absent/corrupted
     echo ''
-    make runtimes |& egrep -v '^(Total|echo|runtimes)' \
+    if grep ^runtimes Makefile >& /dev/null; then
+        get_runtimes="make runtimes"
+    else
+        get_runtimes="/sim/buildkite-agent/mflowgen.master/mflowgen/scripts/mflowgen-runtimes"
+    fi
+    $get_runtimes |& egrep -v '^(Total|echo|runtimes)' \
         | grep -vi warning | sed '1d; s/Runtimes/+++ CURRENT STATUS (runtimes)/'
 fi
 
