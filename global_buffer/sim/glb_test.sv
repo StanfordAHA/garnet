@@ -221,12 +221,12 @@ program glb_test (
     initial begin
         Test test;
         string test_filename;
-        int num_test;
+        string test_name;
         initialize();
-        if (!($value$plusargs("TEST=%d", num_test))) num_test = 1;
-        $display("Test #%0d", num_test);
+        if (!($value$plusargs("TEST=%s", test_name))) test_name = "test1";
+        $display("Test %s", test_name);
         $display("\n************** Test Start *****************");
-        $sformat(test_filename, "./testvectors/test%0d.txt", num_test);
+        $sformat(test_filename, "./testvectors/%s.txt", test_name);
         test = new(test_filename);
         run_test(test);
         $display("************** Test End *****************\n");

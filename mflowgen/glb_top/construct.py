@@ -41,7 +41,9 @@ def construct():
     'array_width'         : 32,
     'num_glb_tiles'       : 16,
     # glb tile memory size (unit: KB)
-    'glb_tile_mem_size' : 256
+    'glb_tile_mem_size' : 256,
+    'rtl_testvectors' : ["test1", "test2", "test3", "test4"],
+    'gls_testvectors' : ["test1.pwr", "test2.pwr"]
   }
 
   #-----------------------------------------------------------------------
@@ -58,15 +60,15 @@ def construct():
   # Custom steps
 
   rtl               = Step( this_dir + '/../common/rtl'                       )
-  sim               = Step( this_dir + '/sim'                                 )
-  sim_gl            = Step( this_dir + '/sim-gl'                              )
+  sim_compile       = Step( this_dir + '/sim-compile'                         )
+  sim_run           = Step( this_dir + '/sim-run'                             )
+  sim_gl_compile    = Step( this_dir + '/sim-gl-compile'                      )
   glb_tile          = Step( this_dir + '/glb_tile'                            )
   constraints       = Step( this_dir + '/constraints'                         )
   custom_init       = Step( this_dir + '/custom-init'                         )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
   lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
-  ptpx_gl           = Step( this_dir + '/synopsys-ptpx-gl'                    )
 
   # Default steps
 
@@ -91,6 +93,26 @@ def construct():
       drc            = Step( 'cadence-pegasus-drc',           default=True )
       lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
+
+
+  sim_gl_run_nodes = {}
+  ptpx_gl_nodes = {}
+  for test in parameters["gls_testvectors"]:
+    sim_gl_run        = Step( this_dir + '/sim-gl-run'       )
+    ptpx_gl           = Step( this_dir + '/synopsys-ptpx-gl' )
+
+    # rename
+    sim_gl_run.set_name(f"sim_gl_run_{test}")
+    ptpx_gl.set_name(f"ptpx_gl_{test}")
+    sim_gl_run_nodes[test] = sim_gl_run
+    ptpx_gl_nodes[test] = ptpx_gl
+
+    sim_gl_run.update_params( {'test' : test}, allow_new=True)
+
+    # Gate-level ptpx node
+    ptpx_gl.set_param("strip_path", "top/dut")
+    ptpx_gl.extend_inputs(glb_tile.all_outputs())
+
 
   # Add header files to outputs
   rtl.extend_outputs( ['header'] )
@@ -137,9 +159,6 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
-  # Gate-level ptpx node
-  ptpx_gl.set_param("strip_path", "top/dut")
-  ptpx_gl.extend_inputs(glb_tile.all_outputs())
 
 
   #-----------------------------------------------------------------------
@@ -148,8 +167,9 @@ def construct():
 
   g.add_step( info           )
   g.add_step( rtl            )
-  g.add_step( sim            )
-  g.add_step( sim_gl         )
+  g.add_step( sim_compile    )
+  g.add_step( sim_run        )
+  g.add_step( sim_gl_compile )
   g.add_step( glb_tile       )
   g.add_step( constraints    )
   g.add_step( synth          )
@@ -165,7 +185,6 @@ def construct():
   g.add_step( postroute      )
   g.add_step( postroute_hold )
   g.add_step( signoff        )
-  g.add_step( ptpx_gl        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
   g.add_step( lib2db         )
@@ -173,6 +192,10 @@ def construct():
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
   g.add_step( debugcalibre   )
+
+  for test in parameters["gls_testvectors"]:
+    g.add_step(sim_gl_run_nodes[test])
+    g.add_step(ptpx_gl_nodes[test])
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -210,7 +233,8 @@ def construct():
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
 
-  g.connect_by_name( rtl,         sim        )
+  g.connect_by_name( rtl,         sim_compile )
+  g.connect_by_name( sim_compile, sim_run     )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
@@ -257,15 +281,19 @@ def construct():
   g.connect_by_name( adk,          genlib   )
   g.connect_by_name( signoff,      genlib   )
 
-  g.connect_by_name( rtl,           sim_gl   )
-  g.connect_by_name( adk,           sim_gl   )
-  g.connect_by_name( glb_tile,      sim_gl   )
-  g.connect_by_name( signoff,       sim_gl   )
+  g.connect_by_name( rtl,        sim_gl_compile )
+  g.connect_by_name( adk,        sim_gl_compile )
+  g.connect_by_name( glb_tile,   sim_gl_compile )
+  g.connect_by_name( signoff,    sim_gl_compile )
+
+  for test in parameters["gls_testvectors"]:
+    g.connect_by_name( sim_gl_compile, sim_gl_run_nodes[test] )
   
-  g.connect_by_name( adk,            ptpx_gl   )
-  g.connect_by_name( glb_tile,       ptpx_gl   )
-  g.connect_by_name( signoff,        ptpx_gl   )
-  g.connect_by_name( sim_gl,         ptpx_gl   )
+  for test in parameters["gls_testvectors"]:
+    g.connect_by_name( adk,                    ptpx_gl_nodes[test] )
+    g.connect_by_name( glb_tile,               ptpx_gl_nodes[test] )
+    g.connect_by_name( signoff,                ptpx_gl_nodes[test] )
+    g.connect_by_name( sim_gl_run_nodes[test], ptpx_gl_nodes[test] )
 
   g.connect_by_name( genlib,       lib2db   )
 
