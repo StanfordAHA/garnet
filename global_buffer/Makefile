@@ -118,7 +118,7 @@ ifeq ($(TOOL), XCELIUM)
 else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
-    RUN = ./simv -lca -l $(RUN_LOG)
+    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
