@@ -8,7 +8,6 @@ if { $::env(SAIF) == "0" } {
   exit
 } else {
   stop -change top.test.test_toggle
-  run
 
   run
   power -gate_level on mda sv

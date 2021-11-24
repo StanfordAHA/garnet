@@ -612,11 +612,6 @@ program glb_test (
                 $display(
                     "Data different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
                     data_arr_0[i], data_arr_1[i]);
-            end else begin
-                if ($test$plusargs("DEBUG")) begin
-                    $display("Data same. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
-                             data_arr_0[i], data_arr_1[i]);
-                end
             end
         end
         if (err > 0) begin
@@ -645,11 +640,6 @@ program glb_test (
                 end
                 $display("Data different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
                         data_arr_0[i], data_arr_1[i]);
-            end else begin
-                if ($test$plusargs("DEBUG")) begin
-                    $display("Data same. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
-                             data_arr_0[i], data_arr_1[i]);
-                end
             end
         end
         if (err > 0) begin
