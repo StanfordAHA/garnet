@@ -16,7 +16,7 @@
 #   - makes local copy of adk
 
 # CHANGE LOG
-# sep 2021 better log output
+# sep 2021 better log output, rsync adks instead of cp
 
 ##############################################################################
 # Script must be sourced; complain if someone tries to execute it instead.
@@ -442,8 +442,9 @@ if [ "$USER" == "buildkite-agent" ]; then
     # Copy the adk to test rig
     echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
     echo "Copying adks from '$tsmc16' to '$adks'"
-    # Need '-f' to e.g. copy over existing read-only .git objects
-    set -x; cp -frpH $tsmc16 $adks; set +x
+
+    # Note rsync is much faster than cp!
+    set -x; rsync -avR $tsmc16 $adks; set +x
 
     export MFLOWGEN_PATH=$adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
