@@ -61,6 +61,7 @@ module cgra (
     // ---------------------------------------
     bit [NUM_PRR-1:0] is_glb2prr_on;
     bit [NUM_PRR-1:0] is_prr2glb_on;
+    bit [NUM_PRR-1:0] is_prr2glb_done;
 
     bit [NUM_PRR-1:0][99:0] prr2glb_cnt;
     bit [NUM_PRR-1:0] prr2glb_valid;
@@ -115,10 +116,11 @@ module cgra (
         if (reset) begin
             prr2glb_valid <= 0;
             prr2glb_cnt <= 0;
+            is_prr2glb_done <= '0;
         end else begin
             for (int i = 0; i < NUM_PRR; i++) begin
                 if (!stall[i]) begin
-                    if (is_prr2glb_on[i] == 1) begin
+                    if ((is_prr2glb_on[i] == 1) && (is_prr2glb_done[i] == 0)) begin
                         if (prr2glb_cnt[i] == prr2glb_valid_cnt_q[i][0]) begin
                             prr2glb_valid[i] <= 1;
                             void'(iterate_valid_cnt(i));
@@ -139,13 +141,6 @@ module cgra (
             prr2glb_valid_cnt_q[i] = {};
         end
     end
-
-    function iterate_valid_cnt(int prr_id);
-        void'(prr2glb_valid_cnt_q[prr_id].pop_front());
-        if (prr2glb_valid_cnt_q[prr_id].size() == 0) begin
-            is_prr2glb_on[prr_id] = '0;
-        end
-    endfunction
 
     function prr2glb_configure(int prr_id, int dim, int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL]);
         bit[99:0] cnt;
@@ -186,6 +181,14 @@ module cgra (
 
     function prr2glb_off(int prr_id);
         is_prr2glb_on[prr_id] = '0;
+    endfunction
+
+    function iterate_valid_cnt(int prr_id);
+        void'(prr2glb_valid_cnt_q[prr_id].pop_front());
+        if (prr2glb_valid_cnt_q[prr_id].size() == 0) begin
+            is_prr2glb_done[prr_id] = 1;
+            // void'(prr2glb_off(prr_id));
+        end
     endfunction
 
 endmodule

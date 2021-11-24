@@ -40,6 +40,7 @@ def construct():
     # signals in glb_top to corresponding CGRA tile columns below glb_top
     'array_width'         : 32,
     'num_glb_tiles'       : 16,
+    'tool'                : "XCELIUM",
     # glb tile memory size (unit: KB)
     'glb_tile_mem_size' : 256,
     'rtl_testvectors' : ["test1", "test2", "test3", "test4"],
@@ -94,6 +95,14 @@ def construct():
       lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
 
+  if parameters['tool'] == 'VCS':
+    sim_compile.extend_outputs(['simv', 'simv.daidir'])
+    sim_gl_compile.extend_outputs(['simv', 'simv.daidir'])
+    sim_run.extend_inputs(['simv', 'simv.daidir'])
+  elif parameters['tool'] == 'XCELIUM':
+    sim_compile.extend_outputs(['xcelium.d'])
+    sim_gl_compile.extend_outputs(['xcelium.d'])
+    sim_run.extend_inputs(['xcelium.d'])
 
   sim_gl_run_nodes = {}
   ptpx_gl_nodes = {}
@@ -106,12 +115,14 @@ def construct():
     ptpx_gl.set_name(f"ptpx_gl_{test}")
     sim_gl_run_nodes[test] = sim_gl_run
     ptpx_gl_nodes[test] = ptpx_gl
-
     sim_gl_run.update_params( {'test' : test}, allow_new=True)
-
     # Gate-level ptpx node
     ptpx_gl.set_param("strip_path", "top/dut")
     ptpx_gl.extend_inputs(glb_tile.all_outputs())
+    if parameters['tool'] == 'VCS':
+      sim_gl_run.extend_inputs(['simv', 'simv.daidir'])
+    elif parameters['tool'] == 'XCELIUM':
+      sim_gl_run.extend_inputs(['xcelium.d'])
 
 
   # Add header files to outputs
@@ -158,7 +169,6 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-
 
 
   #-----------------------------------------------------------------------
