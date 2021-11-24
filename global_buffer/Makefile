@@ -5,19 +5,32 @@ current_dir := $(abspath $(dir $(mkfile_path)))
 # -------------------------------------------------------------------
 # Parameters
 # -------------------------------------------------------------------
-CGRA_WIDTH ?= 4
+CLK_PERIOD ?= 800ps
+CGRA_WIDTH ?= 32
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
 
-RUNARGS = 
-RUNARGS += +TEST_GLB_MEM_SIMPLE
-RUNARGS += +TEST_GLB_CFG
-RUNARGS += +TEST_GLB_G2F_STREAM
-RUNARGS += +TEST_GLB_F2G_STREAM
-RUNARGS += +TEST_PCFG_STREAM
+TOOL ?= XCELIUM
+export WAVEFORM ?= 0
+export SAIF ?= 0
+
+# GLS 
+SDF ?= 0
+MTM ?= MAXIMUM
+SDF_CMD_FILE ?= sdf_cmd.cmd
+SDF_LOG ?= sdf_logs
+GLB_TOP_SDF ?= gls/glb.sdf
+GLB_TILE_SDF ?= gls/glb_tile.sdf
+
+RUN_ARGS ?= +TEST=3
+RUN_ARGS += +DEBUG
+
+RUN_LOG ?= run.log
 
 HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
+#FIXME: pm cells should be removed!
+NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-pm.v
 TB_FILES ?= -F sim/tb_global_buffer.f 
 
 # -------------------------------------------------------------------
@@ -30,7 +43,15 @@ FIX_SYSTEMRDL = \
     sed -i '/endmodule/d' ./systemRDL/output/glb_jrdl_decode.sv; \
     printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glb_jrdl_decode.sv
 
-GENERATE_TV = python glb_test_gen.py
+GENERATE_TV = \
+    python testvectors/gen_glb_test.py --data testvectors/in_32.dat --num 32 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/out_32.dat --num 32 --seed 2; \
+    python testvectors/gen_glb_test.py --data testvectors/in_128.dat --num 128 --seed 3; \
+    python testvectors/gen_glb_test.py --data testvectors/out_128.dat --num 128 --seed 4; \
+    python testvectors/gen_glb_test.py --data testvectors/in_4096.dat --num 4096 --seed 5; \
+    python testvectors/gen_glb_test.py --data testvectors/in2_4096.dat --num 4096 --seed 6; \
+    python testvectors/gen_glb_test.py --data testvectors/out_4096.dat --num 4096 --seed 7; \
+    python testvectors/gen_glb_test.py --data testvectors/out2_4096.dat --num 4096 --seed 8;
 
 XRUN = xrun \
 	   -64bit \
@@ -38,16 +59,18 @@ XRUN = xrun \
 	   -sysv \
 	   -l xrun.log \
 	   -debug \
+	   +access+rwc \
 	   -covoverwrite \
+	   -elaborate \
 	   -top top \
 	   -timescale 100ps/1ps \
 	   -unbuffered \
 	   -svseed random \
-	   $(XRUNARGS) \
-	   $(DESIGNARGS)
+	   $(COMPILE_ARGS) \
+	   $(INPUT_ARGS)
 
 VCS = vcs \
-	  -debug_accss+designer \
+	  -debug_accss+all \
 	  -sverilog \
 	  -timescale=100ps/1ps \
 	  -full64 \
@@ -55,16 +78,20 @@ VCS = vcs \
 	  -CFLAGS "-m64" \
 	  -top top \
 	  -kdb \
-	  +lint=all \
+	  +vpi \
+	  +memcbk \
+	  +vcsd \
+	  +lint=TFIPC-L \
 	  +vcs+lic+wait \
 	  +vcs+initreg+random \
 	  +overlap \
 	  +v2k \
 	  -l vcs.log \
-	  $(VCSARGS) \
-	  $(HEADER_FILES) \
-	  $(DESIGN_FILES) \
-	  $(TB_FILES)
+	  $(COMPILE_ARGS) \
+	  $(INPUT_ARGS)
+
+GEN_SDF_CMD = python gls/gen_sdf_cmd.py \
+              -f $(SDF_CMD_FILE) -n $(NUM_GLB_TILES) --top $(GLB_TOP_SDF) --tile $(GLB_TILE_SDF) -l $(SDF_LOG) -t $(MTM) --tool $(TOOL)
 
 # -------------------------------------------------------------------
 # RTL
@@ -79,37 +106,73 @@ rtl:
 # -------------------------------------------------------------------
 # Compile & Run
 # -------------------------------------------------------------------
+
+COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
+COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
+ifeq ($(TOOL), XCELIUM)
+    COMPILE = $(XRUN)
+    COMPILE_RTL_ARGS += -xminitialize 0 -xminit_log init.log -nospecify
+    COMPILE_GLS_ARGS += -xminitialize 0 -xminit_log init.log
+    COMPILE_GLS_ARGS += -ALLOWREDEFINITION
+    RUN = xrun -R -l $(RUN_LOG)
+else ifeq ($(TOOL), VCS)
+    COMPILE = $(VCS)
+    COMPILE_RTL_ARGS += +nospecify
+    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0
+else
+    @echo "TOOL must be either XCELIUM or VCS"
+endif
+
+ifeq ($(TOOL), XCELIUM)
+	DUMP_ARGS = -input sim/dump_shm.tcl
+else ifeq ($(TOOL), VCS)
+	DUMP_ARGS = -ucli -i sim/dump_fsdb.tcl
+endif
+
+ifneq ($(SDF), 0)
+    ifeq ($(TOOL), XCELIUM)
+        SDF_ARGS += -sdf_cmd_file $(SDF_CMD_FILE)
+        SDF_ARGS += -sdfstats sdf_stats.txt -sdf_verbose
+        COMPILE_GLS_ARGS += $(SDF_ARGS)
+    else ifeq ($(TOOL), VCS)
+        SDF_ARGS += $(shell cat $(SDF_CMD_FILE))
+        SDF_ARGS += +sdfverbose
+        COMPILE_GLS_ARGS += $(SDF_ARGS)
+    endif
+endif
+
 .PHONY: compile
-compile: VCSARGS+= +nospecify
+compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
+compile: INPUT_ARGS = $(HEADER_FILES) $(DESIGN_FILES) $(TB_FILES)
 compile:
-	$(VCS)
+	$(COMPILE)
 
 .PHONY: run
-run: compile
-	./simv $(RUNARGS)
+run:
+	$(GENERATE_TV)
+	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
 
-.PHONY: dump
-dump: compile
-	./simv -ucli -i top-ucli.tcl $(RUNARGS)
+.PHONY: sim
+sim: compile
+	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
 
 # -------------------------------------------------------------------
-# GLS Compile & Run
+# GLS Compile
 # -------------------------------------------------------------------
-.PHONY: compile-gl
-compile-gl: DESIGNARGS += -F netlist/netlist.f
-compile-gl: DESIGNARGS += header/global_buffer_param.svh header/glb.svh -F sim/tb_global_buffer.f
-compile-gl: VCSARGS += +define+PWR
-compile-gl: VCSARGS += +define+NON_STOP_IF_INPUT_Z
-compile-gl: VCSARGS += +define+TSMC_CM_NO_WARNING
-compile-gl: VCSARGS += +define+TSMC_CM_UNIT_DELAY
-compile-gl: VCSARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS
-compile-gl: VCSARGS += +define+TSMC_MEM_LOAD_0
-compile-gl: VCSARGS += -negdelay
-compile-gl: VCSARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
-compile-gl: XRUNARGS += -sdfstats sdf_stats.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
-compile-gl:
-	$(VCS)
+.PHONY: compile-gls
+compile-gls: COMPILE_GLS_ARGS += +define+NON_STOP_IF_INPUT_Z
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_CM_NO_WARNING
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_CM_UNIT_DELAY
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_MEM_LOAD_0
+compile-gls: COMPILE_GLS_ARGS += -negdelay
+compile-gls: COMPILE_ARGS = $(COMPILE_GLS_ARGS)
+compile-gls: INPUT_ARGS = $(HEADER_FILES) $(NETLIST_FILES) $(TB_FILES)
+compile-gls:
+	@rm -rf $(SDF_LOG); mkdir $(SDF_LOG)
+	@if [ $(SDF) != 0 ]; then $(GEN_SDF_CMD); fi
+	$(COMPILE)
 
 .PHONY: clean
 clean:
-	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log
+	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log global_buffer.shm global_buffer.fsdb sdf_stats.txt sdf_logs

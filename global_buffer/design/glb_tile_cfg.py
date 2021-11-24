@@ -105,10 +105,10 @@ class GlbTileCfg(Generator):
     def wire_config_signals(self):
         self.wire(self.clk, self.glb_pio_wrapper.ports["clk"])
         self.wire(self.reset, self.glb_pio_wrapper.ports["reset"])
-        self.wire(self.cfg_data_network['f2g_mux'],
-                  self.glb_pio_wrapper.ports[f"l2h_data_network_f2g_mux_r"])
-        self.wire(self.cfg_data_network['g2f_mux'],
-                  self.glb_pio_wrapper.ports[f"l2h_data_network_g2f_mux_r"])
+        self.wire(self.cfg_st_dma_ctrl['f2g_mux'],
+                  self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_f2g_mux_r"])
+        self.wire(self.cfg_ld_dma_ctrl['g2f_mux'],
+                  self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_g2f_mux_r"])
         self.wire(self.cfg_data_network['tile_connected'],
                   self.glb_pio_wrapper.ports[f"l2h_data_network_tile_connected_r"])
         self.wire(self.cfg_data_network['latency'],
