@@ -43,7 +43,15 @@ FIX_SYSTEMRDL = \
     sed -i '/endmodule/d' ./systemRDL/output/glb_jrdl_decode.sv; \
     printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glb_jrdl_decode.sv
 
-GENERATE_TV = python sim/gen_glb_test.py
+GENERATE_TV = \
+    python testvectors/gen_glb_test.py --data testvectors/in_32.dat --num 32 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/out_32.dat --num 32 --seed 2; \
+    python testvectors/gen_glb_test.py --data testvectors/in_128.dat --num 128 --seed 3; \
+    python testvectors/gen_glb_test.py --data testvectors/out_128.dat --num 128 --seed 4; \
+    python testvectors/gen_glb_test.py --data testvectors/in_4096.dat --num 4096 --seed 5; \
+    python testvectors/gen_glb_test.py --data testvectors/in2_4096.dat --num 4096 --seed 6; \
+    python testvectors/gen_glb_test.py --data testvectors/out_4096.dat --num 4096 --seed 7; \
+    python testvectors/gen_glb_test.py --data testvectors/out2_4096.dat --num 4096 --seed 8;
 
 XRUN = xrun \
 	   -64bit \
@@ -141,6 +149,7 @@ compile:
 
 .PHONY: run
 run:
+	$(GENERATE_TV)
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
 
 .PHONY: sim
