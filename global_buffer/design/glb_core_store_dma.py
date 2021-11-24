@@ -324,7 +324,9 @@ class GlbCoreStoreDma(Generator):
             self.wr_packet['wr_en'] = 1
             self.wr_packet['wr_strb'] = self.cache_strb_r
             self.wr_packet['wr_data'] = self.cache_data_r
-            self.wr_packet['wr_addr'] = self.cur_addr_r
+            self.wr_packet['wr_addr'] = concat(self.cur_addr_r[self._params.glb_addr_width - 1,
+                                                               self._params.bank_byte_offset],
+                                               const(0, self._params.bank_byte_offset))
         else:
             self.wr_packet['wr_en'] = 0
             self.wr_packet['wr_strb'] = 0

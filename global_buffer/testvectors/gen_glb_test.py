@@ -1,4 +1,5 @@
 import random
+import argparse
 
 def gen_reg_pair(f_reglist, f_regpair):
     with open(f_reglist, 'r') as reglist:
@@ -29,14 +30,27 @@ def gen_bs_sample(filename, num):
             f.write(f"{(reg << 8 ) | col} ")
             f.write(f"{data}\n")
 
-def gen_data_sample(filename, num):
+def gen_data_sample(filename, width, num):
     with open(filename, 'w') as f:
-        f.write(f"{num}\n")
+        # f.write(f"{num}\n")
         for i in range(num):
-            x = random.randrange(0, 2**16)
-            f.write(f"{x} ")
+            x = random.randrange(0, 2**width)
+            f.write(f"{hex(x)[2:]} ")
 
 if __name__ == "__main__":
-    gen_reg_pair("systemRDL/output/glb.reglist", "glb.regpair")
-    gen_data_sample("glb.test.data16", 32)
-    gen_bs_sample("glb.test.bs", 32)
+    parser = argparse.ArgumentParser(description='testvector generator')
+    parser.add_argument('--data', type=str, default=None)
+    parser.add_argument('--width', type=int, default=16)
+    parser.add_argument('--num', type=int, default=32)
+    parser.add_argument('--config', type=str, default=None)
+    parser.add_argument('--seed', type=int, default=1)
+    parser.add_argument('--bitstream', type=str, default=None)
+    parser.add_argument('--bitstream-size', type=int, default=32)
+    args = parser.parse_args()
+    random.seed(args.seed)
+    if args.config:
+        gen_reg_pair("../systemRDL/output/glb.reglist", args.config)
+    if args.bitstream:
+        gen_bs_sample(args.bitstream, args.bitstream_size)
+    if args.data:
+        gen_data_sample(args.data, args.width, args.num)
