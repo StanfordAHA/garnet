@@ -45,8 +45,8 @@ class GlbBankCtrl(Generator):
         self.if_sram_cfg_s = self.interface(
             self.bank_cfg_ifc.slave, f"if_sram_cfg_s", is_port=True)
 
-        # TODO: This should not be hard-fixed
-        self.bank_ctrl_pipeline_depth = 3
+        self.bank_ctrl_pipeline_depth = self._params.glb_bank_memory_pipeline_depth + \
+            self._params.sram_gen_pipeline_depth + self._params.sram_gen_output_pipeline_depth + 1
 
         # local variables
         self.sram_cfg_rd_data_r = self.var(
