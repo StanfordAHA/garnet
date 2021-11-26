@@ -38,5 +38,5 @@ parameters:
   design_name: undefined
   strip_path: top/dut
   PWR_AWARE: False
-  batch: False
+  instances: ["glb_tile_gen_0", "glb_tile_gen_1"]
   chkpt: False # Turn this on to save periodically during ptpx flow
