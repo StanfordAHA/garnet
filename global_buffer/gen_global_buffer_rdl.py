@@ -225,19 +225,12 @@ def gen_global_buffer_rdl(name, params):
     stride_r = Reg(f"stride", size=params.loop_level)
     stride_f = Field("stride", width=params.axi_data_width)
     stride_r.add_child(stride_f)
+    cycle_stride_r = Reg(f"cycle_stride", size=params.loop_level)
+    cycle_stride_f = Field("cycle_stride", width=params.axi_data_width)
+    cycle_stride_r.add_child(cycle_stride_f)
     ld_dma_header_rf.add_child(range_r)
     ld_dma_header_rf.add_child(stride_r)
-
-    # active/inactive words
-    num_active_words_r = Reg("num_active_words")
-    num_active_words_f = Field("num_active_words", params.max_num_words_width)
-    num_active_words_r.add_child(num_active_words_f)
-    num_inactive_words_r = Reg("num_inactive_words")
-    num_inactive_words_f = Field(
-        "num_inactive_words", params.max_num_words_width)
-    num_inactive_words_r.add_child(num_inactive_words_f)
-    ld_dma_header_rf.add_child(num_active_words_r)
-    ld_dma_header_rf.add_child(num_inactive_words_r)
+    ld_dma_header_rf.add_child(cycle_stride_r)
 
     addr_map.add_child(ld_dma_header_rf)
 

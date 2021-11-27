@@ -33,9 +33,8 @@ class GlbHeader():
 
         for i in range(self._params.loop_level):
             dma_header_struct_list += [(f"range_{i}", self._params.axi_data_width),
-                                       (f"stride_{i}", self._params.axi_data_width)]
-        dma_header_struct_list += [("num_active_words", self._params.max_num_words_width),
-                                   ("num_inactive_words", self._params.max_num_words_width)]
+                                       (f"stride_{i}", self._params.axi_data_width),
+                                       (f"cycle_stride_{i}", self._params.axi_data_width)]
         self.cfg_ld_dma_header_t = PackedStruct(
             "ld_dma_header_t", dma_header_struct_list)
 

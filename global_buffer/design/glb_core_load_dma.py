@@ -459,7 +459,6 @@ class GlbCoreLoadDma(Generator):
             self.queue_sel_r = self.queue_sel_next
 
     def add_strm_rd_en_pipeline(self):
-        # TODO: This maximum latency is different from start_pulse maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
         latency_width = clog2(maximum_latency)
         self.strm_rd_en_d_arr = self.var(
@@ -479,7 +478,6 @@ class GlbCoreLoadDma(Generator):
             self.cfg_data_network_latency, latency_width) + self.default_latency])
 
     def add_strm_rd_addr_pipeline(self):
-        # TODO: This maximum latency is different from start_pulse maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
         latency_width = clog2(maximum_latency)
         self.strm_rd_addr_d_arr = self.var(
@@ -500,8 +498,6 @@ class GlbCoreLoadDma(Generator):
                                                                              self._params.cgra_byte_offset]
 
     def add_strm_data_start_pulse_pipeline(self):
-        # TODO: Latency calculation should be automatic.
-        # self.default_latency set to 8 is error-prone.
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 2
         latency_width = clog2(maximum_latency)
         self.strm_data_start_pulse_d_arr = self.var(
@@ -522,7 +518,6 @@ class GlbCoreLoadDma(Generator):
                                                    + self.default_latency + 2])
 
     def add_ld_dma_done_pulse_pipeline(self):
-        # TODO: This maximum latency is different from other maximum latency
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 3
         latency_width = clog2(maximum_latency)
         self.ld_dma_done_pulse_d_arr = self.var(
