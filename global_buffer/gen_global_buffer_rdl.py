@@ -1,4 +1,5 @@
 from abc import ABC
+from kratos import clog2
 import os
 
 
@@ -211,6 +212,12 @@ def gen_global_buffer_rdl(name, params):
     validate_f = Field(f"validate", width=1, property=["hwclr"])
     validate_r.add_child(validate_f)
     ld_dma_header_rf.add_child(validate_r)
+
+    # dim reg
+    dim_r = Reg(f"dim")
+    dim_f = Field(f"dim", width=clog2(params.loop_level) + 1)
+    dim_r.add_child(dim_f)
+    ld_dma_header_rf.add_child(dim_r)
 
     # start_addr reg
     start_addr_r = Reg(f"start_addr")
