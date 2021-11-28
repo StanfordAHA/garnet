@@ -219,7 +219,7 @@ program glb_test (
     endtask
 
     initial begin
-        Test test;
+        Test   test;
         string test_filename;
         string test_name;
         initialize();
@@ -303,6 +303,10 @@ program glb_test (
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
 
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_DIM_R,
+            (dim << `GLB_LD_DMA_HEADER_0_DIM_DIM_F_LSB));
+
         // NOTE: Each stride/range address difference is 'h4
         for (int i = 0; i < dim; i++) begin
             glb_cfg_write(
@@ -323,9 +327,9 @@ program glb_test (
                            int data_stride[LOOP_LEVEL]);
         // NOTE: F2G DMA does not care about access pattern. It just waits for the valid signal. 
         static int num_word = 1;
-        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
-                      ((1 << `GLB_ST_DMA_CTRL_MODE_F_LSB)
-                       |(2'b10 << `GLB_ST_DMA_CTRL_F2G_MUX_F_LSB)));
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
+            ((1 << `GLB_ST_DMA_CTRL_MODE_F_LSB) | (2'b10 << `GLB_ST_DMA_CTRL_F2G_MUX_F_LSB)));
         for (int i = 0; i < dim; i++) begin
             num_word *= extent[i];
         end
@@ -606,12 +610,12 @@ program glb_test (
             if (data_arr_0[i] !== data_arr_1[i]) begin
                 err++;
                 if (err > MAX_NUM_ERRORS) begin
-                    $display("The number of errors reached %0d. Do not print anymore", MAX_NUM_ERRORS);
+                    $display("The number of errors reached %0d. Do not print anymore",
+                             MAX_NUM_ERRORS);
                     break;
                 end
-                $display(
-                    "Data different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
-                    data_arr_0[i], data_arr_1[i]);
+                $display("Data different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
+                         data_arr_0[i], data_arr_1[i]);
             end
         end
         if (err > 0) begin
@@ -628,18 +632,19 @@ program glb_test (
         int err;
         if (size_0 != size_1) begin
             $display("Data array size is different. data_arr_0: %0d, data_arr_1: %0d", size_0,
-                        size_1);
+                     size_1);
             err++;
         end
         foreach (data_arr_0[i]) begin
             if (data_arr_0[i] !== data_arr_1[i]) begin
                 err++;
                 if (err > MAX_NUM_ERRORS) begin
-                    $display("The number of errors reached %0d. Do not print anymore", MAX_NUM_ERRORS);
+                    $display("The number of errors reached %0d. Do not print anymore",
+                             MAX_NUM_ERRORS);
                     break;
                 end
                 $display("Data different. index: %0d, data_arr_0: 0x%0h, data_arr_1: 0x%0h", i,
-                        data_arr_0[i], data_arr_1[i]);
+                         data_arr_0[i], data_arr_1[i]);
             end
         end
         if (err > 0) begin

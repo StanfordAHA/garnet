@@ -1,4 +1,4 @@
-from kratos import PackedStruct
+from kratos import PackedStruct, clog2
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 import math
 
@@ -30,7 +30,7 @@ class GlbHeader():
         # TODO: Kratos does not support struct of struct now.
         dma_header_struct_list = [("validate", 1),
                                   ("start_addr", self._params.glb_addr_width)]
-
+        dma_header_struct_list += [("dim", 1 + clog2(self._params.loop_level))]
         for i in range(self._params.loop_level):
             dma_header_struct_list += [(f"range_{i}", self._params.axi_data_width),
                                        (f"stride_{i}", self._params.axi_data_width),

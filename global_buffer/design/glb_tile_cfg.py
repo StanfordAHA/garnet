@@ -152,6 +152,8 @@ class GlbTileCfg(Generator):
                       self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_validate_validate_r"])
             self.wire(self.cfg_ld_dma_header[0]['start_addr'],
                       self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_start_addr_start_addr_r"])
+            self.wire(self.cfg_ld_dma_header[0]['dim'],
+                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_dim_dim_r"])
             for j in range(self._params.loop_level):
                 self.wire(self.cfg_ld_dma_header[0][f"cycle_stride_{j}"],
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_cycle_stride_{j}_cycle_stride_r"])
@@ -168,6 +170,8 @@ class GlbTileCfg(Generator):
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_validate_validate_r"])
                 self.wire(self.cfg_ld_dma_header[i]['start_addr'],
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_start_addr_start_addr_r"])
+                self.wire(self.cfg_ld_dma_header[i]['dim'],
+                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_dim_dim_r"])
                 for j in range(self._params.loop_level):
                     self.wire(self.cfg_ld_dma_header[i][f"cycle_stride_{j}"],
                               self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_cycle_stride_{j}_cycle_stride_r"])
