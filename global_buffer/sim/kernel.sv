@@ -14,6 +14,7 @@ class Kernel;
     int tile_id;
     int bank_id;
     int start_addr;
+    int cycle_start_addr;
     int dim;
     int extent[LOOP_LEVEL];
     int cycle_stride[LOOP_LEVEL];
@@ -41,6 +42,7 @@ function Test::new(string filename);
     int fd = $fopen(filename, "r");
     string type_, data_filename;
     int tile_id, bank_id, dim;
+    int tmp_start_addr, tmp_cycle_start_addr;
     string cycle_stride_s, extent_s, data_stride_s, tmp_s;
 
     $display("\n---- Test Initialization ----");
@@ -50,7 +52,9 @@ function Test::new(string filename);
     kernels = new[num_kernels];
     for (int i = 0; i < num_kernels; i++) begin
         kernels[i] = new();
-        void'($fscanf(fd, " %s%d%d", type_, tile_id, bank_id));
+        void'($fscanf(
+            fd, " %s%d%d%d%d", type_, tile_id, bank_id, tmp_start_addr, tmp_cycle_start_addr
+        ));
         if (type_ == "WR") kernels[i].type_ = WR;
         else if (type_ == "RD") kernels[i].type_ = RD;
         else if (type_ == "G2F") kernels[i].type_ = G2F;
@@ -59,7 +63,8 @@ function Test::new(string filename);
         void'($fscanf(fd, " %d", dim));
         kernels[i].tile_id = tile_id;
         kernels[i].bank_id = tile_id;
-        kernels[i].start_addr = tile_offset * tile_id + bank_offset * bank_id;
+        kernels[i].start_addr = tile_offset * tile_id + bank_offset * bank_id + tmp_start_addr;
+        kernels[i].cycle_start_addr = tmp_cycle_start_addr;
         kernels[i].dim = dim;
         for (int j = 0; j < dim; j++) begin
             void'($fscanf(fd, " %d", kernels[i].extent[j]));
