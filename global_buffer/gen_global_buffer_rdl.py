@@ -225,6 +225,12 @@ def gen_global_buffer_rdl(name, params):
     start_addr_r.add_child(start_addr_f)
     ld_dma_header_rf.add_child(start_addr_r)
 
+    # cycle_start_addr reg
+    cycle_start_addr_r = Reg(f"cycle_start_addr")
+    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.glb_addr_width)
+    cycle_start_addr_r.add_child(cycle_start_addr_f)
+    ld_dma_header_rf.add_child(cycle_start_addr_r)
+
     # num_word reg
     range_r = Reg(f"range", size=params.loop_level)
     range_f = Field("range", width=params.axi_data_width)

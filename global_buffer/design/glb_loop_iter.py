@@ -20,7 +20,7 @@ class GlbLoopIter(Generator):
         self.dim = self.input("dim", 1 + clog2(self._params.loop_level))
         self.step = self.input("step", 1)
         self.mux_sel_out = self.output("mux_sel_out", max(clog2(self._params.loop_level), 1))
-        self.finished = self.output("finished", 1)
+        self.restart = self.output("restart", 1)
 
         # local varaibles
         self.dim_counter = self.var("dim_counter", self._params.axi_data_width,
@@ -47,7 +47,7 @@ class GlbLoopIter(Generator):
             self.add_code(self.dim_counter_update, idx=i)
             self.add_code(self.max_value_update, idx=i)
 
-        self.wire(self.finished, self.step & (~self.done))
+        self.wire(self.restart, self.step & (~self.done))
 
     @always_comb
     # Find lowest ready
