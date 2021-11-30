@@ -19,6 +19,10 @@ class Kernel;
     int extent[LOOP_LEVEL];
     int cycle_stride[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
+    int new_start_addr;
+    int new_extent[LOOP_LEVEL];
+    int new_cycle_stride[LOOP_LEVEL];
+    int new_data_stride[LOOP_LEVEL];
     string filename;
     data16 data_arr;
     data16 data_arr_out;
@@ -29,6 +33,7 @@ endclass
 class Test;
     const int tile_offset = 1 << (BANK_ADDR_WIDTH + BANK_SEL_ADDR_WIDTH);
     const int bank_offset = 1 << BANK_ADDR_WIDTH;
+    const int cgra_data_byte_offset = 1;
     string filename;
     int num_kernels;
     Kernel kernels[];
@@ -62,8 +67,8 @@ function Test::new(string filename);
         else $error("This type [%s] is not supported", type_);
         void'($fscanf(fd, " %d", dim));
         kernels[i].tile_id = tile_id;
-        kernels[i].bank_id = tile_id;
-        kernels[i].start_addr = tile_offset * tile_id + bank_offset * bank_id + tmp_start_addr;
+        kernels[i].bank_id = bank_id;
+        kernels[i].start_addr = tile_offset * tile_id + bank_offset * bank_id + tmp_start_addr * cgra_data_byte_offset;
         kernels[i].cycle_start_addr = tmp_cycle_start_addr;
         kernels[i].dim = dim;
         for (int j = 0; j < dim; j++) begin
@@ -77,6 +82,19 @@ function Test::new(string filename);
         end
         void'($fscanf(fd, " %s", data_filename));
         kernels[i].filename = data_filename;
+
+        // Convert start_addr/extent/stride to hardware-friendly start_addr/extent/stride
+        kernels[i].new_start_addr = kernels[i].start_addr >> cgra_data_byte_offset;
+        for (int j = 0; j < dim; j++) begin
+            kernels[i].new_extent[j] = kernels[i].extent[j] - 2;
+            if (j == 0) begin
+                kernels[i].new_cycle_stride[j] = kernels[i].cycle_stride[j];
+                kernels[i].new_data_stride[j]  = kernels[i].data_stride[j];
+            end else begin
+                kernels[i].new_cycle_stride[j] = kernels[i].cycle_stride[j] - kernels[i].cycle_stride[j-1] * (kernels[i].extent[j-1] - 1);
+                kernels[i].new_data_stride[j]  = kernels[i].data_stride[j] - kernels[i].data_stride[j-1] * (kernels[i].extent[j-1] - 1);
+            end
+        end
     end
     $fclose(fd);
 

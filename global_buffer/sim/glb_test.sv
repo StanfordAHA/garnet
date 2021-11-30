@@ -66,6 +66,19 @@ program glb_test (
 
     bit [NUM_GLB_TILES-1:0] tile_id_mask = 0;
 
+    task automatic init_test();
+        // Initialize global buffer configuration registers
+        for (int i = 0; i < NUM_GLB_TILES; i++) begin
+            g2f_dma_configure(i, 0, 0, LOOP_LEVEL, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}});
+            f2g_dma_configure(i, 0, 0, LOOP_LEVEL, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}});
+            pcfg_dma_configure(i, 0, 0);
+        end
+        void'($root.top.cgra.flush_on());
+        @(posedge clk);
+        void'($root.top.cgra.flush_off());
+        @(posedge clk);
+    endtask
+
     task automatic run_test(Test test);
         int err = 0;
         int i_addr = 0;
@@ -127,9 +140,9 @@ program glb_test (
                     if (done == 1) break;
                 end
                 // Configure LD DMA
-                g2f_dma_configure(kernels[i].tile_id, kernels[i].start_addr,
-                                  kernels[i].cycle_start_addr, kernels[i].dim, kernels[i].extent,
-                                  kernels[i].cycle_stride, kernels[i].data_stride);
+                g2f_dma_configure(kernels[i].tile_id, kernels[i].new_start_addr,
+                                  kernels[i].cycle_start_addr, kernels[i].dim, kernels[i].new_extent,
+                                  kernels[i].new_cycle_stride, kernels[i].new_data_stride);
             end else if (kernels[i].type_ == F2G) begin
                 data_cnt = 1;
                 for (int j = 0; j < kernels[i].dim; j++) begin
@@ -148,7 +161,7 @@ program glb_test (
                     kernels[i].tile_id, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride
                 ));
                 // Configure ST DMA
-                f2g_dma_configure(kernels[i].tile_id, kernels[i].start_addr, kernels[i].dim,
+                f2g_dma_configure(kernels[i].tile_id, kernels[i].start_addr, kernels[i].cycle_start_addr, kernels[i].dim,
                                   kernels[i].extent, kernels[i].cycle_stride,
                                   kernels[i].data_stride);
             end
@@ -172,7 +185,8 @@ program glb_test (
                         end else if (kernels[j].type_ == RD) begin
                             proc_read_burst(kernels[j].start_addr, kernels[j].data64_arr_out);
                         end else if (kernels[j].type_ == G2F) begin
-                            g2f_run(kernels[j].tile_id, kernels[j].data_arr.size());
+                            // FIXME: Instead of data_arr.size(), we should pass expected number of cycles
+                            g2f_run(kernels[j].tile_id, kernels[j].data_arr.size() + 300);
                         end else if (kernels[j].type_ == F2G) begin
                             f2g_run(kernels[j].tile_id, kernels[j].data_arr.size());
                         end
@@ -219,17 +233,23 @@ program glb_test (
     endtask
 
     initial begin
-        Test   test;
+        Test test;
         string test_filename;
         string test_name;
+        int max_num_test;
         initialize();
-        if (!($value$plusargs("TEST=%s", test_name))) test_name = "test1";
-        $display("Test %s", test_name);
-        $display("\n************** Test Start *****************");
-        $sformat(test_filename, "./testvectors/%s.txt", test_name);
-        test = new(test_filename);
-        run_test(test);
-        $display("************** Test End *****************\n");
+        if (!($value$plusargs("MAX_NUM_TEST=%d", max_num_test))) max_num_test = 4;
+        for (int i = 1; i <= max_num_test; i++) begin
+            $sformat(test_name, "test%0d", i);
+            if (($test$plusargs(test_name))) begin
+                $display("\n************** Test Start *****************");
+                $sformat(test_filename, "./testvectors/%s.txt", test_name);
+                test = new(test_filename);
+                init_test();
+                run_test(test);
+                $display("************** Test End *****************\n");
+            end
+        end
     end
 
     task initialize();
@@ -295,6 +315,7 @@ program glb_test (
     task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,
                            [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim, int extent[LOOP_LEVEL],
                            int cycle_stride[LOOP_LEVEL], int data_stride[LOOP_LEVEL]);
+
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
                       ((2'b01 << `GLB_LD_DMA_CTRL_G2F_MUX_F_LSB)
                        | (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB)
@@ -329,11 +350,11 @@ program glb_test (
             (1 << `GLB_LD_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
     endtask
 
-    task f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr, int dim,
-                           int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
-                           int data_stride[LOOP_LEVEL]);
+    task automatic f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,
+                           [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim, int extent[LOOP_LEVEL],
+                           int cycle_stride[LOOP_LEVEL], int data_stride[LOOP_LEVEL]);
         // NOTE: F2G DMA does not care about access pattern. It just waits for the valid signal. 
-        static int num_word = 1;
+        int num_word = 1;
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
             ((1 << `GLB_ST_DMA_CTRL_MODE_F_LSB) | (2'b10 << `GLB_ST_DMA_CTRL_F2G_MUX_F_LSB)));
