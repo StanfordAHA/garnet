@@ -1,0 +1,32 @@
+name: sim-gl-compile
+
+parameters:
+  sdf: False
+  PWR_AWARE: False
+  tool: "XCELIUM"
+  num_glb_tiles: 16
+
+commands:
+  - bash run_sim.sh
+
+inputs:
+  - adk
+  - design.vcs.v
+  - design.vcs.pg.v
+  - header
+  - design.sdf
+  - glb_tile.vcs.v
+  - glb_tile.vcs.pg.v
+  - glb_tile.sdf
+  - glb_tile_sram.v
+  - glb_tile_sram_pwr.v
+
+outputs:
+  - sim.log
+
+postconditions:
+  - assert File( 'outputs/sim.log' )      # must exist
+
+  # Basic error checking
+  - assert 'Error,' not in File( 'outputs/sim.log' )
+  - assert '*E,' not in File( 'outputs/sim.log' )
