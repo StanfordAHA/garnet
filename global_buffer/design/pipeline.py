@@ -29,8 +29,12 @@ class Pipeline(Generator):
             else:
                 self.out_ = self.output("out_", self.width)
 
-            self.pipeline_r = self.var(
-                "pipeline_r", width=self.width, size=self.depth, explicit_array=True)
+            if self.depth == 1 and self.width == 1:
+                self.pipeline_r = self.var(
+                    "pipeline_r", width=self.width, size=self.depth)
+            else:
+                self.pipeline_r = self.var(
+                    "pipeline_r", width=self.width, size=self.depth, explicit_array=True)
 
             if flatten_output:
                 self.wire(self.out_, self.pipeline_r)

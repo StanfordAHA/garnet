@@ -1,11 +1,10 @@
-from kratos import Generator, always_ff, always_comb, posedge, resize, clog2, ext, concat
+from kratos import Generator, always_ff, always_comb, posedge, resize, clog2, ext
 from global_buffer.design.glb_loop_iter import GlbLoopIter
 from global_buffer.design.glb_sched_gen import GlbSchedGen
 from global_buffer.design.glb_addr_gen import GlbAddrGen
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
-import math
 
 
 class GlbCoreLoadDma(Generator):
@@ -34,9 +33,6 @@ class GlbCoreLoadDma(Generator):
             "cfg_data_network_latency", self._params.latency_width)
         self.cfg_ld_dma_header = self.input(
             "cfg_ld_dma_header", self.header.cfg_ld_dma_header_t, size=self._params.queue_depth)
-
-        self.ld_dma_header_clr = self.output(
-            "ld_dma_header_clr", width=self._params.queue_depth)
 
         self.ld_dma_start_pulse = self.input("ld_dma_start_pulse", 1)
         self.ld_dma_done_pulse = self.output("ld_dma_done_pulse", 1)
@@ -71,24 +67,15 @@ class GlbCoreLoadDma(Generator):
 
         self.start_addr_r = self.var(
             "start_addr_r", self._params.glb_addr_width)
-        self.strm_rd_en_r = self.var("strm_rd_en_r", 1)
-        self.strm_rd_addr_r = self.var(
-            "strm_rd_addr_r", self._params.glb_addr_width)
+        self.strm_rd_en_w = self.var("strm_rd_en_w", 1)
+        self.strm_rd_addr_w = self.var(
+            "strm_rd_addr_w", self._params.glb_addr_width)
         self.last_strm_rd_addr_r = self.var(
             "last_strm_rd_addr_r", self._params.glb_addr_width)
 
         self.ld_dma_start_pulse_next = self.var("ld_dma_start_pulse_next", 1)
         self.ld_dma_start_pulse_r = self.var("ld_dma_start_pulse_r", 1)
-        self.ld_dma_start_pulse_d2 = self.var("ld_dma_start_pulse_d2", 1)
-        self.ld_dma_start_pulse_pipeline = Pipeline(width=1, depth=2)
-
-        self.add_child("ld_dma_start_pulse_pipeline",
-                       self.ld_dma_start_pulse_pipeline,
-                       clk=self.clk,
-                       clk_en=self.clk_en,
-                       reset=self.reset,
-                       in_=self.ld_dma_start_pulse_r,
-                       out_=self.ld_dma_start_pulse_d2)
+        self.is_first = self.var("is_first", 1)
 
         self.ld_dma_done_pulse_w = self.var("ld_dma_done_pulse_w", 1)
 
@@ -108,7 +95,8 @@ class GlbCoreLoadDma(Generator):
         self.mux_sel = self.var("mux_sel", clog2(self._params.loop_level))
 
         self.add_always(self.cycle_counter)
-        self.add_always(self.dma_on_ff)
+        self.add_always(self.is_first_ff)
+        self.add_always(self.strm_run_ff)
         self.add_always(self.strm_data_ff)
         self.add_strm_data_start_pulse_pipeline()
         self.add_ld_dma_done_pulse_pipeline()
@@ -123,9 +111,6 @@ class GlbCoreLoadDma(Generator):
         self.add_always(self.bank_rdrq_packet_logic)
         self.add_always(self.bank_rdrs_data_cache_ff)
         self.add_always(self.strm_data_logic)
-
-        # FIXME: To remove
-        self.wire(self.ld_dma_header_clr, 0)
 
         # Loop iteration shared for cycle and data
         self.loop_iter = GlbLoopIter(self._params)
@@ -185,8 +170,18 @@ class GlbCoreLoadDma(Generator):
         for i in range(self._params.loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.cfg_ld_dma_header[0][f"stride_{i}"])
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
-    def dma_on_ff(self):
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def is_first_ff(self):
+        if self.reset:
+            self.is_first = 0
+        elif self.clk_en:
+            if self.ld_dma_start_pulse_r:
+                self.is_first = 1
+            elif self.bank_rdrq_rd_en:
+                self.is_first = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def strm_run_ff(self):
         if self.reset:
             self.strm_run = 0
         elif self.clk_en:
@@ -195,7 +190,7 @@ class GlbCoreLoadDma(Generator):
             elif self.loop_done:
                 self.strm_run = 0
 
-    @ always_comb
+    @always_comb
     def ld_dma_start_pulse_logic(self):
         if self.cfg_ld_dma_ctrl_mode == 0:
             self.ld_dma_start_pulse_next = 0
@@ -204,7 +199,7 @@ class GlbCoreLoadDma(Generator):
         else:
             self.ld_dma_start_pulse_next = 0
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def ld_dma_start_pulse_ff(self):
         if self.reset:
             self.ld_dma_start_pulse_r = 0
@@ -214,19 +209,19 @@ class GlbCoreLoadDma(Generator):
             else:
                 self.ld_dma_start_pulse_r = self.ld_dma_start_pulse_next
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def cycle_counter(self):
         if self.reset:
             self.cycle_count = 0
         elif self.clk_en:
             if self.ld_dma_start_pulse_r:
                 self.cycle_count = 0
-            elif self.loop_done:  # FIXME: is it loop_done or (step == 0)
+            elif self.loop_done:
                 self.cycle_count = 0
             elif self.strm_run:
                 self.cycle_count = self.cycle_count + 1
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def strm_data_ff(self):
         if self.reset:
             self.strm_data_r = 0
@@ -235,7 +230,7 @@ class GlbCoreLoadDma(Generator):
             self.strm_data_r = self.strm_data
             self.strm_data_valid_r = self.strm_data_valid
 
-    @ always_comb
+    @always_comb
     def strm_data_mux(self):
         if self.cfg_ld_dma_ctrl_use_valid:
             self.data_g2f = self.strm_data_r
@@ -244,43 +239,35 @@ class GlbCoreLoadDma(Generator):
             self.data_g2f = self.strm_data_r
             self.data_valid_g2f = self.strm_data_start_pulse
 
-    @ always_comb
+    @always_comb
     def ld_dma_done_pulse_logic(self):
         self.ld_dma_done_pulse_w = self.strm_run & self.loop_done
 
-    # FIXME: We do not need this register anymore
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_comb
     def strm_rdrq_packet_ff(self):
-        if self.reset:
-            self.strm_rd_en_r = 0
-            self.strm_rd_addr_r = 0
-        elif self.clk_en:
-            self.strm_rd_en_r = self.cycle_valid
-            self.strm_rd_addr_r = resize(self.data_current_addr,
-                                         self._params.glb_addr_width) << self._params.cgra_byte_offset
+        self.strm_rd_en_w = self.cycle_valid
+        self.strm_rd_addr_w = resize(self.data_current_addr,
+                                     self._params.glb_addr_width) << self._params.cgra_byte_offset
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def last_strm_rd_addr_ff(self):
         if self.reset:
             self.last_strm_rd_addr_r = 0
         elif self.clk_en:
-            if self.strm_rd_en_r:
-                self.last_strm_rd_addr_r = self.strm_rd_addr_r
+            if self.strm_rd_en_w:
+                self.last_strm_rd_addr_r = self.strm_rd_addr_w
 
-    @ always_comb
+    @always_comb
     def bank_rdrq_packet_logic(self):
-        self.bank_addr_match = (self.strm_rd_addr_r[self._params.glb_addr_width - 1, self._params.bank_byte_offset]
+        self.bank_addr_match = (self.strm_rd_addr_w[self._params.glb_addr_width - 1, self._params.bank_byte_offset]
                                 == self.last_strm_rd_addr_r[self._params.glb_addr_width - 1,
                                                             self._params.bank_byte_offset])
-        # FIXME: The first strm_rd_en_r can be different from ld_dma_start_pulse_d2 with cycle_start_addr
-        # Need better way to check this.
-        self.bank_rdrq_rd_en = self.strm_rd_en_r & (
-            self.ld_dma_start_pulse_d2 | (~self.bank_addr_match))
-        self.bank_rdrq_rd_addr = self.strm_rd_addr_r
+        self.bank_rdrq_rd_en = self.strm_rd_en_w & (self.is_first | (~self.bank_addr_match))
+        self.bank_rdrq_rd_addr = self.strm_rd_addr_w
         self.rdrq_packet['rd_en'] = self.bank_rdrq_rd_en
         self.rdrq_packet['rd_addr'] = self.bank_rdrq_rd_addr
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def bank_rdrs_data_cache_ff(self):
         if self.reset:
             self.bank_rdrs_data_cache_r = 0
@@ -288,7 +275,7 @@ class GlbCoreLoadDma(Generator):
             if self.rdrs_packet['rd_data_valid']:
                 self.bank_rdrs_data_cache_r = self.rdrs_packet['rd_data']
 
-    @ always_comb
+    @always_comb
     def strm_data_logic(self):
         if self.strm_data_sel == 0:
             self.strm_data = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0]
@@ -317,7 +304,7 @@ class GlbCoreLoadDma(Generator):
                        clk=self.clk,
                        clk_en=self.clk_en,
                        reset=self.reset,
-                       in_=self.strm_rd_en_r,
+                       in_=self.strm_rd_en_w,
                        out_=self.strm_rd_en_d_arr)
 
         self.wire(self.strm_data_valid, self.strm_rd_en_d_arr[resize(
@@ -336,7 +323,7 @@ class GlbCoreLoadDma(Generator):
                        clk=self.clk,
                        clk_en=self.clk_en,
                        reset=self.reset,
-                       in_=self.strm_rd_addr_r,
+                       in_=self.strm_rd_addr_w,
                        out_=self.strm_rd_addr_d_arr)
 
         self.strm_data_sel = self.strm_rd_addr_d_arr[resize(self.cfg_data_network_latency, latency_width)
@@ -361,7 +348,7 @@ class GlbCoreLoadDma(Generator):
         self.strm_data_start_pulse = self.var("strm_data_start_pulse", 1)
         self.wire(self.strm_data_start_pulse,
                   self.strm_data_start_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width)
-                                                   + self.default_latency + 2])
+                                                   + self.default_latency + 1])
 
     def add_ld_dma_done_pulse_pipeline(self):
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 3

@@ -28,8 +28,7 @@ class GlbHeader():
                                                ("g2f_mux", 2)])
 
         # TODO: Kratos does not support struct of struct now.
-        dma_header_struct_list = [("validate", 1),
-                                  ("start_addr", self._params.glb_addr_width),
+        dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
                                   ("cycle_start_addr", self._params.glb_addr_width)]
         dma_header_struct_list += [("dim", 1 + clog2(self._params.loop_level))]
         for i in range(self._params.loop_level):

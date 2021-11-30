@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, concat, const, clog2, resize, ext
+from kratos import Generator, always_ff, always_comb, posedge, concat, const, resize, ext, clog2
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
@@ -69,10 +69,8 @@ class GlbCoreStoreDma(Generator):
         self.cache_strb_next = self.var(
             "cache_strb_next", math.ceil(self._params.bank_data_width / 8))
 
-        self.queue_sel_r = self.var("queue_sel_r", math.ceil(
-            math.log(self._params.queue_depth, 2)))
-        self.queue_sel_w = self.var("queue_sel_w", math.ceil(
-            math.log(self._params.queue_depth, 2)))
+        self.queue_sel_r = self.var("queue_sel_r", max(clog2(self._params.queue_depth), 1))
+        self.queue_sel_w = self.var("queue_sel_w", max(clog2(self._params.queue_depth), 1))
 
         self.strm_done = self.var("strm_done", 1)
         self.strm_done_d1 = self.var("strm_done_d1", 1)

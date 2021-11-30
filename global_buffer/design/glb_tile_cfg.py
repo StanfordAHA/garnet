@@ -54,8 +54,6 @@ class GlbTileCfg(Generator):
 
         self.cfg_ld_dma_header = self.output("cfg_ld_dma_header", self.header.cfg_ld_dma_header_t,
                                              size=self._params.queue_depth)
-        self.ld_dma_header_clr = self.input(
-            "ld_dma_header_clr", width=self._params.queue_depth)
 
         # pcfg dma
         self.cfg_pcfg_dma_ctrl = self.output(
@@ -148,8 +146,6 @@ class GlbTileCfg(Generator):
                   self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_use_valid_r"])
 
         if self._params.queue_depth == 1:
-            self.wire(self.cfg_ld_dma_header[0]['validate'],
-                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_validate_validate_r"])
             self.wire(self.cfg_ld_dma_header[0]['start_addr'],
                       self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_start_addr_start_addr_r"])
             self.wire(self.cfg_ld_dma_header[0]['cycle_start_addr'],
@@ -163,13 +159,8 @@ class GlbTileCfg(Generator):
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_stride_{j}_stride_r"])
                 self.wire(self.cfg_ld_dma_header[0][f"range_{j}"],
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_range_{j}_range_r"])
-
-            self.wire(self.ld_dma_header_clr[0],
-                      self.glb_pio_wrapper.ports[f"h2l_ld_dma_header_validate_validate_hwclr"])
         else:
             for i in range(self._params.queue_depth):
-                self.wire(self.cfg_ld_dma_header[i]['validate'],
-                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_validate_validate_r"])
                 self.wire(self.cfg_ld_dma_header[i]['start_addr'],
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_start_addr_start_addr_r"])
                 self.wire(self.cfg_ld_dma_header[i]['cycle_start_addr'],
@@ -183,8 +174,6 @@ class GlbTileCfg(Generator):
                               self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_stride_{j}_stride_r"])
                     self.wire(self.cfg_ld_dma_header[i][f"range_{j}"],
                               self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_range_{j}_range_r"])
-                self.wire(self.ld_dma_header_clr[i],
-                          self.glb_pio_wrapper.ports[f"h2l_ld_dma_header_{i}_validate_validate_hwclr"])
 
         self.wire(
             self.cfg_pcfg_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_mode_r"])

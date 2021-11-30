@@ -345,9 +345,6 @@ program glb_test (
                 (cycle_stride[i] << `GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
         end
 
-        glb_cfg_write(
-            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_VALIDATE_R,
-            (1 << `GLB_LD_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
     endtask
 
     task automatic f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,

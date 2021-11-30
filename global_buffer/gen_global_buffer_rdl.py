@@ -207,11 +207,6 @@ def gen_global_buffer_rdl(name, params):
 
     # Load DMA Header
     ld_dma_header_rf = RegFile(f"ld_dma_header", size=params.queue_depth)
-    # validate reg
-    validate_r = Reg(f"validate")
-    validate_f = Field(f"validate", width=1, property=["hwclr"])
-    validate_r.add_child(validate_f)
-    ld_dma_header_rf.add_child(validate_r)
 
     # dim reg
     dim_r = Reg(f"dim")
