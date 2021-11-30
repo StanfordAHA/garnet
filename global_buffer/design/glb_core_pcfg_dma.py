@@ -32,10 +32,15 @@ class GlbCorePcfgDma(Generator):
         # localparam
         self.bank_data_byte_offset = math.ceil(
             self._params.bank_data_width / 8)
-        # TODO: For now, we assume that it takes 8 cycles to finish configuring the chip after sending the last rdrq
-        self.default_latency = 8
-        # TODO: Interrupt pulse width can be just one cycle?
-        self.interrupt_pulse_width = 4  # This is not used now.
+        self.default_latency = (self._params.glb_switch_pipeline_depth
+                                + self._params.glb_bank_memory_pipeline_depth
+                                + self._params.sram_gen_pipeline_depth
+                                + self._params.sram_gen_output_pipeline_depth
+                                + 1  # SRAM macro read latency
+                                + self._params.glb_switch_pipeline_depth
+                                + 2  # FIXME: Unnecessary delay of moving back and forth btw switch and router
+                                + 1  # dma cache register delay
+                                )
 
         # local variables
         self.is_running_r = self.var("is_running_r", 1)

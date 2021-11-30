@@ -2,11 +2,13 @@ from kratos import Generator, always_comb, concat, always_ff, posedge, const, re
 from kratos.util import clog2
 from global_buffer.design.TS1N16FFCLLSBLVTC2048X64M8SW import TS1N16FFCLLSBLVTC2048X64M8SW
 from global_buffer.design.pipeline import Pipeline
+from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
 class GlbBankSramGen(Generator):
-    def __init__(self, addr_width, sram_macro_width, sram_macro_depth):
+    def __init__(self, addr_width, sram_macro_width, sram_macro_depth, _params: GlobalBufferParams):
         super().__init__("glb_bank_sram_gen")
+        self._params = _params
         self.addr_width = addr_width
         self.sram_macro_width = sram_macro_width
         self.sram_macro_depth = sram_macro_depth
@@ -21,7 +23,6 @@ class GlbBankSramGen(Generator):
         self.Q = self.output("Q", self.sram_macro_width)
 
         # local parameter
-        self.sram_pipeline_depth = 1
         self.sram_macro_addr_width = clog2(self.sram_macro_depth)
         self.num_sram_macros = 2 ** (self.addr_width
                                      - self.sram_macro_addr_width)
@@ -34,6 +35,7 @@ class GlbBankSramGen(Generator):
             "Q_SRAM2MUX", self.sram_macro_width, size=self.num_sram_macros)
         self.sram_sel = self.var(
             "SRAM_SEL", self.addr_width - self.sram_macro_addr_width)
+        self.Q_w = self.var("Q_w", self.sram_macro_width)
         self.q_sel = self.var(
             "Q_SEL", self.addr_width - self.sram_macro_addr_width)
 
@@ -55,7 +57,7 @@ class GlbBankSramGen(Generator):
         self.add_always(self.q_sel_ff)
         self.add_always(self.sram_ctrl_logic)
         self.add_sram_macro()
-        self.wire(self.Q, self.q_sram2mux[self.q_sel])
+        self.wire(self.Q_w, self.q_sram2mux[self.q_sel])
 
     def add_pipeline(self):
         sram_signals_reset_high_in = concat(
@@ -63,7 +65,7 @@ class GlbBankSramGen(Generator):
         sram_signals_reset_high_out = concat(
             self.WEB_d, self.CEB_d, self.web_demux_d, self.ceb_demux_d, self.BWEB_d)
         self.sram_signals_reset_high_pipeline = Pipeline(width=sram_signals_reset_high_in.width,
-                                                         depth=self.sram_pipeline_depth,
+                                                         depth=self._params.sram_gen_pipeline_depth,
                                                          reset_high=True)
         self.add_child("sram_signals_reset_high_pipeline",
                        self.sram_signals_reset_high_pipeline,
@@ -76,7 +78,7 @@ class GlbBankSramGen(Generator):
         sram_signals_in = concat(self.a_sram, self.sram_sel, self.D)
         sram_signals_out = concat(self.a_sram_d, self.sram_sel_d, self.D_d)
         self.sram_signals_pipeline = Pipeline(width=sram_signals_in.width,
-                                              depth=self.sram_pipeline_depth)
+                                              depth=self._params.sram_gen_pipeline_depth)
         self.add_child("sram_signals_pipeline",
                        self.sram_signals_pipeline,
                        clk=self.CLK,
@@ -84,6 +86,16 @@ class GlbBankSramGen(Generator):
                        reset=self.RESET,
                        in_=sram_signals_in,
                        out_=sram_signals_out)
+
+        self.sram_signals_output_pipeline = Pipeline(width=self.sram_macro_width,
+                                                     depth=self._params.sram_gen_output_pipeline_depth)
+        self.add_child("sram_signals_output_pipeline",
+                       self.sram_signals_output_pipeline,
+                       clk=self.CLK,
+                       clk_en=const(1, 1),
+                       reset=self.RESET,
+                       in_=self.Q_w,
+                       out_=self.Q)
 
     @always_ff((posedge, "CLK"), (posedge, "RESET"))
     def q_sel_ff(self):

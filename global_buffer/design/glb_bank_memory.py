@@ -19,10 +19,6 @@ class GlbBankMemory(Generator):
             "data_in_bit_sel", self._params.bank_data_width)
         self.data_out = self.output("data_out", self._params.bank_data_width)
 
-        # TODO: This should be parameter
-        self.glb_bank_memory_pipeline_depth = 1
-        self.sram_gen_latency = 2
-
         # local variables
         self.sram_wen = self.var("sram_wen", 1)
         self.sram_wen_d = self.var("sram_wen_d", 1)
@@ -65,7 +61,7 @@ class GlbBankMemory(Generator):
                                   self.sram_addr_d, self.sram_data_in_d, self.sram_data_in_bit_sel_d)
 
         sram_signals_pipeline = Pipeline(width=sram_signals_in.width,
-                                         depth=self.glb_bank_memory_pipeline_depth)
+                                         depth=self._params.glb_bank_memory_pipeline_depth)
         self.add_child(f"sram_signals_pipeline",
                        sram_signals_pipeline,
                        clk=self.clk,
@@ -75,7 +71,9 @@ class GlbBankMemory(Generator):
                        out_=sram_signals_out)
 
         self.sram_ren_rsp_pipeline = Pipeline(width=1,
-                                              depth=self.sram_gen_latency)
+                                              depth=(self._params.sram_gen_pipeline_depth
+                                                     + self._params.sram_gen_output_pipeline_depth
+                                                     + 1))
         self.add_child("sram_ren_rsp_pipeline",
                        self.sram_ren_rsp_pipeline,
                        clk=self.clk,
@@ -88,7 +86,8 @@ class GlbBankMemory(Generator):
         self.glb_bank_sram_gen = GlbBankSramGen(addr_width=(self._params.bank_addr_width
                                                             - self._params.bank_byte_offset),
                                                 sram_macro_width=self._params.bank_data_width,
-                                                sram_macro_depth=self._params.sram_macro_depth)
+                                                sram_macro_depth=self._params.sram_macro_depth,
+                                                _params=self._params)
         self.add_child("glb_bank_sram_gen",
                        self.glb_bank_sram_gen,
                        CLK=self.clk,
