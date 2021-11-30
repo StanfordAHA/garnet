@@ -93,8 +93,6 @@ class GlbCore(Generator):
             "cfg_ld_dma_ctrl", self.header.cfg_ld_dma_ctrl_t)
         self.cfg_ld_dma_header = self.input("cfg_ld_dma_header", self.header.cfg_ld_dma_header_t,
                                             size=self._params.queue_depth)
-        self.ld_dma_header_clr = self.output(
-            "ld_dma_header_clr", width=self._params.queue_depth)
         # pcfg dma
         self.cfg_pcfg_dma_ctrl = self.input(
             "cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
@@ -235,7 +233,6 @@ class GlbCore(Generator):
                        cfg_ld_dma_ctrl_mode=self.cfg_ld_dma_ctrl['mode'],
                        cfg_data_network_latency=self.cfg_data_network['latency'],
                        cfg_ld_dma_header=self.cfg_ld_dma_header,
-                       ld_dma_header_clr=self.ld_dma_header_clr,
                        ld_dma_start_pulse=self.ld_dma_start_pulse,
                        ld_dma_done_pulse=self.ld_dma_done_pulse)
 

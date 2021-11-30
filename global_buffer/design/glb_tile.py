@@ -638,14 +638,10 @@ class GlbTile(Generator):
         self.wire(self.glb_core.cfg_ld_dma_ctrl,
                   self.glb_tile_cfg.cfg_ld_dma_ctrl)
 
-        # HACK
         ld_dma_header_w = self.var(
             "ld_dma_header_w", self.header.cfg_ld_dma_header_t, size=self._params.queue_depth)
         self.wire(self.glb_core.cfg_ld_dma_header, ld_dma_header_w)
         self.wire(ld_dma_header_w, self.glb_tile_cfg.cfg_ld_dma_header)
-
-        self.wire(self.glb_core.ld_dma_header_clr,
-                  self.glb_tile_cfg.ld_dma_header_clr)
 
         self.wire(self.glb_core.cfg_pcfg_dma_ctrl,
                   self.glb_tile_cfg.cfg_pcfg_dma_ctrl)
