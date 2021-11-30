@@ -22,7 +22,7 @@ SDF_LOG ?= sdf_logs
 GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
-RUN_ARGS ?= +TEST=3
+RUN_ARGS ?= +TEST=test1
 RUN_ARGS += +DEBUG
 
 RUN_LOG ?= run.log
