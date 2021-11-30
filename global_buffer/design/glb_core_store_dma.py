@@ -132,8 +132,7 @@ class GlbCoreStoreDma(Generator):
                 self.dma_invalidate_pulse[i] = 0
         elif self.clk_en:
             if ((self.state_r == self.state_e.idle)
-                & (self.dma_header_r[self.queue_sel_w]['validate'])
-                    & ~(self.dma_header_r[self.queue_sel_w]['num_words'] == 0)):
+                    & (self.dma_header_r[self.queue_sel_w]['validate'])):
                 self.dma_invalidate_pulse[self.queue_sel_w] = 1
             else:
                 self.dma_invalidate_pulse[self.queue_sel_w] = 0

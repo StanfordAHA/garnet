@@ -1,6 +1,6 @@
 if { $::env(WAVEFORM) != "0" } {
   database -open global_buffer -shm
-  probe -create top.dut -depth all -all -shm -database global_buffer
+  probe -create top -depth all -all -memories -functions -tasks -shm -database global_buffer
 }
 
 if { $::env(SAIF) == "0" } {

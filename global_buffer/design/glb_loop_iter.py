@@ -32,7 +32,7 @@ class GlbLoopIter(Generator):
         self.mux_sel = self.var("mux_sel", max(clog2(self._params.loop_level), 1))
         self.wire(self.mux_sel_out, self.mux_sel)
 
-        self.done = self.var("done", 1)
+        self.not_done = self.var("not_done", 1)
         self.clear = self.var("clear", self._params.loop_level)
         self.inc = self.var("inc", self._params.loop_level)
 
@@ -47,23 +47,23 @@ class GlbLoopIter(Generator):
             self.add_code(self.dim_counter_update, idx=i)
             self.add_code(self.max_value_update, idx=i)
 
-        self.wire(self.restart, self.step & (~self.done))
+        self.wire(self.restart, self.step & (~self.not_done))
 
     @always_comb
     # Find lowest ready
     def set_mux_sel(self):
         self.mux_sel = 0
-        self.done = 0
+        self.not_done = 0
         for i in range(self._params.loop_level):
-            if ~self.done:
+            if ~self.not_done:
                 if ~self.max_value[i] & (i < self.dim):
                     self.mux_sel = i
-                    self.done = 1
+                    self.not_done = 1
 
     @always_comb
     def set_clear(self, idx):
         self.clear[idx] = 0
-        if ((idx < self.mux_sel) | (~self.done)) & self.step:
+        if ((idx < self.mux_sel) | (~self.not_done)) & self.step:
             self.clear[idx] = 1
 
     @always_comb
