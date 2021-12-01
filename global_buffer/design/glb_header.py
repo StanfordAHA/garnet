@@ -25,7 +25,8 @@ class GlbHeader():
         self.cfg_ld_dma_ctrl_t = PackedStruct("ld_dma_ctrl_t",
                                               [("mode", 2),
                                                ("use_valid", 1),
-                                               ("g2f_mux", 2)])
+                                               ("g2f_mux", 2),
+                                               ("num_repeat", max(1, clog2(self._params.queue_depth)))])
 
         # TODO: Kratos does not support struct of struct now.
         dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
