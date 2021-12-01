@@ -1,4 +1,7 @@
 from kratos import Generator, always_ff, always_comb, posedge, concat, const, resize, ext, clog2
+from global_buffer.design.glb_loop_iter import GlbLoopIter
+from global_buffer.design.glb_sched_gen import GlbSchedGen
+from global_buffer.design.glb_addr_gen import GlbAddrGen
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
@@ -23,32 +26,26 @@ class GlbCoreStoreDma(Generator):
         self.wr_packet = self.output(
             "wr_packet", self.header.wr_packet_t)
 
+        self.cfg_st_dma_num_repeat = self.input("cfg_st_dma_num_repeat", max(1, clog2(self._params.queue_depth)))
         self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2)
+        self.cfg_st_dma_ctrl_use_valid = self.input("cfg_st_dma_ctrl_use_valid", 1)
         self.cfg_data_network_latency = self.input(
             "cfg_data_network_latency", self._params.latency_width)
         self.cfg_st_dma_header = self.input(
             "cfg_st_dma_header", self.header.cfg_st_dma_header_t, size=self._params.queue_depth)
-        self.st_dma_header_clr = self.output(
-            "st_dma_header_clr", width=self._params.queue_depth)
+
+        self.st_dma_start_pulse = self.input("st_dma_start_pulse", 1)
         self.st_dma_done_pulse = self.output("st_dma_done_pulse", 1)
 
         # localparam
-        self.default_latency = self._params.glb_bank_memory_pipeline_depth + \
-            self._params.sram_gen_pipeline_depth + self._params.glb_switch_pipeline_depth
+        self.default_latency = (self._params.glb_bank_memory_pipeline_depth
+                                + self._params.sram_gen_pipeline_depth
+                                + self._params.glb_switch_pipeline_depth
+                                )
         # local variables
-        self.data_f2g_d1 = self.var(
-            "data_f2g_d1", width=self._params.cgra_data_width)
-        self.data_valid_f2g_d1 = self.var("data_valid_f2g_d1", width=1)
-
-        self.dma_validate_r = self.var(
-            "dma_validate_r", width=self._params.queue_depth)
-        self.dma_validate_pulse = self.var(
-            "dma_validate_pulse", width=self._params.queue_depth)
-        self.dma_invalidate_pulse = self.var(
-            "dma_invalidate_pulse", width=self._params.queue_depth)
-
-        self.dma_header_r = self.var(
-            "dma_header_r", self.header.cfg_st_dma_header_t, size=self._params.queue_depth)
+        self.strm_wr_data_w = self.var("strm_wr_data_w", width=self._params.cgra_data_width)
+        self.strm_wr_addr_w = self.var("strm_wr_addr_w", width=self._params.glb_addr_width)
+        self.strm_wr_en_w = self.var("strm_wr_en_w", width=1)
 
         self.num_cnt_next = self.var(
             "num_cnt_next", self._params.max_num_words_width)
@@ -81,6 +78,17 @@ class GlbCoreStoreDma(Generator):
         self.state_r = self.var("state_r", self.state_e)
         self.state_next = self.var("state_next", self.state_e)
 
+        self.strm_run = self.var("strm_run", 1)
+        self.loop_done = self.var("loop_done", 1)
+        self.cycle_valid = self.var("cycle_valid", 1)
+        self.cycle_valid_muxed = self.var("cycle_valid_muxed", 1)
+        self.cycle_count = self.var("cycle_count", self._params.axi_data_width)
+        self.cycle_current_addr = self.var("cycle_current_addr", self._params.axi_data_width)
+        self.data_current_addr = self.var("data_current_addr", self._params.axi_data_width)
+        self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.loop_level))
+        self.queue_sel_r = self.var("queue_sel_r", max(1, clog2(self._params.queue_depth)))
+        self.repeat_cnt = self.var("repeat_cnt", max(1, clog2(self._params.queue_depth)))
+
         self.add_done_pulse_pipeline()
         self.add_always(self.data_f2g_pipeline)
         self.add_always(self.dma_validate_ff)
@@ -99,216 +107,287 @@ class GlbCoreStoreDma(Generator):
         self.add_always(self.strm_done_pipeline)
         self.add_always(self.strm_done_pulse_logic)
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def data_f2g_pipeline(self):
-        if self.reset:
-            self.data_f2g_d1 = 0
-            self.data_valid_f2g_d1 = 0
-        elif self.clk_en:
-            self.data_f2g_d1 = self.data_f2g
-            self.data_valid_f2g_d1 = self.data_valid_f2g
+        # Loop iteration shared for cycle and data
+        self.loop_iter = GlbLoopIter(self._params)
+        self.add_child("loop_iter",
+                       self.loop_iter,
+                       clk=self.clk,
+                       clk_en=self.clk_en,
+                       reset=self.reset,
+                       step=self.cycle_valid_muxed,
+                       mux_sel_out=self.loop_mux_sel,
+                       restart=self.loop_done)
+        self.wire(self.loop_iter.dim, self.cfg_st_dma_header[self.queue_sel_r][f"dim"])
+        for i in range(self._params.loop_level):
+            self.wire(self.loop_iter.ranges[i], self.cfg_st_dma_header[self.queue_sel_r][f"range_{i}"])
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def dma_validate_ff(self):
-        if self.reset:
-            for i in range(self._params.queue_depth):
-                self.dma_validate_r[i] = 0
-        elif self.clk_en:
-            for i in range(self._params.queue_depth):
-                self.dma_validate_r[i] = self.cfg_st_dma_header[i]['validate']
+        # Cycle stride
+        self.cycle_stride_sched_gen = GlbSchedGen(self._params)
+        self.add_child("cycle_stride_sched_gen",
+                       self.cycle_stride_sched_gen,
+                       clk=self.clk,
+                       clk_en=self.clk_en,
+                       reset=self.reset,
+                       restart=self.st_dma_start_pulse_r,
+                       cycle_count=self.cycle_count,
+                       current_addr=self.cycle_current_addr,
+                       finished=self.loop_done,
+                       valid_output=self.cycle_valid)
 
-    @always_comb
-    def dma_validate_pulse_gen(self):
-        for i in range(self._params.queue_depth):
-            self.dma_validate_pulse[i] = self.cfg_st_dma_header[i]['validate'] & (
-                ~self.dma_validate_r[i])
+        self.cycle_stride_addr_gen = GlbAddrGen(self._params)
+        self.add_child("cycle_stride_addr_gen",
+                       self.cycle_stride_addr_gen,
+                       clk=self.clk,
+                       clk_en=self.clk_en,
+                       reset=self.reset,
+                       restart=self.st_dma_start_pulse_r,
+                       step=self.cycle_valid_muxed,
+                       mux_sel=self.loop_mux_sel,
+                       addr_out=self.cycle_current_addr)
+        self.wire(self.cycle_stride_addr_gen.start_addr, ext(
+            self.cfg_st_dma_header[self.queue_sel_r][f"cycle_start_addr"], self._params.axi_data_width))
+        for i in range(self._params.loop_level):
+            self.wire(self.cycle_stride_addr_gen.strides[i],
+                      self.cfg_st_dma_header[self.queue_sel_r][f"cycle_stride_{i}"])
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def dma_invalidate_pulse_gen(self):
-        if self.reset:
-            for i in range(self._params.queue_depth):
-                self.dma_invalidate_pulse[i] = 0
-        elif self.clk_en:
-            if ((self.state_r == self.state_e.idle)
-                    & (self.dma_header_r[self.queue_sel_w]['validate'])):
-                self.dma_invalidate_pulse[self.queue_sel_w] = 1
-            else:
-                self.dma_invalidate_pulse[self.queue_sel_w] = 0
+        # Data stride
+        self.data_stride_addr_gen = GlbAddrGen(self._params)
+        self.add_child("data_stride_addr_gen",
+                       self.data_stride_addr_gen,
+                       clk=self.clk,
+                       clk_en=self.clk_en,
+                       reset=self.reset,
+                       restart=self.st_dma_start_pulse_r,
+                       step=self.cycle_valid_muxed,
+                       mux_sel=self.loop_mux_sel,
+                       addr_out=self.data_current_addr)
+        self.wire(self.data_stride_addr_gen.start_addr, ext(
+            self.cfg_st_dma_header[self.queue_sel_r][f"start_addr"], self._params.axi_data_width))
+        for i in range(self._params.loop_level):
+            self.wire(self.data_stride_addr_gen.strides[i], self.cfg_st_dma_header[self.queue_sel_r][f"stride_{i}"])
 
-    @always_comb
-    def assign_st_dma_header_hwclr(self):
-        for i in range(self._params.queue_depth):
-            self.st_dma_header_clr[i] = self.dma_invalidate_pulse[i]
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def dma_header_ff(self):
-        if self.reset:
-            for i in range(self._params.queue_depth):
-                self.dma_header_r[i] = 0
-        elif self.clk_en:
-            for i in range(self._params.queue_depth):
-                if self.dma_validate_pulse[i]:
-                    self.dma_header_r[i] = self.cfg_st_dma_header[i]
-                elif self.dma_invalidate_pulse[i]:
-                    self.dma_header_r[i]['validate'] = 0
-
-    @always_comb
-    def state_fsm_logic(self):
-        self.cache_data_next = self.cache_data_r
-        self.cache_strb_next = self.cache_strb_r
-        self.num_cnt_next = self.num_cnt_r
-        self.cur_addr_next = self.cur_addr_r
-        self.state_next = self.state_r
-        self.is_first_word_next = self.is_first_word_r
-        if self.state_r == self.state_e.off:
-            if self.cfg_st_dma_ctrl_mode != 0:
-                self.state_next = self.state_e.idle
-        elif self.state_r == self.state_e.idle:
-            self.num_cnt_next = 0
-            self.cur_addr_next = 0
-            if ((self.dma_header_r[self.queue_sel_w]['validate'] == 1)
-                    & (self.dma_header_r[self.queue_sel_w]['num_words'] != 0)):
-                self.cur_addr_next = self.dma_header_r[self.queue_sel_w]['start_addr']
-                self.num_cnt_next = self.dma_header_r[self.queue_sel_w]['num_words']
-                self.is_first_word_next = 1
-                if self.cur_addr_next[2, 1] == 0b00:
-                    self.state_next = self.state_e.ready
-                elif self.cur_addr_next[2, 1] == 0b01:
-                    self.state_next = self.state_e.acc1
-                elif self.cur_addr_next[2, 1] == 0b10:
-                    self.state_next = self.state_e.acc2
-                elif self.cur_addr_next[2, 1] == 0b11:
-                    self.state_next = self.state_e.acc3
-                else:
-                    self.state_next = self.state_e.ready
-        elif self.state_r == self.state_e.ready:
-            if self.num_cnt_r == 0:
-                self.state_next = self.state_e.done
-            elif self.data_valid_f2g_d1 == 1:
-                self.is_first_word_next = 0
-                self.cache_data_next[self._params.cgra_data_width
-                                     - 1, 0] = self.data_f2g_d1
-                self.cache_strb_next[1, 0] = 0b11
-                self.num_cnt_next = self.num_cnt_r - 1
-                if ~self.is_first_word_r:
-                    self.cur_addr_next = self.cur_addr_r + \
-                        (self._params.cgra_data_width // 8)
-                self.state_next = self.state_e.acc1
-        elif self.state_r == self.state_e.acc1:
-            if self.num_cnt_r == 0:
-                self.state_next = self.state_e.done
-            elif self.data_valid_f2g_d1 == 1:
-                self.is_first_word_next = 0
-                self.cache_data_next[self._params.cgra_data_width * 2 - 1,
-                                     self._params.cgra_data_width] = self.data_f2g_d1
-                self.cache_strb_next[3, 2] = 0b11
-                self.num_cnt_next = self.num_cnt_r - 1
-                if ~self.is_first_word_r:
-                    self.cur_addr_next = self.cur_addr_r + \
-                        (self._params.cgra_data_width // 8)
-                self.state_next = self.state_e.acc2
-        elif self.state_r == self.state_e.acc2:
-            if self.num_cnt_r == 0:
-                self.state_next = self.state_e.done
-            elif self.data_valid_f2g_d1 == 1:
-                self.is_first_word_next = 0
-                self.cache_data_next[self._params.cgra_data_width * 3 - 1,
-                                     self._params.cgra_data_width * 2] = self.data_f2g_d1
-                self.cache_strb_next[5, 4] = 0b11
-                self.num_cnt_next = self.num_cnt_r - 1
-                if ~self.is_first_word_r:
-                    self.cur_addr_next = self.cur_addr_r + \
-                        (self._params.cgra_data_width // 8)
-                self.state_next = self.state_e.acc3
-        elif self.state_r == self.state_e.acc3:
-            if self.num_cnt_r == 0:
-                self.state_next = self.state_e.done
-            elif self.data_valid_f2g_d1 == 1:
-                self.is_first_word_next = 0
-                self.cache_data_next[self._params.cgra_data_width * 4 - 1,
-                                     self._params.cgra_data_width * 3] = self.data_f2g_d1
-                self.cache_strb_next[7, 6] = 0b11
-                self.num_cnt_next = self.num_cnt_r - 1
-                if ~self.is_first_word_r:
-                    self.cur_addr_next = self.cur_addr_r + \
-                        (self._params.cgra_data_width // 8)
-                self.state_next = self.state_e.acc4
-        elif self.state_r == self.state_e.acc4:
-            if self.num_cnt_r == 0:
-                self.state_next = self.state_e.done
-            elif self.data_valid_f2g_d1 == 1:
-                self.is_first_word_next = 0
-                self.cache_data_next = ext(self.data_f2g_d1, self._params.bank_data_width)
-                self.cache_strb_next = concat(const(0, 6), const(0b11, 2))
-                self.num_cnt_next = self.num_cnt_r - 1
-                if ~self.is_first_word_r:
-                    self.cur_addr_next = self.cur_addr_r + \
-                        (self._params.cgra_data_width // 8)
-                self.state_next = self.state_e.acc1
-            else:
-                self.cache_data_next = 0
-                self.cache_strb_next = 0
-                self.state_next = self.state_e.ready
-        elif self.state_r == self.state_e.done:
-            self.cache_data_next = 0
-            self.cache_strb_next = 0
-            self.num_cnt_next = 0
-            self.state_next = self.state_e.idle
-        else:
-            self.cache_data_next = self.cache_data_r
-            self.cache_strb_next = self.cache_strb_r
-            self.num_cnt_next = self.num_cnt_r
-            self.state_next = self.state_e.idle
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def state_fsm_ff(self):
-        if self.reset:
-            self.state_r = self.state_e.off
-        elif self.clk_en:
-            if self.cfg_st_dma_ctrl_mode == 0:
-                self.state_r = self.state_e.off
-            else:
-                self.state_r = self.state_next
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def cache_ff(self):
-        if self.reset:
-            self.cache_data_r = 0
-            self.cache_strb_r = 0
-        elif self.clk_en:
-            self.cache_data_r = self.cache_data_next
-            self.cache_strb_r = self.cache_strb_next
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def counter_ff(self):
-        if self.reset:
-            self.num_cnt_r = 0
-            self.cur_addr_r = 0
-            self.is_first_word_r = 0
-        elif self.clk_en:
-            self.num_cnt_r = self.num_cnt_next
-            self.cur_addr_r = self.cur_addr_next
-            self.is_first_word_r = self.is_first_word_next
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def queue_sel_ff(self):
         if self.reset:
             self.queue_sel_r = 0
+            self.repeat_cnt = 0
         elif self.clk_en:
-            if self.state_r == self.state_e.idle:
-                if self.cfg_st_dma_ctrl_mode == 0b11:
-                    if (self.dma_header_r[self.queue_sel_r]['validate']
-                            & (self.dma_header_r[self.queue_sel_r]['num_words'] != 0)):
+            if self.cfg_st_dma_ctrl_mode == 2:
+                if self.st_dma_done_pulse:
+                    if (self.repeat_cnt + 1) < self.cfg_st_dma_num_repeat:
+                        self.repeat_cnt += 1
+            elif self.cfg_st_dma_ctrl_mode == 3:
+                if self.st_dma_done_pulse:
+                    if (self.repeat_cnt + 1) < self.cfg_st_dma_num_repeat:
                         self.queue_sel_r = self.queue_sel_r + 1
-                else:
-                    self.queue_sel_r = 0
+                        self.repeat_cnt += 1
+            else:
+                self.queue_sel_r = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def is_last_ff(self):
+        if self.reset:
+            self.is_last = 0
+        elif self.clk_en:
+            if self.loop_done:
+                self.is_last = 1
+            elif self.bank_wr_en:
+                self.is_last = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def strm_run_ff(self):
+        if self.reset:
+            self.strm_run = 0
+        elif self.clk_en:
+            if self.st_dma_start_pulse_r:
+                self.strm_run = 1
+            elif self.loop_done:
+                self.strm_run = 0
 
     @always_comb
-    def queue_sel_logic(self):
-        if self.cfg_st_dma_ctrl_mode == 0b11:
-            self.queue_sel_w = self.queue_sel_r
+    def st_dma_start_pulse_logic(self):
+        if self.cfg_st_dma_ctrl_mode == 0:
+            self.st_dma_start_pulse_next = 0
+        elif self.cfg_st_dma_ctrl_mode == 1:
+            self.st_dma_start_pulse_next = (~self.strm_run) & self.st_dma_start_pulse
+        elif (self.cfg_st_dma_ctrl_mode == 2) | (self.cfg_st_dma_ctrl_mode == 3):
+            self.st_dma_start_pulse_next = (((~self.strm_run) & self.st_dma_start_pulse)
+                                            | ((self.st_dma_done_pulse)
+                                               & ((self.repeat_cnt + 1) < self.cfg_st_dma_num_repeat)))
         else:
-            self.queue_sel_w = 0
+            self.st_dma_start_pulse_next = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def st_dma_start_pulse_ff(self):
+        if self.reset:
+            self.st_dma_start_pulse_r = 0
+        elif self.clk_en:
+            if self.st_dma_start_pulse_r:
+                self.st_dma_start_pulse_r = 0
+            else:
+                self.st_dma_start_pulse_r = self.st_dma_start_pulse_next
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def cycle_counter(self):
+        if self.reset:
+            self.cycle_count = 0
+        elif self.clk_en:
+            if self.st_dma_start_pulse_r:
+                self.cycle_count = 0
+            elif self.loop_done:
+                self.cycle_count = 0
+            elif self.strm_run:
+                self.cycle_count = self.cycle_count + 1
+
+    @always_comb
+    def cycle_valid_comb(self):
+        if self.cfg_st_dma_ctrl_use_valid:
+            self.cycle_valid_muxed = self.data_valid_f2g
+        else:
+            self.cycle_valid_muxed = self.cycle_valid
+
+    # FIXME: Check if cycle_valid meets the timing with ld_dma.
+    @always_comb
+    def strm_wr_packet_comb(self):
+        self.strm_wr_en_w = self.cycle_valid_muxed
+        self.strm_wr_addr_w = resize(self.data_current_addr,
+                                     self._params.glb_addr_width) << self._params.cgra_byte_offset
+        self.strm_wr_data_w = self.data_f2g
+
+    # @always_comb
+    # def state_fsm_logic(self):
+    #     self.cache_data_next = self.cache_data_r
+    #     self.cache_strb_next = self.cache_strb_r
+    #     self.num_cnt_next = self.num_cnt_r
+    #     self.cur_addr_next = self.cur_addr_r
+    #     self.state_next = self.state_r
+    #     self.is_first_word_next = self.is_first_word_r
+    #     if self.state_r == self.state_e.off:
+    #         if self.cfg_st_dma_ctrl_mode != 0:
+    #             self.state_next = self.state_e.idle
+    #     elif self.state_r == self.state_e.idle:
+    #         self.num_cnt_next = 0
+    #         self.cur_addr_next = 0
+    #         if ((self.dma_header_r[self.queue_sel_w]['validate'] == 1)
+    #                 & (self.dma_header_r[self.queue_sel_w]['num_words'] != 0)):
+    #             self.cur_addr_next = self.dma_header_r[self.queue_sel_w]['start_addr']
+    #             self.num_cnt_next = self.dma_header_r[self.queue_sel_w]['num_words']
+    #             self.is_first_word_next = 1
+    #             if self.cur_addr_next[2, 1] == 0b00:
+    #                 self.state_next = self.state_e.ready
+    #             elif self.cur_addr_next[2, 1] == 0b01:
+    #                 self.state_next = self.state_e.acc1
+    #             elif self.cur_addr_next[2, 1] == 0b10:
+    #                 self.state_next = self.state_e.acc2
+    #             elif self.cur_addr_next[2, 1] == 0b11:
+    #                 self.state_next = self.state_e.acc3
+    #             else:
+    #                 self.state_next = self.state_e.ready
+    #     elif self.state_r == self.state_e.ready:
+    #         if self.num_cnt_r == 0:
+    #             self.state_next = self.state_e.done
+    #         elif self.strm_wr_en_r == 1:
+    #             self.is_first_word_next = 0
+    #             self.cache_data_next[self._params.cgra_data_width
+    #                                  - 1, 0] = self.strm_wr_data_r
+    #             self.cache_strb_next[1, 0] = 0b11
+    #             self.num_cnt_next = self.num_cnt_r - 1
+    #             if ~self.is_first_word_r:
+    #                 self.cur_addr_next = self.cur_addr_r + \
+    #                     (self._params.cgra_data_width // 8)
+    #             self.state_next = self.state_e.acc1
+    #     elif self.state_r == self.state_e.acc1:
+    #         if self.num_cnt_r == 0:
+    #             self.state_next = self.state_e.done
+    #         elif self.strm_wr_en_r == 1:
+    #             self.is_first_word_next = 0
+    #             self.cache_data_next[self._params.cgra_data_width * 2 - 1,
+    #                                  self._params.cgra_data_width] = self.strm_wr_data_r
+    #             self.cache_strb_next[3, 2] = 0b11
+    #             self.num_cnt_next = self.num_cnt_r - 1
+    #             if ~self.is_first_word_r:
+    #                 self.cur_addr_next = self.cur_addr_r + \
+    #                     (self._params.cgra_data_width // 8)
+    #             self.state_next = self.state_e.acc2
+    #     elif self.state_r == self.state_e.acc2:
+    #         if self.num_cnt_r == 0:
+    #             self.state_next = self.state_e.done
+    #         elif self.strm_wr_en_r == 1:
+    #             self.is_first_word_next = 0
+    #             self.cache_data_next[self._params.cgra_data_width * 3 - 1,
+    #                                  self._params.cgra_data_width * 2] = self.strm_wr_data_r
+    #             self.cache_strb_next[5, 4] = 0b11
+    #             self.num_cnt_next = self.num_cnt_r - 1
+    #             if ~self.is_first_word_r:
+    #                 self.cur_addr_next = self.cur_addr_r + \
+    #                     (self._params.cgra_data_width // 8)
+    #             self.state_next = self.state_e.acc3
+    #     elif self.state_r == self.state_e.acc3:
+    #         if self.num_cnt_r == 0:
+    #             self.state_next = self.state_e.done
+    #         elif self.strm_wr_en_r == 1:
+    #             self.is_first_word_next = 0
+    #             self.cache_data_next[self._params.cgra_data_width * 4 - 1,
+    #                                  self._params.cgra_data_width * 3] = self.strm_wr_data_r
+    #             self.cache_strb_next[7, 6] = 0b11
+    #             self.num_cnt_next = self.num_cnt_r - 1
+    #             if ~self.is_first_word_r:
+    #                 self.cur_addr_next = self.cur_addr_r + \
+    #                     (self._params.cgra_data_width // 8)
+    #             self.state_next = self.state_e.acc4
+    #     elif self.state_r == self.state_e.acc4:
+    #         if self.num_cnt_r == 0:
+    #             self.state_next = self.state_e.done
+    #         elif self.strm_wr_en_r == 1:
+    #             self.is_first_word_next = 0
+    #             self.cache_data_next = ext(self.strm_wr_data_r, self._params.bank_data_width)
+    #             self.cache_strb_next = concat(const(0, 6), const(0b11, 2))
+    #             self.num_cnt_next = self.num_cnt_r - 1
+    #             if ~self.is_first_word_r:
+    #                 self.cur_addr_next = self.cur_addr_r + \
+    #                     (self._params.cgra_data_width // 8)
+    #             self.state_next = self.state_e.acc1
+    #         else:
+    #             self.cache_data_next = 0
+    #             self.cache_strb_next = 0
+    #             self.state_next = self.state_e.ready
+    #     elif self.state_r == self.state_e.done:
+    #         self.cache_data_next = 0
+    #         self.cache_strb_next = 0
+    #         self.num_cnt_next = 0
+    #         self.state_next = self.state_e.idle
+    #     else:
+    #         self.cache_data_next = self.cache_data_r
+    #         self.cache_strb_next = self.cache_strb_r
+    #         self.num_cnt_next = self.num_cnt_r
+    #         self.state_next = self.state_e.idle
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def last_strm_wr_addr_ff(self):
+        if self.reset:
+            self.last_strm_wr_addr_r = 0
+        elif self.clk_en:
+            if self.strm_wr_en_w:
+                self.last_strm_wr_addr_r = self.strm_wr_addr_w
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def bank_wr_packet_cache_ff(self):
+        if self.reset:
+            self.bank_wr_strb_cache_r = 0
+            self.bank_wr_data_cache_r = 0
+        elif self.clk_en:
+            if self.strm_wr_en_w:
+                if self.strm_data_sel == 0:
+                    self.bank_wr_strb_cache_r[] = 0
+                    self.bank_wr_data_cache_r[] = 0
+
+    @always_comb
+    def bank_wr_packet_logic(self):
+        self.bank_addr_match = (self.strm_wr_addr_w[self._params.glb_addr_width - 1, self._params.bank_byte_offset]
+                                == self.last_strm_wr_addr_r[self._params.glb_addr_width - 1,
+                                                            self._params.bank_byte_offset])
+        self.bank_wr_en = ((self.strm_wr_en_w & (~self.bank_addr_match)) | self.is_last)
+        self.bank_wr_addr = self.last_strm_wr_addr_r
 
     @always_comb
     def wr_packet_logic(self):
@@ -330,6 +409,15 @@ class GlbCoreStoreDma(Generator):
             self.wr_packet['wr_data'] = 0
             self.wr_packet['wr_addr'] = 0
 
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def cache_ff(self):
+        if self.reset:
+            self.cache_data_r = 0
+            self.cache_strb_r = 0
+        elif self.clk_en:
+            self.cache_data_r = self.cache_data_next
+            self.cache_strb_r = self.cache_strb_next
+
     @always_comb
     def strm_done_logic(self):
         self.strm_done = (self.state_r == self.state_e.done)
@@ -343,7 +431,7 @@ class GlbCoreStoreDma(Generator):
 
     @always_comb
     def strm_done_pulse_logic(self):
-        self.done_pulse_w = self.strm_done & (~self.strm_done_d1)
+        self.done_pulse_w = self.loop_done & self.strm_run
 
     def add_done_pulse_pipeline(self):
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency

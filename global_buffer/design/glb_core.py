@@ -229,6 +229,7 @@ class GlbCore(Generator):
                        rdrq_packet=self.rdrq_packet_dma2sw,
                        rdrs_packet=self.rdrs_packet_sw2dma,
                        # TODO: How to make this automatic
+                       cfg_ld_dma_num_repeat=self.cfg_ld_dma_ctrl['num_repeat'],
                        cfg_ld_dma_ctrl_use_valid=self.cfg_ld_dma_ctrl['use_valid'],
                        cfg_ld_dma_ctrl_mode=self.cfg_ld_dma_ctrl['mode'],
                        cfg_data_network_latency=self.cfg_data_network['latency'],

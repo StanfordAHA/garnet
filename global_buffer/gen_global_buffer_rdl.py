@@ -168,17 +168,23 @@ def gen_global_buffer_rdl(name, params):
     # Store DMA Ctrl
     st_dma_ctrl_r = Reg("st_dma_ctrl")
     st_dma_mode_f = Field("mode", 2)
+    st_dma_ctrl_r.add_child(st_dma_mode_f)
+    st_dma_use_valid_f = Field("use_valid", 1)
+    st_dma_ctrl_r.add_child(st_dma_use_valid_f)
     f2g_mux_f = Field("f2g_mux", 2)
-    st_dma_ctrl_r.add_children([st_dma_mode_f, f2g_mux_f])
+    st_dma_ctrl_r.add_child(f2g_mux_f)
+    st_dma_num_repeat_f = Field("num_repeat", max(1, clog2(params.queue_depth)))
+    st_dma_ctrl_r.add_child(st_dma_num_repeat_f)
     addr_map.add_child(st_dma_ctrl_r)
 
     # Store DMA Header
     st_dma_header_rf = RegFile(f"st_dma_header", size=params.queue_depth)
-    # validate reg
-    validate_r = Reg(f"validate")
-    validate_f = Field(f"validate", width=1, property=["hwclr"])
-    validate_r.add_child(validate_f)
-    st_dma_header_rf.add_child(validate_r)
+
+    # dim reg
+    dim_r = Reg(f"dim")
+    dim_f = Field(f"dim", width=clog2(params.loop_level) + 1)
+    dim_r.add_child(dim_f)
+    st_dma_header_rf.add_child(dim_r)
 
     # start_addr reg
     start_addr_r = Reg(f"start_addr")
@@ -186,45 +192,11 @@ def gen_global_buffer_rdl(name, params):
     start_addr_r.add_child(start_addr_f)
     st_dma_header_rf.add_child(start_addr_r)
 
-    # num_word reg
-    num_words_r = Reg(f"num_words")
-    num_words_f = Field(f"num_words", width=params.max_num_words_width)
-    num_words_r.add_child(num_words_f)
-    st_dma_header_rf.add_child(num_words_r)
-
-    # Add final regfile to addrmap
-    addr_map.add_child(st_dma_header_rf)
-
-    # Load DMA Ctrl
-    ld_dma_ctrl_r = Reg("ld_dma_ctrl")
-    ld_dma_mode_f = Field("mode", 2)
-    ld_dma_ctrl_r.add_child(ld_dma_mode_f)
-    ld_dma_use_valid_f = Field("use_valid", 1)
-    ld_dma_ctrl_r.add_child(ld_dma_use_valid_f)
-    g2f_mux_f = Field("g2f_mux", 2)
-    ld_dma_ctrl_r.add_child(g2f_mux_f)
-    addr_map.add_child(ld_dma_ctrl_r)
-
-    # Load DMA Header
-    ld_dma_header_rf = RegFile(f"ld_dma_header", size=params.queue_depth)
-
-    # dim reg
-    dim_r = Reg(f"dim")
-    dim_f = Field(f"dim", width=clog2(params.loop_level) + 1)
-    dim_r.add_child(dim_f)
-    ld_dma_header_rf.add_child(dim_r)
-
-    # start_addr reg
-    start_addr_r = Reg(f"start_addr")
-    start_addr_f = Field(f"start_addr", width=params.glb_addr_width)
-    start_addr_r.add_child(start_addr_f)
-    ld_dma_header_rf.add_child(start_addr_r)
-
     # cycle_start_addr reg
     cycle_start_addr_r = Reg(f"cycle_start_addr")
     cycle_start_addr_f = Field(f"cycle_start_addr", width=params.glb_addr_width)
     cycle_start_addr_r.add_child(cycle_start_addr_f)
-    ld_dma_header_rf.add_child(cycle_start_addr_r)
+    st_dma_header_rf.add_child(cycle_start_addr_r)
 
     # num_word reg
     range_r = Reg(f"range", size=params.loop_level)
@@ -236,11 +208,84 @@ def gen_global_buffer_rdl(name, params):
     cycle_stride_r = Reg(f"cycle_stride", size=params.loop_level)
     cycle_stride_f = Field("cycle_stride", width=params.axi_data_width)
     cycle_stride_r.add_child(cycle_stride_f)
-    ld_dma_header_rf.add_child(range_r)
-    ld_dma_header_rf.add_child(stride_r)
-    ld_dma_header_rf.add_child(cycle_stride_r)
+    st_dma_header_rf.add_child(range_r)
+    st_dma_header_rf.add_child(stride_r)
+    st_dma_header_rf.add_child(cycle_stride_r)
 
-    addr_map.add_child(ld_dma_header_rf)
+    addr_map.add_child(st_dma_header_rf)
+
+    # FIXME: Remove old registers
+    # # Store DMA Header
+    # st_dma_header_rf = RegFile(f"st_dma_header", size=params.queue_depth)
+    # # validate reg
+    # validate_r = Reg(f"validate")
+    # validate_f = Field(f"validate", width=1, property=["hwclr"])
+    # validate_r.add_child(validate_f)
+    # st_dma_header_rf.add_child(validate_r)
+
+    # # start_addr reg
+    # start_addr_r = Reg(f"start_addr")
+    # start_addr_f = Field(f"start_addr", width=params.glb_addr_width)
+    # start_addr_r.add_child(start_addr_f)
+    # st_dma_header_rf.add_child(start_addr_r)
+
+    # # num_word reg
+    # num_words_r = Reg(f"num_words")
+    # num_words_f = Field(f"num_words", width=params.max_num_words_width)
+    # num_words_r.add_child(num_words_f)
+    # st_dma_header_rf.add_child(num_words_r)
+
+    # # Add final regfile to addrmap
+    # addr_map.add_child(st_dma_header_rf)
+
+    # Load DMA Ctrl
+    st_dma_ctrl_r = Reg("st_dma_ctrl")
+    st_dma_mode_f = Field("mode", 2)
+    st_dma_ctrl_r.add_child(st_dma_mode_f)
+    st_dma_use_valid_f = Field("use_valid", 1)
+    st_dma_ctrl_r.add_child(st_dma_use_valid_f)
+    g2f_mux_f = Field("g2f_mux", 2)
+    st_dma_ctrl_r.add_child(g2f_mux_f)
+    st_dma_num_repeat_f = Field("num_repeat", max(1, clog2(params.queue_depth)))
+    st_dma_ctrl_r.add_child(st_dma_num_repeat_f)
+    addr_map.add_child(st_dma_ctrl_r)
+
+    # Load DMA Header
+    st_dma_header_rf = RegFile(f"st_dma_header", size=params.queue_depth)
+
+    # dim reg
+    dim_r = Reg(f"dim")
+    dim_f = Field(f"dim", width=clog2(params.loop_level) + 1)
+    dim_r.add_child(dim_f)
+    st_dma_header_rf.add_child(dim_r)
+
+    # start_addr reg
+    start_addr_r = Reg(f"start_addr")
+    start_addr_f = Field(f"start_addr", width=params.glb_addr_width)
+    start_addr_r.add_child(start_addr_f)
+    st_dma_header_rf.add_child(start_addr_r)
+
+    # cycle_start_addr reg
+    cycle_start_addr_r = Reg(f"cycle_start_addr")
+    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.glb_addr_width)
+    cycle_start_addr_r.add_child(cycle_start_addr_f)
+    st_dma_header_rf.add_child(cycle_start_addr_r)
+
+    # num_word reg
+    range_r = Reg(f"range", size=params.loop_level)
+    range_f = Field("range", width=params.axi_data_width)
+    range_r.add_child(range_f)
+    stride_r = Reg(f"stride", size=params.loop_level)
+    stride_f = Field("stride", width=params.axi_data_width)
+    stride_r.add_child(stride_f)
+    cycle_stride_r = Reg(f"cycle_stride", size=params.loop_level)
+    cycle_stride_f = Field("cycle_stride", width=params.axi_data_width)
+    cycle_stride_r.add_child(cycle_stride_f)
+    st_dma_header_rf.add_child(range_r)
+    st_dma_header_rf.add_child(stride_r)
+    st_dma_header_rf.add_child(cycle_stride_r)
+
+    addr_map.add_child(st_dma_header_rf)
 
     # Pcfg DMA Ctrl
     pcfg_dma_ctrl_r = Reg("pcfg_dma_ctrl")

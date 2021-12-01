@@ -140,10 +140,10 @@ class GlbTileCfg(Generator):
                 self.wire(self.st_dma_header_clr[i],
                           self.glb_pio_wrapper.ports[f"h2l_st_dma_header_{i}_validate_validate_hwclr"])
 
-        self.wire(
-            self.cfg_ld_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_mode_r"])
+        self.wire(self.cfg_ld_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_mode_r"])
         self.wire(self.cfg_ld_dma_ctrl['use_valid'],
                   self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_use_valid_r"])
+        self.wire(self.cfg_ld_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_num_repeat_r"])
 
         if self._params.queue_depth == 1:
             self.wire(self.cfg_ld_dma_header[0]['start_addr'],
