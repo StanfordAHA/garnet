@@ -1,0 +1,23 @@
+name: sim-gl-run
+
+parameters:
+  waveform: False
+  saif: True
+  tool: "XCELIUM"
+  num_glb_tiles: 16
+  test: "test1.pwr"
+
+commands:
+  - bash run_sim.sh
+
+outputs:
+  - run.log
+  - run.saif
+
+postconditions:
+  - assert File( 'outputs/run.log' )      # must exist
+  - assert File( 'outputs/run.saif' )     # must exist
+
+  # Basic error checking
+  - assert 'Error,' not in File( 'outputs/run.log' )
+  - assert '*E,' not in File( 'outputs/run.log' )
