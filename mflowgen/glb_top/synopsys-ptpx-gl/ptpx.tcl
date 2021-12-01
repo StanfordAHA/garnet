@@ -127,7 +127,24 @@ report_power -nosplit -hierarchy -sort_by total_power \
   > reports/${ptpx_design_name}.power.hier.rpt
 
 report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power \
+  > reports/${ptpx_design_name}.power.leaf.rpt
+
+report_power -nosplit -cell -leaf -sort_by total_power \
   > reports/${ptpx_design_name}.power.cell.rpt
+
+# Report power summary and breakdown of sub-instances
+foreach instance [split $::env(instances) ,] {
+    current_instance "/${ptpx_design_name}/${instance}"
+
+    report_power -nosplit \
+      > reports/${instance}.power.rpt
+    
+    report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power \
+      > reports/${instance}.power.leaf.rpt
+
+    report_power -nosplit -cell -leaf -sort_by total_power \
+      > reports/${instance}.power.cell.rpt
+}
 
 ###
 save_session chk_final
