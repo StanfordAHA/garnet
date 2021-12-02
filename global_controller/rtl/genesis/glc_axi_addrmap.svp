@@ -29,7 +29,8 @@ module `mname` (
     output logic [`$num_glb_tiles-1`:0]         axi_cgra_stall, 
 
 	// global buffer control signals
-	output logic [`$num_glb_tiles-1`:0]         strm_start_pulse,
+	output logic [`$num_glb_tiles-1`:0]         strm_g2f_start_pulse,
+	output logic [`$num_glb_tiles-1`:0]         strm_f2g_start_pulse,
 	output logic [`$num_glb_tiles-1`:0]         pc_start_pulse,
 	input  logic [`$num_glb_tiles-1`:0]         strm_g2f_interrupt_pulse,
 	input  logic [`$num_glb_tiles-1`:0]         strm_f2g_interrupt_pulse,
@@ -222,7 +223,11 @@ assign h2l_par_cfg_g2f_isr_tile_`$i`_intr = pcfg_g2f_interrupt_pulse[`$i`];
 //; }
 
 //; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {
-assign strm_start_pulse[`$i`] = l2h_stream_start_pulse_glb_tile_`$i`_r;
+assign strm_g2f_start_pulse[`$i`] = l2h_stream_start_pulse_g2f_glb_tile_`$i`_r;
+//; }
+
+//; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {
+assign strm_f2g_start_pulse[`$i`] = l2h_stream_start_pulse_f2g_glb_tile_`$i`_r;
 //; }
 
 //; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {

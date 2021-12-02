@@ -1,8 +1,9 @@
-#!/usr/bin/env python3
-
 import json
 import argparse
-from systemrdl import RDLCompiler, node
+import sys
+import os
+from systemrdl import RDLCompiler, node, RDLCompileError
+from peakrdl.html import HTMLExporter
 from dataclasses import dataclass
 
 
@@ -168,3 +169,21 @@ def parse_arguments():
     args = parser.parse_args()
 
     return args
+
+
+def gen_rdl_header(top_name, rdl_file, output_folder):
+    # Generate HTML and addressmap header
+    rdlc = RDLCompiler()
+    try:
+        rdlc.compile_file(rdl_file)
+        # Elaborate the design
+        root = rdlc.elaborate()
+    except RDLCompileError:
+        # A compilation error occurred. Exit with error code
+        sys.exit(1)
+    root = rdlc.elaborate()
+    exporter = HTMLExporter()
+    exporter.export(root, os.path.join(output_folder, "html"))
+    rdl_json = convert_addrmap(rdlc, root.top)
+    convert_to_json(rdl_json, os.path.join(output_folder, f"{top_name}.json"))
+    convert_to_header(rdl_json, os.path.join(output_folder, top_name))

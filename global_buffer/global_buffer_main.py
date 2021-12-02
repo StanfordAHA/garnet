@@ -1,50 +1,19 @@
 import argparse
 from global_buffer.design.global_buffer import GlobalBuffer
 from global_buffer.design.global_buffer_parameter import gen_global_buffer_params, gen_header_files
-from systemrdl import RDLCompiler, RDLCompileError
-from peakrdl.html import HTMLExporter
-from systemRDL.gen_config_addrmap import convert_addrmap, convert_to_json, convert_to_header
+from systemRDL.gen_config_addrmap import gen_rdl_header
 import os
-import sys
 import pathlib
 import kratos as k
 
 
-def gen_param_header(garnet_home, params):
-    svh_filename = os.path.join(
-        garnet_home, "global_buffer/header/global_buffer_param.svh")
-    h_filename = os.path.join(
-        garnet_home, "global_buffer/header/global_buffer_param.h")
+def gen_param_header(top_name, params, output_folder):
+    svh_filename = os.path.join(output_folder, f"{top_name}.svh")
+    h_filename = os.path.join(output_folder, f"{top_name}.h")
     gen_header_files(params=params,
                      svh_filename=svh_filename,
                      h_filename=h_filename,
                      header_name="global_buffer")
-
-
-def gen_rdl_header(garnet_home):
-    # Generate default RDL
-    top_name = "glb"
-    rdl_file = os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl")
-
-    # Generate HTML and addressmap header
-    addrmap_output_folder = os.path.join(
-        garnet_home, "global_buffer/header")
-    rdlc = RDLCompiler()
-    try:
-        rdlc.compile_file(rdl_file)
-        # Elaborate the design
-        root = rdlc.elaborate()
-    except RDLCompileError:
-        # A compilation error occurred. Exit with error code
-        sys.exit(1)
-    root = rdlc.elaborate()
-    exporter = HTMLExporter()
-    exporter.export(root, os.path.join(addrmap_output_folder, "html"))
-    rdl_json = convert_addrmap(rdlc, root.top)
-    convert_to_json(rdl_json, os.path.join(
-        addrmap_output_folder, f"{top_name}.json"))
-    convert_to_header(rdl_json, os.path.join(
-        addrmap_output_folder, top_name))
 
 
 def main():
@@ -70,14 +39,17 @@ def main():
     glb = GlobalBuffer(_params=params)
 
     if args.parameter:
-        gen_param_header(garnet_home=garnet_home, params=params)
+        gen_param_header(top_name="global_buffer_param",
+                         params=params,
+                         output_folder=os.path.join(garnet_home, "global_buffer/header"))
 
     if args.rdl:
-        gen_rdl_header(garnet_home=garnet_home)
+        gen_rdl_header(top_name="glb",
+                       rdl_file=os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl"),
+                       output_folder=os.path.join(garnet_home, "global_buffer/header"))
 
     if args.verilog:
-        k.verilog(glb, filename=os.path.join(
-            garnet_home, "global_buffer", "global_buffer.sv"))
+        k.verilog(glb, filename=os.path.join(garnet_home, "global_buffer", "global_buffer.sv"))
 
 
 if __name__ == "__main__":

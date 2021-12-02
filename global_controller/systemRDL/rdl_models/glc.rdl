@@ -56,7 +56,11 @@ addrmap glc {
         name = "Stream Start";
         desc = "Start data streaming from glb tile";
         <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
-        field {singlepulse;} glb_tile_<%=$i%> = 0x0;
+        field {singlepulse;} g2f_glb_tile_<%=$i%> = 0x0;
+        <% } %>
+
+        <% for ($i = 0; $i < NUM_GLB_TILES; $i += 1) { %>
+        field {singlepulse;} f2g_glb_tile_<%=$i%> = 0x0;
         <% } %>
     };
 
