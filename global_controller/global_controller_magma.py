@@ -42,7 +42,8 @@ class GlobalController(Generator):
                               self.axi_data_width).master,
             sram_cfg=GlbCfgIfc(self.glb_addr_width, self.axi_data_width).master,
 
-            strm_start_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
+            strm_g2f_start_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
+            strm_f2g_start_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
             pc_start_pulse=magma.Out(magma.Bits[self.num_glb_tiles]),
             strm_g2f_interrupt_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
             strm_f2g_interrupt_pulse=magma.In(magma.Bits[self.num_glb_tiles]),
@@ -127,8 +128,10 @@ class GlobalController(Generator):
                   self.ports.strm_g2f_interrupt_pulse)
         self.wire(self.underlying.ports.pcfg_g2f_interrupt_pulse,
                   self.ports.pcfg_g2f_interrupt_pulse)
-        self.wire(self.ports.strm_start_pulse,
-                  self.underlying.ports.strm_start_pulse)
+        self.wire(self.ports.strm_g2f_start_pulse,
+                  self.underlying.ports.strm_g2f_start_pulse)
+        self.wire(self.ports.strm_f2g_start_pulse,
+                  self.underlying.ports.strm_f2g_start_pulse)
         self.wire(self.ports.pc_start_pulse,
                   self.underlying.ports.pc_start_pulse)
 

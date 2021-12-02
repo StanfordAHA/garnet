@@ -45,8 +45,10 @@ def glb_glc_wiring(garnet):
     garnet.wire(garnet.global_controller.ports.sram_cfg.rd_data_valid,
                 garnet.global_buffer.ports.if_sram_cfg_rd_data_valid[0])
 
-    garnet.wire(garnet.global_controller.ports.strm_start_pulse,
-                garnet.global_buffer.ports.strm_start_pulse)
+    garnet.wire(garnet.global_controller.ports.strm_g2f_start_pulse,
+                garnet.global_buffer.ports.strm_g2f_start_pulse)
+    garnet.wire(garnet.global_controller.ports.strm_f2g_start_pulse,
+                garnet.global_buffer.ports.strm_f2g_start_pulse)
     garnet.wire(garnet.global_controller.ports.pc_start_pulse,
                 garnet.global_buffer.ports.pcfg_start_pulse)
     garnet.wire(garnet.global_controller.ports.strm_f2g_interrupt_pulse,
