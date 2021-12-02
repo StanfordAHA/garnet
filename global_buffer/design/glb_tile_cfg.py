@@ -104,19 +104,23 @@ class GlbTileCfg(Generator):
         self.wire(self.cfg_st_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_num_repeat_r"])
 
         for i in range(self._params.queue_depth):
-            self.wire(self.cfg_st_dma_header[i]['start_addr'],
-                        self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_start_addr_start_addr_r"])
-            self.wire(self.cfg_st_dma_header[i]['cycle_start_addr'],
-                        self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_cycle_start_addr_cycle_start_addr_r"])
-            self.wire(self.cfg_st_dma_header[i]['dim'],
-                        self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_dim_dim_r"])
+            if self._params.queue_depth == 1:
+                current_header = self.cfg_st_dma_header
+            else:
+                current_header = self.cfg_st_dma_header[i]
+            self.wire(current_header['start_addr'],
+                      self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_start_addr_start_addr_r"])
+            self.wire(current_header['cycle_start_addr'],
+                      self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_cycle_start_addr_cycle_start_addr_r"])
+            self.wire(current_header['dim'],
+                      self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_dim_dim_r"])
             for j in range(self._params.loop_level):
-                self.wire(self.cfg_st_dma_header[i][f"cycle_stride_{j}"],
-                            self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_cycle_stride_{j}_cycle_stride_r"])
-                self.wire(self.cfg_st_dma_header[i][f"stride_{j}"],
-                            self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_stride_{j}_stride_r"])
-                self.wire(self.cfg_st_dma_header[i][f"range_{j}"],
-                            self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_range_{j}_range_r"])
+                self.wire(current_header[f"cycle_stride_{j}"],
+                          self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_cycle_stride_{j}_cycle_stride_r"])
+                self.wire(current_header[f"stride_{j}"],
+                          self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_stride_{j}_stride_r"])
+                self.wire(current_header[f"range_{j}"],
+                          self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_range_{j}_range_r"])
 
         self.wire(self.cfg_ld_dma_ctrl['data_mux'],
                   self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_data_mux_r"])
@@ -126,19 +130,23 @@ class GlbTileCfg(Generator):
         self.wire(self.cfg_ld_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_num_repeat_r"])
 
         for i in range(self._params.queue_depth):
-            self.wire(self.cfg_ld_dma_header[i]['start_addr'],
-                        self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_start_addr_start_addr_r"])
-            self.wire(self.cfg_ld_dma_header[i]['cycle_start_addr'],
-                        self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_cycle_start_addr_cycle_start_addr_r"])
-            self.wire(self.cfg_ld_dma_header[i]['dim'],
-                        self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_dim_dim_r"])
+            if self._params.queue_depth == 1:
+                current_header = self.cfg_ld_dma_header
+            else:
+                current_header = self.cfg_ld_dma_header[i]
+            self.wire(current_header['start_addr'],
+                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_start_addr_start_addr_r"])
+            self.wire(current_header['cycle_start_addr'],
+                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_cycle_start_addr_cycle_start_addr_r"])
+            self.wire(current_header['dim'],
+                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_dim_dim_r"])
             for j in range(self._params.loop_level):
-                self.wire(self.cfg_ld_dma_header[i][f"cycle_stride_{j}"],
-                            self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_cycle_stride_{j}_cycle_stride_r"])
-                self.wire(self.cfg_ld_dma_header[i][f"stride_{j}"],
-                            self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_stride_{j}_stride_r"])
-                self.wire(self.cfg_ld_dma_header[i][f"range_{j}"],
-                            self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_range_{j}_range_r"])
+                self.wire(current_header[f"cycle_stride_{j}"],
+                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_cycle_stride_{j}_cycle_stride_r"])
+                self.wire(current_header[f"stride_{j}"],
+                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_stride_{j}_stride_r"])
+                self.wire(current_header[f"range_{j}"],
+                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_range_{j}_range_r"])
 
         self.wire(
             self.cfg_pcfg_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_mode_r"])

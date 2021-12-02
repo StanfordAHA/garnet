@@ -19,7 +19,7 @@ class GlbHeader():
                                            [("mode", 2),
                                             ("use_valid", 1),
                                             ("data_mux", 2),
-                                            ("num_repeat", max(1, clog2(self._params.queue_depth)))])
+                                            ("num_repeat", clog2(self._params.queue_depth) + 1)])
 
         # NOTE: Kratos does not support struct of struct now.
         dma_header_struct_list = [("start_addr", self._params.glb_addr_width),

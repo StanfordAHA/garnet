@@ -26,7 +26,7 @@ class GlbCoreStoreDma(Generator):
         self.wr_packet = self.output(
             "wr_packet", self.header.wr_packet_t)
 
-        self.cfg_st_dma_num_repeat = self.input("cfg_st_dma_num_repeat", max(1, clog2(self._params.queue_depth)))
+        self.cfg_st_dma_num_repeat = self.input("cfg_st_dma_num_repeat", clog2(self._params.queue_depth) + 1)
         self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2)
         self.cfg_st_dma_ctrl_use_valid = self.input("cfg_st_dma_ctrl_use_valid", 1)
         self.cfg_data_network_latency = self.input(
@@ -72,10 +72,22 @@ class GlbCoreStoreDma(Generator):
         self.cycle_current_addr = self.var("cycle_current_addr", self._params.axi_data_width)
         self.data_current_addr = self.var("data_current_addr", self._params.axi_data_width)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.loop_level))
-        self.repeat_cnt = self.var("repeat_cnt", max(1, clog2(self._params.queue_depth)))
-        self.queue_sel_r = self.var("queue_sel_r", max(clog2(self._params.queue_depth), 1))
+        self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
 
-        self.add_always(self.queue_sel_ff)
+        if self._params.queue_depth != 1:
+            self.queue_sel_r = self.var("queue_sel_r", max(1, clog2(self.repeat_cnt.width)))
+
+        # Current dma header
+        self.current_dma_header = self.var("current_dma_header", self.header.cfg_dma_header_t)
+        if self._params.queue_depth == 1:
+            self.wire(self.cfg_st_dma_header, self.current_dma_header)
+        else:
+            self.wire(self.cfg_st_dma_header[self.queue_sel_r], self.current_dma_header)
+
+        if self._params.queue_depth != 1:
+            self.add_always(self.queue_sel_ff)
+
+        self.add_always(self.repeat_cnt_ff)
         self.add_always(self.is_last_ff)
         self.add_always(self.strm_run_ff)
         self.add_always(self.st_dma_start_pulse_logic)
@@ -102,9 +114,9 @@ class GlbCoreStoreDma(Generator):
                        step=self.cycle_valid_muxed,
                        mux_sel_out=self.loop_mux_sel,
                        restart=self.loop_done)
-        self.wire(self.loop_iter.dim, self.cfg_st_dma_header[self.queue_sel_r][f"dim"])
+        self.wire(self.loop_iter.dim, self.current_dma_header[f"dim"])
         for i in range(self._params.loop_level):
-            self.wire(self.loop_iter.ranges[i], self.cfg_st_dma_header[self.queue_sel_r][f"range_{i}"])
+            self.wire(self.loop_iter.ranges[i], self.current_dma_header[f"range_{i}"])
 
         # Cycle stride
         self.cycle_stride_sched_gen = GlbSchedGen(self._params)
@@ -130,10 +142,10 @@ class GlbCoreStoreDma(Generator):
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.cycle_current_addr)
         self.wire(self.cycle_stride_addr_gen.start_addr, ext(
-            self.cfg_st_dma_header[self.queue_sel_r][f"cycle_start_addr"], self._params.axi_data_width))
+            self.current_dma_header[f"cycle_start_addr"], self._params.axi_data_width))
         for i in range(self._params.loop_level):
             self.wire(self.cycle_stride_addr_gen.strides[i],
-                      self.cfg_st_dma_header[self.queue_sel_r][f"cycle_stride_{i}"])
+                      self.current_dma_header[f"cycle_stride_{i}"])
 
         # Data stride
         self.data_stride_addr_gen = GlbAddrGen(self._params)
@@ -147,14 +159,13 @@ class GlbCoreStoreDma(Generator):
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
         self.wire(self.data_stride_addr_gen.start_addr, ext(
-            self.cfg_st_dma_header[self.queue_sel_r][f"start_addr"], self._params.axi_data_width))
+            self.current_dma_header[f"start_addr"], self._params.axi_data_width))
         for i in range(self._params.loop_level):
-            self.wire(self.data_stride_addr_gen.strides[i], self.cfg_st_dma_header[self.queue_sel_r][f"stride_{i}"])
+            self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
-    def queue_sel_ff(self):
+    def repeat_cnt_ff(self):
         if self.reset:
-            self.queue_sel_r = 0
             self.repeat_cnt = 0
         elif self.clk_en:
             if self.cfg_st_dma_ctrl_mode == 2:
@@ -163,9 +174,19 @@ class GlbCoreStoreDma(Generator):
                         self.repeat_cnt += 1
             elif self.cfg_st_dma_ctrl_mode == 3:
                 if self.st_dma_done_pulse:
+                    if (((self.repeat_cnt + 1) < self.cfg_st_dma_num_repeat)
+                            & ((self.repeat_cnt + 1) < self._params.queue_depth)):
+                        self.repeat_cnt += 1
+
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    def queue_sel_ff(self):
+        if self.reset:
+            self.queue_sel_r = 0
+        elif self.clk_en:
+            if self.cfg_st_dma_ctrl_mode == 3:
+                if self.st_dma_done_pulse:
                     if (self.repeat_cnt + 1) < self.cfg_st_dma_num_repeat:
                         self.queue_sel_r = self.queue_sel_r + 1
-                        self.repeat_cnt += 1
             else:
                 self.queue_sel_r = 0
 

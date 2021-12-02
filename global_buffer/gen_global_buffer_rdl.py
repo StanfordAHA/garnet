@@ -173,7 +173,7 @@ def gen_global_buffer_rdl(name, params):
     st_dma_ctrl_r.add_child(st_dma_use_valid_f)
     st_dma_data_mux_f = Field("data_mux", 2)
     st_dma_ctrl_r.add_child(st_dma_data_mux_f)
-    st_dma_num_repeat_f = Field("num_repeat", max(1, clog2(params.queue_depth)))
+    st_dma_num_repeat_f = Field("num_repeat", clog2(params.queue_depth) + 1)
     st_dma_ctrl_r.add_child(st_dma_num_repeat_f)
     addr_map.add_child(st_dma_ctrl_r)
 
@@ -225,7 +225,7 @@ def gen_global_buffer_rdl(name, params):
     ld_dma_ctrl_r.add_child(ld_dma_use_valid_f)
     ld_dma_data_mux_f = Field("data_mux", 2)
     ld_dma_ctrl_r.add_child(ld_dma_data_mux_f)
-    ld_dma_num_repeat_f = Field("num_repeat", max(1, clog2(params.queue_depth)))
+    ld_dma_num_repeat_f = Field("num_repeat", clog2(params.queue_depth) + 1)
     ld_dma_ctrl_r.add_child(ld_dma_num_repeat_f)
     addr_map.add_child(ld_dma_ctrl_r)
 
