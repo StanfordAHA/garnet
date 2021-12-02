@@ -47,7 +47,8 @@ program glb_test (
     output logic [CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_jtag_gc2glb_data,
 
     // control pulse
-    output logic [NUM_GLB_TILES-1:0] strm_start_pulse,
+    output logic [NUM_GLB_TILES-1:0] strm_g2f_start_pulse,
+    output logic [NUM_GLB_TILES-1:0] strm_f2g_start_pulse,
     output logic [NUM_GLB_TILES-1:0] pcfg_start_pulse,
     input  logic [NUM_GLB_TILES-1:0] strm_g2f_interrupt_pulse,
     input  logic [NUM_GLB_TILES-1:0] strm_f2g_interrupt_pulse,
@@ -69,9 +70,15 @@ program glb_test (
     task automatic init_test();
         // Initialize global buffer configuration registers
         for (int i = 0; i < NUM_GLB_TILES; i++) begin
-            g2f_dma_configure(i, 0, 0, LOOP_LEVEL, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}});
-            f2g_dma_configure(i, 0, 0, LOOP_LEVEL, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}});
+            g2f_dma_configure(i, 0, 0, LOOP_LEVEL, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}},
+                              '{LOOP_LEVEL{0}});
+            f2g_dma_configure(i, 0, 0, LOOP_LEVEL, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}},
+                              '{LOOP_LEVEL{0}});
             pcfg_dma_configure(i, 0, 0);
+        end
+        for (int i = 0; i < NUM_GLB_TILES; i++) begin
+            void'($root.top.cgra.glb2prr_off(i));
+            void'($root.top.cgra.prr2glb_off(i));
         end
         void'($root.top.cgra.flush_on());
         @(posedge clk);
@@ -141,8 +148,9 @@ program glb_test (
                 end
                 // Configure LD DMA
                 g2f_dma_configure(kernels[i].tile_id, kernels[i].new_start_addr,
-                                  kernels[i].cycle_start_addr, kernels[i].dim, kernels[i].new_extent,
-                                  kernels[i].new_cycle_stride, kernels[i].new_data_stride);
+                                  kernels[i].cycle_start_addr, kernels[i].dim,
+                                  kernels[i].new_extent, kernels[i].new_cycle_stride,
+                                  kernels[i].new_data_stride);
             end else if (kernels[i].type_ == F2G) begin
                 data_cnt = 1;
                 for (int j = 0; j < kernels[i].dim; j++) begin
@@ -161,9 +169,10 @@ program glb_test (
                     kernels[i].tile_id, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride
                 ));
                 // Configure ST DMA
-                f2g_dma_configure(kernels[i].tile_id, kernels[i].start_addr, kernels[i].cycle_start_addr, kernels[i].dim,
-                                  kernels[i].extent, kernels[i].cycle_stride,
-                                  kernels[i].data_stride);
+                f2g_dma_configure(kernels[i].tile_id, kernels[i].new_start_addr,
+                                  kernels[i].cycle_start_addr, kernels[i].dim,
+                                  kernels[i].new_extent, kernels[i].new_cycle_stride,
+                                  kernels[i].new_data_stride);
             end
         end
 
@@ -185,10 +194,9 @@ program glb_test (
                         end else if (kernels[j].type_ == RD) begin
                             proc_read_burst(kernels[j].start_addr, kernels[j].data64_arr_out);
                         end else if (kernels[j].type_ == G2F) begin
-                            // FIXME: Instead of data_arr.size(), we should pass expected number of cycles
-                            g2f_run(kernels[j].tile_id, kernels[j].data_arr.size() + 300);
+                            g2f_run(kernels[j].tile_id, kernels[j].total_cycle);
                         end else if (kernels[j].type_ == F2G) begin
-                            f2g_run(kernels[j].tile_id, kernels[j].data_arr.size());
+                            f2g_run(kernels[j].tile_id, kernels[j].total_cycle);
                         end
                     join_none
                 end
@@ -257,7 +265,8 @@ program glb_test (
         stall <= 0;
         cgra_stall_in <= 0;
         pcfg_start_pulse <= 0;
-        strm_start_pulse <= 0;
+        strm_g2f_start_pulse <= 0;
+        strm_f2g_start_pulse <= 0;
 
         // proc
         proc_wr_en <= 0;
@@ -315,9 +324,8 @@ program glb_test (
     task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,
                            [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim, int extent[LOOP_LEVEL],
                            int cycle_stride[LOOP_LEVEL], int data_stride[LOOP_LEVEL]);
-
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
-                      ((2'b01 << `GLB_LD_DMA_CTRL_G2F_MUX_F_LSB)
+                      ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
                        | (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB)
                        | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
         glb_cfg_write(
@@ -348,25 +356,37 @@ program glb_test (
     endtask
 
     task automatic f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,
-                           [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim, int extent[LOOP_LEVEL],
-                           int cycle_stride[LOOP_LEVEL], int data_stride[LOOP_LEVEL]);
-        // NOTE: F2G DMA does not care about access pattern. It just waits for the valid signal. 
-        int num_word = 1;
-        glb_cfg_write(
-            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
-            ((1 << `GLB_ST_DMA_CTRL_MODE_F_LSB) | (2'b10 << `GLB_ST_DMA_CTRL_F2G_MUX_F_LSB)));
-        for (int i = 0; i < dim; i++) begin
-            num_word *= extent[i];
-        end
+                                     [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
+                                     int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
+                                     int data_stride[LOOP_LEVEL]);
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
+                      ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
+                       | (1 << `GLB_ST_DMA_CTRL_MODE_F_LSB)
+                       | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
+
         glb_cfg_write(
-            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_NUM_WORDS_R,
-            (num_word << `GLB_ST_DMA_HEADER_0_NUM_WORDS_NUM_WORDS_F_LSB));
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_R,
+            (cycle_start_addr << `GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_CYCLE_START_ADDR_F_LSB));
+
         glb_cfg_write(
-            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_VALIDATE_R,
-            (1 << `GLB_ST_DMA_HEADER_0_VALIDATE_VALIDATE_F_LSB));
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_DIM_R,
+            (dim << `GLB_ST_DMA_HEADER_0_DIM_DIM_F_LSB));
+
+        // NOTE: Each stride/range address difference is 'h4
+        for (int i = 0; i < dim; i++) begin
+            glb_cfg_write(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_RANGE_0_R + i * 'h4,
+                (extent[i] << `GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+            glb_cfg_write(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
+                (data_stride[i] << `GLB_ST_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+            glb_cfg_write(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'h4,
+                (cycle_stride[i] << `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
+        end
     endtask
 
     task glb_cfg_write(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
@@ -467,9 +487,16 @@ program glb_test (
     endtask
 
     task automatic proc_read_burst(input [GLB_ADDR_WIDTH-1:0] addr, ref data64 data);
+        logic [CGRA_DATA_WIDTH-1:0] data_q[$];
+        data16 data_out;
         int size = data.size();
+
         repeat (5) @(posedge clk);
         $display("Start glb-mem burst read. addr: 0x%0h, size %0d", addr, size);
+        // If address is not aligned, we need to read one more address
+        if (addr[2:1] != 2'b00) begin
+            size += 1;
+        end
         fork : proc_read
             begin
                 for (int i = 0; i < size; i++) begin
@@ -486,7 +513,57 @@ program glb_test (
                         while (1) begin
                             @(posedge clk);
                             if (proc_rd_data_valid) begin
-                                data[cnt] = proc_rd_data;
+                                // For the first and the last data, we only push valid data to queue 
+                                if (cnt == 0) begin
+                                    if (addr[2:1] == 2'b00) begin
+                                        for (int i = 0; i < 4; i++) begin
+                                            data_q.push_back(
+                                                proc_rd_data[CGRA_DATA_WIDTH*i+:CGRA_DATA_WIDTH]);
+                                        end
+                                    end else if (addr[2:1] == 2'b01) begin
+                                        for (int i = 1; i < 4; i++) begin
+                                            data_q.push_back(
+                                                proc_rd_data[CGRA_DATA_WIDTH*i+:CGRA_DATA_WIDTH]);
+                                        end
+                                    end else if (addr[2:1] == 2'b10) begin
+                                        for (int i = 2; i < 4; i++) begin
+                                            data_q.push_back(
+                                                proc_rd_data[CGRA_DATA_WIDTH*i+:CGRA_DATA_WIDTH]);
+                                        end
+                                    end else begin
+                                        for (int i = 3; i < 4; i++) begin
+                                            data_q.push_back(
+                                                proc_rd_data[CGRA_DATA_WIDTH*i+:CGRA_DATA_WIDTH]);
+                                        end
+                                    end
+                                end else if (cnt == (size - 1)) begin
+                                    if (addr[2:1] == 2'b00) begin
+                                        for (int i = 0; i < 4; i++) begin
+                                            data_q.push_back(
+                                                proc_rd_data[CGRA_DATA_WIDTH*i+:CGRA_DATA_WIDTH]);
+                                        end
+                                    end else if (addr[2:1] == 2'b01) begin
+                                        for (int i = 0; i < 1; i++) begin
+                                            data_q.push_back(
+                                                proc_rd_data[CGRA_DATA_WIDTH*i+:CGRA_DATA_WIDTH]);
+                                        end
+                                    end else if (addr[2:1] == 2'b10) begin
+                                        for (int i = 0; i < 2; i++) begin
+                                            data_q.push_back(
+                                                proc_rd_data[CGRA_DATA_WIDTH*i+:CGRA_DATA_WIDTH]);
+                                        end
+                                    end else begin
+                                        for (int i = 0; i < 3; i++) begin
+                                            data_q.push_back(
+                                                proc_rd_data[CGRA_DATA_WIDTH*i+:CGRA_DATA_WIDTH]);
+                                        end
+                                    end
+                                end else begin
+                                    for (int i = 0; i < 4; i++) begin
+                                        data_q.push_back(
+                                            proc_rd_data[CGRA_DATA_WIDTH*i+:CGRA_DATA_WIDTH]);
+                                    end
+                                end
                                 cnt = cnt + 1;
                                 if (cnt == size) break;
                             end
@@ -500,6 +577,8 @@ program glb_test (
                 disable fork;
             end
         join
+        data_out = data_q;
+        data = convert_16b_to_64b(data_out);
         repeat (5) @(posedge clk);
         $display("Finish glb-mem burst read");
     endtask
@@ -514,20 +593,20 @@ program glb_test (
             end
         end
 
-        repeat (2) @(posedge clk);
-        #(`CLK_PERIOD * 0.3) strm_start_pulse <= tile_id_mask;
+        #(`CLK_PERIOD * 0.3) strm_g2f_start_pulse <= tile_id_mask;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) strm_start_pulse <= 0;
+        #(`CLK_PERIOD * 0.3) strm_g2f_start_pulse <= 0;
     endtask
 
-    task automatic g2f_run(input int tile_id, int max_num_data);
+    task automatic g2f_run(input int tile_id, int total_cycle);
+        $display("g2f run total cycles: %0d", total_cycle);
         fork : interrupt_timeout
             begin
                 wait (strm_g2f_interrupt_pulse[tile_id]);
                 $display("g2f streaming done.");
             end
             begin
-                repeat (max_num_data + 30) @(posedge clk);
+                repeat (total_cycle + 30) @(posedge clk);
                 $display("@%0t: %m ERROR: glb stream g2f interrupt timeout ", $time);
             end
         join_any
@@ -544,18 +623,22 @@ program glb_test (
                 void'($root.top.cgra.prr2glb_on(i));
             end
         end
+
+        #(`CLK_PERIOD * 0.3) strm_f2g_start_pulse <= tile_id_mask;
         @(posedge clk);
+        #(`CLK_PERIOD * 0.3) strm_f2g_start_pulse <= 0;
 
     endtask
 
-    task automatic f2g_run(input int tile_id, int max_num_data);
+    task automatic f2g_run(input int tile_id, int total_cycle);
+        $display("f2g run total cycles: %0d", total_cycle);
         fork : interrupt_timeout
             begin
                 wait (strm_f2g_interrupt_pulse[tile_id]);
                 $display("f2g streaming done.");
             end
             begin
-                repeat (max_num_data + 30) @(posedge clk);
+                repeat (total_cycle + 30) @(posedge clk);
                 $display("@%0t: %m ERROR: cgra stream f2g interrupt timeout ", $time);
             end
         join_any
@@ -571,13 +654,13 @@ program glb_test (
         #(`CLK_PERIOD * 0.3) pcfg_start_pulse <= 0;
     endtask
 
-    task automatic pcfg_run(input int tile_id, int max_num_data);
+    task automatic pcfg_run(input int tile_id, int total_cycle);
         fork : interrupt_timeout
             begin
                 wait (pcfg_g2f_interrupt_pulse[tile_id]);
             end
             begin
-                repeat (max_num_data + 50) @(posedge clk);
+                repeat (total_cycle + 50) @(posedge clk);
                 $display("@%0t: %m ERROR: glb stream pcfg interrupt timeout ", $time);
             end
         join_any

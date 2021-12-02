@@ -32,7 +32,7 @@ class GlbCoreStoreDma(Generator):
         self.cfg_data_network_latency = self.input(
             "cfg_data_network_latency", self._params.latency_width)
         self.cfg_st_dma_header = self.input(
-            "cfg_st_dma_header", self.header.cfg_st_dma_header_t, size=self._params.queue_depth)
+            "cfg_st_dma_header", self.header.cfg_dma_header_t, size=self._params.queue_depth, explicit_array=True)
 
         self.st_dma_start_pulse = self.input("st_dma_start_pulse", 1)
         self.st_dma_done_pulse = self.output("st_dma_done_pulse", 1)
@@ -42,42 +42,28 @@ class GlbCoreStoreDma(Generator):
                                 + self._params.sram_gen_pipeline_depth
                                 + self._params.glb_switch_pipeline_depth
                                 )
+        self.cgra_strb_width = self._params.cgra_data_width // 8
+        self.cgra_strb_value = 2 ** (self._params.cgra_data_width // 8) - 1
+
         # local variables
         self.strm_wr_data_w = self.var("strm_wr_data_w", width=self._params.cgra_data_width)
         self.strm_wr_addr_w = self.var("strm_wr_addr_w", width=self._params.glb_addr_width)
+        self.last_strm_wr_addr_r = self.var("last_strm_wr_addr_r", width=self._params.glb_addr_width)
         self.strm_wr_en_w = self.var("strm_wr_en_w", width=1)
+        self.strm_data_sel = self.var("strm_data_sel", self._params.bank_byte_offset - self._params.cgra_byte_offset)
 
-        self.num_cnt_next = self.var(
-            "num_cnt_next", self._params.max_num_words_width)
-        self.num_cnt_r = self.var(
-            "num_cnt_r", self._params.max_num_words_width)
-        self.is_first_word_next = self.var("is_first_word_next", 1)
-        self.is_first_word_r = self.var("is_first_word_r", 1)
-        self.cur_addr_next = self.var(
-            "cur_addr_next", self._params.glb_addr_width)
-        self.cur_addr_r = self.var("cur_addr_r", self._params.glb_addr_width)
+        self.bank_addr_match = self.var("bank_addr_match", 1)
+        self.bank_wr_en = self.var("bank_wr_en", 1)
+        self.bank_wr_addr = self.var("bank_wr_addr", width=self._params.glb_addr_width)
+        self.bank_wr_data_cache_r = self.var("bank_wr_data_cache_r", self._params.bank_data_width)
+        self.bank_wr_data_cache_w = self.var("bank_wr_data_cache_w", self._params.bank_data_width)
+        self.bank_wr_strb_cache_r = self.var("bank_wr_strb_cache_r", math.ceil(self._params.bank_data_width / 8))
+        self.bank_wr_strb_cache_w = self.var("bank_wr_strb_cache_w", math.ceil(self._params.bank_data_width / 8))
 
-        self.cache_data_r = self.var(
-            "cache_data_r", self._params.bank_data_width)
-        self.cache_data_next = self.var(
-            "cache_data_next", self._params.bank_data_width)
-        self.cache_strb_r = self.var(
-            "cache_strb_r", math.ceil(self._params.bank_data_width / 8))
-        self.cache_strb_next = self.var(
-            "cache_strb_next", math.ceil(self._params.bank_data_width / 8))
-
-        self.queue_sel_r = self.var("queue_sel_r", max(clog2(self._params.queue_depth), 1))
-        self.queue_sel_w = self.var("queue_sel_w", max(clog2(self._params.queue_depth), 1))
-
-        self.strm_done = self.var("strm_done", 1)
-        self.strm_done_d1 = self.var("strm_done_d1", 1)
         self.done_pulse_w = self.var("done_pulse_w", 1)
-
-        self.state_e = self.enum("state_e", {
-            "off": 0, "idle": 1, "ready": 2, "acc1": 3, "acc2": 4, "acc3": 5, "acc4": 6, "done": 7})
-        self.state_r = self.var("state_r", self.state_e)
-        self.state_next = self.var("state_next", self.state_e)
-
+        self.st_dma_start_pulse_next = self.var("st_dma_start_pulse_next", 1)
+        self.st_dma_start_pulse_r = self.var("st_dma_start_pulse_r", 1)
+        self.is_last = self.var("is_last", 1)
         self.strm_run = self.var("strm_run", 1)
         self.loop_done = self.var("loop_done", 1)
         self.cycle_valid = self.var("cycle_valid", 1)
@@ -86,26 +72,25 @@ class GlbCoreStoreDma(Generator):
         self.cycle_current_addr = self.var("cycle_current_addr", self._params.axi_data_width)
         self.data_current_addr = self.var("data_current_addr", self._params.axi_data_width)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.loop_level))
-        self.queue_sel_r = self.var("queue_sel_r", max(1, clog2(self._params.queue_depth)))
         self.repeat_cnt = self.var("repeat_cnt", max(1, clog2(self._params.queue_depth)))
+        self.queue_sel_r = self.var("queue_sel_r", max(clog2(self._params.queue_depth), 1))
 
-        self.add_done_pulse_pipeline()
-        self.add_always(self.data_f2g_pipeline)
-        self.add_always(self.dma_validate_ff)
-        self.add_always(self.dma_validate_pulse_gen)
-        self.add_always(self.dma_invalidate_pulse_gen)
-        self.add_always(self.assign_st_dma_header_hwclr)
-        self.add_always(self.dma_header_ff)
-        self.add_always(self.state_fsm_logic)
-        self.add_always(self.state_fsm_ff)
-        self.add_always(self.cache_ff)
-        self.add_always(self.counter_ff)
         self.add_always(self.queue_sel_ff)
-        self.add_always(self.queue_sel_logic)
+        self.add_always(self.is_last_ff)
+        self.add_always(self.strm_run_ff)
+        self.add_always(self.st_dma_start_pulse_logic)
+        self.add_always(self.st_dma_start_pulse_ff)
+        self.add_always(self.cycle_counter)
+        self.add_always(self.cycle_valid_comb)
+        self.add_always(self.strm_wr_packet_comb)
+        self.add_always(self.last_strm_wr_addr_ff)
+        self.add_always(self.strm_data_sel_comb)
+        self.add_always(self.bank_wr_packet_cache_comb)
+        self.add_always(self.bank_wr_packet_cache_ff)
+        self.add_always(self.bank_wr_packet_logic)
         self.add_always(self.wr_packet_logic)
-        self.add_always(self.strm_done_logic)
-        self.add_always(self.strm_done_pipeline)
         self.add_always(self.strm_done_pulse_logic)
+        self.add_done_pulse_pipeline()
 
         # Loop iteration shared for cycle and data
         self.loop_iter = GlbLoopIter(self._params)
@@ -246,121 +231,12 @@ class GlbCoreStoreDma(Generator):
         else:
             self.cycle_valid_muxed = self.cycle_valid
 
-    # FIXME: Check if cycle_valid meets the timing with ld_dma.
     @always_comb
     def strm_wr_packet_comb(self):
         self.strm_wr_en_w = self.cycle_valid_muxed
         self.strm_wr_addr_w = resize(self.data_current_addr,
                                      self._params.glb_addr_width) << self._params.cgra_byte_offset
         self.strm_wr_data_w = self.data_f2g
-
-    # @always_comb
-    # def state_fsm_logic(self):
-    #     self.cache_data_next = self.cache_data_r
-    #     self.cache_strb_next = self.cache_strb_r
-    #     self.num_cnt_next = self.num_cnt_r
-    #     self.cur_addr_next = self.cur_addr_r
-    #     self.state_next = self.state_r
-    #     self.is_first_word_next = self.is_first_word_r
-    #     if self.state_r == self.state_e.off:
-    #         if self.cfg_st_dma_ctrl_mode != 0:
-    #             self.state_next = self.state_e.idle
-    #     elif self.state_r == self.state_e.idle:
-    #         self.num_cnt_next = 0
-    #         self.cur_addr_next = 0
-    #         if ((self.dma_header_r[self.queue_sel_w]['validate'] == 1)
-    #                 & (self.dma_header_r[self.queue_sel_w]['num_words'] != 0)):
-    #             self.cur_addr_next = self.dma_header_r[self.queue_sel_w]['start_addr']
-    #             self.num_cnt_next = self.dma_header_r[self.queue_sel_w]['num_words']
-    #             self.is_first_word_next = 1
-    #             if self.cur_addr_next[2, 1] == 0b00:
-    #                 self.state_next = self.state_e.ready
-    #             elif self.cur_addr_next[2, 1] == 0b01:
-    #                 self.state_next = self.state_e.acc1
-    #             elif self.cur_addr_next[2, 1] == 0b10:
-    #                 self.state_next = self.state_e.acc2
-    #             elif self.cur_addr_next[2, 1] == 0b11:
-    #                 self.state_next = self.state_e.acc3
-    #             else:
-    #                 self.state_next = self.state_e.ready
-    #     elif self.state_r == self.state_e.ready:
-    #         if self.num_cnt_r == 0:
-    #             self.state_next = self.state_e.done
-    #         elif self.strm_wr_en_r == 1:
-    #             self.is_first_word_next = 0
-    #             self.cache_data_next[self._params.cgra_data_width
-    #                                  - 1, 0] = self.strm_wr_data_r
-    #             self.cache_strb_next[1, 0] = 0b11
-    #             self.num_cnt_next = self.num_cnt_r - 1
-    #             if ~self.is_first_word_r:
-    #                 self.cur_addr_next = self.cur_addr_r + \
-    #                     (self._params.cgra_data_width // 8)
-    #             self.state_next = self.state_e.acc1
-    #     elif self.state_r == self.state_e.acc1:
-    #         if self.num_cnt_r == 0:
-    #             self.state_next = self.state_e.done
-    #         elif self.strm_wr_en_r == 1:
-    #             self.is_first_word_next = 0
-    #             self.cache_data_next[self._params.cgra_data_width * 2 - 1,
-    #                                  self._params.cgra_data_width] = self.strm_wr_data_r
-    #             self.cache_strb_next[3, 2] = 0b11
-    #             self.num_cnt_next = self.num_cnt_r - 1
-    #             if ~self.is_first_word_r:
-    #                 self.cur_addr_next = self.cur_addr_r + \
-    #                     (self._params.cgra_data_width // 8)
-    #             self.state_next = self.state_e.acc2
-    #     elif self.state_r == self.state_e.acc2:
-    #         if self.num_cnt_r == 0:
-    #             self.state_next = self.state_e.done
-    #         elif self.strm_wr_en_r == 1:
-    #             self.is_first_word_next = 0
-    #             self.cache_data_next[self._params.cgra_data_width * 3 - 1,
-    #                                  self._params.cgra_data_width * 2] = self.strm_wr_data_r
-    #             self.cache_strb_next[5, 4] = 0b11
-    #             self.num_cnt_next = self.num_cnt_r - 1
-    #             if ~self.is_first_word_r:
-    #                 self.cur_addr_next = self.cur_addr_r + \
-    #                     (self._params.cgra_data_width // 8)
-    #             self.state_next = self.state_e.acc3
-    #     elif self.state_r == self.state_e.acc3:
-    #         if self.num_cnt_r == 0:
-    #             self.state_next = self.state_e.done
-    #         elif self.strm_wr_en_r == 1:
-    #             self.is_first_word_next = 0
-    #             self.cache_data_next[self._params.cgra_data_width * 4 - 1,
-    #                                  self._params.cgra_data_width * 3] = self.strm_wr_data_r
-    #             self.cache_strb_next[7, 6] = 0b11
-    #             self.num_cnt_next = self.num_cnt_r - 1
-    #             if ~self.is_first_word_r:
-    #                 self.cur_addr_next = self.cur_addr_r + \
-    #                     (self._params.cgra_data_width // 8)
-    #             self.state_next = self.state_e.acc4
-    #     elif self.state_r == self.state_e.acc4:
-    #         if self.num_cnt_r == 0:
-    #             self.state_next = self.state_e.done
-    #         elif self.strm_wr_en_r == 1:
-    #             self.is_first_word_next = 0
-    #             self.cache_data_next = ext(self.strm_wr_data_r, self._params.bank_data_width)
-    #             self.cache_strb_next = concat(const(0, 6), const(0b11, 2))
-    #             self.num_cnt_next = self.num_cnt_r - 1
-    #             if ~self.is_first_word_r:
-    #                 self.cur_addr_next = self.cur_addr_r + \
-    #                     (self._params.cgra_data_width // 8)
-    #             self.state_next = self.state_e.acc1
-    #         else:
-    #             self.cache_data_next = 0
-    #             self.cache_strb_next = 0
-    #             self.state_next = self.state_e.ready
-    #     elif self.state_r == self.state_e.done:
-    #         self.cache_data_next = 0
-    #         self.cache_strb_next = 0
-    #         self.num_cnt_next = 0
-    #         self.state_next = self.state_e.idle
-    #     else:
-    #         self.cache_data_next = self.cache_data_r
-    #         self.cache_strb_next = self.cache_strb_r
-    #         self.num_cnt_next = self.num_cnt_r
-    #         self.state_next = self.state_e.idle
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def last_strm_wr_addr_ff(self):
@@ -370,16 +246,54 @@ class GlbCoreStoreDma(Generator):
             if self.strm_wr_en_w:
                 self.last_strm_wr_addr_r = self.strm_wr_addr_w
 
+    @always_comb
+    def strm_data_sel_comb(self):
+        self.strm_data_sel = self.strm_wr_addr_w[self._params.bank_byte_offset - 1, self._params.cgra_byte_offset]
+
+    @always_comb
+    def bank_wr_packet_cache_comb(self):
+        self.bank_wr_strb_cache_w = self.bank_wr_strb_cache_r
+        self.bank_wr_data_cache_w = self.bank_wr_data_cache_r
+        # First, if cached data is written to memory, clear it.
+        if self.bank_wr_en:
+            self.bank_wr_strb_cache_w = 0
+            self.bank_wr_data_cache_w = 0
+        # Next, save data to cache
+        if self.strm_wr_en_w:
+            if self.strm_data_sel == 0:
+                self.bank_wr_strb_cache_w[self.cgra_strb_width - 1,
+                                          0] = const(self.cgra_strb_value, self.cgra_strb_width)
+                self.bank_wr_data_cache_w[self._params.cgra_data_width - 1, 0] = self.strm_wr_data_w
+            elif self.strm_data_sel == 1:
+                self.bank_wr_strb_cache_w[self.cgra_strb_width * 2 - 1,
+                                          self.cgra_strb_width] = const(self.cgra_strb_value,
+                                                                        self.cgra_strb_width)
+                self.bank_wr_data_cache_w[self._params.cgra_data_width * 2 - 1,
+                                          self._params.cgra_data_width] = self.strm_wr_data_w
+            elif self.strm_data_sel == 2:
+                self.bank_wr_strb_cache_w[self.cgra_strb_width * 3 - 1,
+                                          self.cgra_strb_width * 2] = const(self.cgra_strb_value,
+                                                                            self.cgra_strb_width)
+                self.bank_wr_data_cache_w[self._params.cgra_data_width * 3 - 1,
+                                          self._params.cgra_data_width * 2] = self.strm_wr_data_w
+            elif self.strm_data_sel == 3:
+                self.bank_wr_strb_cache_w[self.cgra_strb_width * 4 - 1,
+                                          self.cgra_strb_width * 3] = const(self.cgra_strb_value,
+                                                                            self.cgra_strb_width)
+                self.bank_wr_data_cache_w[self._params.cgra_data_width * 4 - 1,
+                                          self._params.cgra_data_width * 3] = self.strm_wr_data_w
+            else:
+                self.bank_wr_strb_cache_w = self.bank_wr_strb_cache_r
+                self.bank_wr_data_cache_w = self.bank_wr_data_cache_r
+
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def bank_wr_packet_cache_ff(self):
         if self.reset:
             self.bank_wr_strb_cache_r = 0
             self.bank_wr_data_cache_r = 0
         elif self.clk_en:
-            if self.strm_wr_en_w:
-                if self.strm_data_sel == 0:
-                    self.bank_wr_strb_cache_r[] = 0
-                    self.bank_wr_data_cache_r[] = 0
+            self.bank_wr_strb_cache_r = self.bank_wr_strb_cache_w
+            self.bank_wr_data_cache_r = self.bank_wr_data_cache_w
 
     @always_comb
     def bank_wr_packet_logic(self):
@@ -391,43 +305,10 @@ class GlbCoreStoreDma(Generator):
 
     @always_comb
     def wr_packet_logic(self):
-        if self.state_r == self.state_e.done:
-            self.wr_packet['wr_en'] = 1
-            self.wr_packet['wr_strb'] = self.cache_strb_r
-            self.wr_packet['wr_data'] = self.cache_data_r
-            self.wr_packet['wr_addr'] = self.cur_addr_r
-        elif (self.state_r == self.state_e.acc4) & (self.num_cnt_r != 0):
-            self.wr_packet['wr_en'] = 1
-            self.wr_packet['wr_strb'] = self.cache_strb_r
-            self.wr_packet['wr_data'] = self.cache_data_r
-            self.wr_packet['wr_addr'] = concat(self.cur_addr_r[self._params.glb_addr_width - 1,
-                                                               self._params.bank_byte_offset],
-                                               const(0, self._params.bank_byte_offset))
-        else:
-            self.wr_packet['wr_en'] = 0
-            self.wr_packet['wr_strb'] = 0
-            self.wr_packet['wr_data'] = 0
-            self.wr_packet['wr_addr'] = 0
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def cache_ff(self):
-        if self.reset:
-            self.cache_data_r = 0
-            self.cache_strb_r = 0
-        elif self.clk_en:
-            self.cache_data_r = self.cache_data_next
-            self.cache_strb_r = self.cache_strb_next
-
-    @always_comb
-    def strm_done_logic(self):
-        self.strm_done = (self.state_r == self.state_e.done)
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def strm_done_pipeline(self):
-        if self.reset:
-            self.strm_done_d1 = 0
-        elif self.clk_en:
-            self.strm_done_d1 = self.strm_done
+        self.wr_packet['wr_en'] = self.bank_wr_en
+        self.wr_packet['wr_strb'] = self.bank_wr_strb_cache_r
+        self.wr_packet['wr_data'] = self.bank_wr_data_cache_r
+        self.wr_packet['wr_addr'] = self.bank_wr_addr
 
     @always_comb
     def strm_done_pulse_logic(self):

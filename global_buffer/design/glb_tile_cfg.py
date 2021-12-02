@@ -15,54 +15,40 @@ class GlbTileCfg(Generator):
         super().__init__("glb_tile_cfg")
         self._params = _params
         self.header = GlbHeader(self._params)
-        cfg_ifc = GlbConfigInterface(
-            addr_width=self._params.axi_addr_width, data_width=self._params.axi_data_width)
+        cfg_ifc = GlbConfigInterface(addr_width=self._params.axi_addr_width, data_width=self._params.axi_data_width)
 
         # ports
         self.clk = self.clock("clk")
         self.reset = self.reset("reset", is_async=True)
-        self.glb_tile_id = self.input(
-            "glb_tile_id", self._params.tile_sel_addr_width)
+        self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
         # config port
-        self.if_cfg_wst_s = self.interface(
-            cfg_ifc.slave, "if_cfg_wst_s", is_port=True)
-        self.if_cfg_est_m = self.interface(
-            cfg_ifc.master, "if_cfg_est_m", is_port=True)
+        self.if_cfg_wst_s = self.interface(cfg_ifc.slave, "if_cfg_wst_s", is_port=True)
+        self.if_cfg_est_m = self.interface(cfg_ifc.master, "if_cfg_est_m", is_port=True)
 
         # configuration register struct
         # TODO: Can we have a pass for this configuration?
-        # TODO: Can we dump configuration struct verilog as external file?
-        self.cfg_data_network = self.output(
-            "cfg_data_network", self.header.cfg_data_network_t)
+        self.cfg_data_network = self.output("cfg_data_network", self.header.cfg_data_network_t)
 
-        self.cfg_pcfg_network = self.output(
-            "cfg_pcfg_network", self.header.cfg_pcfg_network_t)
+        self.cfg_pcfg_network = self.output("cfg_pcfg_network", self.header.cfg_pcfg_network_t)
 
         # st dma
-        self.cfg_st_dma_ctrl = self.output(
-            "cfg_st_dma_ctrl", self.header.cfg_st_dma_ctrl_t)
+        self.cfg_st_dma_ctrl = self.output("cfg_st_dma_ctrl", self.header.cfg_dma_ctrl_t)
 
-        self.cfg_st_dma_header = self.output("cfg_st_dma_header", self.header.cfg_st_dma_header_t,
+        self.cfg_st_dma_header = self.output("cfg_st_dma_header", self.header.cfg_dma_header_t,
                                              size=self._params.queue_depth)
-        self.st_dma_header_clr = self.input(
-            "st_dma_header_clr", width=self._params.queue_depth)
-
         # ld dma
-        self.cfg_ld_dma_ctrl = self.output(
-            "cfg_ld_dma_ctrl", self.header.cfg_ld_dma_ctrl_t)
+        self.cfg_ld_dma_ctrl = self.output("cfg_ld_dma_ctrl", self.header.cfg_dma_ctrl_t)
 
-        self.cfg_ld_dma_header = self.output("cfg_ld_dma_header", self.header.cfg_ld_dma_header_t,
+        self.cfg_ld_dma_header = self.output("cfg_ld_dma_header", self.header.cfg_dma_header_t,
                                              size=self._params.queue_depth)
 
         # pcfg dma
-        self.cfg_pcfg_dma_ctrl = self.output(
-            "cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
-        self.cfg_pcfg_dma_header = self.output(
-            "cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
+        self.cfg_pcfg_dma_ctrl = self.output("cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
+        self.cfg_pcfg_dma_header = self.output("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
 
-        # TODO: For now, we parse generated glb_pio.sv file. Later this should be auto generated from RDL
         self.glb_pio_wrapper = self.get_glb_pio_wrapper()
+        # TODO: Update axi_reg_addr_width
         self.add_child("glb_pio", self.glb_pio_wrapper)
         self.glb_tile_cfg_ctrl = GlbTileCfgCtrl(self._params)
         self.add_child("glb_tile_cfg_ctrl", self.glb_tile_cfg_ctrl)
@@ -75,8 +61,7 @@ class GlbTileCfg(Generator):
         # However, in the future, we need to generate wrapper directly from configuration space.
         top_name = "glb"
         garnet_home = pathlib.Path(__file__).parent.parent.parent.resolve()
-        rdl_output_folder = os.path.join(
-            garnet_home, "global_buffer/systemRDL/output/")
+        rdl_output_folder = os.path.join(garnet_home, "global_buffer/systemRDL/output/")
         pio_file = rdl_output_folder + top_name + "_pio.sv"
         pio_wrapper_file = rdl_output_folder + top_name + "_pio_wrapper.sv"
 
@@ -90,10 +75,8 @@ class GlbTileCfg(Generator):
 
             # Run ORDT to generate RTL
             ordt_path = os.path.join(garnet_home, 'systemRDL', 'Ordt.jar')
-            rdl_parms_file = os.path.join(
-                garnet_home, "global_buffer/systemRDL/ordt_params/glb.parms")
-            run_systemrdl(ordt_path, top_name, rdl_file,
-                          rdl_parms_file, rdl_output_folder)
+            rdl_parms_file = os.path.join(garnet_home, "global_buffer/systemRDL/ordt_params/glb.parms")
+            run_systemrdl(ordt_path, top_name, rdl_file, rdl_parms_file, rdl_output_folder)
 
             # Create wrapper of glb_pio.sv
             gen_glb_pio_wrapper(src_file=pio_file, dest_file=pio_wrapper_file)
@@ -103,10 +86,6 @@ class GlbTileCfg(Generator):
     def wire_config_signals(self):
         self.wire(self.clk, self.glb_pio_wrapper.ports["clk"])
         self.wire(self.reset, self.glb_pio_wrapper.ports["reset"])
-        self.wire(self.cfg_st_dma_ctrl['f2g_mux'],
-                  self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_f2g_mux_r"])
-        self.wire(self.cfg_ld_dma_ctrl['g2f_mux'],
-                  self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_g2f_mux_r"])
         self.wire(self.cfg_data_network['tile_connected'],
                   self.glb_pio_wrapper.ports[f"l2h_data_network_tile_connected_r"])
         self.wire(self.cfg_data_network['latency'],
@@ -117,63 +96,49 @@ class GlbTileCfg(Generator):
         self.wire(self.cfg_pcfg_network['latency'],
                   self.glb_pio_wrapper.ports[f"l2h_pcfg_network_latency_r"])
 
-        self.wire(
-            self.cfg_st_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_mode_r"])
+        self.wire(self.cfg_st_dma_ctrl['data_mux'],
+                  self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_data_mux_r"])
+        self.wire(self.cfg_st_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_mode_r"])
+        self.wire(self.cfg_st_dma_ctrl['use_valid'],
+                  self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_use_valid_r"])
+        self.wire(self.cfg_st_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_num_repeat_r"])
 
-        if self._params.queue_depth == 1:
-            self.wire(self.cfg_st_dma_header[0]['validate'],
-                      self.glb_pio_wrapper.ports[f"l2h_st_dma_header_validate_validate_r"])
-            self.wire(self.cfg_st_dma_header[0]['start_addr'],
-                      self.glb_pio_wrapper.ports[f"l2h_st_dma_header_start_addr_start_addr_r"])
-            self.wire(self.cfg_st_dma_header[0]['num_words'],
-                      self.glb_pio_wrapper.ports[f"l2h_st_dma_header_num_words_num_words_r"])
-            self.wire(self.st_dma_header_clr[0],
-                      self.glb_pio_wrapper.ports[f"h2l_st_dma_header_validate_validate_hwclr"])
-        else:
-            for i in range(self._params.queue_depth):
-                self.wire(self.cfg_st_dma_header[i]['validate'],
-                          self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_validate_validate_r"])
-                self.wire(self.cfg_st_dma_header[i]['start_addr'],
-                          self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_start_addr_start_addr_r"])
-                self.wire(self.cfg_st_dma_header[i]['num_words'],
-                          self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_num_words_num_words_r"])
-                self.wire(self.st_dma_header_clr[i],
-                          self.glb_pio_wrapper.ports[f"h2l_st_dma_header_{i}_validate_validate_hwclr"])
+        for i in range(self._params.queue_depth):
+            self.wire(self.cfg_st_dma_header[i]['start_addr'],
+                        self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_start_addr_start_addr_r"])
+            self.wire(self.cfg_st_dma_header[i]['cycle_start_addr'],
+                        self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_cycle_start_addr_cycle_start_addr_r"])
+            self.wire(self.cfg_st_dma_header[i]['dim'],
+                        self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_dim_dim_r"])
+            for j in range(self._params.loop_level):
+                self.wire(self.cfg_st_dma_header[i][f"cycle_stride_{j}"],
+                            self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_cycle_stride_{j}_cycle_stride_r"])
+                self.wire(self.cfg_st_dma_header[i][f"stride_{j}"],
+                            self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_stride_{j}_stride_r"])
+                self.wire(self.cfg_st_dma_header[i][f"range_{j}"],
+                            self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_range_{j}_range_r"])
 
+        self.wire(self.cfg_ld_dma_ctrl['data_mux'],
+                  self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_data_mux_r"])
         self.wire(self.cfg_ld_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_mode_r"])
         self.wire(self.cfg_ld_dma_ctrl['use_valid'],
                   self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_use_valid_r"])
         self.wire(self.cfg_ld_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_num_repeat_r"])
 
-        if self._params.queue_depth == 1:
-            self.wire(self.cfg_ld_dma_header[0]['start_addr'],
-                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_start_addr_start_addr_r"])
-            self.wire(self.cfg_ld_dma_header[0]['cycle_start_addr'],
-                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_cycle_start_addr_cycle_start_addr_r"])
-            self.wire(self.cfg_ld_dma_header[0]['dim'],
-                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_dim_dim_r"])
+        for i in range(self._params.queue_depth):
+            self.wire(self.cfg_ld_dma_header[i]['start_addr'],
+                        self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_start_addr_start_addr_r"])
+            self.wire(self.cfg_ld_dma_header[i]['cycle_start_addr'],
+                        self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_cycle_start_addr_cycle_start_addr_r"])
+            self.wire(self.cfg_ld_dma_header[i]['dim'],
+                        self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_dim_dim_r"])
             for j in range(self._params.loop_level):
-                self.wire(self.cfg_ld_dma_header[0][f"cycle_stride_{j}"],
-                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_cycle_stride_{j}_cycle_stride_r"])
-                self.wire(self.cfg_ld_dma_header[0][f"stride_{j}"],
-                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_stride_{j}_stride_r"])
-                self.wire(self.cfg_ld_dma_header[0][f"range_{j}"],
-                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_range_{j}_range_r"])
-        else:
-            for i in range(self._params.queue_depth):
-                self.wire(self.cfg_ld_dma_header[i]['start_addr'],
-                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_start_addr_start_addr_r"])
-                self.wire(self.cfg_ld_dma_header[i]['cycle_start_addr'],
-                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_cycle_start_addr_cycle_start_addr_r"])
-                self.wire(self.cfg_ld_dma_header[i]['dim'],
-                          self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_dim_dim_r"])
-                for j in range(self._params.loop_level):
-                    self.wire(self.cfg_ld_dma_header[i][f"cycle_stride_{j}"],
-                              self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_cycle_stride_{j}_cycle_stride_r"])
-                    self.wire(self.cfg_ld_dma_header[i][f"stride_{j}"],
-                              self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_stride_{j}_stride_r"])
-                    self.wire(self.cfg_ld_dma_header[i][f"range_{j}"],
-                              self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_range_{j}_range_r"])
+                self.wire(self.cfg_ld_dma_header[i][f"cycle_stride_{j}"],
+                            self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_cycle_stride_{j}_cycle_stride_r"])
+                self.wire(self.cfg_ld_dma_header[i][f"stride_{j}"],
+                            self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_stride_{j}_stride_r"])
+                self.wire(self.cfg_ld_dma_header[i][f"range_{j}"],
+                            self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_range_{j}_range_r"])
 
         self.wire(
             self.cfg_pcfg_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_mode_r"])
@@ -190,7 +155,6 @@ class GlbTileCfg(Generator):
         self.wire(self.if_cfg_wst_s, self.glb_tile_cfg_ctrl.if_cfg_wst_s)
         self.wire(self.if_cfg_est_m, self.glb_tile_cfg_ctrl.if_cfg_est_m)
 
-        # TODO: Use portbundle for systemrdl specific ports
         self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_address'],
                   self.glb_tile_cfg_ctrl.h2d_pio_dec_address)
         self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_write_data'],

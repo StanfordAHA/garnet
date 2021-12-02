@@ -33,7 +33,7 @@ class GlbCoreLoadDma(Generator):
         self.cfg_data_network_latency = self.input(
             "cfg_data_network_latency", self._params.latency_width)
         self.cfg_ld_dma_header = self.input(
-            "cfg_ld_dma_header", self.header.cfg_ld_dma_header_t, size=self._params.queue_depth)
+            "cfg_ld_dma_header", self.header.cfg_dma_header_t, size=self._params.queue_depth)
 
         self.ld_dma_start_pulse = self.input("ld_dma_start_pulse", 1)
         self.ld_dma_done_pulse = self.output("ld_dma_done_pulse", 1)
@@ -55,8 +55,7 @@ class GlbCoreLoadDma(Generator):
             "strm_data_r", self._params.cgra_data_width)
         self.strm_data_valid = self.var("strm_data_valid", 1)
         self.strm_data_valid_r = self.var("strm_data_valid_r", 1)
-        self.strm_data_sel = self.var(
-            "strm_data_sel", self._params.bank_byte_offset - self._params.cgra_byte_offset)
+        self.strm_data_sel = self.var("strm_data_sel", self._params.bank_byte_offset - self._params.cgra_byte_offset)
 
         self.strm_rd_en_w = self.var("strm_rd_en_w", 1)
         self.strm_rd_addr_w = self.var(

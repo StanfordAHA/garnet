@@ -372,7 +372,7 @@ def main():
 
     glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
                                           num_cgra_cols=args.width,
-                                          # FIXEME: We assume num_prr is same as num_glb_tiles
+                                          # NOTE: We assume num_prr is same as num_glb_tiles
                                           num_prr=args.width // 2,
                                           glb_tile_mem_size=args.glb_tile_mem_size,
                                           bank_data_width=64,
