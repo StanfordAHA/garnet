@@ -26,6 +26,7 @@ class Kernel;
     string filename;
     data16 data_arr;
     data16 data_arr_out;
+    int total_cycle;
     data64 data64_arr;
     data64 data64_arr_out;
 endclass
@@ -103,13 +104,23 @@ function Test::new(string filename);
         else if (kernels[i].type_ == F2G) f2g_tile_mask[kernels[i].tile_id] = 1;
     end
 
+    // Calculate total cycles
+    for (int i = 0; i < num_kernels; i++) begin
+        if (kernels[i].type_ == G2F || kernels[i].type_ == F2G) begin
+            kernels[i].total_cycle = kernels[i].cycle_stride[kernels[i].dim - 1] * kernels[i].extent[kernels[i].dim - 1];
+        end
+    end
+
+    // Display log
     $display("Number of kernels in the app is %0d", num_kernels);
     foreach (kernels[i]) begin
         extent_s = "";
         cycle_stride_s = "";
         data_stride_s = "";
-        $display("Kernel %0d: Type: %s, Tile_ID: %0d, Bank_ID: %0d", i, kernels[i].type_.name(),
-                 kernels[i].tile_id, kernels[i].bank_id);
+        $display(
+            "Kernel %0d: Type: %s, Tile_ID: %0d, Bank_ID: %0d, Start_addr: %0d, Cycle_start_addr: %0d",
+            i, kernels[i].type_.name(), kernels[i].tile_id, kernels[i].bank_id,
+            kernels[i].start_addr, kernels[i].cycle_start_addr);
         for (int j = 0; j < kernels[i].dim; j++) begin
             tmp_s.itoa(kernels[i].extent[j]);
             extent_s = {extent_s, " ", tmp_s};

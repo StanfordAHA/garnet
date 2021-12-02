@@ -152,10 +152,11 @@ module cgra (
         end
     end
 
-    function prr2glb_configure(int prr_id, int dim, int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL]);
-        bit[99:0] cnt;
+    function prr2glb_configure(int prr_id, int dim, int extent[LOOP_LEVEL],
+                               int cycle_stride[LOOP_LEVEL]);
+        bit [99:0] cnt;
         bit done;
-        int i_extent[LOOP_LEVEL]; 
+        int i_extent[LOOP_LEVEL];
         prr2glb_valid_cnt_q[prr_id] = {};
         done = 0;
         i_extent = '{LOOP_LEVEL{0}};
