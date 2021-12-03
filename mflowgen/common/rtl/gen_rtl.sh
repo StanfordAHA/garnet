@@ -136,7 +136,6 @@ else
            cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
-           make -C global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
            cat global_controller/systemRDL/output/*.sv >> design.v
          fi"
 
@@ -145,6 +144,7 @@ else
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       if [ $interconnect_only == False ]; then
         docker cp $container_name:/aha/garnet/global_buffer/header ../outputs/header
+        docker cp $container_name:/aha/garnet/global_controller/header/* ../outputs/header/
       fi
       # Kill the container
       docker kill $container_name
@@ -189,11 +189,11 @@ else
         cat global_buffer/systemRDL/output/glb_pio.sv >> $current_dir/outputs/design.v
         cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> $current_dir/outputs/design.v
         cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> $current_dir/outputs/design.v
-        make -C global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
         cat global_controller/systemRDL/output/*.sv >> $current_dir/outputs/design.v
       fi
       if [ $interconnect_only == False ]; then
         cp -r global_buffer/header $current_dir/outputs/header
+        cp -r global_controller/header/* $current_dir/outputs/header/
       fi
       cd $current_dir ;
     fi

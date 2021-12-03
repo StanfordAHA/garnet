@@ -255,8 +255,7 @@ class GlbCoreStoreDma(Generator):
     @always_comb
     def strm_wr_packet_comb(self):
         self.strm_wr_en_w = self.cycle_valid_muxed
-        self.strm_wr_addr_w = resize(self.data_current_addr,
-                                     self._params.glb_addr_width) << self._params.cgra_byte_offset
+        self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
         self.strm_wr_data_w = self.data_f2g
 
     @always_ff((posedge, "clk"), (posedge, "reset"))

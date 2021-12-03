@@ -8,7 +8,7 @@ from global_buffer.io_placement import place_io_blk
 from global_buffer.design.global_buffer import GlobalBufferMagma
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
 from global_buffer.global_buffer_main import gen_param_header
-from systemRDL.gen_config_addrmap import gen_rdl_header
+from systemRDL.util import gen_rdl_header
 from global_controller.global_controller_magma import GlobalController
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring

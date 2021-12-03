@@ -6,9 +6,14 @@ from gemstone.generator.generator import Generator
 from gemstone.generator.const import Const
 from .global_controller_genesis2 import gen_wrapper, GlobalControllerParams
 from cgra.ifc_struct import *
+from systemRDL.util import run_systemrdl
+import pathlib
+import os
 
 
 class GlobalController(Generator):
+    cache = None
+
     def __init__(self, addr_width=32, data_width=32,
                  axi_addr_width=12, axi_data_width=32,
                  num_glb_tiles=16, glb_addr_width=22,
@@ -55,6 +60,10 @@ class GlobalController(Generator):
             axi4_slave=AXI4LiteIfc(self.axi_addr_width, self.data_width).slave,
             interrupt=magma.Out(magma.Bit)
         )
+
+        if not self.__class__.cache:
+            self.__class__.cache = 1
+            self.run_glc_systemrdl()
 
         params = GlobalControllerParams(cfg_data_width=self.data_width,
                                         cfg_addr_width=self.addr_width,
@@ -194,3 +203,19 @@ class GlobalController(Generator):
     def name(self):
         return f"GlobalController_cfg_{self.addr_width}_{self.data_width}" \
                f"_axi_{self.axi_addr_width}_{self.axi_data_width}"
+
+    def run_glc_systemrdl(self):
+        top_name = "glc"
+        garnet_home = pathlib.Path(__file__).parent.parent.resolve()
+
+        rdl_file = os.path.join(garnet_home, 'global_controller/systemRDL/rdl_models/glc.rdl.final')
+        rdl_output_folder = os.path.join(garnet_home, 'global_controller/systemRDL/output/')
+        # Run perl preprocessing
+        os.system(f"{os.path.join(garnet_home, 'systemRDL', 'perlpp.pl')}"
+                  f" {os.path.join(garnet_home, 'global_controller/systemRDL/rdl_models/glc.rdl')}"
+                  f" -o {rdl_file}")
+
+        # Run ORDT to generate RTL
+        ordt_path = os.path.join(garnet_home, 'systemRDL', 'Ordt.jar')
+        rdl_parms_file = os.path.join(garnet_home, "global_controller/systemRDL/ordt_params/glc.parms")
+        run_systemrdl(ordt_path, top_name, rdl_file, rdl_parms_file, rdl_output_folder)

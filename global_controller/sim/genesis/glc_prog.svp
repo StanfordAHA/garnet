@@ -249,7 +249,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     endsequence
     
     sequence assert_strm_pulsing;
-           ##[0:100] (top.dut.strm_start_pulse==axi_trans.data_in) ##1 (top.dut.strm_start_pulse == 0);
+           ##[0:100] (top.dut.strm_g2f_start_pulse==axi_trans.data_in) ##1 (top.dut.strm_g2f_start_pulse == 0);
     endsequence
     
     property correct_strm_pulsing;
@@ -451,10 +451,10 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     @(posedge dut_ifc.Clk);
     addrmap_read(am_stall);
 
-    // axi control - start_pulse
+    // axi control - g2f_start_pulse
     repeat(100) begin
         @(posedge dut_ifc.Clk);
-        addrmap_write(am_strm_start_pulse, $urandom_range((2 ** `$num_glb_tiles`)-1));
+        addrmap_write(am_strm_g2f_start_pulse, $urandom_range((2 ** `$num_glb_tiles`)-1));
     end
 
     // axi control - pc
@@ -837,7 +837,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     end
     endtask
 
-    task axi_strm_start_pulse(int data);
+    task axi_strm_g2f_start_pulse(int data);
     begin
         assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
         state = strm_pulsing;
@@ -1361,8 +1361,8 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             am_stall: begin
                 axi_stall(data);
             end
-            am_strm_start_pulse: begin
-                axi_strm_start_pulse(data);
+            am_strm_g2f_start_pulse: begin
+                axi_strm_g2f_start_pulse(data);
             end
             am_pc_start_pulse: begin
                 axi_pc_start_pulse(data);
@@ -1423,7 +1423,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             am_stall: begin
                 axi_rd_stall();
             end
-            am_strm_start_pulse: begin
+            am_strm_g2f_start_pulse: begin
             end
             am_pc_start_pulse: begin
             end
