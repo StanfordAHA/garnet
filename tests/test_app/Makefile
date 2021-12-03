@@ -89,6 +89,9 @@ DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garne
 			  $(garnet_dir)/global_buffer/systemRDL/output/glb_pio.sv \
 			  $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
 			  $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_logic.sv \
+			  $(garnet_dir)/global_controller/systemRDL/output/glc_pio.sv \
+			  $(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_decode.sv \
+			  $(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_logic.sv \
 			  -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
 			  $(garnet_dir)/genesis_verif/*.sv -F tb/tb_cgra.f
 
