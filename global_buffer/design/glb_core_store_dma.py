@@ -63,6 +63,7 @@ class GlbCoreStoreDma(Generator):
         self.done_pulse_w = self.var("done_pulse_w", 1)
         self.st_dma_start_pulse_next = self.var("st_dma_start_pulse_next", 1)
         self.st_dma_start_pulse_r = self.var("st_dma_start_pulse_r", 1)
+        self.is_first = self.var("is_first", 1)
         self.is_last = self.var("is_last", 1)
         self.strm_run = self.var("strm_run", 1)
         self.loop_done = self.var("loop_done", 1)
@@ -88,6 +89,7 @@ class GlbCoreStoreDma(Generator):
             self.add_always(self.queue_sel_ff)
 
         self.add_always(self.repeat_cnt_ff)
+        self.add_always(self.is_first_ff)
         self.add_always(self.is_last_ff)
         self.add_always(self.strm_run_ff)
         self.add_always(self.st_dma_start_pulse_logic)
@@ -189,6 +191,16 @@ class GlbCoreStoreDma(Generator):
                         self.queue_sel_r = self.queue_sel_r + 1
             else:
                 self.queue_sel_r = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def is_first_ff(self):
+        if self.reset:
+            self.is_first = 0
+        elif self.clk_en:
+            if self.st_dma_start_pulse_r:
+                self.is_first = 1
+            elif self.strm_wr_en_w:
+                self.is_first = 0
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def is_last_ff(self):
@@ -320,7 +332,7 @@ class GlbCoreStoreDma(Generator):
         self.bank_addr_match = (self.strm_wr_addr_w[self._params.glb_addr_width - 1, self._params.bank_byte_offset]
                                 == self.last_strm_wr_addr_r[self._params.glb_addr_width - 1,
                                                             self._params.bank_byte_offset])
-        self.bank_wr_en = ((self.strm_wr_en_w & (~self.bank_addr_match)) | self.is_last)
+        self.bank_wr_en = ((self.strm_wr_en_w & (~self.bank_addr_match) & (~self.is_first)) | self.is_last)
         self.bank_wr_addr = self.last_strm_wr_addr_r
 
     @always_comb

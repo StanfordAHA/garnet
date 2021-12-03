@@ -173,7 +173,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_START_ADDR_R, start_addr);
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
     printf("Input block mapped to tile: %0d\n", tile);
-    printf("Input block start addr: %0d\n", start_addr);
+    printf("Input block start addr: 0x%0x\n", start_addr);
     printf("Input block cycle start addr: %0d\n", cycle_start_addr);
     printf("Input block dimensionality: %0d\n", loop_dim);
     for (int i = 0; i < loop_dim; i++)
@@ -197,7 +197,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_START_ADDR_R, start_addr);
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
     printf("Output block mapped to tile: %0d\n", tile);
-    printf("Output block start addr: %0d\n", start_addr);
+    printf("Output block start addr: 0x%0x\n", start_addr);
     printf("Output block cycle start addr: %0d\n", cycle_start_addr);
     printf("Output block dimensionality: %0d\n", loop_dim);
     for (int i = 0; i < loop_dim; i++)
