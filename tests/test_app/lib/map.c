@@ -116,7 +116,7 @@ int glb_map(void *kernel_)
       io_tile_info = get_io_tile_info(io_info, j);
       tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
       io_tile_info->tile = tile;
-      io_tile_info->start_addr += ((tile * 2) << BANK_ADDR_WIDTH);
+      io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
       printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
       update_io_tile_configuration(io_tile_info, &kernel->config);
     }
@@ -131,7 +131,7 @@ int glb_map(void *kernel_)
       io_tile_info = get_io_tile_info(io_info, j);
       tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
       io_tile_info->tile = tile;
-      io_tile_info->start_addr += ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+      io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
       printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
       update_io_tile_configuration(io_tile_info, &kernel->config);
     }
@@ -143,7 +143,7 @@ int glb_map(void *kernel_)
 int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info)
 {
   int tile = io_tile_info->tile;
-  int start_addr = (io_tile_info->start_addr) << CGRA_BYTE_OFFSET;
+  int start_addr = io_tile_info->start_addr;
   int cycle_start_addr = io_tile_info->cycle_start_addr;
   int loop_dim = io_tile_info->loop_dim;
   int extent[LOOP_LEVEL];
