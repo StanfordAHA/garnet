@@ -168,8 +168,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         cycle_extent[i] = io_tile_info->extent[i];
         stride[i] = io_tile_info->data_stride[i];
         extent[i] = io_tile_info->extent[i];
-#endif
     }
+#endif
 
     // int *extent = io_tile_info->extent;
     // int *stride = io_tile_info->data_stride;
