@@ -90,7 +90,7 @@ DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garne
 			  $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
 			  $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_logic.sv \
 			  -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
-			  -F $(glc_dir)/global_controller.filelist -F tb/tb_cgra.f
+			  $(garnet_dir)/genesis_verif/*.sv -F tb/tb_cgra.f
 
 # compile testbench of garnet with VCS
 # -------------------------------------------------------------------
