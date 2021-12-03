@@ -298,7 +298,6 @@ class FlattenIO(Visitor):
         isel = lambda t: "io2f_1" if t==Bit else "io2f_16"
         real_inputs = [Input(type=IO_Input_t, iname="_".join(str(field) for field in path)) for path in ipath_to_type]
         self.inputs = {path: inode.select(isel(t)) for inode, (path, t) in zip(real_inputs, ipath_to_type.items())}
-        #breakpoint()
         self.outputs = {}
         self.run(dag)
         real_sources = [self.node_map[s] for s in dag.sources[1:]]
@@ -445,6 +444,7 @@ BitRegisterSource, BitRegisterSink = Common.create_dag_node("Register", 1, True,
 class RemoveInputsOutputs(Visitor):
     def __init__(self, sinks):
         self.sinks = sinks
+        self.max_sinks = math.ceil(math.log2(max([len(sink) for _,sink in sinks.items()])))
         pass
 
     def doit(self, dag: Dag):
@@ -460,23 +460,25 @@ class RemoveInputsOutputs(Visitor):
         return IODag(inputs=self.inputs, outputs=self.outputs, sources=real_sources, sinks=real_sinks)
 
 
-    def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit):
-        print("creating reg tree for:", new_io_node.node_name)
-        num_levels = math.log2(len(sinks))
+    def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit, num_stages, tree_leaves):
+        print("creating reg tree for:", new_io_node.node_name, self.max_sinks)
         levels = [len(sinks)]
         while 1 not in levels:
-            levels.insert(0, math.ceil(levels[0]/2))
+            levels.insert(0, math.ceil(levels[0]/tree_leaves))
 
         sources = []
 
         if bit:
+            if num_stages > len(levels):
+                for _ in range(num_stages - len(levels)):
+                    levels.insert(0, 1)
+
             new_reg_sink = BitRegisterSink(new_select_node, iname=new_io_node.iname+"$reg"+str(self.added_regs))
             new_reg_source = BitRegisterSource(iname=new_io_node.iname+"$reg"+str(self.added_regs))
         else:
-            levels.insert(0, 1)
-            levels.insert(0, 1)
-            levels.insert(0, 1)
-            levels.insert(0, 1)
+            if num_stages > len(levels):
+                for _ in range(num_stages - len(levels)):
+                    levels.insert(0, 1)
             new_reg_sink = RegisterSink(new_select_node, iname=new_io_node.iname+"$reg"+str(self.added_regs))
             new_reg_source = RegisterSource(iname=new_io_node.iname+"$reg"+str(self.added_regs))        
         self.added_regs += 1
@@ -485,6 +487,8 @@ class RemoveInputsOutputs(Visitor):
         self.node_map[new_reg_source] = new_reg_source
         self.node_map[new_reg_sink] = new_reg_sink
         sources.append(new_reg_source)
+
+        print(levels)
        
 
         for level in levels[1:]:
@@ -504,7 +508,7 @@ class RemoveInputsOutputs(Visitor):
                 self.node_map[new_reg_sink] = new_reg_sink
                 new_sources.append(new_reg_source)
                
-                if (idx + 1) % 2 == 0:
+                if (idx + 1) % tree_leaves == 0:
                     sources_idx += 1 
 
             sources = new_sources
@@ -523,14 +527,14 @@ class RemoveInputsOutputs(Visitor):
             io_child = new_children[0]
             if "io16in" in io_child.iname:
                 new_node = new_children[0].select("io2f_16")
-                self.create_register_tree(io_child, new_node, node, self.sinks[node], False)
+                self.create_register_tree(io_child, new_node, node, self.sinks[node], False, self.max_sinks, 3)
             elif "io1in" in io_child.iname:
                 new_node = new_children[0].select("io2f_1")
-                self.create_register_tree(io_child, new_node, node, self.sinks[node], True)
+                self.create_register_tree(io_child, new_node, node, self.sinks[node], True, self.max_sinks, 3)
             else:
                 new_node = node.copy()
-                if len(node.children()) > 1:
-                    self.create_register_tree(io_child, new_node, node, self.sinks[node], False)
+                #if len(self.sinks[node]) > 5 and io_child.node_name == "global.MEM":
+                #    self.create_register_tree(io_child, new_node, node, self.sinks[node], False, 0, 6)
             new_node.set_children(*new_children)
             self.node_map[node] = new_node
 
@@ -568,17 +572,17 @@ class CountTiles(Visitor):
         print(f"PEs: {self.num_pes}")
         print(f"MEMs: {self.num_mems}")
         print(f"IOs: {self.num_ios}")
-        print(f"Regs: {self.num_regs}")
+        print(f"Regs: {self.num_regs/2}")
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
-        if node.node_name == "global.IO" or node.node_name == "global.BitIO":
+        if node.node_name == "Input" or node.node_name == "Output":
             self.num_ios += 1
         elif node.node_name == "global.PE":
             self.num_pes += 1
         elif node.node_name == "global.MEM":
             self.num_mems += 1
-        elif node.node_name == "coreir.reg":
+        elif node.node_name == "Register":
             self.num_regs += 1
 
 from lassen.sim import PE_fc as lassen_fc
@@ -591,6 +595,7 @@ def create_netlist_info(dag: Dag, tile_info: dict, load_only = False, id_to_name
 
     #fdag = FlattenIO().doit(dag)
     sinks = PipelineBroadcasts().doit(dag)
+
 
     fdag = RemoveInputsOutputs(sinks).doit(dag)
 
