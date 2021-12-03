@@ -157,8 +157,11 @@ class CreateInstrs(Visitor):
         if node.node_name not in self.inst_info:
             raise ValueError(f"Need info for {node.node_name}")
         adt = self.inst_info[node.node_name]
-        instr_child = list(node.children())[0]
-        assert isinstance(instr_child, Constant)
+        for instr_child in node.children():
+            if isinstance(instr_child, Constant):
+                break
+        
+        assert isinstance(instr_child, Constant), f"{node.node_name} {node.iname} {instr_child.node_name}"
         self.node_to_instr[node] = instr_child.value
 
 class CreateMetaData(Visitor):
@@ -325,7 +328,7 @@ class DagToPdf(Visitor):
     def generic_visit(self, node):
         Visitor.generic_visit(self, node)
         def n2s(node):
-            return f"{str(node)}_{str(node.iname)}"
+            return f"{str(node)}_{str(node.iname)}_{str(node.node_name)}"
         if self.no_unbound and not is_unbound_const(node):
             self.graph.node(n2s(node))
         for i, child in enumerate(node.children()):
@@ -398,7 +401,7 @@ class CountTiles(Visitor):
         print(f"PEs: {self.num_pes}")
         print(f"MEMs: {self.num_mems}")
         print(f"IOs: {self.num_ios}")
-        print(f"Regs: {self.num_regs}")
+        print(f"Regs: {self.num_regs/2}")
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
@@ -434,6 +437,8 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False):
             return "p"
         elif t.split(".")[1]=="MEM":
             return "m"
+        elif t.split(".")[1]=="Pond":
+            return "M"
         elif t.split(".")[1] == "IO":
             return "I"
         elif t.split(".")[1] == "BitIO":
@@ -452,9 +457,11 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False):
     node_to_metadata = CreateMetaData().doit(fdag)
     info["id_to_metadata"] = {nodes_to_ids[node]: md for node, md in node_to_metadata.items()}
 
+    #gen_dag_img(fdag, "pre_instr_dag", None, False)
+
     nodes_to_instrs = CreateInstrs(node_info).doit(fdag)
     info["id_to_instrs"] = {id:nodes_to_instrs[node] for node, id in nodes_to_ids.items()}
-    
+
     info["instance_to_instrs"] = {node.iname:nodes_to_instrs[node] for node, id in nodes_to_ids.items() if ("p" in id or "m" in id)}
     for node, md in node_to_metadata.items():
         info["instance_to_instrs"][node.iname] = md
@@ -465,7 +472,7 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False):
     info["buses"] = bus_info
     info["netlist"] = {}
     for bid, ports in netlist.items():
-        info["netlist"][bid] = [(nodes_to_ids[node], field) for node, field in ports]
+        info["netlist"][bid] = [(nodes_to_ids[node], field.replace("pond_0", "pond")) for node, field in ports]
 
     CountTiles().doit(fdag)    
 

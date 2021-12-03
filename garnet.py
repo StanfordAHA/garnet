@@ -31,6 +31,7 @@ from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
 from metamapper import CoreIRContext
 from metamapper.irs.coreir import gen_CoreIRNodes
 from metamapper.lake_mem import gen_MEM_fc
+from metamapper.lake_pond import gen_Pond_fc
 from metamapper.io_tiles import IO_fc, BitIO_fc
 from lassen.sim import PE_fc as lassen_fc
 import metamapper.peak_util as putil
@@ -276,6 +277,7 @@ class Garnet(Generator):
         mem_header = f"./headers/mem_header.json"
         io_header = f"./headers/io_header.json"
         bit_io_header = f"./headers/bit_io_header.json"
+        pond_header = f"./headers/pond_header.json"
 
         app_file = app
         c = CoreIRContext(reset=True)
@@ -284,6 +286,7 @@ class Garnet(Generator):
         c.run_passes(["flatten"])
 
         MEM_fc = gen_MEM_fc()
+        Pond_fc = gen_Pond_fc()
         # Contains an empty nodes
         nodes = gen_CoreIRNodes(16)
         putil.load_and_link_peak(
@@ -307,12 +310,19 @@ class Garnet(Generator):
             nodes,
             bit_io_header,
             {"global.BitIO": BitIO_fc},
-        )   
+        )  
+        
+        putil.load_and_link_peak(
+            nodes,
+            pond_header,
+            {"global.Pond": (Pond_fc, True)},
+        ) 
+
 
  
         dag = cutil.coreir_to_dag(nodes, cmod)
         print("-"*80)
-        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc, "global.IO": IO_fc, "global.BitIO": BitIO_fc}
+        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc, "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
         netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"], netlist_info["buses"]
