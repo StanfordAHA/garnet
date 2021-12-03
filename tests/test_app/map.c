@@ -153,14 +153,21 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int extent[loop_dim+1];
     int stride[loop_dim+1];
 
+#ifdef SHUFFLE
     for (int i = 0; i < loop_dim; i++) {
-        cycle_stride[i] = io_tile_info->cycle_stride[i];
         stride[i] = io_tile_info->data_stride[i];
         extent[i] = io_tile_info->extent[i];
-#ifdef SHUFFLE
+    }
+    for (int i = 0; i < cycle_loop_dim; i++) {
+        cycle_stride[i] = io_tile_info->cycle_stride[i];
         cycle_extent[i] = io_tile_info->cycle_extent[i];
+    }
 #else
+    for (int i = 0; i < loop_dim; i++) {
+        cycle_stride[i] = io_tile_info->cycle_stride[i];
         cycle_extent[i] = io_tile_info->extent[i];
+        stride[i] = io_tile_info->data_stride[i];
+        extent[i] = io_tile_info->extent[i];
 #endif
     }
 
