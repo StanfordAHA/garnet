@@ -281,8 +281,7 @@ class GlbCoreLoadDma(Generator):
     @always_comb
     def strm_rdrq_packet_ff(self):
         self.strm_rd_en_w = self.cycle_valid
-        self.strm_rd_addr_w = resize(self.data_current_addr,
-                                     self._params.glb_addr_width) << self._params.cgra_byte_offset
+        self.strm_rd_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def last_strm_rd_addr_ff(self):

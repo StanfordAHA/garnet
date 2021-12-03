@@ -10,8 +10,6 @@
 `define CLK_PERIOD 1ns
 `endif
 
-`include "garnet_regmap.svh"
-
 import global_buffer_param::*;
 
 module top;

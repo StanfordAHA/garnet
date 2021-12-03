@@ -293,12 +293,6 @@ def gen_global_buffer_rdl(name, params):
     return glb_rdl
 
 
-def run_systemrdl(ordt_path, name, rdl_file, parms_file, output_folder):
-    os.system(
-        f"java -jar {ordt_path} -reglist {output_folder}/{name}.reglist"
-        f" -parms {parms_file} -systemverilog {output_folder} {rdl_file}")
-
-
 def gen_glb_pio_wrapper(src_file, dest_file):
     os.system(f"sed '/\.\*/d' {src_file} > {dest_file}")  # nopep8
     return dest_file

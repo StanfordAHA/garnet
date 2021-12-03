@@ -2,8 +2,9 @@ from kratos import Generator
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.glb_tile_cfg_ctrl import GlbTileCfgCtrl
-from global_buffer.gen_global_buffer_rdl import gen_global_buffer_rdl, run_systemrdl, gen_glb_pio_wrapper
+from global_buffer.gen_global_buffer_rdl import gen_global_buffer_rdl, gen_glb_pio_wrapper
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
+from systemRDL.util import run_systemrdl
 import pathlib
 import os
 

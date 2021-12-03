@@ -183,7 +183,13 @@ def gen_rdl_header(top_name, rdl_file, output_folder):
         sys.exit(1)
     root = rdlc.elaborate()
     exporter = HTMLExporter()
-    exporter.export(root, os.path.join(output_folder, "html"))
+    exporter.export(root, os.path.join(output_folder, f"{top_name}_html"))
     rdl_json = convert_addrmap(rdlc, root.top)
     convert_to_json(rdl_json, os.path.join(output_folder, f"{top_name}.json"))
     convert_to_header(rdl_json, os.path.join(output_folder, top_name))
+
+
+def run_systemrdl(ordt_path, name, rdl_file, parms_file, output_folder):
+    os.system(
+        f"java -jar {ordt_path} -reglist {os.path.join(output_folder, name + '.reglist')}"
+        f" -parms {parms_file} -systemverilog {output_folder} {rdl_file}")

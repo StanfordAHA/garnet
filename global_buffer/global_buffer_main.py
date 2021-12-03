@@ -1,7 +1,7 @@
 import argparse
 from global_buffer.design.global_buffer import GlobalBuffer
 from global_buffer.design.global_buffer_parameter import gen_global_buffer_params, gen_header_files
-from systemRDL.gen_config_addrmap import gen_rdl_header
+from systemRDL.util import gen_rdl_header
 import os
 import pathlib
 import kratos as k

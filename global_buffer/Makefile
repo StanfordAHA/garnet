@@ -38,12 +38,6 @@ TB_FILES ?= -F sim/tb_global_buffer.f
 # Commands
 # -------------------------------------------------------------------
 
-FIX_SYSTEMRDL = \
-    sed -i '/pio_dec_write_data_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
-    sed -i '/pio_dec_address_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
-    sed -i '/endmodule/d' ./systemRDL/output/glb_jrdl_decode.sv; \
-    printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glb_jrdl_decode.sv
-
 GENERATE_TV = \
     python testvectors/gen_glb_test.py --data testvectors/in_32.dat --num 32 --seed 1; \
     python testvectors/gen_glb_test.py --data testvectors/out_32.dat --num 32 --seed 2; \
@@ -102,7 +96,6 @@ rtl: export GARNET_HOME := $(current_dir)/..
 rtl: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
 rtl: 
 	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE)
-	$(FIX_SYSTEMRDL)
 
 # -------------------------------------------------------------------
 # Compile & Run

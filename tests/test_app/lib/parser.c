@@ -132,6 +132,18 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
     }
     io_tile_info->loop_dim = json_getInteger(dim_json);
 
+    // parse cycle_start_addr
+    json_t const *cycle_start_addr_list_json = json_getProperty(addr_json, "cycle_starting_addr");
+    if (!cycle_start_addr_list_json || JSON_ARRAY != json_getType(cycle_start_addr_list_json))
+    {
+        puts("Error, the cycle_starting_addr_list property is not found.");
+        exit(1);
+    }
+    // cycle_start_addr_json type is list, but we only need the first one
+    json_t const *cycle_start_addr_json;
+    cycle_start_addr_json = json_getChild(cycle_start_addr_list_json);
+    io_tile_info->cycle_start_addr = json_getInteger(cycle_start_addr_json);
+
     // parse cycle stride
     json_t const *cycle_stride_list_json = json_getProperty(addr_json, "cycle_stride");
     if (!cycle_stride_list_json || JSON_ARRAY != json_getType(cycle_stride_list_json))
@@ -147,6 +159,26 @@ int parse_io_tile_info(struct IOTileInfo *io_tile_info, json_t const *io_tile_js
         io_tile_info->cycle_stride[cnt] = json_getInteger(stride_json);
         cnt++;
     }
+
+    // parse start_addr
+    json_t const *start_addr_list_json;
+    if (io_tile_info->io == Input)
+    {
+        start_addr_list_json = json_getProperty(addr_json, "read_data_starting_addr");
+    }
+    else
+    {
+        start_addr_list_json = json_getProperty(addr_json, "write_data_starting_addr");
+    }
+    if (!start_addr_list_json || JSON_ARRAY != json_getType(start_addr_list_json))
+    {
+        puts("Error, the data_starting_addr_list property is not found.");
+        exit(1);
+    }
+    // start_addr_json type is list, but we only need the first one
+    json_t const *start_addr_json;
+    start_addr_json = json_getChild(start_addr_list_json);
+    io_tile_info->start_addr = json_getInteger(start_addr_json);
 
     // parse data stride
     json_t const *data_stride_list_json;
@@ -675,6 +707,12 @@ int get_io_tile_start_addr(void *info, int index)
 {
     GET_IO_INFO(info);
     return io_info->io_tiles[index].start_addr;
+}
+
+int get_io_tile_cycle_start_addr(void *info, int index)
+{
+    GET_IO_INFO(info);
+    return io_info->io_tiles[index].cycle_start_addr;
 }
 
 int get_io_tile_map_tile(void *info, int index)

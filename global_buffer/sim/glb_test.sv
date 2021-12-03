@@ -147,7 +147,7 @@ program glb_test (
                     if (done == 1) break;
                 end
                 // Configure LD DMA
-                g2f_dma_configure(kernels[i].tile_id, kernels[i].new_start_addr,
+                g2f_dma_configure(kernels[i].tile_id, kernels[i].start_addr,
                                   kernels[i].cycle_start_addr, kernels[i].dim,
                                   kernels[i].new_extent, kernels[i].new_cycle_stride,
                                   kernels[i].new_data_stride);
@@ -169,7 +169,7 @@ program glb_test (
                     kernels[i].tile_id, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride
                 ));
                 // Configure ST DMA
-                f2g_dma_configure(kernels[i].tile_id, kernels[i].new_start_addr,
+                f2g_dma_configure(kernels[i].tile_id, kernels[i].start_addr,
                                   kernels[i].cycle_start_addr, kernels[i].dim,
                                   kernels[i].new_extent, kernels[i].new_cycle_stride,
                                   kernels[i].new_data_stride);
