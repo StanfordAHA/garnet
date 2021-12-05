@@ -63,6 +63,7 @@ class GlbCoreLoadDma(Generator):
 
         self.ld_dma_start_pulse_next = self.var("ld_dma_start_pulse_next", 1)
         self.ld_dma_start_pulse_r = self.var("ld_dma_start_pulse_r", 1)
+        self.data_start_pulse_w = self.var("data_start_pulse_w", 1)
         self.is_first = self.var("is_first", 1)
 
         self.ld_dma_done_pulse_w = self.var("ld_dma_done_pulse_w", 1)
@@ -101,6 +102,7 @@ class GlbCoreLoadDma(Generator):
         self.add_always(self.is_first_ff)
         self.add_always(self.strm_run_ff)
         self.add_always(self.strm_data_ff)
+        self.add_always(self.data_start_pulse_comb)
         self.add_strm_data_start_pulse_pipeline()
         self.add_ld_dma_done_pulse_pipeline()
         self.add_strm_rd_en_pipeline()
@@ -244,6 +246,10 @@ class GlbCoreLoadDma(Generator):
             else:
                 self.ld_dma_start_pulse_r = self.ld_dma_start_pulse_next
 
+    @always_comb
+    def data_start_pulse_comb(self):
+        self.data_start_pulse_w = self.strm_run & (self.cycle_count == self.current_dma_header[f"cycle_start_addr"])
+
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def cycle_counter(self):
         if self.reset:
@@ -377,12 +383,12 @@ class GlbCoreLoadDma(Generator):
                        clk=self.clk,
                        clk_en=self.clk_en,
                        reset=self.reset,
-                       in_=self.ld_dma_start_pulse_r,
+                       in_=self.data_start_pulse_w,
                        out_=self.strm_data_start_pulse_d_arr)
         self.strm_data_start_pulse = self.var("strm_data_start_pulse", 1)
         self.wire(self.strm_data_start_pulse,
                   self.strm_data_start_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width)
-                                                   + self.default_latency + 1])
+                                                   + self.default_latency])
 
     def add_ld_dma_done_pulse_pipeline(self):
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 3
