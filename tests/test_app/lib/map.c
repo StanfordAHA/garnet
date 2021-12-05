@@ -154,16 +154,14 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
   for (int i = 0; i < loop_dim; i++)
   {
     extent[i] = io_tile_info->extent[i] - 2;
-    if (i == 0)
+    cycle_stride[i] = io_tile_info->cycle_stride[i];
+    data_stride[i] = io_tile_info->data_stride[i];
+    for (int j = 0; j < i; j++)
     {
-      cycle_stride[i] = io_tile_info->cycle_stride[i];
-      data_stride[i] = io_tile_info->data_stride[i] << CGRA_BYTE_OFFSET;
+      cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
+      data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
     }
-    else
-    {
-      cycle_stride[i] = io_tile_info->cycle_stride[i] - io_tile_info->cycle_stride[i - 1] * (io_tile_info->extent[i - 1] - 1);
-      data_stride[i] = (io_tile_info->data_stride[i] - io_tile_info->data_stride[i - 1] * (io_tile_info->extent[i - 1] - 1)) << CGRA_BYTE_OFFSET;
-    }
+    data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
   }
 
   if (io_tile_info->io == Input)
