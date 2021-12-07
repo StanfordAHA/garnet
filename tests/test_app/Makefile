@@ -77,35 +77,44 @@ XRUN = xrun \
 # C API
 # -------------------------------------------------------------------
 .PHONY: libcgra.so
-libcgra.so: $(shell find lib -type f) $(garnet_dir)/global_buffer/header/global_buffer_param.h
-	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -shared -o libcgra.so -fPIC
+libcgra.so: $(shell find lib -type f) $(garnet_dir)/global_buffer/header/global_buffer_param.h $(garnet_dir)/global_buffer/header/glb.h $(garnet_dir)/global_controller/header/glc.h
+	gcc -Wno-error -Wall lib/*.c -I$(garnet_dir)/global_buffer/header -I$(garnet_dir)/global_controller/header -shared -o libcgra.so -fPIC
 
 # -------------------------------------------------------------------
-# Compile VCS (Default)
+# Compile 
 # -------------------------------------------------------------------
+DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garnet_dir)/global_buffer/header/glb.svh \
+			  $(garnet_dir)/global_controller/header/glc.svh \
+			  $(garnet_dir)/garnet.v \
+			  $(garnet_dir)/global_buffer/systemRDL/output/glb_pio.sv \
+			  $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
+			  $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_logic.sv \
+			  $(garnet_dir)/global_controller/systemRDL/output/glc_pio.sv \
+			  $(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_decode.sv \
+			  $(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_logic.sv \
+			  -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
+			  $(garnet_dir)/genesis_verif/*.sv -F tb/tb_cgra.f
+
 # compile testbench of garnet with VCS
-.PHONY: compile
-compile: VCSARGS += -top $(TOP_NAME)
-compile: VCSARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
-compile: VCSARGS += +nospecify
-compile: VCSARGS += +define+NON_STOP_IF_INPUT_PIN_Z
-compile: VCSARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
-				    -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
-					+libext+.v+.sv 
-compile: DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garnet_dir)/global_buffer/header/glb.svh $(garnet_dir)/garnet.v \
-					   $(garnet_dir)/global_buffer/systemRDL/output/glb_pio.sv \
-					   $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
-					   $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_logic.sv \
-					   -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
-			 	       -F $(glc_dir)/global_controller.filelist -F tb/tb_cgra.f
-compile: libcgra.so $(shell find tb -type f)
+# -------------------------------------------------------------------
+# Compile VCS 
+# -------------------------------------------------------------------
+.PHONY: compile-vcs
+compile-vcs: VCSARGS += -top $(TOP_NAME)
+compile-vcs: VCSARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
+compile-vcs: VCSARGS += +nospecify
+compile-vcs: VCSARGS += +define+NON_STOP_IF_INPUT_PIN_Z
+compile-vcs: VCSARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
+				        -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
+					    +libext+.v+.sv 
+compile-vcs: libcgra.so $(shell find tb -type f)
 	$(VCS)
 
 # -------------------------------------------------------------------
 # Compile Xcelium
 # -------------------------------------------------------------------
 # compile testbench of garnet with xcelium
-.PHONY: compile
+.PHONY: compile-xcel
 compile-xcel: XRUN_ARGS += -top $(TOP_NAME)
 compile-xcel: XRUN_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 compile-xcel: XRUN_ARGS += -notimingchecks
@@ -114,12 +123,6 @@ compile-xcel: XRUN_ARGS += +define+TSMC_CM_NO_WARNING
 compile-xcel: XRUN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
 				      	   -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
 					       +libext+.v+.sv 
-compile-xcel: DESIGNARGS += $(garnet_dir)/global_buffer/header/global_buffer_param.svh $(garnet_dir)/global_buffer/header/glb.svh $(garnet_dir)/garnet.v \
-						    $(garnet_dir)/global_buffer/systemRDL/output/glb_pio.sv \
-						    $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
-						    $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_logic.sv \
-					        -v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
-			 	            -F $(glc_dir)/global_controller.filelist -F tb/tb_cgra.f
 compile-xcel: libcgra.so $(shell find tb -type f)
 	$(XRUN)
 
@@ -155,7 +158,7 @@ compile-gl: XRUN_ARGS += -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/c
 				      	 -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
 					     +libext+.v+.sv 
 compile-gl: XRUN_ARGS += $(NETLIST_FILES)
-compile-gl: libcgra.so top.sv garnet_param.svh garnet_test.sv kernel.sv proc_driver.sv axil_driver.sv axil_ifc.sv proc_ifc.sv environment.sv
+compile-gl: libcgra.so top.sv garnet_test.sv kernel.sv proc_driver.sv axil_driver.sv axil_ifc.sv proc_ifc.sv environment.sv
 	$(XRUN)
 
 # -------------------------------------------------------------------

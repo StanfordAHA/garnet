@@ -22,7 +22,8 @@ SDF_LOG ?= sdf_logs
 GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
-RUN_ARGS ?= +TEST=test1
+RUN_ARGS ?= +test1 +test2 +test3 +test4 +test5
+RUN_ARGS += +MAX_NUM_TEST=10
 RUN_ARGS += +DEBUG
 
 RUN_LOG ?= run.log
@@ -37,12 +38,6 @@ TB_FILES ?= -F sim/tb_global_buffer.f
 # Commands
 # -------------------------------------------------------------------
 
-FIX_SYSTEMRDL = \
-    sed -i '/pio_dec_write_data_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
-    sed -i '/pio_dec_address_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
-    sed -i '/endmodule/d' ./systemRDL/output/glb_jrdl_decode.sv; \
-    printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glb_jrdl_decode.sv
-
 GENERATE_TV = \
     python testvectors/gen_glb_test.py --data testvectors/in_32.dat --num 32 --seed 1; \
     python testvectors/gen_glb_test.py --data testvectors/out_32.dat --num 32 --seed 2; \
@@ -50,8 +45,9 @@ GENERATE_TV = \
     python testvectors/gen_glb_test.py --data testvectors/out_128.dat --num 128 --seed 4; \
     python testvectors/gen_glb_test.py --data testvectors/in_4096.dat --num 4096 --seed 5; \
     python testvectors/gen_glb_test.py --data testvectors/in2_4096.dat --num 4096 --seed 6; \
-    python testvectors/gen_glb_test.py --data testvectors/out_4096.dat --num 4096 --seed 7; \
-    python testvectors/gen_glb_test.py --data testvectors/out2_4096.dat --num 4096 --seed 8;
+    python testvectors/gen_glb_test.py --data testvectors/out_3844.dat --num 3844 --seed 7; \
+    python testvectors/gen_glb_test.py --data testvectors/out_4096.dat --num 4096 --seed 8; \
+    python testvectors/gen_glb_test.py --data testvectors/out2_4096.dat --num 4096 --seed 9;
 
 XRUN = xrun \
 	   -64bit \
@@ -101,7 +97,6 @@ rtl: export GARNET_HOME := $(current_dir)/..
 rtl: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
 rtl: 
 	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE)
-	$(FIX_SYSTEMRDL)
 
 # -------------------------------------------------------------------
 # Compile & Run

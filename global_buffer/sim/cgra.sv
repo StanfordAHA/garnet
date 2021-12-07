@@ -70,6 +70,8 @@ module cgra (
     bit [15:0] prr2glb_q[int][$];
     bit [99:0] prr2glb_valid_cnt_q[int][$];
 
+    bit flush;
+
     // ---------------------------------------
     // Data Queue
     // ---------------------------------------
@@ -81,7 +83,9 @@ module cgra (
             end
         end else begin
             for (int i = 0; i < NUM_PRR; i++) begin
-                if (!stall[i]) begin
+                if (flush) begin
+                    glb2prr_q[i] = {};
+                end else if (!stall[i]) begin
                     if (is_glb2prr_on[i] == 1) begin
                         if (io1_g2io[i] == 1) begin
                             glb2prr_q[i].push_back(io16_g2io[i]);
@@ -99,7 +103,9 @@ module cgra (
             end
         end else begin
             for (int i = 0; i < NUM_PRR; i++) begin
-                if (!stall[i]) begin
+                if (flush) begin
+                    prr2glb_q[i] = {};
+                end else if (!stall[i]) begin
                     if (prr2glb_valid[i] == 1 && (prr2glb_q[i].size() > 0)) begin
                         io1_io2g[i]  <= 1;
                         io16_io2g[i] <= prr2glb_q[i].pop_front();
@@ -119,7 +125,11 @@ module cgra (
             is_prr2glb_done <= '0;
         end else begin
             for (int i = 0; i < NUM_PRR; i++) begin
-                if (!stall[i]) begin
+                if (flush) begin
+                    prr2glb_cnt <= 0;
+                    is_prr2glb_done <= '0;
+                    prr2glb_valid <= 0;
+                end else if (!stall[i]) begin
                     if ((is_prr2glb_on[i] == 1) && (is_prr2glb_done[i] == 0)) begin
                         if (prr2glb_cnt[i] == prr2glb_valid_cnt_q[i][0]) begin
                             prr2glb_valid[i] <= 1;
@@ -142,10 +152,12 @@ module cgra (
         end
     end
 
-    function prr2glb_configure(int prr_id, int dim, int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL]);
-        bit[99:0] cnt;
+    function prr2glb_configure(int prr_id, int dim, int extent[LOOP_LEVEL],
+                               int cycle_stride[LOOP_LEVEL]);
+        bit [99:0] cnt;
         bit done;
-        int i_extent[LOOP_LEVEL]; 
+        int i_extent[LOOP_LEVEL];
+        prr2glb_valid_cnt_q[prr_id] = {};
         done = 0;
         i_extent = '{LOOP_LEVEL{0}};
         while (1) begin
@@ -189,6 +201,14 @@ module cgra (
             is_prr2glb_done[prr_id] = 1;
             // void'(prr2glb_off(prr_id));
         end
+    endfunction
+
+    function flush_on();
+        flush = 1;
+    endfunction
+
+    function flush_off();
+        flush = 0;
     endfunction
 
 endmodule

@@ -3,7 +3,7 @@ import math
 import os
 
 
-@dataclasses.dataclass(eq=True, frozen=True)
+@dataclasses.dataclass(eq=True, frozen=False)
 class GlobalBufferParams:
     # cgra parameters
     num_prr: int = 16
@@ -60,8 +60,8 @@ class GlobalBufferParams:
     cgra_cfg_data_width: int = 32
 
     # dma address generator
-    queue_depth: int = 2
-    loop_level: int = 4
+    queue_depth: int = 1
+    loop_level: int = 5
 
     # dma latency
     latency_width: int = 2 + math.ceil(math.log(num_glb_tiles, 2))
@@ -92,8 +92,8 @@ def gen_global_buffer_params(**kwargs):
     cfg_data_width = kwargs.pop('cfg_data_width', 32)
     cgra_data_width = kwargs.pop('cgra_data_width', 16)
     max_stride_width = kwargs.pop('max_stride_width', 10)
-    queue_depth = kwargs.pop('queue_depth', 2)
-    loop_level = kwargs.pop('loop_level', 4)
+    queue_depth = kwargs.pop('queue_depth', 1)
+    loop_level = kwargs.pop('loop_level', 5)
     glb_bank_memory_pipeline_depth = kwargs.pop('glb_bank_memory_pipeline_depth', 1)
     sram_gen_pipeline_depth = kwargs.pop('sram_gen_pipeline_depth', 1)
     sram_gen_output_pipeline_depth = kwargs.pop('sram_gen_output_pipeline_depth', 1)

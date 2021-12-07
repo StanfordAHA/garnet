@@ -323,8 +323,8 @@ class GlbTile(Generator):
         self.cgra_cfg_g2f_cfg_data = self.output(
             "cgra_cfg_g2f_cfg_data", self._params.cgra_cfg_data_width, size=self._params.cgra_per_glb, packed=True)
 
-        self.strm_start_pulse = self.input(
-            "strm_start_pulse", 1)
+        self.strm_g2f_start_pulse = self.input("strm_g2f_start_pulse", 1)
+        self.strm_f2g_start_pulse = self.input("strm_f2g_start_pulse", 1)
         self.pcfg_start_pulse = self.input(
             "pcfg_start_pulse", 1)
         self.strm_f2g_interrupt_pulse = self.output(
@@ -613,7 +613,8 @@ class GlbTile(Generator):
         self.wire(self.glb_core.cfg_pcfg_network_connected_prev,
                   self.cfg_pcfg_tile_connected_wsti)
 
-        self.wire(self.glb_core.ld_dma_start_pulse, self.strm_start_pulse)
+        self.wire(self.glb_core.ld_dma_start_pulse, self.strm_g2f_start_pulse)
+        self.wire(self.glb_core.st_dma_start_pulse, self.strm_f2g_start_pulse)
         self.wire(self.glb_core.pcfg_start_pulse, self.pcfg_start_pulse)
         self.wire(self.glb_core.ld_dma_done_pulse,
                   self.strm_g2f_interrupt_pulse)
@@ -627,36 +628,23 @@ class GlbTile(Generator):
         self.wire(self.glb_core.cfg_pcfg_network,
                   self.glb_tile_cfg.cfg_pcfg_network)
 
-        self.wire(self.glb_core.cfg_st_dma_ctrl,
-                  self.glb_tile_cfg.cfg_st_dma_ctrl)
-        st_dma_header_w = self.var(
-            "st_dma_header_w", self.header.cfg_st_dma_header_t, size=self._params.queue_depth)
+        self.wire(self.glb_core.cfg_st_dma_ctrl, self.glb_tile_cfg.cfg_st_dma_ctrl)
+        # NOTE: Kratos bug - Cannot directly wire struct array from two different modules
+        st_dma_header_w = self.var("st_dma_header_w", self.header.cfg_dma_header_t, size=self._params.queue_depth)
         self.wire(st_dma_header_w, self.glb_tile_cfg.cfg_st_dma_header)
         self.wire(self.glb_core.cfg_st_dma_header, st_dma_header_w)
-        self.wire(self.glb_core.st_dma_header_clr,
-                  self.glb_tile_cfg.st_dma_header_clr)
-        self.wire(self.glb_core.cfg_ld_dma_ctrl,
-                  self.glb_tile_cfg.cfg_ld_dma_ctrl)
 
-        # HACK
-        ld_dma_header_w = self.var(
-            "ld_dma_header_w", self.header.cfg_ld_dma_header_t, size=self._params.queue_depth)
+        self.wire(self.glb_core.cfg_ld_dma_ctrl, self.glb_tile_cfg.cfg_ld_dma_ctrl)
+        ld_dma_header_w = self.var("ld_dma_header_w", self.header.cfg_dma_header_t, size=self._params.queue_depth)
         self.wire(self.glb_core.cfg_ld_dma_header, ld_dma_header_w)
         self.wire(ld_dma_header_w, self.glb_tile_cfg.cfg_ld_dma_header)
 
-        self.wire(self.glb_core.ld_dma_header_clr,
-                  self.glb_tile_cfg.ld_dma_header_clr)
-
-        self.wire(self.glb_core.cfg_pcfg_dma_ctrl,
-                  self.glb_tile_cfg.cfg_pcfg_dma_ctrl)
-        self.wire(self.glb_core.cfg_pcfg_dma_header,
-                  self.glb_tile_cfg.cfg_pcfg_dma_header)
+        self.wire(self.glb_core.cfg_pcfg_dma_ctrl, self.glb_tile_cfg.cfg_pcfg_dma_ctrl)
+        self.wire(self.glb_core.cfg_pcfg_dma_header, self.glb_tile_cfg.cfg_pcfg_dma_header)
 
     def core2pcfgs_wiring(self):
-        self.wire(self.glb_core.cgra_cfg_pcfg,
-                  self.glb_tile_pcfg_switch.cgra_cfg_core2sw)
-        self.wire(
-            self.glb_tile_cfg.cfg_pcfg_dma_ctrl['mode'], self.glb_tile_pcfg_switch.cfg_pcfg_dma_mode)
+        self.wire(self.glb_core.cgra_cfg_pcfg, self.glb_tile_pcfg_switch.cgra_cfg_core2sw)
+        self.wire(self.glb_tile_cfg.cfg_pcfg_dma_ctrl['mode'], self.glb_tile_pcfg_switch.cfg_pcfg_dma_mode)
 
     def tile2pcfgs_wiring(self):
         cgra_cfg_g2f_w = self.var(
