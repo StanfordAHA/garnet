@@ -7,16 +7,15 @@ from gemstone.generator.generator import Generator, set_debug_mode
 from global_buffer.io_placement import place_io_blk
 from global_buffer.design.global_buffer import GlobalBufferMagma
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
-from global_buffer.global_buffer_main import gen_param_header, gen_rdl_header
+from global_buffer.global_buffer_main import gen_param_header
+from systemRDL.util import gen_rdl_header
 from global_controller.global_controller_magma import GlobalController
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, has_rom, get_total_cycle_from_app
-from cgra import glb_glc_wiring, glb_interconnect_wiring, \
-    glc_interconnect_wiring, create_cgra, compress_config_data
+from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
 import json
-from passes.collateral_pass.config_register import get_interconnect_regs, \
-    get_core_registers
+from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
 from passes.interconnect_port_pass import stall_port_pass, config_port_pass
 import os
 import archipelago
@@ -372,7 +371,7 @@ def main():
 
     glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
                                           num_cgra_cols=args.width,
-                                          # FIXEME: We assume num_prr is same as num_glb_tiles
+                                          # NOTE: We assume num_prr is same as num_glb_tiles
                                           num_prr=args.width // 2,
                                           glb_tile_mem_size=args.glb_tile_mem_size,
                                           bank_data_width=64,
@@ -395,8 +394,7 @@ def main():
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_CW"},
-                      passes=["rungenerators",
-                              "inline_single_instances", "clock_gate"],
+                      passes=["rungenerators", "inline_single_instances", "clock_gate"],
                       disable_ndarray=True,
                       inline=False)
         garnet.create_stub()
@@ -404,8 +402,15 @@ def main():
             garnet_home = os.getenv('GARNET_HOME')
             if not garnet_home:
                 garnet_home = os.path.dirname(os.path.abspath(__file__))
-            gen_param_header(garnet_home=garnet_home, params=glb_params)
-            gen_rdl_header(garnet_home=garnet_home)
+            gen_param_header(top_name="global_buffer_param",
+                             params=glb_params,
+                             output_folder=os.path.join(garnet_home, "global_buffer/header"))
+            gen_rdl_header(top_name="glb",
+                           rdl_file=os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl"),
+                           output_folder=os.path.join(garnet_home, "global_buffer/header"))
+            gen_rdl_header(top_name="glc",
+                           rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
+                           output_folder=os.path.join(garnet_home, "global_controller/header"))
 
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:

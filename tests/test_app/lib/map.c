@@ -4,6 +4,7 @@
 #include "global_buffer_param.h"
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #define MAX_NUM_COLS 32
 #define MAX_NUM_GLB_TILES 16
@@ -115,7 +116,7 @@ int glb_map(void *kernel_)
       io_tile_info = get_io_tile_info(io_info, j);
       tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
       io_tile_info->tile = tile;
-      io_tile_info->start_addr = ((tile * 2) << BANK_ADDR_WIDTH);
+      io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
       printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
       update_io_tile_configuration(io_tile_info, &kernel->config);
     }
@@ -130,7 +131,7 @@ int glb_map(void *kernel_)
       io_tile_info = get_io_tile_info(io_info, j);
       tile = (group_start * GROUP_SIZE + io_tile_info->pos.x) / 2;
       io_tile_info->tile = tile;
-      io_tile_info->start_addr = ((tile * 2 + 1) << BANK_ADDR_WIDTH);
+      io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2 + 1) << BANK_ADDR_WIDTH);
       printf("Mapping output_%0d_block_%0d to global buffer\n", i, j);
       update_io_tile_configuration(io_tile_info, &kernel->config);
     }
@@ -139,111 +140,77 @@ int glb_map(void *kernel_)
   return 1;
 }
 
-int update_io_tile_configuration(struct IOTileInfo *io_tile_info,
-                                 struct ConfigInfo *config_info)
+int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigInfo *config_info)
 {
   int tile = io_tile_info->tile;
   int start_addr = io_tile_info->start_addr;
-
+  int cycle_start_addr = io_tile_info->cycle_start_addr;
   int loop_dim = io_tile_info->loop_dim;
-  int cycle_stride[loop_dim + 1];
-  int extent[loop_dim + 1];
-  int stride[loop_dim + 1];
+  int extent[LOOP_LEVEL];
+  int data_stride[LOOP_LEVEL];
+  int cycle_stride[LOOP_LEVEL];
+
+  // Convert extent/stride hardware-friendly
   for (int i = 0; i < loop_dim; i++)
   {
+    extent[i] = io_tile_info->extent[i] - 2;
     cycle_stride[i] = io_tile_info->cycle_stride[i];
-    stride[i] = io_tile_info->data_stride[i];
-    extent[i] = io_tile_info->extent[i];
-  }
-
-  // FIXME: We assume chaining is not happening.
-
-  // HACK1: Reduce cycle stride dimension by sending the same data multiple time
-  // if the cycle_stride[0] is non zero.
-  if (io_tile_info->io == Input)
-  {
-    if (cycle_stride[0] > 1 && loop_dim > 1)
+    data_stride[i] = io_tile_info->data_stride[i];
+    for (int j = 0; j < i; j++)
     {
-      for (int i = loop_dim; i > 0; i--)
-      {
-        cycle_stride[i] = cycle_stride[i - 1];
-        extent[i] = extent[i - 1];
-        stride[i] = stride[i - 1];
-      }
-      extent[0] = cycle_stride[0];
-      cycle_stride[0] = 1;
-      stride[0] = 0;
-      loop_dim += 1;
+      cycle_stride[i] -= io_tile_info->cycle_stride[j] * (io_tile_info->extent[j] - 1);
+      data_stride[i] -= io_tile_info->data_stride[j] * (io_tile_info->extent[j] - 1);
     }
+    data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
   }
 
   if (io_tile_info->io == Input)
   {
-    int cnt_diff = 0;
-    int active = 0;
-    int inactive = 0;
-    int active_acc = 1;
-    // First check if GLB can support this cycle stride pattern
-    for (int i = 0; i < loop_dim - 1; i++)
-    {
-      active_acc = active_acc * extent[i];
-      if (extent[i] * cycle_stride[i] != cycle_stride[i + 1])
-      {
-        cnt_diff++;
-        active = active_acc;
-        inactive = cycle_stride[i + 1] - active;
-      }
-    }
-    if (cnt_diff > 1)
-    {
-      printf("GLB does not support this cycle stride pattern\n");
-      return 0;
-    }
-
-
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_CTRL_R, ((0b01 << GLB_LD_DMA_CTRL_G2F_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (0 << GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_CTRL_R, ((0b01 << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (0 << GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_DIM_R, loop_dim);
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_START_ADDR_R, start_addr);
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
     printf("Input block mapped to tile: %0d\n", tile);
-    printf("Input block start addr: %0d\n", start_addr);
+    printf("Input block start addr: 0x%0x\n", start_addr);
+    printf("Input block cycle start addr: %0d\n", cycle_start_addr);
+    printf("Input block dimensionality: %0d\n", loop_dim);
     for (int i = 0; i < loop_dim; i++)
     {
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_STRIDE_0_R + 0x08 * i),
-                 stride[i]);
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_RANGE_0_R + 0x04 * i),
+                 extent[i] << (GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_RANGE_0_R + 0x08 * i),
-                 extent[i]);
-      printf("ITER CTRL %0d - stride: %0d, extent: %0d\n", i, stride[i],
-             extent[i]);
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x04 * i),
+                 cycle_stride[i] << (GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
+      add_config(config_info,
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_STRIDE_0_R + 0x04 * i),
+                 data_stride[i] << (GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+      printf("ITER CTRL - loop %0d: extent: %0d, cycle stride: %0d, data stride: %0d\n", i, extent[i], cycle_stride[i], data_stride[i]);
     }
-    if (cnt_diff == 1)
-    {
-      add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_NUM_ACTIVE_WORDS_R,
-                 active);
-      add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_NUM_INACTIVE_WORDS_R,
-                 inactive);
-      printf("ACTIVE CTRL - active: %0d, inactive: %0d\n", active, inactive);
-    }
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_VALIDATE_R, 1);
   }
   else
   {
-    int size = 1;
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_CTRL_R, ((0b10 << GLB_ST_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) | (1 << GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_DIM_R, loop_dim);
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_START_ADDR_R, start_addr);
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
+    printf("Output block mapped to tile: %0d\n", tile);
+    printf("Output block start addr: 0x%0x\n", start_addr);
+    printf("Output block cycle start addr: %0d\n", cycle_start_addr);
+    printf("Output block dimensionality: %0d\n", loop_dim);
     for (int i = 0; i < loop_dim; i++)
     {
-      size = size * extent[i];
+      add_config(config_info,
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_RANGE_0_R + 0x04 * i),
+                 extent[i] << (GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+      add_config(config_info,
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x04 * i),
+                 cycle_stride[i] << (GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
+      add_config(config_info,
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_STRIDE_0_R + 0x04 * i),
+                 data_stride[i] << (GLB_ST_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+      printf("ITER CTRL - loop %0d: extent: %0d, cycle stride: %0d, data stride: %0d\n", i, extent[i], cycle_stride[i], data_stride[i]);
     }
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_CTRL_R, ((0b10 << GLB_ST_DMA_CTRL_F2G_MUX_F_LSB) | (0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB)));
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_START_ADDR_R,
-               start_addr);
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_NUM_WORDS_R,
-               size);
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_VALIDATE_R, 1);
-    printf("Output block mapped to tile: %0d\n", tile);
-    printf("Output block start addr: %0d\n", start_addr);
-    printf("Output ITER CTRL - size: %0d\n", size);
   }
   return 1;
 }

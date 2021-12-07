@@ -1,4 +1,4 @@
-#include "glc_addrmap.h"
+#include "glc.h"
 #include "gen.h"
 #include "parser.h"
 
@@ -35,7 +35,7 @@ int get_configuration_data(void *info, int index)
 
 int get_pcfg_pulse_addr()
 {
-    return GLC_PC_START_PULSE;
+    return GLC_PC_START_PULSE_R;
 }
 
 int get_pcfg_pulse_data(void *info)
@@ -46,27 +46,41 @@ int get_pcfg_pulse_data(void *info)
 
 int get_strm_pulse_addr()
 {
-    return GLC_STREAM_START_PULSE;
+    return GLC_STREAM_START_PULSE_R;
 }
 
 int get_strm_pulse_data(void *info)
 {
     GET_KERNEL_INFO(info);
     int num_inputs = kernel_info->num_inputs;
+    int num_outputs = kernel_info->num_outputs;
     int num_io_tiles;
     struct IOInfo *io_info;
-    int result = 0;
+    int g2f_mask = 0;
+    int f2g_mask = 0;
+    int mask;
 
-    // Iterate through all input_io_tiles and store it to result
+    // Iterate through all io_tiles and store it to result
     for (int i = 0; i < num_inputs; i++)
     {
         io_info = kernel_info->input_info[i];
         num_io_tiles = io_info->num_io_tiles;
         for (int j = 0; j < num_io_tiles; j++)
         {
-            result |= (1 << io_info->io_tiles[j].tile);
+            g2f_mask |= (1 << io_info->io_tiles[j].tile);
         }
     }
 
-    return result;
+    for (int i = 0; i < num_outputs; i++)
+    {
+        io_info = kernel_info->output_info[i];
+        num_io_tiles = io_info->num_io_tiles;
+        for (int j = 0; j < num_io_tiles; j++)
+        {
+            f2g_mask |= (1 << io_info->io_tiles[j].tile);
+        }
+    }
+    mask = (f2g_mask << GLC_STREAM_START_PULSE_F2G_GLB_TILE_0_F_LSB) | (g2f_mask << GLC_STREAM_START_PULSE_G2F_GLB_TILE_0_F_LSB);
+
+    return mask;
 }

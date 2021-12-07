@@ -1,11 +1,11 @@
 2
-WR 0 0
+WR 0 0 0 0
 1
 4096
 1
 1
 testvectors/in_4096.dat
-RD 0 1
+RD 0 1 0 0
 1
 4096
 1

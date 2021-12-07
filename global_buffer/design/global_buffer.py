@@ -96,7 +96,8 @@ class GlobalBuffer(Generator):
         self.cgra_cfg_g2f_cfg_data = self.output("cgra_cfg_g2f_cfg_data", self._params.cgra_cfg_data_width, size=[
                                                  self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
-        self.strm_start_pulse = self.input("strm_start_pulse", self._params.num_glb_tiles)
+        self.strm_g2f_start_pulse = self.input("strm_g2f_start_pulse", self._params.num_glb_tiles)
+        self.strm_f2g_start_pulse = self.input("strm_f2g_start_pulse", self._params.num_glb_tiles)
         self.pcfg_start_pulse = self.input("pcfg_start_pulse", self._params.num_glb_tiles)
         self.strm_f2g_interrupt_pulse = self.output("strm_f2g_interrupt_pulse", self._params.num_glb_tiles)
         self.strm_g2f_interrupt_pulse = self.output("strm_g2f_interrupt_pulse", self._params.num_glb_tiles)
@@ -210,11 +211,13 @@ class GlobalBuffer(Generator):
             self.wire(self.cgra_stall[i], concat(
                 *[self.cgra_stall_in_d[i]] * self._params.cgra_per_glb))
 
-        self.strm_start_pulse_w = self.var(
-            "strm_start_pulse_w", self._params.num_glb_tiles)
-        self.strm_start_pulse_d = self.var(
-            "strm_start_pulse_d", self._params.num_glb_tiles)
-        self.wire(self.strm_start_pulse, self.strm_start_pulse_w)
+        self.strm_g2f_start_pulse_w = self.var("strm_g2f_start_pulse_w", self._params.num_glb_tiles)
+        self.strm_g2f_start_pulse_d = self.var("strm_g2f_start_pulse_d", self._params.num_glb_tiles)
+        self.wire(self.strm_g2f_start_pulse, self.strm_g2f_start_pulse_w)
+
+        self.strm_f2g_start_pulse_w = self.var("strm_f2g_start_pulse_w", self._params.num_glb_tiles)
+        self.strm_f2g_start_pulse_d = self.var("strm_f2g_start_pulse_d", self._params.num_glb_tiles)
+        self.wire(self.strm_f2g_start_pulse, self.strm_f2g_start_pulse_w)
 
         self.pcfg_start_pulse_w = self.var("pcfg_start_pulse_w", self._params.num_glb_tiles)
         self.pcfg_start_pulse_d = self.var("pcfg_start_pulse_d", self._params.num_glb_tiles)
@@ -640,7 +643,8 @@ class GlobalBuffer(Generator):
                            cgra_cfg_jtag_esto_addr_bypass=self.cgra_cfg_jtag_esto_addr_bypass[
                                i],
 
-                           strm_start_pulse=self.strm_start_pulse_d[i],
+                           strm_g2f_start_pulse=self.strm_g2f_start_pulse_d[i],
+                           strm_f2g_start_pulse=self.strm_f2g_start_pulse_d[i],
                            pcfg_start_pulse=self.pcfg_start_pulse_d[i],
                            strm_f2g_interrupt_pulse=self.strm_f2g_interrupt_pulse_w[i],
                            strm_g2f_interrupt_pulse=self.strm_g2f_interrupt_pulse_w[i],
@@ -663,11 +667,13 @@ class GlobalBuffer(Generator):
     def start_pulse_pipeline(self):
         if self.reset:
             for i in range(self._params.num_glb_tiles):
-                self.strm_start_pulse_d[i] = 0
+                self.strm_g2f_start_pulse_d[i] = 0
+                self.strm_f2g_start_pulse_d[i] = 0
                 self.pcfg_start_pulse_d[i] = 0
         else:
             for i in range(self._params.num_glb_tiles):
-                self.strm_start_pulse_d[i] = self.strm_start_pulse_w[i]
+                self.strm_g2f_start_pulse_d[i] = self.strm_g2f_start_pulse_w[i]
+                self.strm_f2g_start_pulse_d[i] = self.strm_f2g_start_pulse_w[i]
                 self.pcfg_start_pulse_d[i] = self.pcfg_start_pulse_w[i]
 
     @always_ff((posedge, "clk"), (posedge, "reset"))

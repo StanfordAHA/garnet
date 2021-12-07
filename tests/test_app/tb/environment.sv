@@ -153,9 +153,9 @@ endfunction
 task Environment::stall(bit [NUM_GLB_TILES-1:0] stall_mask);
     bit [CGRA_AXI_DATA_WIDTH-1:0] data;
     bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
-    axil_drv.read(`GLC_STALL, data);
+    axil_drv.read(`GLC_STALL_R, data);
     wr_data |= ((stall_mask << NUM_GLB_TILES) | stall_mask);
-    axil_drv.write(`GLC_STALL, wr_data);
+    axil_drv.write(`GLC_STALL_R, wr_data);
     $display("Stall GLB & CGRA with stall mask %4h", stall_mask);
 endtask
 
@@ -163,9 +163,9 @@ endtask
 task Environment::unstall(bit [NUM_GLB_TILES-1:0] stall_mask);
     bit [CGRA_AXI_DATA_WIDTH-1:0] data;
     bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
-    axil_drv.read(`GLC_STALL, data);
+    axil_drv.read(`GLC_STALL_R, data);
     wr_data &= (((~stall_mask) << NUM_GLB_TILES) | (~stall_mask));
-    axil_drv.write(`GLC_STALL, wr_data);
+    axil_drv.write(`GLC_STALL_R, wr_data);
     $display("Unstall GLB & CGRA with stall mask %4h", stall_mask);
 endtask
 
@@ -254,13 +254,13 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
 
     // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
-        addr = `GLC_PAR_CFG_G2F_ISR;
+        addr = `GLC_PAR_CFG_G2F_ISR_R;
         reg_name = "PCFG";
     end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
-        addr = `GLC_STRM_G2F_ISR;
+        addr = `GLC_STRM_G2F_ISR_R;
         reg_name = "STRM_G2F";
     end else begin
-        addr = `GLC_STRM_F2G_ISR;
+        addr = `GLC_STRM_F2G_ISR_R;
         reg_name = "STRM_F2G";
     end
 
@@ -292,13 +292,13 @@ task Environment::clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES
 
     // which interrupt
     if (glb_ctrl == GLB_PCFG_CTRL) begin
-        addr = `GLC_PAR_CFG_G2F_ISR;
+        addr = `GLC_PAR_CFG_G2F_ISR_R;
         reg_name = "PCFG";
     end else if (glb_ctrl == GLB_STRM_G2F_CTRL) begin
-        addr = `GLC_STRM_G2F_ISR;
+        addr = `GLC_STRM_G2F_ISR_R;
         reg_name = "STRM_G2F";
     end else begin
-        addr = `GLC_STRM_F2G_ISR;
+        addr = `GLC_STRM_F2G_ISR_R;
         reg_name = "STRM_F2G";
     end
 
@@ -308,10 +308,10 @@ endtask
 
 task Environment::set_interrupt_on();
     $display("Turn on interrupt enable registers");
-    axil_drv.write(`GLC_GLOBAL_IER, 3'b111);
-    axil_drv.write(`GLC_PAR_CFG_G2F_IER, {NUM_GLB_TILES{1'b1}});
-    axil_drv.write(`GLC_STRM_F2G_IER, {NUM_GLB_TILES{1'b1}});
-    axil_drv.write(`GLC_STRM_G2F_IER, {NUM_GLB_TILES{1'b1}});
+    axil_drv.write(`GLC_GLOBAL_IER_R, 3'b111);
+    axil_drv.write(`GLC_PAR_CFG_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
+    axil_drv.write(`GLC_STRM_F2G_IER_R, {NUM_GLB_TILES{1'b1}});
+    axil_drv.write(`GLC_STRM_G2F_IER_R, {NUM_GLB_TILES{1'b1}});
 endtask
 
 task Environment::run();

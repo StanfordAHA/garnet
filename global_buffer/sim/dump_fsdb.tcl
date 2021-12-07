@@ -1,6 +1,6 @@
 if { $::env(WAVEFORM) != "0" } {
   dump -file global_buffer.fsdb -type FSDB
-  dump -add top.dut -fsdb_opt +mda+packedmda+struct
+  dump -add top -fsdb_opt +mda+packedmda+struct
 }
 
 if { $::env(SAIF) == "0" } {

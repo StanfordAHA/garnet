@@ -2,23 +2,18 @@
 #define VIRTUALIZE_META_LIBRARY_H
 
 #include "tiny-json.h"
+#include "global_buffer_param.h"
 
-#define MAX_NUM_IO 16
+#define MAX_NUM_IO 8
 #define MAX_NUM_IO_TILES 16
 #define BUFFER_SIZE 1024
-#define MAX_NUM_KERNEL 16
+#define MAX_NUM_KERNEL 8
 #define MAX_JSON_FIELDS 2048
 #define MAX_CONFIG 40
-#define MAX_ADDR_GEN_LOOP 5
 
-#define GET_BS_INFO(info) struct BitstreamInfo *bs_info = \
-                              (struct BitstreamInfo *)info
-
-#define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = \
-                                  (struct KernelInfo *)info
-
-#define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = \
-                                  (struct ConfigInfo *)info
+#define GET_BS_INFO(info) struct BitstreamInfo *bs_info = (struct BitstreamInfo *)info
+#define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = (struct KernelInfo *)info
+#define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = (struct ConfigInfo *)info
 
 struct Configuration
 {
@@ -37,7 +32,6 @@ struct BitstreamInfo
     int size;
     int start_addr;
 
-    // TODO: Store glb control information separately
     struct ConfigInfo config;
 };
 
@@ -53,20 +47,18 @@ enum IO
     Output = 1
 };
 
-// TODO: Change IOTile name to IOBlock
 struct IOTileInfo
 {
     enum IO io;
     int tile;
-    // TODO: we do not need size anymore as we have extent
-    // int size;
     int start_addr;
+    int cycle_start_addr;
 
     struct Position pos;
     int loop_dim;
-    int cycle_stride[MAX_ADDR_GEN_LOOP];
-    int data_stride[MAX_ADDR_GEN_LOOP];
-    int extent[MAX_ADDR_GEN_LOOP];
+    int cycle_stride[LOOP_LEVEL];
+    int data_stride[LOOP_LEVEL];
+    int extent[LOOP_LEVEL];
 };
 
 struct IOInfo
@@ -75,11 +67,7 @@ struct IOInfo
     int num_io_tiles;
     char filename[BUFFER_SIZE];
     int filesize;
-
     struct IOTileInfo io_tiles[MAX_NUM_IO_TILES];
-
-    // TODO: We do not use it
-    // struct ConfigInfo config;
 };
 
 struct KernelInfo
@@ -96,16 +84,13 @@ struct KernelInfo
     char bitstream_filename[BUFFER_SIZE];
     char placement_filename[BUFFER_SIZE];
 
-    // TODO: input_info + output_info should be less than MAX_NUM_IO
-    // TODO: Is static global variable better or local variable better?
     struct IOInfo *input_info[MAX_NUM_IO];
     struct IOInfo *output_info[MAX_NUM_IO];
     struct BitstreamInfo *bitstream_info;
 
-    // TODO: What is the best place to store config information
-    // configuration registers are stored in this struct
+    // NOTE: What is the best place to store config information?
     // Most config should go into each IOInfo by having separate
-    // configuration registers for each DMA
+    // configuration info for each DMA?
     struct ConfigInfo config;
 };
 
@@ -139,11 +124,10 @@ int get_input_size(void *info, int index);
 int get_output_size(void *info, int index);
 
 int get_io_tile_start_addr(void *info, int index);
-// TODO: Change function name to get_io_block_tile
 int get_io_tile_map_tile(void *info, int index);
 int get_bs_start_addr(void *info);
 int get_bs_size(void *info);
 int get_bs_tile(void *info);
 char *get_prefix(const char *s, char t);
 
-#endif //VIRTUALIZE_META_LIBRARY_H
+#endif // VIRTUALIZE_META_LIBRARY_H
