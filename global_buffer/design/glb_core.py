@@ -266,8 +266,8 @@ class GlbCore(Generator):
                        data_valid_f2g_dma=self.strm_data_valid_f2g_mux2dma,
                        data_f2g=self.strm_data_f2g,
                        data_valid_f2g=self.strm_data_valid_f2g,
-                       cfg_data_network_g2f_mux=self.cfg_data_network['g2f_mux'],
-                       cfg_data_network_f2g_mux=self.cfg_data_network['f2g_mux'])
+                       cfg_data_network_g2f_mux=self.cfg_ld_dma_ctrl['g2f_mux'],
+                       cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['f2g_mux'])
 
         self.glb_core_switch = GlbCoreSwitch(_params=self._params)
         self.add_child("glb_core_switch",

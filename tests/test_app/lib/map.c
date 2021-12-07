@@ -145,11 +145,6 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info,
   int tile = io_tile_info->tile;
   int start_addr = io_tile_info->start_addr;
 
-  // FIXME: We assume chaining is not happening.
-  add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_DATA_NETWORK_R,
-             ((0b10 << GLB_DATA_NETWORK_F2G_MUX_F_LSB) |
-              (0b01 << GLB_DATA_NETWORK_G2F_MUX_F_LSB)));
-
   int loop_dim = io_tile_info->loop_dim;
   int cycle_stride[loop_dim + 1];
   int extent[loop_dim + 1];
@@ -161,9 +156,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info,
     extent[i] = io_tile_info->extent[i];
   }
 
-  // int *extent = io_tile_info->extent;
-  // int *stride = io_tile_info->data_stride;
-  // int *cycle_stride = io_tile_info->cycle_stride;
+  // FIXME: We assume chaining is not happening.
 
   // HACK1: Reduce cycle stride dimension by sending the same data multiple time
   // if the cycle_stride[0] is non zero.
@@ -207,7 +200,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info,
       return 0;
     }
 
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_CTRL_R, ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (0 << GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_CTRL_R, ((0b01 << GLB_LD_DMA_CTRL_G2F_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (0 << GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_START_ADDR_R, start_addr);
     printf("Input block mapped to tile: %0d\n", tile);
     printf("Input block start addr: %0d\n", start_addr);
@@ -241,7 +235,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info,
     {
       size = size * extent[i];
     }
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_CTRL_R, ((0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB)));
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_CTRL_R, ((0b10 << GLB_ST_DMA_CTRL_F2G_MUX_F_LSB) | (0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB)));
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_START_ADDR_R,
                start_addr);
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_NUM_WORDS_R,

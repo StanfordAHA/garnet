@@ -98,7 +98,7 @@ class Rdl:
 
                 if not isinstance(rdl_node, Field):
                     for child in rdl_node.children:
-                        expr += self._get_rdl_node_expr(child, level+1)
+                        expr += self._get_rdl_node_expr(child, level + 1)
 
                 elab_name = rdl_node.name + f"_{i}"
                 if isinstance(rdl_node, Field):
@@ -131,7 +131,7 @@ class Rdl:
 
             if not isinstance(rdl_node, Field):
                 for child in rdl_node.children:
-                    expr += self._get_rdl_node_expr(child, level+1)
+                    expr += self._get_rdl_node_expr(child, level + 1)
 
             elab_name = rdl_node.name
             if isinstance(rdl_node, Field):
@@ -153,12 +153,9 @@ def gen_global_buffer_rdl(name, params):
 
     # Data Network Ctrl Register
     data_network_ctrl = Reg("data_network")
-    f2g_mux_f = Field("f2g_mux", 2)
-    g2f_mux_f = Field("g2f_mux", 2)
     tile_connected_f = Field("tile_connected", 1)
     strm_latency_f = Field("latency", params.latency_width)
-    data_network_ctrl.add_children(
-        [f2g_mux_f, g2f_mux_f, tile_connected_f, strm_latency_f])
+    data_network_ctrl.add_children([tile_connected_f, strm_latency_f])
     addr_map.add_child(data_network_ctrl)
 
     # Pcfg Network Ctrl Register
@@ -170,7 +167,8 @@ def gen_global_buffer_rdl(name, params):
     # Store DMA Ctrl
     st_dma_ctrl_r = Reg("st_dma_ctrl")
     st_dma_mode_f = Field("mode", 2)
-    st_dma_ctrl_r.add_child(st_dma_mode_f)
+    f2g_mux_f = Field("f2g_mux", 2)
+    st_dma_ctrl_r.add_children([st_dma_mode_f, f2g_mux_f])
     addr_map.add_child(st_dma_ctrl_r)
 
     # Store DMA Header
@@ -202,6 +200,8 @@ def gen_global_buffer_rdl(name, params):
     ld_dma_ctrl_r.add_child(ld_dma_mode_f)
     ld_dma_use_valid_f = Field("use_valid", 1)
     ld_dma_ctrl_r.add_child(ld_dma_use_valid_f)
+    g2f_mux_f = Field("g2f_mux", 2)
+    ld_dma_ctrl_r.add_child(g2f_mux_f)
     addr_map.add_child(ld_dma_ctrl_r)
 
     # Load DMA Header
@@ -272,5 +272,5 @@ def run_systemrdl(ordt_path, name, rdl_file, parms_file, output_folder):
 
 
 def gen_glb_pio_wrapper(src_file, dest_file):
-    os.system(f"sed '/\.\*/d' {src_file} > {dest_file}")
+    os.system(f"sed '/\.\*/d' {src_file} > {dest_file}")  # nopep8
     return dest_file

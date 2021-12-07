@@ -33,8 +33,8 @@ class GlbCoreStoreDma(Generator):
         self.st_dma_done_pulse = self.output("st_dma_done_pulse", 1)
 
         # localparam
-        self.default_latency = 3
-
+        self.default_latency = self._params.glb_bank_memory_pipeline_depth + \
+            self._params.sram_gen_pipeline_depth + self._params.glb_switch_pipeline_depth
         # local variables
         self.data_f2g_d1 = self.var(
             "data_f2g_d1", width=self._params.cgra_data_width)
@@ -324,7 +324,9 @@ class GlbCoreStoreDma(Generator):
             self.wr_packet['wr_en'] = 1
             self.wr_packet['wr_strb'] = self.cache_strb_r
             self.wr_packet['wr_data'] = self.cache_data_r
-            self.wr_packet['wr_addr'] = self.cur_addr_r
+            self.wr_packet['wr_addr'] = concat(self.cur_addr_r[self._params.glb_addr_width - 1,
+                                                               self._params.bank_byte_offset],
+                                               const(0, self._params.bank_byte_offset))
         else:
             self.wr_packet['wr_en'] = 0
             self.wr_packet['wr_strb'] = 0
@@ -347,7 +349,6 @@ class GlbCoreStoreDma(Generator):
         self.done_pulse_w = self.strm_done & (~self.strm_done_d1)
 
     def add_done_pulse_pipeline(self):
-        # TODO: This maximum latency should be automatically set
         maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
         latency_width = clog2(maximum_latency)
         self.done_pulse_d_arr = self.var(

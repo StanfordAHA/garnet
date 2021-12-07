@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge
+from kratos import Generator, always_ff, always_comb, posedge, concat
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 
@@ -69,41 +69,42 @@ class GlbCoreSwitch(Generator):
         self.cfg_pcfg_dma_ctrl_mode = self.input("cfg_pcfg_dma_ctrl_mode", 1)
 
         # local variables
-        self.wr_packet_sr2sw_d1 = self.var(
-            "wr_packet_sr2sw_d1", self.header.wr_packet_t)
-        self.wr_packet_pr2sw_d1 = self.var(
-            "wr_packet_pr2sw_d1", self.header.wr_packet_t)
-        self.wr_packet_dma2sw_d1 = self.var(
-            "wr_packet_dma2sw_d1", self.header.wr_packet_t)
+        assert self._params.glb_switch_pipeline_depth == 1  # switch pipeline depth is fixed to 1
+        self.wr_packet_sr2sw_d = self.var(
+            "wr_packet_sr2sw_d", self.header.wr_packet_t)
+        self.wr_packet_pr2sw_d = self.var(
+            "wr_packet_pr2sw_d", self.header.wr_packet_t)
+        self.wr_packet_dma2sw_d = self.var(
+            "wr_packet_dma2sw_d", self.header.wr_packet_t)
         self.wr_packet_sw2bank_muxed = self.var(
             "wr_packet_sw2bank_muxed", self.header.wr_packet_t)
         self.wr_packet_sw2bank_filtered = self.var(
             "wr_packet_sw2bank_filtered", self.header.wr_packet_t)
 
-        self.rdrq_packet_pr2sw_d1 = self.var(
-            "rdrq_packet_pr2sw_d1", self.header.rdrq_packet_t)
-        self.rdrq_packet_sr2sw_d1 = self.var(
-            "rdrq_packet_sr2sw_d1", self.header.rdrq_packet_t)
-        self.rdrq_packet_dma2sw_d1 = self.var(
-            "rdrq_packet_dma2sw_d1", self.header.rdrq_packet_t)
-        self.rdrq_packet_pcfgr2sw_d1 = self.var(
-            "rdrq_packet_pcfgr2sw_d1", self.header.rdrq_packet_t)
-        self.rdrq_packet_pcfgdma2sw_d1 = self.var(
-            "rdrq_packet_pcfgdma2sw_d1", self.header.rdrq_packet_t)
+        self.rdrq_packet_pr2sw_d = self.var(
+            "rdrq_packet_pr2sw_d", self.header.rdrq_packet_t)
+        self.rdrq_packet_sr2sw_d = self.var(
+            "rdrq_packet_sr2sw_d", self.header.rdrq_packet_t)
+        self.rdrq_packet_dma2sw_d = self.var(
+            "rdrq_packet_dma2sw_d", self.header.rdrq_packet_t)
+        self.rdrq_packet_pcfgr2sw_d = self.var(
+            "rdrq_packet_pcfgr2sw_d", self.header.rdrq_packet_t)
+        self.rdrq_packet_pcfgdma2sw_d = self.var(
+            "rdrq_packet_pcfgdma2sw_d", self.header.rdrq_packet_t)
         self.rdrq_packet_sw2bank_muxed = self.var(
             "rdrq_packet_sw2bank_muxed", self.header.rdrq_packet_t)
 
-        self.rdrs_packet_pcfgr2sw_d1 = self.var(
-            "rdrs_packet_pcfgr2sw_d1", self.header.rdrs_packet_t)
-        self.rdrs_packet_sr2sw_d1 = self.var(
-            "rdrs_packet_sr2sw_d1", self.header.rdrs_packet_t)
+        self.rdrs_packet_pcfgr2sw_d = self.var(
+            "rdrs_packet_pcfgr2sw_d", self.header.rdrs_packet_t)
+        self.rdrs_packet_sr2sw_d = self.var(
+            "rdrs_packet_sr2sw_d", self.header.rdrs_packet_t)
 
-        self.rdrs_packet_bankarr2sw_sr_d1 = self.var(
-            "rdrs_packet_bankarr2sw_sr_d1 ", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
-        self.rdrs_packet_bankarr2sw_pr_d1 = self.var(
-            "rdrs_packet_bankarr2sw_pr_d1 ", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
-        self.rdrs_packet_bankarr2sw_pcfgr_d1 = self.var(
-            "rdrs_packet_bankarr2sw_pcfgr_d1 ", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
+        self.rdrs_packet_bankarr2sw_sr_d = self.var(
+            "rdrs_packet_bankarr2sw_sr_d ", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
+        self.rdrs_packet_bankarr2sw_pr_d = self.var(
+            "rdrs_packet_bankarr2sw_pr_d ", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
+        self.rdrs_packet_bankarr2sw_pcfgr_d = self.var(
+            "rdrs_packet_bankarr2sw_pcfgr_d ", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
 
         # packet src enum
         self.packet_src_e = self.enum("packet_src_e", {
@@ -112,7 +113,11 @@ class GlbCoreSwitch(Generator):
         self.rdrq_sel = self.var("rdrq_sel", self.packet_src_e)
         self.rdrq_sel_d = []
         self.rdrq_sel_d_nostall = []
-        for i in range(self._params.glb_switch_pipeline_depth):
+        for i in range(self._params.glb_bank_memory_pipeline_depth
+                       + self._params.sram_gen_pipeline_depth
+                       + self._params.sram_gen_output_pipeline_depth
+                       + self._params.glb_switch_pipeline_depth
+                       + 1):
             self.rdrq_sel_d.append(
                 self.var(f"rdrq_sel_d{i+1}", self.packet_src_e))
             self.rdrq_sel_d_nostall.append(
@@ -122,7 +127,11 @@ class GlbCoreSwitch(Generator):
             "rdrq_bank_sel", self._params.bank_sel_addr_width)
         self.rdrq_bank_sel_d = []
         self.rdrq_bank_sel_d_nostall = []
-        for i in range(self._params.glb_switch_pipeline_depth):
+        for i in range(self._params.glb_bank_memory_pipeline_depth
+                       + self._params.sram_gen_pipeline_depth
+                       + self._params.sram_gen_output_pipeline_depth
+                       + self._params.glb_switch_pipeline_depth
+                       + 1):
             self.rdrq_bank_sel_d.append(
                 self.var(f"rdrq_bank_sel_d{i+1}", self._params.bank_sel_addr_width))
             self.rdrq_bank_sel_d_nostall.append(
@@ -185,27 +194,27 @@ class GlbCoreSwitch(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def wr_proc_pipeline(self):
         if self.reset:
-            self.wr_packet_pr2sw_d1 = 0
+            self.wr_packet_pr2sw_d = 0
         else:
-            self.wr_packet_pr2sw_d1 = self.wr_packet_pr2sw
+            self.wr_packet_pr2sw_d = self.wr_packet_pr2sw
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def wr_data_pipeline(self):
         if self.reset:
-            self.wr_packet_dma2sw_d1 = 0
-            self.wr_packet_sr2sw_d1 = 0
+            self.wr_packet_dma2sw_d = 0
+            self.wr_packet_sr2sw_d = 0
         elif self.clk_en:
-            self.wr_packet_dma2sw_d1 = self.wr_packet_dma2sw
-            self.wr_packet_sr2sw_d1 = self.wr_packet_sr2sw
+            self.wr_packet_dma2sw_d = self.wr_packet_dma2sw
+            self.wr_packet_sr2sw_d = self.wr_packet_sr2sw
 
     @always_comb
     def wr_sw2bank_logic(self):
-        if self.wr_packet_pr2sw_d1['wr_en']:
-            self.wr_packet_sw2bank_muxed = self.wr_packet_pr2sw_d1
+        if self.wr_packet_pr2sw_d['wr_en']:
+            self.wr_packet_sw2bank_muxed = self.wr_packet_pr2sw_d
         elif self.cfg_st_dma_ctrl_mode != 0:
-            self.wr_packet_sw2bank_muxed = self.wr_packet_dma2sw_d1
+            self.wr_packet_sw2bank_muxed = self.wr_packet_dma2sw_d
         else:
-            self.wr_packet_sw2bank_muxed = self.wr_packet_sr2sw_d1
+            self.wr_packet_sw2bank_muxed = self.wr_packet_sr2sw_d
 
     @always_comb
     def wr_sw2bank_filtered_logic(self):
@@ -236,47 +245,47 @@ class GlbCoreSwitch(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_proc_pcfg_pipeline(self):
         if self.reset:
-            self.rdrq_packet_pr2sw_d1 = 0
-            self.rdrq_packet_pcfgr2sw_d1 = 0
-            self.rdrq_packet_pcfgdma2sw_d1 = 0
+            self.rdrq_packet_pr2sw_d = 0
+            self.rdrq_packet_pcfgr2sw_d = 0
+            self.rdrq_packet_pcfgdma2sw_d = 0
         else:
-            self.rdrq_packet_pr2sw_d1 = self.rdrq_packet_pr2sw
-            self.rdrq_packet_pcfgr2sw_d1 = self.rdrq_packet_pcfgr2sw
-            self.rdrq_packet_pcfgdma2sw_d1 = self.rdrq_packet_pcfgdma2sw
+            self.rdrq_packet_pr2sw_d = self.rdrq_packet_pr2sw
+            self.rdrq_packet_pcfgr2sw_d = self.rdrq_packet_pcfgr2sw
+            self.rdrq_packet_pcfgdma2sw_d = self.rdrq_packet_pcfgdma2sw
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_data_pipeline(self):
         if self.reset:
-            self.rdrq_packet_dma2sw_d1 = 0
-            self.rdrq_packet_sr2sw_d1 = 0
+            self.rdrq_packet_dma2sw_d = 0
+            self.rdrq_packet_sr2sw_d = 0
         elif self.clk_en:
-            self.rdrq_packet_dma2sw_d1 = self.rdrq_packet_dma2sw
-            self.rdrq_packet_sr2sw_d1 = self.rdrq_packet_sr2sw
+            self.rdrq_packet_dma2sw_d = self.rdrq_packet_dma2sw
+            self.rdrq_packet_sr2sw_d = self.rdrq_packet_sr2sw
 
     @always_comb
     def rdrq_sel_logic(self):
-        if ((self.rdrq_packet_pr2sw_d1['rd_en'] == 1)
-            & (self.rdrq_packet_pr2sw_d1['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
+        if ((self.rdrq_packet_pr2sw_d['rd_en'] == 1)
+            & (self.rdrq_packet_pr2sw_d['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
                == self.glb_tile_id)):
             self.rdrq_sel = self.packet_src_e.proc
         elif ((self.cfg_pcfg_dma_ctrl_mode == 1)
-              & (self.rdrq_packet_pcfgdma2sw_d1['rd_en'] == 1)
-              & (self.rdrq_packet_pcfgdma2sw_d1['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
+              & (self.rdrq_packet_pcfgdma2sw_d['rd_en'] == 1)
+              & (self.rdrq_packet_pcfgdma2sw_d['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
                  == self.glb_tile_id)):
             self.rdrq_sel = self.packet_src_e.pcfg_dma
         elif ((self.cfg_pcfg_dma_ctrl_mode == 0)
-              & (self.rdrq_packet_pcfgr2sw_d1['rd_en'] == 1)
-              & (self.rdrq_packet_pcfgr2sw_d1['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
+              & (self.rdrq_packet_pcfgr2sw_d['rd_en'] == 1)
+              & (self.rdrq_packet_pcfgr2sw_d['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
                  == self.glb_tile_id)):
             self.rdrq_sel = self.packet_src_e.pcfg_rtr
         elif ((self.cfg_ld_dma_ctrl_mode != 0)
-              & (self.rdrq_packet_dma2sw_d1['rd_en'] == 1)
-              & (self.rdrq_packet_dma2sw_d1['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
+              & (self.rdrq_packet_dma2sw_d['rd_en'] == 1)
+              & (self.rdrq_packet_dma2sw_d['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
                  == self.glb_tile_id)):
             self.rdrq_sel = self.packet_src_e.strm_dma
         elif ((self.cfg_ld_dma_ctrl_mode == 0)
-              & (self.rdrq_packet_sr2sw_d1['rd_en'] == 1)
-              & (self.rdrq_packet_sr2sw_d1['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
+              & (self.rdrq_packet_sr2sw_d['rd_en'] == 1)
+              & (self.rdrq_packet_sr2sw_d['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
                  == self.glb_tile_id)):
             self.rdrq_sel = self.packet_src_e.strm_rtr
         else:
@@ -285,15 +294,15 @@ class GlbCoreSwitch(Generator):
     @always_comb
     def rdrq_switch_logic(self):
         if self.rdrq_sel == self.packet_src_e.proc:
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_pr2sw_d1
+            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_pr2sw_d
         elif self.rdrq_sel == self.packet_src_e.pcfg_dma:
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_pcfgdma2sw_d1
+            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_pcfgdma2sw_d
         elif self.rdrq_sel == self.packet_src_e.pcfg_rtr:
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_pcfgr2sw_d1
+            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_pcfgr2sw_d
         elif self.rdrq_sel == self.packet_src_e.strm_dma:
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_dma2sw_d1
+            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_dma2sw_d
         elif self.rdrq_sel == self.packet_src_e.strm_rtr:
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_sr2sw_d1
+            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_sr2sw_d
         else:
             self.rdrq_packet_sw2bank_muxed = 0
         self.rdrq_bank_sel = self.rdrq_packet_sw2bank_muxed['rd_addr'][
@@ -325,21 +334,21 @@ class GlbCoreSwitch(Generator):
     def rdrs_proc_pcfg_pipeline(self):
         if self.reset:
             for i in range(self._params.banks_per_tile):
-                self.rdrs_packet_bankarr2sw_pr_d1[i] = 0
-                self.rdrs_packet_bankarr2sw_pcfgr_d1[i] = 0
+                self.rdrs_packet_bankarr2sw_pr_d[i] = 0
+                self.rdrs_packet_bankarr2sw_pcfgr_d[i] = 0
         else:
             for i in range(self._params.banks_per_tile):
-                self.rdrs_packet_bankarr2sw_pr_d1[i] = self.rdrs_packet_bankarr2sw[i]
-                self.rdrs_packet_bankarr2sw_pcfgr_d1[i] = self.rdrs_packet_bankarr2sw[i]
+                self.rdrs_packet_bankarr2sw_pr_d[i] = self.rdrs_packet_bankarr2sw[i]
+                self.rdrs_packet_bankarr2sw_pcfgr_d[i] = self.rdrs_packet_bankarr2sw[i]
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrs_data_pipeline(self):
         if self.reset:
             for i in range(self._params.banks_per_tile):
-                self.rdrs_packet_bankarr2sw_sr_d1[i] = 0
+                self.rdrs_packet_bankarr2sw_sr_d[i] = 0
         elif self.clk_en:
             for i in range(self._params.banks_per_tile):
-                self.rdrs_packet_bankarr2sw_sr_d1[i] = self.rdrs_packet_bankarr2sw[i]
+                self.rdrs_packet_bankarr2sw_sr_d[i] = self.rdrs_packet_bankarr2sw[i]
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_pipeline_nostall(self, in_, out_, rst):
@@ -359,21 +368,21 @@ class GlbCoreSwitch(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrs_sr2sw_pipieline(self):
         if self.reset:
-            self.rdrs_packet_sr2sw_d1 = 0
+            self.rdrs_packet_sr2sw_d = 0
         elif self.clk_en:
-            self.rdrs_packet_sr2sw_d1 = self.rdrs_packet_sr2sw
+            self.rdrs_packet_sr2sw_d = self.rdrs_packet_sr2sw
 
     @always_comb
     def rdrs_sw2dma_logic(self):
         if self.cfg_ld_dma_ctrl_mode != 0:
-            self.rdrs_packet_sw2dma = self.rdrs_packet_sr2sw_d1
+            self.rdrs_packet_sw2dma = self.rdrs_packet_sr2sw_d
         else:
             self.rdrs_packet_sw2dma = 0
 
     @always_comb
     def rdrs_sw2sr_logic(self):
         if (self.rdrq_sel_d[-1] == self.packet_src_e.strm_rtr) | (self.rdrq_sel_d[-1] == self.packet_src_e.strm_dma):
-            self.rdrs_packet_sw2sr = self.rdrs_packet_bankarr2sw_sr_d1[self.rdrq_bank_sel_d[-1]]
+            self.rdrs_packet_sw2sr = self.rdrs_packet_bankarr2sw_sr_d[self.rdrq_bank_sel_d[-1]]
         else:
             if self.cfg_ld_dma_ctrl_mode != 0:
                 self.rdrs_packet_sw2sr = 0
@@ -384,7 +393,7 @@ class GlbCoreSwitch(Generator):
     @always_comb
     def rdrs_sw2pr_logic(self):
         if self.rdrq_sel_d_nostall[-1] == self.packet_src_e.proc:
-            self.rdrs_packet_sw2pr = self.rdrs_packet_bankarr2sw_pr_d1[
+            self.rdrs_packet_sw2pr = self.rdrs_packet_bankarr2sw_pr_d[
                 self.rdrq_bank_sel_d_nostall[-1]]
         else:
             self.rdrs_packet_sw2pr = 0
@@ -393,14 +402,14 @@ class GlbCoreSwitch(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrs_pcfgr2sw_pipeline(self):
         if self.reset:
-            self.rdrs_packet_pcfgr2sw_d1 = 0
+            self.rdrs_packet_pcfgr2sw_d = 0
         else:
-            self.rdrs_packet_pcfgr2sw_d1 = self.rdrs_packet_pcfgr2sw
+            self.rdrs_packet_pcfgr2sw_d = self.rdrs_packet_pcfgr2sw
 
     @always_comb
     def rdrs_sw2pcfgdma_logic(self):
         if self.cfg_pcfg_dma_ctrl_mode != 0:
-            self.rdrs_packet_sw2pcfgdma = self.rdrs_packet_pcfgr2sw_d1
+            self.rdrs_packet_sw2pcfgdma = self.rdrs_packet_pcfgr2sw_d
         else:
             self.rdrs_packet_sw2pcfgdma = 0
 
@@ -408,7 +417,7 @@ class GlbCoreSwitch(Generator):
     def rdrs_sw2pcfgr_logic(self):
         if ((self.rdrq_sel_d_nostall[-1] == self.packet_src_e.pcfg_rtr)
                 | (self.rdrq_sel_d_nostall[-1] == self.packet_src_e.pcfg_dma)):
-            self.rdrs_packet_sw2pcfgr = self.rdrs_packet_bankarr2sw_pcfgr_d1[
+            self.rdrs_packet_sw2pcfgr = self.rdrs_packet_bankarr2sw_pcfgr_d[
                 self.rdrq_bank_sel_d_nostall[-1]]
         else:
             if self.cfg_pcfg_dma_ctrl_mode != 0:

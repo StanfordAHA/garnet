@@ -27,7 +27,7 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'   : 1.0,
+    'clock_period'   : 1.25,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
@@ -40,8 +40,11 @@ def construct():
     # signals in glb_top to corresponding CGRA tile columns below glb_top
     'array_width'         : 32,
     'num_glb_tiles'       : 16,
+    'tool'                : "VCS",
     # glb tile memory size (unit: KB)
-    'glb_tile_mem_size' : 256
+    'glb_tile_mem_size' : 256,
+    'rtl_testvectors' : ["test1", "test2", "test3", "test4"],
+    'gls_testvectors' : ["test1.pwr", "test2.pwr"]
   }
 
   #-----------------------------------------------------------------------
@@ -57,15 +60,17 @@ def construct():
 
   # Custom steps
 
-  rtl               = Step( this_dir + '/../common/rtl'                                 )
-  sim               = Step( this_dir + '/sim'                                 )
+  rtl               = Step( this_dir + '/../common/rtl'                       )
+  sim_compile       = Step( this_dir + '/sim-compile'                         )
+  sim_run           = Step( this_dir + '/sim-run'                             )
+  sim_gl_compile    = Step( this_dir + '/sim-gl-compile'                      )
   glb_tile          = Step( this_dir + '/glb_tile'                            )
-  glb_tile_syn      = Step( this_dir + '/glb_tile_syn'                        )
   constraints       = Step( this_dir + '/constraints'                         )
   custom_init       = Step( this_dir + '/custom-init'                         )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
   lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
+
   # Default steps
 
   info           = Step( 'info',                            default=True )
@@ -89,6 +94,36 @@ def construct():
       drc            = Step( 'cadence-pegasus-drc',           default=True )
       lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
+
+  if parameters['tool'] == 'VCS':
+    sim_compile.extend_outputs(['simv', 'simv.daidir'])
+    sim_gl_compile.extend_outputs(['simv', 'simv.daidir'])
+    sim_run.extend_inputs(['simv', 'simv.daidir'])
+  elif parameters['tool'] == 'XCELIUM':
+    sim_compile.extend_outputs(['xcelium.d'])
+    sim_gl_compile.extend_outputs(['xcelium.d'])
+    sim_run.extend_inputs(['xcelium.d'])
+
+  sim_gl_run_nodes = {}
+  ptpx_gl_nodes = {}
+  for test in parameters["gls_testvectors"]:
+    sim_gl_run        = Step( this_dir + '/sim-gl-run'       )
+    ptpx_gl           = Step( this_dir + '/synopsys-ptpx-gl' )
+
+    # rename
+    sim_gl_run.set_name(f"sim_gl_run_{test}")
+    ptpx_gl.set_name(f"ptpx_gl_{test}")
+    sim_gl_run_nodes[test] = sim_gl_run
+    ptpx_gl_nodes[test] = ptpx_gl
+    sim_gl_run.update_params( {'test' : test}, allow_new=True)
+    # Gate-level ptpx node
+    ptpx_gl.set_param("strip_path", "top/dut")
+    ptpx_gl.extend_inputs(glb_tile.all_outputs())
+    if parameters['tool'] == 'VCS':
+      sim_gl_run.extend_inputs(['simv', 'simv.daidir'])
+    elif parameters['tool'] == 'XCELIUM':
+      sim_gl_run.extend_inputs(['xcelium.d'])
+
 
   # Add header files to outputs
   rtl.extend_outputs( ['header'] )
@@ -135,15 +170,17 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
   g.add_step( info           )
   g.add_step( rtl            )
-  g.add_step( sim            )
+  g.add_step( sim_compile    )
+  g.add_step( sim_run        )
+  g.add_step( sim_gl_compile )
   g.add_step( glb_tile       )
-  g.add_step( glb_tile_syn   )
   g.add_step( constraints    )
   g.add_step( synth          )
   g.add_step( iflow          )
@@ -165,6 +202,10 @@ def construct():
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
   g.add_step( debugcalibre   )
+
+  for test in parameters["gls_testvectors"]:
+    g.add_step(sim_gl_run_nodes[test])
+    g.add_step(ptpx_gl_nodes[test])
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -202,7 +243,8 @@ def construct():
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
 
-  g.connect_by_name( rtl,         sim        )
+  g.connect_by_name( rtl,         sim_compile )
+  g.connect_by_name( sim_compile, sim_run     )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
@@ -248,11 +290,25 @@ def construct():
 
   g.connect_by_name( adk,          genlib   )
   g.connect_by_name( signoff,      genlib   )
+
+  g.connect_by_name( rtl,        sim_gl_compile )
+  g.connect_by_name( adk,        sim_gl_compile )
+  g.connect_by_name( glb_tile,   sim_gl_compile )
+  g.connect_by_name( signoff,    sim_gl_compile )
+
+  for test in parameters["gls_testvectors"]:
+    g.connect_by_name( sim_gl_compile, sim_gl_run_nodes[test] )
   
+  for test in parameters["gls_testvectors"]:
+    g.connect_by_name( adk,                    ptpx_gl_nodes[test] )
+    g.connect_by_name( glb_tile,               ptpx_gl_nodes[test] )
+    g.connect_by_name( signoff,                ptpx_gl_nodes[test] )
+    g.connect_by_name( sim_gl_run_nodes[test], ptpx_gl_nodes[test] )
+
   g.connect_by_name( genlib,       lib2db   )
 
   g.connect_by_name( adk,      debugcalibre )
-  g.connect_by_name( synth,       debugcalibre )
+  g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
