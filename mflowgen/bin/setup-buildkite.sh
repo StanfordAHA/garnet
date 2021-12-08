@@ -15,6 +15,8 @@
 #   - makes local link to mflowgen repo "/sim/buildkite-agent/mflowgen"
 #   - makes local copy of adk
 
+# CHANGE LOG
+# sep 2021 better log output, rsync adks instead of cp
 
 ##############################################################################
 # Script must be sourced; complain if someone tries to execute it instead.
@@ -266,7 +268,7 @@ function check_pyversions {
 # If you're not "buildkite-agent", you're on your own.
 
 if [ "$USER" == "buildkite-agent" ]; then
-    echo "--- ENVIRONMENT"; echo ""
+    echo "--- ENVIRONMENT - VENV"; echo ""
     venv=/usr/local/venv_garnet
     if ! test -d $venv; then
         echo "**ERROR: Cannot find pre-built environment '$venv'"
@@ -303,6 +305,7 @@ export PATH="$PATH:/usr/local/bin"; hash -r
 # source $garnet/.buildkite/setup.sh
 # source $garnet/.buildkite/setup-calibre.sh
 # Use the new stuff
+echo "--- ENVIRONMENT - CAD TOOLS"; echo ""
 echo Sourcing $garnet/mflowgen/setup-garnet.sh ...
 source $garnet/mflowgen/setup-garnet.sh
 
@@ -439,8 +442,9 @@ if [ "$USER" == "buildkite-agent" ]; then
     # Copy the adk to test rig
     echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
     echo "Copying adks from '$tsmc16' to '$adks'"
-    # Need '-f' to e.g. copy over existing read-only .git objects
-    set -x; cp -frpH $tsmc16 $adks; set +x
+
+    # Note rsync is much faster than cp!
+    set -x; rsync -avR $tsmc16 $adks; set +x
 
     export MFLOWGEN_PATH=$adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
