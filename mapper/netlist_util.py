@@ -395,13 +395,15 @@ class CountTiles(Visitor):
     def doit(self, dag: Dag):
         self.num_pes = 0
         self.num_mems = 0
+        self.num_ponds = 0
         self.num_ios = 0
         self.num_regs = 0
         self.run(dag)
         print(f"PEs: {self.num_pes}")
         print(f"MEMs: {self.num_mems}")
+        print(f"Ponds: {self.num_ponds}")
         print(f"IOs: {self.num_ios}")
-        print(f"Regs: {self.num_regs/2}")
+        print(f"Regs: {int(self.num_regs/2)}")
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
@@ -411,6 +413,8 @@ class CountTiles(Visitor):
             self.num_pes += 1
         elif node.node_name == "global.MEM":
             self.num_mems += 1
+        elif node.node_name == "global.Pond":
+            self.num_ponds += 1
         elif node.node_name == "Register":
             self.num_regs += 1
 
