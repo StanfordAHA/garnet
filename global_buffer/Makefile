@@ -5,7 +5,7 @@ current_dir := $(abspath $(dir $(mkfile_path)))
 # -------------------------------------------------------------------
 # Parameters
 # -------------------------------------------------------------------
-CLK_PERIOD ?= 1000ps
+CLK_PERIOD ?= 800ps
 CGRA_WIDTH ?= 32
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
