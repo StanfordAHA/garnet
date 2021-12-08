@@ -165,7 +165,7 @@ class GlbCoreStoreDma(Generator):
         for i in range(self._params.loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def repeat_cnt_ff(self):
         if self.reset:
             self.repeat_cnt = 0
@@ -180,7 +180,7 @@ class GlbCoreStoreDma(Generator):
                             & ((self.repeat_cnt + 1) < self._params.queue_depth)):
                         self.repeat_cnt += 1
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def queue_sel_ff(self):
         if self.reset:
             self.queue_sel_r = 0
