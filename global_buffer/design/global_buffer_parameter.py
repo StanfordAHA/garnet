@@ -72,6 +72,8 @@ class GlobalBufferParams:
     sram_gen_pipeline_depth: int = 1
     sram_gen_output_pipeline_depth: int = 1
 
+    is_sram_stub: int = 0
+
 
 def gen_global_buffer_params(**kwargs):
     # User-defined parameters
@@ -97,6 +99,7 @@ def gen_global_buffer_params(**kwargs):
     glb_bank_memory_pipeline_depth = kwargs.pop('glb_bank_memory_pipeline_depth', 1)
     sram_gen_pipeline_depth = kwargs.pop('sram_gen_pipeline_depth', 1)
     sram_gen_output_pipeline_depth = kwargs.pop('sram_gen_output_pipeline_depth', 1)
+    is_sram_stub = kwargs.pop('is_sram_stub', 0)
 
     # Check if there is unused kwargs
     if kwargs:
@@ -164,7 +167,8 @@ def gen_global_buffer_params(**kwargs):
                                 latency_width=latency_width,
                                 glb_bank_memory_pipeline_depth=glb_bank_memory_pipeline_depth,
                                 sram_gen_pipeline_depth=sram_gen_pipeline_depth,
-                                sram_gen_output_pipeline_depth=sram_gen_output_pipeline_depth
+                                sram_gen_output_pipeline_depth=sram_gen_output_pipeline_depth,
+                                is_sram_stub=is_sram_stub
                                 )
     return params
 
@@ -181,6 +185,7 @@ def gen_header_files(params, svh_filename, h_filename, header_name):
         f.write(f"`define {header_name.upper()}_PARAM\n")
         f.write(f"package {header_name}_param;\n")
         for k, v in mod_params.items():
+            v = int(v)
             f.write(f"localparam int {k.upper()} = {v};\n")
         f.write(f"endpackage\n")
         f.write(f"`endif\n")
@@ -188,4 +193,5 @@ def gen_header_files(params, svh_filename, h_filename, header_name):
     with open(h_filename, "w") as f:
         f.write(f"#pragma once\n")
         for k, v in mod_params.items():
+            v = int(v)
             f.write(f"#define {k.upper()} {v}\n")
