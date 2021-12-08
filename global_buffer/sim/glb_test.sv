@@ -117,11 +117,17 @@ program glb_test (
             end else if (kernels[i].type_ == G2F) begin
                 data_cnt = 1;
                 for (int j = 0; j < kernels[i].dim; j++) begin
+                    data_cnt += (kernels[i].extent[j] - 1) * kernels[i].data_stride[j];
+                end
+                kernels[i].mem = new[data_cnt];
+                $readmemh(kernels[i].filename, kernels[i].mem);
+
+                data_cnt = 1;
+                for (int j = 0; j < kernels[i].dim; j++) begin
                     data_cnt *= kernels[i].extent[j];
                 end
                 kernels[i].data_arr = new[data_cnt];
                 kernels[i].data_arr_out = new[data_cnt];
-                $readmemh(kernels[i].filename, kernels[i].data_arr);
                 i_addr = kernels[i].start_addr;
                 i_extent = '{LOOP_LEVEL{0}};
                 done = 0;
@@ -143,7 +149,8 @@ program glb_test (
                             break;
                         end
                     end
-                    proc_write_partial(i_addr, kernels[i].data_arr[data_cnt++]);
+                    proc_write_partial(i_addr, kernels[i].mem[i_addr / 2]);
+                    kernels[i].data_arr[data_cnt++] = kernels[i].mem[i_addr / 2];
                     if (done == 1) break;
                 end
                 // Configure LD DMA
@@ -175,7 +182,6 @@ program glb_test (
                                   kernels[i].new_data_stride);
             end
         end
-
         repeat (50) @(posedge clk);
 
         $display("\n---- Test Run ----");

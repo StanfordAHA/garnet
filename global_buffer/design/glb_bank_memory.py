@@ -2,6 +2,7 @@ from kratos import Generator, always_comb, concat, always_ff, posedge, const
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_bank_sram_gen import GlbBankSramGen
+from global_buffer.design.glb_bank_sram_stub import GlbBankSramStub
 
 
 class GlbBankMemory(Generator):
@@ -83,23 +84,39 @@ class GlbBankMemory(Generator):
                        out_=self.sram_ren_d_vld)
 
     def add_glb_bank_sram_gen(self):
-        self.glb_bank_sram_gen = GlbBankSramGen(addr_width=(self._params.bank_addr_width
-                                                            - self._params.bank_byte_offset),
-                                                sram_macro_width=self._params.bank_data_width,
-                                                sram_macro_depth=self._params.sram_macro_depth,
-                                                _params=self._params)
-        self.add_child("glb_bank_sram_gen",
-                       self.glb_bank_sram_gen,
-                       CLK=self.clk,
-                       RESET=self.reset,
-                       CEB=(~self.sram_cen_d),
-                       WEB=(~self.sram_wen_d),
-                       A=self.sram_addr_d,
-                       D=self.sram_data_in_d,
-                       BWEB=(~self.sram_data_in_bit_sel_d),
-                       Q=self.sram_data_out)
+        if self._params.is_sram_stub:
+            self.glb_bank_sram_stub = GlbBankSramStub(addr_width=(self._params.bank_addr_width
+                                                                  - self._params.bank_byte_offset),
+                                                      data_width=self._params.bank_data_width,
+                                                      _params=self._params)
+            self.add_child("glb_bank_sram_stub",
+                           self.glb_bank_sram_stub,
+                           CLK=self.clk,
+                           RESET=self.reset,
+                           CEB=(~self.sram_cen_d),
+                           WEB=(~self.sram_wen_d),
+                           A=self.sram_addr_d,
+                           D=self.sram_data_in_d,
+                           BWEB=(~self.sram_data_in_bit_sel_d),
+                           Q=self.sram_data_out)
+        else:
+            self.glb_bank_sram_gen = GlbBankSramGen(addr_width=(self._params.bank_addr_width
+                                                                - self._params.bank_byte_offset),
+                                                    sram_macro_width=self._params.bank_data_width,
+                                                    sram_macro_depth=self._params.sram_macro_depth,
+                                                    _params=self._params)
+            self.add_child("glb_bank_sram_gen",
+                           self.glb_bank_sram_gen,
+                           CLK=self.clk,
+                           RESET=self.reset,
+                           CEB=(~self.sram_cen_d),
+                           WEB=(~self.sram_wen_d),
+                           A=self.sram_addr_d,
+                           D=self.sram_data_in_d,
+                           BWEB=(~self.sram_data_in_bit_sel_d),
+                           Q=self.sram_data_out)
 
-    @ always_comb
+    @always_comb
     def sram_ctrl_logic(self):
         self.sram_wen = self.wen
         self.sram_ren = self.ren
@@ -109,14 +126,14 @@ class GlbBankMemory(Generator):
         self.sram_data_in = self.data_in
         self.sram_data_in_bit_sel = self.data_in_bit_sel
 
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def data_out_ff(self):
         if self.reset:
             self.data_out_r = 0
         else:
             self.data_out_r = self.data_out_w
 
-    @ always_comb
+    @always_comb
     def data_out_logic(self):
         if self.sram_ren_d_vld:
             self.data_out_w = self.sram_data_out
