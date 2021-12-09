@@ -74,6 +74,9 @@ class GlobalBufferParams:
 
     is_sram_stub: int = 0
 
+    # cycle count data width
+    cycle_count_width: int = 16
+
 
 def gen_global_buffer_params(**kwargs):
     # User-defined parameters

@@ -69,9 +69,9 @@ class GlbCoreStoreDma(Generator):
         self.loop_done = self.var("loop_done", 1)
         self.cycle_valid = self.var("cycle_valid", 1)
         self.cycle_valid_muxed = self.var("cycle_valid_muxed", 1)
-        self.cycle_count = self.var("cycle_count", self._params.axi_data_width)
-        self.cycle_current_addr = self.var("cycle_current_addr", self._params.axi_data_width)
-        self.data_current_addr = self.var("data_current_addr", self._params.axi_data_width)
+        self.cycle_count = self.var("cycle_count", self._params.cycle_count_width)
+        self.cycle_current_addr = self.var("cycle_current_addr", self._params.cycle_count_width)
+        self.data_current_addr = self.var("data_current_addr", self._params.glb_addr_width + 1)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
 
@@ -134,6 +134,7 @@ class GlbCoreStoreDma(Generator):
                        valid_output=self.cycle_valid)
 
         self.cycle_stride_addr_gen = GlbAddrGen(self._params)
+        self.cycle_stride_addr_gen.p_addr_width.value = self._params.cycle_count_width
         self.add_child("cycle_stride_addr_gen",
                        self.cycle_stride_addr_gen,
                        clk=self.clk,
@@ -141,16 +142,16 @@ class GlbCoreStoreDma(Generator):
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
                        step=self.cycle_valid_muxed,
-                       mux_sel=self.loop_mux_sel,
-                       addr_out=self.cycle_current_addr)
-        self.wire(self.cycle_stride_addr_gen.start_addr, ext(
-            self.current_dma_header[f"cycle_start_addr"], self._params.axi_data_width))
+                       mux_sel=self.loop_mux_sel)
+        self.wire(self.cycle_stride_addr_gen.addr_out, self.cycle_current_addr)
+        self.wire(self.cycle_stride_addr_gen.start_addr, self.current_dma_header[f"cycle_start_addr"])
         for i in range(self._params.loop_level):
             self.wire(self.cycle_stride_addr_gen.strides[i],
                       self.current_dma_header[f"cycle_stride_{i}"])
 
         # Data stride
         self.data_stride_addr_gen = GlbAddrGen(self._params)
+        self.data_stride_addr_gen.p_addr_width.value = self._params.glb_addr_width + 1
         self.add_child("data_stride_addr_gen",
                        self.data_stride_addr_gen,
                        clk=self.clk,
@@ -160,12 +161,12 @@ class GlbCoreStoreDma(Generator):
                        step=self.cycle_valid_muxed,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
-        self.wire(self.data_stride_addr_gen.start_addr, ext(
-            self.current_dma_header[f"start_addr"], self._params.axi_data_width))
+        self.wire(self.data_stride_addr_gen.start_addr, ext(self.current_dma_header[f"start_addr"],
+                                                            self._params.glb_addr_width + 1))
         for i in range(self._params.loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def repeat_cnt_ff(self):
         if self.reset:
             self.repeat_cnt = 0
@@ -180,7 +181,7 @@ class GlbCoreStoreDma(Generator):
                             & ((self.repeat_cnt + 1) < self._params.queue_depth)):
                         self.repeat_cnt += 1
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def queue_sel_ff(self):
         if self.reset:
             self.queue_sel_r = 0
@@ -192,7 +193,7 @@ class GlbCoreStoreDma(Generator):
             else:
                 self.queue_sel_r = 0
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def is_first_ff(self):
         if self.reset:
             self.is_first = 0
@@ -202,7 +203,7 @@ class GlbCoreStoreDma(Generator):
             elif self.strm_wr_en_w:
                 self.is_first = 0
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def is_last_ff(self):
         if self.reset:
             self.is_last = 0
@@ -212,7 +213,7 @@ class GlbCoreStoreDma(Generator):
             elif self.bank_wr_en:
                 self.is_last = 0
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def strm_run_ff(self):
         if self.reset:
             self.strm_run = 0
@@ -222,7 +223,7 @@ class GlbCoreStoreDma(Generator):
             elif self.loop_done:
                 self.strm_run = 0
 
-    @always_comb
+    @ always_comb
     def st_dma_start_pulse_logic(self):
         if self.cfg_st_dma_ctrl_mode == 0:
             self.st_dma_start_pulse_next = 0
@@ -235,7 +236,7 @@ class GlbCoreStoreDma(Generator):
         else:
             self.st_dma_start_pulse_next = 0
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def st_dma_start_pulse_ff(self):
         if self.reset:
             self.st_dma_start_pulse_r = 0
@@ -245,7 +246,7 @@ class GlbCoreStoreDma(Generator):
             else:
                 self.st_dma_start_pulse_r = self.st_dma_start_pulse_next
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def cycle_counter(self):
         if self.reset:
             self.cycle_count = 0
@@ -257,20 +258,20 @@ class GlbCoreStoreDma(Generator):
             elif self.strm_run:
                 self.cycle_count = self.cycle_count + 1
 
-    @always_comb
+    @ always_comb
     def cycle_valid_comb(self):
         if self.cfg_st_dma_ctrl_use_valid:
             self.cycle_valid_muxed = self.data_valid_f2g
         else:
             self.cycle_valid_muxed = self.cycle_valid
 
-    @always_comb
+    @ always_comb
     def strm_wr_packet_comb(self):
         self.strm_wr_en_w = self.cycle_valid_muxed
         self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
         self.strm_wr_data_w = self.data_f2g
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def last_strm_wr_addr_ff(self):
         if self.reset:
             self.last_strm_wr_addr_r = 0
@@ -278,11 +279,11 @@ class GlbCoreStoreDma(Generator):
             if self.strm_wr_en_w:
                 self.last_strm_wr_addr_r = self.strm_wr_addr_w
 
-    @always_comb
+    @ always_comb
     def strm_data_sel_comb(self):
         self.strm_data_sel = self.strm_wr_addr_w[self._params.bank_byte_offset - 1, self._params.cgra_byte_offset]
 
-    @always_comb
+    @ always_comb
     def bank_wr_packet_cache_comb(self):
         self.bank_wr_strb_cache_w = self.bank_wr_strb_cache_r
         self.bank_wr_data_cache_w = self.bank_wr_data_cache_r
@@ -318,7 +319,7 @@ class GlbCoreStoreDma(Generator):
                 self.bank_wr_strb_cache_w = self.bank_wr_strb_cache_r
                 self.bank_wr_data_cache_w = self.bank_wr_data_cache_r
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @ always_ff((posedge, "clk"), (posedge, "reset"))
     def bank_wr_packet_cache_ff(self):
         if self.reset:
             self.bank_wr_strb_cache_r = 0
@@ -327,7 +328,7 @@ class GlbCoreStoreDma(Generator):
             self.bank_wr_strb_cache_r = self.bank_wr_strb_cache_w
             self.bank_wr_data_cache_r = self.bank_wr_data_cache_w
 
-    @always_comb
+    @ always_comb
     def bank_wr_packet_logic(self):
         self.bank_addr_match = (self.strm_wr_addr_w[self._params.glb_addr_width - 1, self._params.bank_byte_offset]
                                 == self.last_strm_wr_addr_r[self._params.glb_addr_width - 1,
@@ -335,14 +336,14 @@ class GlbCoreStoreDma(Generator):
         self.bank_wr_en = ((self.strm_wr_en_w & (~self.bank_addr_match) & (~self.is_first)) | self.is_last)
         self.bank_wr_addr = self.last_strm_wr_addr_r
 
-    @always_comb
+    @ always_comb
     def wr_packet_logic(self):
         self.wr_packet['wr_en'] = self.bank_wr_en
         self.wr_packet['wr_strb'] = self.bank_wr_strb_cache_r
         self.wr_packet['wr_data'] = self.bank_wr_data_cache_r
         self.wr_packet['wr_addr'] = self.bank_wr_addr
 
-    @always_comb
+    @ always_comb
     def strm_done_pulse_logic(self):
         self.done_pulse_w = self.loop_done & self.strm_run
 
