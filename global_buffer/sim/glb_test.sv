@@ -252,9 +252,20 @@ program glb_test (
         string test_name;
         int max_num_test;
         initialize();
-        if (!($value$plusargs("MAX_NUM_TEST=%d", max_num_test))) max_num_test = 4;
+        if (!($value$plusargs("MAX_NUM_TEST=%d", max_num_test))) max_num_test = 10;
         for (int i = 1; i <= max_num_test; i++) begin
             $sformat(test_name, "test%0d", i);
+            if (($test$plusargs(test_name))) begin
+                $display("\n************** Test Start *****************");
+                $sformat(test_filename, "./testvectors/%s.txt", test_name);
+                test = new(test_filename);
+                init_test();
+                run_test(test);
+                $display("************** Test End *****************\n");
+            end
+        end
+        for (int i = 1; i <= max_num_test; i++) begin
+            $sformat(test_name, "test%0d-pwr", i);
             if (($test$plusargs(test_name))) begin
                 $display("\n************** Test Start *****************");
                 $sformat(test_filename, "./testvectors/%s.txt", test_name);
