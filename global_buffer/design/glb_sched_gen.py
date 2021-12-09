@@ -13,8 +13,8 @@ class GlbSchedGen(Generator):
         self.clk_en = self.clock_en("clk_en")
         self.reset = self.reset("reset")
         self.restart = self.input("restart", 1)
-        self.cycle_count = self.input("cycle_count", self._params.axi_data_width)
-        self.current_addr = self.input("current_addr", self._params.axi_data_width)
+        self.cycle_count = self.input("cycle_count", self._params.cycle_count_width)
+        self.current_addr = self.input("current_addr", self._params.cycle_count_width)
         self.finished = self.input("finished", 1)
         self.valid_output = self.output("valid_output", 1)
 

@@ -77,9 +77,9 @@ class GlbCoreLoadDma(Generator):
         self.strm_run = self.var("strm_run", 1)
         self.loop_done = self.var("loop_done", 1)
         self.cycle_valid = self.var("cycle_valid", 1)
-        self.cycle_count = self.var("cycle_count", self._params.axi_data_width)
-        self.cycle_current_addr = self.var("cycle_current_addr", self._params.axi_data_width)
-        self.data_current_addr = self.var("data_current_addr", self._params.axi_data_width)
+        self.cycle_count = self.var("cycle_count", self._params.cycle_count_width)
+        self.cycle_current_addr = self.var("cycle_current_addr", self._params.cycle_count_width)
+        self.data_current_addr = self.var("data_current_addr", self._params.glb_addr_width + 1)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
 
@@ -143,6 +143,7 @@ class GlbCoreLoadDma(Generator):
                        valid_output=self.cycle_valid)
 
         self.cycle_stride_addr_gen = GlbAddrGen(self._params)
+        self.cycle_stride_addr_gen.p_addr_width.value = self._params.cycle_count_width
         self.add_child("cycle_stride_addr_gen",
                        self.cycle_stride_addr_gen,
                        clk=self.clk,
@@ -152,14 +153,14 @@ class GlbCoreLoadDma(Generator):
                        step=self.cycle_valid,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.cycle_current_addr)
-        self.wire(self.cycle_stride_addr_gen.start_addr, ext(
-            self.current_dma_header[f"cycle_start_addr"], self._params.axi_data_width))
+        self.wire(self.cycle_stride_addr_gen.start_addr, self.current_dma_header[f"cycle_start_addr"])
         for i in range(self._params.loop_level):
             self.wire(self.cycle_stride_addr_gen.strides[i],
                       self.current_dma_header[f"cycle_stride_{i}"])
 
         # Data stride
         self.data_stride_addr_gen = GlbAddrGen(self._params)
+        self.data_stride_addr_gen.p_addr_width.value = self._params.glb_addr_width + 1
         self.add_child("data_stride_addr_gen",
                        self.data_stride_addr_gen,
                        clk=self.clk,
@@ -169,8 +170,8 @@ class GlbCoreLoadDma(Generator):
                        step=self.cycle_valid,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
-        self.wire(self.data_stride_addr_gen.start_addr, ext(
-            self.current_dma_header[f"start_addr"], self._params.axi_data_width))
+        self.wire(self.data_stride_addr_gen.start_addr, ext(self.current_dma_header[f"start_addr"],
+                                                            self._params.glb_addr_width + 1))
         for i in range(self._params.loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
