@@ -42,6 +42,7 @@ def construct():
     'num_glb_tiles'       : 16,
     'tool'                : "VCS",
     # glb tile memory size (unit: KB)
+    'use_container' : False,
     'glb_tile_mem_size' : 256,
     'rtl_testvectors' : ["test1", "test2", "test3", "test4", "test5", "test6"],
     'gls_testvectors' : ["test1-pwr", "test2-pwr"]
