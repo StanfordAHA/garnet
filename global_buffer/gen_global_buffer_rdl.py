@@ -1,5 +1,6 @@
 from abc import ABC
 from kratos import clog2
+from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 import os
 
 
@@ -149,7 +150,7 @@ class Rdl:
         return expr
 
 
-def gen_global_buffer_rdl(name, params):
+def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     addr_map = AddrMap(name)
 
     # Data Network Ctrl Register
@@ -197,7 +198,7 @@ def gen_global_buffer_rdl(name, params):
 
     # cycle_start_addr reg
     cycle_start_addr_r = Reg(f"cycle_start_addr")
-    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.glb_addr_width)
+    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.cycle_count_width)
     cycle_start_addr_r.add_child(cycle_start_addr_f)
     st_dma_header_rf.add_child(cycle_start_addr_r)
 
@@ -206,10 +207,10 @@ def gen_global_buffer_rdl(name, params):
     range_f = Field("range", width=params.axi_data_width)
     range_r.add_child(range_f)
     stride_r = Reg(f"stride", size=params.loop_level)
-    stride_f = Field("stride", width=params.axi_data_width)
+    stride_f = Field("stride", width=params.glb_addr_width + 1)
     stride_r.add_child(stride_f)
     cycle_stride_r = Reg(f"cycle_stride", size=params.loop_level)
-    cycle_stride_f = Field("cycle_stride", width=params.axi_data_width)
+    cycle_stride_f = Field("cycle_stride", width=params.cycle_count_width)
     cycle_stride_r.add_child(cycle_stride_f)
     st_dma_header_rf.add_child(range_r)
     st_dma_header_rf.add_child(stride_r)
@@ -249,7 +250,7 @@ def gen_global_buffer_rdl(name, params):
 
     # cycle_start_addr reg
     cycle_start_addr_r = Reg(f"cycle_start_addr")
-    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.glb_addr_width)
+    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.cycle_count_width)
     cycle_start_addr_r.add_child(cycle_start_addr_f)
     ld_dma_header_rf.add_child(cycle_start_addr_r)
 
@@ -258,10 +259,10 @@ def gen_global_buffer_rdl(name, params):
     range_f = Field("range", width=params.axi_data_width)
     range_r.add_child(range_f)
     stride_r = Reg(f"stride", size=params.loop_level)
-    stride_f = Field("stride", width=params.axi_data_width)
+    stride_f = Field("stride", width=params.glb_addr_width + 1)
     stride_r.add_child(stride_f)
     cycle_stride_r = Reg(f"cycle_stride", size=params.loop_level)
-    cycle_stride_f = Field("cycle_stride", width=params.axi_data_width)
+    cycle_stride_f = Field("cycle_stride", width=params.cycle_count_width)
     cycle_stride_r.add_child(cycle_stride_f)
     ld_dma_header_rf.add_child(range_r)
     ld_dma_header_rf.add_child(stride_r)

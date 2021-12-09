@@ -149,8 +149,8 @@ program glb_test (
                             break;
                         end
                     end
-                    proc_write_partial(i_addr, kernels[i].mem[i_addr / 2]);
-                    kernels[i].data_arr[data_cnt++] = kernels[i].mem[i_addr / 2];
+                    proc_write_partial(i_addr, kernels[i].mem[(i_addr - kernels[i].start_addr) / 2]);
+                    kernels[i].data_arr[data_cnt++] = kernels[i].mem[(i_addr - kernels[i].start_addr) / 2];
                     if (done == 1) break;
                 end
                 // Configure LD DMA

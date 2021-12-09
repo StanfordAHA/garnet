@@ -23,12 +23,12 @@ class GlbHeader():
 
         # NOTE: Kratos does not support struct of struct now.
         dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
-                                  ("cycle_start_addr", self._params.glb_addr_width)]
+                                  ("cycle_start_addr", self._params.cycle_count_width)]
         dma_header_struct_list += [("dim", 1 + clog2(self._params.loop_level))]
         for i in range(self._params.loop_level):
             dma_header_struct_list += [(f"range_{i}", self._params.axi_data_width),
-                                       (f"stride_{i}", self._params.axi_data_width),
-                                       (f"cycle_stride_{i}", self._params.axi_data_width)]
+                                       (f"stride_{i}", self._params.glb_addr_width + 1),
+                                       (f"cycle_stride_{i}", self._params.cycle_count_width)]
         self.cfg_dma_header_t = PackedStruct("dma_header_t", dma_header_struct_list)
 
         # pcfg dma header
