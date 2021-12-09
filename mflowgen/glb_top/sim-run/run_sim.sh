@@ -22,7 +22,7 @@ for test in $(echo $rtl_testvectors | sed "s/,/ /g")
 do
     set -x;
     RUN_LOG=${test}.log \
-    RUN_ARGS=+TEST=${test} \
+    RUN_ARGS=+${test} \
     WAVEFORM=$WAVEFORM \
     SAIF=0 \
     TOOL=$tool \

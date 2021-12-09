@@ -43,7 +43,7 @@ fi
 (
     set -x;
     RUN_LOG=${test}.log \
-    RUN_ARGS=+TEST=${test} \
+    RUN_ARGS=+${test} \
     WAVEFORM=$WAVEFORM \
     SAIF=${saif} \
     TOOL=$tool \
