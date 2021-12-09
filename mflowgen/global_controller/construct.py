@@ -59,12 +59,13 @@ def construct():
   constraints          = Step( this_dir + '/constraints'                           )
   custom_init          = Step( this_dir + '/custom-init'                           )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
+  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
 
   # Default steps
 
   info         = Step( 'info',                          default=True )
   #constraints  = Step( 'constraints',                   default=True )
-  synth        = Step( 'cadence-genus-synthesis',         default=True )
+  synth        = Step( 'cadence-genus-synthesis',       default=True )
   iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
   init         = Step( 'cadence-innovus-init',          default=True )
   power        = Step( 'cadence-innovus-power',         default=True )
@@ -76,7 +77,7 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlib       = Step( 'cadence-genus-genlib',        default=True )
+  genlib       = Step( 'cadence-genus-genlib',          default=True )
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -112,6 +113,7 @@ def construct():
   g.add_step( signoff                  )
   g.add_step( pt_signoff   )
   g.add_step( genlib                   )
+  g.add_step( lib2db                   )
   g.add_step( drc                      )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
@@ -171,8 +173,10 @@ def construct():
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  g.connect_by_name( signoff,              genlib   )
-  g.connect_by_name( adk,                  genlib   )
+  g.connect_by_name( signoff,      genlib   )
+  g.connect_by_name( adk,          genlib   )
+  
+  g.connect_by_name( genlib,       lib2db   )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )

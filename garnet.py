@@ -5,22 +5,23 @@ from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator, set_debug_mode
 from global_buffer.io_placement import place_io_blk
-from global_buffer.global_buffer_magma import GlobalBuffer
+from global_buffer.design.global_buffer import GlobalBufferMagma
+from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
+from global_buffer.global_buffer_main import gen_param_header
+from systemRDL.util import gen_rdl_header
 from global_controller.global_controller_magma import GlobalController
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
 from mini_mapper import map_app, has_rom, get_total_cycle_from_app
-from cgra import glb_glc_wiring, glb_interconnect_wiring, \
-        glc_interconnect_wiring, create_cgra, compress_config_data
+from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
 import json
-from passes.collateral_pass.config_register import get_interconnect_regs, \
-    get_core_registers
+from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
 from passes.interconnect_port_pass import stall_port_pass, config_port_pass
-import math
 import os
 import archipelago
 import archipelago.power
 import archipelago.io
+import math
 
 from peak_gen.peak_wrapper import wrapped_peak_class
 from peak_gen.arch import read_arch
@@ -31,6 +32,7 @@ from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
 from metamapper import CoreIRContext
 from metamapper.irs.coreir import gen_CoreIRNodes
 from metamapper.lake_mem import gen_MEM_fc
+from metamapper.lake_pond import gen_Pond_fc
 from metamapper.io_tiles import IO_fc, BitIO_fc
 from lassen.sim import PE_fc as lassen_fc
 import metamapper.peak_util as putil
@@ -47,7 +49,7 @@ class Garnet(Generator):
                  add_pond: bool = True,
                  use_io_valid: bool = False,
                  pipeline_config_interval: int = 8,
-                 glb_tile_mem_size: int = 256,
+                 glb_params: GlobalBufferParams = GlobalBufferParams(),
                  pe_fc=lassen_fc):
         super().__init__()
 
@@ -57,12 +59,12 @@ class Garnet(Generator):
             assert interconnect_only
 
         # configuration parameters
+        self.glb_params = glb_params
         config_addr_width = 32
         config_data_width = 32
         self.config_addr_width = config_addr_width
         self.config_data_width = config_data_width
         axi_addr_width = 13
-        glb_axi_addr_width = 12
         axi_data_width = 32
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
@@ -84,41 +86,26 @@ class Garnet(Generator):
         self.pe_fc = pe_fc
 
         if not interconnect_only:
-            # global buffer parameters
             # width must be even number
             assert (self.width % 2) == 0
-            num_glb_tiles = self.width // 2
 
-            bank_data_width = 64
-            banks_per_tile = 2
-            bank_addr_width = (magma.bitutils.clog2(glb_tile_mem_size)
-                               - magma.bitutils.clog2(banks_per_tile) + 10)
+            # Bank should be larger than or equal to 1KB
+            assert glb_params.bank_addr_width >= 10
 
-            glb_addr_width = (bank_addr_width
-                              + magma.bitutils.clog2(banks_per_tile)
-                              + magma.bitutils.clog2(num_glb_tiles))
-
-            # bank_data_width must be the size of bitstream
-            assert bank_data_width == config_addr_width + config_data_width
-
+            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
+                math.ceil(math.log(glb_params.banks_per_tile, 2))
             wiring = GlobalSignalWiring.ParallelMeso
             self.global_controller = GlobalController(addr_width=config_addr_width,
                                                       data_width=config_data_width,
                                                       axi_addr_width=axi_addr_width,
                                                       axi_data_width=axi_data_width,
-                                                      num_glb_tiles=num_glb_tiles,
-                                                      glb_addr_width=glb_addr_width,
+                                                      num_glb_tiles=glb_params.num_glb_tiles,
+                                                      glb_addr_width=glb_params.glb_addr_width,
                                                       glb_tile_mem_size=glb_tile_mem_size,
-                                                      block_axi_addr_width=glb_axi_addr_width)
+                                                      block_axi_addr_width=glb_params.axi_addr_width)
 
-            self.global_buffer = GlobalBuffer(num_glb_tiles=num_glb_tiles,
-                                              num_cgra_cols=width,
-                                              glb_tile_mem_size=glb_tile_mem_size,
-                                              bank_data_width=bank_data_width,
-                                              cfg_addr_width=config_addr_width,
-                                              cfg_data_width=config_data_width,
-                                              axi_addr_width=glb_axi_addr_width,
-                                              axi_data_width=axi_data_width)
+            self.global_buffer = GlobalBufferMagma(glb_params)
+
         else:
             wiring = GlobalSignalWiring.Meso
 
@@ -149,7 +136,8 @@ class Garnet(Generator):
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
                 reset_in=magma.In(magma.AsyncReset),
-                proc_packet=ProcPacketIfc(glb_addr_width, bank_data_width).slave,
+                proc_packet=ProcPacketIfc(
+                    glb_params.glb_addr_width, glb_params.bank_data_width).slave,
                 axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
                 interrupt=magma.Out(magma.Bit),
                 cgra_running_clk_out=magma.Out(magma.Clock),
@@ -169,7 +157,22 @@ class Garnet(Generator):
 
             # top <-> global buffer ports connection
             self.wire(self.ports.clk_in, self.global_buffer.ports.clk)
-            self.wire(self.ports.proc_packet, self.global_buffer.ports.proc_packet)
+            self.wire(self.ports.proc_packet.wr_en,
+                      self.global_buffer.ports.proc_wr_en[0])
+            self.wire(self.ports.proc_packet.wr_strb,
+                      self.global_buffer.ports.proc_wr_strb)
+            self.wire(self.ports.proc_packet.wr_addr,
+                      self.global_buffer.ports.proc_wr_addr)
+            self.wire(self.ports.proc_packet.wr_data,
+                      self.global_buffer.ports.proc_wr_data)
+            self.wire(self.ports.proc_packet.rd_en,
+                      self.global_buffer.ports.proc_rd_en[0])
+            self.wire(self.ports.proc_packet.rd_addr,
+                      self.global_buffer.ports.proc_rd_addr)
+            self.wire(self.ports.proc_packet.rd_data,
+                      self.global_buffer.ports.proc_rd_data)
+            self.wire(self.ports.proc_packet.rd_data_valid,
+                      self.global_buffer.ports.proc_rd_data_valid[0])
 
             # Top -> Interconnect clock port connection
             self.wire(self.ports.clk_in, self.interconnect.ports.clk)
@@ -189,7 +192,8 @@ class Garnet(Generator):
                 config=magma.In(magma.Array[width,
                                 ConfigurationType(config_data_width,
                                                   config_data_width)]),
-                stall=magma.In(magma.Bits[self.width * self.interconnect.stall_signal_width]),
+                stall=magma.In(
+                    magma.Bits[self.width * self.interconnect.stall_signal_width]),
                 read_config_data=magma.Out(magma.Bits[config_data_width])
             )
 
@@ -265,24 +269,10 @@ class Garnet(Generator):
             if "valid" in blk_name:
                 valid_port_name = name
         return input_interface, output_interface,\
-               (reset_port_name, valid_port_name, en_port_name)
+            (reset_port_name, valid_port_name, en_port_name)
 
     def load_netlist(self, app, load_only):
         app_dir = os.path.dirname(app)
-        id_to_name = None
-        if load_only:
-            id_to_name_filename = os.path.join(app_dir, f"design.id_to_name")
-            if os.path.isfile(id_to_name_filename):
-                fin = open(id_to_name_filename, "r")
-                lines = fin.readlines()
-
-                id_to_name = {}
-
-                for line in lines:
-                    id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
-
-   
-
         if self.pe_fc == lassen_fc:
             pe_header = f"./headers/lassen_header.json"
         else:
@@ -290,6 +280,7 @@ class Garnet(Generator):
         mem_header = f"./headers/mem_header.json"
         io_header = f"./headers/io_header.json"
         bit_io_header = f"./headers/bit_io_header.json"
+        pond_header = f"./headers/pond_header.json"
 
         app_file = app
         c = CoreIRContext(reset=True)
@@ -298,6 +289,7 @@ class Garnet(Generator):
         c.run_passes(["flatten"])
 
         MEM_fc = gen_MEM_fc()
+        Pond_fc = gen_Pond_fc()
         # Contains an empty nodes
         nodes = gen_CoreIRNodes(16)
         putil.load_and_link_peak(
@@ -321,14 +313,20 @@ class Garnet(Generator):
             nodes,
             bit_io_header,
             {"global.BitIO": BitIO_fc},
-        )   
+        )  
+        
+        putil.load_and_link_peak(
+            nodes,
+            pond_header,
+            {"global.Pond": (Pond_fc, True)},
+        ) 
+
 
  
         dag = cutil.coreir_to_dag(nodes, cmod)
-        #print_dag(dag)
         print("-"*80)
-        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc, "global.IO": IO_fc, "global.BitIO": BitIO_fc}
-        netlist_info = create_netlist_info(dag, tile_info, load_only, id_to_name)
+        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc, "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
+        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"], netlist_info["buses"]
 
@@ -351,7 +349,6 @@ class Garnet(Generator):
         return placement, routing, id_to_name, instance_to_instr, netlist, bus 
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus, compact=False):
-        #id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src)
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -367,10 +364,10 @@ class Garnet(Generator):
                                                        outputs,
                                                        placement,
                                                        id_to_name)
-        # delay = 1 if has_rom(id_to_name) else 0
         delay = 0
         # also write out the meta file
-        archipelago.io.dump_meta_file(halide_src, "design", os.path.dirname(halide_src))
+        archipelago.io.dump_meta_file(
+            halide_src, "design", os.path.dirname(halide_src))
         return bitstream, (input_interface, output_interface, reset, valid, en,
                            delay)
 
@@ -385,7 +382,8 @@ class Garnet(Generator):
             bitstream += self.get_placement_bitstream(placement, p_id_to_name,
                                                       instance_to_instr)
             skip_addr = self.interconnect.get_skip_addr()
-            bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
+            bitstream = compress_config_data(
+                bitstream, skip_compression=skip_addr)
             result[c_id] = bitstream
         return result
 
@@ -464,9 +462,19 @@ def main():
     if args.pe:
         arch = read_arch(args.pe)
         pe_fc = wrapped_peak_class(arch, debug=True)
+    glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
+                                          num_cgra_cols=args.width,
+                                          # NOTE: We assume num_prr is same as num_glb_tiles
+                                          num_prr=args.width // 2,
+                                          glb_tile_mem_size=args.glb_tile_mem_size,
+                                          bank_data_width=64,
+                                          cfg_addr_width=32,
+                                          cfg_data_width=32,
+                                          axi_addr_width=12,
+                                          axi_data_width=32)
 
     garnet = Garnet(width=args.width, height=args.height,
-                    glb_tile_mem_size=args.glb_tile_mem_size,
+                    glb_params=glb_params,
                     add_pd=not args.no_pd,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
@@ -480,17 +488,28 @@ def main():
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_CW"},
-                      passes = ["rungenerators", "inline_single_instances", "clock_gate"],
+                      passes=["rungenerators", "inline_single_instances", "clock_gate"],
                       disable_ndarray=True,
                       inline=False)
         garnet.create_stub()
+        if not args.interconnect_only:
+            garnet_home = os.getenv('GARNET_HOME')
+            if not garnet_home:
+                garnet_home = os.path.dirname(os.path.abspath(__file__))
+            gen_param_header(top_name="global_buffer_param",
+                             params=glb_params,
+                             output_folder=os.path.join(garnet_home, "global_buffer/header"))
+            gen_rdl_header(top_name="glb",
+                           rdl_file=os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl"),
+                           output_folder=os.path.join(garnet_home, "global_buffer/header"))
+            gen_rdl_header(top_name="glc",
+                           rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
+                           output_folder=os.path.join(garnet_home, "global_controller/header"))
+
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
-        # do PnR and produce bitstream
         
         placement, routing, id_to_name, instance_to_instr, netlist, bus = garnet.place_and_route(args.app, args.target_frequency, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact, load_only=args.generate_bitstream_only)
-         #     bitstream, (inputs, outputs, reset, valid, \
-   #         en, delay)  = garnet.place_and_route(args.app, args.unconstrained_io, compact=args.compact, load_only=args.generate_bitstream_only)  
         
         if args.pipeline_pnr:
             return
@@ -538,4 +557,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

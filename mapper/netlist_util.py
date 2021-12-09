@@ -157,8 +157,11 @@ class CreateInstrs(Visitor):
         if node.node_name not in self.inst_info:
             raise ValueError(f"Need info for {node.node_name}")
         adt = self.inst_info[node.node_name]
-        instr_child = list(node.children())[0]
-        assert isinstance(instr_child, Constant)
+        for instr_child in node.children():
+            if isinstance(instr_child, Constant):
+                break
+        
+        assert isinstance(instr_child, Constant), f"{node.node_name} {node.iname} {instr_child.node_name}"
         self.node_to_instr[node] = instr_child.value
 
 class CreateMetaData(Visitor):
@@ -408,7 +411,7 @@ class DagToPdf(Visitor):
     def generic_visit(self, node):
         Visitor.generic_visit(self, node)
         def n2s(node):
-            return f"{str(node)}_{str(node.iname)}"
+            return f"{str(node)}_{str(node.iname)}_{str(node.node_name)}"
         if self.no_unbound and not is_unbound_const(node):
             self.graph.node(n2s(node))
         for i, child in enumerate(node.children()):
@@ -566,13 +569,15 @@ class CountTiles(Visitor):
     def doit(self, dag: Dag):
         self.num_pes = 0
         self.num_mems = 0
+        self.num_ponds = 0
         self.num_ios = 0
         self.num_regs = 0
         self.run(dag)
         print(f"PEs: {self.num_pes}")
         print(f"MEMs: {self.num_mems}")
+        print(f"Ponds: {self.num_ponds}")
         print(f"IOs: {self.num_ios}")
-        print(f"Regs: {self.num_regs/2}")
+        print(f"Regs: {int(self.num_regs/2)}")
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
@@ -582,6 +587,8 @@ class CountTiles(Visitor):
             self.num_pes += 1
         elif node.node_name == "global.MEM":
             self.num_mems += 1
+        elif node.node_name == "global.Pond":
+            self.num_ponds += 1
         elif node.node_name == "Register":
             self.num_regs += 1
 
@@ -589,24 +596,35 @@ from lassen.sim import PE_fc as lassen_fc
 from metamapper. common_passes import print_dag
 
 def create_netlist_info(dag: Dag, tile_info: dict, load_only = False, id_to_name = None):
-    gen_dag_img(dag, "dag", None)
+    #gen_dag_img(dag, "dag", None)
     # Extract IO metadata
     # Inline IO tiles
 
     #fdag = FlattenIO().doit(dag)
+    
+    if load_only:
+        id_to_name_filename = os.path.join(app_dir, f"design.id_to_name")
+        if os.path.isfile(id_to_name_filename):
+            fin = open(id_to_name_filename, "r")
+            lines = fin.readlines()
+            
+            id_to_name = {}
+            
+            for line in lines:
+            	id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
+
     sinks = PipelineBroadcasts().doit(dag)
-
-
     fdag = RemoveInputsOutputs(sinks).doit(dag)
 
-    #print_dag(fdag)
-    gen_dag_img(fdag, "dag_reg_io", None)
+    #gen_dag_img(fdag, "dag_reg_io", None)
 
     def tile_to_char(t):
         if t.split(".")[1]=="PE":
             return "p"
         elif t.split(".")[1]=="MEM":
             return "m"
+        elif t.split(".")[1]=="Pond":
+            return "M"
         elif t.split(".")[1] == "IO":
             return "I"
         elif t.split(".")[1] == "BitIO":
@@ -625,9 +643,11 @@ def create_netlist_info(dag: Dag, tile_info: dict, load_only = False, id_to_name
     node_to_metadata = CreateMetaData().doit(fdag)
     info["id_to_metadata"] = {nodes_to_ids[node]: md for node, md in node_to_metadata.items()}
 
+    #gen_dag_img(fdag, "pre_instr_dag", None, False)
+
     nodes_to_instrs = CreateInstrs(node_info).doit(fdag)
     info["id_to_instrs"] = {id:nodes_to_instrs[node] for node, id in nodes_to_ids.items()}
-    
+
     info["instance_to_instrs"] = {node.iname:nodes_to_instrs[node] for node, id in nodes_to_ids.items() if ("p" in id or "m" in id)}
     for node, md in node_to_metadata.items():
         info["instance_to_instrs"][node.iname] = md
@@ -638,7 +658,7 @@ def create_netlist_info(dag: Dag, tile_info: dict, load_only = False, id_to_name
     info["buses"] = bus_info
     info["netlist"] = {}
     for bid, ports in netlist.items():
-        info["netlist"][bid] = [(nodes_to_ids[node], field) for node, field in ports]
+        info["netlist"][bid] = [(nodes_to_ids[node], field.replace("pond_0", "pond")) for node, field in ports]
 
     CountTiles().doit(fdag)    
 
