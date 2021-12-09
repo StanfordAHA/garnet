@@ -10,8 +10,10 @@ parameters:
   array_width: 4
   array_height: 2
   glb_tile_mem_size: 256
+  num_glb_tiles: 2
   pipeline_config_interval: 8
   interconnect_only: False
+  glb_only: False
   soc_only: False
   PWR_AWARE: True
 

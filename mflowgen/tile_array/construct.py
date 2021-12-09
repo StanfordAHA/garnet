@@ -76,6 +76,7 @@ def construct():
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
   gls_args       = Step( this_dir + '/gls_args'                            )
   testbench      = Step( this_dir + '/testbench'                           )
+  lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
 
 
   # Default steps
@@ -94,7 +95,7 @@ def construct():
   postroute      = Step( 'cadence-innovus-postroute',      default=True )
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
-  #pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
+  pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
   #genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
   genlib         = Step( 'cadence-genus-genlib',           default=True )
   if which("calibre") is not None:
@@ -112,8 +113,8 @@ def construct():
   synth.extend_inputs( ['Tile_PE_tt.lib'] )
   #dc.extend_inputs( ['Tile_MemCore.db'] )
   synth.extend_inputs( ['Tile_MemCore_tt.lib'] )
-  #pt_signoff.extend_inputs( ['Tile_PE.db'] )
-  #pt_signoff.extend_inputs( ['Tile_MemCore.db'] )
+  pt_signoff.extend_inputs( ['Tile_PE_tt.db'] )
+  pt_signoff.extend_inputs( ['Tile_MemCore_tt.db'] )
   #genlibdb.extend_inputs( ['Tile_PE.db'] )
   genlib.extend_inputs( ['Tile_PE_tt.lib'] )
   #genlibdb.extend_inputs( ['Tile_MemCore.db'] )
@@ -218,7 +219,9 @@ def construct():
   g.add_step( postroute      )
   g.add_step( postroute_hold )
   g.add_step( signoff        )
+  g.add_step( pt_signoff     )
   g.add_step( genlib         )
+  g.add_step( lib2db         )
   g.add_step( drc            )
   g.add_step( custom_lvs     )
   g.add_step( lvs            )
@@ -287,7 +290,7 @@ def construct():
       g.connect_by_name( Tile_MemCore,      postroute      )
       g.connect_by_name( Tile_MemCore,      postroute_hold )
       g.connect_by_name( Tile_MemCore,      signoff        )
-      #g.connect_by_name( Tile_MemCore,      pt_signoff     )
+      g.connect_by_name( Tile_MemCore,      pt_signoff     )
       #g.connect_by_name( Tile_MemCore,      genlibdb       )
       g.connect_by_name( Tile_MemCore,      genlib         )
       g.connect_by_name( Tile_MemCore,      drc            )
@@ -313,7 +316,7 @@ def construct():
   g.connect_by_name( Tile_PE,      postroute      )
   g.connect_by_name( Tile_PE,      postroute_hold )
   g.connect_by_name( Tile_PE,      signoff        )
-  #g.connect_by_name( Tile_PE,      pt_signoff     )
+  g.connect_by_name( Tile_PE,      pt_signoff     )
   #g.connect_by_name( Tile_PE,      genlibdb       )
   g.connect_by_name( Tile_PE,      genlib         )
   g.connect_by_name( Tile_PE,      drc            )
@@ -368,13 +371,15 @@ def construct():
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  #g.connect_by_name( adk,          pt_signoff   )
-  #g.connect_by_name( signoff,      pt_signoff   )
+  g.connect_by_name( adk,          pt_signoff   )
+  g.connect_by_name( signoff,      pt_signoff   )
   
   #g.connect_by_name( adk,          genlibdb   )
   g.connect_by_name( adk,          genlib   )
   #g.connect_by_name( signoff,      genlibdb   )
   g.connect_by_name( signoff,      genlib   )
+  
+  g.connect_by_name( genlib,       lib2db   )
 
   g.connect_by_name( adk,      debugcalibre )
   #g.connect_by_name( dc,       debugcalibre )

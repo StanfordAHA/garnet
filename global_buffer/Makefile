@@ -1,38 +1,53 @@
 #!/bin/bash
-RTL_DIR := ./rtl
-RDL_DIR := systemRDL/output
-TB_DIR := ./sim
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+current_dir := $(abspath $(dir $(mkfile_path)))
 
-TOP_MODULE := global_buffer
-
+# -------------------------------------------------------------------
+# Parameters
+# -------------------------------------------------------------------
+CLK_PERIOD ?= 800ps
 CGRA_WIDTH ?= 32
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
-XRUNARGS = 
-# XRUNARGS += +TEST_PROC_SIMPLE
-# XRUNARGS += +TEST_PROC_ALL
-# XRUNARGS += +TEST_JTAG
-# XRUNARGS += +TEST_CONFIG
-XRUNARGS += +TEST_PCFG
-# XRUNARGS += +TEST_STRM
-# XRUNARGS += +TEST_STRM_CHAIN
-XRUNARGS += +VCD_ON
 
+TOOL ?= XCELIUM
+export WAVEFORM ?= 0
+export SAIF ?= 0
 
-GLB_TILE_NETLIST := ./netlist/glb_tile.vcs.v
-GLB_TOP_NETLIST := ./netlist/global_buffer.vcs.v
-SRAM_RTL := /sim/kongty/mc/ts1n16ffcllsblvtc2048x64m8sw_130a/VERILOG/ts1n16ffcllsblvtc2048x64m8sw_130a.v
-SRAM_STUB := ./rtl/TS1N16FFCLLSBLVTC2048X64M8SW.sv
+# GLS 
+SDF ?= 0
+MTM ?= MAXIMUM
+SDF_CMD_FILE ?= sdf_cmd.cmd
+SDF_LOG ?= sdf_logs
+GLB_TOP_SDF ?= gls/glb.sdf
+GLB_TILE_SDF ?= gls/glb_tile.sdf
 
-RTL_LISTS := `cat $(RTL_DIR)/global_buffer.filelist | sed -e 's/^/$(RTL_DIR)\//' | xargs readlink -f`
+RUN_ARGS ?= +test1 +test2 +test3 +test4 +test5
+RUN_ARGS += +MAX_NUM_TEST=10
+RUN_ARGS += +DEBUG
 
-FIX_SYSTEMRDL = \
-    sed -i '/pio_dec_write_data_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
-    sed -i '/pio_dec_address_d1 <=/d' ./systemRDL/output/glb_jrdl_decode.sv; \
-    sed -i '/endmodule/d' ./systemRDL/output/glb_jrdl_decode.sv; \
-    printf "always_ff @ (posedge clk) begin \n pio_dec_address_d1 <= pio_dec_address; \n pio_dec_write_data_d1 <= pio_dec_write_data; \nend \nendmodule" >> ./systemRDL/output/glb_jrdl_decode.sv
+RUN_LOG ?= run.log
 
-GENERATE_TV = python glb_test_gen.py
+HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
+DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
+#FIXME: pm cells should be removed!
+NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-pm.v
+TB_FILES ?= -F sim/tb_global_buffer.f 
+
+# -------------------------------------------------------------------
+# Commands
+# -------------------------------------------------------------------
+
+GENERATE_TV = \
+    python testvectors/gen_glb_test.py --data testvectors/in_32.dat --num 32 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/out_32.dat --num 32 --seed 2; \
+    python testvectors/gen_glb_test.py --data testvectors/in_128.dat --num 128 --seed 3; \
+    python testvectors/gen_glb_test.py --data testvectors/out_128.dat --num 128 --seed 4; \
+    python testvectors/gen_glb_test.py --data testvectors/in_4096.dat --num 4096 --seed 5; \
+    python testvectors/gen_glb_test.py --data testvectors/in2_4096.dat --num 4096 --seed 6; \
+    python testvectors/gen_glb_test.py --data testvectors/out_3844.dat --num 3844 --seed 7; \
+    python testvectors/gen_glb_test.py --data testvectors/out_4096.dat --num 4096 --seed 8; \
+    python testvectors/gen_glb_test.py --data testvectors/out2_4096.dat --num 4096 --seed 9;
 
 XRUN = xrun \
 	   -64bit \
@@ -40,119 +55,119 @@ XRUN = xrun \
 	   -sysv \
 	   -l xrun.log \
 	   -debug \
+	   +access+rwc \
 	   -covoverwrite \
+	   -elaborate \
 	   -top top \
 	   -timescale 100ps/1ps \
 	   -unbuffered \
 	   -svseed random \
-	   $(XRUNARGS) \
-	   $(DESIGNARGS)
+	   $(COMPILE_ARGS) \
+	   $(INPUT_ARGS)
 
 VCS = vcs \
-	  -debug_acc+all \
+	  -debug_accss+all \
 	  -sverilog \
 	  -timescale=100ps/1ps \
-	  -v2k_generate \
 	  -full64 \
 	  -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
 	  -top top \
+	  -kdb \
+	  +vpi \
+	  +memcbk \
+	  +vcsd \
 	  +lint=TFIPC-L \
 	  +vcs+lic+wait \
 	  +vcs+initreg+random \
 	  +overlap \
 	  +v2k \
-	  +memcbk \
-	  $(VCSARGS) \
-	  $(DESIGNARGS)
+	  -l vcs.log \
+	  $(COMPILE_ARGS) \
+	  $(INPUT_ARGS)
+
+GEN_SDF_CMD = python gls/gen_sdf_cmd.py \
+              -f $(SDF_CMD_FILE) -n $(NUM_GLB_TILES) --top $(GLB_TOP_SDF) --tile $(GLB_TILE_SDF) -l $(SDF_LOG) -t $(MTM) --tool $(TOOL)
 
 # -------------------------------------------------------------------
 # RTL
 # -------------------------------------------------------------------
-# param target generates global_buffer_param.svh
-.PHONY: param
-param: global_buffer_main.py global_buffer_magma_helper.py
-	cd .. && python -m global_buffer.global_buffer_main -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE)
-
-# rtl target always runs param target
-rdl_pre = systemRDL/rdl_models/glb.rdl.pre
-$(rdl_pre): param systemRDL/rdl_models/glb.rdl
-	cat systemRDL/rdl_models/glb.rdl.param systemRDL/rdl_models/glb.rdl > systemRDL/rdl_models/glb.rdl.pre
-
-rdl_post = systemRDL/rdl_models/glb.rdl.post
-$(rdl_post): $(rdl_pre)
-	../systemRDL/perlpp.pl systemRDL/rdl_models/glb.rdl.pre -o systemRDL/rdl_models/glb.rdl.post
-
-rdl_gen = $(RDL_DIR)/glb_jrdl_decode.sv $(RDL_DIR)/glb_jrdl_logic.sv $(RDL_DIR)/glb_pio.sv
-$(rdl_gen): $(rdl_post)
-	java -jar ../systemRDL/Ordt.jar -reglist systemRDL/output/glb.reglist -parms systemRDL/ordt_params/glb.parms -systemverilog systemRDL/output/ systemRDL/rdl_models/glb.rdl.post
-
-$(RTL_LISTS): $(rdl_gen)
-
 .PHONY: rtl
-rtl: $(RTL_LISTS)
-	$(FIX_SYSTEMRDL)
-
-# html target generates html for systemRDL table
-.PHONY: html
-html: $(rdl_post)
-	python ../systemRDL/gen_html.py systemRDL/rdl_models/glb.rdl.post
+rtl: export GARNET_HOME := $(current_dir)/..
+rtl: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
+rtl: 
+	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE)
 
 # -------------------------------------------------------------------
-# GLB TILE
+# Compile & Run
 # -------------------------------------------------------------------
-# sim-tile
-# run testbench of glb-tile with xcelium
-.PHONY: sim-tile
-sim-tile: TOP_MODULE=glb_tile
-sim-tile: TB_DIR=sim-tile
-sim-tile: DESIGNARGS += -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist -v $(SRAM_STUB)
-sim-tile: rtl
-	$(XRUN)
 
-# sim-tile-pnr
-# run testbench of glb-tile with xcelium with sdf back annotation
-.PHONY: sim-til-gl
-sim-tile-gl: TOP_MODULE=glb_tile
-sim-tile-gl: TB_DIR=sim-tile
-sim-tile-gl: XRUNARGS += +define+PNR
-sim-tile-gl: DESIGNARGS += \
-	`find /tsmc16/TSMCHOME/digital/Front_End/verilog/ -name '*.v' | grep -v "pwr" | sed -e 's/^/-v /' | xargs` \
-	-v $(SRAM_RTL) \
-	$(GLB_TILE_NETLIST) \
-	$(RTL_DIR)/global_buffer_param.svh \
-	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist
-sim-tile-gl: $(GLB_TILE_NETLIST)
-	$(XRUN)
+COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
+COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
+ifeq ($(TOOL), XCELIUM)
+    COMPILE = $(XRUN)
+    COMPILE_RTL_ARGS += -xminitialize 0 -xminit_log init.log -nospecify
+    COMPILE_GLS_ARGS += -xminitialize 0 -xminit_log init.log
+    COMPILE_GLS_ARGS += -ALLOWREDEFINITION
+    RUN = xrun -R -l $(RUN_LOG)
+else ifeq ($(TOOL), VCS)
+    COMPILE = $(VCS)
+    COMPILE_RTL_ARGS += +nospecify
+    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0
+else
+    @echo "TOOL must be either XCELIUM or VCS"
+endif
 
-# -------------------------------------------------------------------
-# GLB TOP
-# -------------------------------------------------------------------
+ifeq ($(TOOL), XCELIUM)
+	DUMP_ARGS = -input sim/dump_shm.tcl
+else ifeq ($(TOOL), VCS)
+	DUMP_ARGS = -ucli -i sim/dump_fsdb.tcl
+endif
+
+ifneq ($(SDF), 0)
+    ifeq ($(TOOL), XCELIUM)
+        SDF_ARGS += -sdf_cmd_file $(SDF_CMD_FILE)
+        SDF_ARGS += -sdfstats sdf_stats.txt -sdf_verbose
+        COMPILE_GLS_ARGS += $(SDF_ARGS)
+    else ifeq ($(TOOL), VCS)
+        SDF_ARGS += $(shell cat $(SDF_CMD_FILE))
+        SDF_ARGS += +sdfverbose
+        COMPILE_GLS_ARGS += $(SDF_ARGS)
+    endif
+endif
+
+.PHONY: compile
+compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
+compile: INPUT_ARGS = $(HEADER_FILES) $(DESIGN_FILES) $(TB_FILES)
+compile:
+	$(COMPILE)
+
+.PHONY: run
+run:
+	$(GENERATE_TV)
+	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
+
 .PHONY: sim
-sim: XRUNARGS+= -notimingchecks
-sim: DESIGNARGS += -v $(SRAM_STUB) -F $(RTL_DIR)/$(TOP_MODULE).filelist -F $(TB_DIR)/tb_$(TOP_MODULE).filelist 
-sim:
-	$(GENERATE_TV); 
-	$(XRUN)
+sim: compile
+	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
 
-# gate-level simulation
-.PHONY: sim-gl
-sim-gl: DESIGNARGS += \
-	$(RTL_DIR)/global_buffer_param.svh \
-	$(RTL_DIR)/global_buffer_pkg.svh \
-	-F $(TB_DIR)/tb_$(TOP_MODULE).filelist \
-	-F netlist/netlist.filelist
-# sim-gl: XRUNARGS += +define+PWR
-sim-gl: XRUNARGS += +define+NON_STOP_IF_INPUT_Z
-sim-gl: XRUNARGS += +define+PNR +define+TSMC_CM_NO_WARNING
-sim-gl: XRUNARGS += +define+TSMC_CM_UNIT_DELAY
-sim-gl: XRUNARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS +define+TSMC_MEM_LOAD_0
-sim-gl: XRUNARGS += -negdelay
-sim-gl: XRUNARGS += -sdf_cmd_file netlist/sdf_cmd.cmd
-sim-gl: XRUNARGS += -sdfstats sdf_stats.txt -sdf_verbose -xminitialize 0 -xminit_log init.log
-sim-gl:
-	$(XRUN)
+# -------------------------------------------------------------------
+# GLS Compile
+# -------------------------------------------------------------------
+.PHONY: compile-gls
+compile-gls: COMPILE_GLS_ARGS += +define+NON_STOP_IF_INPUT_Z
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_CM_NO_WARNING
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_CM_UNIT_DELAY
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS
+compile-gls: COMPILE_GLS_ARGS += +define+TSMC_MEM_LOAD_0
+compile-gls: COMPILE_GLS_ARGS += -negdelay
+compile-gls: COMPILE_ARGS = $(COMPILE_GLS_ARGS)
+compile-gls: INPUT_ARGS = $(HEADER_FILES) $(NETLIST_FILES) $(TB_FILES)
+compile-gls:
+	@rm -rf $(SDF_LOG); mkdir $(SDF_LOG)
+	@if [ $(SDF) != 0 ]; then $(GEN_SDF_CMD); fi
+	$(COMPILE)
 
 .PHONY: clean
 clean:
-	rm -rf xrun.log xrun.history xcelium.d
+	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log global_buffer.shm global_buffer.fsdb sdf_stats.txt sdf_logs
