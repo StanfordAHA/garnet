@@ -45,6 +45,16 @@ steps:
      source /tmp/tmp$$.sh; /bin/rm /tmp/tmp$$.sh'
 - wait: ~
 
+# Unjumble the build logs for pe, mem tiles
+- label: 'log_pe'
+  commands:
+  - 'cat $$GOLD/*tile_array/*Tile_PE/mflowgen-run.log'
+
+- label: 'log_mem'
+  commands:
+  - 'cat $$GOLD/*tile_array/*Tile_MemCore/mflowgen-run.log'
+- wait: ~
+
 # Check tile_array LVS results but don't halt pipeline regardless of outcome
 - label: "lvs?"
   commands:

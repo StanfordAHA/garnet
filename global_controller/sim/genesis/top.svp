@@ -60,7 +60,8 @@
 //;            {name => 'sram_cfg_rd_addr', width => $glb_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'sram_cfg_wr_data', width => $axi_data_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'sram_cfg_wr_addr', width => $glb_addr_width,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
-//;            {name => 'strm_start_pulse', width => $num_glb_tiles,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'strm_g2f_start_pulse', width => $num_glb_tiles,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
+//;            {name => 'strm_f2g_start_pulse', width => $num_glb_tiles,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'pc_start_pulse', width => $num_glb_tiles,  direction => 'out', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'strm_f2g_interrupt_pulse', width => $num_glb_tiles,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
 //;            {name => 'strm_g2f_interrupt_pulse', width => $num_glb_tiles,  direction => 'in', bsr => 'no',  pad => 'digital', orientation => 'right'},
@@ -165,7 +166,8 @@ module `mname`();
         .sram_cfg_rd_data_valid     ( dut_ifc.sram_cfg_rd_data_valid),
 
         // control signals
-        .strm_start_pulse           ( dut_ifc.strm_start_pulse      ),
+        .strm_g2f_start_pulse           ( dut_ifc.strm_g2f_start_pulse      ),
+        .strm_f2g_start_pulse           ( dut_ifc.strm_f2g_start_pulse      ),
         .pc_start_pulse             ( dut_ifc.pc_start_pulse        ),
         .strm_f2g_interrupt_pulse   ( dut_ifc.strm_f2g_interrupt_pulse  ),
         .strm_g2f_interrupt_pulse   ( dut_ifc.strm_g2f_interrupt_pulse  ),
