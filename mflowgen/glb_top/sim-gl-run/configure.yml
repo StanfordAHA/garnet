@@ -5,7 +5,7 @@ parameters:
   saif: True
   tool: "XCELIUM"
   num_glb_tiles: 16
-  test: "test1.pwr"
+  test: "test1-pwr"
 
 commands:
   - bash run_sim.sh
