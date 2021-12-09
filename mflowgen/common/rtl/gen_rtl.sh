@@ -6,6 +6,10 @@ if [ -f ../inputs/design.v ]; then
   echo "Using RTL from parent graph"
   mkdir -p outputs
   (cd outputs; ln -s ../../inputs/design.v)
+  if [ -d ../inputs/header ]; then
+    echo "Using header from parent graph"
+    (cd outputs; ln -s ../../inputs/header)
+  fi
 else
   if [ $soc_only = True ]; then
     echo "soc_only set to true. Garnet not included"
@@ -98,36 +102,50 @@ else
                  echo "---"
              done
          }'"
-         # (Double-quote regime)
          set -e; # DIE if any single command exits with error status
-
-         source /aha/bin/activate; # Set up the build environment
-
+         # (Double-quote regime)
          # Example: say you want to double-check packages 'ast_tools', 'magma', and 'peak'.
          # Uncomment the line below; This will display the version,
          # location and latest commit hash for each.
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
 
-         aha garnet $flags; # Here is where we build the verilog for the main chip
+         source /aha/bin/activate; # Set up the build environment
 
-         # Rename output verilog, final name must be 'design.v'
-         cd garnet
-         if [ -d 'genesis_verif' ]; then
-           cp garnet.v genesis_verif/garnet.v
-           cat genesis_verif/* >> design.v
-         else
+         if [ $interconnect_only == True ]; then
+           aha garnet $flags; # Here is where we build the verilog for the main chip
+           cd garnet
            cp garnet.v design.v
-         fi
-         make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
-         cat global_buffer/rtl/global_buffer_param.svh >> design.v
-         cat global_buffer/rtl/global_buffer_pkg.svh >> design.v
-         cat global_buffer/systemRDL/output/*.sv >> design.v
-         cat global_buffer/rtl/gl*.sv >> design.v
-         make -C global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
-         cat global_controller/systemRDL/output/*.sv >> design.v"
+         elif [ $glb_only == True ]; then
+           cd garnet
+
+           make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
+           cp global_buffer/global_buffer.sv design.v
+           cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
+           cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
+           cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
+         else
+           # Rename output verilog, final name must be 'design.v'
+           aha garnet $flags; # Here is where we build the verilog for the main chip
+           cd garnet
+           if [ -d 'genesis_verif' ]; then
+             cp garnet.v genesis_verif/garnet.v
+             cat genesis_verif/* >> design.v
+           else
+             cp garnet.v design.v
+           fi
+           cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
+           cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
+           cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
+           cat global_controller/systemRDL/output/*.sv >> design.v
+         fi"
+
 
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
+      if [ $interconnect_only == False ]; then
+        docker cp $container_name:/aha/garnet/global_buffer/header ../outputs/header
+        docker cp $container_name:/aha/garnet/global_controller/header/* ../outputs/header/
+      fi
       # Kill the container
       docker kill $container_name
       echo "killed docker container $container_name"
@@ -150,31 +168,34 @@ else
       current_dir=$(pwd)
       cd $GARNET_HOME
 
-      eval "python garnet.py $flags"
-
-      # If there are any genesis files, we need to cat those
-      # with the magma generated garnet.v
-      if [ -d "genesis_verif" ]; then
-        cp garnet.v genesis_verif/garnet.sv
-        cat genesis_verif/* >> $current_dir/outputs/design.v
-
-      # Otherwise, garnet.v contains all rtl
-      else
+      if [ $interconnect_only == True ]; then
+        eval "python garnet.py $flags"
         cp garnet.v $current_dir/outputs/design.v
+      elif [ $glb_only == True ]; then
+        make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
+        cp global_buffer/global_buffer.sv $current_dir/outputs/design.v
+        cat global_buffer/systemRDL/output/glb_pio.sv >> $current_dir/outputs/design.v
+        cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> $current_dir/outputs/design.v
+        cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> $current_dir/outputs/design.v
+      else
+        eval "python garnet.py $flags"
+        cp garnet.v $current_dir/outputs/design.v
+        if [ -d 'genesis_verif' ]; then
+          cp garnet.v genesis_verif/garnet.v
+          cat genesis_verif/* >> $current_dir/outputs/design.v
+        else
+          cp garnet.v $current_dir/outputs/design.v
+        fi
+        cat global_buffer/systemRDL/output/glb_pio.sv >> $current_dir/outputs/design.v
+        cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> $current_dir/outputs/design.v
+        cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> $current_dir/outputs/design.v
+        cat global_controller/systemRDL/output/*.sv >> $current_dir/outputs/design.v
       fi
-
-      # make to generate systemRDL RTL files global buffer
-      make -C $GARNET_HOME/global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
-      # Copy global buffer systemverilog from the global buffer folder
-      cat global_buffer/rtl/global_buffer_param.svh >> $current_dir/outputs/design.v
-      cat global_buffer/rtl/global_buffer_pkg.svh >> $current_dir/outputs/design.v
-      cat global_buffer/systemRDL/output/*.sv >> $current_dir/outputs/design.v
-      cat global_buffer/rtl/gl*.sv >> $current_dir/outputs/design.v
-      # make to generate systemRDL RTL files for global controller
-      make -C $GARNET_HOME/global_controller rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
-      cat global_controller/systemRDL/output/*.sv >> $current_dir/outputs/design.v
-
-      cd $current_dir ; # why? all we do after this is exit back to calling dir...?
+      if [ $interconnect_only == False ]; then
+        cp -r global_buffer/header $current_dir/outputs/header
+        cp -r global_controller/header/* $current_dir/outputs/header/
+      fi
+      cd $current_dir ;
     fi
   fi
 fi

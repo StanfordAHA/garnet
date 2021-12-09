@@ -62,7 +62,8 @@ module `mname` (
     input  logic                                sram_cfg_rd_data_valid,
 
 	// global buffer control signals
-	output logic [`$num_glb_tiles-1`:0]         strm_start_pulse,
+	output logic [`$num_glb_tiles-1`:0]         strm_g2f_start_pulse,
+	output logic [`$num_glb_tiles-1`:0]         strm_f2g_start_pulse,
 	output logic [`$num_glb_tiles-1`:0]         pc_start_pulse,
 	input  logic [`$num_glb_tiles-1`:0]         strm_g2f_interrupt_pulse,
 	input  logic [`$num_glb_tiles-1`:0]         strm_f2g_interrupt_pulse,
@@ -354,7 +355,8 @@ assign axi_cgra_cfg_data_in         = cgra_cfg_rd_data;
     .axi_glb_stall(axi_glb_stall), 
     .axi_cgra_stall(axi_cgra_stall), 
 
-	.strm_start_pulse(strm_start_pulse),
+	.strm_g2f_start_pulse(strm_g2f_start_pulse),
+	.strm_f2g_start_pulse(strm_f2g_start_pulse),
 	.pc_start_pulse(pc_start_pulse),
 	.strm_g2f_interrupt_pulse(strm_g2f_interrupt_pulse),
 	.strm_f2g_interrupt_pulse(strm_f2g_interrupt_pulse),

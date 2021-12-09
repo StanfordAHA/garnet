@@ -1,0 +1,20 @@
+name: sim-compile
+
+parameters:
+  tool: "XCELIUM"
+
+commands:
+  - bash run_sim.sh
+
+inputs:
+  - design.v
+  - header
+
+outputs:
+  - sim.log
+
+postconditions:
+  - assert File( 'outputs/sim.log' )      # must exist
+
+  - assert 'Error,' not in File( 'outputs/sim.log' )
+  - assert '*E,' not in File( 'outputs/sim.log' )
