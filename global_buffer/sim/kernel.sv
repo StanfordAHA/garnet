@@ -36,6 +36,7 @@ class Test;
     const int bank_offset = 1 << BANK_ADDR_WIDTH;
     string filename;
     int num_kernels;
+    int data_network_mask;
     Kernel kernels[];
     bit [NUM_GLB_TILES-1:0] g2f_tile_mask;
     bit [NUM_GLB_TILES-1:0] f2g_tile_mask;
@@ -55,6 +56,7 @@ function Test::new(string filename);
     if (fd) $display("Test file open %s", filename);
     else $error("Cannot open %s", filename);
     void'($fscanf(fd, " %d", num_kernels));
+    void'($fscanf(fd, " %b", data_network_mask));
     kernels = new[num_kernels];
     for (int i = 0; i < num_kernels; i++) begin
         kernels[i] = new();
@@ -69,7 +71,7 @@ function Test::new(string filename);
         void'($fscanf(fd, " %d", dim));
         kernels[i].tile_id = tile_id;
         kernels[i].bank_id = bank_id;
-        kernels[i].start_addr = tile_offset * tile_id + bank_offset * bank_id + tmp_start_addr;
+        kernels[i].start_addr = bank_offset * bank_id + tmp_start_addr;
         kernels[i].cycle_start_addr = tmp_cycle_start_addr;
         kernels[i].dim = dim;
         for (int j = 0; j < dim; j++) begin
@@ -112,6 +114,7 @@ function Test::new(string filename);
 
     // Display log
     $display("Number of kernels in the app is %0d", num_kernels);
+    $display("Data interconnect of app is %16b", data_network_mask);
     foreach (kernels[i]) begin
         extent_s = "";
         cycle_stride_s = "";
