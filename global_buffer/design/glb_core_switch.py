@@ -45,7 +45,7 @@ class GlbCoreSwitch(Generator):
         self.rdrq_packet_sw2bankarr = self.output(
             "rdrq_packet_sw2bankarr", self.header.rdrq_packet_t, size=self._params.banks_per_tile)
 
-        # rdrq packet
+        # rdrs packet
         self.rdrs_packet_sw2pr = self.output(
             "rdrs_packet_sw2pr", self.header.rdrs_packet_t)
         self.rdrs_packet_sr2sw = self.input(
@@ -67,6 +67,8 @@ class GlbCoreSwitch(Generator):
         self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2)
         self.cfg_ld_dma_ctrl_mode = self.input("cfg_ld_dma_ctrl_mode", 2)
         self.cfg_pcfg_dma_ctrl_mode = self.input("cfg_pcfg_dma_ctrl_mode", 1)
+        self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
+        self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
 
         # local variables
         assert self._params.glb_switch_pipeline_depth == 1  # switch pipeline depth is fixed to 1
@@ -375,14 +377,20 @@ class GlbCoreSwitch(Generator):
     @always_comb
     def rdrs_sw2dma_logic(self):
         if self.cfg_ld_dma_ctrl_mode != 0:
-            self.rdrs_packet_sw2dma = self.rdrs_packet_sr2sw_d
+            if (~self.cfg_tile_connected_next) & (~self.cfg_tile_connected_prev):
+                self.rdrs_packet_sw2dma = self.rdrs_packet_bankarr2sw_sr_d[self.rdrq_bank_sel_d[-1]]
+            else:
+                self.rdrs_packet_sw2dma = self.rdrs_packet_sr2sw_d
         else:
             self.rdrs_packet_sw2dma = 0
 
     @always_comb
     def rdrs_sw2sr_logic(self):
         if (self.rdrq_sel_d[-1] == self.packet_src_e.strm_rtr) | (self.rdrq_sel_d[-1] == self.packet_src_e.strm_dma):
-            self.rdrs_packet_sw2sr = self.rdrs_packet_bankarr2sw_sr_d[self.rdrq_bank_sel_d[-1]]
+            if (self.cfg_ld_dma_ctrl_mode != 0) & (~self.cfg_tile_connected_next) & (~self.cfg_tile_connected_prev):
+                self.rdrs_packet_sw2sr = 0
+            else:
+                self.rdrs_packet_sw2sr = self.rdrs_packet_bankarr2sw_sr_d[self.rdrq_bank_sel_d[-1]]
         else:
             if self.cfg_ld_dma_ctrl_mode != 0:
                 self.rdrs_packet_sw2sr = 0
@@ -393,8 +401,7 @@ class GlbCoreSwitch(Generator):
     @always_comb
     def rdrs_sw2pr_logic(self):
         if self.rdrq_sel_d_nostall[-1] == self.packet_src_e.proc:
-            self.rdrs_packet_sw2pr = self.rdrs_packet_bankarr2sw_pr_d[
-                self.rdrq_bank_sel_d_nostall[-1]]
+            self.rdrs_packet_sw2pr = self.rdrs_packet_bankarr2sw_pr_d[self.rdrq_bank_sel_d_nostall[-1]]
         else:
             self.rdrs_packet_sw2pr = 0
 

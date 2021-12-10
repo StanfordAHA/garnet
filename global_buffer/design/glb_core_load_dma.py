@@ -43,8 +43,6 @@ class GlbCoreLoadDma(Generator):
                                 + self._params.sram_gen_output_pipeline_depth
                                 + 1  # SRAM macro read latency
                                 + self._params.glb_switch_pipeline_depth
-                                + 2  # FIXME: Unnecessary delay of moving back and forth btw switch and router
-                                + 1  # load_dma cache register delay
                                 )
 
         # local variables
