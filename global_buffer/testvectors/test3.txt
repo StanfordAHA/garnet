@@ -1,4 +1,5 @@
 4
+00
 WR 0 0 0 0
 1
 4096
@@ -11,13 +12,13 @@ G2F 0 1 0 0
 1
 1
 testvectors/in2_4096.dat
-F2G 1 0 0 0
+F2G 1 2 0 0
 1
 4096
 1
 1
 testvectors/out_4096.dat
-RD 1 1 0 0
+RD 1 3 0 0
 1
 4096
 1
