@@ -155,7 +155,7 @@ class GlbCorePcfgDma(Generator):
     def assign_rdrq_packet(self):
         self.wire(self.rdrq_packet['rd_en'], self.rdrq_packet_rd_en_r)
         self.wire(self.rdrq_packet['rd_addr'], self.rdrq_packet_rd_addr_r)
-        self.wire(self.rdrq_packet['rdrq_type'], const(self.header.PacketEnum.pcfg.value, self.header.PacketEnumWidth))
+        self.wire(self.rdrq_packet['rd_type'], const(self.header.PacketEnum.pcfg.value, self.header.PacketEnumWidth))
         self.wire(self.rdrq_packet['rd_src_tile'], self.glb_tile_id)
 
     def assign_cgra_cfg_output(self):
