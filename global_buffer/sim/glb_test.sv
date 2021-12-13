@@ -95,7 +95,7 @@ program glb_test (
         Kernel kernels[] = test.kernels;
 
         for (int i = 0; i < NUM_GLB_TILES; i++) begin
-            data_network_configure(i, test.data_network_mask[i], test.data_network_mask[i] * 4 + 3);
+            data_network_configure(i, test.data_network_mask[i], test.data_network_mask[i] * 4 + {test.data_network_mask[i], test.data_network_mask[i]});
         end
 
         foreach (kernels[i]) begin
