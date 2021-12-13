@@ -38,8 +38,10 @@ class GlbCoreStrmRouter(Generator):
         self.packet_e2w_esti_turned_d1 = self.var("packet_e2w_esti_turned_d1", self.header.packet_t)
         self.packet_sw2sr_d1 = self.var("packet_sw2sr_d1", self.header.packet_t)
 
-        self.is_even = self.var("is_even", 1)
-        self.wire(self.is_even, self.glb_tile_id[0] == 0)
+        # localparam
+        self.packet_addr_tile_sel_msb = (_params.bank_addr_width
+                                         + _params.bank_sel_addr_width + _params.tile_sel_addr_width - 1)
+        self.packet_addr_tile_sel_lsb = _params.bank_addr_width + _params.bank_sel_addr_width
 
         # localparam
         self.add_always(self.packet_wst_logic)
@@ -49,61 +51,56 @@ class GlbCoreStrmRouter(Generator):
         self.add_always(self.packet_switch)
 
     @always_comb
-    def packet_wst_logic(self):
+    def packet_wsti_muxed_logic(self):
         if self.cfg_tile_connected_prev:
-            self.packet_w2e_wsti_turned = self.packet_w2e_wsti_d1
+            self.wr_packet_w2e_wsti_muxed = self.wr_packet_w2e_wsti
+            self.rdrq_packet_w2e_wsti_muxed = self.rdrq_packet_w2e_wsti
+            self.rdrs_packet_w2e_wsti_muxed = self.rdrs_packet_w2e_wsti
         else:
-            self.packet_w2e_wsti_turned = self.packet_e2w_wsto
+            self.wr_packet_w2e_wsti_muxed = self.wr_packet_e2w_wsto_d
+            self.rdrq_packet_w2e_wsti_muxed = self.rdrq_packet_e2w_wsto_d
+            self.rdrs_packet_w2e_wsti_muxed = self.rdrs_packet_e2w_wsto_d
 
     @always_comb
-    def packet_est_logic(self):
+    def packet_esti_muxed_logic(self):
         if self.cfg_tile_connected_next:
-            self.packet_e2w_esti_turned = self.packet_e2w_esti_d1
+            self.wr_packet_e2w_esti_muxed = self.wr_packet_e2w_esti
+            self.rdrq_packet_e2w_esti_muxed = self.rdrq_packet_e2w_esti
+            self.rdrs_packet_e2w_esti_muxed = self.rdrs_packet_e2w_esti
         else:
-            self.packet_e2w_esti_turned = self.packet_w2e_esto
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def packet_sw2sr_pipeline(self):
-        if self.reset:
-            self.packet_sw2sr_d1 = 0
-        elif self.clk_en:
-            self.packet_sw2sr_d1 = self.packet_sw2sr
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def packet_pipeline(self):
-        if self.reset:
-            self.packet_w2e_wsti_d1 = 0
-            self.packet_e2w_esti_d1 = 0
-            self.packet_w2e_wsti_turned_d1 = 0
-            self.packet_e2w_esti_turned_d1 = 0
-        elif self.clk_en:
-            self.packet_w2e_wsti_d1 = self.packet_w2e_wsti
-            self.packet_e2w_esti_d1 = self.packet_e2w_esti
-            self.packet_w2e_wsti_turned_d1 = self.packet_w2e_wsti_turned
-            self.packet_e2w_esti_turned_d1 = self.packet_e2w_esti_turned
+            self.wr_packet_e2w_esti_muxed = self.wr_packet_w2e_esto_d
+            self.rdrq_packet_e2w_esti_muxed = self.rdrq_packet_w2e_esto_d
+            self.rdrs_packet_e2w_esti_muxed = self.rdrs_packet_w2e_esto_d
 
     @always_comb
-    def packet_switch(self):
-        if (~self.cfg_tile_connected_next) & (~self.cfg_tile_connected_prev):
-                self.wr_packet_sr2sw = 0
-                self.rdrq_packet_sr2sw = 0
-                self.rdrs_packet_sr2sw = 0
+    def wr_packet_switch_logic(self):
+        if (self.wr_packet_sw2sr['wr_en'] == 1):
+            if (self.wr_packet_sw2sr['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
+                    == self.glb_tile_id):
+                self.wr_packet_sr2sw_w = self.wr_packet_sw2sr
+                self.wr_packet_w2e_esto_w = 0
+            else:
+                self.wr_packet_sr2sw_w = 0
+                if self.cfg_tile_connected_next:
+                    self.wr_packet_w2e_esto_w = self.wr_packet_sw2sr
+                else:
+                    self.wr_packet_w2e_esto_w = 0
+        elif (self.wr_packet_w2e_wsti_muxed['wr_en'] == 1):
+            if (self.wr_packet_w2e_wsti_muxed['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
+                    == self.glb_tile_id):
+                self.wr_packet_sr2sw_w = self.wr_packet_w2e_wsti_muxed
+                self.wr_packet_w2e_esto_w = 0
+            else:
+                self.wr_packet_sr2sw_w = 0
+                if self.cfg_tile_connected_next:
+                    self.wr_packet_w2e_esto_w = self.wr_packet_w2e_wsti_muxed
+                else:
+                    self.wr_packet_w2e_esto_w = 0
         else:
-            if self.is_even:
-                self.wr_packet_sr2sw = self.wr_packet_w2e_wsti_turned
-                self.rdrq_packet_sr2sw = self.wr_packet_w2e_wsti_turned
-                self.rdrq_packet_sr2sw = self.wr_packet_w2e_wsti_turned
-            else:
-                self.wr_packet_sr2sw = self.packet_e2w_esti_turned
+            self.wr_packet_sr2sw_w = 0
+            self.wr_packet_w2e_esto_w = 0
 
-
-
-
-
-
-            if self.is_even:
-            self.packet_w2e_esto = self.packet_sw2sr_d1
-            self.packet_e2w_wsto = self.packet_e2w_esti_turned_d1
-            else:
-                self.packet_w2e_esto = self.packet_w2e_wsti_turned_d1
-                self.packet_e2w_wsto = self.packet_sw2sr_d1
+        if self.cfg_tile_connected_prev:
+            self.wr_packet_e2w_wsto_w = self.wr_packet_e2w_esti_muxed
+        else:
+            self.wr_packet_e2w_wsto_w = 0
