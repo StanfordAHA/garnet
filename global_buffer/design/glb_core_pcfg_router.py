@@ -11,43 +11,24 @@ class GlbCorePcfgRouter(Generator):
 
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
-        self.glb_tile_id = self.input(
-            "glb_tile_id", self._params.tile_sel_addr_width)
+        self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
-        self.rd_packet_w2e_wsti = self.input(
-            "rd_packet_w2e_wsti", self.header.rd_packet_t)
+        self.rd_packet_w2e_wsti = self.input("rd_packet_w2e_wsti", self.header.rd_packet_t)
+        self.rd_packet_e2w_wsto = self.output("rd_packet_e2w_wsto", self.header.rd_packet_t)
+        self.rd_packet_e2w_esti = self.input("rd_packet_e2w_esti", self.header.rd_packet_t)
+        self.rd_packet_w2e_esto = self.output("rd_packet_w2e_esto", self.header.rd_packet_t)
+        self.rd_packet_sw2pcfgr = self.input("rd_packet_sw2pcfgr", self.header.rd_packet_t)
+        self.rd_packet_pcfgr2sw = self.output("rd_packet_pcfgr2sw", self.header.rd_packet_t)
 
-        self.rd_packet_e2w_wsto = self.output(
-            "rd_packet_e2w_wsto", self.header.rd_packet_t)
-
-        self.rd_packet_e2w_esti = self.input(
-            "rd_packet_e2w_esti", self.header.rd_packet_t)
-
-        self.rd_packet_w2e_esto = self.output(
-            "rd_packet_w2e_esto", self.header.rd_packet_t)
-
-        self.rd_packet_sw2pcfgr = self.input(
-            "rd_packet_sw2pcfgr", self.header.rd_packet_t)
-
-        self.rd_packet_pcfgr2sw = self.output(
-            "rd_packet_pcfgr2sw", self.header.rd_packet_t)
-
-        self.cfg_tile_connected_prev = self.input(
-            "cfg_tile_connected_prev", 1)
-        self.cfg_tile_connected_next = self.input(
-            "cfg_tile_connected_next", 1)
+        self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
+        self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
 
         # local variables
-        self.rd_packet_w2e_wsti_turned = self.var(
-            "rd_packet_w2e_wsti_turned", self.header.rd_packet_t)
-        self.rd_packet_w2e_wsti_turned_d1 = self.var(
-            "rd_packet_w2e_wsti_turned_d1", self.header.rd_packet_t)
-        self.rd_packet_e2w_esti_turned = self.var(
-            "rd_packet_e2w_esti_turned", self.header.rd_packet_t)
-        self.rd_packet_e2w_esti_turned_d1 = self.var(
-            "rd_packet_e2w_esti_turned_d1", self.header.rd_packet_t)
-        self.rd_packet_sw2pcfgr_d1 = self.var(
-            "rd_packet_sw2pcfgr_d1", self.header.rd_packet_t)
+        self.rd_packet_w2e_wsti_turned = self.var("rd_packet_w2e_wsti_turned", self.header.rd_packet_t)
+        self.rd_packet_w2e_wsti_turned_d1 = self.var("rd_packet_w2e_wsti_turned_d1", self.header.rd_packet_t)
+        self.rd_packet_e2w_esti_turned = self.var("rd_packet_e2w_esti_turned", self.header.rd_packet_t)
+        self.rd_packet_e2w_esti_turned_d1 = self.var("rd_packet_e2w_esti_turned_d1", self.header.rd_packet_t)
+        self.rd_packet_sw2pcfgr_d1 = self.var("rd_packet_sw2pcfgr_d1", self.header.rd_packet_t)
 
         self.add_is_even_stmt()
         self.add_always(self.packet_wst_logic)
