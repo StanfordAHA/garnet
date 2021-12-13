@@ -15,8 +15,7 @@ class GlbTileCfgCtrl(Generator):
 
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
-        self.glb_tile_id = self.input(
-            "glb_tile_id", _params.tile_sel_addr_width)
+        self.glb_tile_id = self.input("glb_tile_id", _params.tile_sel_addr_width)
 
         # config port
         self.if_cfg_wst_s = self.interface(
@@ -24,39 +23,31 @@ class GlbTileCfgCtrl(Generator):
         self.if_cfg_est_m = self.interface(
             config.master, "if_cfg_est_m", is_port=True)
 
-        self.h2d_pio_dec_write_data = self.output(
-            "h2d_pio_dec_write_data", _params.axi_data_width)
-        self.h2d_pio_dec_address = self.output(
-            "h2d_pio_dec_address", _params.axi_addr_reg_width)
+        self.h2d_pio_dec_write_data = self.output("h2d_pio_dec_write_data", _params.axi_data_width)
+        self.h2d_pio_dec_address = self.output("h2d_pio_dec_address", _params.axi_addr_reg_width)
         self.h2d_pio_dec_read = self.output("h2d_pio_dec_read", 1)
         self.h2d_pio_dec_write = self.output("h2d_pio_dec_write", 1)
 
-        self.d2h_dec_pio_read_data = self.input(
-            "d2h_dec_pio_read_data", _params.axi_data_width)
+        self.d2h_dec_pio_read_data = self.input("d2h_dec_pio_read_data", _params.axi_data_width)
         self.d2h_dec_pio_ack = self.input("d2h_dec_pio_ack", 1)
         self.d2h_dec_pio_nack = self.input("d2h_dec_pio_nack", 1)
 
         # local variables
-        self.wr_data_internal = self.var(
-            "wr_data_internal", _params.axi_data_width)
-        self.addr_internal = self.var(
-            "addr_internal", _params.axi_addr_reg_width)
+        self.wr_data_internal = self.var("wr_data_internal", _params.axi_data_width)
+        self.addr_internal = self.var("addr_internal", _params.axi_addr_reg_width)
         self.read_internal = self.var("read_internal", 1)
         self.write_internal = self.var("write_internal", 1)
         self.rd_en_d1 = self.var("rd_en_d1", 1)
         self.rd_en_d2 = self.var("rd_en_d2", 1)
-        self.rd_data_internal = self.var(
-            "rd_data_internal", _params.axi_data_width)
+        self.rd_data_internal = self.var("rd_data_internal", _params.axi_data_width)
         self.rd_data_next = self.var("rd_data_next", _params.axi_data_width)
         self.rd_data_valid_internal = self.var("rd_data_valid_internal", 1)
         self.rd_data_valid_next = self.var("rd_data_vald_next", 1)
         self.wr_tile_id_match = self.var("wr_tile_id_match", 1)
         self.rd_tile_id_match = self.var("rd_tile_id_match", 1)
 
-        self.wr_addr_tile_id = self.var(
-            "wr_addr_tile_id", _params.tile_sel_addr_width)
-        self.rd_addr_tile_id = self.var(
-            "rd_addr_tile_id", _params.tile_sel_addr_width)
+        self.wr_addr_tile_id = self.var("wr_addr_tile_id", _params.tile_sel_addr_width)
+        self.rd_addr_tile_id = self.var("rd_addr_tile_id", _params.tile_sel_addr_width)
 
         tile_id_msb = (_params.axi_addr_reg_width
                        + _params.axi_byte_offset

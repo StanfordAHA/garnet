@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, resize, clog2, ext
+from kratos import Generator, always_ff, always_comb, posedge, resize, clog2, ext, const
 from global_buffer.design.glb_loop_iter import GlbLoopIter
 from global_buffer.design.glb_sched_gen import GlbSchedGen
 from global_buffer.design.glb_addr_gen import GlbAddrGen
@@ -17,13 +17,12 @@ class GlbCoreLoadDma(Generator):
         self.clk = self.clock("clk")
         self.clk_en = self.clock_en("clk_en")
         self.reset = self.reset("reset")
+        self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
-        self.data_g2f = self.output(
-            "data_g2f", width=self._params.cgra_data_width)
+        self.data_g2f = self.output("data_g2f", width=self._params.cgra_data_width)
         self.data_valid_g2f = self.output("data_valid_g2f", width=1)
 
-        self.rdrq_packet = self.output(
-            "rdrq_packet", self.header.rdrq_packet_t)
+        self.rdrq_packet = self.output("rdrq_packet", self.header.rdrq_packet_t)
         self.rdrs_packet = self.input("rdrs_packet", self.header.rdrs_packet_t)
 
         self.cfg_ld_dma_num_repeat = self.input("cfg_ld_dma_num_repeat", clog2(self._params.queue_depth) + 1)
@@ -47,17 +46,14 @@ class GlbCoreLoadDma(Generator):
 
         # local variables
         self.strm_data = self.var("strm_data", self._params.cgra_data_width)
-        self.strm_data_r = self.var(
-            "strm_data_r", self._params.cgra_data_width)
+        self.strm_data_r = self.var("strm_data_r", self._params.cgra_data_width)
         self.strm_data_valid = self.var("strm_data_valid", 1)
         self.strm_data_valid_r = self.var("strm_data_valid_r", 1)
         self.strm_data_sel = self.var("strm_data_sel", self._params.bank_byte_offset - self._params.cgra_byte_offset)
 
         self.strm_rd_en_w = self.var("strm_rd_en_w", 1)
-        self.strm_rd_addr_w = self.var(
-            "strm_rd_addr_w", self._params.glb_addr_width)
-        self.last_strm_rd_addr_r = self.var(
-            "last_strm_rd_addr_r", self._params.glb_addr_width)
+        self.strm_rd_addr_w = self.var("strm_rd_addr_w", self._params.glb_addr_width)
+        self.last_strm_rd_addr_r = self.var("last_strm_rd_addr_r", self._params.glb_addr_width)
 
         self.ld_dma_start_pulse_next = self.var("ld_dma_start_pulse_next", 1)
         self.ld_dma_start_pulse_r = self.var("ld_dma_start_pulse_r", 1)
@@ -67,10 +63,8 @@ class GlbCoreLoadDma(Generator):
 
         self.bank_addr_match = self.var("bank_addr_match", 1)
         self.bank_rdrq_rd_en = self.var("bank_rdrq_rd_en", 1)
-        self.bank_rdrq_rd_addr = self.var(
-            "bank_rdrq_rd_addr", self._params.glb_addr_width)
-        self.bank_rdrs_data_cache_r = self.var(
-            "bank_rdrs_data_cache_r", self._params.bank_data_width)
+        self.bank_rdrq_rd_addr = self.var("bank_rdrq_rd_addr", self._params.glb_addr_width)
+        self.bank_rdrs_data_cache_r = self.var("bank_rdrs_data_cache_r", self._params.bank_data_width)
 
         self.strm_run = self.var("strm_run", 1)
         self.loop_done = self.var("loop_done", 1)
@@ -298,6 +292,8 @@ class GlbCoreLoadDma(Generator):
         self.bank_rdrq_rd_en = self.strm_rd_en_w & (self.is_first | (~self.bank_addr_match))
         self.bank_rdrq_rd_addr = self.strm_rd_addr_w
         self.rdrq_packet['rd_en'] = self.bank_rdrq_rd_en
+        self.rdrq_packet['rdrq_type'] = const(self.header.PacketEnum.strm.value, self.header.PacketEnumWidth)
+        self.rdrq_packet['rd_src_tile'] = self.glb_tile_id
         self.rdrq_packet['rd_addr'] = self.bank_rdrq_rd_addr
 
     @always_ff((posedge, "clk"), (posedge, "reset"))

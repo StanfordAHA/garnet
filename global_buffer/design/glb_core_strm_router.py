@@ -19,8 +19,12 @@ class GlbCoreStrmRouter(Generator):
         self.packet_e2w_esti = self.input("packet_e2w_esti", self.header.packet_t)
         self.packet_w2e_esto = self.output("packet_w2e_esto", self.header.packet_t)
 
-        self.packet_sw2sr = self.input("packet_sw2sr", self.header.packet_t)
-        self.packet_sr2sw = self.output("packet_sr2sw", self.header.packet_t)
+        self.wr_packet_sw2sr = self.input("wr_packet_sw2sr", self.header.wr_packet_t)
+        self.wr_packet_sr2sw = self.output("wr_packet_sr2sw", self.header.wr_packet_t)
+        self.rdrq_packet_sw2sr = self.input("rdrq_packet_sw2sr", self.header.rdrq_packet_t)
+        self.rdrq_packet_sr2sw = self.output("rdrq_packet_sr2sw", self.header.rdrq_packet_t)
+        self.rdrs_packet_sw2sr = self.input("rdrs_packet_sw2sr", self.header.rdrs_packet_t)
+        self.rdrs_packet_sr2sw = self.output("rdrs_packet_sr2sw", self.header.rdrs_packet_t)
 
         self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
         self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
@@ -80,11 +84,26 @@ class GlbCoreStrmRouter(Generator):
 
     @always_comb
     def packet_switch(self):
-        if self.is_even:
-            self.packet_sr2sw = self.packet_w2e_wsti_turned
+        if (~self.cfg_tile_connected_next) & (~self.cfg_tile_connected_prev):
+                self.wr_packet_sr2sw = 0
+                self.rdrq_packet_sr2sw = 0
+                self.rdrs_packet_sr2sw = 0
+        else:
+            if self.is_even:
+                self.wr_packet_sr2sw = self.wr_packet_w2e_wsti_turned
+                self.rdrq_packet_sr2sw = self.wr_packet_w2e_wsti_turned
+                self.rdrq_packet_sr2sw = self.wr_packet_w2e_wsti_turned
+            else:
+                self.wr_packet_sr2sw = self.packet_e2w_esti_turned
+
+
+
+
+
+
+            if self.is_even:
             self.packet_w2e_esto = self.packet_sw2sr_d1
             self.packet_e2w_wsto = self.packet_e2w_esti_turned_d1
-        else:
-            self.packet_sr2sw = self.packet_e2w_esti_turned
-            self.packet_w2e_esto = self.packet_w2e_wsti_turned_d1
-            self.packet_e2w_wsto = self.packet_sw2sr_d1
+            else:
+                self.packet_w2e_esto = self.packet_w2e_wsti_turned_d1
+                self.packet_e2w_wsto = self.packet_sw2sr_d1
