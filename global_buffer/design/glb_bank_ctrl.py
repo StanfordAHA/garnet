@@ -15,29 +15,25 @@ class GlbBankCtrl(Generator):
         self.reset = self.reset("reset")
 
         self.packet_wr_en = self.input("packet_wr_en", 1)
-        self.packet_wr_addr = self.input(
-            "packet_wr_addr", self._params.bank_addr_width)
-        self.packet_wr_data = self.input(
-            "packet_wr_data", self._params.bank_data_width)
-        self.packet_wr_data_bit_sel = self.input(
-            "packet_wr_data_bit_sel", self._params.bank_data_width)
+        self.packet_wr_addr = self.input("packet_wr_addr", self._params.bank_addr_width)
+        self.packet_wr_data = self.input("packet_wr_data", self._params.bank_data_width)
+        self.packet_wr_data_bit_sel = self.input("packet_wr_data_bit_sel", self._params.bank_data_width)
 
         self.packet_rd_en = self.input("packet_rd_en", 1)
-        self.packet_rd_addr = self.input(
-            "packet_rd_addr", self._params.bank_addr_width)
-        self.packet_rd_data = self.output(
-            "packet_rd_data", self._params.bank_data_width)
+        self.packet_rdrq_type = self.input("packet_rdrq_type", self.header.PacketEnumWidth)
+        self.packet_rd_src_tile = self.input("packet_rd_src_tile", self._params.tile_sel_addr_width)
+        self.packet_rd_addr = self.input("packet_rd_addr", self._params.bank_addr_width)
+        self.packet_rd_data = self.output("packet_rd_data", self._params.bank_data_width)
         self.packet_rd_data_valid = self.output("packet_rd_data_valid", 1)
+        self.packet_rdrs_type = self.output("packet_rdrs_type", self.header.PacketEnumWidth)
+        self.packet_rd_dst_tile = self.output("packet_rd_dst_tile", self._params.tile_sel_addr_width)
 
         self.mem_rd_en = self.output("mem_rd_en", 1)
         self.mem_wr_en = self.output("mem_wr_en", 1)
         self.mem_addr = self.output("mem_addr", self._params.bank_addr_width)
-        self.mem_data_in = self.output(
-            "mem_data_in", self._params.bank_data_width)
-        self.mem_data_in_bit_sel = self.output(
-            "mem_data_in_bit_sel", self._params.bank_data_width)
-        self.mem_data_out = self.input(
-            "mem_data_out", self._params.bank_data_width)
+        self.mem_data_in = self.output("mem_data_in", self._params.bank_data_width)
+        self.mem_data_in_bit_sel = self.output("mem_data_in_bit_sel", self._params.bank_data_width)
+        self.mem_data_out = self.input("mem_data_out", self._params.bank_data_width)
 
         self.bank_cfg_ifc = GlbConfigInterface(
             addr_width=self._params.bank_addr_width, data_width=self._params.axi_data_width)
@@ -49,11 +45,9 @@ class GlbBankCtrl(Generator):
             self._params.sram_gen_pipeline_depth + self._params.sram_gen_output_pipeline_depth + 1
 
         # local variables
-        self.sram_cfg_rd_data_r = self.var(
-            "sram_cfg_rd_data_r", self._params.axi_data_width)
+        self.sram_cfg_rd_data_r = self.var("sram_cfg_rd_data_r", self._params.axi_data_width)
         self.sram_cfg_rd_addr_sel_d = self.var("sram_cfg_rd_addr_sel_d", 1)
-        self.packet_rd_data_r = self.var(
-            "packet_rd_data_r", self._params.bank_data_width)
+        self.packet_rd_data_r = self.var("packet_rd_data_r", self._params.bank_data_width)
 
         self.add_rd_en_pipeline()
         self.add_always(self.mem_signal_logic)
@@ -115,11 +109,9 @@ class GlbBankCtrl(Generator):
         self.mem_rd_en_w = self.var("mem_rd_en_w", 1)
         self.mem_rd_en_d = self.var("mem_rd_en_d", 1)
         self.sram_cfg_rd_en_d = self.var("sram_cfg_rd_en_d", 1)
-        self.packet_rd_en_d = self.var("packet_rd_en_d", 1)
         self.wire(self.mem_rd_en_w, self.mem_rd_en)
 
-        self.mem_rd_en_pipeline = Pipeline(width=1,
-                                           depth=self.bank_ctrl_pipeline_depth)
+        self.mem_rd_en_pipeline = Pipeline(width=1, depth=self.bank_ctrl_pipeline_depth)
         self.add_child("mem_rd_en_pipeline",
                        self.mem_rd_en_pipeline,
                        clk=self.clk,
@@ -128,8 +120,7 @@ class GlbBankCtrl(Generator):
                        in_=self.mem_rd_en_w,
                        out_=self.mem_rd_en_d)
 
-        self.sram_cfg_rd_en_pipeline = Pipeline(width=1,
-                                                depth=self.bank_ctrl_pipeline_depth)
+        self.sram_cfg_rd_en_pipeline = Pipeline(width=1, depth=self.bank_ctrl_pipeline_depth)
         self.add_child("sram_cfg_rd_en_pipeline",
                        self.sram_cfg_rd_en_pipeline,
                        clk=self.clk,
@@ -138,15 +129,19 @@ class GlbBankCtrl(Generator):
                        in_=self.if_sram_cfg_s.rd_en,
                        out_=self.sram_cfg_rd_en_d)
 
-        self.packet_rd_en_pipeline = Pipeline(width=1,
-                                              depth=self.bank_ctrl_pipeline_depth)
-        self.add_child("packet_rd_en_pipeline",
-                       self.packet_rd_en_pipeline,
+        self.packet_rd_en_d = self.var("packet_rd_en_d", 1)
+        self.packet_rdrq_type_d = self.var("packet_rdrq_type_d", self.header.PacketEnumWidth)
+        self.packet_rd_src_tile_d = self.var("packet_rd_src_tile_d", self._params.tile_sel_addr_width)
+        self.packet_pipeline_in = concat(self.packet_rd_en, self.packet_rdrq_type, self.packet_rd_src_tile)
+        self.packet_pipeline_out = concat(self.packet_rd_en_d, self.packet_rdrq_type_d, self.packet_rd_src_tile_d)
+        self.packet_rdrq_pipeline = Pipeline(width=self.packet_pipeline_in.width, depth=self.bank_ctrl_pipeline_depth)
+        self.add_child("packet_rdrq_pipeline",
+                       self.packet_rdrq_pipeline,
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       in_=self.packet_rd_en,
-                       out_=self.packet_rd_en_d)
+                       in_=self.packet_pipeline_in,
+                       out_=self.packet_pipeline_out)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def packet_rd_data_ff(self):
@@ -162,6 +157,8 @@ class GlbBankCtrl(Generator):
         else:
             self.packet_rd_data = self.packet_rd_data_r
         self.packet_rd_data_valid = self.packet_rd_en_d
+        self.packet_rdrs_type = self.packet_rdrq_type_d
+        self.packet_rd_dst_tile = self.packet_rd_src_tile_d
 
     def add_sram_cfg_rd_addr_sel_pipeline(self):
         self.sram_cfg_rd_addr_sel_d = self.var("sram_cfg_rd_addr_sel_d", 1)

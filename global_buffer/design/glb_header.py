@@ -1,9 +1,12 @@
-from kratos import PackedStruct, clog2
+from kratos import PackedStruct, clog2, enum
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 import math
+from enum import Enum
 
 
 class GlbHeader():
+    enum_cache = {}
+
     def __init__(self, _params: GlobalBufferParams):
         self._params = _params
 
@@ -36,13 +39,26 @@ class GlbHeader():
         self.cfg_pcfg_dma_header_t = PackedStruct("pcfg_dma_header_t",
                                                   [("start_addr", self._params.glb_addr_width),
                                                    ("num_cfg", self._params.max_num_cfg_width)])
+
+        class PacketEnum(Enum):
+            none = 0
+            proc = 1
+            strm = 2
+            pcfg = 3
+        self.PacketEnum = PacketEnum
+        self.PacketEnumWidth = 2
+
         wr_packet_list = [("wr_en", 1),
                           ("wr_strb", math.ceil(self._params.bank_data_width / 8)),
                           ("wr_addr", self._params.glb_addr_width),
                           ("wr_data", self._params.bank_data_width), ]
         rdrq_packet_list = [("rd_en", 1),
+                            ("rdrq_type", 2),
+                            ("rd_src_tile", self._params.tile_sel_addr_width),
                             ("rd_addr", self._params.glb_addr_width), ]
         rdrs_packet_list = [("rd_data", self._params.bank_data_width),
+                            ("rdrs_type", 2),
+                            ("rd_dst_tile", self._params.tile_sel_addr_width),
                             ("rd_data_valid", 1), ]
 
         self.packet_t = PackedStruct(

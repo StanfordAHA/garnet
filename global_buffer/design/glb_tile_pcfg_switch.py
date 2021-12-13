@@ -13,33 +13,21 @@ class GlbTilePcfgSwitch(Generator):
         self.reset = self.reset("reset")
 
         self.cfg_pcfg_dma_mode = self.input("cfg_pcfg_dma_mode", 1)
-        self.cgra_cfg_core2sw = self.input(
-            "cgra_cfg_core2sw", self.header.cgra_cfg_t)
-        self.cgra_cfg_jtag_wsti = self.input(
-            "cgra_cfg_jtag_wsti", self.header.cgra_cfg_t)
-        self.cgra_cfg_jtag_esto = self.output(
-            "cgra_cfg_jtag_esto", self.header.cgra_cfg_t)
-        self.cgra_cfg_pcfg_wsti = self.input(
-            "cgra_cfg_pcfg_wsti", self.header.cgra_cfg_t)
-        self.cgra_cfg_pcfg_esto = self.output(
-            "cgra_cfg_pcfg_esto", self.header.cgra_cfg_t)
-        self.cgra_cfg_g2f = self.output(
-            "cgra_cfg_g2f", self.header.cgra_cfg_t, size=self._params.cgra_per_glb, packed=True)
+        self.cgra_cfg_core2sw = self.input("cgra_cfg_core2sw", self.header.cgra_cfg_t)
+        self.cgra_cfg_jtag_wsti = self.input("cgra_cfg_jtag_wsti", self.header.cgra_cfg_t)
+        self.cgra_cfg_jtag_esto = self.output("cgra_cfg_jtag_esto", self.header.cgra_cfg_t)
+        self.cgra_cfg_pcfg_wsti = self.input("cgra_cfg_pcfg_wsti", self.header.cgra_cfg_t)
+        self.cgra_cfg_pcfg_esto = self.output("cgra_cfg_pcfg_esto", self.header.cgra_cfg_t)
+        self.cgra_cfg_g2f = self.output("cgra_cfg_g2f", self.header.cgra_cfg_t, size=self._params.cgra_per_glb, packed=True)
 
-        self.cgra_cfg_jtag_wsti_rd_en_bypass = self.input(
-            "cgra_cfg_jtag_wsti_rd_en_bypass", 1)
-        self.cgra_cfg_jtag_wsti_addr_bypass = self.input(
-            "cgra_cfg_jtag_wsti_addr_bypass", self._params.cgra_cfg_addr_width)
-        self.cgra_cfg_jtag_esto_rd_en_bypass = self.output(
-            "cgra_cfg_jtag_esto_rd_en_bypass", 1)
-        self.cgra_cfg_jtag_esto_addr_bypass = self.output(
-            "cgra_cfg_jtag_esto_addr_bypass", self._params.cgra_cfg_addr_width)
+        self.cgra_cfg_jtag_wsti_rd_en_bypass = self.input("cgra_cfg_jtag_wsti_rd_en_bypass", 1)
+        self.cgra_cfg_jtag_wsti_addr_bypass = self.input("cgra_cfg_jtag_wsti_addr_bypass", self._params.cgra_cfg_addr_width)
+        self.cgra_cfg_jtag_esto_rd_en_bypass = self.output("cgra_cfg_jtag_esto_rd_en_bypass", 1)
+        self.cgra_cfg_jtag_esto_addr_bypass = self.output("cgra_cfg_jtag_esto_addr_bypass", self._params.cgra_cfg_addr_width)
 
         # local variables
-        self.cgra_cfg_g2f_w = self.var(
-            "cgra_cfg_g2f_w", self.header.cgra_cfg_t, size=self._params.cgra_per_glb)
-        self.cgra_cfg_pcfg_muxed = self.var(
-            "cgra_cfg_pcfg_muxed", self.header.cgra_cfg_t)
+        self.cgra_cfg_g2f_w = self.var("cgra_cfg_g2f_w", self.header.cgra_cfg_t, size=self._params.cgra_per_glb)
+        self.cgra_cfg_pcfg_muxed = self.var("cgra_cfg_pcfg_muxed", self.header.cgra_cfg_t)
 
         self.add_always(self.bypass_logic)
         self.add_always(self.cgra_cfg_pcfg_muxed_logic)

@@ -11,40 +11,25 @@ class GlbCoreProcRouter(Generator):
 
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
-        self.glb_tile_id = self.input(
-            "glb_tile_id", self._params.tile_sel_addr_width)
+        self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
-        self.packet_w2e_wsti = self.input(
-            "packet_w2e_wsti", self.header.packet_t)
-        self.packet_e2w_wsto = self.output(
-            "packet_e2w_wsto", self.header.packet_t)
-        self.packet_e2w_esti = self.input(
-            "packet_e2w_esti", self.header.packet_t)
-        self.packet_w2e_esto = self.output(
-            "packet_w2e_esto", self.header.packet_t)
+        self.packet_w2e_wsti = self.input("packet_w2e_wsti", self.header.packet_t)
+        self.packet_e2w_wsto = self.output("packet_e2w_wsto", self.header.packet_t)
+        self.packet_e2w_esti = self.input("packet_e2w_esti", self.header.packet_t)
+        self.packet_w2e_esto = self.output("packet_w2e_esto", self.header.packet_t)
 
-        self.wr_packet_pr2sw = self.output(
-            "wr_packet_pr2sw", self.header.wr_packet_t)
-        self.rdrq_packet_pr2sw = self.output(
-            "rdrq_packet_pr2sw", self.header.rdrq_packet_t)
-        self.rdrs_packet_sw2pr = self.input(
-            "rdrs_packet_sw2pr", self.header.rdrs_packet_t)
+        self.wr_packet_pr2sw = self.output("wr_packet_pr2sw", self.header.wr_packet_t)
+        self.rdrq_packet_pr2sw = self.output("rdrq_packet_pr2sw", self.header.rdrq_packet_t)
+        self.rdrs_packet_sw2pr = self.input("rdrs_packet_sw2pr", self.header.rdrs_packet_t)
 
         # local variables
-        self.packet_w2e_wsti_d1 = self.var(
-            "packet_w2e_wsti_d1", self.header.packet_t)
-        self.packet_e2w_esti_d1 = self.var(
-            "packet_e2w_esti_d1", self.header.packet_t)
-        self.rdrs_packet_sw2pr_d1 = self.var(
-            "rdrs_packet_sw2pr_d1", self.header.rdrs_packet_t)
-        self.rdrq_packet_pr2sw_filtered = self.var(
-            "rdrq_packet_pr2sw_filtered", self.header.rdrq_packet_t)
-        self.rdrq_packet_pr2sw_muxed = self.var(
-            "rdrq_packet_pr2sw_muxed", self.header.rdrq_packet_t)
-        self.wr_packet_pr2sw_filtered = self.var(
-            "wr_packet_pr2sw_filtered", self.header.wr_packet_t)
-        self.wr_packet_pr2sw_muxed = self.var(
-            "wr_packet_pr2sw_muxed", self.header.wr_packet_t)
+        self.packet_w2e_wsti_d1 = self.var("packet_w2e_wsti_d1", self.header.packet_t)
+        self.packet_e2w_esti_d1 = self.var("packet_e2w_esti_d1", self.header.packet_t)
+        self.rdrs_packet_sw2pr_d1 = self.var("rdrs_packet_sw2pr_d1", self.header.rdrs_packet_t)
+        self.rdrq_packet_pr2sw_filtered = self.var("rdrq_packet_pr2sw_filtered", self.header.rdrq_packet_t)
+        self.rdrq_packet_pr2sw_muxed = self.var("rdrq_packet_pr2sw_muxed", self.header.rdrq_packet_t)
+        self.wr_packet_pr2sw_filtered = self.var("wr_packet_pr2sw_filtered", self.header.wr_packet_t)
+        self.wr_packet_pr2sw_muxed = self.var("wr_packet_pr2sw_muxed", self.header.wr_packet_t)
 
         # localparam
         self.packet_addr_tile_sel_msb = _params.bank_addr_width + \
@@ -79,8 +64,6 @@ class GlbCoreProcRouter(Generator):
 
     @always_comb
     def rq_assign(self):
-        # TODO: Kratos currently does not support struct of struct
-        # packet output
         for port in self.header.wr_packet_ports + self.header.rdrq_packet_ports:
             self.packet_w2e_esto[port] = self.packet_w2e_wsti_d1[port]
             self.packet_e2w_wsto[port] = self.packet_e2w_esti_d1[port]

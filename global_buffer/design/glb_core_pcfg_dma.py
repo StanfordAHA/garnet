@@ -12,19 +12,16 @@ class GlbCorePcfgDma(Generator):
         self.header = GlbHeader(self._params)
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
+        self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
-        self.cgra_cfg_pcfg = self.output(
-            "cgra_cfg_pcfg", self.header.cgra_cfg_t)
+        self.cgra_cfg_pcfg = self.output("cgra_cfg_pcfg", self.header.cgra_cfg_t)
 
-        self.rdrq_packet = self.output(
-            "rdrq_packet", self.header.rdrq_packet_t)
+        self.rdrq_packet = self.output("rdrq_packet", self.header.rdrq_packet_t)
         self.rdrs_packet = self.input("rdrs_packet", self.header.rdrs_packet_t)
 
         self.cfg_pcfg_dma_ctrl_mode = self.input("cfg_pcfg_dma_ctrl_mode", 1)
-        self.cfg_pcfg_dma_header = self.input(
-            "cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
-        self.cfg_pcfg_network_latency = self.input(
-            "cfg_pcfg_network_latency", self._params.latency_width)
+        self.cfg_pcfg_dma_header = self.input("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
+        self.cfg_pcfg_network_latency = self.input("cfg_pcfg_network_latency", self._params.latency_width)
 
         self.pcfg_start_pulse = self.input("pcfg_start_pulse", 1)
         self.pcfg_done_pulse = self.output("pcfg_done_pulse", 1)
@@ -158,6 +155,8 @@ class GlbCorePcfgDma(Generator):
     def assign_rdrq_packet(self):
         self.wire(self.rdrq_packet['rd_en'], self.rdrq_packet_rd_en_r)
         self.wire(self.rdrq_packet['rd_addr'], self.rdrq_packet_rd_addr_r)
+        self.wire(self.rdrq_packet['rdrq_type'], const(self.header.PacketEnum.pcfg.value, self.header.PacketEnumWidth))
+        self.wire(self.rdrq_packet['rd_src_tile'], self.glb_tile_id)
 
     def assign_cgra_cfg_output(self):
         self.wire(self.cgra_cfg_pcfg['rd_en'], 0)

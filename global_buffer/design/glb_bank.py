@@ -15,33 +15,25 @@ class GlbBank(Generator):
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
 
-        self.wr_packet = self.input(
-            "wr_packet", self.header.wr_packet_t)
-        self.rdrq_packet = self.input(
-            "rdrq_packet", self.header.rdrq_packet_t)
-        self.rdrs_packet = self.output(
-            "rdrs_packet", self.header.rdrs_packet_t)
+        self.wr_packet = self.input("wr_packet", self.header.wr_packet_t)
+        self.rdrq_packet = self.input("rdrq_packet", self.header.rdrq_packet_t)
+        self.rdrs_packet = self.output("rdrs_packet", self.header.rdrs_packet_t)
 
         self.bank_cfg_ifc = GlbConfigInterface(
             addr_width=self._params.bank_addr_width, data_width=self._params.axi_data_width)
 
-        self.if_sram_cfg_s = self.interface(
-            self.bank_cfg_ifc.slave, f"if_sram_cfg_s", is_port=True)
+        self.if_sram_cfg_s = self.interface(self.bank_cfg_ifc.slave, f"if_sram_cfg_s", is_port=True)
 
         # local variables
         self.mem_rd_en = self.var("mem_rd_en", 1)
         self.mem_wr_en = self.var("mem_wr_en", 1)
         self.mem_addr = self.var("mem_addr", self._params.bank_addr_width)
-        self.mem_data_in = self.var(
-            "mem_data_in", self._params.bank_data_width)
-        self.mem_data_in_bit_sel = self.var(
-            "mem_data_in_bit_sel", self._params.bank_data_width)
-        self.mem_data_out = self.var(
-            "mem_data_out", self._params.bank_data_width)
+        self.mem_data_in = self.var("mem_data_in", self._params.bank_data_width)
+        self.mem_data_in_bit_sel = self.var("mem_data_in_bit_sel", self._params.bank_data_width)
+        self.mem_data_out = self.var("mem_data_out", self._params.bank_data_width)
 
         # memory core declaration
-        self.wr_data_bit_sel = self.var(
-            "wr_data_bit_sel", self._params.bank_data_width)
+        self.wr_data_bit_sel = self.var("wr_data_bit_sel", self._params.bank_data_width)
 
         self.wr_data_bit_sel_logic()
         self.add_glb_bank_ctrl()
@@ -74,9 +66,13 @@ class GlbBank(Generator):
                        packet_wr_data=self.wr_packet['wr_data'],
                        packet_wr_data_bit_sel=self.wr_data_bit_sel,
                        packet_rd_en=self.rdrq_packet['rd_en'],
+                       packet_rdrq_type=self.rdrq_packet['rdrq_type'],
+                       packet_rd_src_tile=self.rdrq_packet['rd_src_tile'],
                        packet_rd_addr=self.rdrq_packet['rd_addr'][self._params.bank_addr_width - 1, 0],
                        packet_rd_data=self.rdrs_packet['rd_data'],
                        packet_rd_data_valid=self.rdrs_packet['rd_data_valid'],
+                       packet_rdrs_type=self.rdrs_packet['rdrs_type'],
+                       packet_rd_dst_tile=self.rdrs_packet['rd_dst_tile'],
                        mem_rd_en=self.mem_rd_en,
                        mem_wr_en=self.mem_wr_en,
                        mem_addr=self.mem_addr,

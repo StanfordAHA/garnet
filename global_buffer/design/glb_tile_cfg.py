@@ -30,7 +30,6 @@ class GlbTileCfg(Generator):
         # configuration register struct
         # TODO: Can we have a pass for this configuration?
         self.cfg_data_network = self.output("cfg_data_network", self.header.cfg_data_network_t)
-
         self.cfg_pcfg_network = self.output("cfg_pcfg_network", self.header.cfg_pcfg_network_t)
 
         # st dma
