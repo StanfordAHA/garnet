@@ -17,66 +17,39 @@ class GlobalBuffer(Generator):
         self.stall = self.input("stall", self._params.num_glb_tiles)
         self.reset = self.reset("reset")
         # TODO: Why cgra_stall has same width as num_glb_tiles
-        self.cgra_stall_in = self.input(
-            "cgra_stall_in", self._params.num_glb_tiles)
+        self.cgra_stall_in = self.input("cgra_stall_in", self._params.num_glb_tiles)
         self.cgra_stall = self.output(
             "cgra_stall", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
-        self.proc_wr_en = self.input(
-            "proc_wr_en", 1)
-        self.proc_wr_strb = self.input(
-            "proc_wr_strb", self._params.bank_data_width // 8)
-        self.proc_wr_addr = self.input(
-            "proc_wr_addr", self._params.glb_addr_width)
-        self.proc_wr_data = self.input(
-            "proc_wr_data", self._params.bank_data_width)
-        self.proc_rd_en = self.input(
-            "proc_rd_en", 1)
-        self.proc_rd_addr = self.input(
-            "proc_rd_addr", self._params.glb_addr_width)
-        self.proc_rd_data = self.output(
-            "proc_rd_data", self._params.bank_data_width)
-        self.proc_rd_data_valid = self.output(
-            "proc_rd_data_valid", 1)
+        self.proc_wr_en = self.input("proc_wr_en", 1)
+        self.proc_wr_strb = self.input("proc_wr_strb", self._params.bank_data_width // 8)
+        self.proc_wr_addr = self.input("proc_wr_addr", self._params.glb_addr_width)
+        self.proc_wr_data = self.input("proc_wr_data", self._params.bank_data_width)
+        self.proc_rd_en = self.input("proc_rd_en", 1)
+        self.proc_rd_addr = self.input("proc_rd_addr", self._params.glb_addr_width)
+        self.proc_rd_data = self.output("proc_rd_data", self._params.bank_data_width)
+        self.proc_rd_data_valid = self.output("proc_rd_data_valid", 1)
 
-        self.if_cfg_wr_en = self.input(
-            "if_cfg_wr_en", 1)
-        self.if_cfg_wr_addr = self.input(
-            "if_cfg_wr_addr", self._params.axi_addr_width)
-        self.if_cfg_wr_data = self.input(
-            "if_cfg_wr_data", self._params.axi_data_width)
-        self.if_cfg_rd_en = self.input(
-            "if_cfg_rd_en", 1)
-        self.if_cfg_rd_addr = self.input(
-            "if_cfg_rd_addr", self._params.axi_addr_width)
-        self.if_cfg_rd_data = self.output(
-            "if_cfg_rd_data", self._params.axi_data_width)
-        self.if_cfg_rd_data_valid = self.output(
-            "if_cfg_rd_data_valid", 1)
+        self.if_cfg_wr_en = self.input("if_cfg_wr_en", 1)
+        self.if_cfg_wr_addr = self.input("if_cfg_wr_addr", self._params.axi_addr_width)
+        self.if_cfg_wr_data = self.input("if_cfg_wr_data", self._params.axi_data_width)
+        self.if_cfg_rd_en = self.input("if_cfg_rd_en", 1)
+        self.if_cfg_rd_addr = self.input("if_cfg_rd_addr", self._params.axi_addr_width)
+        self.if_cfg_rd_data = self.output("if_cfg_rd_data", self._params.axi_data_width)
+        self.if_cfg_rd_data_valid = self.output("if_cfg_rd_data_valid", 1)
 
-        self.if_sram_cfg_wr_en = self.input(
-            "if_sram_cfg_wr_en", 1)
-        self.if_sram_cfg_wr_addr = self.input(
-            "if_sram_cfg_wr_addr", self._params.glb_addr_width)
-        self.if_sram_cfg_wr_data = self.input(
-            "if_sram_cfg_wr_data", self._params.axi_data_width)
-        self.if_sram_cfg_rd_en = self.input(
-            "if_sram_cfg_rd_en", 1)
-        self.if_sram_cfg_rd_addr = self.input(
-            "if_sram_cfg_rd_addr", self._params.glb_addr_width)
-        self.if_sram_cfg_rd_data = self.output(
-            "if_sram_cfg_rd_data", self._params.axi_data_width)
-        self.if_sram_cfg_rd_data_valid = self.output(
-            "if_sram_cfg_rd_data_valid", 1)
+        self.if_sram_cfg_wr_en = self.input("if_sram_cfg_wr_en", 1)
+        self.if_sram_cfg_wr_addr = self.input("if_sram_cfg_wr_addr", self._params.glb_addr_width)
+        self.if_sram_cfg_wr_data = self.input("if_sram_cfg_wr_data", self._params.axi_data_width)
+        self.if_sram_cfg_rd_en = self.input("if_sram_cfg_rd_en", 1)
+        self.if_sram_cfg_rd_addr = self.input("if_sram_cfg_rd_addr", self._params.glb_addr_width)
+        self.if_sram_cfg_rd_data = self.output("if_sram_cfg_rd_data", self._params.axi_data_width)
+        self.if_sram_cfg_rd_data_valid = self.output("if_sram_cfg_rd_data_valid", 1)
 
-        self.cgra_cfg_jtag_gc2glb_wr_en = self.input(
-            "cgra_cfg_jtag_gc2glb_wr_en", 1)
-        self.cgra_cfg_jtag_gc2glb_rd_en = self.input(
-            "cgra_cfg_jtag_gc2glb_rd_en", 1)
-        self.cgra_cfg_jtag_gc2glb_addr = self.input(
-            "cgra_cfg_jtag_gc2glb_addr", self._params.cgra_cfg_addr_width)
-        self.cgra_cfg_jtag_gc2glb_data = self.input(
-            "cgra_cfg_jtag_gc2glb_data", self._params.cgra_cfg_data_width)
+        self.cgra_cfg_jtag_gc2glb_wr_en = self.input("cgra_cfg_jtag_gc2glb_wr_en", 1)
+        self.cgra_cfg_jtag_gc2glb_rd_en = self.input("cgra_cfg_jtag_gc2glb_rd_en", 1)
+        self.cgra_cfg_jtag_gc2glb_addr = self.input("cgra_cfg_jtag_gc2glb_addr", self._params.cgra_cfg_addr_width)
+        self.cgra_cfg_jtag_gc2glb_data = self.input("cgra_cfg_jtag_gc2glb_data", self._params.cgra_cfg_data_width)
 
         self.stream_data_f2g = self.input("stream_data_f2g", self._params.cgra_data_width, size=[
                                           self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
@@ -104,17 +77,12 @@ class GlobalBuffer(Generator):
         self.pcfg_g2f_interrupt_pulse = self.output("pcfg_g2f_interrupt_pulse", self._params.num_glb_tiles)
 
         # local variables
-        self.cgra_cfg_jtag_gc2glb_wr_en_d = self.var(
-            "cgra_cfg_jtag_gc2glb_wr_en_d", 1)
-        self.cgra_cfg_jtag_gc2glb_rd_en_d = self.var(
-            "cgra_cfg_jtag_gc2glb_rd_en_d", 1)
-        self.cgra_cfg_jtag_gc2glb_addr_d = self.var(
-            "cgra_cfg_jtag_gc2glb_addr_d", self._params.cgra_cfg_addr_width)
-        self.cgra_cfg_jtag_gc2glb_data_d = self.var(
-            "cgra_cfg_jtag_gc2glb_data_d", self._params.cgra_cfg_data_width)
+        self.cgra_cfg_jtag_gc2glb_wr_en_d = self.var("cgra_cfg_jtag_gc2glb_wr_en_d", 1)
+        self.cgra_cfg_jtag_gc2glb_rd_en_d = self.var("cgra_cfg_jtag_gc2glb_rd_en_d", 1)
+        self.cgra_cfg_jtag_gc2glb_addr_d = self.var("cgra_cfg_jtag_gc2glb_addr_d", self._params.cgra_cfg_addr_width)
+        self.cgra_cfg_jtag_gc2glb_data_d = self.var("cgra_cfg_jtag_gc2glb_data_d", self._params.cgra_cfg_data_width)
 
-        self.proc_packet_d = self.var(
-            "proc_packet_d", self.header.packet_t)
+        self.proc_packet_d = self.var("proc_packet_d", self.header.packet_t)
 
         self.proc_packet_e2w_esti = self.var(
             "proc_packet_e2w_esti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
@@ -143,10 +111,8 @@ class GlobalBuffer(Generator):
         self.pcfg_packet_w2e_esto = self.var(
             "pcfg_packet_w2e_esto", self.header.rd_packet_t, size=self._params.num_glb_tiles, packed=True)
 
-        self.cfg_tile_connected = self.var(
-            "cfg_tile_connected", self._params.num_glb_tiles + 1)
-        self.cfg_pcfg_tile_connected = self.var(
-            "cfg_pcfg_tile_connected", self._params.num_glb_tiles + 1)
+        self.cfg_tile_connected = self.var("cfg_tile_connected", self._params.num_glb_tiles + 1)
+        self.cfg_pcfg_tile_connected = self.var("cfg_pcfg_tile_connected", self._params.num_glb_tiles + 1)
         self.wire(self.cfg_tile_connected[0], 0)
         self.wire(self.cfg_pcfg_tile_connected[0], 0)
 
@@ -402,12 +368,9 @@ class GlobalBuffer(Generator):
         self.wire(self.strm_packet_e2w_esti[self._params.num_glb_tiles - 1], 0)
         self.wire(self.pcfg_packet_e2w_esti[self._params.num_glb_tiles - 1], 0)
         for i in range(self._params.num_glb_tiles - 1):
-            self.wire(self.proc_packet_e2w_esti[i],
-                      self.proc_packet_e2w_wsto[i + 1])
-            self.wire(self.strm_packet_e2w_esti[i],
-                      self.strm_packet_e2w_wsto[i + 1])
-            self.wire(self.pcfg_packet_e2w_esti[i],
-                      self.pcfg_packet_e2w_wsto[i + 1])
+            self.wire(self.proc_packet_e2w_esti[i], self.proc_packet_e2w_wsto[i + 1])
+            self.wire(self.strm_packet_e2w_esti[i], self.strm_packet_e2w_wsto[i + 1])
+            self.wire(self.pcfg_packet_e2w_esti[i], self.pcfg_packet_e2w_wsto[i + 1])
 
     def tile2tile_w2e_wiring(self):
         self.wire(self.proc_packet_w2e_wsti[0], self.proc_packet_d)
@@ -467,8 +430,7 @@ class GlobalBuffer(Generator):
                            proc_rd_en_e2w_esti=self.proc_packet_e2w_esti[i]['rd_en'],
                            proc_rd_addr_e2w_esti=self.proc_packet_e2w_esti[i]['rd_addr'],
                            proc_rd_data_e2w_esti=self.proc_packet_e2w_esti[i]['rd_data'],
-                           proc_rd_data_valid_e2w_esti=self.proc_packet_e2w_esti[
-                               i]['rd_data_valid'],
+                           proc_rd_data_valid_e2w_esti=self.proc_packet_e2w_esti[i]['rd_data_valid'],
 
                            proc_wr_en_w2e_esto=self.proc_packet_w2e_esto[i]['wr_en'],
                            proc_wr_strb_w2e_esto=self.proc_packet_w2e_esto[i]['wr_strb'],
@@ -477,8 +439,7 @@ class GlobalBuffer(Generator):
                            proc_rd_en_w2e_esto=self.proc_packet_w2e_esto[i]['rd_en'],
                            proc_rd_addr_w2e_esto=self.proc_packet_w2e_esto[i]['rd_addr'],
                            proc_rd_data_w2e_esto=self.proc_packet_w2e_esto[i]['rd_data'],
-                           proc_rd_data_valid_w2e_esto=self.proc_packet_w2e_esto[
-                               i]['rd_data_valid'],
+                           proc_rd_data_valid_w2e_esto=self.proc_packet_w2e_esto[i]['rd_data_valid'],
 
                            proc_wr_en_w2e_wsti=self.proc_packet_w2e_wsti[i]['wr_en'],
                            proc_wr_strb_w2e_wsti=self.proc_packet_w2e_wsti[i]['wr_strb'],
@@ -487,8 +448,7 @@ class GlobalBuffer(Generator):
                            proc_rd_en_w2e_wsti=self.proc_packet_w2e_wsti[i]['rd_en'],
                            proc_rd_addr_w2e_wsti=self.proc_packet_w2e_wsti[i]['rd_addr'],
                            proc_rd_data_w2e_wsti=self.proc_packet_w2e_wsti[i]['rd_data'],
-                           proc_rd_data_valid_w2e_wsti=self.proc_packet_w2e_wsti[
-                               i]['rd_data_valid'],
+                           proc_rd_data_valid_w2e_wsti=self.proc_packet_w2e_wsti[i]['rd_data_valid'],
 
                            proc_wr_en_e2w_wsto=self.proc_packet_e2w_wsto[i]['wr_en'],
                            proc_wr_strb_e2w_wsto=self.proc_packet_e2w_wsto[i]['wr_strb'],
@@ -497,8 +457,7 @@ class GlobalBuffer(Generator):
                            proc_rd_en_e2w_wsto=self.proc_packet_e2w_wsto[i]['rd_en'],
                            proc_rd_addr_e2w_wsto=self.proc_packet_e2w_wsto[i]['rd_addr'],
                            proc_rd_data_e2w_wsto=self.proc_packet_e2w_wsto[i]['rd_data'],
-                           proc_rd_data_valid_e2w_wsto=self.proc_packet_e2w_wsto[
-                               i]['rd_data_valid'],
+                           proc_rd_data_valid_e2w_wsto=self.proc_packet_e2w_wsto[i]['rd_data_valid'],
 
                            strm_wr_en_e2w_esti=self.strm_packet_e2w_esti[i]['wr_en'],
                            strm_wr_strb_e2w_esti=self.strm_packet_e2w_esti[i]['wr_strb'],
@@ -507,8 +466,7 @@ class GlobalBuffer(Generator):
                            strm_rd_en_e2w_esti=self.strm_packet_e2w_esti[i]['rd_en'],
                            strm_rd_addr_e2w_esti=self.strm_packet_e2w_esti[i]['rd_addr'],
                            strm_rd_data_e2w_esti=self.strm_packet_e2w_esti[i]['rd_data'],
-                           strm_rd_data_valid_e2w_esti=self.strm_packet_e2w_esti[
-                               i]['rd_data_valid'],
+                           strm_rd_data_valid_e2w_esti=self.strm_packet_e2w_esti[i]['rd_data_valid'],
 
                            strm_wr_en_w2e_esto=self.strm_packet_w2e_esto[i]['wr_en'],
                            strm_wr_strb_w2e_esto=self.strm_packet_w2e_esto[i]['wr_strb'],
@@ -517,8 +475,7 @@ class GlobalBuffer(Generator):
                            strm_rd_en_w2e_esto=self.strm_packet_w2e_esto[i]['rd_en'],
                            strm_rd_addr_w2e_esto=self.strm_packet_w2e_esto[i]['rd_addr'],
                            strm_rd_data_w2e_esto=self.strm_packet_w2e_esto[i]['rd_data'],
-                           strm_rd_data_valid_w2e_esto=self.strm_packet_w2e_esto[
-                               i]['rd_data_valid'],
+                           strm_rd_data_valid_w2e_esto=self.strm_packet_w2e_esto[i]['rd_data_valid'],
 
                            strm_wr_en_w2e_wsti=self.strm_packet_w2e_wsti[i]['wr_en'],
                            strm_wr_strb_w2e_wsti=self.strm_packet_w2e_wsti[i]['wr_strb'],
@@ -527,8 +484,7 @@ class GlobalBuffer(Generator):
                            strm_rd_en_w2e_wsti=self.strm_packet_w2e_wsti[i]['rd_en'],
                            strm_rd_addr_w2e_wsti=self.strm_packet_w2e_wsti[i]['rd_addr'],
                            strm_rd_data_w2e_wsti=self.strm_packet_w2e_wsti[i]['rd_data'],
-                           strm_rd_data_valid_w2e_wsti=self.strm_packet_w2e_wsti[
-                               i]['rd_data_valid'],
+                           strm_rd_data_valid_w2e_wsti=self.strm_packet_w2e_wsti[i]['rd_data_valid'],
 
                            strm_wr_en_e2w_wsto=self.strm_packet_e2w_wsto[i]['wr_en'],
                            strm_wr_strb_e2w_wsto=self.strm_packet_e2w_wsto[i]['wr_strb'],
@@ -537,32 +493,27 @@ class GlobalBuffer(Generator):
                            strm_rd_en_e2w_wsto=self.strm_packet_e2w_wsto[i]['rd_en'],
                            strm_rd_addr_e2w_wsto=self.strm_packet_e2w_wsto[i]['rd_addr'],
                            strm_rd_data_e2w_wsto=self.strm_packet_e2w_wsto[i]['rd_data'],
-                           strm_rd_data_valid_e2w_wsto=self.strm_packet_e2w_wsto[
-                               i]['rd_data_valid'],
+                           strm_rd_data_valid_e2w_wsto=self.strm_packet_e2w_wsto[i]['rd_data_valid'],
 
                            pcfg_rd_en_e2w_esti=self.pcfg_packet_e2w_esti[i]['rd_en'],
                            pcfg_rd_addr_e2w_esti=self.pcfg_packet_e2w_esti[i]['rd_addr'],
                            pcfg_rd_data_e2w_esti=self.pcfg_packet_e2w_esti[i]['rd_data'],
-                           pcfg_rd_data_valid_e2w_esti=self.pcfg_packet_e2w_esti[
-                               i]['rd_data_valid'],
+                           pcfg_rd_data_valid_e2w_esti=self.pcfg_packet_e2w_esti[i]['rd_data_valid'],
 
                            pcfg_rd_en_w2e_esto=self.pcfg_packet_w2e_esto[i]['rd_en'],
                            pcfg_rd_addr_w2e_esto=self.pcfg_packet_w2e_esto[i]['rd_addr'],
                            pcfg_rd_data_w2e_esto=self.pcfg_packet_w2e_esto[i]['rd_data'],
-                           pcfg_rd_data_valid_w2e_esto=self.pcfg_packet_w2e_esto[
-                               i]['rd_data_valid'],
+                           pcfg_rd_data_valid_w2e_esto=self.pcfg_packet_w2e_esto[i]['rd_data_valid'],
 
                            pcfg_rd_en_w2e_wsti=self.pcfg_packet_w2e_wsti[i]['rd_en'],
                            pcfg_rd_addr_w2e_wsti=self.pcfg_packet_w2e_wsti[i]['rd_addr'],
                            pcfg_rd_data_w2e_wsti=self.pcfg_packet_w2e_wsti[i]['rd_data'],
-                           pcfg_rd_data_valid_w2e_wsti=self.pcfg_packet_w2e_wsti[
-                               i]['rd_data_valid'],
+                           pcfg_rd_data_valid_w2e_wsti=self.pcfg_packet_w2e_wsti[i]['rd_data_valid'],
 
                            pcfg_rd_en_e2w_wsto=self.pcfg_packet_e2w_wsto[i]['rd_en'],
                            pcfg_rd_addr_e2w_wsto=self.pcfg_packet_e2w_wsto[i]['rd_addr'],
                            pcfg_rd_data_e2w_wsto=self.pcfg_packet_e2w_wsto[i]['rd_data'],
-                           pcfg_rd_data_valid_e2w_wsto=self.pcfg_packet_e2w_wsto[
-                               i]['rd_data_valid'],
+                           pcfg_rd_data_valid_e2w_wsto=self.pcfg_packet_e2w_wsto[i]['rd_data_valid'],
 
                            if_cfg_est_m_wr_en=self.if_cfg_list[i + 1].wr_en,
                            if_cfg_est_m_wr_addr=self.if_cfg_list[i + 1].wr_addr,
@@ -570,8 +521,7 @@ class GlobalBuffer(Generator):
                            if_cfg_est_m_rd_en=self.if_cfg_list[i + 1].rd_en,
                            if_cfg_est_m_rd_addr=self.if_cfg_list[i + 1].rd_addr,
                            if_cfg_est_m_rd_data=self.if_cfg_list[i + 1].rd_data,
-                           if_cfg_est_m_rd_data_valid=self.if_cfg_list[i
-                                                                       + 1].rd_data_valid,
+                           if_cfg_est_m_rd_data_valid=self.if_cfg_list[i + 1].rd_data_valid,
 
                            if_cfg_wst_s_wr_en=self.if_cfg_list[i].wr_en,
                            if_cfg_wst_s_wr_addr=self.if_cfg_list[i].wr_addr,
@@ -587,8 +537,7 @@ class GlobalBuffer(Generator):
                            if_sram_cfg_est_m_rd_en=self.if_sram_cfg_list[i + 1].rd_en,
                            if_sram_cfg_est_m_rd_addr=self.if_sram_cfg_list[i + 1].rd_addr,
                            if_sram_cfg_est_m_rd_data=self.if_sram_cfg_list[i + 1].rd_data,
-                           if_sram_cfg_est_m_rd_data_valid=self.if_sram_cfg_list[
-                               i + 1].rd_data_valid,
+                           if_sram_cfg_est_m_rd_data_valid=self.if_sram_cfg_list[i + 1].rd_data_valid,
 
                            if_sram_cfg_wst_s_wr_en=self.if_sram_cfg_list[i].wr_en,
                            if_sram_cfg_wst_s_wr_addr=self.if_sram_cfg_list[i].wr_addr,
@@ -596,8 +545,7 @@ class GlobalBuffer(Generator):
                            if_sram_cfg_wst_s_rd_en=self.if_sram_cfg_list[i].rd_en,
                            if_sram_cfg_wst_s_rd_addr=self.if_sram_cfg_list[i].rd_addr,
                            if_sram_cfg_wst_s_rd_data=self.if_sram_cfg_list[i].rd_data,
-                           if_sram_cfg_wst_s_rd_data_valid=self.if_sram_cfg_list[
-                               i].rd_data_valid,
+                           if_sram_cfg_wst_s_rd_data_valid=self.if_sram_cfg_list[i].rd_data_valid,
 
                            cfg_tile_connected_wsti=self.cfg_tile_connected[i],
                            cfg_tile_connected_esto=self.cfg_tile_connected[i + 1],
@@ -634,14 +582,10 @@ class GlobalBuffer(Generator):
                            cgra_cfg_jtag_esto_addr=self.cgra_cfg_jtag_esto_addr[i],
                            cgra_cfg_jtag_esto_data=self.cgra_cfg_jtag_esto_data[i],
 
-                           cgra_cfg_jtag_wsti_rd_en_bypass=self.cgra_cfg_jtag_wsti_rd_en_bypass[
-                               i],
-                           cgra_cfg_jtag_wsti_addr_bypass=self.cgra_cfg_jtag_wsti_addr_bypass[
-                               i],
-                           cgra_cfg_jtag_esto_rd_en_bypass=self.cgra_cfg_jtag_esto_rd_en_bypass[
-                               i],
-                           cgra_cfg_jtag_esto_addr_bypass=self.cgra_cfg_jtag_esto_addr_bypass[
-                               i],
+                           cgra_cfg_jtag_wsti_rd_en_bypass=self.cgra_cfg_jtag_wsti_rd_en_bypass[i],
+                           cgra_cfg_jtag_wsti_addr_bypass=self.cgra_cfg_jtag_wsti_addr_bypass[i],
+                           cgra_cfg_jtag_esto_rd_en_bypass=self.cgra_cfg_jtag_esto_rd_en_bypass[i],
+                           cgra_cfg_jtag_esto_addr_bypass=self.cgra_cfg_jtag_esto_addr_bypass[i],
 
                            strm_g2f_start_pulse=self.strm_g2f_start_pulse_d[i],
                            strm_f2g_start_pulse=self.strm_f2g_start_pulse_d[i],
