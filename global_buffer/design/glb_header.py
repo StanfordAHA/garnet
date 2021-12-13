@@ -53,11 +53,10 @@ class GlbHeader():
                           ("wr_addr", self._params.glb_addr_width),
                           ("wr_data", self._params.bank_data_width), ]
         rdrq_packet_list = [("rd_en", 1),
-                            ("rdrq_type", 2),
+                            ("rd_type", 2),
                             ("rd_src_tile", self._params.tile_sel_addr_width),
                             ("rd_addr", self._params.glb_addr_width), ]
         rdrs_packet_list = [("rd_data", self._params.bank_data_width),
-                            ("rdrs_type", 2),
                             ("rd_dst_tile", self._params.tile_sel_addr_width),
                             ("rd_data_valid", 1), ]
 
