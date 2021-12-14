@@ -20,97 +20,65 @@ class GlbTile(Generator):
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
-        self.proc_wr_en_e2w_esti = self.input("proc_wr_en_e2w_esti", 1)
-        self.proc_wr_strb_e2w_esti = self.input("proc_wr_strb_e2w_esti", self._params.bank_data_width // 8)
-        self.proc_wr_addr_e2w_esti = self.input("proc_wr_addr_e2w_esti", self._params.glb_addr_width)
-        self.proc_wr_data_e2w_esti = self.input("proc_wr_data_e2w_esti", self._params.bank_data_width)
-        self.proc_rd_en_e2w_esti = self.input("proc_rd_en_e2w_esti", 1)
-        self.proc_rd_addr_e2w_esti = self.input("proc_rd_addr_e2w_esti", self._params.glb_addr_width)
-        self.proc_rd_data_e2w_esti = self.input("proc_rd_data_e2w_esti", self._params.bank_data_width)
-        self.proc_rd_data_valid_e2w_esti = self.input("proc_rd_data_valid_e2w_esti", 1)
+        self.proc_w2e_wsti_dict = {}
+        for port, size in self.header.packet_list:
+            name = f"proc_{port}_w2e_wsti"
+            self.proc_w2e_wsti_dict[port] = self.input(name, size)
 
-        self.proc_wr_en_w2e_esto = self.output("proc_wr_en_w2e_esto", 1)
-        self.proc_wr_strb_w2e_esto = self.output("proc_wr_strb_w2e_esto", self._params.bank_data_width // 8)
-        self.proc_wr_addr_w2e_esto = self.output("proc_wr_addr_w2e_esto", self._params.glb_addr_width)
-        self.proc_wr_data_w2e_esto = self.output("proc_wr_data_w2e_esto", self._params.bank_data_width)
-        self.proc_rd_en_w2e_esto = self.output("proc_rd_en_w2e_esto", 1)
-        self.proc_rd_addr_w2e_esto = self.output("proc_rd_addr_w2e_esto", self._params.glb_addr_width)
-        self.proc_rd_data_w2e_esto = self.output("proc_rd_data_w2e_esto", self._params.bank_data_width)
-        self.proc_rd_data_valid_w2e_esto = self.output("proc_rd_data_valid_w2e_esto", 1)
+        self.proc_w2e_esto_dict = {}
+        for port, size in self.header.packet_list:
+            name = f"proc_{port}_w2e_esto"
+            self.proc_w2e_esto_dict[port] = self.output(name, size)
 
-        self.proc_wr_en_w2e_wsti = self.input("proc_wr_en_w2e_wsti", 1)
-        self.proc_wr_strb_w2e_wsti = self.input("proc_wr_strb_w2e_wsti", self._params.bank_data_width // 8)
-        self.proc_wr_addr_w2e_wsti = self.input("proc_wr_addr_w2e_wsti", self._params.glb_addr_width)
-        self.proc_wr_data_w2e_wsti = self.input("proc_wr_data_w2e_wsti", self._params.bank_data_width)
-        self.proc_rd_en_w2e_wsti = self.input("proc_rd_en_w2e_wsti", 1)
-        self.proc_rd_addr_w2e_wsti = self.input("proc_rd_addr_w2e_wsti", self._params.glb_addr_width)
-        self.proc_rd_data_w2e_wsti = self.input("proc_rd_data_w2e_wsti", self._params.bank_data_width)
-        self.proc_rd_data_valid_w2e_wsti = self.input("proc_rd_data_valid_w2e_wsti", 1)
+        self.proc_e2w_esti_dict = {}
+        for port, size in self.header.rdrs_packet_list:
+            name = f"proc_{port}_e2w_esti"
+            self.proc_e2w_esti_dict[port] = self.input(name, size)
 
-        self.proc_wr_en_e2w_wsto = self.output("proc_wr_en_e2w_wsto", 1)
-        self.proc_wr_strb_e2w_wsto = self.output("proc_wr_strb_e2w_wsto", self._params.bank_data_width // 8)
-        self.proc_wr_addr_e2w_wsto = self.output("proc_wr_addr_e2w_wsto", self._params.glb_addr_width)
-        self.proc_wr_data_e2w_wsto = self.output("proc_wr_data_e2w_wsto", self._params.bank_data_width)
-        self.proc_rd_en_e2w_wsto = self.output("proc_rd_en_e2w_wsto", 1)
-        self.proc_rd_addr_e2w_wsto = self.output("proc_rd_addr_e2w_wsto", self._params.glb_addr_width)
-        self.proc_rd_data_e2w_wsto = self.output("proc_rd_data_e2w_wsto", self._params.bank_data_width)
-        self.proc_rd_data_valid_e2w_wsto = self.output("proc_rd_data_valid_e2w_wsto", 1)
+        self.proc_e2w_wsto_dict = {}
+        for port, size in self.header.rdrs_packet_list:
+            name = f"proc_{port}_e2w_wsto"
+            self.proc_e2w_wsto_dict[port] = self.output(name, size)
 
-        self.strm_wr_en_e2w_esti = self.input("strm_wr_en_e2w_esti", 1)
-        self.strm_wr_strb_e2w_esti = self.input("strm_wr_strb_e2w_esti", self._params.bank_data_width // 8)
-        self.strm_wr_addr_e2w_esti = self.input("strm_wr_addr_e2w_esti", self._params.glb_addr_width)
-        self.strm_wr_data_e2w_esti = self.input("strm_wr_data_e2w_esti", self._params.bank_data_width)
-        self.strm_rd_en_e2w_esti = self.input("strm_rd_en_e2w_esti", 1)
-        self.strm_rd_addr_e2w_esti = self.input("strm_rd_addr_e2w_esti", self._params.glb_addr_width)
-        self.strm_rd_data_e2w_esti = self.input("strm_rd_data_e2w_esti", self._params.bank_data_width)
-        self.strm_rd_data_valid_e2w_esti = self.input("strm_rd_data_valid_e2w_esti", 1)
+        self.strm_w2e_wsti_dict = {}
+        for port, size in self.header.packet_list:
+            name = f"strm_{port}_w2e_wsti"
+            self.strm_w2e_wsti_dict[port] = self.input(name, size)
 
-        self.strm_wr_en_w2e_esto = self.output("strm_wr_en_w2e_esto", 1)
-        self.strm_wr_strb_w2e_esto = self.output("strm_wr_strb_w2e_esto", self._params.bank_data_width // 8)
-        self.strm_wr_addr_w2e_esto = self.output("strm_wr_addr_w2e_esto", self._params.glb_addr_width)
-        self.strm_wr_data_w2e_esto = self.output("strm_wr_data_w2e_esto", self._params.bank_data_width)
-        self.strm_rd_en_w2e_esto = self.output("strm_rd_en_w2e_esto", 1)
-        self.strm_rd_addr_w2e_esto = self.output("strm_rd_addr_w2e_esto", self._params.glb_addr_width)
-        self.strm_rd_data_w2e_esto = self.output("strm_rd_data_w2e_esto", self._params.bank_data_width)
-        self.strm_rd_data_valid_w2e_esto = self.output("strm_rd_data_valid_w2e_esto", 1)
+        self.strm_w2e_esto_dict = {}
+        for port, size in self.header.packet_list:
+            name = f"strm_{port}_w2e_esto"
+            self.strm_w2e_esto_dict[port] = self.output(name, size)
 
-        self.strm_wr_en_w2e_wsti = self.input("strm_wr_en_w2e_wsti", 1)
-        self.strm_wr_strb_w2e_wsti = self.input("strm_wr_strb_w2e_wsti", self._params.bank_data_width // 8)
-        self.strm_wr_addr_w2e_wsti = self.input("strm_wr_addr_w2e_wsti", self._params.glb_addr_width)
-        self.strm_wr_data_w2e_wsti = self.input("strm_wr_data_w2e_wsti", self._params.bank_data_width)
-        self.strm_rd_en_w2e_wsti = self.input("strm_rd_en_w2e_wsti", 1)
-        self.strm_rd_addr_w2e_wsti = self.input("strm_rd_addr_w2e_wsti", self._params.glb_addr_width)
-        self.strm_rd_data_w2e_wsti = self.input("strm_rd_data_w2e_wsti", self._params.bank_data_width)
-        self.strm_rd_data_valid_w2e_wsti = self.input("strm_rd_data_valid_w2e_wsti", 1)
+        self.strm_e2w_esti_dict = {}
+        for port, size in self.header.packet_list:
+            name = f"strm_{port}_e2w_esti"
+            self.strm_e2w_esti_dict[port] = self.input(name, size)
 
-        self.strm_wr_en_e2w_wsto = self.output("strm_wr_en_e2w_wsto", 1)
-        self.strm_wr_strb_e2w_wsto = self.output("strm_wr_strb_e2w_wsto", self._params.bank_data_width // 8)
-        self.strm_wr_addr_e2w_wsto = self.output("strm_wr_addr_e2w_wsto", self._params.glb_addr_width)
-        self.strm_wr_data_e2w_wsto = self.output("strm_wr_data_e2w_wsto", self._params.bank_data_width)
-        self.strm_rd_en_e2w_wsto = self.output("strm_rd_en_e2w_wsto", 1)
-        self.strm_rd_addr_e2w_wsto = self.output("strm_rd_addr_e2w_wsto", self._params.glb_addr_width)
-        self.strm_rd_data_e2w_wsto = self.output("strm_rd_data_e2w_wsto", self._params.bank_data_width)
-        self.strm_rd_data_valid_e2w_wsto = self.output("strm_rd_data_valid_e2w_wsto", 1)
+        self.strm_e2w_wsto_dict = {}
+        for port, size in self.header.packet_list:
+            name = f"strm_{port}_e2w_wsto"
+            self.strm_e2w_wsto_dict[port] = self.output(name, size)
 
-        self.pcfg_rd_en_e2w_esti = self.input("pcfg_rd_en_e2w_esti", 1)
-        self.pcfg_rd_addr_e2w_esti = self.input("pcfg_rd_addr_e2w_esti", self._params.glb_addr_width)
-        self.pcfg_rd_data_e2w_esti = self.input("pcfg_rd_data_e2w_esti", self._params.bank_data_width)
-        self.pcfg_rd_data_valid_e2w_esti = self.input("pcfg_rd_data_valid_e2w_esti", 1)
+        self.pcfg_w2e_wsti_dict = {}
+        for port, size in self.header.rd_packet_list:
+            name = f"pcfg_{port}_w2e_wsti"
+            self.pcfg_w2e_wsti_dict[port] = self.input(name, size)
 
-        self.pcfg_rd_en_w2e_esto = self.output("pcfg_rd_en_w2e_esto", 1)
-        self.pcfg_rd_addr_w2e_esto = self.output("pcfg_rd_addr_w2e_esto", self._params.glb_addr_width)
-        self.pcfg_rd_data_w2e_esto = self.output("pcfg_rd_data_w2e_esto", self._params.bank_data_width)
-        self.pcfg_rd_data_valid_w2e_esto = self.output("pcfg_rd_data_valid_w2e_esto", 1)
+        self.pcfg_w2e_esto_dict = {}
+        for port, size in self.header.rd_packet_list:
+            name = f"pcfg_{port}_w2e_esto"
+            self.pcfg_w2e_esto_dict[port] = self.output(name, size)
 
-        self.pcfg_rd_en_w2e_wsti = self.input("pcfg_rd_en_w2e_wsti", 1)
-        self.pcfg_rd_addr_w2e_wsti = self.input("pcfg_rd_addr_w2e_wsti", self._params.glb_addr_width)
-        self.pcfg_rd_data_w2e_wsti = self.input("pcfg_rd_data_w2e_wsti", self._params.bank_data_width)
-        self.pcfg_rd_data_valid_w2e_wsti = self.input("pcfg_rd_data_valid_w2e_wsti", 1)
+        self.pcfg_e2w_esti_dict = {}
+        for port, size in self.header.rd_packet_list:
+            name = f"pcfg_{port}_e2w_esti"
+            self.pcfg_e2w_esti_dict[port] = self.input(name, size)
 
-        self.pcfg_rd_en_e2w_wsto = self.output("pcfg_rd_en_e2w_wsto", 1)
-        self.pcfg_rd_addr_e2w_wsto = self.output("pcfg_rd_addr_e2w_wsto", self._params.glb_addr_width)
-        self.pcfg_rd_data_e2w_wsto = self.output("pcfg_rd_data_e2w_wsto", self._params.bank_data_width)
-        self.pcfg_rd_data_valid_e2w_wsto = self.output("pcfg_rd_data_valid_e2w_wsto", 1)
+        self.pcfg_e2w_wsto_dict = {}
+        for port, size in self.header.rd_packet_list:
+            name = f"pcfg_{port}_e2w_wsto"
+            self.pcfg_e2w_wsto_dict[port] = self.output(name, size)
 
         self.if_cfg_est_m_wr_en = self.output("if_cfg_est_m_wr_en", 1)
         self.if_cfg_est_m_wr_addr = self.output("if_cfg_est_m_wr_addr", self._params.axi_addr_width)
@@ -345,97 +313,69 @@ class GlbTile(Generator):
         self.wire(self.glb_tile_cfg.if_cfg_est_m, self.if_cfg_est_m)
 
     def tile2core_wiring(self):
-        self.wire(self.glb_core.proc_packet_w2e_wsti['wr_en'], self.proc_wr_en_w2e_wsti)
-        self.wire(self.glb_core.proc_packet_w2e_wsti['wr_addr'], self.proc_wr_addr_w2e_wsti)
-        self.wire(self.glb_core.proc_packet_w2e_wsti['wr_strb'], self.proc_wr_strb_w2e_wsti)
-        self.wire(self.glb_core.proc_packet_w2e_wsti['wr_data'], self.proc_wr_data_w2e_wsti)
-        self.wire(self.glb_core.proc_packet_w2e_wsti['rd_en'], self.proc_rd_en_w2e_wsti)
-        self.wire(self.glb_core.proc_packet_w2e_wsti['rd_addr'], self.proc_rd_addr_w2e_wsti)
-        self.wire(self.glb_core.proc_packet_w2e_wsti['rd_data'], self.proc_rd_data_w2e_wsti)
-        self.wire(self.glb_core.proc_packet_w2e_wsti['rd_data_valid'], self.proc_rd_data_valid_w2e_wsti)
+        for port in self.header.wr_packet_ports:
+            self.wire(self.glb_core.proc_wr_packet_w2e_wsti[port], self.proc_w2e_wsti_dict[port])
+        for port in self.header.wr_packet_ports:
+            self.wire(self.glb_core.proc_wr_packet_w2e_esto[port], self.proc_w2e_esto_dict[port])
 
-        self.wire(self.glb_core.proc_packet_e2w_wsto['wr_en'], self.proc_wr_en_e2w_wsto)
-        self.wire(self.glb_core.proc_packet_e2w_wsto['wr_addr'], self.proc_wr_addr_e2w_wsto)
-        self.wire(self.glb_core.proc_packet_e2w_wsto['wr_strb'], self.proc_wr_strb_e2w_wsto)
-        self.wire(self.glb_core.proc_packet_e2w_wsto['wr_data'], self.proc_wr_data_e2w_wsto)
-        self.wire(self.glb_core.proc_packet_e2w_wsto['rd_en'], self.proc_rd_en_e2w_wsto)
-        self.wire(self.glb_core.proc_packet_e2w_wsto['rd_addr'], self.proc_rd_addr_e2w_wsto)
-        self.wire(self.glb_core.proc_packet_e2w_wsto['rd_data'], self.proc_rd_data_e2w_wsto)
-        self.wire(self.glb_core.proc_packet_e2w_wsto['rd_data_valid'], self.proc_rd_data_valid_e2w_wsto)
+        for port in self.header.rdrq_packet_ports:
+            self.wire(self.glb_core.proc_rdrq_packet_w2e_wsti[port], self.proc_w2e_wsti_dict[port])
+        for port in self.header.rdrq_packet_ports:
+            self.wire(self.glb_core.proc_rdrq_packet_w2e_esto[port], self.proc_w2e_esto_dict[port])
 
-        self.wire(self.glb_core.proc_packet_e2w_esti['wr_en'], self.proc_wr_en_e2w_esti)
-        self.wire(self.glb_core.proc_packet_e2w_esti['wr_addr'], self.proc_wr_addr_e2w_esti)
-        self.wire(self.glb_core.proc_packet_e2w_esti['wr_strb'], self.proc_wr_strb_e2w_esti)
-        self.wire(self.glb_core.proc_packet_e2w_esti['wr_data'], self.proc_wr_data_e2w_esti)
-        self.wire(self.glb_core.proc_packet_e2w_esti['rd_en'], self.proc_rd_en_e2w_esti)
-        self.wire(self.glb_core.proc_packet_e2w_esti['rd_addr'], self.proc_rd_addr_e2w_esti)
-        self.wire(self.glb_core.proc_packet_e2w_esti['rd_data'], self.proc_rd_data_e2w_esti)
-        self.wire(self.glb_core.proc_packet_e2w_esti['rd_data_valid'], self.proc_rd_data_valid_e2w_esti)
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.proc_rdrs_packet_e2w_wsto[port], self.proc_e2w_wsto_dict[port])
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.proc_rdrs_packet_e2w_esti[port], self.proc_e2w_esti_dict[port])
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.proc_rdrs_packet_w2e_wsti[port], self.proc_w2e_wsti_dict[port])
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.proc_rdrs_packet_w2e_esto[port], self.proc_w2e_esto_dict[port])
 
-        self.wire(self.glb_core.proc_packet_w2e_esto['wr_en'], self.proc_wr_en_w2e_esto)
-        self.wire(self.glb_core.proc_packet_w2e_esto['wr_addr'], self.proc_wr_addr_w2e_esto)
-        self.wire(self.glb_core.proc_packet_w2e_esto['wr_strb'], self.proc_wr_strb_w2e_esto)
-        self.wire(self.glb_core.proc_packet_w2e_esto['wr_data'], self.proc_wr_data_w2e_esto)
-        self.wire(self.glb_core.proc_packet_w2e_esto['rd_en'], self.proc_rd_en_w2e_esto)
-        self.wire(self.glb_core.proc_packet_w2e_esto['rd_addr'], self.proc_rd_addr_w2e_esto)
-        self.wire(self.glb_core.proc_packet_w2e_esto['rd_data'], self.proc_rd_data_w2e_esto)
-        self.wire(self.glb_core.proc_packet_w2e_esto['rd_data_valid'], self.proc_rd_data_valid_w2e_esto)
+        for port in self.header.wr_packet_ports:
+            self.wire(self.glb_core.strm_wr_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
+        for port in self.header.wr_packet_ports:
+            self.wire(self.glb_core.strm_wr_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
+        for port in self.header.wr_packet_ports:
+            self.wire(self.glb_core.strm_wr_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
+        for port in self.header.wr_packet_ports:
+            self.wire(self.glb_core.strm_wr_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
 
-        self.wire(self.glb_core.strm_packet_w2e_wsti['wr_en'], self.strm_wr_en_w2e_wsti)
-        self.wire(self.glb_core.strm_packet_w2e_wsti['wr_addr'], self.strm_wr_addr_w2e_wsti)
-        self.wire(self.glb_core.strm_packet_w2e_wsti['wr_strb'], self.strm_wr_strb_w2e_wsti)
-        self.wire(self.glb_core.strm_packet_w2e_wsti['wr_data'], self.strm_wr_data_w2e_wsti)
-        self.wire(self.glb_core.strm_packet_w2e_wsti['rd_en'], self.strm_rd_en_w2e_wsti)
-        self.wire(self.glb_core.strm_packet_w2e_wsti['rd_addr'], self.strm_rd_addr_w2e_wsti)
-        self.wire(self.glb_core.strm_packet_w2e_wsti['rd_data'], self.strm_rd_data_w2e_wsti)
-        self.wire(self.glb_core.strm_packet_w2e_wsti['rd_data_valid'], self.strm_rd_data_valid_w2e_wsti)
+        for port in self.header.rdrq_packet_ports:
+            self.wire(self.glb_core.strm_rdrq_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
+        for port in self.header.rdrq_packet_ports:
+            self.wire(self.glb_core.strm_rdrq_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
+        for port in self.header.rdrq_packet_ports:
+            self.wire(self.glb_core.strm_rdrq_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
+        for port in self.header.rdrq_packet_ports:
+            self.wire(self.glb_core.strm_rdrq_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
 
-        self.wire(self.glb_core.strm_packet_e2w_wsto['wr_en'], self.strm_wr_en_e2w_wsto)
-        self.wire(self.glb_core.strm_packet_e2w_wsto['wr_addr'], self.strm_wr_addr_e2w_wsto)
-        self.wire(self.glb_core.strm_packet_e2w_wsto['wr_strb'], self.strm_wr_strb_e2w_wsto)
-        self.wire(self.glb_core.strm_packet_e2w_wsto['wr_data'], self.strm_wr_data_e2w_wsto)
-        self.wire(self.glb_core.strm_packet_e2w_wsto['rd_en'], self.strm_rd_en_e2w_wsto)
-        self.wire(self.glb_core.strm_packet_e2w_wsto['rd_addr'], self.strm_rd_addr_e2w_wsto)
-        self.wire(self.glb_core.strm_packet_e2w_wsto['rd_data'], self.strm_rd_data_e2w_wsto)
-        self.wire(self.glb_core.strm_packet_e2w_wsto['rd_data_valid'], self.strm_rd_data_valid_e2w_wsto)
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.strm_rdrs_packet_e2w_wsto[port], self.strm_e2w_wsto_dict[port])
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.strm_rdrs_packet_e2w_esti[port], self.strm_e2w_esti_dict[port])
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.strm_rdrs_packet_w2e_wsti[port], self.strm_w2e_wsti_dict[port])
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.strm_rdrs_packet_w2e_esto[port], self.strm_w2e_esto_dict[port])
 
-        self.wire(self.glb_core.strm_packet_e2w_esti['wr_en'], self.strm_wr_en_e2w_esti)
-        self.wire(self.glb_core.strm_packet_e2w_esti['wr_addr'], self.strm_wr_addr_e2w_esti)
-        self.wire(self.glb_core.strm_packet_e2w_esti['wr_strb'], self.strm_wr_strb_e2w_esti)
-        self.wire(self.glb_core.strm_packet_e2w_esti['wr_data'], self.strm_wr_data_e2w_esti)
-        self.wire(self.glb_core.strm_packet_e2w_esti['rd_en'], self.strm_rd_en_e2w_esti)
-        self.wire(self.glb_core.strm_packet_e2w_esti['rd_addr'], self.strm_rd_addr_e2w_esti)
-        self.wire(self.glb_core.strm_packet_e2w_esti['rd_data'], self.strm_rd_data_e2w_esti)
-        self.wire(self.glb_core.strm_packet_e2w_esti['rd_data_valid'], self.strm_rd_data_valid_e2w_esti)
+        for port in self.header.rdrq_packet_ports:
+            self.wire(self.glb_core.pcfg_rdrq_packet_w2e_wsti[port], self.pcfg_w2e_wsti_dict[port])
+        for port in self.header.rdrq_packet_ports:
+            self.wire(self.glb_core.pcfg_rdrq_packet_w2e_esto[port], self.pcfg_w2e_esto_dict[port])
+        for port in self.header.rdrq_packet_ports:
+            self.wire(self.glb_core.pcfg_rdrq_packet_e2w_esti[port], self.pcfg_e2w_esti_dict[port])
+        for port in self.header.rdrq_packet_ports:
+            self.wire(self.glb_core.pcfg_rdrq_packet_e2w_wsto[port], self.pcfg_e2w_wsto_dict[port])
 
-        self.wire(self.glb_core.strm_packet_w2e_esto['wr_en'], self.strm_wr_en_w2e_esto)
-        self.wire(self.glb_core.strm_packet_w2e_esto['wr_addr'], self.strm_wr_addr_w2e_esto)
-        self.wire(self.glb_core.strm_packet_w2e_esto['wr_strb'], self.strm_wr_strb_w2e_esto)
-        self.wire(self.glb_core.strm_packet_w2e_esto['wr_data'], self.strm_wr_data_w2e_esto)
-        self.wire(self.glb_core.strm_packet_w2e_esto['rd_en'], self.strm_rd_en_w2e_esto)
-        self.wire(self.glb_core.strm_packet_w2e_esto['rd_addr'], self.strm_rd_addr_w2e_esto)
-        self.wire(self.glb_core.strm_packet_w2e_esto['rd_data'], self.strm_rd_data_w2e_esto)
-        self.wire(self.glb_core.strm_packet_w2e_esto['rd_data_valid'], self.strm_rd_data_valid_w2e_esto)
-
-        self.wire(self.glb_core.pcfg_packet_w2e_wsti['rd_en'], self.pcfg_rd_en_w2e_wsti)
-        self.wire(self.glb_core.pcfg_packet_w2e_wsti['rd_addr'], self.pcfg_rd_addr_w2e_wsti)
-        self.wire(self.glb_core.pcfg_packet_w2e_wsti['rd_data'], self.pcfg_rd_data_w2e_wsti)
-        self.wire(self.glb_core.pcfg_packet_w2e_wsti['rd_data_valid'], self.pcfg_rd_data_valid_w2e_wsti)
-
-        self.wire(self.glb_core.pcfg_packet_e2w_wsto['rd_en'], self.pcfg_rd_en_e2w_wsto)
-        self.wire(self.glb_core.pcfg_packet_e2w_wsto['rd_addr'], self.pcfg_rd_addr_e2w_wsto)
-        self.wire(self.glb_core.pcfg_packet_e2w_wsto['rd_data'], self.pcfg_rd_data_e2w_wsto)
-        self.wire(self.glb_core.pcfg_packet_e2w_wsto['rd_data_valid'], self.pcfg_rd_data_valid_e2w_wsto)
-
-        self.wire(self.glb_core.pcfg_packet_e2w_esti['rd_en'], self.pcfg_rd_en_e2w_esti)
-        self.wire(self.glb_core.pcfg_packet_e2w_esti['rd_addr'], self.pcfg_rd_addr_e2w_esti)
-        self.wire(self.glb_core.pcfg_packet_e2w_esti['rd_data'], self.pcfg_rd_data_e2w_esti)
-        self.wire(self.glb_core.pcfg_packet_e2w_esti['rd_data_valid'], self.pcfg_rd_data_valid_e2w_esti)
-
-        self.wire(self.glb_core.pcfg_packet_w2e_esto['rd_en'], self.pcfg_rd_en_w2e_esto)
-        self.wire(self.glb_core.pcfg_packet_w2e_esto['rd_addr'], self.pcfg_rd_addr_w2e_esto)
-        self.wire(self.glb_core.pcfg_packet_w2e_esto['rd_data'], self.pcfg_rd_data_w2e_esto)
-        self.wire(self.glb_core.pcfg_packet_w2e_esto['rd_data_valid'], self.pcfg_rd_data_valid_w2e_esto)
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.pcfg_rdrs_packet_e2w_wsto[port], self.pcfg_e2w_wsto_dict[port])
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.pcfg_rdrs_packet_e2w_esti[port], self.pcfg_e2w_esti_dict[port])
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.pcfg_rdrs_packet_w2e_wsti[port], self.pcfg_w2e_wsti_dict[port])
+        for port in self.header.rdrs_packet_ports:
+            self.wire(self.glb_core.pcfg_rdrs_packet_w2e_esto[port], self.pcfg_w2e_esto_dict[port])
 
         self.wire(self.glb_core.strm_data_valid_f2g, self.stream_data_valid_f2g)
         self.wire(self.glb_core.strm_data_valid_g2f, self.stream_data_valid_g2f)
