@@ -292,7 +292,6 @@ class GlbCoreLoadDma(Generator):
         self.bank_rdrq_rd_en = self.strm_rd_en_w & (self.is_first | (~self.bank_addr_match))
         self.bank_rdrq_rd_addr = self.strm_rd_addr_w
         self.rdrq_packet['rd_en'] = self.bank_rdrq_rd_en
-        self.rdrq_packet['rd_type'] = const(self.header.PacketEnum.strm.value, self.header.PacketEnumWidth)
         self.rdrq_packet['rd_src_tile'] = self.glb_tile_id
         self.rdrq_packet['rd_addr'] = self.bank_rdrq_rd_addr
 

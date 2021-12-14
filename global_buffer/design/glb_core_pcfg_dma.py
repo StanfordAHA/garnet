@@ -33,32 +33,24 @@ class GlbCorePcfgDma(Generator):
                                 + self._params.glb_bank_memory_pipeline_depth
                                 + self._params.sram_gen_pipeline_depth
                                 + self._params.sram_gen_output_pipeline_depth
-                                + 1  # SRAM macro read latency
                                 + self._params.glb_switch_pipeline_depth
-                                + 2  # FIXME: Unnecessary delay of moving back and forth btw switch and router
-                                + 1  # dma cache register delay
+                                + 1  # SRAM macro read latency
                                 )
 
         # local variables
         self.is_running_r = self.var("is_running_r", 1)
         self.start_pulse_r = self.var("start_pulse_r", 1)
         self.done_pulse_r = self.var("done_pulse_r", 1)
-        self.num_cfg_cnt_r = self.var(
-            "num_cfg_cnt_r", self._params.max_num_cfg_width)
-        self.num_cfg_cnt_next = self.var(
-            "num_cfg_cnt_next", self._params.max_num_cfg_width)
+        self.num_cfg_cnt_r = self.var("num_cfg_cnt_r", self._params.max_num_cfg_width)
+        self.num_cfg_cnt_next = self.var("num_cfg_cnt_next", self._params.max_num_cfg_width)
         self.addr_r = self.var("addr_r", self._params.glb_addr_width)
         self.addr_next = self.var("addr_next", self._params.glb_addr_width)
         self.rdrq_packet_rd_en_r = self.var("rdrq_packet_rd_en_r", 1)
         self.rdrq_packet_rd_en_next = self.var("rdrq_packet_rd_en_next", 1)
-        self.rdrq_packet_rd_addr_r = self.var(
-            "rdrq_packet_rd_addr_r", self._params.glb_addr_width)
-        self.rdrq_packet_rd_addr_next = self.var(
-            "rdrq_packet_rd_addr_next", self._params.glb_addr_width)
-        self.rdrs_packet_rd_data_r = self.var(
-            "rdrs_packet_rd_data_r", self._params.bank_data_width)
-        self.rdrs_packet_rd_data_valid_r = self.var(
-            "rdrs_packet_rd_data_valid_r", 1)
+        self.rdrq_packet_rd_addr_r = self.var("rdrq_packet_rd_addr_r", self._params.glb_addr_width)
+        self.rdrq_packet_rd_addr_next = self.var("rdrq_packet_rd_addr_next", self._params.glb_addr_width)
+        self.rdrs_packet_rd_data_r = self.var("rdrs_packet_rd_data_r", self._params.bank_data_width)
+        self.rdrs_packet_rd_data_valid_r = self.var("rdrs_packet_rd_data_valid_r", 1)
 
         # Add always statements
         self.add_always(self.start_pulse_ff)
@@ -155,7 +147,6 @@ class GlbCorePcfgDma(Generator):
     def assign_rdrq_packet(self):
         self.wire(self.rdrq_packet['rd_en'], self.rdrq_packet_rd_en_r)
         self.wire(self.rdrq_packet['rd_addr'], self.rdrq_packet_rd_addr_r)
-        self.wire(self.rdrq_packet['rd_type'], const(self.header.PacketEnum.pcfg.value, self.header.PacketEnumWidth))
         self.wire(self.rdrq_packet['rd_src_tile'], self.glb_tile_id)
 
     def assign_cgra_cfg_output(self):
@@ -171,8 +162,7 @@ class GlbCorePcfgDma(Generator):
     def add_pcfg_dma_done_pulse_pipeline(self):
         maximum_latency = 3 * self._params.num_glb_tiles + self.default_latency
         latency_width = clog2(maximum_latency)
-        self.done_pulse_d_arr = self.var(
-            "done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
+        self.done_pulse_d_arr = self.var("done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.done_pulse_pipeline = Pipeline(width=1,
                                             depth=maximum_latency,
                                             flatten_output=True)
