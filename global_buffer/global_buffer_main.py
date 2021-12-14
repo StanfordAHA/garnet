@@ -1,4 +1,6 @@
 import argparse
+from global_buffer.design.glb_core import GlbCore
+from global_buffer.design.glb_tile import GlbTile
 from global_buffer.design.global_buffer import GlobalBuffer
 from global_buffer.design.global_buffer_parameter import gen_global_buffer_params, gen_header_files
 from systemRDL.util import gen_rdl_header

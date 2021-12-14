@@ -79,9 +79,6 @@ class GlbCoreSwitch(Generator):
         self.rd_type = self.var("rd_type", self.header.PacketEnumWidth)
         self.rd_type_d = self.var("rd_type_d", self.header.PacketEnumWidth)
         self.rd_type_d_nostall = self.var("rd_type_d_nostall", self.header.PacketEnumWidth)
-        self.rdrq_src_tile = self.var("rdrq_src_tile", self._params.tile_sel_addr_width)
-        self.rdrq_src_tile_d = self.var("rdrq_src_tile_d", self._params.tile_sel_addr_width)
-        self.rdrq_src_tile_d_nostall = self.var("rdrq_src_tile_d_nostall", self._params.tile_sel_addr_width)
         self.rdrq_bank_sel = self.var("rdrq_bank_sel", self._params.bank_sel_addr_width)
         self.rdrq_bank_sel_d = self.var("rdrq_bank_sel_d", self._params.bank_sel_addr_width)
         self.rdrq_bank_sel_d_nostall = self.var("rdrq_bank_sel_d_nostall", self._params.bank_sel_addr_width)
@@ -92,10 +89,9 @@ class GlbCoreSwitch(Generator):
                           + self._params.glb_switch_pipeline_depth
                           + 1)
 
-        self.rdrq_pipeline_in = concat(self.rd_type, self.rdrq_src_tile, self.rdrq_bank_sel)
-        self.rdrq_pipeline_out = concat(self.rd_type_d, self.rdrq_src_tile_d, self.rdrq_bank_sel_d)
-        self.rdrq_pipeline_out_nostall = concat(
-            self.rd_type_d_nostall, self.rdrq_src_tile_d_nostall, self.rdrq_bank_sel_d_nostall)
+        self.rdrq_pipeline_in = concat(self.rd_type, self.rdrq_bank_sel)
+        self.rdrq_pipeline_out = concat(self.rd_type_d, self.rdrq_bank_sel_d)
+        self.rdrq_pipeline_out_nostall = concat(self.rd_type_d_nostall, self.rdrq_bank_sel_d_nostall)
         self.rdrq_pipeline = Pipeline(width=self.rdrq_pipeline_in.width, depth=pipeline_depth)
         self.add_child("rdrq_pipeline",
                        self.rdrq_pipeline,
@@ -248,7 +244,6 @@ class GlbCoreSwitch(Generator):
         else:
             self.rdrq_packet_sw2bank_muxed = 0
         self.rd_type = self.rdrq_packet_sw2bank_muxed['rd_type']
-        self.rdrq_src_tile = self.rdrq_packet_sw2bank_muxed['rd_src_tile']
         self.rdrq_bank_sel = self.rdrq_packet_sw2bank_muxed['rd_addr'][self.packet_addr_bank_sel_msb,
                                                                        self.packet_addr_bank_sel_lsb]
 
