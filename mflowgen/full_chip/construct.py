@@ -65,9 +65,9 @@ def construct():
     'flatten_effort'    : 0,
     'topographical'     : True,
     # RTL Generation
-    'array_width'       : 32,
-    'array_height'      : 16,
-    'num_glb_tiles'     : 16,
+    'array_width'       : 4,
+    'array_height'      : 4,
+    'num_glb_tiles'     : 2,
     'interconnect_only' : False,
     # glb tile memory size (unit: KB)
     # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
