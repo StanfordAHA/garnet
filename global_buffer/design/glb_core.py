@@ -1,8 +1,7 @@
-from kratos import Generator
-from global_buffer.design.glb_core_pcfg_router import GlbCorePcfgRouter
+from kratos import Generator, const
+from global_buffer.design.glb_core_router import GlbCoreRouter
 from global_buffer.design.glb_core_proc_router import GlbCoreProcRouter
 from global_buffer.design.glb_core_strm_mux import GlbCoreStrmMux
-from global_buffer.design.glb_core_strm_router import GlbCoreStrmRouter
 from global_buffer.design.glb_core_switch import GlbCoreSwitch
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
@@ -23,20 +22,41 @@ class GlbCore(Generator):
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
-        self.proc_packet_w2e_wsti = self.input("proc_packet_w2e_wsti", self.header.packet_t)
-        self.proc_packet_e2w_wsto = self.output("proc_packet_e2w_wsto", self.header.packet_t)
-        self.proc_packet_e2w_esti = self.input("proc_packet_e2w_esti", self.header.packet_t)
-        self.proc_packet_w2e_esto = self.output("proc_packet_w2e_esto", self.header.packet_t)
+        self.proc_wr_packet_w2e_wsti = self.input("proc_wr_packet_w2e_wsti", self.header.wr_packet_t)
+        self.proc_wr_packet_w2e_esto = self.output("proc_wr_packet_w2e_esto", self.header.wr_packet_t)
 
-        self.strm_packet_w2e_wsti = self.input("strm_packet_w2e_wsti", self.header.packet_t)
-        self.strm_packet_e2w_wsto = self.output("strm_packet_e2w_wsto", self.header.packet_t)
-        self.strm_packet_e2w_esti = self.input("strm_packet_e2w_esti", self.header.packet_t)
-        self.strm_packet_w2e_esto = self.output("strm_packet_w2e_esto", self.header.packet_t)
+        self.proc_rdrq_packet_w2e_wsti = self.input("proc_rdrq_packet_w2e_wsti", self.header.rdrq_packet_t)
+        self.proc_rdrq_packet_w2e_esto = self.output("proc_rdrq_packet_w2e_esto", self.header.rdrq_packet_t)
 
-        self.pcfg_packet_w2e_wsti = self.input("pcfg_packet_w2e_wsti", self.header.rd_packet_t)
-        self.pcfg_packet_e2w_wsto = self.output("pcfg_packet_e2w_wsto", self.header.rd_packet_t)
-        self.pcfg_packet_e2w_esti = self.input("pcfg_packet_e2w_esti", self.header.rd_packet_t)
-        self.pcfg_packet_w2e_esto = self.output("pcfg_packet_w2e_esto", self.header.rd_packet_t)
+        self.proc_rdrs_packet_w2e_wsti = self.input("proc_rdrs_packet_w2e_wsti", self.header.rdrs_packet_t)
+        self.proc_rdrs_packet_e2w_wsto = self.output("proc_rdrs_packet_e2w_wsto", self.header.rdrs_packet_t)
+        self.proc_rdrs_packet_e2w_esti = self.input("proc_rdrs_packet_e2w_esti", self.header.rdrs_packet_t)
+        self.proc_rdrs_packet_w2e_esto = self.output("proc_rdrs_packet_w2e_esto", self.header.rdrs_packet_t)
+
+        self.strm_wr_packet_w2e_wsti = self.input("strm_wr_packet_w2e_wsti", self.header.wr_packet_t)
+        self.strm_wr_packet_e2w_wsto = self.output("strm_wr_packet_e2w_wsto", self.header.wr_packet_t)
+        self.strm_wr_packet_e2w_esti = self.input("strm_wr_packet_e2w_esti", self.header.wr_packet_t)
+        self.strm_wr_packet_w2e_esto = self.output("strm_wr_packet_w2e_esto", self.header.wr_packet_t)
+
+        self.strm_rdrq_packet_w2e_wsti = self.input("strm_rdrq_packet_w2e_wsti", self.header.rdrq_packet_t)
+        self.strm_rdrq_packet_e2w_wsto = self.output("strm_rdrq_packet_e2w_wsto", self.header.rdrq_packet_t)
+        self.strm_rdrq_packet_e2w_esti = self.input("strm_rdrq_packet_e2w_esti", self.header.rdrq_packet_t)
+        self.strm_rdrq_packet_w2e_esto = self.output("strm_rdrq_packet_w2e_esto", self.header.rdrq_packet_t)
+
+        self.strm_rdrs_packet_w2e_wsti = self.input("strm_rdrs_packet_w2e_wsti", self.header.rdrs_packet_t)
+        self.strm_rdrs_packet_e2w_wsto = self.output("strm_rdrs_packet_e2w_wsto", self.header.rdrs_packet_t)
+        self.strm_rdrs_packet_e2w_esti = self.input("strm_rdrs_packet_e2w_esti", self.header.rdrs_packet_t)
+        self.strm_rdrs_packet_w2e_esto = self.output("strm_rdrs_packet_w2e_esto", self.header.rdrs_packet_t)
+
+        self.pcfg_rdrq_packet_w2e_wsti = self.input("pcfg_rdrq_packet_w2e_wsti", self.header.rdrq_packet_t)
+        self.pcfg_rdrq_packet_e2w_wsto = self.output("pcfg_rdrq_packet_e2w_wsto", self.header.rdrq_packet_t)
+        self.pcfg_rdrq_packet_e2w_esti = self.input("pcfg_rdrq_packet_e2w_esti", self.header.rdrq_packet_t)
+        self.pcfg_rdrq_packet_w2e_esto = self.output("pcfg_rdrq_packet_w2e_esto", self.header.rdrq_packet_t)
+
+        self.pcfg_rdrs_packet_w2e_wsti = self.input("pcfg_rdrs_packet_w2e_wsti", self.header.rdrs_packet_t)
+        self.pcfg_rdrs_packet_e2w_wsto = self.output("pcfg_rdrs_packet_e2w_wsto", self.header.rdrs_packet_t)
+        self.pcfg_rdrs_packet_e2w_esti = self.input("pcfg_rdrs_packet_e2w_esti", self.header.rdrs_packet_t)
+        self.pcfg_rdrs_packet_w2e_esto = self.output("pcfg_rdrs_packet_w2e_esto", self.header.rdrs_packet_t)
 
         self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width,
                                         size=self._params.cgra_per_glb, packed=True)
@@ -85,29 +105,26 @@ class GlbCore(Generator):
         self.strm_data_f2g_mux2dma = self.var("strm_data_f2g_mux2dma", self._params.cgra_data_width)
         self.strm_data_valid_f2g_mux2dma = self.var("strm_data_valid_f2g_mux2dma", 1)
 
-        self.wr_packet_pr2sw = self.var("wr_packet_pr2sw", self.header.wr_packet_t)
-        self.wr_packet_sr2sw = self.var("wr_packet_sr2sw", self.header.wr_packet_t)
-        self.wr_packet_sw2sr = self.var("wr_packet_sw2sr", self.header.wr_packet_t)
-        self.wr_packet_dma2sw = self.var("wr_packet_dma2sw", self.header.wr_packet_t)
+        self.proc_wr_packet_r2sw = self.var("proc_wr_packet_r2sw", self.header.wr_packet_t)
+        self.strm_wr_packet_r2sw = self.var("strm_wr_packet_sr2sw", self.header.wr_packet_t)
+        self.strm_wr_packet_sw2r = self.var("strm_wr_packet_sw2r", self.header.wr_packet_t)
+        self.strm_wr_packet_dma2sw = self.var("strm_wr_packet_dma2sw", self.header.wr_packet_t)
 
-        self.rdrq_packet_pr2sw = self.var("rdrq_packet_pr2sw", self.header.rdrq_packet_t)
-        self.rdrq_packet_sr2sw = self.var("rdrq_packet_sr2sw", self.header.rdrq_packet_t)
-        self.rdrq_packet_sw2sr = self.var("rdrq_packet_sw2sr", self.header.rdrq_packet_t)
-        self.rdrq_packet_dma2sw = self.var("rdrq_packet_dma2sw", self.header.rdrq_packet_t)
-        self.rdrq_packet_pcfgdma2sw = self.var("rdrq_packet_pcfgdma2sw", self.header.rdrq_packet_t)
-        self.rdrq_packet_pcfgr2sw = self.var("rdrq_packet_pcfgr2sw", self.header.rdrq_packet_t)
-        self.rdrq_packet_sw2pcfgr = self.var("rdrq_packet_sw2pcfgr", self.header.rdrq_packet_t)
+        self.proc_rdrq_packet_r2sw = self.var("proc_rdrq_packet_r2sw", self.header.rdrq_packet_t)
+        self.strm_rdrq_packet_r2sw = self.var("strm_rdrq_packet_r2sw", self.header.rdrq_packet_t)
+        self.strm_rdrq_packet_sw2r = self.var("strm_rdrq_packet_sw2r", self.header.rdrq_packet_t)
+        self.strm_rdrq_packet_dma2sw = self.var("strm_rdrq_packet_dma2sw", self.header.rdrq_packet_t)
+        self.pcfg_rdrq_packet_dma2sw = self.var("pcfg_rdrq_packet_dma2sw", self.header.rdrq_packet_t)
+        self.pcfg_rdrq_packet_r2sw = self.var("pcfg_rdrq_packet_r2sw", self.header.rdrq_packet_t)
+        self.pcfg_rdrq_packet_sw2r = self.var("pcfg_rdrq_packet_sw2r", self.header.rdrq_packet_t)
 
-        self.rdrs_packet_sw2pr = self.var("rdrs_packet_sw2pr", self.header.rdrs_packet_t)
-        self.rdrs_packet_sr2sw = self.var("rdrs_packet_sr2sw", self.header.rdrs_packet_t)
-        self.rdrs_packet_sw2sr = self.var("rdrs_packet_sw2sr", self.header.rdrs_packet_t)
-        self.rdrs_packet_sw2dma = self.var("rdrs_packet_sw2dma", self.header.rdrs_packet_t)
-        self.rdrs_packet_pcfgr2sw = self.var("rdrs_packet_pcfgr2sw", self.header.rdrs_packet_t)
-        self.rdrs_packet_sw2pcfgr = self.var("rdrs_packet_sw2pcfgr", self.header.rdrs_packet_t)
-        self.rdrs_packet_sw2pcfgdma = self.var("rdrs_packet_sw2pcfgdma", self.header.rdrs_packet_t)
-
-        self.rd_packet_pcfgr2sw = self.var("rd_packet_pcfgr2sw", self.header.rd_packet_t)
-        self.rd_packet_sw2pcfgr = self.var("rd_packet_sw2pcfgr", self.header.rd_packet_t)
+        self.proc_rdrs_packet_sw2r = self.var("proc_rdrs_packet_sw2r", self.header.rdrs_packet_t)
+        self.strm_rdrs_packet_r2sw = self.var("strm_rdrs_packet_r2sw", self.header.rdrs_packet_t)
+        self.strm_rdrs_packet_sw2r = self.var("strm_rdrs_packet_sw2r", self.header.rdrs_packet_t)
+        self.strm_rdrs_packet_sw2dma = self.var("strm_rdrs_packet_sw2dma", self.header.rdrs_packet_t)
+        self.pcfg_rdrs_packet_r2sw = self.var("pcfg_rdrs_packet_r2sw", self.header.rdrs_packet_t)
+        self.pcfg_rdrs_packet_sw2r = self.var("pcfg_rdrs_packet_sw2r", self.header.rdrs_packet_t)
+        self.pcfg_rdrs_packet_sw2dma = self.var("pcfg_rdrs_packet_sw2dma", self.header.rdrs_packet_t)
 
         self.add_child("glb_core_store_dma",
                        GlbCoreStoreDma(_params=self._params),
@@ -116,7 +133,7 @@ class GlbCore(Generator):
                        reset=self.reset,
                        data_f2g=self.strm_data_f2g_mux2dma,
                        data_valid_f2g=self.strm_data_valid_f2g_mux2dma,
-                       wr_packet=self.wr_packet_dma2sw,
+                       wr_packet=self.strm_wr_packet_dma2sw,
                        # TODO: How to make this automatic
                        cfg_st_dma_num_repeat=self.cfg_st_dma_ctrl['num_repeat'],
                        cfg_st_dma_ctrl_use_valid=self.cfg_st_dma_ctrl['use_valid'],
@@ -134,8 +151,8 @@ class GlbCore(Generator):
                        reset=self.reset,
                        data_g2f=self.strm_data_g2f_dma2mux,
                        data_valid_g2f=self.strm_data_valid_g2f_dma2mux,
-                       rdrq_packet=self.rdrq_packet_dma2sw,
-                       rdrs_packet=self.rdrs_packet_sw2dma,
+                       rdrq_packet=self.strm_rdrq_packet_dma2sw,
+                       rdrs_packet=self.strm_rdrs_packet_sw2dma,
                        # TODO: How to make this automatic
                        cfg_ld_dma_num_repeat=self.cfg_ld_dma_ctrl['num_repeat'],
                        cfg_ld_dma_ctrl_use_valid=self.cfg_ld_dma_ctrl['use_valid'],
@@ -151,8 +168,8 @@ class GlbCore(Generator):
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
                        cgra_cfg_pcfg=self.cgra_cfg_pcfg,
-                       rdrq_packet=self.rdrq_packet_pcfgdma2sw,
-                       rdrs_packet=self.rdrs_packet_sw2pcfgdma,
+                       rdrq_packet=self.pcfg_rdrq_packet_dma2sw,
+                       rdrs_packet=self.pcfg_rdrs_packet_sw2dma,
                        # TODO: How to make this automatic
                        cfg_pcfg_dma_ctrl_mode=self.cfg_pcfg_dma_ctrl['mode'],
                        cfg_pcfg_network_latency=self.cfg_pcfg_network['latency'],
@@ -183,80 +200,99 @@ class GlbCore(Generator):
                        clk_en=self.clk_en,
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
-                       wr_packet_pr2sw=self.wr_packet_pr2sw,
-                       wr_packet_dma2sw=self.wr_packet_dma2sw,
+                       wr_packet_pr2sw=self.proc_wr_packet_r2sw,
+                       wr_packet_dma2sw=self.strm_wr_packet_dma2sw,
                        wr_packet_sw2bankarr=self.wr_packet_sw2bankarr,
-                       rdrq_packet_pr2sw=self.rdrq_packet_pr2sw,
-                       rdrq_packet_dma2sw=self.rdrq_packet_dma2sw,
-                       rdrq_packet_pcfgdma2sw=self.rdrq_packet_pcfgdma2sw,
+                       rdrq_packet_pr2sw=self.proc_rdrq_packet_r2sw,
+                       rdrq_packet_dma2sw=self.strm_rdrq_packet_dma2sw,
+                       rdrq_packet_pcfgdma2sw=self.pcfg_rdrq_packet_dma2sw,
                        rdrq_packet_sw2bankarr=self.rdrq_packet_sw2bankarr,
-                       rdrs_packet_sw2pr=self.rdrs_packet_sw2pr,
-                       rdrs_packet_sw2dma=self.rdrs_packet_sw2dma,
-                       rdrs_packet_sw2pcfgdma=self.rdrs_packet_sw2pcfgdma,
+                       rdrs_packet_sw2pr=self.proc_rdrs_packet_sw2r,
+                       rdrs_packet_sw2dma=self.strm_rdrs_packet_sw2dma,
+                       rdrs_packet_sw2pcfgdma=self.pcfg_rdrs_packet_sw2dma,
                        rdrs_packet_bankarr2sw=self.rdrs_packet_bankarr2sw,
+                       # cfg
                        cfg_st_dma_ctrl_mode=self.cfg_st_dma_ctrl['mode'],
                        cfg_ld_dma_ctrl_mode=self.cfg_ld_dma_ctrl['mode'],
                        cfg_pcfg_dma_ctrl_mode=self.cfg_pcfg_dma_ctrl['mode'],
                        cfg_tile_connected_prev=self.cfg_data_network_connected_prev,
                        cfg_tile_connected_next=self.cfg_data_network['tile_connected'],
                        cfg_pcfg_tile_connected_prev=self.cfg_pcfg_network_connected_prev,
-                       cfg_pcfg_tile_connected_next=self.cfg_pcfg_network['tile_connected'])
-        for port in self.header.wr_packet_ports:
-            self.wire(self.glb_core_switch.wr_packet_sr2sw[port], self.wr_packet_sr2sw[port])
-            self.wire(self.glb_core_switch.wr_packet_sw2sr[port], self.wr_packet_sw2sr[port])
-        for port in self.header.rdrq_packet_ports:
-            self.wire(self.glb_core_switch.rdrq_packet_sr2sw[port], self.rdrq_packet_sr2sw[port])
-            self.wire(self.glb_core_switch.rdrq_packet_sw2sr[port], self.rdrq_packet_sw2sr[port])
-            self.wire(self.glb_core_switch.rdrq_packet_pcfgr2sw[port], self.rd_packet_pcfgr2sw[port])
-            self.wire(self.glb_core_switch.rdrq_packet_sw2pcfgr[port], self.rd_packet_sw2pcfgr[port])
-        for port in self.header.rdrs_packet_ports:
-            self.wire(self.glb_core_switch.rdrs_packet_sr2sw[port], self.rdrs_packet_sr2sw[port])
-            self.wire(self.glb_core_switch.rdrs_packet_sw2sr[port], self.rdrs_packet_sw2sr[port])
-            self.wire(self.glb_core_switch.rdrs_packet_pcfgr2sw[port], self.rd_packet_pcfgr2sw[port])
-            self.wire(self.glb_core_switch.rdrs_packet_sw2pcfgr[port], self.rd_packet_sw2pcfgr[port])
+                       cfg_pcfg_tile_connected_next=self.cfg_pcfg_network['tile_connected'],
+                       # strm
+                       wr_packet_sr2sw=self.strm_wr_packet_r2sw,
+                       wr_packet_sw2sr=self.strm_wr_packet_sw2r,
+                       rdrq_packet_sr2sw=self.strm_rdrq_packet_r2sw,
+                       rdrq_packet_sw2sr=self.strm_rdrq_packet_sw2r,
+                       rdrs_packet_sr2sw=self.strm_rdrs_packet_r2sw,
+                       rdrs_packet_sw2sr=self.strm_rdrs_packet_sw2r,
+                       # pcfg
+                       rdrq_packet_pcfgr2sw=self.pcfg_rdrq_packet_r2sw,
+                       rdrq_packet_sw2pcfgr=self.pcfg_rdrq_packet_sw2r,
+                       rdrs_packet_pcfgr2sw=self.pcfg_rdrs_packet_r2sw,
+                       rdrs_packet_sw2pcfgr=self.pcfg_rdrs_packet_sw2r)
 
         self.add_child("glb_core_proc_router",
                        GlbCoreProcRouter(_params=self._params),
                        clk=self.clk,
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
-                       packet_w2e_wsti=self.proc_packet_w2e_wsti,
-                       packet_e2w_wsto=self.proc_packet_e2w_wsto,
-                       packet_e2w_esti=self.proc_packet_e2w_esti,
-                       packet_w2e_esto=self.proc_packet_w2e_esto,
-                       wr_packet_pr2sw=self.wr_packet_pr2sw,
-                       rdrq_packet_pr2sw=self.rdrq_packet_pr2sw,
-                       rdrs_packet_sw2pr=self.rdrs_packet_sw2pr)
+                       wr_packet_w2e_wsti=self.proc_wr_packet_w2e_wsti,
+                       wr_packet_w2e_esto=self.proc_wr_packet_w2e_esto,
+                       rdrq_packet_w2e_wsti=self.proc_rdrq_packet_w2e_wsti,
+                       rdrq_packet_w2e_esto=self.proc_rdrq_packet_w2e_esto,
+                       rdrs_packet_w2e_wsti=self.proc_rdrs_packet_w2e_wsti,
+                       rdrs_packet_e2w_wsto=self.proc_rdrs_packet_e2w_wsto,
+                       rdrs_packet_e2w_esti=self.proc_rdrs_packet_e2w_esti,
+                       rdrs_packet_w2e_esto=self.proc_rdrs_packet_w2e_esto,
+                       wr_packet_pr2sw=self.proc_wr_packet_r2sw,
+                       rdrq_packet_pr2sw=self.proc_rdrq_packet_r2sw,
+                       rdrs_packet_sw2pr=self.proc_rdrs_packet_sw2r)
 
         self.add_child("glb_core_strm_router",
-                       GlbCoreStrmRouter(_params=self._params),
+                       GlbCoreRouter(_params=self._params, wr_channel=True, rd_channel=True),
                        clk=self.clk,
                        clk_en=self.clk_en,
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
-                       packet_w2e_wsti=self.strm_packet_w2e_wsti,
-                       packet_e2w_wsto=self.strm_packet_e2w_wsto,
-                       packet_e2w_esti=self.strm_packet_e2w_esti,
-                       packet_w2e_esto=self.strm_packet_w2e_esto,
-                       wr_packet_sr2sw=self.wr_packet_sr2sw,
-                       wr_packet_sw2sr=self.wr_packet_sw2sr,
-                       rdrq_packet_sr2sw=self.rdrq_packet_sr2sw,
-                       rdrq_packet_sw2sr=self.rdrq_packet_sw2sr,
-                       rdrs_packet_sr2sw=self.rdrs_packet_sr2sw,
-                       rdrs_packet_sw2sr=self.rdrs_packet_sw2sr,
+                       wr_packet_w2e_wsti=self.strm_wr_packet_w2e_wsti,
+                       wr_packet_e2w_wsto=self.strm_wr_packet_e2w_wsto,
+                       wr_packet_e2w_esti=self.strm_wr_packet_e2w_esti,
+                       wr_packet_w2e_esto=self.strm_wr_packet_w2e_esto,
+                       rdrq_packet_w2e_wsti=self.strm_rdrq_packet_w2e_wsti,
+                       rdrq_packet_e2w_wsto=self.strm_rdrq_packet_e2w_wsto,
+                       rdrq_packet_e2w_esti=self.strm_rdrq_packet_e2w_esti,
+                       rdrq_packet_w2e_esto=self.strm_rdrq_packet_w2e_esto,
+                       rdrs_packet_w2e_wsti=self.strm_rdrs_packet_w2e_wsti,
+                       rdrs_packet_e2w_wsto=self.strm_rdrs_packet_e2w_wsto,
+                       rdrs_packet_e2w_esti=self.strm_rdrs_packet_e2w_esti,
+                       rdrs_packet_w2e_esto=self.strm_rdrs_packet_w2e_esto,
+                       wr_packet_r2sw=self.strm_wr_packet_r2sw,
+                       wr_packet_sw2r=self.strm_wr_packet_sw2r,
+                       rdrq_packet_r2sw=self.strm_rdrq_packet_r2sw,
+                       rdrq_packet_sw2r=self.strm_rdrq_packet_sw2r,
+                       rdrs_packet_r2sw=self.strm_rdrs_packet_r2sw,
+                       rdrs_packet_sw2r=self.strm_rdrs_packet_sw2r,
                        cfg_tile_connected_prev=self.cfg_data_network_connected_prev,
                        cfg_tile_connected_next=self.cfg_data_network['tile_connected'])
 
         self.add_child("glb_core_pcfg_router",
-                       GlbCorePcfgRouter(_params=self._params),
+                       GlbCoreRouter(_params=self._params, wr_channel=False, rd_channel=True),
                        clk=self.clk,
+                       clk_en=const(1, 1),
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
-                       rd_packet_w2e_wsti=self.pcfg_packet_w2e_wsti,
-                       rd_packet_e2w_wsto=self.pcfg_packet_e2w_wsto,
-                       rd_packet_e2w_esti=self.pcfg_packet_e2w_esti,
-                       rd_packet_w2e_esto=self.pcfg_packet_w2e_esto,
-                       rd_packet_sw2pcfgr=self.rd_packet_sw2pcfgr,
-                       rd_packet_pcfgr2sw=self.rd_packet_pcfgr2sw,
+                       rdrq_packet_w2e_wsti=self.pcfg_rdrq_packet_w2e_wsti,
+                       rdrq_packet_e2w_wsto=self.pcfg_rdrq_packet_e2w_wsto,
+                       rdrq_packet_e2w_esti=self.pcfg_rdrq_packet_e2w_esti,
+                       rdrq_packet_w2e_esto=self.pcfg_rdrq_packet_w2e_esto,
+                       rdrs_packet_w2e_wsti=self.pcfg_rdrs_packet_w2e_wsti,
+                       rdrs_packet_e2w_wsto=self.pcfg_rdrs_packet_e2w_wsto,
+                       rdrs_packet_e2w_esti=self.pcfg_rdrs_packet_e2w_esti,
+                       rdrs_packet_w2e_esto=self.pcfg_rdrs_packet_w2e_esto,
+                       rdrq_packet_sw2r=self.pcfg_rdrq_packet_sw2r,
+                       rdrq_packet_r2sw=self.pcfg_rdrq_packet_r2sw,
+                       rdrs_packet_r2sw=self.pcfg_rdrs_packet_r2sw,
+                       rdrs_packet_sw2r=self.pcfg_rdrs_packet_sw2r,
                        cfg_tile_connected_prev=self.cfg_pcfg_network_connected_prev,
                        cfg_tile_connected_next=self.cfg_pcfg_network['tile_connected'])

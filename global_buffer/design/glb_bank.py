@@ -66,7 +66,6 @@ class GlbBank(Generator):
                        packet_wr_data=self.wr_packet['wr_data'],
                        packet_wr_data_bit_sel=self.wr_data_bit_sel,
                        packet_rd_en=self.rdrq_packet['rd_en'],
-                       packet_rd_type=self.rdrq_packet['rd_type'],
                        packet_rd_src_tile=self.rdrq_packet['rd_src_tile'],
                        packet_rd_addr=self.rdrq_packet['rd_addr'][self._params.bank_addr_width - 1, 0],
                        packet_rd_data=self.rdrs_packet['rd_data'],
