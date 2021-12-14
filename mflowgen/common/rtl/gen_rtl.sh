@@ -151,8 +151,11 @@ else
       if [ $glb_only == True ]; then
         docker cp $container_name:/aha/garnet/global_buffer/header ../outputs/header
       elif [ $interconnect_only == False ]; then
-        docker cp $container_name:/aha/garnet/global_buffer/header ../outputs/header
-        docker cp $container_name:/aha/garnet/global_controller/header/* ../outputs/header/
+        docker cp $container_name:/aha/garnet/global_buffer/header ../glb_header
+        docker cp $container_name:/aha/garnet/global_controller/header ../glc_header
+        mkdir ../outputs/header
+        cp -r ../glb_header/* ../outputs/header/
+        cp -r ../glc_header/* ../outputs/header/
       fi
       # Kill the container
       docker kill $container_name
