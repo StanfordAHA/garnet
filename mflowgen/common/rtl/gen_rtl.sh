@@ -52,6 +52,7 @@ else
       # which_image=cst
 
       # pull docker image from docker hub
+      echo "--- docker pull stanfordaha/garnet:${which_image}"
       docker pull stanfordaha/garnet:${which_image}
 
       # Display ID info for image e.g.
@@ -82,6 +83,8 @@ else
       fi
 
       # run garnet.py in container and concat all verilog outputs
+      echo "---docker exec $container_name"
+
       docker exec $container_name /bin/bash -c \
         '# Func to check python package creds (Added 02/2021 as part of cst vetting)
          # (Single-quote regime)
@@ -112,18 +115,21 @@ else
          source /aha/bin/activate; # Set up the build environment
 
          if [ $interconnect_only == True ]; then
+           echo --- INTERCONNECT_ONLY: aha garnet $flags
            aha garnet $flags; # Here is where we build the verilog for the main chip
            cd garnet
            cp garnet.v design.v
          elif [ $glb_only == True ]; then
            cd garnet
 
+           echo --- GLB_ONLY: make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
            make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
            cp global_buffer/global_buffer.sv design.v
            cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
          else
+           echo --- DEFAULT: aha garnet $flags
            # Rename output verilog, final name must be 'design.v'
            aha garnet $flags; # Here is where we build the verilog for the main chip
            cd garnet
@@ -139,7 +145,7 @@ else
            cat global_controller/systemRDL/output/*.sv >> design.v
          fi"
 
-
+      set -x
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       if [ $glb_only == True ]; then
@@ -164,6 +170,7 @@ else
           cp mflowgen-run.log /tmp/log.${which_image}.deleteme$$
           set +x
       fi
+      set +x
 
     # Else we want to use local python env to generate rtl
     else
