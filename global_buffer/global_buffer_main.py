@@ -1,5 +1,4 @@
 import argparse
-from global_buffer.design.glb_core import GlbCore
 from global_buffer.design.glb_tile import GlbTile
 from global_buffer.design.global_buffer import GlobalBuffer
 from global_buffer.design.global_buffer_parameter import gen_global_buffer_params, gen_header_files
@@ -41,6 +40,8 @@ def main():
                                       glb_tile_mem_size=args.glb_tile_mem_size)
 
     glb = GlobalBuffer(_params=params)
+    # glb_tile = GlbTile(_params=params)
+    # k.verilog(glb_tile, filename=os.path.join(garnet_home, "global_buffer", "global_buffer.sv"))
 
     if args.parameter:
         gen_param_header(top_name="global_buffer_param",
