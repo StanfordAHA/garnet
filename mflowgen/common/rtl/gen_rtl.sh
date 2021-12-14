@@ -145,6 +145,7 @@ else
            cat global_controller/systemRDL/output/*.sv >> design.v
          fi"
 
+      echo +++ docker cleanup
       set -x
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
