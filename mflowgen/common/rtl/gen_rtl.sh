@@ -38,30 +38,51 @@ else
       # install the aha wrapper script
       pip install -e .
 
-
-      echo "--- Docker cleanup BEFORE"
-      docker images
-      docker ps
-
-
-      printf "\nDocker cleanup PRUNE (old)"
-
+      echo "--- Docker pre-cleaning"
+      docker images; echo ""
+      docker ps    ; echo ""
 
       # Prune docker images ("yes" emits endless stream of y's)
+      echo ""; echo "Docker cleanup PRUNE (old)"
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
 
+      echo ""; echo "After pruning:"; echo ""
+      docker images; echo ""
+      docker ps    ; echo ""
+
+      echo ""; echo "# 1. Find untagged docker images"; echo ""
+      untagged_images=`docker images | grep "<none>" | awk '{print $3}'`
+      if [ "$untagged_images" ]; then echo "Found untagged images $untagged_images"; echo ""; fi
+
+      echo ""; echo "# 2. Find and kill jobs associated with image"; echo ""
+      for ui in $untagged_images; do
+          echo "================================================================"
+          echo docker ps --filter "id=$ui"
+          docker ps --filter "id=$ui"
+          echo ""
+          untagged_jobs=`docker ps --filter "id=$ui" -q`
+          echo docker kill $untagged_jobs
+          docker kill $untagged_jobs
+
+          # Now that jobs are dead, can delete untagged image
+          echo docker rmi $ui
+          docker rmi $ui
+
+          echo "================================================================"
+      done
+
+      echo ""; echo "# Untagged jobs AFTER"; echo ""
+
+
+#       printf "\nDocker cleanup (new)\n"
+#       docker images | grep "<none>" | awk '{print $3}' | xargs echo docker rmi
+#       docker images | grep "<none>" | awk '{print $3}' | xargs docker rmi
+# 
+#       printf "\nDocker cleanup AFTER\n"
       docker images
       docker ps
 
-      printf "\nDocker cleanup (new)"
-      docker images | grep "<none>" | awk '{print $3}' | xargs echo docker rmi
-      docker images | grep "<none>" | awk '{print $3}' | xargs docker rmi
-
-      printf "\nDocker cleanup AFTER"
-      docker images
-      docker ps
-
-      printf "\nDocker cleanup DONE\n"
+      echo ""; echo "# Docker cleanup DONE"; echo ""
 
       echo "--- Continue..."
 
