@@ -231,7 +231,7 @@ program glb_test (
                         end else if (kernels[j].type_ == F2G) begin
                             f2g_run(kernels[j].tile_id, kernels[j].total_cycle);
                         end else if (kernels[j].type_ == PCFG) begin
-                            pcfg_run(kernels[j].tile_id, kernels[j].total_cycle);
+                            pcfg_run(kernels[j].tile_id, kernels[j].total_cycle, kernels[j].data64_arr_out);
                         end
                     join_none
                 end
@@ -262,6 +262,8 @@ program glb_test (
             end else if (kernels[i].type_ == F2G) begin
                 proc_read_burst(kernels[i].start_addr, kernels[i].data64_arr_out);
                 $display("F2G Comparison");
+                err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
+            end else if (kernels[i].type_ == PCFG) begin
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end
             repeat (10) @(posedge clk);
@@ -724,7 +726,10 @@ program glb_test (
         #(`CLK_PERIOD * 0.3) pcfg_start_pulse <= 0;
     endtask
 
-    task automatic pcfg_run(input int tile_id, int total_cycle);
+    task automatic pcfg_run(
+        input int tile_id, int total_cycle,
+        ref [CGRA_CFG_ADDR_WIDTH + CGRA_CFG_DATA_WIDTH - 1:0] cgra_cfg_out[]);
+        int cnt = 0;
         fork : interrupt_timeout
             begin
                 wait (pcfg_g2f_interrupt_pulse[tile_id]);
@@ -732,6 +737,15 @@ program glb_test (
             begin
                 repeat (total_cycle + 50) @(posedge clk);
                 $display("@%0t: %m ERROR: glb stream pcfg interrupt timeout ", $time);
+            end
+            begin
+                // NOTE: Check the last column
+                forever begin
+                    if (cgra_cfg_g2f_cfg_wr_en[NUM_GLB_TILES-1][CGRA_PER_GLB-1] == 1) begin
+                        cgra_cfg_out[cnt++] = {cgra_cfg_g2f_cfg_addr[NUM_GLB_TILES-1][CGRA_PER_GLB-1], cgra_cfg_g2f_cfg_data[NUM_GLB_TILES-1][CGRA_PER_GLB-1]};
+                    end
+                    @(posedge clk);
+                end
             end
         join_any
         disable fork;
