@@ -179,9 +179,6 @@ class GlbCore(Generator):
 
         self.add_child("glb_core_strm_mux",
                        GlbCoreStrmMux(_params=self._params),
-                       clk=self.clk,
-                       clk_en=self.clk_en,
-                       reset=self.reset,
                        data_g2f_dma=self.strm_data_g2f_dma2mux,
                        data_valid_g2f_dma=self.strm_data_valid_g2f_dma2mux,
                        data_g2f=self.strm_data_g2f,

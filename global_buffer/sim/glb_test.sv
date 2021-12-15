@@ -104,6 +104,7 @@ program glb_test (
             data_network_configure(i, test.data_network_mask[i], $clog2(test.data_network_mask + 1
                                    ) * 2 + latency);
         end
+        glb_stall(test.stall_mask);
 
         foreach (kernels[i]) begin
             if (kernels[i].type_ == WR) begin
@@ -208,6 +209,7 @@ program glb_test (
                                   kernels[i].new_data_stride);
             end
         end
+
         repeat (50) @(posedge clk);
 
         $display("\n---- Test Run ----");
@@ -349,10 +351,10 @@ program glb_test (
         repeat (10) @(posedge clk);
     endtask
 
-    task glb_tile_stall(logic [NUM_GLB_TILES-1:0] tile_sel);
+    task glb_stall(logic [NUM_GLB_TILES-1:0] tile_mask);
 
         $display("Glb tiles are stalled");
-        stall <= tile_sel;
+        stall <= tile_mask;
         repeat (1) @(posedge clk);
 
     endtask
