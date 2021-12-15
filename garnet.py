@@ -315,11 +315,11 @@ class Garnet(Generator):
             {"global.BitIO": BitIO_fc},
         )  
         
-        putil.load_and_link_peak(
-            nodes,
-            pond_header,
-            {"global.Pond": (Pond_fc, True)},
-        ) 
+        #putil.load_and_link_peak(
+        #    nodes,
+        #    pond_header,
+        #    {"global.Pond": (Pond_fc, True)},
+        #) 
 
 
  

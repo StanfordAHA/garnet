@@ -6,7 +6,7 @@ from DagVisitor import Visitor, Transformer
 from hwtypes import Bit, BitVector
 from peak.mapper.utils import Unbound
 from graphviz import Digraph
-import math
+import os, math
 
 class CreateBuses(Visitor):
     def __init__(self, inst_info):
@@ -595,7 +595,7 @@ class CountTiles(Visitor):
 from lassen.sim import PE_fc as lassen_fc
 from metamapper. common_passes import print_dag
 
-def create_netlist_info(dag: Dag, tile_info: dict, load_only = False, id_to_name = None):
+def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, id_to_name = None):
     #gen_dag_img(dag, "dag", None)
     # Extract IO metadata
     # Inline IO tiles
