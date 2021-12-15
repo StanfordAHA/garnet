@@ -2,7 +2,8 @@ typedef enum int {
     WR  = 0,
     RD  = 1,
     G2F = 2,
-    F2G = 3
+    F2G = 3,
+    PCFG = 4
 } stream_type;
 
 typedef logic [CGRA_DATA_WIDTH-1:0] data16[];
@@ -40,6 +41,7 @@ class Test;
     Kernel kernels[];
     bit [NUM_GLB_TILES-1:0] g2f_tile_mask;
     bit [NUM_GLB_TILES-1:0] f2g_tile_mask;
+    bit [NUM_GLB_TILES-1:0] pcfg_tile_mask;
 
     extern function new(string filename);
 endclass
@@ -67,6 +69,7 @@ function Test::new(string filename);
         else if (type_ == "RD") kernels[i].type_ = RD;
         else if (type_ == "G2F") kernels[i].type_ = G2F;
         else if (type_ == "F2G") kernels[i].type_ = F2G;
+        else if (type_ == "PCFG") kernels[i].type_ = PCFG;
         else $error("This type [%s] is not supported", type_);
         void'($fscanf(fd, " %d", dim));
         kernels[i].tile_id = tile_id;
@@ -103,12 +106,15 @@ function Test::new(string filename);
     for (int i = 0; i < num_kernels; i++) begin
         if (kernels[i].type_ == G2F) g2f_tile_mask[kernels[i].tile_id] = 1;
         else if (kernels[i].type_ == F2G) f2g_tile_mask[kernels[i].tile_id] = 1;
+        else if (kernels[i].type_ == PCFG) pcfg_tile_mask[kernels[i].tile_id] = 1;
     end
 
     // Calculate total cycles
     for (int i = 0; i < num_kernels; i++) begin
         if (kernels[i].type_ == G2F || kernels[i].type_ == F2G) begin
             kernels[i].total_cycle = kernels[i].cycle_stride[kernels[i].dim - 1] * kernels[i].extent[kernels[i].dim - 1] + kernels[i].cycle_start_addr;
+        end else if (kernels[i].type_ == PCFG) begin
+            kernels[i].total_cycle = kernels[i].extent[0] / 4;
         end
     end
 
