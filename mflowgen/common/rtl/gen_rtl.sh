@@ -38,8 +38,32 @@ else
       # install the aha wrapper script
       pip install -e .
 
-      # Prune docker images...
+
+      echo "--- Docker cleanup BEFORE"
+      docker images
+      docker ps
+
+
+      printf "\nDocker cleanup PRUNE (old)"
+
+
+      # Prune docker images ("yes" emits endless stream of y's)
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
+
+      docker images
+      docker ps
+
+      printf "\nDocker cleanup (new)"
+      docker images | grep "<none>" | awk '{print $3}' | xargs echo docker rmi
+      docker images | grep "<none>" | awk '{print $3}' | xargs docker rmi
+
+      printf "\nDocker cleanup AFTER"
+      docker images
+      docker ps
+
+      printf "\nDocker cleanup DONE\n"
+
+      echo "--- Continue..."
 
       ##############################################################################
       # steveri 02/2021 - Original code only supported image "latest";
