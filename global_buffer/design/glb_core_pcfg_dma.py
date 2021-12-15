@@ -160,7 +160,7 @@ class GlbCorePcfgDma(Generator):
                   self.rdrs_packet_rd_data_r[self._params.cgra_cfg_data_width - 1, 0])
 
     def add_pcfg_dma_done_pulse_pipeline(self):
-        maximum_latency = 3 * self._params.num_glb_tiles + self.default_latency
+        maximum_latency = 3 * self._params.num_glb_tiles + self.default_latency + 6
         latency_width = clog2(maximum_latency)
         self.done_pulse_d_arr = self.var("done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.done_pulse_pipeline = Pipeline(width=1,
