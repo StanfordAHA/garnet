@@ -68,9 +68,9 @@ class GlobalBufferParams:
 
     # pipeline depth
     glb_switch_pipeline_depth: int = 1  # fixed
-    glb_bank_memory_pipeline_depth: int = 1
-    sram_gen_pipeline_depth: int = 2
-    sram_gen_output_pipeline_depth: int = 1
+    glb_bank_memory_pipeline_depth: int = 0
+    sram_gen_pipeline_depth: int = 0
+    sram_gen_output_pipeline_depth: int = 0
 
     is_sram_stub: int = 0
 
@@ -99,9 +99,9 @@ def gen_global_buffer_params(**kwargs):
     max_stride_width = kwargs.pop('max_stride_width', 10)
     queue_depth = kwargs.pop('queue_depth', 1)
     loop_level = kwargs.pop('loop_level', 5)
-    glb_bank_memory_pipeline_depth = kwargs.pop('glb_bank_memory_pipeline_depth', 1)
-    sram_gen_pipeline_depth = kwargs.pop('sram_gen_pipeline_depth', 2)
-    sram_gen_output_pipeline_depth = kwargs.pop('sram_gen_output_pipeline_depth', 1)
+    glb_bank_memory_pipeline_depth = kwargs.pop('glb_bank_memory_pipeline_depth', 0)
+    sram_gen_pipeline_depth = kwargs.pop('sram_gen_pipeline_depth', 0)
+    sram_gen_output_pipeline_depth = kwargs.pop('sram_gen_output_pipeline_depth', 0)
     is_sram_stub = kwargs.pop('is_sram_stub', 0)
 
     # Check if there is unused kwargs
