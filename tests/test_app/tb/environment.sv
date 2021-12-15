@@ -225,7 +225,7 @@ task Environment::kernel_test(Kernel kernel);
     foreach (kernel.output_size[i]) begin
         total_output_size += kernel.output_size[i];
     end
-    $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size * 2);
+    $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size);
 
     latency = end_time - g2f_end_time;
     $display("[%s] The latency is %0t.", kernel.name, latency);
