@@ -62,11 +62,14 @@ else
           echo ""
           untagged_jobs=`docker ps --filter "ancestor=$ui" -q`
           for uj in $untagged_jobs; do
-              echo docker kill $uj
+              echo -n "docker kill $uj ... "
                    docker kill $uj
           done
 
-          # Now that jobs are dead, can delete untagged image
+          # Wait a couple seconds for last job to die
+          sleep 10
+
+          echo ""; echo "# Now that jobs are dead, can delete untagged image"
           echo docker rmi $ui
                docker rmi $ui
 
