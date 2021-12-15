@@ -42,6 +42,7 @@ class Test;
     bit [NUM_GLB_TILES-1:0] g2f_tile_mask;
     bit [NUM_GLB_TILES-1:0] f2g_tile_mask;
     bit [NUM_GLB_TILES-1:0] pcfg_tile_mask;
+    bit [NUM_GLB_TILES-1:0] stall_mask;
 
     extern function new(string filename);
 endclass
@@ -115,6 +116,17 @@ function Test::new(string filename);
             kernels[i].total_cycle = kernels[i].cycle_stride[kernels[i].dim - 1] * kernels[i].extent[kernels[i].dim - 1] + kernels[i].cycle_start_addr;
         end else if (kernels[i].type_ == PCFG) begin
             kernels[i].total_cycle = kernels[i].extent[0] / 4;
+        end
+    end
+
+    // Calculate stall
+    stall_mask = {NUM_GLB_TILES{1'b1}};
+    for (int i = 0; i < num_kernels; i++) begin
+        stall_mask[kernels[i].tile_id] = 1'b0;
+    end
+    for (int i = 0; i < NUM_GLB_TILES; i++) begin
+        if (data_network_mask[i] == 1'b1) begin
+            stall_mask[i + 1] = 1'b0;
         end
     end
 
