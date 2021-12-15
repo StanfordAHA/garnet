@@ -57,32 +57,25 @@ else
       echo ""; echo "# 2. Find and kill jobs associated with image"; echo ""
       for ui in $untagged_images; do
           echo "================================================================"
-          echo docker ps --filter "id=$ui"
-          docker ps --filter "id=$ui"
+          echo docker ps --filter "ancestors=$ui"
+               docker ps --filter "ancestors=$ui"
           echo ""
-          untagged_jobs=`docker ps --filter "id=$ui" -q`
-          echo docker kill $untagged_jobs
-          docker kill $untagged_jobs
+          untagged_jobs=`docker ps --filter "ancestors=$ui" -q`
+          for uj in $untagged_jobs; do
+              echo docker kill $uj
+                   docker kill $uj
+          done
 
           # Now that jobs are dead, can delete untagged image
           echo docker rmi $ui
-          docker rmi $ui
+               docker rmi $ui
 
           echo "================================================================"
       done
 
-      echo ""; echo "# Untagged jobs AFTER"; echo ""
-
-
-#       printf "\nDocker cleanup (new)\n"
-#       docker images | grep "<none>" | awk '{print $3}' | xargs echo docker rmi
-#       docker images | grep "<none>" | awk '{print $3}' | xargs docker rmi
-# 
-#       printf "\nDocker cleanup AFTER\n"
+      echo ""; echo "# Untagged jobs AFTER pre-cleaning"; echo ""
       docker images
       docker ps
-
-      echo ""; echo "# Docker cleanup DONE"; echo ""
 
       echo "--- Continue..."
 
