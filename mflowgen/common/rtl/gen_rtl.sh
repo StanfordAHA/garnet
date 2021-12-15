@@ -57,10 +57,10 @@ else
       echo ""; echo "# 2. Find and kill jobs associated with image"; echo ""
       for ui in $untagged_images; do
           echo "================================================================"
-          echo docker ps --filter "ancestors=$ui"
-               docker ps --filter "ancestors=$ui"
+          echo docker ps --filter "ancestor=$ui"
+               docker ps --filter "ancestor=$ui"
           echo ""
-          untagged_jobs=`docker ps --filter "ancestors=$ui" -q`
+          untagged_jobs=`docker ps --filter "ancestor=$ui" -q`
           for uj in $untagged_jobs; do
               echo docker kill $uj
                    docker kill $uj
