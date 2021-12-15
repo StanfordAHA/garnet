@@ -379,7 +379,7 @@ class GlbCoreLoadDma(Generator):
                                                    + self.default_latency + 1])
 
     def add_ld_dma_done_pulse_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 3
+        maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 1
         latency_width = clog2(maximum_latency)
         self.ld_dma_done_pulse_d_arr = self.var(
             "ld_dma_done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
@@ -395,4 +395,4 @@ class GlbCoreLoadDma(Generator):
                        out_=self.ld_dma_done_pulse_d_arr)
         self.wire(self.ld_dma_done_pulse,
                   self.ld_dma_done_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width)
-                                               + self.default_latency + 3])
+                                               + self.default_latency + 1])

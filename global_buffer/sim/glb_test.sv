@@ -90,12 +90,18 @@ program glb_test (
         int err = 0;
         int i_addr = 0;
         int i_extent[LOOP_LEVEL];
+        int latency;
         int data_cnt = 0;
         bit done = 0;
         Kernel kernels[] = test.kernels;
 
         for (int i = 0; i < NUM_GLB_TILES; i++) begin
-            data_network_configure(i, test.data_network_mask[i], test.data_network_mask[i] * 4);
+            if (test.data_network_mask == 0) begin
+                latency = 0;
+            end else begin
+                latency = 6;
+            end
+            data_network_configure(i, test.data_network_mask[i], $clog2(test.data_network_mask + 1) * 2 + latency);
         end
 
         foreach (kernels[i]) begin
