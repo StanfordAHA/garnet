@@ -78,6 +78,8 @@ class GlbCoreProcRouter(Generator):
     def rdrs_switch_logic(self):
         if self.rdrs_packet_sw2pr['rd_data_valid'] == 1:
             self.rdrs_packet_w2e_esto_w = self.rdrs_packet_sw2pr
+        elif self.rdrs_packet_w2e_wsti['rd_data_valid'] == 1:
+            self.rdrs_packet_w2e_esto_w = self.rdrs_packet_w2e_wsti
         else:
             self.rdrs_packet_w2e_esto_w = 0
         if self.rdrs_packet_e2w_esti['rd_data_valid'] == 1:
