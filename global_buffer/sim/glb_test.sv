@@ -730,10 +730,10 @@ program glb_test (
                 $display("@%0t: %m ERROR: glb stream pcfg interrupt timeout ", $time);
             end
             begin
-                // NOTE: Check the last column
                 forever begin
-                    if (cgra_cfg_g2f_cfg_wr_en[NUM_GLB_TILES-1][CGRA_PER_GLB-1] == 1) begin
-                        cgra_cfg_out[cnt++] = {cgra_cfg_g2f_cfg_addr[NUM_GLB_TILES-1][CGRA_PER_GLB-1], cgra_cfg_g2f_cfg_data[NUM_GLB_TILES-1][CGRA_PER_GLB-1]};
+                    // Check the second column
+                    if (cgra_cfg_g2f_cfg_wr_en[tile_id][CGRA_PER_GLB-1] == 1) begin
+                        cgra_cfg_out[cnt++] = {cgra_cfg_g2f_cfg_addr[tile_id][CGRA_PER_GLB-1], cgra_cfg_g2f_cfg_data[tile_id][CGRA_PER_GLB-1]};
                     end
                     @(posedge clk);
                 end
