@@ -44,8 +44,8 @@ def construct():
     # glb tile memory size (unit: KB)
     'use_container' : False,
     'glb_tile_mem_size' : 256,
-    'rtl_testvectors' : ["test1", "test2", "test3", "test4", "test5", "test6"],
-    'gls_testvectors' : ["test1-pwr", "test2-pwr"]
+    'rtl_testvectors' : ["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9"],
+    'gls_testvectors' : ["test1", "test2"]
   }
 
   #-----------------------------------------------------------------------
