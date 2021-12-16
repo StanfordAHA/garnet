@@ -163,17 +163,10 @@ class GlbTileCfg(Generator):
         self.wire(self.if_cfg_wst_s, self.glb_tile_cfg_ctrl.if_cfg_wst_s)
         self.wire(self.if_cfg_est_m, self.glb_tile_cfg_ctrl.if_cfg_est_m)
 
-        self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_address'],
-                  self.glb_tile_cfg_ctrl.h2d_pio_dec_address)
-        self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_write_data'],
-                  self.glb_tile_cfg_ctrl.h2d_pio_dec_write_data)
-        self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_write'],
-                  self.glb_tile_cfg_ctrl.h2d_pio_dec_write)
-        self.wire(
-            self.glb_pio_wrapper.ports['h2d_pio_dec_read'], self.glb_tile_cfg_ctrl.h2d_pio_dec_read)
-        self.wire(self.glb_pio_wrapper.ports['d2h_dec_pio_read_data'],
-                  self.glb_tile_cfg_ctrl.d2h_dec_pio_read_data)
-        self.wire(self.glb_pio_wrapper.ports['d2h_dec_pio_ack'],
-                  self.glb_tile_cfg_ctrl.d2h_dec_pio_ack)
-        self.wire(self.glb_pio_wrapper.ports['d2h_dec_pio_nack'],
-                  self.glb_tile_cfg_ctrl.d2h_dec_pio_nack)
+        self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_address'], self.glb_tile_cfg_ctrl.h2d_pio_dec_address)
+        self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_write_data'], self.glb_tile_cfg_ctrl.h2d_pio_dec_write_data)
+        self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_write'], self.glb_tile_cfg_ctrl.h2d_pio_dec_write)
+        self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_read'], self.glb_tile_cfg_ctrl.h2d_pio_dec_read)
+        self.wire(self.glb_pio_wrapper.ports['d2h_dec_pio_read_data'], self.glb_tile_cfg_ctrl.d2h_dec_pio_read_data)
+        self.wire(self.glb_pio_wrapper.ports['d2h_dec_pio_ack'], self.glb_tile_cfg_ctrl.d2h_dec_pio_ack)
+        self.wire(self.glb_pio_wrapper.ports['d2h_dec_pio_nack'], self.glb_tile_cfg_ctrl.d2h_dec_pio_nack)

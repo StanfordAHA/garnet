@@ -18,10 +18,8 @@ class GlbTileCfgCtrl(Generator):
         self.glb_tile_id = self.input("glb_tile_id", _params.tile_sel_addr_width)
 
         # config port
-        self.if_cfg_wst_s = self.interface(
-            config.slave, "if_cfg_wst_s", is_port=True)
-        self.if_cfg_est_m = self.interface(
-            config.master, "if_cfg_est_m", is_port=True)
+        self.if_cfg_wst_s = self.interface(config.slave, "if_cfg_wst_s", is_port=True)
+        self.if_cfg_est_m = self.interface(config.master, "if_cfg_est_m", is_port=True)
 
         self.h2d_pio_dec_write_data = self.output("h2d_pio_dec_write_data", _params.axi_data_width)
         self.h2d_pio_dec_address = self.output("h2d_pio_dec_address", _params.axi_addr_reg_width)
@@ -110,8 +108,6 @@ class GlbTileCfgCtrl(Generator):
         if self.reset:
             self.rd_data_valid_internal = 0
             self.rd_data_internal = 0
-        # TODO: Do we really need rd_en_d2 check?
-        # Isn't d2h_dec_pio_ack/nack enough?
         elif (self.rd_en_d2 == 1) & (self.d2h_dec_pio_ack | self.d2h_dec_pio_nack):
             self.rd_data_valid_internal = 1
             self.rd_data_internal = self.d2h_dec_pio_read_data
