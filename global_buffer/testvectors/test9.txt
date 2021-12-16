@@ -1,5 +1,5 @@
 // Test parallel configuration
-1
+2
 00
 PCFG 0 0 0 0
 1
@@ -7,3 +7,9 @@ PCFG 0 0 0 0
 1
 1
 testvectors/4096_v0.dat
+PCFG 1 2 0 0
+1
+4096
+1
+1
+testvectors/4096_v1.dat
