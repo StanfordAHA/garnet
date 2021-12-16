@@ -406,7 +406,7 @@ program glb_test (
     endtask
 
     task automatic sram_read(input bit [GLB_ADDR_WIDTH-1:0] addr, ref int data);
-        int read_delay = 50;
+        int read_delay = 40;
         fork 
             begin
                 if_sram_cfg_rd_en <= 1;
@@ -425,7 +425,7 @@ program glb_test (
         join
         if_sram_cfg_rd_en <= 0;
         if_sram_cfg_rd_addr <= 0;
-        repeat(4) @(posedge clk);
+        repeat(20) @(posedge clk);
     endtask
 
     task automatic data_network_configure(input int tile_id, bit is_connected,
