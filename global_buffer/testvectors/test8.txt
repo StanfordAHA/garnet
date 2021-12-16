@@ -1,14 +1,15 @@
+// Test chaining of tile0 and tile1. rdrq accesses both bank1 and bank2
 2
-01
-G2F 0 1 131000 0
+11
+G2F 1 1 131000 0
 1
 4096
 1
 1
-testvectors/in_4096.dat
+testvectors/4096_v0.dat
 F2G 0 3 0 130
 2
 62 62
 1 64
 1 62
-testvectors/out_3844.dat
+testvectors/3844_v0.dat
