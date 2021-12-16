@@ -54,14 +54,16 @@ class GlbHeader():
         self.packet_list = self.wr_packet_list + self.rdrq_packet_list + self.rdrs_packet_list
         self.rd_packet_list = self.rdrq_packet_list + self.rdrs_packet_list
 
-        self.packet_t = PackedStruct(
-            "packet_t", self.wr_packet_list + self.rdrq_packet_list + self.rdrs_packet_list)
-        self.rd_packet_t = PackedStruct(
-            "rd_packet_t", self.rdrq_packet_list + self.rdrs_packet_list)
+        self.wr_packet_t = PackedStruct("wr_packet_t", self.wr_packet_list)
         self.rdrq_packet_t = PackedStruct("rdrq_packet_t", self.rdrq_packet_list)
         self.rdrs_packet_t = PackedStruct("rdrs_packet_t", self.rdrs_packet_list)
-
-        self.wr_packet_t = PackedStruct("wr_packet_t", self.wr_packet_list)
+        self.packet_t = PackedStruct("packet_t")
+        self.packet_t.add_attribute("wr", self.wr_packet_t)
+        self.packet_t.add_attribute("rdrq", self.rdrq_packet_t)
+        self.packet_t.add_attribute("rdrs", self.rdrs_packet_t)
+        self.rd_packet_t = PackedStruct("rd_packet_t")
+        self.rd_packet_t.add_attribute("rdrq", self.rdrq_packet_t)
+        self.rd_packet_t.add_attribute("rdrs", self.rdrs_packet_t)
 
         # NOTE: Kratos currently does not support struct of struct.
         # This can become cleaner if it does.
