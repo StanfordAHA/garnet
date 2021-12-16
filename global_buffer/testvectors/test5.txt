@@ -1,8 +1,9 @@
+// Test G2F. data start addr, cycle start addr are non-zero.
 1
 00
-F2G 0 0 2 0
+G2F 0 0 2 2
 2
 64 64
 1 65
 1 64
-testvectors/out_4096.dat
+testvectors/4096_v0.dat

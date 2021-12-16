@@ -40,16 +40,14 @@ TB_FILES ?= -F sim/tb_global_buffer.f
 # -------------------------------------------------------------------
 
 GENERATE_TV = \
-    python testvectors/gen_glb_test.py --data testvectors/in_32.dat --num 32 --seed 1; \
-    python testvectors/gen_glb_test.py --data testvectors/out_32.dat --num 32 --seed 2; \
-    python testvectors/gen_glb_test.py --data testvectors/in_128.dat --num 128 --seed 3; \
-    python testvectors/gen_glb_test.py --data testvectors/out_128.dat --num 128 --seed 4; \
-    python testvectors/gen_glb_test.py --data testvectors/in_4096.dat --num 4096 --seed 5; \
-    python testvectors/gen_glb_test.py --data testvectors/in2_4096.dat --num 4096 --seed 6; \
-    python testvectors/gen_glb_test.py --data testvectors/out_3844.dat --num 3844 --seed 7; \
-    python testvectors/gen_glb_test.py --data testvectors/out_4096.dat --num 4096 --seed 8; \
-    python testvectors/gen_glb_test.py --data testvectors/out2_4096.dat --num 4096 --seed 9; \
-    python testvectors/gen_glb_test.py --data testvectors/14400.dat --num 14400 --seed 10;
+    python testvectors/gen_glb_test.py --data testvectors/512_v0.dat --num 512 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num 512 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/4096_v0.dat --num 4096 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/4096_v1.dat --num 4096 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/4096_v2.dat --num 4096 --seed 2; \
+    python testvectors/gen_glb_test.py --data testvectors/4096_v3.dat --num 4096 --seed 3; \
+    python testvectors/gen_glb_test.py --data testvectors/3844_v0.dat --num 3844 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/14400.dat --num 14400 --seed 0;
 
 XRUN = xrun \
 	   -64bit \
