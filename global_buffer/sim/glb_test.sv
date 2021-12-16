@@ -298,7 +298,7 @@ program glb_test (
             end
         end
         for (int i = 1; i <= max_num_test; i++) begin
-            $sformat(test_name, "test%0d-pwr", i);
+            $sformat(test_name, "test%0d.pwr", i);
             if (($test$plusargs(test_name))) begin
                 $display("\n************** Test Start *****************");
                 $sformat(test_filename, "./testvectors/%s.txt", test_name);
