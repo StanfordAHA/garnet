@@ -54,10 +54,13 @@ function Test::new(string filename);
     int tmp_start_addr, tmp_cycle_start_addr;
     string cycle_stride_s, extent_s, data_stride_s, tmp_s;
     string new_cycle_stride_s, new_extent_s, new_data_stride_s, new_tmp_s;
+    string line;
 
     $display("\n---- Test Initialization ----");
     if (fd) $display("Test file open %s", filename);
     else $error("Cannot open %s", filename);
+    // Skip the first line
+    void'($fgets(line, fd));
     void'($fscanf(fd, " %d", num_kernels));
     void'($fscanf(fd, " %b", data_network_mask));
     kernels = new[num_kernels];

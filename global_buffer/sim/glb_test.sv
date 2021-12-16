@@ -297,17 +297,6 @@ program glb_test (
                 $display("************** Test End *****************\n");
             end
         end
-        for (int i = 1; i <= max_num_test; i++) begin
-            $sformat(test_name, "test%0d.pwr", i);
-            if (($test$plusargs(test_name))) begin
-                $display("\n************** Test Start *****************");
-                $sformat(test_filename, "./testvectors/%s.txt", test_name);
-                test = new(test_filename);
-                init_test();
-                run_test(test);
-                $display("************** Test End *****************\n");
-            end
-        end
     end
 
     task initialize();
