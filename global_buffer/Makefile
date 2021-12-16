@@ -24,7 +24,7 @@ GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
 RUN_ARGS ?= +test1 +test2 +test3 +test4 +test5 +test6 +test7 +test8 +test9
-RUN_ARGS += +MAX_NUM_TEST=10
+RUN_ARGS += +MAX_NUM_TEST=9
 RUN_ARGS += +DEBUG
 
 RUN_LOG ?= run.log
@@ -46,8 +46,7 @@ GENERATE_TV = \
     python testvectors/gen_glb_test.py --data testvectors/4096_v1.dat --num 4096 --seed 1; \
     python testvectors/gen_glb_test.py --data testvectors/4096_v2.dat --num 4096 --seed 2; \
     python testvectors/gen_glb_test.py --data testvectors/4096_v3.dat --num 4096 --seed 3; \
-    python testvectors/gen_glb_test.py --data testvectors/3844_v0.dat --num 3844 --seed 0; \
-    python testvectors/gen_glb_test.py --data testvectors/14400.dat --num 14400 --seed 0;
+    python testvectors/gen_glb_test.py --data testvectors/3844_v0.dat --num 3844 --seed 0;
 
 XRUN = xrun \
 	   -64bit \
