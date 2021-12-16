@@ -117,10 +117,15 @@ module top;
     end
 
     // reset generation
-    initial begin
+    task automatic assert_reset();
         reset <= 1;
         repeat (10) @(posedge clk);
         reset <= 0;
+        repeat (10) @(posedge clk);
+    endtask
+
+    initial begin
+        assert_reset();
     end
 
     // instantiate test

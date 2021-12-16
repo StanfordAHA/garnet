@@ -1,9 +1,9 @@
 // Test Sram configuration
 1
 00
-SRAM 0 0 0 0
+SRAM 0 4 0 0
 1
-4096
+512
 1
 1
-testvectors/4096_v0.dat
+testvectors/512_v0.dat
