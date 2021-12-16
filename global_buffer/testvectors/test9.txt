@@ -1,15 +1,9 @@
-// Test parallel configuration
-2
+// Test Sram configuration
+1
 00
-PCFG 0 0 0 0
+SRAM 0 0 0 0
 1
 4096
 1
 1
 testvectors/4096_v0.dat
-PCFG 1 2 0 0
-1
-4096
-1
-1
-testvectors/4096_v1.dat

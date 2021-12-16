@@ -3,7 +3,8 @@ typedef enum int {
     RD  = 1,
     G2F = 2,
     F2G = 3,
-    PCFG = 4
+    PCFG = 4,
+    SRAM = 5
 } stream_type;
 
 typedef logic [CGRA_DATA_WIDTH-1:0] data16[];
@@ -74,6 +75,7 @@ function Test::new(string filename);
         else if (type_ == "G2F") kernels[i].type_ = G2F;
         else if (type_ == "F2G") kernels[i].type_ = F2G;
         else if (type_ == "PCFG") kernels[i].type_ = PCFG;
+        else if (type_ == "SRAM") kernels[i].type_ = SRAM;
         else $error("This type [%s] is not supported", type_);
         void'($fscanf(fd, " %d", dim));
         kernels[i].tile_id = tile_id;
@@ -125,7 +127,10 @@ function Test::new(string filename);
     // Calculate stall
     stall_mask = {NUM_GLB_TILES{1'b1}};
     for (int i = 0; i < num_kernels; i++) begin
-        stall_mask[kernels[i].tile_id] = 1'b0;
+        // For SRAM configuration test, we can still stall tiles
+        if (kernels[i].type_ != SRAM) begin
+            stall_mask[kernels[i].tile_id] = 1'b0;
+        end
     end
     for (int i = 0; i < NUM_GLB_TILES; i++) begin
         if (data_network_mask[i] == 1'b1) begin
