@@ -62,6 +62,7 @@ function Test::new(string filename);
     else $error("Cannot open %s", filename);
     // Skip the first line
     void'($fgets(line, fd));
+    $display("[Description] %s", line);
     void'($fscanf(fd, " %d", num_kernels));
     void'($fscanf(fd, " %b", data_network_mask));
     kernels = new[num_kernels];

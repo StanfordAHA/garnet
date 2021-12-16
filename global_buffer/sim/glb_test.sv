@@ -69,13 +69,8 @@ program glb_test (
 
     task automatic init_test();
         // Initialize global buffer configuration registers
-        for (int i = 0; i < NUM_GLB_TILES; i++) begin
-            g2f_dma_configure(i, 0, 0, 0, LOOP_LEVEL, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}},
-                              '{LOOP_LEVEL{0}});
-            f2g_dma_configure(i, 0, 0, 0, LOOP_LEVEL, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}},
-                              '{LOOP_LEVEL{0}});
-            pcfg_dma_configure(i, 0, 0, 0);
-        end
+        $root.top.assert_reset();
+
         for (int i = 0; i < NUM_GLB_TILES; i++) begin
             void'($root.top.cgra.glb2prr_off(i));
             void'($root.top.cgra.prr2glb_off(i));
@@ -93,16 +88,33 @@ program glb_test (
         int latency;
         int data_cnt = 0;
         bit done = 0;
+        int num_chained_prev = 0;
+        int num_chained_next = 0;
+
         Kernel kernels[] = test.kernels;
 
-        for (int i = 0; i < NUM_GLB_TILES; i++) begin
-            if (test.data_network_mask == 0) begin
-                latency = 0;
-            end else begin
-                latency = 6;
+        if (test.data_network_mask != 0) begin
+            foreach (kernels[i]) begin
+                num_chained_prev = 0;
+                num_chained_next = 0;
+                for (int j = kernels[i].tile_id; j <= NUM_GLB_TILES; j++) begin
+                    if (test.data_network_mask[j] == 1) begin
+                        num_chained_next++;
+                    end else begin
+                        break;
+                    end
+                end
+                for (int j = kernels[i].tile_id - 1; j >= 0; j--) begin
+                    if (test.data_network_mask[j] == 1) begin
+                        num_chained_prev++;
+                    end else begin
+                        break;
+                    end
+                end
+                for (int j = kernels[i].tile_id - num_chained_prev; j < kernels[i].tile_id + num_chained_next; j++) begin
+                    data_network_configure(j, 1, (num_chained_prev + num_chained_next) * 2 + 6);
+                end
             end
-            data_network_configure(i, test.data_network_mask[i], $clog2(test.data_network_mask + 1
-                                   ) * 2 + latency);
         end
         glb_stall(test.stall_mask);
 
@@ -394,7 +406,7 @@ program glb_test (
     endtask
 
     task automatic sram_read(input bit [GLB_ADDR_WIDTH-1:0] addr, ref int data);
-        int read_delay = 30;
+        int read_delay = 50;
         fork 
             begin
                 if_sram_cfg_rd_en <= 1;
@@ -424,18 +436,22 @@ program glb_test (
 
     task automatic pcfg_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
                                       [AXI_DATA_WIDTH-1:0] num_word);
-        if (on == 1) begin
-            glb_cfg_write(
-                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_CTRL_R,
-                (1 << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
-        end else begin
-            glb_cfg_write(
-                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_CTRL_R, 0);
-        end
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_CTRL_R,
+            (on << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_CTRL_R,
+            (on << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_HEADER_START_ADDR_R,
             (start_addr << `GLB_PCFG_DMA_HEADER_START_ADDR_START_ADDR_F_LSB));
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_HEADER_START_ADDR_R,
+            (start_addr << `GLB_PCFG_DMA_HEADER_START_ADDR_START_ADDR_F_LSB));
         glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_HEADER_NUM_CFG_R,
+            (num_word << `GLB_PCFG_DMA_HEADER_NUM_CFG_NUM_CFG_F_LSB));
+        glb_cfg_read(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_HEADER_NUM_CFG_R,
             (num_word << `GLB_PCFG_DMA_HEADER_NUM_CFG_NUM_CFG_F_LSB));
     endtask
@@ -444,77 +460,105 @@ program glb_test (
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
                                      int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
                                      int data_stride[LOOP_LEVEL]);
-        if (on == 1) begin
-            glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
-                          ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
-                        | (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB)
-                        | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
-        end else begin
-            glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
-                          0);
-        end
-
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
+                        ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
+                    | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
+                    | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+        glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
+                        ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
+                    | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
+                    | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
-
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
+            (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_R,
             (cycle_start_addr << `GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_CYCLE_START_ADDR_F_LSB));
-
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_R,
+            (cycle_start_addr << `GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_CYCLE_START_ADDR_F_LSB));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_DIM_R,
             (dim << `GLB_LD_DMA_HEADER_0_DIM_DIM_F_LSB));
-
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_DIM_R,
+            (dim << `GLB_LD_DMA_HEADER_0_DIM_DIM_F_LSB));
         // NOTE: Each stride/range address difference is 'h4
         for (int i = 0; i < dim; i++) begin
             glb_cfg_write(
                 (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_RANGE_0_R + i * 'h4,
                 (extent[i] << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+            glb_cfg_read(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_RANGE_0_R + i * 'h4,
+                (extent[i] << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
             glb_cfg_write(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
+                (data_stride[i] << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+            glb_cfg_read(
                 (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
                 (data_stride[i] << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
             glb_cfg_write(
                 (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'h4,
                 (cycle_stride[i] << `GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
+            glb_cfg_read(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'h4,
+                (cycle_stride[i] << `GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
         end
-
     endtask
 
     task automatic f2g_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
                                      int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
                                      int data_stride[LOOP_LEVEL]);
-        if (on == 1) begin
-            glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
-                          ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
-                        | (1 << `GLB_ST_DMA_CTRL_MODE_F_LSB)
-                        | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
-        end else begin
-            glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
-                          0);
-        end
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
+                        ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
+                    | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
+                    | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
+        glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
+                        ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
+                    | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
+                    | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
         glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_START_ADDR_R,
+            (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
+        glb_cfg_read(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
 
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_R,
             (cycle_start_addr << `GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_CYCLE_START_ADDR_F_LSB));
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_R,
+            (cycle_start_addr << `GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_CYCLE_START_ADDR_F_LSB));
 
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_DIM_R,
             (dim << `GLB_ST_DMA_HEADER_0_DIM_DIM_F_LSB));
-
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_DIM_R,
+            (dim << `GLB_ST_DMA_HEADER_0_DIM_DIM_F_LSB));
         // NOTE: Each stride/range address difference is 'h4
         for (int i = 0; i < dim; i++) begin
             glb_cfg_write(
                 (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_RANGE_0_R + i * 'h4,
                 (extent[i] << `GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+            glb_cfg_read(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_RANGE_0_R + i * 'h4,
+                (extent[i] << `GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
             glb_cfg_write(
                 (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
                 (data_stride[i] << `GLB_ST_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+            glb_cfg_read(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
+                (data_stride[i] << `GLB_ST_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
             glb_cfg_write(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'h4,
+                (cycle_stride[i] << `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
+            glb_cfg_read(
                 (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'h4,
                 (cycle_stride[i] << `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
         end
@@ -532,7 +576,7 @@ program glb_test (
         repeat (2) @(posedge clk);
     endtask
 
-    task glb_cfg_read(input [AXI_ADDR_WIDTH-1:0] addr, output [AXI_DATA_WIDTH-1:0] data);
+    task glb_cfg_read(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
         repeat (5) @(posedge clk);
         #(`CLK_PERIOD * 0.3) if_cfg_rd_en <= 1;
         if_cfg_rd_addr <= addr;
@@ -542,11 +586,11 @@ program glb_test (
         fork : glb_cfg_read_timeout
             begin
                 while (1) begin
-                    @(posedge clk);
                     if (if_cfg_rd_data_valid) begin
-                        data = if_cfg_rd_data;
+                        assert(data == if_cfg_rd_data);
                         break;
                     end
+                    @(posedge clk);
                 end
             end
             begin
