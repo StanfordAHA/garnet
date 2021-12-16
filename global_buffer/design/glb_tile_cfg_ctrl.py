@@ -44,16 +44,10 @@ class GlbTileCfgCtrl(Generator):
         self.wr_tile_id_match = self.var("wr_tile_id_match", 1)
         self.rd_tile_id_match = self.var("rd_tile_id_match", 1)
 
-        self.wr_addr_tile_id = self.var("wr_addr_tile_id", _params.tile_sel_addr_width)
-        self.rd_addr_tile_id = self.var("rd_addr_tile_id", _params.tile_sel_addr_width)
+        self.tile_id_lsb = self._params.axi_addr_reg_width + self._params.axi_byte_offset
+        self.tile_id_msb = self.tile_id_lsb + self._params.tile_sel_addr_width - 1
 
-        tile_id_msb = (_params.axi_addr_reg_width
-                       + _params.axi_byte_offset
-                       + _params.tile_sel_addr_width
-                       - 1)
-        tile_id_lsb = _params.axi_addr_reg_width + _params.axi_byte_offset
-        self.add_always(self.tile_id_match,
-                        tile_id_msb=tile_id_msb, tile_id_lsb=tile_id_lsb)
+        self.add_always(self.tile_id_match)
         self.add_always(self.internal_logic)
 
         self.add_always(self.w2e_wr_ifc)
@@ -66,12 +60,9 @@ class GlbTileCfgCtrl(Generator):
         self.wire_outputs()
 
     @always_comb
-    def tile_id_match(self, tile_id_msb, tile_id_lsb):
-        """Check if tile id matches with cfg address"""
-        self.wr_addr_tile_id = self.if_cfg_wst_s.wr_addr[tile_id_msb, tile_id_lsb]
-        self.rd_addr_tile_id = self.if_cfg_wst_s.rd_addr[tile_id_msb, tile_id_lsb]
-        self.wr_tile_id_match = self.glb_tile_id == self.wr_addr_tile_id
-        self.rd_tile_id_match = self.glb_tile_id == self.rd_addr_tile_id
+    def tile_id_match(self):
+        self.wr_tile_id_match = self.glb_tile_id == self.if_cfg_wst_s.wr_addr[self.tile_id_msb, self.tile_id_lsb]
+        self.rd_tile_id_match = self.glb_tile_id == self.if_cfg_wst_s.rd_addr[self.tile_id_msb, self.tile_id_lsb]
 
     @always_comb
     def internal_logic(self):
