@@ -207,6 +207,13 @@ program glb_test (
                                   kernels[i].cycle_start_addr, kernels[i].dim,
                                   kernels[i].new_extent, kernels[i].new_cycle_stride,
                                   kernels[i].new_data_stride);
+            end else if (kernels[i].type_ == SRAM) begin
+                kernels[i].data_arr = new[kernels[i].extent[0]];
+                kernels[i].data_arr_out = new[kernels[i].extent[0]];
+                $readmemh(kernels[i].filename, kernels[i].data_arr);
+                // Since data is in 16bit word, we have to convert it to 64bit data array
+                kernels[i].data64_arr = convert_16b_to_64b(kernels[i].data_arr);
+                kernels[i].data64_arr_out = new[kernels[i].data64_arr.size()];
             end
         end
 
@@ -234,6 +241,9 @@ program glb_test (
                             f2g_run(kernels[j].tile_id, kernels[j].total_cycle);
                         end else if (kernels[j].type_ == PCFG) begin
                             pcfg_run(kernels[j].tile_id, kernels[j].total_cycle, kernels[j].data64_arr_out);
+                        end else if (kernels[j].type_ == SRAM) begin
+                            sram_write_burst(kernels[j].bank_id, kernels[j].data64_arr);
+                            sram_read_burst(kernels[j].bank_id, kernels[j].data64_arr_out);
                         end
                     join_none
                 end
@@ -266,6 +276,8 @@ program glb_test (
                 $display("F2G Comparison");
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end else if (kernels[i].type_ == PCFG) begin
+                err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
+            end else if (kernels[i].type_ == SRAM) begin
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end
             repeat (10) @(posedge clk);
@@ -346,6 +358,62 @@ program glb_test (
         stall <= tile_mask;
         repeat (1) @(posedge clk);
 
+    endtask
+
+    task automatic sram_write_burst(int bank_id, ref data64 data);
+        int start_addr = (1 << BANK_ADDR_WIDTH) * bank_id;
+        int write_data;
+        for (int i = 0; i < data.size(); i++) begin
+            for (int j = 0; j < 2; j++) begin
+                write_data = data[i][32*j+:32];
+                sram_write(start_addr + (i << BANK_BYTE_OFFSET) + (j << (BANK_BYTE_OFFSET-1)), write_data);
+            end
+        end
+    endtask
+
+    task automatic sram_write(input bit [GLB_ADDR_WIDTH-1:0] addr, int data);
+        if_sram_cfg_wr_en <= 1;
+        if_sram_cfg_wr_addr <= addr;
+        if_sram_cfg_wr_data <= data;
+        repeat(4) @(posedge clk);
+        if_sram_cfg_wr_en <= 0;
+        if_sram_cfg_wr_addr <= 0;
+        if_sram_cfg_wr_data <= 0;
+        repeat(4) @(posedge clk);
+    endtask
+
+    task automatic sram_read_burst(int bank_id, ref data64 data);
+        int start_addr = (1 << BANK_ADDR_WIDTH) * bank_id;
+        int read_data;
+        for (int i = 0; i < data.size(); i++) begin
+            for (int j = 0; j < 2; j++) begin
+                sram_read(start_addr + (i << BANK_BYTE_OFFSET) + (j << (BANK_BYTE_OFFSET-1)), read_data);
+                data[i][32*j+:32] = read_data;
+            end
+        end
+    endtask
+
+    task automatic sram_read(input bit [GLB_ADDR_WIDTH-1:0] addr, ref int data);
+        int read_delay = 30;
+        fork 
+            begin
+                if_sram_cfg_rd_en <= 1;
+                if_sram_cfg_rd_addr <= addr;
+                repeat(read_delay) @(posedge clk);
+            end
+            begin
+                for(int i = 0; i < read_delay; i++) begin
+                    if (if_sram_cfg_rd_data_valid == 1) begin
+                        data = if_sram_cfg_rd_data;
+                        break;
+                    end
+                    @(posedge clk);
+                end
+            end
+        join
+        if_sram_cfg_rd_en <= 0;
+        if_sram_cfg_rd_addr <= 0;
+        repeat(4) @(posedge clk);
     endtask
 
     task automatic data_network_configure(input int tile_id, bit is_connected,
