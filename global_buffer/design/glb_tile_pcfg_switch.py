@@ -18,21 +18,26 @@ class GlbTilePcfgSwitch(Generator):
         self.cgra_cfg_jtag_esto = self.output("cgra_cfg_jtag_esto", self.header.cgra_cfg_t)
         self.cgra_cfg_pcfg_wsti = self.input("cgra_cfg_pcfg_wsti", self.header.cgra_cfg_t)
         self.cgra_cfg_pcfg_esto = self.output("cgra_cfg_pcfg_esto", self.header.cgra_cfg_t)
-        self.cgra_cfg_g2f = self.output("cgra_cfg_g2f", self.header.cgra_cfg_t, size=self._params.cgra_per_glb, packed=True)
+        self.cgra_cfg_g2f = self.output("cgra_cfg_g2f", self.header.cgra_cfg_t, size=self._params.cgra_per_glb)
 
         self.cgra_cfg_jtag_wsti_rd_en_bypass = self.input("cgra_cfg_jtag_wsti_rd_en_bypass", 1)
-        self.cgra_cfg_jtag_wsti_addr_bypass = self.input("cgra_cfg_jtag_wsti_addr_bypass", self._params.cgra_cfg_addr_width)
+        self.cgra_cfg_jtag_wsti_addr_bypass = self.input("cgra_cfg_jtag_wsti_addr_bypass",
+                                                         self._params.cgra_cfg_addr_width)
         self.cgra_cfg_jtag_esto_rd_en_bypass = self.output("cgra_cfg_jtag_esto_rd_en_bypass", 1)
-        self.cgra_cfg_jtag_esto_addr_bypass = self.output("cgra_cfg_jtag_esto_addr_bypass", self._params.cgra_cfg_addr_width)
+        self.cgra_cfg_jtag_esto_addr_bypass = self.output("cgra_cfg_jtag_esto_addr_bypass",
+                                                          self._params.cgra_cfg_addr_width)
 
         # local variables
-        self.cgra_cfg_g2f_w = self.var("cgra_cfg_g2f_w", self.header.cgra_cfg_t, size=self._params.cgra_per_glb)
+        self.cgra_cfg_g2f_w = self.var("cgra_cfg_g2f_w", self.header.cgra_cfg_t,
+                                       size=self._params.cgra_per_glb, packed=True)
         self.cgra_cfg_pcfg_muxed = self.var("cgra_cfg_pcfg_muxed", self.header.cgra_cfg_t)
 
         self.add_always(self.bypass_logic)
         self.add_always(self.cgra_cfg_pcfg_muxed_logic)
         self.add_always(self.pipeline)
-        self.add_always(self.cgra_cfg_g2f_logic)
+        # FIXME: Kratos has a bug when using array of struct and for loop together
+        for i in range(self._params.cgra_per_glb):
+            self.add_always(self.cgra_cfg_g2f_logic, i=i)
         self.add_always(self.pipeline_cgra_cfg_g2f)
 
     @always_comb
@@ -57,15 +62,14 @@ class GlbTilePcfgSwitch(Generator):
             self.cgra_cfg_pcfg_esto = self.cgra_cfg_pcfg_muxed
 
     @always_comb
-    def cgra_cfg_g2f_logic(self):
-        for i in range(self._params.cgra_per_glb):
-            if self.cgra_cfg_jtag_esto_rd_en_bypass:
-                self.cgra_cfg_g2f_w[i]['wr_en'] = 0
-                self.cgra_cfg_g2f_w[i]['rd_en'] = 1
-                self.cgra_cfg_g2f_w[i]['addr'] = self.cgra_cfg_jtag_esto_addr_bypass
-                self.cgra_cfg_g2f_w[i]['data'] = 0
-            else:
-                self.cgra_cfg_g2f_w[i] = self.cgra_cfg_jtag_esto | self.cgra_cfg_pcfg_esto
+    def cgra_cfg_g2f_logic(self, i):
+        if self.cgra_cfg_jtag_esto_rd_en_bypass:
+            self.cgra_cfg_g2f_w[i]['wr_en'] = 0
+            self.cgra_cfg_g2f_w[i]['rd_en'] = 1
+            self.cgra_cfg_g2f_w[i]['addr'] = self.cgra_cfg_jtag_esto_addr_bypass
+            self.cgra_cfg_g2f_w[i]['data'] = 0
+        else:
+            self.cgra_cfg_g2f_w[i] = self.cgra_cfg_jtag_esto | self.cgra_cfg_pcfg_esto
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def pipeline_cgra_cfg_g2f(self):
