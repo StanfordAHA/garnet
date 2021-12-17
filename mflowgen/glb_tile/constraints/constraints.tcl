@@ -32,72 +32,27 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
-# reset
-#set_max_delay -from [get_ports reset] [expr ${clock_period}*0.9]
-#set_min_delay -from [get_ports reset] [expr ${clock_period}*0.2]
-
-# set_min_delay for all tile-connected inputs
-set_min_delay -from [get_ports *_est* -filter "direction==in"] [expr ${clock_period}*0.65]
-set_min_delay -from [get_ports *_wst* -filter "direction==in"] [expr ${clock_period}*0.65]
-
-# min delay for if_cfg ports should be set low
-set_min_delay -from [get_ports if_cfg_* -filter "direction==in"] [expr ${clock_period}*0.50]
-
-# min delay for pc ports should be set low
-set_min_delay -from [get_ports pcfg_*_est* -filter "direction==in"] [expr ${clock_period}*0.50]
-set_min_delay -from [get_ports pcfg_*_wst* -filter "direction==in"] [expr ${clock_period}*0.50]
-#set_min_delay -from [get_ports pcfg_*_est* -filter "direction==in"] [expr ${clock_period}*0.55]
-#set_min_delay -from [get_ports pcfg_*_wst* -filter "direction==in"] [expr ${clock_period}*0.55]
-#set_min_delay -from [get_ports pcfg_rd_data*_est* -filter "direction==in"] [expr ${clock_period}*0.50]
-#set_min_delay -from [get_ports pcfg_rd_data*_wst* -filter "direction==in"] [expr ${clock_period}*0.50]
-
-# set_min_delay for all outputs 
-set_min_delay -to [get_ports *_esto*] [expr ${clock_period}*0.65]
-set_min_delay -to [get_ports *_wsto*] [expr ${clock_period}*0.65]
-
-# strm esto/wsto needs to have longer min delay to fix hold time
-set_min_delay -to [get_ports strm_*_wsto*] [expr ${clock_period}*0.70]
-set_min_delay -to [get_ports strm_*_esto*] [expr ${clock_period}*0.70]
-
-# min delay for strm_rd_data should be set back to normal
-set_min_delay -to [get_ports strm_rd_data*_wsto*] [expr ${clock_period}*0.65]
-
-# if_cfg ports should be set to low
-set_min_delay -to [get_ports if_cfg_* -filter "direction==out"] [expr ${clock_period}*0.50]
-
+# set_input_delay
+set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
 # all est<->wst connections
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports *_esti*]
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports *_wsti*]
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.6] [get_ports proc*_esti*]
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.6] [get_ports proc*_wsti*]
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.3] [get_ports strm*_esti*]
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.3] [get_ports strm*_wsti*]
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_cfg_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==in"]
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_sram_cfg_wst* -filter "direction==in"]
-
-# tile id is constant
+set_input_delay -clock ${clock_name} -max 0.4 [get_ports *_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} -max 0.4 [get_ports *_wst* -filter "direction==in"]
+set_input_delay -clock ${clock_name} -min 0.1 [get_ports *_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} -min 0.1 [get_ports *_wst* -filter "direction==in"]
 set_input_delay -clock ${clock_name} 0 glb_tile_id
 
 # set_output_delay constraints for output ports
-# default output delay is 0.2
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.2] [all_outputs]
+set_output_delay -clock ${clock_name} 0.3 [all_outputs]
+set_output_delay -clock ${clock_name} 0.5 [get_ports *_est* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 0.5 [get_ports *_wst* -filter "direction==out"]
 
-# set output ports to cgra output delay to high number 0.75
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.75] [get_ports stream_*_g2f*]
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.75] [get_ports cgra_cfg_g2f*]
-
-# all est<->wst connections
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports *_esto* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports *_wsto* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.35] [get_ports proc*_esto* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.35] [get_ports proc*_wsto* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_cfg_est* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_cfg_wst* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_sram_cfg_est* -filter "direction==out"]
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.5] [get_ports if_sram_cfg_wst* -filter "direction==out"]
-
+# set_min_delay for all tile-connected inputs
+set_min_delay -from [get_ports *_est* -filter "direction==in"] 0.5
+set_min_delay -from [get_ports *_wst* -filter "direction==in"] 0.5
+set_min_delay -to [get_ports *_est* -filter "direction==out"] 0.6
+set_min_delay -to [get_ports *_wst* -filter "direction==out"] 0.6
+set_max_delay -to [get_ports *_est* -filter "direction==out"] 0.9
+set_max_delay -to [get_ports *_wst* -filter "direction==out"] 0.9
 
 # set false path
 # glb_tile_id is constant
@@ -165,7 +120,4 @@ set_max_fanout 20 $design_name
 
 # Make all signals meet good slew
 set_max_transition [expr 0.10*${clock_period}] $design_name
-
-#set_input_transition 1 [all_inputs]
-#set_max_transition 10 [all_outputs]
 

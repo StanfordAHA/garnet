@@ -32,36 +32,11 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
-###############################
 # set_input_delay constraints for input ports
-###############################
+set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
 
-# set min delay for all inputs
-set_min_delay -from [all_inputs -no_clocks] [expr ${clock_period}*0.45]
-set_min_delay -from [get_ports proc_wr_data] [expr ${clock_period}*0.50]
-set_min_delay -from [get_ports if_sram_cfg_rd_addr] [expr ${clock_period}*0.50]
-
-# default input delay is 0.30
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.30] [all_inputs -no_clocks]
-
-# reset input delay is 0.2
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.20] [get_ports reset]
-
-# set input delay for cgra to glb 
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
-
-# cgra_cfg_jtag delay is 0.4 (from glc)
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.40] [get_ports cgra_cfg_jtag*]
-
-###############################
 # set_output_delay constraints for output ports
-###############################
-# default output delay is 0.30
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.30] [all_outputs]
-
-# all output ports connected to cgra has high output delay
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.4] [get_ports cgra_* -filter "direction==out"] -add_delay
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.4] [get_ports stream_* -filter "direction==out"] -add_delay
+set_output_delay -clock ${clock_name} 0.4 [all_outputs]
 
 ###############################
 # set_false path and multicycle path
@@ -97,9 +72,7 @@ set_max_fanout 20 $design_name
 
 set_max_transition [expr 0.10*${clock_period}] $design_name
 
-#set_input_transition 1 [all_inputs]
-#set_max_transition 10 [all_outputs]
-
+# Do not touch nets
 set num_tiles [sizeof_collection [get_cells *glb_tile_gen_*]]
 for {set i 1} {$i < $num_tiles} {incr i} {
   # only need to set west since east pins are connected to same nets
