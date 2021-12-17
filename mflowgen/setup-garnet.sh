@@ -33,6 +33,6 @@ else
     module load calibre/2019.1
 fi
 
-module load pts/M-2017.06
+module load prime/latest
 module load ext/latest
 
