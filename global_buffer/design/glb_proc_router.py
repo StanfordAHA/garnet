@@ -3,9 +3,9 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 
 
-class GlbCoreProcRouter(Generator):
+class GlbProcRouter(Generator):
     def __init__(self, _params: GlobalBufferParams):
-        super().__init__("glb_core_proc_router")
+        super().__init__("glb_proc_router")
         self._params = _params
         self.header = GlbHeader(self._params)
 

@@ -4,9 +4,9 @@ from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_header import GlbHeader
 
 
-class GlbCoreSwitch(Generator):
+class GlbSwitch(Generator):
     def __init__(self, _params: GlobalBufferParams):
-        super().__init__("glb_core_switch")
+        super().__init__("glb_switch")
         self._params = _params
         self.header = GlbHeader(self._params)
 
