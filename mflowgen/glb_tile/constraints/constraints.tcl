@@ -69,8 +69,8 @@ set_false_path -from [get_ports cgra_cfg_jtag_wsti_rd_en_bypass] -to [get_ports 
 set_false_path -from [get_ports cgra_cfg_jtag_wsti_addr_bypass] -to [get_ports cgra_cfg_jtag_esto_addr_bypass]
 
 # path from configuration registers are false path
-set_false_path -through [get_cells glb_tile_cfg/glb_pio/pio_logic/*] -through [get_pins glb_tile_cfg/cfg_* -filter "direction==out"]
-set_false_path -from [get_cells glb_tile_cfg/glb_pio/pio_logic/*] -through [get_pins glb_tile_cfg/cfg_* -filter "direction==out"]
+set_false_path -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+set_false_path -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
 
 # jtag cgra configuration read
 # ignore timing when rd_en is 1
@@ -85,12 +85,12 @@ set_false_path -from cgra_cfg_jtag_wsti_wr_en -to cgra_cfg_jtag_esto_wr_en
 
 # jtag sram read
 # jtag sram read is multicycle path because you assert rd_en for long cycles
-# glb_core_sram_cfg_ctrl input to bank signals
-set_multicycle_path -setup 10 -through [get_pins glb_tile_sram_cfg_ctrl/if_sram_cfg_wst_s*rd* -filter "direction==in"] -through [get_pins glb_tile_sram_cfg_ctrl/if_sram_cfg_ctrl*rd* -filter "direction==out"]
-set_multicycle_path -hold 9 -through [get_pins glb_tile_sram_cfg_ctrl/if_sram_cfg_wst_s*rd* -filter "direction==in"] -through [get_pins glb_tile_sram_cfg_ctrl/if_sram_cfg_ctrl*rd* -filter "direction==out"]
+# glb_sram_cfg_ctrl input to bank signals
+set_multicycle_path -setup 10 -through [get_pins glb_sram_cfg_ctrl/if_sram_cfg_wst_s*rd* -filter "direction==in"] -through [get_pins glb_sram_cfg_ctrl/if_sram_cfg_ctrl*rd* -filter "direction==out"]
+set_multicycle_path -hold 9 -through [get_pins glb_sram_cfg_ctrl/if_sram_cfg_wst_s*rd* -filter "direction==in"] -through [get_pins glb_sram_cfg_ctrl/if_sram_cfg_ctrl*rd* -filter "direction==out"]
 # bank to output signals
-set_multicycle_path -setup 10 -through [get_pins glb_tile_sram_cfg_ctrl/if_sram_cfg_ctrl*rd_data* -filter "direction==in"] -through [get_cells glb_tile_sram_cfg_ctrl/if_sram_cfg_wst_s*rd_data*] 
-set_multicycle_path -hold 9 -through [get_pins glb_tile_sram_cfg_ctrl/if_sram_cfg_ctrl*rd_data* -filter "direction==in"] -through [get_cells glb_tile_sram_cfg_ctrl/if_sram_cfg_wst_s*rd_data*] 
+set_multicycle_path -setup 10 -through [get_pins glb_sram_cfg_ctrl/if_sram_cfg_ctrl*rd_data* -filter "direction==in"] -through [get_cells glb_sram_cfg_ctrl/if_sram_cfg_wst_s*rd_data*] 
+set_multicycle_path -hold 9 -through [get_pins glb_sram_cfg_ctrl/if_sram_cfg_ctrl*rd_data* -filter "direction==in"] -through [get_cells glb_sram_cfg_ctrl/if_sram_cfg_wst_s*rd_data*] 
 # bank_ctrl ports through mem
 set_multicycle_path -setup 10 -through [get_pins glb_bank_*/glb_bank_ctrl/if_sram_cfg*rd* -filter "direction==in"] -through [get_pins glb_bank_*/glb_bank_ctrl/mem_rd_en -filter "direction==out"]
 set_multicycle_path -hold 9 -through [get_pins glb_bank_*/glb_bank_ctrl/if_sram_cfg*rd* -filter "direction==in"] -through [get_pins glb_bank_*/glb_bank_ctrl/mem_rd_en -filter "direction==out"]
@@ -105,8 +105,8 @@ set_multicycle_path -hold 9 -through [get_pins glb_bank_*/glb_bank_ctrl/mem_data
 
 # jtag write
 # jtag sram write is asserted for 4 cycles from glc
-set_multicycle_path -setup 4 -through [get_pins glb_tile_sram_cfg_ctrl/if_sram_cfg_wst_s*wr* -filter "direction==in"] -through [get_pins glb_tile_sram_cfg_ctrl/if_sram_cfg_ctrl*wr* -filter "direction==out"]
-set_multicycle_path -hold 3 -through [get_pins glb_tile_sram_cfg_ctrl/if_sram_cfg_wst_s*wr* -filter "direction==in"] -through [get_pins glb_tile_sram_cfg_ctrl/if_sram_cfg_ctrl*wr* -filter "direction==out"]
+set_multicycle_path -setup 4 -through [get_pins glb_sram_cfg_ctrl/if_sram_cfg_wst_s*wr* -filter "direction==in"] -through [get_pins glb_sram_cfg_ctrl/if_sram_cfg_ctrl*wr* -filter "direction==out"]
+set_multicycle_path -hold 3 -through [get_pins glb_sram_cfg_ctrl/if_sram_cfg_wst_s*wr* -filter "direction==in"] -through [get_pins glb_sram_cfg_ctrl/if_sram_cfg_ctrl*wr* -filter "direction==out"]
 # bank_ctrl ports through mem
 set_multicycle_path -setup 4 -through [get_pins glb_bank_*/glb_bank_ctrl/if_sram_cfg*wr* -filter "direction==in"] -through [get_pins glb_bank_*/glb_bank_ctrl/mem_wr_en -filter "direction==out"]
 set_multicycle_path -hold 3 -through [get_pins glb_bank_*/glb_bank_ctrl/if_sram_cfg*wr* -filter "direction==in"] -through [get_pins glb_bank_*/glb_bank_ctrl/mem_wr_en -filter "direction==out"]
