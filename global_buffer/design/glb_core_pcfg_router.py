@@ -42,17 +42,15 @@ class GlbCorePcfgRouter(Generator):
         self.add_always(self.packet_pipeline)
 
         # wiring
-        for signal in self.header.rdrq_packet_ports:
-            self.wire(self.rdrq_packet_w2e_wsti[signal], self.rd_packet_w2e_wsti[signal])
-            self.wire(self.rdrq_packet_w2e_esto[signal], self.rd_packet_w2e_esto[signal])
-            self.wire(self.rdrq_packet_e2w_esti[signal], self.rd_packet_e2w_esti[signal])
-            self.wire(self.rdrq_packet_e2w_wsto[signal], self.rd_packet_e2w_wsto[signal])
+        self.wire(self.rdrq_packet_w2e_wsti, self.rd_packet_w2e_wsti['rdrq'])
+        self.wire(self.rdrq_packet_w2e_esto, self.rd_packet_w2e_esto['rdrq'])
+        self.wire(self.rdrq_packet_e2w_esti, self.rd_packet_e2w_esti['rdrq'])
+        self.wire(self.rdrq_packet_e2w_wsto, self.rd_packet_e2w_wsto['rdrq'])
 
-        for signal in self.header.rdrs_packet_ports:
-            self.wire(self.rdrs_packet_w2e_wsti[signal], self.rd_packet_w2e_wsti[signal])
-            self.wire(self.rdrs_packet_w2e_esto[signal], self.rd_packet_w2e_esto[signal])
-            self.wire(self.rdrs_packet_e2w_esti[signal], self.rd_packet_e2w_esti[signal])
-            self.wire(self.rdrs_packet_e2w_wsto[signal], self.rd_packet_e2w_wsto[signal])
+        self.wire(self.rdrs_packet_w2e_wsti, self.rd_packet_w2e_wsti['rdrs'])
+        self.wire(self.rdrs_packet_w2e_esto, self.rd_packet_w2e_esto['rdrs'])
+        self.wire(self.rdrs_packet_e2w_esti, self.rd_packet_e2w_esti['rdrs'])
+        self.wire(self.rdrs_packet_e2w_wsto, self.rd_packet_e2w_wsto['rdrs'])
 
         # localparam
         self.packet_addr_tile_sel_msb = (_params.bank_addr_width
