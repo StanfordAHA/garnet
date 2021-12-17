@@ -58,19 +58,28 @@ set_max_delay -to [get_ports *_wst* -filter "direction==out"] 1.0
 # glb_tile_id is constant
 set_false_path -from {glb_tile_id*}
 
-# these inputs are from configuration register
-set_false_path -from {cfg_tile_connected_wsti}
-set_false_path -from {cfg_pcfg_tile_connected_wsti}
-set_false_path -to {cfg_tile_connected_esto}
-set_false_path -to {cfg_pcfg_tile_connected_esto}
+# clk_en is multi_cycle path
+set_multicycle_path -setup 10 -from {clk_en}
+set_multicycle_path -hold 9 -from {clk_en}
+
+# path from configuration registers are multi_cycle path
+set_multicycle_path -setup 10 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+set_multicycle_path -hold 9 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+set_multicycle_path -setup 10 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+set_multicycle_path -hold 9 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+# these inputs/outputs are configuration register
+set_multicycle_path -setup 10 -from {cfg_tile_connected_wsti}
+set_multicycle_path -hold 9 -from {cfg_tile_connected_wsti}
+set_multicycle_path -setup 10 -from {cfg_pcfg_tile_connected_wsti}
+set_multicycle_path -hold 9 -from {cfg_pcfg_tile_connected_wsti}
+set_multicycle_path -setup 10 -to {cfg_tile_connected_esto}
+set_multicycle_path -hold 9 -to {cfg_tile_connected_esto}
+set_multicycle_path -setup 10 -to {cfg_pcfg_tile_connected_esto}
+set_multicycle_path -hold 9 -to {cfg_pcfg_tile_connected_esto}
 
 # jtag bypass mode is false path
 set_false_path -from [get_ports cgra_cfg_jtag_wsti_rd_en_bypass] -to [get_ports cgra_cfg_jtag_esto_rd_en_bypass]
 set_false_path -from [get_ports cgra_cfg_jtag_wsti_addr_bypass] -to [get_ports cgra_cfg_jtag_esto_addr_bypass]
-
-# path from configuration registers are false path
-set_false_path -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
-set_false_path -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
 
 # jtag cgra configuration read
 # ignore timing when rd_en is 1

@@ -366,7 +366,7 @@ program glb_test (
 
     task glb_stall(logic [NUM_GLB_TILES-1:0] tile_mask);
 
-        $display("Glb tiles are stalled");
+        $display("Glb tiles are stalled with mask %16b", tile_mask);
         stall <= tile_mask;
         repeat (1) @(posedge clk);
 
