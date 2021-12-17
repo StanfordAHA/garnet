@@ -181,7 +181,6 @@ class GlbTile(Generator):
         self.struct_wiring()
 
         # Local variables
-
         # configuration
         self.cfg_tile_connected_prev = self.var("cfg_tile_connected_prev", 1)
         self.cfg_tile_connected_next = self.var("cfg_tile_connected_next", 1)
