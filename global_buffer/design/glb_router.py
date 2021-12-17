@@ -3,9 +3,9 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 
 
-class GlbCoreRouter(Generator):
+class GlbRouter(Generator):
     def __init__(self, _params: GlobalBufferParams, wr_channel=True, rd_channel=True):
-        name = "glb_core_router"
+        name = "glb_router"
         if wr_channel:
             name += "_WR"
         if rd_channel:

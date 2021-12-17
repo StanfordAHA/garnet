@@ -3,9 +3,9 @@ from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
-class GlbTileCfgCtrl(Generator):
+class GlbCfgCtrl(Generator):
     def __init__(self, _params: GlobalBufferParams):
-        super().__init__("glb_tile_cfg_ctrl")
+        super().__init__("glb_cfg_ctrl")
 
         self._params = _params
         # local parameters
