@@ -1,4 +1,5 @@
 from kratos import Generator, RawStringStmt, const
+from kratos.util import clock
 from global_buffer.design.glb_store_dma import GlbStoreDma
 from global_buffer.design.glb_load_dma import GlbLoadDma
 from global_buffer.design.glb_pcfg_dma import GlbPcfgDma
@@ -13,6 +14,7 @@ from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_bank import GlbBank
+from global_buffer.design.clk_gate import ClkGate
 
 
 class GlbTile(Generator):
@@ -220,10 +222,20 @@ class GlbTile(Generator):
         self.wire(self.cfg_pcfg_dma_ctrl, self.glb_tile_cfg.cfg_pcfg_dma_ctrl)
         self.wire(self.cfg_pcfg_dma_header, self.glb_tile_cfg.cfg_pcfg_dma_header)
 
+        # Instantiate modules
+        # Clock gating
+        self.gclk = self.var("gclk", 1)
+        self.glb_clk_gate = ClkGate()
+        self.add_child("glb_clk_gate",
+                       self.glb_clk_gate,
+                       clk=self.clk,
+                       enable=self.clk_en,
+                       gclk=self.gclk)
+
         self.glb_tile_pcfg_switch = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_switch",
                        self.glb_tile_pcfg_switch,
-                       clk=self.clk,
+                       clk=self.gclk,
                        reset=self.reset,
                        cgra_cfg_core2sw=self.cgra_cfg_pcfgdma2mux,
                        cfg_pcfg_dma_mode=self.cfg_pcfg_dma_ctrl['mode'])
