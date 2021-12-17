@@ -35,10 +35,10 @@ set_driving_cell -no_design_rule \
 # set_input_delay
 set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
 # all est<->wst connections
-set_input_delay -clock ${clock_name} -max 0.4 [get_ports *_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} -max 0.4 [get_ports *_wst* -filter "direction==in"]
-set_input_delay -clock ${clock_name} -min 0.1 [get_ports *_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} -min 0.1 [get_ports *_wst* -filter "direction==in"]
+set_input_delay -clock ${clock_name} 0.3 [get_ports *_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} 0.3 [get_ports *_wst* -filter "direction==in"]
+# set_input_delay -clock ${clock_name} -min 0.1 [get_ports *_est* -filter "direction==in"]
+# set_input_delay -clock ${clock_name} -min 0.1 [get_ports *_wst* -filter "direction==in"]
 set_input_delay -clock ${clock_name} 0 glb_tile_id
 
 # set_output_delay constraints for output ports
@@ -49,10 +49,10 @@ set_output_delay -clock ${clock_name} 0.5 [get_ports *_wst* -filter "direction==
 # set_min_delay for all tile-connected inputs
 set_min_delay -from [get_ports *_est* -filter "direction==in"] 0.5
 set_min_delay -from [get_ports *_wst* -filter "direction==in"] 0.5
-set_min_delay -to [get_ports *_est* -filter "direction==out"] 0.6
-set_min_delay -to [get_ports *_wst* -filter "direction==out"] 0.6
-set_max_delay -to [get_ports *_est* -filter "direction==out"] 0.9
-set_max_delay -to [get_ports *_wst* -filter "direction==out"] 0.9
+# set_min_delay -to [get_ports *_est* -filter "direction==out"] 0.6
+# set_min_delay -to [get_ports *_wst* -filter "direction==out"] 0.6
+set_max_delay -to [get_ports *_est* -filter "direction==out"] 1.0
+set_max_delay -to [get_ports *_wst* -filter "direction==out"] 1.0
 
 # set false path
 # glb_tile_id is constant
