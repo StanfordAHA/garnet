@@ -73,16 +73,12 @@ class GlbSwitch(Generator):
 
         self.rdrs_packet_bankarr2sw_d = self.var(
             "rdrs_packet_bankarr2sw_d", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
-        self.rdrs_packet_bankarr2sw_d_nostall = self.var(
-            "rdrs_packet_bankarr2sw_d_nostall", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
 
         self.rd_type_e = self.enum("rd_type_e", {"none": 0, "proc": 1, "strm": 2, "pcfg": 3})
         self.rd_type = self.var("rd_type", self.rd_type_e)
         self.rd_type_d = self.var("rd_type_d", self.rd_type_e)
-        self.rd_type_d_nostall = self.var("rd_type_d_nostall", self.rd_type_e)
         self.rdrq_bank_sel = self.var("rdrq_bank_sel", self._params.bank_sel_addr_width)
         self.rdrq_bank_sel_d = self.var("rdrq_bank_sel_d", self._params.bank_sel_addr_width)
-        self.rdrq_bank_sel_d_nostall = self.var("rdrq_bank_sel_d_nostall", self._params.bank_sel_addr_width)
 
         pipeline_depth = (self._params.glb_bank_memory_pipeline_depth
                           + self._params.sram_gen_pipeline_depth
@@ -92,7 +88,6 @@ class GlbSwitch(Generator):
 
         self.rdrq_pipeline_in = concat(self.rd_type, self.rdrq_bank_sel)
         self.rdrq_pipeline_out = concat(self.rd_type_d, self.rdrq_bank_sel_d)
-        self.rdrq_pipeline_out_nostall = concat(self.rd_type_d_nostall, self.rdrq_bank_sel_d_nostall)
         self.rdrq_pipeline = Pipeline(width=self.rdrq_pipeline_in.width, depth=pipeline_depth)
         self.add_child("rdrq_pipeline",
                        self.rdrq_pipeline,
@@ -101,15 +96,6 @@ class GlbSwitch(Generator):
                        reset=self.reset,
                        in_=self.rdrq_pipeline_in,
                        out_=self.rdrq_pipeline_out)
-
-        self.rdrq_pipeline_nostall = Pipeline(width=self.rdrq_pipeline_in.width, depth=pipeline_depth)
-        self.add_child("rdrq_pipeline_nostall",
-                       self.rdrq_pipeline_nostall,
-                       clk=self.clk,
-                       clk_en=const(1, 1),
-                       reset=self.reset,
-                       in_=self.rdrq_pipeline_in,
-                       out_=self.rdrq_pipeline_out_nostall)
 
         self.wr_bank_sel = self.var("wr_bank_sel", self._params.bank_sel_addr_width)
 
@@ -137,8 +123,7 @@ class GlbSwitch(Generator):
         self.add_always(self.rdrq_sw2pcfgr_logic)
 
         # rdrs packet
-        self.add_always(self.rdrs_proc_pcfg_pipeline)
-        self.add_always(self.rdrs_data_pipeline)
+        self.add_always(self.rdrs_pipeline)
         self.add_always(self.rdrs_sr2sw_pipieline)
         self.add_always(self.rdrs_sw2dma_logic)
         self.add_always(self.rdrs_sw2sr_logic)
@@ -151,7 +136,7 @@ class GlbSwitch(Generator):
     def wr_proc_pipeline(self):
         if self.reset:
             self.wr_packet_pr2sw_d = 0
-        else:
+        elif self.clk_en:
             self.wr_packet_pr2sw_d = self.wr_packet_pr2sw
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -204,7 +189,7 @@ class GlbSwitch(Generator):
             self.rdrq_packet_pr2sw_d = 0
             self.rdrq_packet_pcfgr2sw_d = 0
             self.rdrq_packet_pcfgdma2sw_d = 0
-        else:
+        elif self.clk_en:
             self.rdrq_packet_pr2sw_d = self.rdrq_packet_pr2sw
             self.rdrq_packet_pcfgr2sw_d = self.rdrq_packet_pcfgr2sw
             self.rdrq_packet_pcfgdma2sw_d = self.rdrq_packet_pcfgdma2sw
@@ -280,16 +265,7 @@ class GlbSwitch(Generator):
             self.rdrq_packet_sw2pcfgr = 0
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
-    def rdrs_proc_pcfg_pipeline(self):
-        if self.reset:
-            for i in range(self._params.banks_per_tile):
-                self.rdrs_packet_bankarr2sw_d_nostall[i] = 0
-        else:
-            for i in range(self._params.banks_per_tile):
-                self.rdrs_packet_bankarr2sw_d_nostall[i] = self.rdrs_packet_bankarr2sw[i]
-
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
-    def rdrs_data_pipeline(self):
+    def rdrs_pipeline(self):
         if self.reset:
             for i in range(self._params.banks_per_tile):
                 self.rdrs_packet_bankarr2sw_d[i] = 0
@@ -331,8 +307,8 @@ class GlbSwitch(Generator):
     # rdrs proc
     @ always_comb
     def rdrs_sw2pr_logic(self):
-        if self.rd_type_d_nostall == self.rd_type_e.proc:
-            self.rdrs_packet_sw2pr = self.rdrs_packet_bankarr2sw_d_nostall[self.rdrq_bank_sel_d_nostall]
+        if self.rd_type_d == self.rd_type_e.proc:
+            self.rdrs_packet_sw2pr = self.rdrs_packet_bankarr2sw_d[self.rdrq_bank_sel_d]
         else:
             self.rdrs_packet_sw2pr = 0
 
@@ -341,15 +317,15 @@ class GlbSwitch(Generator):
     def rdrs_pcfgr2sw_pipeline(self):
         if self.reset:
             self.rdrs_packet_pcfgr2sw_d = 0
-        else:
+        elif self.clk_en:
             self.rdrs_packet_pcfgr2sw_d = self.rdrs_packet_pcfgr2sw
 
     @ always_comb
     def rdrs_sw2pcfgdma_logic(self):
         if self.cfg_pcfg_dma_ctrl_mode != 0:
             if (~self.cfg_pcfg_tile_connected_next) & (~self.cfg_pcfg_tile_connected_prev):
-                if self.rd_type_d_nostall == self.rd_type_e.pcfg:
-                    self.rdrs_packet_sw2pcfgdma = self.rdrs_packet_bankarr2sw_d_nostall[self.rdrq_bank_sel_d_nostall]
+                if self.rd_type_d == self.rd_type_e.pcfg:
+                    self.rdrs_packet_sw2pcfgdma = self.rdrs_packet_bankarr2sw_d[self.rdrq_bank_sel_d]
                 else:
                     self.rdrs_packet_sw2pcfgdma = 0
             else:
@@ -362,7 +338,7 @@ class GlbSwitch(Generator):
         if (~self.cfg_pcfg_tile_connected_next) & (~self.cfg_pcfg_tile_connected_prev):
             self.rdrs_packet_sw2pcfgr = 0
         else:
-            if self.rd_type_d_nostall == self.rd_type_e.pcfg:
-                self.rdrs_packet_sw2pcfgr = self.rdrs_packet_bankarr2sw_d_nostall[self.rdrq_bank_sel_d_nostall]
+            if self.rd_type_d == self.rd_type_e.pcfg:
+                self.rdrs_packet_sw2pcfgr = self.rdrs_packet_bankarr2sw_d[self.rdrq_bank_sel_d]
             else:
                 self.rdrs_packet_sw2pcfgr = 0
