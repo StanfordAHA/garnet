@@ -4,9 +4,9 @@ from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.glb_header import GlbHeader
 
 
-class GlbTileSramCfgCtrl(Generator):
+class GlbSramCfgCtrl(Generator):
     def __init__(self, _params: GlobalBufferParams):
-        super().__init__("glb_tile_sram_cfg_ctrl")
+        super().__init__("glb_sram_cfg_ctrl")
         self._params = _params
         self.header = GlbHeader(self._params)
 

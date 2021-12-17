@@ -1,7 +1,7 @@
 from kratos import Generator
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
-from global_buffer.design.glb_tile_cfg_ctrl import GlbTileCfgCtrl
+from global_buffer.design.glb_cfg_ctrl import GlbCfgCtrl
 from global_buffer.gen_global_buffer_rdl import gen_global_buffer_rdl, gen_glb_pio_wrapper
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from systemRDL.util import run_systemrdl
@@ -9,11 +9,11 @@ import pathlib
 import os
 
 
-class GlbTileCfg(Generator):
+class GlbCfg(Generator):
     cache = None
 
     def __init__(self, _params: GlobalBufferParams):
-        super().__init__("glb_tile_cfg")
+        super().__init__("glb_cfg")
         self._params = _params
         self.header = GlbHeader(self._params)
         cfg_ifc = GlbConfigInterface(addr_width=self._params.axi_addr_width, data_width=self._params.axi_data_width)
@@ -50,7 +50,7 @@ class GlbTileCfg(Generator):
         self.glb_pio_wrapper = self.get_glb_pio_wrapper()
         # TODO: Update axi_reg_addr_width
         self.add_child("glb_pio", self.glb_pio_wrapper)
-        self.glb_tile_cfg_ctrl = GlbTileCfgCtrl(self._params)
+        self.glb_tile_cfg_ctrl = GlbCfgCtrl(self._params)
         self.add_child("glb_tile_cfg_ctrl", self.glb_tile_cfg_ctrl)
 
         self.wire_config_signals()

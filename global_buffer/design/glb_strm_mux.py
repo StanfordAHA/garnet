@@ -1,10 +1,10 @@
-from kratos import Generator, always_ff, always_comb, posedge
+from kratos import Generator, always_comb
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
-class GlbCoreStrmMux(Generator):
+class GlbStrmMux(Generator):
     def __init__(self, _params: GlobalBufferParams):
-        super().__init__("glb_core_strm_mux")
+        super().__init__("glb_strm_mux")
         self._params = _params
         self.data_g2f_dma = self.input("data_g2f_dma", width=self._params.cgra_data_width)
         self.data_valid_g2f_dma = self.input("data_valid_g2f_dma", width=1)

@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, concat, const, resize, ext, clog2
+from kratos import Generator, always_ff, always_comb, posedge, const, resize, ext, clog2
 from global_buffer.design.glb_loop_iter import GlbLoopIter
 from global_buffer.design.glb_sched_gen import GlbSchedGen
 from global_buffer.design.glb_addr_gen import GlbAddrGen
@@ -8,9 +8,9 @@ from global_buffer.design.glb_header import GlbHeader
 import math
 
 
-class GlbCoreStoreDma(Generator):
+class GlbStoreDma(Generator):
     def __init__(self, _params: GlobalBufferParams):
-        super().__init__("glb_core_store_dma")
+        super().__init__("glb_store_dma")
         self._params = _params
         self.header = GlbHeader(self._params)
         assert self._params.bank_data_width == self._params.cgra_data_width * 4

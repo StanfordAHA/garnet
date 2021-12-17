@@ -7,9 +7,9 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 
 
-class GlbCoreLoadDma(Generator):
+class GlbLoadDma(Generator):
     def __init__(self, _params: GlobalBufferParams):
-        super().__init__("glb_core_load_dma")
+        super().__init__("glb_load_dma")
         self._params = _params
         self.header = GlbHeader(self._params)
         assert self._params.bank_data_width == self._params.cgra_data_width * 4
