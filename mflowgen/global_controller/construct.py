@@ -198,13 +198,6 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
-  # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
-
-  order = init.get_param('order') # get the default script run order
-  floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
-  order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
-  init.update_params( { 'order': order } )
-  
   # Add density target parameter
   init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
 
