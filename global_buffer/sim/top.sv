@@ -72,12 +72,12 @@ module top;
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_stall;
 
     // cgra to glb streaming word
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] stream_data_f2g;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] stream_data_valid_f2g;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_f2g;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_valid_f2g;
 
     // glb to cgra streaming word
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] stream_data_g2f;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] stream_data_valid_g2f;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_g2f;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_valid_g2f;
 
     // cgra configuration to cgra
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_cfg_g2f_cfg_wr_en;
@@ -229,13 +229,13 @@ module top;
     // Note: Connect g2f to [0] column. Connect f2g to [1] column.
     always_comb begin
         for (int i = 0; i < NUM_PRR; i++) begin
-            g2c_io1[i] = stream_data_valid_g2f[i][0];
-            g2c_io16[i] = stream_data_g2f[i][0];
+            g2c_io1[i] = strm_data_valid_g2f[i][0];
+            g2c_io16[i] = strm_data_g2f[i][0];
 
-            stream_data_valid_f2g[i][0] = 0;
-            stream_data_valid_f2g[i][1] = c2g_io1[i];
-            stream_data_f2g[i][0] = 0;
-            stream_data_f2g[i][1] = c2g_io16[i];
+            strm_data_valid_f2g[i][0] = 0;
+            strm_data_valid_f2g[i][1] = c2g_io1[i];
+            strm_data_f2g[i][0] = 0;
+            strm_data_f2g[i][1] = c2g_io16[i];
         end
     end
 
