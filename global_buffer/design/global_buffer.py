@@ -289,29 +289,29 @@ class GlobalBuffer(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_ff(self):
         if self.reset:
-            self.proc_packet_d['wr_en'] = 0
-            self.proc_packet_d['wr_strb'] = 0
-            self.proc_packet_d['wr_addr'] = 0
-            self.proc_packet_d['wr_data'] = 0
-            self.proc_packet_d['rd_en'] = 0
-            self.proc_packet_d['rd_src_tile'] = 0
-            self.proc_packet_d['rd_addr'] = 0
-            self.proc_packet_d['rd_data'] = 0
-            self.proc_packet_d['rd_dst_tile'] = 0
-            self.proc_packet_d['rd_data_valid'] = 0
+            self.proc_packet_d['wr']['wr_en'] = 0
+            self.proc_packet_d['wr']['wr_strb'] = 0
+            self.proc_packet_d['wr']['wr_addr'] = 0
+            self.proc_packet_d['wr']['wr_data'] = 0
+            self.proc_packet_d['rdrq']['rd_en'] = 0
+            self.proc_packet_d['rdrq']['rd_src_tile'] = 0
+            self.proc_packet_d['rdrq']['rd_addr'] = 0
+            self.proc_packet_d['rdrs']['rd_data'] = 0
+            self.proc_packet_d['rdrs']['rd_dst_tile'] = 0
+            self.proc_packet_d['rdrs']['rd_data_valid'] = 0
             self.proc_rd_data = 0
             self.proc_rd_data_valid = 0
         else:
-            self.proc_packet_d['wr_en'] = self.proc_wr_en
-            self.proc_packet_d['wr_strb'] = self.proc_wr_strb
-            self.proc_packet_d['wr_addr'] = self.proc_wr_addr
-            self.proc_packet_d['wr_data'] = self.proc_wr_data
-            self.proc_packet_d['rd_en'] = self.proc_rd_en
-            self.proc_packet_d['rd_src_tile'] = 0
-            self.proc_packet_d['rd_addr'] = self.proc_rd_addr
-            self.proc_packet_d['rd_data'] = 0
-            self.proc_packet_d['rd_dst_tile'] = 0
-            self.proc_packet_d['rd_data_valid'] = 0
+            self.proc_packet_d['wr']['wr_en'] = self.proc_wr_en
+            self.proc_packet_d['wr']['wr_strb'] = self.proc_wr_strb
+            self.proc_packet_d['wr']['wr_addr'] = self.proc_wr_addr
+            self.proc_packet_d['wr']['wr_data'] = self.proc_wr_data
+            self.proc_packet_d['rdrq']['rd_en'] = self.proc_rd_en
+            self.proc_packet_d['rdrq']['rd_src_tile'] = 0
+            self.proc_packet_d['rdrq']['rd_addr'] = self.proc_rd_addr
+            self.proc_packet_d['rdrs']['rd_data'] = 0
+            self.proc_packet_d['rdrs']['rd_dst_tile'] = 0
+            self.proc_packet_d['rdrs']['rd_data_valid'] = 0
             self.proc_rd_data = self.proc_packet_e2w_wsto[0]['rd_data']
             self.proc_rd_data_valid = self.proc_packet_e2w_wsto[0]['rd_data_valid']
 
@@ -367,9 +367,8 @@ class GlobalBuffer(Generator):
             self.cgra_cfg_jtag_gc2glb_data_d = self.cgra_cfg_jtag_gc2glb_data
 
     def tile2tile_e2w_wiring(self):
-        for port in self.header.rdrs_packet_ports:
-            self.wire(self.proc_packet_e2w_esti[self._params.num_glb_tiles - 1][port],
-                      self.proc_packet_w2e_esto[self._params.num_glb_tiles - 1][port])
+        self.wire(self.proc_packet_e2w_esti[self._params.num_glb_tiles - 1],
+                  self.proc_packet_w2e_esto[self._params.num_glb_tiles - 1]['rdrs'])
         self.wire(self.strm_packet_e2w_esti[self._params.num_glb_tiles - 1], 0)
         self.wire(self.pcfg_packet_e2w_esti[self._params.num_glb_tiles - 1], 0)
         for i in range(self._params.num_glb_tiles - 1):
