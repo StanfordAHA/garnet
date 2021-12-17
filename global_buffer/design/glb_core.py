@@ -1,13 +1,13 @@
 from kratos import Generator, const
-from global_buffer.design.glb_core_router import GlbCoreRouter
-from global_buffer.design.glb_core_proc_router import GlbCoreProcRouter
-from global_buffer.design.glb_core_strm_mux import GlbCoreStrmMux
-from global_buffer.design.glb_core_switch import GlbCoreSwitch
+from global_buffer.design.glb_router import GlbRouter
+from global_buffer.design.glb_proc_router import GlbProcRouter
+from global_buffer.design.glb_strm_mux import GlbStrmMux
+from global_buffer.design.glb_switch import GlbSwitch
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
-from global_buffer.design.glb_core_store_dma import GlbCoreStoreDma
-from global_buffer.design.glb_core_load_dma import GlbCoreLoadDma
-from global_buffer.design.glb_core_pcfg_dma import GlbCorePcfgDma
+from global_buffer.design.glb_store_dma import GlbStoreDma
+from global_buffer.design.glb_load_dma import GlbLoadDma
+from global_buffer.design.glb_pcfg_dma import GlbPcfgDma
 
 
 class GlbCore(Generator):
@@ -127,7 +127,7 @@ class GlbCore(Generator):
         self.pcfg_rdrs_packet_sw2dma = self.var("pcfg_rdrs_packet_sw2dma", self.header.rdrs_packet_t)
 
         self.add_child("glb_core_store_dma",
-                       GlbCoreStoreDma(_params=self._params),
+                       GlbStoreDma(_params=self._params),
                        clk=self.clk,
                        clk_en=self.clk_en,
                        reset=self.reset,
@@ -144,7 +144,7 @@ class GlbCore(Generator):
                        st_dma_done_pulse=self.st_dma_done_pulse)
 
         self.add_child("glb_core_load_dma",
-                       GlbCoreLoadDma(_params=self._params),
+                       GlbLoadDma(_params=self._params),
                        clk=self.clk,
                        clk_en=self.clk_en,
                        glb_tile_id=self.glb_tile_id,
@@ -163,7 +163,7 @@ class GlbCore(Generator):
                        ld_dma_done_pulse=self.ld_dma_done_pulse)
 
         self.add_child("glb_core_pcfg_dma",
-                       GlbCorePcfgDma(_params=self._params),
+                       GlbPcfgDma(_params=self._params),
                        clk=self.clk,
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
@@ -178,7 +178,7 @@ class GlbCore(Generator):
                        pcfg_done_pulse=self.pcfg_done_pulse)
 
         self.add_child("glb_core_strm_mux",
-                       GlbCoreStrmMux(_params=self._params),
+                       GlbStrmMux(_params=self._params),
                        data_g2f_dma=self.strm_data_g2f_dma2mux,
                        data_valid_g2f_dma=self.strm_data_valid_g2f_dma2mux,
                        data_g2f=self.strm_data_g2f,
@@ -190,7 +190,7 @@ class GlbCore(Generator):
                        cfg_data_network_g2f_mux=self.cfg_ld_dma_ctrl['data_mux'],
                        cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'])
 
-        self.glb_core_switch = GlbCoreSwitch(_params=self._params)
+        self.glb_core_switch = GlbSwitch(_params=self._params)
         self.add_child("glb_core_switch",
                        self.glb_core_switch,
                        clk=self.clk,
@@ -230,7 +230,7 @@ class GlbCore(Generator):
                        rdrs_packet_sw2pcfgr=self.pcfg_rdrs_packet_sw2r)
 
         self.add_child("glb_core_proc_router",
-                       GlbCoreProcRouter(_params=self._params),
+                       GlbProcRouter(_params=self._params),
                        clk=self.clk,
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
@@ -247,7 +247,7 @@ class GlbCore(Generator):
                        rdrs_packet_sw2pr=self.proc_rdrs_packet_sw2r)
 
         self.add_child("glb_core_strm_router",
-                       GlbCoreRouter(_params=self._params, wr_channel=True, rd_channel=True),
+                       GlbRouter(_params=self._params, wr_channel=True, rd_channel=True),
                        clk=self.clk,
                        clk_en=self.clk_en,
                        reset=self.reset,
@@ -274,7 +274,7 @@ class GlbCore(Generator):
                        cfg_tile_connected_next=self.cfg_data_network['tile_connected'])
 
         self.add_child("glb_core_pcfg_router",
-                       GlbCoreRouter(_params=self._params, wr_channel=False, rd_channel=True),
+                       GlbRouter(_params=self._params, wr_channel=False, rd_channel=True),
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
