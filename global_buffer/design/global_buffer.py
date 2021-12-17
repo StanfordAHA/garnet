@@ -567,10 +567,10 @@ class GlobalBuffer(Generator):
                            cfg_pcfg_tile_connected_wsti=self.cfg_pcfg_tile_connected[i],
                            cfg_pcfg_tile_connected_esto=self.cfg_pcfg_tile_connected[i + 1],
 
-                           stream_data_f2g=self.stream_data_f2g_d[i],
-                           stream_data_valid_f2g=self.stream_data_valid_f2g_d[i],
-                           stream_data_g2f=self.stream_data_g2f_w[i],
-                           stream_data_valid_g2f=self.stream_data_valid_g2f_w[i],
+                           strm_data_f2g=self.stream_data_f2g_d[i],
+                           strm_data_valid_f2g=self.stream_data_valid_f2g_d[i],
+                           strm_data_g2f=self.stream_data_g2f_w[i],
+                           strm_data_valid_g2f=self.stream_data_valid_g2f_w[i],
 
                            cgra_cfg_g2f_cfg_wr_en=self.cgra_cfg_g2f_cfg_wr_en_w[i],
                            cgra_cfg_g2f_cfg_rd_en=self.cgra_cfg_g2f_cfg_rd_en_w[i],
