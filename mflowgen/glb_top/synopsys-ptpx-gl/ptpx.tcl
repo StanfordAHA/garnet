@@ -123,14 +123,17 @@ report_switching_activity \
 report_power -nosplit \
   > reports/${ptpx_design_name}.power.rpt
 
-report_power -nosplit -hierarchy -sort_by total_power \
+report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power \
   > reports/${ptpx_design_name}.power.hier.rpt
 
-report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power \
-  > reports/${ptpx_design_name}.power.leaf.rpt
+report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power -groups clock_network \
+  > reports/${ptpx_design_name}.power.hier.cn.rpt
 
 report_power -nosplit -cell -leaf -sort_by total_power \
   > reports/${ptpx_design_name}.power.cell.rpt
+
+report_power -nosplit -cell -leaf -sort_by total_power -groups clock_network \
+  > reports/${ptpx_design_name}.power.cell.cn.rpt
 
 # Report power summary and breakdown of sub-instances
 foreach instance [split $::env(instances) ,] {
@@ -140,10 +143,16 @@ foreach instance [split $::env(instances) ,] {
       > reports/${instance}.power.rpt
     
     report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power \
-      > reports/${instance}.power.leaf.rpt
+      > reports/${instance}.power.hier.rpt
 
     report_power -nosplit -cell -leaf -sort_by total_power \
       > reports/${instance}.power.cell.rpt
+
+    report_power -nosplit -cell -leaf -sort_by total_power -groups clock_network\
+      > reports/${instance}.power.cell.cn.rpt
+
+    report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power -groups clock_network \
+      > reports/${instance}.power.hier.cn.rpt
 }
 
 ###
