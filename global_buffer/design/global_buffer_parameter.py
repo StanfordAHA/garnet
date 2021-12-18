@@ -71,6 +71,7 @@ class GlobalBufferParams:
     glb_bank_memory_pipeline_depth: int = 0
     sram_gen_pipeline_depth: int = 0
     sram_gen_output_pipeline_depth: int = 0
+    gls_pipeline_depth: int = 2
 
     is_sram_stub: int = 0
 
