@@ -45,13 +45,6 @@ class GlobalBufferParams:
     axi_strb_width: int = math.ceil(axi_data_width / 8)
     axi_byte_offset: int = math.ceil(math.log(axi_data_width / 8, 2))
 
-    # max number of words in dma header
-    max_num_words_width: int = (glb_addr_width
-                                - bank_byte_offset
-                                + math.ceil(math.log((bank_data_width
-                                                      / cgra_data_width), 2)))
-    max_stride_width: int = 10
-
     # max number of bitstream in dma header
     max_num_cfg_width: int = glb_addr_width - bank_byte_offset
 
@@ -97,7 +90,6 @@ def gen_global_buffer_params(**kwargs):
     cfg_addr_width = kwargs.pop('cfg_addr_width', 32)
     cfg_data_width = kwargs.pop('cfg_data_width', 32)
     cgra_data_width = kwargs.pop('cgra_data_width', 16)
-    max_stride_width = kwargs.pop('max_stride_width', 10)
     queue_depth = kwargs.pop('queue_depth', 1)
     loop_level = kwargs.pop('loop_level', 5)
     glb_bank_memory_pipeline_depth = kwargs.pop('glb_bank_memory_pipeline_depth', 0)
@@ -134,9 +126,6 @@ def gen_global_buffer_params(**kwargs):
     tile_sel_addr_width = math.ceil(math.log(num_glb_tiles, 2))
     cgra_per_glb = num_cgra_cols // num_glb_tiles
     bank_sel_addr_width = math.ceil(math.log(banks_per_tile, 2))
-    max_num_words_width = (glb_addr_width - bank_byte_offset
-                           + math.ceil(math.log((bank_data_width
-                                                 / cgra_data_width), 2)))
     max_num_cfg_width = glb_addr_width - bank_byte_offset
     latency_width = 2 + math.ceil(math.log(num_glb_tiles, 2))
 
@@ -161,8 +150,6 @@ def gen_global_buffer_params(**kwargs):
                                 axi_data_width=axi_data_width,
                                 axi_strb_width=axi_strb_width,
                                 axi_byte_offset=axi_byte_offset,
-                                max_num_words_width=max_num_words_width,
-                                max_stride_width=max_stride_width,
                                 max_num_cfg_width=max_num_cfg_width,
                                 cgra_cfg_addr_width=cfg_addr_width,
                                 cgra_cfg_data_width=cfg_data_width,
