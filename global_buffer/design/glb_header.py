@@ -56,11 +56,11 @@ class GlbHeader():
         self.wr_packet_t = PackedStruct("wr_packet_t", self.wr_packet_ports)
         self.rdrq_packet_t = PackedStruct("rdrq_packet_t", self.rdrq_packet_ports)
         self.rdrs_packet_t = PackedStruct("rdrs_packet_t", self.rdrs_packet_ports)
-        self.packet_t = PackedStruct("z_packet_t")
+        self.packet_t = PackedStruct("packet_t")
         self.packet_t.add_attribute("wr", self.wr_packet_t)
         self.packet_t.add_attribute("rdrq", self.rdrq_packet_t)
         self.packet_t.add_attribute("rdrs", self.rdrs_packet_t)
-        self.rd_packet_t = PackedStruct("y_rd_packet_t")
+        self.rd_packet_t = PackedStruct("rd_packet_t")
         self.rd_packet_t.add_attribute("rdrq", self.rdrq_packet_t)
         self.rd_packet_t.add_attribute("rdrs", self.rdrs_packet_t)
 

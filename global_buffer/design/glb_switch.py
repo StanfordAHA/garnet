@@ -57,7 +57,7 @@ class GlbSwitch(Generator):
         assert self._params.glb_switch_pipeline_depth == 1  # switch pipeline depth is fixed to 1
         self.wr_packet_sw2bankarr_w = self.var(
             "wr_packet_sw2bankarr_w", self.header.wr_packet_t, size=self._params.banks_per_tile)
-        self.wr_packet_sw2sr_w = self.output("wr_packet_sw2sr_w", self.header.wr_packet_t)
+        self.wr_packet_sw2sr_w = self.var("wr_packet_sw2sr_w", self.header.wr_packet_t)
         self.wr_packet_sw2bank_muxed = self.var("wr_packet_sw2bank_muxed", self.header.wr_packet_t)
 
         self.rdrq_packet_sw2bankarr_w = self.var(
