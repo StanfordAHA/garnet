@@ -4,6 +4,7 @@ from global_buffer.design.glb_tile import GlbTile
 from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
+from global_buffer.design.pipeline import Pipeline
 from gemstone.generator.from_magma import FromMagma
 
 
@@ -163,32 +164,6 @@ class GlobalBuffer(Generator):
         self.cgra_cfg_pcfg_esto_data = self.var(
             "cgra_cfg_pcfg_esto_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
 
-        self.stall_w = self.var("stall_w", self._params.num_glb_tiles)
-        self.stall_d = self.var("stall_d", self._params.num_glb_tiles)
-        self.wire(self.stall_w, self.stall)
-
-        self.cgra_stall_in_w = self.var(
-            "cgra_stall_in_w", self._params.num_glb_tiles)
-        self.cgra_stall_in_d = self.var(
-            "cgra_stall_in_d", self._params.num_glb_tiles)
-        self.wire(self.cgra_stall_in_w, self.cgra_stall_in)
-
-        for i in range(self._params.num_glb_tiles):
-            self.wire(self.cgra_stall[i], concat(
-                *[self.cgra_stall_in_d[i]] * self._params.cgra_per_glb))
-
-        self.strm_g2f_start_pulse_w = self.var("strm_g2f_start_pulse_w", self._params.num_glb_tiles)
-        self.strm_g2f_start_pulse_d = self.var("strm_g2f_start_pulse_d", self._params.num_glb_tiles)
-        self.wire(self.strm_g2f_start_pulse, self.strm_g2f_start_pulse_w)
-
-        self.strm_f2g_start_pulse_w = self.var("strm_f2g_start_pulse_w", self._params.num_glb_tiles)
-        self.strm_f2g_start_pulse_d = self.var("strm_f2g_start_pulse_d", self._params.num_glb_tiles)
-        self.wire(self.strm_f2g_start_pulse, self.strm_f2g_start_pulse_w)
-
-        self.pcfg_start_pulse_w = self.var("pcfg_start_pulse_w", self._params.num_glb_tiles)
-        self.pcfg_start_pulse_d = self.var("pcfg_start_pulse_d", self._params.num_glb_tiles)
-        self.wire(self.pcfg_start_pulse, self.pcfg_start_pulse_w)
-
         self.strm_f2g_interrupt_pulse_w = self.var("strm_f2g_interrupt_pulse_w", self._params.num_glb_tiles)
         self.strm_f2g_interrupt_pulse_d = self.var("strm_f2g_interrupt_pulse_d", self._params.num_glb_tiles)
         self.wire(self.strm_f2g_interrupt_pulse_d, self.strm_f2g_interrupt_pulse)
@@ -263,6 +238,29 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_list.append(self.interface(
                 if_sram_cfg_tile2tile, f"if_sram_cfg_tile2tile_{i}"))
 
+        # GLS pipeline
+        self.stall_d = self.var("stall_d", self._params.num_glb_tiles)
+        self.cgra_stall_in_d = self.var("cgra_stall_in_d", self._params.num_glb_tiles)
+        self.strm_g2f_start_pulse_d = self.var("strm_g2f_start_pulse_d", self._params.num_glb_tiles)
+        self.strm_f2g_start_pulse_d = self.var("strm_f2g_start_pulse_d", self._params.num_glb_tiles)
+        self.pcfg_start_pulse_d = self.var("pcfg_start_pulse_d", self._params.num_glb_tiles)
+        self.gls_in = concat(self.stall, self.cgra_stall_in, self.strm_g2f_start_pulse,
+                             self.strm_f2g_start_pulse, self.pcfg_start_pulse)
+        self.gls_out = concat(self.stall_d, self.cgra_stall_in_d, self.strm_g2f_start_pulse_d,
+                              self.strm_f2g_start_pulse_d, self.pcfg_start_pulse_d)
+
+        self.gls_pipeline = Pipeline(width=self.gls_in.width, depth=self._params.gls_pipeline_depth)
+        self.add_child("gls_pipeline",
+                       self.gls_pipeline,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=self.gls_in,
+                       out_=self.gls_out)
+        for i in range(self._params.num_glb_tiles):
+            self.wire(self.cgra_stall[i], concat(*[self.cgra_stall_in_d[i]] * self._params.cgra_per_glb))
+
+        # GLB Tiles
         self.glb_tile = []
         for i in range(self._params.num_glb_tiles):
             self.glb_tile.append(GlbTile(_params=self._params))
@@ -281,8 +279,6 @@ class GlobalBuffer(Generator):
         self.tile2tile_w2e_wiring()
         self.add_always(self.tile2tile_w2e_cfg_wiring)
         self.add_always(self.interrupt_pipeline)
-        self.add_always(self.start_pulse_pipeline)
-        self.add_always(self.stall_pipeline)
         self.add_always(self.strm_data_pipeline)
         self.add_always(self.cgra_cfg_pcfg_pipeline)
 
@@ -621,30 +617,6 @@ class GlobalBuffer(Generator):
                 self.strm_f2g_interrupt_pulse_d[i] = self.strm_f2g_interrupt_pulse_w[i]
                 self.strm_g2f_interrupt_pulse_d[i] = self.strm_g2f_interrupt_pulse_w[i]
                 self.pcfg_g2f_interrupt_pulse_d[i] = self.pcfg_g2f_interrupt_pulse_w[i]
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def start_pulse_pipeline(self):
-        if self.reset:
-            for i in range(self._params.num_glb_tiles):
-                self.strm_g2f_start_pulse_d[i] = 0
-                self.strm_f2g_start_pulse_d[i] = 0
-                self.pcfg_start_pulse_d[i] = 0
-        else:
-            for i in range(self._params.num_glb_tiles):
-                self.strm_g2f_start_pulse_d[i] = self.strm_g2f_start_pulse_w[i]
-                self.strm_f2g_start_pulse_d[i] = self.strm_f2g_start_pulse_w[i]
-                self.pcfg_start_pulse_d[i] = self.pcfg_start_pulse_w[i]
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def stall_pipeline(self):
-        if self.reset:
-            for i in range(self._params.num_glb_tiles):
-                self.stall_d[i] = 0
-                self.cgra_stall_in_d[i] = 0
-        else:
-            for i in range(self._params.num_glb_tiles):
-                self.stall_d[i] = self.stall_w[i]
-                self.cgra_stall_in_d[i] = self.cgra_stall_in_w[i]
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def strm_data_pipeline(self):

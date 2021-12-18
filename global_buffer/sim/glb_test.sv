@@ -368,7 +368,7 @@ program glb_test (
 
         $display("Glb tiles are stalled with mask %16b", tile_mask);
         stall <= tile_mask;
-        repeat (1) @(posedge clk);
+        repeat (4) @(posedge clk);
 
     endtask
 
@@ -792,16 +792,17 @@ program glb_test (
     task automatic f2g_start(input [NUM_GLB_TILES-1:0] tile_id_mask);
         $display("f2g streaming start. tiles: 0x%4h", tile_id_mask);
 
+        #(`CLK_PERIOD * 0.3) strm_f2g_start_pulse <= tile_id_mask;
+        @(posedge clk);
+        #(`CLK_PERIOD * 0.3) strm_f2g_start_pulse <= 0;
+
+        repeat (GLS_PIPELINE_DEPTH - 1) @(posedge clk);
         // Enable glb2prr
         for (int i = 0; i < NUM_PRR; i++) begin
             if (tile_id_mask[i] == 1) begin
                 void'($root.top.cgra.prr2glb_on(i));
             end
         end
-
-        #(`CLK_PERIOD * 0.3) strm_f2g_start_pulse <= tile_id_mask;
-        @(posedge clk);
-        #(`CLK_PERIOD * 0.3) strm_f2g_start_pulse <= 0;
 
     endtask
 
