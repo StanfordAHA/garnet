@@ -11,6 +11,7 @@ class GlbSwitch(Generator):
         self.header = GlbHeader(self._params)
 
         self.clk = self.clock("clk")
+        self.clk_en = self.clock_en("clk_en")
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
@@ -164,7 +165,7 @@ class GlbSwitch(Generator):
         if self.reset:
             for i in range(self._params.banks_per_tile):
                 self.wr_packet_sw2bankarr[i] = 0
-        else:
+        elif self.clk_en:
             for i in range(self._params.banks_per_tile):
                 self.wr_packet_sw2bankarr[i] = self.wr_packet_sw2bankarr_w[i]
 
@@ -179,7 +180,7 @@ class GlbSwitch(Generator):
     def wr_sw2sr_pipeline(self):
         if self.reset:
             self.wr_packet_sw2sr = 0
-        else:
+        elif self.clk_en:
             self.wr_packet_sw2sr = self.wr_packet_sw2sr_w
 
     @ always_comb
@@ -230,7 +231,7 @@ class GlbSwitch(Generator):
         if self.reset:
             for i in range(self._params.banks_per_tile):
                 self.rdrq_packet_sw2bankarr[i] = 0
-        else:
+        elif self.clk_en:
             for i in range(self._params.banks_per_tile):
                 self.rdrq_packet_sw2bankarr[i] = self.rdrq_packet_sw2bankarr_w[i]
 
@@ -245,7 +246,7 @@ class GlbSwitch(Generator):
     def rdrq_sw2sr_pipeline(self):
         if self.reset:
             self.rdrq_packet_sw2sr = 0
-        else:
+        elif self.clk_en:
             self.rdrq_packet_sw2sr = self.rdrq_packet_sw2sr_w
 
     @ always_comb
@@ -263,7 +264,7 @@ class GlbSwitch(Generator):
     def rdrq_sw2pcfgr_pipeline(self):
         if self.reset:
             self.rdrq_packet_sw2pcfgr = 0
-        else:
+        elif self.clk_en:
             self.rdrq_packet_sw2pcfgr = self.rdrq_packet_sw2pcfgr_w
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
@@ -271,7 +272,7 @@ class GlbSwitch(Generator):
         if self.reset:
             for i in range(self._params.banks_per_tile):
                 self.rdrs_packet_bankarr2sw_d[i] = 0
-        else:
+        elif self.clk_en:
             for i in range(self._params.banks_per_tile):
                 self.rdrs_packet_bankarr2sw_d[i] = self.rdrs_packet_bankarr2sw[i]
 
@@ -280,7 +281,7 @@ class GlbSwitch(Generator):
     def rdrs_sr2sw_pipieline(self):
         if self.reset:
             self.rdrs_packet_sr2sw_d = 0
-        else:
+        elif self.clk_en:
             self.rdrs_packet_sr2sw_d = self.rdrs_packet_sr2sw
 
     @ always_comb
@@ -319,7 +320,7 @@ class GlbSwitch(Generator):
     def rdrs_pcfgr2sw_pipeline(self):
         if self.reset:
             self.rdrs_packet_pcfgr2sw_d = 0
-        else:
+        elif self.clk_en:
             self.rdrs_packet_pcfgr2sw_d = self.rdrs_packet_pcfgr2sw
 
     @ always_comb

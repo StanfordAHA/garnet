@@ -11,6 +11,7 @@ class GlbPcfgDma(Generator):
         self._params = _params
         self.header = GlbHeader(self._params)
         self.clk = self.clock("clk")
+        self.clk_en = self.clock_en("clk_en")
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
@@ -69,28 +70,31 @@ class GlbPcfgDma(Generator):
     def start_pulse_ff(self):
         if self.reset:
             self.start_pulse_r = 0
-        elif ((self.cfg_pcfg_dma_ctrl_mode == 1) & (~self.is_running_r) & (self.pcfg_start_pulse)):
-            self.start_pulse_r = 1
-        else:
-            self.start_pulse_r = 0
+        elif self.clk_en:
+            if ((self.cfg_pcfg_dma_ctrl_mode == 1) & (~self.is_running_r) & (self.pcfg_start_pulse)):
+                self.start_pulse_r = 1
+            else:
+                self.start_pulse_r = 0
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def done_pulse_ff(self):
         if self.reset:
             self.done_pulse_r = 0
-        elif ((self.is_running_r) & (self.num_cfg_cnt_r == 0)):
-            self.done_pulse_r = 1
-        else:
-            self.done_pulse_r = 0
+        elif self.clk_en:
+            if ((self.is_running_r) & (self.num_cfg_cnt_r == 0)):
+                self.done_pulse_r = 1
+            else:
+                self.done_pulse_r = 0
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def is_running_ff(self):
         if self.reset:
             self.is_running_r = 0
-        elif self.start_pulse_r:
-            self.is_running_r = 1
-        elif ((self.is_running_r == 1) & (self.num_cfg_cnt_r == 0)):
-            self.is_running_r = 0
+        elif self.clk_en:
+            if self.start_pulse_r:
+                self.is_running_r = 1
+            elif ((self.is_running_r == 1) & (self.num_cfg_cnt_r == 0)):
+                self.is_running_r = 0
 
     # TODO: We can merge adgn_logic, adgn_ff, rdrq_packet_logic, rdrq_packet_ff
     @always_comb
@@ -110,7 +114,7 @@ class GlbPcfgDma(Generator):
         if self.reset:
             self.num_cfg_cnt_r = 0
             self.addr_r = 0
-        else:
+        elif self.clk_en:
             self.num_cfg_cnt_r = self.num_cfg_cnt_next
             self.addr_r = self.addr_next
 
@@ -128,7 +132,7 @@ class GlbPcfgDma(Generator):
         if self.reset:
             self.rdrq_packet_rd_en_r = 0
             self.rdrq_packet_rd_addr_r = 0
-        else:
+        elif self.clk_en:
             self.rdrq_packet_rd_en_r = self.rdrq_packet_rd_en_next
             self.rdrq_packet_rd_addr_r = self.rdrq_packet_rd_addr_next
 
@@ -137,12 +141,13 @@ class GlbPcfgDma(Generator):
         if self.reset:
             self.rdrs_packet_rd_data_r = 0
             self.rdrs_packet_rd_data_valid_r = 0
-        elif self.rdrs_packet['rd_data_valid']:
-            self.rdrs_packet_rd_data_r = self.rdrs_packet['rd_data']
-            self.rdrs_packet_rd_data_valid_r = 1
-        else:
-            self.rdrs_packet_rd_data_r = 0
-            self.rdrs_packet_rd_data_valid_r = 0
+        elif self.clk_en:
+            if self.rdrs_packet['rd_data_valid']:
+                self.rdrs_packet_rd_data_r = self.rdrs_packet['rd_data']
+                self.rdrs_packet_rd_data_valid_r = 1
+            else:
+                self.rdrs_packet_rd_data_r = 0
+                self.rdrs_packet_rd_data_valid_r = 0
 
     def assign_rdrq_packet(self):
         self.wire(self.rdrq_packet['rd_en'], self.rdrq_packet_rd_en_r)

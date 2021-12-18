@@ -223,15 +223,6 @@ class GlbTile(Generator):
         self.wire(self.cfg_pcfg_dma_header, self.glb_tile_cfg.cfg_pcfg_dma_header)
 
         # Instantiate modules
-        # Clock gating
-        self.gclk = self.var("gclk", 1)
-        self.glb_clk_gate = ClkGate()
-        self.add_child("glb_clk_gate",
-                       self.glb_clk_gate,
-                       clk=self.clk,
-                       enable=self.clk_en,
-                       gclk=self.gclk)
-
         self.glb_tile_pcfg_switch = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_switch",
                        self.glb_tile_pcfg_switch,
@@ -242,7 +233,8 @@ class GlbTile(Generator):
 
         self.add_child("glb_store_dma",
                        GlbStoreDma(_params=self._params),
-                       clk=clock(self.gclk),
+                       clk=self.clk,
+                       clk_en=self.clk_en,
                        reset=self.reset,
                        data_f2g=self.strm_data_f2g_mux2dma,
                        data_valid_f2g=self.strm_data_valid_f2g_mux2dma,
@@ -258,7 +250,8 @@ class GlbTile(Generator):
 
         self.add_child("glb_load_dma",
                        GlbLoadDma(_params=self._params),
-                       clk=clock(self.gclk),
+                       clk=self.clk,
+                       clk_en=self.clk_en,
                        glb_tile_id=self.glb_tile_id,
                        reset=self.reset,
                        data_g2f=self.strm_data_g2f_dma2mux,
@@ -276,7 +269,8 @@ class GlbTile(Generator):
 
         self.add_child("glb_pcfg_dma",
                        GlbPcfgDma(_params=self._params),
-                       clk=clock(self.gclk),
+                       clk=self.clk,
+                       clk_en=self.clk_en,
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
                        cgra_cfg_pcfg=self.cgra_cfg_pcfgdma2mux,
@@ -305,7 +299,8 @@ class GlbTile(Generator):
         self.glb_core_switch = GlbSwitch(_params=self._params)
         self.add_child("glb_switch",
                        self.glb_core_switch,
-                       clk=clock(self.gclk),
+                       clk=self.clk,
+                       clk_en=self.clk_en,
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
                        wr_packet_pr2sw=self.proc_wr_packet_r2sw,

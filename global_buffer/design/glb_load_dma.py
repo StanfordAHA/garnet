@@ -15,6 +15,7 @@ class GlbLoadDma(Generator):
         assert self._params.bank_data_width == self._params.cgra_data_width * 4
 
         self.clk = self.clock("clk")
+        self.clk_en = self.clock_en("clk_en")
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
@@ -170,7 +171,7 @@ class GlbLoadDma(Generator):
     def queue_sel_ff(self):
         if self.reset:
             self.queue_sel_r = 0
-        else:
+        elif self.clk_en:
             if self.cfg_ld_dma_ctrl_mode == 3:
                 if self.ld_dma_done_pulse:
                     if (self.repeat_cnt + 1) < self.cfg_ld_dma_num_repeat:
@@ -182,7 +183,7 @@ class GlbLoadDma(Generator):
     def repeat_cnt_ff(self):
         if self.reset:
             self.repeat_cnt = 0
-        else:
+        elif self.clk_en:
             if self.cfg_ld_dma_ctrl_mode == 2:
                 if self.ld_dma_done_pulse:
                     if (self.repeat_cnt + 1) < self.cfg_ld_dma_num_repeat:
@@ -197,7 +198,7 @@ class GlbLoadDma(Generator):
     def is_first_ff(self):
         if self.reset:
             self.is_first = 0
-        else:
+        elif self.clk_en:
             if self.ld_dma_start_pulse_r:
                 self.is_first = 1
             elif self.bank_rdrq_rd_en:
@@ -207,7 +208,7 @@ class GlbLoadDma(Generator):
     def strm_run_ff(self):
         if self.reset:
             self.strm_run = 0
-        else:
+        elif self.clk_en:
             if self.ld_dma_start_pulse_r:
                 self.strm_run = 1
             elif self.loop_done:
@@ -230,7 +231,7 @@ class GlbLoadDma(Generator):
     def ld_dma_start_pulse_ff(self):
         if self.reset:
             self.ld_dma_start_pulse_r = 0
-        else:
+        elif self.clk_en:
             if self.ld_dma_start_pulse_r:
                 self.ld_dma_start_pulse_r = 0
             else:
@@ -240,7 +241,7 @@ class GlbLoadDma(Generator):
     def cycle_counter(self):
         if self.reset:
             self.cycle_count = 0
-        else:
+        elif self.clk_en:
             if self.ld_dma_start_pulse_r:
                 self.cycle_count = 0
             elif self.loop_done:
@@ -253,7 +254,7 @@ class GlbLoadDma(Generator):
         if self.reset:
             self.strm_data_r = 0
             self.strm_data_valid_r = 0
-        else:
+        elif self.clk_en:
             self.strm_data_r = self.strm_data
             self.strm_data_valid_r = self.strm_data_valid
 
@@ -279,7 +280,7 @@ class GlbLoadDma(Generator):
     def last_strm_rd_addr_ff(self):
         if self.reset:
             self.last_strm_rd_addr_r = 0
-        else:
+        elif self.clk_en:
             if self.strm_rd_en_w:
                 self.last_strm_rd_addr_r = self.strm_rd_addr_w
 
@@ -298,7 +299,7 @@ class GlbLoadDma(Generator):
     def bank_rdrs_data_cache_ff(self):
         if self.reset:
             self.bank_rdrs_data_cache_r = 0
-        else:
+        elif self.clk_en:
             if self.rdrs_packet['rd_data_valid']:
                 self.bank_rdrs_data_cache_r = self.rdrs_packet['rd_data']
 
