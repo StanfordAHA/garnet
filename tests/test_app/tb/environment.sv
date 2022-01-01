@@ -230,7 +230,7 @@ task Environment::kernel_test(Kernel kernel);
     latency = end_time - g2f_end_time;
     $display("[%s] The latency is %0t.", kernel.name, latency);
     $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
-             (total_output_size * 2) / (g2f_end_time - start_time));
+             total_output_size / (g2f_end_time - start_time));
 
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
