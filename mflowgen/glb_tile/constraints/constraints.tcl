@@ -59,8 +59,8 @@ set_max_delay -to [get_ports *_wst* -filter "direction==out"] 1.0
 set_false_path -from {glb_tile_id*}
 
 # clk_en is multi_cycle path
-set_multicycle_path -setup 10 -from {clk_en}
-set_multicycle_path -hold 9 -from {clk_en}
+set_multicycle_path -setup 10 -from {clk_en*}
+set_multicycle_path -hold 9 -from {clk_en*}
 
 # path from configuration registers are multi_cycle path
 set_multicycle_path -setup 10 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
