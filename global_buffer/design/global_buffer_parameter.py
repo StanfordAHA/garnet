@@ -60,8 +60,8 @@ class GlobalBufferParams:
     latency_width: int = 2 + math.ceil(math.log(num_glb_tiles, 2))
 
     # pipeline depth
-    glb_switch_rq_pipeline_depth: int = 0
-    glb_switch_rs_pipeline_depth: int = 1
+    glb_sw2bank_pipeline_depth: int = 0
+    glb_bank2sw_pipeline_depth: int = 1
     glb_bank_memory_pipeline_depth: int = 0
     sram_gen_pipeline_depth: int = 0
     sram_gen_output_pipeline_depth: int = 0
