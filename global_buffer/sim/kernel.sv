@@ -43,7 +43,9 @@ class Test;
     bit [NUM_GLB_TILES-1:0] g2f_tile_mask;
     bit [NUM_GLB_TILES-1:0] f2g_tile_mask;
     bit [NUM_GLB_TILES-1:0] pcfg_tile_mask;
-    bit [NUM_GLB_TILES-1:0] stall_mask;
+    bit [NUM_GLB_TILES-1:0] core_stall_mask;
+    bit [NUM_GLB_TILES-1:0] rtr_stall_mask;
+    bit [NUM_GLB_TILES-1:0] pcfg_rtr_stall_mask;
 
     extern function new(string filename);
 endclass
@@ -126,16 +128,19 @@ function Test::new(string filename);
     end
 
     // Calculate stall
-    stall_mask = {NUM_GLB_TILES{1'b1}};
+    core_stall_mask = {NUM_GLB_TILES{1'b1}};
+    rtr_stall_mask = {NUM_GLB_TILES{1'b1}};
+    pcfg_rtr_stall_mask = {NUM_GLB_TILES{1'b1}};
     for (int i = 0; i < num_kernels; i++) begin
         // For SRAM configuration test, we can still stall tiles
         if (kernels[i].type_ != SRAM) begin
-            stall_mask[kernels[i].tile_id] = 1'b0;
+            core_stall_mask[kernels[i].tile_id] = 1'b0;
         end
     end
     for (int i = 0; i < NUM_GLB_TILES; i++) begin
         if (data_network_mask[i] == 1'b1) begin
-            stall_mask[i + 1] = 1'b0;
+            rtr_stall_mask[i] = 1'b0;
+            rtr_stall_mask[i + 1] = 1'b0;
         end
     end
 

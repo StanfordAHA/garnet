@@ -39,5 +39,5 @@ parameters:
   strip_path: top/dut
   PWR_AWARE: False
   instances: ["glb_tile_gen_0", "glb_tile_gen_1"]
-  parse_modules: ["CTS.*", "RC_CG.*", "glb_tile_cfg", "glb_core_switch", "glb_core_proc_router", "glb_core_strm_router", "'glb_core_(load|store)_dma'", "'(pcfg_dma|pcfg_switch|pcfg_router)'", "glb_bank_memory", "sram_cfg_ctrl"]
+  parse_modules: ["glb_cfg", "'(glb_switch|glb_proc_router|glb_strm_router)'", "'glb_core_(load|store|pcfg)_dma'", "glb_bank_memory", "sram_cfg_ctrl"]
   chkpt: False # Turn this on to save periodically during ptpx flow
