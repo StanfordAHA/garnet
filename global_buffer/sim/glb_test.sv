@@ -112,7 +112,7 @@ program glb_test (
                     end
                 end
                 for (int j = kernels[i].tile_id - num_chained_prev; j < kernels[i].tile_id + num_chained_next; j++) begin
-                    data_network_configure(j, 1, (num_chained_prev + num_chained_next) * 2 + 5 + GLB_SWITCH_RS_PIPELINE_DEPTH);
+                    data_network_configure(j, 1, (num_chained_prev + num_chained_next) * 2 + 5 + GLB_BANK2SW_PIPELINE_DEPTH);
                 end
             end
         end
