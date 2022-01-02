@@ -37,6 +37,7 @@ class GlbStoreDma(Generator):
         self.default_latency = (self._params.glb_bank_memory_pipeline_depth
                                 + self._params.sram_gen_pipeline_depth
                                 + self._params.glb_sw2bank_pipeline_depth
+                                + self._params.glb_switch_muxed_pipeline_depth
                                 )
         self.cgra_strb_width = self._params.cgra_data_width // 8
         self.cgra_strb_value = 2 ** (self._params.cgra_data_width // 8) - 1

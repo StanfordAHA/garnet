@@ -37,6 +37,7 @@ class GlbLoadDma(Generator):
         # local parameter
         self.default_latency = (self._params.glb_sw2bank_pipeline_depth
                                 + self._params.glb_bank2sw_pipeline_depth 
+                                + self._params.glb_switch_muxed_pipeline_depth
                                 + self._params.glb_bank_memory_pipeline_depth
                                 + self._params.sram_gen_pipeline_depth
                                 + self._params.sram_gen_output_pipeline_depth
