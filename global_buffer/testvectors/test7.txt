@@ -1,6 +1,6 @@
 // Test chaining of tile0 and tile1. rdrq accesses both bank1 and bank2
 2
-11
+111
 G2F 1 1 131000 0
 1
 4096

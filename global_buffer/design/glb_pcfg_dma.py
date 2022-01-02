@@ -29,11 +29,11 @@ class GlbPcfgDma(Generator):
         # localparam
         self.bank_data_byte_offset = math.ceil(
             self._params.bank_data_width / 8)
-        self.default_latency = (self._params.glb_switch_pipeline_depth
+        self.default_latency = (self._params.glb_switch_rq_pipeline_depth
+                                + self._params.glb_switch_rs_pipeline_depth
                                 + self._params.glb_bank_memory_pipeline_depth
                                 + self._params.sram_gen_pipeline_depth
                                 + self._params.sram_gen_output_pipeline_depth
-                                + self._params.glb_switch_pipeline_depth
                                 + 1  # SRAM macro read latency
                                 )
 
