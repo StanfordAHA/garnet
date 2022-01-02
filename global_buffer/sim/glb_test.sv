@@ -9,7 +9,9 @@ program glb_test (
     // LEFT
     input  logic                     clk,
     input  logic                     reset,
-    output logic [NUM_GLB_TILES-1:0] stall,
+    output logic [NUM_GLB_TILES-1:0] core_stall,
+    output logic [NUM_GLB_TILES-1:0] rtr_stall,
+    output logic [NUM_GLB_TILES-1:0] pcfg_rtr_stall,
     output logic [NUM_GLB_TILES-1:0] cgra_stall_in,
 
     // proc
@@ -116,7 +118,7 @@ program glb_test (
                 end
             end
         end
-        glb_stall(test.stall_mask);
+        glb_stall(test.core_stall_mask, test.rtr_stall_mask, test.pcfg_rtr_stall_mask);
 
         foreach (kernels[i]) begin
             if (kernels[i].type_ == WR) begin
@@ -325,7 +327,9 @@ program glb_test (
 
     task initialize();
         // control
-        stall <= 0;
+        core_stall <= 0;
+        rtr_stall <= 0;
+        pcfg_rtr_stall <= 0;
         cgra_stall_in <= 0;
         pcfg_start_pulse <= 0;
         strm_g2f_start_pulse <= 0;
@@ -364,10 +368,14 @@ program glb_test (
         repeat (10) @(posedge clk);
     endtask
 
-    task glb_stall(logic [NUM_GLB_TILES-1:0] tile_mask);
+    task glb_stall(logic [NUM_GLB_TILES-1:0] core_tile_mask, logic [NUM_GLB_TILES-1:0] rtr_tile_mask, logic [NUM_GLB_TILES-1:0] pcfg_rtr_tile_mask);
 
-        $display("Glb tiles are stalled with mask %16b", tile_mask);
-        stall <= tile_mask;
+        $display("Glb tiles CORE logics are stalled with mask %16b", core_tile_mask);
+        core_stall <= core_tile_mask;
+        $display("Glb tiles ROUTER logics are stalled with mask %16b", rtr_tile_mask);
+        rtr_stall <= rtr_tile_mask;
+        $display("Glb tiles PCFGROUTER logics are stalled with mask %16b", pcfg_rtr_tile_mask);
+        pcfg_rtr_stall <= pcfg_rtr_tile_mask;
         repeat (4) @(posedge clk);
 
     endtask
