@@ -58,10 +58,12 @@ class GlbSwitch(Generator):
             "wr_packet_sw2bankarr_w", self.header.wr_packet_t, size=self._params.banks_per_tile)
         self.wr_packet_sw2sr_w = self.var("wr_packet_sw2sr_w", self.header.wr_packet_t)
         self.wr_packet_sw2bank_muxed = self.var("wr_packet_sw2bank_muxed", self.header.wr_packet_t)
+        self.wr_packet_sw2bank_muxed_d = self.var("wr_packet_sw2bank_muxed_d", self.header.wr_packet_t)
 
         self.rdrq_packet_sw2bankarr_w = self.var(
             "rdrq_packet_sw2bankarr_w", self.header.rdrq_packet_t, size=self._params.banks_per_tile)
         self.rdrq_packet_sw2bank_muxed = self.var("rdrq_packet_sw2bank_muxed", self.header.rdrq_packet_t)
+        self.rdrq_packet_sw2bank_muxed_d = self.var("rdrq_packet_sw2bank_muxed_d", self.header.rdrq_packet_t)
         self.rdrq_packet_sw2sr_w = self.var("rdrq_packet_sw2sr_w", self.header.rdrq_packet_t)
         self.rdrq_packet_sw2pcfgr_w = self.var("rdrq_packet_sw2pcfgr_w", self.header.rdrq_packet_t)
 
@@ -76,11 +78,14 @@ class GlbSwitch(Generator):
         self.rd_type_d = self.var("rd_type_d", self.rd_type_e)
         self.rdrq_bank_sel = self.var("rdrq_bank_sel", self._params.bank_sel_addr_width)
         self.rdrq_bank_sel_d = self.var("rdrq_bank_sel_d", self._params.bank_sel_addr_width)
+        self.rdrq_bank_sel_muxed_d = self.var("rdrq_bank_sel_muxed_d", self._params.bank_sel_addr_width)
         self.wr_bank_sel = self.var("wr_bank_sel", self._params.bank_sel_addr_width)
+        self.wr_bank_sel_d = self.var("wr_bank_sel_d", self._params.bank_sel_addr_width)
 
         # wr pipeline
         for i in range(self._params.banks_per_tile):
-            self.wr_sw2bank_pipeline = Pipeline(width=self.wr_packet_sw2bankarr_w[i].width, depth=self._params.glb_sw2bank_pipeline_depth)
+            self.wr_sw2bank_pipeline = Pipeline(
+                width=self.wr_packet_sw2bankarr_w[i].width, depth=self._params.glb_sw2bank_pipeline_depth)
             self.add_child(f"wr_sw2bank_pipeline_{i}",
                            self.wr_sw2bank_pipeline,
                            clk=self.clk,
@@ -91,7 +96,8 @@ class GlbSwitch(Generator):
 
         # rdrq pipeline
         for i in range(self._params.banks_per_tile):
-            self.rdrq_sw2bank_pipeline = Pipeline(width=self.rdrq_packet_sw2bankarr_w[i].width, depth=self._params.glb_sw2bank_pipeline_depth)
+            self.rdrq_sw2bank_pipeline = Pipeline(
+                width=self.rdrq_packet_sw2bankarr_w[i].width, depth=self._params.glb_sw2bank_pipeline_depth)
             self.add_child(f"rdrq_sw2bank_pipeline_{i}",
                            self.rdrq_sw2bank_pipeline,
                            clk=self.clk,
@@ -105,8 +111,8 @@ class GlbSwitch(Generator):
                           + self._params.sram_gen_output_pipeline_depth
                           + self._params.glb_sw2bank_pipeline_depth
                           + self._params.glb_bank2sw_pipeline_depth
+                          + self._params.glb_switch_muxed_pipeline_depth
                           + 1)
-
         self.rdrq_pipeline_in = concat(self.rd_type, self.rdrq_bank_sel)
         self.rdrq_pipeline_out = concat(self.rd_type_d, self.rdrq_bank_sel_d)
         self.rdrq_pipeline = Pipeline(width=self.rdrq_pipeline_in.width, depth=pipeline_depth)
@@ -118,10 +124,32 @@ class GlbSwitch(Generator):
                        in_=self.rdrq_pipeline_in,
                        out_=self.rdrq_pipeline_out)
 
+        # rdrq_muxed_pipeline
+        self.rdrq_muxed_pipeline = Pipeline(width=self.rdrq_packet_sw2bank_muxed.width + self.rdrq_bank_sel.width,
+                                            depth=self._params.glb_switch_muxed_pipeline_depth)
+        self.add_child("rdrq_muxed_pipeline",
+                       self.rdrq_muxed_pipeline,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=concat(self.rdrq_packet_sw2bank_muxed, self.rdrq_bank_sel),
+                       out_=concat(self.rdrq_packet_sw2bank_muxed_d, self.rdrq_bank_sel_muxed_d))
+
+        # wr_muxed pipeline
+        self.wr_muxed_pipeline = Pipeline(width=self.wr_packet_sw2bank_muxed.width + self.wr_bank_sel.width,
+                                          depth=self._params.glb_switch_muxed_pipeline_depth)
+        self.add_child("wr_muxed_pipeline",
+                       self.wr_muxed_pipeline,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=concat(self.wr_packet_sw2bank_muxed, self.wr_bank_sel),
+                       out_=concat(self.wr_packet_sw2bank_muxed_d, self.wr_bank_sel_d))
 
         # rdrs pipeline
         for i in range(self._params.banks_per_tile):
-            self.rdrs_bank2sw_pipeline = Pipeline(width=self.rdrs_packet_bankarr2sw[i].width, depth=self._params.glb_bank2sw_pipeline_depth)
+            self.rdrs_bank2sw_pipeline = Pipeline(
+                width=self.rdrs_packet_bankarr2sw[i].width, depth=self._params.glb_bank2sw_pipeline_depth)
             self.add_child(f"rdrs_bank2sw_pipeline_{i}",
                            self.rdrs_bank2sw_pipeline,
                            clk=self.clk,
@@ -130,7 +158,8 @@ class GlbSwitch(Generator):
                            in_=self.rdrs_packet_bankarr2sw[i],
                            out_=self.rdrs_packet_bankarr2sw_d[i])
 
-        self.rdrs_sr2sw_pipeline = Pipeline(width=self.rdrs_packet_sr2sw.width, depth=self._params.glb_bank2sw_pipeline_depth)
+        self.rdrs_sr2sw_pipeline = Pipeline(width=self.rdrs_packet_sr2sw.width,
+                                            depth=self._params.glb_bank2sw_pipeline_depth)
         self.add_child(f"rdrs_sr2sw_pipeline",
                        self.rdrs_sr2sw_pipeline,
                        clk=self.clk,
@@ -139,7 +168,8 @@ class GlbSwitch(Generator):
                        in_=self.rdrs_packet_sr2sw,
                        out_=self.rdrs_packet_sr2sw_d)
 
-        self.rdrs_pcfgr2sw_pipeline = Pipeline(width=self.rdrs_packet_pcfgr2sw.width, depth=self._params.glb_bank2sw_pipeline_depth)
+        self.rdrs_pcfgr2sw_pipeline = Pipeline(width=self.rdrs_packet_pcfgr2sw.width,
+                                               depth=self._params.glb_bank2sw_pipeline_depth)
         self.add_child(f"rdrs_pcfgr2sw_pipeline",
                        self.rdrs_pcfgr2sw_pipeline,
                        clk=self.clk,
@@ -200,8 +230,8 @@ class GlbSwitch(Generator):
     @always_comb
     def wr_sw2bankarr_logic(self):
         for i in range(self._params.banks_per_tile):
-            if self.wr_bank_sel == i:
-                self.wr_packet_sw2bankarr_w[i] = self.wr_packet_sw2bank_muxed
+            if self.wr_bank_sel_d == i:
+                self.wr_packet_sw2bankarr_w[i] = self.wr_packet_sw2bank_muxed_d
             else:
                 self.wr_packet_sw2bankarr_w[i] = 0
 
@@ -257,8 +287,8 @@ class GlbSwitch(Generator):
     @ always_comb
     def rdrq_sw2bankarr_logic(self):
         for i in range(self._params.banks_per_tile):
-            if self.rdrq_bank_sel == i:
-                self.rdrq_packet_sw2bankarr_w[i] = self.rdrq_packet_sw2bank_muxed
+            if self.rdrq_bank_sel_muxed_d == i:
+                self.rdrq_packet_sw2bankarr_w[i] = self.rdrq_packet_sw2bank_muxed_d
             else:
                 self.rdrq_packet_sw2bankarr_w[i] = 0
 
