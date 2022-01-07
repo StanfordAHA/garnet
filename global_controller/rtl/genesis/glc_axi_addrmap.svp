@@ -29,7 +29,8 @@ module `mname` (
     output logic [`$num_glb_tiles-1`:0]         axi_cgra_stall, 
 
 	// global buffer control signals
-	output logic [`$num_glb_tiles-1`:0]         strm_start_pulse,
+	output logic [`$num_glb_tiles-1`:0]         strm_g2f_start_pulse,
+	output logic [`$num_glb_tiles-1`:0]         strm_f2g_start_pulse,
 	output logic [`$num_glb_tiles-1`:0]         pc_start_pulse,
 	input  logic [`$num_glb_tiles-1`:0]         strm_g2f_interrupt_pulse,
 	input  logic [`$num_glb_tiles-1`:0]         strm_f2g_interrupt_pulse,
@@ -137,22 +138,38 @@ module `mname` (
     logic     [31:0] l2h_soft_reset_cnt_r;
     logic     [15:0] l2h_stall_cgra_stall_r;
     logic     [15:0] l2h_stall_glb_stall_r;
-    logic    l2h_stream_start_pulse_glb_tile_0_r;
-    logic    l2h_stream_start_pulse_glb_tile_1_r;
-    logic    l2h_stream_start_pulse_glb_tile_2_r;
-    logic    l2h_stream_start_pulse_glb_tile_3_r;
-    logic    l2h_stream_start_pulse_glb_tile_4_r;
-    logic    l2h_stream_start_pulse_glb_tile_5_r;
-    logic    l2h_stream_start_pulse_glb_tile_6_r;
-    logic    l2h_stream_start_pulse_glb_tile_7_r;
-    logic    l2h_stream_start_pulse_glb_tile_8_r;
-    logic    l2h_stream_start_pulse_glb_tile_9_r;
-    logic    l2h_stream_start_pulse_glb_tile_10_r;
-    logic    l2h_stream_start_pulse_glb_tile_11_r;
-    logic    l2h_stream_start_pulse_glb_tile_12_r;
-    logic    l2h_stream_start_pulse_glb_tile_13_r;
-    logic    l2h_stream_start_pulse_glb_tile_14_r;
-    logic    l2h_stream_start_pulse_glb_tile_15_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_0_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_1_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_2_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_3_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_4_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_5_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_6_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_7_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_8_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_9_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_10_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_11_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_12_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_13_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_14_r;
+    logic    l2h_stream_start_pulse_g2f_glb_tile_15_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_0_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_1_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_2_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_3_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_4_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_5_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_6_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_7_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_8_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_9_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_10_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_11_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_12_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_13_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_14_r;
+    logic    l2h_stream_start_pulse_f2g_glb_tile_15_r;
     logic    l2h_pc_start_pulse_glb_tile_0_r;
     logic    l2h_pc_start_pulse_glb_tile_1_r;
     logic    l2h_pc_start_pulse_glb_tile_2_r;
@@ -222,7 +239,11 @@ assign h2l_par_cfg_g2f_isr_tile_`$i`_intr = pcfg_g2f_interrupt_pulse[`$i`];
 //; }
 
 //; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {
-assign strm_start_pulse[`$i`] = l2h_stream_start_pulse_glb_tile_`$i`_r;
+assign strm_g2f_start_pulse[`$i`] = l2h_stream_start_pulse_g2f_glb_tile_`$i`_r;
+//; }
+
+//; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {
+assign strm_f2g_start_pulse[`$i`] = l2h_stream_start_pulse_f2g_glb_tile_`$i`_r;
 //; }
 
 //; for (my $i = 0; $i < $num_glb_tiles; $i += 1) {
