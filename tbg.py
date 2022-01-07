@@ -395,11 +395,12 @@ class TestBenchGenerator:
             verilog_libraries = [os.path.basename(f) for f in verilogs]
             # sanity check since we just copied
             assert "Interconnect.sv" in verilog_libraries
-            if "Interconnect.v" in verilog_libraries:
-                # ncsim will freak out if the system verilog file has .v
-                # extension
-                verilog_libraries.remove("Interconnect.v")
-                os.remove(os.path.join(tempdir, "Interconnect.v"))
+            for name in ["Interconnect.v", "Interconnect.sv"]:
+                if name in verilog_libraries:
+                    # ncsim will freak out if the system verilog file has .v or .sv
+                    # extension
+                    verilog_libraries.remove(name)
+                    # os.remove(os.path.join(tempdir, name))
             tester.compile_and_run(target="system-verilog",
                                    skip_compile=True,
                                    skip_run=args.tb_only,

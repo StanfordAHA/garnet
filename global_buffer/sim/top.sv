@@ -1,229 +1,236 @@
 /*=============================================================================
 ** Module: top.sv
 ** Description:
-**              new testbench for global buffer
+**              simple top testbench for glb
 ** Author: Taeyoung Kong
-** Change history:
-**  09/19/2020 - Implement first version of uvm-style testbench
+** Change history:  05/22/2021 - Implement first version of testbench
 **===========================================================================*/
-`define CLK_PERIOD 1200ps
+`define CLK_PERIOD 1000ps
 
-import global_buffer_pkg::*;
 import global_buffer_param::*;
 
 module top;
-timeunit 1ps;
-timeprecision 1ps;
 
 `ifdef PWR
     supply1 VDD;
     supply0 VSS;
 `endif
 
-    logic                           clk;
-    logic [NUM_GLB_TILES-1:0]       stall;
-    logic [NUM_GLB_TILES-1:0]       cgra_stall_in;
-    logic                           reset;
-    logic                           cgra_soft_reset;
+    // ---------------------------------------
+    // GLB signals
+    // ---------------------------------------
+    logic clk;
+    logic [NUM_GLB_TILES-1:0] stall;
+    logic [NUM_GLB_TILES-1:0] cgra_stall_in;
+    logic reset;
+    logic cgra_soft_reset;
 
     // cgra configuration from global controller
-    logic                           cgra_cfg_jtag_gc2glb_wr_en;
-    logic                           cgra_cfg_jtag_gc2glb_rd_en;
+    logic cgra_cfg_jtag_gc2glb_wr_en;
+    logic cgra_cfg_jtag_gc2glb_rd_en;
     logic [CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_jtag_gc2glb_addr;
     logic [CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_jtag_gc2glb_data;
 
     // control pulse
-    logic [NUM_GLB_TILES-1:0]       strm_start_pulse;
-    logic [NUM_GLB_TILES-1:0]       pc_start_pulse;
-    logic [NUM_GLB_TILES-1:0]       strm_f2g_interrupt_pulse;
-    logic [NUM_GLB_TILES-1:0]       strm_g2f_interrupt_pulse;
-    logic [NUM_GLB_TILES-1:0]       pcfg_g2f_interrupt_pulse;
+    logic [NUM_GLB_TILES-1:0] strm_g2f_start_pulse;
+    logic [NUM_GLB_TILES-1:0] strm_f2g_start_pulse;
+    logic [NUM_GLB_TILES-1:0] pcfg_start_pulse;
+    logic [NUM_GLB_TILES-1:0] strm_f2g_interrupt_pulse;
+    logic [NUM_GLB_TILES-1:0] strm_g2f_interrupt_pulse;
+    logic [NUM_GLB_TILES-1:0] pcfg_g2f_interrupt_pulse;
+
+    // Processor
+    logic proc_wr_en;
+    logic [BANK_DATA_WIDTH/8-1:0] proc_wr_strb;
+    logic [GLB_ADDR_WIDTH-1:0] proc_wr_addr;
+    logic [BANK_DATA_WIDTH-1:0] proc_wr_data;
+    logic proc_rd_en;
+    logic [GLB_ADDR_WIDTH-1:0] proc_rd_addr;
+    logic [BANK_DATA_WIDTH-1:0] proc_rd_data;
+    logic proc_rd_data_valid;
+
+    // configuration of glb from glc
+    logic if_cfg_wr_en;
+    logic [AXI_ADDR_WIDTH-1:0] if_cfg_wr_addr;
+    logic [AXI_DATA_WIDTH-1:0] if_cfg_wr_data;
+    logic if_cfg_rd_en;
+    logic [AXI_ADDR_WIDTH-1:0] if_cfg_rd_addr;
+    logic [AXI_DATA_WIDTH-1:0] if_cfg_rd_data;
+    logic if_cfg_rd_data_valid;
+
+    // configuration of sram from glc
+    logic if_sram_cfg_wr_en;
+    logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_wr_addr;
+    logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_wr_data;
+    logic if_sram_cfg_rd_en;
+    logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_rd_addr;
+    logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_rd_data;
+    logic if_sram_cfg_rd_data_valid;
 
     // BOTTOM
     // stall
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_stall;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_stall;
 
     // cgra to glb streaming word
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_f2g;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_f2g;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] stream_data_f2g;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] stream_data_valid_f2g;
 
     // glb to cgra streaming word
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0]     stream_data_g2f;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          stream_data_valid_g2f;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] stream_data_g2f;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] stream_data_valid_g2f;
 
     // cgra configuration to cgra
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2f_cfg_wr_en;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_g2f_cfg_rd_en;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_cfg_g2f_cfg_wr_en;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_cfg_g2f_cfg_rd_en;
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr;
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data;
+    logic [NUM_GLB_TILES-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_f2g_cfg_data;
 
-    // for jtag simulation
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_f2g_rd_data;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0]                          cgra_cfg_f2g_rd_data_valid;
+    // ---------------------------------------
+    // CGRA signals
+    // ---------------------------------------
+    logic [NUM_PRR-1:0] g2c_cgra_stall;
+    logic [NUM_PRR-1:0] g2c_cfg_wr_en;
+    logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0] g2c_cfg_wr_addr;
+    logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0] g2c_cfg_wr_data;
+    logic [NUM_PRR-1:0] g2c_cfg_rd_en;
+    logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0] g2c_cfg_rd_addr;
+    logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0] c2g_cfg_rd_data;
 
-    logic [CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_rd_data;
-    logic                           cgra_cfg_rd_data_valid;
+    logic [NUM_PRR-1:0] g2c_io1;
+    logic [NUM_PRR-1:0][15:0] g2c_io16;
+    logic [NUM_PRR-1:0] c2g_io1;
+    logic [NUM_PRR-1:0][15:0] c2g_io16;
+
 
     // max cycle set
     initial begin
-        repeat(10000000) @(posedge clk);
+        repeat (10000000) @(posedge clk);
         $display("\n%0t\tERROR: The 10000000 cycles marker has passed!", $time);
         $finish(2);
     end
 
-    // back-annotation and dump
-`ifdef SYNTHESIS
-    initial begin
-        if ($test$plusargs("VCD_ON")) begin
-            $dumpfile("glb_syn.vcd");
-            $dumpvars(0, top);
-        end
-    end
-`elsif PNR 
-    initial begin
-        if ($test$plusargs("VCD_ON")) begin
-            $dumpfile("glb_pnr.vcd");
-            $dumpvars(0, top);
-        end
-    end
-`else
-    initial begin
-        if ($test$plusargs("VCD_ON")) begin
-            $dumpfile("glb.vcd");
-            $dumpvars(0, top);
-        end
-    end
-`endif
-
     // clk generation
     initial begin
-        #0.5ns
-        clk = 0;
-        forever
-        #(`CLK_PERIOD/2.0) clk = !clk;
+        #0.5ns clk = 0;
+        forever #(`CLK_PERIOD / 2.0) clk = !clk;
     end
 
-    // reset and stall generation
+    // reset generation
     initial begin
         reset <= 1;
-        stall <= '0;
-        cgra_stall_in <= '0;
-        cgra_cfg_jtag_gc2glb_wr_en <= 0;
-        cgra_cfg_jtag_gc2glb_rd_en <= 0;
-        cgra_cfg_jtag_gc2glb_addr <= 0;
-        cgra_cfg_jtag_gc2glb_data <= 0;
-        for(int i=0; i<NUM_GLB_TILES; i++) begin
-            pc_start_pulse[i] <= 0;
-        end
-
-        repeat(10) @(posedge clk);
+        repeat (10) @(posedge clk);
         reset <= 0;
     end
 
-    // interfaces
-    proc_ifc p_ifc(.clk(clk));
-    reg_ifc #(.ADDR_WIDTH(32), .DATA_WIDTH(AXI_DATA_WIDTH))  r_ifc(.clk(clk));
-    reg_ifc #(.ADDR_WIDTH(32), .DATA_WIDTH(AXI_DATA_WIDTH))  m_ifc(.clk(clk));
-    strm_ifc s_ifc[NUM_GLB_TILES](.clk(clk));
-    pcfg_ifc c_ifc[NUM_GLB_TILES](.clk(clk));
-
     // instantiate test
     glb_test test (
-        .clk(clk),
-        .reset(reset),
-        .p_ifc(p_ifc),
-        .r_ifc(r_ifc),
-        .m_ifc(m_ifc),
-        .s_ifc(s_ifc),
-        .c_ifc(c_ifc)
+        .clk                      (clk),
+        .reset                    (reset),
+        // proc ifc
+        .proc_wr_en               (proc_wr_en),
+        .proc_wr_strb             (proc_wr_strb),
+        .proc_wr_addr             (proc_wr_addr),
+        .proc_wr_data             (proc_wr_data),
+        .proc_rd_en               (proc_rd_en),
+        .proc_rd_addr             (proc_rd_addr),
+        .proc_rd_data             (proc_rd_data),
+        .proc_rd_data_valid       (proc_rd_data_valid),
+        // config ifc
+        .if_cfg_wr_en             (if_cfg_wr_en),
+        .if_cfg_wr_addr           (if_cfg_wr_addr),
+        .if_cfg_wr_data           (if_cfg_wr_data),
+        .if_cfg_rd_en             (if_cfg_rd_en),
+        .if_cfg_rd_addr           (if_cfg_rd_addr),
+        .if_cfg_rd_data           (if_cfg_rd_data),
+        .if_cfg_rd_data_valid     (if_cfg_rd_data_valid),
+        // sram config ifc
+        .if_sram_cfg_wr_en        (if_sram_cfg_wr_en),
+        .if_sram_cfg_wr_addr      (if_sram_cfg_wr_addr),
+        .if_sram_cfg_wr_data      (if_sram_cfg_wr_data),
+        .if_sram_cfg_rd_en        (if_sram_cfg_rd_en),
+        .if_sram_cfg_rd_addr      (if_sram_cfg_rd_addr),
+        .if_sram_cfg_rd_data      (if_sram_cfg_rd_data),
+        .if_sram_cfg_rd_data_valid(if_sram_cfg_rd_data_valid),
+        .*
     );
-
-    genvar i;
-    generate
-        for(i=0; i<NUM_GLB_TILES; i++) begin
-            // strm
-            assign strm_start_pulse[i]          = s_ifc[i].strm_start_pulse;
-            assign stream_data_f2g[i]           = s_ifc[i].data_f2g;
-            assign stream_data_valid_f2g[i]     = s_ifc[i].data_valid_f2g;
-            assign s_ifc[i].data_g2f            = stream_data_g2f[i];
-            assign s_ifc[i].data_valid_g2f      = stream_data_valid_g2f[i];
-            assign s_ifc[i].strm_f2g_interrupt  = strm_f2g_interrupt_pulse[i];
-            assign s_ifc[i].strm_g2f_interrupt  = strm_g2f_interrupt_pulse[i];
-
-            //pcfg
-            assign c_ifc[i].cgra_cfg_wr_en      = cgra_cfg_g2f_cfg_wr_en[i];
-            assign c_ifc[i].cgra_cfg_rd_en      = cgra_cfg_g2f_cfg_rd_en[i];
-            assign c_ifc[i].cgra_cfg_addr       = cgra_cfg_g2f_cfg_addr[i];
-            assign c_ifc[i].cgra_cfg_data       = cgra_cfg_g2f_cfg_data[i];
-        end
-    endgenerate
-
 
     // instantiate dut
     global_buffer dut (
         // proc ifc
-        .proc_wr_en                 ( p_ifc.wr_en           ),
-        .proc_wr_strb               ( p_ifc.wr_strb         ),
-        .proc_wr_addr               ( p_ifc.wr_addr         ),
-        .proc_wr_data               ( p_ifc.wr_data         ),
-        .proc_rd_en                 ( p_ifc.rd_en           ),
-        .proc_rd_addr               ( p_ifc.rd_addr         ),
-        .proc_rd_data               ( p_ifc.rd_data         ),
-        .proc_rd_data_valid         ( p_ifc.rd_data_valid   ),
+        .proc_wr_en               (proc_wr_en),
+        .proc_wr_strb             (proc_wr_strb),
+        .proc_wr_addr             (proc_wr_addr),
+        .proc_wr_data             (proc_wr_data),
+        .proc_rd_en               (proc_rd_en),
+        .proc_rd_addr             (proc_rd_addr),
+        .proc_rd_data             (proc_rd_data),
+        .proc_rd_data_valid       (proc_rd_data_valid),
         // config ifc
-        .if_cfg_wr_en               ( r_ifc.wr_en           ),
-        .if_cfg_wr_clk_en           ( r_ifc.wr_clk_en       ),
-        .if_cfg_wr_addr             ( r_ifc.wr_addr[AXI_ADDR_WIDTH-1:0] ),
-        .if_cfg_wr_data             ( r_ifc.wr_data         ),
-        .if_cfg_rd_en               ( r_ifc.rd_en           ),
-        .if_cfg_rd_clk_en           ( r_ifc.rd_clk_en       ),
-        .if_cfg_rd_addr             ( r_ifc.rd_addr[AXI_ADDR_WIDTH-1:0] ),
-        .if_cfg_rd_data             ( r_ifc.rd_data         ),
-        .if_cfg_rd_data_valid       ( r_ifc.rd_data_valid   ),
+        .if_cfg_wr_en             (if_cfg_wr_en),
+        .if_cfg_wr_addr           (if_cfg_wr_addr),
+        .if_cfg_wr_data           (if_cfg_wr_data),
+        .if_cfg_rd_en             (if_cfg_rd_en),
+        .if_cfg_rd_addr           (if_cfg_rd_addr),
+        .if_cfg_rd_data           (if_cfg_rd_data),
+        .if_cfg_rd_data_valid     (if_cfg_rd_data_valid),
         // sram config ifc
-        .if_sram_cfg_wr_en          ( m_ifc.wr_en           ),
-        .if_sram_cfg_wr_clk_en      ( m_ifc.wr_clk_en       ),
-        .if_sram_cfg_wr_addr        ( m_ifc.wr_addr[GLB_ADDR_WIDTH-1:0] ),
-        .if_sram_cfg_wr_data        ( m_ifc.wr_data         ),
-        .if_sram_cfg_rd_en          ( m_ifc.rd_en           ),
-        .if_sram_cfg_rd_clk_en      ( m_ifc.rd_clk_en       ),
-        .if_sram_cfg_rd_addr        ( m_ifc.rd_addr[GLB_ADDR_WIDTH-1:0] ),
-        .if_sram_cfg_rd_data        ( m_ifc.rd_data         ),
-        .if_sram_cfg_rd_data_valid  ( m_ifc.rd_data_valid   ),
+        .if_sram_cfg_wr_en        (if_sram_cfg_wr_en),
+        .if_sram_cfg_wr_addr      (if_sram_cfg_wr_addr),
+        .if_sram_cfg_wr_data      (if_sram_cfg_wr_data),
+        .if_sram_cfg_rd_en        (if_sram_cfg_rd_en),
+        .if_sram_cfg_rd_addr      (if_sram_cfg_rd_addr),
+        .if_sram_cfg_rd_data      (if_sram_cfg_rd_data),
+        .if_sram_cfg_rd_data_valid(if_sram_cfg_rd_data_valid),
 `ifdef PWR
-        .VDD (VDD),
-        .VSS (VSS),
+        .VDD                      (VDD),
+        .VSS                      (VSS),
 `endif
-        .*);
+        .*
+    );
 
-    genvar j;
-    generate
-        for (i=0; i<NUM_GLB_TILES; i=i+1) begin: group_gen
-            for (j=0; j<CGRA_PER_GLB; j=j+1) begin: col_gen
-                localparam CGRA_TILE_WIDTH = $clog2(NUM_CGRA_TILES);
-                localparam bit [CGRA_TILE_WIDTH-1:0] id = i*CGRA_PER_GLB+j;
-                column #(.CGRA_TILE_WIDTH(CGRA_TILE_WIDTH)) col (
-                    .rst_n (!reset),
-                    .id (id),
-                    .rf_rd_en (c_ifc[i].cgra_cfg_rd_en[j]),
-                    .rf_wr_en (c_ifc[i].cgra_cfg_wr_en[j]),
-                    .rf_addr (c_ifc[i].cgra_cfg_addr[j]),
-                    .rf_wr_data (c_ifc[i].cgra_cfg_data[j]),
-                    .rf_rd_data (cgra_cfg_f2g_rd_data[i][j]),
-                    .rf_rd_data_valid (cgra_cfg_f2g_rd_data_valid[i][j]),
-                    .*);
-            end
-        end
-    endgenerate
+    cgra cgra (
+        // stall
+        .stall      (g2c_cgra_stall),
+        // configuration
+        .cfg_wr_en  (g2c_cfg_wr_en),
+        .cfg_wr_addr(g2c_cfg_wr_addr),
+        .cfg_wr_data(g2c_cfg_wr_data),
+        .cfg_rd_en  (g2c_cfg_rd_en),
+        .cfg_rd_addr(g2c_cfg_rd_addr),
+        .cfg_rd_data(c2g_cfg_rd_data),
+        // data
+        .io1_g2io   (g2c_io1),
+        .io16_g2io  (g2c_io16),
+        .io1_io2g   (c2g_io1),
+        .io16_io2g  (c2g_io16),
+        .*
+    );
 
+    // Configuration interface
+    // TODO: Assume that NUM_PRR == NUM_GLB_TILES. Use the first one among two signals.
     always_comb begin
-        cgra_cfg_rd_data_valid = 0;
-        cgra_cfg_rd_data = 0;
-        for (int i=0; i<NUM_GLB_TILES; i=i+1) begin
-            for (int j=0; j<CGRA_PER_GLB; j=j+1) begin
-                cgra_cfg_rd_data_valid |= cgra_cfg_f2g_rd_data_valid[i][j];
-                cgra_cfg_rd_data |= cgra_cfg_f2g_rd_data[i][j];
-            end
+        for (int i = 0; i < NUM_PRR; i++) begin
+            g2c_cgra_stall[i]  = cgra_stall[i][0];
+            g2c_cfg_wr_en[i]   = cgra_cfg_g2f_cfg_wr_en[i][0];
+            g2c_cfg_wr_addr[i] = cgra_cfg_g2f_cfg_addr[i][0];
+            g2c_cfg_wr_data[i] = cgra_cfg_g2f_cfg_data[i][0];
+            g2c_cfg_rd_en[i]   = cgra_cfg_g2f_cfg_rd_en[i][0];
+            g2c_cfg_rd_addr[i] = cgra_cfg_g2f_cfg_addr[i][0];
+        end
+    end
+
+    // Data interface
+    // Note: Connect g2f to [0] column. Connect f2g to [1] column.
+    always_comb begin
+        for (int i = 0; i < NUM_PRR; i++) begin
+            g2c_io1[i] = stream_data_valid_g2f[i][0];
+            g2c_io16[i] = stream_data_g2f[i][0];
+
+            stream_data_valid_f2g[i][0] = 0;
+            stream_data_valid_f2g[i][1] = c2g_io1[i];
+            stream_data_f2g[i][0] = 0;
+            stream_data_f2g[i][1] = c2g_io16[i];
         end
     end
 

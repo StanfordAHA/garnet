@@ -35,6 +35,8 @@ jobs:
     - name: Install deps 🛠️
       shell: bash
       run: |
+        docker exec -i garnet bash -c "apt update"
+        docker exec -i garnet bash -c "apt install -y default-jre"
         docker exec -i garnet bash -c "pip install -r /garnet/requirements.txt"
         docker exec -i garnet bash -c "pip install coveralls"
         docker exec -i garnet bash -c "pip install pytest"

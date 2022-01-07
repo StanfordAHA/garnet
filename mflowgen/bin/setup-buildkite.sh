@@ -15,6 +15,8 @@
 #   - makes local link to mflowgen repo "/sim/buildkite-agent/mflowgen"
 #   - makes local copy of adk
 
+# CHANGE LOG
+# sep 2021 better log output, rsync adks instead of cp
 
 ##############################################################################
 # Script must be sourced; complain if someone tries to execute it instead.
@@ -55,7 +57,7 @@ Options:
 Examples:
     source $script --dir /build/gold.100/full_chip
     source $script --dir /build/gold.100/full_chip --need_space 30G
-    
+
 EOF
 }
 
@@ -74,7 +76,7 @@ fi
 
 # Default is to use pre-built RTL from docker,
 # so no need for elaborate garnet python env
-PIP_INSTALL_REQUIREMENTS=false
+PIP_INSTALL_REQUIREMENTS=true
 
 build_dir=
 VERBOSE=false
@@ -266,7 +268,7 @@ function check_pyversions {
 # If you're not "buildkite-agent", you're on your own.
 
 if [ "$USER" == "buildkite-agent" ]; then
-    echo "--- ENVIRONMENT"; echo ""
+    echo "--- ENVIRONMENT - VENV"; echo ""
     venv=/usr/local/venv_garnet
     if ! test -d $venv; then
         echo "**ERROR: Cannot find pre-built environment '$venv'"
@@ -303,6 +305,7 @@ export PATH="$PATH:/usr/local/bin"; hash -r
 # source $garnet/.buildkite/setup.sh
 # source $garnet/.buildkite/setup-calibre.sh
 # Use the new stuff
+echo "--- ENVIRONMENT - CAD TOOLS"; echo ""
 echo Sourcing $garnet/mflowgen/setup-garnet.sh ...
 source $garnet/mflowgen/setup-garnet.sh
 
@@ -351,7 +354,7 @@ echo "--- Building in destination dir `pwd`"
 
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds of a given branch
-# 
+#
 # Mar 2102 - Added option to use a different mflowgen branch when/if desired
 
 mflowgen_branch=master
@@ -409,7 +412,7 @@ echo "--- ADK SETUP / CHECK"
 echo 'COPY LATEST ADK TO MFLOWGEN REPO'
 
 # Copy the latest tsmc16 adk from a nearby repo; we'll use the one in steveri.
-# 
+#
 # Note the adks must be touchable by current user, thus must copy
 # locally and cannot e.g. use symlink to someone else's existing adk.
 
@@ -439,8 +442,9 @@ if [ "$USER" == "buildkite-agent" ]; then
     # Copy the adk to test rig
     echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
     echo "Copying adks from '$tsmc16' to '$adks'"
-    # Need '-f' to e.g. copy over existing read-only .git objects
-    set -x; cp -frpH $tsmc16 $adks; set +x
+
+    # Note rsync is much faster than cp!
+    set -x; rsync -avR $tsmc16 $adks; set +x
 
     export MFLOWGEN_PATH=$adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
@@ -459,21 +463,21 @@ fi
 ########################################################################
 # TCLSH VERSION CHECK
 ########################################################################
-# 
+#
 # tclsh version must be >= 8.5!  Because of e.g.
 #    "delay_best" in $vars(delay_corners)
 # in flowgen-setup/setup.tcl
-# 
+#
 # For reference, I can see these versions in my various open windows
 #   kiwi/stever:  tclsh v8.6 (/usr/bin/tclsh)
 #   r7arm/agent:  tclsh v8.5 (/usr/bin/tclsh)
 #   r7arm/stever: tclsh v8.4 (/cad/mentor/2019.1/aoi_cal_2019.1_18.11/bin/tclsh
-# 
+#
 # An example path that breaks tclsh:
 #   % source $garnet/.buildkite/setup-calibre.sh
 #   % which tclsh => 'tclsh is /cad/mentor/2019.1/aoi_cal_2019.1_18.11/bin/tclsh'
 #   % echo 'puts $tcl_version; exit 0' | tclsh => 8.4
-# 
+#
 echo "--- TCLSH VERSION CHECK (must be >= 8.5)"
 
 # Uncomment to reset tclsh for testing
@@ -499,7 +503,7 @@ else
     else
         echo "  - ${TBIN}/tclsh no good; looking for a new one"
         test -d $TBIN && /bin/rm -rf $TBIN; mkdir -p $TBIN
-        for d in $( echo $PATH | sed 's/:/ /g' ); do 
+        for d in $( echo $PATH | sed 's/:/ /g' ); do
             if test -x $d/tclsh; then
                 tclsh_version=`echo 'puts $tcl_version; exit 0' | $d/tclsh`
                 echo -n "  Found tclsh v$tclsh_version: $d/tclsh"
