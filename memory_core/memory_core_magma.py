@@ -255,7 +255,7 @@ class MemCore(LakeCoreBase):
         for name, v in config_runtime:
             configs = [self.get_config_data(name, v)] + configs
 
-        print(configs)
+        #print(configs)
         return configs
 
     def get_static_bitstream(self, config_path, in_file_name, out_file_name):
