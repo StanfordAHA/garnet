@@ -46,6 +46,3 @@ tests/*/obj_dir/
 dump/
 # COSA temporary files
 CoSA*tmp.out
-
-# Everything else? I hate when random folders show up...
-*
