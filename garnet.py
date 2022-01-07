@@ -286,6 +286,7 @@ class Garnet(Generator):
         c = CoreIRContext(reset=True)
         cmod = cutil.load_from_json(app_file)
         c = CoreIRContext()
+        cutil.load_libs(["commonlib", "float"])
         c.run_passes(["flatten"])
 
         MEM_fc = gen_MEM_fc()

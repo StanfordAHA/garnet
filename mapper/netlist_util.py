@@ -464,6 +464,9 @@ class RemoveInputsOutputs(Visitor):
 
 
     def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit, num_stages, tree_leaves):
+        return
+        if sinks[0].node_name == "global.Pond":
+            return
         print("creating reg tree for:", new_io_node.node_name, self.max_sinks)
         levels = [len(sinks)]
         while 1 not in levels:
@@ -528,12 +531,15 @@ class RemoveInputsOutputs(Visitor):
         if not ("hw_output" in [child.iname for child in node.children()] or "self" in [child.iname for child in node.children()]):
             new_children = [self.node_map[child] for child in node.children()]
             io_child = new_children[0]
+            pipeline = os.getenv('PIPELINED')
             if "io16in" in io_child.iname:
                 new_node = new_children[0].select("io2f_16")
-                self.create_register_tree(io_child, new_node, node, self.sinks[node], False, self.max_sinks, 3)
+                if pipeline:
+                    self.create_register_tree(io_child, new_node, node, self.sinks[node], False, self.max_sinks, 3)
             elif "io1in" in io_child.iname:
                 new_node = new_children[0].select("io2f_1")
-                self.create_register_tree(io_child, new_node, node, self.sinks[node], True, self.max_sinks, 3)
+                if pipeline:
+                    self.create_register_tree(io_child, new_node, node, self.sinks[node], True, self.max_sinks, 3)
             else:
                 new_node = node.copy()
                 #if len(self.sinks[node]) > 5 and io_child.node_name == "global.MEM":
@@ -591,6 +597,19 @@ class CountTiles(Visitor):
             self.num_ponds += 1
         elif node.node_name == "Register":
             self.num_regs += 1
+
+def separatePondFlush(info):
+    netlist = info['netlist'] 
+    new_conns = [netlist['e1'][0]]
+    
+    for bid, conns in netlist.items():
+        for conn in conns.copy():
+            if conn[0][0] == "M" and conn[1] == "flush":
+                netlist[bid].remove(conn)
+                new_conns.append(conn)
+
+    netlist['e0'] = new_conns
+    info['buses']['e0'] = 1
 
 from lassen.sim import PE_fc as lassen_fc
 from metamapper. common_passes import print_dag
@@ -660,7 +679,9 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, i
     for bid, ports in netlist.items():
         info["netlist"][bid] = [(nodes_to_ids[node], field.replace("pond_0", "pond")) for node, field in ports]
 
-    CountTiles().doit(fdag)    
+    CountTiles().doit(fdag)  
+
+    #separatePondFlush(info) 
 
     return info
 
