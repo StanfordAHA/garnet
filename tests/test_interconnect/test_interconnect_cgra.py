@@ -259,8 +259,6 @@ def test_interconnect_fifo(run_tb, io_sides, depth):
 
     tester.step(1)
 
-    random.seed(0)
-
     fifo = deque()
     valid_check = 0
     for i in range(2048):
