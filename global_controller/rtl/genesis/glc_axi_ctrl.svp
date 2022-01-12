@@ -86,13 +86,13 @@ WrState wr_state;
 //============================================================================//
 // internal wires
 //============================================================================//
-logic [$clog2(`$num_glb_tiles`):0] wr_wait_cnt;
+logic [$clog2(`$num_glb_tiles+10`):0] wr_wait_cnt;
 logic cfg_rd_is_glb;
 
-logic cfg_wr_glb_clk_en_p;
-logic cfg_rd_glb_clk_en_p;
-logic cfg_wr_glc_clk_en_p;
-logic cfg_rd_glc_clk_en_p;
+logic cfg_wr_glb_clk_en;
+logic cfg_rd_glb_clk_en;
+logic cfg_wr_glc_clk_en;
+logic cfg_rd_glc_clk_en;
 
 // timeout
 // local parameter
@@ -106,8 +106,9 @@ logic [9:0] wr_timeout_cnt;
 always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         wr_state <= WR_IDLE;
-        cfg_wr_glb_clk_en_p <= 0;
-        cfg_wr_glc_clk_en_p <= 0;
+        wr_wait_cnt <= 0;
+        cfg_wr_glb_clk_en <= 0;
+        cfg_wr_glc_clk_en <= 0;
 
         // axi interface
         axi_awready <= '1;
@@ -130,8 +131,8 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else if (wr_state == WR_IDLE) begin
         // clock gating
-        cfg_wr_glb_clk_en_p <= 0;
-        cfg_wr_glc_clk_en_p <= 0;
+        cfg_wr_glb_clk_en <= 0;
+        cfg_wr_glc_clk_en <= 0;
 
         // axi interface
         axi_awready <= '1;
@@ -160,13 +161,13 @@ always_ff @(posedge clk or posedge reset) begin
             if (axi_awaddr[`$axi_addr_width-1`] == 1'b0) begin
                 wr_state <= WR_REQ_GLC;
                 // cfg glc clock gating off
-                cfg_wr_glc_clk_en_p <= 1;
+                cfg_wr_glc_clk_en <= 1;
                 axi_glc_cfg_wr_addr <= axi_awaddr;
             end
             else begin
                 wr_state <= WR_REQ_GLB;
                 // cfg glb clock gating off
-                cfg_wr_glb_clk_en_p <= 1;
+                cfg_wr_glb_clk_en <= 1;
                 axi_glb_cfg_wr_addr <= axi_awaddr[`$block_axi_addr_width-1`:0];
             end
         end
@@ -188,16 +189,13 @@ always_ff @(posedge clk or posedge reset) begin
             axi_wready <= 1'h0;
             axi_glb_cfg_wr_en <= 1'h1;
             axi_glb_cfg_wr_data <= axi_wdata;
-            wr_wait_cnt <= 'd16;
+            wr_wait_cnt <= `$num_glb_tiles+10`;
             wr_state <= WR_WAIT;
         end
     end
     else if (wr_state == WR_WAIT) begin
         axi_glc_cfg_wr_en <= 1'h0;
         axi_glb_cfg_wr_en <= 1'h0;
-        // clock gating on again
-        cfg_wr_glb_clk_en_p <= 0;
-        cfg_wr_glc_clk_en_p <= 0;
         axi_glc_cfg_wr_addr <= '0;
         axi_glb_cfg_wr_addr <= '0;
         axi_glc_cfg_wr_data <= '0;
@@ -212,7 +210,9 @@ always_ff @(posedge clk or posedge reset) begin
         end
     end
     else if (wr_state == WR_RESP) begin
-
+        // cfg clock gating on again
+        cfg_wr_glb_clk_en <= 0;
+        cfg_wr_glc_clk_en <= 0;
         if (axi_bready & axi_bvalid) begin
             axi_bvalid <= 1'h0;
             wr_state <= WR_IDLE;
@@ -236,8 +236,8 @@ always_ff @(posedge clk or posedge reset) begin
         cfg_rd_is_glb <= '0;
 
         // clock gating on
-        cfg_rd_glb_clk_en_p <= 0;
-        cfg_rd_glc_clk_en_p <= 0;
+        cfg_rd_glb_clk_en <= 0;
+        cfg_rd_glc_clk_en <= 0;
 
         // axi interface
         axi_arready <= 1'h1;
@@ -257,8 +257,8 @@ always_ff @(posedge clk or posedge reset) begin
     end
     else if (rd_state == RD_IDLE) begin
         // clock gating on
-        cfg_rd_glb_clk_en_p <= 0;
-        cfg_rd_glc_clk_en_p <= 0;
+        cfg_rd_glb_clk_en <= 0;
+        cfg_rd_glc_clk_en <= 0;
 
         // axi interface
         axi_arready <= 1'h1;
@@ -280,14 +280,14 @@ always_ff @(posedge clk or posedge reset) begin
             axi_arready <= 1'h0;
             if (axi_araddr[`$axi_addr_width-1`] == 1'b0) begin
                 // cfg glc clock gating off
-                cfg_rd_glc_clk_en_p <= 1;
+                cfg_rd_glc_clk_en <= 1;
 
                 rd_state <= RD_REQ_GLC;
                 axi_glc_cfg_rd_addr <= axi_araddr;
             end
             else begin
                 // cfg glb clock gating off
-                cfg_rd_glb_clk_en_p <= 1;
+                cfg_rd_glb_clk_en <= 1;
 
                 rd_state <= RD_REQ_GLB;
                 axi_glb_cfg_rd_addr <= axi_araddr[`$block_axi_addr_width-1`:0];
@@ -312,7 +312,6 @@ always_ff @(posedge clk or posedge reset) begin
     else if (rd_state == RD_WAIT) begin
         if (cfg_rd_is_glb) begin
             axi_glb_cfg_rd_en <= 1'h0;
-            cfg_rd_glb_clk_en_p <= 0;
             axi_glb_cfg_rd_addr <= '0;
             if (axi_glb_cfg_rd_data_valid == 1'b1) begin
                 axi_rdata <= axi_glb_cfg_rd_data;
@@ -334,7 +333,6 @@ always_ff @(posedge clk or posedge reset) begin
         end
         else begin
             axi_glc_cfg_rd_en <= 1'h0;
-            cfg_rd_glc_clk_en_p <= 0;
             axi_glc_cfg_rd_addr <= '0;
             if (axi_glc_cfg_rd_data_valid == 1'b1) begin
                 axi_rdata <= axi_glc_cfg_rd_data;
@@ -356,14 +354,14 @@ always_ff @(posedge clk or posedge reset) begin
         end
     end
     else if (rd_state == RD_RESP) begin
+        cfg_rd_glb_clk_en <= 0;
+        cfg_rd_glc_clk_en <= 0;
         if (axi_rready & axi_rvalid) begin
             axi_rresp <= 2'b00;
             axi_rvalid <= 1'h0;
             rd_state <= RD_IDLE;
         end
         else if (rd_timeout_cnt == 0) begin
-            cfg_rd_glb_clk_en_p <= 0;
-            cfg_rd_glc_clk_en_p <= 0;
 
             axi_rresp <= 2'b10;
             axi_rvalid <= 1'h0;
@@ -376,21 +374,11 @@ always_ff @(posedge clk or posedge reset) begin
 end
 
 //============================================================================//
-// Half cycle shift of clock gating control signal
+// assign clk_en
 //============================================================================//
-always_ff @(negedge clk or posedge reset) begin
-    if (reset) begin
-        axi_glb_cfg_wr_clk_en <= 0;
-        axi_glb_cfg_rd_clk_en <= 0;
-        axi_glc_cfg_wr_clk_en <= 0;
-        axi_glc_cfg_rd_clk_en <= 0;
-    end
-    else begin
-        axi_glb_cfg_wr_clk_en <= cfg_wr_glb_clk_en_p;
-        axi_glb_cfg_rd_clk_en <= cfg_rd_glb_clk_en_p;
-        axi_glc_cfg_wr_clk_en <= cfg_wr_glc_clk_en_p;
-        axi_glc_cfg_rd_clk_en <= cfg_rd_glc_clk_en_p;
-    end
-end
+assign axi_glb_cfg_wr_clk_en = cfg_wr_glb_clk_en;
+assign axi_glc_cfg_wr_clk_en = cfg_wr_glc_clk_en;
+assign axi_glb_cfg_rd_clk_en = cfg_rd_glb_clk_en;
+assign axi_glc_cfg_rd_clk_en = cfg_rd_glc_clk_en;
 
 endmodule

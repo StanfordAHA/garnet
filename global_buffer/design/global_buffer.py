@@ -34,17 +34,21 @@ class GlobalBuffer(Generator):
         self.proc_rd_data_valid = self.output("proc_rd_data_valid", 1)
 
         self.if_cfg_wr_en = self.input("if_cfg_wr_en", 1)
+        self.if_cfg_wr_clk_en = self.input("if_cfg_wr_clk_en", 1)
         self.if_cfg_wr_addr = self.input("if_cfg_wr_addr", self._params.axi_addr_width)
         self.if_cfg_wr_data = self.input("if_cfg_wr_data", self._params.axi_data_width)
         self.if_cfg_rd_en = self.input("if_cfg_rd_en", 1)
+        self.if_cfg_rd_clk_en = self.input("if_cfg_rd_clk_en", 1)
         self.if_cfg_rd_addr = self.input("if_cfg_rd_addr", self._params.axi_addr_width)
         self.if_cfg_rd_data = self.output("if_cfg_rd_data", self._params.axi_data_width)
         self.if_cfg_rd_data_valid = self.output("if_cfg_rd_data_valid", 1)
 
         self.if_sram_cfg_wr_en = self.input("if_sram_cfg_wr_en", 1)
+        self.if_sram_cfg_wr_clk_en = self.input("if_sram_cfg_wr_clk_en", 1)
         self.if_sram_cfg_wr_addr = self.input("if_sram_cfg_wr_addr", self._params.glb_addr_width)
         self.if_sram_cfg_wr_data = self.input("if_sram_cfg_wr_data", self._params.axi_data_width)
         self.if_sram_cfg_rd_en = self.input("if_sram_cfg_rd_en", 1)
+        self.if_sram_cfg_rd_clk_en = self.input("if_sram_cfg_rd_clk_en", 1)
         self.if_sram_cfg_rd_addr = self.input("if_sram_cfg_rd_addr", self._params.glb_addr_width)
         self.if_sram_cfg_rd_data = self.output("if_sram_cfg_rd_data", self._params.axi_data_width)
         self.if_sram_cfg_rd_data_valid = self.output("if_sram_cfg_rd_data_valid", 1)
@@ -80,6 +84,11 @@ class GlobalBuffer(Generator):
         self.pcfg_g2f_interrupt_pulse = self.output("pcfg_g2f_interrupt_pulse", self._params.num_glb_tiles)
 
         # local variables
+        self.cfg_wr_clk_en_d = self.var("cfg_wr_clk_en_d", 1)
+        self.cfg_rd_clk_en_d = self.var("cfg_rd_clk_en_d", 1)
+        self.sram_cfg_wr_clk_en_d = self.var("sram_cfg_wr_clk_en_d", 1)
+        self.sram_cfg_rd_clk_en_d = self.var("sram_cfg_rd_clk_en_d", 1)
+
         self.cgra_cfg_jtag_gc2glb_wr_en_d = self.var("cgra_cfg_jtag_gc2glb_wr_en_d", 1)
         self.cgra_cfg_jtag_gc2glb_rd_en_d = self.var("cgra_cfg_jtag_gc2glb_rd_en_d", 1)
         self.cgra_cfg_jtag_gc2glb_addr_d = self.var("cgra_cfg_jtag_gc2glb_addr_d", self._params.cgra_cfg_addr_width)
@@ -325,6 +334,8 @@ class GlobalBuffer(Generator):
             self.if_cfg_list[0].rd_addr = 0
             self.if_cfg_rd_data = 0
             self.if_cfg_rd_data_valid = 0
+            self.cfg_wr_clk_en_d = 0
+            self.cfg_rd_clk_en_d = 0
         else:
             self.if_cfg_list[0].wr_en = self.if_cfg_wr_en
             self.if_cfg_list[0].wr_addr = self.if_cfg_wr_addr
@@ -333,6 +344,8 @@ class GlobalBuffer(Generator):
             self.if_cfg_list[0].rd_addr = self.if_cfg_rd_addr
             self.if_cfg_rd_data = self.if_cfg_list[0].rd_data
             self.if_cfg_rd_data_valid = self.if_cfg_list[0].rd_data_valid
+            self.cfg_wr_clk_en_d = self.if_cfg_wr_clk_en
+            self.cfg_rd_clk_en_d = self.if_cfg_rd_clk_en
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_sram_cfg_ff(self):
@@ -344,6 +357,8 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_list[0].rd_addr = 0
             self.if_sram_cfg_rd_data = 0
             self.if_sram_cfg_rd_data_valid = 0
+            self.sram_cfg_wr_clk_en_d = 0
+            self.sram_cfg_rd_clk_en_d = 0
         else:
             self.if_sram_cfg_list[0].wr_en = self.if_sram_cfg_wr_en
             self.if_sram_cfg_list[0].wr_addr = self.if_sram_cfg_wr_addr
@@ -352,6 +367,8 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_list[0].rd_addr = self.if_sram_cfg_rd_addr
             self.if_sram_cfg_rd_data = self.if_sram_cfg_list[0].rd_data
             self.if_sram_cfg_rd_data_valid = self.if_sram_cfg_list[0].rd_data_valid
+            self.sram_cfg_wr_clk_en_d = self.if_sram_cfg_wr_clk_en
+            self.sram_cfg_rd_clk_en_d = self.if_sram_cfg_rd_clk_en
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cgra_cfg_ff(self):
@@ -423,6 +440,8 @@ class GlobalBuffer(Generator):
             self.add_child(f"glb_tile_gen_{i}",
                            self.glb_tile[i],
                            clk=self.clk,
+                           clk_en_cfg=clock_en(self.cfg_wr_clk_en_d | self.cfg_rd_clk_en_d),
+                           clk_en_jtag_sram=clock_en(self.sram_cfg_wr_clk_en_d | self.sram_cfg_rd_clk_en_d),
                            clk_en_core=clock_en(~self.core_stall_d[i]),
                            clk_en_rtr=clock_en(~self.rtr_stall_d[i]),
                            clk_en_pcfg_rtr=clock_en(~self.pcfg_rtr_stall_d[i]),

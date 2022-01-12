@@ -668,14 +668,17 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         begin
             for (int i=0; i<10000; i++) begin
                 // Assume glb returns config read data after 3 cycles
-                if (cnt == 3) begin
+                if (top.dut.glb_cfg_rd_en==1) begin
+                    cnt = 4;
+                end
+                else if (cnt == 1) begin
                     dut_ifc.glb_cfg_rd_data_valid = 1;
                     dut_ifc.glb_cfg_rd_data = data_in;
                     @(posedge dut_ifc.Clk);
                     break;
                 end
-                else if (top.dut.glb_cfg_rd_en==1) begin
-                    cnt++;
+                else if (cnt > 1) begin
+                    cnt--;
                 end
                 @(posedge dut_ifc.Clk);
             end
@@ -724,15 +727,18 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         end
         begin
             for (int i=0; i<10000; i++) begin
-                // Assume sram returns config read data after 3 cycles
-                if (cnt == 3) begin
+                // Assume sram returns config read data after 5 cycles
+                if (top.dut.sram_cfg_rd_en==1) begin
+                    cnt = 5;
+                end
+                else if (cnt == 1) begin
                     dut_ifc.sram_cfg_rd_data_valid = 1;
                     dut_ifc.sram_cfg_rd_data = data_in;
                     @(posedge dut_ifc.Clk);
                     break;
                 end
-                else if (top.dut.sram_cfg_rd_en==1) begin
-                    cnt++;
+                else if (cnt > 1) begin
+                    cnt--;
                 end
                 @(posedge dut_ifc.Clk);
             end
