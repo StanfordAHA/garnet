@@ -114,11 +114,6 @@ logic [`$axi_data_width-1`:0]       axi_rd_data;
 logic reset_out;
 logic soft_reset_out;
 
-logic jtag_glb_cfg_wr_clk_en_p;
-logic jtag_glb_cfg_rd_clk_en_p;
-logic jtag_sram_cfg_wr_clk_en_p;
-logic jtag_sram_cfg_rd_clk_en_p;
-
 //============================================================================//
 // assigns
 //============================================================================//
@@ -330,34 +325,46 @@ always_ff @(posedge clk or posedge reset_in) begin
     end
 end
 
-always_comb begin
-    jtag_glb_cfg_wr_clk_en_p = glb_write | jtag_glb_cfg_wr_en;
-end
-
-// clk gating signal is synced at clk falling edge
-always_ff @(negedge clk or posedge reset_in) begin
+logic [$clog2(`$num_glb_tiles+10`):0] glb_cfg_wr_clk_en_cnt;
+logic glb_cfg_wr_clk_en;
+always_ff @(posedge clk or posedge reset_in) begin
     if (reset_in) begin
-        jtag_glb_cfg_wr_clk_en <= 0;
-    end
-        else begin
-        jtag_glb_cfg_wr_clk_en <= jtag_glb_cfg_wr_clk_en_p;
+        glb_cfg_wr_clk_en_cnt <= 0;
+        glb_cfg_wr_clk_en <= 0;
+    end else begin
+        if (glb_write) begin
+            glb_cfg_wr_clk_en_cnt <= `$num_glb_tiles+10`;
+            glb_cfg_wr_clk_en <= 1;
+        end else begin
+            if (glb_cfg_wr_clk_en_cnt == 0) begin
+                glb_cfg_wr_clk_en <= 0;
+            end else begin
+                glb_cfg_wr_clk_en_cnt <= glb_cfg_wr_clk_en_cnt - 1;
+            end
+        end
     end
 end
+assign jtag_glb_cfg_wr_clk_en = glb_write | glb_cfg_wr_clk_en;
 
 // READ
+logic glb_read_d;
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        glb_read_d <= 0;
+    end else begin
+        glb_read_d <= glb_read;
+    end
+end
+
 always_ff @(posedge clk or posedge reset_in) begin
     if (reset_in) begin
         jtag_glb_cfg_rd_en <= 0;
         jtag_glb_cfg_rd_addr <= '0;
-        glb_config_data_in <= '0;
     end
     else begin
-        if (glb_read) begin
+        if (glb_read && !glb_read_d) begin
             jtag_glb_cfg_rd_en <= 1;
             jtag_glb_cfg_rd_addr <= glb_config_addr_out;
-            if (jtag_glb_cfg_rd_data_valid) begin
-                glb_config_data_in <= jtag_glb_cfg_rd_data;
-            end
         end
         else begin
             jtag_glb_cfg_rd_en <= 0;
@@ -366,102 +373,121 @@ always_ff @(posedge clk or posedge reset_in) begin
     end
 end
 
-always_comb begin
-    jtag_glb_cfg_rd_clk_en_p = glb_read | jtag_glb_cfg_rd_en;
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        glb_config_data_in <= '0;
+    end else begin
+        if (glb_read) begin
+            if (jtag_glb_cfg_rd_data_valid) begin
+                glb_config_data_in <= jtag_glb_cfg_rd_data;
+            end
+        end
+    end
 end
 
-// clk gating signal is synced at clk falling edge
-always_ff @(negedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        jtag_glb_cfg_rd_clk_en <= 0;
-    end
-        else begin
-        jtag_glb_cfg_rd_clk_en <= jtag_glb_cfg_rd_clk_en_p;
-    end
-end
+assign jtag_glb_cfg_rd_clk_en = glb_read;
 
 //============================================================================//
 // Glb SRAM configuration with clk gating
 //============================================================================//
 // WRITE
-logic [1:0] cnt;
+logic [1:0] jtag_sram_wr_cnt;
 
 always_ff @(posedge clk or posedge reset_in) begin
     if (reset_in) begin
         jtag_sram_cfg_wr_en <= 0;
         jtag_sram_cfg_wr_addr <= '0;
         jtag_sram_cfg_wr_data <= '0;
-        cnt <= '0;
+        jtag_sram_wr_cnt <= '0;
     end
     else begin
         if (glb_sram_write) begin
             jtag_sram_cfg_wr_en <= 1;
             jtag_sram_cfg_wr_addr <= glb_sram_config_addr_out;
             jtag_sram_cfg_wr_data <= glb_sram_config_data_out;
-            cnt <= 3;
+            jtag_sram_wr_cnt <= 3;
         end
         else begin
-            if (cnt == 0) begin
+            if (jtag_sram_wr_cnt == 0) begin
                 jtag_sram_cfg_wr_en <= 0;
                 jtag_sram_cfg_wr_addr <= '0;
                 jtag_sram_cfg_wr_data <= '0;
             end
             else begin
-                cnt <= cnt - 1;
+                jtag_sram_wr_cnt <= jtag_sram_wr_cnt - 1;
             end
         end
     end
 end
 
-always_comb begin
-    jtag_sram_cfg_wr_clk_en_p = glb_sram_write | jtag_sram_cfg_wr_en;
-end
-
-// clk gating signal is synced at clk falling edge
-always_ff @(negedge clk or posedge reset_in) begin
+logic [$clog2(`$num_glb_tiles+10`):0] sram_cfg_wr_clk_en_cnt;
+logic sram_cfg_wr_clk_en;
+always_ff @(posedge clk or posedge reset_in) begin
     if (reset_in) begin
-        jtag_sram_cfg_wr_clk_en <= 0;
-    end
-        else begin
-        jtag_sram_cfg_wr_clk_en <= jtag_sram_cfg_wr_clk_en_p;
+        sram_cfg_wr_clk_en_cnt <= 0;
+        sram_cfg_wr_clk_en <= 0;
+    end else begin
+        if (glb_sram_write) begin
+            sram_cfg_wr_clk_en_cnt <= `$num_glb_tiles+10`;
+            sram_cfg_wr_clk_en <= 1;
+        end else begin
+            if (sram_cfg_wr_clk_en_cnt == 0) begin
+                sram_cfg_wr_clk_en <= 0;
+            end else begin
+                sram_cfg_wr_clk_en_cnt <= sram_cfg_wr_clk_en_cnt - 1;
+            end
+        end
     end
 end
+assign jtag_sram_cfg_wr_clk_en = glb_sram_write | sram_cfg_wr_clk_en;
 
 // READ
+logic glb_sram_read_d;
+logic [1:0] jtag_sram_rd_cnt;
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        glb_sram_read_d <= 0;
+    end else begin
+        glb_sram_read_d <= glb_sram_read;
+    end
+end
+
 always_ff @(posedge clk or posedge reset_in) begin
     if (reset_in) begin
         jtag_sram_cfg_rd_en <= 0;
         jtag_sram_cfg_rd_addr <= '0;
-        glb_sram_config_data_in <= '0;
+        jtag_sram_rd_cnt <= 0;
     end
     else begin
-        if (glb_sram_read) begin
+        if (glb_sram_read && !glb_sram_read_d) begin
             jtag_sram_cfg_rd_en <= 1;
             jtag_sram_cfg_rd_addr <= glb_sram_config_addr_out;
+            jtag_sram_rd_cnt <= 3;
+        end
+        else begin
+            if (jtag_sram_rd_cnt == 0) begin
+                jtag_sram_cfg_rd_en <= 0;
+                jtag_sram_cfg_rd_addr <= '0;
+            end else begin
+                jtag_sram_rd_cnt <= jtag_sram_rd_cnt - 1;
+            end
+        end
+    end
+end
+
+always_ff @(posedge clk or posedge reset_in) begin
+    if (reset_in) begin
+        glb_sram_config_data_in <= '0;
+    end else begin
+        if (glb_sram_read) begin
             if (jtag_sram_cfg_rd_data_valid) begin
                 glb_sram_config_data_in <= jtag_sram_cfg_rd_data;
             end
         end
-        else begin
-            jtag_sram_cfg_rd_en <= 0;
-            jtag_sram_cfg_rd_addr <= '0;
-        end
     end
 end
 
-always_comb begin
-    jtag_sram_cfg_rd_clk_en_p = glb_sram_read | jtag_sram_cfg_rd_en;
-end
-
-// clk gating signal is synced at clk falling edge
-always_ff @(negedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        jtag_sram_cfg_rd_clk_en <= 0;
-    end
-        else begin
-        jtag_sram_cfg_rd_clk_en <= jtag_sram_cfg_rd_clk_en_p;
-    end
-end
+assign jtag_sram_cfg_rd_clk_en = glb_sram_read;
 
 //============================================================================//
 // Write/Read AXI addressmap using JTAG
