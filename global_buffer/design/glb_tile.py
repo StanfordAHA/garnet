@@ -24,6 +24,8 @@ class GlbTile(Generator):
         self.header = GlbHeader(self._params)
 
         self.clk = self.clock("clk")
+        self.clk_en_cfg = self.clock_en("clk_en_cfg")
+        self.clk_en_jtag_sram = self.clock_en("clk_en_jtag_sram")
         self.clk_en_core = self.clock_en("clk_en_core")
         self.clk_en_rtr = self.clock_en("clk_en_rtr")
         self.clk_en_pcfg_rtr = self.clock_en("clk_en_pcfg_rtr")
@@ -184,45 +186,21 @@ class GlbTile(Generator):
         # Struct
         self.struct_wiring()
 
-        # Local variables
-        # configuration
-        self.cfg_tile_connected_prev = self.var("cfg_tile_connected_prev", 1)
-        self.cfg_tile_connected_next = self.var("cfg_tile_connected_next", 1)
-        self.cfg_pcfg_tile_connected_prev = self.var("cfg_pcfg_tile_connected_prev", 1)
-        self.cfg_pcfg_tile_connected_next = self.var("cfg_pcfg_tile_connected_next", 1)
-
-        # st dma
-        self.cfg_st_dma_ctrl = self.var("cfg_st_dma_ctrl", self.header.cfg_dma_ctrl_t)
-        self.cfg_st_dma_header = self.var("cfg_st_dma_header", self.header.cfg_dma_header_t,
-                                          size=self._params.queue_depth)
-        # ld dma
-        self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_dma_ctrl_t)
-        self.cfg_ld_dma_header = self.var("cfg_ld_dma_header", self.header.cfg_dma_header_t,
-                                          size=self._params.queue_depth)
-        # pcfg dma
-        self.cfg_pcfg_dma_ctrl = self.var("cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
-        self.cfg_pcfg_dma_header = self.var("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
-
-        self.glb_cfg = GlbCfg(_params=self._params)
-        self.add_child("glb_cfg",
-                       self.glb_cfg,
+        # Clock gating - cfg
+        self.gclk_cfg = self.var("gclk_cfg", 1)
+        self.add_child("glb_clk_gate_cfg",
+                       ClkGate(),
                        clk=self.clk,
-                       reset=self.reset,
-                       glb_tile_id=self.glb_tile_id)
-        self.wire(self.cfg_tile_connected_next, self.glb_cfg.cfg_data_network['tile_connected'])
-        self.wire(self.cfg_tile_connected_prev, self.cfg_tile_connected_wsti)
-        self.wire(self.cfg_tile_connected_next, self.cfg_tile_connected_esto)
-        self.wire(self.cfg_pcfg_tile_connected_next, self.glb_cfg.cfg_pcfg_network['tile_connected'])
-        self.wire(self.cfg_pcfg_tile_connected_prev, self.cfg_pcfg_tile_connected_wsti)
-        self.wire(self.cfg_pcfg_tile_connected_next, self.cfg_pcfg_tile_connected_esto)
-        self.wire(self.glb_cfg.if_cfg_wst_s, self.if_cfg_wst_s)
-        self.wire(self.glb_cfg.if_cfg_est_m, self.if_cfg_est_m)
-        self.wire(self.cfg_st_dma_ctrl, self.glb_cfg.cfg_st_dma_ctrl)
-        self.wire(self.cfg_st_dma_header, self.glb_cfg.cfg_st_dma_header)
-        self.wire(self.cfg_ld_dma_ctrl, self.glb_cfg.cfg_ld_dma_ctrl)
-        self.wire(self.cfg_ld_dma_header, self.glb_cfg.cfg_ld_dma_header)
-        self.wire(self.cfg_pcfg_dma_ctrl, self.glb_cfg.cfg_pcfg_dma_ctrl)
-        self.wire(self.cfg_pcfg_dma_header, self.glb_cfg.cfg_pcfg_dma_header)
+                       enable=self.clk_en_cfg,
+                       gclk=self.gclk_cfg)
+
+        # Clock gating - jtag_sram
+        self.gclk_jtag_sram = self.var("gclk_jtag_sram", 1)
+        self.add_child("glb_clk_gate_jtag_sram",
+                       ClkGate(),
+                       clk=self.clk,
+                       enable=self.clk_en_jtag_sram,
+                       gclk=self.gclk_jtag_sram)
 
         # Clock gating - core
         self.gclk_core = self.var("gclk_core", 1)
@@ -248,9 +226,49 @@ class GlbTile(Generator):
                        enable=self.clk_en_pcfg_rtr,
                        gclk=self.gclk_pcfg_rtr)
 
-        self.glb_tile_pcfg_switch = GlbPcfgBroadcast(_params=self._params)
+        # Local variables
+        # configuration
+        self.cfg_tile_connected_prev = self.var("cfg_tile_connected_prev", 1)
+        self.cfg_tile_connected_next = self.var("cfg_tile_connected_next", 1)
+        self.cfg_pcfg_tile_connected_prev = self.var("cfg_pcfg_tile_connected_prev", 1)
+        self.cfg_pcfg_tile_connected_next = self.var("cfg_pcfg_tile_connected_next", 1)
+
+        # st dma
+        self.cfg_st_dma_ctrl = self.var("cfg_st_dma_ctrl", self.header.cfg_dma_ctrl_t)
+        self.cfg_st_dma_header = self.var("cfg_st_dma_header", self.header.cfg_dma_header_t,
+                                          size=self._params.queue_depth)
+        # ld dma
+        self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_dma_ctrl_t)
+        self.cfg_ld_dma_header = self.var("cfg_ld_dma_header", self.header.cfg_dma_header_t,
+                                          size=self._params.queue_depth)
+        # pcfg dma
+        self.cfg_pcfg_dma_ctrl = self.var("cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
+        self.cfg_pcfg_dma_header = self.var("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
+
+        self.glb_cfg = GlbCfg(_params=self._params)
+        self.add_child("glb_cfg",
+                       self.glb_cfg,
+                       clk=clock(self.gclk_cfg),
+                       reset=self.reset,
+                       glb_tile_id=self.glb_tile_id)
+        self.wire(self.cfg_tile_connected_next, self.glb_cfg.cfg_data_network['tile_connected'])
+        self.wire(self.cfg_tile_connected_prev, self.cfg_tile_connected_wsti)
+        self.wire(self.cfg_tile_connected_next, self.cfg_tile_connected_esto)
+        self.wire(self.cfg_pcfg_tile_connected_next, self.glb_cfg.cfg_pcfg_network['tile_connected'])
+        self.wire(self.cfg_pcfg_tile_connected_prev, self.cfg_pcfg_tile_connected_wsti)
+        self.wire(self.cfg_pcfg_tile_connected_next, self.cfg_pcfg_tile_connected_esto)
+        self.wire(self.glb_cfg.if_cfg_wst_s, self.if_cfg_wst_s)
+        self.wire(self.glb_cfg.if_cfg_est_m, self.if_cfg_est_m)
+        self.wire(self.cfg_st_dma_ctrl, self.glb_cfg.cfg_st_dma_ctrl)
+        self.wire(self.cfg_st_dma_header, self.glb_cfg.cfg_st_dma_header)
+        self.wire(self.cfg_ld_dma_ctrl, self.glb_cfg.cfg_ld_dma_ctrl)
+        self.wire(self.cfg_ld_dma_header, self.glb_cfg.cfg_ld_dma_header)
+        self.wire(self.cfg_pcfg_dma_ctrl, self.glb_cfg.cfg_pcfg_dma_ctrl)
+        self.wire(self.cfg_pcfg_dma_header, self.glb_cfg.cfg_pcfg_dma_header)
+
+        self.glb_pcfg_broadcast = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_broadcast",
-                       self.glb_tile_pcfg_switch,
+                       self.glb_pcfg_broadcast,
                        clk=self.clk,
                        reset=self.reset,
                        cgra_cfg_core2sw=self.cgra_cfg_pcfgdma2mux,
@@ -424,7 +442,7 @@ class GlbTile(Generator):
         self.glb_tile_sram_cfg_ctrl = GlbSramCfgCtrl(self._params)
         self.add_child("glb_sram_cfg_ctrl",
                        self.glb_tile_sram_cfg_ctrl,
-                       clk=self.clk,
+                       clk=clock(self.gclk_jtag_sram),
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
                        if_sram_cfg_est_m=self.if_sram_cfg_est_m,
@@ -662,32 +680,32 @@ class GlbTile(Generator):
     def pcfg_wiring(self):
         cgra_cfg_g2f_w = self.var(f"cgra_cfg_g2f_cfg_w", self.header.cgra_cfg_t,
                                   size=self._params.cgra_per_glb, packed=True)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_g2f, cgra_cfg_g2f_w)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_g2f, cgra_cfg_g2f_w)
         for i in range(self._params.cgra_per_glb):
             self.wire(cgra_cfg_g2f_w[i]['wr_en'], self.cgra_cfg_g2f_cfg_wr_en[i])
             self.wire(cgra_cfg_g2f_w[i]['rd_en'], self.cgra_cfg_g2f_cfg_rd_en[i])
             self.wire(cgra_cfg_g2f_w[i]['addr'], self.cgra_cfg_g2f_cfg_addr[i])
             self.wire(cgra_cfg_g2f_w[i]['data'], self.cgra_cfg_g2f_cfg_data[i])
 
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_wsti['wr_en'], self.cgra_cfg_jtag_wsti_wr_en)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_wsti['rd_en'], self.cgra_cfg_jtag_wsti_rd_en)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_wsti['addr'], self.cgra_cfg_jtag_wsti_addr)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_wsti['data'], self.cgra_cfg_jtag_wsti_data)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_esto['wr_en'], self.cgra_cfg_jtag_esto_wr_en)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_esto['rd_en'], self.cgra_cfg_jtag_esto_rd_en)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_esto['addr'], self.cgra_cfg_jtag_esto_addr)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_esto['data'], self.cgra_cfg_jtag_esto_data)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_wsti['wr_en'], self.cgra_cfg_jtag_wsti_wr_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_wsti['rd_en'], self.cgra_cfg_jtag_wsti_rd_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_wsti['addr'], self.cgra_cfg_jtag_wsti_addr)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_wsti['data'], self.cgra_cfg_jtag_wsti_data)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_esto['wr_en'], self.cgra_cfg_jtag_esto_wr_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_esto['rd_en'], self.cgra_cfg_jtag_esto_rd_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_esto['addr'], self.cgra_cfg_jtag_esto_addr)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_esto['data'], self.cgra_cfg_jtag_esto_data)
 
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_pcfg_wsti['wr_en'], self.cgra_cfg_pcfg_wsti_wr_en)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_pcfg_wsti['rd_en'], self.cgra_cfg_pcfg_wsti_rd_en)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_pcfg_wsti['addr'], self.cgra_cfg_pcfg_wsti_addr)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_pcfg_wsti['data'], self.cgra_cfg_pcfg_wsti_data)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_pcfg_esto['wr_en'], self.cgra_cfg_pcfg_esto_wr_en)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_pcfg_esto['rd_en'], self.cgra_cfg_pcfg_esto_rd_en)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_pcfg_esto['addr'], self.cgra_cfg_pcfg_esto_addr)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_pcfg_esto['data'], self.cgra_cfg_pcfg_esto_data)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_wsti['wr_en'], self.cgra_cfg_pcfg_wsti_wr_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_wsti['rd_en'], self.cgra_cfg_pcfg_wsti_rd_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_wsti['addr'], self.cgra_cfg_pcfg_wsti_addr)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_wsti['data'], self.cgra_cfg_pcfg_wsti_data)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esto['wr_en'], self.cgra_cfg_pcfg_esto_wr_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esto['rd_en'], self.cgra_cfg_pcfg_esto_rd_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esto['addr'], self.cgra_cfg_pcfg_esto_addr)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esto['data'], self.cgra_cfg_pcfg_esto_data)
 
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_wsti_rd_en_bypass, self.cgra_cfg_jtag_wsti_rd_en_bypass)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_esto_rd_en_bypass, self.cgra_cfg_jtag_esto_rd_en_bypass)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_wsti_addr_bypass, self.cgra_cfg_jtag_wsti_addr_bypass)
-        self.wire(self.glb_tile_pcfg_switch.cgra_cfg_jtag_esto_addr_bypass, self.cgra_cfg_jtag_esto_addr_bypass)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_wsti_rd_en_bypass, self.cgra_cfg_jtag_wsti_rd_en_bypass)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_esto_rd_en_bypass, self.cgra_cfg_jtag_esto_rd_en_bypass)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_wsti_addr_bypass, self.cgra_cfg_jtag_wsti_addr_bypass)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_esto_addr_bypass, self.cgra_cfg_jtag_esto_addr_bypass)
