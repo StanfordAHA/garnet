@@ -1,6 +1,7 @@
 #!/bin/bash
 cp $GARNET_HOME/global_buffer/Makefile ./
 cp -r $GARNET_HOME/global_buffer/sim ./
+cp -r $GARNET_HOME/global_buffer/gls ./
 
 # FIXME: PM standard cells should be removed!
 if [ $PWR_AWARE = "True" ]; then
