@@ -21,12 +21,12 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'multicorner'
+  adk_view = 'view-standard'
 
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'glb_tile',
-    'clock_period'   : 1.25,
+    'clock_period'   : 1.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
