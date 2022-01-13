@@ -1076,7 +1076,8 @@ def run_test(len1, len2, num_match, value_limit=100, dump_dir="mek_dump", log_na
 
     assert loglines is not None, "Error extracting simulation log..."
     check_lines = [x for x in loglines if "COORD" in x]
-    split_lines = [re.split('[,\s\t]+', x.strip()) for x in check_lines]
+    # split_lines = [re.split('[,\s\t]+', x.strip()) for x in check_lines]
+    split_lines = [re.split('[, \t]+', x.strip()) for x in check_lines]
     coord_sim = [int(x[1]) for x in split_lines]
     data_sim = [int(x[3]) for x in split_lines]
 
@@ -3618,12 +3619,12 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, matB_strides, matB_ranges, 1))
     # nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, 0, 1, 1))
     nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, [0], [4], 0))
-    nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_data}]})
-    nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_data}]})
-    nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_vals}]})
-    nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_data}]})
-    nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_data}]})
-    nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}]})
+    nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
+    nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
+    nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_vals}], "mode": 2})
+    nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
+    nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
+    nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}], "mode": 2})
     nlb.configure_tile(isect_row, 5)
     nlb.configure_tile(isect_col, 5)
     nlb.configure_tile(accum_reg, 5)
