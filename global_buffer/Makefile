@@ -130,6 +130,7 @@ else ifeq ($(TOOL), VCS)
 endif
 
 ifneq ($(SDF), 0)
+    $(shell $(GEN_SDF_CMD))
     ifeq ($(TOOL), XCELIUM)
         SDF_ARGS += -sdf_cmd_file $(SDF_CMD_FILE)
         SDF_ARGS += -sdfstats sdf_stats.txt -sdf_verbose
@@ -170,7 +171,6 @@ compile-gls: COMPILE_ARGS = $(COMPILE_GLS_ARGS)
 compile-gls: INPUT_ARGS = $(HEADER_FILES) $(NETLIST_FILES) $(TB_FILES)
 compile-gls:
 	@rm -rf $(SDF_LOG); mkdir $(SDF_LOG)
-	@if [ $(SDF) != 0 ]; then $(GEN_SDF_CMD); fi
 	$(COMPILE)
 
 .PHONY: clean
