@@ -3,7 +3,7 @@ name: sim-gl-run
 parameters:
   waveform: False
   saif: True
-  tool: "XCELIUM"
+  tool: "VCS"
   num_glb_tiles: 16
   test: "test1-pwr"
 

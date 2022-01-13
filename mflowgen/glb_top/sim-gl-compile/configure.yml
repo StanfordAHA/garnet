@@ -3,7 +3,7 @@ name: sim-gl-compile
 parameters:
   sdf: False
   PWR_AWARE: False
-  tool: "XCELIUM"
+  tool: "VCS"
   num_glb_tiles: 16
 
 commands:
