@@ -1,0 +1,31 @@
+name: gen-gf-sram-macro
+
+commands:
+  - bash adk/gen_srams.sh
+
+inputs:
+  - adk
+
+outputs:
+  - sram.v
+  - sram-pwr.v
+  - sram.lef
+  - sram_tt.lib
+  - sram_ff.lib
+  - sram_tt.db  # Need this back for power on ptpx
+  - sram.gds
+  - sram.cdl
+
+parameters:
+  num_words: 2048
+  word_size: 64
+  mux_size: 8
+  num_subarrays: 2
+  corner: "TT_0P800V_025C"
+  bc_corner: "FFPG_0P880V_125C"
+  partial_write: False
+  leakage_opt: False
+
+postconditions:
+   # Sanity check to see if we at least got one sram
+   - assert File( 'outputs/sram_tt.lib' )
