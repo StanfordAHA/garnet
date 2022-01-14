@@ -1,7 +1,7 @@
-name: gen-gf-sram-macro
+name: gen_sram_macro
 
 commands:
-  - bash adk/gen_srams.sh
+  - bash gen_srams.sh
 
 inputs:
   - adk
@@ -14,17 +14,15 @@ outputs:
   - sram_ff.lib
   - sram_tt.db  # Need this back for power on ptpx
   - sram.gds
-  - sram.cdl
+  - sram.spi
 
 parameters:
   num_words: 2048
   word_size: 64
   mux_size: 8
-  num_subarrays: 2
-  corner: "TT_0P800V_025C"
-  bc_corner: "FFPG_0P880V_125C"
+  corner: "tt0p8v25c"
+  bc_corner: "ffg0p88v125c"
   partial_write: False
-  leakage_opt: False
 
 postconditions:
    # Sanity check to see if we at least got one sram
