@@ -3675,12 +3675,12 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         tester.eval()
 
         # If we have valid, print the two datas
-        tester_if = tester._if(h_valid_out)
+        tester_if = tester._if(tester.peek(h_valid_out))
         tester_if.print("COORD: %d, VAL0: %d, VAL1: %d\n",
                         h_coord_out,
                         h_val_out_0,
                         h_val_out_1)
-        if_eos_finish = tester._if(h_eos_out)
+        if_eos_finish = tester._if(tester.peek(h_eos_out))
         if_eos_finish.print("EOS IS HIGH\n")
 
         tester.step(2)
