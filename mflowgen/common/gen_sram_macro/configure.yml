@@ -1,7 +1,7 @@
 name: gen_sram_macro
 
 commands:
-  - bash adk/gen_srams.sh
+  - bash inputs/adk/gen_srams.sh
 
 inputs:
   - adk
