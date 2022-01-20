@@ -464,7 +464,6 @@ class RemoveInputsOutputs(Visitor):
 
 
     def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit, num_stages, tree_leaves):
-        return
         if sinks[0].node_name == "global.Pond":
             return
         print("creating reg tree for:", new_io_node.node_name, self.max_sinks)
