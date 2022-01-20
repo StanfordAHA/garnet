@@ -13,7 +13,7 @@ class CreateBuses(Visitor):
         self.inst_info = inst_info
 
     def doit(self, dag):
-        self.i = 0
+        self.i = 1
         self.bid_to_width = {}
         self.node_to_bid = {}
         self.netlist = defaultdict(lambda: [])
@@ -422,6 +422,23 @@ def gen_dag_img(dag, file, info, no_unbound=True):
     DagToPdf(info, no_unbound).doit(dag).render(filename=file)
 
 
+class PondFlushes(Transformer):
+    def __init__(self):
+        self.pond_flush_select = None
+        pass
+
+    def generic_visit(self, node: DagNode):   
+        Transformer.generic_visit(self, node)
+        if node.node_name == "global.Pond":
+            children = [child for child in node.children()]
+            for idx, child in enumerate(children):
+                if len(child.children()) > 0 and child.children()[0].node_name == "global.BitIO":
+                    if not self.pond_flush_select:
+                        self.pond_flush_select = Select(child.children()[0], field="out", type=BitVector[16])
+                    children[idx] = self.pond_flush_select
+            node.set_children(*children)
+        return node
+
 class PipelineBroadcasts(Visitor):
     def __init__(self):
         self.sinks = {}
@@ -447,8 +464,11 @@ BitRegisterSource, BitRegisterSink = Common.create_dag_node("Register", 1, True,
 class RemoveInputsOutputs(Visitor):
     def __init__(self, sinks):
         self.sinks = sinks
-        self.max_sinks = math.ceil(math.log2(max([len(sink) for _,sink in sinks.items()])))
-        pass
+        self.max_sinks = 0
+        for _,sink in sinks.items():
+            if sink[0].node_name == "global.Pond":
+                continue
+            self.max_sinks = max(self.max_sinks, len(sink))
 
     def doit(self, dag: Dag):
         self.node_map = {}
@@ -464,9 +484,12 @@ class RemoveInputsOutputs(Visitor):
 
 
     def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit, num_stages, tree_leaves):
-        if sinks[0].node_name == "global.Pond":
+    def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit, max_sinks, tree_leaves):
+        if not ("PIPELINED" in os.environ and os.environ["PIPELINED"] == "1"): 
             return
-        print("creating reg tree for:", new_io_node.node_name, self.max_sinks)
+
+        num_stages = math.ceil(math.log(max_sinks, 2)) + 1
+        print("creating reg tree for:", new_io_node.node_name, new_io_node.iname, num_stages)
         levels = [len(sinks)]
         while 1 not in levels:
             levels.insert(0, math.ceil(levels[0]/tree_leaves))
@@ -534,11 +557,11 @@ class RemoveInputsOutputs(Visitor):
             if "io16in" in io_child.iname:
                 new_node = new_children[0].select("io2f_16")
                 if pipeline:
-                    self.create_register_tree(io_child, new_node, node, self.sinks[node], False, self.max_sinks, 3)
+                    self.create_register_tree(io_child, new_node, node, self.sinks[node], False, self.max_sinks, 2)
             elif "io1in" in io_child.iname:
                 new_node = new_children[0].select("io2f_1")
                 if pipeline:
-                    self.create_register_tree(io_child, new_node, node, self.sinks[node], True, self.max_sinks, 3)
+                    self.create_register_tree(io_child, new_node, node, self.sinks[node], True, self.max_sinks, 2)
             else:
                 new_node = node.copy()
                 #if len(self.sinks[node]) > 5 and io_child.node_name == "global.MEM":
@@ -599,8 +622,9 @@ class CountTiles(Visitor):
 
 def separatePondFlush(info):
     netlist = info['netlist'] 
-    new_conns = [netlist['e1'][0]]
     
+    new_conns = [('i0', 'io2f_1')]
+
     for bid, conns in netlist.items():
         for conn in conns.copy():
             if conn[0][0] == "M" and conn[1] == "flush":
@@ -609,6 +633,8 @@ def separatePondFlush(info):
 
     netlist['e0'] = new_conns
     info['buses']['e0'] = 1
+
+
 
 from lassen.sim import PE_fc as lassen_fc
 from metamapper. common_passes import print_dag
@@ -630,7 +656,9 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, i
             
             for line in lines:
             	id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
-
+    if 'POND_PIPELINED' in os.environ and os.environ['POND_PIPELINED'] == '1':
+        PondFlushes().run(dag)
+    gen_dag_img(dag, "dag_pond_flush", None)
     sinks = PipelineBroadcasts().doit(dag)
     fdag = RemoveInputsOutputs(sinks).doit(dag)
 
@@ -679,8 +707,8 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, i
         info["netlist"][bid] = [(nodes_to_ids[node], field.replace("pond_0", "pond")) for node, field in ports]
 
     CountTiles().doit(fdag)  
-
-    #separatePondFlush(info) 
+    if 'POND_PIPELINED' in os.environ and os.environ['POND_PIPELINED'] == '1':
+        separatePondFlush(info) 
 
     return info
 
