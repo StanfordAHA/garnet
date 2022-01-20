@@ -333,7 +333,7 @@ class Garnet(Generator):
 
 
 
-    def place_and_route(self, halide_src, target_frequency, unconstrained_io=False, compact=False, load_only=False):
+    def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False):
         id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src, load_only)
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
@@ -341,7 +341,7 @@ class Garnet(Generator):
         else:
             fixed_io = place_io_blk(id_to_name)
         placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
-                                             load_only=load_only, target_freq=target_frequency,
+                                             load_only=load_only, target_freq=0,
                                              cwd=app_dir,
                                              id_to_name=id_to_name,
                                              fixed_pos=fixed_io,
@@ -448,7 +448,6 @@ def main():
     parser.add_argument("--virtualize", action="store_true")
     parser.add_argument("--use-io-valid", action="store_true")
     parser.add_argument("--pipeline-pnr", action="store_true")
-    parser.add_argument("--target-frequency", type=int, default=0)
     parser.add_argument("--generate-bitstream-only", action="store_true")
     parser.add_argument('--pe', type=str, default="")
     args = parser.parse_args()
@@ -510,7 +509,7 @@ def main():
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
         
-        placement, routing, id_to_name, instance_to_instr, netlist, bus = garnet.place_and_route(args.app, args.target_frequency, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact, load_only=args.generate_bitstream_only)
+        placement, routing, id_to_name, instance_to_instr, netlist, bus = garnet.place_and_route(args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact, load_only=args.generate_bitstream_only)
         
         if args.pipeline_pnr:
             return
