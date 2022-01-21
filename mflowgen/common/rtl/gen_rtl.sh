@@ -38,7 +38,7 @@ else
       # install the aha wrapper script
       pip install -e .
 
-      echo "--- Docker pre-cleaning"
+      echo "--- Docker pre-cleaning"; echo ""
       docker images; echo ""
       docker ps    ; echo ""
 
@@ -54,7 +54,7 @@ else
       untagged_images=`docker images | grep "<none>" | awk '{print $3}'`
       if [ "$untagged_images" ]; then echo "Found untagged images $untagged_images"; echo ""; fi
 
-      echo ""; echo "# 2. Find and kill jobs associated with image"; echo ""
+      echo ""; echo "# 2. Find and kill jobs associated with each untagged image"; echo ""
       for ui in $untagged_images; do
           echo "================================================================"
           echo docker ps --filter "ancestor=$ui"
@@ -77,8 +77,8 @@ else
       done
 
       echo ""; echo "# Untagged jobs AFTER pre-cleaning"; echo ""
-      docker images
-      docker ps
+      docker images; echo ""
+      docker ps    ; echo ""
 
       echo "--- Continue..."
 
