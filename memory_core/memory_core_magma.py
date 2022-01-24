@@ -224,8 +224,8 @@ class MemCore(LakeCoreBase):
 
         mode_num_map = {
             0: MemoryMode.UNIFIED_BUFFER,
-            1: MemoryMode.ROM,
-            2: MemoryMode.SRAM,
+            1: MemoryMode.SRAM,
+            2: MemoryMode.ROM,
             3: MemoryMode.FIFO,
         }
 
@@ -283,7 +283,6 @@ class MemCore(LakeCoreBase):
         return configs
 
     def get_static_bitstream(self, config_path, in_file_name, out_file_name):
-
         # Don't do the rest anymore...
         return self.dut.get_static_bitstream(config_path=config_path,
                                              in_file_name=in_file_name,
