@@ -372,6 +372,25 @@ cat -n $f | grep -i error  | sumfilter | tail | tee -a tmp.summary || PASS; echo
 cat -n $f | grep    FAIL   | sumfilter | tail | tee -a tmp.summary || PASS; echo "-----"
 cat -n $f | grep -i passed | sumfilter | tail | tee -a tmp.summary || PASS; echo ""
 
+
+echo '+++ Kill stray docker if necessary'
+
+# Find the name of the docker container we just built.
+container=`egrep ^container-name make*.log | awk '{print $NF}'` || echo no container found
+
+# Kill the container if it still exists, e.g. if make job crashed before cleanup.
+if [ "$container" ]; then
+  echo '-------------------------'
+  echo 'docker before:'; docker ps
+  echo '-------------------------'
+  set -x
+  docker kill $container || echo no containers were killed
+  set +x
+  echo '-------------------------'
+  echo 'docker after:'; docker ps
+  echo '-------------------------'
+fi
+
 echo '+++ FAIL if make job failed, duh.'
 egrep '^make: .* Error 1' make*.log && exit 13 || echo 'Did not fail. Right?'
 
