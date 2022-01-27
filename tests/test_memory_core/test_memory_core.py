@@ -3458,7 +3458,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     mem_bvals = nlb.register_core("memtile", flushable=True, name="mem_bvals")
 
     # Intersect the two...
-    isect_row = nlb.register_core("intersect", flushable=True, name="isect_row")
+    # isect_row = nlb.register_core("intersect", flushable=True, name="isect_row")
     isect_col = nlb.register_core("intersect", flushable=True, name="isect_col")
 
     reg_coord = nlb.register_core("register", name="reg_coord")
@@ -3496,27 +3496,27 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         ],
 
         # top level intersection
-        'root_scans_to_intersect': [
-            ([(scan_aroot, "coord_out"), (isect_row, "coord_in_0")], 16),
-            ([(scan_broot, "coord_out"), (isect_row, "coord_in_1")], 16),
-            ([(scan_aroot, "payload_ptr"), (isect_row, "payload_ptr_0")], 16),
-            ([(scan_broot, "payload_ptr"), (isect_row, "payload_ptr_1")], 16),
-            ([(scan_aroot, "valid_out"), (isect_row, "valid_in_0")], 1),
-            ([(scan_broot, "valid_out"), (isect_row, "valid_in_1")], 1),
-            ([(scan_aroot, "eos_out"), (isect_row, "eos_in_0")], 1),
-            ([(scan_broot, "eos_out"), (isect_row, "eos_in_1")], 1),
-            ([(isect_row, "ready_out_0"), (scan_aroot, "ready_in")], 1),
-            ([(isect_row, "ready_out_1"), (scan_broot, "ready_in")], 1)
+        'root_scans_to_row_scans': [
+            # ([(scan_aroot, "coord_out"), (isect_row, "coord_in_0")], 16),
+            # ([(scan_broot, "coord_out"), (isect_row, "coord_in_1")], 16),
+            ([(scan_aroot, "payload_ptr"), (scan_arows, "us_pos_in")], 16),
+            ([(scan_broot, "payload_ptr"), (scan_brows, "us_pos_in")], 16),
+            ([(scan_aroot, "valid_out"), (scan_arows, "us_valid_in")], 1),
+            ([(scan_broot, "valid_out"), (scan_brows, "us_valid_in")], 1),
+            ([(scan_aroot, "eos_out"), (scan_arows, "us_eos_in")], 1),
+            ([(scan_broot, "eos_out"), (scan_brows, "us_eos_in")], 1),
+            ([(scan_arows, "us_ready_out"), (scan_aroot, "ready_in")], 1),
+            ([(scan_brows, "us_ready_out"), (scan_broot, "ready_in")], 1)
         ],
 
         # top intersect to the next level of scanners
-        'intersect_to_scan_rows': [
-            ([(isect_row, "pos_out_0"), (scan_arows, "us_pos_in")], 16),
-            ([(isect_row, "pos_out_1"), (scan_brows, "us_pos_in")], 16),
-            ([(isect_row, "valid_out"), (scan_arows, "us_valid_in"), (scan_brows, "us_valid_in")], 1),
-            ([(isect_row, "eos_out"), (scan_arows, "us_eos_in"), (scan_brows, "us_eos_in")], 1),
-            ([(scan_arows, "us_ready_out"), (isect_row, "ready_in")], 1)
-        ],
+        # 'intersect_to_scan_rows': [
+            # ([(isect_row, "pos_out_0"), (scan_arows, "us_pos_in")], 16),
+            # ([(isect_row, "pos_out_1"), (scan_brows, "us_pos_in")], 16),
+            # ([(isect_row, "valid_out"), (scan_arows, "us_valid_in"), (scan_brows, "us_valid_in")], 1),
+            # ([(isect_row, "eos_out"), (scan_arows, "us_eos_in"), (scan_brows, "us_eos_in")], 1),
+            # ([(scan_arows, "us_ready_out"), (isect_row, "ready_in")], 1)
+        # ],
 
         'scan_arows_to_mem_arows': [
             ([(scan_arows, "addr_out"), (mem_arows, "addr_in_0")], 16),
@@ -3607,25 +3607,25 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     max_outer_dim = matrix_size
     mmatrix_vals_alt = [x + 5 for x in mmatrix_vals]
 
-    matA_strides = [0, 1]
-    matA_ranges = [4, 4]
+    matA_strides = [0]
+    matA_ranges = [1]
 
-    matB_strides = [1, 0]
-    matB_ranges = [4, 4]
+    matB_strides = [0]
+    matB_ranges = [1]
 
-    nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, matA_strides, matA_ranges, 1))
+    nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, matA_strides, matA_ranges, 1, 1, 1, 3))
     # nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, 0, 1, 1))
-    nlb.configure_tile(scan_arows, (minner_offset_row, max_outer_dim, [0], [4], 0))
-    nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, matB_strides, matB_ranges, 1))
+    nlb.configure_tile(scan_arows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0))
+    nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, matB_strides, matB_ranges, 1, 1, 0, 3))
     # nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, 0, 1, 1))
-    nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, [0], [4], 0))
+    nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0))
     nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
     nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
     nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_vals}], "mode": 2})
     nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
     nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
     nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}], "mode": 2})
-    nlb.configure_tile(isect_row, 5)
+    # nlb.configure_tile(isect_row, 5)
     nlb.configure_tile(isect_col, 5)
     nlb.configure_tile(accum_reg, 5)
     nlb.configure_tile(pe_mul, asm.umult0())
