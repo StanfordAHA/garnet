@@ -20,7 +20,8 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'tsmc16'
+  adk_name = 'gf12-adk'
+  #adk_view = 'multicorner'
   adk_view = 'view-standard'
 
   parameters = {
@@ -42,7 +43,7 @@ def construct():
     'num_words'      : 2048,
     'word_size'      : 64,
     'mux_size'       : 8,
-    'corner'         : "tt0p8v25c",
+    'num_subarrays'  : 2,
     'partial_write'  : True,
      # Power Domains
     'PWR_AWARE'         : False,
