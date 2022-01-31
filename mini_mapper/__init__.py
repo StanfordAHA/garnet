@@ -88,7 +88,6 @@ def __get_alu_mapping(op_str):
     elif op_str == "neq":
         return ALU.Sub, Signed.unsigned
     else:
-        print(op_str)
         raise NotImplemented
 
 
@@ -172,10 +171,6 @@ def convert2netlist(connections):
         # rearrange the net so that it's src -> sink
         net.sort(key=lambda p: sort_value(p))
         # sanity check to make sure that the first one is indeed an out
-        print("net")
-        print(net)
-        print("net0")
-        print(net[0])
         assert (is_conn_out(net[0]))
         netlists.append(net)
     # print("INFO: before conversion connections", len(connections),
@@ -588,7 +583,7 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
         if rename_op:
             # this depends on the mode
             mode = instance["modargs"]["mode"][-1]
-            print(mode)            
+            print(mode)
             assert mode in {"sram", "linebuffer", "unified_buffer", "lake", "pond"}
             if mode == "lake":
                 op = "mem_lake_{}"
