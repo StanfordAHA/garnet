@@ -23,8 +23,8 @@ class GlbPcfgDma(Generator):
         self.cfg_pcfg_dma_header = self.input("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
         self.cfg_pcfg_network_latency = self.input("cfg_pcfg_network_latency", self._params.latency_width)
 
-        self.pcfg_start_pulse = self.input("pcfg_start_pulse", 1)
-        self.pcfg_done_pulse = self.output("pcfg_done_pulse", 1)
+        self.pcfg_dma_start_pulse = self.input("pcfg_dma_start_pulse", 1)
+        self.pcfg_dma_done_interrupt = self.output("pcfg_dma_done_interrupt", 1)
 
         # localparam
         self.bank_data_byte_offset = math.ceil(
@@ -39,6 +39,8 @@ class GlbPcfgDma(Generator):
                                 )
 
         # local variables
+        self.pcfg_done_pulse = self.var("pcfg_done_pulse", 1)
+        self.pcfg_done_pulse_last = self.var("pcfg_done_pulse_last", 1)
         self.is_running_r = self.var("is_running_r", 1)
         self.start_pulse_r = self.var("start_pulse_r", 1)
         self.done_pulse_r = self.var("done_pulse_r", 1)
@@ -64,13 +66,15 @@ class GlbPcfgDma(Generator):
         self.add_always(self.rdrs_packet_ff)
         self.assign_rdrq_packet()
         self.assign_cgra_cfg_output()
-        self.add_pcfg_dma_done_pulse_pipeline()
+        self.add_done_pulse_pipeline()
+        self.add_done_pulse_last_pipeline()
+        self.add_always(self.interrupt_ff)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def start_pulse_ff(self):
         if self.reset:
             self.start_pulse_r = 0
-        elif ((self.cfg_pcfg_dma_ctrl_mode == 1) & (~self.is_running_r) & (self.pcfg_start_pulse)):
+        elif ((self.cfg_pcfg_dma_ctrl_mode == 1) & (~self.is_running_r) & (self.pcfg_dma_start_pulse)):
             self.start_pulse_r = 1
         else:
             self.start_pulse_r = 0
@@ -160,7 +164,7 @@ class GlbPcfgDma(Generator):
         self.wire(self.cgra_cfg_pcfg['data'],
                   self.rdrs_packet_rd_data_r[self._params.cgra_cfg_data_width - 1, 0])
 
-    def add_pcfg_dma_done_pulse_pipeline(self):
+    def add_done_pulse_pipeline(self):
         maximum_latency = 3 * self._params.num_glb_tiles + self.default_latency + 6
         latency_width = clog2(maximum_latency)
         self.done_pulse_d_arr = self.var("done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
@@ -178,3 +182,23 @@ class GlbPcfgDma(Generator):
                   self.done_pulse_d_arr[resize(self.cfg_pcfg_network_latency, latency_width)
                                         + self.default_latency
                                         + self._params.num_glb_tiles])
+
+    def add_done_pulse_last_pipeline(self):
+        self.interrupt_last_pipeline = Pipeline(width=1, depth=self._params.interrupt_cnt)
+        self.add_child("pcfg_dma_interrupt_pipeline",
+                       self.interrupt_last_pipeline,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=self.pcfg_done_pulse,
+                       out_=self.pcfg_done_pulse_last)
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def interrupt_ff(self):
+        if self.reset:
+            self.pcfg_dma_done_interrupt = 0
+        else:
+            if self.pcfg_done_pulse:
+                self.pcfg_dma_done_interrupt = 1
+            elif self.pcfg_done_pulse_last:
+                self.pcfg_dma_done_interrupt = 0

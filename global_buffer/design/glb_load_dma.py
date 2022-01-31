@@ -32,11 +32,11 @@ class GlbLoadDma(Generator):
             "cfg_ld_dma_header", self.header.cfg_dma_header_t, size=self._params.queue_depth)
 
         self.ld_dma_start_pulse = self.input("ld_dma_start_pulse", 1)
-        self.ld_dma_done_pulse = self.output("ld_dma_done_pulse", 1)
+        self.ld_dma_done_interrupt = self.output("ld_dma_done_interrupt", 1)
 
         # local parameter
         self.default_latency = (self._params.glb_sw2bank_pipeline_depth
-                                + self._params.glb_bank2sw_pipeline_depth 
+                                + self._params.glb_bank2sw_pipeline_depth
                                 + self._params.glb_switch_muxed_pipeline_depth
                                 + self._params.glb_bank_memory_pipeline_depth
                                 + self._params.sram_gen_pipeline_depth
@@ -45,6 +45,8 @@ class GlbLoadDma(Generator):
                                 )
 
         # local variables
+        self.ld_dma_done_pulse = self.var("ld_dma_done_pulse", 1)
+        self.ld_dma_done_pulse_last = self.var("ld_dma_done_pulse_last", 1)
         self.strm_data = self.var("strm_data", self._params.cgra_data_width)
         self.strm_data_r = self.var("strm_data_r", self._params.cgra_data_width)
         self.strm_data_valid = self.var("strm_data_valid", 1)
@@ -94,7 +96,6 @@ class GlbLoadDma(Generator):
         self.add_always(self.strm_run_ff)
         self.add_always(self.strm_data_ff)
         self.add_strm_data_start_pulse_pipeline()
-        self.add_ld_dma_done_pulse_pipeline()
         self.add_strm_rd_en_pipeline()
         self.add_strm_rd_addr_pipeline()
         self.add_always(self.ld_dma_start_pulse_logic)
@@ -106,6 +107,9 @@ class GlbLoadDma(Generator):
         self.add_always(self.bank_rdrq_packet_logic)
         self.add_always(self.bank_rdrs_data_cache_ff)
         self.add_always(self.strm_data_logic)
+        self.add_ld_dma_done_pulse_pipeline()
+        self.add_done_pulse_last_pipeline()
+        self.add_always(self.interrupt_ff)
 
         # Loop iteration shared for cycle and data
         self.loop_iter = GlbLoopIter(self._params)
@@ -396,3 +400,23 @@ class GlbLoadDma(Generator):
         self.wire(self.ld_dma_done_pulse,
                   self.ld_dma_done_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width)
                                                + self.default_latency + 1])
+
+    def add_done_pulse_last_pipeline(self):
+        self.interrupt_last_pipeline = Pipeline(width=1, depth=self._params.interrupt_cnt)
+        self.add_child("ld_dma_interrupt_pipeline",
+                       self.interrupt_last_pipeline,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=self.ld_dma_done_pulse,
+                       out_=self.ld_dma_done_pulse_last)
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def interrupt_ff(self):
+        if self.reset:
+            self.ld_dma_done_interrupt = 0
+        else:
+            if self.ld_dma_done_pulse:
+                self.ld_dma_done_interrupt = 1
+            elif self.ld_dma_done_pulse_last:
+                self.ld_dma_done_interrupt = 0
