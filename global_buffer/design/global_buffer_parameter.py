@@ -73,6 +73,9 @@ class GlobalBufferParams:
     # cycle count data width
     cycle_count_width: int = 16
 
+    # interrupt cnt
+    interrupt_cnt: int = 5
+
 
 def gen_global_buffer_params(**kwargs):
     # User-defined parameters
