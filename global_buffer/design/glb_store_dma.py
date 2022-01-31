@@ -31,7 +31,7 @@ class GlbStoreDma(Generator):
                                             size=self._params.queue_depth, explicit_array=True)
 
         self.st_dma_start_pulse = self.input("st_dma_start_pulse", 1)
-        self.st_dma_done_pulse = self.output("st_dma_done_pulse", 1)
+        self.st_dma_done_interrupt = self.output("st_dma_done_interrupt", 1)
 
         # localparam
         self.default_latency = (self._params.glb_bank_memory_pipeline_depth
@@ -43,6 +43,8 @@ class GlbStoreDma(Generator):
         self.cgra_strb_value = 2 ** (self._params.cgra_data_width // 8) - 1
 
         # local variables
+        self.st_dma_done_pulse = self.var("st_dma_done_pulse", 1)
+        self.st_dma_done_pulse_last = self.var("st_dma_done_pulse_last", 1)
         self.strm_wr_data_w = self.var("strm_wr_data_w", width=self._params.cgra_data_width)
         self.strm_wr_addr_w = self.var("strm_wr_addr_w", width=self._params.glb_addr_width)
         self.last_strm_wr_addr_r = self.var("last_strm_wr_addr_r", width=self._params.glb_addr_width)
@@ -102,6 +104,8 @@ class GlbStoreDma(Generator):
         self.add_always(self.wr_packet_logic)
         self.add_always(self.strm_done_pulse_logic)
         self.add_done_pulse_pipeline()
+        self.add_done_pulse_last_pipeline()
+        self.add_always(self.interrupt_ff)
 
         # Loop iteration shared for cycle and data
         self.loop_iter = GlbLoopIter(self._params)
@@ -362,3 +366,23 @@ class GlbStoreDma(Generator):
 
         self.wire(self.st_dma_done_pulse,
                   self.done_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width) + self.default_latency])
+
+    def add_done_pulse_last_pipeline(self):
+        self.interrupt_last_pipeline = Pipeline(width=1, depth=self._params.interrupt_cnt)
+        self.add_child("st_dma_interrupt_pipeline",
+                       self.interrupt_last_pipeline,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=self.st_dma_done_pulse,
+                       out_=self.st_dma_done_pulse_last)
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def interrupt_ff(self):
+        if self.reset:
+            self.st_dma_done_interrupt = 0
+        else:
+            if self.st_dma_done_pulse:
+                self.st_dma_done_interrupt = 1
+            elif self.st_dma_done_pulse_last:
+                self.st_dma_done_interrupt = 0

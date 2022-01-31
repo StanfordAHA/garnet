@@ -288,7 +288,7 @@ class GlbTile(Generator):
                        cfg_data_network_latency=self.glb_cfg.cfg_data_network['latency'],
                        cfg_st_dma_header=self.cfg_st_dma_header,
                        st_dma_start_pulse=self.strm_f2g_start_pulse,
-                       st_dma_done_pulse=self.strm_f2g_interrupt_pulse)
+                       st_dma_done_interrupt=self.strm_f2g_interrupt_pulse)
 
         self.add_child("glb_load_dma",
                        GlbLoadDma(_params=self._params),
@@ -306,7 +306,7 @@ class GlbTile(Generator):
                        cfg_data_network_latency=self.glb_cfg.cfg_data_network['latency'],
                        cfg_ld_dma_header=self.cfg_ld_dma_header,
                        ld_dma_start_pulse=self.strm_g2f_start_pulse,
-                       ld_dma_done_pulse=self.strm_g2f_interrupt_pulse)
+                       ld_dma_done_interrupt=self.strm_g2f_interrupt_pulse)
 
         self.add_child("glb_pcfg_dma",
                        GlbPcfgDma(_params=self._params),
@@ -320,8 +320,8 @@ class GlbTile(Generator):
                        cfg_pcfg_dma_ctrl_mode=self.cfg_pcfg_dma_ctrl['mode'],
                        cfg_pcfg_network_latency=self.glb_cfg.cfg_pcfg_network['latency'],
                        cfg_pcfg_dma_header=self.cfg_pcfg_dma_header,
-                       pcfg_start_pulse=self.pcfg_start_pulse,
-                       pcfg_done_pulse=self.pcfg_g2f_interrupt_pulse)
+                       pcfg_dma_start_pulse=self.pcfg_start_pulse,
+                       pcfg_dma_done_interrupt=self.pcfg_g2f_interrupt_pulse)
 
         self.add_child("glb_strm_mux",
                        GlbStrmMux(_params=self._params),
