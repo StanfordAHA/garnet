@@ -3499,8 +3499,8 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         'root_scans_to_row_scans': [
             # ([(scan_aroot, "coord_out"), (isect_row, "coord_in_0")], 16),
             # ([(scan_broot, "coord_out"), (isect_row, "coord_in_1")], 16),
-            ([(scan_aroot, "payload_ptr"), (scan_arows, "us_pos_in")], 16),
-            ([(scan_broot, "payload_ptr"), (scan_brows, "us_pos_in")], 16),
+            ([(scan_aroot, "pos_out"), (scan_arows, "us_pos_in")], 16),
+            ([(scan_broot, "pos_out"), (scan_brows, "us_pos_in")], 16),
             ([(scan_aroot, "valid_out"), (scan_arows, "us_valid_in")], 1),
             ([(scan_broot, "valid_out"), (scan_brows, "us_valid_in")], 1),
             ([(scan_aroot, "eos_out"), (scan_arows, "us_eos_in")], 1),
@@ -3613,12 +3613,12 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     matB_strides = [0]
     matB_ranges = [1]
 
-    nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, matA_strides, matA_ranges, 1, 1, 1, 3))
+    nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, matA_strides, matA_ranges, 1, 1, 0, 3, 0))
     # nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, 0, 1, 1))
-    nlb.configure_tile(scan_arows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0))
-    nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, matB_strides, matB_ranges, 1, 1, 0, 3))
+    nlb.configure_tile(scan_arows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0, 2))
+    nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, matB_strides, matB_ranges, 1, 1, 1, 3, 0))
     # nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, 0, 1, 1))
-    nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0))
+    nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0, 2))
     nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
     nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
     nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_vals}], "mode": 2})
