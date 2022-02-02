@@ -19,8 +19,7 @@ class GlobalBuffer(Generator):
         self.rtr_stall = self.input("rtr_stall", self._params.num_glb_tiles)
         self.pcfg_rtr_stall = self.input("pcfg_rtr_stall", self._params.num_glb_tiles)
         self.reset = self.reset("reset")
-        # TODO: Why cgra_stall has same width as num_glb_tiles
-        self.cgra_stall_in = self.input("cgra_stall_in", self._params.num_glb_tiles)
+        self.cgra_stall_in = self.input("cgra_stall_in", self._params.num_cgra_tiles)
         self.cgra_stall = self.output(
             "cgra_stall", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
@@ -253,7 +252,7 @@ class GlobalBuffer(Generator):
         self.core_stall_d = self.var("core_stall_d", self._params.num_glb_tiles)
         self.rtr_stall_d = self.var("rtr_stall_d", self._params.num_glb_tiles)
         self.pcfg_rtr_stall_d = self.var("pcfg_rtr_stall_d", self._params.num_glb_tiles)
-        self.cgra_stall_in_d = self.var("cgra_stall_in_d", self._params.num_glb_tiles)
+        self.cgra_stall_in_d = self.var("cgra_stall_in_d", self._params.num_cgra_tiles)
         self.strm_g2f_start_pulse_d = self.var("strm_g2f_start_pulse_d", self._params.num_glb_tiles)
         self.strm_f2g_start_pulse_d = self.var("strm_f2g_start_pulse_d", self._params.num_glb_tiles)
         self.pcfg_start_pulse_d = self.var("pcfg_start_pulse_d", self._params.num_glb_tiles)
@@ -271,7 +270,8 @@ class GlobalBuffer(Generator):
                        in_=self.gls_in,
                        out_=self.gls_out)
         for i in range(self._params.num_glb_tiles):
-            self.wire(self.cgra_stall[i], concat(*[self.cgra_stall_in_d[i]] * self._params.cgra_per_glb))
+            for j in range(self._params.cgra_per_glb):
+                self.wire(self.cgra_stall[i][j], self.cgra_stall_in_d[i * self._params.cgra_per_glb + j])
 
         # GLB Tiles
         self.glb_tile = []
