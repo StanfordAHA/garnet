@@ -70,9 +70,9 @@ class GlobalController(Generator):
                                         axi_addr_width=self.axi_addr_width,
                                         axi_data_width=self.axi_data_width,
                                         num_glb_tiles=self.num_glb_tiles,
+                                        cgra_width=self.cgra_width,
                                         glb_tile_mem_size=self.glb_tile_mem_size,
-                                        block_axi_addr_width=(
-                                            self.block_axi_addr_width))
+                                        block_axi_addr_width=self.block_axi_addr_width)
 
         wrapper = gen_wrapper(params)
         generator = wrapper.generator(mode="declare")
