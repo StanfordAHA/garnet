@@ -16,7 +16,7 @@ class GlobalController(Generator):
 
     def __init__(self, addr_width=32, data_width=32,
                  axi_addr_width=12, axi_data_width=32,
-                 num_glb_tiles=16, glb_addr_width=22,
+                 num_glb_tiles=16, cgra_width=32, glb_addr_width=22,
                  block_axi_addr_width=12, glb_tile_mem_size=256):
         super().__init__()
 
@@ -25,6 +25,7 @@ class GlobalController(Generator):
         self.axi_addr_width = axi_addr_width
         self.axi_data_width = axi_data_width
         self.num_glb_tiles = num_glb_tiles
+        self.cgra_width = cgra_width
         self.glb_addr_width = glb_addr_width
         self.glb_tile_mem_size = glb_tile_mem_size
         self.block_axi_addr_width = block_axi_addr_width
@@ -39,9 +40,10 @@ class GlobalController(Generator):
 
             clk_out=magma.Out(magma.Clock),
             reset_out=magma.Out(magma.AsyncReset),
-            cgra_stall=magma.Out(magma.Bits[self.num_glb_tiles]),
-            glb_stall=magma.Out(magma.Bits[self.num_glb_tiles]),
-            soft_reset=magma.Out(magma.Bit),
+            cgra_stall=magma.Out(magma.Bits[self.cgra_width]),
+            glb_core_stall=magma.Out(magma.Bits[self.num_glb_tiles]),
+            glb_rtr_stall=magma.Out(magma.Bits[self.num_glb_tiles]),
+            glb_pcfg_rtr_stall=magma.Out(magma.Bits[self.num_glb_tiles]),
 
             glb_cfg=GlbCfgIfc(self.block_axi_addr_width,
                               self.axi_data_width).master,
@@ -86,9 +88,9 @@ class GlobalController(Generator):
         self.wire(self.underlying.ports.clk_out, self.ports.clk_out)
         self.wire(self.underlying.ports.reset_out, self.ports.reset_out)
         self.wire(self.underlying.ports.cgra_stall, self.ports.cgra_stall)
-        self.wire(self.underlying.ports.glb_stall, self.ports.glb_stall)
-        self.wire(self.underlying.ports.soft_reset,
-                  self.ports.soft_reset)
+        self.wire(self.underlying.ports.glb_core_stall, self.ports.glb_core_stall)
+        self.wire(self.underlying.ports.glb_rtr_stall, self.ports.glb_rtr_stall)
+        self.wire(self.underlying.ports.glb_pcfg_rtr_stall, self.ports.glb_pcfg_rtr_stall)
 
         # global buffer configuration
         self.wire(self.ports.glb_cfg.wr_en,
