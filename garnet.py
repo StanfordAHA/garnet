@@ -81,6 +81,7 @@ class Garnet(Generator):
                                                       axi_addr_width=axi_addr_width,
                                                       axi_data_width=axi_data_width,
                                                       num_glb_tiles=glb_params.num_glb_tiles,
+                                                      cgra_width=glb_params.num_cgra_tiles,
                                                       glb_addr_width=glb_params.glb_addr_width,
                                                       glb_tile_mem_size=glb_tile_mem_size,
                                                       block_axi_addr_width=glb_params.axi_addr_width)

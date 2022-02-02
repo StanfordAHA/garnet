@@ -3,8 +3,12 @@ def glb_glc_wiring(garnet):
 
     garnet.wire(garnet.global_controller.ports.reset_out,
                 garnet.global_buffer.ports.reset)
-    garnet.wire(garnet.global_controller.ports.glb_stall,
-                garnet.global_buffer.ports.stall)
+    garnet.wire(garnet.global_controller.ports.glb_core_stall,
+                garnet.global_buffer.ports.core_stall)
+    garnet.wire(garnet.global_controller.ports.glb_rtr_stall,
+                garnet.global_buffer.ports.rtr_stall)
+    garnet.wire(garnet.global_controller.ports.glb_pcfg_rtr_stall,
+                garnet.global_buffer.ports.pcfg_rtr_stall)
 
     garnet.wire(garnet.global_controller.ports.cgra_config.config_addr,
                 garnet.global_buffer.ports.cgra_cfg_jtag_gc2glb_addr)
@@ -17,12 +21,16 @@ def glb_glc_wiring(garnet):
 
     garnet.wire(garnet.global_controller.ports.glb_cfg.wr_en,
                 garnet.global_buffer.ports.if_cfg_wr_en[0])
+    garnet.wire(garnet.global_controller.ports.glb_cfg.wr_clk_en,
+                garnet.global_buffer.ports.if_cfg_wr_clk_en[0])
     garnet.wire(garnet.global_controller.ports.glb_cfg.wr_addr,
                 garnet.global_buffer.ports.if_cfg_wr_addr)
     garnet.wire(garnet.global_controller.ports.glb_cfg.wr_data,
                 garnet.global_buffer.ports.if_cfg_wr_data)
     garnet.wire(garnet.global_controller.ports.glb_cfg.rd_en,
                 garnet.global_buffer.ports.if_cfg_rd_en[0])
+    garnet.wire(garnet.global_controller.ports.glb_cfg.rd_clk_en,
+                garnet.global_buffer.ports.if_cfg_rd_clk_en[0])
     garnet.wire(garnet.global_controller.ports.glb_cfg.rd_addr,
                 garnet.global_buffer.ports.if_cfg_rd_addr)
     garnet.wire(garnet.global_controller.ports.glb_cfg.rd_data,
@@ -32,12 +40,16 @@ def glb_glc_wiring(garnet):
 
     garnet.wire(garnet.global_controller.ports.sram_cfg.wr_en,
                 garnet.global_buffer.ports.if_sram_cfg_wr_en[0])
+    garnet.wire(garnet.global_controller.ports.sram_cfg.wr_clk_en,
+                garnet.global_buffer.ports.if_sram_cfg_wr_clk_en[0])
     garnet.wire(garnet.global_controller.ports.sram_cfg.wr_addr,
                 garnet.global_buffer.ports.if_sram_cfg_wr_addr)
     garnet.wire(garnet.global_controller.ports.sram_cfg.wr_data,
                 garnet.global_buffer.ports.if_sram_cfg_wr_data)
     garnet.wire(garnet.global_controller.ports.sram_cfg.rd_en,
                 garnet.global_buffer.ports.if_sram_cfg_rd_en[0])
+    garnet.wire(garnet.global_controller.ports.sram_cfg.rd_clk_en,
+                garnet.global_buffer.ports.if_sram_cfg_rd_clk_en[0])
     garnet.wire(garnet.global_controller.ports.sram_cfg.rd_addr,
                 garnet.global_buffer.ports.if_sram_cfg_rd_addr)
     garnet.wire(garnet.global_controller.ports.sram_cfg.rd_data,
