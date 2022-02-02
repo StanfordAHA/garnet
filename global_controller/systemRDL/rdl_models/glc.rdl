@@ -179,7 +179,7 @@ addrmap glc {
                 'data_strm_cgra_to_glb', and 'parallel_config_glb_to_cgra'";
 
         default nonsticky intr;
-		default hw = na;
+		default hw = w;
         default sw = r; // Software can just read this. It clears the block interrupt to
 
         field { 
