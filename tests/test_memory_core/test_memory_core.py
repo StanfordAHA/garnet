@@ -3472,6 +3472,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     val_out_1 = nlb.register_core("io_16", name="val_out_1")
     accum_data_out = nlb.register_core("io_16", name="accum_data_out")
     accum_valid_out = nlb.register_core("io_1", name="accum_valid_out")
+    accum_eos_out = nlb.register_core("io_1", name="accum_eos_out")
 
     ready_in = nlb.register_core("io_1", name="ready_in")
     flush_in = nlb.register_core("io_1", name="flush_in")
@@ -3581,6 +3582,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         'accum_reg_to_io': [
             ([(accum_reg, "data_out"), (accum_data_out, "f2io_16")], 16),
             ([(accum_reg, "valid_out"), (accum_valid_out, "f2io_1")], 1),
+            ([(accum_reg, "eos_out"), (accum_eos_out, "f2io_1")], 1),
         ]
     }
 
@@ -3641,12 +3643,15 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
 
     h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
     h_ready_in = nlb.get_handle(ready_in, prefix="glb2io_1_")
-    h_valid_out = nlb.get_handle(valid_out, prefix="io2glb_1_")
-    h_eos_out = nlb.get_handle(eos_out, prefix="io2glb_1_")
+    # h_valid_out = nlb.get_handle(valid_out, prefix="io2glb_1_")
+    h_valid_out = nlb.get_handle(accum_valid_out, prefix="io2glb_1_")
+    # h_eos_out = nlb.get_handle(eos_out, prefix="io2glb_1_")
+    h_eos_out = nlb.get_handle(accum_eos_out, prefix="io2glb_1_")
     h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
     h_coord_out = nlb.get_handle(coord_out, prefix="io2glb_16_")
-    h_val_out_0 = nlb.get_handle(val_out_0, prefix="io2glb_16_")
-    h_val_out_1 = nlb.get_handle(val_out_1, prefix="io2glb_16_")
+    # h_val_out_0 = nlb.get_handle(val_out_0, prefix="io2glb_16_")
+    h_val_out_0 = nlb.get_handle(accum_data_out, prefix="io2glb_16_")
+    # h_val_out_1 = nlb.get_handle(val_out_1, prefix="io2glb_16_")
     stall_in = nlb.get_handle_str("stall")
 
     tester.reset()
@@ -3675,13 +3680,20 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         tester.eval()
 
         # If we have valid, print the two datas
+        # tester_if = tester._if(tester.peek(h_valid_out))
+        # tester_if.print("COORD: %d, VAL0: %d, VAL1: %d, EOS: %d\n",
+        #                 h_coord_out,
+        #                 h_val_out_0,
+        #                 h_val_out_1,
+        #                 h_eos_out)
+
         tester_if = tester._if(tester.peek(h_valid_out))
-        tester_if.print("COORD: %d, VAL0: %d, VAL1: %d\n",
+        tester_if.print("COORD: %d, DATA: %d, EOS: %d\n",
                         h_coord_out,
                         h_val_out_0,
-                        h_val_out_1)
-        if_eos_finish = tester._if(tester.peek(h_eos_out))
-        if_eos_finish.print("EOS IS HIGH\n")
+                        h_eos_out)
+        # if_eos_finish = tester._if(tester.peek(h_eos_out))
+        # if_eos_finish.print("EOS IS HIGH\n")
 
         tester.step(2)
 
