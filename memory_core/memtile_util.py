@@ -364,6 +364,8 @@ class NetlistBuilder():
             tag = "i"
         elif core == "pe":
             tag = "p"
+        elif core == "fake_pe":
+            tag = "f"
         elif core == "scanner":
             tag = "s"
         elif core == "intersect":
