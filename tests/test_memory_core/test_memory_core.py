@@ -2,6 +2,7 @@ import argparse
 from lake.modules.reg_cr import Reg
 
 import os
+from memory_core.fake_pe_core import FakePECore
 from peak_core.peak_core import PeakCore
 from memory_core.intersect_core import IntersectCore
 from gemstone.common.util import compress_config_data
@@ -3431,7 +3432,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     num_cycles = 50
     chip_size = 8
     num_tracks = 5
-    altcore = [ScannerCore, IntersectCore, PeakCore, RegCore]
+    altcore = [ScannerCore, IntersectCore, FakePECore, RegCore]
 
     interconnect = create_cgra(width=chip_size, height=chip_size,
                                io_sides=NetlistBuilder.io_sides(),
@@ -3478,7 +3479,8 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     flush_in = nlb.register_core("io_1", name="flush_in")
 
     accum_reg = nlb.register_core("regcore", flushable=True, name="accum_reg")
-    pe_mul = nlb.register_core("pe", name="pe_mul")
+    # pe_mul = nlb.register_core("pe", name="pe_mul")
+    pe_mul = nlb.register_core("fake_pe", name="pe_mul")
 
     conn_dict = {
         # Set up streaming out matrix from scan_mrows
@@ -3571,12 +3573,12 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         # Pass values to multiplier and accum reg...
 
         'value_mems_to_io': [
-            ([(mem_avals, "data_out_0"), (val_out_0, "f2io_16"), (pe_mul, "data0")], 16),
-            ([(mem_bvals, "data_out_0"), (val_out_1, "f2io_16"), (pe_mul, "data1")], 16),
+            ([(mem_avals, "data_out_0"), (val_out_0, "f2io_16"), (pe_mul, "data_in_0")], 16),
+            ([(mem_bvals, "data_out_0"), (val_out_1, "f2io_16"), (pe_mul, "data_in_1")], 16),
         ],
 
         'pe_mul_to_accum_reg': [
-            ([(pe_mul, "alu_res"), (accum_reg, "data_in")], 16),
+            ([(pe_mul, "data_out"), (accum_reg, "data_in")], 16),
         ],
 
         'accum_reg_to_io': [
@@ -3630,10 +3632,8 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # nlb.configure_tile(isect_row, 5)
     nlb.configure_tile(isect_col, 5)
     nlb.configure_tile(accum_reg, 5)
-    nlb.configure_tile(pe_mul, asm.umult0())
-
-    accum_reg = nlb.register_core("regcore", flushable=True, name="accum_reg")
-    pe_mul = nlb.register_core("pe", name="pe_mul")
+    # nlb.configure_tile(pe_mul, asm.umult0())
+    nlb.configure_tile(pe_mul, 1)
 
     # This does some cleanup like partitioning into compressed/uncompressed space
     nlb.finalize_config()
