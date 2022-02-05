@@ -7,8 +7,8 @@ def glb_glc_wiring(garnet):
                 garnet.global_buffer.ports.core_stall)
     garnet.wire(garnet.global_controller.ports.glb_rtr_stall,
                 garnet.global_buffer.ports.rtr_stall)
-    garnet.wire(garnet.global_controller.ports.glb_pcfg_rtr_stall,
-                garnet.global_buffer.ports.pcfg_rtr_stall)
+    garnet.wire(garnet.global_controller.ports.glb_pcfg_stall,
+                garnet.global_buffer.ports.pcfg_stall)
 
     garnet.wire(garnet.global_controller.ports.cgra_config.config_addr,
                 garnet.global_buffer.ports.cgra_cfg_jtag_gc2glb_addr)

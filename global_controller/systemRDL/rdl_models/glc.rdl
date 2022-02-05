@@ -294,7 +294,7 @@ addrmap glc {
     cgra_stall_r            cgra_stall;
     glb_stall_r             glb_core_stall;
     glb_stall_r             glb_rtr_stall;
-    glb_stall_r             glb_pcfg_rtr_stall;
+    glb_stall_r             glb_pcfg_stall;
     stream_start_pulse_r    stream_start_pulse;
     pc_start_pulse_r        pc_start_pulse;
 
