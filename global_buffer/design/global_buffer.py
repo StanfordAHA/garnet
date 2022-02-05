@@ -17,7 +17,7 @@ class GlobalBuffer(Generator):
         self.clk = self.clock("clk")
         self.core_stall = self.input("core_stall", self._params.num_glb_tiles)
         self.rtr_stall = self.input("rtr_stall", self._params.num_glb_tiles)
-        self.pcfg_rtr_stall = self.input("pcfg_rtr_stall", self._params.num_glb_tiles)
+        self.pcfg_stall = self.input("pcfg_stall", self._params.num_glb_tiles)
         self.reset = self.reset("reset")
         self.cgra_stall_in = self.input("cgra_stall_in", self._params.num_cgra_tiles)
         self.cgra_stall = self.output(
@@ -251,14 +251,14 @@ class GlobalBuffer(Generator):
         # GLS pipeline
         self.core_stall_d = self.var("core_stall_d", self._params.num_glb_tiles)
         self.rtr_stall_d = self.var("rtr_stall_d", self._params.num_glb_tiles)
-        self.pcfg_rtr_stall_d = self.var("pcfg_rtr_stall_d", self._params.num_glb_tiles)
+        self.pcfg_stall_d = self.var("pcfg_stall_d", self._params.num_glb_tiles)
         self.cgra_stall_in_d = self.var("cgra_stall_in_d", self._params.num_cgra_tiles)
         self.strm_g2f_start_pulse_d = self.var("strm_g2f_start_pulse_d", self._params.num_glb_tiles)
         self.strm_f2g_start_pulse_d = self.var("strm_f2g_start_pulse_d", self._params.num_glb_tiles)
         self.pcfg_start_pulse_d = self.var("pcfg_start_pulse_d", self._params.num_glb_tiles)
-        self.gls_in = concat(self.core_stall, self.rtr_stall, self.pcfg_rtr_stall, self.cgra_stall_in, self.strm_g2f_start_pulse,
+        self.gls_in = concat(self.core_stall, self.rtr_stall, self.pcfg_stall, self.cgra_stall_in, self.strm_g2f_start_pulse,
                              self.strm_f2g_start_pulse, self.pcfg_start_pulse)
-        self.gls_out = concat(self.core_stall_d, self.rtr_stall_d, self.pcfg_rtr_stall_d, self.cgra_stall_in_d, self.strm_g2f_start_pulse_d,
+        self.gls_out = concat(self.core_stall_d, self.rtr_stall_d, self.pcfg_stall_d, self.cgra_stall_in_d, self.strm_g2f_start_pulse_d,
                               self.strm_f2g_start_pulse_d, self.pcfg_start_pulse_d)
 
         self.gls_pipeline = Pipeline(width=self.gls_in.width, depth=self._params.gls_pipeline_depth)
@@ -444,7 +444,7 @@ class GlobalBuffer(Generator):
                            clk_en_jtag_sram=clock_en(self.sram_cfg_wr_clk_en_d | self.sram_cfg_rd_clk_en_d),
                            clk_en_core=clock_en(~self.core_stall_d[i]),
                            clk_en_rtr=clock_en(~self.rtr_stall_d[i]),
-                           clk_en_pcfg_rtr=clock_en(~self.pcfg_rtr_stall_d[i]),
+                           clk_en_pcfg=clock_en(~self.pcfg_stall_d[i]),
                            reset=self.reset,
                            glb_tile_id=i,
 

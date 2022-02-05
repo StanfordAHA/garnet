@@ -28,7 +28,7 @@ class GlbTile(Generator):
         self.clk_en_jtag_sram = self.clock_en("clk_en_jtag_sram")
         self.clk_en_core = self.clock_en("clk_en_core")
         self.clk_en_rtr = self.clock_en("clk_en_rtr")
-        self.clk_en_pcfg_rtr = self.clock_en("clk_en_pcfg_rtr")
+        self.clk_en_pcfg = self.clock_en("clk_en_pcfg")
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
@@ -210,6 +210,14 @@ class GlbTile(Generator):
                        enable=self.clk_en_core,
                        gclk=self.gclk_core)
 
+        # Clock gating - switch
+        self.gclk_switch = self.var("gclk_switch", 1)
+        self.add_child("glb_clk_gate_switch",
+                       ClkGate(),
+                       clk=self.clk,
+                       enable=(self.clk_en_core | self.clk_en_rtr | self.clk_en_pcfg),
+                       gclk=self.gclk_switch)
+
         # Clock gating - router
         self.gclk_rtr = self.var("gclk_rtr", 1)
         self.add_child("glb_clk_gate_rtr",
@@ -219,12 +227,12 @@ class GlbTile(Generator):
                        gclk=self.gclk_rtr)
 
         # Clock gating - pcfg
-        self.gclk_pcfg_rtr = self.var("gclk_pcfg_rtr", 1)
-        self.add_child("glb_clk_gate_pcfg_rtr",
+        self.gclk_pcfg = self.var("gclk_pcfg", 1)
+        self.add_child("glb_clk_gate_pcfg",
                        ClkGate(),
                        clk=self.clk,
-                       enable=self.clk_en_pcfg_rtr,
-                       gclk=self.gclk_pcfg_rtr)
+                       enable=self.clk_en_pcfg,
+                       gclk=self.gclk_pcfg)
 
         # Local variables
         # configuration
@@ -310,7 +318,7 @@ class GlbTile(Generator):
 
         self.add_child("glb_pcfg_dma",
                        GlbPcfgDma(_params=self._params),
-                       clk=clock(self.gclk_core),
+                       clk=clock(self.gclk_pcfg),
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
                        cgra_cfg_pcfg=self.cgra_cfg_pcfgdma2mux,
@@ -339,7 +347,7 @@ class GlbTile(Generator):
         self.glb_core_switch = GlbSwitch(_params=self._params)
         self.add_child("glb_switch",
                        self.glb_core_switch,
-                       clk=clock(self.gclk_core),
+                       clk=clock(self.gclk_switch),
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,
                        wr_packet_pr2sw=self.proc_wr_packet_r2sw,
@@ -420,7 +428,7 @@ class GlbTile(Generator):
 
         self.add_child("glb_pcfg_router",
                        GlbRouter(_params=self._params, wr_channel=False, rd_channel=True),
-                       clk=clock(self.gclk_pcfg_rtr),
+                       clk=clock(self.gclk_pcfg),
                        clk_en=const(1, 1),
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id,

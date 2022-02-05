@@ -39,7 +39,7 @@ module `mname` (
     output logic [`$cgra_width-1`:0]            cgra_stall, 
     output logic [`$num_glb_tiles-1`:0]         glb_core_stall, 
     output logic [`$num_glb_tiles-1`:0]         glb_rtr_stall, 
-    output logic [`$num_glb_tiles-1`:0]         glb_pcfg_rtr_stall, 
+    output logic [`$num_glb_tiles-1`:0]         glb_pcfg_stall, 
 
     // global buffer configuration
     output logic                                glb_cfg_wr_en,
@@ -124,7 +124,7 @@ logic                                sys_clk_activated;
 logic                                jtag_global_reset, axi_global_reset, global_reset;
 logic [`$num_glb_tiles-1`:0]         jtag_glb_core_stall, axi_glb_core_stall;
 logic [`$num_glb_tiles-1`:0]         jtag_glb_rtr_stall, axi_glb_rtr_stall;
-logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_rtr_stall, axi_glb_pcfg_rtr_stall;
+logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_stall, axi_glb_pcfg_stall;
 logic [`$cgra_width-1`:0]            jtag_cgra_stall, axi_cgra_stall;
 
 // global buffer configuration
@@ -182,7 +182,7 @@ logic                                axi_glc_cfg_rd_data_valid;
 assign global_reset = jtag_global_reset | axi_global_reset;
 assign glb_core_stall = jtag_glb_core_stall | axi_glb_core_stall;
 assign glb_rtr_stall = jtag_glb_rtr_stall | axi_glb_rtr_stall;
-assign glb_pcfg_rtr_stall = jtag_glb_pcfg_rtr_stall | axi_glb_pcfg_rtr_stall;
+assign glb_pcfg_stall = jtag_glb_pcfg_stall | axi_glb_pcfg_stall;
 assign cgra_stall = jtag_cgra_stall | axi_cgra_stall;
 
 // reset output
@@ -264,7 +264,7 @@ assign axi_cgra_cfg_data_in         = cgra_cfg_rd_data;
     .jtag_global_reset(jtag_global_reset),
     .jtag_glb_core_stall(jtag_glb_core_stall), 
     .jtag_glb_rtr_stall(jtag_glb_rtr_stall), 
-    .jtag_glb_pcfg_rtr_stall(jtag_glb_pcfg_rtr_stall), 
+    .jtag_glb_pcfg_stall(jtag_glb_pcfg_stall), 
     .jtag_cgra_stall(jtag_cgra_stall), 
 
     .jtag_glb_cfg_wr_en(jtag_glb_cfg_wr_en),
@@ -358,7 +358,7 @@ assign axi_cgra_cfg_data_in         = cgra_cfg_rd_data;
     .axi_global_reset(axi_global_reset),
     .axi_glb_core_stall(axi_glb_core_stall), 
     .axi_glb_rtr_stall(axi_glb_rtr_stall), 
-    .axi_glb_pcfg_rtr_stall(axi_glb_pcfg_rtr_stall), 
+    .axi_glb_pcfg_stall(axi_glb_pcfg_stall), 
     .axi_cgra_stall(axi_cgra_stall), 
 
 	.strm_g2f_start_pulse(strm_g2f_start_pulse),

@@ -27,7 +27,7 @@ module `mname` (
     output logic                                axi_global_reset,
     output logic [`$num_glb_tiles-1`:0]         axi_glb_core_stall, 
     output logic [`$num_glb_tiles-1`:0]         axi_glb_rtr_stall, 
-    output logic [`$num_glb_tiles-1`:0]         axi_glb_pcfg_rtr_stall, 
+    output logic [`$num_glb_tiles-1`:0]         axi_glb_pcfg_stall, 
     output logic [`$cgra_width-1`:0]            axi_cgra_stall, 
 
 	// global buffer control signals
@@ -138,7 +138,7 @@ module `mname` (
     logic     [31:0] l2h_cgra_stall_stall_r;
     logic     [15:0] l2h_glb_core_stall_stall_r;
     logic     [15:0] l2h_glb_rtr_stall_stall_r;
-    logic     [15:0] l2h_glb_pcfg_rtr_stall_stall_r;
+    logic     [15:0] l2h_glb_pcfg_stall_stall_r;
     logic    l2h_stream_start_pulse_g2f_glb_tile_0_r;
     logic    l2h_stream_start_pulse_g2f_glb_tile_1_r;
     logic    l2h_stream_start_pulse_g2f_glb_tile_2_r;
@@ -253,7 +253,7 @@ assign pc_start_pulse[`$i`] = l2h_pc_start_pulse_glb_tile_`$i`_r;
 
 assign axi_glb_core_stall = l2h_glb_core_stall_stall_r;
 assign axi_glb_rtr_stall = l2h_glb_rtr_stall_stall_r;
-assign axi_glb_pcfg_rtr_stall = l2h_glb_pcfg_rtr_stall_stall_r;
+assign axi_glb_pcfg_stall = l2h_glb_pcfg_stall_stall_r;
 assign axi_cgra_stall = l2h_cgra_stall_stall_r;
 
 assign interrupt_internal = l2h_global_isr_intr_o;
