@@ -43,7 +43,7 @@ class GlobalController(Generator):
             cgra_stall=magma.Out(magma.Bits[self.cgra_width]),
             glb_core_stall=magma.Out(magma.Bits[self.num_glb_tiles]),
             glb_rtr_stall=magma.Out(magma.Bits[self.num_glb_tiles]),
-            glb_pcfg_rtr_stall=magma.Out(magma.Bits[self.num_glb_tiles]),
+            glb_pcfg_stall=magma.Out(magma.Bits[self.num_glb_tiles]),
 
             glb_cfg=GlbCfgIfc(self.block_axi_addr_width,
                               self.axi_data_width).master,
@@ -90,7 +90,7 @@ class GlobalController(Generator):
         self.wire(self.underlying.ports.cgra_stall, self.ports.cgra_stall)
         self.wire(self.underlying.ports.glb_core_stall, self.ports.glb_core_stall)
         self.wire(self.underlying.ports.glb_rtr_stall, self.ports.glb_rtr_stall)
-        self.wire(self.underlying.ports.glb_pcfg_rtr_stall, self.ports.glb_pcfg_rtr_stall)
+        self.wire(self.underlying.ports.glb_pcfg_stall, self.ports.glb_pcfg_stall)
 
         # global buffer configuration
         self.wire(self.ports.glb_cfg.wr_en,
