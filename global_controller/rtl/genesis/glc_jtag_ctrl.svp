@@ -34,7 +34,7 @@ module `mname` (
     output logic                                jtag_global_reset,
     output logic [`$num_glb_tiles-1`:0]         jtag_glb_core_stall, 
     output logic [`$num_glb_tiles-1`:0]         jtag_glb_rtr_stall, 
-    output logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_rtr_stall, 
+    output logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_stall, 
     output logic [`$cgra_width-1`:0]            jtag_cgra_stall, 
 
     // global buffer configuration
@@ -129,7 +129,7 @@ assign config_data_in = jtag_cgra_cfg_data_in;
 // stall signals
 assign jtag_glb_core_stall = glb_stall;
 assign jtag_glb_rtr_stall = glb_stall;
-assign jtag_glb_pcfg_rtr_stall = glb_stall;
+assign jtag_glb_pcfg_stall = glb_stall;
 assign jtag_cgra_stall = stall;
 
 // global reset signal
