@@ -3431,7 +3431,7 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
 def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # Streams and code to create them and align them
     num_cycles = 50
-    chip_size = 12
+    chip_size = 10
     num_tracks = 5
     altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore]
 
@@ -3466,11 +3466,11 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     isect_col = nlb.register_core("intersect", flushable=True, name="isect_col")
 
     reg_coord = nlb.register_core("register", name="reg_coord")
-    reg_eos_out = nlb.register_core("register", name="reg_eos_out")
-    reg_valid_out = nlb.register_core("register", name="reg_valid_out")
+    # reg_eos_out = nlb.register_core("register", name="reg_eos_out")
+    # reg_valid_out = nlb.register_core("register", name="reg_valid_out")
 
-    valid_out = nlb.register_core("io_1", name="valid_out")
-    eos_out = nlb.register_core("io_1", name="eos_out")
+    # valid_out = nlb.register_core("io_1", name="valid_out")
+    # eos_out = nlb.register_core("io_1", name="eos_out")
     coord_out = nlb.register_core("io_16", name="coord_out")
     val_out_0 = nlb.register_core("io_16", name="val_out_0")
     val_out_1 = nlb.register_core("io_16", name="val_out_1")
@@ -3551,11 +3551,11 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
             ([(isect_col, "coord_out"), (reg_coord, "reg")], 16),
             ([(reg_coord, "reg"), (coord_out, "f2io_16")], 16),
             # Register valid_out
-            # ([(isect, "valid_out"), (reg_valid_out, "reg")], 1),
-            ([(reg_valid_out, "reg"), (valid_out, "f2io_1")], 1),
+            # ([(isect_col, "valid_out"), (reg_valid_out, "reg")], 1),
+            # ([(reg_valid_out, "reg"), (valid_out, "f2io_1")], 1),
             # Register eos_out
             # ([(isect_col, "eos_out"), (reg_eos_out, "reg")], 1),
-            ([(reg_eos_out, "reg"), (eos_out, "f2io_1")], 1),
+            # ([(reg_eos_out, "reg"), (eos_out, "f2io_1")], 1),
         ],
 
         # Read from the corresponding memories to get actual values
