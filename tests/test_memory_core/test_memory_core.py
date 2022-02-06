@@ -3,6 +3,7 @@ from lake.modules.reg_cr import Reg
 
 import os
 from memory_core.fake_pe_core import FakePECore
+from memory_core.lookup_core import LookupCore
 from peak_core.peak_core import PeakCore
 from memory_core.intersect_core import IntersectCore
 from gemstone.common.util import compress_config_data
@@ -3430,9 +3431,9 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
 def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # Streams and code to create them and align them
     num_cycles = 50
-    chip_size = 8
+    chip_size = 12
     num_tracks = 5
-    altcore = [ScannerCore, IntersectCore, FakePECore, RegCore]
+    altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore]
 
     interconnect = create_cgra(width=chip_size, height=chip_size,
                                io_sides=NetlistBuilder.io_sides(),
@@ -3450,6 +3451,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     mem_aroot = nlb.register_core("memtile", flushable=True, name="mem_aroot")
     mem_arows = nlb.register_core("memtile", flushable=True, name="mem_arows")
     mem_avals = nlb.register_core("memtile", flushable=True, name="mem_avals")
+    mem_avals_lu = nlb.register_core("lookup", flushable=True, name="mem_avals_lu")
 
     # Matrix B
     scan_broot = nlb.register_core("scanner", flushable=True, name="scan_broot")
@@ -3457,6 +3459,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     mem_broot = nlb.register_core("memtile", flushable=True, name="mem_broot")
     mem_brows = nlb.register_core("memtile", flushable=True, name="mem_brows")
     mem_bvals = nlb.register_core("memtile", flushable=True, name="mem_bvals")
+    mem_bvals_lu = nlb.register_core("lookup", flushable=True, name="mem_bvals_lu")
 
     # Intersect the two...
     # isect_row = nlb.register_core("intersect", flushable=True, name="isect_row")
@@ -3551,34 +3554,58 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
 
         # Basically apply ready_in to the isect
         'isect_to_io': [
-            ([(ready_in, "io2f_1"), (isect_col, "ready_in"), (accum_reg, "ready_in")], 1),
+            # ([(ready_in, "io2f_1"), (isect_col, "ready_in"), (accum_reg, "ready_in")], 1),
+            ([(ready_in, "io2f_1"), (accum_reg, "ready_in")], 1),
             # Register coord_out
             ([(isect_col, "coord_out"), (reg_coord, "reg")], 16),
             ([(reg_coord, "reg"), (coord_out, "f2io_16")], 16),
             # Register valid_out
             # ([(isect, "valid_out"), (reg_valid_out, "reg")], 1),
-            ([(reg_valid_out, "reg"), (valid_out, "f2io_1"), (accum_reg, "valid_in")], 1),
+            ([(reg_valid_out, "reg"), (valid_out, "f2io_1")], 1),
             # Register eos_out
-            ([(isect_col, "eos_out"), (reg_eos_out, "reg")], 1),
-            ([(reg_eos_out, "reg"), (eos_out, "f2io_1"), (accum_reg, "eos_in")], 1),
+            # ([(isect_col, "eos_out"), (reg_eos_out, "reg")], 1),
+            ([(reg_eos_out, "reg"), (eos_out, "f2io_1")], 1),
         ],
 
         # Read from the corresponding memories to get actual values
         'isect_to_value_mems': [
-            ([(isect_col, "pos_out_0"), (mem_avals, "addr_in_0")], 16),
-            ([(isect_col, "pos_out_1"), (mem_bvals, "addr_in_0")], 16),
-            ([(isect_col, "valid_out"), (mem_avals, "ren_in_0"), (mem_bvals, "ren_in_0"), (reg_valid_out, "reg")], 1),
+            # Links betweens isect and lookup blocks
+            ([(isect_col, "pos_out_0"), (mem_avals_lu, "pos_in")], 16),
+            ([(isect_col, "pos_out_1"), (mem_bvals_lu, "pos_in")], 16),
+            # TODO: Decouple fifos...
+            ([(isect_col, "ready_in"), (mem_avals_lu, "ready_out")], 1),
+            ([(isect_col, "valid_out"), (mem_avals_lu, "valid_in"), (mem_bvals_lu, "valid_in")], 1),
+            ([(isect_col, "eos_out"), (mem_avals_lu, "eos_in"), (mem_bvals_lu, "eos_in")], 1),
+            # Links between lookup and memories...
+            ([(mem_avals_lu, "addr_out"), (mem_avals, "addr_in_0")], 16),
+            ([(mem_bvals_lu, "addr_out"), (mem_bvals, "addr_in_0")], 16),
+            ([(mem_avals_lu, "ren"), (mem_avals, "ren_in_0")], 1),
+            ([(mem_bvals_lu, "ren"), (mem_bvals, "ren_in_0")], 1),
+            ([(mem_avals, "data_out_0"), (mem_avals_lu, "data_in")], 16),
+            ([(mem_bvals, "data_out_0"), (mem_bvals_lu, "data_in")], 16),
+            # ([(isect_col, "valid_out"), (mem_avals, "ren_in_0"), (mem_bvals, "ren_in_0"), (reg_valid_out, "reg")], 1),
         ],
 
         # Pass values to multiplier and accum reg...
 
-        'value_mems_to_io': [
-            ([(mem_avals, "data_out_0"), (val_out_0, "f2io_16"), (pe_mul, "data_in_0")], 16),
-            ([(mem_bvals, "data_out_0"), (val_out_1, "f2io_16"), (pe_mul, "data_in_1")], 16),
+        'lookup_to_PE': [
+            # ([(mem_avals, "data_out_0"), (val_out_0, "f2io_16"), (pe_mul, "data_in_0")], 16),
+            ([(mem_avals, "data_out_0"), (val_out_0, "f2io_16")], 16),
+            # ([(mem_bvals, "data_out_0"), (val_out_1, "f2io_16"), (pe_mul, "data_in_1")], 16),
+            ([(mem_bvals, "data_out_0"), (val_out_1, "f2io_16")], 16),
+            # Link between lookup blocks and pe
+            ([(mem_avals_lu, "data_out"), (pe_mul, "data_in_0")], 16),
+            ([(mem_avals_lu, "valid_out"), (pe_mul, "valid_in_0")], 1),
+            ([(pe_mul, "ready_out_0"), (mem_avals_lu, "ready_in")], 1),
+            ([(mem_bvals_lu, "data_out"), (pe_mul, "data_in_1")], 16),
+            ([(mem_bvals_lu, "valid_out"), (pe_mul, "valid_in_1")], 1),
+            ([(pe_mul, "ready_out_1"), (mem_bvals_lu, "ready_in")], 1),
         ],
 
         'pe_mul_to_accum_reg': [
             ([(pe_mul, "data_out"), (accum_reg, "data_in")], 16),
+            ([(pe_mul, "valid_out"), (accum_reg, "valid_in")], 1),
+            ([(accum_reg, "ready_out"), (pe_mul, "ready_in")], 1),
         ],
 
         'accum_reg_to_io': [
@@ -3634,6 +3661,8 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     nlb.configure_tile(accum_reg, 5)
     # nlb.configure_tile(pe_mul, asm.umult0())
     nlb.configure_tile(pe_mul, 1)
+    nlb.configure_tile(mem_avals_lu, (0))
+    nlb.configure_tile(mem_bvals_lu, (0))
 
     # This does some cleanup like partitioning into compressed/uncompressed space
     nlb.finalize_config()
