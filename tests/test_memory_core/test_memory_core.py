@@ -3515,15 +3515,6 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
             ([(scan_brows, "us_ready_out"), (scan_broot, "ready_in")], 1)
         ],
 
-        # top intersect to the next level of scanners
-        # 'intersect_to_scan_rows': [
-            # ([(isect_row, "pos_out_0"), (scan_arows, "us_pos_in")], 16),
-            # ([(isect_row, "pos_out_1"), (scan_brows, "us_pos_in")], 16),
-            # ([(isect_row, "valid_out"), (scan_arows, "us_valid_in"), (scan_brows, "us_valid_in")], 1),
-            # ([(isect_row, "eos_out"), (scan_arows, "us_eos_in"), (scan_brows, "us_eos_in")], 1),
-            # ([(scan_arows, "us_ready_out"), (isect_row, "ready_in")], 1)
-        # ],
-
         'scan_arows_to_mem_arows': [
             ([(scan_arows, "addr_out"), (mem_arows, "addr_in_0")], 16),
             ([(scan_arows, "ready_out"), (mem_arows, "ren_in_0")], 1),
