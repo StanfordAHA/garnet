@@ -75,7 +75,8 @@ class ScannerCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        inner_offset, max_outer_dim, strides, ranges, is_root, do_repeat, repeat_outer, repeat_factor, stop_lvl = config_tuple
+        inner_offset, max_outer_dim, strides, ranges, is_root, \
+            do_repeat, repeat_outer, repeat_factor, stop_lvl = config_tuple
         configs = []
         config_scanner = [("tile_en", 1)]
         if is_root:

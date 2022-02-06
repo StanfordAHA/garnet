@@ -328,9 +328,11 @@ class LakeCoreBase(ConfigurableCore):
     def num_data_outputs(self):
         return self.interconnect_output_ports
 
+
 class CoreMappingUndefinedException(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
+
 
 class NetlistBuilder():
 
