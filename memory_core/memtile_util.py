@@ -328,6 +328,9 @@ class LakeCoreBase(ConfigurableCore):
     def num_data_outputs(self):
         return self.interconnect_output_ports
 
+class CoreMappingUndefinedException(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
 
 class NetlistBuilder():
 
@@ -356,6 +359,25 @@ class NetlistBuilder():
         ''' Register the core/primitive with the
             data structure and return unique ID
         '''
+        # self.core_map = {
+        #         "register": "r",
+        #         "io_16": "I",
+        #         "io_1": "i",
+        #         "pe": "p",
+        #         "fake_pe": "f",
+        #         "scanner": "s",
+        #         "intersect": "j",
+        #         "memtile": "m",
+        #         "regcore": "R",
+        #         "lookup": "L"
+        #     }
+
+        # if core not in self.core_map:
+        #     tag = core.pnr_info().tag_name
+        #     # raise CoreMappingUndefinedException
+        # else:
+        #     tag = self.core_map[core]
+
         if core == "register":
             tag = "r"
         elif core == "io_16":
@@ -374,6 +396,8 @@ class NetlistBuilder():
             tag = "m"
         elif core == "regcore":
             tag = "R"
+        elif core == "lookup":
+            tag = "L"
         else:
             tag = core.pnr_info().tag_name
 
