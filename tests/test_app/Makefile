@@ -34,7 +34,7 @@ NETLIST_FILES ?= -v $(garnet_dir)/garnet.v -v $(netlist_dir)/glb_top.vcs.v -v $(
 # -------------------------------------------------------------------
 # Run Parameters
 # -------------------------------------------------------------------
-RUN_ARGS ?= 
+RUN_ARGS ?=
 
 # -------------------------------------------------------------------
 # Command
@@ -130,8 +130,8 @@ compile-xcel: libcgra.so $(shell find tb -type f)
 # Run VCS
 # -------------------------------------------------------------------
 .PHONY: run
-run: 
-	./simv -sv_lib libcgra $(RUN_ARGS) $(APP_ARGS)
+run-vcs: 
+	./simv -sv_lib libcgra $(RUN_ARGS) $(APP_ARGS) -lca +vcs+initmem+0 +vcs+initreg+0
 
 # -------------------------------------------------------------------
 # Run Xcelium
