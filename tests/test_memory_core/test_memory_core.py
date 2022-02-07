@@ -3432,7 +3432,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # Streams and code to create them and align them
     num_cycles = 250
     chip_size = 10
-    num_tracks = 10
+    num_tracks = 5
     altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore]
 
     interconnect = create_cgra(width=chip_size, height=chip_size,
@@ -3519,8 +3519,8 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
             ([(scan_broot, "valid_out_1"), (scan_brows, "us_valid_in")], 1),
             ([(scan_aroot, "eos_out_1"), (scan_arows, "us_eos_in")], 1),
             ([(scan_broot, "eos_out_1"), (scan_brows, "us_eos_in")], 1),
-            ([(scan_arows, "us_ready_out"), (scan_aroot, "ready_in_0")], 1),
-            ([(scan_brows, "us_ready_out"), (scan_broot, "ready_in_0")], 1)
+            ([(scan_arows, "us_ready_out"), (scan_aroot, "ready_in_1")], 1),
+            ([(scan_brows, "us_ready_out"), (scan_broot, "ready_in_1")], 1)
         ],
 
         'scan_arows_to_mem_arows': [
