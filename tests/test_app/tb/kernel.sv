@@ -332,6 +332,10 @@ endfunction
 function data_array_t Kernel::parse_input_data(int idx);
     int num_pixel = (input_size[idx] >> 1);  // Pixel is 2byte (16bit) size
     data_array_t result = new[num_pixel];
+    // FIXME: VCS does not support to read input to dynamic memory
+    // Use temporary register
+    bit [15:0] result_tmp [2048*1440-1:0];
+
     int fp = $fopen(input_filenames[idx], "rb");
     int name_len = input_filenames[idx].len();
     string tmp;
@@ -347,7 +351,10 @@ function data_array_t Kernel::parse_input_data(int idx);
     end
     if (input_filenames[idx].substr(name_len - 3, name_len - 1) == "pgm"
         | input_filenames[idx].substr(name_len - 3, name_len - 1) == "raw") begin
-        cnt = $fread(result, fp);
+        cnt = $fread(result_tmp, fp);
+        foreach(result[i]) begin
+            result[i] = result_tmp[i];
+        end
     end else begin
         cnt = 0;
         while ($fscanf(fp, "%h\n", result[cnt]) == 1) begin
@@ -368,6 +375,9 @@ endfunction
 function data_array_t Kernel::parse_gold_data(int idx);
     int num_pixel = (output_size[idx] >> 1);  // Pixel is 2byte (16bit) size
     data_array_t result = new[num_pixel];
+    // FIXME: VCS does not support to read input to dynamic memory
+    // Use temporary register
+    bit [15:0] result_tmp [2048*1440-1:0];
     int fp = $fopen(output_filenames[idx], "rb");
     int name_len = output_filenames[idx].len();
     string tmp;
@@ -385,7 +395,10 @@ function data_array_t Kernel::parse_gold_data(int idx);
         ) == "pgm" | output_filenames[idx].substr(
             name_len - 3, name_len - 1
         ) == "raw") begin
-        cnt = $fread(result, fp);
+        cnt = $fread(result_tmp, fp);
+        foreach(result[i]) begin
+            result[i] = result_tmp[i];
+        end
     end else begin
         cnt = 0;
         while ($fscanf(
