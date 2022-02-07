@@ -3430,7 +3430,7 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
 
 def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # Streams and code to create them and align them
-    num_cycles = 50
+    num_cycles = 250
     chip_size = 10
     num_tracks = 5
     altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore]
@@ -3465,13 +3465,13 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # isect_row = nlb.register_core("intersect", flushable=True, name="isect_row")
     isect_col = nlb.register_core("intersect", flushable=True, name="isect_col")
 
-    reg_coord = nlb.register_core("register", name="reg_coord")
+    # reg_coord = nlb.register_core("register", name="reg_coord")
     # reg_eos_out = nlb.register_core("register", name="reg_eos_out")
     # reg_valid_out = nlb.register_core("register", name="reg_valid_out")
 
     # valid_out = nlb.register_core("io_1", name="valid_out")
     # eos_out = nlb.register_core("io_1", name="eos_out")
-    coord_out = nlb.register_core("io_16", name="coord_out")
+    # coord_out = nlb.register_core("io_16", name="coord_out")
     val_out_0 = nlb.register_core("io_16", name="val_out_0")
     val_out_1 = nlb.register_core("io_16", name="val_out_1")
     accum_data_out = nlb.register_core("io_16", name="accum_data_out")
@@ -3544,19 +3544,19 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         ],
 
         # Basically apply ready_in to the isect
-        'isect_to_io': [
+        # 'isect_to_io': [
             # ([(ready_in, "io2f_1"), (isect_col, "ready_in"), (accum_reg, "ready_in")], 1),
-            ([(ready_in, "io2f_1"), (accum_reg, "ready_in")], 1),
+            # ([(ready_in, "io2f_1"), (accum_reg, "ready_in")], 1),
             # Register coord_out
-            ([(isect_col, "coord_out"), (reg_coord, "reg")], 16),
-            ([(reg_coord, "reg"), (coord_out, "f2io_16")], 16),
+            # ([(isect_col, "coord_out"), (reg_coord, "reg")], 16),
+            # ([(reg_coord, "reg"), (coord_out, "f2io_16")], 16),
             # Register valid_out
             # ([(isect_col, "valid_out"), (reg_valid_out, "reg")], 1),
             # ([(reg_valid_out, "reg"), (valid_out, "f2io_1")], 1),
             # Register eos_out
             # ([(isect_col, "eos_out"), (reg_eos_out, "reg")], 1),
             # ([(reg_eos_out, "reg"), (eos_out, "f2io_1")], 1),
-        ],
+        # ],
 
         # Read from the corresponding memories to get actual values
         'isect_to_value_mems': [
@@ -3564,7 +3564,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
             ([(isect_col, "pos_out_0"), (mem_avals_lu, "pos_in")], 16),
             ([(isect_col, "pos_out_1"), (mem_bvals_lu, "pos_in")], 16),
             # TODO: Decouple fifos...
-            ([(isect_col, "ready_in"), (mem_avals_lu, "ready_out")], 1),
+            ([(mem_avals_lu, "ready_out"), (isect_col, "ready_in")], 1),
             ([(isect_col, "valid_out"), (mem_avals_lu, "valid_in"), (mem_bvals_lu, "valid_in")], 1),
             ([(isect_col, "eos_out"), (mem_avals_lu, "eos_in"), (mem_bvals_lu, "eos_in")], 1),
             # Links between lookup and memories...
@@ -3587,15 +3587,18 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
             # Link between lookup blocks and pe
             ([(mem_avals_lu, "data_out"), (pe_mul, "data_in_0")], 16),
             ([(mem_avals_lu, "valid_out"), (pe_mul, "valid_in_0")], 1),
+            ([(mem_avals_lu, "eos_out"), (pe_mul, "eos_in_0")], 1),
             ([(pe_mul, "ready_out_0"), (mem_avals_lu, "ready_in")], 1),
             ([(mem_bvals_lu, "data_out"), (pe_mul, "data_in_1")], 16),
             ([(mem_bvals_lu, "valid_out"), (pe_mul, "valid_in_1")], 1),
+            ([(mem_bvals_lu, "eos_out"), (pe_mul, "eos_in_1")], 1),
             ([(pe_mul, "ready_out_1"), (mem_bvals_lu, "ready_in")], 1),
         ],
 
         'pe_mul_to_accum_reg': [
             ([(pe_mul, "data_out"), (accum_reg, "data_in")], 16),
             ([(pe_mul, "valid_out"), (accum_reg, "valid_in")], 1),
+            ([(pe_mul, "eos_out"), (accum_reg, "eos_in")], 1),
             ([(accum_reg, "ready_out"), (pe_mul, "ready_in")], 1),
         ],
 
@@ -3603,6 +3606,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
             ([(accum_reg, "data_out"), (accum_data_out, "f2io_16")], 16),
             ([(accum_reg, "valid_out"), (accum_valid_out, "f2io_1")], 1),
             ([(accum_reg, "eos_out"), (accum_eos_out, "f2io_1")], 1),
+            ([(ready_in, "io2f_1"), (accum_reg, "ready_in")], 1),
         ]
     }
 
@@ -3668,7 +3672,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # h_eos_out = nlb.get_handle(eos_out, prefix="io2glb_1_")
     h_eos_out = nlb.get_handle(accum_eos_out, prefix="io2glb_1_")
     h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
-    h_coord_out = nlb.get_handle(coord_out, prefix="io2glb_16_")
+    # h_coord_out = nlb.get_handle(coord_out, prefix="io2glb_16_")
     # h_val_out_0 = nlb.get_handle(val_out_0, prefix="io2glb_16_")
     h_val_out_0 = nlb.get_handle(accum_data_out, prefix="io2glb_16_")
     # h_val_out_1 = nlb.get_handle(val_out_1, prefix="io2glb_16_")
@@ -3708,10 +3712,12 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         #                 h_eos_out)
 
         tester_if = tester._if(tester.peek(h_valid_out))
-        tester_if.print("COORD: %d, DATA: %d, EOS: %d\n",
-                        h_coord_out,
+        tester_if.print("DATA: %d, EOS: %d\n",
+                        # h_coord_out,
                         h_val_out_0,
                         h_eos_out)
+        # tester_finish = tester._if(tester.peek(h_valid_out) and tester.peek(h_eos_out) and (tester.peek(h_val_out_0) == 0))
+        # tester_finish.finish()
         # if_eos_finish = tester._if(tester.peek(h_eos_out))
         # if_eos_finish.print("EOS IS HIGH\n")
 
