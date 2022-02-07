@@ -3432,7 +3432,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # Streams and code to create them and align them
     num_cycles = 250
     chip_size = 10
-    num_tracks = 5
+    num_tracks = 10
     altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore]
 
     interconnect = create_cgra(width=chip_size, height=chip_size,
@@ -3479,6 +3479,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     accum_eos_out = nlb.register_core("io_1", name="accum_eos_out")
 
     ready_in = nlb.register_core("io_1", name="ready_in")
+    ready_in_bulk = nlb.register_core("io_1", name="ready_in_bulk")
     flush_in = nlb.register_core("io_1", name="flush_in")
 
     accum_reg = nlb.register_core("regcore", flushable=True, name="accum_reg")
@@ -3487,6 +3488,13 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
 
     conn_dict = {
         # Set up streaming out matrix from scan_mrows
+
+        'bulk_ready_1_unused': [
+            ([(ready_in_bulk, "io2f_1"), (scan_aroot, "ready_in_0"), 
+              (scan_broot, "ready_in_0"), (scan_arows, "ready_in_1"),
+              (scan_brows, "ready_in_1"), (isect_col, "ready_in_0")], 1)
+        ],
+
         'scan_aroot_to_mem_aroot': [
             ([(scan_aroot, "addr_out"), (mem_aroot, "addr_in_0")], 16),
             ([(scan_aroot, "ready_out"), (mem_aroot, "ren_in_0")], 1),
@@ -3507,12 +3515,12 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
             # ([(scan_broot, "coord_out"), (isect_row, "coord_in_1")], 16),
             ([(scan_aroot, "pos_out"), (scan_arows, "us_pos_in")], 16),
             ([(scan_broot, "pos_out"), (scan_brows, "us_pos_in")], 16),
-            ([(scan_aroot, "valid_out"), (scan_arows, "us_valid_in")], 1),
-            ([(scan_broot, "valid_out"), (scan_brows, "us_valid_in")], 1),
-            ([(scan_aroot, "eos_out"), (scan_arows, "us_eos_in")], 1),
-            ([(scan_broot, "eos_out"), (scan_brows, "us_eos_in")], 1),
-            ([(scan_arows, "us_ready_out"), (scan_aroot, "ready_in")], 1),
-            ([(scan_brows, "us_ready_out"), (scan_broot, "ready_in")], 1)
+            ([(scan_aroot, "valid_out_1"), (scan_arows, "us_valid_in")], 1),
+            ([(scan_broot, "valid_out_1"), (scan_brows, "us_valid_in")], 1),
+            ([(scan_aroot, "eos_out_1"), (scan_arows, "us_eos_in")], 1),
+            ([(scan_broot, "eos_out_1"), (scan_brows, "us_eos_in")], 1),
+            ([(scan_arows, "us_ready_out"), (scan_aroot, "ready_in_0")], 1),
+            ([(scan_brows, "us_ready_out"), (scan_broot, "ready_in_0")], 1)
         ],
 
         'scan_arows_to_mem_arows': [
@@ -3535,28 +3543,13 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
             ([(scan_brows, "coord_out"), (isect_col, "coord_in_1")], 16),
             ([(scan_arows, "payload_ptr"), (isect_col, "payload_ptr_0")], 16),
             ([(scan_brows, "payload_ptr"), (isect_col, "payload_ptr_1")], 16),
-            ([(scan_arows, "valid_out"), (isect_col, "valid_in_0")], 1),
-            ([(scan_brows, "valid_out"), (isect_col, "valid_in_1")], 1),
-            ([(scan_arows, "eos_out"), (isect_col, "eos_in_0")], 1),
-            ([(scan_brows, "eos_out"), (isect_col, "eos_in_1")], 1),
-            ([(isect_col, "ready_out_0"), (scan_arows, "ready_in")], 1),
-            ([(isect_col, "ready_out_1"), (scan_brows, "ready_in")], 1)
+            ([(scan_arows, "valid_out_0"), (isect_col, "valid_in_0")], 1),
+            ([(scan_brows, "valid_out_0"), (isect_col, "valid_in_1")], 1),
+            ([(scan_arows, "eos_out_0"), (isect_col, "eos_in_0")], 1),
+            ([(scan_brows, "eos_out_0"), (isect_col, "eos_in_1")], 1),
+            ([(isect_col, "ready_out_0"), (scan_arows, "ready_in_0")], 1),
+            ([(isect_col, "ready_out_1"), (scan_brows, "ready_in_0")], 1)
         ],
-
-        # Basically apply ready_in to the isect
-        # 'isect_to_io': [
-            # ([(ready_in, "io2f_1"), (isect_col, "ready_in"), (accum_reg, "ready_in")], 1),
-            # ([(ready_in, "io2f_1"), (accum_reg, "ready_in")], 1),
-            # Register coord_out
-            # ([(isect_col, "coord_out"), (reg_coord, "reg")], 16),
-            # ([(reg_coord, "reg"), (coord_out, "f2io_16")], 16),
-            # Register valid_out
-            # ([(isect_col, "valid_out"), (reg_valid_out, "reg")], 1),
-            # ([(reg_valid_out, "reg"), (valid_out, "f2io_1")], 1),
-            # Register eos_out
-            # ([(isect_col, "eos_out"), (reg_eos_out, "reg")], 1),
-            # ([(reg_eos_out, "reg"), (eos_out, "f2io_1")], 1),
-        # ],
 
         # Read from the corresponding memories to get actual values
         'isect_to_value_mems': [
@@ -3564,9 +3557,12 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
             ([(isect_col, "pos_out_0"), (mem_avals_lu, "pos_in")], 16),
             ([(isect_col, "pos_out_1"), (mem_bvals_lu, "pos_in")], 16),
             # TODO: Decouple fifos...
-            ([(mem_avals_lu, "ready_out"), (isect_col, "ready_in")], 1),
-            ([(isect_col, "valid_out"), (mem_avals_lu, "valid_in"), (mem_bvals_lu, "valid_in")], 1),
-            ([(isect_col, "eos_out"), (mem_avals_lu, "eos_in"), (mem_bvals_lu, "eos_in")], 1),
+            ([(mem_avals_lu, "ready_out"), (isect_col, "ready_in_1")], 1),
+            ([(mem_bvals_lu, "ready_out"), (isect_col, "ready_in_2")], 1),
+            ([(isect_col, "valid_out_1"), (mem_avals_lu, "valid_in")], 1),
+            ([(isect_col, "valid_out_2"), (mem_bvals_lu, "valid_in")], 1),
+            ([(isect_col, "eos_out_1"), (mem_avals_lu, "eos_in")], 1),
+            ([(isect_col, "eos_out_2"), (mem_bvals_lu, "eos_in")], 1),
             # Links between lookup and memories...
             ([(mem_avals_lu, "addr_out"), (mem_avals, "addr_in_0")], 16),
             ([(mem_bvals_lu, "addr_out"), (mem_bvals, "addr_in_0")], 16),
@@ -3667,6 +3663,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
 
     h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
     h_ready_in = nlb.get_handle(ready_in, prefix="glb2io_1_")
+    h_ready_in_bulk = nlb.get_handle(ready_in_bulk, prefix="glb2io_1_")
     # h_valid_out = nlb.get_handle(valid_out, prefix="io2glb_1_")
     h_valid_out = nlb.get_handle(accum_valid_out, prefix="io2glb_1_")
     # h_eos_out = nlb.get_handle(eos_out, prefix="io2glb_1_")
@@ -3700,6 +3697,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
 
     for i in range(num_cycles):
         tester.poke(h_ready_in, 1)
+        tester.poke(h_ready_in_bulk, 1)
         # tester.poke(circuit.interface[pop], 1)
         tester.eval()
 
