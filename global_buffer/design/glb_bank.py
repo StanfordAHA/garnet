@@ -39,7 +39,6 @@ class GlbBank(Generator):
         self.add_glb_bank_ctrl()
         self.add_glb_bank_memory()
 
-    # TODO: Is there a better way to connect?
     def wr_data_bit_sel_logic(self):
         for i in range(self._params.bank_data_width):
             self.wire(self.wr_data_bit_sel[i], self.wr_packet['wr_strb'][i // 8])

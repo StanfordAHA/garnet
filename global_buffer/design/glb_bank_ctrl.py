@@ -185,6 +185,4 @@ class GlbBankCtrl(Generator):
                                                                * 2 - 1, self._params.axi_data_width]
         else:
             self.if_sram_cfg_s.rd_data = self.sram_cfg_rd_data_r
-        self.if_sram_cfg_s.rd_data_valid = self.mem_rd_en_d & self.sram_cfg_rd_en_d
-        # TODO: This can just be simpler as below
-        # self.if_sram_cfg_s.rd_data_valid = self.sram_cfg_rd_en_d
+        self.if_sram_cfg_s.rd_data_valid = self.sram_cfg_rd_en_d
