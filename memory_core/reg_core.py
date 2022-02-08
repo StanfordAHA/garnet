@@ -75,10 +75,10 @@ class RegCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        config_tuple += 6
+        stop_lvl = config_tuple
         configs = []
         config_reg = []
-        config_reg += self.dut.get_bitstream()
+        config_reg += self.dut.get_bitstream(stop_lvl=stop_lvl)
         for name, v in config_reg:
             configs = [self.get_config_data(name, v)] + configs
         return configs
