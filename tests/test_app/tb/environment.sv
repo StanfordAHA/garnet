@@ -41,6 +41,7 @@ class Environment;
     extern task glb_stall(bit [NUM_GLB_TILES-1:0] stall_mask);
     extern task glb_unstall(bit [NUM_GLB_TILES-1:0] stall_mask);
     extern task run();
+    extern task compare();
 endclass
 
 function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc);
@@ -283,7 +284,7 @@ task Environment::kernel_test(Kernel kernel);
     $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size);
 
     latency = end_time - g2f_end_time;
-    $display("[%s] The latency is %0t.", kernel.name, latency);
+    $display("[%s] The initial latency is %0t.", kernel.name, latency);
     $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
              total_output_size / (g2f_end_time - start_time));
 
@@ -390,10 +391,11 @@ task Environment::run();
         join_none
     end
     wait fork;
-    repeat (20) @(vifc_axil.cbd);
+endtask
 
+task Environment::compare();
+    repeat (20) @(vifc_axil.cbd);
     foreach (kernels[i]) begin
         kernels[i].compare();
     end
-
 endtask
