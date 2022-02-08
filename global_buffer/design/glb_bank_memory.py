@@ -49,7 +49,6 @@ class GlbBankMemory(Generator):
         self.add_glb_bank_memory_pipeline()
         self.add_glb_bank_sram_gen()
         self.add_always(self.sram_ctrl_logic)
-        self.add_always(self.data_out_ff)
         self.add_always(self.data_out_logic)
 
     def add_glb_bank_memory_pipeline(self):
