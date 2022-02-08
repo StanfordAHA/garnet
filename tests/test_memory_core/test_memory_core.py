@@ -3614,7 +3614,9 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
 
     # App data
     matrix_size = 4
-    matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
+    matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 6, 0]]
+    # matrix_a = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
+    # matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
     (mouter, mptr, minner, mmatrix_vals) = compress_matrix(matrix, row=True)
     mroot = [0, 3]
     mroot = align_data(mroot, 4)
@@ -3649,7 +3651,8 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}], "mode": 2})
     # nlb.configure_tile(isect_row, 5)
     nlb.configure_tile(isect_col, 5)
-    nlb.configure_tile(accum_reg, 5)
+    # Configure the stop level
+    nlb.configure_tile(accum_reg, (2))
     # nlb.configure_tile(pe_mul, asm.umult0())
     nlb.configure_tile(pe_mul, 1)
     nlb.configure_tile(mem_avals_lu, (0))
@@ -3711,13 +3714,11 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
 
         tester_if = tester._if(tester.peek(h_valid_out))
         tester_if.print("DATA: %d, EOS: %d\n",
-                        # h_coord_out,
                         h_val_out_0,
                         h_eos_out)
-        # tester_finish = tester._if(tester.peek(h_valid_out) and tester.peek(h_eos_out) and (tester.peek(h_val_out_0) == 0))
-        # tester_finish.finish()
-        # if_eos_finish = tester._if(tester.peek(h_eos_out))
-        # if_eos_finish.print("EOS IS HIGH\n")
+        tester_finish = tester._if(tester.peek(h_valid_out) and tester.peek(h_eos_out) & (tester.peek(h_val_out_0) == 0))
+        tester_finish.print("Observed end of application...early finish...")
+        tester_finish.finish()
 
         tester.step(2)
 
