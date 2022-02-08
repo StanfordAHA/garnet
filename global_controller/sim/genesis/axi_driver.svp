@@ -21,7 +21,7 @@ typedef enum logic [5:0] {
     am_stall,
     am_glb_core_stall,
     am_glb_rtr_stall,
-    am_glb_pcfg_rtr_stall,
+    am_glb_pcfg_stall,
     am_strm_start_pulse,
     am_pc_start_pulse,
     am_strm_f2g_ier,

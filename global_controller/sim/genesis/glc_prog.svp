@@ -364,7 +364,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     repeat(2) jtag_driver.Next_tck();
     check_register(top.dut.glb_core_stall, {`$num_glb_tiles`{1'b1}});
     check_register(top.dut.glb_rtr_stall, {`$num_glb_tiles`{1'b1}});
-    check_register(top.dut.glb_pcfg_rtr_stall, {`$num_glb_tiles`{1'b1}});
+    check_register(top.dut.glb_pcfg_stall, {`$num_glb_tiles`{1'b1}});
 
     // glb unstall
     @(posedge dut_ifc.Clk);
@@ -372,7 +372,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     repeat(2) jtag_driver.Next_tck();
     check_register(top.dut.glb_core_stall, 0);
     check_register(top.dut.glb_rtr_stall, 0);
-    check_register(top.dut.glb_pcfg_rtr_stall, 0);
+    check_register(top.dut.glb_pcfg_stall, 0);
 
     // global reset
     @(posedge dut_ifc.Clk);
@@ -454,11 +454,11 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     // axi control - glb pcfg rtr stall
     @(posedge dut_ifc.Clk);
-    addrmap_write(am_glb_pcfg_rtr_stall, {`$num_glb_tiles`{1'b1}});
+    addrmap_write(am_glb_pcfg_stall, {`$num_glb_tiles`{1'b1}});
 
     // axi control
     @(posedge dut_ifc.Clk);
-    addrmap_read(am_glb_pcfg_rtr_stall);
+    addrmap_read(am_glb_pcfg_stall);
 
     // axi control - glb core unstall
     @(posedge dut_ifc.Clk);
@@ -470,7 +470,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     // axi control - glb pcfg rtr unstall
     @(posedge dut_ifc.Clk);
-    addrmap_write(am_glb_pcfg_rtr_stall, 0);
+    addrmap_write(am_glb_pcfg_stall, 0);
 
     // axi control - g2f_start_pulse
     repeat(100) begin
@@ -879,7 +879,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     end
     endtask
 
-    task axi_glb_pcfg_rtr_stall(int data);
+    task axi_glb_pcfg_stall(int data);
     begin
         gc_interface = axi4;
         config_count++;
@@ -890,11 +890,11 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         $fdisplay(file_desc,"%t: %m: Trans %d (axi glb pcfg rtr stall):  Address to CGRA=%d, Data to CGRA=%d",  
             $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
         repeat (100) @(posedge dut_ifc.Clk); 
-        check_register(top.dut.glb_pcfg_rtr_stall, data);
+        check_register(top.dut.glb_pcfg_stall, data);
     end
     endtask
 
-    task axi_rd_glb_pcfg_rtr_stall();
+    task axi_rd_glb_pcfg_stall();
     begin
         gc_interface = axi4;
         config_count++;
@@ -905,7 +905,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         $fdisplay(file_desc,"%t: %m: Trans %d (axi read glb pcfg rtr stall):  Address to CGRA=%d, Data to CGRA=%d",  
             $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
         repeat (100) @(posedge dut_ifc.Clk); 
-	    assert (axi_trans.data_out == top.dut.glb_pcfg_rtr_stall) else $display("Stall axi read error");
+	    assert (axi_trans.data_out == top.dut.glb_pcfg_stall) else $display("Stall axi read error");
     end
     endtask
 
@@ -1436,8 +1436,8 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             am_glb_rtr_stall: begin
                 axi_glb_rtr_stall(data);
             end
-            am_glb_pcfg_rtr_stall: begin
-                axi_glb_pcfg_rtr_stall(data);
+            am_glb_pcfg_stall: begin
+                axi_glb_pcfg_stall(data);
             end
             am_strm_start_pulse: begin
                 axi_strm_start_pulse(data);
@@ -1504,8 +1504,8 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             am_glb_rtr_stall: begin
                 axi_rd_glb_rtr_stall();
             end
-            am_glb_pcfg_rtr_stall: begin
-                axi_rd_glb_pcfg_rtr_stall();
+            am_glb_pcfg_stall: begin
+                axi_rd_glb_pcfg_stall();
             end
             am_strm_start_pulse: begin
             end
