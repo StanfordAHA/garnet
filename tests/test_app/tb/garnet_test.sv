@@ -15,6 +15,8 @@ program garnet_test #(
     proc_ifc p_ifc,
     axil_ifc axil_ifc
 );
+    int test_toggle = 0;
+
     //============================================================================//
     // local variables
     //============================================================================//
@@ -22,12 +24,18 @@ program garnet_test #(
     Environment env;
 
     initial begin
+        #100
         initialize();
         map(kernels);
 
         env = new(kernels, axil_ifc, p_ifc);
         env.build();
+
+        test_toggle = 1;
         env.run();
+        test_toggle = 0;
+
+        env.compare();
     end
 
     //============================================================================//

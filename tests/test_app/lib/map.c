@@ -185,8 +185,17 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
       add_config(config_info,
                  (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_STRIDE_0_R + 0x04 * i),
                  data_stride[i] << (GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
-      printf("[ITER CTRL] Before Optimization - loop %0d: extent: %0d, cycle stride: %0d, data stride: %0d\n", i, io_tile_info->extent[i], io_tile_info->cycle_stride[i], io_tile_info->data_stride[i]);
-      printf("[ITER CTRL] After Optimization - loop %0d: extent: %0d, cycle stride: %0d, data stride: %0d\n", i, extent[i], cycle_stride[i], data_stride[i]);
+    }
+    printf("=====Before Optimization=====\n");
+    for (int i = 0; i < loop_dim; i++)
+    {
+      printf("[ITER CTRL - loop %0d] extent: %0d, cycle stride: %0d, data stride: %0d\n", i, io_tile_info->extent[i], io_tile_info->cycle_stride[i], io_tile_info->data_stride[i]);
+    }
+
+    printf("=====After Optimization=====\n");
+    for (int i = 0; i < loop_dim; i++)
+    {
+      printf("[ITER CTRL - loop %0d] extent: %0d, cycle stride: %0d, data stride: %0d\n", i, extent[i], cycle_stride[i], data_stride[i]);
     }
   }
   else
@@ -210,8 +219,17 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
       add_config(config_info,
                  (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_STRIDE_0_R + 0x04 * i),
                  data_stride[i] << (GLB_ST_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
-      printf("[ITER CTRL] Before Optimization - loop %0d: extent: %0d, cycle stride: %0d, data stride: %0d\n", i, io_tile_info->extent[i], io_tile_info->cycle_stride[i], io_tile_info->data_stride[i]);
-      printf("[ITER CTRL] After Optimization - loop %0d: extent: %0d, cycle stride: %0d, data stride: %0d\n", i, extent[i], cycle_stride[i], data_stride[i]);
+    }
+    printf("=====Before Optimization=====\n");
+    for (int i = 0; i < loop_dim; i++)
+    {
+      printf("[ITER CTRL - loop %0d] extent: %0d, cycle stride: %0d, data stride: %0d\n", i, io_tile_info->extent[i], io_tile_info->cycle_stride[i], io_tile_info->data_stride[i]);
+    }
+
+    printf("=====After Optimization=====\n");
+    for (int i = 0; i < loop_dim; i++)
+    {
+      printf("[ITER CTRL - loop %0d] extent: %0d, cycle stride: %0d, data stride: %0d\n", i, extent[i], cycle_stride[i], data_stride[i]);
     }
   }
   return 1;

@@ -106,7 +106,6 @@ rtl:
 # -------------------------------------------------------------------
 # Compile & Run
 # -------------------------------------------------------------------
-
 COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 ifeq ($(TOOL), XCELIUM)
