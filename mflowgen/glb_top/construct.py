@@ -27,7 +27,7 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'   : 1.0,
+    'clock_period'   : 1.25,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
@@ -45,7 +45,8 @@ def construct():
     'use_container' : False,
     'glb_tile_mem_size' : 256,
     'rtl_testvectors' : ["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9"],
-    'gls_testvectors' : ["test1", "test2"]
+    'gls_testvectors' : ["test1", "test2"],
+    'sdf' : False,
   }
 
   #-----------------------------------------------------------------------
