@@ -10,7 +10,7 @@ CGRA_WIDTH ?= 32
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
 
-TOOL ?= XCELIUM
+TOOL ?= VCS
 SRAM_STUB ?= 0
 export WAVEFORM ?= 0
 export SAIF ?= 0
@@ -154,8 +154,7 @@ run:
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
 
 .PHONY: sim
-sim: compile
-	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
+sim: compile run
 
 # -------------------------------------------------------------------
 # GLS Compile
