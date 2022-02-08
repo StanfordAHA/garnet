@@ -5,6 +5,7 @@ parameters:
   PWR_AWARE: False
   tool: "VCS"
   num_glb_tiles: 16
+  sim_clk_period: 1.5
 
 commands:
   - bash run_sim.sh

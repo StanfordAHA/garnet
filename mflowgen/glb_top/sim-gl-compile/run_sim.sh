@@ -16,9 +16,12 @@ else
   SDF=0
 fi
 
+CLK_PERIOD=${sim_clock_period}ns
+
 (
     set -x;
     SDF=$SDF \
+    CLK_PERIOD=$CLK_PERIOD \
     HEADER_FILES="inputs/header/global_buffer_param.svh inputs/header/glb.svh" \
     NETLIST_FILES=$NETLIST_FILES \
     TB_FILES="-F sim/tb_global_buffer.f" \
