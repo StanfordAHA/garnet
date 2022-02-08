@@ -2,6 +2,7 @@ name: sim-compile
 
 parameters:
   tool: "XCELIUM"
+  sim_clock_period: 1.5
 
 commands:
   - bash run_sim.sh
