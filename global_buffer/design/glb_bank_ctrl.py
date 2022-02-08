@@ -60,7 +60,7 @@ class GlbBankCtrl(Generator):
         if self.if_sram_cfg_s.wr_en:
             if self.if_sram_cfg_s.wr_addr[self._params.bank_byte_offset - 1] == 0:
                 self.mem_wr_en = 1
-                self.mem_rd_en_w = 0
+                self.mem_rd_en = 0
                 self.mem_addr = self.if_sram_cfg_s.wr_addr
                 self.mem_data_in = concat(const(
                     0, self._params.bank_data_width - self._params.axi_data_width), self.if_sram_cfg_s.wr_data)
@@ -69,7 +69,7 @@ class GlbBankCtrl(Generator):
                                                         self._params.axi_data_width))
             else:
                 self.mem_wr_en = 1
-                self.mem_rd_en_w = 0
+                self.mem_rd_en = 0
                 self.mem_addr = self.if_sram_cfg_s.wr_addr
                 self.mem_data_in = concat(self.if_sram_cfg_s.wr_data[self._params.bank_data_width
                                                                      - self._params.axi_data_width - 1, 0],
@@ -80,44 +80,31 @@ class GlbBankCtrl(Generator):
                                                   const(0, self._params.axi_data_width))
         elif self.if_sram_cfg_s.rd_en:
             self.mem_wr_en = 0
-            self.mem_rd_en_w = 1
+            self.mem_rd_en = 1
             self.mem_addr = self.if_sram_cfg_s.rd_addr
             self.mem_data_in = 0
             self.mem_data_in_bit_sel = 0
         elif self.packet_wr_en:
             self.mem_wr_en = 1
-            self.mem_rd_en_w = 0
+            self.mem_rd_en = 0
             self.mem_addr = self.packet_wr_addr
             self.mem_data_in = self.packet_wr_data
             self.mem_data_in_bit_sel = self.packet_wr_data_bit_sel
         elif self.packet_rd_en:
             self.mem_wr_en = 0
-            self.mem_rd_en_w = 1
+            self.mem_rd_en = 1
             self.mem_addr = self.packet_rd_addr
             self.mem_data_in = 0
             self.mem_data_in_bit_sel = 0
         else:
             self.mem_wr_en = 0
-            self.mem_rd_en_w = 0
+            self.mem_rd_en = 0
             self.mem_addr = 0
             self.mem_data_in = 0
             self.mem_data_in_bit_sel = 0
 
     def add_rd_en_pipeline(self):
-        self.mem_rd_en_w = self.var("mem_rd_en_w", 1)
-        self.mem_rd_en_d = self.var("mem_rd_en_d", 1)
         self.sram_cfg_rd_en_d = self.var("sram_cfg_rd_en_d", 1)
-        self.wire(self.mem_rd_en_w, self.mem_rd_en)
-
-        self.mem_rd_en_pipeline = Pipeline(width=1, depth=self.bank_ctrl_pipeline_depth)
-        self.add_child("mem_rd_en_pipeline",
-                       self.mem_rd_en_pipeline,
-                       clk=self.clk,
-                       clk_en=const(1, 1),
-                       reset=self.reset,
-                       in_=self.mem_rd_en_w,
-                       out_=self.mem_rd_en_d)
-
         self.sram_cfg_rd_en_pipeline = Pipeline(width=1, depth=self.bank_ctrl_pipeline_depth)
         self.add_child("sram_cfg_rd_en_pipeline",
                        self.sram_cfg_rd_en_pipeline,
