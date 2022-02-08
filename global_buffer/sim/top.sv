@@ -22,7 +22,7 @@ module top;
     logic clk;
     logic [NUM_GLB_TILES-1:0] core_stall;
     logic [NUM_GLB_TILES-1:0] rtr_stall;
-    logic [NUM_GLB_TILES-1:0] pcfg_rtr_stall;
+    logic [NUM_GLB_TILES-1:0] pcfg_stall;
     logic [NUM_CGRA_TILES-1:0] cgra_stall_in;
     logic reset;
     logic cgra_soft_reset;

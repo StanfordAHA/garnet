@@ -45,7 +45,7 @@ class Test;
     bit [NUM_GLB_TILES-1:0] pcfg_tile_mask;
     bit [NUM_GLB_TILES-1:0] core_stall_mask;
     bit [NUM_GLB_TILES-1:0] rtr_stall_mask;
-    bit [NUM_GLB_TILES-1:0] pcfg_rtr_stall_mask;
+    bit [NUM_GLB_TILES-1:0] pcfg_stall_mask;
 
     extern function new(string filename);
 endclass
@@ -130,11 +130,17 @@ function Test::new(string filename);
     // Calculate stall
     core_stall_mask = {NUM_GLB_TILES{1'b1}};
     rtr_stall_mask = {NUM_GLB_TILES{1'b1}};
-    pcfg_rtr_stall_mask = {NUM_GLB_TILES{1'b1}};
+    pcfg_stall_mask = {NUM_GLB_TILES{1'b1}};
     for (int i = 0; i < num_kernels; i++) begin
         // For SRAM configuration test, we can still stall tiles
         if (kernels[i].type_ != SRAM) begin
             core_stall_mask[kernels[i].tile_id] = 1'b0;
+        end
+    end
+    for (int i = 0; i < num_kernels; i++) begin
+        // For PCFG test, unstall pcfg logic
+        if (kernels[i].type_ == PCFG) begin
+            pcfg_stall_mask[kernels[i].tile_id] = 1'b0;
         end
     end
     for (int i = 0; i < NUM_GLB_TILES; i++) begin
