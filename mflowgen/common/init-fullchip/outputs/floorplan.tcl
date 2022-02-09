@@ -3,16 +3,17 @@
 #=========================================================================
 # This script is called from the Innovus init flow step.
 
-# Should this be in power step??
+# Run this in floorplanning step to make io filler addition step happy
+# (see add-io-fillers.tcl). Will be re-run in power step
 delete_global_net_connections
-connect_global_net VDDPST -type pgpin -pin VDDPST -inst *
-connect_global_net VSS -type pgpin -pin VSSPST -inst * 
-connect_global_net VDD -type pgpin -pin VDD -inst *
+connect_global_net VDDIO -type pgpin -pin VDDIO -inst *
+connect_global_net VSS -type pgpin -pin VSSIO -inst * 
+connect_global_net VDD -type pgpin -pin VDDC -inst *
 connect_global_net VDD -type tiehi
-connect_global_net VSS -type pgpin -pin VSS -inst *
+connect_global_net VSS -type pgpin -pin VSSC -inst *
 connect_global_net VSS -type tielo
-connect_global_net VDD -type pgpin -pin VPP -inst *
-connect_global_net VSS -type pgpin -pin VBB -inst *
+connect_global_net VDD -type pgpin -pin VPW -inst *
+connect_global_net VSS -type pgpin -pin VNW -inst *
 
 
 
@@ -27,7 +28,6 @@ connect_global_net VSS -type pgpin -pin VBB -inst *
 floorPlan \
     -coreMarginsBy die \
     -dieSizeByIoHeight max \
-    -site core \
     -d 4900.0 4900.0 100 100 100 100
 
 # Adding PCORNER cells here, io_file will take
