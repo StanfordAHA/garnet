@@ -32,9 +32,10 @@ floorPlan \
 
 # Adding PCORNER cells here, io_file will take
 # care of orientation and location
-create_inst -inst corner_lr -cell PCORNER
-create_inst -inst corner_ll -cell PCORNER
-create_inst -inst corner_ul -cell PCORNER
+create_inst -inst corner_lr -cell IN12LP_GPIO18_13M9S30P_CORNER
+create_inst -inst corner_ll -cell IN12LP_GPIO18_13M9S30P_CORNER
+create_inst -inst corner_ur -cell IN12LP_GPIO18_13M9S30P_CORNER
+create_inst -inst corner_ul -cell IN12LP_GPIO18_13M9S30P_CORNER
 
 # read_io_file inputs/io_file -no_die_size_adjust 
 loadIoFile inputs/io_file -noAdjustDieSize
@@ -42,12 +43,11 @@ loadIoFile inputs/io_file -noAdjustDieSize
 # Disconnect IO-pad RTE pins
 foreach x \
     [get_property \
-         [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL* || ref_name=~*PVDD1* || ref_name=~*PVDD2* || ref_name=~*PDB2* || ref_name=~PCORNER" ]\
+         [get_cells -filter "ref_name=~*_IO_* || ref_name=~*_VDDC_* || ref_name=~*_VSSC_* || ref_name=~*_VDDIO_* || ref_name=~*_VSSIO_* || ref_name=~*FILL* || ref_name=~*CORNER*" ] \
          full_name \
         ] \
     {
-        # disconnect_pin -inst $x -pin RTE
-        detachTerm $x RTE
+        detachTerm $x RETC
     }
 
 # snap_floorplan_io - Snaps I/O cells to a user-defined grid
