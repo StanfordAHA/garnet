@@ -67,6 +67,9 @@ program glb_test (
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data
 );
+    timeunit 100ps;
+    timeprecision 1ps;
+
     const int MAX_NUM_ERRORS = 20;
     int test_toggle = 0;
     int tile_id = 0;
