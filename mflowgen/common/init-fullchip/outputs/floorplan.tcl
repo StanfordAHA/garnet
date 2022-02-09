@@ -28,7 +28,7 @@ connect_global_net VSS -type pgpin -pin VNW -inst *
 floorPlan \
     -coreMarginsBy die \
     -dieSizeByIoHeight max \
-    -d 4900.0 4900.0 100 100 100 100
+    -d 4900.0 4900.0 200 200 200 200
 
 # Adding PCORNER cells here, io_file will take
 # care of orientation and location
