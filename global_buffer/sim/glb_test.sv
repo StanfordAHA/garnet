@@ -183,6 +183,7 @@ program glb_test (
                 data_cnt = 0;
                 // Note: Again, we cannot call function to write data to memory, we have to run task 
                 // to write data to memory. Use partial wrtie function to do that.
+                #2
                 while (1) begin
                     i_addr = kernels[i].start_addr;
                     for (int j = 0; j < kernels[i].dim; j++) begin
@@ -386,7 +387,8 @@ program glb_test (
     task glb_stall(logic [NUM_GLB_TILES-1:0] core_tile_mask,
                    logic [NUM_GLB_TILES-1:0] rtr_tile_mask,
                    logic [NUM_GLB_TILES-1:0] pcfg_tile_mask);
-
+        
+        #2
         $display("Glb tiles CORE logics are stalled with mask %16b", core_tile_mask);
         core_stall <= core_tile_mask;
         $display("Glb tiles ROUTER logics are stalled with mask %16b", rtr_tile_mask);
@@ -410,17 +412,17 @@ program glb_test (
     endtask
 
     task automatic sram_write(input bit [GLB_ADDR_WIDTH-1:0] addr, int data);
-        #(`CLK_PERIOD * 0.3) if_sram_cfg_wr_clk_en <= 1;
+        #2 if_sram_cfg_wr_clk_en <= 1;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_sram_cfg_wr_en <= 1;
+        #2 if_sram_cfg_wr_en <= 1;
         if_sram_cfg_wr_addr <= addr;
         if_sram_cfg_wr_data <= data;
         repeat (4) @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_sram_cfg_wr_en <= 0;
+        #2 if_sram_cfg_wr_en <= 0;
         if_sram_cfg_wr_addr <= 0;
         if_sram_cfg_wr_data <= 0;
         repeat (NUM_GLB_TILES + 6) @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_sram_cfg_wr_clk_en <= 0;
+        #2 if_sram_cfg_wr_clk_en <= 0;
         repeat (2) @(posedge clk);
     endtask
 
@@ -440,16 +442,16 @@ program glb_test (
         int read_delay = 40;
         fork
             begin
-                #(`CLK_PERIOD * 0.3) if_sram_cfg_rd_clk_en <= 1;
+                #2 if_sram_cfg_rd_clk_en <= 1;
                 repeat (read_delay) @(posedge clk);
-                #(`CLK_PERIOD * 0.3) if_sram_cfg_rd_clk_en <= 0;
+                #2 if_sram_cfg_rd_clk_en <= 0;
             end
             begin
                 @(posedge clk);
-                #(`CLK_PERIOD * 0.3) if_sram_cfg_rd_en <= 1;
+                #2 if_sram_cfg_rd_en <= 1;
                 if_sram_cfg_rd_addr <= addr;
                 repeat (4) @(posedge clk);
-                #(`CLK_PERIOD * 0.3) if_sram_cfg_rd_en <= 0;
+                #2 if_sram_cfg_rd_en <= 0;
                 if_sram_cfg_rd_addr <= 0;
             end
             begin
@@ -601,28 +603,28 @@ program glb_test (
 
     task glb_cfg_write(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
         repeat (5) @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_wr_clk_en <= 1;
+        #2 if_cfg_wr_clk_en <= 1;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_wr_en <= 1;
+        #2 if_cfg_wr_en <= 1;
         if_cfg_wr_addr <= addr;
         if_cfg_wr_data <= data;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_wr_en <= 0;
+        #2 if_cfg_wr_en <= 0;
         if_cfg_wr_addr <= 0;
         if_cfg_wr_data <= 0;
         repeat (NUM_GLB_TILES + 10) @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_wr_clk_en <= 0;
+        #2 if_cfg_wr_clk_en <= 0;
         repeat (2) @(posedge clk);
     endtask
 
     task glb_cfg_read(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
         repeat (5) @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_rd_clk_en <= 1;
+        #2 if_cfg_rd_clk_en <= 1;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_rd_en <= 1;
+        #2 if_cfg_rd_en <= 1;
         if_cfg_rd_addr <= addr;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_rd_en <= 0;
+        #2 if_cfg_rd_en <= 0;
         if_cfg_rd_addr <= 0;
         fork : glb_cfg_read_timeout
             begin
@@ -641,7 +643,7 @@ program glb_test (
         join_any
         disable fork;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_rd_clk_en <= 0;
+        #2 if_cfg_rd_clk_en <= 0;
         repeat (2) @(posedge clk);
     endtask
 
@@ -649,10 +651,12 @@ program glb_test (
         int size = data.size();
         repeat (5) @(posedge clk);
         $display("Start glb-mem burst write. addr: 0x%0h, size %0d", addr, size);
+        #2
         foreach (data[i]) begin
             proc_write(addr + 8 * i, data[i]);
         end
-        #(`CLK_PERIOD * 0.3) proc_wr_en <= 0;
+        #2 
+        proc_wr_en <= 0;
         proc_wr_strb <= 0;
         $display("Finish glb-mem burst write");
         repeat (5) @(posedge clk);
@@ -664,7 +668,7 @@ program glb_test (
         proc_wr_addr <= addr;
         proc_wr_data <= data;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) proc_wr_en <= 0;
+        #2 proc_wr_en <= 0;
         proc_wr_strb <= 0;
     endtask
 
@@ -700,7 +704,7 @@ program glb_test (
         proc_wr_addr <= addr;
         proc_wr_data <= wr_data;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) proc_wr_en <= 0;
+        #2 proc_wr_en <= 0;
         proc_wr_strb <= 0;
     endtask
 
@@ -718,11 +722,11 @@ program glb_test (
         fork : proc_read
             begin
                 for (int i = 0; i < size; i++) begin
-                    #(`CLK_PERIOD * 0.4) proc_rd_en <= 1;
+                    #2 proc_rd_en <= 1;
                     proc_rd_addr <= addr + 8 * i;
                     @(posedge clk);
                 end
-                #(`CLK_PERIOD * 0.4) proc_rd_en <= 0;
+                #2 proc_rd_en <= 0;
             end
             begin
                 fork : proc_read_timeout
@@ -811,9 +815,9 @@ program glb_test (
             end
         end
 
-        #(`CLK_PERIOD * 0.3) strm_g2f_start_pulse <= tile_id_mask;
+        #2 strm_g2f_start_pulse <= tile_id_mask;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) strm_g2f_start_pulse <= 0;
+        #2 strm_g2f_start_pulse <= 0;
     endtask
 
     task automatic g2f_run(input int tile_id, int total_cycle);
@@ -835,9 +839,9 @@ program glb_test (
     task automatic f2g_start(input [NUM_GLB_TILES-1:0] tile_id_mask);
         $display("f2g streaming start. tiles: 0x%4h", tile_id_mask);
 
-        #(`CLK_PERIOD * 0.3) strm_f2g_start_pulse <= tile_id_mask;
+        #2 strm_f2g_start_pulse <= tile_id_mask;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) strm_f2g_start_pulse <= 0;
+        #2 strm_f2g_start_pulse <= 0;
 
         repeat (GLS_PIPELINE_DEPTH - 1) @(posedge clk);
         // Enable glb2prr
@@ -868,9 +872,9 @@ program glb_test (
     task automatic pcfg_start(input [NUM_GLB_TILES-1:0] tile_id_mask);
         $display("pcfg streaming start. tiles: 0x%4h", tile_id_mask);
         repeat (5) @(posedge clk);
-        #(`CLK_PERIOD * 0.3) pcfg_start_pulse <= tile_id_mask;
+        #2 pcfg_start_pulse <= tile_id_mask;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) pcfg_start_pulse <= 0;
+        #2 pcfg_start_pulse <= 0;
     endtask
 
     task automatic pcfg_run(input int tile_id, int total_cycle,
