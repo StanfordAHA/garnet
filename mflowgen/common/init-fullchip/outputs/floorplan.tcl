@@ -54,13 +54,6 @@ foreach x \
 
 snapFPlanIO
 
-
-# insert io fillers. previously, this was done *after* routing bumps
-# copied from "proc done_fp" in "gen_floorplan.tcl"
-
-
-
-
 # Do we need/want this?? It's from tile_array or something
 # # setFlipping - Specifies the orientation of the bottom row in the core area
 # # * s: Specifies that the second row flips from the bottom up.
@@ -68,6 +61,7 @@ snapFPlanIO
 
 # Checks the quality of the floorplan to detect potential
 # problems before the design is passed on to other tools.
+
 # check_floorplan
 checkFPlan
 
