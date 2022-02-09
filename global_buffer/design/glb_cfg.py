@@ -4,7 +4,7 @@ from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
 from global_buffer.design.glb_cfg_ctrl import GlbCfgCtrl
 from global_buffer.gen_global_buffer_rdl import gen_global_buffer_rdl, gen_glb_pio_wrapper
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
-from systemRDL.util import run_systemrdl
+from systemRDL.util import run_systemrdl, fix_systemrdl
 import pathlib
 import os
 
@@ -77,6 +77,9 @@ class GlbCfg(Generator):
             ordt_path = os.path.join(garnet_home, 'systemRDL', 'Ordt.jar')
             rdl_parms_file = os.path.join(garnet_home, "global_buffer/systemRDL/ordt_params/glb.parms")
             run_systemrdl(ordt_path, top_name, rdl_file, rdl_parms_file, rdl_output_folder)
+
+            # Run pass to fix ORDT bug
+            fix_systemrdl(rdl_output_folder, top_name)
 
             # Create wrapper of glb_pio.sv
             gen_glb_pio_wrapper(src_file=pio_file, dest_file=pio_wrapper_file)
