@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--num_glb_tiles', type=int, default=16)
     parser.add_argument('--num_cgra_cols', type=int, default=32)
     parser.add_argument('--glb_tile_mem_size', type=int, default=256)
+    parser.add_argument("--sram_stub", action="store_true")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("-p", "--parameter", action="store_true")
     parser.add_argument("-r", "--rdl", action="store_true")
@@ -34,6 +35,7 @@ def main():
                                       num_cgra_cols=args.num_cgra_cols,
                                       # FIXEME: We assume num_prr is same as num_glb_tiles
                                       num_prr=args.num_glb_tiles,
+                                      is_sram_stub=args.sram_stub,
                                       glb_tile_mem_size=args.glb_tile_mem_size)
 
     glb = GlobalBuffer(_params=params)

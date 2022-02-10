@@ -1,4 +1,4 @@
-from kratos import Generator
+from kratos import Generator, RawStringStmt
 from global_buffer.design.glb_core import GlbCore
 from global_buffer.design.glb_tile_cfg import GlbTileCfg
 from global_buffer.design.glb_tile_pcfg_switch import GlbTilePcfgSwitch
@@ -365,6 +365,33 @@ class GlbTile(Generator):
                        reset=self.reset,
                        glb_tile_id=self.glb_tile_id)
 
+        if self._params.is_sram_stub:
+            self.readmemh_block = RawStringStmt(["initial begin",
+                                                "\tstring b0_file_name;",
+                                                "\tstring b1_file_name;",
+                                                "\tstring load_arg;",
+                                                "\t$sformat(b0_file_name, \"testvectors/tile%0d_b0.dat\", glb_tile_id);",
+                                                "\t$sformat(b1_file_name, \"testvectors/tile%0d_b1.dat\", glb_tile_id);",
+                                                "\t$sformat(load_arg, \"LOAD%0d\", glb_tile_id);",
+                                                "\tif (($test$plusargs(load_arg))) begin",
+                                                "\t\t$readmemh(b0_file_name, glb_core.glb_bank_0.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
+                                                "\t\t$readmemh(b1_file_name, glb_core.glb_bank_1.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
+                                                "\tend",
+                                                "end"])
+            self.writememh_block = RawStringStmt(["final begin",
+                                                "\tstring b0_file_name;",
+                                                "\tstring b1_file_name;",
+                                                "\tstring save_arg;",
+                                                "\t$sformat(b0_file_name, \"testvectors/tile%0d_b0_out.dat\", glb_tile_id);",
+                                                "\t$sformat(b1_file_name, \"testvectors/tile%0d_b1_out.dat\", glb_tile_id);",
+                                                "\t$sformat(save_arg, \"SAVE%0d\", glb_tile_id);",
+                                                "\tif (($test$plusargs(save_arg))) begin",
+                                                "\t\t$writememh(b0_file_name, glb_core.glb_bank_0.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
+                                                "\t\t$writememh(b1_file_name, glb_core.glb_bank_1.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
+                                                "\tend",
+                                                "end"])
+            self.add_stmt(self.readmemh_block.stmt())
+            self.add_stmt(self.writememh_block.stmt())
         self.interface_wiring()
         self.tile2cfg_wiring()
         self.tile2core_wiring()

@@ -142,9 +142,14 @@ else
 
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
-      if [ $interconnect_only == False ]; then
+      if [ $glb_only == True ]; then
         docker cp $container_name:/aha/garnet/global_buffer/header ../outputs/header
-        docker cp $container_name:/aha/garnet/global_controller/header/* ../outputs/header/
+      elif [ $interconnect_only == False ]; then
+        docker cp $container_name:/aha/garnet/global_buffer/header ../glb_header
+        docker cp $container_name:/aha/garnet/global_controller/header ../glc_header
+        mkdir ../outputs/header
+        cp -r ../glb_header/* ../outputs/header/
+        cp -r ../glc_header/* ../outputs/header/
       fi
       # Kill the container
       docker kill $container_name
@@ -191,7 +196,9 @@ else
         cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> $current_dir/outputs/design.v
         cat global_controller/systemRDL/output/*.sv >> $current_dir/outputs/design.v
       fi
-      if [ $interconnect_only == False ]; then
+      if [ $glb_only == True ]; then
+        cp -r global_buffer/header $current_dir/outputs/header
+      elif [ $interconnect_only == False ]; then
         cp -r global_buffer/header $current_dir/outputs/header
         cp -r global_controller/header/* $current_dir/outputs/header/
       fi

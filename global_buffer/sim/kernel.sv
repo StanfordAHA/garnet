@@ -23,6 +23,7 @@ class Kernel;
     int new_cycle_stride[LOOP_LEVEL];
     int new_data_stride[LOOP_LEVEL];
     string filename;
+    data16 mem;
     data16 data_arr;
     data16 data_arr_out;
     int total_cycle;
