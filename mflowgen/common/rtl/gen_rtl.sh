@@ -50,25 +50,51 @@ else
 
       # Or can simply uncomment below to e.g. use image 'stanfordaha/garnet:cst'
       # which_image=cst
+      
+echo "BING BANG BOOM"
+digest352_bad="@sha256:0f7b71c17c7b2eb708fbcb7d03564302ac5a73d53b4cdbde708de19fc25c8e8a"
+digest347_good="@sha256:1e4a0bf29f3bad8e31b8b6f19a1b156eb67d70c0e6c29a80e8c0ccc2e279df5f"
+which_image=$digest347_good
+
+      # E.g. which_image="@sha256:1e4a0bf..."
+      if expr "$which_image" : "@"; then
+          container_name=sha_$$
+          echo "Found image prefix '@'; using sha image"
+
+      # E.g. which_image=":cst"
+      elif expr "$which_image" : ":"; then
+          container_name=image_$$
+          echo "Found image prefix ':'; using named image"
+
+      # E.g. which_image="latest" => ":latest" or "cst" => ":cst"
+      else
+          container_name={$which_image}_$$
+          which_image=":${which_image}"
+          echo "Image prefix not ':' nor '@'; assume named image"
+
+      fi
+      echo "Using image '$which_image' w/ container name '$container_name'"
 
       # pull docker image from docker hub
-      docker pull stanfordaha/garnet:${which_image}
+      docker pull stanfordaha/garnet${which_image}
 
       # Display ID info for image e.g.
       #     RepoTags    [stanfordaha/garnet:latest]
       #     RepoDigests [stanfordaha/garnet@sha256:e43c853b4068992...]
-      docker inspect --format='RepoTags    {{.RepoTags}}'    stanfordaha/garnet:${which_image}
-      docker inspect --format='RepoDigests {{.RepoDigests}}' stanfordaha/garnet:${which_image}
-
-      if [ "$which_image" == "latest" ]; then
+      docker inspect --format='RepoTags    {{.RepoTags}}'    stanfordaha/garnet${which_image}
+      docker inspect --format='RepoDigests {{.RepoDigests}}' stanfordaha/garnet${which_image}
+set -x
+      if [ "$which_image" == ":latest" ]; then
           # run the container in the background and delete it when it exits
           # ("aha docker" will print out the name of the container to attach to)
           container_name=$(aha docker)
       else
           # run the container in the background and delete it when it exits (--rm)
           # mount /cad and name it, and run container as a daemon in background
-          container_name=${which_image}
-          docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
+          # container_name=${which_image} see farther above
+          # docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
+          tmp_image="stanfordaha/garnet${which_image}"
+          docker run -id --name ${container_name} --rm -v /cad:/cad $tmp_image bash
       fi
       echo "container-name: $container_name"
       ##############################################################################
@@ -104,10 +130,14 @@ else
          }'"
          set -e; # DIE if any single command exits with error status
          # (Double-quote regime)
+
          # Example: say you want to double-check packages 'ast_tools', 'magma', and 'peak'.
          # Uncomment the line below; This will display the version,
          # location and latest commit hash for each.
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
+         echo '+++ PIPCHECK-BEFORE'
+         checkpip 'gemstone ' 'canal ' 'peak ' 'lassen ' 'karst ' 'buffer_mapping ' 'pyverilog ' 'lake ' 'lake-aha ' 'magma ' 'mgma-lang ' 'mantle '
+         echo '--- Continue build'
 
          source /aha/bin/activate; # Set up the build environment
 
@@ -151,6 +181,16 @@ else
         cp -r ../glb_header/* ../outputs/header/
         cp -r ../glc_header/* ../outputs/header/
       fi
+
+
+
+
+      docker ps
+      docker images --digests
+      save_verilog_to_tmpdir=True
+
+
+
       # Kill the container
       docker kill $container_name
       echo "killed docker container $container_name"
@@ -163,8 +203,8 @@ else
       if [ "$save_verilog_to_tmpdir" == "True" ]; then
           echo "+++ ENDGAME - Save verilog to /tmp before buildkite deletes it"
           set -x; # so user will know where the files are going
-          cp outputs/design.v /tmp/design.v.${which_image}.deleteme$$
-          cp mflowgen-run.log /tmp/log.${which_image}.deleteme$$
+          cp outputs/design.v /tmp/design.v.${container_name}.deleteme$$
+          cp mflowgen-run.log /tmp/log.${container_name}.deleteme$$
           set +x
       fi
 
@@ -207,3 +247,4 @@ else
   fi
 fi
 
+echo "--- gen_rtl DONE"
