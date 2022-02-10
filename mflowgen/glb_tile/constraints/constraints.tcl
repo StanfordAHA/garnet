@@ -60,10 +60,10 @@ set_false_path -from {glb_tile_id*}
 
 # clk_en for core/rtr/pcfg_rtr are multi_cycle path
 # NOTE: clk_en for cfg and jtag are not multi cycle path
-set_multicycle_path -setup 10 -from {clk_en_core}
-set_multicycle_path -hold 9 -from {clk_en_core}
-set_multicycle_path -setup 10 -from {clk_en_*rtr}
-set_multicycle_path -hold 9 -from {clk_en_*rtr}
+# set_multicycle_path -setup 10 -from {clk_en_core}
+# set_multicycle_path -hold 9 -from {clk_en_core}
+# set_multicycle_path -setup 10 -from {clk_en_*rtr}
+# set_multicycle_path -hold 9 -from {clk_en_*rtr}
 
 # path from configuration registers are multi_cycle path
 set_multicycle_path -setup 10 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]

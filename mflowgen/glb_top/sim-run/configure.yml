@@ -14,5 +14,5 @@ outputs:
 postconditions:
   - assert File( 'outputs/run.log' )      # must exist
 
-  - assert 'Error,' not in File( 'outputs/run.log' )
+  - assert 'Error' not in File( 'outputs/run.log' )
   - assert '*E,' not in File( 'outputs/run.log' )

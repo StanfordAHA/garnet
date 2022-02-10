@@ -16,8 +16,7 @@ outputs:
 
 postconditions:
   - assert File( 'outputs/run.log' )      # must exist
-  - assert File( 'outputs/run.saif' )     # must exist
 
   # Basic error checking
-  - assert 'Error,' not in File( 'outputs/run.log' )
+  - assert 'Error' not in File( 'outputs/run.log' )
   - assert '*E,' not in File( 'outputs/run.log' )
