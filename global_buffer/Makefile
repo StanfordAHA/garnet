@@ -77,7 +77,6 @@ VCS = vcs \
 	  +vpi \
 	  +memcbk \
 	  +vcsd \
-	  +lint=TFIPC-L \
 	  +vcs+lic+wait \
 	  +vcs+initreg+random \
 	  +overlap \
@@ -117,6 +116,10 @@ ifeq ($(TOOL), XCELIUM)
 else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
+    COMPILE_RTL_ARGS += +lint=TFIPC-L
+    COMPILE_GLS_ARGS += +nbaopt
+    COMPILE_GLS_ARGS += +neg_tchk
+    COMPILE_GLS_ARGS += -negdelay
     RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0
 else
     @echo "TOOL must be either XCELIUM or VCS"
@@ -164,7 +167,6 @@ compile-gls: COMPILE_GLS_ARGS += +define+TSMC_CM_NO_WARNING
 compile-gls: COMPILE_GLS_ARGS += +define+TSMC_CM_UNIT_DELAY
 compile-gls: COMPILE_GLS_ARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS
 compile-gls: COMPILE_GLS_ARGS += +define+TSMC_MEM_LOAD_0
-compile-gls: COMPILE_GLS_ARGS += -negdelay
 compile-gls: COMPILE_ARGS = $(COMPILE_GLS_ARGS)
 compile-gls: INPUT_ARGS = $(HEADER_FILES) $(NETLIST_FILES) $(TB_FILES)
 compile-gls:

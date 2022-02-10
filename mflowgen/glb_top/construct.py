@@ -35,7 +35,7 @@ def construct():
     'flatten_effort' : 3,
     'topographical'  : True,
     # hold target slack
-    'hold_target_slack'   : 0.045,
+    'hold_target_slack'   : 0.04,
     # array_width = width of CGRA below GLB; `pin-assignments.tcl` uses
     # these parms to set up per-cgra-column ports connecting glb tile
     # signals in glb_top to corresponding CGRA tile columns below glb_top
@@ -46,8 +46,10 @@ def construct():
     'use_container' : False,
     'glb_tile_mem_size' : 256,
     'rtl_testvectors' : ["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9"],
-    'gls_testvectors' : ["test1", "test2"],
+    'gls_testvectors' : ["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9"],
     'sdf' : True,
+    'saif' : True,
+    'waveform' : False,
   }
 
   #-----------------------------------------------------------------------
@@ -126,6 +128,8 @@ def construct():
       sim_gl_run.extend_inputs(['simv', 'simv.daidir'])
     elif parameters['tool'] == 'XCELIUM':
       sim_gl_run.extend_inputs(['xcelium.d'])
+    if parameters['saif'] == True:
+      sim_gl_run.extend_postconditions( ["assert File( 'outputs/run.saif' ) "] )
 
 
   # Add header files to outputs
