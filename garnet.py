@@ -273,10 +273,12 @@ class Garnet(Generator):
 
     def load_netlist(self, app, load_only):
         app_dir = os.path.dirname(app)
+
         if self.pe_fc == lassen_fc:
             pe_header = f"./headers/lassen_header.json"
         else:
             pe_header = f"{app_dir}/pe_header.json"
+
         mem_header = f"./headers/mem_header.json"
         io_header = f"./headers/io_header.json"
         bit_io_header = f"./headers/bit_io_header.json"
@@ -291,8 +293,8 @@ class Garnet(Generator):
 
         MEM_fc = gen_MEM_fc()
         Pond_fc = gen_Pond_fc()
-        # Contains an empty nodes
         nodes = gen_CoreIRNodes(16)
+        
         putil.load_and_link_peak(
             nodes,
             pe_header,
@@ -316,24 +318,19 @@ class Garnet(Generator):
             {"global.BitIO": BitIO_fc},
         )  
         
-        #putil.load_and_link_peak(
-        #    nodes,
-        #    pond_header,
-        #    {"global.Pond": (Pond_fc, True)},
-        #) 
-
-
+        putil.load_and_link_peak(
+            nodes,
+            pond_header,
+            {"global.Pond": (Pond_fc, True)},
+        ) 
  
         dag = cutil.coreir_to_dag(nodes, cmod)
-        print("-"*80)
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc, "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
         netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"], netlist_info["buses"]
 
-
-
-    def place_and_route(self, halide_src, target_frequency, unconstrained_io=False, compact=False, load_only=False):
+    def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False):
         id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src, load_only)
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
@@ -341,7 +338,7 @@ class Garnet(Generator):
         else:
             fixed_io = place_io_blk(id_to_name)
         placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
-                                             load_only=load_only, target_freq=target_frequency,
+                                             load_only=load_only, 
                                              cwd=app_dir,
                                              id_to_name=id_to_name,
                                              fixed_pos=fixed_io,
@@ -510,10 +507,12 @@ def main():
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
         
-        placement, routing, id_to_name, instance_to_instr, netlist, bus = garnet.place_and_route(args.app, args.target_frequency, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact, load_only=args.generate_bitstream_only)
+        placement, routing, id_to_name, instance_to_instr, \
+           netlist, bus = garnet.place_and_route(args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact, load_only=args.generate_bitstream_only)
         
         if args.pipeline_pnr:
             return
+
         bitstream, (inputs, outputs, reset, valid, \
             en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr, netlist, bus, compact=args.compact)
 

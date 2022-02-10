@@ -62,7 +62,6 @@ class CreateBuses(Visitor):
         assert node.field in child_bid
         bid = child_bid[node.field]
         self.node_to_bid[node] = bid
-        #print(node.field)
         self.netlist[bid].append((child, node.field))
 
     def visit_RegisterSource(self, node):
@@ -105,13 +104,11 @@ class CreateBuses(Visitor):
     def visit_Output(self, node: Output):
         Visitor.generic_visit(self, node)
         child_bid = self.node_to_bid[node.child]
-        if node.child.field == "stencil_valid":
+        if node.child.type == Bit:
             port = 'f2io_1'
         else:
             port = 'f2io_16'
         self.netlist[child_bid].append((node, port))
-        #for field, bid in child_bid.items():
-        #    self.netlist[bid].append((node, field))
 
 
 class CreateInstrs(Visitor):
@@ -122,16 +119,16 @@ class CreateInstrs(Visitor):
         self.node_to_instr = {}
         self.run(dag)
         for src, sink in zip(dag.non_input_sources, dag.non_output_sinks):
-            self.node_to_instr[src] = self.node_to_instr[sink]
+            self.node_to_instr[src.iname] = self.node_to_instr[sink.iname]
         return self.node_to_instr
 
 
     def visit_Input(self, node):
-        self.node_to_instr[node] = 1
+        self.node_to_instr[node.iname] = 1
 
     def visit_Output(self, node):
         Visitor.generic_visit(self, node)
-        self.node_to_instr[node] = 2
+        self.node_to_instr[node.iname] = 2
 
     def visit_Source(self, node):
         pass
@@ -150,7 +147,7 @@ class CreateInstrs(Visitor):
 
     def visit_RegisterSink(self, node):
         Visitor.generic_visit(self, node)
-        self.node_to_instr[node] = 0 #TODO what is the 'instr' for a register?
+        self.node_to_instr[node.iname] = 0 #TODO what is the 'instr' for a register?
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
@@ -162,7 +159,7 @@ class CreateInstrs(Visitor):
                 break
         
         assert isinstance(instr_child, Constant), f"{node.node_name} {node.iname} {instr_child.node_name}"
-        self.node_to_instr[node] = instr_child.value
+        self.node_to_instr[node.iname] = instr_child.value
 
 class CreateMetaData(Visitor):
     def doit(self, dag):
@@ -173,7 +170,7 @@ class CreateMetaData(Visitor):
     def generic_visit(self, node):
         Visitor.generic_visit(self, node)
         if hasattr(node, "_metadata_"):
-            self.node_to_md[node] = node._metadata_
+            self.node_to_md[node.iname] = node._metadata_
 
 
 class CreateIDs(Visitor):
@@ -185,7 +182,7 @@ class CreateIDs(Visitor):
         self.node_to_id = {}
         self.run(dag)
         for src, sink in zip(dag.non_input_sources, dag.non_output_sinks):
-            self.node_to_id[src] = self.node_to_id[sink]
+            self.node_to_id[src.iname] = self.node_to_id[sink.iname]
         return self.node_to_id
 
     def visit_Source(self, node):
@@ -208,7 +205,7 @@ class CreateIDs(Visitor):
         else:
             id = f"I{self.i}"
         self.i += 1
-        self.node_to_id[node] = id
+        self.node_to_id[node.iname] = id
 
     def visit_Select(self, node):
         Visitor.generic_visit(self, node)
@@ -221,7 +218,7 @@ class CreateIDs(Visitor):
             else:
                 raise NotImplementedError(f"{node}, {node.type}")
             self.i += 1
-            self.node_to_id[child] = id
+            self.node_to_id[child.iname] = id
 
     def visit_Combine(self, node):
         Visitor.generic_visit(self, node)
@@ -240,7 +237,7 @@ class CreateIDs(Visitor):
             id = f"r{self.i}"
         else:
             raise NotImplementedError(f"{node}, {node.type}")
-        self.node_to_id[node] = id
+        self.node_to_id[node.iname] = id
         self.i += 1
 
     def generic_visit(self, node: DagNode):
@@ -248,7 +245,7 @@ class CreateIDs(Visitor):
         if node.node_name not in self.inst_info:
             raise ValueError(f"Need info for {node.node_name}")
         id = f"{self.inst_info[node.node_name]}{self.i}"
-        self.node_to_id[node] = id
+        self.node_to_id[node.iname] = id
         self.i += 1
 
 
@@ -421,6 +418,52 @@ class DagToPdf(Visitor):
 def gen_dag_img(dag, file, info, no_unbound=True):
     DagToPdf(info, no_unbound).doit(dag).render(filename=file)
 
+class DagToPdfSimp(Visitor):
+    def doit(self, dag: Dag):
+        AddID().run(dag)
+        self.plotted_nodes = {"global.PE", "Input", "Output","PipelineRegister", "global.MEMSource", "global.MEMSink", "global.PondSource", "global.PondSink"}
+        self.child_list = []
+        self.graph = Digraph()
+        self.run(dag)
+        return self.graph
+
+    def generic_visit(self, node):
+        Visitor.generic_visit(self, node)
+        def n2s(node):
+            op = node.iname.split("_")[0]
+            return f"{str(node)}_{node._id_}\n{op}"
+
+        def find_child(node):
+            if len(node.children()) == 0:
+                return
+            for child in node.children():
+                if str(child) in self.plotted_nodes:      
+                    self.child_list.append(child)
+                else:
+                    child_f = find_child(child)
+
+        if str(node) in self.plotted_nodes:      
+            find_child(node)
+            for child in self.child_list:
+                self.graph.edge(n2s(child), n2s(node))
+            self.child_list = []
+
+
+def gen_dag_img_simp(dag, file):
+    DagToPdfSimp().doit(dag).render(filename=file)
+
+
+class VerifyUniqueIname(Visitor):
+    def __init__(self):
+        self.inames = {}
+
+    def generic_visit(self, node):
+        Visitor.generic_visit(self, node)
+        if node.iname in self.inames:
+            print(f"{node.iname} for {node} already used by {self.inames[node.iname]}")
+            #raise ValueError(f"{node.iname} for {node} already used by {self.inames[node.iname]}")
+        self.inames[node.iname] = node
+
 
 class PondFlushes(Transformer):
     def __init__(self):
@@ -439,7 +482,7 @@ class PondFlushes(Transformer):
             node.set_children(*children)
         return node
 
-class PipelineBroadcasts(Visitor):
+class PipelineBroadcastHelper(Visitor):
     def __init__(self):
         self.sinks = {}
         pass
@@ -448,31 +491,27 @@ class PipelineBroadcasts(Visitor):
         self.run(dag)
         return self.sinks
 
-    def generic_visit(self, node: DagNode):
-            
+    def generic_visit(self, node: DagNode): 
         for child in node.children():
             if child not in self.sinks:
                 self.sinks[child] = []
             self.sinks[child].append(node)
-        
         Visitor.generic_visit(self, node)
         
 RegisterSource, RegisterSink = Common.create_dag_node("Register", 1, True, static_attrs=dict(input_t = BitVector[16], output_t = BitVector[16]))
 BitRegisterSource, BitRegisterSink = Common.create_dag_node("Register", 1, True, static_attrs=dict(input_t = Bit, output_t = Bit))
 
 
-class RemoveInputsOutputs(Visitor):
+class FixInputsOutputAndPipeline(Visitor):
     def __init__(self, sinks):
         self.sinks = sinks
         self.max_sinks = 0
         for _,sink in sinks.items():
-            if sink[0].node_name == "global.Pond":
-                continue
             self.max_sinks = max(self.max_sinks, len(sink))
 
     def doit(self, dag: Dag):
         self.node_map = {}
-        self.added_regs = 1000
+        self.added_regs = 0
         self.inputs = []
         self.outputs = []
         self.dag_sources = dag.sources
@@ -483,20 +522,18 @@ class RemoveInputsOutputs(Visitor):
         return IODag(inputs=self.inputs, outputs=self.outputs, sources=real_sources, sinks=real_sinks)
 
 
-    def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit, max_sinks, tree_leaves):
-        if not ("PIPELINED" in os.environ and os.environ["PIPELINED"] == "1"): 
-            return
-        if sinks[0].node_name == "global.Pond":
-            return
-
-        num_stages = math.ceil(math.log(max_sinks, 2)) + 1
-        print("creating reg tree for:", new_io_node.node_name, new_io_node.iname, num_stages)
-        levels = [len(sinks)]
+    def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit, tree_leaves):
+        max_tree_level = 16
+        max_curr_tree_level = min(max_tree_level, len(sinks))
+        num_stages = math.ceil(math.log(max_tree_level, 4)) + 1        
+        
+        print("Creating register tree for:", new_io_node.iname, "with", max_curr_tree_level, "sinks and", num_stages, "stages")
+        
+        levels = [max_curr_tree_level]
         while 1 not in levels:
             levels.insert(0, math.ceil(levels[0]/tree_leaves))
 
         sources = []
-
         if bit:
             if num_stages > len(levels):
                 for _ in range(num_stages - len(levels)):
@@ -508,17 +545,16 @@ class RemoveInputsOutputs(Visitor):
             if num_stages > len(levels):
                 for _ in range(num_stages - len(levels)):
                     levels.insert(0, 1)
+
             new_reg_sink = RegisterSink(new_select_node, iname=new_io_node.iname+"$reg"+str(self.added_regs))
-            new_reg_source = RegisterSource(iname=new_io_node.iname+"$reg"+str(self.added_regs))        
+            new_reg_source = RegisterSource(iname=new_io_node.iname+"$reg"+str(self.added_regs))     
+        
         self.added_regs += 1
         self.dag_sources.append(new_reg_source)
         self.dag_sinks.append(new_reg_sink)
         self.node_map[new_reg_source] = new_reg_source
         self.node_map[new_reg_sink] = new_reg_sink
         sources.append(new_reg_source)
-
-        print(levels)
-       
 
         for level in levels[1:]:
             sources_idx = 0
@@ -536,17 +572,19 @@ class RemoveInputsOutputs(Visitor):
                 self.node_map[new_reg_source] = new_reg_source
                 self.node_map[new_reg_sink] = new_reg_sink
                 new_sources.append(new_reg_source)
-               
                 if (idx + 1) % tree_leaves == 0:
                     sources_idx += 1 
-
             sources = new_sources
 
+        source_idx = 0
+        nodes_per_leaf = math.ceil((len(sinks))/max_curr_tree_level)
         for idx, sink in enumerate(sinks):
+            print(idx, source_idx)
             children_temp = list(sink.children())
             reg_index = children_temp.index(old_select_node)
-            children_temp.remove(old_select_node)
-            children_temp.insert(reg_index, sources[idx])
+            children_temp[reg_index] = sources[source_idx]
+            if (idx + 1) % nodes_per_leaf == 0 and (source_idx+1) < len(sources):
+                source_idx += 1 
             sink.set_children(*children_temp)
 
     def visit_Select(self, node: DagNode):
@@ -558,24 +596,39 @@ class RemoveInputsOutputs(Visitor):
             if "io16in" in io_child.iname:
                 new_node = new_children[0].select("io2f_16")
                 if pipeline:
-                    self.create_register_tree(io_child, new_node, node, self.sinks[node], False, self.max_sinks, 2)
+                    self.create_register_tree(io_child, new_node, node, self.sinks[node], False, 4)
             elif "io1in" in io_child.iname:
                 new_node = new_children[0].select("io2f_1")
                 if pipeline:
-                    self.create_register_tree(io_child, new_node, node, self.sinks[node], True, self.max_sinks, 2)
+                    self.create_register_tree(io_child, new_node, node, self.sinks[node], True, 4)
             else:
                 new_node = node.copy()
-                #if len(self.sinks[node]) > 5 and io_child.node_name == "global.MEM":
-                #    self.create_register_tree(io_child, new_node, node, self.sinks[node], False, 0, 6)
-            new_node.set_children(*new_children)
-            self.node_map[node] = new_node
+            
+            if node not in self.node_map:
+                new_node.set_children(*new_children)
+                self.node_map[node] = new_node
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if node.node_name == "global.IO" or node.node_name == "global.BitIO":
             if "write" in node.iname:
                 new_node = Output(type=IO_Output_t, iname=node.iname)
-                new_children = [self.node_map[child] for child in node.children()]
+                new_children = []
+
+                for child in node.children():
+                    if node.node_name == "global.IO":
+                        new_reg_sink = RegisterSink(self.node_map[child], iname=node.iname+"$reg"+str(self.added_regs))
+                        new_reg_source = RegisterSource(iname=node.iname+"$reg"+str(self.added_regs))       
+                    else:
+                        new_reg_sink = BitRegisterSink(self.node_map[child], iname=node.iname+"$reg"+str(self.added_regs))
+                        new_reg_source = BitRegisterSource(iname=node.iname+"$reg"+str(self.added_regs))    
+                    self.dag_sources.append(new_reg_source)
+                    self.dag_sinks.append(new_reg_sink)
+                    self.node_map[new_reg_source] = new_reg_source
+                    self.node_map[new_reg_sink] = new_reg_sink
+                    self.added_regs += 1    
+                    new_children.append(new_reg_source)
+                
                 new_node.set_children(*new_children)
                 self.outputs.append(new_node)
             else:
@@ -587,8 +640,9 @@ class RemoveInputsOutputs(Visitor):
             if not(node.node_name == "Input" or "Input" in [child.node_name for child in node.children()]):
                 new_children = [self.node_map[child] for child in node.children()]
                 new_node = node.copy()
-                new_node.set_children(*new_children)
-                self.node_map[node] = new_node
+                if node not in self.node_map:
+                    new_node.set_children(*new_children)
+                    self.node_map[node] = new_node
 
 
 class CountTiles(Visitor):
@@ -603,8 +657,8 @@ class CountTiles(Visitor):
         self.num_regs = 0
         self.run(dag)
         print(f"PEs: {self.num_pes}")
-        print(f"MEMs: {self.num_mems}")
-        print(f"Ponds: {self.num_ponds}")
+        print(f"MEMs: {int(self.num_mems/2)}")
+        print(f"Ponds: {int(self.num_ponds/2)}")
         print(f"IOs: {self.num_ios}")
         print(f"Regs: {int(self.num_regs/2)}")
 
@@ -621,32 +675,12 @@ class CountTiles(Visitor):
         elif node.node_name == "Register":
             self.num_regs += 1
 
-def separatePondFlush(info):
-    netlist = info['netlist'] 
-    
-    new_conns = [('i0', 'io2f_1')]
-
-    for bid, conns in netlist.items():
-        for conn in conns.copy():
-            if conn[0][0] == "M" and conn[1] == "flush":
-                netlist[bid].remove(conn)
-                new_conns.append(conn)
-
-    netlist['e0'] = new_conns
-    info['buses']['e0'] = 1
-
-
 
 from lassen.sim import PE_fc as lassen_fc
 from metamapper. common_passes import print_dag
 
 def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, id_to_name = None):
-    #gen_dag_img(dag, "dag", None)
-    # Extract IO metadata
-    # Inline IO tiles
-
-    #fdag = FlattenIO().doit(dag)
-    
+        
     if load_only:
         id_to_name_filename = os.path.join(app_dir, f"design.id_to_name")
         if os.path.isfile(id_to_name_filename):
@@ -657,13 +691,9 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, i
             
             for line in lines:
             	id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
-    if 'POND_PIPELINED' in os.environ and os.environ['POND_PIPELINED'] == '1':
-        PondFlushes().run(dag)
-    gen_dag_img(dag, "dag_pond_flush", None)
-    sinks = PipelineBroadcasts().doit(dag)
-    fdag = RemoveInputsOutputs(sinks).doit(dag)
-
-    #gen_dag_img(fdag, "dag_reg_io", None)
+    
+    sinks = PipelineBroadcastHelper().doit(dag)
+    fdag = FixInputsOutputAndPipeline(sinks).doit(dag)
 
     def tile_to_char(t):
         if t.split(".")[1]=="PE":
@@ -682,23 +712,19 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, i
    
     if load_only:
         name_to_id = {name:id_ for id_, name in id_to_name.items()}
-        nodes_to_ids = {node:name_to_id[node.iname] for node,_ in nodes_to_ids.items()}
 
     info = {}
-    info["id_to_name"] = {id: node.iname for node,id in nodes_to_ids.items()}
+    info["id_to_name"] = {id: node for node,id in nodes_to_ids.items()}
 
     node_to_metadata = CreateMetaData().doit(fdag)
     info["id_to_metadata"] = {nodes_to_ids[node]: md for node, md in node_to_metadata.items()}
 
-    #gen_dag_img(fdag, "pre_instr_dag", None, False)
-
     nodes_to_instrs = CreateInstrs(node_info).doit(fdag)
     info["id_to_instrs"] = {id:nodes_to_instrs[node] for node, id in nodes_to_ids.items()}
 
-    info["instance_to_instrs"] = {node.iname:nodes_to_instrs[node] for node, id in nodes_to_ids.items() if ("p" in id or "m" in id)}
+    info["instance_to_instrs"] = {node:nodes_to_instrs[node] for node, id in nodes_to_ids.items() if ("p" in id or "m" in id)}
     for node, md in node_to_metadata.items():
-        info["instance_to_instrs"][node.iname] = md
-
+        info["instance_to_instrs"][node] = md
 
     node_info = {t:fc.Py.input_t for t,fc in tile_info.items()}
     bus_info, netlist = CreateBuses(node_info).doit(fdag)
@@ -708,8 +734,6 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, i
         info["netlist"][bid] = [(nodes_to_ids[node], field.replace("pond_0", "pond")) for node, field in ports]
 
     CountTiles().doit(fdag)  
-    if 'POND_PIPELINED' in os.environ and os.environ['POND_PIPELINED'] == '1':
-        separatePondFlush(info) 
 
     return info
 
