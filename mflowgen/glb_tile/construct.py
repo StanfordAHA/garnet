@@ -71,6 +71,7 @@ def construct():
   custom_power = Step( this_dir + '/../common/custom-power-leaf'  )
   short_fix    = Step( this_dir + '/../common/custom-short-fix'   )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'             )
+  genlib       = Step( this_dir + '/../common/cadence-innovus-genlib' )
   lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db' )
 
 
@@ -90,7 +91,6 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff           = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff        = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlib            = Step( 'cadence-genus-genlib',          default=True )
   if which("calibre") is not None:
       drc               = Step( 'mentor-calibre-drc',            default=True )
       lvs               = Step( 'mentor-calibre-lvs',            default=True )
@@ -189,6 +189,7 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
+  g.connect_by_name( adk,      genlib         )
 
   g.connect_by_name( gen_sram,      synth          )
   g.connect_by_name( gen_sram,      iflow          )
@@ -224,6 +225,7 @@ def construct():
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    signoff        )
+  g.connect_by_name( iflow,    genlib         )
 
   # Fetch short-fix script in prep for eventual use by postroute_hold
   g.connect_by_name( short_fix, postroute_hold )

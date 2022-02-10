@@ -74,6 +74,7 @@ def construct():
   custom_init       = Step( this_dir + '/custom-init'                         )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
+  genlib            = Step( this_dir + '/../common/cadence-innovus-genlib'    )
   lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
 
   # Default steps
@@ -91,7 +92,6 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
-  genlib         = Step( 'cadence-genus-genlib',            default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
@@ -220,7 +220,7 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      synth             )
+  g.connect_by_name( adk,      synth          )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
   g.connect_by_name( adk,      power          )
@@ -233,8 +233,9 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
+  g.connect_by_name( adk,      genlib         )
 
-  g.connect_by_name( glb_tile,      synth           )
+  g.connect_by_name( glb_tile,      synth        )
   g.connect_by_name( glb_tile,      iflow        )
   g.connect_by_name( glb_tile,      init         )
   g.connect_by_name( glb_tile,      power        )
@@ -250,14 +251,14 @@ def construct():
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
 
-  g.connect_by_name( rtl,         sim_compile )
-  g.connect_by_name( sim_compile, sim_run     )
+  g.connect_by_name( rtl,         sim_compile  )
+  g.connect_by_name( sim_compile, sim_run      )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
 
   # glb_tile can use the same rtl as glb_top
-  g.connect_by_name( rtl,         glb_tile      )
+  g.connect_by_name( rtl,         glb_tile     )
 
   g.connect_by_name( synth,       iflow        )
   g.connect_by_name( synth,       init         )
@@ -274,6 +275,7 @@ def construct():
   g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff      )
+  g.connect_by_name( iflow,    genlib       )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
