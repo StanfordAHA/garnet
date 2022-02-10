@@ -11,6 +11,7 @@ NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
 
 TOOL ?= XCELIUM
+SRAM_STUB ?= 0
 export WAVEFORM ?= 0
 export SAIF ?= 0
 
@@ -22,7 +23,7 @@ SDF_LOG ?= sdf_logs
 GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
-RUN_ARGS ?= +test1 +test2 +test3 +test4 +test5
+RUN_ARGS ?= +test1 +test2 +test3 +test4 +test5 +test6
 RUN_ARGS += +MAX_NUM_TEST=10
 RUN_ARGS += +DEBUG
 
@@ -47,7 +48,8 @@ GENERATE_TV = \
     python testvectors/gen_glb_test.py --data testvectors/in2_4096.dat --num 4096 --seed 6; \
     python testvectors/gen_glb_test.py --data testvectors/out_3844.dat --num 3844 --seed 7; \
     python testvectors/gen_glb_test.py --data testvectors/out_4096.dat --num 4096 --seed 8; \
-    python testvectors/gen_glb_test.py --data testvectors/out2_4096.dat --num 4096 --seed 9;
+    python testvectors/gen_glb_test.py --data testvectors/out2_4096.dat --num 4096 --seed 9; \
+    python testvectors/gen_glb_test.py --data testvectors/14400.dat --num 14400 --seed 10;
 
 XRUN = xrun \
 	   -64bit \
@@ -93,10 +95,15 @@ GEN_SDF_CMD = python gls/gen_sdf_cmd.py \
 # RTL
 # -------------------------------------------------------------------
 .PHONY: rtl
+ifneq ($(SRAM_STUB), 0)
+    SRAM_STUB_ARG = --sram_stub
+else
+    SRAM_STUB_ARG =
+endif
 rtl: export GARNET_HOME := $(current_dir)/..
 rtl: export PYTHONPATH = $(GARNET_HOME):$$PYTHONPATH
 rtl: 
-	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE)
+	python global_buffer_main.py -r -v -p --num_cgra_cols=$(CGRA_WIDTH) --num_glb_tiles=$(NUM_GLB_TILES) --glb_tile_mem_size=$(GLB_TILE_MEM_SIZE) $(SRAM_STUB_ARG)
 
 # -------------------------------------------------------------------
 # Compile & Run
