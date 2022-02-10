@@ -530,6 +530,7 @@ class FixInputsOutputAndPipeline(Visitor):
         print("Creating register tree for:", new_io_node.iname, "with", max_curr_tree_level, "sinks and", num_stages, "stages")
         
         levels = [max_curr_tree_level]
+
         while 1 not in levels:
             levels.insert(0, math.ceil(levels[0]/tree_leaves))
 
