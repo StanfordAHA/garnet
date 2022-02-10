@@ -445,7 +445,6 @@ def main():
     parser.add_argument("--virtualize", action="store_true")
     parser.add_argument("--use-io-valid", action="store_true")
     parser.add_argument("--pipeline-pnr", action="store_true")
-    parser.add_argument("--target-frequency", type=int, default=0)
     parser.add_argument("--generate-bitstream-only", action="store_true")
     parser.add_argument('--pe', type=str, default="")
     args = parser.parse_args()
