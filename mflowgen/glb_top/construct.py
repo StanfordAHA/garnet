@@ -27,15 +27,15 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'      : 1.25,
-    'sim_clock_period'  : 1.5,
+    'clock_period'      : 1.5,
+    'sim_clock_period'  : 2.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : True,
     # hold target slack
-    'hold_target_slack'   : 0.04,
+    'hold_target_slack'   : 0.03,
     # array_width = width of CGRA below GLB; `pin-assignments.tcl` uses
     # these parms to set up per-cgra-column ports connecting glb tile
     # signals in glb_top to corresponding CGRA tile columns below glb_top
@@ -49,7 +49,7 @@ def construct():
     'gls_testvectors' : ["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9"],
     'sdf' : True,
     'saif' : True,
-    'waveform' : False,
+    'waveform' : True,
   }
 
   #-----------------------------------------------------------------------

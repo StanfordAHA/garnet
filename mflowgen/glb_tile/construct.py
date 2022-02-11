@@ -47,7 +47,7 @@ def construct():
      # Power Domains
     'PWR_AWARE'         : False,
     # hold target slack
-    'hold_target_slack' : 0.053
+    'hold_target_slack' : 0.03
 
   }
 
