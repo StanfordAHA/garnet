@@ -11,6 +11,7 @@ connect_global_net VSS -type pgpin -pin VSSIO -inst *
 connect_global_net VDD -type pgpin -pin VDDC -inst *
 connect_global_net VDD -type tiehi
 connect_global_net VSS -type pgpin -pin VSSC -inst *
+connect_global_net VSS -type pgpin -pin VSS_CM -inst *
 connect_global_net VSS -type tielo
 connect_global_net VDD -type pgpin -pin VPW -inst *
 connect_global_net VSS -type pgpin -pin VNW -inst *
@@ -30,25 +31,8 @@ floorPlan \
     -dieSizeByIoHeight max \
     -d 4900.0 4900.0 200 200 200 200
 
-# Adding PCORNER cells here, io_file will take
-# care of orientation and location
-create_inst -inst corner_lr -cell IN12LP_GPIO18_13M9S30P_CORNER
-create_inst -inst corner_ll -cell IN12LP_GPIO18_13M9S30P_CORNER
-create_inst -inst corner_ur -cell IN12LP_GPIO18_13M9S30P_CORNER
-create_inst -inst corner_ul -cell IN12LP_GPIO18_13M9S30P_CORNER
-
 # read_io_file inputs/io_file -no_die_size_adjust 
 loadIoFile inputs/io_file -noAdjustDieSize
-
-# Disconnect IO-pad RTE pins
-foreach x \
-    [get_property \
-         [get_cells -filter "ref_name=~*_IO_* || ref_name=~*_VDDC_* || ref_name=~*_VSSC_* || ref_name=~*_VDDIO_* || ref_name=~*_VSSIO_* || ref_name=~*FILL* || ref_name=~*CORNER*" ] \
-         full_name \
-        ] \
-    {
-        detachTerm $x RETC
-    }
 
 # snap_floorplan_io - Snaps I/O cells to a user-defined grid
 
