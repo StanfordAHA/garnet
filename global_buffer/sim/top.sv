@@ -5,13 +5,17 @@
 ** Author: Taeyoung Kong
 ** Change history:  05/22/2021 - Implement first version of testbench
 **===========================================================================*/
-`define CLK_PERIOD 1000ps
+`define TIMEUNIT 100ps
+`define TIMEPRECISION 1ps
+
+`define CLK_PERIOD 15
+`define CLK_SRC_LATENCY -6
 
 import global_buffer_param::*;
 
 module top;
-    timeunit 100ps;
-    timeprecision 1ps;
+    timeunit `TIMEUNIT;
+    timeprecision `TIMEPRECISION;
 
 `ifdef PWR
     supply1 VDD;
@@ -133,7 +137,7 @@ module top;
     end
     
     always #(`CLK_PERIOD / 2.0) clk = !clk;
-    always #(`CLK_PERIOD / 2.0) dut_clk = #(`CLK_PERIOD - 0.68) clk;
+    always @ (*) dut_clk <= #(`CLK_PERIOD + `CLK_SRC_LATENCY) clk;
 
     // instantiate test
     glb_test test (

@@ -5,11 +5,20 @@ current_dir := $(abspath $(dir $(mkfile_path)))
 # -------------------------------------------------------------------
 # Parameters
 # -------------------------------------------------------------------
-CLK_PERIOD ?= 1250ps
+# time control
+CLK_PERIOD ?= 1500ps
+CLK_SRC_LATENCY ?= -600ps
+TIMEUNIT ?= 100ps
+TIMEPRECISION ?= 1ps
+CLK_PERIOD_TIMEUNIT = $(shell expr $(shell echo $(CLK_PERIOD) | rev | cut -c 3- | rev) / $(shell echo $(TIMEUNIT) | rev | cut -c 3- | rev) )
+CLK_SRC_LATENCY_TIMEUNIT = $(shell expr $(shell echo $(CLK_SRC_LATENCY) | rev | cut -c 3- | rev) / $(shell echo $(TIMEUNIT) | rev | cut -c 3- | rev) )
+
+# architecture
 CGRA_WIDTH ?= 32
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
 
+# tool chain
 TOOL ?= VCS
 SRAM_STUB ?= 0
 export WAVEFORM ?= 0
@@ -23,12 +32,13 @@ SDF_LOG ?= sdf_logs
 GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
+# runtime
 RUN_ARGS ?= +test1 +test2 +test3 +test4 +test5 +test6 +test7 +test8 +test9
 RUN_ARGS += +MAX_NUM_TEST=9
 RUN_ARGS += +DEBUG
-
 RUN_LOG ?= run.log
 
+# design files
 HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
 #FIXME: pm cells should be removed!
@@ -105,8 +115,8 @@ rtl:
 # -------------------------------------------------------------------
 # Compile & Run
 # -------------------------------------------------------------------
-COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
-COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
+COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=$(CLK_SRC_LATENCY_TIMEUNIT) 
+COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=$(CLK_SRC_LATENCY_TIMEUNIT) 
 ifeq ($(TOOL), XCELIUM)
     COMPILE = $(XRUN)
     COMPILE_RTL_ARGS += -xminitialize 0 -xminit_log init.log -nospecify
