@@ -8,7 +8,7 @@
 setNanoRouteMode -routeInsertAntennaDiode true
 
 # set_db route_design_antenna_cell_name ANTENNABWP16P90 
-setNanoRouteMode -routeAntennaCellName ANTENNABWP16P90 
+setNanoRouteMode -routeAntennaCellName $ADK_ANTENNA_CELL
 
 # set_db route_design_fix_top_layer_antenna true
 # FIXME CANNOT FIND COMMON UI EQUIVALENT FOR THIS
