@@ -265,8 +265,9 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
 
-  # Fetch short-fix script in prep for eventual use by postroute
+  # Fetch short-fix script in prep for eventual use by route,postroute
   g.connect_by_name( short_fix, postroute )
+  g.connect_by_name( short_fix, route )
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
@@ -417,6 +418,7 @@ def construct():
       # route node
       order = route.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
+      order.insert( 0, 'fix-lowmetal-shorts.tcl') # Want this *first*; is this how?
       order.append('check-clamp-logic-structure.tcl')
       route.update_params( { 'order': order } )
 
