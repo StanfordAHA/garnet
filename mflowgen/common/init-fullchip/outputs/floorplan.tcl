@@ -6,7 +6,7 @@
 # Run this in floorplanning step to make io filler addition step happy
 # (see add-io-fillers.tcl). Will be re-run in power step
 delete_global_net_connections
-connect_global_net VDDIO -type pgpin -pin VDDIO -inst *
+connect_global_net VDDPST -type pgpin -pin VDDIO -inst *
 connect_global_net VSS -type pgpin -pin VSSIO -inst * 
 connect_global_net VDD -type pgpin -pin VDDC -inst *
 connect_global_net VDD -type tiehi
