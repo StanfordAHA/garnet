@@ -207,10 +207,10 @@ proc gen_bumps { bumpCell } {
     deselect_bumps
 
     # voltage labels to prevent DRCs
-    #foreach bump_center [dbGet top.bumps.bump_shape_center] {
-    #  add_gui_text -label 0 -pt $bump_center -layer CUSTOM_AP_test4 -height 1
-    #  add_gui_text -label 0.8 -pt $bump_center -layer CUSTOM_AP_test3 -height 1
-    #}
+    foreach bump_center [dbGet top.bumps.bump_shape_center] {
+      add_gui_text -label 0 -pt $bump_center -layer CUSTOM_LB_test4 -height 1
+      add_gui_text -label 0.8 -pt $bump_center -layer CUSTOM_LB_test3 -height 1
+    }
 
     gui_show_bump_connections
 }
