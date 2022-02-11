@@ -22,7 +22,7 @@ module top;
     // GLB signals
     // ---------------------------------------
     logic clk;
-    logic mclk;
+    logic dut_clk;
     logic [NUM_GLB_TILES-1:0] core_stall;
     logic [NUM_GLB_TILES-1:0] rtr_stall;
     logic [NUM_GLB_TILES-1:0] pcfg_stall;
@@ -111,24 +111,11 @@ module top;
     logic [NUM_PRR-1:0] c2g_io1;
     logic [NUM_PRR-1:0][15:0] c2g_io16;
 
-
     // max cycle set
     initial begin
         repeat (10000000) @(posedge clk);
         $display("\n%0t\tERROR: The 10000000 cycles marker has passed!", $time);
         $finish(2);
-    end
-
-    // clk generation
-    initial begin
-        #6.8 clk = 0;
-        forever #(`CLK_PERIOD / 2.0) clk = !clk;
-    end
-
-    // master clk generation
-    initial begin
-        mclk = 0;
-        forever #(`CLK_PERIOD / 2.0) mclk = !mclk;
     end
 
     // reset generation
@@ -140,8 +127,13 @@ module top;
     endtask
 
     initial begin
+        clk = 0;
+        dut_clk = 0;
         assert_reset();
     end
+    
+    always #(`CLK_PERIOD / 2.0) clk = !clk;
+    always #(`CLK_PERIOD / 2.0) dut_clk = #(`CLK_PERIOD - 0.68) clk;
 
     // instantiate test
     glb_test test (
@@ -181,7 +173,7 @@ module top;
 
     // instantiate dut
     global_buffer dut (
-        .clk                      (mclk),
+        .clk                      (dut_clk),
         // proc ifc
         .proc_wr_en               (proc_wr_en),
         .proc_wr_strb             (proc_wr_strb),

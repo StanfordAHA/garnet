@@ -116,8 +116,8 @@ ifeq ($(TOOL), XCELIUM)
 else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
+    COMPILE_RTL_ARGS += +nbaopt
     COMPILE_RTL_ARGS += +lint=TFIPC-L
-    COMPILE_GLS_ARGS += +nbaopt
     COMPILE_GLS_ARGS += +neg_tchk
     COMPILE_GLS_ARGS += -negdelay
     RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0
