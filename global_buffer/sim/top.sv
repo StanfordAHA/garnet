@@ -10,6 +10,8 @@
 import global_buffer_param::*;
 
 module top;
+    timeunit 100ps;
+    timeprecision 1ps;
 
 `ifdef PWR
     supply1 VDD;
@@ -20,6 +22,7 @@ module top;
     // GLB signals
     // ---------------------------------------
     logic clk;
+    logic mclk;
     logic [NUM_GLB_TILES-1:0] core_stall;
     logic [NUM_GLB_TILES-1:0] rtr_stall;
     logic [NUM_GLB_TILES-1:0] pcfg_stall;
@@ -118,8 +121,14 @@ module top;
 
     // clk generation
     initial begin
-        #0.5ns clk = 0;
+        #6.8 clk = 0;
         forever #(`CLK_PERIOD / 2.0) clk = !clk;
+    end
+
+    // master clk generation
+    initial begin
+        mclk = 0;
+        forever #(`CLK_PERIOD / 2.0) mclk = !mclk;
     end
 
     // reset generation
@@ -172,6 +181,7 @@ module top;
 
     // instantiate dut
     global_buffer dut (
+        .clk                      (mclk),
         // proc ifc
         .proc_wr_en               (proc_wr_en),
         .proc_wr_strb             (proc_wr_strb),
@@ -201,6 +211,11 @@ module top;
         .if_sram_cfg_rd_addr      (if_sram_cfg_rd_addr),
         .if_sram_cfg_rd_data      (if_sram_cfg_rd_data),
         .if_sram_cfg_rd_data_valid(if_sram_cfg_rd_data_valid),
+
+        // cgra-glb
+        .strm_data_valid_f2g      (strm_data_valid_f2g),
+        .strm_data_f2g            (strm_data_f2g),
+
 `ifdef PWR
         .VDD                      (VDD),
         .VSS                      (VSS),
@@ -245,11 +260,15 @@ module top;
         for (int i = 0; i < NUM_PRR; i++) begin
             g2c_io1[i] = strm_data_valid_g2f[i][0];
             g2c_io16[i] = strm_data_g2f[i][0];
+        end
+    end
 
-            strm_data_valid_f2g[i][0] = 0;
-            strm_data_valid_f2g[i][1] = c2g_io1[i];
-            strm_data_f2g[i][0] = 0;
-            strm_data_f2g[i][1] = c2g_io16[i];
+    always @ (*) begin
+        for (int i = 0; i < NUM_PRR; i++) begin
+            strm_data_valid_f2g[i][0] <= #4 0;
+            strm_data_valid_f2g[i][1] <= #4 c2g_io1[i];
+            strm_data_f2g[i][0] <= #4 0;
+            strm_data_f2g[i][1] <= #4 c2g_io16[i];
         end
     end
 
