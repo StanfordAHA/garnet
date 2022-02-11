@@ -419,8 +419,8 @@ def construct():
       # route node
       order = route.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
-      order.insert( 0, 'fix-lowmetal-shorts.tcl') # Want this *first*; is this how?
       order.append('check-clamp-logic-structure.tcl')
+      order.append('fix-lowmetal-shorts.tcl') # ...or maybe it should be at the end?
       route.update_params( { 'order': order } )
 
       # postroute node
