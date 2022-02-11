@@ -169,7 +169,8 @@ def construct():
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
   
-  # Add short_fix script(s) to list of available postroute scripts
+  # Add short_fix script(s) to list of available route and postroute scripts
+  route.extend_inputs( short_fix.all_outputs() )
   postroute.extend_inputs( short_fix.all_outputs() )
 
   #-----------------------------------------------------------------------
