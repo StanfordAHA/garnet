@@ -1,8 +1,8 @@
 typedef enum int {
-    WR  = 0,
-    RD  = 1,
-    G2F = 2,
-    F2G = 3,
+    WR   = 0,
+    RD   = 1,
+    G2F  = 2,
+    F2G  = 3,
     PCFG = 4,
     SRAM = 5
 } stream_type;
@@ -102,7 +102,7 @@ function Test::new(string filename);
         for (int j = 0; j < dim; j++) begin
             kernels[i].new_extent[j] = kernels[i].extent[j] - 2;
             kernels[i].new_cycle_stride[j] = kernels[i].cycle_stride[j];
-            kernels[i].new_data_stride[j]  = kernels[i].data_stride[j];
+            kernels[i].new_data_stride[j] = kernels[i].data_stride[j];
             for (int k = 0; k < j; k++) begin
                 kernels[i].new_cycle_stride[j] -= kernels[i].cycle_stride[k] * (kernels[i].extent[k] - 1);
                 kernels[i].new_data_stride[j]  -= kernels[i].data_stride[k] * (kernels[i].extent[k] - 1);
@@ -129,7 +129,7 @@ function Test::new(string filename);
 
     // Calculate stall
     core_stall_mask = {NUM_GLB_TILES{1'b1}};
-    rtr_stall_mask = {NUM_GLB_TILES{1'b1}};
+    rtr_stall_mask  = {NUM_GLB_TILES{1'b1}};
     pcfg_stall_mask = {NUM_GLB_TILES{1'b1}};
     for (int i = 0; i < num_kernels; i++) begin
         // For SRAM configuration test, we can still stall tiles
@@ -145,8 +145,8 @@ function Test::new(string filename);
     end
     for (int i = 0; i < NUM_GLB_TILES; i++) begin
         if (data_network_mask[i] == 1'b1) begin
-            rtr_stall_mask[i] = 1'b0;
-            rtr_stall_mask[i + 1] = 1'b0;
+            rtr_stall_mask[i]   = 1'b0;
+            rtr_stall_mask[i+1] = 1'b0;
         end
     end
 
@@ -180,7 +180,9 @@ function Test::new(string filename);
             data_stride_s = {data_stride_s, " ", tmp_s};
             new_data_stride_s = {new_data_stride_s, " ", new_tmp_s};
         end
-        $display("[BEFORE] Extent: [%s], cycle_stride: [%s], data_stride: [%s]", extent_s, cycle_stride_s, data_stride_s);
-        $display("[AFTER] Extent: [%s], cycle_stride: [%s], data_stride: [%s]", new_extent_s, new_cycle_stride_s, new_data_stride_s);
+        $display("[BEFORE] Extent: [%s], cycle_stride: [%s], data_stride: [%s]", extent_s,
+                 cycle_stride_s, data_stride_s);
+        $display("[AFTER] Extent: [%s], cycle_stride: [%s], data_stride: [%s]", new_extent_s,
+                 new_cycle_stride_s, new_data_stride_s);
     end
 endfunction

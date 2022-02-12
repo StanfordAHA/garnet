@@ -67,8 +67,7 @@ program glb_test (
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data
 );
-    timeunit 100ps;
-    timeprecision 1ps;
+    timeunit 100ps; timeprecision 1ps;
 
     const int MAX_NUM_ERRORS = 20;
     int test_toggle = 0;
@@ -187,27 +186,28 @@ program glb_test (
                 // Note: Again, we cannot call function to write data to memory, we have to run task 
                 // to write data to memory. Use partial wrtie function to do that.
                 #2
-                while (1) begin
-                    i_addr = kernels[i].start_addr;
-                    for (int j = 0; j < kernels[i].dim; j++) begin
-                        i_addr += kernels[i].data_stride[j] * i_extent[j] * 2; // Convert 16bit-word address to byte address
-                    end
-                    // Update internal counter
-                    for (int j = 0; j < kernels[i].dim; j++) begin
-                        i_extent[j] += 1;
-                        if (i_extent[j] == kernels[i].extent[j]) begin
-                            i_extent[j] = 0;
-                            if (j == kernels[i].dim - 1) done = 1;
-                        end else begin
-                            break;
+                    while (1) begin
+                        i_addr = kernels[i].start_addr;
+                        for (int j = 0; j < kernels[i].dim; j++) begin
+                            i_addr += kernels[i].data_stride[j] * i_extent[j] * 2; // Convert 16bit-word address to byte address
                         end
+                        // Update internal counter
+                        for (int j = 0; j < kernels[i].dim; j++) begin
+                            i_extent[j] += 1;
+                            if (i_extent[j] == kernels[i].extent[j]) begin
+                                i_extent[j] = 0;
+                                if (j == kernels[i].dim - 1) done = 1;
+                            end else begin
+                                break;
+                            end
+                        end
+                        proc_write_partial(i_addr,
+                                           kernels[i].mem[(i_addr-kernels[i].start_addr)/2]);
+                        kernels[i].data_arr[
+                        data_cnt++
+                        ] = kernels[i].mem[(i_addr-kernels[i].start_addr)/2];
+                        if (done == 1) break;
                     end
-                    proc_write_partial(i_addr, kernels[i].mem[(i_addr-kernels[i].start_addr)/2]);
-                    kernels[i].data_arr[
-                    data_cnt++
-                    ] = kernels[i].mem[(i_addr-kernels[i].start_addr)/2];
-                    if (done == 1) break;
-                end
                 // Configure LD DMA
                 g2f_dma_configure(kernels[i].tile_id, 1, kernels[i].start_addr,
                                   kernels[i].cycle_start_addr, kernels[i].dim,
@@ -390,9 +390,8 @@ program glb_test (
     task glb_stall(logic [NUM_GLB_TILES-1:0] core_tile_mask,
                    logic [NUM_GLB_TILES-1:0] rtr_tile_mask,
                    logic [NUM_GLB_TILES-1:0] pcfg_tile_mask);
-        
-        #2
-        $display("Glb tiles CORE logics are stalled with mask %16b", core_tile_mask);
+
+        #2 $display("Glb tiles CORE logics are stalled with mask %16b", core_tile_mask);
         core_stall <= core_tile_mask;
         $display("Glb tiles ROUTER logics are stalled with mask %16b", rtr_tile_mask);
         rtr_stall <= rtr_tile_mask;
@@ -655,11 +654,10 @@ program glb_test (
         repeat (5) @(posedge clk);
         $display("Start glb-mem burst write. addr: 0x%0h, size %0d", addr, size);
         #2
-        foreach (data[i]) begin
-            proc_write(addr + 8 * i, data[i]);
-        end
-        #2 
-        proc_wr_en <= 0;
+            foreach (data[i]) begin
+                proc_write(addr + 8 * i, data[i]);
+            end
+        #2 proc_wr_en <= 0;
         proc_wr_strb <= 0;
         $display("Finish glb-mem burst write");
         repeat (5) @(posedge clk);

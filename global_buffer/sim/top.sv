@@ -7,7 +7,6 @@
 **===========================================================================*/
 `define TIMEUNIT 100ps
 `define TIMEPRECISION 1ps
-
 `define CLK_PERIOD 15
 `define CLK_SRC_LATENCY -6
 
