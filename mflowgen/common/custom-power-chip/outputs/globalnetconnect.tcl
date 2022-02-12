@@ -3,8 +3,8 @@ globalNetConnect VDD -type pgpin -pin VDD -inst *
 globalNetConnect VDD -type tiehi
 globalNetConnect VSS -type pgpin -pin VSS -inst *
 globalNetConnect VSS -type tielo
-globalNetConnect VDD -type pgpin -pin VPW -inst *
-globalNetConnect VSS -type pgpin -pin VNW -inst *
+globalNetConnect VSS -type pgpin -pin VPW -inst *
+globalNetConnect VDD -type pgpin -pin VNW -inst *
 
 # I/O pads
 globalNetConnect VDDPST -type pgpin -pin VDDIO -inst *
