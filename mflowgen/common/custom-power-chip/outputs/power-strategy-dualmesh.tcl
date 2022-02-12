@@ -14,7 +14,7 @@
 # M1 power stripes.
 # Generating manually instead of using sroute because it's faster.
 #-------------------------------------------------------------------------
-set M1_min_width [dbGet [dbGetLayerByZ].minWidth]
+set M1_min_width [dbGet [dbGetLayerByZ 1].minWidth]
 # This is the width sroute uses
 set M1_width [expr 2 * $M1_min_width]
                                                           
