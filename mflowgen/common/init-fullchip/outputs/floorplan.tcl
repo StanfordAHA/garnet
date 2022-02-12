@@ -13,8 +13,8 @@ connect_global_net VDD -type tiehi
 connect_global_net VSS -type pgpin -pin VSSC -inst *
 connect_global_net VSS -type pgpin -pin VSS_CM -inst *
 connect_global_net VSS -type tielo
-connect_global_net VDD -type pgpin -pin VPW -inst *
-connect_global_net VSS -type pgpin -pin VNW -inst *
+connect_global_net VSS -type pgpin -pin VPW -inst *
+connect_global_net VDD -type pgpin -pin VNW -inst *
 
 
 
