@@ -11,9 +11,12 @@
 # Date   : March 26, 2020
 
 #-------------------------------------------------------------------------
-# M1 power stripes
+# M1 power stripes.
+# Generating manually instead of using sroute because it's faster.
 #-------------------------------------------------------------------------
-set M1_width 0.09
+set M1_min_width [dbGet [dbGetLayerByZ].minWidth]
+# This is the width sroute uses
+set M1_width [expr 2 * $M1_min_width]
                                                           
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
@@ -34,7 +37,7 @@ addStripe \
   -spacing [expr [dbGet top.fPlan.coreSite.size_y] - $M1_width]   \
   -set_to_set_distance [expr 2 * [dbGet top.fPlan.coreSite.size_y]]   \
   -direction horizontal   \
-  -layer M1   \
+  -layer 1   \
   -width $M1_width \
   -nets {VDD VSS}
 
@@ -141,14 +144,14 @@ setViaGenMode -viarule_preference default
 setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
-setAddStripeMode -stacked_via_bottom_layer M4 \
-                 -stacked_via_top_layer    M5 \
+setAddStripeMode -stacked_via_bottom_layer 4 \
+                 -stacked_via_top_layer    5 \
                  -ignore_DRC false
 
 set srams [get_cells -quiet -hier -filter {is_memory_cell==true}]
 foreach_in_collection block $srams {
     selectInst $block
-    addStripe -nets {VSS VDD} -layer M5 -direction vertical \
+    addStripe -nets {VSS VDD} -layer 5 -direction vertical \
         -width $M5_str_width                                \
         -spacing $M5_str_intraset_spacing                   \
         -set_to_set_distance $M5_str_interset_pitch         \
@@ -247,7 +250,7 @@ setViaGenMode -ignore_DRC true
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer $pmesh_top \
-                 -stacked_via_top_layer    AP \
+                 -stacked_via_top_layer    LB \
                  -ignore_DRC true
 
 addStripe -nets {VDD VSS} \
