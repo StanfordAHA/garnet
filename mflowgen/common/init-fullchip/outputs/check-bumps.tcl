@@ -76,7 +76,7 @@ proc report_unconnected_bumps_phy { bumpnet bumplist } {
         # Get all wires that cross bump $b
         set bbox     [dbGet [dbGet -p top.bumps.name $b].bump_shape_bbox]
         set wires    [dbQuery -area $bbox -objType sWire]
-        set ap_wires [dbGet -p2 $wires.layer.name AP]
+        set ap_wires [dbGet -p2 $wires.layer.name LB]
         set nets     [dbGet $ap_wires.net.name]
 
         # Bump is connected if one or more wires belong to required net
@@ -212,7 +212,7 @@ proc get_all_rdl_wire_endpoints {} {
     # so must save/restore whatever is currently selected :(
     set save_selections [ get_db selected ]; deselect_obj -all
 
-        select_routes -layer AP
+        select_routes -layer LB
         set endpoints [ get_db selected .path ]
 
     deselect_obj -all; select_obj $save_selections
