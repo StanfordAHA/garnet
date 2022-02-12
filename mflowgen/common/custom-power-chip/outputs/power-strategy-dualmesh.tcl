@@ -258,7 +258,7 @@ setAddStripeMode -stacked_via_bottom_layer $pmesh_top \
 
 addStripe -nets {VDD VSS} \
   -over_bumps 1 \
-  -layer AP -direction horizontal \
+  -layer LB -direction horizontal \
   -width 30.0 -spacing 20.0 -number_of_sets 1 \
   -start_from left \
   -area {1050.0 1050.0 3850.0 3850.0}
