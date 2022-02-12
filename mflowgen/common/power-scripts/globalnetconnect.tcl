@@ -14,6 +14,6 @@ globalNetConnect VDD -type pgpin -pin VDD -inst *
 globalNetConnect VDD -type tiehi
 globalNetConnect VSS -type pgpin -pin VSS -inst *
 globalNetConnect VSS -type tielo
-globalNetConnect VDD -type pgpin -pin VPP -inst *
-globalNetConnect VSS -type pgpin -pin VBB -inst *
+globalNetConnect VDD -type pgpin -pin VPW -inst *
+globalNetConnect VSS -type pgpin -pin VNW -inst *
 
