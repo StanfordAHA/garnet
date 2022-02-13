@@ -44,6 +44,7 @@ proc fix_register_shorts {} {
         deselectAll
         set badregs [dbGet $regs]
         select_obj $badregs
+        select_stripes_near_markers { 0.232 }
         echo sleep 5; redraw; sleep 5
     }
     
