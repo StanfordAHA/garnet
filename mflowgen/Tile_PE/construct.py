@@ -420,7 +420,7 @@ def construct():
       order = route.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
-      order.append('fix-lowmetal-shorts.tcl') # ...or maybe it should be at the end?
+      order.append('fix-register-shorts.tcl') # Fix shorts in regs SDF*
       route.update_params( { 'order': order } )
 
       # postroute node

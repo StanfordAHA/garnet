@@ -10,4 +10,4 @@ name: custom-short-fix
 
 outputs:
   - fix-shorts.tcl
-  - fix-lowmetal-shorts.tcl
+  - fix-register-shorts.tcl
