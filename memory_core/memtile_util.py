@@ -356,6 +356,7 @@ class NetlistBuilder():
         self._config_finalized = False
         self._circuit = None
         self._core_names = {}
+        self._core_used = {}
 
     def register_core(self, core, flushable=False, config=None, name=""):
         ''' Register the core/primitive with the
@@ -400,6 +401,8 @@ class NetlistBuilder():
             tag = "R"
         elif core == "lookup":
             tag = "L"
+        elif core == "write_scanner":
+            tag = "w"
         else:
             tag = core.pnr_info().tag_name
 
@@ -409,7 +412,7 @@ class NetlistBuilder():
         self._cores.append(ret_str)
         self._core_num += 1
         self._core_names[ret_str] = name
-
+        self._core_used[ret_str] = 0
         if config is not None:
             self._core_config[ret_str] = (config, 0)
         return ret_str
@@ -433,6 +436,9 @@ class NetlistBuilder():
     def add_connection(self, connection, width):
         conn_name = f"e{self._connection_num}"
         self._connection_num += 1
+        # Dissect the connection to check if a core is used
+        for (core, io_name) in connection:
+            self._core_used[core] = 1
         self._netlist[conn_name] = connection
         self._bus[conn_name] = width
         self._placement_up_to_date = False
@@ -490,7 +496,11 @@ class NetlistBuilder():
 
     def get_handle(self, core, prefix="glb2io_1_X"):
         self.get_placement()
-        core_x, core_y = self._placement[core]
+        if core in self._placement:
+            core_x, core_y = self._placement[core]
+        else:
+            print(f"Core {core} not in placement...can't get handle...")
+            raise RuntimeError
         return self._circuit.interface[f"{prefix}X{core_x:02X}_Y{core_y:02X}"]
 
     def get_handle_str(self, base_sig):
@@ -537,6 +547,9 @@ class NetlistBuilder():
     def finalize_config(self):
         skip_addr = self._interconnect.get_skip_addr()
         self._config_data = compress_config_data(self._config_data, skip_compression=skip_addr)
+        for core, used in self._core_used.items():
+            if used == 0:
+                print(f"Core {core} is not being used...any accesses to its handle will cause a crash...")
         self._config_finalized = True
 
     def get_tester(self):
