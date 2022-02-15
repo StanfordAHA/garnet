@@ -6,6 +6,7 @@ from memory_core.fake_pe_core import FakePECore
 from memory_core.lookup_core import LookupCore
 from peak_core.peak_core import PeakCore
 from memory_core.intersect_core import IntersectCore
+from memory_core.write_scanner_core import WriteScannerCore
 from gemstone.common.util import compress_config_data
 from memory_core.scanner_core import ScannerCore
 from memory_core.reg_core import RegCore
@@ -3431,9 +3432,9 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
 def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # Streams and code to create them and align them
     num_cycles = 250
-    chip_size = 10
+    chip_size = 12
     num_tracks = 5
-    altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore]
+    altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore, WriteScannerCore]
 
     interconnect = create_cgra(width=chip_size, height=chip_size,
                                io_sides=NetlistBuilder.io_sides(),
@@ -3460,6 +3461,13 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     mem_brows = nlb.register_core("memtile", flushable=True, name="mem_brows")
     mem_bvals = nlb.register_core("memtile", flushable=True, name="mem_bvals")
     mem_bvals_lu = nlb.register_core("lookup", flushable=True, name="mem_bvals_lu")
+
+    wscan_root = nlb.register_core("write_scanner", flushable=True, name="wscan_root")
+    wscan_rows = nlb.register_core("write_scanner", flushable=True, name="wscan_rows")
+    wscan_vals = nlb.register_core("write_scanner", flushable=True, name="wscan_vals")
+    mem_xroot = nlb.register_core("memtile", flushable=True, name="mem_xroot")
+    mem_xrows = nlb.register_core("memtile", flushable=True, name="mem_xrows")
+    mem_xvals = nlb.register_core("memtile", flushable=True, name="mem_xvals")
 
     # Intersect the two...
     # isect_row = nlb.register_core("intersect", flushable=True, name="isect_row")
@@ -3489,9 +3497,24 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     conn_dict = {
         # Set up streaming out matrix from scan_mrows
 
+        'upper_coords_to_wscan': [
+            # Row Coord
+            ([(wscan_root, "ready_out_0"), (scan_aroot, "ready_in_0")], 1),
+            ([(scan_aroot, "valid_out_0"), (wscan_root, "valid_in_0")], 1),
+            ([(scan_aroot, "eos_out_0"), (wscan_root, "eos_in_0")], 1),
+            ([(scan_aroot, "coord_out"), (wscan_root, "data_in_0")], 16),
+            # Col coord
+            ([(wscan_rows, "ready_out_0"), (scan_broot, "ready_in_0")], 1),
+            ([(scan_broot, "valid_out_0"), (wscan_rows, "valid_in_0")], 1),
+            ([(scan_broot, "eos_out_0"), (wscan_rows, "eos_in_0")], 1),
+            ([(scan_broot, "coord_out"), (wscan_rows, "data_in_0")], 16),
+            # Values
+            # ([(wscan_vals, "ready_out_0"), (scan_aroot, "ready_in_0")], 1),
+
+        ],
+
         'bulk_ready_1_unused': [
-            ([(ready_in_bulk, "io2f_1"), (scan_aroot, "ready_in_0"), 
-              (scan_broot, "ready_in_0"), (scan_arows, "ready_in_1"),
+            ([(ready_in_bulk, "io2f_1"), (scan_arows, "ready_in_1"),
               (scan_brows, "ready_in_1"), (isect_col, "ready_in_0")], 1)
         ],
 
@@ -3599,10 +3622,28 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         ],
 
         'accum_reg_to_io': [
-            ([(accum_reg, "data_out"), (accum_data_out, "f2io_16")], 16),
-            ([(accum_reg, "valid_out"), (accum_valid_out, "f2io_1")], 1),
-            ([(accum_reg, "eos_out"), (accum_eos_out, "f2io_1")], 1),
-            ([(ready_in, "io2f_1"), (accum_reg, "ready_in")], 1),
+            ([(accum_reg, "data_out"), (accum_data_out, "f2io_16"), (wscan_vals, "data_in_0")], 16),
+            ([(accum_reg, "valid_out"), (accum_valid_out, "f2io_1"), (wscan_vals, "valid_in_0")], 1),
+            ([(accum_reg, "eos_out"), (accum_eos_out, "f2io_1"), (wscan_vals, "eos_in_0")], 1),
+            # ([(ready_in, "io2f_1"), (accum_reg, "ready_in")], 1),
+            ([(wscan_vals, "ready_out_0"), (accum_reg, "ready_in")], 1),
+        ],
+
+        'wscan_to_mems': [
+            ([(wscan_root, "data_out"), (mem_xroot, "data_in_0")], 16),
+            ([(wscan_root, "addr_out"), (mem_xroot, "addr_in_0")], 16),
+            ([(wscan_root, "wen"), (mem_xroot, "wen_in_0")], 1),
+            ([(mem_xroot, "sram_ready_out"), (wscan_root, "ready_in")], 1),
+
+            ([(wscan_rows, "data_out"), (mem_xrows, "data_in_0")], 16),
+            ([(wscan_rows, "addr_out"), (mem_xrows, "addr_in_0")], 16),
+            ([(wscan_rows, "wen"), (mem_xrows, "wen_in_0")], 1),
+            ([(mem_xrows, "sram_ready_out"), (wscan_rows, "ready_in")], 1),
+
+            ([(wscan_vals, "data_out"), (mem_xvals, "data_in_0")], 16),
+            ([(wscan_vals, "addr_out"), (mem_xvals, "addr_in_0")], 16),
+            ([(wscan_vals, "wen"), (mem_xvals, "wen_in_0")], 1),
+            ([(mem_xvals, "sram_ready_out"), (wscan_vals, "ready_in")], 1),
         ]
     }
 
@@ -3649,7 +3690,15 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
     nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
     nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}], "mode": 2})
+    # Configure in WOM
+    nlb.configure_tile(mem_xroot, {"config": ["mek", {}], "mode": 4})
+    nlb.configure_tile(mem_xrows, {"config": ["mek", {}], "mode": 4})
+    nlb.configure_tile(mem_xvals, {"config": ["mek", {}], "mode": 4})
     # nlb.configure_tile(isect_row, 5)
+    # nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, 0, 1, 1))
+    nlb.configure_tile(wscan_root, (16, 0, 0, 0))
+    nlb.configure_tile(wscan_rows, (16, 0, 0, 1))
+    nlb.configure_tile(wscan_vals, (0, 1, 1, 0))
     nlb.configure_tile(isect_col, 5)
     # Configure the stop level
     nlb.configure_tile(accum_reg, (2))
@@ -3665,7 +3714,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     tester = nlb.get_tester()
 
     h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
-    h_ready_in = nlb.get_handle(ready_in, prefix="glb2io_1_")
+    # h_ready_in = nlb.get_handle(ready_in, prefix="glb2io_1_")
     h_ready_in_bulk = nlb.get_handle(ready_in_bulk, prefix="glb2io_1_")
     # h_valid_out = nlb.get_handle(valid_out, prefix="io2glb_1_")
     h_valid_out = nlb.get_handle(accum_valid_out, prefix="io2glb_1_")
@@ -3699,7 +3748,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     tester.eval()
 
     for i in range(num_cycles):
-        tester.poke(h_ready_in, 1)
+        # tester.poke(h_ready_in, 1)
         tester.poke(h_ready_in_bulk, 1)
         # tester.poke(circuit.interface[pop], 1)
         tester.eval()
@@ -3718,7 +3767,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
                         h_eos_out)
         tester_finish = tester._if(tester.peek(h_valid_out) and tester.peek(h_eos_out) & (tester.peek(h_val_out_0) == 0))
         tester_finish.print("Observed end of application...early finish...")
-        tester_finish.finish()
+        # tester_finish.finish()
 
         tester.step(2)
 

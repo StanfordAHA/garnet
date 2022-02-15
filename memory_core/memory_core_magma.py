@@ -227,6 +227,7 @@ class MemCore(LakeCoreBase):
             1: MemoryMode.SRAM,
             2: MemoryMode.ROM,
             3: MemoryMode.FIFO,
+            4: MemoryMode.WOM
         }
 
         # Extract the runtime + preload config
@@ -274,6 +275,13 @@ class MemCore(LakeCoreBase):
                               ("mode", 1),
                               ("wen_in_1_reg_sel", 1),
                               ("strg_fifo_fifo_depth", fifo_depth)]
+        elif mode == MemoryMode.WOM:
+            # Rom mode is simply SRAM mode with the writes disabled
+            print("Using WOM")
+            config_runtime = [("tile_en", 1),
+                              ("mode", 2),
+                              ("ren_in_0_reg_sel", 1),
+                              ("wen_in_1_reg_sel", 1)]
 
         # Add the runtime configuration to the final config
         for name, v in config_runtime:
