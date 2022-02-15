@@ -84,6 +84,7 @@ def construct():
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
   custom_lvs           = Step( this_dir + '/custom-lvs-rules'                      )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
+  short_fix            = Step( this_dir + '/../common/custom-short-fix'            )
   testbench            = Step( this_dir + '/../common/testbench'                   )
   application          = Step( this_dir + '/../common/application'                 )
   lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
@@ -119,6 +120,9 @@ def construct():
       lvs            = Step( 'cadence-pegasus-lvs',            default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',  default=True )
 
+  # Add short_fix script(s) to list of available route and postroute scripts
+  route.extend_inputs( short_fix.all_outputs() )
+  postroute.extend_inputs( short_fix.all_outputs() )
 
   # Extra DC input
   synth.extend_inputs(["common.tcl"])
@@ -203,6 +207,7 @@ def construct():
   g.add_step( route                )
   g.add_step( postroute            )
   g.add_step( postroute_hold       )
+  g.add_step( short_fix            )
   g.add_step( signoff              )
   g.add_step( pt_signoff           )
   g.add_step( genlibdb_constraints )
@@ -285,6 +290,10 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
   g.connect_by_name( custom_lvs,   lvs      )
+
+  # Fetch short-fix script in prep for eventual use by route,postroute
+  g.connect_by_name( short_fix, postroute )
+  g.connect_by_name( short_fix, route )
 
   g.connect_by_name( init,           power          )
   g.connect_by_name( power,          place          )
@@ -440,6 +449,7 @@ def construct():
       order = route.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
+      order.append('fix-register-shorts.tcl') # Fix shorts in regs SDF*
       route.update_params( { 'order': order } )
 
       # postroute node
