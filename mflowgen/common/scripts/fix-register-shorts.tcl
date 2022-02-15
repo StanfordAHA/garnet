@@ -97,7 +97,7 @@ proc frs_drc_check {} {
       min_area \
       out_of_die \
     "
-    clearDrc; verify_drc 
+    clearDrc; verify_drc
     set_verify_drc_mode -reset
 
     # Info

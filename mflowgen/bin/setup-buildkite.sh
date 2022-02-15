@@ -449,6 +449,15 @@ if [ "$USER" == "buildkite-agent" ]; then
     export MFLOWGEN_PATH=$adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
+    echo "+++ ADK HACK"
+    for f in $adks/tsmc16/*/adk.tcl; do
+        cat << EOF >> $f
+
+set ADK_DONT_USE_CELL_LIST "*/E* */G* */*D16* */*D20* */*D24* */*D28* */*D32* */SDF* */*DFM* */*SEDF*"
+EOF
+    done
+
+
 else
     # FIXME/TODO what about normal users, can they use this?
     echo
