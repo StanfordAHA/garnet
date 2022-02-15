@@ -22,8 +22,6 @@ class GlbBank(Generator):
         self.bank_cfg_ifc = GlbConfigInterface(
             addr_width=self._params.bank_addr_width, data_width=self._params.axi_data_width)
 
-        self.if_sram_cfg_s = self.interface(self.bank_cfg_ifc.slave, f"if_sram_cfg_s", is_port=True)
-
         # local variables
         self.mem_rd_en = self.var("mem_rd_en", 1)
         self.mem_wr_en = self.var("mem_wr_en", 1)
@@ -75,5 +73,4 @@ class GlbBank(Generator):
                        mem_addr=self.mem_addr,
                        mem_data_in=self.mem_data_in,
                        mem_data_in_bit_sel=self.mem_data_in_bit_sel,
-                       mem_data_out=self.mem_data_out,
-                       if_sram_cfg_s=self.if_sram_cfg_s)
+                       mem_data_out=self.mem_data_out)

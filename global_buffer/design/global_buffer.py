@@ -15,16 +15,14 @@ class GlobalBuffer(Generator):
         self.header = GlbHeader(self._params)
 
         self.clk = self.clock("clk")
-        self.core_stall = self.input("core_stall", self._params.num_glb_tiles)
-        self.rtr_stall = self.input("rtr_stall", self._params.num_glb_tiles)
-        self.pcfg_stall = self.input("pcfg_stall", self._params.num_glb_tiles)
+        self.pcfg_broadcast_stall = self.input("pcfg_broadcast_stall", self._params.num_glb_tiles)
         self.reset = self.reset("reset")
         self.cgra_stall_in = self.input("cgra_stall_in", self._params.num_cgra_tiles)
         self.cgra_stall = self.output(
             "cgra_stall", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
         self.proc_wr_en = self.input("proc_wr_en", 1)
-        self.proc_wr_strb = self.input("proc_wr_strb", self._params.bank_data_width // 8)
+        self.proc_wr_strb = self.input("proc_wr_strb", self._params.bank_strb_width)
         self.proc_wr_addr = self.input("proc_wr_addr", self._params.glb_addr_width)
         self.proc_wr_data = self.input("proc_wr_data", self._params.bank_data_width)
         self.proc_rd_en = self.input("proc_rd_en", 1)
@@ -249,17 +247,15 @@ class GlobalBuffer(Generator):
                 if_sram_cfg_tile2tile, f"if_sram_cfg_tile2tile_{i}"))
 
         # GLS pipeline
-        self.core_stall_d = self.var("core_stall_d", self._params.num_glb_tiles)
-        self.rtr_stall_d = self.var("rtr_stall_d", self._params.num_glb_tiles)
-        self.pcfg_stall_d = self.var("pcfg_stall_d", self._params.num_glb_tiles)
+        self.pcfg_broadcast_stall_d = self.var("pcfg_broadcast_stall_d", self._params.num_glb_tiles)
         self.cgra_stall_in_d = self.var("cgra_stall_in_d", self._params.num_cgra_tiles)
         self.strm_g2f_start_pulse_d = self.var("strm_g2f_start_pulse_d", self._params.num_glb_tiles)
         self.strm_f2g_start_pulse_d = self.var("strm_f2g_start_pulse_d", self._params.num_glb_tiles)
         self.pcfg_start_pulse_d = self.var("pcfg_start_pulse_d", self._params.num_glb_tiles)
-        self.gls_in = concat(self.core_stall, self.rtr_stall, self.pcfg_stall, self.cgra_stall_in, self.strm_g2f_start_pulse,
-                             self.strm_f2g_start_pulse, self.pcfg_start_pulse)
-        self.gls_out = concat(self.core_stall_d, self.rtr_stall_d, self.pcfg_stall_d, self.cgra_stall_in_d, self.strm_g2f_start_pulse_d,
-                              self.strm_f2g_start_pulse_d, self.pcfg_start_pulse_d)
+        self.gls_in = concat(self.pcfg_broadcast_stall, self.cgra_stall_in,
+                             self.strm_g2f_start_pulse, self.strm_f2g_start_pulse, self.pcfg_start_pulse)
+        self.gls_out = concat(self.pcfg_broadcast_stall_d, self.cgra_stall_in_d,
+                              self.strm_g2f_start_pulse_d, self.strm_f2g_start_pulse_d, self.pcfg_start_pulse_d)
 
         self.gls_pipeline = Pipeline(width=self.gls_in.width, depth=self._params.gls_pipeline_depth)
         self.add_child("gls_pipeline",
@@ -442,9 +438,7 @@ class GlobalBuffer(Generator):
                            clk=self.clk,
                            clk_en_cfg=clock_en(self.cfg_wr_clk_en_d | self.cfg_rd_clk_en_d),
                            clk_en_jtag_sram=clock_en(self.sram_cfg_wr_clk_en_d | self.sram_cfg_rd_clk_en_d),
-                           clk_en_core=clock_en(~self.core_stall_d[i]),
-                           clk_en_rtr=clock_en(~self.rtr_stall_d[i]),
-                           clk_en_pcfg=clock_en(~self.pcfg_stall_d[i]),
+                           clk_en_pcfg_broadcast=clock_en(~self.pcfg_broadcast_stall_d[i]),
                            reset=self.reset,
                            glb_tile_id=i,
 
