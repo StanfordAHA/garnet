@@ -3514,8 +3514,9 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         ],
 
         'bulk_ready_1_unused': [
-            ([(ready_in_bulk, "io2f_1"), (scan_arows, "ready_in_1"),
-              (scan_brows, "ready_in_1"), (isect_col, "ready_in_0")], 1)
+            ([(ready_in_bulk, "io2f_1"), (isect_col, "ready_in_0")], 1)
+            # ([(ready_in_bulk, "io2f_1"), (scan_arows, "ready_in_1"),
+            #   (scan_brows, "ready_in_1"), (isect_col, "ready_in_0")], 1)
         ],
 
         'scan_aroot_to_mem_aroot': [
@@ -3564,14 +3565,23 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
         'row_scans_to_intersect': [
             ([(scan_arows, "coord_out"), (isect_col, "coord_in_0")], 16),
             ([(scan_brows, "coord_out"), (isect_col, "coord_in_1")], 16),
-            ([(scan_arows, "payload_ptr"), (isect_col, "payload_ptr_0")], 16),
-            ([(scan_brows, "payload_ptr"), (isect_col, "payload_ptr_1")], 16),
+            # ([(scan_arows, "payload_ptr"), (isect_col, "payload_ptr_0")], 16),
+            ([(scan_arows, "pos_out"), (isect_col, "pos_in_0")], 16),
+            # ([(scan_brows, "payload_ptr"), (isect_col, "payload_ptr_1")], 16),
+            ([(scan_brows, "pos_out"), (isect_col, "pos_in_1")], 16),
             ([(scan_arows, "valid_out_0"), (isect_col, "valid_in_0")], 1),
             ([(scan_brows, "valid_out_0"), (isect_col, "valid_in_1")], 1),
+            ([(scan_arows, "valid_out_1"), (isect_col, "valid_in_2")], 1),
+            ([(scan_brows, "valid_out_1"), (isect_col, "valid_in_3")], 1),
             ([(scan_arows, "eos_out_0"), (isect_col, "eos_in_0")], 1),
             ([(scan_brows, "eos_out_0"), (isect_col, "eos_in_1")], 1),
+            ([(scan_arows, "eos_out_1"), (isect_col, "eos_in_2")], 1),
+            ([(scan_brows, "eos_out_1"), (isect_col, "eos_in_3")], 1),
+            # coord, pos will naturally be aligned by the structure of the streams
             ([(isect_col, "ready_out_0"), (scan_arows, "ready_in_0")], 1),
-            ([(isect_col, "ready_out_1"), (scan_brows, "ready_in_0")], 1)
+            ([(isect_col, "ready_out_2"), (scan_arows, "ready_in_1")], 1),
+            ([(isect_col, "ready_out_1"), (scan_brows, "ready_in_0")], 1),
+            ([(isect_col, "ready_out_3"), (scan_brows, "ready_in_1")], 1)
         ],
 
         # Read from the corresponding memories to get actual values
