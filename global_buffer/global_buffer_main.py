@@ -1,5 +1,4 @@
 import argparse
-from global_buffer.design.glb_tile import GlbTile
 from global_buffer.design.global_buffer import GlobalBuffer
 from global_buffer.design.global_buffer_parameter import gen_global_buffer_params, gen_header_files
 from systemRDL.util import gen_rdl_header
@@ -34,14 +33,12 @@ def main():
     args = parser.parse_args()
     params = gen_global_buffer_params(num_glb_tiles=args.num_glb_tiles,
                                       num_cgra_cols=args.num_cgra_cols,
-                                      # FIXEME: We assume num_prr is same as num_glb_tiles
+                                      # FIXME: We assume num_prr is same as num_glb_tiles
                                       num_prr=args.num_glb_tiles,
                                       is_sram_stub=args.sram_stub,
                                       glb_tile_mem_size=args.glb_tile_mem_size)
 
     glb = GlobalBuffer(_params=params)
-    # glb_tile = GlbTile(_params=params)
-    # k.verilog(glb_tile, filename=os.path.join(garnet_home, "global_buffer", "global_buffer.sv"))
 
     if args.parameter:
         gen_param_header(top_name="global_buffer_param",

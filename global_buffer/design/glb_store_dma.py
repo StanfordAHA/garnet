@@ -5,7 +5,6 @@ from global_buffer.design.glb_addr_gen import GlbAddrGen
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
-import math
 
 
 class GlbStoreDma(Generator):
@@ -56,8 +55,8 @@ class GlbStoreDma(Generator):
         self.bank_wr_addr = self.var("bank_wr_addr", width=self._params.glb_addr_width)
         self.bank_wr_data_cache_r = self.var("bank_wr_data_cache_r", self._params.bank_data_width)
         self.bank_wr_data_cache_w = self.var("bank_wr_data_cache_w", self._params.bank_data_width)
-        self.bank_wr_strb_cache_r = self.var("bank_wr_strb_cache_r", math.ceil(self._params.bank_data_width / 8))
-        self.bank_wr_strb_cache_w = self.var("bank_wr_strb_cache_w", math.ceil(self._params.bank_data_width / 8))
+        self.bank_wr_strb_cache_r = self.var("bank_wr_strb_cache_r", self._params.bank_strb_width)
+        self.bank_wr_strb_cache_w = self.var("bank_wr_strb_cache_w", self._params.bank_strb_width)
 
         self.done_pulse_w = self.var("done_pulse_w", 1)
         self.st_dma_start_pulse_next = self.var("st_dma_start_pulse_next", 1)

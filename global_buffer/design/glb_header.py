@@ -1,7 +1,5 @@
-from kratos import PackedStruct, clog2, enum
+from kratos import PackedStruct, clog2
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
-import math
-from enum import Enum
 
 
 class GlbHeader():
@@ -40,7 +38,7 @@ class GlbHeader():
                                                    ("num_cfg", self._params.max_num_cfg_width)])
 
         self.wr_packet_ports = [("wr_en", 1),
-                                ("wr_strb", math.ceil(self._params.bank_data_width / 8)),
+                                ("wr_strb", self._params.bank_strb_width),
                                 ("wr_addr", self._params.glb_addr_width),
                                 ("wr_data", self._params.bank_data_width), ]
         self.rdrq_packet_ports = [("rd_en", 1),

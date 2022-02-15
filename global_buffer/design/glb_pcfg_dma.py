@@ -2,7 +2,6 @@ from kratos import Generator, always_ff, always_comb, posedge, const, clog2, res
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
-import math
 
 
 class GlbPcfgDma(Generator):
@@ -27,8 +26,7 @@ class GlbPcfgDma(Generator):
         self.pcfg_dma_done_interrupt = self.output("pcfg_dma_done_interrupt", 1)
 
         # localparam
-        self.bank_data_byte_offset = math.ceil(
-            self._params.bank_data_width / 8)
+        self.bank_data_byte_offset = self._params.bank_strb_width
         self.default_latency = (self._params.glb_sw2bank_pipeline_depth
                                 + self._params.glb_bank2sw_pipeline_depth
                                 + self._params.glb_switch_muxed_pipeline_depth

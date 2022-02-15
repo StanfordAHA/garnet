@@ -25,6 +25,7 @@ class GlobalBufferParams:
     banks_per_tile: int = 2
     bank_sel_addr_width: int = math.ceil(math.log(banks_per_tile, 2))
     bank_data_width: int = 64
+    bank_strb_width: int = math.ceil(bank_data_width / 8)
     sram_macro_depth: int = 2048
     bank_addr_width: int = 17
     bank_byte_offset: int = math.ceil(math.log(bank_data_width / 8, 2))
