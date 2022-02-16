@@ -15,6 +15,7 @@ class GlobalBuffer(Generator):
         self.header = GlbHeader(self._params)
 
         self.clk = self.clock("clk")
+        self.glb_clk_en_master = self.input("glb_clk_en_master", self._params.num_glb_tiles)
         self.pcfg_broadcast_stall = self.input("pcfg_broadcast_stall", self._params.num_glb_tiles)
         self.reset = self.reset("reset")
         self.cgra_stall_in = self.input("cgra_stall_in", self._params.num_cgra_tiles)
@@ -81,11 +82,6 @@ class GlobalBuffer(Generator):
         self.pcfg_g2f_interrupt_pulse = self.output("pcfg_g2f_interrupt_pulse", self._params.num_glb_tiles)
 
         # local variables
-        self.cfg_wr_clk_en_d = self.var("cfg_wr_clk_en_d", 1)
-        self.cfg_rd_clk_en_d = self.var("cfg_rd_clk_en_d", 1)
-        self.sram_cfg_wr_clk_en_d = self.var("sram_cfg_wr_clk_en_d", 1)
-        self.sram_cfg_rd_clk_en_d = self.var("sram_cfg_rd_clk_en_d", 1)
-
         self.cgra_cfg_jtag_gc2glb_wr_en_d = self.var("cgra_cfg_jtag_gc2glb_wr_en_d", 1)
         self.cgra_cfg_jtag_gc2glb_rd_en_d = self.var("cgra_cfg_jtag_gc2glb_rd_en_d", 1)
         self.cgra_cfg_jtag_gc2glb_addr_d = self.var("cgra_cfg_jtag_gc2glb_addr_d", self._params.cgra_cfg_addr_width)
@@ -324,47 +320,47 @@ class GlobalBuffer(Generator):
     def left_edge_cfg_ff(self):
         if self.reset:
             self.if_cfg_list[0].wr_en = 0
+            self.if_cfg_list[0].wr_clk_en = 0
             self.if_cfg_list[0].wr_addr = 0
             self.if_cfg_list[0].wr_data = 0
             self.if_cfg_list[0].rd_en = 0
+            self.if_cfg_list[0].rd_clk_en = 0
             self.if_cfg_list[0].rd_addr = 0
             self.if_cfg_rd_data = 0
             self.if_cfg_rd_data_valid = 0
-            self.cfg_wr_clk_en_d = 0
-            self.cfg_rd_clk_en_d = 0
         else:
             self.if_cfg_list[0].wr_en = self.if_cfg_wr_en
+            self.if_cfg_list[0].wr_clk_en = self.if_cfg_wr_clk_en
             self.if_cfg_list[0].wr_addr = self.if_cfg_wr_addr
             self.if_cfg_list[0].wr_data = self.if_cfg_wr_data
             self.if_cfg_list[0].rd_en = self.if_cfg_rd_en
+            self.if_cfg_list[0].rd_clk_en = self.if_cfg_rd_clk_en
             self.if_cfg_list[0].rd_addr = self.if_cfg_rd_addr
             self.if_cfg_rd_data = self.if_cfg_list[0].rd_data
             self.if_cfg_rd_data_valid = self.if_cfg_list[0].rd_data_valid
-            self.cfg_wr_clk_en_d = self.if_cfg_wr_clk_en
-            self.cfg_rd_clk_en_d = self.if_cfg_rd_clk_en
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_sram_cfg_ff(self):
         if self.reset:
             self.if_sram_cfg_list[0].wr_en = 0
+            self.if_sram_cfg_list[0].wr_clk_en = 0
             self.if_sram_cfg_list[0].wr_addr = 0
             self.if_sram_cfg_list[0].wr_data = 0
             self.if_sram_cfg_list[0].rd_en = 0
+            self.if_sram_cfg_list[0].rd_clk_en = 0
             self.if_sram_cfg_list[0].rd_addr = 0
             self.if_sram_cfg_rd_data = 0
             self.if_sram_cfg_rd_data_valid = 0
-            self.sram_cfg_wr_clk_en_d = 0
-            self.sram_cfg_rd_clk_en_d = 0
         else:
             self.if_sram_cfg_list[0].wr_en = self.if_sram_cfg_wr_en
+            self.if_sram_cfg_list[0].wr_clk_en = self.if_sram_cfg_wr_clk_en
             self.if_sram_cfg_list[0].wr_addr = self.if_sram_cfg_wr_addr
             self.if_sram_cfg_list[0].wr_data = self.if_sram_cfg_wr_data
             self.if_sram_cfg_list[0].rd_en = self.if_sram_cfg_rd_en
+            self.if_sram_cfg_list[0].rd_clk_en = self.if_sram_cfg_rd_clk_en
             self.if_sram_cfg_list[0].rd_addr = self.if_sram_cfg_rd_addr
             self.if_sram_cfg_rd_data = self.if_sram_cfg_list[0].rd_data
             self.if_sram_cfg_rd_data_valid = self.if_sram_cfg_list[0].rd_data_valid
-            self.sram_cfg_wr_clk_en_d = self.if_sram_cfg_wr_clk_en
-            self.sram_cfg_rd_clk_en_d = self.if_sram_cfg_rd_clk_en
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cgra_cfg_ff(self):
@@ -436,9 +432,8 @@ class GlobalBuffer(Generator):
             self.add_child(f"glb_tile_gen_{i}",
                            self.glb_tile[i],
                            clk=self.clk,
-                           clk_en_cfg=clock_en(self.cfg_wr_clk_en_d | self.cfg_rd_clk_en_d),
-                           clk_en_jtag_sram=clock_en(self.sram_cfg_wr_clk_en_d | self.sram_cfg_rd_clk_en_d),
                            clk_en_pcfg_broadcast=clock_en(~self.pcfg_broadcast_stall_d[i]),
+                           clk_en_master=clock_en(self.glb_clk_en_master[i]),
                            reset=self.reset,
                            glb_tile_id=i,
 
@@ -546,33 +541,41 @@ class GlobalBuffer(Generator):
                            pcfg_rd_data_valid_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'],
 
                            if_cfg_est_m_wr_en=self.if_cfg_list[i + 1].wr_en,
+                           if_cfg_est_m_wr_clk_en=self.if_cfg_list[i + 1].wr_clk_en,
                            if_cfg_est_m_wr_addr=self.if_cfg_list[i + 1].wr_addr,
                            if_cfg_est_m_wr_data=self.if_cfg_list[i + 1].wr_data,
                            if_cfg_est_m_rd_en=self.if_cfg_list[i + 1].rd_en,
+                           if_cfg_est_m_rd_clk_en=self.if_cfg_list[i + 1].rd_clk_en,
                            if_cfg_est_m_rd_addr=self.if_cfg_list[i + 1].rd_addr,
                            if_cfg_est_m_rd_data=self.if_cfg_list[i + 1].rd_data,
                            if_cfg_est_m_rd_data_valid=self.if_cfg_list[i + 1].rd_data_valid,
 
                            if_cfg_wst_s_wr_en=self.if_cfg_list[i].wr_en,
+                           if_cfg_wst_s_wr_clk_en=self.if_cfg_list[i].wr_clk_en,
                            if_cfg_wst_s_wr_addr=self.if_cfg_list[i].wr_addr,
                            if_cfg_wst_s_wr_data=self.if_cfg_list[i].wr_data,
                            if_cfg_wst_s_rd_en=self.if_cfg_list[i].rd_en,
+                           if_cfg_wst_s_rd_clk_en=self.if_cfg_list[i].rd_clk_en,
                            if_cfg_wst_s_rd_addr=self.if_cfg_list[i].rd_addr,
                            if_cfg_wst_s_rd_data=self.if_cfg_list[i].rd_data,
                            if_cfg_wst_s_rd_data_valid=self.if_cfg_list[i].rd_data_valid,
 
                            if_sram_cfg_est_m_wr_en=self.if_sram_cfg_list[i + 1].wr_en,
+                           if_sram_cfg_est_m_wr_clk_en=self.if_sram_cfg_list[i + 1].wr_clk_en,
                            if_sram_cfg_est_m_wr_addr=self.if_sram_cfg_list[i + 1].wr_addr,
                            if_sram_cfg_est_m_wr_data=self.if_sram_cfg_list[i + 1].wr_data,
                            if_sram_cfg_est_m_rd_en=self.if_sram_cfg_list[i + 1].rd_en,
+                           if_sram_cfg_est_m_rd_clk_en=self.if_sram_cfg_list[i + 1].rd_clk_en,
                            if_sram_cfg_est_m_rd_addr=self.if_sram_cfg_list[i + 1].rd_addr,
                            if_sram_cfg_est_m_rd_data=self.if_sram_cfg_list[i + 1].rd_data,
                            if_sram_cfg_est_m_rd_data_valid=self.if_sram_cfg_list[i + 1].rd_data_valid,
 
                            if_sram_cfg_wst_s_wr_en=self.if_sram_cfg_list[i].wr_en,
+                           if_sram_cfg_wst_s_wr_clk_en=self.if_sram_cfg_list[i].wr_clk_en,
                            if_sram_cfg_wst_s_wr_addr=self.if_sram_cfg_list[i].wr_addr,
                            if_sram_cfg_wst_s_wr_data=self.if_sram_cfg_list[i].wr_data,
                            if_sram_cfg_wst_s_rd_en=self.if_sram_cfg_list[i].rd_en,
+                           if_sram_cfg_wst_s_rd_clk_en=self.if_sram_cfg_list[i].rd_clk_en,
                            if_sram_cfg_wst_s_rd_addr=self.if_sram_cfg_list[i].rd_addr,
                            if_sram_cfg_wst_s_rd_data=self.if_sram_cfg_list[i].rd_data,
                            if_sram_cfg_wst_s_rd_data_valid=self.if_sram_cfg_list[i].rd_data_valid,

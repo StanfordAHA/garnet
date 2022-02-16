@@ -34,7 +34,7 @@ GLB_TILE_SDF ?= gls/glb_tile.sdf
 
 # runtime
 # RUN_ARGS ?= +test1 +test2 +test3 +test4 +test5 +test6 +test7 +test8 +test9
-RUN_ARGS ?= +test1
+RUN_ARGS ?= +test2
 RUN_ARGS += +MAX_NUM_TEST=9
 RUN_ARGS += +DEBUG
 RUN_LOG ?= run.log
@@ -49,7 +49,6 @@ TB_FILES ?= -F sim/tb_global_buffer.f
 # -------------------------------------------------------------------
 # Commands
 # -------------------------------------------------------------------
-
 GENERATE_TV = \
     python testvectors/gen_glb_test.py --data testvectors/512_v0.dat --num 512 --seed 0; \
     python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num 512 --seed 1; \

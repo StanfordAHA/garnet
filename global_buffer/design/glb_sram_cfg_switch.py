@@ -13,7 +13,8 @@ class GlbSramCfgSwitch(Generator):
         self.bank_lsb_data_width = self._params.axi_data_width
         self.bank_msb_data_width = self._params.bank_data_width - self._params.axi_data_width
 
-        self.clk = self.clock("clk")
+        self.mclk = self.clock("mclk")
+        self.gclk = self.clock("gclk")
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
@@ -21,6 +22,7 @@ class GlbSramCfgSwitch(Generator):
                                                data_width=self._params.axi_data_width)
 
         # port to switch
+        self.clk_en_sramcfg2bank = self.output("clk_en_sramcfg2bank", 1)
         self.wr_packet = self.output("wr_packet", self.header.wr_packet_t)
         self.rdrq_packet = self.output("rdrq_packet", self.header.rdrq_packet_t)
         self.rdrs_packet = self.input("rdrs_packet", self.header.rdrs_packet_t)
@@ -30,6 +32,16 @@ class GlbSramCfgSwitch(Generator):
         self.if_sram_cfg_wst_s = self.interface(self.sram_cfg_ifc.slave, "if_sram_cfg_wst_s", is_port=True)
 
         # local variables
+        self.if_sram_cfg_wst_s_wr_clk_en_d = self.var("if_sram_cfg_wst_s_wr_clk_en_d", 1)
+        self.if_sram_cfg_wst_s_rd_clk_en_d = self.var("if_sram_cfg_wst_s_rd_clk_en_d", 1)
+        self.if_sram_cfg_est_m_wr_clk_en_sel_first_cycle = self.var("if_sram_cfg_est_m_wr_clk_en_sel_first_cycle", 1)
+        self.if_sram_cfg_est_m_rd_clk_en_sel_first_cycle = self.var("if_sram_cfg_est_m_rd_clk_en_sel_first_cycle", 1)
+        self.if_sram_cfg_est_m_wr_clk_en_sel_latch = self.var("if_sram_cfg_est_m_wr_clk_en_sel_latch", 1)
+        self.if_sram_cfg_est_m_rd_clk_en_sel_latch = self.var("if_sram_cfg_est_m_rd_clk_en_sel_latch", 1)
+        self.if_sram_cfg_est_m_wr_clk_en_sel = self.var("if_sram_cfg_est_m_wr_clk_en_sel", 1)
+        self.if_sram_cfg_est_m_rd_clk_en_sel = self.var("if_sram_cfg_est_m_rd_clk_en_sel", 1)
+        self.clk_en_wst_s_d = self.var("clk_en_wst_s_d", 1)
+        self.clk_en_est_m = self.var("clk_en_est_m", 1)
         self.if_sram_cfg_est_m_wr_en_w = self.var("if_sram_cfg_est_m_wr_en_w", 1)
         self.if_sram_cfg_est_m_wr_addr_w = self.var("if_sram_cfg_est_m_wr_addr_w", self._params.glb_addr_width)
         self.if_sram_cfg_est_m_wr_data_w = self.var("if_sram_cfg_est_m_wr_data_w", self._params.axi_data_width)
@@ -58,11 +70,90 @@ class GlbSramCfgSwitch(Generator):
         self.add_always(self.rdrq_logic)
         self.add_always(self.rdrs_logic)
         self.add_always(self.pipeline)
+        self.add_always(self.clk_en_pipeline)
+        self.add_always(self.est_m_clk_en_sel_first_cycle_comb)
+        self.add_always(self.est_m_wr_clk_en_sel_latch)
+        self.add_always(self.est_m_rd_clk_en_sel_latch)
+        self.add_always(self.est_m_clk_en_sel_comb)
+        self.add_always(self.est_m_wr_clk_en_mux)
+        self.add_always(self.est_m_rd_clk_en_mux)
+        self.add_always(self.clk_en_sramcfg2bank_comb)
 
     @always_comb
     def tile_id_match(self):
         self.wr_tile_id_match = self.glb_tile_id == self.if_sram_cfg_wst_s.wr_addr[self.tile_id_msb, self.tile_id_lsb]
         self.rd_tile_id_match = self.glb_tile_id == self.if_sram_cfg_wst_s.rd_addr[self.tile_id_msb, self.tile_id_lsb]
+
+    @always_ff((posedge, "mclk"), (posedge, "reset"))
+    def clk_en_pipeline(self):
+        if self.reset:
+            self.if_sram_cfg_wst_s_wr_clk_en_d = 0
+            self.if_sram_cfg_wst_s_rd_clk_en_d = 0
+        else:
+            self.if_sram_cfg_wst_s_wr_clk_en_d = self.if_sram_cfg_wst_s.wr_clk_en
+            self.if_sram_cfg_wst_s_rd_clk_en_d = self.if_sram_cfg_wst_s.rd_clk_en
+
+    @always_comb
+    def est_m_clk_en_sel_first_cycle_comb(self):
+        self.if_sram_cfg_est_m_wr_clk_en_sel_first_cycle = self.if_sram_cfg_wst_s.wr_en & (~self.wr_tile_id_match)
+        self.if_sram_cfg_est_m_rd_clk_en_sel_first_cycle = self.if_sram_cfg_wst_s.rd_en & (~self.rd_tile_id_match)
+
+    @always_ff((posedge, "mclk"), (posedge, "reset"))
+    def est_m_wr_clk_en_sel_latch(self):
+        if self.reset:
+            self.if_sram_cfg_est_m_wr_clk_en_sel_latch = 0
+        else:
+            if self.if_sram_cfg_wst_s.wr_en == 1:
+                # If tile id matches, it does not feedthrough clk_en to the east
+                if self.wr_tile_id_match:
+                    self.if_sram_cfg_est_m_wr_clk_en_sel_latch = 0
+                else:
+                    self.if_sram_cfg_est_m_wr_clk_en_sel_latch = 1
+            else:
+                if self.if_sram_cfg_wst_s.wr_clk_en == 0:
+                    self.if_sram_cfg_est_m_wr_clk_en_sel_latch = 0
+
+    @always_ff((posedge, "mclk"), (posedge, "reset"))
+    def est_m_rd_clk_en_sel_latch(self):
+        if self.reset:
+            self.if_sram_cfg_est_m_rd_clk_en_sel_latch = 0
+        else:
+            if self.if_sram_cfg_wst_s.rd_en == 1:
+                # If tile id matches, it does not feedthrough clk_en to the east
+                if self.rd_tile_id_match:
+                    self.if_sram_cfg_est_m_rd_clk_en_sel_latch = 0
+                else:
+                    self.if_sram_cfg_est_m_rd_clk_en_sel_latch = 1
+            else:
+                if self.if_sram_cfg_wst_s.rd_clk_en == 0:
+                    self.if_sram_cfg_est_m_rd_clk_en_sel_latch = 0
+
+    @always_comb
+    def est_m_clk_en_sel_comb(self):
+        self.if_sram_cfg_est_m_wr_clk_en_sel = (
+            self.if_sram_cfg_est_m_wr_clk_en_sel_first_cycle | self.if_sram_cfg_est_m_wr_clk_en_sel_latch)
+        self.if_sram_cfg_est_m_rd_clk_en_sel = (
+            self.if_sram_cfg_est_m_rd_clk_en_sel_first_cycle | self.if_sram_cfg_est_m_rd_clk_en_sel_latch)
+
+    @always_comb
+    def est_m_wr_clk_en_mux(self):
+        if self.if_sram_cfg_est_m_wr_clk_en_sel:
+            self.if_sram_cfg_est_m.wr_clk_en = self.if_sram_cfg_wst_s_wr_clk_en_d
+        else:
+            self.if_sram_cfg_est_m.wr_clk_en = 0
+
+    @always_comb
+    def est_m_rd_clk_en_mux(self):
+        if self.if_sram_cfg_est_m_rd_clk_en_sel:
+            self.if_sram_cfg_est_m.rd_clk_en = self.if_sram_cfg_wst_s_rd_clk_en_d
+        else:
+            self.if_sram_cfg_est_m.rd_clk_en = 0
+
+    @always_comb
+    def clk_en_sramcfg2bank_comb(self):
+        self.clk_en_wst_s_d = self.if_sram_cfg_wst_s_wr_clk_en_d | self.if_sram_cfg_wst_s_rd_clk_en_d
+        self.clk_en_est_m = self.if_sram_cfg_est_m.wr_clk_en | self.if_sram_cfg_est_m.rd_clk_en
+        self.clk_en_sramcfg2bank = self.clk_en_wst_s_d ^ self.clk_en_est_m
 
     @always_comb
     def wr_logic(self):
@@ -148,26 +239,18 @@ class GlbSramCfgSwitch(Generator):
             self.rd_data_valid_w = 1
 
     def add_bank_rd_addr_sel_pipeline(self):
-        self.bank_rd_latency = (self._params.glb_sw2bank_pipeline_depth
-                                + self._params.glb_switch_muxed_pipeline_depth
-                                + self._params.glb_bank2sw_pipeline_depth
-                                + self._params.glb_bank_memory_pipeline_depth
-                                + self._params.sram_gen_pipeline_depth
-                                + self._params.sram_gen_output_pipeline_depth
-                                + 1  # SRAM macro read latency
-                                )
-
+        self.bank_rd_latency = self._params.tile2sram_rd_delay + 1  # rdrq sram_cfg_switch latency
         self.bank_rd_addr_sel_d = self.var("bank_rd_addr_sel_d", 1)
         self.bank_rd_addr_sel_pipeline = Pipeline(width=1, depth=self.bank_rd_latency)
         self.add_child("bank_rd_addr_sel_pipeline",
                        self.bank_rd_addr_sel_pipeline,
-                       clk=self.clk,
+                       clk=self.gclk,
                        clk_en=const(1, 1),
                        reset=self.reset,
                        in_=self.bank_rd_addr[self._params.bank_byte_offset - 1],
                        out_=self.bank_rd_addr_sel_d)
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
+    @always_ff((posedge, "gclk"), (posedge, "reset"))
     def pipeline(self):
         if self.reset:
             self.if_sram_cfg_est_m.wr_en = 0

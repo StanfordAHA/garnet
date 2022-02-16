@@ -68,6 +68,13 @@ class GlobalBufferParams:
     sram_gen_pipeline_depth: int = 0
     sram_gen_output_pipeline_depth: int = 0
     gls_pipeline_depth: int = 2
+    tile2sram_wr_delay: int = (glb_switch_muxed_pipeline_depth + glb_sw2bank_pipeline_depth
+                               + glb_bank_memory_pipeline_depth + sram_gen_pipeline_depth)
+    tile2sram_rd_delay: int = (glb_switch_muxed_pipeline_depth + glb_sw2bank_pipeline_depth
+                               + glb_bank_memory_pipeline_depth + sram_gen_pipeline_depth
+                               + glb_bank2sw_pipeline_depth + sram_gen_output_pipeline_depth
+                               + 1  # SRAM macro read latency
+                               )
 
     is_sram_stub: int = 0
 

@@ -34,16 +34,6 @@ class GlbLoadDma(Generator):
         self.ld_dma_start_pulse = self.input("ld_dma_start_pulse", 1)
         self.ld_dma_done_interrupt = self.output("ld_dma_done_interrupt", 1)
 
-        # local parameter
-        self.default_latency = (self._params.glb_sw2bank_pipeline_depth
-                                + self._params.glb_bank2sw_pipeline_depth
-                                + self._params.glb_switch_muxed_pipeline_depth
-                                + self._params.glb_bank_memory_pipeline_depth
-                                + self._params.sram_gen_pipeline_depth
-                                + self._params.sram_gen_output_pipeline_depth
-                                + 1  # SRAM macro read latency
-                                )
-
         # local variables
         self.ld_dma_done_pulse = self.var("ld_dma_done_pulse", 1)
         self.ld_dma_done_pulse_last = self.var("ld_dma_done_pulse_last", 1)
@@ -324,7 +314,7 @@ class GlbLoadDma(Generator):
             self.strm_data = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0]
 
     def add_strm_rd_en_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency
+        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay
         latency_width = clog2(maximum_latency)
         self.strm_rd_en_d_arr = self.var(
             "strm_rd_en_d_arr", 1, size=maximum_latency, explicit_array=True)
@@ -340,10 +330,10 @@ class GlbLoadDma(Generator):
                        out_=self.strm_rd_en_d_arr)
 
         self.wire(self.strm_data_valid, self.strm_rd_en_d_arr[resize(
-            self.cfg_data_network_latency, latency_width) + self.default_latency])
+            self.cfg_data_network_latency, latency_width) + self._params.tile2sram_rd_delay])
 
     def add_strm_rd_addr_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + 6 + self.default_latency
+        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6
         latency_width = clog2(maximum_latency)
         self.strm_rd_addr_d_arr = self.var(
             "strm_rd_addr_d_arr", width=self._params.glb_addr_width, size=maximum_latency, explicit_array=True)
@@ -359,11 +349,12 @@ class GlbLoadDma(Generator):
                        out_=self.strm_rd_addr_d_arr)
 
         self.strm_data_sel = self.strm_rd_addr_d_arr[resize(self.cfg_data_network_latency, latency_width)
-                                                     + self.default_latency][self._params.bank_byte_offset - 1,
-                                                                             self._params.cgra_byte_offset]
+                                                     + self._params.tile2sram_rd_delay][(self._params.bank_byte_offset
+                                                                                         - 1),
+                                                                                        self._params.cgra_byte_offset]
 
     def add_strm_data_start_pulse_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 6 + 1
+        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6 + 1
         latency_width = clog2(maximum_latency)
         self.strm_data_start_pulse_d_arr = self.var(
             "strm_data_start_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
@@ -380,10 +371,10 @@ class GlbLoadDma(Generator):
         self.strm_data_start_pulse = self.var("strm_data_start_pulse", 1)
         self.wire(self.strm_data_start_pulse,
                   self.strm_data_start_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width)
-                                                   + self.default_latency + 1])
+                                                   + self._params.tile2sram_rd_delay + 1])
 
     def add_ld_dma_done_pulse_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + self.default_latency + 6 + 1
+        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6 + 1
         latency_width = clog2(maximum_latency)
         self.ld_dma_done_pulse_d_arr = self.var(
             "ld_dma_done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
@@ -399,7 +390,7 @@ class GlbLoadDma(Generator):
                        out_=self.ld_dma_done_pulse_d_arr)
         self.wire(self.ld_dma_done_pulse,
                   self.ld_dma_done_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width)
-                                               + self.default_latency + 1])
+                                               + self._params.tile2sram_rd_delay + 1])
 
     def add_done_pulse_last_pipeline(self):
         self.interrupt_last_pipeline = Pipeline(width=1, depth=self._params.interrupt_cnt)
