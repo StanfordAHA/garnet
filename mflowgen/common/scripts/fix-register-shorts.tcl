@@ -29,7 +29,7 @@ proc fix_register_shorts {} {
     # DONE if no markers found
     if { $nv == "0" } {
         echo "@file_info: No DRC errors found"
-        return
+        return 0
     }
     if {$DBG} {echo sleep 5; redraw; sleep 5}
 
