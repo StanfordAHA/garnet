@@ -177,13 +177,16 @@ class PeakCore(ConfigurableCore):
         self.wire(self.ports.reset, self.peak_circuit.ports.ASYNCRESET)
 
         # wire the fake register to the actual lassen core
+        
         ports = ["config_data", "config_addr"]
         for port in ports:
-            self.wire(self.ports.config[port], self.peak_circuit.ports[port])
-            # self.wire(reg1.ports[reg_port], self.peak_circuit.ports[port])
+            if port in self.peak_circuit.ports:
+                self.wire(self.ports.config[port], self.peak_circuit.ports[port])
+                # self.wire(reg1.ports[reg_port], self.peak_circuit.ports[port])
 
         # wire it to 0, since we'll never going to use it
-        self.wire(Const(0), self.peak_circuit.ports.config_en)
+        if "config_en" in self.peak_circuit.ports: 
+            self.wire(Const(0), self.peak_circuit.ports.config_en)
 
         # PE core uses clk_en (essentially active low stall)
         self.stallInverter = FromMagma(mantle.DefineInvert(1))
@@ -193,8 +196,9 @@ class PeakCore(ConfigurableCore):
         self._setup_config()
 
     def get_config_bitstream(self, instr):
-        assert isinstance(instr, self.wrapper.instruction_type())
-        config = self.wrapper.assemble(instr)
+        if isinstance(instr, self.wrapper.instruction_type()):
+            instr = self.wrapper.assemble(instr)
+        config = instr
         config_width = self.wrapper.instruction_width()
         num_config = math.ceil(config_width / 32)
         instr_name = self.wrapper.instruction_name()
