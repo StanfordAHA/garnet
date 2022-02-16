@@ -14,7 +14,7 @@ outputs:
   - sram_ff.lib
   - sram_tt.db  # Need this back for power on ptpx
   - sram.gds
-  - sram.cdl
+  - sram.spi
 
 parameters:
   num_words: 2048
