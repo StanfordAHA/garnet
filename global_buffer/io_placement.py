@@ -36,11 +36,13 @@ def place_io_blk(id_to_name):
     inputs = []
     outputs = []
     for blk_id in ios:
-        if "in" in id_to_name[blk_id]:
-            inputs.append(blk_id)
-        else:
-            assert "out" in id_to_name[blk_id]
+        print(blk_id, id_to_name[blk_id])
+        if "output" in id_to_name[blk_id]:
+            assert "write" in id_to_name[blk_id]
             outputs.append(blk_id)
+        else:
+            assert "read" in id_to_name[blk_id]
+            inputs.append(blk_id)
 
     # place it on the interconnect
     # input and outputs are placed on the same IO tiles

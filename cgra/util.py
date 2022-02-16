@@ -5,7 +5,7 @@ from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
 from canal.interconnect import Interconnect
 from passes.power_domain.pd_pass import add_power_domain, add_aon_read_config_data
-from lassen.sim import PE_fc
+from lassen.sim import PE_fc as lassen_fc
 from io_core.io_core_magma import IOCoreValid, IOCore
 from memory_core.memory_core_magma import MemCore
 from memory_core.pond_core import PondCore
@@ -15,6 +15,8 @@ from passes.tile_id_pass.tile_id_pass import tile_id_physical
 from passes.clk_pass.clk_pass import clk_physical
 from passes.pipeline_config_pass.pipeline_config_pass import pipeline_config_signals
 from gemstone.common.util import compress_config_data
+from peak_gen.peak_wrapper import wrapped_peak_class
+from peak_gen.arch import read_arch
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
@@ -49,7 +51,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
                 port_conn_override: Dict[str,
                                          List[Tuple[SwitchBoxSide,
-                                                    SwitchBoxIO]]] = None):
+                                                    SwitchBoxIO]]] = None,
+                pe_fc = lassen_fc):
     # currently only add 16bit io cores
     bit_widths = [1, 16]
     track_length = 1
@@ -92,7 +95,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 if use_mem_core:
                     core = MemCore(use_sram_stub=use_sram_stub)
                 else:
-                    core = PeakCore(PE_fc)
+                    core = PeakCore(pe_fc)
                     if add_pond:
                         additional_core[(x, y)] = PondCore()
             cores[(x, y)] = core
