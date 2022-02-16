@@ -117,7 +117,7 @@ addStripe -nets $power_nets -layer 3 -direction vertical \
 # The M5 straps are required over the memory because the M4 power straps
 # inside the SRAMs are horizontal, and our M8 strap in the coarse power
 # mesh are also horizontal. The M5 vertical straps are needed to form an
-# intersection with the M8 straps where the tool can place via stacks.
+# intersection with the pmesh_bot straps where the tool can place via stacks.
 #
 # Parameters:
 #
@@ -138,13 +138,13 @@ setViaGenMode -viarule_preference default
 setViaGenMode -ignore_DRC 0
 
 setAddStripeMode -reset
-setAddStripeMode -stacked_via_bottom_layer M4 \
-                 -stacked_via_top_layer    M5
+setAddStripeMode -stacked_via_bottom_layer 4 \
+                 -stacked_via_top_layer    5
 
 set srams [get_cells -quiet -hier -filter {is_memory_cell==true}]
 foreach_in_collection block $srams {
     selectInst $block
-    addStripe -nets $power_nets -layer M5 -direction vertical \
+    addStripe -nets $power_nets -layer 5 -direction vertical \
         -width $M5_str_width                                \
         -spacing $M5_str_intraset_spacing                   \
         -set_to_set_distance $M5_str_interset_pitch         \
