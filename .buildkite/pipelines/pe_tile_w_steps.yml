@@ -10,11 +10,16 @@ steps:
 - label: 'fc rtl'
   commands:
   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array         --steps rtl
+- wait: ~
+
 
 - label: 'pe rtl'
   commands:
   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps rtl
+- wait: ~
+
 
 - label: 'pe syn'
   commands:
   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps synthesis
+- wait: ~
