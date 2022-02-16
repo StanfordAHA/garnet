@@ -9,6 +9,7 @@ program glb_test (
     // LEFT
     input  logic                      clk,
     input  logic                      reset,
+    output logic [ NUM_GLB_TILES-1:0] glb_clk_en_master,
     output logic [ NUM_GLB_TILES-1:0] pcfg_broadcast_stall,
     output logic [NUM_CGRA_TILES-1:0] cgra_stall_in,
 
@@ -340,6 +341,7 @@ program glb_test (
 
     task initialize();
         // control
+        glb_clk_en_master <= 0;
         pcfg_broadcast_stall <= 0;
         cgra_stall_in <= 0;
         pcfg_start_pulse <= 0;
@@ -383,10 +385,16 @@ program glb_test (
         repeat (10) @(posedge clk);
     endtask
 
-    task glb_pcfg_broadcast_stall(logic [NUM_GLB_TILES-1:0] pcfg_broadcast_stall_mask);
+    task glb_clk_en_master_ctrl(logic [NUM_GLB_TILES-1:0] mask);
+        #2 $display("Glb tiles master clk enable with mask %16b", mask);
+        glb_clk_en_master <= mask;
+        repeat (4) @(posedge clk);
 
-        #2 $display("Glb tiles PCFG broadcast logics are stalled with mask %16b", pcfg_broadcast_stall_mask);
-        pcfg_broadcast_stall <= pcfg_broadcast_stall_mask;
+    endtask
+
+    task glb_pcfg_broadcast_stall(logic [NUM_GLB_TILES-1:0] mask);
+        #2 $display("Glb tiles PCFG broadcast logics are stalled with mask %16b", mask);
+        pcfg_broadcast_stall <= mask;
         repeat (4) @(posedge clk);
 
     endtask
@@ -409,11 +417,11 @@ program glb_test (
         #2 if_sram_cfg_wr_en <= 1;
         if_sram_cfg_wr_addr <= addr;
         if_sram_cfg_wr_data <= data;
-        repeat (4) @(posedge clk);
+        @(posedge clk);
         #2 if_sram_cfg_wr_en <= 0;
         if_sram_cfg_wr_addr <= 0;
         if_sram_cfg_wr_data <= 0;
-        repeat (NUM_GLB_TILES + 6) @(posedge clk);
+        repeat (TILE2SRAM_WR_DELAY) @(posedge clk);
         #2 if_sram_cfg_wr_clk_en <= 0;
         repeat (2) @(posedge clk);
     endtask

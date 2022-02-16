@@ -7,15 +7,17 @@ class GlbConfigInterface(Interface):
 
         # Local variables
         self.wr_en = self.var("wr_en", 1)
+        self.wr_clk_en = self.var("wr_clk_en", 1)
         self.wr_addr = self.var("wr_addr", addr_width)
         self.wr_data = self.var("wr_data", data_width)
         self.rd_en = self.var("rd_en", 1)
+        self.rd_clk_en = self.var("rd_clk_en", 1)
         self.rd_addr = self.var("rd_addr", addr_width)
         self.rd_data = self.var("rd_data", data_width)
         self.rd_data_valid = self.var("rd_data_valid", 1)
 
-        m_to_s = [self.wr_en, self.wr_addr,
-                  self.wr_data, self.rd_en, self.rd_addr]
+        m_to_s = [self.wr_en, self.wr_clk_en, self.wr_addr,
+                  self.wr_data, self.rd_en, self.rd_clk_en, self.rd_addr]
         s_to_m = [self.rd_data, self.rd_data_valid]
 
         self.master = self.modport("master")

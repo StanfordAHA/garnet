@@ -27,6 +27,7 @@ module top;
     logic clk;
     logic dut_clk;
     logic [NUM_GLB_TILES-1:0] pcfg_broadcast_stall;
+    logic [NUM_GLB_TILES-1:0] glb_clk_en_master;
     logic [NUM_CGRA_TILES-1:0] cgra_stall_in;
     logic reset;
     logic cgra_soft_reset;

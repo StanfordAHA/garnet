@@ -19,7 +19,8 @@ class GlbCfg(Generator):
         cfg_ifc = GlbConfigInterface(addr_width=self._params.axi_addr_width, data_width=self._params.axi_data_width)
 
         # ports
-        self.clk = self.clock("clk")
+        self.mclk = self.clock("mclk")
+        self.gclk = self.clock("gclk")
         self.reset = self.reset("reset", is_async=True)
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
@@ -87,7 +88,7 @@ class GlbCfg(Generator):
         return self.from_verilog("glb_pio", pio_wrapper_file, [], {})
 
     def wire_config_signals(self):
-        self.wire(self.clk, self.glb_pio_wrapper.ports["clk"])
+        self.wire(self.gclk, self.glb_pio_wrapper.ports["clk"])
         self.wire(self.reset, self.glb_pio_wrapper.ports["reset"])
         self.wire(self.cfg_data_network['tile_connected'],
                   self.glb_pio_wrapper.ports[f"l2h_data_network_tile_connected_r"])
@@ -160,7 +161,8 @@ class GlbCfg(Generator):
                   self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_header_num_cfg_num_cfg_r"])
 
     def wire_ctrl_signals(self):
-        self.wire(self.clk, self.glb_cfg_ctrl.clk)
+        self.wire(self.gclk, self.glb_cfg_ctrl.gclk)
+        self.wire(self.mclk, self.glb_cfg_ctrl.mclk)
         self.wire(self.reset, self.glb_cfg_ctrl.reset)
         self.wire(self.glb_tile_id, self.glb_cfg_ctrl.glb_tile_id)
         self.wire(self.if_cfg_wst_s, self.glb_cfg_ctrl.if_cfg_wst_s)

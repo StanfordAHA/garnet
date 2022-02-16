@@ -27,14 +27,6 @@ class GlbPcfgDma(Generator):
 
         # localparam
         self.bank_data_byte_offset = self._params.bank_strb_width
-        self.default_latency = (self._params.glb_sw2bank_pipeline_depth
-                                + self._params.glb_bank2sw_pipeline_depth
-                                + self._params.glb_switch_muxed_pipeline_depth
-                                + self._params.glb_bank_memory_pipeline_depth
-                                + self._params.sram_gen_pipeline_depth
-                                + self._params.sram_gen_output_pipeline_depth
-                                + 1  # SRAM macro read latency
-                                )
 
         # local variables
         self.pcfg_done_pulse = self.var("pcfg_done_pulse", 1)
@@ -163,7 +155,7 @@ class GlbPcfgDma(Generator):
                   self.rdrs_packet_rd_data_r[self._params.cgra_cfg_data_width - 1, 0])
 
     def add_done_pulse_pipeline(self):
-        maximum_latency = 3 * self._params.num_glb_tiles + self.default_latency + 6
+        maximum_latency = 3 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6
         latency_width = clog2(maximum_latency)
         self.done_pulse_d_arr = self.var("done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.done_pulse_pipeline = Pipeline(width=1,
@@ -178,7 +170,7 @@ class GlbPcfgDma(Generator):
                        out_=self.done_pulse_d_arr)
         self.wire(self.pcfg_done_pulse,
                   self.done_pulse_d_arr[resize(self.cfg_pcfg_network_latency, latency_width)
-                                        + self.default_latency
+                                        + self._params.tile2sram_rd_delay
                                         + self._params.num_glb_tiles])
 
     def add_done_pulse_last_pipeline(self):
