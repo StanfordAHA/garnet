@@ -16,6 +16,8 @@
 # set_attribute [get_lib *lvt*] default_threshold_voltage_group LVT
 # set_attribute [get_lib *ulvt*] default_threshold_voltage_group ULVT
 
+set_units -time ns -capacitance pF
+
 if $::env(PWR_AWARE) {
     source inputs/pe-constraints.tcl
 } 
