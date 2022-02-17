@@ -49,7 +49,7 @@ def construct():
     'gls_testvectors' : ["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9"],
     'sdf' : True,
     'saif' : True,
-    'waveform' : True,
+    'waveform' : False,
   }
 
   #-----------------------------------------------------------------------
@@ -307,7 +307,7 @@ def construct():
 
   for test in parameters["gls_testvectors"]:
     g.connect_by_name( sim_gl_compile, sim_gl_run_nodes[test] )
-  
+
   for test in parameters["gls_testvectors"]:
     g.connect_by_name( adk,                    ptpx_gl_nodes[test] )
     g.connect_by_name( glb_tile,               ptpx_gl_nodes[test] )
