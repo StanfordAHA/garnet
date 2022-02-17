@@ -18,9 +18,6 @@ class GlobalBuffer(Generator):
         self.glb_clk_en_master = self.input("glb_clk_en_master", self._params.num_glb_tiles)
         self.pcfg_broadcast_stall = self.input("pcfg_broadcast_stall", self._params.num_glb_tiles)
         self.reset = self.reset("reset")
-        self.cgra_stall_in = self.input("cgra_stall_in", self._params.num_cgra_tiles)
-        self.cgra_stall = self.output(
-            "cgra_stall", 1, size=[self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
 
         self.proc_wr_en = self.input("proc_wr_en", 1)
         self.proc_wr_strb = self.input("proc_wr_strb", self._params.bank_strb_width)
@@ -180,54 +177,6 @@ class GlobalBuffer(Generator):
         self.pcfg_g2f_interrupt_pulse_d = self.var("pcfg_g2f_interrupt_pulse_d", self._params.num_glb_tiles)
         self.wire(self.pcfg_g2f_interrupt_pulse_d, self.pcfg_g2f_interrupt_pulse)
 
-        self.cgra_cfg_g2f_cfg_wr_en_w = self.var("cgra_cfg_g2f_cfg_wr_en_w", 1, size=[
-                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_wr_en_d = self.var("cgra_cfg_g2f_cfg_wr_en_d", 1, size=[
-                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.wire(self.cgra_cfg_g2f_cfg_wr_en_d, self.cgra_cfg_g2f_cfg_wr_en)
-
-        self.cgra_cfg_g2f_cfg_rd_en_w = self.var("cgra_cfg_g2f_cfg_rd_en_w", 1, size=[
-                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_rd_en_d = self.var("cgra_cfg_g2f_cfg_rd_en_d", 1, size=[
-                                                 self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.wire(self.cgra_cfg_g2f_cfg_rd_en_d, self.cgra_cfg_g2f_cfg_rd_en)
-
-        self.cgra_cfg_g2f_cfg_addr_w = self.var("cgra_cfg_g2f_cfg_addr_w", self._params.cgra_cfg_addr_width, size=[
-                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_addr_d = self.var("cgra_cfg_g2f_cfg_addr_d", self._params.cgra_cfg_addr_width, size=[
-                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.wire(self.cgra_cfg_g2f_cfg_addr_d, self.cgra_cfg_g2f_cfg_addr)
-
-        self.cgra_cfg_g2f_cfg_data_w = self.var("cgra_cfg_g2f_cfg_data_w", self._params.cgra_cfg_data_width, size=[
-                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.cgra_cfg_g2f_cfg_data_d = self.var("cgra_cfg_g2f_cfg_data_d", self._params.cgra_cfg_data_width, size=[
-                                                self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.wire(self.cgra_cfg_g2f_cfg_data_d, self.cgra_cfg_g2f_cfg_data)
-
-        self.strm_data_f2g_w = self.var("strm_data_f2g_w", self._params.cgra_data_width, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.strm_data_f2g_d = self.var("strm_data_f2g_d", self._params.cgra_data_width, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.wire(self.strm_data_f2g, self.strm_data_f2g_w)
-
-        self.strm_data_valid_f2g_w = self.var("strm_data_valid_f2g_w", 1, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.strm_data_valid_f2g_d = self.var("strm_data_valid_f2g_d", 1, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.wire(self.strm_data_valid_f2g, self.strm_data_valid_f2g_w)
-
-        self.strm_data_g2f_w = self.var("strm_data_g2f_w", self._params.cgra_data_width, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.strm_data_g2f_d = self.var("strm_data_g2f_d", self._params.cgra_data_width, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.wire(self.strm_data_g2f_d, self.strm_data_g2f)
-
-        self.strm_data_valid_g2f_w = self.var("strm_data_valid_g2f_w", 1, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.strm_data_valid_g2f_d = self.var("strm_data_valid_g2f_d", 1, size=[
-            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.wire(self.strm_data_valid_g2f_d, self.strm_data_valid_g2f)
-
         # interface
         if_cfg_tile2tile = GlbConfigInterface(
             addr_width=self._params.axi_addr_width, data_width=self._params.axi_data_width)
@@ -248,10 +197,8 @@ class GlobalBuffer(Generator):
         self.strm_g2f_start_pulse_d = self.var("strm_g2f_start_pulse_d", self._params.num_glb_tiles)
         self.strm_f2g_start_pulse_d = self.var("strm_f2g_start_pulse_d", self._params.num_glb_tiles)
         self.pcfg_start_pulse_d = self.var("pcfg_start_pulse_d", self._params.num_glb_tiles)
-        self.gls_in = concat(self.pcfg_broadcast_stall, self.cgra_stall_in,
-                             self.strm_g2f_start_pulse, self.strm_f2g_start_pulse, self.pcfg_start_pulse)
-        self.gls_out = concat(self.pcfg_broadcast_stall_d, self.cgra_stall_in_d,
-                              self.strm_g2f_start_pulse_d, self.strm_f2g_start_pulse_d, self.pcfg_start_pulse_d)
+        self.gls_in = concat(self.strm_g2f_start_pulse, self.strm_f2g_start_pulse, self.pcfg_start_pulse)
+        self.gls_out = concat(self.strm_g2f_start_pulse_d, self.strm_f2g_start_pulse_d, self.pcfg_start_pulse_d)
 
         self.gls_pipeline = Pipeline(width=self.gls_in.width, depth=self._params.gls_pipeline_depth)
         self.add_child("gls_pipeline",
@@ -261,9 +208,6 @@ class GlobalBuffer(Generator):
                        reset=self.reset,
                        in_=self.gls_in,
                        out_=self.gls_out)
-        for i in range(self._params.num_glb_tiles):
-            for j in range(self._params.cgra_per_glb):
-                self.wire(self.cgra_stall[i][j], self.cgra_stall_in_d[i * self._params.cgra_per_glb + j])
 
         # GLB Tiles
         self.glb_tile = []
@@ -284,8 +228,6 @@ class GlobalBuffer(Generator):
         self.tile2tile_w2e_wiring()
         self.add_always(self.tile2tile_w2e_cfg_wiring)
         self.add_always(self.interrupt_pipeline)
-        self.add_always(self.strm_data_pipeline)
-        self.add_always(self.cgra_cfg_pcfg_pipeline)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_ff(self):
@@ -432,7 +374,7 @@ class GlobalBuffer(Generator):
             self.add_child(f"glb_tile_gen_{i}",
                            self.glb_tile[i],
                            clk=self.clk,
-                           clk_en_pcfg_broadcast=clock_en(~self.pcfg_broadcast_stall_d[i]),
+                           clk_en_pcfg_broadcast=clock_en(~self.pcfg_broadcast_stall[i]),
                            clk_en_master=clock_en(self.glb_clk_en_master[i]),
                            reset=self.reset,
                            glb_tile_id=i,
@@ -585,15 +527,15 @@ class GlobalBuffer(Generator):
                            cfg_pcfg_tile_connected_wsti=self.cfg_pcfg_tile_connected[i],
                            cfg_pcfg_tile_connected_esto=self.cfg_pcfg_tile_connected[i + 1],
 
-                           strm_data_f2g=self.strm_data_f2g_d[i],
-                           strm_data_valid_f2g=self.strm_data_valid_f2g_d[i],
-                           strm_data_g2f=self.strm_data_g2f_w[i],
-                           strm_data_valid_g2f=self.strm_data_valid_g2f_w[i],
+                           strm_data_f2g=self.strm_data_f2g[i],
+                           strm_data_valid_f2g=self.strm_data_valid_f2g[i],
+                           strm_data_g2f=self.strm_data_g2f[i],
+                           strm_data_valid_g2f=self.strm_data_valid_g2f[i],
 
-                           cgra_cfg_g2f_cfg_wr_en=self.cgra_cfg_g2f_cfg_wr_en_w[i],
-                           cgra_cfg_g2f_cfg_rd_en=self.cgra_cfg_g2f_cfg_rd_en_w[i],
-                           cgra_cfg_g2f_cfg_addr=self.cgra_cfg_g2f_cfg_addr_w[i],
-                           cgra_cfg_g2f_cfg_data=self.cgra_cfg_g2f_cfg_data_w[i],
+                           cgra_cfg_g2f_cfg_wr_en=self.cgra_cfg_g2f_cfg_wr_en[i],
+                           cgra_cfg_g2f_cfg_rd_en=self.cgra_cfg_g2f_cfg_rd_en[i],
+                           cgra_cfg_g2f_cfg_addr=self.cgra_cfg_g2f_cfg_addr[i],
+                           cgra_cfg_g2f_cfg_data=self.cgra_cfg_g2f_cfg_data[i],
 
                            cgra_cfg_pcfg_wsti_wr_en=self.cgra_cfg_pcfg_wsti_wr_en[i],
                            cgra_cfg_pcfg_wsti_rd_en=self.cgra_cfg_pcfg_wsti_rd_en[i],
@@ -639,36 +581,6 @@ class GlobalBuffer(Generator):
                 self.strm_f2g_interrupt_pulse_d[i] = self.strm_f2g_interrupt_pulse_w[i]
                 self.strm_g2f_interrupt_pulse_d[i] = self.strm_g2f_interrupt_pulse_w[i]
                 self.pcfg_g2f_interrupt_pulse_d[i] = self.pcfg_g2f_interrupt_pulse_w[i]
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def strm_data_pipeline(self):
-        if self.reset:
-            for i in range(self._params.num_glb_tiles):
-                self.strm_data_g2f_d[i] = 0
-                self.strm_data_valid_g2f_d[i] = 0
-                self.strm_data_f2g_d[i] = 0
-                self.strm_data_valid_f2g_d[i] = 0
-        else:
-            for i in range(self._params.num_glb_tiles):
-                self.strm_data_g2f_d[i] = self.strm_data_g2f_w[i]
-                self.strm_data_valid_g2f_d[i] = self.strm_data_valid_g2f_w[i]
-                self.strm_data_f2g_d[i] = self.strm_data_f2g_w[i]
-                self.strm_data_valid_f2g_d[i] = self.strm_data_valid_f2g_w[i]
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def cgra_cfg_pcfg_pipeline(self):
-        if self.reset:
-            for i in range(self._params.num_glb_tiles):
-                self.cgra_cfg_g2f_cfg_wr_en_d[i] = 0
-                self.cgra_cfg_g2f_cfg_rd_en_d[i] = 0
-                self.cgra_cfg_g2f_cfg_addr_d[i] = 0
-                self.cgra_cfg_g2f_cfg_data_d[i] = 0
-        else:
-            for i in range(self._params.num_glb_tiles):
-                self.cgra_cfg_g2f_cfg_wr_en_d[i] = self.cgra_cfg_g2f_cfg_wr_en_w[i]
-                self.cgra_cfg_g2f_cfg_rd_en_d[i] = self.cgra_cfg_g2f_cfg_rd_en_w[i]
-                self.cgra_cfg_g2f_cfg_addr_d[i] = self.cgra_cfg_g2f_cfg_addr_w[i]
-                self.cgra_cfg_g2f_cfg_data_d[i] = self.cgra_cfg_g2f_cfg_data_w[i]
 
 
 def GlobalBufferMagma(params: GlobalBufferParams):

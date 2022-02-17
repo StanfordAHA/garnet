@@ -60,13 +60,9 @@ class GlbBankSwitch(Generator):
         self.wr_packet_sw2bankarr_w = self.var(
             "wr_packet_sw2bankarr_w", self.header.wr_packet_t, size=self._params.banks_per_tile)
         self.wr_packet_sw2sr_w = self.var("wr_packet_sw2sr_w", self.header.wr_packet_t)
-        self.wr_packet_sw2bank_muxed = self.var("wr_packet_sw2bank_muxed", self.header.wr_packet_t)
-        self.wr_packet_sw2bank_muxed_d = self.var("wr_packet_sw2bank_muxed_d", self.header.wr_packet_t)
 
         self.rdrq_packet_sw2bankarr_w = self.var(
             "rdrq_packet_sw2bankarr_w", self.header.rdrq_packet_t, size=self._params.banks_per_tile)
-        self.rdrq_packet_sw2bank_muxed = self.var("rdrq_packet_sw2bank_muxed", self.header.rdrq_packet_t)
-        self.rdrq_packet_sw2bank_muxed_d = self.var("rdrq_packet_sw2bank_muxed_d", self.header.rdrq_packet_t)
         self.rdrq_packet_sw2sr_w = self.var("rdrq_packet_sw2sr_w", self.header.rdrq_packet_t)
         self.rdrq_packet_sw2pcfgr_w = self.var("rdrq_packet_sw2pcfgr_w", self.header.rdrq_packet_t)
 
@@ -77,13 +73,13 @@ class GlbBankSwitch(Generator):
             "rdrs_packet_bankarr2sw_d", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
 
         self.rd_type_e = self.enum("rd_type_e", {"none": 0, "proc": 1, "strm": 2, "pcfg": 3, "sramcfg": 4})
-        self.rd_type = self.var("rd_type", self.rd_type_e)
-        self.rd_type_d = self.var("rd_type_d", self.rd_type_e)
-        self.rdrq_bank_sel = self.var("rdrq_bank_sel", self._params.bank_sel_addr_width)
-        self.rdrq_bank_sel_d = self.var("rdrq_bank_sel_d", self._params.bank_sel_addr_width)
-        self.rdrq_bank_sel_muxed_d = self.var("rdrq_bank_sel_muxed_d", self._params.bank_sel_addr_width)
-        self.wr_bank_sel = self.var("wr_bank_sel", self._params.bank_sel_addr_width)
-        self.wr_bank_sel_d = self.var("wr_bank_sel_d", self._params.bank_sel_addr_width)
+        # FIXME: Kratos does not support array of enum type
+        # Just use python array
+        self.rd_type = []
+        self.rd_type_d = []
+        for i in range(self._params.banks_per_tile):
+            self.rd_type.append(self.var(f"rd_type_{i}", self.rd_type_e))
+            self.rd_type_d.append(self.var(f"rd_type_d_{i}", self.rd_type_e))
 
         # wr pipeline
         for i in range(self._params.banks_per_tile):
@@ -109,45 +105,16 @@ class GlbBankSwitch(Generator):
                            in_=self.rdrq_packet_sw2bankarr_w[i],
                            out_=self.rdrq_packet_sw2bankarr[i])
 
-        pipeline_depth = (self._params.glb_bank_memory_pipeline_depth
-                          + self._params.sram_gen_pipeline_depth
-                          + self._params.sram_gen_output_pipeline_depth
-                          + self._params.glb_sw2bank_pipeline_depth
-                          + self._params.glb_bank2sw_pipeline_depth
-                          + self._params.glb_switch_muxed_pipeline_depth
-                          + 1)
-        self.rdrq_pipeline_in = concat(self.rd_type, self.rdrq_bank_sel)
-        self.rdrq_pipeline_out = concat(self.rd_type_d, self.rdrq_bank_sel_d)
-        self.rdrq_pipeline = Pipeline(width=self.rdrq_pipeline_in.width, depth=pipeline_depth)
-        self.add_child("rdrq_pipeline",
-                       self.rdrq_pipeline,
+        rd_type_pipeline_in = concat(*self.rd_type)
+        rd_type_pipeline_out = concat(*self.rd_type_d)
+        self.rd_type_pipeline = Pipeline(width=rd_type_pipeline_in.width, depth=self._params.tile2sram_rd_delay)
+        self.add_child(f"rd_type_pipeline_{i}",
+                       self.rd_type_pipeline,
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       in_=self.rdrq_pipeline_in,
-                       out_=self.rdrq_pipeline_out)
-
-        # rdrq_muxed_pipeline
-        self.rdrq_muxed_pipeline = Pipeline(width=self.rdrq_packet_sw2bank_muxed.width + self.rdrq_bank_sel.width,
-                                            depth=self._params.glb_switch_muxed_pipeline_depth)
-        self.add_child("rdrq_muxed_pipeline",
-                       self.rdrq_muxed_pipeline,
-                       clk=self.clk,
-                       clk_en=const(1, 1),
-                       reset=self.reset,
-                       in_=concat(self.rdrq_packet_sw2bank_muxed, self.rdrq_bank_sel),
-                       out_=concat(self.rdrq_packet_sw2bank_muxed_d, self.rdrq_bank_sel_muxed_d))
-
-        # wr_muxed pipeline
-        self.wr_muxed_pipeline = Pipeline(width=self.wr_packet_sw2bank_muxed.width + self.wr_bank_sel.width,
-                                          depth=self._params.glb_switch_muxed_pipeline_depth)
-        self.add_child("wr_muxed_pipeline",
-                       self.wr_muxed_pipeline,
-                       clk=self.clk,
-                       clk_en=const(1, 1),
-                       reset=self.reset,
-                       in_=concat(self.wr_packet_sw2bank_muxed, self.wr_bank_sel),
-                       out_=concat(self.wr_packet_sw2bank_muxed_d, self.wr_bank_sel_d))
+                       in_=rd_type_pipeline_in,
+                       out_=rd_type_pipeline_out)
 
         # rdrs pipeline
         for i in range(self._params.banks_per_tile):
@@ -182,21 +149,18 @@ class GlbBankSwitch(Generator):
                        out_=self.rdrs_packet_pcfgr2sw_d)
 
         # localparam
-        self.packet_addr_tile_sel_msb = (_params.bank_addr_width
-                                         + _params.bank_sel_addr_width + _params.tile_sel_addr_width - 1)
-        self.packet_addr_tile_sel_lsb = _params.bank_addr_width + _params.bank_sel_addr_width
-        self.packet_addr_bank_sel_msb = _params.bank_addr_width + _params.bank_sel_addr_width - 1
-        self.packet_addr_bank_sel_lsb = _params.bank_addr_width
+        self.tile_sel_msb = (_params.bank_addr_width + _params.bank_sel_addr_width + _params.tile_sel_addr_width - 1)
+        self.tile_sel_lsb = _params.bank_addr_width + _params.bank_sel_addr_width
+        self.bank_sel_msb = _params.bank_addr_width + _params.bank_sel_addr_width - 1
+        self.bank_sel_lsb = _params.bank_addr_width
 
         # Add always statements
         # wr packet
-        self.add_always(self.wr_sw2bank_muxed_logic)
         self.add_always(self.wr_sw2bankarr_logic)
         self.add_always(self.wr_sw2sr_logic)
         self.add_always(self.wr_sw2sr_pipeline)
 
         # rdrq packet
-        self.add_always(self.rdrq_sw2bank_muxed_logic)
         self.add_always(self.rdrq_sw2bankarr_logic)
         self.add_always(self.rdrq_sw2sr_logic)
         self.add_always(self.rdrq_sw2sr_pipeline)
@@ -212,34 +176,25 @@ class GlbBankSwitch(Generator):
         self.add_always(self.rdrs_sw2sramcfg_logic)
 
     @always_comb
-    def wr_sw2bank_muxed_logic(self):
-        if ((self.wr_packet_pr2sw['wr_en'] == 1)
-                & (self.wr_packet_pr2sw['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                   == self.glb_tile_id)):
-            self.wr_packet_sw2bank_muxed = self.wr_packet_pr2sw
-        elif ((self.wr_packet_dma2sw['wr_en'] == 1)
-              & (~self.cfg_tile_connected_prev) & (~self.cfg_tile_connected_next)
-                & (self.wr_packet_dma2sw['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                   == self.glb_tile_id)):
-            self.wr_packet_sw2bank_muxed = self.wr_packet_dma2sw
-        elif ((self.wr_packet_sr2sw['wr_en'] == 1)
-              & (self.wr_packet_sr2sw['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                 == self.glb_tile_id)):
-            self.wr_packet_sw2bank_muxed = self.wr_packet_sr2sw
-        elif ((self.wr_packet_sramcfg2sw['wr_en'] == 1)
-              & (self.wr_packet_sramcfg2sw['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                 == self.glb_tile_id)):
-            self.wr_packet_sw2bank_muxed = self.wr_packet_sramcfg2sw
-        else:
-            self.wr_packet_sw2bank_muxed = 0
-        self.wr_bank_sel = self.wr_packet_sw2bank_muxed['wr_addr'][
-            self.packet_addr_bank_sel_msb, self.packet_addr_bank_sel_lsb]
-
-    @always_comb
     def wr_sw2bankarr_logic(self):
         for i in range(self._params.banks_per_tile):
-            if self.wr_bank_sel_d == i:
-                self.wr_packet_sw2bankarr_w[i] = self.wr_packet_sw2bank_muxed_d
+            if ((self.wr_packet_pr2sw['wr_en'] == 1)
+                    & (self.wr_packet_pr2sw['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.wr_packet_pr2sw['wr_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.wr_packet_sw2bankarr_w[i] = self.wr_packet_pr2sw
+            elif ((self.wr_packet_dma2sw['wr_en'] == 1)
+                    & ((~self.cfg_tile_connected_prev) & (~self.cfg_tile_connected_next))
+                    & (self.wr_packet_dma2sw['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.wr_packet_dma2sw['wr_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.wr_packet_sw2bankarr_w[i] = self.wr_packet_dma2sw
+            elif ((self.wr_packet_sr2sw['wr_en'] == 1)
+                    & (self.wr_packet_sr2sw['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.wr_packet_sr2sw['wr_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.wr_packet_sw2bankarr_w[i] = self.wr_packet_sr2sw
+            elif ((self.wr_packet_sramcfg2sw['wr_en'] == 1)
+                    & (self.wr_packet_sramcfg2sw['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.wr_packet_sramcfg2sw['wr_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.wr_packet_sw2bankarr_w[i] = self.wr_packet_sramcfg2sw
             else:
                 self.wr_packet_sw2bankarr_w[i] = 0
 
@@ -258,59 +213,50 @@ class GlbBankSwitch(Generator):
             self.wr_packet_sw2sr = self.wr_packet_sw2sr_w
 
     @ always_comb
-    def rdrq_sw2bank_muxed_logic(self):
-        if ((self.rdrq_packet_pr2sw['rd_en'] == 1)
-            & (self.rdrq_packet_pr2sw['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-               == self.glb_tile_id)):
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_pr2sw
-            self.rd_type = self.rd_type_e.proc
-        elif ((self.rdrq_packet_pcfgdma2sw['rd_en'] == 1)
-              & (~self.cfg_pcfg_tile_connected_prev) & (~self.cfg_pcfg_tile_connected_next)
-              & (self.rdrq_packet_pcfgdma2sw['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                 == self.glb_tile_id)):
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_pcfgdma2sw
-            self.rd_type = self.rd_type_e.pcfg
-        elif ((self.rdrq_packet_pcfgr2sw['rd_en'] == 1)
-              & (self.rdrq_packet_pcfgr2sw['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                 == self.glb_tile_id)):
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_pcfgr2sw
-            self.rd_type = self.rd_type_e.pcfg
-        elif ((self.rdrq_packet_dma2sw['rd_en'] == 1)
-              & (~self.cfg_tile_connected_prev) & (~self.cfg_tile_connected_next)
-              & (self.rdrq_packet_dma2sw['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                 == self.glb_tile_id)):
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_dma2sw
-            self.rd_type = self.rd_type_e.strm
-        elif ((self.rdrq_packet_sr2sw['rd_en'] == 1)
-              & (self.rdrq_packet_sr2sw['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                 == self.glb_tile_id)):
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_sr2sw
-            self.rd_type = self.rd_type_e.strm
-        elif ((self.rdrq_packet_sramcfg2sw['rd_en'] == 1)
-              & (self.rdrq_packet_sramcfg2sw['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                 == self.glb_tile_id)):
-            self.rdrq_packet_sw2bank_muxed = self.rdrq_packet_sramcfg2sw
-            self.rd_type = self.rd_type_e.sramcfg
-        else:
-            self.rdrq_packet_sw2bank_muxed = 0
-            self.rd_type = self.rd_type_e.none
-        self.rdrq_bank_sel = self.rdrq_packet_sw2bank_muxed['rd_addr'][self.packet_addr_bank_sel_msb,
-                                                                       self.packet_addr_bank_sel_lsb]
-
-    @ always_comb
     def rdrq_sw2bankarr_logic(self):
         for i in range(self._params.banks_per_tile):
-            if self.rdrq_bank_sel_muxed_d == i:
-                self.rdrq_packet_sw2bankarr_w[i] = self.rdrq_packet_sw2bank_muxed_d
+            if ((self.rdrq_packet_pr2sw['rd_en'] == 1)
+                    & (self.rdrq_packet_pr2sw['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                    & (self.rdrq_packet_pr2sw['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i] = self.rdrq_packet_pr2sw
+                self.rd_type[i] = self.rd_type_e.proc
+            elif ((self.rdrq_packet_pcfgdma2sw['rd_en'] == 1)
+                  & ((~self.cfg_pcfg_tile_connected_prev) & (~self.cfg_pcfg_tile_connected_next))
+                  & (self.rdrq_packet_pcfgdma2sw['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                  & (self.rdrq_packet_pcfgdma2sw['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i] = self.rdrq_packet_pcfgdma2sw
+                self.rd_type[i] = self.rd_type_e.pcfg
+            elif ((self.rdrq_packet_pcfgr2sw['rd_en'] == 1)
+                  & (self.rdrq_packet_pcfgr2sw['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                  & (self.rdrq_packet_pcfgr2sw['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i] = self.rdrq_packet_pcfgr2sw
+                self.rd_type[i] = self.rd_type_e.pcfg
+            elif ((self.rdrq_packet_dma2sw['rd_en'] == 1)
+                  & ((~self.cfg_tile_connected_prev) & (~self.cfg_tile_connected_next))
+                  & (self.rdrq_packet_dma2sw['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                  & (self.rdrq_packet_dma2sw['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i] = self.rdrq_packet_dma2sw
+                self.rd_type[i] = self.rd_type_e.strm
+            elif ((self.rdrq_packet_sr2sw['rd_en'] == 1)
+                  & (self.rdrq_packet_sr2sw['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                  & (self.rdrq_packet_sr2sw['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i] = self.rdrq_packet_sr2sw
+                self.rd_type[i] = self.rd_type_e.strm
+            elif ((self.rdrq_packet_sramcfg2sw['rd_en'] == 1)
+                  & (self.rdrq_packet_sramcfg2sw['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
+                  & (self.rdrq_packet_sramcfg2sw['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
+                self.rdrq_packet_sw2bankarr_w[i] = self.rdrq_packet_sramcfg2sw
+                self.rd_type[i] = self.rd_type_e.sramcfg
             else:
                 self.rdrq_packet_sw2bankarr_w[i] = 0
+                self.rd_type[i] = self.rd_type_e.none
 
     @ always_comb
     def rdrq_sw2sr_logic(self):
-        if (self.cfg_ld_dma_ctrl_mode != 0) & ((self.cfg_tile_connected_next) | (self.cfg_tile_connected_prev)):
+        self.rdrq_packet_sw2sr_w = 0
+        if ((self.cfg_ld_dma_ctrl_mode != 0)
+                & (self.cfg_tile_connected_next | self.cfg_tile_connected_prev)):
             self.rdrq_packet_sw2sr_w = self.rdrq_packet_dma2sw
-        else:
-            self.rdrq_packet_sw2sr_w = 0
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_sw2sr_pipeline(self):
@@ -321,14 +267,10 @@ class GlbBankSwitch(Generator):
 
     @ always_comb
     def rdrq_sw2pcfgr_logic(self):
+        self.rdrq_packet_sw2pcfgr_w = 0
         if ((self.cfg_pcfg_dma_ctrl_mode != 0)
-            & ((self.cfg_pcfg_tile_connected_next) | (self.cfg_pcfg_tile_connected_prev))
-                & (self.rdrq_packet_pcfgdma2sw['rd_addr'][self.packet_addr_tile_sel_msb,
-                                                          self.packet_addr_tile_sel_lsb]
-                   != self.glb_tile_id)):
+                & ((self.cfg_pcfg_tile_connected_next) | (self.cfg_pcfg_tile_connected_prev))):
             self.rdrq_packet_sw2pcfgr_w = self.rdrq_packet_pcfgdma2sw
-        else:
-            self.rdrq_packet_sw2pcfgr_w = 0
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_sw2pcfgr_pipeline(self):
@@ -339,61 +281,52 @@ class GlbBankSwitch(Generator):
 
     @ always_comb
     def rdrs_sw2dma_logic(self):
+        self.rdrs_packet_sw2dma = 0
         if self.cfg_ld_dma_ctrl_mode != 0:
-            if (~self.cfg_tile_connected_next) & (~self.cfg_tile_connected_prev):
-                if self.rd_type_d == self.rd_type_e.strm:
-                    self.rdrs_packet_sw2dma = self.rdrs_packet_bankarr2sw_d[self.rdrq_bank_sel_d]
-                else:
-                    self.rdrs_packet_sw2dma = 0
+            if ((~self.cfg_tile_connected_next) & (~self.cfg_tile_connected_prev)):
+                for i in range(self._params.banks_per_tile):
+                    if self.rd_type_d[i] == self.rd_type_e.strm:
+                        self.rdrs_packet_sw2dma = self.rdrs_packet_bankarr2sw_d[i]
             else:
                 self.rdrs_packet_sw2dma = self.rdrs_packet_sr2sw_d
-        else:
-            self.rdrs_packet_sw2dma = 0
 
     @ always_comb
     def rdrs_sw2sr_logic(self):
-        if (~self.cfg_tile_connected_next) & (~self.cfg_tile_connected_prev):
-            self.rdrs_packet_sw2sr = 0
-        else:
-            if self.rd_type_d == self.rd_type_e.strm:
-                self.rdrs_packet_sw2sr = self.rdrs_packet_bankarr2sw_d[self.rdrq_bank_sel_d]
-            else:
-                self.rdrs_packet_sw2sr = 0
+        self.rdrs_packet_sw2sr = 0
+        if (self.cfg_tile_connected_next | self.cfg_tile_connected_prev):
+            for i in range(self._params.banks_per_tile):
+                if self.rd_type_d[i] == self.rd_type_e.strm:
+                    self.rdrs_packet_sw2sr = self.rdrs_packet_bankarr2sw_d[i]
 
-    # rdrs proc
     @ always_comb
     def rdrs_sw2pr_logic(self):
-        if self.rd_type_d == self.rd_type_e.proc:
-            self.rdrs_packet_sw2pr = self.rdrs_packet_bankarr2sw_d[self.rdrq_bank_sel_d]
-        else:
-            self.rdrs_packet_sw2pr = 0
+        self.rdrs_packet_sw2pr = 0
+        for i in range(self._params.banks_per_tile):
+            if self.rd_type_d[i] == self.rd_type_e.proc:
+                self.rdrs_packet_sw2pr = self.rdrs_packet_bankarr2sw_d[i]
 
     @ always_comb
     def rdrs_sw2pcfgdma_logic(self):
+        self.rdrs_packet_sw2pcfgdma = 0
         if self.cfg_pcfg_dma_ctrl_mode != 0:
             if (~self.cfg_pcfg_tile_connected_next) & (~self.cfg_pcfg_tile_connected_prev):
-                if self.rd_type_d == self.rd_type_e.pcfg:
-                    self.rdrs_packet_sw2pcfgdma = self.rdrs_packet_bankarr2sw_d[self.rdrq_bank_sel_d]
-                else:
-                    self.rdrs_packet_sw2pcfgdma = 0
+                for i in range(self._params.banks_per_tile):
+                    if self.rd_type_d[i] == self.rd_type_e.pcfg:
+                        self.rdrs_packet_sw2pcfgdma = self.rdrs_packet_bankarr2sw_d[i]
             else:
                 self.rdrs_packet_sw2pcfgdma = self.rdrs_packet_pcfgr2sw_d
-        else:
-            self.rdrs_packet_sw2pcfgdma = 0
 
     @ always_comb
     def rdrs_sw2pcfgr_logic(self):
-        if (~self.cfg_pcfg_tile_connected_next) & (~self.cfg_pcfg_tile_connected_prev):
-            self.rdrs_packet_sw2pcfgr = 0
-        else:
-            if self.rd_type_d == self.rd_type_e.pcfg:
-                self.rdrs_packet_sw2pcfgr = self.rdrs_packet_bankarr2sw_d[self.rdrq_bank_sel_d]
-            else:
-                self.rdrs_packet_sw2pcfgr = 0
+        self.rdrs_packet_sw2pcfgr = 0
+        if (self.cfg_pcfg_tile_connected_next | self.cfg_pcfg_tile_connected_prev):
+            for i in range(self._params.banks_per_tile):
+                if self.rd_type_d[i] == self.rd_type_e.pcfg:
+                    self.rdrs_packet_sw2pcfgr = self.rdrs_packet_bankarr2sw_d[i]
 
     @ always_comb
     def rdrs_sw2sramcfg_logic(self):
-        if self.rd_type_d == self.rd_type_e.sramcfg:
-            self.rdrs_packet_sw2sramcfg = self.rdrs_packet_bankarr2sw_d[self.rdrq_bank_sel_d]
-        else:
-            self.rdrs_packet_sw2sramcfg = 0
+        self.rdrs_packet_sw2sramcfg = 0
+        for i in range(self._params.banks_per_tile):
+            if self.rd_type_d[i] == self.rd_type_e.sramcfg:
+                self.rdrs_packet_sw2sramcfg = self.rdrs_packet_bankarr2sw_d[i]

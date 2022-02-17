@@ -28,7 +28,6 @@ module top;
     logic dut_clk;
     logic [NUM_GLB_TILES-1:0] pcfg_broadcast_stall;
     logic [NUM_GLB_TILES-1:0] glb_clk_en_master;
-    logic [NUM_CGRA_TILES-1:0] cgra_stall_in;
     logic reset;
     logic cgra_soft_reset;
 
@@ -80,7 +79,6 @@ module top;
 
     // BOTTOM
     // stall
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_stall;
 
     // cgra to glb streaming word
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_f2g;
@@ -100,7 +98,6 @@ module top;
     // ---------------------------------------
     // CGRA signals
     // ---------------------------------------
-    logic [NUM_PRR-1:0] g2c_cgra_stall;
     logic [NUM_PRR-1:0] g2c_cfg_wr_en;
     logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0] g2c_cfg_wr_addr;
     logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0] g2c_cfg_wr_data;
@@ -219,7 +216,7 @@ module top;
 
     cgra cgra (
         // stall
-        .stall      (g2c_cgra_stall),
+        .stall      ( {NUM_PRR{1'b0}} ),
         // configuration
         .cfg_wr_en  (g2c_cfg_wr_en),
         .cfg_wr_addr(g2c_cfg_wr_addr),
@@ -239,7 +236,6 @@ module top;
     // TODO: Assume that NUM_PRR == NUM_GLB_TILES. Use the first one among two signals.
     always_comb begin
         for (int i = 0; i < NUM_PRR; i++) begin
-            g2c_cgra_stall[i]  = cgra_stall[i][0];
             g2c_cfg_wr_en[i]   = cgra_cfg_g2f_cfg_wr_en[i][0];
             g2c_cfg_wr_addr[i] = cgra_cfg_g2f_cfg_addr[i][0];
             g2c_cfg_wr_data[i] = cgra_cfg_g2f_cfg_data[i][0];

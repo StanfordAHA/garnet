@@ -17,8 +17,9 @@ class GlbStoreDma(Generator):
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
 
-        self.data_f2g = self.input("data_f2g", width=self._params.cgra_data_width)
-        self.data_valid_f2g = self.input("data_valid_f2g", width=1)
+        self.data_f2g = self.input("data_f2g", width=self._params.cgra_data_width,
+                                   size=self._params.cgra_per_glb, packed=True)
+        self.data_valid_f2g = self.input("data_valid_f2g", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.wr_packet = self.output("wr_packet", self.header.wr_packet_t)
 
@@ -28,6 +29,7 @@ class GlbStoreDma(Generator):
         self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width)
         self.cfg_st_dma_header = self.input("cfg_st_dma_header", self.header.cfg_dma_header_t,
                                             size=self._params.queue_depth, explicit_array=True)
+        self.cfg_data_network_f2g_mux = self.input("cfg_data_network_f2g_mux", self._params.cgra_per_glb)
 
         self.st_dma_start_pulse = self.input("st_dma_start_pulse", 1)
         self.st_dma_done_interrupt = self.output("st_dma_done_interrupt", 1)
@@ -37,6 +39,11 @@ class GlbStoreDma(Generator):
         self.cgra_strb_value = 2 ** (self._params.cgra_data_width // 8) - 1
 
         # local variables
+        self.data_f2g_r = self.var("data_f2g_r", width=self._params.cgra_data_width,
+                                   size=self._params.cgra_per_glb, packed=True)
+        self.data_valid_f2g_r = self.var("data_valid_f2g_r", 1, size=self._params.cgra_per_glb, packed=True)
+        self.strm_data = self.var("strm_data", width=self._params.cgra_data_width)
+        self.strm_data_valid = self.var("strm_data_valid", width=1)
         self.st_dma_done_pulse = self.var("st_dma_done_pulse", 1)
         self.st_dma_done_pulse_last = self.var("st_dma_done_pulse_last", 1)
         self.strm_wr_data_w = self.var("strm_wr_data_w", width=self._params.cgra_data_width)
@@ -88,6 +95,8 @@ class GlbStoreDma(Generator):
         self.add_always(self.st_dma_start_pulse_logic)
         self.add_always(self.st_dma_start_pulse_ff)
         self.add_always(self.cycle_counter)
+        self.add_always(self.data_f2g_ff)
+        self.add_always(self.data_f2g_logic)
         self.add_always(self.cycle_valid_comb)
         self.add_always(self.strm_wr_packet_comb)
         self.add_always(self.last_strm_wr_addr_ff)
@@ -253,10 +262,32 @@ class GlbStoreDma(Generator):
             elif self.strm_run:
                 self.cycle_count = self.cycle_count + 1
 
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def data_f2g_ff(self):
+        if self.reset:
+            self.data_f2g_r = 0
+            self.data_valid_f2g_r = 0
+        else:
+            for i in range(self._params.cgra_per_glb):
+                self.data_f2g_r[i] = self.data_f2g[i]
+                self.data_valid_f2g_r[i] = self.data_valid_f2g[i]
+
+    @always_comb
+    def data_f2g_logic(self):
+        self.strm_data = 0
+        self.strm_data_valid = 0
+        for i in range(self._params.cgra_per_glb):
+            if self.cfg_data_network_f2g_mux[i] == 1:
+                self.strm_data = self.data_f2g_r[i]
+                self.strm_data_valid = self.data_valid_f2g_r[i]
+            else:
+                self.strm_data = self.strm_data
+                self.strm_data_valid = self.strm_data_valid
+
     @always_comb
     def cycle_valid_comb(self):
         if self.cfg_st_dma_ctrl_use_valid:
-            self.cycle_valid_muxed = self.data_valid_f2g
+            self.cycle_valid_muxed = self.strm_data_valid
         else:
             self.cycle_valid_muxed = self.cycle_valid
 
@@ -264,7 +295,7 @@ class GlbStoreDma(Generator):
     def strm_wr_packet_comb(self):
         self.strm_wr_en_w = self.cycle_valid_muxed
         self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
-        self.strm_wr_data_w = self.data_f2g
+        self.strm_wr_data_w = self.strm_data
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def last_strm_wr_addr_ff(self):

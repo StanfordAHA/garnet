@@ -73,9 +73,8 @@ class GlbSwitch(Generator):
             self.rdrs_packet_r2sw_w = self.var("rdrs_packet_r2sw_w", self.header.rdrs_packet_t)
 
         # localparam
-        self.packet_addr_tile_sel_msb = (_params.bank_addr_width
-                                         + _params.bank_sel_addr_width + _params.tile_sel_addr_width - 1)
-        self.packet_addr_tile_sel_lsb = _params.bank_addr_width + _params.bank_sel_addr_width
+        self.tile_sel_msb = _params.bank_addr_width + _params.bank_sel_addr_width + _params.tile_sel_addr_width - 1
+        self.tile_sel_lsb = _params.bank_addr_width + _params.bank_sel_addr_width
 
         self.add_always(self.packet_wsti_muxed_logic)
         self.add_always(self.packet_esti_muxed_logic)
@@ -122,16 +121,14 @@ class GlbSwitch(Generator):
     @always_comb
     def wr_packet_switch_logic(self):
         if (self.wr_packet_sw2r['wr_en'] == 1):
-            if (self.wr_packet_sw2r['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                    == self.glb_tile_id):
+            if (self.wr_packet_sw2r['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id):
                 self.wr_packet_r2sw_w = self.wr_packet_sw2r
                 self.wr_packet_w2e_esto_w = 0
             else:
                 self.wr_packet_r2sw_w = 0
                 self.wr_packet_w2e_esto_w = self.wr_packet_sw2r
         elif (self.wr_packet_w2e_wsti_muxed['wr_en'] == 1):
-            if (self.wr_packet_w2e_wsti_muxed['wr_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                    == self.glb_tile_id):
+            if (self.wr_packet_w2e_wsti_muxed['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id):
                 self.wr_packet_r2sw_w = self.wr_packet_w2e_wsti_muxed
                 self.wr_packet_w2e_esto_w = 0
             else:
@@ -140,23 +137,19 @@ class GlbSwitch(Generator):
         else:
             self.wr_packet_r2sw_w = 0
             self.wr_packet_w2e_esto_w = 0
-
         self.wr_packet_e2w_wsto_w = self.wr_packet_e2w_esti_muxed
 
     @always_comb
     def rdrq_packet_switch_logic(self):
         if (self.rdrq_packet_sw2r['rd_en'] == 1):
-            if (self.rdrq_packet_sw2r['rd_addr'][self.packet_addr_tile_sel_msb, self.packet_addr_tile_sel_lsb]
-                    == self.glb_tile_id):
+            if (self.rdrq_packet_sw2r['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id):
                 self.rdrq_packet_r2sw_w = self.rdrq_packet_sw2r
                 self.rdrq_packet_w2e_esto_w = 0
             else:
                 self.rdrq_packet_r2sw_w = 0
                 self.rdrq_packet_w2e_esto_w = self.rdrq_packet_sw2r
         elif (self.rdrq_packet_w2e_wsti_muxed['rd_en'] == 1):
-            if (self.rdrq_packet_w2e_wsti_muxed['rd_addr'][self.packet_addr_tile_sel_msb,
-                                                           self.packet_addr_tile_sel_lsb]
-                    == self.glb_tile_id):
+            if (self.rdrq_packet_w2e_wsti_muxed['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id):
                 self.rdrq_packet_r2sw_w = self.rdrq_packet_w2e_wsti_muxed
                 self.rdrq_packet_w2e_esto_w = 0
             else:
@@ -165,7 +158,6 @@ class GlbSwitch(Generator):
         else:
             self.rdrq_packet_r2sw_w = 0
             self.rdrq_packet_w2e_esto_w = 0
-
         self.rdrq_packet_e2w_wsto_w = self.rdrq_packet_e2w_esti_muxed
 
     @always_comb
@@ -184,7 +176,6 @@ class GlbSwitch(Generator):
             self.rdrs_packet_r2sw_w = self.rdrs_packet_w2e_wsti_muxed
         else:
             self.rdrs_packet_r2sw_w = self.rdrs_packet_w2e_wsti_muxed
-
         self.rdrs_packet_e2w_wsto_w = self.rdrs_packet_e2w_esti_muxed
 
     @always_ff((posedge, "clk"), (posedge, "reset"))

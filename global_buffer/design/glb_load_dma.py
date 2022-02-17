@@ -18,8 +18,9 @@ class GlbLoadDma(Generator):
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
-        self.data_g2f = self.output("data_g2f", width=self._params.cgra_data_width)
-        self.data_valid_g2f = self.output("data_valid_g2f", width=1)
+        self.data_g2f = self.output("data_g2f", width=self._params.cgra_data_width,
+                                    size=self._params.cgra_per_glb, packed=True)
+        self.data_valid_g2f = self.output("data_valid_g2f", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.rdrq_packet = self.output("rdrq_packet", self.header.rdrq_packet_t)
         self.rdrs_packet = self.input("rdrs_packet", self.header.rdrs_packet_t)
@@ -30,17 +31,21 @@ class GlbLoadDma(Generator):
         self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width)
         self.cfg_ld_dma_header = self.input(
             "cfg_ld_dma_header", self.header.cfg_dma_header_t, size=self._params.queue_depth)
+        self.cfg_data_network_g2f_mux = self.input("cfg_data_network_g2f_mux", self._params.cgra_per_glb)
 
         self.ld_dma_start_pulse = self.input("ld_dma_start_pulse", 1)
         self.ld_dma_done_interrupt = self.output("ld_dma_done_interrupt", 1)
 
         # local variables
+        self.data_g2f_w = self.var("data_g2f_w", width=self._params.cgra_data_width,
+                                   size=self._params.cgra_per_glb, packed=True)
+        self.data_valid_g2f_w = self.var("data_valid_g2f_w", 1, size=self._params.cgra_per_glb, packed=True)
         self.ld_dma_done_pulse = self.var("ld_dma_done_pulse", 1)
         self.ld_dma_done_pulse_last = self.var("ld_dma_done_pulse_last", 1)
         self.strm_data = self.var("strm_data", self._params.cgra_data_width)
-        self.strm_data_r = self.var("strm_data_r", self._params.cgra_data_width)
+        self.strm_data_muxed = self.var("strm_data_muxed", self._params.cgra_data_width)
         self.strm_data_valid = self.var("strm_data_valid", 1)
-        self.strm_data_valid_r = self.var("strm_data_valid_r", 1)
+        self.strm_data_valid_muxed = self.var("strm_data_valid_muxed", 1)
         self.strm_data_sel = self.var("strm_data_sel", self._params.bank_byte_offset - self._params.cgra_byte_offset)
 
         self.strm_rd_en_w = self.var("strm_rd_en_w", 1)
@@ -84,13 +89,14 @@ class GlbLoadDma(Generator):
         self.add_always(self.cycle_counter)
         self.add_always(self.is_first_ff)
         self.add_always(self.strm_run_ff)
-        self.add_always(self.strm_data_ff)
         self.add_strm_data_start_pulse_pipeline()
         self.add_strm_rd_en_pipeline()
         self.add_strm_rd_addr_pipeline()
         self.add_always(self.ld_dma_start_pulse_logic)
         self.add_always(self.ld_dma_start_pulse_ff)
         self.add_always(self.strm_data_mux)
+        self.add_always(self.data_g2f_logic)
+        self.add_always(self.data_g2f_ff)
         self.add_always(self.ld_dma_done_pulse_logic)
         self.add_always(self.strm_rdrq_packet_ff)
         self.add_always(self.last_strm_rd_addr_ff)
@@ -243,23 +249,34 @@ class GlbLoadDma(Generator):
             elif self.strm_run:
                 self.cycle_count = self.cycle_count + 1
 
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def strm_data_ff(self):
-        if self.reset:
-            self.strm_data_r = 0
-            self.strm_data_valid_r = 0
-        else:
-            self.strm_data_r = self.strm_data
-            self.strm_data_valid_r = self.strm_data_valid
-
     @always_comb
     def strm_data_mux(self):
         if self.cfg_ld_dma_ctrl_use_valid:
-            self.data_g2f = self.strm_data_r
-            self.data_valid_g2f = self.strm_data_valid_r
+            self.strm_data_muxed = self.strm_data
+            self.strm_data_valid_muxed = self.strm_data_valid
         else:
-            self.data_g2f = self.strm_data_r
-            self.data_valid_g2f = self.strm_data_start_pulse
+            self.strm_data_muxed = self.strm_data
+            self.strm_data_valid_muxed = self.strm_data_start_pulse
+
+    @always_comb
+    def data_g2f_logic(self):
+        for i in range(self._params.cgra_per_glb):
+            if self.cfg_data_network_g2f_mux[i] == 1:
+                self.data_g2f_w[i] = self.strm_data_muxed
+                self.data_valid_g2f_w[i] = self.strm_data_valid_muxed
+            else:
+                self.data_g2f_w[i] = 0
+                self.data_valid_g2f_w[i] = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def data_g2f_ff(self):
+        if self.reset:
+            self.data_g2f = 0
+            self.data_valid_g2f = 0
+        else:
+            for i in range(self._params.cgra_per_glb):
+                self.data_g2f[i] = self.data_g2f_w[i]
+                self.data_valid_g2f[i] = self.data_valid_g2f_w[i]
 
     @always_comb
     def ld_dma_done_pulse_logic(self):
@@ -354,7 +371,7 @@ class GlbLoadDma(Generator):
                                                                                         self._params.cgra_byte_offset]
 
     def add_strm_data_start_pulse_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6 + 1
+        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6
         latency_width = clog2(maximum_latency)
         self.strm_data_start_pulse_d_arr = self.var(
             "strm_data_start_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
@@ -371,7 +388,7 @@ class GlbLoadDma(Generator):
         self.strm_data_start_pulse = self.var("strm_data_start_pulse", 1)
         self.wire(self.strm_data_start_pulse,
                   self.strm_data_start_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width)
-                                                   + self._params.tile2sram_rd_delay + 1])
+                                                   + self._params.tile2sram_rd_delay])
 
     def add_ld_dma_done_pulse_pipeline(self):
         maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6 + 1
