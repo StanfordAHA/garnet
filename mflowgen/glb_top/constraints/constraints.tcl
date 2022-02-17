@@ -12,9 +12,9 @@
 # conservative implementation.
 
 
-###############################
+#=========================================================================
 # clk
-###############################
+#=========================================================================
 set clock_net  clk
 set clock_name ideal_clock
 
@@ -22,23 +22,24 @@ create_clock -name ${clock_name} \
              -period ${clock_period} \
              [get_ports ${clock_net}]
 
+#=========================================================================
+# clk phase shift
+#=========================================================================
+# glb-top clock is shifted right in reference to glb-tile.
+# glb-top captures at the next cycle
 set_multicycle_path 2 -setup -from [get_clocks glb_tile_gen*] -to [get_clocks ${clock_name}]
 
 #=========================================================================
 # clk_en multicycle path
 #=========================================================================
-# clk_en for core/rtr/pcfg_rtr are multi_cycle path
-# NOTE: clk_en for cfg and jtag are not multi cycle path
-set_multicycle_path -setup 10 -from {core_stall}
-set_multicycle_path -hold 9 -from {core_stall}
-set_multicycle_path -setup 10 -from {rtr_stall}
-set_multicycle_path -hold 9 -from {rtr_stall}
-set_multicycle_path -setup 10 -from {pcfg_stall}
-set_multicycle_path -hold 9 -from {pcfg_stall}
+set_multicycle_path -setup 10 -from {pcfg_broadcast_stall}
+set_multicycle_path -hold 9 -from {pcfg_broadcast_stall}
+set_multicycle_path -setup 10 -from {glb_clk_en_master}
+set_multicycle_path -hold 9 -from {glb_clk_en_master}
 
-###############################
+#=========================================================================
 # load
-###############################
+#=========================================================================
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
 set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
@@ -52,54 +53,48 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
-###############################
+#=========================================================================
 # input delay
-###############################
+#=========================================================================
 # set_input_delay constraints for input ports
 set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
 set_input_delay -clock ${clock_name} 0 [get_ports reset]
 # glb-cgra delay is high
 set_input_delay -clock ${clock_name} 0.4 [get_ports strm_data_*f2g*]
 
-###############################
+#=========================================================================
 # output delay
-###############################
+#=========================================================================
 # set_output_delay constraints for output ports
 set_output_delay -clock ${clock_name} 0.2 [all_outputs]
 # glb-cgra delay is high
 set_input_delay -clock ${clock_name} 0.4 [get_ports strm_data_*g2f*]
 set_input_delay -clock ${clock_name} 0.4 [get_ports cgra_cfg_g2f*]
-set_input_delay -clock ${clock_name} 0.4 [get_ports cgra_stall]
 
-###############################
-# set_false path
-###############################
-# glc reading configuration registers is false path
-set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
+#=========================================================================
+# set_muticycle_path & set_false path
+#=========================================================================
+# glc reading configuration registers is multi_cycle path
+set_case_analysis 0 cgra_cfg_jtag_gc2glb_rd_en
+set_multicycle_path -setup 4 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
+set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
+
 # jtag bypass mode is false path
 set_false_path -through [get_pins glb_tile_gen_*/*bypass]
 
-###############################
+#=========================================================================
 # jtag sram read
-###############################
-set_multicycle_path -setup 10 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
-set_multicycle_path -hold 9 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
-set_multicycle_path -setup 10 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
-set_multicycle_path -hold 9 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
-set_multicycle_path -setup 10 -through [get_pins glb_tile_gen_*/if_sram*rd*]
-set_multicycle_path -hold 9 -through [get_pins glb_tile_gen_*/if_sram*rd*]
+#=========================================================================
+set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
+set_multicycle_path -hold 3 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
+set_multicycle_path -setup 4 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
+set_multicycle_path -hold 3 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
+set_multicycle_path -setup 4 -through [get_pins glb_tile_gen_*/if_sram*rd*]
+set_multicycle_path -hold 3 -through [get_pins glb_tile_gen_*/if_sram*rd*]
 
-###############################
-# jtag write
-###############################
-set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
-set_multicycle_path -hold 3 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
-set_multicycle_path -setup 4 -through [get_pins glb_tile_gen_*/if_sram*wr*]
-set_multicycle_path -hold 3 -through [get_pins glb_tile_gen_*/if_sram*wr*]
-
-###############################
+#=========================================================================
 # interrupt
-###############################
+#=========================================================================
 # interrupt is asserted for 4 cycles 
 set_multicycle_path -setup 4 -to [get_ports *interrupt_pulse -filter "direction==out"]
 set_multicycle_path -hold 3 -to [get_ports *interrupt_pulse -filter "direction==out"]
