@@ -11,6 +11,8 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
+set_units -time ns -capacitance pF
+
 set clock_net  pad_MASTER_CLK
 set clock_name ideal_clock
 

@@ -11,10 +11,12 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
+set_units -time ns -capacitance pF
+
 #=========================================================================
 # clk
 #=========================================================================
-set clock_net clk
+set clock_net  clk
 set clock_name ideal_clock
 
 create_clock -name ${clock_name} \
