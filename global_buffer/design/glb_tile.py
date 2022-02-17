@@ -224,7 +224,7 @@ class GlbTile(Generator):
         self.clk_en_sram_cfg_switch = self.var("clk_en_sram_cfg_switch", 1)
         self.wire(self.clk_en_sram_cfg_switch, self.if_sram_cfg_wst_s_wr_clk_en | self.if_sram_cfg_wst_s_rd_clk_en)
         self.clk_en_sramcfg2bank = self.var("clk_en_sramcfg2bank", 1)
-        self.add_child("glb_clk_gate_jtag_sram",
+        self.add_child("glb_clk_gate_sram_cfg_switch",
                        ClkGate(),
                        clk=self.clk,
                        enable=self.clk_en_sram_cfg_switch | self.clk_en_master,
