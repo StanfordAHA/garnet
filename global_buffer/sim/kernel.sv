@@ -130,7 +130,8 @@ function Test::new(string filename);
     for (int i = 0; i < num_kernels; i++) begin
         // For PCFG test, unstall pcfg logic
         if (kernels[i].type_ == PCFG) begin
-            pcfg_broadcast_stall_mask[kernels[i].tile_id] = 1'b0;
+            pcfg_broadcast_stall_mask = 0;
+            break;
         end
     end
 

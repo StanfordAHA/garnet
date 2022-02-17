@@ -1,11 +1,9 @@
 from kratos import Generator, RawStringStmt, const
 from kratos.util import clock
 from global_buffer.design.glb_store_dma import GlbStoreDma
-from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_load_dma import GlbLoadDma
 from global_buffer.design.glb_pcfg_dma import GlbPcfgDma
 from global_buffer.design.glb_cfg import GlbCfg
-from global_buffer.design.glb_strm_mux import GlbStrmMux
 from global_buffer.design.glb_bank_switch import GlbBankSwitch
 from global_buffer.design.glb_switch import GlbSwitch
 from global_buffer.design.glb_proc_switch import GlbProcSwitch
@@ -348,8 +346,8 @@ class GlbTile(Generator):
                        GlbStoreDma(_params=self._params),
                        clk=clock(self.gclk_st_dma),
                        reset=self.reset,
-                       data_f2g=self.strm_data_f2g_mux2dma,
-                       data_valid_f2g=self.strm_data_valid_f2g_mux2dma,
+                       data_f2g=self.strm_data_f2g,
+                       data_valid_f2g=self.strm_data_valid_f2g,
                        wr_packet=self.strm_wr_packet_dma2sw,
                        # TODO: How to make this automatic
                        cfg_st_dma_num_repeat=self.cfg_st_dma_ctrl['num_repeat'],
@@ -358,15 +356,16 @@ class GlbTile(Generator):
                        cfg_data_network_latency=self.glb_cfg.cfg_data_network['latency'],
                        cfg_st_dma_header=self.cfg_st_dma_header,
                        st_dma_start_pulse=self.strm_f2g_start_pulse,
-                       st_dma_done_interrupt=self.strm_f2g_interrupt_pulse)
+                       st_dma_done_interrupt=self.strm_f2g_interrupt_pulse,
+                       cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'])
 
         self.add_child("glb_load_dma",
                        GlbLoadDma(_params=self._params),
                        clk=clock(self.gclk_ld_dma),
                        glb_tile_id=self.glb_tile_id,
                        reset=self.reset,
-                       data_g2f=self.strm_data_g2f_dma2mux,
-                       data_valid_g2f=self.strm_data_valid_g2f_dma2mux,
+                       data_g2f=self.strm_data_g2f,
+                       data_valid_g2f=self.strm_data_valid_g2f,
                        rdrq_packet=self.strm_rdrq_packet_dma2sw,
                        rdrs_packet=self.strm_rdrs_packet_sw2dma,
                        # TODO: How to make this automatic
@@ -375,6 +374,7 @@ class GlbTile(Generator):
                        cfg_ld_dma_ctrl_mode=self.cfg_ld_dma_ctrl['mode'],
                        cfg_data_network_latency=self.glb_cfg.cfg_data_network['latency'],
                        cfg_ld_dma_header=self.cfg_ld_dma_header,
+                       cfg_data_network_g2f_mux=self.cfg_ld_dma_ctrl['data_mux'],
                        ld_dma_start_pulse=self.strm_g2f_start_pulse,
                        ld_dma_done_interrupt=self.strm_g2f_interrupt_pulse)
 
@@ -392,19 +392,6 @@ class GlbTile(Generator):
                        cfg_pcfg_dma_header=self.cfg_pcfg_dma_header,
                        pcfg_dma_start_pulse=self.pcfg_start_pulse,
                        pcfg_dma_done_interrupt=self.pcfg_g2f_interrupt_pulse)
-
-        self.add_child("glb_strm_mux",
-                       GlbStrmMux(_params=self._params),
-                       data_g2f_dma=self.strm_data_g2f_dma2mux,
-                       data_valid_g2f_dma=self.strm_data_valid_g2f_dma2mux,
-                       data_g2f=self.strm_data_g2f,
-                       data_valid_g2f=self.strm_data_valid_g2f,
-                       data_f2g_dma=self.strm_data_f2g_mux2dma,
-                       data_valid_f2g_dma=self.strm_data_valid_f2g_mux2dma,
-                       data_f2g=self.strm_data_f2g,
-                       data_valid_f2g=self.strm_data_valid_f2g,
-                       cfg_data_network_g2f_mux=self.cfg_ld_dma_ctrl['data_mux'],
-                       cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'])
 
         self.glb_bank_switch = GlbBankSwitch(_params=self._params)
         self.add_child("glb_bank_switch",
@@ -627,10 +614,6 @@ class GlbTile(Generator):
         self.rdrs_packet_bankarr2sw = self.var(
             "rdrs_packet_bankarr2sw", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
 
-        self.strm_data_g2f_dma2mux = self.var("strm_data_g2f_dma2mux", self._params.cgra_data_width)
-        self.strm_data_valid_g2f_dma2mux = self.var("strm_data_valid_g2f_dma2mux", 1)
-        self.strm_data_f2g_mux2dma = self.var("strm_data_f2g_mux2dma", self._params.cgra_data_width)
-        self.strm_data_valid_f2g_mux2dma = self.var("strm_data_valid_f2g_mux2dma", 1)
         self.cgra_cfg_pcfgdma2mux = self.var("cgra_cfg_pcfgdma2mux", self.header.cgra_cfg_t)
 
         self.proc_wr_packet_r2sw = self.var("proc_wr_packet_r2sw", self.header.wr_packet_t)

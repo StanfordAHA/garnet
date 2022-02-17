@@ -11,7 +11,6 @@ program glb_test (
     input  logic                      reset,
     output logic [ NUM_GLB_TILES-1:0] glb_clk_en_master,
     output logic [ NUM_GLB_TILES-1:0] pcfg_broadcast_stall,
-    output logic [NUM_CGRA_TILES-1:0] cgra_stall_in,
 
     // proc
     output logic                         proc_wr_en,
@@ -60,7 +59,6 @@ program glb_test (
     input  logic [NUM_GLB_TILES-1:0] pcfg_g2f_interrupt_pulse,
 
     // cgra configuration to cgra
-    input logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_stall,
     input logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_cfg_g2f_cfg_wr_en,
     input logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_cfg_g2f_cfg_rd_en,
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
@@ -124,6 +122,9 @@ program glb_test (
                     j++
                 ) begin
                     data_network_configure(
+                        j, 1,
+                        (num_chained_prev + num_chained_next) * 2 + 5 + GLB_BANK2SW_PIPELINE_DEPTH);
+                    pcfg_network_configure(
                         j, 1,
                         (num_chained_prev + num_chained_next) * 2 + 5 + GLB_BANK2SW_PIPELINE_DEPTH);
                 end
@@ -343,7 +344,6 @@ program glb_test (
         // control
         glb_clk_en_master <= 0;
         pcfg_broadcast_stall <= 0;
-        cgra_stall_in <= 0;
         pcfg_start_pulse <= 0;
         strm_g2f_start_pulse <= 0;
         strm_f2g_start_pulse <= 0;
@@ -471,6 +471,12 @@ program glb_test (
                                           [LATENCY_WIDTH-1:0] latency);
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_R,
                       (latency << `GLB_DATA_NETWORK_LATENCY_F_LSB) | (is_connected << `GLB_DATA_NETWORK_TILE_CONNECTED_F_LSB));
+    endtask
+
+    task automatic pcfg_network_configure(input int tile_id, bit is_connected,
+                                          [LATENCY_WIDTH-1:0] latency);
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_NETWORK_R,
+                      (latency << `GLB_PCFG_NETWORK_LATENCY_F_LSB) | (is_connected << `GLB_PCFG_NETWORK_TILE_CONNECTED_F_LSB));
     endtask
 
     task automatic pcfg_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
@@ -842,7 +848,7 @@ program glb_test (
         @(posedge clk);
         #2 strm_f2g_start_pulse <= 0;
 
-        repeat (GLS_PIPELINE_DEPTH - 1) @(posedge clk);
+        repeat (GLS_PIPELINE_DEPTH + 3) @(posedge clk);
         // Enable glb2prr
         for (int i = 0; i < NUM_PRR; i++) begin
             if (tile_id_mask[i] == 1) begin
