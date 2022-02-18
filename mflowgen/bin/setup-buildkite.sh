@@ -459,7 +459,7 @@ if [ "$USER" == "buildkite-agent" ]; then
     # i.e. creates mflowgen.droute-auto-stop/adks/sim/steveri/...
     #
     # Maybe it's because of the -a (archive) flag?
-    set -x; rsync -vR $tsmc16 $adks; set +x
+    (set -x; cd $adks/..; rsync -avR $tsmc16 ./adks; set +x)
 
 
     export MFLOWGEN_PATH=$adks
