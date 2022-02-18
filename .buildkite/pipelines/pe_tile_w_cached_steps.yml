@@ -69,8 +69,8 @@ steps:
      pwd; ls -l;
      cd *-Tile_PE; mflowgen run --design $$GARNET_HOME/mflowgen/Tile_PE;
      pwd; ls -l;
-     echo "--- make rtl I guess"; make -n rtl;
-     echo "--- make syn perhaps"; make -n cadence-genus-synthesis;
+     echo "--- make rtl I guess"; make rtl;
+     echo "--- make syn perhaps"; make cadence-genus-synthesis;
      '
 
 
