@@ -59,9 +59,10 @@ steps:
   # 
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
      pwd; set -x; cp -rp $$CACHE/full_chip/*-rtl .;
-     make -n 18-tile_array;
+     mkdir 18-tile_array;
+     pwd; ls -l'
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
-     pwd; ls -lR'
+     pwd; ls -l'
 
 
 # - label: 'pe rtl'
