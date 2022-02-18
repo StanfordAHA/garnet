@@ -2,11 +2,11 @@
 
 if [ "$1" == "--help" ]; then cat <<EOF
 
-USAGE: $0 <refdir> <step>
+USAGE: $0 <refdir> <target_step>
 
 DESCRIPTION:
 Builds symbolic links to the appropriate collateral in reference dir
-<refdir> such that you can locally run mflowgen step <step>.
+<refdir> such that you can locally run mflowgen step <target_step>.
 
 EXAMPLE USE CASE:
 Suppose you have a design with multiple mflowgen steps.
@@ -29,7 +29,7 @@ a Makefile such that "make list" gives a valid list of mflowgen steps.
 Linked nodes are renumbered as appropriate to account for changes in
 the graph between <refdir> and local dir.
 
-E.g. for <step> = 'cadence-innovus-postroute_hold' it might link
+E.g. for <target_step> = 'cadence-innovus-postroute_hold' it might link
 these two steps from <refdir> into current (build) dir
 
     ln -s ./23-cadence-innovus-flowsetup <refdir>/22-cadence-innovus-flowsetup
@@ -82,7 +82,7 @@ function get_predecessors {
     #   - Could do "test -e .mflowgen || ERROR"
 
     target_step=${1} ; # E.g. "rtl"
-    target_step=cadence-innovus-postroute_hold
+#     target_step=cadence-innovus-postroute_hold
 
     stepdir=$(/bin/ls .mflowgen | egrep "^[0-9]*-${target_step}") ; # E.g. "11-rtl"
     config_file=".mflowgen/${stepdir}/configure.yml"
@@ -112,7 +112,7 @@ function get_predecessors {
 }
 echo ""; echo "NODE PREDS"
 # get_predecessors cadence-innovus-postroute_hold
-get_predecessors $step
+get_predecessors $target_step
 echo ""
 
 
