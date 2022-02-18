@@ -485,9 +485,9 @@ if [ "$USER" == "buildkite-agent" ]; then
     # screw it!
     # Link to the adk(s)
     echo "Linking to adks in '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
-    (set -x; cd $adks; ln -s $tsmc16; set +x)
-
-
+    if [ ! -e tsmc16 ]; then
+        (set -x; cd $adks; ln -s $tsmc16; set +x)
+    fi
 
 else
     # FIXME/TODO what about normal users, can they use this?
