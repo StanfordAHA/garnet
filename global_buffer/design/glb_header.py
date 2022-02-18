@@ -37,6 +37,12 @@ class GlbHeader():
                                                   [("start_addr", self._params.glb_addr_width),
                                                    ("num_cfg", self._params.max_num_cfg_width)])
 
+        self.wr_bank_packet_ports = [("wr_en", 1),
+                                     ("wr_strb", self._params.bank_strb_width),
+                                     ("wr_addr", self._params.bank_addr_width),
+                                     ("wr_data", self._params.bank_data_width), ]
+        self.rdrq_bank_packet_ports = [("rd_en", 1),
+                                       ("rd_addr", self._params.bank_addr_width), ]
         self.wr_packet_ports = [("wr_en", 1),
                                 ("wr_strb", self._params.bank_strb_width),
                                 ("wr_addr", self._params.glb_addr_width),
@@ -49,6 +55,8 @@ class GlbHeader():
         self.packet_ports = self.wr_packet_ports + self.rdrq_packet_ports + self.rdrs_packet_ports
         self.rd_packet_ports = self.rdrq_packet_ports + self.rdrs_packet_ports
 
+        self.wr_bank_packet_t = PackedStruct("wr_bank_packet_t", self.wr_bank_packet_ports)
+        self.rdrq_bank_packet_t = PackedStruct("rdrq_bank_packet_t", self.rdrq_bank_packet_ports)
         self.wr_packet_t = PackedStruct("wr_packet_t", self.wr_packet_ports)
         self.rdrq_packet_t = PackedStruct("rdrq_packet_t", self.rdrq_packet_ports)
         self.rdrs_packet_t = PackedStruct("rdrs_packet_t", self.rdrs_packet_ports)

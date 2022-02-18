@@ -610,9 +610,9 @@ class GlbTile(Generator):
 
     def struct_wiring(self):
         self.wr_packet_sw2bankarr = self.var(
-            "wr_packet_sw2bankarr", self.header.wr_packet_t, size=self._params.banks_per_tile)
+            "wr_packet_sw2bankarr", self.header.wr_bank_packet_t, size=self._params.banks_per_tile)
         self.rdrq_packet_sw2bankarr = self.var(
-            "rdrq_packet_sw2bankarr", self.header.rdrq_packet_t, size=self._params.banks_per_tile)
+            "rdrq_packet_sw2bankarr", self.header.rdrq_bank_packet_t, size=self._params.banks_per_tile)
         self.rdrs_packet_bankarr2sw = self.var(
             "rdrs_packet_bankarr2sw", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
 
