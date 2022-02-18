@@ -26,19 +26,20 @@ env:
 steps:
 
 
-- label: 'setup'
-  commands:
+# - label: 'setup'
+#   commands:
+# 
+# # # Copy existing rtl collateral
+# # - 'set -x; mkdir -p full_chip; cp -rp $$GOLD/full_chip/*-rtl full_chip/'
+# 
+#   # Copy existing rtl collateral;
+#   # Think of setup-buildkite as a fancy "mkdir -p $d && cd $d"
+#   - 'set -x; 
+#      source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+#      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+#      $$GET_STEP_CONTEXT --from /build/gold --step tile_array;
+#      pwd; ls -lR'
 
-# # Copy existing rtl collateral
-# - 'set -x; mkdir -p full_chip; cp -rp $$GOLD/full_chip/*-rtl full_chip/'
-
-  # Copy existing rtl collateral;
-  # Think of setup-buildkite as a fancy "mkdir -p $d && cd $d"
-  - 'set -x; 
-     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
-     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
-     $$GET_STEP_CONTEXT --from /build/gold --step tile_array;
-     pwd; ls -lR'
 
 # Uhhhh...see if this works
 - label: 'setup'
@@ -57,7 +58,7 @@ steps:
   # "mflowgen run full_chip" to reset rtl in the context of latest full_chip framework
   # 
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
-     set -x; mkdir -p full_chip; cp -rp $$CACHE/full_chip/*-rtl full_chip/
+     set -x; mkdir -p full_chip; cp -rp $$CACHE/full_chip/*-rtl full_chip/;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      make -n tile_array;
      pwd; ls -lR'
