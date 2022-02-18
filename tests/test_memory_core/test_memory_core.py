@@ -3191,11 +3191,10 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
         run_tb (function): [description]
         cwd (str): [description]
     """
-    # Streams and code to create them and align them
-    num_cycles = 50
-    chip_size = 6
-    num_tracks = 5
-    altcore = [ScannerCore, IntersectCore]
+    num_cycles = 250
+    chip_size = 12
+    num_tracks = 10
+    altcore = [ScannerCore, IntersectCore, FakePECore, LookupCore, WriteScannerCore]
 
     interconnect = create_cgra(width=chip_size, height=chip_size,
                                io_sides=NetlistBuilder.io_sides(),
@@ -3213,6 +3212,7 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
     mem_aroot = nlb.register_core("memtile", flushable=True)
     mem_arows = nlb.register_core("memtile", flushable=True)
     mem_avals = nlb.register_core("memtile", flushable=True)
+    mem_avals_lu = nlb.register_core("lookup", flushable=True, name="mem_avals_lu")
 
     # Matrix B
     scan_broot = nlb.register_core("scanner", flushable=True)
@@ -3220,25 +3220,28 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
     mem_broot = nlb.register_core("memtile", flushable=True)
     mem_brows = nlb.register_core("memtile", flushable=True)
     mem_bvals = nlb.register_core("memtile", flushable=True)
+    mem_bvals_lu = nlb.register_core("lookup", flushable=True, name="mem_bvals_lu")
+
+    wscan_root = nlb.register_core("write_scanner", flushable=True, name="wscan_root")
+    wscan_rows = nlb.register_core("write_scanner", flushable=True, name="wscan_rows")
+    wscan_vals = nlb.register_core("write_scanner", flushable=True, name="wscan_vals")
+    mem_xroot = nlb.register_core("memtile", flushable=True, name="mem_xroot")
+    mem_xrows = nlb.register_core("memtile", flushable=True, name="mem_xrows")
+    mem_xvals = nlb.register_core("memtile", flushable=True, name="mem_xvals")
+
+    pe_mul = nlb.register_core("fake_pe", name="pe_mul")
 
     # Intersect the two...
     isect_row = nlb.register_core("intersect", flushable=True)
     isect_col = nlb.register_core("intersect", flushable=True)
 
-    coord_isect = nlb.register_core("intersect", flushable=True)
-
-    reg_coord = nlb.register_core("register")
-    reg_eos_out = nlb.register_core("register")
-    reg_valid_out = nlb.register_core("register")
-
-    valid_out = nlb.register_core("io_1")
-    eos_out = nlb.register_core("io_1")
-    coord_out = nlb.register_core("io_16")
-    o_coord_out = nlb.register_core("io_16")
+    # valid_out = nlb.register_core("io_1")
+    # eos_out = nlb.register_core("io_1")
+    # coord_out = nlb.register_core("io_16")
     val_out_0 = nlb.register_core("io_16")
     val_out_1 = nlb.register_core("io_16")
 
-    ready_in = nlb.register_core("io_1")
+    # ready_in = nlb.register_core("io_1")
     flush_in = nlb.register_core("io_1")
 
     conn_dict = {
@@ -3247,28 +3250,34 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
             ([(scan_aroot, "addr_out"), (mem_aroot, "addr_in_0")], 16),
             ([(scan_aroot, "ready_out"), (mem_aroot, "ren_in_0")], 1),
             ([(mem_aroot, "data_out_0"), (scan_aroot, "data_in")], 16),
-            ([(mem_aroot, "valid_out_0"), (scan_aroot, "valid_in")], 1)
+            ([(mem_aroot, "valid_out_0"), (scan_aroot, "valid_in")], 1),
         ],
 
         'scan_broot_to_mem_broot': [
             ([(scan_broot, "addr_out"), (mem_broot, "addr_in_0")], 16),
             ([(scan_broot, "ready_out"), (mem_broot, "ren_in_0")], 1),
             ([(mem_broot, "data_out_0"), (scan_broot, "data_in")], 16),
-            ([(mem_broot, "valid_out_0"), (scan_broot, "valid_in")], 1)
+            ([(mem_broot, "valid_out_0"), (scan_broot, "valid_in")], 1),
         ],
 
         # top level intersection
         'root_scans_to_intersect': [
             ([(scan_aroot, "coord_out"), (isect_row, "coord_in_0")], 16),
             ([(scan_broot, "coord_out"), (isect_row, "coord_in_1")], 16),
-            ([(scan_aroot, "payload_ptr"), (isect_row, "payload_ptr_0")], 16),
-            ([(scan_broot, "payload_ptr"), (isect_row, "payload_ptr_1")], 16),
-            ([(scan_aroot, "valid_out"), (isect_row, "valid_in_0")], 1),
-            ([(scan_broot, "valid_out"), (isect_row, "valid_in_1")], 1),
-            ([(scan_aroot, "eos_out"), (isect_row, "eos_in_0")], 1),
-            ([(scan_broot, "eos_out"), (isect_row, "eos_in_1")], 1),
-            ([(isect_row, "ready_out_0"), (scan_aroot, "ready_in")], 1),
-            ([(isect_row, "ready_out_1"), (scan_broot, "ready_in")], 1)
+            ([(scan_aroot, "pos_out"), (isect_row, "pos_in_0")], 16),
+            ([(scan_broot, "pos_out"), (isect_row, "pos_in_1")], 16),
+            ([(scan_aroot, "valid_out_0"), (isect_row, "valid_in_0")], 1),
+            ([(scan_broot, "valid_out_0"), (isect_row, "valid_in_1")], 1),
+            ([(scan_aroot, "valid_out_1"), (isect_row, "valid_in_2")], 1),
+            ([(scan_broot, "valid_out_1"), (isect_row, "valid_in_3")], 1),
+            ([(scan_aroot, "eos_out_0"), (isect_row, "eos_in_0")], 1),
+            ([(scan_broot, "eos_out_0"), (isect_row, "eos_in_1")], 1),
+            ([(scan_aroot, "eos_out_1"), (isect_row, "eos_in_2")], 1),
+            ([(scan_broot, "eos_out_1"), (isect_row, "eos_in_3")], 1),
+            ([(isect_row, "ready_out_0"), (scan_aroot, "ready_in_0")], 1),
+            ([(isect_row, "ready_out_1"), (scan_broot, "ready_in_0")], 1),
+            ([(isect_row, "ready_out_2"), (scan_aroot, "ready_in_1")], 1),
+            ([(isect_row, "ready_out_3"), (scan_broot, "ready_in_1")], 1),
         ],
 
         # top intersect to the next level of scanners
@@ -3276,65 +3285,134 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
             ([(isect_row, "pos_out_0"), (scan_arows, "us_pos_in")], 16),
             ([(isect_row, "pos_out_1"), (scan_brows, "us_pos_in")], 16),
             # Bring intersect coord to the scanner to emit final coords
-            ([(isect_row, "coord_out"), (scan_arows, "us_coord_in"), (scan_brows, "us_coord_in")], 16),
-            ([(isect_row, "valid_out"), (scan_arows, "us_valid_in"), (scan_brows, "us_valid_in")], 1),
-            ([(isect_row, "eos_out"), (scan_arows, "us_eos_in"), (scan_brows, "us_eos_in")], 1),
-            ([(scan_arows, "us_ready_out"), (isect_row, "ready_in")], 1)
+            # ([(isect_row, "coord_out"), (scan_arows, "us_coord_in"), (scan_brows, "us_coord_in")], 16),
+            # ([(isect_row, "coord_out"), (scan_arows, "us_coord_in"), (scan_brows, "us_coord_in")], 16),
+            ([(isect_row, "valid_out_1"), (scan_arows, "us_valid_in")], 1),
+            ([(isect_row, "valid_out_2"), (scan_brows, "us_valid_in")], 1),
+            # ([(isect_row, "valid_out"), (scan_arows, "us_valid_in"), (scan_brows, "us_valid_in")], 1),
+            ([(isect_row, "eos_out_1"), (scan_arows, "us_eos_in")], 1),
+            ([(isect_row, "eos_out_2"), (scan_brows, "us_eos_in")], 1),
+            ([(scan_arows, "us_ready_out"), (isect_row, "ready_in_1")], 1),
+            ([(scan_brows, "us_ready_out"), (isect_row, "ready_in_2")], 1),
         ],
 
         'scan_arows_to_mem_arows': [
             ([(scan_arows, "addr_out"), (mem_arows, "addr_in_0")], 16),
             ([(scan_arows, "ready_out"), (mem_arows, "ren_in_0")], 1),
             ([(mem_arows, "data_out_0"), (scan_arows, "data_in")], 16),
-            ([(mem_arows, "valid_out_0"), (scan_arows, "valid_in")], 1)
+            ([(mem_arows, "valid_out_0"), (scan_arows, "valid_in")], 1),
         ],
 
         'scan_brows_to_mem_brows': [
             ([(scan_brows, "addr_out"), (mem_brows, "addr_in_0")], 16),
             ([(scan_brows, "ready_out"), (mem_brows, "ren_in_0")], 1),
             ([(mem_brows, "data_out_0"), (scan_brows, "data_in")], 16),
-            ([(mem_brows, "valid_out_0"), (scan_brows, "valid_in")], 1)
+            ([(mem_brows, "valid_out_0"), (scan_brows, "valid_in")], 1),
         ],
 
         # row scanners to intersect
         'row_scans_to_intersect': [
             ([(scan_arows, "coord_out"), (isect_col, "coord_in_0")], 16),
             ([(scan_brows, "coord_out"), (isect_col, "coord_in_1")], 16),
-            ([(scan_arows, "payload_ptr"), (isect_col, "payload_ptr_0")], 16),
-            ([(scan_brows, "payload_ptr"), (isect_col, "payload_ptr_1")], 16),
-            ([(scan_arows, "valid_out"), (isect_col, "valid_in_0")], 1),
-            ([(scan_brows, "valid_out"), (isect_col, "valid_in_1")], 1),
-            ([(scan_arows, "eos_out"), (isect_col, "eos_in_0")], 1),
-            ([(scan_brows, "eos_out"), (isect_col, "eos_in_1")], 1),
-            ([(isect_col, "ready_out_0"), (scan_arows, "ready_in")], 1),
-            ([(isect_col, "ready_out_1"), (scan_brows, "ready_in")], 1)
+            ([(scan_arows, "pos_out"), (isect_col, "pos_in_0")], 16),
+            ([(scan_brows, "pos_out"), (isect_col, "pos_in_1")], 16),
+            ([(scan_arows, "valid_out_0"), (isect_col, "valid_in_0")], 1),
+            ([(scan_brows, "valid_out_0"), (isect_col, "valid_in_1")], 1),
+            ([(scan_arows, "valid_out_1"), (isect_col, "valid_in_2")], 1),
+            ([(scan_brows, "valid_out_1"), (isect_col, "valid_in_3")], 1),
+            ([(scan_arows, "eos_out_0"), (isect_col, "eos_in_0")], 1),
+            ([(scan_brows, "eos_out_0"), (isect_col, "eos_in_1")], 1),
+            ([(scan_arows, "eos_out_1"), (isect_col, "eos_in_2")], 1),
+            ([(scan_brows, "eos_out_1"), (isect_col, "eos_in_3")], 1),
+            ([(isect_col, "ready_out_0"), (scan_arows, "ready_in_0")], 1),
+            ([(isect_col, "ready_out_1"), (scan_brows, "ready_in_0")], 1),
+            ([(isect_col, "ready_out_2"), (scan_arows, "ready_in_1")], 1),
+            ([(isect_col, "ready_out_3"), (scan_brows, "ready_in_1")], 1),
         ],
 
         # Basically apply ready_in to the isect
-        'isect_to_io': [
-            ([(ready_in, "io2f_1"), (isect_col, "ready_in"), ()], 1),
-            # Register coord_out
-            ([(isect_col, "coord_out"), (reg_coord, "reg")], 16),
-            ([(reg_coord, "reg"), (coord_out, "f2io_16")], 16),
-            # Register valid_out
-            # ([(isect, "valid_out"), (reg_valid_out, "reg")], 1),
-            ([(reg_valid_out, "reg"), (valid_out, "f2io_1")], 1),
-            # Register eos_out
-            ([(isect_col, "eos_out"), (reg_eos_out, "reg")], 1),
-            ([(reg_eos_out, "reg"), (eos_out, "f2io_1")], 1),
+        'isects_to_merger': [
+            # Send isect row and isect col to merger inside isect_col
+            ([(isect_col, "coord_out"), (isect_col, "cmrg_coord_in_0")], 16),
+            ([(isect_row, "coord_out"), (isect_col, "cmrg_coord_in_1")], 16),
+            ([(isect_col, "valid_out_0"), (isect_col, "cmrg_valid_in_0")], 1),
+            ([(isect_row, "valid_out_0"), (isect_col, "cmrg_valid_in_1")], 1),
+            ([(isect_col, "eos_out_0"), (isect_col, "cmrg_eos_in_0")], 1),
+            ([(isect_row, "eos_out_0"), (isect_col, "cmrg_eos_in_1")], 1),
+            ([(isect_col, "cmrg_ready_out_0"), (isect_col, "ready_in_0")], 1),
+            ([(isect_col, "cmrg_ready_out_1"), (isect_row, "ready_in_0")], 1),
         ],
 
         # Read from the corresponding memories to get actual values
         'isect_to_value_mems': [
-            ([(isect_col, "pos_out_0"), (mem_avals, "addr_in_0")], 16),
-            ([(isect_col, "pos_out_1"), (mem_bvals, "addr_in_0")], 16),
-            ([(isect_col, "valid_out"), (mem_avals, "ren_in_0"), (mem_bvals, "ren_in_0"), (reg_valid_out, "reg")], 1),
+            ([(isect_col, "pos_out_0"), (mem_avals_lu, "pos_in")], 16),
+            ([(isect_col, "pos_out_1"), (mem_bvals_lu, "pos_in")], 16),
+            ([(isect_col, "valid_out_1"), (mem_avals_lu, "valid_in")], 1),
+            ([(isect_col, "valid_out_2"), (mem_bvals_lu, "valid_in")], 1),
+            ([(isect_col, "eos_out_1"), (mem_avals_lu, "eos_in")], 1),
+            ([(isect_col, "eos_out_2"), (mem_bvals_lu, "eos_in")], 1),
+            ([(mem_avals_lu, "ready_out"), (isect_col, "ready_in_1")], 1),
+            ([(mem_bvals_lu, "ready_out"), (isect_col, "ready_in_2")], 1),
+            # Actual memory lookup
+            ([(mem_avals_lu, "addr_out"), (mem_avals, "addr_in_0")], 16),
+            ([(mem_bvals_lu, "addr_out"), (mem_bvals, "addr_in_0")], 16),
+            ([(mem_avals_lu, "ren"), (mem_avals, "ren_in_0")], 1),
+            ([(mem_bvals_lu, "ren"), (mem_bvals, "ren_in_0")], 1),
+            ([(mem_avals, "data_out_0"), (mem_avals_lu, "data_in")], 16),
+            ([(mem_bvals, "data_out_0"), (mem_bvals_lu, "data_in")], 16),
+
+            # ([(isect_col, "pos_out_0"), (mem_avals, "addr_in_0")], 16),
+            # ([(isect_col, "pos_out_1"), (mem_bvals, "addr_in_0")], 16),
+            # ([(isect_col, "valid_out"), (mem_avals, "ren_in_0"), (mem_bvals, "ren_in_0"), (reg_valid_out, "reg")], 1),
         ],
 
-        'value_mems_to_io': [
+        'value_mems_to_pe_and_io': [
             ([(mem_avals, "data_out_0"), (val_out_0, "f2io_16")], 16),
             ([(mem_bvals, "data_out_0"), (val_out_1, "f2io_16")], 16),
+            ([(mem_avals_lu, "data_out"), (pe_mul, "data_in_0")], 16),
+            ([(mem_avals_lu, "valid_out"), (pe_mul, "valid_in_0")], 1),
+            ([(mem_avals_lu, "eos_out"), (pe_mul, "eos_in_0")], 1),
+            ([(pe_mul, "ready_out_0"), (mem_avals_lu, "ready_in")], 1),
+            ([(mem_bvals_lu, "data_out"), (pe_mul, "data_in_1")], 16),
+            ([(mem_bvals_lu, "valid_out"), (pe_mul, "valid_in_1")], 1),
+            ([(mem_bvals_lu, "eos_out"), (pe_mul, "eos_in_1")], 1),
+            ([(pe_mul, "ready_out_1"), (mem_bvals_lu, "ready_in")], 1),
+        ],
+
+        'to_wscan': [
+            ([(wscan_root, "ready_out_0"), (isect_col, "cmrg_ready_in_1")], 1),
+            ([(isect_col, "cmrg_valid_out_1"), (wscan_root, "valid_in_0")], 1),
+            ([(isect_col, "cmrg_eos_out_1"), (wscan_root, "eos_in_0")], 1),
+            ([(isect_col, "cmrg_coord_out_1"), (wscan_root, "data_in_0")], 16),
+            # Col coord
+            ([(wscan_rows, "ready_out_0"), (isect_col, "cmrg_ready_in_0")], 1),
+            ([(isect_col, "cmrg_valid_out_0"), (wscan_rows, "valid_in_0")], 1),
+            ([(isect_col, "cmrg_eos_out_0"), (wscan_rows, "eos_in_0")], 1),
+            ([(isect_col, "cmrg_coord_out_0"), (wscan_rows, "data_in_0")], 16),
+
+            ([(pe_mul, "data_out"), (wscan_vals, "data_in_0")], 16),
+            ([(pe_mul, "valid_out"), (wscan_vals, "valid_in_0")], 1),
+            ([(pe_mul, "eos_out"), (wscan_vals, "eos_in_0")], 1),
+            ([(wscan_vals, "ready_out_0"), (pe_mul, "ready_in")], 1),
+        ],
+
+        'wscan_to_mems': [
+            ([(wscan_root, "data_out"), (mem_xroot, "data_in_0")], 16),
+            ([(wscan_root, "addr_out"), (mem_xroot, "addr_in_0")], 16),
+            ([(wscan_root, "wen"), (mem_xroot, "wen_in_0")], 1),
+            ([(mem_xroot, "sram_ready_out"), (wscan_root, "ready_in")], 1),
+
+            ([(wscan_rows, "data_out"), (mem_xrows, "data_in_0")], 16),
+            ([(wscan_rows, "addr_out"), (mem_xrows, "addr_in_0")], 16),
+            ([(wscan_rows, "wen"), (mem_xrows, "wen_in_0")], 1),
+            ([(mem_xrows, "sram_ready_out"), (wscan_rows, "ready_in")], 1),
+
+            ([(wscan_vals, "data_out"), (mem_xvals, "data_in_0")], 16),
+            ([(wscan_vals, "addr_out"), (mem_xvals, "addr_in_0")], 16),
+            ([(wscan_vals, "wen"), (mem_xvals, "wen_in_0")], 1),
+            ([(mem_xvals, "sram_ready_out"), (wscan_vals, "ready_in")], 1),
         ]
+
     }
 
     connections = nlb.connections_from_json(conn_dict)
@@ -3360,19 +3438,31 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
     max_outer_dim = matrix_size
     mmatrix_vals_alt = [x + 5 for x in mmatrix_vals]
 
-    nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, 0, 1, 1))
-    nlb.configure_tile(scan_arows, (minner_offset_row, max_outer_dim, 0, 4, 0))
-    nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, 0, 1, 1))
-    nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, 0, 4, 0))
-    nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_data}]})
-    nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_data}]})
-    nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_vals}]})
-    nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_data}]})
-    nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_data}]})
-    nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}]})
-    nlb.configure_tile(isect_row, 0)
-    nlb.configure_tile(isect_col, 0)
-    nlb.configure_tile(coord_isect, 2)
+    nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, [0], [1], 1, 0, 0, 0, 0))
+    nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, [0], [1], 1, 0, 0, 0, 0))
+    nlb.configure_tile(scan_arows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0, 1))
+    nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0, 1))
+    nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
+    nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
+    nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_vals}], "mode": 2})
+    nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
+    nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
+    nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}], "mode": 2})
+    nlb.configure_tile(isect_row, (0, 0))
+    # Configure to do merging
+    nlb.configure_tile(isect_col, (1, 1))
+
+    nlb.configure_tile(mem_xroot, {"config": ["mek", {}], "mode": 4})
+    nlb.configure_tile(mem_xrows, {"config": ["mek", {}], "mode": 4})
+    nlb.configure_tile(mem_xvals, {"config": ["mek", {}], "mode": 4})
+
+    nlb.configure_tile(wscan_root, (16, 0, 0, 0))
+    nlb.configure_tile(wscan_rows, (16, 0, 0, 1))
+    nlb.configure_tile(wscan_vals, (0, 1, 1, 0))
+
+    nlb.configure_tile(pe_mul, 1)
+    nlb.configure_tile(mem_avals_lu, (0))
+    nlb.configure_tile(mem_bvals_lu, (0))
 
     # This does some cleanup like partitioning into compressed/uncompressed space
     nlb.finalize_config()
@@ -3381,11 +3471,11 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
     tester = nlb.get_tester()
 
     h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
-    h_ready_in = nlb.get_handle(ready_in, prefix="glb2io_1_")
-    h_valid_out = nlb.get_handle(valid_out, prefix="io2glb_1_")
-    h_eos_out = nlb.get_handle(eos_out, prefix="io2glb_1_")
+    # h_ready_in = nlb.get_handle(ready_in, prefix="glb2io_1_")
+    # h_valid_out = nlb.get_handle(valid_out, prefix="io2glb_1_")
+    # h_eos_out = nlb.get_handle(eos_out, prefix="io2glb_1_")
     h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
-    h_coord_out = nlb.get_handle(coord_out, prefix="io2glb_16_")
+    # h_coord_out = nlb.get_handle(coord_out, prefix="io2glb_16_")
     h_val_out_0 = nlb.get_handle(val_out_0, prefix="io2glb_16_")
     h_val_out_1 = nlb.get_handle(val_out_1, prefix="io2glb_16_")
     stall_in = nlb.get_handle_str("stall")
@@ -3411,22 +3501,23 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
     tester.eval()
 
     for i in range(num_cycles):
-        tester.poke(h_ready_in, 1)
+        # tester.poke(h_ready_in, 1)
         # tester.poke(circuit.interface[pop], 1)
         tester.eval()
 
         # If we have valid, print the two datas
-        tester_if = tester._if(h_valid_out)
-        tester_if.print("COORD: %d, VAL0: %d, VAL1: %d\n",
-                        h_coord_out,
-                        h_val_out_0,
-                        h_val_out_1)
-        if_eos_finish = tester._if(h_eos_out)
-        if_eos_finish.print("EOS IS HIGH\n")
+        # tester_if = tester._if(h_valid_out)
+        # tester_if.print("COORD: %d, VAL0: %d, VAL1: %d\n",
+        tester.print("VAL0: %d, VAL1: %d\n",
+                     h_val_out_0,
+                     h_val_out_1)
+        # if_eos_finish = tester._if(h_eos_out)
+        # if_eos_finish.print("EOS IS HIGH\n")
 
         tester.step(2)
 
     run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
+    nlb.display_names()
 
 
 def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
@@ -3806,7 +3897,8 @@ if __name__ == "__main__":
     # Make sure DISABLE_GP=1
     os.environ['DISABLE_GP'] = "1"
 
-    spM_spM_multiplication_hierarchical_json(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
+    spM_spM_elementwise_hierarchical_json_coords(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
+    # spM_spM_multiplication_hierarchical_json(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
     exit()
 
     spVspV_regress(dump_dir="mek_dump",

@@ -357,6 +357,7 @@ class NetlistBuilder():
         self._circuit = None
         self._core_names = {}
         self._core_used = {}
+        self._dest_counts = {}
 
     def register_core(self, core, flushable=False, config=None, name=""):
         ''' Register the core/primitive with the
@@ -439,6 +440,15 @@ class NetlistBuilder():
         # Dissect the connection to check if a core is used
         for (core, io_name) in connection:
             self._core_used[core] = 1
+        # Add sink counts to prevent multiple drivers
+        skip_source = True
+        for (core, io_name) in connection:
+            if skip_source is False:
+                if (core, io_name) not in self._dest_counts:
+                    self._dest_counts[(core, io_name)] = 1
+                else:
+                    self._dest_counts[(core, io_name)] += 1
+            skip_source = False
         self._netlist[conn_name] = connection
         self._bus[conn_name] = width
         self._placement_up_to_date = False
@@ -461,6 +471,13 @@ class NetlistBuilder():
         return (self.get_netlist(), self.get_bus())
 
     def generate_placement(self):
+        # Check for multiple drivers...
+        for (core, io_name), num_drivers in self._dest_counts.items():
+            # print(f"Core: {core}/{self._core_names[core]}: Pin: {io_name}, Num_Drivers: {num_drivers}")
+            if num_drivers > 1:
+                print("MORE THAN 1 DRIVER!!!!")
+                print(f"Core: {core}/{self._core_names[core]}: Pin: {io_name}, Num_Drivers: {num_drivers}")
+                raise RuntimeError
         if self._placement_up_to_date:
             return
         self._placement, self._routing = pnr(self._interconnect, (self._netlist, self._bus), cwd=self._cwd)
@@ -499,7 +516,7 @@ class NetlistBuilder():
         if core in self._placement:
             core_x, core_y = self._placement[core]
         else:
-            print(f"Core {core} not in placement...can't get handle...")
+            print(f"Core {core}/{self._core_names[core]} not in placement...can't get handle...")
             raise RuntimeError
         return self._circuit.interface[f"{prefix}X{core_x:02X}_Y{core_y:02X}"]
 
@@ -547,6 +564,7 @@ class NetlistBuilder():
     def finalize_config(self):
         skip_addr = self._interconnect.get_skip_addr()
         self._config_data = compress_config_data(self._config_data, skip_compression=skip_addr)
+        # Check for unused potential handles...
         for core, used in self._core_used.items():
             if used == 0:
                 print(f"Core {core} is not being used...any accesses to its handle will cause a crash...")
