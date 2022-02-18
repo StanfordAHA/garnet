@@ -59,7 +59,7 @@ steps:
   # 
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
      pwd; set -x; cp -rp $$CACHE/full_chip/*-rtl .;
-     rsync -aRv $$CACHE/full_chip/*-tile_array/*-TilePE/*-constraints .;
+     rsync -aRv $$CACHE/full_chip/*-tile_array/*-Tile_PE/*-constraints .;
      pwd; ls -l;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      pwd; ls -l;
