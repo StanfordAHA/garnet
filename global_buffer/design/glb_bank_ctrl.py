@@ -31,9 +31,6 @@ class GlbBankCtrl(Generator):
         self.mem_data_in_bit_sel = self.output("mem_data_in_bit_sel", self._params.bank_data_width)
         self.mem_data_out = self.input("mem_data_out", self._params.bank_data_width)
 
-        self.bank_ctrl_pipeline_depth = self._params.glb_bank_memory_pipeline_depth + \
-            self._params.sram_gen_pipeline_depth + self._params.sram_gen_output_pipeline_depth + 1
-
         # local variables
         self.packet_rd_data_r = self.var("packet_rd_data_r", self._params.bank_data_width)
 

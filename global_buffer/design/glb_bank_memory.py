@@ -16,8 +16,7 @@ class GlbBankMemory(Generator):
         self.wen = self.input("wen", 1)
         self.addr = self.input("addr", self._params.bank_addr_width)
         self.data_in = self.input("data_in", self._params.bank_data_width)
-        self.data_in_bit_sel = self.input(
-            "data_in_bit_sel", self._params.bank_data_width)
+        self.data_in_bit_sel = self.input("data_in_bit_sel", self._params.bank_data_width)
         self.data_out = self.output("data_out", self._params.bank_data_width)
 
         # local variables
@@ -25,31 +24,17 @@ class GlbBankMemory(Generator):
         self.sram_wen_d = self.var("sram_wen_d", 1)
         self.sram_cen = self.var("sram_cen", 1)
         self.sram_cen_d = self.var("sram_cen_d", 1)
-        self.sram_addr = self.var(
-            "sram_addr", self._params.bank_addr_width - self._params.bank_byte_offset)
-        self.sram_addr_d = self.var(
-            "sram_addr_d", self._params.bank_addr_width - self._params.bank_byte_offset)
-        self.sram_data_in = self.var(
-            "sram_data_in", self._params.bank_data_width)
-        self.sram_data_in_d = self.var(
-            "sram_data_in_d", self._params.bank_data_width)
-        self.sram_data_in_bit_sel = self.var(
-            "sram_data_in_bit_sel", self._params.bank_data_width)
-        self.sram_data_in_bit_sel_d = self.var(
-            "sram_data_in_bit_sel_d", self._params.bank_data_width)
-        self.sram_data_out = self.var(
-            "sram_data_out", self._params.bank_data_width)
-        self.data_out_w = self.var(
-            "data_out_w", self._params.bank_data_width)
-        self.data_out_r = self.var(
-            "data_out_r", self._params.bank_data_width)
-
-        self.wire(self.data_out, self.data_out_w)
+        self.sram_addr = self.var("sram_addr", self._params.bank_addr_width - self._params.bank_byte_offset)
+        self.sram_addr_d = self.var("sram_addr_d", self._params.bank_addr_width - self._params.bank_byte_offset)
+        self.sram_data_in = self.var("sram_data_in", self._params.bank_data_width)
+        self.sram_data_in_d = self.var("sram_data_in_d", self._params.bank_data_width)
+        self.sram_data_in_bit_sel = self.var("sram_data_in_bit_sel", self._params.bank_data_width)
+        self.sram_data_in_bit_sel_d = self.var("sram_data_in_bit_sel_d", self._params.bank_data_width)
+        self.sram_data_out = self.var("sram_data_out", self._params.bank_data_width)
 
         self.add_glb_bank_memory_pipeline()
         self.add_glb_bank_sram_gen()
         self.add_always(self.sram_ctrl_logic)
-        self.add_always(self.data_out_logic)
 
     def add_glb_bank_memory_pipeline(self):
         sram_signals_in = concat(self.sram_wen, self.sram_cen,
@@ -104,11 +89,7 @@ class GlbBankMemory(Generator):
     def sram_ctrl_logic(self):
         self.sram_wen = self.wen
         self.sram_cen = self.wen | self.ren
-        self.sram_addr = self.addr[self._params.bank_addr_width - 1,
-                                   self._params.bank_byte_offset]
+        self.sram_addr = self.addr[self._params.bank_addr_width - 1, self._params.bank_byte_offset]
         self.sram_data_in = self.data_in
         self.sram_data_in_bit_sel = self.data_in_bit_sel
-
-    @always_comb
-    def data_out_logic(self):
-        self.data_out_w = self.sram_data_out
+        self.data_out = self.sram_data_out
