@@ -1,5 +1,5 @@
 import magma
-from ..generator.generator import Generator
+from gemstone.generator.generator import Generator
 import math
 import enum
 
