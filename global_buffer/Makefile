@@ -49,6 +49,7 @@ TB_FILES ?= -F sim/tb_global_buffer.f
 # Commands
 # -------------------------------------------------------------------
 GENERATE_TV = \
+    python testvectors/gen_glb_test.py --data testvectors/64_v0.dat --num 64 --seed 0; \
     python testvectors/gen_glb_test.py --data testvectors/512_v0.dat --num 512 --seed 0; \
     python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num 512 --seed 1; \
     python testvectors/gen_glb_test.py --data testvectors/4096_v0.dat --num 4096 --seed 0; \
