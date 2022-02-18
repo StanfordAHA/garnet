@@ -441,46 +441,52 @@ if [ "$USER" == "buildkite-agent" ]; then
     }
     check_adk $tsmc16 || return 13 || exit 13
 
-    # Copy the adk to test rig
-    echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
-    echo "Copying adks from '$tsmc16' to '$adks'"
+#     # Copy the adk to test rig
+#     echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
+#     echo "Copying adks from '$tsmc16' to '$adks'"
+# 
+#     # Note rsync is much faster than cp!
+#     # set -x; rsync -avR $tsmc16 $adks; set +x
+# 
+#     # ...but only works if adk already been copied once! 
+#     set -x
+#     if [ ! -e $adks/tsmc16 ]; then
+#         cp -rp $tsmc16 $adks
+#     else
+#         rsync -avR $tsmc16 $adks
+#     fi
+#     set +x
+# 
+#     # Apparently this works:
+#     #   rsync -avR /sim/steveri/mflowgen/adks/tsmc16 \
+#     #      /sim/buildkite-agent/mflowgen/adks
+#     #
+#     # But this has problems:
+#     #   rsync -avR /sim/steveri/mflowgen/adks/tsmc16 \
+#     #      /sim/buildkite-agent/mflowgen.droute-auto-stop/adks
+#     #
+#     # i.e. creates mflowgen.droute-auto-stop/adks/sim/steveri/...
+#     #
+#     # Maybe it's because of the -a (archive) flag?
+# #     (set -x; cd $adks/..; rsync -avR $tsmc16 ./adks; set +x)
+# 
+# 
+#     export MFLOWGEN_PATH=$adks
+#     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+# 
+#     echo "+++ ADK HACK"
+#     for f in $adks/tsmc16/*/adk.tcl; do
+#         cat << EOF >> $f
+# 
+# set ADK_DONT_USE_CELL_LIST "*/E* */G* */*D16* */*D20* */*D24* */*D28* */*D32* */SDF* */*DFM* */*SEDF*"
+# EOF
+#     done
 
-    # Note rsync is much faster than cp!
-    # set -x; rsync -avR $tsmc16 $adks; set +x
+    # screw it!
+    # Link to the adk(s)
+    echo "Linking to adks in '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
+    (set -x; cd $adks; ln -s $tsmc16; set +x)
 
-    # ...but only works if adk already been copied once! 
-    set -x
-    if [ ! -e $adks/tsmc16 ]; then
-        cp -rp $tsmc16 $adks
-    else
-        rsync -avR $tsmc16 $adks
-    fi
-    set +x
-
-    # Apparently this works:
-    #   rsync -avR /sim/steveri/mflowgen/adks/tsmc16 \
-    #      /sim/buildkite-agent/mflowgen/adks
-    #
-    # But this has problems:
-    #   rsync -avR /sim/steveri/mflowgen/adks/tsmc16 \
-    #      /sim/buildkite-agent/mflowgen.droute-auto-stop/adks
-    #
-    # i.e. creates mflowgen.droute-auto-stop/adks/sim/steveri/...
-    #
-    # Maybe it's because of the -a (archive) flag?
-#     (set -x; cd $adks/..; rsync -avR $tsmc16 ./adks; set +x)
-
-
-    export MFLOWGEN_PATH=$adks
-    echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
-
-    echo "+++ ADK HACK"
-    for f in $adks/tsmc16/*/adk.tcl; do
-        cat << EOF >> $f
-
-set ADK_DONT_USE_CELL_LIST "*/E* */G* */*D16* */*D20* */*D24* */*D28* */*D32* */SDF* */*DFM* */*SEDF*"
-EOF
-    done
 
 
 else
