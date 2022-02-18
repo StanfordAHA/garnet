@@ -448,10 +448,12 @@ if [ "$USER" == "buildkite-agent" ]; then
     # Note rsync is much faster than cp!
     # set -x; rsync -avR $tsmc16 $adks; set +x
 
-     (set -x;
-         cd $tsmc16/..;
-         rsync -aRv tsmc16 $adks;
-     set +x)
+    # So...? tsmc16 is a link to tsmc16-adk I guess?
+    (set -x;
+        cd $tsmc16/..;
+        rsync -aRv tsmc16 $adks;
+        rsync -aRv tsmc16-adk $adks;
+    set +x)
 
 
 #     # ...but only works if adk already been copied once! 
@@ -488,10 +490,10 @@ if [ "$USER" == "buildkite-agent" ]; then
 # EOF
 #     done
 
-    # screw it!
-    # Link to the adk(s)
-    echo "Linking to adks in '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
-    (set -x; cd $adks; test -e tsmc16 || ln -s $tsmc16; set +x)
+#     # screw it!
+#     # Link to the adk(s)
+#     echo "Linking to adks in '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
+#     (set -x; cd $adks; test -e tsmc16 || ln -s $tsmc16; set +x)
 
 
 # Huh. So this is why we don't use symbolic links.
