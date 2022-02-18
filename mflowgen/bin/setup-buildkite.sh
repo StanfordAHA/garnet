@@ -446,7 +446,21 @@ if [ "$USER" == "buildkite-agent" ]; then
     echo "Copying adks from '$tsmc16' to '$adks'"
 
     # Note rsync is much faster than cp!
-    set -x; rsync -avR $tsmc16 $adks; set +x
+    # set -x; rsync -avR $tsmc16 $adks; set +x
+
+    # Apparently this works:
+    #   rsync -avR /sim/steveri/mflowgen/adks/tsmc16 \
+    #      /sim/buildkite-agent/mflowgen/adks
+    #
+    # But this has problems:
+    #   rsync -avR /sim/steveri/mflowgen/adks/tsmc16 \
+    #      /sim/buildkite-agent/mflowgen.droute-auto-stop/adks
+    #
+    # i.e. creates mflowgen.droute-auto-stop/adks/sim/steveri/...
+    #
+    # Maybe it's because of the -a (archive) flag?
+    set -x; rsync -vR $tsmc16 $adks; set +x
+
 
     export MFLOWGEN_PATH=$adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
