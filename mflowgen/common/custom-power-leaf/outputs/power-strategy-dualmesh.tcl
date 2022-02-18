@@ -24,7 +24,7 @@ if $::env(PWR_AWARE) {
  sroute -nets $power_nets
 } else {
  set power_nets {VDD VSS} 
- sroute -nets $power_nets 
+ sroute -connect {corePin} -nets $power_nets 
 }
 
 #-------------------------------------------------------------------------
