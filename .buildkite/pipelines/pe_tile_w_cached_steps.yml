@@ -1,0 +1,97 @@
+agents: { jobsize: "hours" }
+
+##############################################################################
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
+
+env:
+  GOLD: /build/pm${BUILDKITE_BUILD_NUMBER}
+  # OVERRIDE_MFLOWGEN_BRANCH: silent_fail
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+
+  CACHE: /build/gold
+  GET_STEP_CONTEXT: eval $$GARNET_HOME/mflowgen/bin/get-step-context.sh
+
+
+# prototype for using get-step-context:
+#   % cd /build/chip2
+#   % get-step-context.sh /build/chip1 cadence-innovus-postroute_hold
+#   % make *-cadence-innovus-postroute_hold
+
+
+
+steps:
+
+
+# - label: 'setup'
+#   commands:
+# 
+# # # Copy existing rtl collateral
+# # - 'set -x; mkdir -p full_chip; cp -rp $$GOLD/full_chip/*-rtl full_chip/'
+# 
+#   # Copy existing rtl collateral;
+#   # Think of setup-buildkite as a fancy "mkdir -p $d && cd $d"
+#   - 'set -x; 
+#      source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
+#      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+#      $$GET_STEP_CONTEXT --from /build/gold --step tile_array;
+#      pwd; ls -lR'
+
+
+# Uhhhh...see if this works
+- label: 'setup'
+  commands:
+
+# # Copy existing rtl collateral
+# - 'set -x; mkdir -p full_chip; cp -rp $$GOLD/full_chip/*-rtl full_chip/'
+
+  # Copy existing rtl collateral;
+  # Think of setup-buildkite as a fancy "mkdir -p $d && cd $d"
+  # "mflowgen run" should maybe renumber rtl step if necessary?
+
+  # Make $GOLD directory and cd to it
+  # # "mflowgen run full_chip" to build full_chip framework (may not be necessary)
+  # Copy rtl collateral from $CACHE
+  # "mflowgen run full_chip" to reset rtl in the context of latest full_chip framework
+  # 
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
+     pwd; set -x; cp -rp $$CACHE/full_chip/*-rtl .;
+     make -n 18-tile_array;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+     pwd; ls -lR'
+
+
+# - label: 'pe rtl'
+#   commands:
+#   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps rtl
+# - wait: ~
+# 
+# - label: 'pe syn'
+#   commands:
+#   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps synthesis
+# - wait: ~
+
+
+
+
+# Original code:
+# 
+# - label: 'fc rtl'
+#   commands:
+#   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array --steps rtl
+# - wait: ~
+# 
+# 
+# - label: 'pe rtl'
+#   commands:
+#   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps rtl
+# - wait: ~
+# 
+# 
+# - label: 'pe syn'
+#   commands:
+#   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps synthesis
+# - wait: ~
