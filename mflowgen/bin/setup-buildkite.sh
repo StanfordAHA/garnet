@@ -433,7 +433,9 @@ if [ "$USER" == "buildkite-agent" ]; then
                 echo "  - Need to do a git pull on '$d'"
                 echo "  - Also see 'help adk'."
                 echo "---------------------------------------------------------"
-                return 13 || exit 13
+                # return 13 || exit 13
+                echo "NEVER MIND it's okay (for now)"
+                echo "---------------------------------------------------------"
             fi
         popd
     }
