@@ -16,7 +16,7 @@ else
   SDF=0
 fi
 
-CLK_PERIOD=${sim_clock_period}ns
+CLK_PERIOD=$(echo $sim_clock_period*1000/1 | bc)ps
 
 (
     set -x;

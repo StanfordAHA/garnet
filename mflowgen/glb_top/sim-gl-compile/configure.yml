@@ -29,5 +29,4 @@ postconditions:
   - assert File( 'outputs/sim.log' )      # must exist
 
   # Basic error checking
-  - assert 'Error' not in File( 'outputs/sim.log' )
   - assert '*E' not in File( 'outputs/sim.log' )
