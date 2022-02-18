@@ -58,19 +58,33 @@ steps:
   # "mflowgen run full_chip" to reset rtl in the context of latest full_chip framework
   # 
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
-     echo "--- copy fullchip rtl, tile-pe constraints";
+
+     echo "--- fetch fullchip/rtl from $$CACHE";
      pwd; set -x; cp -rp $$CACHE/full_chip/*-rtl .;
+
+     echo "--- fetch fullchip/tile_array/Tile_PE/constraints from $$CACHE";
      (cd $$CACHE; rsync -aRv full_chip/*-tile_array/*-Tile_PE/*-constraints $$GOLD);
-     pwd; ls -l;
-     echo "--- set up design hierarchy(s)";
+
+     echo "--- design hierarchy: full_chip";
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
-     pwd; ls -l;
+
+     echo "--- design hierarchy: full_chip/tile_array";
      cd *-tile_array; mflowgen run --design $$GARNET_HOME/mflowgen/tile_array;
-     pwd; ls -l;
+
+     echo "--- design hierarchy: full_chip/tile_array/Tile_PE";
      cd *-Tile_PE; mflowgen run --design $$GARNET_HOME/mflowgen/Tile_PE;
-     pwd; ls -l;
-     echo "--- make rtl I guess"; make rtl;
-     echo "--- make syn perhaps"; make cadence-genus-synthesis;
+
+     echo "--- make power I guess";
+     echo "Build rtl,syn,init,power from sratch, should take like 10 minutes"; 
+     make cadence-innovus-power;
+
+     echo "--- fetch place,cts,postcts_hold from $$CACHE";
+     (cd $$CACHE; rsync -aRv full_chip/*-tile_array/*-Tile_PE/*-place $$GOLD);
+     (cd $$CACHE; rsync -aRv full_chip/*-tile_array/*-Tile_PE/*-cts $$GOLD);
+     (cd $$CACHE; rsync -aRv full_chip/*-tile_array/*-Tile_PE/*-postcts_hold $$GOLD);
+
+     echo;
+     echo "--- make route perhaps"; make cadence-innovus-route;
      '
 
 
