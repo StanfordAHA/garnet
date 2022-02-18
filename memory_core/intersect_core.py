@@ -25,7 +25,7 @@ class IntersectCore(LakeCoreBase):
                  data_width=16,  # CGRA Params
                  config_data_width=32,
                  config_addr_width=8,
-                 use_merger=False):
+                 use_merger=True):
 
         scan_name = "Intersector"
         super().__init__(config_data_width=config_data_width,
@@ -78,11 +78,12 @@ class IntersectCore(LakeCoreBase):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
-    def get_config_bitstream(self, num_levels):
+    def get_config_bitstream(self, config_tuple):
         configs = []
-        config_scanner = []
-        config_scanner += self.dut.get_bitstream(num_levels)
-        for name, v in config_scanner:
+        cmrg_enable, cmrg_stop_lvl = config_tuple
+        config_isect = self.dut.get_bitstream(cmrg_enable=cmrg_enable,
+                                              cmrg_stop_lvl=cmrg_stop_lvl)
+        for name, v in config_isect:
             configs = [self.get_config_data(name, v)] + configs
         return configs
 
