@@ -23,13 +23,6 @@ create_clock -name ${clock_name} \
              [get_ports ${clock_net}]
 
 #=========================================================================
-# clk phase shift
-#=========================================================================
-# glb-top clock is shifted right in reference to glb-tile.
-# glb-top captures at the next cycle
-set_multicycle_path 2 -setup -from [get_clocks glb_tile_gen*] -to [get_clocks ${clock_name}]
-
-#=========================================================================
 # clk_en multicycle path
 #=========================================================================
 set_multicycle_path -setup 10 -from {pcfg_broadcast_stall}
