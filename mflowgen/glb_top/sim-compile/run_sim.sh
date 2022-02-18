@@ -2,7 +2,7 @@
 cp $GARNET_HOME/global_buffer/Makefile ./
 cp -r $GARNET_HOME/global_buffer/sim ./
 
-CLK_PERIOD=${sim_clock_period}ns
+CLK_PERIOD=$(echo $sim_clock_period*1000/1 | bc)ps
 
 (
     set -x;
