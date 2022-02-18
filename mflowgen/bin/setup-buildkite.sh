@@ -448,6 +448,15 @@ if [ "$USER" == "buildkite-agent" ]; then
     # Note rsync is much faster than cp!
     # set -x; rsync -avR $tsmc16 $adks; set +x
 
+    # ...but only works if adk already been copied once! 
+    set -x
+    if [ ! -e $adks/tsmc16 ]; then
+        cp -rp $tsmc16 $adks
+    else
+        rsync -avR $tsmc16 $adks
+    fi
+    set +x
+
     # Apparently this works:
     #   rsync -avR /sim/steveri/mflowgen/adks/tsmc16 \
     #      /sim/buildkite-agent/mflowgen/adks
@@ -459,7 +468,7 @@ if [ "$USER" == "buildkite-agent" ]; then
     # i.e. creates mflowgen.droute-auto-stop/adks/sim/steveri/...
     #
     # Maybe it's because of the -a (archive) flag?
-    (set -x; cd $adks/..; rsync -avR $tsmc16 ./adks; set +x)
+#     (set -x; cd $adks/..; rsync -avR $tsmc16 ./adks; set +x)
 
 
     export MFLOWGEN_PATH=$adks
