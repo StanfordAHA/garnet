@@ -1,4 +1,4 @@
-from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper, AOIMuxType
+from .mux_wrapper_aoi import AOIMuxWrapper, AOIMuxType
 from gemstone.common.transform import replace, Generator, FromMagma
 from io_core.io_core_magma import IOCoreValid
 from canal.interconnect import Interconnect
