@@ -21,7 +21,7 @@ if $::env(PWR_AWARE) {
  # be available above and below the SRAMs
  set aon_power_nets {VSS VDD}
  set sw_power_nets {VDD_SW}
- sroute -nets $power_nets
+ sroute -connect {corePin} -nets $power_nets
 } else {
  set power_nets {VDD VSS} 
  sroute -connect {corePin} -nets $power_nets 
