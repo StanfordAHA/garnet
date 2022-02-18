@@ -13,7 +13,7 @@ env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
 
   CACHE: /build/gold
-  GET_STEP_CONTEXT: eval $$GARNET_HOME/mflowgen/bin/get-step-context.sh $CACHE
+  GET_STEP_CONTEXT: eval $$GARNET_HOME/mflowgen/bin/get-step-context.sh
 
 
 # prototype for using get-step-context:
@@ -35,8 +35,9 @@ steps:
   # Copy existing rtl collateral;
   # Think of setup-buildkite as a fancy "mkdir -p $d && cd $d"
   - 'set -x; 
-     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD full_chip;
-     $$GET_STEP_CONTEXT tile_array;
+     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+     $$GET_STEP_CONTEXT --from /build/gold --step tile_array;
      pwd; ls -lR'
 
 - label: 'pe rtl'
