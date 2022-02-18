@@ -374,8 +374,7 @@ class GlbStoreDma(Generator):
         self.done_pulse_w = self.loop_done & self.strm_run
 
     def add_done_pulse_pipeline(self):
-        # FIXME: is 6 correct?
-        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_wr_delay + 6
+        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_wr_delay + 4
         latency_width = clog2(maximum_latency)
         self.done_pulse_d_arr = self.var(
             "done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)

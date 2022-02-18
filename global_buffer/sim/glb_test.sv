@@ -7,10 +7,10 @@
 **===========================================================================*/
 program glb_test (
     // LEFT
-    input  logic                      clk,
-    input  logic                      reset,
-    output logic [ NUM_GLB_TILES-1:0] glb_clk_en_master,
-    output logic [ NUM_GLB_TILES-1:0] pcfg_broadcast_stall,
+    input  logic                     clk,
+    input  logic                     reset,
+    output logic [NUM_GLB_TILES-1:0] glb_clk_en_master,
+    output logic [NUM_GLB_TILES-1:0] pcfg_broadcast_stall,
 
     // proc
     output logic                         proc_wr_en,
@@ -121,12 +121,23 @@ program glb_test (
                     j < kernels[i].tile_id + num_chained_next;
                     j++
                 ) begin
+                    if (j == kernels[i].tile_id) begin
+                        data_network_configure(j, 1,
+                                                (num_chained_prev + num_chained_next) * 2 + 3 + GLB_BANK2SW_PIPELINE_DEPTH);
+                        pcfg_network_configure(j, 1,
+                                                (num_chained_prev + num_chained_next) * 2 + 3 + GLB_BANK2SW_PIPELINE_DEPTH);
+                    end else begin
+                        data_network_configure(j, 1, 0);
+                        pcfg_network_configure(j, 1, 0);
+                    end
+                end
+                if (num_chained_next == 0) begin
                     data_network_configure(
-                        j, 1,
-                        (num_chained_prev + num_chained_next) * 2 + 5 + GLB_BANK2SW_PIPELINE_DEPTH);
+                        kernels[i].tile_id, 0,
+                        (num_chained_prev + num_chained_next) * 2 + 4);
                     pcfg_network_configure(
-                        j, 1,
-                        (num_chained_prev + num_chained_next) * 2 + 5 + GLB_BANK2SW_PIPELINE_DEPTH);
+                        kernels[i].tile_id, 0,
+                        (num_chained_prev + num_chained_next) * 2 + 4);
                 end
             end
         end

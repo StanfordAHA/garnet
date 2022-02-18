@@ -237,10 +237,8 @@ class GlobalBuffer(Generator):
             self.proc_packet_d['wr']['wr_addr'] = 0
             self.proc_packet_d['wr']['wr_data'] = 0
             self.proc_packet_d['rdrq']['rd_en'] = 0
-            self.proc_packet_d['rdrq']['rd_src_tile'] = 0
             self.proc_packet_d['rdrq']['rd_addr'] = 0
             self.proc_packet_d['rdrs']['rd_data'] = 0
-            self.proc_packet_d['rdrs']['rd_dst_tile'] = 0
             self.proc_packet_d['rdrs']['rd_data_valid'] = 0
             self.proc_rd_data = 0
             self.proc_rd_data_valid = 0
@@ -250,10 +248,8 @@ class GlobalBuffer(Generator):
             self.proc_packet_d['wr']['wr_addr'] = self.proc_wr_addr
             self.proc_packet_d['wr']['wr_data'] = self.proc_wr_data
             self.proc_packet_d['rdrq']['rd_en'] = self.proc_rd_en
-            self.proc_packet_d['rdrq']['rd_src_tile'] = 0
             self.proc_packet_d['rdrq']['rd_addr'] = self.proc_rd_addr
             self.proc_packet_d['rdrs']['rd_data'] = 0
-            self.proc_packet_d['rdrs']['rd_dst_tile'] = 0
             self.proc_packet_d['rdrs']['rd_data_valid'] = 0
             self.proc_rd_data = self.proc_packet_e2w_wsto[0]['rd_data']
             self.proc_rd_data_valid = self.proc_packet_e2w_wsto[0]['rd_data_valid']
@@ -385,10 +381,8 @@ class GlobalBuffer(Generator):
                            proc_wr_addr_w2e_wsti=self.proc_packet_w2e_wsti[i]["wr"]['wr_addr'],
                            proc_wr_data_w2e_wsti=self.proc_packet_w2e_wsti[i]["wr"]['wr_data'],
                            proc_rd_en_w2e_wsti=self.proc_packet_w2e_wsti[i]["rdrq"]['rd_en'],
-                           proc_rd_src_tile_w2e_wsti=self.proc_packet_w2e_wsti[i]["rdrq"]['rd_src_tile'],
                            proc_rd_addr_w2e_wsti=self.proc_packet_w2e_wsti[i]["rdrq"]['rd_addr'],
                            proc_rd_data_w2e_wsti=self.proc_packet_w2e_wsti[i]["rdrs"]['rd_data'],
-                           proc_rd_dst_tile_w2e_wsti=self.proc_packet_w2e_wsti[i]["rdrs"]['rd_dst_tile'],
                            proc_rd_data_valid_w2e_wsti=self.proc_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'],
 
                            proc_wr_en_w2e_esto=self.proc_packet_w2e_esto[i]["wr"]['wr_en'],
@@ -396,18 +390,14 @@ class GlobalBuffer(Generator):
                            proc_wr_addr_w2e_esto=self.proc_packet_w2e_esto[i]["wr"]['wr_addr'],
                            proc_wr_data_w2e_esto=self.proc_packet_w2e_esto[i]["wr"]['wr_data'],
                            proc_rd_en_w2e_esto=self.proc_packet_w2e_esto[i]["rdrq"]['rd_en'],
-                           proc_rd_src_tile_w2e_esto=self.proc_packet_w2e_esto[i]["rdrq"]['rd_src_tile'],
                            proc_rd_addr_w2e_esto=self.proc_packet_w2e_esto[i]["rdrq"]['rd_addr'],
                            proc_rd_data_w2e_esto=self.proc_packet_w2e_esto[i]["rdrs"]['rd_data'],
-                           proc_rd_dst_tile_w2e_esto=self.proc_packet_w2e_esto[i]["rdrs"]['rd_dst_tile'],
                            proc_rd_data_valid_w2e_esto=self.proc_packet_w2e_esto[i]["rdrs"]['rd_data_valid'],
 
                            proc_rd_data_e2w_esti=self.proc_packet_e2w_esti[i]['rd_data'],
-                           proc_rd_dst_tile_e2w_esti=self.proc_packet_e2w_esti[i]['rd_dst_tile'],
                            proc_rd_data_valid_e2w_esti=self.proc_packet_e2w_esti[i]['rd_data_valid'],
 
                            proc_rd_data_e2w_wsto=self.proc_packet_e2w_wsto[i]['rd_data'],
-                           proc_rd_dst_tile_e2w_wsto=self.proc_packet_e2w_wsto[i]['rd_dst_tile'],
                            proc_rd_data_valid_e2w_wsto=self.proc_packet_e2w_wsto[i]['rd_data_valid'],
 
                            strm_wr_en_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_en'],
@@ -415,10 +405,8 @@ class GlobalBuffer(Generator):
                            strm_wr_addr_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_addr'],
                            strm_wr_data_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_data'],
                            strm_rd_en_e2w_esti=self.strm_packet_e2w_esti[i]["rdrq"]['rd_en'],
-                           strm_rd_src_tile_e2w_esti=self.strm_packet_e2w_esti[i]["rdrq"]['rd_src_tile'],
                            strm_rd_addr_e2w_esti=self.strm_packet_e2w_esti[i]["rdrq"]['rd_addr'],
                            strm_rd_data_e2w_esti=self.strm_packet_e2w_esti[i]["rdrs"]['rd_data'],
-                           strm_rd_dst_tile_e2w_esti=self.strm_packet_e2w_esti[i]["rdrs"]['rd_dst_tile'],
                            strm_rd_data_valid_e2w_esti=self.strm_packet_e2w_esti[i]["rdrs"]['rd_data_valid'],
 
                            strm_wr_en_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_en'],
@@ -426,10 +414,8 @@ class GlobalBuffer(Generator):
                            strm_wr_addr_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_addr'],
                            strm_wr_data_w2e_esto=self.strm_packet_w2e_esto[i]["wr"]['wr_data'],
                            strm_rd_en_w2e_esto=self.strm_packet_w2e_esto[i]["rdrq"]['rd_en'],
-                           strm_rd_src_tile_w2e_esto=self.strm_packet_w2e_esto[i]["rdrq"]['rd_src_tile'],
                            strm_rd_addr_w2e_esto=self.strm_packet_w2e_esto[i]["rdrq"]['rd_addr'],
                            strm_rd_data_w2e_esto=self.strm_packet_w2e_esto[i]["rdrs"]['rd_data'],
-                           strm_rd_dst_tile_w2e_esto=self.strm_packet_w2e_esto[i]["rdrs"]['rd_dst_tile'],
                            strm_rd_data_valid_w2e_esto=self.strm_packet_w2e_esto[i]["rdrs"]['rd_data_valid'],
 
                            strm_wr_en_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_en'],
@@ -437,10 +423,8 @@ class GlobalBuffer(Generator):
                            strm_wr_addr_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_addr'],
                            strm_wr_data_w2e_wsti=self.strm_packet_w2e_wsti[i]["wr"]['wr_data'],
                            strm_rd_en_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrq"]['rd_en'],
-                           strm_rd_src_tile_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrq"]['rd_src_tile'],
                            strm_rd_addr_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrq"]['rd_addr'],
                            strm_rd_data_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrs"]['rd_data'],
-                           strm_rd_dst_tile_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrs"]['rd_dst_tile'],
                            strm_rd_data_valid_w2e_wsti=self.strm_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'],
 
                            strm_wr_en_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_en'],
@@ -448,38 +432,28 @@ class GlobalBuffer(Generator):
                            strm_wr_addr_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_addr'],
                            strm_wr_data_e2w_wsto=self.strm_packet_e2w_wsto[i]["wr"]['wr_data'],
                            strm_rd_en_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrq"]['rd_en'],
-                           strm_rd_src_tile_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrq"]['rd_src_tile'],
                            strm_rd_addr_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrq"]['rd_addr'],
                            strm_rd_data_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data'],
-                           strm_rd_dst_tile_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrs"]['rd_dst_tile'],
                            strm_rd_data_valid_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'],
 
                            pcfg_rd_en_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_en'],
-                           pcfg_rd_src_tile_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_src_tile'],
                            pcfg_rd_addr_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_addr'],
                            pcfg_rd_data_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data'],
-                           pcfg_rd_dst_tile_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_dst_tile'],
                            pcfg_rd_data_valid_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data_valid'],
 
                            pcfg_rd_en_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_en'],
-                           pcfg_rd_src_tile_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_src_tile'],
                            pcfg_rd_addr_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrq"]['rd_addr'],
                            pcfg_rd_data_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_data'],
-                           pcfg_rd_dst_tile_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_dst_tile'],
                            pcfg_rd_data_valid_w2e_esto=self.pcfg_packet_w2e_esto[i]["rdrs"]['rd_data_valid'],
 
                            pcfg_rd_en_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_en'],
-                           pcfg_rd_src_tile_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_src_tile'],
                            pcfg_rd_addr_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrq"]['rd_addr'],
                            pcfg_rd_data_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_data'],
-                           pcfg_rd_dst_tile_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_dst_tile'],
                            pcfg_rd_data_valid_w2e_wsti=self.pcfg_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'],
 
                            pcfg_rd_en_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_en'],
-                           pcfg_rd_src_tile_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_src_tile'],
                            pcfg_rd_addr_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrq"]['rd_addr'],
                            pcfg_rd_data_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data'],
-                           pcfg_rd_dst_tile_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_dst_tile'],
                            pcfg_rd_data_valid_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'],
 
                            if_cfg_est_m_wr_en=self.if_cfg_list[i + 1].wr_en,

@@ -48,6 +48,7 @@ class GlbSwitch(Generator):
             self.rdrs_packet_sw2r = self.input("rdrs_packet_sw2r", self.header.rdrs_packet_t)
             self.rdrs_packet_r2sw = self.output("rdrs_packet_r2sw", self.header.rdrs_packet_t)
 
+        self.cfg_ld_dma_on = self.input("cfg_ld_dma_on", 1)
         self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
         self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
 
@@ -165,17 +166,15 @@ class GlbSwitch(Generator):
         if (self.rdrs_packet_sw2r['rd_data_valid'] == 1):
             self.rdrs_packet_w2e_esto_w = self.rdrs_packet_sw2r
         else:
-            if ((self.rdrs_packet_w2e_wsti_muxed['rd_data_valid'] == 1)
-                    & (self.rdrs_packet_w2e_wsti_muxed['rd_dst_tile'] == self.glb_tile_id)):
+            if (self.rdrs_packet_w2e_wsti_muxed['rd_data_valid'] & self.cfg_ld_dma_on):
                 self.rdrs_packet_w2e_esto_w = 0
             else:
                 self.rdrs_packet_w2e_esto_w = self.rdrs_packet_w2e_wsti_muxed
 
-        if ((self.rdrs_packet_w2e_wsti_muxed['rd_data_valid'] == 1)
-                & (self.rdrs_packet_w2e_wsti_muxed['rd_dst_tile'] == self.glb_tile_id)):
+        if (self.rdrs_packet_w2e_wsti_muxed['rd_data_valid'] & self.cfg_ld_dma_on):
             self.rdrs_packet_r2sw_w = self.rdrs_packet_w2e_wsti_muxed
         else:
-            self.rdrs_packet_r2sw_w = self.rdrs_packet_w2e_wsti_muxed
+            self.rdrs_packet_r2sw_w = 0
         self.rdrs_packet_e2w_wsto_w = self.rdrs_packet_e2w_esti_muxed
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
