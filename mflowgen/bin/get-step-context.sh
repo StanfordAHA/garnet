@@ -52,7 +52,7 @@ exit
 fi
 
 if [ "$1" == "--from" ]; then shift; fi
-REF=$1
+refdir=$1
 
 if [ "$2" == "--step" ]; then shift; fi
 target_step=$2
@@ -61,7 +61,7 @@ target_step=$2
 
 echo "--- BEGIN $0 $*" | sed "s,$GARNET_HOME,\$GARNET_HOME,"
 echo "  where GARNET_HOME=$GARNET_HOME"
-echo "+++ STANDALONE TEST RIG SETUP - build symlinks to steps in $REF/full_chip";
+echo "+++ STANDALONE TEST RIG SETUP - build symlinks to steps in $refdir/full_chip";
 
 ########################################################################
 ########################################################################
@@ -111,12 +111,14 @@ function get_predecessors {
     | sed 's/^[0-9]*[-]//'
 }
 echo ""; echo "NODE PREDS"
-get_predecessors cadence-innovus-postroute_hold
+# get_predecessors cadence-innovus-postroute_hold
+get_predecessors $step
 echo ""
 
 
 DBG=
-for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
+# for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
+for step in `get_predecessors $step`; do
 
     [ "$DBG" ] && echo Processing step $step
 
@@ -132,8 +134,8 @@ for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
     fi
 
     # Find name of step in ref dir
-    stepnum=$(cd $REF/full_chip; make list |& egrep ": $step\$" | awk '{print $2}')
-    ref_step=$REF/full_chip/$stepnum-$step
+    stepnum=$(cd $refdir/full_chip; make list |& egrep ": $step\$" | awk '{print $2}')
+    ref_step=$refdir/full_chip/$stepnum-$step
     [ "$DBG" ] && echo "Found ref step $ref_step"
     if ! test -d $ref_step; then
         echo "hm look like $ref_step don't exist after all..."

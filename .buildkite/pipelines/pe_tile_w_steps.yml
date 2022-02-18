@@ -35,7 +35,7 @@ steps:
   # Copy existing rtl collateral;
   # Think of setup-buildkite as a fancy "mkdir -p $d && cd $d"
   - 'set -x; 
-     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD full_chip;
      $$GET_STEP_CONTEXT tile_array;
      pwd; ls -lR'
 
