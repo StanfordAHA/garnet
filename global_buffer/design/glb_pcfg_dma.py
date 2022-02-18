@@ -142,7 +142,6 @@ class GlbPcfgDma(Generator):
     def assign_rdrq_packet(self):
         self.wire(self.rdrq_packet['rd_en'], self.rdrq_packet_rd_en_r)
         self.wire(self.rdrq_packet['rd_addr'], self.rdrq_packet_rd_addr_r)
-        self.wire(self.rdrq_packet['rd_src_tile'], self.glb_tile_id)
 
     def assign_cgra_cfg_output(self):
         self.wire(self.cgra_cfg_pcfg['rd_en'], 0)
@@ -155,7 +154,7 @@ class GlbPcfgDma(Generator):
                   self.rdrs_packet_rd_data_r[self._params.cgra_cfg_data_width - 1, 0])
 
     def add_done_pulse_pipeline(self):
-        maximum_latency = 3 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6
+        maximum_latency = 3 * self._params.num_glb_tiles + 4 + self._params.tile2sram_rd_delay
         latency_width = clog2(maximum_latency)
         self.done_pulse_d_arr = self.var("done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.done_pulse_pipeline = Pipeline(width=1,

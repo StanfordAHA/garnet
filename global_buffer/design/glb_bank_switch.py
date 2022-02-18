@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, const, concat
+from kratos import Generator, always_comb, const, concat
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_header import GlbHeader
@@ -59,15 +59,9 @@ class GlbBankSwitch(Generator):
         # local variables
         self.wr_packet_sw2bankarr_w = self.var(
             "wr_packet_sw2bankarr_w", self.header.wr_packet_t, size=self._params.banks_per_tile)
-        self.wr_packet_sw2sr_w = self.var("wr_packet_sw2sr_w", self.header.wr_packet_t)
 
         self.rdrq_packet_sw2bankarr_w = self.var(
             "rdrq_packet_sw2bankarr_w", self.header.rdrq_packet_t, size=self._params.banks_per_tile)
-        self.rdrq_packet_sw2sr_w = self.var("rdrq_packet_sw2sr_w", self.header.rdrq_packet_t)
-        self.rdrq_packet_sw2pcfgr_w = self.var("rdrq_packet_sw2pcfgr_w", self.header.rdrq_packet_t)
-
-        self.rdrs_packet_pcfgr2sw_d = self.var("rdrs_packet_pcfgr2sw_d", self.header.rdrs_packet_t)
-        self.rdrs_packet_sr2sw_d = self.var("rdrs_packet_sr2sw_d", self.header.rdrs_packet_t)
 
         self.rdrs_packet_bankarr2sw_d = self.var(
             "rdrs_packet_bankarr2sw_d", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
@@ -128,28 +122,8 @@ class GlbBankSwitch(Generator):
                            in_=self.rdrs_packet_bankarr2sw[i],
                            out_=self.rdrs_packet_bankarr2sw_d[i])
 
-        self.rdrs_sr2sw_pipeline = Pipeline(width=self.rdrs_packet_sr2sw.width,
-                                            depth=self._params.glb_bank2sw_pipeline_depth)
-        self.add_child(f"rdrs_sr2sw_pipeline",
-                       self.rdrs_sr2sw_pipeline,
-                       clk=self.clk,
-                       clk_en=const(1, 1),
-                       reset=self.reset,
-                       in_=self.rdrs_packet_sr2sw,
-                       out_=self.rdrs_packet_sr2sw_d)
-
-        self.rdrs_pcfgr2sw_pipeline = Pipeline(width=self.rdrs_packet_pcfgr2sw.width,
-                                               depth=self._params.glb_bank2sw_pipeline_depth)
-        self.add_child(f"rdrs_pcfgr2sw_pipeline",
-                       self.rdrs_pcfgr2sw_pipeline,
-                       clk=self.clk,
-                       clk_en=const(1, 1),
-                       reset=self.reset,
-                       in_=self.rdrs_packet_pcfgr2sw,
-                       out_=self.rdrs_packet_pcfgr2sw_d)
-
         # localparam
-        self.tile_sel_msb = (_params.bank_addr_width + _params.bank_sel_addr_width + _params.tile_sel_addr_width - 1)
+        self.tile_sel_msb = _params.bank_addr_width + _params.bank_sel_addr_width + _params.tile_sel_addr_width - 1
         self.tile_sel_lsb = _params.bank_addr_width + _params.bank_sel_addr_width
         self.bank_sel_msb = _params.bank_addr_width + _params.bank_sel_addr_width - 1
         self.bank_sel_lsb = _params.bank_addr_width
@@ -158,14 +132,11 @@ class GlbBankSwitch(Generator):
         # wr packet
         self.add_always(self.wr_sw2bankarr_logic)
         self.add_always(self.wr_sw2sr_logic)
-        self.add_always(self.wr_sw2sr_pipeline)
 
         # rdrq packet
         self.add_always(self.rdrq_sw2bankarr_logic)
         self.add_always(self.rdrq_sw2sr_logic)
-        self.add_always(self.rdrq_sw2sr_pipeline)
         self.add_always(self.rdrq_sw2pcfgr_logic)
-        self.add_always(self.rdrq_sw2pcfgr_pipeline)
 
         # rdrs packet
         self.add_always(self.rdrs_sw2dma_logic)
@@ -201,16 +172,9 @@ class GlbBankSwitch(Generator):
     @always_comb
     def wr_sw2sr_logic(self):
         if (self.cfg_st_dma_ctrl_mode != 0) & ((self.cfg_tile_connected_next) | (self.cfg_tile_connected_prev)):
-            self.wr_packet_sw2sr_w = self.wr_packet_dma2sw
+            self.wr_packet_sw2sr = self.wr_packet_dma2sw
         else:
-            self.wr_packet_sw2sr_w = 0
-
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
-    def wr_sw2sr_pipeline(self):
-        if self.reset:
             self.wr_packet_sw2sr = 0
-        else:
-            self.wr_packet_sw2sr = self.wr_packet_sw2sr_w
 
     @ always_comb
     def rdrq_sw2bankarr_logic(self):
@@ -253,31 +217,18 @@ class GlbBankSwitch(Generator):
 
     @ always_comb
     def rdrq_sw2sr_logic(self):
-        self.rdrq_packet_sw2sr_w = 0
-        if ((self.cfg_ld_dma_ctrl_mode != 0)
-                & (self.cfg_tile_connected_next | self.cfg_tile_connected_prev)):
-            self.rdrq_packet_sw2sr_w = self.rdrq_packet_dma2sw
-
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
-    def rdrq_sw2sr_pipeline(self):
-        if self.reset:
-            self.rdrq_packet_sw2sr = 0
+        if ((self.cfg_ld_dma_ctrl_mode != 0) & (self.cfg_tile_connected_next | self.cfg_tile_connected_prev)):
+            self.rdrq_packet_sw2sr = self.rdrq_packet_dma2sw
         else:
-            self.rdrq_packet_sw2sr = self.rdrq_packet_sw2sr_w
+            self.rdrq_packet_sw2sr = 0
 
     @ always_comb
     def rdrq_sw2pcfgr_logic(self):
-        self.rdrq_packet_sw2pcfgr_w = 0
         if ((self.cfg_pcfg_dma_ctrl_mode != 0)
                 & ((self.cfg_pcfg_tile_connected_next) | (self.cfg_pcfg_tile_connected_prev))):
-            self.rdrq_packet_sw2pcfgr_w = self.rdrq_packet_pcfgdma2sw
-
-    @ always_ff((posedge, "clk"), (posedge, "reset"))
-    def rdrq_sw2pcfgr_pipeline(self):
-        if self.reset:
-            self.rdrq_packet_sw2pcfgr = 0
+            self.rdrq_packet_sw2pcfgr = self.rdrq_packet_pcfgdma2sw
         else:
-            self.rdrq_packet_sw2pcfgr = self.rdrq_packet_sw2pcfgr_w
+            self.rdrq_packet_sw2pcfgr = 0
 
     @ always_comb
     def rdrs_sw2dma_logic(self):
@@ -288,7 +239,7 @@ class GlbBankSwitch(Generator):
                     if self.rd_type_d[i] == self.rd_type_e.strm:
                         self.rdrs_packet_sw2dma = self.rdrs_packet_bankarr2sw_d[i]
             else:
-                self.rdrs_packet_sw2dma = self.rdrs_packet_sr2sw_d
+                self.rdrs_packet_sw2dma = self.rdrs_packet_sr2sw
 
     @ always_comb
     def rdrs_sw2sr_logic(self):
@@ -314,7 +265,7 @@ class GlbBankSwitch(Generator):
                     if self.rd_type_d[i] == self.rd_type_e.pcfg:
                         self.rdrs_packet_sw2pcfgdma = self.rdrs_packet_bankarr2sw_d[i]
             else:
-                self.rdrs_packet_sw2pcfgdma = self.rdrs_packet_pcfgr2sw_d
+                self.rdrs_packet_sw2pcfgdma = self.rdrs_packet_pcfgr2sw
 
     @ always_comb
     def rdrs_sw2pcfgr_logic(self):

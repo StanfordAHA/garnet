@@ -46,6 +46,8 @@ class GlbLoadDma(Generator):
         self.strm_data_muxed = self.var("strm_data_muxed", self._params.cgra_data_width)
         self.strm_data_valid = self.var("strm_data_valid", 1)
         self.strm_data_valid_muxed = self.var("strm_data_valid_muxed", 1)
+        self.strm_data_sel_w = self.var(
+            "strm_data_sel_w", self._params.bank_byte_offset - self._params.cgra_byte_offset)
         self.strm_data_sel = self.var("strm_data_sel", self._params.bank_byte_offset - self._params.cgra_byte_offset)
 
         self.strm_rd_en_w = self.var("strm_rd_en_w", 1)
@@ -91,7 +93,7 @@ class GlbLoadDma(Generator):
         self.add_always(self.strm_run_ff)
         self.add_strm_data_start_pulse_pipeline()
         self.add_strm_rd_en_pipeline()
-        self.add_strm_rd_addr_pipeline()
+        self.add_strm_data_sel_pipeline()
         self.add_always(self.ld_dma_start_pulse_logic)
         self.add_always(self.ld_dma_start_pulse_ff)
         self.add_always(self.strm_data_mux)
@@ -303,7 +305,6 @@ class GlbLoadDma(Generator):
         self.bank_rdrq_rd_en = self.strm_rd_en_w & (self.is_first | (~self.bank_addr_match))
         self.bank_rdrq_rd_addr = self.strm_rd_addr_w
         self.rdrq_packet['rd_en'] = self.bank_rdrq_rd_en
-        self.rdrq_packet['rd_src_tile'] = self.glb_tile_id
         self.rdrq_packet['rd_addr'] = self.bank_rdrq_rd_addr
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -331,7 +332,7 @@ class GlbLoadDma(Generator):
             self.strm_data = self.bank_rdrs_data_cache_r[self._params.cgra_data_width - 1, 0]
 
     def add_strm_rd_en_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay
+        maximum_latency = 2 * self._params.num_glb_tiles + 4 + self._params.tile2sram_rd_delay
         latency_width = clog2(maximum_latency)
         self.strm_rd_en_d_arr = self.var(
             "strm_rd_en_d_arr", 1, size=maximum_latency, explicit_array=True)
@@ -349,29 +350,29 @@ class GlbLoadDma(Generator):
         self.wire(self.strm_data_valid, self.strm_rd_en_d_arr[resize(
             self.cfg_data_network_latency, latency_width) + self._params.tile2sram_rd_delay])
 
-    def add_strm_rd_addr_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6
+    def add_strm_data_sel_pipeline(self):
+        maximum_latency = 2 * self._params.num_glb_tiles + 4 + self._params.tile2sram_rd_delay
         latency_width = clog2(maximum_latency)
-        self.strm_rd_addr_d_arr = self.var(
-            "strm_rd_addr_d_arr", width=self._params.glb_addr_width, size=maximum_latency, explicit_array=True)
-        self.strm_rd_addr_pipeline = Pipeline(width=self._params.glb_addr_width,
-                                              depth=maximum_latency,
-                                              flatten_output=True)
-        self.add_child("strm_rd_addr_pipeline",
-                       self.strm_rd_addr_pipeline,
+        self.wire(self.strm_data_sel_w,
+                  self.strm_rd_addr_w[self._params.bank_byte_offset - 1, self._params.cgra_byte_offset])
+        self.strm_data_sel_arr = self.var("strm_data_sel_arr", width=self._params.bank_byte_offset
+                                          - self._params.cgra_byte_offset, size=maximum_latency, explicit_array=True)
+        self.strm_data_sel_pipeline = Pipeline(width=self._params.bank_byte_offset - self._params.cgra_byte_offset,
+                                               depth=maximum_latency,
+                                               flatten_output=True)
+        self.add_child("strm_data_sel_pipeline",
+                       self.strm_data_sel_pipeline,
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       in_=self.strm_rd_addr_w,
-                       out_=self.strm_rd_addr_d_arr)
+                       in_=self.strm_data_sel_w,
+                       out_=self.strm_data_sel_arr)
 
-        self.strm_data_sel = self.strm_rd_addr_d_arr[resize(self.cfg_data_network_latency, latency_width)
-                                                     + self._params.tile2sram_rd_delay][(self._params.bank_byte_offset
-                                                                                         - 1),
-                                                                                        self._params.cgra_byte_offset]
+        self.strm_data_sel = self.strm_data_sel_arr[resize(
+            self.cfg_data_network_latency, latency_width) + self._params.tile2sram_rd_delay]
 
     def add_strm_data_start_pulse_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6
+        maximum_latency = 2 * self._params.num_glb_tiles + 4 + self._params.tile2sram_rd_delay
         latency_width = clog2(maximum_latency)
         self.strm_data_start_pulse_d_arr = self.var(
             "strm_data_start_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
@@ -391,7 +392,7 @@ class GlbLoadDma(Generator):
                                                    + self._params.tile2sram_rd_delay])
 
     def add_ld_dma_done_pulse_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 6 + 1
+        maximum_latency = 2 * self._params.num_glb_tiles + 4 + self._params.tile2sram_rd_delay + 1
         latency_width = clog2(maximum_latency)
         self.ld_dma_done_pulse_d_arr = self.var(
             "ld_dma_done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)

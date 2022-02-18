@@ -476,6 +476,7 @@ class GlbTile(Generator):
                        rdrq_packet_sw2r=self.strm_rdrq_packet_sw2r,
                        rdrs_packet_r2sw=self.strm_rdrs_packet_r2sw,
                        rdrs_packet_sw2r=self.strm_rdrs_packet_sw2r,
+                       cfg_ld_dma_on=(self.cfg_ld_dma_ctrl['mode'] != 0),
                        cfg_tile_connected_prev=self.cfg_tile_connected_prev,
                        cfg_tile_connected_next=self.cfg_tile_connected_next)
 
@@ -497,8 +498,9 @@ class GlbTile(Generator):
                        rdrq_packet_r2sw=self.pcfg_rdrq_packet_r2sw,
                        rdrs_packet_r2sw=self.pcfg_rdrs_packet_r2sw,
                        rdrs_packet_sw2r=self.pcfg_rdrs_packet_sw2r,
-                       cfg_tile_connected_prev=self.cfg_tile_connected_prev,
-                       cfg_tile_connected_next=self.cfg_tile_connected_next)
+                       cfg_ld_dma_on=(self.cfg_pcfg_dma_ctrl['mode'] != 0),
+                       cfg_tile_connected_prev=self.cfg_pcfg_tile_connected_prev,
+                       cfg_tile_connected_next=self.cfg_pcfg_tile_connected_next)
 
         self.glb_tile_sram_cfg_switch = GlbSramCfgSwitch(self._params)
         self.add_child("glb_sram_cfg_switch",

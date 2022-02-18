@@ -52,7 +52,6 @@ class GlbSramCfgSwitch(Generator):
         self.bank_wr_addr = self.var("bank_wr_addr", self._params.glb_addr_width)
         self.bank_wr_data = self.var("bank_wr_data", self._params.bank_data_width)
         self.bank_rd_en = self.var("bank_rd_en", 1)
-        self.bank_rd_src_tile = self.var("bank_rd_src_tile", self._params.tile_sel_addr_width)
         self.bank_rd_addr = self.var("bank_rd_addr", self._params.glb_addr_width)
         self.rd_data_valid_w = self.var("rd_data_valid_w", 1)
         self.rd_data_w = self.var("rd_data_w", self._params.axi_data_width)
@@ -208,20 +207,17 @@ class GlbSramCfgSwitch(Generator):
                 # Send rdrq packet to switch
                 self.bank_rd_en = 1
                 self.bank_rd_addr = self.if_sram_cfg_wst_s.rd_addr
-                self.bank_rd_src_tile = self.glb_tile_id
             else:
                 # Feedthrough to the east
                 self.if_sram_cfg_est_m_rd_en_w = self.if_sram_cfg_wst_s.rd_en
                 self.if_sram_cfg_est_m_rd_addr_w = self.if_sram_cfg_wst_s.rd_addr
                 self.bank_rd_en = 0
                 self.bank_rd_addr = 0
-                self.bank_rd_src_tile = 0
         else:
             self.if_sram_cfg_est_m_rd_en_w = 0
             self.if_sram_cfg_est_m_rd_addr_w = 0
             self.bank_rd_en = 0
             self.bank_rd_addr = 0
-            self.bank_rd_src_tile = 0
 
     @always_comb
     def rdrs_logic(self):
@@ -266,7 +262,6 @@ class GlbSramCfgSwitch(Generator):
             self.wr_packet['wr_data'] = 0
             self.rdrq_packet['rd_en'] = 0
             self.rdrq_packet['rd_addr'] = 0
-            self.rdrq_packet['rd_src_tile'] = 0
         else:
             self.if_sram_cfg_est_m.wr_en = self.if_sram_cfg_est_m_wr_en_w
             self.if_sram_cfg_est_m.wr_addr = self.if_sram_cfg_est_m_wr_addr_w
@@ -281,4 +276,3 @@ class GlbSramCfgSwitch(Generator):
             self.wr_packet['wr_data'] = self.bank_wr_data
             self.rdrq_packet['rd_en'] = self.bank_rd_en
             self.rdrq_packet['rd_addr'] = self.bank_rd_addr
-            self.rdrq_packet['rd_src_tile'] = self.bank_rd_src_tile

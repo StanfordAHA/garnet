@@ -42,10 +42,8 @@ class GlbHeader():
                                 ("wr_addr", self._params.glb_addr_width),
                                 ("wr_data", self._params.bank_data_width), ]
         self.rdrq_packet_ports = [("rd_en", 1),
-                                  ("rd_src_tile", self._params.tile_sel_addr_width),
                                   ("rd_addr", self._params.glb_addr_width), ]
         self.rdrs_packet_ports = [("rd_data", self._params.bank_data_width),
-                                  ("rd_dst_tile", self._params.tile_sel_addr_width),
                                   ("rd_data_valid", 1), ]
 
         self.packet_ports = self.wr_packet_ports + self.rdrq_packet_ports + self.rdrs_packet_ports
