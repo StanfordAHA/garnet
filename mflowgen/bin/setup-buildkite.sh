@@ -441,13 +441,19 @@ if [ "$USER" == "buildkite-agent" ]; then
     }
     check_adk $tsmc16 || return 13 || exit 13
 
-#     # Copy the adk to test rig
-#     echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
-#     echo "Copying adks from '$tsmc16' to '$adks'"
-# 
-#     # Note rsync is much faster than cp!
-#     # set -x; rsync -avR $tsmc16 $adks; set +x
-# 
+    # Copy the adk to test rig
+    echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
+    echo "Copying adks from '$tsmc16' to '$adks'"
+
+    # Note rsync is much faster than cp!
+    # set -x; rsync -avR $tsmc16 $adks; set +x
+
+     (set -x;
+         cd $tsmc16/..;
+         rsync -aRv tsmc16 $adks;
+     set +x)
+
+
 #     # ...but only works if adk already been copied once! 
 #     set -x
 #     if [ ! -e $adks/tsmc16 ]; then
@@ -486,6 +492,15 @@ if [ "$USER" == "buildkite-agent" ]; then
     # Link to the adk(s)
     echo "Linking to adks in '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
     (set -x; cd $adks; test -e tsmc16 || ln -s $tsmc16; set +x)
+
+
+# Huh. So this is why we don't use symbolic links.
+# touch: setting times of ‘13-tsmc16/outputs/adk’: Permission denied
+# touch: setting times of ‘13-tsmc16/outputs/adk_lvs2’: Permission denied
+# touch: setting times of ‘13-tsmc16/outputs/pkgs’: Permission denied
+
+
+
 
 else
     # FIXME/TODO what about normal users, can they use this?
