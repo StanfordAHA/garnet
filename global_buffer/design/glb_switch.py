@@ -1,8 +1,9 @@
-from kratos import Generator, always_ff, always_comb, posedge, concat, const, Interface
+from kratos import Generator, always_ff, always_comb, posedge, concat, const
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.pipeline import Pipeline
+from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
 
 
 class GlbSwitch(Generator):
@@ -82,7 +83,7 @@ class GlbSwitch(Generator):
         self.add_always(self.est_m_clk_en_sel_comb)
         self.add_always(self.est_m_wr_clk_en_mux)
         self.add_always(self.est_m_rd_clk_en_mux)
-        self.add_always(self.clk_en_sramcfg2bank_comb)
+        self.add_sw2bank_clk_en()
 
     @always_comb
     def tile_id_match(self):
@@ -154,11 +155,26 @@ class GlbSwitch(Generator):
         else:
             self.if_est_m.rd_clk_en = 0
 
-    @always_comb
-    def clk_en_sramcfg2bank_comb(self):
-        self.clk_en_wst_s_d = self.if_wst_s_wr_clk_en_d | self.if_wst_s_rd_clk_en_d
-        self.clk_en_est_m = self.if_est_m.wr_clk_en | self.if_est_m.rd_clk_en
-        self.clk_en_sw2bank = self.clk_en_wst_s_d ^ self.clk_en_est_m
+    def add_sw2bank_clk_en(self):
+        self.wr_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + 4)
+        self.sw2bank_wr_clk_en = self.var("sw2bank_wr_clk_en", 1)
+        self.add_child("sw2bank_wr_clk_en_gen",
+                       self.wr_clk_en_gen,
+                       clk=self.mclk,
+                       reset=self.reset,
+                       enable=(self.if_wst_s.wr_en & self.wr_tile_id_match),
+                       clk_en=self.sw2bank_wr_clk_en
+                       )
+        self.rd_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + 4)
+        self.sw2bank_rd_clk_en = self.var("sw2bank_rd_clk_en", 1)
+        self.add_child("sw2bank_rd_clk_en_gen",
+                       self.rd_clk_en_gen,
+                       clk=self.mclk,
+                       reset=self.reset,
+                       enable=(self.if_wst_s.rd_en & self.rd_tile_id_match),
+                       clk_en=self.sw2bank_rd_clk_en
+                       )
+        self.wire(self.clk_en_sw2bank, self.sw2bank_wr_clk_en | self.sw2bank_rd_clk_en)
 
     @always_comb
     def wr_logic(self, is_partial: bool):

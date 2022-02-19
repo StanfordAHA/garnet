@@ -320,7 +320,7 @@ program glb_test (
             end else if (kernels[i].type_ == SRAM) begin
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end
-            repeat (10) @(posedge clk);
+            repeat (30) @(posedge clk);
         end
 
         if (err == 0) begin
