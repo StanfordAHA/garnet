@@ -294,8 +294,8 @@ class GlbTile(Generator):
         self.clk_en_bank = self.var("clk_en_bank", 1)
         self.gclk_bank = self.var("gclk_bank", 1)
         self.wire(self.clk_en_bank, self.clk_en_ld_dma | self.clk_en_st_dma | self.clk_en_pcfg_dma
-                  | self.clk_en_proc_switch | self.clk_en_strm_switch | self.clk_en_pcfg_switch
-                  | self.clk_en_sramcfg2bank | self.clk_en_procsw2bank)
+                  | self.clk_en_strm_switch | self.clk_en_pcfg_switch | self.clk_en_sramcfg2bank
+                  | self.clk_en_procsw2bank)
         self.add_child("glb_clk_gate_bank",
                        ClkGate(),
                        clk=self.clk,

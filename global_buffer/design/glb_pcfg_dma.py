@@ -87,7 +87,6 @@ class GlbPcfgDma(Generator):
         elif ((self.is_running_r == 1) & (self.num_cfg_cnt_r == 0)):
             self.is_running_r = 0
 
-    # TODO: We can merge adgn_logic, adgn_ff, rdrq_packet_logic, rdrq_packet_ff
     @always_comb
     def adgn_logic(self):
         if self.start_pulse_r:
