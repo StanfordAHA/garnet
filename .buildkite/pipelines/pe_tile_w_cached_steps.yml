@@ -76,30 +76,56 @@ steps:
      echo "--- design hierarchy: full_chip/tile_array/Tile_PE";
      cd *-Tile_PE; mflowgen run --design $$GARNET_HOME/mflowgen/Tile_PE;
 
+     echo '------------------------------------------------------------------------';
+     echo "--- quick check of goodness";
+     set -x;
+
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-place`;
+     ls -ld $$CACHE/$$step;
+     echo "(cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt";
+     ls -ld $$GOLD/$$step;
+
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-cts`;
+     ls -ld $$CACHE/$$step;
+     echo "(cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt";
+     ls -ld $$GOLD/$$step;
+
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-postcts_hold`;
+     ls -ld $$CACHE/$$step;
+     echo "(cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt";
+     ls -ld $$GOLD/$$step;
+
+     set +x;
+     echo '------------------------------------------------------------------------';
+
+
+
+
+
      echo "--- make power I guess";
      echo "Build rtl,syn,init,power from sratch, should take like 10 minutes"; 
      make cadence-innovus-power;
 
      echo "--- fetch place,cts,postcts_hold from $$CACHE";
 
-     set -x
+     set -x;
 
-     step=`cd $$CACHE; /bin/ls -1 full_chip/*-tile_array/*-Tile_PE/*-place`
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-place`;
      ls -ld $$CACHE/$$step;
-     (cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt
+     (cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt;
      ls -ld $$GOLD/$$step;
 
-     step=`cd $$CACHE; /bin/ls -1 full_chip/*-tile_array/*-Tile_PE/*-cts`
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-cts`;
      ls -ld $$CACHE/$$step;
-     (cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt
+     (cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt;
      ls -ld $$GOLD/$$step;
 
-     step=`cd $$CACHE; /bin/ls -1 full_chip/*-tile_array/*-Tile_PE/*-postcts_hold`
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-postcts_hold`;
      ls -ld $$CACHE/$$step;
-     (cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt
+     (cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt;
      ls -ld $$GOLD/$$step;
 
-     set +x
+     set +x;
 
      echo;
      echo "--- make route perhaps"
