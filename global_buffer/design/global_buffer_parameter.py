@@ -21,12 +21,15 @@ class GlobalBufferParams:
     # cgra tiles per glb tile
     cgra_per_glb: int = num_cgra_tiles // num_glb_tiles  # 2
 
+    # cell parameters
+    cg_cell_name: str = "CKLNQD1BWP16P90"
+    sram_macro_name: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
+    sram_macro_depth: int = 2048
     # bank parameters
     banks_per_tile: int = 2
     bank_sel_addr_width: int = math.ceil(math.log(banks_per_tile, 2))
     bank_data_width: int = 64
     bank_strb_width: int = math.ceil(bank_data_width / 8)
-    sram_macro_depth: int = 2048
     bank_addr_width: int = 17
     bank_byte_offset: int = math.ceil(math.log(bank_data_width / 8, 2))
 
@@ -186,6 +189,8 @@ def gen_header_files(params, svh_filename, h_filename, header_name):
         f.write(f"`define {header_name.upper()}_PARAM\n")
         f.write(f"package {header_name}_param;\n")
         for k, v in mod_params.items():
+            if type(v) == str:
+                continue
             v = int(v)
             f.write(f"localparam int {k.upper()} = {v};\n")
         f.write(f"endpackage\n")
@@ -194,5 +199,7 @@ def gen_header_files(params, svh_filename, h_filename, header_name):
     with open(h_filename, "w") as f:
         f.write(f"#pragma once\n")
         for k, v in mod_params.items():
+            if type(v) == str:
+                continue
             v = int(v)
             f.write(f"#define {k.upper()} {v}\n")

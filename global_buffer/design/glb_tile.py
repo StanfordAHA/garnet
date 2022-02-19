@@ -204,7 +204,7 @@ class GlbTile(Generator):
         self.clk_en_cfg = self.var("clk_en_cfg", 1)
         self.wire(self.clk_en_cfg, self.if_cfg_wst_s['wr_clk_en'] | self.if_cfg_wst_s['rd_clk_en'])
         self.add_child("glb_clk_gate_cfg",
-                       ClkGate(),
+                       ClkGate(_params=self._params),
                        clk=self.clk,
                        enable=self.clk_en_cfg | self.clk_en_master,
                        gclk=self.gclk_cfg)
@@ -216,7 +216,7 @@ class GlbTile(Generator):
                   self.if_sram_cfg_wst_s['wr_clk_en'] | self.if_sram_cfg_wst_s['rd_clk_en'])
         self.clk_en_sramcfg2bank = self.var("clk_en_sramcfg2bank", 1)
         self.add_child("glb_clk_gate_sram_cfg_switch",
-                       ClkGate(),
+                       ClkGate(_params=self._params),
                        clk=self.clk,
                        enable=self.clk_en_sram_cfg_switch | self.clk_en_master,
                        gclk=self.gclk_sram_cfg_switch)
@@ -224,7 +224,7 @@ class GlbTile(Generator):
         # Clock gating - pcfg broadcast
         self.gclk_pcfg_broadcast = self.var("gclk_pcfg_broadcast", 1)
         self.add_child("glb_clk_gate_pcfg_broadcast",
-                       ClkGate(),
+                       ClkGate(_params=self._params),
                        clk=self.clk,
                        enable=self.clk_en_pcfg_broadcast | self.clk_en_master,
                        gclk=self.gclk_pcfg_broadcast)
@@ -234,7 +234,7 @@ class GlbTile(Generator):
         self.gclk_ld_dma = self.var("gclk_ld_dma", 1)
         self.wire(self.clk_en_ld_dma, self.cfg_ld_dma_ctrl['mode'] != 0)
         self.add_child("glb_clk_gate_ld_dma",
-                       ClkGate(),
+                       ClkGate(_params=self._params),
                        clk=self.clk,
                        enable=self.clk_en_ld_dma | self.clk_en_master,
                        gclk=self.gclk_ld_dma)
@@ -244,7 +244,7 @@ class GlbTile(Generator):
         self.gclk_st_dma = self.var("gclk_st_dma", 1)
         self.wire(self.clk_en_st_dma, self.cfg_st_dma_ctrl['mode'] != 0)
         self.add_child("glb_clk_gate_st_dma",
-                       ClkGate(),
+                       ClkGate(_params=self._params),
                        clk=self.clk,
                        enable=self.clk_en_st_dma | self.clk_en_master,
                        gclk=self.gclk_st_dma)
@@ -255,7 +255,7 @@ class GlbTile(Generator):
         self.wire(self.clk_en_proc_switch, self.if_proc_wst_s['wr_clk_en'] | self.if_proc_wst_s['rd_clk_en'])
         self.clk_en_procsw2bank = self.var("clk_en_procsw2bank", 1)
         self.add_child("glb_clk_gate_proc_switch",
-                       ClkGate(),
+                       ClkGate(_params=self._params),
                        clk=self.clk,
                        enable=self.clk_en_proc_switch | self.clk_en_master,
                        gclk=self.gclk_proc_switch)
@@ -265,7 +265,7 @@ class GlbTile(Generator):
         self.gclk_pcfg_dma = self.var("gclk_pcfg_dma", 1)
         self.wire(self.clk_en_pcfg_dma, self.cfg_pcfg_dma_ctrl['mode'] != 0)
         self.add_child("glb_clk_gate_pcfg_dma",
-                       ClkGate(),
+                       ClkGate(_params=self._params),
                        clk=self.clk,
                        enable=self.clk_en_pcfg_dma | self.clk_en_master,
                        gclk=self.gclk_pcfg_dma)
@@ -275,7 +275,7 @@ class GlbTile(Generator):
         self.gclk_strm_switch = self.var("gclk_strm_switch", 1)
         self.wire(self.clk_en_strm_switch, self.cfg_tile_connected_next | self.cfg_tile_connected_prev)
         self.add_child("glb_clk_gate_strm_switch",
-                       ClkGate(),
+                       ClkGate(_params=self._params),
                        clk=self.clk,
                        enable=self.clk_en_strm_switch | self.clk_en_master,
                        gclk=self.gclk_strm_switch)
@@ -285,7 +285,7 @@ class GlbTile(Generator):
         self.gclk_pcfg_switch = self.var("gclk_pcfg_switch", 1)
         self.wire(self.clk_en_pcfg_switch, self.cfg_pcfg_tile_connected_next | self.cfg_pcfg_tile_connected_prev)
         self.add_child("glb_clk_gate_pcfg_switch",
-                       ClkGate(),
+                       ClkGate(_params=self._params),
                        clk=self.clk,
                        enable=self.clk_en_pcfg_switch | self.clk_en_master,
                        gclk=self.gclk_pcfg_switch)
@@ -297,7 +297,7 @@ class GlbTile(Generator):
                   | self.clk_en_strm_switch | self.clk_en_pcfg_switch | self.clk_en_sramcfg2bank
                   | self.clk_en_procsw2bank)
         self.add_child("glb_clk_gate_bank",
-                       ClkGate(),
+                       ClkGate(_params=self._params),
                        clk=self.clk,
                        enable=self.clk_en_bank | self.clk_en_master,
                        gclk=self.gclk_bank)

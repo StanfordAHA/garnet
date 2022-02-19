@@ -1,6 +1,6 @@
 from kratos import Generator, always_comb, concat, always_ff, posedge, const, resize
 from kratos.util import clog2
-from global_buffer.design.TS1N16FFCLLSBLVTC2048X64M8SW import TS1N16FFCLLSBLVTC2048X64M8SW
+from global_buffer.design.SRAM import SRAM
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
@@ -110,7 +110,7 @@ class GlbBankSramGen(Generator):
     def add_sram_macro(self):
         for i in range(self.num_sram_macros):
             self.add_child(f"sram_array_{i}",
-                           TS1N16FFCLLSBLVTC2048X64M8SW(),
+                           SRAM(self._params.sram_macro_name),
                            CLK=self.CLK,
                            A=self.a_sram_d,
                            BWEB=self.BWEB_d,
