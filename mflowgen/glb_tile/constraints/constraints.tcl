@@ -112,10 +112,6 @@ set_driving_cell -no_design_rule \
 # set_input_delay
 #=========================================================================
 set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
-# all est<->wst connections
-set_input_delay -clock ${clock_name} 0.3 [get_ports *_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} 0.3 [get_ports *_wst* -filter "direction==in"]
-set_input_delay -clock ${clock_name} 0 glb_tile_id
 
 # set_output_delay constraints for output ports
 set_output_delay -clock ${clock_name} 0.3 [all_outputs]
