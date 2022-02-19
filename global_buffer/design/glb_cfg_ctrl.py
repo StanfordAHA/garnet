@@ -1,5 +1,5 @@
 from kratos import Generator, always_comb, always_ff, posedge
-from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
+from global_buffer.design.glb_tile_ifc import GlbTileInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
@@ -10,7 +10,7 @@ class GlbCfgCtrl(Generator):
         self._params = _params
         # local parameters
 
-        config = GlbConfigInterface(
+        config = GlbTileInterface(
             addr_width=self._params.axi_addr_width, data_width=self._params.axi_data_width)
 
         self.gclk = self.clock("gclk")
