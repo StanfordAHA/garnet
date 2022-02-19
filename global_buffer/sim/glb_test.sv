@@ -121,24 +121,11 @@ program glb_test (
                     j < kernels[i].tile_id + num_chained_next;
                     j++
                 ) begin
-                    if (j == kernels[i].tile_id) begin
-                        data_network_configure(j, 1,
-                                                (num_chained_prev + num_chained_next) * 2 + 3 + GLB_BANK2SW_PIPELINE_DEPTH);
-                        pcfg_network_configure(j, 1,
-                                                (num_chained_prev + num_chained_next) * 2 + 3 + GLB_BANK2SW_PIPELINE_DEPTH);
-                    end else begin
-                        data_network_configure(j, 1, 0);
-                        pcfg_network_configure(j, 1, 0);
-                    end
+                    data_network_connect(j, 1);
+                    pcfg_network_connect(j, 1);
                 end
-                if (num_chained_next == 0) begin
-                    data_network_configure(
-                        kernels[i].tile_id, 0,
-                        (num_chained_prev + num_chained_next) * 2 + 4);
-                    pcfg_network_configure(
-                        kernels[i].tile_id, 0,
-                        (num_chained_prev + num_chained_next) * 2 + 4);
-                end
+                data_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 4);
+                pcfg_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 4);
             end
         end
         glb_pcfg_broadcast_stall(test.pcfg_broadcast_stall_mask);
@@ -478,16 +465,24 @@ program glb_test (
         repeat (20) @(posedge clk);
     endtask
 
-    task automatic data_network_configure(input int tile_id, bit is_connected,
-                                          [LATENCY_WIDTH-1:0] latency);
-        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_R,
-                      (latency << `GLB_DATA_NETWORK_LATENCY_F_LSB) | (is_connected << `GLB_DATA_NETWORK_TILE_CONNECTED_F_LSB));
+    task automatic data_network_connect(input int tile_id, bit is_connected);
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_CTRL_R,
+                      (is_connected << `GLB_DATA_NETWORK_CTRL_CONNECTED_F_LSB));
     endtask
 
-    task automatic pcfg_network_configure(input int tile_id, bit is_connected,
-                                          [LATENCY_WIDTH-1:0] latency);
-        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_NETWORK_R,
-                      (latency << `GLB_PCFG_NETWORK_LATENCY_F_LSB) | (is_connected << `GLB_PCFG_NETWORK_TILE_CONNECTED_F_LSB));
+    task automatic data_network_latency(input int tile_id, [LATENCY_WIDTH-1:0] latency);
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_LATENCY_R,
+                      (latency << `GLB_DATA_NETWORK_LATENCY_VALUE_F_LSB));
+    endtask
+
+    task automatic pcfg_network_connect(input int tile_id, bit is_connected);
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_NETWORK_CTRL_R,
+                      (is_connected << `GLB_PCFG_NETWORK_CTRL_CONNECTED_F_LSB));
+    endtask
+
+    task automatic pcfg_network_latency(input int tile_id, [LATENCY_WIDTH-1:0] latency);
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_NETWORK_LATENCY_R,
+                      (latency << `GLB_PCFG_NETWORK_LATENCY_VALUE_F_LSB));
     endtask
 
     task automatic pcfg_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
