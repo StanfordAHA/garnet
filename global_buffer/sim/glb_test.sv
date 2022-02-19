@@ -808,7 +808,7 @@ program glb_test (
                         end
                     end
                     begin
-                        repeat (size + 100) @(posedge clk);
+                        repeat (2 * size + 100) @(posedge clk);
                         $display("@%0t: %m ERROR: glb-mem burst read timeout ", $time);
                     end
                 join_any

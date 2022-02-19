@@ -5,6 +5,7 @@ from global_buffer.design.glb_tile_ifc import GlbTileInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.pipeline import Pipeline
+from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
 from gemstone.generator.from_magma import FromMagma
 
 
@@ -79,6 +80,13 @@ class GlobalBuffer(Generator):
         self.pcfg_g2f_interrupt_pulse = self.output("pcfg_g2f_interrupt_pulse", self._params.num_glb_tiles)
 
         # local variables
+        self.proc_wr_en_d = self.var("proc_wr_en_d", 1)
+        self.proc_wr_strb_d = self.var("proc_wr_strb_d", self._params.bank_strb_width)
+        self.proc_wr_addr_d = self.var("proc_wr_addr_d", self._params.glb_addr_width)
+        self.proc_wr_data_d = self.var("proc_wr_data_d", self._params.bank_data_width)
+        self.proc_rd_en_d = self.var("proc_rd_en_d", 1)
+        self.proc_rd_addr_d = self.var("proc_rd_addr_d", self._params.glb_addr_width)
+
         self.cgra_cfg_jtag_gc2glb_wr_en_d = self.var("cgra_cfg_jtag_gc2glb_wr_en_d", 1)
         self.cgra_cfg_jtag_gc2glb_rd_en_d = self.var("cgra_cfg_jtag_gc2glb_rd_en_d", 1)
         self.cgra_cfg_jtag_gc2glb_addr_d = self.var("cgra_cfg_jtag_gc2glb_addr_d", self._params.cgra_cfg_addr_width)
@@ -186,8 +194,6 @@ class GlobalBuffer(Generator):
                 if_sram_cfg_tile2tile, f"if_sram_cfg_tile2tile_{i}"))
 
         # GLS pipeline
-        self.pcfg_broadcast_stall_d = self.var("pcfg_broadcast_stall_d", self._params.num_glb_tiles)
-        self.cgra_stall_in_d = self.var("cgra_stall_in_d", self._params.num_cgra_tiles)
         self.strm_g2f_start_pulse_d = self.var("strm_g2f_start_pulse_d", self._params.num_glb_tiles)
         self.strm_f2g_start_pulse_d = self.var("strm_f2g_start_pulse_d", self._params.num_glb_tiles)
         self.pcfg_start_pulse_d = self.var("pcfg_start_pulse_d", self._params.num_glb_tiles)
@@ -216,7 +222,9 @@ class GlobalBuffer(Generator):
         self.wire(self.if_sram_cfg_list[-1].rd_data_valid, 0)
 
         self.add_glb_tile()
+        self.add_always(self.proc_pipeline)
         self.add_always(self.left_edge_proc_ff)
+        self.add_proc_clk_en()
         self.add_always(self.left_edge_cfg_ff)
         self.add_always(self.left_edge_sram_cfg_ff)
         self.add_always(self.left_edge_cgra_cfg_ff)
@@ -225,32 +233,69 @@ class GlobalBuffer(Generator):
         self.add_always(self.tile2tile_w2e_cfg_wiring)
         self.add_always(self.interrupt_pipeline)
 
+        # Directly assign rd_data output ports at the left side
+        self.wire(self.proc_rd_data, self.if_proc_list[0].rd_data)
+        self.wire(self.proc_rd_data_valid, self.if_proc_list[0].rd_data_valid)
+        self.wire(self.if_cfg_rd_data, self.if_cfg_list[0].rd_data)
+        self.wire(self.if_cfg_rd_data_valid, self.if_cfg_list[0].rd_data_valid)
+        self.wire(self.if_sram_cfg_rd_data, self.if_sram_cfg_list[0].rd_data)
+        self.wire(self.if_sram_cfg_rd_data_valid, self.if_sram_cfg_list[0].rd_data_valid)
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def proc_pipeline(self):
+        if self.reset:
+            self.proc_wr_en_d = 0
+            self.proc_wr_strb_d = 0
+            self.proc_wr_addr_d = 0
+            self.proc_wr_data_d = 0
+            self.proc_rd_en_d = 0
+            self.proc_rd_addr_d = 0
+        else:
+            self.proc_wr_en_d = self.proc_wr_en
+            self.proc_wr_strb_d = self.proc_wr_strb
+            self.proc_wr_addr_d = self.proc_wr_addr
+            self.proc_wr_data_d = self.proc_wr_data
+            self.proc_rd_en_d = self.proc_rd_en
+            self.proc_rd_addr_d = self.proc_rd_addr
+
+    def add_proc_clk_en(self):
+        self.wr_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + 4)
+        self.proc_wr_clk_en = self.var("proc_wr_clk_en", 1)
+        self.add_child("proc_wr_clk_en_gen",
+                       self.wr_clk_en_gen,
+                       clk=self.clk,
+                       reset=self.reset,
+                       enable=self.proc_wr_en_d,
+                       clk_en=self.proc_wr_clk_en
+                       )
+        self.wire(self.if_proc_list[0].wr_clk_en, self.proc_wr_clk_en)
+        self.rd_clk_en_gen = GlbClkEnGen(cnt=2 * self._params.num_glb_tiles + self._params.tile2sram_rd_delay + 4)
+        self.proc_rd_clk_en = self.var("proc_rd_clk_en", 1)
+        self.add_child("proc_rd_clk_en_gen",
+                       self.rd_clk_en_gen,
+                       clk=self.clk,
+                       reset=self.reset,
+                       enable=self.proc_rd_en_d,
+                       clk_en=self.proc_rd_clk_en
+                       )
+        self.wire(self.if_proc_list[0].rd_clk_en, self.proc_rd_clk_en)
+
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_ff(self):
         if self.reset:
             self.if_proc_list[0].wr_en = 0
-            # FIXME: For now, set clk_en to 1 always
-            self.if_proc_list[0].wr_clk_en = 0
             self.if_proc_list[0].wr_strb = 0
             self.if_proc_list[0].wr_addr = 0
             self.if_proc_list[0].wr_data = 0
             self.if_proc_list[0].rd_en = 0
-            self.if_proc_list[0].rd_clk_en = 1
             self.if_proc_list[0].rd_addr = 0
-            self.proc_rd_data = 0
-            self.proc_rd_data_valid = 0
         else:
-            self.if_proc_list[0].wr_en = self.proc_wr_en
-            # FIXME: For now, set clk_en to 1 always
-            self.if_proc_list[0].wr_clk_en = 0
-            self.if_proc_list[0].wr_strb = self.proc_wr_strb
-            self.if_proc_list[0].wr_addr = self.proc_wr_addr
-            self.if_proc_list[0].wr_data = self.proc_wr_data
-            self.if_proc_list[0].rd_en = self.proc_rd_en
-            self.if_proc_list[0].rd_clk_en = 1
-            self.if_proc_list[0].rd_addr = self.proc_rd_addr
-            self.proc_rd_data = self.if_proc_list[0].rd_data
-            self.proc_rd_data_valid = self.if_proc_list[0].rd_data_valid
+            self.if_proc_list[0].wr_en = self.proc_wr_en_d
+            self.if_proc_list[0].wr_strb = self.proc_wr_strb_d
+            self.if_proc_list[0].wr_addr = self.proc_wr_addr_d
+            self.if_proc_list[0].wr_data = self.proc_wr_data_d
+            self.if_proc_list[0].rd_en = self.proc_rd_en_d
+            self.if_proc_list[0].rd_addr = self.proc_rd_addr_d
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cfg_ff(self):
@@ -262,8 +307,6 @@ class GlobalBuffer(Generator):
             self.if_cfg_list[0].rd_en = 0
             self.if_cfg_list[0].rd_clk_en = 0
             self.if_cfg_list[0].rd_addr = 0
-            self.if_cfg_rd_data = 0
-            self.if_cfg_rd_data_valid = 0
         else:
             self.if_cfg_list[0].wr_en = self.if_cfg_wr_en
             self.if_cfg_list[0].wr_clk_en = self.if_cfg_wr_clk_en
@@ -272,8 +315,6 @@ class GlobalBuffer(Generator):
             self.if_cfg_list[0].rd_en = self.if_cfg_rd_en
             self.if_cfg_list[0].rd_clk_en = self.if_cfg_rd_clk_en
             self.if_cfg_list[0].rd_addr = self.if_cfg_rd_addr
-            self.if_cfg_rd_data = self.if_cfg_list[0].rd_data
-            self.if_cfg_rd_data_valid = self.if_cfg_list[0].rd_data_valid
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_sram_cfg_ff(self):
@@ -285,8 +326,6 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_list[0].rd_en = 0
             self.if_sram_cfg_list[0].rd_clk_en = 0
             self.if_sram_cfg_list[0].rd_addr = 0
-            self.if_sram_cfg_rd_data = 0
-            self.if_sram_cfg_rd_data_valid = 0
         else:
             self.if_sram_cfg_list[0].wr_en = self.if_sram_cfg_wr_en
             self.if_sram_cfg_list[0].wr_clk_en = self.if_sram_cfg_wr_clk_en
@@ -295,8 +334,6 @@ class GlobalBuffer(Generator):
             self.if_sram_cfg_list[0].rd_en = self.if_sram_cfg_rd_en
             self.if_sram_cfg_list[0].rd_clk_en = self.if_sram_cfg_rd_clk_en
             self.if_sram_cfg_list[0].rd_addr = self.if_sram_cfg_rd_addr
-            self.if_sram_cfg_rd_data = self.if_sram_cfg_list[0].rd_data
-            self.if_sram_cfg_rd_data_valid = self.if_sram_cfg_list[0].rd_data_valid
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cgra_cfg_ff(self):
