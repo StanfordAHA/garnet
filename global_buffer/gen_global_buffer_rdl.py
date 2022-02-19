@@ -154,17 +154,22 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     addr_map = AddrMap(name)
 
     # Data Network Ctrl Register
-    data_network_ctrl = Reg("data_network")
-    tile_connected_f = Field("tile_connected", 1)
-    strm_latency_f = Field("latency", params.latency_width)
-    data_network_ctrl.add_children([tile_connected_f, strm_latency_f])
+    data_network_ctrl = Reg("data_network_ctrl")
+    data_network_ctrl.add_child(Field("connected", 1))
     addr_map.add_child(data_network_ctrl)
 
+    data_network_latency = Reg("data_network_latency")
+    data_network_latency.add_child(Field("value", params.latency_width))
+    addr_map.add_child(data_network_latency)
+
     # Pcfg Network Ctrl Register
-    pcfg_network_ctrl = Reg("pcfg_network")
-    pcfg_network_ctrl.add_children([Field("tile_connected", 1),
-                                    Field("latency", params.latency_width)])
+    pcfg_network_ctrl = Reg("pcfg_network_ctrl")
+    pcfg_network_ctrl.add_child(Field("connected", 1))
     addr_map.add_child(pcfg_network_ctrl)
+
+    pcfg_network_latency = Reg("pcfg_network_latency")
+    pcfg_network_latency.add_child(Field("value", params.latency_width))
+    addr_map.add_child(pcfg_network_latency)
 
     # Store DMA Ctrl
     st_dma_ctrl_r = Reg("st_dma_ctrl")
