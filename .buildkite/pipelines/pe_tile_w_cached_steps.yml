@@ -81,13 +81,31 @@ steps:
      make cadence-innovus-power;
 
      echo "--- fetch place,cts,postcts_hold from $$CACHE";
-     (cd $$CACHE; rsync -aRv full_chip/*-tile_array/*-Tile_PE/*-place $$GOLD);
-     (cd $$CACHE; rsync -aRv full_chip/*-tile_array/*-Tile_PE/*-cts $$GOLD);
-     (cd $$CACHE; rsync -aRv full_chip/*-tile_array/*-Tile_PE/*-postcts_hold $$GOLD);
+
+     set -x
+
+     step=`cd $$CACHE; /bin/ls -1 full_chip/*-tile_array/*-Tile_PE/*-place`
+     ls -ld $$CACHE/$$step;
+     (cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt
+     ls -ld $$GOLD/$$step;
+
+     step=`cd $$CACHE; /bin/ls -1 full_chip/*-tile_array/*-Tile_PE/*-cts`
+     ls -ld $$CACHE/$$step;
+     (cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt
+     ls -ld $$GOLD/$$step;
+
+     step=`cd $$CACHE; /bin/ls -1 full_chip/*-tile_array/*-Tile_PE/*-postcts_hold`
+     ls -ld $$CACHE/$$step;
+     (cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt
+     ls -ld $$GOLD/$$step;
+
+     set +x
 
      echo;
-     echo "--- make route perhaps"; make cadence-innovus-route;
+     echo "--- make route perhaps"
+     echo exit 13 | make cadence-innovus-route |& tee make-route.log;
      '
+     # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
 
 
 # - label: 'pe rtl'
