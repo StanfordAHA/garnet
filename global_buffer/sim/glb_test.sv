@@ -428,7 +428,7 @@ program glb_test (
         #2 if_sram_cfg_wr_en <= 1;
         if_sram_cfg_wr_addr <= addr;
         if_sram_cfg_wr_data <= data;
-        @(posedge clk);
+        repeat(4) @(posedge clk);
         #2 if_sram_cfg_wr_en <= 0;
         if_sram_cfg_wr_addr <= 0;
         if_sram_cfg_wr_data <= 0;
