@@ -1,9 +1,9 @@
 from kratos import Generator, always_ff, posedge
 
 
-class TS1N16FFCLLSBLVTC2048X64M8SW(Generator):
-    def __init__(self):
-        super().__init__("TS1N16FFCLLSBLVTC2048X64M8SW")
+class SRAM(Generator):
+    def __init__(self, name: str):
+        super().__init__(name)
         self.CLK = self.clock("CLK")
         self.CEB = self.input("CEB", 1)
         self.WEB = self.input("WEB", 1)

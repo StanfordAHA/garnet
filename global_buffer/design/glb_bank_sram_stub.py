@@ -1,5 +1,4 @@
 from kratos import Generator, always_ff, posedge, concat, const, resize, clog2
-from global_buffer.design.TS1N16FFCLLSBLVTC2048X64M8SW import TS1N16FFCLLSBLVTC2048X64M8SW
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
