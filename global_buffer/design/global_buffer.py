@@ -1,7 +1,7 @@
 from kratos import Generator, always_ff, posedge, always_comb, clock_en, clog2, const, concat
 from kratos.util import to_magma
 from global_buffer.design.glb_tile import GlbTile
-from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
+from global_buffer.design.glb_tile_ifc import GlbTileInterface
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.pipeline import Pipeline
@@ -83,17 +83,6 @@ class GlobalBuffer(Generator):
         self.cgra_cfg_jtag_gc2glb_rd_en_d = self.var("cgra_cfg_jtag_gc2glb_rd_en_d", 1)
         self.cgra_cfg_jtag_gc2glb_addr_d = self.var("cgra_cfg_jtag_gc2glb_addr_d", self._params.cgra_cfg_addr_width)
         self.cgra_cfg_jtag_gc2glb_data_d = self.var("cgra_cfg_jtag_gc2glb_data_d", self._params.cgra_cfg_data_width)
-
-        self.proc_packet_d = self.var("proc_packet_d", self.header.packet_t)
-
-        self.proc_packet_w2e_wsti = self.var(
-            "proc_packet_w2e_wsti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.proc_packet_w2e_esto = self.var(
-            "proc_packet_w2e_esto", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.proc_packet_e2w_esti = self.var(
-            "proc_packet_e2w_esti", self.header.rdrs_packet_t, size=self._params.num_glb_tiles, packed=True)
-        self.proc_packet_e2w_wsto = self.var(
-            "proc_packet_e2w_wsto", self.header.rdrs_packet_t, size=self._params.num_glb_tiles, packed=True)
 
         self.strm_packet_e2w_esti = self.var(
             "strm_packet_e2w_esti", self.header.packet_t, size=self._params.num_glb_tiles, packed=True)
@@ -178,14 +167,19 @@ class GlobalBuffer(Generator):
         self.wire(self.pcfg_g2f_interrupt_pulse_d, self.pcfg_g2f_interrupt_pulse)
 
         # interface
-        if_cfg_tile2tile = GlbConfigInterface(
-            addr_width=self._params.axi_addr_width, data_width=self._params.axi_data_width)
-        if_sram_cfg_tile2tile = GlbConfigInterface(
-            addr_width=self._params.glb_addr_width, data_width=self._params.axi_data_width)
+        if_proc_tile2tile = GlbTileInterface(addr_width=self._params.glb_addr_width,
+                                             data_width=self._params.bank_data_width, is_clk_en=True, is_strb=True)
+        if_cfg_tile2tile = GlbTileInterface(addr_width=self._params.axi_addr_width,
+                                            data_width=self._params.axi_data_width, is_clk_en=True, is_strb=False)
+        if_sram_cfg_tile2tile = GlbTileInterface(addr_width=self._params.glb_addr_width,
+                                                 data_width=self._params.axi_data_width, is_clk_en=True, is_strb=False)
 
+        self.if_proc_list = []
         self.if_cfg_list = []
         self.if_sram_cfg_list = []
         for i in range(self._params.num_glb_tiles + 1):
+            self.if_proc_list.append(self.interface(
+                if_proc_tile2tile, f"if_proc_tile2tile_{i}"))
             self.if_cfg_list.append(self.interface(
                 if_cfg_tile2tile, f"if_cfg_tile2tile_{i}"))
             self.if_sram_cfg_list.append(self.interface(
@@ -214,6 +208,8 @@ class GlobalBuffer(Generator):
         for i in range(self._params.num_glb_tiles):
             self.glb_tile.append(GlbTile(_params=self._params))
 
+        self.wire(self.if_proc_list[-1].rd_data, 0)
+        self.wire(self.if_proc_list[-1].rd_data_valid, 0)
         self.wire(self.if_cfg_list[-1].rd_data, 0)
         self.wire(self.if_cfg_list[-1].rd_data_valid, 0)
         self.wire(self.if_sram_cfg_list[-1].rd_data, 0)
@@ -232,27 +228,29 @@ class GlobalBuffer(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_proc_ff(self):
         if self.reset:
-            self.proc_packet_d['wr']['wr_en'] = 0
-            self.proc_packet_d['wr']['wr_strb'] = 0
-            self.proc_packet_d['wr']['wr_addr'] = 0
-            self.proc_packet_d['wr']['wr_data'] = 0
-            self.proc_packet_d['rdrq']['rd_en'] = 0
-            self.proc_packet_d['rdrq']['rd_addr'] = 0
-            self.proc_packet_d['rdrs']['rd_data'] = 0
-            self.proc_packet_d['rdrs']['rd_data_valid'] = 0
+            self.if_proc_list[0].wr_en = 0
+            # FIXME: For now, set clk_en to 1 always
+            self.if_proc_list[0].wr_clk_en = 0
+            self.if_proc_list[0].wr_strb = 0
+            self.if_proc_list[0].wr_addr = 0
+            self.if_proc_list[0].wr_data = 0
+            self.if_proc_list[0].rd_en = 0
+            self.if_proc_list[0].rd_clk_en = 1
+            self.if_proc_list[0].rd_addr = 0
             self.proc_rd_data = 0
             self.proc_rd_data_valid = 0
         else:
-            self.proc_packet_d['wr']['wr_en'] = self.proc_wr_en
-            self.proc_packet_d['wr']['wr_strb'] = self.proc_wr_strb
-            self.proc_packet_d['wr']['wr_addr'] = self.proc_wr_addr
-            self.proc_packet_d['wr']['wr_data'] = self.proc_wr_data
-            self.proc_packet_d['rdrq']['rd_en'] = self.proc_rd_en
-            self.proc_packet_d['rdrq']['rd_addr'] = self.proc_rd_addr
-            self.proc_packet_d['rdrs']['rd_data'] = 0
-            self.proc_packet_d['rdrs']['rd_data_valid'] = 0
-            self.proc_rd_data = self.proc_packet_e2w_wsto[0]['rd_data']
-            self.proc_rd_data_valid = self.proc_packet_e2w_wsto[0]['rd_data_valid']
+            self.if_proc_list[0].wr_en = self.proc_wr_en
+            # FIXME: For now, set clk_en to 1 always
+            self.if_proc_list[0].wr_clk_en = 0
+            self.if_proc_list[0].wr_strb = self.proc_wr_strb
+            self.if_proc_list[0].wr_addr = self.proc_wr_addr
+            self.if_proc_list[0].wr_data = self.proc_wr_data
+            self.if_proc_list[0].rd_en = self.proc_rd_en
+            self.if_proc_list[0].rd_clk_en = 1
+            self.if_proc_list[0].rd_addr = self.proc_rd_addr
+            self.proc_rd_data = self.if_proc_list[0].rd_data
+            self.proc_rd_data_valid = self.if_proc_list[0].rd_data_valid
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def left_edge_cfg_ff(self):
@@ -314,22 +312,16 @@ class GlobalBuffer(Generator):
             self.cgra_cfg_jtag_gc2glb_data_d = self.cgra_cfg_jtag_gc2glb_data
 
     def tile2tile_e2w_wiring(self):
-        self.wire(self.proc_packet_e2w_esti[self._params.num_glb_tiles - 1],
-                  self.proc_packet_w2e_esto[self._params.num_glb_tiles - 1]['rdrs'])
         self.wire(self.strm_packet_e2w_esti[self._params.num_glb_tiles - 1], 0)
         self.wire(self.pcfg_packet_e2w_esti[self._params.num_glb_tiles - 1], 0)
         for i in range(self._params.num_glb_tiles - 1):
-            self.wire(self.proc_packet_e2w_esti[i], self.proc_packet_e2w_wsto[i + 1])
             self.wire(self.strm_packet_e2w_esti[i], self.strm_packet_e2w_wsto[i + 1])
             self.wire(self.pcfg_packet_e2w_esti[i], self.pcfg_packet_e2w_wsto[i + 1])
 
     def tile2tile_w2e_wiring(self):
-        self.wire(self.proc_packet_w2e_wsti[0], self.proc_packet_d)
         self.wire(self.strm_packet_w2e_wsti[0], 0)
         self.wire(self.pcfg_packet_w2e_wsti[0], 0)
         for i in range(1, self._params.num_glb_tiles):
-            self.wire(self.proc_packet_w2e_wsti[const(i, clog2(self._params.num_glb_tiles))],
-                      self.proc_packet_w2e_esto[const((i - 1), clog2(self._params.num_glb_tiles))])
             self.wire(self.strm_packet_w2e_wsti[const(i, clog2(self._params.num_glb_tiles))],
                       self.strm_packet_w2e_esto[const((i - 1), clog2(self._params.num_glb_tiles))])
             self.wire(self.pcfg_packet_w2e_wsti[const(i, clog2(self._params.num_glb_tiles))],
@@ -376,30 +368,29 @@ class GlobalBuffer(Generator):
                            glb_tile_id=i,
 
                            # proc
-                           proc_wr_en_w2e_wsti=self.proc_packet_w2e_wsti[i]["wr"]['wr_en'],
-                           proc_wr_strb_w2e_wsti=self.proc_packet_w2e_wsti[i]["wr"]['wr_strb'],
-                           proc_wr_addr_w2e_wsti=self.proc_packet_w2e_wsti[i]["wr"]['wr_addr'],
-                           proc_wr_data_w2e_wsti=self.proc_packet_w2e_wsti[i]["wr"]['wr_data'],
-                           proc_rd_en_w2e_wsti=self.proc_packet_w2e_wsti[i]["rdrq"]['rd_en'],
-                           proc_rd_addr_w2e_wsti=self.proc_packet_w2e_wsti[i]["rdrq"]['rd_addr'],
-                           proc_rd_data_w2e_wsti=self.proc_packet_w2e_wsti[i]["rdrs"]['rd_data'],
-                           proc_rd_data_valid_w2e_wsti=self.proc_packet_w2e_wsti[i]["rdrs"]['rd_data_valid'],
+                           if_proc_est_m_wr_en=self.if_proc_list[i + 1].wr_en,
+                           if_proc_est_m_wr_clk_en=self.if_proc_list[i + 1].wr_clk_en,
+                           if_proc_est_m_wr_addr=self.if_proc_list[i + 1].wr_addr,
+                           if_proc_est_m_wr_data=self.if_proc_list[i + 1].wr_data,
+                           if_proc_est_m_wr_strb=self.if_proc_list[i + 1].wr_strb,
+                           if_proc_est_m_rd_en=self.if_proc_list[i + 1].rd_en,
+                           if_proc_est_m_rd_clk_en=self.if_proc_list[i + 1].rd_clk_en,
+                           if_proc_est_m_rd_addr=self.if_proc_list[i + 1].rd_addr,
+                           if_proc_est_m_rd_data=self.if_proc_list[i + 1].rd_data,
+                           if_proc_est_m_rd_data_valid=self.if_proc_list[i + 1].rd_data_valid,
 
-                           proc_wr_en_w2e_esto=self.proc_packet_w2e_esto[i]["wr"]['wr_en'],
-                           proc_wr_strb_w2e_esto=self.proc_packet_w2e_esto[i]["wr"]['wr_strb'],
-                           proc_wr_addr_w2e_esto=self.proc_packet_w2e_esto[i]["wr"]['wr_addr'],
-                           proc_wr_data_w2e_esto=self.proc_packet_w2e_esto[i]["wr"]['wr_data'],
-                           proc_rd_en_w2e_esto=self.proc_packet_w2e_esto[i]["rdrq"]['rd_en'],
-                           proc_rd_addr_w2e_esto=self.proc_packet_w2e_esto[i]["rdrq"]['rd_addr'],
-                           proc_rd_data_w2e_esto=self.proc_packet_w2e_esto[i]["rdrs"]['rd_data'],
-                           proc_rd_data_valid_w2e_esto=self.proc_packet_w2e_esto[i]["rdrs"]['rd_data_valid'],
+                           if_proc_wst_s_wr_en=self.if_proc_list[i].wr_en,
+                           if_proc_wst_s_wr_clk_en=self.if_proc_list[i].wr_clk_en,
+                           if_proc_wst_s_wr_addr=self.if_proc_list[i].wr_addr,
+                           if_proc_wst_s_wr_data=self.if_proc_list[i].wr_data,
+                           if_proc_wst_s_wr_strb=self.if_proc_list[i].wr_strb,
+                           if_proc_wst_s_rd_en=self.if_proc_list[i].rd_en,
+                           if_proc_wst_s_rd_clk_en=self.if_proc_list[i].rd_clk_en,
+                           if_proc_wst_s_rd_addr=self.if_proc_list[i].rd_addr,
+                           if_proc_wst_s_rd_data=self.if_proc_list[i].rd_data,
+                           if_proc_wst_s_rd_data_valid=self.if_proc_list[i].rd_data_valid,
 
-                           proc_rd_data_e2w_esti=self.proc_packet_e2w_esti[i]['rd_data'],
-                           proc_rd_data_valid_e2w_esti=self.proc_packet_e2w_esti[i]['rd_data_valid'],
-
-                           proc_rd_data_e2w_wsto=self.proc_packet_e2w_wsto[i]['rd_data'],
-                           proc_rd_data_valid_e2w_wsto=self.proc_packet_e2w_wsto[i]['rd_data_valid'],
-
+                           # strm
                            strm_wr_en_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_en'],
                            strm_wr_strb_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_strb'],
                            strm_wr_addr_e2w_esti=self.strm_packet_e2w_esti[i]["wr"]['wr_addr'],
@@ -436,6 +427,7 @@ class GlobalBuffer(Generator):
                            strm_rd_data_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data'],
                            strm_rd_data_valid_e2w_wsto=self.strm_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'],
 
+                           # pcfg
                            pcfg_rd_en_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_en'],
                            pcfg_rd_addr_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrq"]['rd_addr'],
                            pcfg_rd_data_e2w_esti=self.pcfg_packet_e2w_esti[i]["rdrs"]['rd_data'],
@@ -456,6 +448,7 @@ class GlobalBuffer(Generator):
                            pcfg_rd_data_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data'],
                            pcfg_rd_data_valid_e2w_wsto=self.pcfg_packet_e2w_wsto[i]["rdrs"]['rd_data_valid'],
 
+                           # cfg
                            if_cfg_est_m_wr_en=self.if_cfg_list[i + 1].wr_en,
                            if_cfg_est_m_wr_clk_en=self.if_cfg_list[i + 1].wr_clk_en,
                            if_cfg_est_m_wr_addr=self.if_cfg_list[i + 1].wr_addr,
@@ -476,6 +469,7 @@ class GlobalBuffer(Generator):
                            if_cfg_wst_s_rd_data=self.if_cfg_list[i].rd_data,
                            if_cfg_wst_s_rd_data_valid=self.if_cfg_list[i].rd_data_valid,
 
+                           # sram jtag cfg
                            if_sram_cfg_est_m_wr_en=self.if_sram_cfg_list[i + 1].wr_en,
                            if_sram_cfg_est_m_wr_clk_en=self.if_sram_cfg_list[i + 1].wr_clk_en,
                            if_sram_cfg_est_m_wr_addr=self.if_sram_cfg_list[i + 1].wr_addr,

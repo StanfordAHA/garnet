@@ -2,7 +2,7 @@ from kratos import Generator, always_comb, always_ff, posedge, const
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_bank_memory import GlbBankMemory
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
-from global_buffer.design.glb_cfg_ifc import GlbConfigInterface
+from global_buffer.design.glb_tile_ifc import GlbTileInterface
 from global_buffer.design.glb_header import GlbHeader
 
 
@@ -19,7 +19,7 @@ class GlbBank(Generator):
         self.rdrq_packet = self.input("rdrq_packet", self.header.rdrq_bank_packet_t)
         self.rdrs_packet = self.output("rdrs_packet", self.header.rdrs_packet_t)
 
-        self.bank_cfg_ifc = GlbConfigInterface(
+        self.bank_cfg_ifc = GlbTileInterface(
             addr_width=self._params.bank_addr_width, data_width=self._params.axi_data_width)
 
         # local variables
