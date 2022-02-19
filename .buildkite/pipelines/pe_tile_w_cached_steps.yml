@@ -9,8 +9,10 @@ agents: { jobsize: "hours" }
 
 env:
   GOLD: /build/pm${BUILDKITE_BUILD_NUMBER}
-  # OVERRIDE_MFLOWGEN_BRANCH: silent_fail
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+
+  OVERRIDE_MFLOWGEN_BRANCH: droute-auto-stop
+  stop_on_failed_routing: true
 
   CACHE: /build/gold
   GET_STEP_CONTEXT: eval $$GARNET_HOME/mflowgen/bin/get-step-context.sh
