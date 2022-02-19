@@ -81,19 +81,13 @@ steps:
      set -x;
 
      step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-place`;
-     ls -ld $$CACHE/$$step;
-     echo "(cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt";
-     ls -ld $$GOLD/$$step;
+     ls -ld $$CACHE/$$step; echo "(cd $$CACHE; rsync -aRv $$step $$GOLD);
 
      step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-cts`;
-     ls -ld $$CACHE/$$step;
-     echo "(cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt";
-     ls -ld $$GOLD/$$step;
+     ls -ld $$CACHE/$$step; echo "(cd $$CACHE; rsync -aRv $$step $$GOLD);
 
      step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-postcts_hold`;
-     ls -ld $$CACHE/$$step;
-     echo "(cd $$CACHE; rsync -aRv $$step $$GOLD); touch $$GOLD/$$step/.prebuilt";
-     ls -ld $$GOLD/$$step;
+     ls -ld $$CACHE/$$step; echo "(cd $$CACHE; rsync -aRv $$step $$GOLD);
 
      set +x;
      echo "------------------------------------------------------------------------";
