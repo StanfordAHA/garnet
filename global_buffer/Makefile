@@ -7,11 +7,14 @@ current_dir := $(abspath $(dir $(mkfile_path)))
 # -------------------------------------------------------------------
 # time control
 CLK_PERIOD ?= 1500ps
-CLK_SRC_LATENCY ?= -600ps
+CLK_SRC_LATENCY ?= -500ps
 TIMEUNIT ?= 100ps
 TIMEPRECISION ?= 1ps
-CLK_PERIOD_TIMEUNIT = $(shell expr $(shell echo $(CLK_PERIOD) | rev | cut -c 3- | rev) / $(shell echo $(TIMEUNIT) | rev | cut -c 3- | rev) )
-CLK_SRC_LATENCY_TIMEUNIT = $(shell expr $(shell echo $(CLK_SRC_LATENCY) | rev | cut -c 3- | rev) / $(shell echo $(TIMEUNIT) | rev | cut -c 3- | rev) )
+TIMEUNIT_NUMBER_ONLY = $(shell echo $(TIMEUNIT) | rev | cut -c 3- | rev)
+CLK_PERIOD_NUMBER_ONLY = $(shell echo $(CLK_PERIOD) | rev | cut -c 3- | rev)
+CLK_SRC_LATENCY_NUMBER_ONLY = $(shell echo $(CLK_SRC_LATENCY) | rev | cut -c 3- | rev)
+CLK_PERIOD_TIMEUNIT = $(shell echo "scale=2; $(CLK_PERIOD_NUMBER_ONLY) / $(TIMEUNIT_NUMBER_ONLY)" | bc) 
+CLK_SRC_LATENCY_TIMEUNIT = $(shell echo "scale=2; $(CLK_SRC_LATENCY_NUMBER_ONLY) / $(TIMEUNIT_NUMBER_ONLY)" | bc) 
 
 # architecture
 CGRA_WIDTH ?= 32
