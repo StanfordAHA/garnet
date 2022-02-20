@@ -1,27 +1,27 @@
-// Four transactions simultaneously. Double buffer. WR: tile0/bank0, G2F: tile0/bank1, F2G: tile1/bank2, RD: tile1/bank3
+// Four transactions simultaneously. Double buffer. WR: tile2/bank4, G2F: tile2/bank5, F2G: tile3/bank6, RD: tile3/bank7
 4
 00
-WR 0 0 0 0
+WR 2 4 0 0
 1
 4096
 1
 1
 testvectors/4096_v0.dat
-G2F 0 1 0 0
+G2F 2 5 0 0
+1
+1024
+1
+1
+testvectors/1024_v0.dat
+RD 3 6 0 0
 1
 4096
 1
 1
 testvectors/4096_v1.dat
-F2G 1 2 0 0
+F2G 3 7 0 0
 1
-4096
-1
-1
-testvectors/4096_v2.dat
-RD 1 3 0 0
-1
-4096
+1024
 1
 1
-testvectors/4096_v3.dat
+testvectors/1024_v1.dat

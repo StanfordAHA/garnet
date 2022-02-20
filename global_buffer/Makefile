@@ -54,8 +54,8 @@ GENERATE_TV = \
     python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num 512 --seed 1; \
     python testvectors/gen_glb_test.py --data testvectors/4096_v0.dat --num 4096 --seed 0; \
     python testvectors/gen_glb_test.py --data testvectors/4096_v1.dat --num 4096 --seed 1; \
-    python testvectors/gen_glb_test.py --data testvectors/4096_v2.dat --num 4096 --seed 2; \
-    python testvectors/gen_glb_test.py --data testvectors/4096_v3.dat --num 4096 --seed 3; \
+    python testvectors/gen_glb_test.py --data testvectors/1024_v0.dat --num 1024 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/1024_v1.dat --num 1024 --seed 1; \
     python testvectors/gen_glb_test.py --data testvectors/3844_v0.dat --num 3844 --seed 0;
 
 XRUN = xrun \
