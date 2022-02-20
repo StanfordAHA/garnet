@@ -8,7 +8,7 @@
 `define TIMEUNIT 100ps
 `define TIMEPRECISION 1ps
 `define CLK_PERIOD 15
-`define CLK_SRC_LATENCY -4.6
+`define CLK_SRC_LATENCY -5
 
 import global_buffer_param::*;
 

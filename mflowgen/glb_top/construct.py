@@ -27,8 +27,8 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'      : 1.5,
-    'sim_clock_period'  : 2.0,
+    'clock_period'      : 1.11,
+    'sim_clock_period'  : 1.25,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
