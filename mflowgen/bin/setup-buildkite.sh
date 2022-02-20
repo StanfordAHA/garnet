@@ -426,6 +426,12 @@ if [ "$USER" == "buildkite-agent" ]; then
         d=$1
         pushd $d
             git branch -v
+            # Checks to see if adk repo is ahead or behind origin
+            # FXIME should I check for other possibilites?
+            # FIXME other possibilities that I do not yet check for:
+            # - adk repo not on master branch
+            # - adk repo reverted to earlier version e.g. "git branch -v" yields
+            #   "* (detached from 1b16aa4) 1b16aa4 need adk_lvs2 ..."
             ba=`git branch -v | awk '{print $4}'` # E.g. '[ahead' or '[behind'
             if [ "$ba" == "[ahead" -o  "$ba" == "[behind" ]; then
                 echo "---------------------------------------------------------"
@@ -433,9 +439,7 @@ if [ "$USER" == "buildkite-agent" ]; then
                 echo "  - Need to do a git pull on '$d'"
                 echo "  - Also see 'help adk'."
                 echo "---------------------------------------------------------"
-                # return 13 || exit 13
-                echo "NEVER MIND it's okay (for now)"
-                echo "---------------------------------------------------------"
+                return 13 || exit 13
             fi
         popd
     }
@@ -446,63 +450,16 @@ if [ "$USER" == "buildkite-agent" ]; then
     echo "Copying adks from '$tsmc16' to '$adks'"
 
     # Note rsync is much faster than cp!
-    # set -x; rsync -avR $tsmc16 $adks; set +x
 
-    # So...? tsmc16 is a link to tsmc16-adk I guess?
+    # tsmc16 is a link to tsmc16-adk I guess? rsync BOTH
     (set -x;
         cd $tsmc16/..;
         rsync -aRv tsmc16 $adks;
         rsync -aRv tsmc16-adk $adks;
     set +x)
 
-
-#     # ...but only works if adk already been copied once! 
-#     set -x
-#     if [ ! -e $adks/tsmc16 ]; then
-#         cp -rp $tsmc16 $adks
-#     else
-#         rsync -avR $tsmc16 $adks
-#     fi
-#     set +x
-# 
-#     # Apparently this works:
-#     #   rsync -avR /sim/steveri/mflowgen/adks/tsmc16 \
-#     #      /sim/buildkite-agent/mflowgen/adks
-#     #
-#     # But this has problems:
-#     #   rsync -avR /sim/steveri/mflowgen/adks/tsmc16 \
-#     #      /sim/buildkite-agent/mflowgen.droute-auto-stop/adks
-#     #
-#     # i.e. creates mflowgen.droute-auto-stop/adks/sim/steveri/...
-#     #
-#     # Maybe it's because of the -a (archive) flag?
-# #     (set -x; cd $adks/..; rsync -avR $tsmc16 ./adks; set +x)
-# 
-# 
-#     export MFLOWGEN_PATH=$adks
-#     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
-# 
-#     echo "+++ ADK HACK"
-#     for f in $adks/tsmc16/*/adk.tcl; do
-#         cat << EOF >> $f
-# 
-# set ADK_DONT_USE_CELL_LIST "*/E* */G* */*D16* */*D20* */*D24* */*D28* */*D32* */SDF* */*DFM* */*SEDF*"
-# EOF
-#     done
-
-#     # screw it!
-#     # Link to the adk(s)
-#     echo "Linking to adks in '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
-#     (set -x; cd $adks; test -e tsmc16 || ln -s $tsmc16; set +x)
-
-
-# Huh. So this is why we don't use symbolic links.
-# touch: setting times of ‘13-tsmc16/outputs/adk’: Permission denied
-# touch: setting times of ‘13-tsmc16/outputs/adk_lvs2’: Permission denied
-# touch: setting times of ‘13-tsmc16/outputs/pkgs’: Permission denied
-
-
-
+    export MFLOWGEN_PATH=$adks
+    echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
 else
     # FIXME/TODO what about normal users, can they use this?
