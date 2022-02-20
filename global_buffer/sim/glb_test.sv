@@ -121,11 +121,17 @@ program glb_test (
                     j < kernels[i].tile_id + num_chained_next;
                     j++
                 ) begin
-                    data_network_connect(j, 1);
-                    pcfg_network_connect(j, 1);
+                    if (kernels[i].type == PCFG) begin
+                        pcfg_network_connect(j, 1);
+                    end else begin
+                        data_network_connect(j, 1);
+                    end
                 end
-                data_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 4);
-                pcfg_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 4);
+                if (kernels[i].type == PCFG) begin
+                    pcfg_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 4);
+                end else begin
+                    data_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 4);
+                end
             end
         end
         glb_pcfg_broadcast_stall(test.pcfg_broadcast_stall_mask);
