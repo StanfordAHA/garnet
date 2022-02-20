@@ -9,46 +9,16 @@ agents: { jobsize: "hours" }
 
 env:
   GOLD: /build/pm${BUILDKITE_BUILD_NUMBER}
-  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  CACHE: /build/gold
 
   OVERRIDE_MFLOWGEN_BRANCH: droute-auto-stop
-  stop_on_failed_routing: true
-
-  CACHE: /build/gold
-  GET_STEP_CONTEXT: eval $$GARNET_HOME/mflowgen/bin/get-step-context.sh
-
-
-# prototype for using get-step-context:
-#   % cd /build/chip2
-#   % get-step-context.sh /build/chip1 cadence-innovus-postroute_hold
-#   % make *-cadence-innovus-postroute_hold
-
+  # stop_on_failed_routing: true
 
 
 steps:
 
-
-# - label: 'setup'
-#   commands:
-# 
-# # # Copy existing rtl collateral
-# # - 'set -x; mkdir -p full_chip; cp -rp $$GOLD/full_chip/*-rtl full_chip/'
-# 
-#   # Copy existing rtl collateral;
-#   # Think of setup-buildkite as a fancy "mkdir -p $d && cd $d"
-#   - 'set -x; 
-#      source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
-#      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
-#      $$GET_STEP_CONTEXT --from /build/gold --step tile_array;
-#      pwd; ls -lR'
-
-
-# Uhhhh...see if this works
-- label: 'setup'
+- label: 'Tile_PE route step using cached pre-route collateral'
   commands:
-
-# # Copy existing rtl collateral
-# - 'set -x; mkdir -p full_chip; cp -rp $$GOLD/full_chip/*-rtl full_chip/'
 
   # Copy existing rtl collateral;
   # Think of setup-buildkite as a fancy "mkdir -p $d && cd $d"
@@ -58,26 +28,26 @@ steps:
   # # "mflowgen run full_chip" to build full_chip framework (may not be necessary)
   # Copy rtl collateral from $CACHE
   # "mflowgen run full_chip" to reset rtl in the context of latest full_chip framework
-  # 
+
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
 
-     echo "--- fetch fullchip/rtl from $$CACHE";
+     : ------------------------------------------------------------------------;
+     echo "--- Fetch fullchip/rtl from $$CACHE";
      pwd; set -x; cp -rp $$CACHE/full_chip/*-rtl .;
 
-     echo "--- fetch fullchip/tile_array/Tile_PE/constraints from $$CACHE";
+     : ------------------------------------------------------------------------;
+     echo "--- Build Tile_PE dir hierarchy";
+     echo "(Fetch an inconsequential step to force dir hierarchy build.)";
      (cd $$CACHE; rsync -aR full_chip/*-tile_array/*-Tile_PE/*-constraints $$GOLD);
 
-     echo "--- design hierarchy: full_chip";
-     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
-
-     echo "--- design hierarchy: full_chip/tile_array";
+     : ------------------------------------------------------------------------;
+     echo "--- Renumber as necessary at each stage of the hierarchy";
+     cd .;            mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      cd *-tile_array; mflowgen run --design $$GARNET_HOME/mflowgen/tile_array;
+     cd *-Tile_PE;    mflowgen run --design $$GARNET_HOME/mflowgen/Tile_PE;
 
-     echo "--- design hierarchy: full_chip/tile_array/Tile_PE";
-     cd *-Tile_PE; mflowgen run --design $$GARNET_HOME/mflowgen/Tile_PE;
-
-     echo "------------------------------------------------------------------------";
-     echo "--- quick check of goodness";
+     : ------------------------------------------------------------------------;
+     echo "--- Dry run to see if everything is copacetic with the cache";
      set -x;
 
      step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-place`;
@@ -89,20 +59,16 @@ steps:
      step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-postcts_hold`;
      ls -ld $$CACHE/$$step; echo "(cd $$CACHE; rsync -aR $$step $$GOLD)";
 
-     set +x;
-     echo "------------------------------------------------------------------------";
+     set +x; : verbosity OFF;
 
-
-
-
-
+     : ------------------------------------------------------------------------;
      echo "--- make power I guess";
      echo "Build rtl,syn,init,power from sratch, should take like 10 minutes"; 
      make cadence-innovus-power;
 
+     : ------------------------------------------------------------------------;
      echo "--- fetch place,cts,postcts_hold from $$CACHE";
-
-     set -x;
+     set -x; : verbosity ON;
 
      step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-place`;
      ls -ld $$CACHE/$$step;
@@ -119,25 +85,21 @@ steps:
      (cd $$CACHE; rsync -aR $$step $$GOLD); touch $$GOLD/$$step/.prebuilt;
      ls -ld $$GOLD/$$step;
 
-     set +x;
-     : maybe this is a comment;
-     echo;
-     echo "--- make route perhaps";
+     set +x; : verbosity OFF;
+
+     : ------------------------------------------------------------------------;
+     : For "make" commands below:                                              ;
+     : "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail ;
+     : "pipefail" prevents "tee" from hiding "make" command failure            ;
+     : ------------------------------------------------------------------------;
      set -o pipefail;
+
+     echo "--- make route"
      echo exit 13 | make cadence-innovus-route |& tee make-route.log;
+
+     echo "--- make lvs";
+     echo exit 13 | make mentor-calibre-lvs |& tee make-lvs.log;
      '
-     # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
-
-
-# - label: 'pe rtl'
-#   commands:
-#   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps rtl
-# - wait: ~
-# 
-# - label: 'pe syn'
-#   commands:
-#   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps synthesis
-# - wait: ~
 
 
 # Looks like we can survive renumberings if we're careful:
@@ -150,25 +112,3 @@ steps:
 # -  10 : 10-rtl
 # -  12 : 12-soc-rtl
 # -  18 : 18-tile_array
-
-
-
-
-# Original code:
-# 
-# - label: 'fc rtl'
-#   commands:
-#   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array --steps rtl
-# - wait: ~
-# 
-# 
-# - label: 'pe rtl'
-#   commands:
-#   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps rtl
-# - wait: ~
-# 
-# 
-# - label: 'pe syn'
-#   commands:
-#   - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps synthesis
-# - wait: ~
