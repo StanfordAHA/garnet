@@ -426,13 +426,17 @@ if [ "$USER" == "buildkite-agent" ]; then
         d=$1
         pushd $d
             git branch -v
-            # Checks to see if adk repo is ahead or behind origin
-            # FXIME should I check for other possibilites?
-            # FIXME other possibilities that I do not yet check for:
-            # - adk repo not on master branch
-            # - adk repo reverted to earlier version e.g. "git branch -v" yields
-            #   "* (detached from 1b16aa4) 1b16aa4 need adk_lvs2 ..."
-            ba=`git branch -v | awk '{print $4}'` # E.g. '[ahead' or '[behind'
+            # Check that tsmc16 is pointing to master branch.
+            ba=`git branch -v | awk '{print $2; exit}'` 
+            if [ "$ba" != "master" ]; then
+                echo "---------------------------------------------------------"
+                echo "**ERROR looks like tsmc16 repo is not on master branch."
+                echo "---------------------------------------------------------"
+                return 13 || exit 13
+            fi
+
+            # Checks to see that adk repo is not ahead or behind origin
+            ba=`git branch -v | awk '{print $4; exit}'` # E.g. '[ahead' or '[behind'
             if [ "$ba" == "[ahead" -o  "$ba" == "[behind" ]; then
                 echo "---------------------------------------------------------"
                 echo "**ERROR oops looks like tsmc16 libs are not up to date."
