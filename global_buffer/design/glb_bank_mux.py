@@ -18,7 +18,6 @@ class GlbBankMux(Generator):
         self.wr_packet_pr2sw = self.input("wr_packet_pr2sw", self.header.wr_packet_t)
         self.wr_packet_sr2sw = self.input("wr_packet_sr2sw", self.header.wr_packet_t)
         self.wr_packet_dma2sw = self.input("wr_packet_dma2sw", self.header.wr_packet_t)
-        self.wr_packet_sramcfg2sw = self.input("wr_packet_sramcfg2sw", self.header.wr_packet_t)
         self.wr_packet_sw2sr = self.output("wr_packet_sw2sr", self.header.wr_packet_t)
         self.wr_packet_sw2bankarr = self.output(
             "wr_packet_sw2bankarr", self.header.wr_bank_packet_t, size=self._params.banks_per_tile)
@@ -29,7 +28,6 @@ class GlbBankMux(Generator):
         self.rdrq_packet_dma2sw = self.input("rdrq_packet_dma2sw", self.header.rdrq_packet_t)
         self.rdrq_packet_pcfgr2sw = self.input("rdrq_packet_pcfgr2sw", self.header.rdrq_packet_t)
         self.rdrq_packet_pcfgdma2sw = self.input("rdrq_packet_pcfgdma2sw", self.header.rdrq_packet_t)
-        self.rdrq_packet_sramcfg2sw = self.input("rdrq_packet_sramcfg2sw", self.header.rdrq_packet_t)
         self.rdrq_packet_sw2pcfgr = self.output("rdrq_packet_sw2pcfgr", self.header.rdrq_packet_t)
         self.rdrq_packet_sw2sr = self.output("rdrq_packet_sw2sr", self.header.rdrq_packet_t)
         self.rdrq_packet_sw2bankarr = self.output(
@@ -41,7 +39,6 @@ class GlbBankMux(Generator):
         self.rdrs_packet_bankarr2sw = self.input(
             "rdrs_packet_bankarr2sw", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
         self.rdrs_packet_sw2pr = self.output("rdrs_packet_sw2pr", self.header.rdrs_packet_t)
-        self.rdrs_packet_sw2sramcfg = self.output("rdrs_packet_sw2sramcfg", self.header.rdrs_packet_t)
         self.rdrs_packet_sw2sr = self.output("rdrs_packet_sw2sr", self.header.rdrs_packet_t)
         self.rdrs_packet_sw2dma = self.output("rdrs_packet_sw2dma", self.header.rdrs_packet_t)
         self.rdrs_packet_sw2pcfgr = self.output("rdrs_packet_sw2pcfgr", self.header.rdrs_packet_t)
@@ -66,7 +63,7 @@ class GlbBankMux(Generator):
         self.rdrs_packet_bankarr2sw_d = self.var(
             "rdrs_packet_bankarr2sw_d", self.header.rdrs_packet_t, size=self._params.banks_per_tile)
 
-        self.rd_type_e = self.enum("rd_type_e", {"none": 0, "proc": 1, "strm": 2, "pcfg": 3, "sramcfg": 4})
+        self.rd_type_e = self.enum("rd_type_e", {"none": 0, "proc": 1, "strm": 2, "pcfg": 3})
         # FIXME: Kratos does not support array of enum type
         # Just use python array
         self.rd_type = []
@@ -146,7 +143,6 @@ class GlbBankMux(Generator):
         self.add_always(self.rdrs_sw2pr_logic)
         self.add_always(self.rdrs_sw2pcfgdma_logic)
         self.add_always(self.rdrs_sw2pcfgr_logic)
-        self.add_always(self.rdrs_sw2sramcfg_logic)
 
     @always_comb
     def wr_sw2bankarr_logic(self, i):
@@ -175,14 +171,6 @@ class GlbBankMux(Generator):
                 self._params.bank_addr_width - 1), 0]
             self.wr_packet_sw2bankarr_w[i]['wr_strb'] = self.wr_packet_sr2sw['wr_strb']
             self.wr_packet_sw2bankarr_w[i]['wr_data'] = self.wr_packet_sr2sw['wr_data']
-        elif ((self.wr_packet_sramcfg2sw['wr_en'] == 1)
-                & (self.wr_packet_sramcfg2sw['wr_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
-                & (self.wr_packet_sramcfg2sw['wr_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
-            self.wr_packet_sw2bankarr_w[i]['wr_en'] = self.wr_packet_sramcfg2sw['wr_en']
-            self.wr_packet_sw2bankarr_w[i]['wr_addr'] = self.wr_packet_sramcfg2sw['wr_addr'][(
-                self._params.bank_addr_width - 1), 0]
-            self.wr_packet_sw2bankarr_w[i]['wr_strb'] = self.wr_packet_sramcfg2sw['wr_strb']
-            self.wr_packet_sw2bankarr_w[i]['wr_data'] = self.wr_packet_sramcfg2sw['wr_data']
         else:
             self.wr_packet_sw2bankarr_w[i] = 0
 
@@ -232,13 +220,6 @@ class GlbBankMux(Generator):
             self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_sr2sw['rd_addr'][(
                 self._params.bank_addr_width - 1), 0]
             self.rd_type[i] = self.rd_type_e.strm
-        elif ((self.rdrq_packet_sramcfg2sw['rd_en'] == 1)
-                & (self.rdrq_packet_sramcfg2sw['rd_addr'][self.tile_sel_msb, self.tile_sel_lsb] == self.glb_tile_id)
-                & (self.rdrq_packet_sramcfg2sw['rd_addr'][self.bank_sel_msb, self.bank_sel_lsb] == i)):
-            self.rdrq_packet_sw2bankarr_w[i]['rd_en'] = self.rdrq_packet_sramcfg2sw['rd_en']
-            self.rdrq_packet_sw2bankarr_w[i]['rd_addr'] = self.rdrq_packet_sramcfg2sw['rd_addr'][(
-                self._params.bank_addr_width - 1), 0]
-            self.rd_type[i] = self.rd_type_e.sramcfg
         else:
             self.rdrq_packet_sw2bankarr_w[i] = 0
             self.rd_type[i] = self.rd_type_e.none
@@ -302,10 +283,3 @@ class GlbBankMux(Generator):
             for i in range(self._params.banks_per_tile):
                 if self.rd_type_d[i] == self.rd_type_e.pcfg:
                     self.rdrs_packet_sw2pcfgr = self.rdrs_packet_bankarr2sw_d[i]
-
-    @ always_comb
-    def rdrs_sw2sramcfg_logic(self):
-        self.rdrs_packet_sw2sramcfg = 0
-        for i in range(self._params.banks_per_tile):
-            if self.rd_type_d[i] == self.rd_type_e.sramcfg:
-                self.rdrs_packet_sw2sramcfg = self.rdrs_packet_bankarr2sw_d[i]

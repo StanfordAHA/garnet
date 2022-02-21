@@ -68,11 +68,9 @@ module top;
 
     // configuration of sram from glc
     logic if_sram_cfg_wr_en;
-    logic if_sram_cfg_wr_clk_en;
     logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_wr_addr;
     logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_wr_data;
     logic if_sram_cfg_rd_en;
-    logic if_sram_cfg_rd_clk_en;
     logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_rd_addr;
     logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_rd_data;
     logic if_sram_cfg_rd_data_valid;
@@ -159,11 +157,9 @@ module top;
         .if_cfg_rd_data_valid     (if_cfg_rd_data_valid),
         // sram config ifc
         .if_sram_cfg_wr_en        (if_sram_cfg_wr_en),
-        .if_sram_cfg_wr_clk_en    (if_sram_cfg_wr_clk_en),
         .if_sram_cfg_wr_addr      (if_sram_cfg_wr_addr),
         .if_sram_cfg_wr_data      (if_sram_cfg_wr_data),
         .if_sram_cfg_rd_en        (if_sram_cfg_rd_en),
-        .if_sram_cfg_rd_clk_en    (if_sram_cfg_rd_clk_en),
         .if_sram_cfg_rd_addr      (if_sram_cfg_rd_addr),
         .if_sram_cfg_rd_data      (if_sram_cfg_rd_data),
         .if_sram_cfg_rd_data_valid(if_sram_cfg_rd_data_valid),
@@ -194,11 +190,9 @@ module top;
         .if_cfg_rd_data_valid     (if_cfg_rd_data_valid),
         // sram config ifc
         .if_sram_cfg_wr_en        (if_sram_cfg_wr_en),
-        .if_sram_cfg_wr_clk_en    (if_sram_cfg_wr_clk_en),
         .if_sram_cfg_wr_addr      (if_sram_cfg_wr_addr),
         .if_sram_cfg_wr_data      (if_sram_cfg_wr_data),
         .if_sram_cfg_rd_en        (if_sram_cfg_rd_en),
-        .if_sram_cfg_rd_clk_en    (if_sram_cfg_rd_clk_en),
         .if_sram_cfg_rd_addr      (if_sram_cfg_rd_addr),
         .if_sram_cfg_rd_data      (if_sram_cfg_rd_data),
         .if_sram_cfg_rd_data_valid(if_sram_cfg_rd_data_valid),

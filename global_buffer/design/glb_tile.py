@@ -103,24 +103,6 @@ class GlbTile(Generator):
             port = self.output(f"if_cfg_wst_s_{s2m_port}", self.if_cfg_wst_s[s2m_port].width)
             self.wire(port, self.if_cfg_wst_s[s2m_port])
 
-        # Sram Jtag configuration interface
-        self.if_sram_cfg = GlbTileInterface(addr_width=self._params.glb_addr_width,
-                                            data_width=self._params.axi_data_width, is_clk_en=True, is_strb=False)
-        self.if_sram_cfg_est_m = self.interface(self.if_sram_cfg, "if_sram_cfg_est_m")
-        self.if_sram_cfg_wst_s = self.interface(self.if_sram_cfg, "if_sram_cfg_wst_s")
-        # Connect m2s ports
-        for m2s_port in self.if_sram_cfg.m_to_s:
-            port = self.output(f"if_sram_cfg_est_m_{m2s_port}", self.if_sram_cfg_est_m[m2s_port].width)
-            self.wire(port, self.if_sram_cfg_est_m[m2s_port])
-            port = self.input(f"if_sram_cfg_wst_s_{m2s_port}", self.if_sram_cfg_wst_s[m2s_port].width)
-            self.wire(port, self.if_sram_cfg_wst_s[m2s_port])
-        # Connect s2m ports
-        for s2m_port in self.if_sram_cfg.s_to_m:
-            port = self.input(f"if_sram_cfg_est_m_{s2m_port}", self.if_sram_cfg_est_m[s2m_port].width)
-            self.wire(port, self.if_sram_cfg_est_m[s2m_port])
-            port = self.output(f"if_sram_cfg_wst_s_{s2m_port}", self.if_sram_cfg_wst_s[s2m_port].width)
-            self.wire(port, self.if_sram_cfg_wst_s[s2m_port])
-
         self.cfg_tile_connected_wsti = self.input("cfg_tile_connected_wsti", 1)
         self.cfg_tile_connected_esto = self.output("cfg_tile_connected_esto", 1)
         self.cfg_pcfg_tile_connected_wsti = self.input("cfg_pcfg_tile_connected_wsti", 1)
@@ -209,18 +191,6 @@ class GlbTile(Generator):
                        enable=self.clk_en_cfg | self.clk_en_master,
                        gclk=self.gclk_cfg)
 
-        # Clock gating - jtag_sram cfg switch
-        self.gclk_sram_cfg_switch = self.var("gclk_sram_cfg_switch", 1)
-        self.clk_en_sram_cfg_switch = self.var("clk_en_sram_cfg_switch", 1)
-        self.wire(self.clk_en_sram_cfg_switch,
-                  self.if_sram_cfg_wst_s['wr_clk_en'] | self.if_sram_cfg_wst_s['rd_clk_en'])
-        self.clk_en_sramcfg2bank = self.var("clk_en_sramcfg2bank", 1)
-        self.add_child("glb_clk_gate_sram_cfg_switch",
-                       ClkGate(_params=self._params),
-                       clk=self.clk,
-                       enable=self.clk_en_sram_cfg_switch | self.clk_en_master,
-                       gclk=self.gclk_sram_cfg_switch)
-
         # Clock gating - pcfg broadcast
         self.gclk_pcfg_broadcast = self.var("gclk_pcfg_broadcast", 1)
         self.add_child("glb_clk_gate_pcfg_broadcast",
@@ -294,8 +264,7 @@ class GlbTile(Generator):
         self.clk_en_bank = self.var("clk_en_bank", 1)
         self.gclk_bank = self.var("gclk_bank", 1)
         self.wire(self.clk_en_bank, self.clk_en_ld_dma | self.clk_en_st_dma | self.clk_en_pcfg_dma
-                  | self.clk_en_strm_switch | self.clk_en_pcfg_switch | self.clk_en_sramcfg2bank
-                  | self.clk_en_procsw2bank)
+                  | self.clk_en_strm_switch | self.clk_en_pcfg_switch | self.clk_en_procsw2bank)
         self.add_child("glb_clk_gate_bank",
                        ClkGate(_params=self._params),
                        clk=self.clk,
@@ -401,10 +370,6 @@ class GlbTile(Generator):
                        rdrs_packet_sw2dma=self.strm_rdrs_packet_sw2dma,
                        rdrs_packet_sw2pcfgdma=self.pcfg_rdrs_packet_sw2dma,
                        rdrs_packet_bankarr2sw=self.rdrs_packet_bankarr2sw,
-                       # sram cfg
-                       wr_packet_sramcfg2sw=self.wr_packet_sramcfg2sw,
-                       rdrq_packet_sramcfg2sw=self.rdrq_packet_sramcfg2sw,
-                       rdrs_packet_sw2sramcfg=self.rdrs_packet_sw2sramcfg,
                        # cfg
                        cfg_st_dma_ctrl_mode=self.cfg_st_dma_ctrl['mode'],
                        cfg_ld_dma_ctrl_mode=self.cfg_ld_dma_ctrl['mode'],
@@ -490,20 +455,6 @@ class GlbTile(Generator):
                        cfg_tile_connected_prev=self.cfg_pcfg_tile_connected_prev,
                        cfg_tile_connected_next=self.cfg_pcfg_tile_connected_next)
 
-        self.glb_sram_cfg_switch = GlbSwitch(self._params, ifc=self.if_sram_cfg)
-        self.add_child("glb_sram_cfg_switch",
-                       self.glb_sram_cfg_switch,
-                       mclk=self.clk,
-                       gclk=clock(self.gclk_sram_cfg_switch),
-                       reset=self.reset,
-                       glb_tile_id=self.glb_tile_id,
-                       if_est_m=self.if_sram_cfg_est_m,
-                       if_wst_s=self.if_sram_cfg_wst_s,
-                       clk_en_sw2bank=self.clk_en_sramcfg2bank,
-                       wr_packet=self.wr_packet_sramcfg2sw,
-                       rdrq_packet=self.rdrq_packet_sramcfg2sw,
-                       rdrs_packet=self.rdrs_packet_sw2sramcfg)
-
         self.glb_bank_arr = []
         for i in range(self._params.banks_per_tile):
             glb_bank = GlbBank(self._params)
@@ -560,7 +511,6 @@ class GlbTile(Generator):
         self.strm_wr_packet_r2sw = self.var("strm_wr_packet_sr2sw", self.header.wr_packet_t)
         self.strm_wr_packet_sw2r = self.var("strm_wr_packet_sw2r", self.header.wr_packet_t)
         self.strm_wr_packet_dma2sw = self.var("strm_wr_packet_dma2sw", self.header.wr_packet_t)
-        self.wr_packet_sramcfg2sw = self.var("wr_packet_sramcfg2sw", self.header.wr_packet_t)
 
         self.proc_rdrq_packet_r2sw = self.var("proc_rdrq_packet_r2sw", self.header.rdrq_packet_t)
         self.strm_rdrq_packet_r2sw = self.var("strm_rdrq_packet_r2sw", self.header.rdrq_packet_t)
@@ -569,7 +519,6 @@ class GlbTile(Generator):
         self.pcfg_rdrq_packet_dma2sw = self.var("pcfg_rdrq_packet_dma2sw", self.header.rdrq_packet_t)
         self.pcfg_rdrq_packet_r2sw = self.var("pcfg_rdrq_packet_r2sw", self.header.rdrq_packet_t)
         self.pcfg_rdrq_packet_sw2r = self.var("pcfg_rdrq_packet_sw2r", self.header.rdrq_packet_t)
-        self.rdrq_packet_sramcfg2sw = self.var("rdrq_packet_sramcfg2sw", self.header.rdrq_packet_t)
 
         self.proc_rdrs_packet_sw2r = self.var("proc_rdrs_packet_sw2r", self.header.rdrs_packet_t)
         self.strm_rdrs_packet_r2sw = self.var("strm_rdrs_packet_r2sw", self.header.rdrs_packet_t)
@@ -578,7 +527,6 @@ class GlbTile(Generator):
         self.pcfg_rdrs_packet_r2sw = self.var("pcfg_rdrs_packet_r2sw", self.header.rdrs_packet_t)
         self.pcfg_rdrs_packet_sw2r = self.var("pcfg_rdrs_packet_sw2r", self.header.rdrs_packet_t)
         self.pcfg_rdrs_packet_sw2dma = self.var("pcfg_rdrs_packet_sw2dma", self.header.rdrs_packet_t)
-        self.rdrs_packet_sw2sramcfg = self.var("rdrs_packet_sw2sramcfg", self.header.rdrs_packet_t)
 
         self.strm_wr_packet_w2e_wsti = self.var("strm_wr_packet_w2e_wsti", self.header.wr_packet_t)
         self.strm_wr_packet_e2w_wsto = self.var("strm_wr_packet_e2w_wsto", self.header.wr_packet_t)
