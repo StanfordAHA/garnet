@@ -24,7 +24,7 @@ env:
 
 steps:
 
-- label: 'Tile_PE route step using cached pre-route collateral: setup (5m)'
+- label: 'setup (1m)'
   commands:
 
   # Copy existing rtl collateral;
@@ -67,18 +67,21 @@ steps:
      ls -ld $$CACHE/$$step; echo "(cd $$CACHE; rsync -aR $$step $$GOLD)";
 
      set +x; : verbosity OFF;'
+- wait: ~
 
-- label: 'make power (10m)'
+- label: 'make rtl->power (10m)'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
      cd *-tile_array/*-Tile_PE;
-
      : ------------------------------------------------------------------------;
-     echo "--- make power I guess";
-     echo "Build rtl,syn,init,power from sratch, should take like 10 minutes"; 
-     make cadence-innovus-power;'
+     echo "--- Build rtl,syn,init,power from scratch, should take like 10 minutes"; 
+     echo "--- make rtl";       make rtl;
+     echo "--- make synthesis"; make cadence-genus-synthesis;
+     echo "--- make power";     make cadence-innovus-power;
+     '
+- wait: ~
 
-- label: 'make route, make lvs (20m)'
+- label: 'make route, lvs (20m)'
   commands:
 
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
@@ -118,6 +121,7 @@ steps:
      echo "--- make lvs";
      echo exit 13 | make mentor-calibre-lvs |& tee make-lvs.log;
      '
+- wait: ~
 
 
 # Looks like we can survive renumberings if we're careful:
