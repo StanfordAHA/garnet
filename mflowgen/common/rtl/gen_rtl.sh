@@ -32,6 +32,8 @@ else
 
     # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
+      echo "--- Use aha docker container for all dependencies"
+
       # Clone AHA repo
       git clone https://github.com/StanfordAHA/aha.git
       cd aha
@@ -118,10 +120,6 @@ else
          # Uncomment the line below; This will display the version,
          # location and latest commit hash for each.
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
-         echo '+++ PIPCHECK-BEFORE'
-         # FIXME there's gotta be a better way to do this...
-         checkpip 'gemstone' 'canal' 'peak' 'lassen' 'karst' 'buffer_mapping' 'pyverilog' 'lake' 'lake-aha' 'magma' 'mgma-lang' 'mantle'
-         echo '--- Continue build'
 
          source /aha/bin/activate; # Set up the build environment
 

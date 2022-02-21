@@ -24,7 +24,7 @@ env:
 
 steps:
 
-- label: 'Tile_PE route step using cached pre-route collateral'
+- label: 'Tile_PE route step using cached pre-route collateral: setup (5m)'
   commands:
 
   # Copy existing rtl collateral;
@@ -66,12 +66,23 @@ steps:
      step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-postcts_hold`;
      ls -ld $$CACHE/$$step; echo "(cd $$CACHE; rsync -aR $$step $$GOLD)";
 
-     set +x; : verbosity OFF;
+     set +x; : verbosity OFF;'
+
+- label: 'make power (10m)'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
+     cd *-tile_array/*-Tile_PE;
 
      : ------------------------------------------------------------------------;
      echo "--- make power I guess";
      echo "Build rtl,syn,init,power from sratch, should take like 10 minutes"; 
-     make cadence-innovus-power;
+     make cadence-innovus-power;'
+
+- label: 'make route, make lvs (20m)'
+  commands:
+
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
+     cd *-tile_array/*-Tile_PE;
 
      : ------------------------------------------------------------------------;
      echo "--- fetch place,cts,postcts_hold from $$CACHE";
