@@ -35,11 +35,9 @@ program glb_test (
 
     // configuration of sram from glc
     output logic                      if_sram_cfg_wr_en,
-    output logic                      if_sram_cfg_wr_clk_en,
     output logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_wr_addr,
     output logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_wr_data,
     output logic                      if_sram_cfg_rd_en,
-    output logic                      if_sram_cfg_rd_clk_en,
     output logic [GLB_ADDR_WIDTH-1:0] if_sram_cfg_rd_addr,
     input  logic [AXI_DATA_WIDTH-1:0] if_sram_cfg_rd_data,
     input  logic                      if_sram_cfg_rd_data_valid,
@@ -371,11 +369,9 @@ program glb_test (
 
         // sram ifc
         if_sram_cfg_wr_en <= 0;
-        if_sram_cfg_wr_clk_en <= 0;
         if_sram_cfg_wr_addr <= 0;
         if_sram_cfg_wr_data <= 0;
         if_sram_cfg_rd_en <= 0;
-        if_sram_cfg_rd_clk_en <= 0;
         if_sram_cfg_rd_addr <= 0;
 
         // jtag
@@ -416,8 +412,6 @@ program glb_test (
     endtask
 
     task automatic sram_write(input bit [GLB_ADDR_WIDTH-1:0] addr, int data);
-        #2 if_sram_cfg_wr_clk_en <= 1;
-        @(posedge clk);
         #2 if_sram_cfg_wr_en <= 1;
         if_sram_cfg_wr_addr <= addr;
         if_sram_cfg_wr_data <= data;
@@ -425,8 +419,6 @@ program glb_test (
         #2 if_sram_cfg_wr_en <= 0;
         if_sram_cfg_wr_addr <= 0;
         if_sram_cfg_wr_data <= 0;
-        repeat (TILE2SRAM_WR_DELAY) @(posedge clk);
-        #2 if_sram_cfg_wr_clk_en <= 0;
         repeat (2) @(posedge clk);
     endtask
 
@@ -445,11 +437,6 @@ program glb_test (
     task automatic sram_read(input bit [GLB_ADDR_WIDTH-1:0] addr, ref int data);
         int read_delay = 40;
         fork
-            begin
-                #2 if_sram_cfg_rd_clk_en <= 1;
-                repeat (read_delay) @(posedge clk);
-                #2 if_sram_cfg_rd_clk_en <= 0;
-            end
             begin
                 @(posedge clk);
                 #2 if_sram_cfg_rd_en <= 1;
