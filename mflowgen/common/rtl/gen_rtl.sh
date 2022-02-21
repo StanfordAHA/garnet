@@ -46,33 +46,17 @@ else
       # new code (below) allows use of any image based on new "which_image" parm
 
       # See common/rtl/configure.yml for "which_image" setting; default = "latest"
-      if [ "$which_image" == "" ]; then which_image=latest; fi
+      if [ "$which_image" == "" ]; then which_image=":latest"; fi
 
-      # Or can simply uncomment below to e.g. use image 'stanfordaha/garnet:cst'
-      # which_image=cst
-      
-echo "BING BANG BOOM"
-digest352_bad="@sha256:0f7b71c17c7b2eb708fbcb7d03564302ac5a73d53b4cdbde708de19fc25c8e8a"
-digest347_good="@sha256:1e4a0bf29f3bad8e31b8b6f19a1b156eb67d70c0e6c29a80e8c0ccc2e279df5f"
-which_image=$digest347_good
+      # To use a named docker image other than "latest"
+      #   which_image=":cst"
+      #       
+      # To call up an old docker image
+      #   digest352_bad="@sha256:0f7b71c17c7b2eb708..."
+      #   digest347_good="@sha256:1e4a0bf29f3bad8e3..."
+      #   which_image=$digest347_good
 
-      # E.g. which_image="@sha256:1e4a0bf..."
-      if expr "$which_image" : "@"; then
-          container_name=sha_$$
-          echo "Found image prefix '@'; using sha image"
-
-      # E.g. which_image=":cst"
-      elif expr "$which_image" : ":"; then
-          container_name=image_$$
-          echo "Found image prefix ':'; using named image"
-
-      # E.g. which_image="latest" => ":latest" or "cst" => ":cst"
-      else
-          container_name={$which_image}_$$
-          which_image=":${which_image}"
-          echo "Image prefix not ':' nor '@'; assume named image"
-
-      fi
+      container_name=gen_rtl_$$
       echo "Using image '$which_image' w/ container name '$container_name'"
 
       # pull docker image from docker hub
@@ -83,7 +67,7 @@ which_image=$digest347_good
       #     RepoDigests [stanfordaha/garnet@sha256:e43c853b4068992...]
       docker inspect --format='RepoTags    {{.RepoTags}}'    stanfordaha/garnet${which_image}
       docker inspect --format='RepoDigests {{.RepoDigests}}' stanfordaha/garnet${which_image}
-set -x
+
       if [ "$which_image" == ":latest" ]; then
           # run the container in the background and delete it when it exits
           # ("aha docker" will print out the name of the container to attach to)
@@ -130,13 +114,13 @@ set -x
          }'"
          set -e; # DIE if any single command exits with error status
          # (Double-quote regime)
-
          # Example: say you want to double-check packages 'ast_tools', 'magma', and 'peak'.
          # Uncomment the line below; This will display the version,
          # location and latest commit hash for each.
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
          echo '+++ PIPCHECK-BEFORE'
-         checkpip 'gemstone ' 'canal ' 'peak ' 'lassen ' 'karst ' 'buffer_mapping ' 'pyverilog ' 'lake ' 'lake-aha ' 'magma ' 'mgma-lang ' 'mantle '
+         # FIXME there's gotta be a better way to do this...
+         checkpip 'gemstone' 'canal' 'peak' 'lassen' 'karst' 'buffer_mapping' 'pyverilog' 'lake' 'lake-aha' 'magma' 'mgma-lang' 'mantle'
          echo '--- Continue build'
 
          source /aha/bin/activate; # Set up the build environment
@@ -182,14 +166,9 @@ set -x
         cp -r ../glc_header/* ../outputs/header/
       fi
 
-
-
-
+      # See whassup with docker atm
       docker ps
       docker images --digests
-      save_verilog_to_tmpdir=True
-
-
 
       # Kill the container
       docker kill $container_name
@@ -199,6 +178,7 @@ set -x
       # Set 'save_verilog_to_tmpdir' "True" if want to capture the output
       # design from buildkite, e.g. to compare before-and-after versions of
       # docker images "latest" and "new" (also see notes in configure.yml)
+      # save_verilog_to_tmpdir=True
 
       if [ "$save_verilog_to_tmpdir" == "True" ]; then
           echo "+++ ENDGAME - Save verilog to /tmp before buildkite deletes it"
