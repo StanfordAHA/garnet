@@ -2,11 +2,11 @@
 
 if [ "$1" == "--help" ]; then cat <<EOF
 
-USAGE: $0 <refdir> <target_step>
+USAGE: $0 <refdir> <step>
 
 DESCRIPTION:
 Builds symbolic links to the appropriate collateral in reference dir
-<refdir> such that you can locally run mflowgen step <target_step>.
+<refdir> such that you can locally run mflowgen step <step>.
 
 EXAMPLE USE CASE:
 Suppose you have a design with multiple mflowgen steps.
@@ -29,7 +29,7 @@ a Makefile such that "make list" gives a valid list of mflowgen steps.
 Linked nodes are renumbered as appropriate to account for changes in
 the graph between <refdir> and local dir.
 
-E.g. for <target_step> = 'cadence-innovus-postroute_hold' it might link
+E.g. for <step> = 'cadence-innovus-postroute_hold' it might link
 these two steps from <refdir> into current (build) dir
 
     ln -s ./23-cadence-innovus-flowsetup <refdir>/22-cadence-innovus-flowsetup
@@ -52,7 +52,7 @@ exit
 fi
 
 if [ "$1" == "--from" ]; then shift; fi
-refdir=$1
+REF=$1
 
 if [ "$2" == "--step" ]; then shift; fi
 target_step=$2
@@ -61,7 +61,7 @@ target_step=$2
 
 echo "--- BEGIN $0 $*" | sed "s,$GARNET_HOME,\$GARNET_HOME,"
 echo "  where GARNET_HOME=$GARNET_HOME"
-echo "+++ STANDALONE TEST RIG SETUP - build symlinks to steps in $refdir/full_chip";
+echo "+++ STANDALONE TEST RIG SETUP - build symlinks to steps in $REF/full_chip";
 
 ########################################################################
 ########################################################################
@@ -134,8 +134,8 @@ for step in `get_predecessors $step`; do
     fi
 
     # Find name of step in ref dir
-    stepnum=$(cd $refdir/full_chip; make list |& egrep ": $step\$" | awk '{print $2}')
-    ref_step=$refdir/full_chip/$stepnum-$step
+    stepnum=$(cd $REF/full_chip; make list |& egrep ": $step\$" | awk '{print $2}')
+    ref_step=$REF/full_chip/$stepnum-$step
     [ "$DBG" ] && echo "Found ref step $ref_step"
     if ! test -d $ref_step; then
         echo "hm look like $ref_step don't exist after all..."

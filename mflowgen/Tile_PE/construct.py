@@ -169,8 +169,7 @@ def construct():
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
   
-  # Add short_fix script(s) to list of available route and postroute scripts
-  route.extend_inputs( short_fix.all_outputs() )
+  # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
 
   #-----------------------------------------------------------------------
@@ -266,9 +265,8 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
 
-  # Fetch short-fix script in prep for eventual use by route,postroute
+  # Fetch short-fix script in prep for eventual use by postroute
   g.connect_by_name( short_fix, postroute )
-  g.connect_by_name( short_fix, route )
 
   g.connect_by_name( init,         power        )
   g.connect_by_name( power,        place        )
@@ -354,6 +352,12 @@ def construct():
      route.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
      postroute.extend_postconditions(    ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
      signoff.extend_postconditions(      ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
+
+  # The presence of SDF registers after synthesis means adk got corrupted somehow.
+  # The registers cause short circuits that are not found until much later, after LVS.
+  # This has happened several times now, see .e.g. https://buildkite.com/tapeout-aha/fullchip/builds/358
+  synth.extend_postconditions( ["assert 'SDFQ' not in File( 'outputs/design.v' )"] )
+
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
@@ -420,7 +424,6 @@ def construct():
       order = route.get_param('order')
       order.insert( 0, 'conn-aon-cells-vdd.tcl' ) # add here
       order.append('check-clamp-logic-structure.tcl')
-      order.append('fix-register-shorts.tcl') # Fix shorts in regs SDF*
       route.update_params( { 'order': order } )
 
       # postroute node

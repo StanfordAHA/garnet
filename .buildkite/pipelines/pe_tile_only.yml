@@ -2,8 +2,7 @@ agents: { jobsize: "hours" }
 
 env:
   GOLD: /build/pe${BUILDKITE_BUILD_NUMBER}
-  # OVERRIDE_MFLOWGEN_BRANCH: silent_fail
-  # stop_on_failed_routing: true
+  OVERRIDE_MFLOWGEN_BRANCH: silent_fail
 
 steps:
 

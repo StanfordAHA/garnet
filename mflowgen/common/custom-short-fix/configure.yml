@@ -10,4 +10,3 @@ name: custom-short-fix
 
 outputs:
   - fix-shorts.tcl
-  - fix-register-shorts.tcl

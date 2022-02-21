@@ -1,1 +1,0 @@
-../../scripts/fix-register-shorts.tcl
