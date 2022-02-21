@@ -42,7 +42,7 @@ if [ $waveform = "True" ]; then
     if [ $tool = "XCELIUM" ]; then
         ln -s ../global_buffer.shm global_buffer.shm
     elif [ $tool = "VCS" ]; then
-        ln -s ../global_buffer.fsdb global_buffer.fsdb
+        ln -s ../global_buffer.fsdb run.fsdb
     fi
 fi
 

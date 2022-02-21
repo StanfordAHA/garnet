@@ -48,8 +48,8 @@ def construct():
     'rtl_testvectors' : ["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9"],
     'gls_testvectors' : ["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9"],
     'sdf' : True,
-    'saif' : True,
-    'waveform' : False,
+    'saif' : False,
+    'waveform' : True,
   }
 
   #-----------------------------------------------------------------------
@@ -130,6 +130,8 @@ def construct():
       sim_gl_run.extend_inputs(['xcelium.d'])
     if parameters['saif'] == True:
       sim_gl_run.extend_postconditions( ["assert File( 'outputs/run.saif' ) "] )
+    if parameters['waveform'] == True:
+      sim_gl_run.extend_postconditions( ["assert File( 'outputs/run.fsdb' ) "] )
 
 
   # Add header files to outputs

@@ -43,7 +43,7 @@ set_app_var link_library     [join "
 # Set up power analysis
 
 set_app_var power_enable_analysis true
-set_app_var power_analysis_mode   averaged
+set_app_var power_analysis_mode time_based
 
 set_app_var report_default_significant_digits 3
 
@@ -70,10 +70,10 @@ if { $::env(chkpt) == "True" } {
 
 # Read in switching activity
 
-report_activity_file_check $ptpx_saif -strip_path $ptpx_strip_path \
-  > reports/${ptpx_design_name}.activity.pre.rpt
+# report_activity_file_check $ptpx_saif -strip_path $ptpx_strip_path \
+#   > reports/${ptpx_design_name}.activity.pre.rpt
 
-read_saif $ptpx_saif -strip_path $ptpx_strip_path -quiet
+read_fsdb $ptpx_fsdb -strip_path $ptpx_strip_path
 
 ###
 if { $::env(chkpt) == "True" } {

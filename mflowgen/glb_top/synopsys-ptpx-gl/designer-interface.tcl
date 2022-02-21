@@ -39,7 +39,8 @@ if {$::env(PWR_AWARE) == "True"} {
 }
 set ptpx_sdc                inputs/design.pt.sdc
 set ptpx_spef               inputs/design.spef.gz
-set ptpx_saif               inputs/run.saif
+# set ptpx_saif               inputs/run.saif
+set ptpx_fsdb               inputs/run.fsdb
 
 # The strip path must be defined!
 #

@@ -12,7 +12,7 @@ commands:
 
 outputs:
   - run.log
-  - run.saif
+  - run.fsdb
 
 postconditions:
   - assert File( 'outputs/run.log' )      # must exist

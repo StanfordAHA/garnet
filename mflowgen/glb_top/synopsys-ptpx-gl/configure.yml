@@ -17,7 +17,7 @@ inputs:
   - design.vcs.pg.v
   - design.pt.sdc
   - design.spef.gz
-  - run.saif
+  - run.fsdb
 
 outputs:
   - power.hier
