@@ -426,7 +426,17 @@ if [ "$USER" == "buildkite-agent" ]; then
         d=$1
         pushd $d
             git branch -v
-            ba=`git branch -v | awk '{print $4}'` # E.g. '[ahead' or '[behind'
+            # Check that tsmc16 is pointing to master branch.
+            ba=`git branch -v | awk '{print $2; exit}'` 
+            if [ "$ba" != "master" ]; then
+                echo "---------------------------------------------------------"
+                echo "**ERROR looks like tsmc16 repo is not on master branch."
+                echo "---------------------------------------------------------"
+                return 13 || exit 13
+            fi
+
+            # Checks to see that adk repo is not ahead or behind origin
+            ba=`git branch -v | awk '{print $4; exit}'` # E.g. '[ahead' or '[behind'
             if [ "$ba" == "[ahead" -o  "$ba" == "[behind" ]; then
                 echo "---------------------------------------------------------"
                 echo "**ERROR oops looks like tsmc16 libs are not up to date."
@@ -444,7 +454,13 @@ if [ "$USER" == "buildkite-agent" ]; then
     echo "Copying adks from '$tsmc16' to '$adks'"
 
     # Note rsync is much faster than cp!
-    set -x; rsync -avR $tsmc16 $adks; set +x
+
+    # tsmc16 is a link to tsmc16-adk I guess? rsync BOTH
+    (set -x;
+        cd $tsmc16/..;
+        rsync -aRv tsmc16 $adks;
+        rsync -aRv tsmc16-adk $adks;
+    set +x)
 
     export MFLOWGEN_PATH=$adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
