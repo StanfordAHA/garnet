@@ -29,13 +29,6 @@ create_generated_clock -name gclk_cfg \
     -add \
     [get_pins glb_clk_gate_cfg/gclk]
 
-create_generated_clock -name gclk_sram_cfg_switch \
-    -source [get_ports ${clock_net}] \
-    -divide_by 1 \
-    -master_clock ${clock_name} \
-    -add \
-    [get_pins glb_clk_gate_sram_cfg_switch/gclk]
-
 create_generated_clock -name gclk_pcfg_broadcast \
     -source [get_ports ${clock_net}] \
     -divide_by 1 \
@@ -175,18 +168,6 @@ set_false_path -from [get_ports cgra_cfg_jtag_wsti_addr_bypass] -to [get_ports c
 set_case_analysis 0 cgra_cfg_jtag_wsti_rd_en
 set_multicycle_path -setup 4 -from [get_ports cgra_cfg_jtag_wsti_rd_en]
 set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_wsti_rd_en]
-
-#=========================================================================
-# jtag sram read
-#=========================================================================
-# jtag sram read is multicycle path because you assert rd_en for long cycles
-# glb_sram_cfg_switch input to bank signals
-set_multicycle_path -setup 4 -through [get_pins glb_sram_cfg_switch/rdrq_packet* -filter "direction==out"]
-set_multicycle_path -hold 3 -through [get_pins glb_sram_cfg_switch/rdrq_packet* -filter "direction==out"]
-
-# bank to output signals
-set_multicycle_path -setup 4 -through [get_pins glb_sram_cfg_switch/rdrs_packet* -filter "direction==in"]
-set_multicycle_path -hold 3 -through [get_pins glb_sram_cfg_switch/rdrs_packet* -filter "direction==in"]
 
 #=========================================================================
 # fanout & transition

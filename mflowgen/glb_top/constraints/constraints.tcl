@@ -76,16 +76,6 @@ set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 set_false_path -through [get_pins glb_tile_gen_*/*bypass]
 
 #=========================================================================
-# jtag sram read
-#=========================================================================
-set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
-set_multicycle_path -hold 3 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
-set_multicycle_path -setup 4 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
-set_multicycle_path -hold 3 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
-set_multicycle_path -setup 4 -through [get_pins glb_tile_gen_*/if_sram*rd*]
-set_multicycle_path -hold 3 -through [get_pins glb_tile_gen_*/if_sram*rd*]
-
-#=========================================================================
 # interrupt
 #=========================================================================
 # interrupt is asserted for 4 cycles 
