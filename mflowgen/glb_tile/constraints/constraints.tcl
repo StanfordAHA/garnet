@@ -139,6 +139,10 @@ set_multicycle_path -hold 9 -from {clk_en_master}
 set_multicycle_path -setup 10 -from {clk_en_pcfg_broadcast}
 set_multicycle_path -hold 9 -from {clk_en_pcfg_broadcast}
 
+# Just make clk-gate enable to single cycle
+set_multicycle_path -setup 1 -to [get_cells glb_tile/glb_clk_gate*/enable]
+set_multicycle_path -hold 0 -to [get_cells glb_tile/glb_clk_gate*/enable]
+
 # path from configuration registers are multi_cycle path
 # FIXME: Are these duplicate?
 set_multicycle_path -setup 10 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
