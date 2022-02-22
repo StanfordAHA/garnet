@@ -32,7 +32,7 @@ else
 
     # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
-      echo "--- Use aha docker container for all dependencies"
+      echo "Use aha docker container for all dependencies"
 
       # Clone AHA repo
       git clone https://github.com/StanfordAHA/aha.git
@@ -225,4 +225,4 @@ else
   fi
 fi
 
-echo "--- gen_rtl DONE"
+echo "gen_rtl DONE"

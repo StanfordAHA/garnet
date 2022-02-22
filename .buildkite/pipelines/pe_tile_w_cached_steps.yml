@@ -24,7 +24,7 @@ env:
 
 steps:
 
-- label: 'setup (1m)'
+- label: 'Tile_PE setup (1m)'
   commands:
 
   # Copy existing rtl collateral;
@@ -74,10 +74,10 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
      cd *-tile_array/*-Tile_PE;
      : ------------------------------------------------------------------------;
-     echo "--- Build rtl,syn,init,power from scratch, should take like 10 minutes"; 
-     echo "--- make rtl";       make rtl;
-     echo "--- make synthesis"; make cadence-genus-synthesis;
-     echo "--- make power";     make cadence-innovus-power;
+     echo "--- Build rtl,syn,power from scratch, should take like 10 minutes"; 
+     echo "--- - make rtl";       make rtl;
+     echo "--- - make synthesis"; make cadence-genus-synthesis;
+     echo "--- - make power";     make cadence-innovus-power;
      '
 - wait: ~
 
