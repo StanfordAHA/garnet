@@ -32,6 +32,8 @@ else
 
     # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
+      echo "Use aha docker container for all dependencies"
+
       # Clone AHA repo
       git clone https://github.com/StanfordAHA/aha.git
       cd aha
@@ -46,29 +48,39 @@ else
       # new code (below) allows use of any image based on new "which_image" parm
 
       # See common/rtl/configure.yml for "which_image" setting; default = "latest"
-      if [ "$which_image" == "" ]; then which_image=latest; fi
+      if [ "$which_image" == "" ]; then which_image=":latest"; fi
 
-      # Or can simply uncomment below to e.g. use image 'stanfordaha/garnet:cst'
-      # which_image=cst
+      # To use a named docker image other than "latest"
+      #   which_image=":cst"
+      #       
+      # To call up an old docker image
+      #   digest352_bad="@sha256:0f7b71c17c7b2eb708..."
+      #   digest347_good="@sha256:1e4a0bf29f3bad8e3..."
+      #   which_image=$digest347_good
+
+      container_name=gen_rtl_$$
+      echo "Using image '$which_image' w/ container name '$container_name'"
 
       # pull docker image from docker hub
-      docker pull stanfordaha/garnet:${which_image}
+      docker pull stanfordaha/garnet${which_image}
 
       # Display ID info for image e.g.
       #     RepoTags    [stanfordaha/garnet:latest]
       #     RepoDigests [stanfordaha/garnet@sha256:e43c853b4068992...]
-      docker inspect --format='RepoTags    {{.RepoTags}}'    stanfordaha/garnet:${which_image}
-      docker inspect --format='RepoDigests {{.RepoDigests}}' stanfordaha/garnet:${which_image}
+      docker inspect --format='RepoTags    {{.RepoTags}}'    stanfordaha/garnet${which_image}
+      docker inspect --format='RepoDigests {{.RepoDigests}}' stanfordaha/garnet${which_image}
 
-      if [ "$which_image" == "latest" ]; then
+      if [ "$which_image" == ":latest" ]; then
           # run the container in the background and delete it when it exits
           # ("aha docker" will print out the name of the container to attach to)
           container_name=$(aha docker)
       else
           # run the container in the background and delete it when it exits (--rm)
           # mount /cad and name it, and run container as a daemon in background
-          container_name=${which_image}
-          docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
+          # container_name=${which_image} see farther above
+          # docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
+          tmp_image="stanfordaha/garnet${which_image}"
+          docker run -id --name ${container_name} --rm -v /cad:/cad $tmp_image bash
       fi
       echo "container-name: $container_name"
       ##############################################################################
@@ -151,6 +163,11 @@ else
         cp -r ../glb_header/* ../outputs/header/
         cp -r ../glc_header/* ../outputs/header/
       fi
+
+      # See whassup with docker atm
+      docker ps
+      docker images --digests
+
       # Kill the container
       docker kill $container_name
       echo "killed docker container $container_name"
@@ -159,12 +176,13 @@ else
       # Set 'save_verilog_to_tmpdir' "True" if want to capture the output
       # design from buildkite, e.g. to compare before-and-after versions of
       # docker images "latest" and "new" (also see notes in configure.yml)
+      # save_verilog_to_tmpdir=True
 
       if [ "$save_verilog_to_tmpdir" == "True" ]; then
           echo "+++ ENDGAME - Save verilog to /tmp before buildkite deletes it"
           set -x; # so user will know where the files are going
-          cp outputs/design.v /tmp/design.v.${which_image}.deleteme$$
-          cp mflowgen-run.log /tmp/log.${which_image}.deleteme$$
+          cp outputs/design.v /tmp/design.v.${container_name}.deleteme$$
+          cp mflowgen-run.log /tmp/log.${container_name}.deleteme$$
           set +x
       fi
 
@@ -207,3 +225,4 @@ else
   fi
 fi
 
+echo "gen_rtl DONE"
