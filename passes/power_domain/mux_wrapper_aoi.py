@@ -114,7 +114,7 @@ def _generate_mux_wrapper(height, width, mux_type: AOIMuxType):
 
             for j in range(width):
                 for i in range(math.floor(height / 2)):
-                    verilog_str += f'\tAO22D0BWP16P90 inst_{i}_{j} ( \n'
+                    verilog_str += f'\tSC7P5T_AO22X0P5_SSC14R inst_{i}_{j} ( \n'
                     verilog_str += f'\t.A1(out_sel[{i*2}]), \n'
                     verilog_str += f'\t.A2(I{i*2}[{j}]), \n'
                     verilog_str += f'\t.B1(out_sel[{i*2+1}]), \n'
@@ -122,12 +122,12 @@ def _generate_mux_wrapper(height, width, mux_type: AOIMuxType):
                     verilog_str += f'\t.Z(O{i}[{j}])); \n'
                 if (height % 2 != 0):
                     if (mux_type != mux_type.Const):
-                        verilog_str += f'\tAN2D0BWP16P90 inst_and_{j} ( \n'
-                        verilog_str += f'\t.A1(out_sel[{i*2+2}]), \n'
-                        verilog_str += f'\t.A2(I{i*2+2}[{j}]), \n'
+                        verilog_str += f'\tSC7P5T_AN2X0P5_SSC14R inst_and_{j} ( \n'
+                        verilog_str += f'\t.A(out_sel[{i*2+2}]), \n'
+                        verilog_str += f'\t.B(I{i*2+2}[{j}]), \n'
                         verilog_str += f'\t.Z(O{i+1}[{j}])); \n'
                     else:
-                        verilog_str += f'\tAO22D0BWP16P90 inst_{i+1}_{j} ( \n'
+                        verilog_str += f'\tSC7P5T_AO22X0P5_SSC14R inst_{i+1}_{j} ( \n'
                         verilog_str += f'\t.A1(out_sel[{i*2+2}]), \n'
                         verilog_str += f'\t.A2(I{i*2+2}[{j}]), \n'
                         verilog_str += f'\t.B1(out_sel[{i*2+3}]), \n'
@@ -135,9 +135,9 @@ def _generate_mux_wrapper(height, width, mux_type: AOIMuxType):
                         verilog_str += f'\t.Z(O{i+1}[{j}])); \n'
                 else:
                     if (mux_type == mux_type.Const):
-                        verilog_str += f'\tAN2D0BWP16P90 inst_and_{j} ( \n'
-                        verilog_str += f'\t.A1(out_sel[{i*2+2}]), \n'
-                        verilog_str += f'\t.A2(1\'b0), \n'
+                        verilog_str += f'\tSC7P5T_AN2X0P5_SSC14R inst_and_{j} ( \n'
+                        verilog_str += f'\t.A(out_sel[{i*2+2}]), \n'
+                        verilog_str += f'\t.B(1\'b0), \n'
                         verilog_str += f'\t.Z(O{i+1}[{j}])); \n'
             verilog_str += "endmodule \n"
 
