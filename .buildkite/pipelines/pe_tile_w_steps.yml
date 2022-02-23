@@ -1,5 +1,11 @@
 agents: { jobsize: "hours" }
 
+########################################################################
+# What does this pipeline do?
+# It is able to run a single step in a subgraph without having to build
+# the entire subgraph. This particular pipeline specifically runs Tile_PE
+# synthesis step in the context of the full_chip/tile_array hierarchy.
+
 env:
   GOLD: /build/pm${BUILDKITE_BUILD_NUMBER}
   # OVERRIDE_MFLOWGEN_BRANCH: silent_fail
