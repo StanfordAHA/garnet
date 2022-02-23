@@ -3,7 +3,7 @@ from kratos import Generator, always_ff, posedge
 
 class GFSRAM(Generator):
     def __init__(self, num_words=2048, word_width=64):
-        super().__init__(f"IN12LP_S1DB_W{num_words:05}B{word_width:03)M08S2_HB")
+        super().__init__(f"IN12LP_S1DB_W{num_words:05}B{word_width:03}M08S2_HB")
         self.num_words = num_words
         self.word_width = word_width
         self.CLK = self.clock("CLK")
