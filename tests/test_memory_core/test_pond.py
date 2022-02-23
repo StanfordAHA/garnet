@@ -123,7 +123,7 @@ def test_pond_rd_wr(run_tb):
     }
     bus = {"e0": 16, "e1": 16, "e2": 16}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     pe_x, pe_y = placement["p0"]
@@ -195,7 +195,7 @@ def test_pond_pe(run_tb):
     }
     bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 16}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     pe_x, pe_y = placement["p0"]
@@ -274,7 +274,7 @@ def test_pond_pe_acc(run_tb):
     }
     bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 16}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     pe_x, pe_y = placement["p0"]

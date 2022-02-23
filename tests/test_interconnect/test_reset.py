@@ -34,7 +34,7 @@ def test_interconnect_reset(batch_size: int, run_tb, io_sides):
     }
     bus = {"e0": 16, "e1": 16, "e3": 16}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["p0"]
