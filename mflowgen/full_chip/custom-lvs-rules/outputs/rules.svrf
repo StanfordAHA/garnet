@@ -1,4 +1,4 @@
-LVS BOX "*TS1N*"
+LVS BOX "*S1DB*"
 
 LVS BOX BLACK dragonphy_top
 LVS BLACK BOX PORT M2i_ori M2_text M2
