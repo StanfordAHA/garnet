@@ -15,7 +15,6 @@ class GFSRAM(Generator):
         self.Q = self.output("Q", self.word_width)
         self.T_LOGIC = self.input("T_LOGIC", 1)
         self.T_Q_RST = self.input("T_Q_RST", 1)
-        self.OBSV_CTL = self.output("OBSV_CTL", 2)
         self.MA_SAWL1 = self.input("MA_SAWL1", 1)
         self.MA_SAWL0 = self.input("MA_SAWL0", 1)
         self.MA_WL1 = self.input("MA_WL1", 1)
