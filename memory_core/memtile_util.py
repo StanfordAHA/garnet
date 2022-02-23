@@ -24,6 +24,27 @@ from lake.utils.util import get_configs_dict, set_configs_sv, extract_formal_ann
 import math
 import kratos as kts
 
+ONYX_PORT_REMAP = {
+    'FIFO': {
+        'data_in_0': 'input_width_16_num_0',
+        'ren_in_0': 'input_width_1_num_0',
+        'wen_in_0': 'input_width_1_num_1',
+        'data_out_0': 'output_width_16_num_0',
+        'valid_out_0': 'output_width_1_num_2',
+        'empty': 'output_width_1_num_0',
+        'full': 'output_width_1_num_1',
+    },
+    'UB': {},
+    'RAM': {
+        'rd_addr_in_0': 'input_width_16_num_1',
+        'wr_addr_in_0': 'input_width_16_num_2',
+        'data_in_0': 'input_width_16_num_0',
+        'data_out_0': 'output_width_16_num_0',
+        'ren_in_0': 'input_width_1_num_0',
+        'wen_in_0': 'input_width_1_num_1',
+    }
+}
+
 
 class LakeCoreBase(ConfigurableCore):
 
