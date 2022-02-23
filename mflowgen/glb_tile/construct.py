@@ -109,6 +109,7 @@ def construct():
 
   # Add sram macro inputs to downstream nodes
 
+  genlib.extend_inputs( ['sram_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   # These steps need timing and lef info for srams
