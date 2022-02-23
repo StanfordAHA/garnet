@@ -7,11 +7,11 @@ class GFSRAM(Generator):
         self.num_words = num_words
         self.word_width = word_width
         self.CLK = self.clock("CLK")
-        self.CEB = self.input("CEN", 1)
-        self.WEB = self.input("RDWEN", 1)
+        self.CEN = self.input("CEN", 1)
+        self.RDWEN = self.input("RDWEN", 1)
         self.A = self.input("A", self.num_words.bit_length() - 1)
         self.D = self.input("D", self.word_width)
-        self.BWEB = self.input("BW", self.word_width)
+        self.BW = self.input("BW", self.word_width)
         self.Q = self.output("Q", self.word_width)
         self.T_LOGIC = self.input("T_LOGIC", 1)
         self.T_Q_RST = self.input("T_Q_RST", 1)
@@ -34,9 +34,9 @@ class GFSRAM(Generator):
 
     @always_ff((posedge, "CLK"))
     def ff(self):
-        if self.CEB == 0:
+        if self.CEN == 0:
             self.Q = self.data_array[self.A]
-            if self.WEB == 0:
+            if self.RDWEN == 0:
                 for i in range(self.word_width):
-                    if self.BWEB[i] == 0:
+                    if self.BW[i] == 0:
                         self.data_array[self.A][i] = self.D[i]
