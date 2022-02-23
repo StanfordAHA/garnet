@@ -128,6 +128,6 @@ class GlbBankSramGen(Generator):
                            MA_WRAS1=const(0b0, 1),
                            MA_VD0=const(0b0, 1),
                            MA_VD1=const(0b0, 1),
-                           MA_WRT0=const(0b0, 1),
+                           MA_WRT=const(0b0, 1),
                            MA_STABAS0=const(0b0, 1),
                            MA_STABAS1=const(0b0, 1))
