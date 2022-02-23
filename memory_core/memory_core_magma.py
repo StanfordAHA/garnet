@@ -67,8 +67,7 @@ class MemCore(LakeCoreBase):
                  banks=1,
                  input_iterator_support=6,  # Addr Controllers
                  output_iterator_support=6,
-                 input_config_width=16,
-                 output_config_width=16,
+                 config_width=16,
                  interconnect_input_ports=2,  # Connection to int
                  interconnect_output_ports=2,
                  mem_input_ports=1,
@@ -79,7 +78,6 @@ class MemCore(LakeCoreBase):
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
                  rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
                  agg_height=4,
-                 tb_sched_max=16,
                  config_data_width=32,
                  config_addr_width=8,
                  num_tiles=1,
@@ -104,8 +102,7 @@ class MemCore(LakeCoreBase):
         self.fw_int = int(self.mem_width / self.data_width)
         self.input_iterator_support = input_iterator_support
         self.output_iterator_support = output_iterator_support
-        self.input_config_width = input_config_width
-        self.output_config_width = output_config_width
+        self.config_width = config_width
         self.interconnect_input_ports = interconnect_input_ports
         self.interconnect_output_ports = interconnect_output_ports
         self.mem_input_ports = mem_input_ports
@@ -148,8 +145,7 @@ class MemCore(LakeCoreBase):
                                banks=self.banks,
                                input_iterator_support=self.input_iterator_support,
                                output_iterator_support=self.output_iterator_support,
-                               input_config_width=self.input_config_width,
-                               output_config_width=self.output_config_width,
+                               config_width=self.config_width,
                                interconnect_input_ports=self.interconnect_input_ports,
                                interconnect_output_ports=self.interconnect_output_ports,
                                use_sram_stub=self.use_sram_stub,
@@ -165,6 +161,9 @@ class MemCore(LakeCoreBase):
                                add_flush=self.add_flush,
                                name=lake_name,
                                gen_addr=self.gen_addr)
+
+            # Nonsensical but LakeTop
+            self.dut = self.dut.dut
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
             circ = kts.util.to_magma(self.dut,
