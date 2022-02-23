@@ -21,7 +21,7 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'tsmc16'
+  adk_name = 'gf12-adk'
   adk_view = 'view-standard'
 
   parameters = {
@@ -149,6 +149,7 @@ def construct():
   # Add glb_tile macro inputs to downstream nodes
 
   pt_signoff.extend_inputs( ['glb_tile_tt.db'] )
+  genlib.extend_inputs( ['glb_tile_tt.db'] )
 
   # These steps need timing info for glb_tiles
   tile_steps = \
@@ -168,7 +169,7 @@ def construct():
 
   # Need sram spice file for LVS
 
-  lvs.extend_inputs( ['sram.spi'] )
+  lvs.extend_inputs( ['glb_tile_sram.spi'] )
 
   xlist = synth.get_postconditions()
   xlist = \
