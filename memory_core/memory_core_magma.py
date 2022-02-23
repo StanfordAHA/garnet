@@ -139,31 +139,34 @@ class MemCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = LakeTop(data_width=self.data_width,
-                               mem_width=self.mem_width,
-                               mem_depth=self.mem_depth,
-                               banks=self.banks,
-                               input_iterator_support=self.input_iterator_support,
-                               output_iterator_support=self.output_iterator_support,
-                               config_width=self.config_width,
-                               interconnect_input_ports=self.interconnect_input_ports,
-                               interconnect_output_ports=self.interconnect_output_ports,
-                               use_sram_stub=self.use_sram_stub,
-                               sram_macro_info=self.sram_macro_info,
-                               read_delay=self.read_delay,
-                               rw_same_cycle=self.rw_same_cycle,
-                               agg_height=self.agg_height,
-                               config_data_width=self.config_data_width,
-                               config_addr_width=self.config_addr_width,
-                               num_tiles=self.num_tiles,
-                               fifo_mode=self.fifo_mode,
-                               add_clk_enable=self.add_clk_enable,
-                               add_flush=self.add_flush,
-                               name=lake_name,
-                               gen_addr=self.gen_addr)
+            self.LT = LakeTop(data_width=self.data_width,
+                              mem_width=self.mem_width,
+                              mem_depth=self.mem_depth,
+                              banks=self.banks,
+                              input_iterator_support=self.input_iterator_support,
+                              output_iterator_support=self.output_iterator_support,
+                              config_width=self.config_width,
+                              interconnect_input_ports=self.interconnect_input_ports,
+                              interconnect_output_ports=self.interconnect_output_ports,
+                              use_sram_stub=self.use_sram_stub,
+                              sram_macro_info=self.sram_macro_info,
+                              read_delay=self.read_delay,
+                              rw_same_cycle=self.rw_same_cycle,
+                              agg_height=self.agg_height,
+                              config_data_width=self.config_data_width,
+                              config_addr_width=self.config_addr_width,
+                              num_tiles=self.num_tiles,
+                              fifo_mode=self.fifo_mode,
+                              add_clk_enable=self.add_clk_enable,
+                              add_flush=self.add_flush,
+                              name=lake_name,
+                              gen_addr=self.gen_addr)
 
-            # Nonsensical but LakeTop
-            self.dut = self.dut.dut
+            print(self.LT.dut)
+            print(self.LT.dut.get_mode_map())
+
+            # Nonsensical but LakeTop now has its ow n internal dut
+            self.dut = self.LT.dut
 
             change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
             circ = kts.util.to_magma(self.dut,
@@ -195,6 +198,12 @@ class MemCore(LakeCoreBase):
     def get_config_bitstream(self, instr):
         configs = []
         config_runtime = []
+
+        modes = {
+            'UB': 0,
+            'FIFO': 1,
+            'ROM': 2
+        }
 
         mode_map = {
             "lake": MemoryMode.UNIFIED_BUFFER,
@@ -254,7 +263,7 @@ class MemCore(LakeCoreBase):
         for name, v in config_runtime:
             configs = [self.get_config_data(name, v)] + configs
 
-        #print(configs)
+        print(configs)
         return configs
 
     def get_static_bitstream(self, config_path, in_file_name, out_file_name):
