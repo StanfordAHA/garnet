@@ -25,8 +25,8 @@ class GFSRAM(Generator):
         self.MA_VD1 = self.input("MA_VD1", 1)
         self.MA_VD0 = self.input("MA_VD0", 1)
         self.MA_WRT = self.input("MA_WRT", 1)
-        self.MA_STABAS1 = self.input("MA_STABS1", 1)
-        self.MA_STABAS0 = self.input("MA_STABS0", 1)
+        self.MA_STABAS1 = self.input("MA_STABAS1", 1)
+        self.MA_STABAS0 = self.input("MA_STABAS0", 1)
 
         self.data_array = self.var("data_array", self.word_width, size=self.num_words)
 
