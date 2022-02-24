@@ -55,13 +55,13 @@ else
       #   rtl_docker_image="stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3..."
 
       echo "Using image '$rtl_docker_image'"
-      docker pull stanfordaha/garnet${rtl_docker_image}
+      docker pull ${rtl_docker_image}
 
       # Display ID info for image e.g.
       #     RepoTags    [stanfordaha/garnet:latest]
       #     RepoDigests [stanfordaha/garnet@sha256:e43c853b4068992...]
-      docker inspect --format='RepoTags    {{.RepoTags}}'    stanfordaha/garnet${rtl_docker_image}
-      docker inspect --format='RepoDigests {{.RepoDigests}}' stanfordaha/garnet${rtl_docker_image}
+      docker inspect --format='RepoTags    {{.RepoTags}}'    ${rtl_docker_image}
+      docker inspect --format='RepoDigests {{.RepoDigests}}' ${rtl_docker_image}
 
       # Run the image in a container
       if [ "$rtl_docker_image" == "$default_image" ]; then
