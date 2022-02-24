@@ -417,9 +417,16 @@ if [ "$USER" == "buildkite-agent" ]; then
     # Clone tsmc16-adk for the test rig; must link tsmc16 => tsmc16-adk
     adks=$mflowgen/adks
 
+    # "git clone gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git"
     # Local clone-adk script clones tsmc16-adk w/o revealing password/token to github
-    (cd $adks; /sim/buildkite-agent/bin/sim/clone-adk.sh)
-    (cd $adks; ln -s tsmc16-adk tsmc16)
+    pushd $adks
+      test -e tsmc16-adk || /sim/buildkite-agent/bin/clone-adk.sh
+      test -e tsmc16 || ln -s tsmc16-adk
+      cd tsmc16-adk; git checkout master; git pull
+    popd
+
+#     (cd $adks; /sim/buildkite-agent/bin/clone-adk.sh) || exit 13
+#     (cd $adks; ln -s tsmc16-adk tsmc16)
 
     # Need env var MFLOWGEN_PATH I think
     export MFLOWGEN_PATH=$adks
