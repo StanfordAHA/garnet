@@ -367,11 +367,6 @@ def construct():
       postroute.extend_postconditions(    ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
       signoff.extend_postconditions(      ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
    
-  # The presence of SDF registers after synthesis means adk got corrupted somehow.
-  # The registers cause short circuits that are not found until much later, after LVS.
-  # This has happened several times now, see .e.g. https://buildkite.com/tapeout-aha/fullchip/builds/358
-  synth.extend_postconditions( ["assert 'SDFQ' not in File( 'outputs/design.v' )"] )
-
   # Core density target param
   init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
 
