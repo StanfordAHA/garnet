@@ -40,10 +40,10 @@
     addIoFiller -cell $ADK_IO_FILLER_CELLS_H -fillAnyGap -logic -side left
     addIoFiller -cell $ADK_IO_FILLER_CELLS_H -fillAnyGap -logic -side right
 
-    # Tell Innovus not to touch pad ring control signal net
+    # Tell Innovus not to touch or try to route pad ring control signal nets
     set_db [get_db nets rte*] .skip_routing true
-    set_db [get_db nets rte*] .skip_routing true
-    set_db [get_db nets *pwrok] .dont_touch true
+    set_db [get_db nets *pwrok] .skip_routing true
+    set_db [get_db nets rte*] .dont_touch true
     set_db [get_db nets *pwrok] .dont_touch true
 
     # end of "rte_madness.tcl"
