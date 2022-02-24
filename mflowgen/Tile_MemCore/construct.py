@@ -367,6 +367,7 @@ def construct():
       postroute.extend_postconditions(    ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
       signoff.extend_postconditions(      ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
    
+
   # Core density target param
   init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
 

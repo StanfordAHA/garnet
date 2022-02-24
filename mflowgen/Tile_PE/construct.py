@@ -353,7 +353,6 @@ def construct():
      route.extend_postconditions(        ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
      postroute.extend_postconditions(    ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
      signoff.extend_postconditions(      ["assert 'Clamping logic structure in the SBs and CBs is maintained' in File( 'mflowgen-run.log' )"] )
-
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.

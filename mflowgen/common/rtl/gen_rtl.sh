@@ -48,11 +48,11 @@ else
       if [ "$rtl_docker_image" == ""        ]; then rtl_docker_image=${default_image}; fi
       if [ "$rtl_docker_image" == "default" ]; then rtl_docker_image=${default_image}; fi
 
-      # Example: To use a docker image with name other than "latest"
-      #   rtl_docker_image="stanfordaha/garnet:cst"
-      #       
-      # Example: To use a docker image based on sha hash
-      #   rtl_docker_image="stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3..."
+      # To use a docker image with name other than "latest" can do e.g.
+      # rtl_docker_image="stanfordaha/garnet:cst"
+
+      # To use a docker image based on sha hash can do e.g.
+      # rtl_docker_image="stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3..."
 
       echo "Using image '$rtl_docker_image'"
       docker pull ${rtl_docker_image}
@@ -169,7 +169,6 @@ else
       # Set 'save_verilog_to_tmpdir' "True" if want to capture the output
       # design from buildkite, e.g. to compare before-and-after versions of
       # docker images "latest" and "new" (also see notes in configure.yml)
-      # save_verilog_to_tmpdir=True
 
       if [ "$save_verilog_to_tmpdir" == "True" ]; then
           echo "+++ ENDGAME - Save verilog to /tmp before buildkite deletes it"
