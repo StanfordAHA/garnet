@@ -43,47 +43,40 @@ else
       # Prune docker images...
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
 
-      ##############################################################################
-      # steveri 02/2021 - Original code only supported image "latest";
-      # new code (below) allows use of any image based on new "which_image" parm
+      # Choose a docker image; can set via "rtl_docker_image" parameter
+      default_image="stanfordaha/garnet:latest"
+      if [ "$rtl_docker_image" == ""        ]; then rtl_docker_image=${default_image}; fi
+      if [ "$rtl_docker_image" == "default" ]; then rtl_docker_image=${default_image}; fi
 
-      # See common/rtl/configure.yml for "which_image" setting; default = "latest"
-      if [ "$which_image" == "" ]; then which_image=":latest"; fi
-
-      # To use a named docker image other than "latest"
-      #   which_image=":cst"
+      # Example: To use a docker image with name other than "latest"
+      #   rtl_docker_image="stanfordaha/garnet:cst"
       #       
-      # To call up an old docker image
-      #   digest352_bad="@sha256:0f7b71c17c7b2eb708..."
-      #   digest347_good="@sha256:1e4a0bf29f3bad8e3..."
-      #   which_image=$digest347_good
+      # Example: To use a docker image based on sha hash
+      #   rtl_docker_image="stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3..."
 
-      container_name=gen_rtl_$$
-      echo "Using image '$which_image' w/ container name '$container_name'"
-
-      # pull docker image from docker hub
-      docker pull stanfordaha/garnet${which_image}
+      echo "Using image '$rtl_docker_image'"
+      docker pull stanfordaha/garnet${rtl_docker_image}
 
       # Display ID info for image e.g.
       #     RepoTags    [stanfordaha/garnet:latest]
       #     RepoDigests [stanfordaha/garnet@sha256:e43c853b4068992...]
-      docker inspect --format='RepoTags    {{.RepoTags}}'    stanfordaha/garnet${which_image}
-      docker inspect --format='RepoDigests {{.RepoDigests}}' stanfordaha/garnet${which_image}
+      docker inspect --format='RepoTags    {{.RepoTags}}'    stanfordaha/garnet${rtl_docker_image}
+      docker inspect --format='RepoDigests {{.RepoDigests}}' stanfordaha/garnet${rtl_docker_image}
 
-      if [ "$which_image" == ":latest" ]; then
-          # run the container in the background and delete it when it exits
-          # ("aha docker" will print out the name of the container to attach to)
+      # Run the image in a container
+      if [ "$rtl_docker_image" == "$default_image" ]; then
+          # Default image can use standard "aha docker" mechanism to run the image in a container.
+          # It will run in the background and delete the container when done.
+          # "aha docker" return-value is the name of the container.
           container_name=$(aha docker)
       else
-          # run the container in the background and delete it when it exits (--rm)
-          # mount /cad and name it, and run container as a daemon in background
-          # container_name=${which_image} see farther above
-          # docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
-          tmp_image="stanfordaha/garnet${which_image}"
-          docker run -id --name ${container_name} --rm -v /cad:/cad $tmp_image bash
+          # Run (non-default) container in the background and delete it when it exits (--rm)
+          # Mount /cad and name it, and run container as a daemon in background
+          # Use container_name "gen_rtl_<proc_id>"
+          container_name=gen_rtl_$$
+          docker run -id --name ${container_name} --rm -v /cad:/cad ${rtl_docker_image} bash
       fi
-      echo "container-name: $container_name"
-      ##############################################################################
+      echo "Using docker container '$container_name'"
 
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
