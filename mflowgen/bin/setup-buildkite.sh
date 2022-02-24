@@ -405,31 +405,17 @@ echo ""
 echo "--- ADK SETUP / CHECK"
 echo 'CLONE LATEST ADK INTO MFLOWGEN LOCAL REPO'
 
-# Clone the latest tsmc16 adk from the repo
-#
+# Clone/update tsmc16-adk for test rig and maintain symlink tsmc16 => tsmc16-adk
 # Note the adks must be touchable by current user, thus must copy/clone
 # locally and cannot e.g. use symlink to someone else's existing adk.
 
 if [ "$USER" == "buildkite-agent" ]; then
 
-    tsmc16=/sim/steveri/mflowgen/adks/tsmc16
-
-    # Clone tsmc16-adk for the test rig; must link tsmc16 => tsmc16-adk
-    adks=$mflowgen/adks
-
-    # "git clone gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git"
-    # Local clone-adk script clones tsmc16-adk w/o revealing password/token to github
-    pushd $adks
-      test -e tsmc16-adk || /sim/buildkite-agent/bin/clone-adk.sh
-      test -e tsmc16 || ln -s tsmc16-adk
-      cd tsmc16-adk; git checkout master; git pull
-    popd
-
-#     (cd $adks; /sim/buildkite-agent/bin/clone-adk.sh) || exit 13
-#     (cd $adks; ln -s tsmc16-adk tsmc16)
+    # Local clone-adk script maintains repo w/o revealing password/token to github
+    /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
 
     # Need env var MFLOWGEN_PATH I think
-    export MFLOWGEN_PATH=$adks
+    export MFLOWGEN_PATH=$mflowgen/adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
 else
