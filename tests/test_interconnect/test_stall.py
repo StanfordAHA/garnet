@@ -36,7 +36,7 @@ def test_stall(run_tb, io_sides):
     }
     bus = {"e0": 16, "e2": 16, "e1": 16, "e3": 16, "e4": 1, "e5": 1}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["p0"]
