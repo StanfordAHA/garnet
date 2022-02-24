@@ -3207,19 +3207,19 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
     # Create netlist builder and register the needed cores...
 
     # Matrix A
-    scan_aroot = nlb.register_core("scanner", flushable=True)
-    scan_arows = nlb.register_core("scanner", flushable=True)
-    mem_aroot = nlb.register_core("memtile", flushable=True)
-    mem_arows = nlb.register_core("memtile", flushable=True)
-    mem_avals = nlb.register_core("memtile", flushable=True)
+    scan_aroot = nlb.register_core("scanner", flushable=True, name="scan_aroot")
+    scan_arows = nlb.register_core("scanner", flushable=True, name="scan_arows")
+    mem_aroot = nlb.register_core("memtile", flushable=True, name="mem_aroot")
+    mem_arows = nlb.register_core("memtile", flushable=True, name="mem_arows")
+    mem_avals = nlb.register_core("memtile", flushable=True, name="mem_avals")
     mem_avals_lu = nlb.register_core("lookup", flushable=True, name="mem_avals_lu")
 
     # Matrix B
-    scan_broot = nlb.register_core("scanner", flushable=True)
-    scan_brows = nlb.register_core("scanner", flushable=True)
-    mem_broot = nlb.register_core("memtile", flushable=True)
-    mem_brows = nlb.register_core("memtile", flushable=True)
-    mem_bvals = nlb.register_core("memtile", flushable=True)
+    scan_broot = nlb.register_core("scanner", flushable=True, name="scan_broot")
+    scan_brows = nlb.register_core("scanner", flushable=True, name="scan_brows")
+    mem_broot = nlb.register_core("memtile", flushable=True, name="mem_broot")
+    mem_brows = nlb.register_core("memtile", flushable=True, name="mem_brows")
+    mem_bvals = nlb.register_core("memtile", flushable=True, name="mem_bvals")
     mem_bvals_lu = nlb.register_core("lookup", flushable=True, name="mem_bvals_lu")
 
     wscan_root = nlb.register_core("write_scanner", flushable=True, name="wscan_root")
@@ -3232,17 +3232,17 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
     pe_mul = nlb.register_core("fake_pe", name="pe_mul")
 
     # Intersect the two...
-    isect_row = nlb.register_core("intersect", flushable=True)
-    isect_col = nlb.register_core("intersect", flushable=True)
+    isect_row = nlb.register_core("intersect", flushable=True, name="isect_row")
+    isect_col = nlb.register_core("intersect", flushable=True, name="isect_col")
 
     # valid_out = nlb.register_core("io_1")
     # eos_out = nlb.register_core("io_1")
     # coord_out = nlb.register_core("io_16")
-    val_out_0 = nlb.register_core("io_16")
-    val_out_1 = nlb.register_core("io_16")
+    val_out_0 = nlb.register_core("io_16", name="val_out_0")
+    val_out_1 = nlb.register_core("io_16", name="val_out_1")
 
     # ready_in = nlb.register_core("io_1")
-    flush_in = nlb.register_core("io_1")
+    flush_in = nlb.register_core("io_1", name="flush_in")
 
     conn_dict = {
         # Set up streaming out matrix from scan_mrows
@@ -3423,31 +3423,43 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
 
     # App data
     matrix_size = 4
-    matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
-    (mouter, mptr, minner, mmatrix_vals) = compress_matrix(matrix, row=True)
-    mroot = [0, 3]
-    mroot = align_data(mroot, 4)
-    mouter = align_data(mouter, 4)
-    mptr = align_data(mptr, 4)
-    minner = align_data(minner, 4)
-    minner_offset_root = len(mroot)
-    mmatrix_vals = align_data(mmatrix_vals, 4)
-    mroot_data = mroot + mouter
-    minner_offset_row = len(mptr)
-    mrow_data = mptr + minner
+    matrixA = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
+    matrixB = [[1, 2, 0, 0], [0, 3, 4, 0], [0, 0, 0, 0], [0, 5, 0, 6]]
+    (mouterA, mptrA, minnerA, mmatrix_valsA) = compress_matrix(matrixA, row=True)
+    (mouterB, mptrB, minnerB, mmatrix_valsB) = compress_matrix(matrixB, row=True)
+    mrootA = [0, 3]
+    mrootB = [0, 3]
+    mrootA = align_data(mrootA, 4)
+    mrootB = align_data(mrootB, 4)
+    mouterA = align_data(mouterA, 4)
+    mouterB = align_data(mouterB, 4)
+    mptrA = align_data(mptrA, 4)
+    mptrB = align_data(mptrB, 4)
+    minnerA = align_data(minnerA, 4)
+    minnerB = align_data(minnerB, 4)
+    minner_offset_rootA = len(mrootA)
+    minner_offset_rootB = len(mrootB)
+    mmatrix_valsA = align_data(mmatrix_valsA, 4)
+    mmatrix_valsB = align_data(mmatrix_valsB, 4)
+    mroot_dataA = mrootA + mouterA
+    mroot_dataB = mrootB + mouterB
+    minner_offset_rowA = len(mptrA)
+    minner_offset_rowB = len(mptrB)
+    mrow_dataA = mptrA + minnerA
+    mrow_dataB = mptrB + minnerB
     max_outer_dim = matrix_size
-    mmatrix_vals_alt = [x + 5 for x in mmatrix_vals]
+    # mmatrix_vals_alt = [x + 5 for x in mmatrix_vals]
 
-    nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, [0], [1], 1, 0, 0, 0, 0))
-    nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, [0], [1], 1, 0, 0, 0, 0))
-    nlb.configure_tile(scan_arows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0, 1))
-    nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0, 1))
-    nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
-    nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
-    nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_vals}], "mode": 2})
-    nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
-    nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
-    nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}], "mode": 2})
+    nlb.configure_tile(scan_aroot, (minner_offset_rootA, max_outer_dim, [0], [1], 1, 0, 0, 0, 0))
+    nlb.configure_tile(scan_broot, (minner_offset_rootB, max_outer_dim, [0], [1], 1, 0, 0, 0, 0))
+    nlb.configure_tile(scan_arows, (minner_offset_rowA, max_outer_dim, [0], [4], 0, 0, 0, 0, 1))
+    nlb.configure_tile(scan_brows, (minner_offset_rowB, max_outer_dim, [0], [4], 0, 0, 0, 0, 1))
+    nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_dataA}], "mode": 2})
+    nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_dataA}], "mode": 2})
+    nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_valsA}], "mode": 2})
+    nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_dataB}], "mode": 2})
+    nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_dataB}], "mode": 2})
+    nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_valsB}], "mode": 2})
     nlb.configure_tile(isect_row, (0, 0))
     # Configure to do merging
     nlb.configure_tile(isect_col, (1, 1))
