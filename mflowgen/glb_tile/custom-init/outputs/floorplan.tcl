@@ -22,7 +22,7 @@ set core_margin_l [expr 5 * $horiz_pitch]
 
 # Amount of space between SRAM banks and core area
 # boundary on each side
-set sram_margin_t [expr 4 * $vert_pitch]
+set sram_margin_t [expr 10 * $vert_pitch]
 set sram_margin_b [expr 150 * $vert_pitch]
 set sram_margin_r [expr 175 * $horiz_pitch] 
 set sram_margin_l [expr 175 * $horiz_pitch]
