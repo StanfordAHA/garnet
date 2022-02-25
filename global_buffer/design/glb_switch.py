@@ -156,7 +156,7 @@ class GlbSwitch(Generator):
             self.if_est_m.rd_clk_en = 0
 
     def add_sw2bank_clk_en(self):
-        self.wr_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + 4)
+        self.wr_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin)
         self.sw2bank_wr_clk_en = self.var("sw2bank_wr_clk_en", 1)
         self.add_child("sw2bank_wr_clk_en_gen",
                        self.wr_clk_en_gen,
@@ -165,7 +165,7 @@ class GlbSwitch(Generator):
                        enable=(self.if_wst_s.wr_en & self.wr_tile_id_match),
                        clk_en=self.sw2bank_wr_clk_en
                        )
-        self.rd_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + 4)
+        self.rd_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
         self.sw2bank_rd_clk_en = self.var("sw2bank_rd_clk_en", 1)
         self.add_child("sw2bank_rd_clk_en_gen",
                        self.rd_clk_en_gen,

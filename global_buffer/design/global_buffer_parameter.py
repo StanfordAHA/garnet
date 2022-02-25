@@ -61,20 +61,33 @@ class GlobalBufferParams:
     loop_level: int = 5
 
     # dma latency
-    latency_width: int = 2 + math.ceil(math.log(num_glb_tiles, 2))
+    chain_latency_overhead: int = 3
+    latency_width: int = math.ceil(math.log(num_glb_tiles * 2 + chain_latency_overhead, 2))
+    pcfg_latency_width: int = math.ceil(math.log(num_glb_tiles * 3 + chain_latency_overhead, 2))
 
     # pipeline depth
+    sram_macro_read_latency: int = 1  # Constant
+    glb_dma2bank_delay: int = 1  # Constant
     glb_sw2bank_pipeline_depth: int = 0
     glb_bank2sw_pipeline_depth: int = 1
     glb_bank_memory_pipeline_depth: int = 0
     sram_gen_pipeline_depth: int = 0
     sram_gen_output_pipeline_depth: int = 0
     gls_pipeline_depth: int = 0
-    tile2sram_wr_delay: int = glb_sw2bank_pipeline_depth + glb_bank_memory_pipeline_depth + sram_gen_pipeline_depth
-    tile2sram_rd_delay: int = (glb_sw2bank_pipeline_depth + glb_bank_memory_pipeline_depth + sram_gen_pipeline_depth
-                               + glb_bank2sw_pipeline_depth + sram_gen_output_pipeline_depth
-                               + 1  # SRAM macro read latency
-                               )
+    tile2sram_wr_delay: int = (glb_dma2bank_delay + glb_sw2bank_pipeline_depth
+                               + glb_bank_memory_pipeline_depth + sram_gen_pipeline_depth)
+    tile2sram_rd_delay: int = (glb_dma2bank_delay + glb_sw2bank_pipeline_depth + glb_bank_memory_pipeline_depth
+                               + sram_gen_pipeline_depth + glb_bank2sw_pipeline_depth + sram_gen_output_pipeline_depth
+                               + sram_macro_read_latency)
+
+    bankmux2sram_wr_delay: int = glb_sw2bank_pipeline_depth + glb_bank_memory_pipeline_depth + sram_gen_pipeline_depth
+    bankmux2sram_rd_delay: int = (glb_sw2bank_pipeline_depth + glb_bank_memory_pipeline_depth + sram_gen_pipeline_depth
+                                  + glb_bank2sw_pipeline_depth + sram_gen_output_pipeline_depth
+                                  + sram_macro_read_latency
+                                  )
+    rd_clk_en_margin: int = 3
+    wr_clk_en_margin: int = 3
+    proc_clk_en_margin: int = 4
 
     is_sram_stub: int = 0
 

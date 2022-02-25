@@ -14,7 +14,7 @@ class GlbHeader():
 
         self.cfg_pcfg_network_t = PackedStruct("cfg_pcfg_network_t",
                                                [("tile_connected", 1),
-                                                ("latency", self._params.latency_width)])
+                                                ("latency", self._params.pcfg_latency_width)])
 
         self.cfg_dma_ctrl_t = PackedStruct("dma_ctrl_t",
                                            [("mode", 2),
