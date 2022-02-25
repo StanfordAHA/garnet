@@ -38,8 +38,6 @@ class Environment;
     extern function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);
     extern task cgra_stall(bit [NUM_CGRA_TILES-1:0] stall_mask);
     extern task cgra_unstall(bit [NUM_CGRA_TILES-1:0] stall_mask);
-    extern task glb_stall(bit [NUM_GLB_TILES-1:0] stall_mask);
-    extern task glb_unstall(bit [NUM_GLB_TILES-1:0] stall_mask);
     extern task run();
     extern task compare();
 endclass
@@ -134,7 +132,6 @@ task Environment::cgra_configure(Kernel kernel);
     glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups);
     cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
 
-    glb_stall(glb_stall_mask);
     cgra_stall(cgra_stall_mask);
     start_time = $realtime;
     $display("[%s] fast configuration start at %0t", kernel.name, start_time);
@@ -163,40 +160,6 @@ function bit [NUM_CGRA_TILES-1:0] Environment::calculate_cgra_stall_mask(int sta
         calculate_cgra_stall_mask |= ((4'b1111) << ((start + i) * 4));
     end
 endfunction
-
-task Environment::glb_stall(bit [NUM_GLB_TILES-1:0] stall_mask);
-    bit [CGRA_AXI_DATA_WIDTH-1:0] data;
-    bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
-
-    // Stall GLB Core
-    axil_drv.read(`GLC_GLB_CORE_STALL_R, data);
-    wr_data = stall_mask | data;
-    axil_drv.write(`GLC_GLB_CORE_STALL_R, wr_data);
-
-    // Stall GLB Rtr
-    axil_drv.read(`GLC_GLB_RTR_STALL_R, data);
-    wr_data = stall_mask | data;
-    axil_drv.write(`GLC_GLB_RTR_STALL_R, wr_data);
-
-    $display("Stall GLB with stall mask %4h", stall_mask);
-endtask
-
-task Environment::glb_unstall(bit [NUM_GLB_TILES-1:0] stall_mask);
-    bit [CGRA_AXI_DATA_WIDTH-1:0] data;
-    bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
-
-    // Unstall GLB Core
-    axil_drv.read(`GLC_GLB_CORE_STALL_R, data);
-    wr_data = (~stall_mask) & data;
-    axil_drv.write(`GLC_GLB_CORE_STALL_R, wr_data);
-
-    // Unstall GLB Rtr
-    axil_drv.read(`GLC_GLB_RTR_STALL_R, data);
-    wr_data = (~stall_mask) & data;
-    axil_drv.write(`GLC_GLB_RTR_STALL_R, wr_data);
-
-    $display("Unstall GLB with stall mask %4h", stall_mask);
-endtask
 
 task Environment::cgra_stall(bit [NUM_CGRA_TILES-1:0] stall_mask);
     bit [CGRA_AXI_DATA_WIDTH-1:0] data;
@@ -235,7 +198,6 @@ task Environment::kernel_test(Kernel kernel);
     num_groups = kernel.num_groups;
     glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups);
     cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
-    glb_unstall(glb_stall_mask);
     cgra_unstall(cgra_stall_mask);
 
     start_time = $realtime;
