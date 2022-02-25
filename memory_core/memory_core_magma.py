@@ -85,7 +85,8 @@ class MemCore(LakeCoreBase):
                  add_clk_enable=True,
                  add_flush=True,
                  override_name=None,
-                 gen_addr=True):
+                 gen_addr=True,
+                 GF=True):
 
         lake_name = "LakeTop"
 
@@ -119,6 +120,7 @@ class MemCore(LakeCoreBase):
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
         self.gen_addr = gen_addr
+        self.GF = GF
         # self.app_ctrl_depth_width = app_ctrl_depth_width
         # self.stcl_valid_iter = stcl_valid_iter
         # Typedefs for ease
@@ -160,7 +162,8 @@ class MemCore(LakeCoreBase):
                               add_clk_enable=self.add_clk_enable,
                               add_flush=self.add_flush,
                               name=lake_name,
-                              gen_addr=self.gen_addr)
+                              gen_addr=self.gen_addr,
+                              GF=self.GF)
 
             print(self.LT.dut)
             print(self.LT.dut.get_mode_map())
