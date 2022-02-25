@@ -82,7 +82,7 @@ function get_predecessors {
     #   - Could do "test -e .mflowgen || ERROR"
 
     target_step=${1} ; # E.g. "rtl"
-    target_step=cadence-innovus-postroute_hold
+#     target_step=cadence-innovus-postroute_hold
 
     stepdir=$(/bin/ls .mflowgen | egrep "^[0-9]*-${target_step}") ; # E.g. "11-rtl"
     config_file=".mflowgen/${stepdir}/configure.yml"
@@ -111,12 +111,14 @@ function get_predecessors {
     | sed 's/^[0-9]*[-]//'
 }
 echo ""; echo "NODE PREDS"
-get_predecessors cadence-innovus-postroute_hold
+# get_predecessors cadence-innovus-postroute_hold
+get_predecessors $target_step
 echo ""
 
 
 DBG=
-for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
+# for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
+for step in `get_predecessors $step`; do
 
     [ "$DBG" ] && echo Processing step $step
 
