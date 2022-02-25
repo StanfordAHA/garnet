@@ -1,0 +1,14 @@
+{"namespaces":{
+  "global":{
+    "modules":{
+      "BitIO":{
+        "type":["Record",[
+          ["in","BitIn"],
+          ["out","Bit"]
+        ]],
+        "modparams":{"mode":"String"}
+      }
+    }
+  }
+}
+}
