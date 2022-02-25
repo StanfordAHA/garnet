@@ -22,11 +22,11 @@ CLK_PERIOD ?= 1ns
 
 DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_buffer/header/glb.svh \
-			    $(garnet_dir)/global_controller/header/glc.svh \
+				$(garnet_dir)/global_controller/header/glc.svh \
 			    $(garnet_dir)/garnet.v \
 			    $(garnet_dir)/global_buffer/systemRDL/output/glb_pio.sv \
 			    $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_decode.sv \
-			    $(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_logic.sv \
+				$(garnet_dir)/global_buffer/systemRDL/output/glb_jrdl_logic.sv \
 			    $(garnet_dir)/global_controller/systemRDL/output/glc_pio.sv \
 			    $(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_decode.sv \
 			    $(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_logic.sv \
@@ -165,4 +165,3 @@ compile-gls:
 .PHONY: clean
 clean:
 	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log cgra.shm cgra.fsdb sdf_stats.txt sdf_logs
-
