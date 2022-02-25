@@ -37,9 +37,9 @@ module `mname` (
     output logic                                clk_out,
     output logic                                reset_out,
     output logic [`$cgra_width-1`:0]            cgra_stall, 
-    output logic [`$num_glb_tiles-1`:0]         glb_core_stall, 
-    output logic [`$num_glb_tiles-1`:0]         glb_rtr_stall, 
-    output logic [`$num_glb_tiles-1`:0]         glb_pcfg_stall, 
+    output logic [`$num_glb_tiles-1`:0]         glb_clk_en_master, 
+    output logic [`$num_glb_tiles-1`:0]         glb_clk_en_bank_master, 
+    output logic [`$num_glb_tiles-1`:0]         glb_pcfg_broadcast_stall, 
 
     // global buffer configuration
     output logic                                glb_cfg_wr_en,
@@ -54,11 +54,9 @@ module `mname` (
 
     // global buffer sram configuration
     output logic                                sram_cfg_wr_en,
-    output logic                                sram_cfg_wr_clk_en,
     output logic [`$glb_addr_width-1`:0]        sram_cfg_wr_addr,
     output logic [`$axi_data_width-1`:0]        sram_cfg_wr_data,
     output logic                                sram_cfg_rd_en,
-    output logic                                sram_cfg_rd_clk_en,
     output logic [`$glb_addr_width-1`:0]        sram_cfg_rd_addr,
     input  logic [`$axi_data_width-1`:0]        sram_cfg_rd_data,
     input  logic                                sram_cfg_rd_data_valid,
@@ -122,9 +120,9 @@ logic                                sys_clk_activated;
 
 // cgra control signals
 logic                                jtag_global_reset, axi_global_reset, global_reset;
-logic [`$num_glb_tiles-1`:0]         jtag_glb_core_stall, axi_glb_core_stall;
-logic [`$num_glb_tiles-1`:0]         jtag_glb_rtr_stall, axi_glb_rtr_stall;
-logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_stall, axi_glb_pcfg_stall;
+logic [`$num_glb_tiles-1`:0]         jtag_glb_clk_en_master, axi_glb_clk_en_master;
+logic [`$num_glb_tiles-1`:0]         jtag_glb_clk_en_bank_master, axi_glb_clk_en_bank_master;
+logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_broadcast_stall, axi_glb_pcfg_broadcast_stall;
 logic [`$cgra_width-1`:0]            jtag_cgra_stall, axi_cgra_stall;
 
 // global buffer configuration
@@ -140,7 +138,6 @@ logic                                jtag_glb_cfg_rd_data_valid, axi_glb_cfg_rd_
 
 // global buffer sram configuration
 logic                               jtag_sram_cfg_wr_en;
-logic                               jtag_sram_cfg_wr_clk_en;
 logic [`$glb_addr_width-1`:0]       jtag_sram_cfg_wr_addr;
 logic [`$axi_data_width-1`:0]       jtag_sram_cfg_wr_data;
 logic                               jtag_sram_cfg_rd_en;
@@ -180,9 +177,9 @@ logic                                axi_glc_cfg_rd_data_valid;
 // assign
 //============================================================================//
 assign global_reset = jtag_global_reset | axi_global_reset;
-assign glb_core_stall = jtag_glb_core_stall | axi_glb_core_stall;
-assign glb_rtr_stall = jtag_glb_rtr_stall | axi_glb_rtr_stall;
-assign glb_pcfg_stall = jtag_glb_pcfg_stall | axi_glb_pcfg_stall;
+assign glb_clk_en_master = jtag_glb_clk_en_master | axi_glb_clk_en_master;
+assign glb_clk_en_bank_master = jtag_glb_clk_en_bank_master | axi_glb_clk_en_bank_master;
+assign glb_pcfg_broadcast_stall = jtag_glb_pcfg_broadcast_stall | axi_glb_pcfg_broadcast_stall;
 assign cgra_stall = jtag_cgra_stall | axi_cgra_stall;
 
 // reset output
@@ -203,11 +200,9 @@ assign axi_glb_cfg_rd_data_valid    = glb_cfg_rd_data_valid;
 
 // global buffer sram configuration
 assign sram_cfg_wr_en                = jtag_sram_cfg_wr_en;
-assign sram_cfg_wr_clk_en            = jtag_sram_cfg_wr_clk_en;
 assign sram_cfg_wr_addr              = jtag_sram_cfg_wr_addr;
 assign sram_cfg_wr_data              = jtag_sram_cfg_wr_data;
 assign sram_cfg_rd_en                = jtag_sram_cfg_rd_en;
-assign sram_cfg_rd_clk_en            = jtag_sram_cfg_rd_clk_en;
 assign sram_cfg_rd_addr              = jtag_sram_cfg_rd_addr;
 assign jtag_sram_cfg_rd_data         = sram_cfg_rd_data;
 assign jtag_sram_cfg_rd_data_valid   = sram_cfg_rd_data_valid;
@@ -262,9 +257,9 @@ assign axi_cgra_cfg_data_in         = cgra_cfg_rd_data;
     .sys_clk_activated(sys_clk_activated),
     .clk_out(clk_out),
     .jtag_global_reset(jtag_global_reset),
-    .jtag_glb_core_stall(jtag_glb_core_stall), 
-    .jtag_glb_rtr_stall(jtag_glb_rtr_stall), 
-    .jtag_glb_pcfg_stall(jtag_glb_pcfg_stall), 
+    .jtag_glb_clk_en_master(jtag_glb_clk_en_master), 
+    .jtag_glb_clk_en_bank_master(jtag_glb_clk_en_bank_master), 
+    .jtag_glb_pcfg_broadcast_stall(jtag_glb_pcfg_broadcast_stall), 
     .jtag_cgra_stall(jtag_cgra_stall), 
 
     .jtag_glb_cfg_wr_en(jtag_glb_cfg_wr_en),
@@ -278,11 +273,9 @@ assign axi_cgra_cfg_data_in         = cgra_cfg_rd_data;
     .jtag_glb_cfg_rd_data_valid(jtag_glb_cfg_rd_data_valid),
 
     .jtag_sram_cfg_wr_en(jtag_sram_cfg_wr_en),
-    .jtag_sram_cfg_wr_clk_en(jtag_sram_cfg_wr_clk_en),
     .jtag_sram_cfg_wr_addr(jtag_sram_cfg_wr_addr),
     .jtag_sram_cfg_wr_data(jtag_sram_cfg_wr_data),
     .jtag_sram_cfg_rd_en(jtag_sram_cfg_rd_en),
-    .jtag_sram_cfg_rd_clk_en(jtag_sram_cfg_rd_clk_en),
     .jtag_sram_cfg_rd_addr(jtag_sram_cfg_rd_addr),
     .jtag_sram_cfg_rd_data(jtag_sram_cfg_rd_data),
     .jtag_sram_cfg_rd_data_valid(jtag_sram_cfg_rd_data_valid),
@@ -356,9 +349,9 @@ assign axi_cgra_cfg_data_in         = cgra_cfg_rd_data;
     .reset(reset_in),
 
     .axi_global_reset(axi_global_reset),
-    .axi_glb_core_stall(axi_glb_core_stall), 
-    .axi_glb_rtr_stall(axi_glb_rtr_stall), 
-    .axi_glb_pcfg_stall(axi_glb_pcfg_stall), 
+    .axi_glb_clk_en_master(axi_glb_clk_en_master), 
+    .axi_glb_clk_en_bank_master(axi_glb_clk_en_bank_master), 
+    .axi_glb_pcfg_broadcast_stall(axi_glb_pcfg_broadcast_stall), 
     .axi_cgra_stall(axi_cgra_stall), 
 
 	.strm_g2f_start_pulse(strm_g2f_start_pulse),

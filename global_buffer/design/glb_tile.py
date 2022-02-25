@@ -24,6 +24,7 @@ class GlbTile(Generator):
         self.clk = self.clock("clk")
         self.clk_en_pcfg_broadcast = self.clock_en("clk_en_pcfg_broadcast")
         self.clk_en_master = self.clock_en("clk_en_master")
+        self.clk_en_bank_master = self.clock_en("clk_en_bank_master")
         self.reset = self.reset("reset")
         self.glb_tile_id = self.input("glb_tile_id", self._params.tile_sel_addr_width)
 
@@ -273,7 +274,7 @@ class GlbTile(Generator):
         self.add_child("glb_clk_gate_bank",
                        ClkGate(_params=self._params),
                        clk=self.clk,
-                       enable=self.clk_en_bank | self.clk_en_master,
+                       enable=self.clk_en_bank | self.clk_en_master | self.clk_en_bank_master,
                        gclk=self.gclk_bank)
 
         # module instantiation
