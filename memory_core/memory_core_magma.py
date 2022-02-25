@@ -205,24 +205,28 @@ class MemCore(LakeCoreBase):
         }
 
         # Extract the runtime + preload config
-        top_config = instr['config'][1]
+        if "config" in instr:
+            top_config = instr['config']
+            if "init" in top_config:
+                instr["init"] = top_config["init"]
 
         # Add in preloaded memory
-        if "init" in top_config:
+        if "init" in instr:
             # this is SRAM content
-            content = top_config['init']
-            assert len(content) % self.fw_int == 0, f"ROM content size must be a multiple of {self.fw_int}"
+            content = instr['init']
             for addr, data in enumerate(content):
                 if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
                 addr = addr >> 2
                 feat_addr = addr // 256 + 1
-                addr = addr % 256
+                addr = (addr % 256)
                 configs.append((addr, feat_addr, data))
 
         # Extract mode to the enum
-        # mode = mode_map[instr['mode'][1]]
-        mode = instr['mode']
+        if "is_rom" in instr and instr["is_rom"]:
+            mode = mode_map["rom"]
+        else:
+            mode = mode_map[instr['mode']]
 
         if mode == MemoryMode.UNIFIED_BUFFER:
             config_runtime = self.dut.get_static_bitstream_json(top_config)
@@ -251,7 +255,7 @@ class MemCore(LakeCoreBase):
         for name, v in config_runtime:
             configs = [self.get_config_data(name, v)] + configs
 
-        print(configs)
+        #print(configs)
         return configs
 
     def get_static_bitstream(self, config_path, in_file_name, out_file_name):
