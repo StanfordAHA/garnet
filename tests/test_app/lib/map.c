@@ -177,13 +177,13 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     for (int i = 0; i < loop_dim; i++)
     {
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_RANGE_0_R + 0x04 * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
                  extent[i] << (GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x04 * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x0c * i),
                  cycle_stride[i] << (GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_STRIDE_0_R + 0x04 * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_STRIDE_0_R + 0x0c * i),
                  data_stride[i] << (GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
     }
     printf("=====Before Optimization=====\n");
@@ -211,13 +211,13 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     for (int i = 0; i < loop_dim; i++)
     {
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_RANGE_0_R + 0x04 * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
                  extent[i] << (GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x04 * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x0c * i),
                  cycle_stride[i] << (GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_STRIDE_0_R + 0x04 * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_STRIDE_0_R + 0x0c * i),
                  data_stride[i] << (GLB_ST_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
     }
     printf("=====Before Optimization=====\n");
