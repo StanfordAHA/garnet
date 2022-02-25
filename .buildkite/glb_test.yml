@@ -9,6 +9,7 @@ steps:
     # make /bin/sh symlink to bash instead of dash:
   - echo "dash dash/sh boolean false" | debconf-set-selections
   - DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+  - apt update
   - apt install time
     # use the mounted garnet
   - rm -rf /aha/garnet
