@@ -1,29 +1,10 @@
-import dataclasses
+from dataclasses import dataclass, field, asdict
 import math
 import os
 
 
-@dataclasses.dataclass(eq=True, frozen=False)
+@dataclass(eq=True, frozen=False)
 class GlobalBufferParams:
-    # architecture parameters
-    num_prr: int = 16
-    num_cgra_tiles: int = 32
-    num_glb_tiles: int = 16
-    banks_per_tile: int = 2
-    bank_addr_width: int = 17
-    bank_data_width: int = 64
-    cgra_data_width: int = 16
-    axi_data_width: int = 32
-    cgra_axi_addr_width: int = 13
-    cgra_axi_data_width: int = 32
-    cgra_cfg_addr_width: int = 32
-    cgra_cfg_data_width: int = 32
-
-    # cell parameters
-    cg_cell_name: str = "CKLNQD1BWP16P90"
-    sram_macro_name: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
-    sram_macro_depth: int = 2048
-
     @property
     def num_prr_width(self):
         return math.ceil(math.log(self.num_prr, 2))
@@ -32,12 +13,10 @@ class GlobalBufferParams:
     def tile_sel_addr_width(self):
         return math.ceil(math.log(self.num_glb_tiles, 2))
 
-    # cgra tiles per glb tile
     @property
     def cgra_per_glb(self):
         return self.num_cgra_tiles // self.num_glb_tiles  # 2
 
-    # bank parameters
     @property
     def bank_sel_addr_width(self):
         return math.ceil(math.log(self.banks_per_tile, 2))
@@ -50,17 +29,14 @@ class GlobalBufferParams:
     def bank_byte_offset(self):
         return math.ceil(math.log(self.bank_data_width / 8, 2))
 
-    # glb parameters
     @property
     def glb_addr_width(self):
         return self.bank_addr_width + self.bank_sel_addr_width + self.tile_sel_addr_width
 
-    # cgra data parameters
     @property
     def cgra_byte_offset(self):
         return math.ceil(math.log(self.cgra_data_width / 8, 2))
 
-    # axi parameters
     @property
     def axi_addr_width(self):
         return self.cgra_axi_addr_width - 1
@@ -83,11 +59,42 @@ class GlobalBufferParams:
     def max_num_cfg_width(self):
         return self.glb_addr_width - self.bank_byte_offset
 
-    # cgra config parameters
+    # architecture parameters
+    num_prr: int = 16
+    num_cgra_tiles: int = 32
+    num_glb_tiles: int = 16
+    banks_per_tile: int = 2
+    bank_addr_width: int = 17
+    bank_data_width: int = 64
+    cgra_data_width: int = 16
+    axi_data_width: int = 32
+    cgra_axi_addr_width: int = 13
+    cgra_axi_data_width: int = 32
+    cgra_cfg_addr_width: int = 32
+    cgra_cfg_data_width: int = 32
+
+    # cell parameters
+    cg_cell_name: str = "CKLNQD1BWP16P90"
+    sram_macro_name: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
+    sram_macro_depth: int = 2048
+
+    # dependent field
+    num_prr_width: int = field(init=False, default=num_prr_width)
+    tile_sel_addr_width: int = field(init=False, default=tile_sel_addr_width)
+    cgra_per_glb: int = field(init=False, default=cgra_per_glb)
+    bank_sel_addr_width: int = field(init=False, default=bank_sel_addr_width)
+    bank_strb_width: int = field(init=False, default=bank_strb_width)
+    bank_byte_offset: int = field(init=False, default=bank_byte_offset)
+    glb_addr_width: int = field(init=False, default=glb_addr_width)
+    cgra_byte_offset: int = field(init=False, default=cgra_byte_offset)
+    axi_addr_width: int = field(init=False, default=axi_addr_width)
+    axi_addr_reg_width: int = field(init=False, default=axi_addr_reg_width)
+    axi_strb_width: int = field(init=False, default=axi_strb_width)
+    axi_byte_offset: int = field(init=False, default=axi_byte_offset)
 
     # dma address generator
     queue_depth: int = 1
-    loop_level: int = 7
+    loop_level: int = 5
 
     # dma latency
     chain_latency_overhead: int = 3
@@ -177,7 +184,7 @@ def gen_global_buffer_params(**kwargs):
 
 
 def gen_header_files(params, svh_filename, h_filename, header_name):
-    mod_params = dataclasses.asdict(params)
+    mod_params = asdict(params)
     folder = svh_filename.rsplit('/', 1)[0]
     # parameter pass to systemverilog package
     if not os.path.exists(folder):
