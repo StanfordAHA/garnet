@@ -17,6 +17,7 @@ class GlobalBuffer(Generator):
 
         self.clk = self.clock("clk")
         self.glb_clk_en_master = self.input("glb_clk_en_master", self._params.num_glb_tiles)
+        self.glb_clk_en_bank_master = self.input("glb_clk_en_bank_master", self._params.num_glb_tiles)
         self.pcfg_broadcast_stall = self.input("pcfg_broadcast_stall", self._params.num_glb_tiles)
         self.reset = self.reset("reset")
 
@@ -472,6 +473,7 @@ class GlobalBuffer(Generator):
                            clk=self.clk,
                            clk_en_pcfg_broadcast=clock_en(~self.pcfg_broadcast_stall[i]),
                            clk_en_master=clock_en(self.glb_clk_en_master[i]),
+                           clk_en_bank_master=clock_en(self.glb_clk_en_bank_master[i]),
                            reset=self.reset,
                            glb_tile_id=i,
 

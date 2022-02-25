@@ -31,6 +31,15 @@ class RdlNonLeafNode(RdlNode):
     def add_children(self, children):
         self.children += children
 
+    def get_num_reg(self):
+        total_num = 0
+        if isinstance(self, Reg):
+            return self.size
+        else:
+            for child in self.children:
+                total_num += child.get_num_reg()
+            return self.size * total_num
+
 
 class AddrMap(RdlNonLeafNode):
     type = "addrmap"
@@ -68,7 +77,7 @@ class Field(RdlNode):
 
 
 class Rdl:
-    def __init__(self, top):
+    def __init__(self, top: AddrMap):
         self.top = top
 
     def dump_rdl(self, filename):
@@ -208,18 +217,19 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     st_dma_header_rf.add_child(cycle_start_addr_r)
 
     # num_word reg
-    range_r = Reg(f"range", size=params.loop_level)
-    range_f = Field("range", width=params.axi_data_width)
-    range_r.add_child(range_f)
-    stride_r = Reg(f"stride", size=params.loop_level)
-    stride_f = Field("stride", width=params.glb_addr_width + 1)
-    stride_r.add_child(stride_f)
-    cycle_stride_r = Reg(f"cycle_stride", size=params.loop_level)
-    cycle_stride_f = Field("cycle_stride", width=params.cycle_count_width)
-    cycle_stride_r.add_child(cycle_stride_f)
-    st_dma_header_rf.add_child(range_r)
-    st_dma_header_rf.add_child(stride_r)
-    st_dma_header_rf.add_child(cycle_stride_r)
+    for i in range(params.loop_level):
+        range_r = Reg(f"range_{i}")
+        range_f = Field("range", width=params.axi_data_width)
+        range_r.add_child(range_f)
+        stride_r = Reg(f"stride_{i}")
+        stride_f = Field("stride", width=params.glb_addr_width + 1)
+        stride_r.add_child(stride_f)
+        cycle_stride_r = Reg(f"cycle_stride_{i}")
+        cycle_stride_f = Field("cycle_stride", width=params.cycle_count_width)
+        cycle_stride_r.add_child(cycle_stride_f)
+        st_dma_header_rf.add_child(range_r)
+        st_dma_header_rf.add_child(stride_r)
+        st_dma_header_rf.add_child(cycle_stride_r)
 
     addr_map.add_child(st_dma_header_rf)
 
@@ -260,18 +270,19 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     ld_dma_header_rf.add_child(cycle_start_addr_r)
 
     # num_word reg
-    range_r = Reg(f"range", size=params.loop_level)
-    range_f = Field("range", width=params.axi_data_width)
-    range_r.add_child(range_f)
-    stride_r = Reg(f"stride", size=params.loop_level)
-    stride_f = Field("stride", width=params.glb_addr_width + 1)
-    stride_r.add_child(stride_f)
-    cycle_stride_r = Reg(f"cycle_stride", size=params.loop_level)
-    cycle_stride_f = Field("cycle_stride", width=params.cycle_count_width)
-    cycle_stride_r.add_child(cycle_stride_f)
-    ld_dma_header_rf.add_child(range_r)
-    ld_dma_header_rf.add_child(stride_r)
-    ld_dma_header_rf.add_child(cycle_stride_r)
+    for i in range(params.loop_level):
+        range_r = Reg(f"range_{i}")
+        range_f = Field("range", width=params.axi_data_width)
+        range_r.add_child(range_f)
+        stride_r = Reg(f"stride_{i}")
+        stride_f = Field("stride", width=params.glb_addr_width + 1)
+        stride_r.add_child(stride_f)
+        cycle_stride_r = Reg(f"cycle_stride_{i}")
+        cycle_stride_f = Field("cycle_stride", width=params.cycle_count_width)
+        cycle_stride_r.add_child(cycle_stride_f)
+        ld_dma_header_rf.add_child(range_r)
+        ld_dma_header_rf.add_child(stride_r)
+        ld_dma_header_rf.add_child(cycle_stride_r)
 
     addr_map.add_child(ld_dma_header_rf)
 

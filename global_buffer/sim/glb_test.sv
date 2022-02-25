@@ -10,6 +10,7 @@ program glb_test (
     input  logic                     clk,
     input  logic                     reset,
     output logic [NUM_GLB_TILES-1:0] glb_clk_en_master,
+    output logic [NUM_GLB_TILES-1:0] glb_clk_en_bank_master,
     output logic [NUM_GLB_TILES-1:0] pcfg_broadcast_stall,
 
     // proc
@@ -345,6 +346,7 @@ program glb_test (
     task initialize();
         // control
         glb_clk_en_master <= 0;
+        glb_clk_en_bank_master <= 0;
         pcfg_broadcast_stall <= 0;
         pcfg_start_pulse <= 0;
         strm_g2f_start_pulse <= 0;
@@ -388,6 +390,13 @@ program glb_test (
     task glb_clk_en_master_ctrl(logic [NUM_GLB_TILES-1:0] mask);
         #2 $display("Glb tiles master clk enable with mask %16b", mask);
         glb_clk_en_master <= mask;
+        repeat (4) @(posedge clk);
+
+    endtask
+
+    task glb_clk_en_bank_master_ctrl(logic [NUM_GLB_TILES-1:0] mask);
+        #2 $display("Glb tiles master bank clk enable with mask %16b", mask);
+        glb_clk_en_bank_master <= mask;
         repeat (4) @(posedge clk);
 
     endtask

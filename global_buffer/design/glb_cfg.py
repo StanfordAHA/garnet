@@ -1,4 +1,4 @@
-from kratos import Generator
+from kratos import Generator, clog2
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
 from global_buffer.design.glb_cfg_ctrl import GlbCfgCtrl
@@ -49,7 +49,6 @@ class GlbCfg(Generator):
         self.cfg_pcfg_dma_header = self.output("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
 
         self.glb_pio_wrapper = self.get_glb_pio_wrapper()
-        # TODO: Update axi_reg_addr_width
         self.add_child("glb_pio", self.glb_pio_wrapper)
         self.glb_cfg_ctrl = GlbCfgCtrl(self._params)
         self.add_child("glb_cfg_ctrl", self.glb_cfg_ctrl)
@@ -69,6 +68,13 @@ class GlbCfg(Generator):
         if not self.__class__.cache:
             self.__class__.cache = self._params
             glb_rdl = gen_global_buffer_rdl(name=top_name, params=self._params)
+            glb_addr_reg_width = clog2(glb_rdl.top.get_num_reg())
+            if self._params.axi_addr_reg_width < glb_addr_reg_width:
+                total_addr_width = glb_addr_reg_width + \
+                    clog2(self._params.num_glb_tiles) + clog2(self._params.cgra_axi_data_width / 8) + 1
+                raise Exception(f"CGRA AXI address space is not enough.\n"
+                                f"Current cgra_axi_addr_width is {self._params.cgra_axi_addr_width}.\n"
+                                f"It needs to be equal to or bigger than {total_addr_width}.\n")
 
             # Dump rdl file
             rdl_file = os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl")
@@ -168,7 +174,9 @@ class GlbCfg(Generator):
         self.wire(self.if_cfg_wst_s, self.glb_cfg_ctrl.if_cfg_wst_s)
         self.wire(self.if_cfg_est_m, self.glb_cfg_ctrl.if_cfg_est_m)
 
-        self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_address'], self.glb_cfg_ctrl.h2d_pio_dec_address)
+        addr_width = self.glb_pio_wrapper.ports['h2d_pio_dec_address'].width
+        self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_address'],
+                  self.glb_cfg_ctrl.h2d_pio_dec_address[addr_width - 1, 0])
         self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_write_data'], self.glb_cfg_ctrl.h2d_pio_dec_write_data)
         self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_write'], self.glb_cfg_ctrl.h2d_pio_dec_write)
         self.wire(self.glb_pio_wrapper.ports['h2d_pio_dec_read'], self.glb_cfg_ctrl.h2d_pio_dec_read)

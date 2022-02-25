@@ -47,8 +47,8 @@ class Garnet(Generator):
         config_data_width = 32
         self.config_addr_width = config_addr_width
         self.config_data_width = config_data_width
-        axi_addr_width = 13
-        axi_data_width = 32
+        axi_addr_width = self.glb_params.cgra_axi_addr_width
+        axi_data_width = self.glb_params.axi_data_width
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
 
@@ -378,7 +378,7 @@ def main():
                                           bank_data_width=64,
                                           cfg_addr_width=32,
                                           cfg_data_width=32,
-                                          axi_addr_width=12,
+                                          cgra_axi_addr_width=13,
                                           axi_data_width=32)
 
     garnet = Garnet(width=args.width, height=args.height,

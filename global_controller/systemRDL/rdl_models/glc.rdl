@@ -52,6 +52,12 @@ addrmap glc {
         field {} stall[<%=NUM_GLB_TILES%>] = 0x0;
     };
 
+    reg glb_clk_en_r {
+        name = "GLB clock enable";
+        desc = "control each glb tile";
+        field {} clk_en[<%=NUM_GLB_TILES%>] = 0x0;
+    };
+
     reg stream_start_pulse_r {
         name = "Stream Start";
         desc = "Start data streaming from glb tile";
@@ -292,9 +298,9 @@ addrmap glc {
     test_r                  test;
     global_reset_r          global_reset;
     cgra_stall_r            cgra_stall;
-    glb_stall_r             glb_core_stall;
-    glb_stall_r             glb_rtr_stall;
-    glb_stall_r             glb_pcfg_stall;
+    glb_clk_en_r            glb_clk_en_master;
+    glb_clk_en_r            glb_clk_en_bank_master;
+    glb_stall_r             glb_pcfg_broadcast_stall;
     stream_start_pulse_r    stream_start_pulse;
     pc_start_pulse_r        pc_start_pulse;
 

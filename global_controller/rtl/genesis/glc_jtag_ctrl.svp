@@ -32,9 +32,9 @@ module `mname` (
     output logic                                sys_clk_activated,
     output logic                                clk_out,
     output logic                                jtag_global_reset,
-    output logic [`$num_glb_tiles-1`:0]         jtag_glb_core_stall, 
-    output logic [`$num_glb_tiles-1`:0]         jtag_glb_rtr_stall, 
-    output logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_stall, 
+    output logic [`$num_glb_tiles-1`:0]         jtag_glb_clk_en_master, 
+    output logic [`$num_glb_tiles-1`:0]         jtag_glb_clk_en_bank_master, 
+    output logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_broadcast_stall, 
     output logic [`$cgra_width-1`:0]            jtag_cgra_stall, 
 
     // global buffer configuration
@@ -50,11 +50,9 @@ module `mname` (
 
     // global buffer sram configuration
     output logic                                jtag_sram_cfg_wr_en,
-    output logic                                jtag_sram_cfg_wr_clk_en,
     output logic [`$glb_addr_width-1`:0]        jtag_sram_cfg_wr_addr,
     output logic [`$axi_data_width-1`:0]        jtag_sram_cfg_wr_data,
     output logic                                jtag_sram_cfg_rd_en,
-    output logic                                jtag_sram_cfg_rd_clk_en,
     output logic [`$glb_addr_width-1`:0]        jtag_sram_cfg_rd_addr,
     input  logic [`$axi_data_width-1`:0]        jtag_sram_cfg_rd_data,
     input  logic                                jtag_sram_cfg_rd_data_valid,
@@ -83,7 +81,9 @@ module `mname` (
 logic clk;
 logic clk_domain;
 logic [`$cgra_width-1`:0] stall, stall_bak;
-logic [`$num_glb_tiles-1`:0] glb_stall;
+logic [`$num_glb_tiles-1`:0] glb_pcfg_broadcast_stall;
+logic [`$num_glb_tiles-1`:0] glb_clk_en_master;
+logic [`$num_glb_tiles-1`:0] glb_clk_en_bank_master;
 
 // cgra configuration
 logic                               write;
@@ -127,9 +127,9 @@ assign jtag_cgra_cfg_wr_data = cgra_config_data_out;
 assign config_data_in = jtag_cgra_cfg_data_in;
 
 // stall signals
-assign jtag_glb_core_stall = glb_stall;
-assign jtag_glb_rtr_stall = glb_stall;
-assign jtag_glb_pcfg_stall = glb_stall;
+assign jtag_glb_clk_en_master = glb_clk_en_master;
+assign jtag_glb_clk_en_bank_master = glb_clk_en_bank_master;
+assign jtag_glb_pcfg_broadcast_stall = glb_pcfg_broadcast_stall;
 assign jtag_cgra_stall = stall;
 
 // global reset signal
@@ -161,8 +161,20 @@ parameter glb_sram_write_config = `$cfg_op_width`'d20;
 parameter glb_sram_read_config =`$cfg_op_width`'d21;
 parameter axi_write = `$cfg_op_width`'d22;
 parameter axi_read = `$cfg_op_width`'d23;
-parameter write_glb_stall = `$cfg_op_width`'d24;
-parameter read_glb_stall = `$cfg_op_width`'d25;
+parameter write_glb_clk_en_master = `$cfg_op_width`'d24;
+parameter read_glb_clk_en_master = `$cfg_op_width`'d25;
+parameter write_glb_clk_en_bank_master = `$cfg_op_width`'d26;
+parameter read_glb_clk_en_bank_master = `$cfg_op_width`'d27;
+parameter write_glb_pcfg_broadcast_stall = `$cfg_op_width`'d28;
+parameter read_glb_pcfg_broadcast_stall = `$cfg_op_width`'d29;
+parameter write_sram_en_delay_reg = `$cfg_op_width`'d30;
+parameter read_sram_en_delay_reg = `$cfg_op_width`'d31;
+
+//============================================================================//
+// JTAG register
+//============================================================================//
+logic [`$cfg_data_width-1`:0] rd_delay_reg;
+logic [`$cfg_data_width-1`:0] sram_en_delay_reg;
 
 //============================================================================//
 // states
@@ -393,7 +405,7 @@ assign jtag_glb_cfg_rd_clk_en = glb_read;
 // Glb SRAM configuration with clk gating
 //============================================================================//
 // WRITE
-logic [1:0] jtag_sram_wr_cnt;
+logic [10:0] jtag_sram_wr_cnt;
 
 always_ff @(posedge clk or posedge reset_in) begin
     if (reset_in) begin
@@ -407,7 +419,7 @@ always_ff @(posedge clk or posedge reset_in) begin
             jtag_sram_cfg_wr_en <= 1;
             jtag_sram_cfg_wr_addr <= glb_sram_config_addr_out;
             jtag_sram_cfg_wr_data <= glb_sram_config_data_out;
-            jtag_sram_wr_cnt <= 3;
+            jtag_sram_wr_cnt <= sram_en_delay_reg;
         end
         else begin
             if (jtag_sram_wr_cnt == 0) begin
@@ -422,30 +434,9 @@ always_ff @(posedge clk or posedge reset_in) begin
     end
 end
 
-logic [$clog2(`$num_glb_tiles+10`):0] sram_cfg_wr_clk_en_cnt;
-logic sram_cfg_wr_clk_en;
-always_ff @(posedge clk or posedge reset_in) begin
-    if (reset_in) begin
-        sram_cfg_wr_clk_en_cnt <= 0;
-        sram_cfg_wr_clk_en <= 0;
-    end else begin
-        if (glb_sram_write) begin
-            sram_cfg_wr_clk_en_cnt <= `$num_glb_tiles+10`;
-            sram_cfg_wr_clk_en <= 1;
-        end else begin
-            if (sram_cfg_wr_clk_en_cnt == 0) begin
-                sram_cfg_wr_clk_en <= 0;
-            end else begin
-                sram_cfg_wr_clk_en_cnt <= sram_cfg_wr_clk_en_cnt - 1;
-            end
-        end
-    end
-end
-assign jtag_sram_cfg_wr_clk_en = glb_sram_write | sram_cfg_wr_clk_en;
-
 // READ
 logic glb_sram_read_d;
-logic [1:0] jtag_sram_rd_cnt;
+logic [10:0] jtag_sram_rd_cnt;
 always_ff @(posedge clk or posedge reset_in) begin
     if (reset_in) begin
         glb_sram_read_d <= 0;
@@ -464,7 +455,7 @@ always_ff @(posedge clk or posedge reset_in) begin
         if (glb_sram_read && !glb_sram_read_d) begin
             jtag_sram_cfg_rd_en <= 1;
             jtag_sram_cfg_rd_addr <= glb_sram_config_addr_out;
-            jtag_sram_rd_cnt <= 3;
+            jtag_sram_rd_cnt <= sram_en_delay_reg;
         end
         else begin
             if (jtag_sram_rd_cnt == 0) begin
@@ -489,7 +480,6 @@ always_ff @(posedge clk or posedge reset_in) begin
     end
 end
 
-assign jtag_sram_cfg_rd_clk_en = glb_sram_read;
 
 //============================================================================//
 // Write/Read AXI addressmap using JTAG
@@ -540,7 +530,6 @@ end
 //============================================================================//
 logic [`$cfg_data_width-1`:0] TST;
 logic [`$cfg_data_width-1`:0] counter;
-logic [`$cfg_data_width-1`:0] rd_delay_reg;
 
 always @ (posedge clk or posedge reset_in) begin
     if (reset_in==1) begin
@@ -573,11 +562,14 @@ always @ (posedge clk or posedge reset_in) begin
         glb_sram_config_data_out <= 0;
 
         // other control registers
-        glb_stall <= '0;
+        glb_pcfg_broadcast_stall <= '0;
+        glb_clk_en_master <= '0;
+        glb_clk_en_bank_master <= '0;
         stall <= '0;
         stall_bak <= '0;
         clk_switch_request <= 1;
         rd_delay_reg <= 2;
+        sram_en_delay_reg <= 2;
         TST <= 0;
         counter <= 0;
         delay_sel <= 2'b00;
@@ -763,8 +755,8 @@ always @ (posedge clk or posedge reset_in) begin
                 axi_wr_en <= 0;
                 axi_rd_en <= 0;
             end         
-            read_glb_stall: begin
-                config_data_jtag_in <= glb_stall;
+            read_glb_pcfg_broadcast_stall: begin
+                config_data_jtag_in <= glb_pcfg_broadcast_stall;
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;
@@ -774,8 +766,52 @@ always @ (posedge clk or posedge reset_in) begin
                 axi_wr_en <= 0;
                 axi_rd_en <= 0;
             end
-            write_glb_stall: begin
-                glb_stall <= config_data_jtag_out[`$num_glb_tiles-1`:0];
+            write_glb_pcfg_broadcast_stall: begin
+                glb_pcfg_broadcast_stall <= config_data_jtag_out[`$num_glb_tiles-1`:0];
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end         
+            read_glb_clk_en_master: begin
+                config_data_jtag_in <= glb_clk_en_master;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            write_glb_clk_en_master: begin
+                glb_clk_en_master <= config_data_jtag_out[`$num_glb_tiles-1`:0];
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end         
+            read_glb_clk_en_bank_master: begin
+                config_data_jtag_in <= glb_clk_en_bank_master;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            write_glb_clk_en_bank_master: begin
+                glb_clk_en_bank_master <= config_data_jtag_out[`$num_glb_tiles-1`:0];
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;
@@ -865,6 +901,28 @@ always @ (posedge clk or posedge reset_in) begin
             end
             rd_delay_sel_reg: begin
                 config_data_jtag_in <= {`$cfg_data_width-2`'b0,delay_sel};
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end
+            write_sram_en_delay_reg: begin
+                sram_en_delay_reg <= (config_data_jtag_out > 0) ? config_data_jtag_out : 1;
+                read <= 0;
+                write <= 0;
+                glb_write <= 0;
+                glb_read <= 0;
+                glb_sram_read <= 0;
+                glb_sram_write <= 0;
+                axi_wr_en <= 0;
+                axi_rd_en <= 0;
+            end         
+            read_sram_en_delay_reg: begin
+                config_data_jtag_in <= sram_en_delay_reg;
                 read <= 0;
                 write <= 0;
                 glb_write <= 0;
