@@ -96,9 +96,6 @@ XRUN = xrun \
 	   $(COMPILE_ARGS) \
 	   $(INPUT_ARGS)
 
-GEN_SDF_CMD = python gls/gen_sdf_cmd.py \
-              -f $(SDF_CMD_FILE) -l $(SDF_LOG) -t $(MTM) --tool $(TOOL)
-
 # -------------------------------------------------------------------
 # C API
 # -------------------------------------------------------------------
@@ -131,18 +128,6 @@ else ifeq ($(TOOL), VCS)
 	DUMP_ARGS = -ucli -i dump_fsdb.tcl
 endif
 
-ifneq ($(SDF), 0)
-    $(shell $(GEN_SDF_CMD))
-    ifeq ($(TOOL), XCELIUM)
-        SDF_ARGS += -sdf_cmd_file $(SDF_CMD_FILE)
-        SDF_ARGS += -sdfstats sdf_stats.txt -sdf_verbose
-        COMPILE_GLS_ARGS += $(SDF_ARGS)
-    else ifeq ($(TOOL), VCS)
-        SDF_ARGS += $(shell cat $(SDF_CMD_FILE))
-        SDF_ARGS += +sdfverbose
-        COMPILE_GLS_ARGS += $(SDF_ARGS)
-    endif
-endif
 
 .PHONY: compile
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
