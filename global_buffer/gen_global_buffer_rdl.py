@@ -168,7 +168,7 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     addr_map.add_child(pcfg_network_ctrl)
 
     pcfg_network_latency = Reg("pcfg_network_latency")
-    pcfg_network_latency.add_child(Field("value", params.latency_width))
+    pcfg_network_latency.add_child(Field("value", params.pcfg_latency_width))
     addr_map.add_child(pcfg_network_latency)
 
     # Store DMA Ctrl

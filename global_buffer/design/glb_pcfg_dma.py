@@ -2,6 +2,7 @@ from kratos import Generator, always_ff, always_comb, posedge, const, clog2, res
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
+from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
 
 
 class GlbPcfgDma(Generator):
@@ -15,9 +16,13 @@ class GlbPcfgDma(Generator):
 
         self.cgra_cfg_pcfg = self.output("cgra_cfg_pcfg", self.header.cgra_cfg_t)
 
-        self.rdrq_packet = self.output("rdrq_packet", self.header.rdrq_packet_t)
-        self.rdrs_packet = self.input("rdrs_packet", self.header.rdrs_packet_t)
+        self.rdrq_packet_dma2bank = self.output("rdrq_packet_dma2bank", self.header.rdrq_packet_t)
+        self.rdrq_packet_dma2ring = self.output("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
+        self.rdrs_packet_bank2dma = self.input("rdrs_packet_bank2dma", self.header.rdrs_packet_t)
+        self.rdrs_packet_ring2dma = self.input("rdrs_packet_ring2dma", self.header.rdrs_packet_t)
 
+        self.cfg_pcfg_tile_connected_prev = self.input("cfg_pcfg_tile_connected_prev", 1)
+        self.cfg_pcfg_tile_connected_next = self.input("cfg_pcfg_tile_connected_next", 1)
         self.cfg_pcfg_dma_ctrl_mode = self.input("cfg_pcfg_dma_ctrl_mode", 1)
         self.cfg_pcfg_dma_header = self.input("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
         self.cfg_pcfg_network_latency = self.input("cfg_pcfg_network_latency", self._params.latency_width)
@@ -25,10 +30,15 @@ class GlbPcfgDma(Generator):
         self.pcfg_dma_start_pulse = self.input("pcfg_dma_start_pulse", 1)
         self.pcfg_dma_done_interrupt = self.output("pcfg_dma_done_interrupt", 1)
 
+        self.clk_en_dma2bank = self.output("clk_en_dma2bank", 1)
+
         # localparam
         self.bank_data_byte_offset = self._params.bank_strb_width
 
         # local variables
+        self.rdrq_packet_dma2bank_w = self.var("rdrq_packet_dma2bank_w", self.header.rdrq_packet_t)
+        self.rdrq_packet_dma2ring_w = self.var("rdrq_packet_dma2ring_w", self.header.rdrq_packet_t)
+        self.rdrs_packet = self.var("rdrs_packet", self.header.rdrs_packet_t)
         self.pcfg_done_pulse = self.var("pcfg_done_pulse", 1)
         self.pcfg_done_pulse_last = self.var("pcfg_done_pulse_last", 1)
         self.is_running_r = self.var("is_running_r", 1)
@@ -51,14 +61,16 @@ class GlbPcfgDma(Generator):
         self.add_always(self.is_running_ff)
         self.add_always(self.adgn_logic)
         self.add_always(self.adgn_ff)
-        self.add_always(self.rdrq_packet_logic)
+        self.add_always(self.rdrq_packet_counter)
         self.add_always(self.rdrq_packet_ff)
         self.add_always(self.rdrs_packet_ff)
-        self.assign_rdrq_packet()
+        self.add_always(self.rdrq_packet_logic)
+        self.add_always(self.rdrs_packet_logic)
         self.assign_cgra_cfg_output()
         self.add_done_pulse_pipeline()
         self.add_done_pulse_last_pipeline()
         self.add_always(self.interrupt_ff)
+        self.add_dma2bank_clk_en()
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def start_pulse_ff(self):
@@ -109,7 +121,7 @@ class GlbPcfgDma(Generator):
             self.addr_r = self.addr_next
 
     @always_comb
-    def rdrq_packet_logic(self):
+    def rdrq_packet_counter(self):
         if (self.is_running_r & (self.num_cfg_cnt_r > 0)):
             self.rdrq_packet_rd_en_next = 1
             self.rdrq_packet_rd_addr_next = self.addr_r
@@ -117,14 +129,46 @@ class GlbPcfgDma(Generator):
             self.rdrq_packet_rd_en_next = 0
             self.rdrq_packet_rd_addr_next = 0
 
+    @always_comb
+    def rdrq_packet_logic(self):
+        if self.cfg_pcfg_tile_connected_next | self.cfg_pcfg_tile_connected_prev:
+            self.rdrq_packet_dma2ring_w['rd_en'] = self.rdrq_packet_rd_en_next
+            self.rdrq_packet_dma2ring_w['rd_addr'] = self.rdrq_packet_rd_addr_next
+            self.rdrq_packet_dma2bank_w['rd_en'] = 0
+            self.rdrq_packet_dma2bank_w['rd_addr'] = 0
+        else:
+            self.rdrq_packet_dma2ring_w['rd_en'] = 0
+            self.rdrq_packet_dma2ring_w['rd_addr'] = 0
+            self.rdrq_packet_dma2bank_w['rd_en'] = self.rdrq_packet_rd_en_next
+            self.rdrq_packet_dma2bank_w['rd_addr'] = self.rdrq_packet_rd_addr_next
+
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrq_packet_ff(self):
         if self.reset:
-            self.rdrq_packet_rd_en_r = 0
-            self.rdrq_packet_rd_addr_r = 0
+            self.rdrq_packet_dma2ring = 0
+            self.rdrq_packet_dma2bank = 0
         else:
-            self.rdrq_packet_rd_en_r = self.rdrq_packet_rd_en_next
-            self.rdrq_packet_rd_addr_r = self.rdrq_packet_rd_addr_next
+            self.rdrq_packet_dma2ring = self.rdrq_packet_dma2ring_w
+            self.rdrq_packet_dma2bank = self.rdrq_packet_dma2bank_w
+
+    def add_dma2bank_clk_en(self):
+        self.clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
+        self.dma2bank_clk_en = self.var("dma2bank_clk_en", 1)
+        self.add_child("dma2bank_clk_en_gen",
+                       self.clk_en_gen,
+                       clk=self.clk,
+                       reset=self.reset,
+                       enable=self.rdrq_packet_dma2bank_w['rd_en'],
+                       clk_en=self.dma2bank_clk_en
+                       )
+        self.wire(self.clk_en_dma2bank, self.dma2bank_clk_en)
+
+    @always_comb
+    def rdrs_packet_logic(self):
+        if self.cfg_pcfg_tile_connected_next | self.cfg_pcfg_tile_connected_prev:
+            self.rdrs_packet = self.rdrs_packet_ring2dma
+        else:
+            self.rdrs_packet = self.rdrs_packet_bank2dma
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rdrs_packet_ff(self):
@@ -138,10 +182,6 @@ class GlbPcfgDma(Generator):
             self.rdrs_packet_rd_data_r = 0
             self.rdrs_packet_rd_data_valid_r = 0
 
-    def assign_rdrq_packet(self):
-        self.wire(self.rdrq_packet['rd_en'], self.rdrq_packet_rd_en_r)
-        self.wire(self.rdrq_packet['rd_addr'], self.rdrq_packet_rd_addr_r)
-
     def assign_cgra_cfg_output(self):
         self.wire(self.cgra_cfg_pcfg['rd_en'], 0)
         self.wire(self.cgra_cfg_pcfg['wr_en'],
@@ -153,7 +193,8 @@ class GlbPcfgDma(Generator):
                   self.rdrs_packet_rd_data_r[self._params.cgra_cfg_data_width - 1, 0])
 
     def add_done_pulse_pipeline(self):
-        maximum_latency = 3 * self._params.num_glb_tiles + 4 + self._params.tile2sram_rd_delay
+        maximum_latency = (3 * self._params.num_glb_tiles
+                           + self._params.chain_latency_overhead + self._params.tile2sram_rd_delay)
         latency_width = clog2(maximum_latency)
         self.done_pulse_d_arr = self.var("done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
         self.done_pulse_pipeline = Pipeline(width=1,
@@ -166,6 +207,7 @@ class GlbPcfgDma(Generator):
                        reset=self.reset,
                        in_=self.done_pulse_r,
                        out_=self.done_pulse_d_arr)
+
         self.wire(self.pcfg_done_pulse,
                   self.done_pulse_d_arr[resize(self.cfg_pcfg_network_latency, latency_width)
                                         + self._params.tile2sram_rd_delay

@@ -126,9 +126,9 @@ program glb_test (
                     end
                 end
                 if (kernels[i].type_ == PCFG) begin
-                    pcfg_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 4);
+                    pcfg_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 3);
                 end else begin
-                    data_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 4);
+                    data_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 3);
                 end
             end
         end

@@ -5,6 +5,7 @@ from global_buffer.design.glb_addr_gen import GlbAddrGen
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
+from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
 
 
 class GlbStoreDma(Generator):
@@ -16,13 +17,17 @@ class GlbStoreDma(Generator):
 
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
+        self.clk_en_dma2bank = self.output("clk_en_dma2bank", 1)
 
         self.data_f2g = self.input("data_f2g", width=self._params.cgra_data_width,
                                    size=self._params.cgra_per_glb, packed=True)
         self.data_valid_f2g = self.input("data_valid_f2g", 1, size=self._params.cgra_per_glb, packed=True)
 
-        self.wr_packet = self.output("wr_packet", self.header.wr_packet_t)
+        self.wr_packet_dma2bank = self.output("wr_packet_dma2bank", self.header.wr_packet_t)
+        self.wr_packet_dma2ring = self.output("wr_packet_dma2ring", self.header.wr_packet_t)
 
+        self.cfg_tile_connected_prev = self.input("cfg_tile_connected_prev", 1)
+        self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
         self.cfg_st_dma_num_repeat = self.input("cfg_st_dma_num_repeat", clog2(self._params.queue_depth) + 1)
         self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2)
         self.cfg_st_dma_ctrl_use_valid = self.input("cfg_st_dma_ctrl_use_valid", 1)
@@ -39,6 +44,8 @@ class GlbStoreDma(Generator):
         self.cgra_strb_value = 2 ** (self._params.cgra_data_width // 8) - 1
 
         # local variables
+        self.wr_packet_dma2bank_w = self.var("wr_packet_dma2bank_w", self.header.wr_packet_t)
+        self.wr_packet_dma2ring_w = self.var("wr_packet_dma2ring_w", self.header.wr_packet_t)
         self.data_f2g_r = self.var("data_f2g_r", width=self._params.cgra_data_width,
                                    size=self._params.cgra_per_glb, packed=True)
         self.data_valid_f2g_r = self.var("data_valid_f2g_r", 1, size=self._params.cgra_per_glb, packed=True)
@@ -104,7 +111,9 @@ class GlbStoreDma(Generator):
         self.add_always(self.bank_wr_packet_cache_comb)
         self.add_always(self.bank_wr_packet_cache_ff)
         self.add_always(self.bank_wr_packet_logic)
+        self.add_always(self.wr_packet_ff)
         self.add_always(self.wr_packet_logic)
+        self.add_dma2bank_clk_en()
         self.add_always(self.strm_done_pulse_logic)
         self.add_done_pulse_pipeline()
         self.add_done_pulse_last_pipeline()
@@ -364,17 +373,47 @@ class GlbStoreDma(Generator):
 
     @always_comb
     def wr_packet_logic(self):
-        self.wr_packet['wr_en'] = self.bank_wr_en
-        self.wr_packet['wr_strb'] = self.bank_wr_strb_cache_r
-        self.wr_packet['wr_data'] = self.bank_wr_data_cache_r
-        self.wr_packet['wr_addr'] = self.bank_wr_addr
+        if self.cfg_tile_connected_next | self.cfg_tile_connected_prev:
+            self.wr_packet_dma2bank_w = 0
+            self.wr_packet_dma2ring_w['wr_en'] = self.bank_wr_en
+            self.wr_packet_dma2ring_w['wr_strb'] = self.bank_wr_strb_cache_r
+            self.wr_packet_dma2ring_w['wr_data'] = self.bank_wr_data_cache_r
+            self.wr_packet_dma2ring_w['wr_addr'] = self.bank_wr_addr
+        else:
+            self.wr_packet_dma2bank_w['wr_en'] = self.bank_wr_en
+            self.wr_packet_dma2bank_w['wr_strb'] = self.bank_wr_strb_cache_r
+            self.wr_packet_dma2bank_w['wr_data'] = self.bank_wr_data_cache_r
+            self.wr_packet_dma2bank_w['wr_addr'] = self.bank_wr_addr
+            self.wr_packet_dma2ring_w = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def wr_packet_ff(self):
+        if self.reset:
+            self.wr_packet_dma2bank = 0
+            self.wr_packet_dma2ring = 0
+        else:
+            self.wr_packet_dma2bank = self.wr_packet_dma2bank_w
+            self.wr_packet_dma2ring = self.wr_packet_dma2ring_w
+
+    def add_dma2bank_clk_en(self):
+        self.clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin)
+        self.dma2bank_clk_en = self.var("dma2bank_clk_en", 1)
+        self.add_child("dma2bank_clk_en_gen",
+                       self.clk_en_gen,
+                       clk=self.clk,
+                       reset=self.reset,
+                       enable=self.wr_packet_dma2bank_w['wr_en'],
+                       clk_en=self.dma2bank_clk_en
+                       )
+        self.wire(self.clk_en_dma2bank, self.dma2bank_clk_en)
 
     @always_comb
     def strm_done_pulse_logic(self):
         self.done_pulse_w = self.loop_done & self.strm_run
 
     def add_done_pulse_pipeline(self):
-        maximum_latency = 2 * self._params.num_glb_tiles + self._params.tile2sram_wr_delay + 4
+        maximum_latency = (2 * self._params.num_glb_tiles + self._params.tile2sram_wr_delay
+                           + self._params.chain_latency_overhead)
         latency_width = clog2(maximum_latency)
         self.done_pulse_d_arr = self.var(
             "done_pulse_d_arr", 1, size=maximum_latency, explicit_array=True)
