@@ -53,6 +53,7 @@ def construct():
     'core_density_target' : 0.68,
     # RTL Generation
     'interconnect_only'   : True,
+    'docker_rtl_image'    : 'default', # Current default is 'stanfordaha/garnet:latest'
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
     # Power analysis
