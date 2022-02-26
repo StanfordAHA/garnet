@@ -21,6 +21,9 @@ inputs:
   - glb_tile.sdf
   - glb_tile_sram.v
   - glb_tile_sram_pwr.v
+  - sim
+  - gls
+  - Makefile
 
 outputs:
   - sim.log

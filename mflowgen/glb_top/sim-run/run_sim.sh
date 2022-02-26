@@ -1,8 +1,8 @@
 #!/bin/bash
-cp $GARNET_HOME/global_buffer/Makefile ./
-cp -r $GARNET_HOME/global_buffer/testvectors ./
-mkdir sim
-cp -r $GARNET_HOME/global_buffer/sim/dump*.tcl ./sim/
+
+ln -s ./inputs/Makefile
+ln -s ./inputs/testvectors
+ln -s ./inputs/sim
 
 if [ $tool = "XCELIUM" ]; then
   ln -s ./inputs/xcelium.d

@@ -1,6 +1,6 @@
 #!/bin/bash
-cp $GARNET_HOME/global_buffer/Makefile ./
-cp -r $GARNET_HOME/global_buffer/sim ./
+ln -s ./inputs/Makefile
+ln -s ./inputs/sim
 
 CLK_PERIOD=$(echo $sim_clock_period*1000/1 | bc)ps
 

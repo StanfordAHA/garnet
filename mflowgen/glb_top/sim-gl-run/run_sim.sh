@@ -1,8 +1,7 @@
 #!/bin/bash
-cp $GARNET_HOME/global_buffer/Makefile ./
-cp -r $GARNET_HOME/global_buffer/testvectors ./
-mkdir sim
-cp -r $GARNET_HOME/global_buffer/sim/dump*.tcl ./sim/
+ln -s ./inputs/Makefile
+ln -s ./inputs/sim
+ln -s ./inputs/testvectors
 
 if [ $waveform = "True" ]; then
     WAVEFORM=1

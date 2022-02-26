@@ -1,7 +1,7 @@
 name: sim-compile
 
 parameters:
-  tool: "XCELIUM"
+  tool: "VCS"
   sim_clock_period: 1.5
 
 commands:
@@ -10,6 +10,8 @@ commands:
 inputs:
   - design.v
   - header
+  - Makefile
+  - sim
 
 outputs:
   - sim.log
