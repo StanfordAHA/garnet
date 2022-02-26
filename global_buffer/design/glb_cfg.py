@@ -48,6 +48,9 @@ class GlbCfg(Generator):
         self.cfg_pcfg_dma_ctrl = self.output("cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
         self.cfg_pcfg_dma_header = self.output("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
 
+        # pcfg broadcast
+        self.cfg_pcfg_broadcast_mux = self.output("cfg_pcfg_broadcast_mux", self.header.cfg_pcfg_broadcast_mux_t)
+
         self.glb_pio_wrapper = self.get_glb_pio_wrapper()
         self.add_child("glb_pio", self.glb_pio_wrapper)
         self.glb_cfg_ctrl = GlbCfgCtrl(self._params)
@@ -165,6 +168,9 @@ class GlbCfg(Generator):
                   self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_header_start_addr_start_addr_r"])
         self.wire(self.cfg_pcfg_dma_header['num_cfg'],
                   self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_header_num_cfg_num_cfg_r"])
+        self.wire(self.cfg_pcfg_broadcast_mux['west'], self.glb_pio_wrapper.ports[f"l2h_pcfg_broadcast_mux_west_r"])
+        self.wire(self.cfg_pcfg_broadcast_mux['east'], self.glb_pio_wrapper.ports[f"l2h_pcfg_broadcast_mux_east_r"])
+        self.wire(self.cfg_pcfg_broadcast_mux['south'], self.glb_pio_wrapper.ports[f"l2h_pcfg_broadcast_mux_south_r"])
 
     def wire_ctrl_signals(self):
         self.wire(self.gclk, self.glb_cfg_ctrl.gclk)

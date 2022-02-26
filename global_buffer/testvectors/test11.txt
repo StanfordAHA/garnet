@@ -1,0 +1,15 @@
+// Test parallel configuration. Flowing left. Tile/Bank/StartAddr/CheckTile
+2
+100000
+PCFG 5 13 0 0
+1
+4096
+1
+1
+testvectors/4096_v0.dat
+PCFG 15 31 0 6
+1
+4096
+1
+1
+testvectors/4096_v1.dat

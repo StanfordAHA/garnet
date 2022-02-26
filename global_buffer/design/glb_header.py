@@ -70,3 +70,5 @@ class GlbHeader():
 
         self.cgra_cfg_t = PackedStruct("cgra_cfg_t", [("rd_en", 1), ("wr_en", 1), (
             "addr", self._params.cgra_cfg_addr_width), ("data", self._params.cgra_cfg_data_width)])
+
+        self.cfg_pcfg_broadcast_mux_t = PackedStruct("pcfg_broadcast_mux_t", [("west", 2), ("east", 2), ("south", 2)])

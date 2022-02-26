@@ -127,13 +127,21 @@ program glb_test (
                     end
                 end
                 if (kernels[i].type_ == PCFG) begin
-                    pcfg_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 3);
+                    pcfg_network_latency(kernels[i].tile_id,
+                                         (num_chained_prev + num_chained_next) * 2 + 3);
                 end else begin
-                    data_network_latency(kernels[i].tile_id, (num_chained_prev + num_chained_next) * 2 + 3);
+                    data_network_latency(kernels[i].tile_id,
+                                         (num_chained_prev + num_chained_next) * 2 + 3);
                 end
             end
         end
         glb_pcfg_broadcast_stall(test.pcfg_broadcast_stall_mask);
+        foreach (kernels[i]) begin
+            if (kernels[i].type_ == PCFG) begin
+                glb_pcfg_broadcast_mux(test.pcfg_broadcast_mux_value);
+                break;
+            end
+        end
 
         foreach (kernels[i]) begin
             if (kernels[i].type_ == WR) begin
@@ -271,7 +279,7 @@ program glb_test (
                         end else if (kernels[j].type_ == F2G) begin
                             f2g_run(kernels[j].tile_id, kernels[j].total_cycle);
                         end else if (kernels[j].type_ == PCFG) begin
-                            pcfg_run(kernels[j].tile_id, kernels[j].total_cycle,
+                            pcfg_run(kernels[j].tile_id, kernels[j].check_tile_id, kernels[j].total_cycle,
                                      kernels[j].data64_arr_out);
                         end else if (kernels[j].type_ == SRAM) begin
                             sram_write_burst(kernels[j].bank_id, kernels[j].data64_arr);
@@ -308,8 +316,10 @@ program glb_test (
                 $display("F2G Comparison");
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end else if (kernels[i].type_ == PCFG) begin
+                $display("PCFG Comparison");
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end else if (kernels[i].type_ == SRAM) begin
+                $display("SRAM Comparison");
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end
             repeat (30) @(posedge clk);
@@ -331,7 +341,7 @@ program glb_test (
         initialize();
         if (!($value$plusargs("MAX_NUM_TEST=%d", max_num_test))) max_num_test = 10;
         for (int i = 1; i <= max_num_test; i++) begin
-            $sformat(test_name, "test%0d", i);
+            $sformat(test_name, "test%2d", i);
             if (($test$plusargs(test_name))) begin
                 $display("\n************** Test Start *****************");
                 $sformat(test_filename, "./testvectors/%s.txt", test_name);
@@ -408,6 +418,25 @@ program glb_test (
 
     endtask
 
+    task glb_pcfg_broadcast_mux(
+        logic [`GLB_PCFG_BROADCAST_MUX_R_MSB:0] mux_value[NUM_GLB_TILES-1:0]);
+        $display("Set pcfg broadcast muxes");
+        for (int i = 0; i < NUM_GLB_TILES; i++) begin
+            $display("Tile ID: %0d, South Mux: %2b, West Mux: %2b, East Mux: %2b", i,
+                     mux_value[i][`GLB_PCFG_BROADCAST_MUX_SOUTH_F_MSB : `GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB],
+                     mux_value[i][`GLB_PCFG_BROADCAST_MUX_WEST_F_MSB : `GLB_PCFG_BROADCAST_MUX_WEST_F_LSB],
+                     mux_value[i][`GLB_PCFG_BROADCAST_MUX_EAST_F_MSB : `GLB_PCFG_BROADCAST_MUX_EAST_F_LSB]);
+            glb_cfg_write(
+                (i << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_BROADCAST_MUX_R,
+                mux_value[i]);
+            glb_cfg_read(
+                (i << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_BROADCAST_MUX_R,
+                mux_value[i]);
+        end
+        repeat (4) @(posedge clk);
+
+    endtask
+
     task automatic sram_write_burst(int bank_id, ref data64 data);
         int start_addr = (1 << BANK_ADDR_WIDTH) * bank_id;
         int write_data;
@@ -424,7 +453,7 @@ program glb_test (
         #2 if_sram_cfg_wr_en <= 1;
         if_sram_cfg_wr_addr <= addr;
         if_sram_cfg_wr_data <= data;
-        repeat(4) @(posedge clk);
+        repeat (4) @(posedge clk);
         #2 if_sram_cfg_wr_en <= 0;
         if_sram_cfg_wr_addr <= 0;
         if_sram_cfg_wr_data <= 0;
@@ -468,23 +497,27 @@ program glb_test (
     endtask
 
     task automatic data_network_connect(input int tile_id, bit is_connected);
-        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_CTRL_R,
-                      (is_connected << `GLB_DATA_NETWORK_CTRL_CONNECTED_F_LSB));
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_CTRL_R,
+            (is_connected << `GLB_DATA_NETWORK_CTRL_CONNECTED_F_LSB));
     endtask
 
     task automatic data_network_latency(input int tile_id, [LATENCY_WIDTH-1:0] latency);
-        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_LATENCY_R,
-                      (latency << `GLB_DATA_NETWORK_LATENCY_VALUE_F_LSB));
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_LATENCY_R,
+            (latency << `GLB_DATA_NETWORK_LATENCY_VALUE_F_LSB));
     endtask
 
     task automatic pcfg_network_connect(input int tile_id, bit is_connected);
-        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_NETWORK_CTRL_R,
-                      (is_connected << `GLB_PCFG_NETWORK_CTRL_CONNECTED_F_LSB));
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_NETWORK_CTRL_R,
+            (is_connected << `GLB_PCFG_NETWORK_CTRL_CONNECTED_F_LSB));
     endtask
 
     task automatic pcfg_network_latency(input int tile_id, [LATENCY_WIDTH-1:0] latency);
-        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_NETWORK_LATENCY_R,
-                      (latency << `GLB_PCFG_NETWORK_LATENCY_VALUE_F_LSB));
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_NETWORK_LATENCY_R,
+            (latency << `GLB_PCFG_NETWORK_LATENCY_VALUE_F_LSB));
     endtask
 
     task automatic pcfg_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
@@ -890,7 +923,7 @@ program glb_test (
         #2 pcfg_start_pulse <= 0;
     endtask
 
-    task automatic pcfg_run(input int tile_id, int total_cycle,
+    task automatic pcfg_run(input int tile_id, int check_tile_id, int total_cycle,
                             ref [CGRA_CFG_ADDR_WIDTH + CGRA_CFG_DATA_WIDTH - 1:0] cgra_cfg_out[]);
         int cnt = 0;
         fork : interrupt_timeout
@@ -904,12 +937,12 @@ program glb_test (
             begin
                 forever begin
                     // Check the second column
-                    if (cgra_cfg_g2f_cfg_wr_en[tile_id][CGRA_PER_GLB-1] == 1) begin
+                    if (cgra_cfg_g2f_cfg_wr_en[check_tile_id][CGRA_PER_GLB-1] == 1) begin
                         cgra_cfg_out[
                         cnt++
                         ] = {
-                            cgra_cfg_g2f_cfg_addr[tile_id][CGRA_PER_GLB-1],
-                            cgra_cfg_g2f_cfg_data[tile_id][CGRA_PER_GLB-1]
+                            cgra_cfg_g2f_cfg_addr[check_tile_id][CGRA_PER_GLB-1],
+                            cgra_cfg_g2f_cfg_data[check_tile_id][CGRA_PER_GLB-1]
                         };
                     end
                     @(posedge clk);

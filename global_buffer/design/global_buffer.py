@@ -175,6 +175,24 @@ class GlobalBuffer(Generator):
         self.cgra_cfg_pcfg_esto_data = self.var(
             "cgra_cfg_pcfg_esto_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
 
+        self.cgra_cfg_pcfg_esti_wr_en = self.var(
+            "cgra_cfg_pcfg_esti_wr_en", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_esti_rd_en = self.var(
+            "cgra_cfg_pcfg_esti_rd_en", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_esti_addr = self.var(
+            "cgra_cfg_pcfg_esti_addr", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_esti_data = self.var(
+            "cgra_cfg_pcfg_esti_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+
+        self.cgra_cfg_pcfg_wsto_wr_en = self.var(
+            "cgra_cfg_pcfg_wsto_wr_en", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_wsto_rd_en = self.var(
+            "cgra_cfg_pcfg_wsto_rd_en", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_wsto_addr = self.var(
+            "cgra_cfg_pcfg_wsto_addr", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_wsto_data = self.var(
+            "cgra_cfg_pcfg_wsto_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+
         self.strm_f2g_interrupt_pulse_w = self.var("strm_f2g_interrupt_pulse_w", self._params.num_glb_tiles)
         self.strm_f2g_interrupt_pulse_d = self.var("strm_f2g_interrupt_pulse_d", self._params.num_glb_tiles)
         self.wire(self.strm_f2g_interrupt_pulse_d, self.strm_f2g_interrupt_pulse)
@@ -243,9 +261,10 @@ class GlobalBuffer(Generator):
         self.add_proc_clk_en()
         self.add_always(self.left_edge_cfg_ff)
         self.add_always(self.left_edge_cgra_cfg_ff)
-        self.tile2tile_e2w_wiring()
-        self.tile2tile_w2e_wiring()
+        self.tile2tile_e2w_struct_wiring()
+        self.tile2tile_w2e_struct_wiring()
         self.add_always(self.tile2tile_w2e_cfg_wiring)
+        self.add_always(self.tile2tile_e2w_cfg_wiring)
         self.add_always(self.interrupt_pipeline)
 
         # Directly assign rd_data output ports at the left side
@@ -420,21 +439,34 @@ class GlobalBuffer(Generator):
             self.cgra_cfg_jtag_gc2glb_addr_d = self.cgra_cfg_jtag_gc2glb_addr
             self.cgra_cfg_jtag_gc2glb_data_d = self.cgra_cfg_jtag_gc2glb_data
 
-    def tile2tile_e2w_wiring(self):
+    # NOTE: Kratos limitation. Struct wiring cannot be easily done using always_comb
+    def tile2tile_e2w_struct_wiring(self):
         self.wire(self.strm_packet_e2w_esti[self._params.num_glb_tiles - 1], 0)
         self.wire(self.pcfg_packet_e2w_esti[self._params.num_glb_tiles - 1], 0)
         for i in range(self._params.num_glb_tiles - 1):
             self.wire(self.strm_packet_e2w_esti[i], self.strm_packet_e2w_wsto[i + 1])
             self.wire(self.pcfg_packet_e2w_esti[i], self.pcfg_packet_e2w_wsto[i + 1])
 
-    def tile2tile_w2e_wiring(self):
+    def tile2tile_w2e_struct_wiring(self):
         self.wire(self.strm_packet_w2e_wsti[0], 0)
         self.wire(self.pcfg_packet_w2e_wsti[0], 0)
         for i in range(1, self._params.num_glb_tiles):
-            self.wire(self.strm_packet_w2e_wsti[const(i, clog2(self._params.num_glb_tiles))],
-                      self.strm_packet_w2e_esto[const((i - 1), clog2(self._params.num_glb_tiles))])
-            self.wire(self.pcfg_packet_w2e_wsti[const(i, clog2(self._params.num_glb_tiles))],
-                      self.pcfg_packet_w2e_esto[const((i - 1), clog2(self._params.num_glb_tiles))])
+            self.wire(self.strm_packet_w2e_wsti[i], self.strm_packet_w2e_esto[i - 1])
+            self.wire(self.pcfg_packet_w2e_wsti[i], self.pcfg_packet_w2e_esto[i - 1])
+
+    @always_comb
+    def tile2tile_e2w_cfg_wiring(self):
+        for i in range(self._params.num_glb_tiles):
+            if i == self._params.num_glb_tiles - 1:
+                self.cgra_cfg_pcfg_esti_rd_en[i] = 0
+                self.cgra_cfg_pcfg_esti_wr_en[i] = 0
+                self.cgra_cfg_pcfg_esti_addr[i] = 0
+                self.cgra_cfg_pcfg_esti_data[i] = 0
+            else:
+                self.cgra_cfg_pcfg_esti_rd_en[i] = self.cgra_cfg_pcfg_wsto_rd_en[i + 1]
+                self.cgra_cfg_pcfg_esti_wr_en[i] = self.cgra_cfg_pcfg_wsto_wr_en[i + 1]
+                self.cgra_cfg_pcfg_esti_addr[i] = self.cgra_cfg_pcfg_wsto_addr[i + 1]
+                self.cgra_cfg_pcfg_esti_data[i] = self.cgra_cfg_pcfg_wsto_data[i + 1]
 
     @always_comb
     def tile2tile_w2e_cfg_wiring(self):
@@ -603,6 +635,16 @@ class GlobalBuffer(Generator):
                            cgra_cfg_pcfg_esto_rd_en=self.cgra_cfg_pcfg_esto_rd_en[i],
                            cgra_cfg_pcfg_esto_addr=self.cgra_cfg_pcfg_esto_addr[i],
                            cgra_cfg_pcfg_esto_data=self.cgra_cfg_pcfg_esto_data[i],
+
+                           cgra_cfg_pcfg_esti_wr_en=self.cgra_cfg_pcfg_esti_wr_en[i],
+                           cgra_cfg_pcfg_esti_rd_en=self.cgra_cfg_pcfg_esti_rd_en[i],
+                           cgra_cfg_pcfg_esti_addr=self.cgra_cfg_pcfg_esti_addr[i],
+                           cgra_cfg_pcfg_esti_data=self.cgra_cfg_pcfg_esti_data[i],
+
+                           cgra_cfg_pcfg_wsto_wr_en=self.cgra_cfg_pcfg_wsto_wr_en[i],
+                           cgra_cfg_pcfg_wsto_rd_en=self.cgra_cfg_pcfg_wsto_rd_en[i],
+                           cgra_cfg_pcfg_wsto_addr=self.cgra_cfg_pcfg_wsto_addr[i],
+                           cgra_cfg_pcfg_wsto_data=self.cgra_cfg_pcfg_wsto_data[i],
 
                            cgra_cfg_jtag_wsti_wr_en=self.cgra_cfg_jtag_wsti_wr_en[i],
                            cgra_cfg_jtag_wsti_rd_en=self.cgra_cfg_jtag_wsti_rd_en[i],

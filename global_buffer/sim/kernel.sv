@@ -17,6 +17,7 @@ class Kernel;
     int bank_id;
     int start_addr;
     int cycle_start_addr;
+    int check_tile_id;
     int dim;
     int extent[LOOP_LEVEL];
     int cycle_stride[LOOP_LEVEL];
@@ -44,6 +45,7 @@ class Test;
     bit [NUM_GLB_TILES-1:0] f2g_tile_mask;
     bit [NUM_GLB_TILES-1:0] pcfg_tile_mask;
     bit [NUM_GLB_TILES-1:0] pcfg_broadcast_stall_mask;
+    bit [`GLB_PCFG_BROADCAST_MUX_R_MSB:0] pcfg_broadcast_mux_value[NUM_GLB_TILES-1:0];
 
     extern function new(string filename);
 endclass
@@ -56,6 +58,7 @@ function Test::new(string filename);
     string cycle_stride_s, extent_s, data_stride_s, tmp_s;
     string new_cycle_stride_s, new_extent_s, new_data_stride_s, new_tmp_s;
     string line;
+    int start_tile, end_tile, tmp_tile;
 
     $display("\n---- Test Initialization ----");
     if (fd) $display("Test file open %s", filename);
@@ -83,6 +86,7 @@ function Test::new(string filename);
         kernels[i].bank_id = bank_id;
         kernels[i].start_addr = bank_offset * bank_id + tmp_start_addr;
         kernels[i].cycle_start_addr = tmp_cycle_start_addr;
+        kernels[i].check_tile_id = tmp_cycle_start_addr;
         kernels[i].dim = dim;
         for (int j = 0; j < dim; j++) begin
             void'($fscanf(fd, " %d", kernels[i].extent[j]));
@@ -132,6 +136,27 @@ function Test::new(string filename);
         if (kernels[i].type_ == PCFG) begin
             pcfg_broadcast_stall_mask = 0;
             break;
+        end
+    end
+
+    for (int i = 0; i < NUM_GLB_TILES; i++) begin
+        pcfg_broadcast_mux_value[i] = 0;
+    end
+    for (int i = 0; i < num_kernels; i++) begin
+        if (kernels[i].type_ == PCFG) begin
+            start_tile = kernels[i].tile_id;
+            end_tile   = kernels[i].check_tile_id;
+            if (start_tile <= end_tile) begin
+                pcfg_broadcast_mux_value[start_tile] = (1 << `GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (1 << `GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (0 << `GLB_PCFG_BROADCAST_MUX_WEST_F_LSB);
+                for (int j = start_tile + 1; j <= end_tile; j++) begin
+                    pcfg_broadcast_mux_value[j] = (2 << `GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (2 << `GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (0 << `GLB_PCFG_BROADCAST_MUX_WEST_F_LSB);
+                end
+            end else begin
+                pcfg_broadcast_mux_value[start_tile] = (1 << `GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (0 << `GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (1 << `GLB_PCFG_BROADCAST_MUX_WEST_F_LSB);
+                for (int j = start_tile - 1; j >= end_tile; j--) begin
+                    pcfg_broadcast_mux_value[j] = (3 << `GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (0 << `GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (2 << `GLB_PCFG_BROADCAST_MUX_WEST_F_LSB);
+                end
+            end
         end
     end
 
