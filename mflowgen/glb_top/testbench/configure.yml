@@ -1,0 +1,16 @@
+name: testbench
+
+commands:
+  - bash generate_testbench.sh
+
+outputs:
+  - Makefile
+  - sim
+  - gls
+  - testvectors
+
+postconditions:
+  - assert File( 'outputs/Makefile' )      # must exist
+  - assert File( 'outputs/sim' )      # must exist
+  - assert File( 'outputs/gls' )      # must exist
+  - assert File( 'outputs/testvectors' )      # must exist
