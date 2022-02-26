@@ -43,9 +43,9 @@ void update_bs_configuration(struct BitstreamInfo *bs_info)
   int start_addr = bs_info->start_addr;
   int size = bs_info->size;
 
-  add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_PCFG_DMA_CTRL_R, 1);
-  add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_PCFG_DMA_HEADER_START_ADDR_R, start_addr);
-  add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_PCFG_DMA_HEADER_NUM_CFG_R, size);
+  add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_PCFG_DMA_CTRL_R, 1);
+  add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_PCFG_DMA_HEADER_START_ADDR_R, start_addr);
+  add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_PCFG_DMA_HEADER_NUM_CFG_R, size);
 }
 
 int glb_map(void *kernel_)
@@ -107,11 +107,12 @@ int glb_map(void *kernel_)
   {
     if (i == start_tile)
     {
-      add_config(&bs_info->config, (1 << AXI_ADDR_WIDTH) + (i * 0x100) + GLB_PCFG_BROADCAST_MUX_R, (1 << GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (1 << GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (0 << GLB_PCFG_BROADCAST_MUX_WEST_F_LSB));
+      printf("config addr: %x\n", (1 << AXI_ADDR_WIDTH) + (i << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_PCFG_BROADCAST_MUX_R);
+      add_config(&bs_info->config, (1 << AXI_ADDR_WIDTH) + (i << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_PCFG_BROADCAST_MUX_R, (1 << GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (1 << GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (0 << GLB_PCFG_BROADCAST_MUX_WEST_F_LSB));
     }
     else
     {
-      add_config(&bs_info->config, (1 << AXI_ADDR_WIDTH) + (i * 0x100) + GLB_PCFG_BROADCAST_MUX_R, (2 << GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (2 << GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (0 << GLB_PCFG_BROADCAST_MUX_WEST_F_LSB));
+      add_config(&bs_info->config, (1 << AXI_ADDR_WIDTH) + (i << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_PCFG_BROADCAST_MUX_R, (2 << GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (2 << GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (0 << GLB_PCFG_BROADCAST_MUX_WEST_F_LSB));
     }
   }
 
@@ -180,10 +181,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
   if (io_tile_info->io == Input)
   {
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_CTRL_R, ((0b01 << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (0 << GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_DIM_R, loop_dim);
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_START_ADDR_R, start_addr);
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R, ((0b01 << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (0 << GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_DIM_R, loop_dim);
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_START_ADDR_R, start_addr);
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
     printf("Input block mapped to tile: %0d\n", tile);
     printf("Input block start addr: 0x%0x\n", start_addr);
     printf("Input block cycle start addr: %0d\n", cycle_start_addr);
@@ -191,13 +192,13 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     for (int i = 0; i < loop_dim; i++)
     {
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + (GLB_LD_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
                  extent[i] << (GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x0c * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + (GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x0c * i),
                  cycle_stride[i] << (GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_LD_DMA_HEADER_0_STRIDE_0_R + 0x0c * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + (GLB_LD_DMA_HEADER_0_STRIDE_0_R + 0x0c * i),
                  data_stride[i] << (GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
     }
     printf("=====Before Optimization=====\n");
@@ -214,10 +215,10 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
   }
   else
   {
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_CTRL_R, ((0b10 << GLB_ST_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) | (1 << GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_DIM_R, loop_dim);
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_START_ADDR_R, start_addr);
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R, ((0b10 << GLB_ST_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) | (1 << GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R, loop_dim);
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_START_ADDR_R, start_addr);
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
     printf("Output block mapped to tile: %0d\n", tile);
     printf("Output block start addr: 0x%0x\n", start_addr);
     printf("Output block cycle start addr: %0d\n", cycle_start_addr);
@@ -225,13 +226,13 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     for (int i = 0; i < loop_dim; i++)
     {
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + (GLB_ST_DMA_HEADER_0_RANGE_0_R + 0x0c * i),
                  extent[i] << (GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x0c * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + (GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + 0x0c * i),
                  cycle_stride[i] << (GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
       add_config(config_info,
-                 (1 << AXI_ADDR_WIDTH) + (tile * 0x100) + (GLB_ST_DMA_HEADER_0_STRIDE_0_R + 0x0c * i),
+                 (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + (GLB_ST_DMA_HEADER_0_STRIDE_0_R + 0x0c * i),
                  data_stride[i] << (GLB_ST_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
     }
     printf("=====Before Optimization=====\n");
