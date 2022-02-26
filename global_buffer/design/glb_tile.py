@@ -305,7 +305,7 @@ class GlbTile(Generator):
                        self.glb_pcfg_broadcast,
                        clk=clock(self.gclk_pcfg_broadcast),
                        reset=self.reset,
-                       cgra_cfg_core2sw=self.cgra_cfg_pcfgdma2mux,
+                       cgra_cfg_dma2mux=self.cgra_cfg_pcfgdma2mux,
                        cfg_pcfg_dma_mode=self.cfg_pcfg_dma_ctrl['mode'])
 
         self.add_child("glb_store_dma",
