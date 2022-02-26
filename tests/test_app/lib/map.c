@@ -101,6 +101,20 @@ int glb_map(void *kernel_)
   bs_info->start_addr = ((tile * 2) << BANK_ADDR_WIDTH);
   update_bs_configuration(bs_info);
 
+  // PCFG mux
+  int start_tile = group_start * 2;
+  for (int i = start_tile; i < (group_start + num_groups) * 2; i++)
+  {
+    if (i == start_tile)
+    {
+      add_config(&bs_info->config, (1 << AXI_ADDR_WIDTH) + (i * 0x100) + GLB_PCFG_BROADCAST_MUX_R, (1 << GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (1 << GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (0 << GLB_PCFG_BROADCAST_MUX_WEST_F_LSB));
+    }
+    else
+    {
+      add_config(&bs_info->config, (1 << AXI_ADDR_WIDTH) + (i * 0x100) + GLB_PCFG_BROADCAST_MUX_R, (2 << GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (2 << GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (0 << GLB_PCFG_BROADCAST_MUX_WEST_F_LSB));
+    }
+  }
+
   // int num_bs = bs_info->size;
   int num_inputs = kernel->num_inputs;
   int num_outputs = kernel->num_outputs;
