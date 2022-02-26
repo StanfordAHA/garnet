@@ -276,14 +276,14 @@ class Garnet(Generator):
         app_dir = os.path.dirname(app)
 
         if self.pe_fc == lassen_fc:
-            pe_header = f"./headers/lassen_header.json"
+            pe_header = f"{app_dir}/lassen_header.json"
         else:
             pe_header = f"{app_dir}/pe_header.json"
 
-        mem_header = f"./headers/mem_header.json"
-        io_header = f"./headers/io_header.json"
-        bit_io_header = f"./headers/bit_io_header.json"
-        pond_header = f"./headers/pond_header.json"
+        mem_header = f"{app_dir}/mem_header.json"
+        io_header = f"{app_dir}/io_header.json"
+        bit_io_header = f"{app_dir}/bit_io_header.json"
+        pond_header = f"{app_dir}/pond_header.json"
 
         app_file = app
         c = CoreIRContext(reset=True)
