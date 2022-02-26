@@ -549,7 +549,8 @@ class FixInputsOutputAndPipeline(Visitor):
 
             new_reg_sink = RegisterSink(new_select_node, iname=new_io_node.iname+"$reg"+str(self.added_regs))
             new_reg_source = RegisterSource(iname=new_io_node.iname+"$reg"+str(self.added_regs))     
-        
+       
+        print(levels)
         self.added_regs += 1
         self.dag_sources.append(new_reg_source)
         self.dag_sinks.append(new_reg_sink)
@@ -578,7 +579,7 @@ class FixInputsOutputAndPipeline(Visitor):
             sources = new_sources
 
         source_idx = 0
-        nodes_per_leaf = math.ceil((len(sinks))/max_curr_tree_level)
+        nodes_per_leaf = math.floor((len(sinks))/max_curr_tree_level)
         for idx, sink in enumerate(sinks):
             print(idx, source_idx)
             children_temp = list(sink.children())
