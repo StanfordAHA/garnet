@@ -7,6 +7,11 @@ parameters:
   num_glb_tiles: 16
   test: "test1-pwr"
 
+inputs:
+  - Makefile
+  - sim
+  - testvectors
+
 commands:
   - bash run_sim.sh
 
