@@ -6,7 +6,9 @@
 # ------------------------------------------------------------------------
 
 # Choose the switch name
-set switch_name "HDR10XSICWDPDTD1BWP16P90"
+set switch_name "SC7P5T2V_HEADERBUFX8_SSC14R"
+
+# Use GF HEADERBUF
 
 # Add power switches in TOP domain
 # Checker board pattern so switches are placed
