@@ -29,6 +29,8 @@ set_multicycle_path -setup 10 -from {pcfg_broadcast_stall}
 set_multicycle_path -hold 9 -from {pcfg_broadcast_stall}
 set_multicycle_path -setup 10 -from {glb_clk_en_master}
 set_multicycle_path -hold 9 -from {glb_clk_en_master}
+set_multicycle_path -setup 10 -from {glb_clk_en_bank_master}
+set_multicycle_path -hold 9 -from {glb_clk_en_bank_master}
 
 #=========================================================================
 # load

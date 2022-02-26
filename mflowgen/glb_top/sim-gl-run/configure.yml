@@ -5,7 +5,7 @@ parameters:
   saif: True
   tool: "VCS"
   num_glb_tiles: 16
-  test: "test1-pwr"
+  test: "test01"
 
 inputs:
   - Makefile

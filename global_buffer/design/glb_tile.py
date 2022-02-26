@@ -130,11 +130,19 @@ class GlbTile(Generator):
         self.cgra_cfg_pcfg_wsti_rd_en = self.input("cgra_cfg_pcfg_wsti_rd_en", 1)
         self.cgra_cfg_pcfg_wsti_addr = self.input("cgra_cfg_pcfg_wsti_addr", self._params.cgra_cfg_addr_width)
         self.cgra_cfg_pcfg_wsti_data = self.input("cgra_cfg_pcfg_wsti_data", self._params.cgra_cfg_data_width)
-
         self.cgra_cfg_pcfg_esto_wr_en = self.output("cgra_cfg_pcfg_esto_wr_en", 1)
         self.cgra_cfg_pcfg_esto_rd_en = self.output("cgra_cfg_pcfg_esto_rd_en", 1)
         self.cgra_cfg_pcfg_esto_addr = self.output("cgra_cfg_pcfg_esto_addr", self._params.cgra_cfg_addr_width)
         self.cgra_cfg_pcfg_esto_data = self.output("cgra_cfg_pcfg_esto_data", self._params.cgra_cfg_data_width)
+
+        self.cgra_cfg_pcfg_esti_wr_en = self.input("cgra_cfg_pcfg_esti_wr_en", 1)
+        self.cgra_cfg_pcfg_esti_rd_en = self.input("cgra_cfg_pcfg_esti_rd_en", 1)
+        self.cgra_cfg_pcfg_esti_addr = self.input("cgra_cfg_pcfg_esti_addr", self._params.cgra_cfg_addr_width)
+        self.cgra_cfg_pcfg_esti_data = self.input("cgra_cfg_pcfg_esti_data", self._params.cgra_cfg_data_width)
+        self.cgra_cfg_pcfg_wsto_wr_en = self.output("cgra_cfg_pcfg_wsto_wr_en", 1)
+        self.cgra_cfg_pcfg_wsto_rd_en = self.output("cgra_cfg_pcfg_wsto_rd_en", 1)
+        self.cgra_cfg_pcfg_wsto_addr = self.output("cgra_cfg_pcfg_wsto_addr", self._params.cgra_cfg_addr_width)
+        self.cgra_cfg_pcfg_wsto_data = self.output("cgra_cfg_pcfg_wsto_data", self._params.cgra_cfg_data_width)
 
         self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width,
                                         size=self._params.cgra_per_glb, packed=True)
@@ -181,6 +189,9 @@ class GlbTile(Generator):
         # pcfg dma
         self.cfg_pcfg_dma_ctrl = self.var("cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
         self.cfg_pcfg_dma_header = self.var("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
+
+        # pcfg broadcast
+        self.cfg_pcfg_broadcast_mux = self.var("cfg_pcfg_broadcast_mux", self.header.cfg_pcfg_broadcast_mux_t)
 
         # Clock gating - cfg
         self.gclk_cfg = self.var("gclk_cfg", 1)
@@ -299,6 +310,7 @@ class GlbTile(Generator):
         self.wire(self.cfg_ld_dma_header, self.glb_cfg.cfg_ld_dma_header)
         self.wire(self.cfg_pcfg_dma_ctrl, self.glb_cfg.cfg_pcfg_dma_ctrl)
         self.wire(self.cfg_pcfg_dma_header, self.glb_cfg.cfg_pcfg_dma_header)
+        self.wire(self.cfg_pcfg_broadcast_mux, self.glb_cfg.cfg_pcfg_broadcast_mux)
 
         self.glb_pcfg_broadcast = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_broadcast",
@@ -306,7 +318,7 @@ class GlbTile(Generator):
                        clk=clock(self.gclk_pcfg_broadcast),
                        reset=self.reset,
                        cgra_cfg_dma2mux=self.cgra_cfg_pcfgdma2mux,
-                       cfg_pcfg_dma_mode=self.cfg_pcfg_dma_ctrl['mode'])
+                       cfg_pcfg_broadcast_mux=self.cfg_pcfg_broadcast_mux)
 
         self.add_child("glb_store_dma",
                        GlbStoreDma(_params=self._params),
@@ -638,6 +650,15 @@ class GlbTile(Generator):
         self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esto['rd_en'], self.cgra_cfg_pcfg_esto_rd_en)
         self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esto['addr'], self.cgra_cfg_pcfg_esto_addr)
         self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esto['data'], self.cgra_cfg_pcfg_esto_data)
+
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esti['wr_en'], self.cgra_cfg_pcfg_esti_wr_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esti['rd_en'], self.cgra_cfg_pcfg_esti_rd_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esti['addr'], self.cgra_cfg_pcfg_esti_addr)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_esti['data'], self.cgra_cfg_pcfg_esti_data)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_wsto['wr_en'], self.cgra_cfg_pcfg_wsto_wr_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_wsto['rd_en'], self.cgra_cfg_pcfg_wsto_rd_en)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_wsto['addr'], self.cgra_cfg_pcfg_wsto_addr)
+        self.wire(self.glb_pcfg_broadcast.cgra_cfg_pcfg_wsto['data'], self.cgra_cfg_pcfg_wsto_data)
 
         self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_wsti_rd_en_bypass, self.cgra_cfg_jtag_wsti_rd_en_bypass)
         self.wire(self.glb_pcfg_broadcast.cgra_cfg_jtag_esto_rd_en_bypass, self.cgra_cfg_jtag_esto_rd_en_bypass)
