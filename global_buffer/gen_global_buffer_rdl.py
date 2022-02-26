@@ -305,6 +305,15 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     num_cfg_r.add_child(num_cfg_f)
     pcfg_dma_header_rf.add_child(num_cfg_r)
     addr_map.add_child(pcfg_dma_header_rf)
+
+    # Pcfg broadcast mux ctrl
+    pcfg_broadcast_mux_r = Reg("pcfg_broadcast_mux")
+    west_mux_f = Field("west_mux", 1)
+    east_mux_f = Field("east_mux", 1)
+    south_mux_f = Field("south_mux", 2)
+    pcfg_broadcast_mux_r.add_children([west_mux_f, east_mux_f, south_mux_f])
+    addr_map.add_child(pcfg_broadcast_mux_r)
+
     glb_rdl = Rdl(addr_map)
 
     return glb_rdl

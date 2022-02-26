@@ -13,7 +13,7 @@ class GlbPcfgBroadcast(Generator):
         self.reset = self.reset("reset")
 
         self.cfg_pcfg_dma_mode = self.input("cfg_pcfg_dma_mode", 1)
-        self.cgra_cfg_core2sw = self.input("cgra_cfg_core2sw", self.header.cgra_cfg_t)
+        self.cgra_cfg_dma2mux = self.input("cgra_cfg_dma2mux", self.header.cgra_cfg_t)
         self.cgra_cfg_jtag_wsti = self.input("cgra_cfg_jtag_wsti", self.header.cgra_cfg_t)
         self.cgra_cfg_jtag_esto = self.output("cgra_cfg_jtag_esto", self.header.cgra_cfg_t)
         self.cgra_cfg_pcfg_wsti = self.input("cgra_cfg_pcfg_wsti", self.header.cgra_cfg_t)
@@ -48,7 +48,7 @@ class GlbPcfgBroadcast(Generator):
     @always_comb
     def cgra_cfg_pcfg_muxed_logic(self):
         if self.cfg_pcfg_dma_mode == 1:
-            self.cgra_cfg_pcfg_muxed = self.cgra_cfg_core2sw
+            self.cgra_cfg_pcfg_muxed = self.cgra_cfg_dma2mux
         else:
             self.cgra_cfg_pcfg_muxed = self.cgra_cfg_pcfg_wsti
 
