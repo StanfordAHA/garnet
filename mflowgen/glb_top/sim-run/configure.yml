@@ -3,7 +3,12 @@ name: sim-run
 parameters:
   waveform: False
   tool: "XCELIUM"
-  rtl_testvectors: ["test1", "test2", "test3", "test4"]
+  rtl_testvectors: ["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9"]
+
+inputs:
+  - Makefile
+  - sim
+  - testvectors
 
 commands:
   - bash run_sim.sh
@@ -14,5 +19,5 @@ outputs:
 postconditions:
   - assert File( 'outputs/run.log' )      # must exist
 
-  - assert 'Error,' not in File( 'outputs/run.log' )
+  - assert 'Error' not in File( 'outputs/run.log' )
   - assert '*E,' not in File( 'outputs/run.log' )

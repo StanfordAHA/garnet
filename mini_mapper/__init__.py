@@ -88,7 +88,6 @@ def __get_alu_mapping(op_str):
     elif op_str == "neq":
         return ALU.Sub, Signed.unsigned
     else:
-        print(op_str)
         raise NotImplemented
 
 
@@ -113,7 +112,7 @@ __PORT_RENAME = {
 def is_conn_out(raw_name):
     port_names = ["out", "outb", "valid", "rdata", "res", "res_p", "io2f_16",
                   "alu_res", "tofab", "data_out_0", "data_out_1",
-                  "stencil_valid", "data_out_pond"]
+                  "stencil_valid", "data_out_pond_0"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -127,7 +126,7 @@ def is_conn_out(raw_name):
 def is_conn_in(raw_name):
     port_names = ["in", "wen", "cg_en", "ren", "wdata", "in0", "in1", "in",
                   "inb", "data0", "data1", "f2io_16", "clk_en", "fromfab",
-                  "data_in_0", "wen_in_0", "ren_in_0", "data_in_pond"]
+                  "data_in_0", "wen_in_0", "ren_in_0", "data_in_pond_0"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -593,9 +592,12 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
         if rename_op:
             # this depends on the mode
             mode = instance["modargs"]["mode"][-1]
-            assert mode in {"sram", "linebuffer", "unified_buffer", "lake"}
+            print(mode)
+            assert mode in {"sram", "linebuffer", "unified_buffer", "lake", "pond"}
             if mode == "lake":
                 op = "mem_lake_{}"
+            elif mode == "pond":
+                op = "mem_pond_{}"
             elif mode == "linebuffer":
                 op = "mem_lb_" + str(instance["modargs"]["depth"][-1])
             elif mode == "sram":
@@ -1165,6 +1167,10 @@ def map_app(pre_map, retiming=False):
                 instr.update(instance["modargs"])
                 instr["mode"] = MemoryMode.ROM
             elif mem_mode == "lake":
+                instr["depth"] = 0
+                instr.update(instance["modargs"])
+                instr["mode"] = MemoryMode.UNIFIED_BUFFER
+            elif mem_mode == "pond":
                 instr["depth"] = 0
                 instr.update(instance["modargs"])
                 instr["mode"] = MemoryMode.UNIFIED_BUFFER
