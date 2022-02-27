@@ -20,34 +20,6 @@ module top;
     logic interrupt;
 
     //============================================================================//
-    // back-annotation and dump
-    //============================================================================//
-`ifdef SYNTHESIS
-    initial begin
-        $sdf_annotate("/sim/kongty/syn_annotate/garnet.sdf", top.dut);
-        if ($test$plusargs("VCD_ON")) begin
-            $dumpfile("garnet.syn.vcd");
-            $dumpvars(0, top);
-        end
-    end
-`elsif PNR
-    initial begin
-        $sdf_annotate("/sim/kongty/pnr_annotate/garnet.sdf", top.dut);
-        if ($test$plusargs("VCD_ON")) begin
-            $dumpfile("garnet.pnr.vcd");
-            $dumpvars(0, top);
-        end
-    end
-`else
-    initial begin
-        if ($test$plusargs("VCD_ON")) begin
-            $dumpfile("garnet.vcd");
-            $dumpvars(0, top);
-        end
-    end
-`endif
-
-    //============================================================================//
     // clk / reset generation
     //============================================================================//
     // clk generation

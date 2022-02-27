@@ -5,7 +5,8 @@ module load genesis2
 module load xcelium/19.03.003
 module load icadv/12.30.712 
 module load incisive/15.20.022
-module load vcs/O-2018.09-SP1
+module load vcs/Q-2020.03-SP2
+module load verdi/Q-2020.03-SP2-3
 module load genus/19.10.000 
 module load innovus/19.10.000
 module load lc/M-2017.06-SP3 
@@ -33,6 +34,6 @@ else
     module load calibre/2019.1
 fi
 
-module load pts/M-2017.06
+module load prime/latest
 module load ext/latest
 

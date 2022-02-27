@@ -13,7 +13,6 @@ module cgra (
     output logic [NUM_PRR-1:0]                          io1_io2g,
     output logic [NUM_PRR-1:0][                   15:0] io16_io2g
 );
-
     localparam int PRR_CFG_REG_DEPTH = 16;
 
     // ---------------------------------------
@@ -96,10 +95,12 @@ module cgra (
         end
     end
 
-    always_ff @(posedge clk or posedge reset) begin
+    always @(posedge clk or posedge reset) begin
         if (reset) begin
             for (int i = 0; i < NUM_PRR; i++) begin
                 prr2glb_q[i] = {};
+                io1_io2g[i]  <= 0;
+                io16_io2g[i] <= 0;
             end
         end else begin
             for (int i = 0; i < NUM_PRR; i++) begin

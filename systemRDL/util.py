@@ -193,3 +193,16 @@ def run_systemrdl(ordt_path, name, rdl_file, parms_file, output_folder):
     os.system(
         f"java -jar {ordt_path} -reglist {os.path.join(output_folder, name + '.reglist')}"
         f" -parms {parms_file} -systemverilog {output_folder} {rdl_file}")
+
+def fix_systemrdl(rdl_folder, top_name):
+    with open(os.path.join(rdl_folder, f"{top_name}_jrdl_decode.sv"), "r+") as f:
+        lines = f.readlines()
+        for i, line in enumerate(lines):
+            if line.strip().startswith("pio_read_active <=  1'b0;"):
+                lines.insert(i + 1, "      pio_dec_address_d1 <= 0;\n      pio_dec_write_data_d1 <= 0;\n")
+                break
+        f.seek(0)
+        f.truncate()
+        for line in lines:
+            f.write(line)
+

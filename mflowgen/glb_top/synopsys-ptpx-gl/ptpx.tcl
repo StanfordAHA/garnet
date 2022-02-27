@@ -43,7 +43,7 @@ set_app_var link_library     [join "
 # Set up power analysis
 
 set_app_var power_enable_analysis true
-set_app_var power_analysis_mode   averaged
+set_app_var power_analysis_mode time_based
 
 set_app_var report_default_significant_digits 3
 
@@ -70,10 +70,10 @@ if { $::env(chkpt) == "True" } {
 
 # Read in switching activity
 
-report_activity_file_check $ptpx_saif -strip_path $ptpx_strip_path \
-  > reports/${ptpx_design_name}.activity.pre.rpt
+# report_activity_file_check $ptpx_saif -strip_path $ptpx_strip_path \
+#   > reports/${ptpx_design_name}.activity.pre.rpt
 
-read_saif $ptpx_saif -strip_path $ptpx_strip_path -quiet
+read_fsdb $ptpx_fsdb -strip_path $ptpx_strip_path
 
 ###
 if { $::env(chkpt) == "True" } {
@@ -123,14 +123,17 @@ report_switching_activity \
 report_power -nosplit \
   > reports/${ptpx_design_name}.power.rpt
 
-report_power -nosplit -hierarchy -sort_by total_power \
+report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power \
   > reports/${ptpx_design_name}.power.hier.rpt
 
-report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power \
-  > reports/${ptpx_design_name}.power.leaf.rpt
+report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power -groups clock_network \
+  > reports/${ptpx_design_name}.power.hier.cn.rpt
 
 report_power -nosplit -cell -leaf -sort_by total_power \
   > reports/${ptpx_design_name}.power.cell.rpt
+
+report_power -nosplit -cell -leaf -sort_by total_power -groups clock_network \
+  > reports/${ptpx_design_name}.power.cell.cn.rpt
 
 # Report power summary and breakdown of sub-instances
 foreach instance [split $::env(instances) ,] {
@@ -140,10 +143,16 @@ foreach instance [split $::env(instances) ,] {
       > reports/${instance}.power.rpt
     
     report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power \
-      > reports/${instance}.power.leaf.rpt
+      > reports/${instance}.power.hier.rpt
 
     report_power -nosplit -cell -leaf -sort_by total_power \
       > reports/${instance}.power.cell.rpt
+
+    report_power -nosplit -cell -leaf -sort_by total_power -groups clock_network\
+      > reports/${instance}.power.cell.cn.rpt
+
+    report_power -nosplit -hierarchy -leaf -levels 10 -sort_by total_power -groups clock_network \
+      > reports/${instance}.power.hier.cn.rpt
 }
 
 ###

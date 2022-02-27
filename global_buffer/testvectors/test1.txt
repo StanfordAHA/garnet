@@ -1,13 +1,15 @@
+// WR: tile0/bank29/512, RD: tile0/bank27/512
 2
-WR 0 0 0 0
+00
+WR 0 29 131000 0
 1
-4096
-1
-1
-testvectors/in_4096.dat
-RD 0 1 0 0
-1
-4096
+512
 1
 1
-testvectors/out_4096.dat
+testvectors/512_v0.dat
+RD 0 27 131000 0
+1
+512
+1
+1
+testvectors/512_v1.dat

@@ -17,7 +17,7 @@ inputs:
   - design.vcs.pg.v
   - design.pt.sdc
   - design.spef.gz
-  - run.saif
+  - run.fsdb
 
 outputs:
   - power.hier
@@ -38,6 +38,6 @@ parameters:
   design_name: undefined
   strip_path: top/dut
   PWR_AWARE: False
-  instances: ["glb_tile_gen_0", "glb_tile_gen_1"]
-  parse_modules: ["CTS.*", "RC_CG.*", "glb_tile_cfg", "glb_core_switch", "glb_core_proc_router", "glb_core_strm_router", "'glb_core_(load|store)_dma'", "'(pcfg_dma|pcfg_switch|pcfg_router)'", "glb_bank_memory", "sram_cfg_ctrl"]
+  instances: ["glb_tile_gen_0", "glb_tile_gen_2", "glb_tile_gen_3", "glb_tile_gen_15"]
+  parse_modules: ["glb_cfg", "glb_sram_cfg_switch", "glb_bank_mux", "glb_bank_0", "glb_bank_1", "glb_proc_switch", "glb_strm_ring_switch", "glb_pcfg_ring_switch", "glb_load_dma", "glb_store_dma", "glb_pcfg_dma"]
   chkpt: False # Turn this on to save periodically during ptpx flow
