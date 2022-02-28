@@ -82,7 +82,7 @@ set_multicycle_path -setup 4 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 
 # jtag bypass mode is false path
-set_false_path -through [get_pins glb_tile_gen_*/*bypass]
+set_false_path -through [get_pins glb_tile_gen_*/*bypass*]
 
 #=========================================================================
 # interrupt
