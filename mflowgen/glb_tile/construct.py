@@ -71,8 +71,8 @@ def construct():
   custom_power = Step( this_dir + '/../common/custom-power-leaf'  )
   short_fix    = Step( this_dir + '/../common/custom-short-fix'   )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'             )
-  # genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'    )
-  # lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
+  genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'    )
+  lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
 
 
   # Default steps
@@ -90,7 +90,6 @@ def construct():
   postroute         = Step( 'cadence-innovus-postroute',     default=True )
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff           = Step( 'cadence-innovus-signoff',       default=True )
-  genlibdb          = Step( 'synopsys-ptpx-genlibdb',        default=True )
   pt_signoff        = Step( 'synopsys-pt-timing-signoff',    default=True )
   if which("calibre") is not None:
       drc               = Step( 'mentor-calibre-drc',            default=True )
@@ -114,7 +113,7 @@ def construct():
   # These steps need timing and lef info for srams
   sram_steps = \
     [synth, iflow, init, power, place, cts, postcts_hold, \
-     route, postroute, postroute_hold, signoff, genlibdb]
+     route, postroute, postroute_hold, signoff, genlib]
   for step in sram_steps:
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
 
@@ -163,7 +162,7 @@ def construct():
   g.add_step( postroute_hold )
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
-  g.add_step( genlibdb       )
+  g.add_step( genlib         )
   # g.add_step( lib2db       )
   g.add_step( drc            )
   g.add_step( lvs            )
@@ -190,7 +189,7 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
-  g.connect_by_name( adk,      genlibdb       )
+  g.connect_by_name( adk,      genlib         )
 
   g.connect_by_name( gen_sram,      synth          )
   g.connect_by_name( gen_sram,      iflow          )
@@ -203,7 +202,7 @@ def construct():
   g.connect_by_name( gen_sram,      postroute      )
   g.connect_by_name( gen_sram,      postroute_hold )
   g.connect_by_name( gen_sram,      signoff        )
-  g.connect_by_name( gen_sram,      genlibdb       )
+  g.connect_by_name( gen_sram,      genlib         )
   g.connect_by_name( gen_sram,      pt_signoff     )
   g.connect_by_name( gen_sram,      drc            )
   g.connect_by_name( gen_sram,      lvs            )
@@ -226,7 +225,7 @@ def construct():
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    signoff        )
-  g.connect_by_name( iflow,    genlibdb       )
+  g.connect_by_name( iflow,    genlib         )
 
   # Fetch short-fix script in prep for eventual use by postroute_hold
   g.connect_by_name( short_fix, postroute_hold )
@@ -247,10 +246,10 @@ def construct():
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  g.connect_by_name( signoff, genlibdb )
-  g.connect_by_name( adk,     genlibdb )
+  g.connect_by_name( signoff, genlib   )
+  g.connect_by_name( adk,     genlib   )
   
-  # g.connect_by_name( genlib,     lib2db )
+  g.connect_by_name( genlib,     lib2db )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )

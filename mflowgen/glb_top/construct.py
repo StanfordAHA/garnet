@@ -75,8 +75,8 @@ def construct():
   custom_init       = Step( this_dir + '/custom-init'                         )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
-  # genlib            = Step( this_dir + '/../common/cadence-innovus-genlib'    )
-  # lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
+  genlib            = Step( this_dir + '/../common/cadence-innovus-genlib'    )
+  lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
 
   # Default steps
 
@@ -92,7 +92,6 @@ def construct():
   postroute      = Step( 'cadence-innovus-postroute',       default=True )
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
-  genlibdb       = Step( 'synopsys-ptpx-genlibdb',          default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
@@ -154,7 +153,7 @@ def construct():
   # These steps need timing info for glb_tiles
   tile_steps = \
     [ synth, iflow, init, power, place, cts, postcts_hold,
-      route, postroute, postroute_hold, signoff, genlibdb ]
+      route, postroute, postroute_hold, signoff, genlib ]
 
   for step in tile_steps:
     step.extend_inputs( ['glb_tile_tt.lib', 'glb_tile.lef'] )
@@ -208,7 +207,7 @@ def construct():
   g.add_step( postroute_hold )
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
-  g.add_step( genlibdb       )
+  g.add_step( genlib         )
   # g.add_step( lib2db         )
   g.add_step( drc            )
   g.add_step( lvs            )
@@ -238,7 +237,7 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
-  g.connect_by_name( adk,      genlibdb       )
+  g.connect_by_name( adk,      genlib         )
 
   g.connect_by_name( glb_tile,      synth        )
   g.connect_by_name( glb_tile,      iflow        )
@@ -252,7 +251,7 @@ def construct():
   g.connect_by_name( glb_tile,      postroute_hold )
   g.connect_by_name( glb_tile,      signoff      )
   g.connect_by_name( glb_tile,      pt_signoff   )
-  g.connect_by_name( glb_tile,      genlibdb     )
+  g.connect_by_name( glb_tile,      genlib       )
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
 
@@ -282,7 +281,7 @@ def construct():
   g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff      )
-  g.connect_by_name( iflow,    genlibdb     )
+  g.connect_by_name( iflow,    genlib       )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -304,8 +303,8 @@ def construct():
   g.connect_by_name( adk,          pt_signoff     )
   g.connect_by_name( signoff,      pt_signoff     )
 
-  g.connect_by_name( adk,          genlibdb   )
-  g.connect_by_name( signoff,      genlibdb   )
+  g.connect_by_name( adk,          genlib     )
+  g.connect_by_name( signoff,      genlib     )
 
   g.connect_by_name( rtl,        sim_gl_compile )
   g.connect_by_name( testbench,  sim_gl_compile )
@@ -323,7 +322,7 @@ def construct():
     g.connect_by_name( signoff,                ptpx_gl_nodes[test] )
     g.connect_by_name( sim_gl_run_nodes[test], ptpx_gl_nodes[test] )
 
-  # g.connect_by_name( genlib,       lib2db   )
+  g.connect_by_name( genlib,       lib2db   )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
