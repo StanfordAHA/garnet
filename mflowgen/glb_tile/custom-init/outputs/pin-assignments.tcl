@@ -77,7 +77,7 @@ for {set i 0} {$i < $cols_per_tile} {incr i} {
 
 # bottom is a list that holds object name that is not in bottom_cols, left, or right
 foreach a [get_object_name $all] {
-    if {$a ni $cache} {
+    if {($a ni $cache) && ($a ne "clk")} {
         lappend bottom $a
     }
 }
@@ -87,6 +87,9 @@ for {set j 0} {$j < $cols_per_tile} {incr j} {
     set bottom_col($j) [lsort -command port_compare $bottom_col($j)]
 }
 set bottom [lsort -command port_compare $bottom]
+
+# clk assignment 
+editPin -pin "clk" -side TOP -spreadType CENTER -layer M6
 
 # assignment
 set width [dbGet top.fPlan.box_urx]
