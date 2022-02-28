@@ -190,7 +190,7 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
-  g.connect_by_name( adk,      gdbenlib       )
+  g.connect_by_name( adk,      genlibdb       )
 
   g.connect_by_name( gen_sram,      synth          )
   g.connect_by_name( gen_sram,      iflow          )
