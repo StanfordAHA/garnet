@@ -105,17 +105,19 @@ set_driving_cell -no_design_rule \
 # set_input_delay
 #=========================================================================
 set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
+set_input_delay -clock ${clock_name} 0.3 [get_ports *_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} 0.3 [get_ports *_wst* -filter "direction==in"]
 
 # set_output_delay constraints for output ports
 set_output_delay -clock ${clock_name} 0.3 [all_outputs]
-set_output_delay -clock ${clock_name} 0.5 [get_ports *_est* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.5 [get_ports *_wst* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 0.6 [get_ports *_est* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 0.6 [get_ports *_wst* -filter "direction==out"]
 
 # set_min_delay for all tile-connected inputs
 set_min_delay -from [get_ports *_est* -filter "direction==in"] 0.5
 set_min_delay -from [get_ports *_wst* -filter "direction==in"] 0.5
-set_max_delay -to [get_ports *_est* -filter "direction==out"] 1.0
-set_max_delay -to [get_ports *_wst* -filter "direction==out"] 1.0
+set_max_delay -to [get_ports *_est* -filter "direction==out"] 1.1
+set_max_delay -to [get_ports *_wst* -filter "direction==out"] 1.1
 
 #=========================================================================
 # set false path
@@ -134,23 +136,23 @@ set_multicycle_path -hold 9 -from {clk_en_bank_master}
 set_multicycle_path -setup 10 -from {clk_en_pcfg_broadcast}
 set_multicycle_path -hold 9 -from {clk_en_pcfg_broadcast}
 
-# # path from configuration registers are multi_cycle path
-# # FIXME: Are these duplicate?
-# set_multicycle_path -setup 10 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
-# set_multicycle_path -hold 9 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
-# set_multicycle_path -setup 10 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
-# set_multicycle_path -hold 9 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
-# 
-# # these inputs/outputs are configuration register
-# set_multicycle_path -setup 10 -from {cfg_tile_connected_wsti}
-# set_multicycle_path -hold 9 -from {cfg_tile_connected_wsti}
-# set_multicycle_path -setup 10 -from {cfg_pcfg_tile_connected_wsti}
-# set_multicycle_path -hold 9 -from {cfg_pcfg_tile_connected_wsti}
-# set_multicycle_path -setup 10 -to {cfg_tile_connected_esto}
-# set_multicycle_path -hold 9 -to {cfg_tile_connected_esto}
-# set_multicycle_path -setup 10 -to {cfg_pcfg_tile_connected_esto}
-# set_multicycle_path -hold 9 -to {cfg_pcfg_tile_connected_esto}
-# 
+# path from configuration registers are multi_cycle path
+# FIXME: Are these duplicate?
+set_multicycle_path -setup 10 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+set_multicycle_path -hold 9 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+set_multicycle_path -setup 10 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+set_multicycle_path -hold 9 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+
+# these inputs/outputs are configuration register
+set_multicycle_path -setup 10 -from {cfg_tile_connected_wsti}
+set_multicycle_path -hold 9 -from {cfg_tile_connected_wsti}
+set_multicycle_path -setup 10 -from {cfg_pcfg_tile_connected_wsti}
+set_multicycle_path -hold 9 -from {cfg_pcfg_tile_connected_wsti}
+set_multicycle_path -setup 10 -to {cfg_tile_connected_esto}
+set_multicycle_path -hold 9 -to {cfg_tile_connected_esto}
+set_multicycle_path -setup 10 -to {cfg_pcfg_tile_connected_esto}
+set_multicycle_path -hold 9 -to {cfg_pcfg_tile_connected_esto}
+ 
 # # Just make clk-gate enable to single cycle
 # set_multicycle_path -setup 1 -to [get_pins glb_clk_gate*/enable]
 # set_multicycle_path -hold 0 -to [get_pins glb_clk_gate*/enable]
