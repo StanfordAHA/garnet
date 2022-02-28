@@ -100,7 +100,8 @@ set height [dbGet top.fPlan.box_ury]
 set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
 
 editPin -pin $left -start { 0 10 } -end [list 0 [expr {$height - 5}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M6
-editPin -pin "clk" -assign {0 5} -layer M6
+editPin -pin "clk" -side TOP -spreadType CENTER -layer M6
+# editPin -pin "clk" -assign {0 5} -layer M6
 
 for {set i 0} {$i < $num_glb_tiles} {incr i} {
     editPin -pin $glb_tile_ports($i) -start [list [expr {$tile_width*$i+5}] 0] -end [list [expr {$tile_width*$i+8}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M5
