@@ -35,10 +35,10 @@ set_multicycle_path -hold 9 -from {glb_clk_en_bank_master}
 #=========================================================================
 # configuration connection
 #=========================================================================
-set_multicycle_path -setup 10 -through [get_pins glb_tile_gen*/cfg_tile_connected_esto] -through [get_pins glb_tile_gen*/cfg_tile_connected_wsti]
-set_multicycle_path -hold 9 -through [get_pins glb_tile_gen*/cfg_tile_connected_esto] -through [get_pins glb_tile_gen*/cfg_tile_connected_wsti]
-set_multicycle_path -setup 10 -through [get_pins glb_tile_gen*/cfg_pcfg_tile_connected_esto] -through [get_pins glb_tile_gen*/cfg_pcfg_tile_connected_wsti]
-set_multicycle_path -hold 9 -through [get_pins glb_tile_gen*/cfg_pcfg_tile_connected_esto] -through [get_pins glb_tile_gen*/cfg_pcfg_tile_connected_wsti]
+set_multicycle_path -setup 10 -to [get_pins glb_tile_gen*/cfg_tile_connected_wsti]
+set_multicycle_path -hold 9 -to [get_pins glb_tile_gen*/cfg_tile_connected_wsti]
+set_multicycle_path -setup 10 -to [get_pins glb_tile_gen*/cfg_pcfg_tile_connected_wsti]
+set_multicycle_path -hold 9 -to [get_pins glb_tile_gen*/cfg_pcfg_tile_connected_wsti]
 
 #=========================================================================
 # load

@@ -159,17 +159,17 @@ set_multicycle_path -hold 9 -to {cfg_pcfg_tile_connected_esto}
 # jtag bypass
 #=========================================================================
 # jtag bypass mode is false path
-set_false_path -from [get_ports cgra_cfg_jtag_wsti_rd_en_bypass] -to [get_ports cgra_cfg_jtag_esto_rd_en_bypass]
-set_false_path -from [get_ports cgra_cfg_jtag_wsti_addr_bypass] -to [get_ports cgra_cfg_jtag_esto_addr_bypass]
+set_false_path -from [get_ports cgra_cfg_jtag_rd_en_bypass_wsti] -to [get_ports cgra_cfg_jtag_rd_en_bypass_esto]
+set_false_path -from [get_ports cgra_cfg_jtag_addr_bypass_wsti] -to [get_ports cgra_cfg_jtag_addr_bypass_esto]
 
 #=========================================================================
 # jtag configuration read
 #=========================================================================
 # jtag cgra configuration read
 # ignore timing when rd_en is 1
-set_case_analysis 0 cgra_cfg_jtag_wsti_rd_en
-set_multicycle_path -setup 4 -from [get_ports cgra_cfg_jtag_wsti_rd_en]
-set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_wsti_rd_en]
+set_case_analysis 0 cgra_cfg_jtag_rd_en_wsti
+set_multicycle_path -setup 4 -from [get_ports cgra_cfg_jtag_rd_en_wsti]
+set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_rd_en_wsti]
 
 #=========================================================================
 # fanout & transition
