@@ -94,7 +94,7 @@ class GlobalBufferParams:
 
     # dma address generator
     queue_depth: int = 1
-    loop_level: int = 5
+    loop_level: int = 8
 
     # dma latency
     chain_latency_overhead: int = 3
