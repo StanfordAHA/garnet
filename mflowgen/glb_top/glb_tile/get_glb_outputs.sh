@@ -1,6 +1,6 @@
 #!/bin/bash
 mflowgen run --design $GARNET_HOME/mflowgen/glb_tile/
-make synopsys-dc-lib2db
+make synopsys-ptpx-genlibdb
 if command -v calibre &> /dev/null
 then
     make mentor-calibre-lvs
@@ -9,8 +9,10 @@ else
 fi
 
 mkdir -p outputs
-cp -L *cadence-innovus-genlib/outputs/design.lib outputs/glb_tile_tt.lib
-cp -L *synopsys-dc-lib2db/outputs/design.db outputs/glb_tile_tt.db
+# cp -L *cadence-innovus-genlib/outputs/design.lib outputs/glb_tile_tt.lib
+# cp -L *synopsys-dc-lib2db/outputs/design.db outputs/glb_tile_tt.db
+cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/glb_tile_tt.lib
+cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/glb_tile_tt.db
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/glb_tile.lef
 cp -L *cadence-innovus-signoff/outputs/design-merged.gds outputs/glb_tile.gds
 cp -L *cadence-innovus-signoff/outputs/design.sdf outputs/glb_tile.sdf
