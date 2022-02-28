@@ -22,11 +22,11 @@ class GlbPcfgBroadcast(Generator):
         self.cgra_cfg_jtag_wsti = self.input("cgra_cfg_jtag_wsti", self.header.cgra_cfg_t)
         self.cgra_cfg_jtag_esto = self.output("cgra_cfg_jtag_esto", self.header.cgra_cfg_t)
 
-        self.cgra_cfg_jtag_wsti_rd_en_bypass = self.input("cgra_cfg_jtag_wsti_rd_en_bypass", 1)
-        self.cgra_cfg_jtag_wsti_addr_bypass = self.input("cgra_cfg_jtag_wsti_addr_bypass",
+        self.cgra_cfg_jtag_rd_en_bypass_wsti = self.input("cgra_cfg_jtag_rd_en_bypass_wsti", 1)
+        self.cgra_cfg_jtag_addr_bypass_wsti = self.input("cgra_cfg_jtag_addr_bypass_wsti",
                                                          self._params.cgra_cfg_addr_width)
-        self.cgra_cfg_jtag_esto_rd_en_bypass = self.output("cgra_cfg_jtag_esto_rd_en_bypass", 1)
-        self.cgra_cfg_jtag_esto_addr_bypass = self.output("cgra_cfg_jtag_esto_addr_bypass",
+        self.cgra_cfg_jtag_rd_en_bypass_esto = self.output("cgra_cfg_jtag_rd_en_bypass_esto", 1)
+        self.cgra_cfg_jtag_addr_bypass_esto = self.output("cgra_cfg_jtag_addr_bypass_esto",
                                                           self._params.cgra_cfg_addr_width)
         self.cfg_pcfg_broadcast_mux = self.input("cfg_pcfg_broadcast_mux", self.header.cfg_pcfg_broadcast_mux_t)
 
@@ -52,8 +52,8 @@ class GlbPcfgBroadcast(Generator):
 
     @always_comb
     def bypass_logic(self):
-        self.cgra_cfg_jtag_esto_rd_en_bypass = self.cgra_cfg_jtag_wsti_rd_en_bypass
-        self.cgra_cfg_jtag_esto_addr_bypass = self.cgra_cfg_jtag_wsti_addr_bypass
+        self.cgra_cfg_jtag_rd_en_bypass_esto = self.cgra_cfg_jtag_rd_en_bypass_wsti
+        self.cgra_cfg_jtag_addr_bypass_esto = self.cgra_cfg_jtag_addr_bypass_wsti
 
     @always_comb
     def pcfg_south_mux(self):
@@ -108,10 +108,10 @@ class GlbPcfgBroadcast(Generator):
 
     @always_comb
     def cgra_cfg_g2f_mux(self, i):
-        if self.cgra_cfg_jtag_esto_rd_en_bypass:
+        if self.cgra_cfg_jtag_rd_en_bypass_esto:
             self.cgra_cfg_g2f_w[i]['wr_en'] = 0
             self.cgra_cfg_g2f_w[i]['rd_en'] = 1
-            self.cgra_cfg_g2f_w[i]['addr'] = self.cgra_cfg_jtag_esto_addr_bypass
+            self.cgra_cfg_g2f_w[i]['addr'] = self.cgra_cfg_jtag_addr_bypass_esto
             self.cgra_cfg_g2f_w[i]['data'] = 0
         else:
             self.cgra_cfg_g2f_w[i] = self.cgra_cfg_jtag_wsti | self.pcfg_south_muxed
