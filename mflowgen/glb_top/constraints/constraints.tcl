@@ -80,8 +80,8 @@ set_false_path -through [get_pins glb_tile_gen_*/*bypass*]
 # interrupt
 #=========================================================================
 # interrupt is asserted for at least 3 cycles 
-set_multicycle_path -setup 3 -through [get_pins glb_tile_gen*/*interrupt_pulse*] -through [get_cells *interrupt_pulse_d*]
-set_multicycle_path -hold 2 -through [get_pins glb_tile_gen*/*interrupt_pulse*] -through [get_cells *interrupt_pulse_d*]
+set_multicycle_path -setup 3 -from [get_pins *glb_tile_gen*/*interrupt_pulse*]
+set_multicycle_path -hold 2 -from [get_pins *glb_tile_gen*/*interrupt_pulse*]
 set_multicycle_path -setup 3 -to [get_ports *interrupt_pulse -filter "direction==out"]
 set_multicycle_path -hold 2 -to [get_ports *interrupt_pulse -filter "direction==out"]
 
