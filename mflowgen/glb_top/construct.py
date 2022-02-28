@@ -208,7 +208,7 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
-  # g.add_step( lib2db         )
+  g.add_step( lib2db         )
   g.add_step( drc            )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
