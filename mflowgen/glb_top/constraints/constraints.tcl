@@ -22,9 +22,6 @@ create_clock -name ${clock_name} \
              -period ${clock_period} \
              [get_ports ${clock_net}]
 
-# Use a clock that is one cycle later than gclk
-set_multicycle_path -setup 2 -from [get_clocks glb_tile*] -to [get_clocks ideal_clock]
-
 #=========================================================================
 # clk_en multicycle path
 #=========================================================================
@@ -34,6 +31,14 @@ set_multicycle_path -setup 10 -from {glb_clk_en_master}
 set_multicycle_path -hold 9 -from {glb_clk_en_master}
 set_multicycle_path -setup 10 -from {glb_clk_en_bank_master}
 set_multicycle_path -hold 9 -from {glb_clk_en_bank_master}
+
+#=========================================================================
+# configuration connection
+#=========================================================================
+set_multicycle_path -setup 10 -through [get_pins glb_tile_gen*/cfg_tile_connected_esto] -through [get_pins glb_tile_gen*/cfg_tile_connected_wsti]
+set_multicycle_path -hold 9 -through [get_pins glb_tile_gen*/cfg_tile_connected_esto] -through [get_pins glb_tile_gen*/cfg_tile_connected_wsti]
+set_multicycle_path -setup 10 -through [get_pins glb_tile_gen*/cfg_pcfg_tile_connected_esto] -through [get_pins glb_tile_gen*/cfg_pcfg_tile_connected_wsti]
+set_multicycle_path -hold 9 -through [get_pins glb_tile_gen*/cfg_pcfg_tile_connected_esto] -through [get_pins glb_tile_gen*/cfg_pcfg_tile_connected_wsti]
 
 #=========================================================================
 # load
@@ -66,14 +71,13 @@ set_input_delay -clock ${clock_name} 0.4 [get_ports strm_data_*f2g*]
 # set_output_delay constraints for output ports
 set_output_delay -clock ${clock_name} 0.2 [all_outputs]
 # glb-cgra delay is high
-set_input_delay -clock ${clock_name} 0.4 [get_ports strm_data_*g2f*]
-set_input_delay -clock ${clock_name} 0.4 [get_ports cgra_cfg_g2f*]
+set_output_delay -clock ${clock_name} 0.4 [get_ports strm_data_*g2f*]
+set_output_delay -clock ${clock_name} 0.4 [get_ports cgra_cfg_g2f*]
 
 #=========================================================================
 # set_muticycle_path & set_false path
 #=========================================================================
 # glc reading configuration registers is multi_cycle path
-set_case_analysis 0 cgra_cfg_jtag_gc2glb_rd_en
 set_multicycle_path -setup 4 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 
