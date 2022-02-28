@@ -22,6 +22,9 @@ create_clock -name ${clock_name} \
              -period ${clock_period} \
              [get_ports ${clock_net}]
 
+# Use a clock that is one cycle later than gclk
+set_multi_cycle_path -setup 2 -from [get_clocks glb_tile*] -to [get_clocks ideal_clock]
+
 #=========================================================================
 # clk_en multicycle path
 #=========================================================================
@@ -80,9 +83,11 @@ set_false_path -through [get_pins glb_tile_gen_*/*bypass]
 #=========================================================================
 # interrupt
 #=========================================================================
-# interrupt is asserted for 4 cycles 
-set_multicycle_path -setup 4 -to [get_ports *interrupt_pulse -filter "direction==out"]
-set_multicycle_path -hold 3 -to [get_ports *interrupt_pulse -filter "direction==out"]
+# interrupt is asserted for at least 3 cycles 
+set_multicycle_path -setup 3 -through [get_pins glb_tile_gen*/*interrupt_pulse*] -through [get_cells *interrupt_pulse_d*]
+set_multicycle_path -hold 2 -through [get_pins glb_tile_gen*/*interrupt_pulse*] -through [get_cells *interrupt_pulse_d*]
+set_multicycle_path -setup 3 -to [get_ports *interrupt_pulse -filter "direction==out"]
+set_multicycle_path -hold 2 -to [get_ports *interrupt_pulse -filter "direction==out"]
 
 # Make all signals limit their fanout
 set_max_fanout 20 $design_name
