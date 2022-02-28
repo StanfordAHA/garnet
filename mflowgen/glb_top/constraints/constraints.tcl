@@ -23,7 +23,7 @@ create_clock -name ${clock_name} \
              [get_ports ${clock_net}]
 
 # Use a clock that is one cycle later than gclk
-set_multi_cycle_path -setup 2 -from [get_clocks glb_tile*] -to [get_clocks ideal_clock]
+set_multicycle_path -setup 2 -from [get_clocks glb_tile*] -to [get_clocks ideal_clock]
 
 #=========================================================================
 # clk_en multicycle path
