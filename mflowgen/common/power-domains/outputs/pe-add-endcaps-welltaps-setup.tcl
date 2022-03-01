@@ -13,6 +13,8 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
     deleteInst *ENDCAP*
     deleteInst *tap*
 
+    set aon_tap_cell "SC7P5T_TAPPBIASX14_SSC14R"
+
     # Align tap cells with M3 pitch so that the M1 VPP pin is directly aligned with the M3 VDD net
 
     # Get M3 min width and signal routing pitch as defined in the LEF
@@ -55,11 +57,11 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
     set i 0
     while {$i < $tap_cell_cnt} {
        set cell_name_top endcap_tap_top_${i}
-       addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst $cell_name_top 
+       addInst -cell $aon_tap_cell -inst $cell_name_top 
        placeInstance $cell_name_top -fixed [expr $edge_offset + $i*$pitch_offset*$M3_str_interset_pitch ] [expr [dbGet top.fplan.coreBox_ury] - $polypitch_y]
       
        set cell_name_bot endcap_tap_bot_${i}
-       addInst -cell BOUNDARY_PTAPBWP16P90_VPP_VSS -inst $cell_name_bot
+       addInst -cell $aon_tap_cell -inst $cell_name_bot
        placeInstance $cell_name_bot -fixed [expr $edge_offset + $i*$pitch_offset*$M3_str_interset_pitch ]  $polypitch_y
  
        set i [expr $i + 1]
