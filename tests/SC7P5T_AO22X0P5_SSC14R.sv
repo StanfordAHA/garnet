@@ -1,4 +1,4 @@
-module AO22D0BWP16P90 ( 
+module SC7P5T_AO22X0P5_SSC14R ( 
 input logic  A1,
 input logic  A2, 
 input logic  B1, 
