@@ -27,13 +27,13 @@ parameters:
   save_verilog_to_tmpdir: False
 
   # Current default is 'stanfordaha/garnet:latest'
-  docker_rtl_image: default
+  rtl_docker_image: default
 
   ############################################################################
   # To try out a new docker image e.g. 'stanfordaha/garnet:cst' or 'stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3...'
   #   - set 'save_verilog_to_tmpdir' to "True"
-  #   - set docker_rtl_image to latest, then build (latest) rtl
-  #   - change docker_rtl_image to cst, then build (cst) rtl
+  #   - set rtl_docker_image to latest, then build (latest) rtl
+  #   - change rtl_docker_image to cst, then build (cst) rtl
   #   - should see before-and-after designs in /tmp directory:
   # 
   #   % ls -lt /tmp/design.v.*
