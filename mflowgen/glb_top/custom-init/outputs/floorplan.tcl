@@ -28,8 +28,8 @@ set tile_margin_r [expr 50 * $horiz_pitch]
 
 set tiles [get_cells *glb_tile*]
 set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
-# set tile_width_offset [expr 20 * $horiz_pitch]
-set tile_width_offset 0
+# set tile_gap [expr 20 * $horiz_pitch]
+set tile_gap 0
 set tile_height [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_y]
 set num_tiles [sizeof_collection $tiles]
 
@@ -37,7 +37,7 @@ set num_tiles [sizeof_collection $tiles]
 # Floorplan
 #-------------------------------------------------------------------------
 
-set core_width [expr ($num_tiles * $tile_width) + (($num_tiles - 1) * $tile_width_offset) + $tile_margin_l + $tile_margin_r]
+set core_width [expr ($num_tiles * $tile_width) + (($num_tiles - 1) * $tile_gap) + $tile_margin_l + $tile_margin_r]
 set core_height [expr $tile_height + $tile_margin_t + $tile_margin_b]
 
 floorPlan -s $core_width $core_height \
@@ -69,7 +69,7 @@ foreach_in_collection tile $tiles {
     -layer {3 8} \
     -pgnetonly
 
-  set x_loc [expr $x_loc + $tile_width + $tile_width_offset]
+  set x_loc [expr $x_loc + $tile_width + $tile_gap]
 }
 
 addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
