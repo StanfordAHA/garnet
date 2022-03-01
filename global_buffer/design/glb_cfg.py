@@ -161,8 +161,12 @@ class GlbCfg(Generator):
                 self.wire(current_header[f"range_{j}"],
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_range_{j}_range_r"])
 
-        self.wire(
-            self.cfg_pcfg_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_mode_r"])
+        self.wire(self.cfg_pcfg_dma_ctrl['mode'],
+                  self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_mode_r"])
+        self.wire(self.cfg_pcfg_dma_ctrl['relocation_value'],
+                  self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_relocation_value_r"])
+        self.wire(self.cfg_pcfg_dma_ctrl['relocation_is_msb'],
+                  self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_relocation_is_msb_r"])
 
         self.wire(self.cfg_pcfg_dma_header['start_addr'],
                   self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_header_start_addr_start_addr_r"])
