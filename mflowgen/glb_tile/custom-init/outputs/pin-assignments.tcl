@@ -75,10 +75,10 @@ for {set i 0} {$i < $cols_per_tile} {incr i} {
     }
 }
 
-# bottom is a list that holds object name that is not in bottom_cols, left, or right
+# top is a list that holds object name that is not in bottom_cols, left, or right
 foreach a [get_object_name $all] {
-    if {($a ni $cache) && ($a ne "clk")} {
-        lappend bottom $a
+    if {($a ni $cache)} {
+        lappend top $a
     }
 }
 
@@ -86,10 +86,10 @@ foreach a [get_object_name $all] {
 for {set j 0} {$j < $cols_per_tile} {incr j} {
     set bottom_col($j) [lsort -command port_compare $bottom_col($j)]
 }
-set bottom [lsort -command port_compare $bottom]
+set top [lsort -command port_compare $top]
 
-# clk assignment 
-editPin -pin "clk" -side TOP -spreadType CENTER -layer M6
+# control pins assignment 
+editPin -pin $top -side TOP -spreadType CENTER -layer M5
 
 # assignment
 set width [dbGet top.fPlan.box_urx]
@@ -101,5 +101,4 @@ editPin -pin $right -start [list $width  5] -end [list $width [expr {$height - 5
 for {set j 0} {$j < $cols_per_tile} {incr j} {
     editPin -pin $bottom_col($j) -start [list [expr {($width/2)*$j+10}] 0] -end [list [expr {($width/2)*($j+1)-10}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M5
 }
-editPin -pin $bottom -start [list 5 0] -end [list 8 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M5
 
