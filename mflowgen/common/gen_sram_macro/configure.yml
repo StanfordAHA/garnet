@@ -17,6 +17,12 @@ outputs:
   - sram.spi
 
 parameters:
+  # SRAM Families:
+  # S1DB: single port high density
+  # S1PB: single port high performance
+  # SDPB: dual port high performance
+  # R2PB: dual port reg file
+  sram_family: "S1DB"
   num_words: 2048
   word_size: 64
   mux_size: 8
