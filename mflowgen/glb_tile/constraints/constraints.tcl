@@ -134,23 +134,23 @@ set_multicycle_path -hold 9 -from {clk_en_bank_master}
 set_multicycle_path -setup 10 -from {clk_en_pcfg_broadcast}
 set_multicycle_path -hold 9 -from {clk_en_pcfg_broadcast}
 
-# # path from configuration registers are multi_cycle path
-# # FIXME: Are these duplicate?
-# set_multicycle_path -setup 10 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
-# set_multicycle_path -hold 9 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
-# set_multicycle_path -setup 10 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
-# set_multicycle_path -hold 9 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
-# 
-# # these inputs/outputs are configuration register
-# set_multicycle_path -setup 10 -from {cfg_tile_connected_wsti}
-# set_multicycle_path -hold 9 -from {cfg_tile_connected_wsti}
-# set_multicycle_path -setup 10 -from {cfg_pcfg_tile_connected_wsti}
-# set_multicycle_path -hold 9 -from {cfg_pcfg_tile_connected_wsti}
-# set_multicycle_path -setup 10 -to {cfg_tile_connected_esto}
-# set_multicycle_path -hold 9 -to {cfg_tile_connected_esto}
-# set_multicycle_path -setup 10 -to {cfg_pcfg_tile_connected_esto}
-# set_multicycle_path -hold 9 -to {cfg_pcfg_tile_connected_esto}
-# 
+# path from configuration registers are multi_cycle path
+# FIXME: Are these duplicate?
+set_multicycle_path -setup 10 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+set_multicycle_path -hold 9 -through [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+set_multicycle_path -setup 10 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+set_multicycle_path -hold 9 -from [get_cells glb_cfg/glb_pio/pio_logic/*] -through [get_pins glb_cfg/cfg_* -filter "direction==out"]
+
+# these inputs/outputs are configuration register
+set_multicycle_path -setup 10 -from {cfg_tile_connected_wsti}
+set_multicycle_path -hold 9 -from {cfg_tile_connected_wsti}
+set_multicycle_path -setup 10 -from {cfg_pcfg_tile_connected_wsti}
+set_multicycle_path -hold 9 -from {cfg_pcfg_tile_connected_wsti}
+set_multicycle_path -setup 10 -to {cfg_tile_connected_esto}
+set_multicycle_path -hold 9 -to {cfg_tile_connected_esto}
+set_multicycle_path -setup 10 -to {cfg_pcfg_tile_connected_esto}
+set_multicycle_path -hold 9 -to {cfg_pcfg_tile_connected_esto}
+ 
 # # Just make clk-gate enable to single cycle
 # set_multicycle_path -setup 1 -to [get_pins glb_clk_gate*/enable]
 # set_multicycle_path -hold 0 -to [get_pins glb_clk_gate*/enable]
@@ -159,17 +159,17 @@ set_multicycle_path -hold 9 -from {clk_en_pcfg_broadcast}
 # jtag bypass
 #=========================================================================
 # jtag bypass mode is false path
-set_false_path -from [get_ports cgra_cfg_jtag_wsti_rd_en_bypass] -to [get_ports cgra_cfg_jtag_esto_rd_en_bypass]
-set_false_path -from [get_ports cgra_cfg_jtag_wsti_addr_bypass] -to [get_ports cgra_cfg_jtag_esto_addr_bypass]
+set_false_path -from [get_ports cgra_cfg_jtag_rd_en_bypass_wsti] -to [get_ports cgra_cfg_jtag_rd_en_bypass_esto]
+set_false_path -from [get_ports cgra_cfg_jtag_addr_bypass_wsti] -to [get_ports cgra_cfg_jtag_addr_bypass_esto]
 
 #=========================================================================
 # jtag configuration read
 #=========================================================================
 # jtag cgra configuration read
 # ignore timing when rd_en is 1
-set_case_analysis 0 cgra_cfg_jtag_wsti_rd_en
-set_multicycle_path -setup 4 -from [get_ports cgra_cfg_jtag_wsti_rd_en]
-set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_wsti_rd_en]
+set_case_analysis 0 cgra_cfg_jtag_rd_en_wsti
+set_multicycle_path -setup 4 -from [get_ports cgra_cfg_jtag_rd_en_wsti]
+set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_rd_en_wsti]
 
 #=========================================================================
 # fanout & transition

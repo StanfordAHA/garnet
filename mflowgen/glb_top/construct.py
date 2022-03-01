@@ -237,7 +237,7 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
-  g.connect_by_name( adk,      genlib       )
+  g.connect_by_name( adk,      genlib         )
 
   g.connect_by_name( glb_tile,      synth        )
   g.connect_by_name( glb_tile,      iflow        )
@@ -251,7 +251,7 @@ def construct():
   g.connect_by_name( glb_tile,      postroute_hold )
   g.connect_by_name( glb_tile,      signoff      )
   g.connect_by_name( glb_tile,      pt_signoff   )
-  g.connect_by_name( glb_tile,      genlib     )
+  g.connect_by_name( glb_tile,      genlib       )
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
 
@@ -281,7 +281,7 @@ def construct():
   g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff      )
-  g.connect_by_name( iflow,    genlib     )
+  g.connect_by_name( iflow,    genlib       )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -303,8 +303,8 @@ def construct():
   g.connect_by_name( adk,          pt_signoff     )
   g.connect_by_name( signoff,      pt_signoff     )
 
-  g.connect_by_name( adk,          genlib   )
-  g.connect_by_name( signoff,      genlib   )
+  g.connect_by_name( adk,          genlib     )
+  g.connect_by_name( signoff,      genlib     )
 
   g.connect_by_name( rtl,        sim_gl_compile )
   g.connect_by_name( testbench,  sim_gl_compile )

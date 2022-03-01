@@ -341,7 +341,7 @@ program glb_test (
         initialize();
         if (!($value$plusargs("MAX_NUM_TEST=%d", max_num_test))) max_num_test = 10;
         for (int i = 1; i <= max_num_test; i++) begin
-            $sformat(test_name, "test%2d", i);
+            $sformat(test_name, "test%02d", i);
             if (($test$plusargs(test_name))) begin
                 $display("\n************** Test Start *****************");
                 $sformat(test_filename, "./testvectors/%s.txt", test_name);
