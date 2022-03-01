@@ -162,7 +162,7 @@ def construct():
   g.add_step( postroute_hold )
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
-  g.add_step( genlib       )
+  g.add_step( genlib         )
   g.add_step( lib2db       )
   g.add_step( drc            )
   g.add_step( lvs            )
@@ -189,7 +189,7 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
-  g.connect_by_name( adk,      genlib       )
+  g.connect_by_name( adk,      genlib         )
 
   g.connect_by_name( gen_sram,      synth          )
   g.connect_by_name( gen_sram,      iflow          )
@@ -202,7 +202,7 @@ def construct():
   g.connect_by_name( gen_sram,      postroute      )
   g.connect_by_name( gen_sram,      postroute_hold )
   g.connect_by_name( gen_sram,      signoff        )
-  g.connect_by_name( gen_sram,      genlib       )
+  g.connect_by_name( gen_sram,      genlib         )
   g.connect_by_name( gen_sram,      pt_signoff     )
   g.connect_by_name( gen_sram,      drc            )
   g.connect_by_name( gen_sram,      lvs            )
@@ -225,7 +225,7 @@ def construct():
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    signoff        )
-  g.connect_by_name( iflow,    genlib       )
+  g.connect_by_name( iflow,    genlib         )
 
   # Fetch short-fix script in prep for eventual use by postroute_hold
   g.connect_by_name( short_fix, postroute_hold )
@@ -246,8 +246,8 @@ def construct():
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  g.connect_by_name( signoff, genlib )
-  g.connect_by_name( adk,     genlib )
+  g.connect_by_name( signoff, genlib   )
+  g.connect_by_name( adk,     genlib   )
   
   g.connect_by_name( genlib,     lib2db )
 

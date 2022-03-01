@@ -63,26 +63,27 @@ set_input_delay -clock ${clock_name} 0.4 [get_ports strm_data_*f2g*]
 # set_output_delay constraints for output ports
 set_output_delay -clock ${clock_name} 0.2 [all_outputs]
 # glb-cgra delay is high
-set_input_delay -clock ${clock_name} 0.4 [get_ports strm_data_*g2f*]
-set_input_delay -clock ${clock_name} 0.4 [get_ports cgra_cfg_g2f*]
+set_output_delay -clock ${clock_name} 0.4 [get_ports strm_data_*g2f*]
+set_output_delay -clock ${clock_name} 0.4 [get_ports cgra_cfg_g2f*]
 
 #=========================================================================
 # set_muticycle_path & set_false path
 #=========================================================================
 # glc reading configuration registers is multi_cycle path
-set_case_analysis 0 cgra_cfg_jtag_gc2glb_rd_en
 set_multicycle_path -setup 4 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 
 # jtag bypass mode is false path
-set_false_path -through [get_pins glb_tile_gen_*/*bypass]
+set_false_path -through [get_pins glb_tile_gen_*/*bypass*]
 
 #=========================================================================
 # interrupt
 #=========================================================================
-# interrupt is asserted for 4 cycles 
-set_multicycle_path -setup 4 -to [get_ports *interrupt_pulse -filter "direction==out"]
-set_multicycle_path -hold 3 -to [get_ports *interrupt_pulse -filter "direction==out"]
+# interrupt is asserted for at least 3 cycles 
+set_multicycle_path -setup 3 -from [get_pins *glb_tile_gen*/*interrupt_pulse*]
+set_multicycle_path -hold 2 -from [get_pins *glb_tile_gen*/*interrupt_pulse*]
+set_multicycle_path -setup 3 -to [get_ports *interrupt_pulse -filter "direction==out"]
+set_multicycle_path -hold 2 -to [get_ports *interrupt_pulse -filter "direction==out"]
 
 # Make all signals limit their fanout
 set_max_fanout 20 $design_name

@@ -128,70 +128,70 @@ class GlobalBuffer(Generator):
         self.wire(self.cfg_tile_connected[0], 0)
         self.wire(self.cfg_pcfg_tile_connected[0], 0)
 
-        self.cgra_cfg_jtag_wsti_wr_en = self.var(
-            "cgra_cfg_jtag_wsti_wr_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_wsti_rd_en = self.var(
-            "cgra_cfg_jtag_wsti_rd_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_wsti_addr = self.var(
-            "cgra_cfg_jtag_wsti_addr", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_wsti_data = self.var(
-            "cgra_cfg_jtag_wsti_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_wr_en_wsti = self.var(
+            "cgra_cfg_jtag_wr_en_wsti", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_rd_en_wsti = self.var(
+            "cgra_cfg_jtag_rd_en_wsti", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_addr_wsti = self.var(
+            "cgra_cfg_jtag_addr_wsti", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_data_wsti = self.var(
+            "cgra_cfg_jtag_data_wsti", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
 
-        self.cgra_cfg_jtag_esto_wr_en = self.var(
-            "cgra_cfg_jtag_esto_wr_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_esto_rd_en = self.var(
-            "cgra_cfg_jtag_esto_rd_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_esto_addr = self.var(
-            "cgra_cfg_jtag_esto_addr", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_esto_data = self.var(
-            "cgra_cfg_jtag_esto_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_wr_en_esto = self.var(
+            "cgra_cfg_jtag_wr_en_esto", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_rd_en_esto = self.var(
+            "cgra_cfg_jtag_rd_en_esto", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_addr_esto = self.var(
+            "cgra_cfg_jtag_addr_esto", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_jtag_data_esto = self.var(
+            "cgra_cfg_jtag_data_esto", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
 
-        self.cgra_cfg_jtag_wsti_rd_en_bypass = self.var("cgra_cfg_jtag_wsti_rd_en_bypass", 1,
+        self.cgra_cfg_jtag_rd_en_bypass_wsti = self.var("cgra_cfg_jtag_rd_en_bypass_wsti", 1,
                                                         size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_wsti_addr_bypass = self.var("cgra_cfg_jtag_wsti_addr_bypass",
+        self.cgra_cfg_jtag_addr_bypass_wsti = self.var("cgra_cfg_jtag_addr_bypass_wsti",
                                                        self._params.cgra_cfg_addr_width,
                                                        size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_esto_rd_en_bypass = self.var("cgra_cfg_jtag_esto_rd_en_bypass", 1,
+        self.cgra_cfg_jtag_rd_en_bypass_esto = self.var("cgra_cfg_jtag_rd_en_bypass_esto", 1,
                                                         size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_jtag_esto_addr_bypass = self.var("cgra_cfg_jtag_esto_addr_bypass",
+        self.cgra_cfg_jtag_addr_bypass_esto = self.var("cgra_cfg_jtag_addr_bypass_esto",
                                                        self._params.cgra_cfg_addr_width,
                                                        size=self._params.num_glb_tiles, packed=True)
 
-        self.cgra_cfg_pcfg_wsti_wr_en = self.var(
-            "cgra_cfg_pcfg_wsti_wr_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_wsti_rd_en = self.var(
-            "cgra_cfg_pcfg_wsti_rd_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_wsti_addr = self.var(
-            "cgra_cfg_pcfg_wsti_addr", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_wsti_data = self.var(
-            "cgra_cfg_pcfg_wsti_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_wr_en_w2e_wsti = self.var(
+            "cgra_cfg_pcfg_wr_en_wsti", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_rd_en_w2e_wsti = self.var(
+            "cgra_cfg_pcfg_rd_en_wsti", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_addr_w2e_wsti = self.var(
+            "cgra_cfg_pcfg_addr_wsti", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_data_w2e_wsti = self.var(
+            "cgra_cfg_pcfg_data_wsti", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
 
-        self.cgra_cfg_pcfg_esto_wr_en = self.var(
-            "cgra_cfg_pcfg_esto_wr_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_esto_rd_en = self.var(
-            "cgra_cfg_pcfg_esto_rd_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_esto_addr = self.var(
-            "cgra_cfg_pcfg_esto_addr", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_esto_data = self.var(
-            "cgra_cfg_pcfg_esto_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_wr_en_w2e_esto = self.var(
+            "cgra_cfg_pcfg_wr_en_esto", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_rd_en_w2e_esto = self.var(
+            "cgra_cfg_pcfg_rd_en_esto", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_addr_w2e_esto = self.var(
+            "cgra_cfg_pcfg_addr_esto", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_data_w2e_esto = self.var(
+            "cgra_cfg_pcfg_data_esto", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
 
-        self.cgra_cfg_pcfg_esti_wr_en = self.var(
-            "cgra_cfg_pcfg_esti_wr_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_esti_rd_en = self.var(
-            "cgra_cfg_pcfg_esti_rd_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_esti_addr = self.var(
-            "cgra_cfg_pcfg_esti_addr", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_esti_data = self.var(
-            "cgra_cfg_pcfg_esti_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_wr_en_e2w_esti = self.var(
+            "cgra_cfg_pcfg_wr_en_esti", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_rd_en_e2w_esti = self.var(
+            "cgra_cfg_pcfg_rd_en_esti", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_addr_e2w_esti = self.var(
+            "cgra_cfg_pcfg_addr_esti", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_data_e2w_esti = self.var(
+            "cgra_cfg_pcfg_data_esti", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
 
-        self.cgra_cfg_pcfg_wsto_wr_en = self.var(
-            "cgra_cfg_pcfg_wsto_wr_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_wsto_rd_en = self.var(
-            "cgra_cfg_pcfg_wsto_rd_en", 1, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_wsto_addr = self.var(
-            "cgra_cfg_pcfg_wsto_addr", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
-        self.cgra_cfg_pcfg_wsto_data = self.var(
-            "cgra_cfg_pcfg_wsto_data", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_wr_en_e2w_wsto = self.var(
+            "cgra_cfg_pcfg_wr_en_wsto", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_rd_en_e2w_wsto = self.var(
+            "cgra_cfg_pcfg_rd_en_wsto", 1, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_addr_e2w_wsto = self.var(
+            "cgra_cfg_pcfg_addr_wsto", self._params.cgra_cfg_addr_width, size=self._params.num_glb_tiles, packed=True)
+        self.cgra_cfg_pcfg_data_e2w_wsto = self.var(
+            "cgra_cfg_pcfg_data_wsto", self._params.cgra_cfg_data_width, size=self._params.num_glb_tiles, packed=True)
 
         self.strm_f2g_interrupt_pulse_w = self.var("strm_f2g_interrupt_pulse_w", self._params.num_glb_tiles)
         self.strm_f2g_interrupt_pulse_d = self.var("strm_f2g_interrupt_pulse_d", self._params.num_glb_tiles)
@@ -458,45 +458,45 @@ class GlobalBuffer(Generator):
     def tile2tile_e2w_cfg_wiring(self):
         for i in range(self._params.num_glb_tiles):
             if i == self._params.num_glb_tiles - 1:
-                self.cgra_cfg_pcfg_esti_rd_en[i] = 0
-                self.cgra_cfg_pcfg_esti_wr_en[i] = 0
-                self.cgra_cfg_pcfg_esti_addr[i] = 0
-                self.cgra_cfg_pcfg_esti_data[i] = 0
+                self.cgra_cfg_pcfg_rd_en_e2w_esti[i] = 0
+                self.cgra_cfg_pcfg_wr_en_e2w_esti[i] = 0
+                self.cgra_cfg_pcfg_addr_e2w_esti[i] = 0
+                self.cgra_cfg_pcfg_data_e2w_esti[i] = 0
             else:
-                self.cgra_cfg_pcfg_esti_rd_en[i] = self.cgra_cfg_pcfg_wsto_rd_en[i + 1]
-                self.cgra_cfg_pcfg_esti_wr_en[i] = self.cgra_cfg_pcfg_wsto_wr_en[i + 1]
-                self.cgra_cfg_pcfg_esti_addr[i] = self.cgra_cfg_pcfg_wsto_addr[i + 1]
-                self.cgra_cfg_pcfg_esti_data[i] = self.cgra_cfg_pcfg_wsto_data[i + 1]
+                self.cgra_cfg_pcfg_rd_en_e2w_esti[i] = self.cgra_cfg_pcfg_rd_en_e2w_wsto[i + 1]
+                self.cgra_cfg_pcfg_wr_en_e2w_esti[i] = self.cgra_cfg_pcfg_wr_en_e2w_wsto[i + 1]
+                self.cgra_cfg_pcfg_addr_e2w_esti[i] = self.cgra_cfg_pcfg_addr_e2w_wsto[i + 1]
+                self.cgra_cfg_pcfg_data_e2w_esti[i] = self.cgra_cfg_pcfg_data_e2w_wsto[i + 1]
 
     @always_comb
     def tile2tile_w2e_cfg_wiring(self):
         for i in range(0, self._params.num_glb_tiles):
             if i == 0:
-                self.cgra_cfg_jtag_wsti_rd_en[i] = 0
-                self.cgra_cfg_jtag_wsti_wr_en[i] = self.cgra_cfg_jtag_gc2glb_wr_en_d
-                self.cgra_cfg_jtag_wsti_addr[i] = self.cgra_cfg_jtag_gc2glb_addr_d
-                self.cgra_cfg_jtag_wsti_data[i] = self.cgra_cfg_jtag_gc2glb_data_d
+                self.cgra_cfg_jtag_rd_en_wsti[i] = 0
+                self.cgra_cfg_jtag_wr_en_wsti[i] = self.cgra_cfg_jtag_gc2glb_wr_en_d
+                self.cgra_cfg_jtag_addr_wsti[i] = self.cgra_cfg_jtag_gc2glb_addr_d
+                self.cgra_cfg_jtag_data_wsti[i] = self.cgra_cfg_jtag_gc2glb_data_d
 
-                self.cgra_cfg_jtag_wsti_rd_en_bypass[i] = self.cgra_cfg_jtag_gc2glb_rd_en_d
-                self.cgra_cfg_jtag_wsti_addr_bypass[i] = self.cgra_cfg_jtag_gc2glb_addr_d
+                self.cgra_cfg_jtag_rd_en_bypass_wsti[i] = self.cgra_cfg_jtag_gc2glb_rd_en_d
+                self.cgra_cfg_jtag_addr_bypass_wsti[i] = self.cgra_cfg_jtag_gc2glb_addr_d
 
-                self.cgra_cfg_pcfg_wsti_rd_en[i] = 0
-                self.cgra_cfg_pcfg_wsti_wr_en[i] = 0
-                self.cgra_cfg_pcfg_wsti_addr[i] = 0
-                self.cgra_cfg_pcfg_wsti_data[i] = 0
+                self.cgra_cfg_pcfg_rd_en_w2e_wsti[i] = 0
+                self.cgra_cfg_pcfg_wr_en_w2e_wsti[i] = 0
+                self.cgra_cfg_pcfg_addr_w2e_wsti[i] = 0
+                self.cgra_cfg_pcfg_data_w2e_wsti[i] = 0
             else:
-                self.cgra_cfg_jtag_wsti_rd_en[i] = self.cgra_cfg_jtag_esto_rd_en[i - 1]
-                self.cgra_cfg_jtag_wsti_wr_en[i] = self.cgra_cfg_jtag_esto_wr_en[i - 1]
-                self.cgra_cfg_jtag_wsti_addr[i] = self.cgra_cfg_jtag_esto_addr[i - 1]
-                self.cgra_cfg_jtag_wsti_data[i] = self.cgra_cfg_jtag_esto_data[i - 1]
+                self.cgra_cfg_jtag_rd_en_wsti[i] = self.cgra_cfg_jtag_rd_en_esto[i - 1]
+                self.cgra_cfg_jtag_wr_en_wsti[i] = self.cgra_cfg_jtag_wr_en_esto[i - 1]
+                self.cgra_cfg_jtag_addr_wsti[i] = self.cgra_cfg_jtag_addr_esto[i - 1]
+                self.cgra_cfg_jtag_data_wsti[i] = self.cgra_cfg_jtag_data_esto[i - 1]
 
-                self.cgra_cfg_jtag_wsti_rd_en_bypass[i] = self.cgra_cfg_jtag_esto_rd_en_bypass[i - 1]
-                self.cgra_cfg_jtag_wsti_addr_bypass[i] = self.cgra_cfg_jtag_esto_addr_bypass[i - 1]
+                self.cgra_cfg_jtag_rd_en_bypass_wsti[i] = self.cgra_cfg_jtag_rd_en_bypass_esto[i - 1]
+                self.cgra_cfg_jtag_addr_bypass_wsti[i] = self.cgra_cfg_jtag_addr_bypass_esto[i - 1]
 
-                self.cgra_cfg_pcfg_wsti_rd_en[i] = self.cgra_cfg_pcfg_esto_rd_en[i - 1]
-                self.cgra_cfg_pcfg_wsti_wr_en[i] = self.cgra_cfg_pcfg_esto_wr_en[i - 1]
-                self.cgra_cfg_pcfg_wsti_addr[i] = self.cgra_cfg_pcfg_esto_addr[i - 1]
-                self.cgra_cfg_pcfg_wsti_data[i] = self.cgra_cfg_pcfg_esto_data[i - 1]
+                self.cgra_cfg_pcfg_rd_en_w2e_wsti[i] = self.cgra_cfg_pcfg_rd_en_w2e_esto[i - 1]
+                self.cgra_cfg_pcfg_wr_en_w2e_wsti[i] = self.cgra_cfg_pcfg_wr_en_w2e_esto[i - 1]
+                self.cgra_cfg_pcfg_addr_w2e_wsti[i] = self.cgra_cfg_pcfg_addr_w2e_esto[i - 1]
+                self.cgra_cfg_pcfg_data_w2e_wsti[i] = self.cgra_cfg_pcfg_data_w2e_esto[i - 1]
 
     def add_glb_tile(self):
         for i in range(self._params.num_glb_tiles):
@@ -626,40 +626,40 @@ class GlobalBuffer(Generator):
                            cgra_cfg_g2f_cfg_addr=self.cgra_cfg_g2f_cfg_addr[i],
                            cgra_cfg_g2f_cfg_data=self.cgra_cfg_g2f_cfg_data[i],
 
-                           cgra_cfg_pcfg_wsti_wr_en=self.cgra_cfg_pcfg_wsti_wr_en[i],
-                           cgra_cfg_pcfg_wsti_rd_en=self.cgra_cfg_pcfg_wsti_rd_en[i],
-                           cgra_cfg_pcfg_wsti_addr=self.cgra_cfg_pcfg_wsti_addr[i],
-                           cgra_cfg_pcfg_wsti_data=self.cgra_cfg_pcfg_wsti_data[i],
+                           cgra_cfg_pcfg_wr_en_w2e_wsti=self.cgra_cfg_pcfg_wr_en_w2e_wsti[i],
+                           cgra_cfg_pcfg_rd_en_w2e_wsti=self.cgra_cfg_pcfg_rd_en_w2e_wsti[i],
+                           cgra_cfg_pcfg_addr_w2e_wsti=self.cgra_cfg_pcfg_addr_w2e_wsti[i],
+                           cgra_cfg_pcfg_data_w2e_wsti=self.cgra_cfg_pcfg_data_w2e_wsti[i],
 
-                           cgra_cfg_pcfg_esto_wr_en=self.cgra_cfg_pcfg_esto_wr_en[i],
-                           cgra_cfg_pcfg_esto_rd_en=self.cgra_cfg_pcfg_esto_rd_en[i],
-                           cgra_cfg_pcfg_esto_addr=self.cgra_cfg_pcfg_esto_addr[i],
-                           cgra_cfg_pcfg_esto_data=self.cgra_cfg_pcfg_esto_data[i],
+                           cgra_cfg_pcfg_wr_en_w2e_esto=self.cgra_cfg_pcfg_wr_en_w2e_esto[i],
+                           cgra_cfg_pcfg_rd_en_w2e_esto=self.cgra_cfg_pcfg_rd_en_w2e_esto[i],
+                           cgra_cfg_pcfg_addr_w2e_esto=self.cgra_cfg_pcfg_addr_w2e_esto[i],
+                           cgra_cfg_pcfg_data_w2e_esto=self.cgra_cfg_pcfg_data_w2e_esto[i],
 
-                           cgra_cfg_pcfg_esti_wr_en=self.cgra_cfg_pcfg_esti_wr_en[i],
-                           cgra_cfg_pcfg_esti_rd_en=self.cgra_cfg_pcfg_esti_rd_en[i],
-                           cgra_cfg_pcfg_esti_addr=self.cgra_cfg_pcfg_esti_addr[i],
-                           cgra_cfg_pcfg_esti_data=self.cgra_cfg_pcfg_esti_data[i],
+                           cgra_cfg_pcfg_wr_en_e2w_esti=self.cgra_cfg_pcfg_wr_en_e2w_esti[i],
+                           cgra_cfg_pcfg_rd_en_e2w_esti=self.cgra_cfg_pcfg_rd_en_e2w_esti[i],
+                           cgra_cfg_pcfg_addr_e2w_esti=self.cgra_cfg_pcfg_addr_e2w_esti[i],
+                           cgra_cfg_pcfg_data_e2w_esti=self.cgra_cfg_pcfg_data_e2w_esti[i],
 
-                           cgra_cfg_pcfg_wsto_wr_en=self.cgra_cfg_pcfg_wsto_wr_en[i],
-                           cgra_cfg_pcfg_wsto_rd_en=self.cgra_cfg_pcfg_wsto_rd_en[i],
-                           cgra_cfg_pcfg_wsto_addr=self.cgra_cfg_pcfg_wsto_addr[i],
-                           cgra_cfg_pcfg_wsto_data=self.cgra_cfg_pcfg_wsto_data[i],
+                           cgra_cfg_pcfg_wr_en_e2w_wsto=self.cgra_cfg_pcfg_wr_en_e2w_wsto[i],
+                           cgra_cfg_pcfg_rd_en_e2w_wsto=self.cgra_cfg_pcfg_rd_en_e2w_wsto[i],
+                           cgra_cfg_pcfg_addr_e2w_wsto=self.cgra_cfg_pcfg_addr_e2w_wsto[i],
+                           cgra_cfg_pcfg_data_e2w_wsto=self.cgra_cfg_pcfg_data_e2w_wsto[i],
 
-                           cgra_cfg_jtag_wsti_wr_en=self.cgra_cfg_jtag_wsti_wr_en[i],
-                           cgra_cfg_jtag_wsti_rd_en=self.cgra_cfg_jtag_wsti_rd_en[i],
-                           cgra_cfg_jtag_wsti_addr=self.cgra_cfg_jtag_wsti_addr[i],
-                           cgra_cfg_jtag_wsti_data=self.cgra_cfg_jtag_wsti_data[i],
+                           cgra_cfg_jtag_wr_en_wsti=self.cgra_cfg_jtag_wr_en_wsti[i],
+                           cgra_cfg_jtag_rd_en_wsti=self.cgra_cfg_jtag_rd_en_wsti[i],
+                           cgra_cfg_jtag_addr_wsti=self.cgra_cfg_jtag_addr_wsti[i],
+                           cgra_cfg_jtag_data_wsti=self.cgra_cfg_jtag_data_wsti[i],
 
-                           cgra_cfg_jtag_esto_wr_en=self.cgra_cfg_jtag_esto_wr_en[i],
-                           cgra_cfg_jtag_esto_rd_en=self.cgra_cfg_jtag_esto_rd_en[i],
-                           cgra_cfg_jtag_esto_addr=self.cgra_cfg_jtag_esto_addr[i],
-                           cgra_cfg_jtag_esto_data=self.cgra_cfg_jtag_esto_data[i],
+                           cgra_cfg_jtag_wr_en_esto=self.cgra_cfg_jtag_wr_en_esto[i],
+                           cgra_cfg_jtag_rd_en_esto=self.cgra_cfg_jtag_rd_en_esto[i],
+                           cgra_cfg_jtag_addr_esto=self.cgra_cfg_jtag_addr_esto[i],
+                           cgra_cfg_jtag_data_esto=self.cgra_cfg_jtag_data_esto[i],
 
-                           cgra_cfg_jtag_wsti_rd_en_bypass=self.cgra_cfg_jtag_wsti_rd_en_bypass[i],
-                           cgra_cfg_jtag_wsti_addr_bypass=self.cgra_cfg_jtag_wsti_addr_bypass[i],
-                           cgra_cfg_jtag_esto_rd_en_bypass=self.cgra_cfg_jtag_esto_rd_en_bypass[i],
-                           cgra_cfg_jtag_esto_addr_bypass=self.cgra_cfg_jtag_esto_addr_bypass[i],
+                           cgra_cfg_jtag_rd_en_bypass_wsti=self.cgra_cfg_jtag_rd_en_bypass_wsti[i],
+                           cgra_cfg_jtag_addr_bypass_wsti=self.cgra_cfg_jtag_addr_bypass_wsti[i],
+                           cgra_cfg_jtag_rd_en_bypass_esto=self.cgra_cfg_jtag_rd_en_bypass_esto[i],
+                           cgra_cfg_jtag_addr_bypass_esto=self.cgra_cfg_jtag_addr_bypass_esto[i],
 
                            strm_g2f_start_pulse=self.strm_g2f_start_pulse_d[i],
                            strm_f2g_start_pulse=self.strm_f2g_start_pulse_d[i],
