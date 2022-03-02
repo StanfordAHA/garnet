@@ -11,7 +11,7 @@ class CG(Generator):
 
         self.enable_latch = self.var("enable_latch", 1)
         self.add_always(self.clk_en_latch)
-        self.wire(self.Q, (self.CLK & self.enable_latch))
+        self.wire(self.Z, (self.CLK & self.enable_latch))
 
     @always_latch
     def clk_en_latch(self):
