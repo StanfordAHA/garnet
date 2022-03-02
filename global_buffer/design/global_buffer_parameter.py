@@ -74,7 +74,7 @@ class GlobalBufferParams:
     cgra_cfg_data_width: int = 32
 
     # cell parameters
-    cg_cell_name: str = "CKLNQD1BWP16P90"
+    cg_cell_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
     sram_macro_name: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
     sram_macro_depth: int = 2048
 
