@@ -43,7 +43,7 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'tsmc16'
+  adk_name = 'gf12-adk'
   adk_view = 'view-standard'
 
   if which("calibre") is not None:
