@@ -47,7 +47,7 @@ def test_interconnect_point_wise(batch_size: int, run_tb, io_sides):
     }
     bus = {"e0": 16, "e1": 16, "e3": 16}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["p0"]
@@ -114,7 +114,7 @@ def test_interconnect_sram(run_tb, io_sides):
     }
     bus = {"e0": 16, "e1": 16, "e2": 1}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     mode = 2  # Mode.SRAM
@@ -221,7 +221,7 @@ def test_interconnect_fifo(run_tb, io_sides, depth):
     }
     bus = {"e0": 16, "e1": 1, "e2": 1, "e3": 16, "e4": 1, "e5": 1, "e6": 1}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     configs_mem = [("mem_ctrl_strg_fifo_flat_strg_fifo_inst_fifo_depth", depth, 0),

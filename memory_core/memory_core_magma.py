@@ -72,7 +72,7 @@ class MemCore(LakeCoreBase):
                  interconnect_output_ports=2,
                  mem_input_ports=1,
                  mem_output_ports=1,
-                 use_sram_stub=True,
+                 use_sim_sram=True,
                  sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S",
                                                wtsel_value=0, rtsel_value=1),
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
@@ -108,7 +108,7 @@ class MemCore(LakeCoreBase):
         self.interconnect_output_ports = interconnect_output_ports
         self.mem_input_ports = mem_input_ports
         self.mem_output_ports = mem_output_ports
-        self.use_sram_stub = use_sram_stub
+        self.use_sim_sram = use_sim_sram
         self.sram_macro_info = sram_macro_info
         self.read_delay = read_delay
         self.rw_same_cycle = rw_same_cycle
@@ -130,7 +130,7 @@ class MemCore(LakeCoreBase):
         cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
                      self.input_iterator_support, self.output_iterator_support,
                      self.interconnect_input_ports, self.interconnect_output_ports,
-                     self.use_sram_stub, self.sram_macro_info, self.read_delay,
+                     self.use_sim_sram, self.sram_macro_info, self.read_delay,
                      self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
                      self.num_tiles, self.fifo_mode,
                      self.add_clk_enable, self.add_flush, self.gen_addr)
@@ -150,7 +150,7 @@ class MemCore(LakeCoreBase):
                               config_width=self.config_width,
                               interconnect_input_ports=self.interconnect_input_ports,
                               interconnect_output_ports=self.interconnect_output_ports,
-                              use_sram_stub=self.use_sram_stub,
+                              use_sim_sram=self.use_sim_sram,
                               sram_macro_info=self.sram_macro_info,
                               read_delay=self.read_delay,
                               rw_same_cycle=self.rw_same_cycle,
@@ -171,7 +171,7 @@ class MemCore(LakeCoreBase):
             # Nonsensical but LakeTop now has its ow n internal dut
             self.dut = self.LT.dut
 
-            change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
+            change_sram_port_pass = change_sram_port_names(self.use_sim_sram, sram_macro_info)
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
