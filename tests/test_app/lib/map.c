@@ -103,7 +103,7 @@ int glb_map(void *kernel_)
 
   // PCFG mux
   int start_tile = group_start * 2;
-  for (int i = start_tile; i < (group_start + num_groups) * 2; i++)
+  for (int i = start_tile; i < (group_start + num_groups) * GROUP_SIZE; i++)
   {
     if (i == start_tile)
     {
