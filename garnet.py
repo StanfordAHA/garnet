@@ -45,7 +45,7 @@ set_debug_mode(False)
 
 class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
-                 use_sram_stub: bool = True, standalone: bool = False,
+                 use_sim_sram: bool = True, standalone: bool = False,
                  add_pond: bool = True,
                  use_io_valid: bool = False,
                  pipeline_config_interval: int = 8,
@@ -117,7 +117,7 @@ class Garnet(Generator):
                                    add_pd=add_pd,
                                    add_pond=add_pond,
                                    use_io_valid=use_io_valid,
-                                   use_sram_stub=use_sram_stub,
+                                   use_sim_sram=use_sim_sram,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
                                    mem_ratio=(1, 4),
@@ -437,7 +437,7 @@ def main():
     parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--compact", action="store_true")
-    parser.add_argument("--no-sram-stub", action="store_true")
+    parser.add_argument("--use_sim_sram", action="store_true")
     parser.add_argument("--standalone", action="store_true")
     parser.add_argument("--unconstrained-io", action="store_true")
     parser.add_argument("--dump-config-reg", action="store_true")
@@ -477,7 +477,7 @@ def main():
                     add_pond=not args.no_pond,
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
-                    use_sram_stub=not args.no_sram_stub,
+                    use_sim_sram=args.use_sim_sram,
                     standalone=args.standalone,
                     pe_fc=pe_fc)
 
