@@ -558,7 +558,7 @@ function void Kernel::compare();
     if (result == 0) begin
         $display("%s passed", name);
     end else begin
-        $display("%s failed. %0d number of pixels are different.", name, result);
+        $error("%s failed. %0d number of pixels are different.", name, result);
     end
 endfunction
 

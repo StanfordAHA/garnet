@@ -117,7 +117,7 @@ ifeq ($(TOOL), XCELIUM)
 else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
-    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra
+    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
@@ -158,6 +158,7 @@ compile-gls: INPUT_ARGS = $(NETLIST_FILES) $(TB_FILES) $(IP_FILES)
 compile-gls:
 	@rm -rf $(SDF_LOG); mkdir $(SDF_LOG)
 	$(COMPILE)
+
 
 # -------------------------------------------------------------------
 # Clean
