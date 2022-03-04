@@ -144,6 +144,7 @@ class Garnet(Generator):
                 axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
                 interrupt=magma.Out(magma.Bit),
                 cgra_running_clk_out=magma.Out(magma.Clock),
+                flush=magma.In(magma.Bit),
             )
 
             # top <-> global controller ports connection
@@ -179,6 +180,10 @@ class Garnet(Generator):
 
             # Top -> Interconnect clock port connection
             self.wire(self.ports.clk_in, self.interconnect.ports.clk)
+
+            # flush signal
+            # FIXME: this is just to make tests pass. need to handle the logic properly
+            self.wire(self.ports.flush, self.interconnect.ports.flush[0])
 
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
