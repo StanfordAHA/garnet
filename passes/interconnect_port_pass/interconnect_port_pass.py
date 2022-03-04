@@ -115,6 +115,5 @@ def cleanup_flush_ports(interconnect: Interconnect):
     # the optimization logic that removes unused port in Canal
     for tile in interconnect.tile_circuits.values():
         if hasattr(tile, "__remove_flush_cleanup"):
-            print("has attr")
             tile.disconnect(tile.core.ports.flush)
             tile.core.remove_port("flush")

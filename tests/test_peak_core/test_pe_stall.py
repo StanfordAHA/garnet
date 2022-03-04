@@ -10,6 +10,7 @@ import pytest
 
 def test_pe_stall(run_tb):
     core = PeakCore(PE_fc)
+    core.finalize()
     core.name = lambda: "PECore"
     circuit = core.circuit()
 

@@ -117,8 +117,7 @@ def test_interconnect_sram(run_tb, io_sides):
     mode = 2  # Mode.SRAM
     tile_en = 1
     configs_mem = [("mode", mode, 0),
-                   ("tile_en", tile_en, 0),
-                   ("flush_reg_sel", 1, 0)]
+                   ("tile_en", tile_en, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
@@ -223,8 +222,7 @@ def test_interconnect_fifo(run_tb, io_sides, depth):
 
     configs_mem = [("fifo_ctrl_fifo_depth", depth, 0),
                    ("mode", 1, 0),
-                   ("tile_en", tile_en, 0),
-                   ("flush_reg_sel", 1, 0)]
+                   ("tile_en", tile_en, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
