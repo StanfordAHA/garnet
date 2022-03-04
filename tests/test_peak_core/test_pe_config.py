@@ -45,6 +45,7 @@ def test_pe_data_gate(op, run_tb):
         pytest.skip("We don't have correct CW BFloat implementation yet")
 
     core = PeakCore(PE_fc)
+    core.finalize()
     core.name = lambda: "PECore"
     circuit = core.circuit()
 

@@ -21,7 +21,6 @@ class PowerDomainConfigReg(Configurable):
         )
         self.add_port("ps_en_out", magma.Out(magma.Bits[1]))
         self.wire(self.ports.ps_en_out, self.registers.ps_en.ports.O)
-        self._setup_config()
 
     def name(self):
         return "PowerDomainConfigReg"

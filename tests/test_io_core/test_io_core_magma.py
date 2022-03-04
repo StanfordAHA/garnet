@@ -32,6 +32,7 @@ def test_regression(run_tb):
 
 def test_valid_generation(run_tb):
     io_core = IOCoreValid()
+    io_core.finalize()
     io_core_circuit = io_core.circuit()
     tester = BasicTester(io_core_circuit, io_core_circuit.clk, io_core_circuit.reset)
 
