@@ -59,10 +59,15 @@ class GlobalBufferParams:
     def max_num_cfg_width(self):
         return self.glb_addr_width - self.bank_byte_offset
 
+    @property
+    def num_groups(self):
+        return self.num_cgra_tiles // self.num_cols_per_group
+
     # architecture parameters
     num_prr: int = 16
     num_cgra_cols: int = 32
     num_glb_tiles: int = 16
+    num_cols_per_group: int = 4
     banks_per_tile: int = 2
     bank_addr_width: int = 17
     bank_data_width: int = 64
@@ -91,6 +96,8 @@ class GlobalBufferParams:
     axi_addr_reg_width: int = field(init=False, default=axi_addr_reg_width)
     axi_strb_width: int = field(init=False, default=axi_strb_width)
     axi_byte_offset: int = field(init=False, default=axi_byte_offset)
+    max_num_cfg_width: int = field(init=False, default=max_num_cfg_width)
+    num_groups: int = field(init=False, default=num_groups)
 
     # dma address generator
     queue_depth: int = 1
