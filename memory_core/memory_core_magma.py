@@ -86,6 +86,7 @@ class MemCore(LakeCoreBase):
                  fifo_mode=True,
                  add_clk_enable=True,
                  add_flush=True,
+                 gate_flush=True,
                  override_name=None,
                  gen_addr=True):
 
@@ -94,6 +95,7 @@ class MemCore(LakeCoreBase):
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
+                         gate_flush=gate_flush,
                          name="MemCore")
 
         # Capture everything to the tile object
