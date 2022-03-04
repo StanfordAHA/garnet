@@ -22,6 +22,7 @@ class GlbLoadDma(Generator):
         self.data_g2f = self.output("data_g2f", width=self._params.cgra_data_width,
                                     size=self._params.cgra_per_glb, packed=True)
         self.data_valid_g2f = self.output("data_valid_g2f", 1, size=self._params.cgra_per_glb, packed=True)
+        self.data_flush = self.output("data_flush", 1)
 
         self.rdrq_packet_dma2bank = self.output("rdrq_packet_dma2bank", self.header.rdrq_packet_t)
         self.rdrq_packet_dma2ring = self.output("rdrq_packet_dma2ring", self.header.rdrq_packet_t)
@@ -32,6 +33,7 @@ class GlbLoadDma(Generator):
         self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
         self.cfg_ld_dma_num_repeat = self.input("cfg_ld_dma_num_repeat", clog2(self._params.queue_depth) + 1)
         self.cfg_ld_dma_ctrl_use_valid = self.input("cfg_ld_dma_ctrl_use_valid", 1)
+        self.cfg_ld_dma_ctrl_use_flush = self.input("cfg_ld_dma_ctrl_use_flush", 1)
         self.cfg_ld_dma_ctrl_mode = self.input("cfg_ld_dma_ctrl_mode", 2)
         self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width)
         self.cfg_ld_dma_header = self.input(
@@ -43,6 +45,7 @@ class GlbLoadDma(Generator):
         self.ld_dma_done_interrupt = self.output("ld_dma_done_interrupt", 1)
 
         # local variables
+        self.data_flush_w = self.var("data_flush_w", 1)
         self.rdrq_packet_dma2bank_w = self.var("rdrq_packet_dma2bank_w", self.header.rdrq_packet_t)
         self.rdrq_packet_dma2ring_w = self.var("rdrq_packet_dma2ring_w", self.header.rdrq_packet_t)
         self.rdrs_packet = self.var("rdrs_packet", self.header.rdrs_packet_t)
@@ -120,6 +123,8 @@ class GlbLoadDma(Generator):
         self.add_ld_dma_done_pulse_pipeline()
         self.add_done_pulse_last_pipeline()
         self.add_always(self.interrupt_ff)
+        self.add_always(self.data_flush_ff)
+        self.add_always(self.data_flush_logic)
         self.add_dma2bank_clk_en()
 
         # Loop iteration shared for cycle and data
@@ -292,6 +297,20 @@ class GlbLoadDma(Generator):
             for i in range(self._params.cgra_per_glb):
                 self.data_g2f[i] = self.data_g2f_w[i]
                 self.data_valid_g2f[i] = self.data_valid_g2f_w[i]
+
+    @always_comb
+    def data_flush_logic(self):
+        if self.cfg_ld_dma_ctrl_use_flush:
+            self.data_flush_w = self.strm_data_start_pulse
+        else:
+            self.data_flush_w = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def data_flush_ff(self):
+        if self.reset:
+            self.data_flush = 0
+        else:
+            self.data_flush = self.data_flush_w
 
     @always_comb
     def ld_dma_done_pulse_logic(self):

@@ -6,6 +6,7 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
+from global_buffer.design.glb_crossbar import GlbCrossbar
 from gemstone.generator.from_magma import FromMagma
 
 
@@ -19,6 +20,8 @@ class GlobalBuffer(Generator):
         self.glb_clk_en_master = self.input("glb_clk_en_master", self._params.num_glb_tiles)
         self.glb_clk_en_bank_master = self.input("glb_clk_en_bank_master", self._params.num_glb_tiles)
         self.pcfg_broadcast_stall = self.input("pcfg_broadcast_stall", self._params.num_glb_tiles)
+        self.flush_crossbar_sel = self.input("flush_crossbar_sel", clog2(
+            self._params.num_glb_tiles), size=self._params.num_groups, packed=True)
         self.reset = self.reset("reset")
 
         self.proc_wr_en = self.input("proc_wr_en", 1)
@@ -61,6 +64,7 @@ class GlobalBuffer(Generator):
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.strm_data_valid_g2f = self.output("strm_data_valid_g2f", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.strm_data_flush_g2f = self.output("strm_data_flush_g2f", 1, size=self._params.num_groups, packed=True)
 
         self.cgra_cfg_g2f_cfg_wr_en = self.output("cgra_cfg_g2f_cfg_wr_en", 1, size=[
                                                   self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
@@ -83,6 +87,7 @@ class GlobalBuffer(Generator):
         self.bank_msb_data_width = self._params.bank_data_width - self._params.axi_data_width
 
         # local variables
+        self.data_flush = self.var("data_flush", 1, size=self._params.num_glb_tiles, packed=True)
         self.proc_rd_type_e = self.enum("proc_rd_type_e", {"axi": 0, "jtag": 1})
         self.proc_rd_type = self.var("proc_rd_type", self.proc_rd_type_e)
         self.proc_rd_addr_sel = self.var("proc_rd_addr_sel", 1)
@@ -270,6 +275,15 @@ class GlobalBuffer(Generator):
         # Directly assign rd_data output ports at the left side
         self.wire(self.if_cfg_rd_data, self.if_cfg_list[0].rd_data)
         self.wire(self.if_cfg_rd_data_valid, self.if_cfg_list[0].rd_data_valid)
+
+        # Add flush signal crossbar
+        self.flush_crossbar = GlbCrossbar(width=1, num_input=self._params.num_glb_tiles,
+                                          num_output=self._params.num_groups)
+        self.add_child("flush_crossbar",
+                       self.flush_crossbar,
+                       in_=self.data_flush,
+                       sel_=self.flush_crossbar_sel,
+                       out_=self.strm_data_flush_g2f)
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def proc_pipeline(self):
@@ -620,6 +634,7 @@ class GlobalBuffer(Generator):
                            strm_data_valid_f2g=self.strm_data_valid_f2g[i],
                            strm_data_g2f=self.strm_data_g2f[i],
                            strm_data_valid_g2f=self.strm_data_valid_g2f[i],
+                           data_flush=self.data_flush[i],
 
                            cgra_cfg_g2f_cfg_wr_en=self.cgra_cfg_g2f_cfg_wr_en[i],
                            cgra_cfg_g2f_cfg_rd_en=self.cgra_cfg_g2f_cfg_rd_en[i],
