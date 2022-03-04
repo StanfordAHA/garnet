@@ -100,20 +100,5 @@ def wire_core_flush_pass(interconnect: Interconnect):
         interconnect.globals = list(interconnect.globals) + [interconnect.ports.flush.qualified_name()]
         for tile in interconnect.tile_circuits.values():
             if "flush" not in tile.ports:
-                # add them so that it can be wired properly later
-                tile.add_ports(flush=magma.In(TBit))
-                # add a floating flush to the core so that it can be processed correctly in the downstream
-                if tile.core is not None:
-                    tile.core.add_ports(flush=magma.In(TBit))
-                    tile.wire(tile.ports.flush, tile.core.ports.flush)
-                    setattr(tile, "__remove_flush_cleanup", True)
+                continue
             interconnect.wire(interconnect.ports.flush, tile.ports.flush)
-
-
-def cleanup_flush_ports(interconnect: Interconnect):
-    # remove floating flush wire. essentially this is a hack, but it requires lots of work to properly get around
-    # the optimization logic that removes unused port in Canal
-    for tile in interconnect.tile_circuits.values():
-        if hasattr(tile, "__remove_flush_cleanup"):
-            tile.disconnect(tile.core.ports.flush)
-            tile.core.remove_port("flush")
