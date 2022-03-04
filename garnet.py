@@ -48,6 +48,7 @@ class Garnet(Generator):
                  use_sram_stub: bool = True, standalone: bool = False,
                  add_pond: bool = True,
                  use_io_valid: bool = False,
+                 harden_flush: bool = True,
                  pipeline_config_interval: int = 8,
                  glb_params: GlobalBufferParams = GlobalBufferParams(),
                  pe_fc=lassen_fc):
@@ -119,6 +120,7 @@ class Garnet(Generator):
                                    add_pond=add_pond,
                                    use_io_valid=use_io_valid,
                                    use_sram_stub=use_sram_stub,
+                                   harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
                                    mem_ratio=(1, 4),
@@ -208,6 +210,10 @@ class Garnet(Generator):
 
             self.wire(self.interconnect.ports.read_config_data,
                       self.ports.read_config_data)
+
+            if harden_flush:
+                self.add_ports(flush=magma.In(magma.Bits[1]))
+                self.wire(self.ports.flush, self.interconnect.ports.flush)
 
     def map(self, halide_src):
         return map_app(halide_src, retiming=True)
@@ -447,6 +453,7 @@ def main():
     parser.add_argument("--dump-config-reg", action="store_true")
     parser.add_argument("--virtualize-group-size", type=int, default=4)
     parser.add_argument("--virtualize", action="store_true")
+    parser.add_argument("--no-harden-flush", action="store_true")
     parser.add_argument("--use-io-valid", action="store_true")
     parser.add_argument("--pipeline-pnr", action="store_true")
     parser.add_argument("--generate-bitstream-only", action="store_true")
@@ -479,6 +486,7 @@ def main():
                     add_pd=not args.no_pd,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
+                    harden_flush=not args.no_harden_flush,
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
                     use_sram_stub=not args.no_sram_stub,
