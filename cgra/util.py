@@ -14,7 +14,7 @@ from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
 from passes.clk_pass.clk_pass import clk_physical
 from passes.pipeline_config_pass.pipeline_config_pass import pipeline_config_signals
-from passes.interconnect_port_pass import wire_core_flush_pass, cleanup_flush_ports
+from passes.interconnect_port_pass import wire_core_flush_pass
 from gemstone.common.util import compress_config_data
 from peak_gen.peak_wrapper import wrapped_peak_class
 from peak_gen.arch import read_arch
@@ -191,9 +191,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         wire_core_flush_pass(interconnect)
 
     interconnect.finalize()
-
-    if harden_flush:
-        cleanup_flush_ports(interconnect)
 
     if global_signal_wiring == GlobalSignalWiring.Meso:
         apply_global_meso_wiring(interconnect)
