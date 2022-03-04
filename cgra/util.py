@@ -14,6 +14,7 @@ from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
 from passes.clk_pass.clk_pass import clk_physical
 from passes.pipeline_config_pass.pipeline_config_pass import pipeline_config_signals
+from passes.interconnect_port_pass import wire_core_flush_pass, cleanup_flush_ports
 from gemstone.common.util import compress_config_data
 from peak_gen.peak_wrapper import wrapped_peak_class
 from peak_gen.arch import read_arch
@@ -47,6 +48,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 pipeline_config_interval: int = 8,
                 standalone: bool = False,
                 add_pond: bool = False,
+                harden_flush: bool = True,
                 use_io_valid: bool = True,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
                 port_conn_override: Dict[str,
@@ -93,11 +95,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             else:
                 use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
                 if use_mem_core:
-                    core = MemCore(use_sram_stub=use_sram_stub)
+                    core = MemCore(use_sram_stub=use_sram_stub, gate_flush=not harden_flush)
                 else:
                     core = PeakCore(pe_fc)
                     if add_pond:
-                        additional_core[(x, y)] = PondCore()
+                        additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
@@ -184,7 +186,15 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     if add_pd:
         add_power_domain(interconnect)
 
+    # add hardened flush signal
+    if harden_flush:
+        wire_core_flush_pass(interconnect)
+
     interconnect.finalize()
+
+    if harden_flush:
+        cleanup_flush_ports(interconnect)
+
     if global_signal_wiring == GlobalSignalWiring.Meso:
         apply_global_meso_wiring(interconnect)
     elif global_signal_wiring == GlobalSignalWiring.Fanout:
