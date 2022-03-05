@@ -10,6 +10,8 @@ def glb_glc_wiring(garnet):
                 garnet.global_buffer.ports.glb_clk_en_bank_master)
     garnet.wire(garnet.global_controller.ports.glb_pcfg_broadcast_stall,
                 garnet.global_buffer.ports.pcfg_broadcast_stall)
+    garnet.wire(garnet.global_controller.ports.glb_flush_crossbar_sel,
+                garnet.global_buffer.ports.flush_crossbar_sel)
 
     garnet.wire(garnet.global_controller.ports.cgra_config.config_addr,
                 garnet.global_buffer.ports.cgra_cfg_jtag_gc2glb_addr)
@@ -75,6 +77,7 @@ def glb_interconnect_wiring(garnet):
     # width of garnet
     width = garnet.width
     num_glb_tiles = garnet.glb_params.num_glb_tiles
+    num_groups = garnet.glb_params.num_groups
     col_per_glb = width // num_glb_tiles
     assert width % num_glb_tiles == 0
 
@@ -94,10 +97,6 @@ def glb_interconnect_wiring(garnet):
             garnet.wire(garnet.global_buffer.ports[cfg_wr_en_port_name],
                         garnet.interconnect.ports.config[i * col_per_glb + j].write)
 
-    # stall signal wiring
-    garnet.wire(garnet.global_controller.ports.cgra_stall,
-                garnet.interconnect.ports.stall)
-
     # input/output stream ports wiring
     for i in range(num_glb_tiles):
         for j in range(col_per_glb):
@@ -115,6 +114,15 @@ def glb_interconnect_wiring(garnet):
             garnet.wire(garnet.global_buffer.ports[f"strm_data_valid_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_1_port])
 
+    # flush signal wiring
+    if num_groups == 1:
+        garnet.wire(garnet.global_buffer.ports.strm_data_flush_g2f,
+                    garnet.interconnect.ports.flush)
+    else:
+        for i in range(num_groups):
+            garnet.wire(garnet.global_buffer.ports[f"strm_data_flush_g2f_{i}"][0],
+                        garnet.interconnect.ports.flush[i])
+
     return garnet
 
 
@@ -127,5 +135,8 @@ def glc_interconnect_wiring(garnet):
                 garnet.interconnect.ports.reset)
     garnet.wire(garnet.interconnect.ports.read_config_data,
                 garnet.global_controller.ports.read_data_in)
+    # stall signal wiring
+    garnet.wire(garnet.global_controller.ports.cgra_stall,
+                garnet.interconnect.ports.stall)
 
     return garnet
