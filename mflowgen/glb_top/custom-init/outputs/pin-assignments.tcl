@@ -60,7 +60,7 @@ for {set j 0} {$j < $array_width} {incr j} {
     }
     lappend tile_ports($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_wr_en[$j]"]]
     lappend tile_ports($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_rd_en[$j]"]]
-    if {[expr ($j % $prr_size) == 0}]} {
+    if {[expr {($j % $prr_size) == 0}]} {
         lappend tile_ports($j) [get_object_name [get_ports "strm_data_flush_g2f[[expr {$j / $prr_size}]]"]]
     }
 }
