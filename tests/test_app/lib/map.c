@@ -13,6 +13,7 @@
 #define GROUP_SIZE 4
 #define MAX_NUM_GROUPS MAX_NUM_COLS / GROUP_SIZE
 
+int crossbar_config = 0;
 struct Monitor
 {
   int num_groups;
@@ -159,13 +160,14 @@ int glb_map(void *kernel_)
   }
 
   // configure flush crossbar
-  int crossbar_config = 0;
+  int kernel_crossbar_config = 0;
   for (int i = group_start; i < group_start + num_groups; i++)
   {
-    crossbar_config += first_input_tile + (crossbar_config << (int)ceil(log(NUM_GLB_TILES) / log(2)));
+    kernel_crossbar_config += kernel_crossbar_config + (first_input_tile << (int)ceil(log(NUM_GLB_TILES) / log(2)));
   }
+  crossbar_config = kernel_crossbar_config + crossbar_config;
   add_config(&kernel->config, GLC_GLB_FLUSH_CROSSBAR_R, crossbar_config << GLC_GLB_FLUSH_CROSSBAR_SEL_F_LSB);
-  printf("Configuration of flush signal crossbar is 0x%0x\n", crossbar_config);
+  printf("Configuration of flush signal crossbar is updated to 0x%0x\n", crossbar_config);
 
   return 1;
 }
