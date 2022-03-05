@@ -12,7 +12,7 @@ from systemRDL.util import gen_rdl_header
 from global_controller.global_controller_magma import GlobalController
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
-from mini_mapper import map_app, has_rom, get_total_cycle_from_app
+from mini_mapper import map_app, get_total_cycle_from_app
 from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
 import json
 from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
@@ -104,7 +104,8 @@ class Garnet(Generator):
                                                       cgra_width=glb_params.num_cgra_cols,
                                                       glb_addr_width=glb_params.glb_addr_width,
                                                       glb_tile_mem_size=glb_tile_mem_size,
-                                                      block_axi_addr_width=glb_params.axi_addr_width)
+                                                      block_axi_addr_width=glb_params.axi_addr_width,
+                                                      group_size=glb_params.num_cols_per_group)
 
             self.global_buffer = GlobalBufferMagma(glb_params)
 
@@ -130,7 +131,11 @@ class Garnet(Generator):
         self.interconnect = interconnect
 
         # make multiple stall ports
-        stall_port_pass(self.interconnect)
+        stall_port_pass(self.interconnect, port_name="stall", port_width=1, col_offset=1)
+        # make multiple flush ports
+        if harden_flush:
+            stall_port_pass(self.interconnect, port_name="flush", port_width=1,
+                            col_offset=glb_params.num_cols_per_group)
         # make multiple configuration ports
         config_port_pass(self.interconnect)
 
@@ -144,7 +149,6 @@ class Garnet(Generator):
                 axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
                 interrupt=magma.Out(magma.Bit),
                 cgra_running_clk_out=magma.Out(magma.Clock),
-                flush=magma.In(magma.Bit),
             )
 
             # top <-> global controller ports connection
@@ -180,10 +184,6 @@ class Garnet(Generator):
 
             # Top -> Interconnect clock port connection
             self.wire(self.ports.clk_in, self.interconnect.ports.clk)
-
-            # flush signal
-            # FIXME: this is just to make tests pass. need to handle the logic properly
-            self.wire(self.ports.flush, self.interconnect.ports.flush[0])
 
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)

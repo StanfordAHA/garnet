@@ -40,6 +40,7 @@ module `mname` (
     output logic [`$num_glb_tiles-1`:0]         glb_clk_en_master, 
     output logic [`$num_glb_tiles-1`:0]         glb_clk_en_bank_master, 
     output logic [`$num_glb_tiles-1`:0]         glb_pcfg_broadcast_stall, 
+    output logic [$clog2(`$num_glb_tiles`)*`$cgra_width/4`-1:0] glb_flush_crossbar_sel,
 
     // global buffer configuration
     output logic                                glb_cfg_wr_en,
@@ -124,6 +125,7 @@ logic [`$num_glb_tiles-1`:0]         jtag_glb_clk_en_master, axi_glb_clk_en_mast
 logic [`$num_glb_tiles-1`:0]         jtag_glb_clk_en_bank_master, axi_glb_clk_en_bank_master;
 logic [`$num_glb_tiles-1`:0]         jtag_glb_pcfg_broadcast_stall, axi_glb_pcfg_broadcast_stall;
 logic [`$cgra_width-1`:0]            jtag_cgra_stall, axi_cgra_stall;
+logic [$clog2(`$num_glb_tiles`)*`$cgra_width/4`-1:0] axi_glb_flush_crossbar_sel;
 
 // global buffer configuration
 logic                                jtag_glb_cfg_wr_en, axi_glb_cfg_wr_en;
@@ -180,6 +182,7 @@ assign global_reset = jtag_global_reset | axi_global_reset;
 assign glb_clk_en_master = jtag_glb_clk_en_master | axi_glb_clk_en_master;
 assign glb_clk_en_bank_master = jtag_glb_clk_en_bank_master | axi_glb_clk_en_bank_master;
 assign glb_pcfg_broadcast_stall = jtag_glb_pcfg_broadcast_stall | axi_glb_pcfg_broadcast_stall;
+assign glb_flush_crossbar_sel = axi_glb_flush_crossbar_sel;
 assign cgra_stall = jtag_cgra_stall | axi_cgra_stall;
 
 // reset output
@@ -352,6 +355,7 @@ assign axi_cgra_cfg_data_in         = cgra_cfg_rd_data;
     .axi_glb_clk_en_master(axi_glb_clk_en_master), 
     .axi_glb_clk_en_bank_master(axi_glb_clk_en_bank_master), 
     .axi_glb_pcfg_broadcast_stall(axi_glb_pcfg_broadcast_stall), 
+    .axi_glb_flush_crossbar_sel(axi_glb_flush_crossbar_sel), 
     .axi_cgra_stall(axi_cgra_stall), 
 
 	.strm_g2f_start_pulse(strm_g2f_start_pulse),
