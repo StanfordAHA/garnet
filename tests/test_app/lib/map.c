@@ -1,10 +1,12 @@
 #include "parser.h"
 #include "map.h"
 #include "glb.h"
+#include "glc.h"
 #include "global_buffer_param.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #define MAX_NUM_COLS 32
 #define MAX_NUM_GLB_TILES 16
@@ -107,7 +109,6 @@ int glb_map(void *kernel_)
   {
     if (i == start_tile)
     {
-      printf("config addr: %x\n", (1 << AXI_ADDR_WIDTH) + (i << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_PCFG_BROADCAST_MUX_R);
       add_config(&bs_info->config, (1 << AXI_ADDR_WIDTH) + (i << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_PCFG_BROADCAST_MUX_R, (1 << GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB) | (1 << GLB_PCFG_BROADCAST_MUX_EAST_F_LSB) | (0 << GLB_PCFG_BROADCAST_MUX_WEST_F_LSB));
     }
     else
@@ -119,6 +120,7 @@ int glb_map(void *kernel_)
   // int num_bs = bs_info->size;
   int num_inputs = kernel->num_inputs;
   int num_outputs = kernel->num_outputs;
+  int first_input_tile;
 
   struct IOInfo *io_info;
   struct IOTileInfo *io_tile_info;
@@ -134,6 +136,10 @@ int glb_map(void *kernel_)
       io_tile_info->start_addr = (io_tile_info->start_addr << CGRA_BYTE_OFFSET) + ((tile * 2) << BANK_ADDR_WIDTH);
       printf("Mapping input_%0d_block_%0d to global buffer\n", i, j);
       update_io_tile_configuration(io_tile_info, &kernel->config);
+      if (i == 0 && j == 0)
+      {
+        first_input_tile = tile;
+      }
     }
   }
 
@@ -151,6 +157,15 @@ int glb_map(void *kernel_)
       update_io_tile_configuration(io_tile_info, &kernel->config);
     }
   }
+
+  // configure flush crossbar
+  int crossbar_config = 0;
+  for (int i = group_start; i < group_start + num_groups; i++)
+  {
+    crossbar_config += first_input_tile + (crossbar_config << (int)ceil(log(NUM_GLB_TILES) / log(2)));
+  }
+  add_config(&kernel->config, GLC_GLB_FLUSH_CROSSBAR_R, crossbar_config << GLC_GLB_FLUSH_CROSSBAR_SEL_F_LSB);
+  printf("Configuration of flush signal crossbar is 0x%0x\n", crossbar_config);
 
   return 1;
 }
@@ -181,7 +196,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
   if (io_tile_info->io == Input)
   {
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R, ((0b01 << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (0 << GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R, ((0b01 << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (1 << GLB_LD_DMA_CTRL_USE_FLUSH_F_LSB) | (0 << GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_DIM_R, loop_dim);
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_START_ADDR_R, start_addr);
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
