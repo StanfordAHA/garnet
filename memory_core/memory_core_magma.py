@@ -255,6 +255,8 @@ class MemCore(LakeCoreBase):
 
         # Add the runtime configuration to the final config
         for name, v in config_runtime:
+            if name == "flush_reg_sel" or name == "flush_reg_value":
+                continue
             configs = [self.get_config_data(name, v)] + configs
 
         #print(configs)
