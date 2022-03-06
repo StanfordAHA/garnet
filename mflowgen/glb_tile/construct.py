@@ -71,7 +71,12 @@ def construct():
   custom_power = Step( this_dir + '/../common/custom-power-leaf'  )
   short_fix    = Step( this_dir + '/../common/custom-short-fix'   )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'             )
+
+  # Note, if this changes e.g. "cadence-innovus-genlib" => "cadence-genus-genlib"
+  # must also update "mflowgen/glb_top/glb_tile/get_glb_outputs.sh" where it says
+  # cp -L *cadence-innovus-genlib/outputs/design.lib outputs/glb_tile_tt.lib
   genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'    )
+
   lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
 
 
