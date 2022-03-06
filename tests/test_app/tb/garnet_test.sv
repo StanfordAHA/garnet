@@ -46,7 +46,7 @@ program garnet_test #(
         int result;
         string app_dirs[$], temp_str;
 
-        num_cols = NUM_CGRA_TILES;
+        num_cols = NUM_CGRA_COLS;
         result   = initialize_monitor(num_cols);
 
         if (result == 1) begin

@@ -289,7 +289,9 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     # Pcfg DMA Ctrl
     pcfg_dma_ctrl_r = Reg("pcfg_dma_ctrl")
     pcfg_dma_mode_f = Field("mode", 1)
-    pcfg_dma_ctrl_r.add_child(pcfg_dma_mode_f)
+    pcfg_dma_relocation_value_f = Field("relocation_value", width=params.cgra_cfg_addr_width // 2)
+    pcfg_dma_relocation_is_msb_f = Field("relocation_is_msb", 1)
+    pcfg_dma_ctrl_r.add_children([pcfg_dma_mode_f, pcfg_dma_relocation_value_f, pcfg_dma_relocation_is_msb_f])
     addr_map.add_child(pcfg_dma_ctrl_r)
 
     # Pcfg DMA Header RegFile
