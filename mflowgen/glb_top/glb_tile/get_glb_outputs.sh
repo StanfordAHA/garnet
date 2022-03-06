@@ -9,7 +9,7 @@ else
 fi
 
 mkdir -p outputs
-cp -L *-genlib/outputs/design.lib outputs/glb_tile_tt.lib
+cp -L *cadence-innovus-genlib/outputs/design.lib outputs/glb_tile_tt.lib
 cp -L *synopsys-dc-lib2db/outputs/design.db outputs/glb_tile_tt.db
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/glb_tile.lef
 cp -L *cadence-innovus-signoff/outputs/design-merged.gds outputs/glb_tile.gds

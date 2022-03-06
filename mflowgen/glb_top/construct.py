@@ -75,12 +75,7 @@ def construct():
   custom_init       = Step( this_dir + '/custom-init'                         )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
-
-  # Note, if this changes e.g. "cadence-genus-genlib" => cadence-innovus-genlib"
-  # must also update "mflowgen/full_chip/glb_top/get_glb_top_outputs.sh" where it says
-  # cp -L *cadence-genus-genlib/outputs/design.lib outputs/glb_top_tt.lib
   genlib            = Step( this_dir + '/../common/cadence-innovus-genlib'    )
-
   lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
 
   # Default steps
