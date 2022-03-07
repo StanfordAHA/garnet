@@ -13,7 +13,7 @@ from peak_core.peak_core import PeakCore
 from typing import Tuple, Dict, List, Tuple
 from passes.tile_id_pass.tile_id_pass import tile_id_physical
 from passes.clk_pass.clk_pass import clk_physical
-from passes.pipeline_config_pass.pipeline_config_pass import pipeline_config_signals
+from passes.pipeline_global_pass.pipeline_global_pass import pipeline_global_signals
 from passes.interconnect_port_pass import wire_core_flush_pass
 from gemstone.common.util import compress_config_data
 from peak_gen.peak_wrapper import wrapped_peak_class
@@ -204,6 +204,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     if pass_through_clk:
         clk_physical(interconnect)
     
-    pipeline_config_signals(interconnect, pipeline_config_interval)
+    pipeline_global_signals(interconnect, pipeline_config_interval)
 
     return interconnect
