@@ -14,6 +14,7 @@ class GlbLoadDma(Generator):
         self._params = _params
         self.header = GlbHeader(self._params)
         assert self._params.bank_data_width == self._params.cgra_data_width * 4
+        assert self._params.tile2sram_rd_delay >= self._params.flush_crossbar_pipeline_depth
 
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
@@ -459,9 +460,21 @@ class GlbLoadDma(Generator):
                        in_=self.ld_dma_start_pulse_r,
                        out_=self.strm_data_start_pulse_d_arr)
         self.strm_data_start_pulse = self.var("strm_data_start_pulse", 1)
-        self.wire(self.strm_data_start_pulse,
-                  self.strm_data_start_pulse_d_arr[resize(self.cfg_data_network_latency, latency_width)
-                                                   + self._params.tile2sram_rd_delay])
+
+        @always_comb
+        def strm_data_start_pulse_logic(self):
+            if self.cfg_ld_dma_ctrl_use_flush == 1:
+                self.strm_data_start_pulse = self.strm_data_start_pulse_d_arr[
+                    resize(self.cfg_data_network_latency,
+                           latency_width)
+                    + self._params.tile2sram_rd_delay
+                    - self._params.flush_crossbar_pipeline_depth]
+            else:
+                self.strm_data_start_pulse = self.strm_data_start_pulse_d_arr[
+                    resize(self.cfg_data_network_latency,
+                           latency_width)
+                    + self._params.tile2sram_rd_delay]
+        self.add_always(strm_data_start_pulse_logic)
 
     def add_ld_dma_done_pulse_pipeline(self):
         maximum_latency = (2 * self._params.num_glb_tiles + self._params.chain_latency_overhead
