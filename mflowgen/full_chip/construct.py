@@ -73,7 +73,7 @@ def construct():
     # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
     'glb_tile_mem_size' : 256,   # 256*16 => 4M global buffer
     # Power Domains
-    'PWR_AWARE'         : True,
+    'PWR_AWARE'         : False,
     # Include Garnet?
     'soc_only'          : False,
     # Include SoC core? (use 0 for false, 1 for true)
@@ -83,8 +83,8 @@ def construct():
     # SRAM macros
     'num_words'         : 2048,
     'word_size'         : 64,
-    'mux_size'          : 8,
-    'corner'            : "tt0p8v25c",
+    'mux_size'          : 16,
+    'num_subarrays'     : 2,
     'partial_write'     : True,
     # Dragonphy
     'dragonphy_rdl_x'   : '613.565u',
