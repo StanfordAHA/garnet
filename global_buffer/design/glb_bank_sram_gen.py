@@ -6,18 +6,24 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
 class GlbBankSramGen(Generator):
-    def __init__(self, addr_width, sram_macro_width, sram_macro_depth, _params: GlobalBufferParams):
+    def __init__(self, addr_width, _params: GlobalBufferParams):
         super().__init__("glb_bank_sram_gen")
         self._params = _params
         self.addr_width = addr_width
-        self.sram_macro_width = sram_macro_width
-        self.sram_macro_depth = sram_macro_depth
+        self.sram_macro_width = self._params.sram_macro_word_size
+        self.sram_macro_depth = self._params.sram_macro_depth
 
         self.RESET = self.reset("RESET")
         self.CLK = self.clock("CLK")
         self.CEB = self.input("CEB", 1)
         self.WEB = self.input("WEB", 1)
-        self.BWEB = self.input("BWEB", self.sram_macro_width)
+        if self._params.process == "TSMC":
+            self.BWEB = self.input("BWEB", self.sram_macro_width)
+        elif self._params.process == "GF":
+            self.BW = self.input("BW", self.sram_macro_width)
+        else:
+            raise Exception("process should be either 'TSMC' or 'GF'")
+
         self.D = self.input("D", self.sram_macro_width)
         self.A = self.input("A", self.addr_width)
         self.Q = self.output("Q", self.sram_macro_width)
@@ -37,7 +43,13 @@ class GlbBankSramGen(Generator):
 
         self.CEB_d = self.var("CEB_d", 1)
         self.WEB_d = self.var("WEB_d", 1)
-        self.BWEB_d = self.var("BWEB_d", self.sram_macro_width)
+        if self._params.process == "TSMC":
+            self.BWEB_d = self.var("BWEB_d", self.sram_macro_width)
+        elif self._params.process == "GF":
+            self.BW_d = self.var("BW_d", self.sram_macro_width)
+        else:
+            raise Exception("process should be either 'TSMC' or 'GF'")
+
         self.D_d = self.var("D_d", self.sram_macro_width)
         self.web_demux_d = self.var("WEB_DEMUX_d", self.num_sram_macros)
         self.ceb_demux_d = self.var("CEB_DEMUX_d", self.num_sram_macros)
@@ -54,8 +66,15 @@ class GlbBankSramGen(Generator):
         self.wire(self.Q_w, self.q_sram2mux[self.q_sel])
 
     def add_pipeline(self):
-        sram_signals_reset_high_in = concat(self.WEB, self.CEB, self.web_demux, self.ceb_demux, self.BWEB)
-        sram_signals_reset_high_out = concat(self.WEB_d, self.CEB_d, self.web_demux_d, self.ceb_demux_d, self.BWEB_d)
+        if self._params.process == "TSMC":
+            sram_signals_reset_high_in = concat(self.WEB, self.CEB, self.web_demux, self.ceb_demux, self.BWEB)
+            sram_signals_reset_high_out = concat(
+                self.WEB_d, self.CEB_d, self.web_demux_d, self.ceb_demux_d, self.BWEB_d)
+        elif self._params.process == "GF":
+            sram_signals_reset_high_in = concat(self.WEB, self.CEB, self.web_demux, self.ceb_demux, self.BW)
+            sram_signals_reset_high_out = concat(self.WEB_d, self.CEB_d, self.web_demux_d, self.ceb_demux_d, self.BW_d)
+        else:
+            raise Exception("process should be either 'TSMC' or 'GF'")
         self.sram_signals_reset_high_pipeline = Pipeline(
             width=sram_signals_reset_high_in.width, depth=self._params.sram_gen_pipeline_depth, reset_high=True)
         self.add_child("sram_signals_reset_high_pipeline",
@@ -109,25 +128,47 @@ class GlbBankSramGen(Generator):
 
     def add_sram_macro(self):
         for i in range(self.num_sram_macros):
-            self.add_child(f"sram_array_{i}",
-                           GFSRAM(self.sram_macro_depth, self.sram_macro_width),
-                           CLK=self.CLK,
-                           A=self.a_sram_d,
-                           BW=self.BWEB_d,
-                           CEN=self.ceb_demux_d[i],
-                           RDWEN=self.web_demux_d[i],
-                           D=self.D_d,
-                           Q=self.q_sram2mux[i],
-                           T_LOGIC=const(0b0, 1),
-                           T_Q_RST=const(0b0, 1),
-                           MA_SAWL1=const(0b0, 1),
-                           MA_SAWL0=const(0b0, 1),
-                           MA_WL1=const(0b0, 1),
-                           MA_WL0=const(0b0, 1),
-                           MA_WRAS0=const(0b0, 1),
-                           MA_WRAS1=const(0b0, 1),
-                           MA_VD0=const(0b0, 1),
-                           MA_VD1=const(0b0, 1),
-                           MA_WRT=const(0b0, 1),
-                           MA_STABAS0=const(0b0, 1),
-                           MA_STABAS1=const(0b0, 1))
+            if self._params.process == "TSMC":
+                self.add_child(f"sram_array_{i}",
+                               SRAM(self._params.process, self._params.tsmc_sram_macro_prefix,
+                                    self.sram_macro_width, self.sram_macro_depth),
+                               CLK=self.CLK,
+                               A=self.a_sram_d,
+                               BWEB=self.BWEB_d,
+                               CEB=self.ceb_demux_d[i],
+                               WEB=self.web_demux_d[i],
+                               D=self.D_d,
+                               Q=self.q_sram2mux[i],
+                               RTSEL=const(0b01, 2),
+                               WTSEL=const(0b00, 2))
+            else:
+                sram_name = (self._params.gf_sram_macro_prefix
+                             + f"W{self._params.sram_macro_depth:05d}"
+                             + f"B{self._params.sram_macro_word_size:03d}"
+                             + f"M{self._params.sram_macro_mux_size:02d}"
+                             + f"S{self._params.sram_macro_num_subarrays}"
+                             + f"_HB"
+                             )
+                self.add_child(f"sram_array_{i}",
+                               SRAM(self._params.process, sram_name,
+                                    self.sram_macro_width, self.sram_macro_depth),
+                               CLK=self.CLK,
+                               CEN=self.ceb_demux_d[i],
+                               RDWEN=self.web_demux_d[i],
+                               A=self.a_sram_d,
+                               D=self.D_d,
+                               BW=self.BW_d,
+                               Q=self.q_sram2mux[i],
+                               T_LOGIC=const(0b0, 1),
+                               T_Q_RST=const(0b0, 1),
+                               MA_SAWL1=const(0b0, 1),
+                               MA_SAWL0=const(0b0, 1),
+                               MA_WL1=const(0b0, 1),
+                               MA_WL0=const(0b0, 1),
+                               MA_WRAS0=const(0b0, 1),
+                               MA_WRAS1=const(0b0, 1),
+                               MA_VD0=const(0b0, 1),
+                               MA_VD1=const(0b0, 1),
+                               MA_WRT=const(0b0, 1),
+                               MA_STABAS0=const(0b0, 1),
+                               MA_STABAS1=const(0b0, 1))
