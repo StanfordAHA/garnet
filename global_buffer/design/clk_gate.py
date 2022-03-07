@@ -22,7 +22,7 @@ class ClkGate(Generator):
             raise Exception("process should be either 'TSMC' or 'GF'")
 
         self.add_child(f"CG_CELL",
-                       CG(self._params.icg_name),
+                       CG(icg_name),
                        E=self.enable,
                        CLK=self.clk,
                        TE=const(0, 1),
