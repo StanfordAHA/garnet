@@ -20,9 +20,15 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'tsmc16'
-  adk_view = 'multicorner-multivt'
-  pwr_aware = True
+  adk_name = 'gf12-adk'
+  #base_adk_view = 'multicorner-multivt'
+  base_adk_view = 'view-standard'
+  pwr_aware = False
+
+  if pwr_aware:
+      adk_view = base_adk_view + '-pm'
+  else:
+      adk_view = base_adk_view
 
   flatten = 3
   if os.environ.get('FLATTEN'):
@@ -38,7 +44,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
-    'clock_period'      : 1.1,
+    'clock_period'      : 3,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -122,7 +128,7 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb     = Step( 'cadence-genus-genlib',          default=True )
+  genlibdb     = Step( 'synopsys-ptpx-genlibdb',          default=True )
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
