@@ -58,7 +58,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'GarnetSOC_pad_frame',
-    'clock_period'      : 1.3,
+    'clock_period'      : 5,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -86,9 +86,6 @@ def construct():
     'mux_size'          : 16,
     'num_subarrays'     : 2,
     'partial_write'     : True,
-    # Dragonphy
-    'dragonphy_rdl_x'   : '613.565u',
-    'dragonphy_rdl_y'   : '3901.872u',
     # Low Effort flow
     'express_flow'             : False,
     'skip_verify_connectivity' : True,
@@ -179,18 +176,15 @@ def construct():
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
-      merge_rdl      = Step( 'mentor-calibre-gdsmerge-child', default=True )
       fill           = Step( 'mentor-calibre-fill',           default=True )
       merge_fill     = Step( 'mentor-calibre-gdsmerge-child', default=True )
   else:
       drc            = Step( 'cadence-pegasus-drc',            default=True )
       lvs            = Step( 'cadence-pegasus-lvs',            default=True )
-      merge_rdl      = Step( 'cadence-pegasus-gdsmerge-child', default=True )
       fill           = Step( 'cadence-pegasus-fill',           default=True )
       merge_fill     = Step( 'cadence-pegasus-gdsmerge-child', default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre', default=True )
 
-  merge_rdl.set_name('gdsmerge-dragonphy-rdl')
   merge_fill.set_name('gdsmerge-fill')
 
   # Send in the clones
@@ -208,14 +202,10 @@ def construct():
   synth.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
   synth.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-  synth.extend_inputs( ['dragonphy_top.lef'] )
-  # Exclude dragonphy_top from synth inputs to prevent floating
-  # dragonphy inputs from being tied to 0
   pt_signoff.extend_inputs( ['tile_array_tt.db'] )
   pt_signoff.extend_inputs( ['glb_top_tt.db'] )
   pt_signoff.extend_inputs( ['global_controller_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
-  pt_signoff.extend_inputs( ['dragonphy_top_tt.db'] )
 
   route.extend_inputs( ['pre-route.tcl'] )
   signoff.extend_inputs( sealring.all_outputs() )
@@ -231,8 +221,6 @@ def construct():
     step.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
     step.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-    step.extend_inputs( ['dragonphy_top_tt.lib', 'dragonphy_top.lef'] )
-    step.extend_inputs( ['dragonphy_RDL.lef'] )
 
   # Need all block gds's to merge into the final layout
   gdsmerge_nodes = [signoff, power]
@@ -241,8 +229,6 @@ def construct():
       node.extend_inputs( ['glb_top.gds'] )
       node.extend_inputs( ['global_controller.gds'] )
       node.extend_inputs( ['sram.gds'] )
-      node.extend_inputs( ['dragonphy_top.gds'] )
-      node.extend_inputs( ['dragonphy_RDL.gds'] )
 
   # Need extracted spice files for both tile types to do LVS
 
@@ -252,7 +238,6 @@ def construct():
   lvs.extend_inputs( ['glb_top.sram.spi'] )
   lvs.extend_inputs( ['global_controller.lvs.v'] )
   lvs.extend_inputs( ['sram.spi'] )
-  lvs.extend_inputs( ['dragonphy_top.spi'] )
   lvs.extend_inputs( ['adk_lvs2'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
@@ -304,7 +289,6 @@ def construct():
   g.add_step( netlist_fixing    )
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
-  g.add_step( merge_rdl         )
   g.add_step( fill              )
   g.add_step( merge_fill        )
   g.add_step( drc               )
@@ -340,7 +324,6 @@ def construct():
   g.connect_by_name( adk,      postroute      )
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
-  g.connect_by_name( adk,      merge_rdl      )
   g.connect_by_name( adk,      fill           )
   g.connect_by_name( adk,      merge_fill     )
   g.connect_by_name( adk,      drc            )
@@ -440,19 +423,13 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        lvs            )
-  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  # Skipping
-  g.connect( signoff.o('design-merged.gds'), merge_rdl.i('design.gds') )
-  g.connect( dragonphy.o('dragonphy_RDL.gds'), merge_rdl.i('child.gds') )
-  g.connect_by_name( merge_rdl, lvs )
-
   # Run Fill on merged GDS
-  g.connect( merge_rdl.o('design_merged.gds'), fill.i('design.gds') )
+  g.connect( signoff.o('design-merged.gds'), fill.i('design.gds') )
 
   # Merge fill
-  g.connect( merge_rdl.o('design_merged.gds'), merge_fill.i('design.gds') )
+  g.connect( signoff.o('design-merged.gds'), merge_fill.i('design.gds') )
   g.connect( fill.o('fill.gds'), merge_fill.i('child.gds') )
 
   # Run DRC on merged and filled gds
@@ -499,9 +476,9 @@ def construct():
     {'order': [
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-      'alignment-cells.tcl',
-      'analog-bumps/route-phy-bumps.tcl',
-      'analog-bumps/bump-connect.tcl',
+      #'alignment-cells.tcl',
+      #'analog-bumps/route-phy-bumps.tcl',
+      #'analog-bumps/bump-connect.tcl',
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
       'place-macros.tcl', 'dont-touch.tcl'
     ]}
@@ -543,9 +520,6 @@ def construct():
   index = order.index( 'generate-results.tcl' )
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
-
-  merge_rdl.update_params( {'coord_x': parameters['dragonphy_rdl_x'], 'coord_y': parameters['dragonphy_rdl_y'], 'flatten_child': True,
-                            'design_top_cell': parameters['design_name'], 'child_top_cell': 'dragonphy_RDL'} )
 
   merge_fill.update_params( {'design_top_cell': parameters['design_name'], 'child_top_cell': f"{parameters['design_name']}_F16a"} )
 
