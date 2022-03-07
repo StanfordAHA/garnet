@@ -20,13 +20,14 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'tsmc16'
-  adk_view = 'multivt'
+  adk_name = 'gf12-adk'
+  #adk_view = 'multivt'
+  adk_view = 'view-standard'
 
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 1.1,
+    'clock_period'      : 5,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -37,7 +38,7 @@ def construct():
     'array_height'      : 16,
     'interconnect_only' : False,
     # Power Domains
-    'PWR_AWARE'         : True,
+    'PWR_AWARE'         : False,
     # Useful Skew (CTS)
     'useful_skew'       : False,
     # hold target slack
