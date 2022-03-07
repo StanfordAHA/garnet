@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, posedge, always_comb, clock_en, clog2, const, concat
+from kratos import Generator, always_ff, posedge, always_comb, clock_en, clog2, const, concat, resize
 from kratos.util import to_magma
 from global_buffer.design.glb_tile import GlbTile
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
@@ -88,6 +88,7 @@ class GlobalBuffer(Generator):
 
         # local variables
         self.data_flush = self.var("data_flush", 1, size=self._params.num_glb_tiles, packed=True)
+        self.strm_data_flush_g2f_w = self.var("strm_data_flush_g2f_w", 1, size=self._params.num_groups, packed=True)
         self.proc_rd_type_e = self.enum("proc_rd_type_e", {"axi": 0, "jtag": 1})
         self.proc_rd_type = self.var("proc_rd_type", self.proc_rd_type_e)
         self.proc_rd_addr_sel = self.var("proc_rd_addr_sel", 1)
@@ -289,7 +290,22 @@ class GlobalBuffer(Generator):
                        self.flush_crossbar,
                        in_=self.data_flush,
                        sel_=self.flush_crossbar_sel_w,
-                       out_=self.strm_data_flush_g2f)
+                       out_=self.strm_data_flush_g2f_w)
+
+        flush_pipeline_in = self.var("flush_pipeline_in", width=self._params.num_groups)
+        flush_pipeline_out = self.var("flush_pipeline_out", width=self._params.num_groups)
+        for i in range(self._params.num_groups):
+            self.wire(flush_pipeline_in[i], self.strm_data_flush_g2f_w[i])
+            self.wire(flush_pipeline_out[i], self.strm_data_flush_g2f[i])
+        self.flush_pipeline = Pipeline(width=flush_pipeline_in.width,
+                                       depth=self._params.flush_crossbar_pipeline_depth)
+        self.add_child("flush_pipeline",
+                       self.flush_pipeline,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=flush_pipeline_in,
+                       out_=flush_pipeline_out)
 
     @ always_ff((posedge, "clk"), (posedge, "reset"))
     def proc_pipeline(self):
