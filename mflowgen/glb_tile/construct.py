@@ -34,13 +34,12 @@ def construct():
     'flatten_effort' : 3,
     'topographical'  : True,
     # Floorplan
-    'bank_height'    : 8,
     'array_width' : 32,
     'num_glb_tiles'       : 16,
     # Memory size (unit: KB)
     'glb_tile_mem_size' : 256,
     # SRAM macros
-    'num_words'      : 2048,
+    'num_words'      : 4096,
     'word_size'      : 64,
     'mux_size'       : 8,
     'num_subarrays'  : 2,
@@ -272,7 +271,9 @@ def construct():
   g.update_params( parameters )
 
   # Add bank height param to init
-  init.update_params( { 'bank_height': parameters['bank_height'] }, True )
+  # number of banks is fixed to 2
+  bank_height = (parameters['glb_tile_mem_size'] * 1024 // 2) // (parameters['num_words'] * (parameters['word_size'] // 8))
+  init.update_params( { 'bank_height': bank_height }, True )
 
   # Change nthreads
   synth.update_params( { 'nthreads': 4 } )
