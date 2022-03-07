@@ -2,18 +2,20 @@ from kratos import Generator, always_ff, posedge
 
 
 class SRAM(Generator):
-    def __init__(self, process: str, name: str, word_size: int, depth: int):
+    def __init__(self, process: str, name: str, word_size: int, num_words: int):
         super().__init__(name)
-        self.data_array = self.var("data_array", word_size, size=depth)
+        self.word_size = word_size
+        self.num_words = num_words
+        self.data_array = self.var("data_array", word_size, size=num_words)
 
         if process == "TSMC":
             self.CLK = self.clock("CLK")
             self.CEB = self.input("CEB", 1)
             self.WEB = self.input("WEB", 1)
-            self.BWEB = self.input("BWEB", 64)
-            self.D = self.input("D", 64)
-            self.A = self.input("A", 11)
-            self.Q = self.output("Q", 64)
+            self.A = self.input("A", self.num_words.bit_length() - 1)
+            self.D = self.input("D", self.word_size)
+            self.BWEB = self.input("BWEB", self.word_size)
+            self.Q = self.output("Q", self.word_size)
             self.RTSEL = self.input("RTSEL", 2)
             self.WTSEL = self.input("WTSEL", 2)
 
@@ -22,10 +24,10 @@ class SRAM(Generator):
             self.CLK = self.clock("CLK")
             self.CEN = self.input("CEN", 1)
             self.RDWEN = self.input("RDWEN", 1)
-            self.BW = self.input("BW", 64)
-            self.D = self.input("D", 64)
-            self.A = self.input("A", 11)
-            self.Q = self.output("Q", 64)
+            self.A = self.input("A", self.num_words.bit_length() - 1)
+            self.D = self.input("D", self.word_size)
+            self.BW = self.input("BW", self.word_size)
+            self.Q = self.output("Q", self.word_size)
             self.T_LOGIC = self.input("T_LOGIC", 1)
             self.T_Q_RST = self.input("T_Q_RST", 1)
             self.MA_SAWL1 = self.input("MA_SAWL1", 1)
