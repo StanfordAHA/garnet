@@ -1,6 +1,6 @@
 from kratos import Generator, always_comb, concat, always_ff, posedge, const, resize
 from kratos.util import clog2
-from global_buffer.design.gf_sram import GFSRAM
+from global_buffer.design.SRAM import SRAM
 from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
