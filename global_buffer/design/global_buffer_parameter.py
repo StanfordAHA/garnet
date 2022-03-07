@@ -61,7 +61,7 @@ class GlobalBufferParams:
 
     @property
     def num_groups(self):
-        return self.num_cgra_tiles // self.num_cols_per_group
+        return self.num_cgra_cols // self.num_cols_per_group
 
     # architecture parameters
     num_prr: int = 16
