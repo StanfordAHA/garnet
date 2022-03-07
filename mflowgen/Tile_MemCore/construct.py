@@ -20,9 +20,9 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'tsmc16'
-  adk_view = 'multicorner-multivt'
-  pwr_aware = True
+  adk_name = 'gf12-adk'
+  adk_view = 'view-standard'
+  pwr_aware = False
 
   synth_power = False
   if os.environ.get('SYNTH_POWER') == 'True':
@@ -44,8 +44,6 @@ def construct():
     'num_words'           : 512,
     'word_size'           : 32,
     'mux_size'            : 4,
-    'corner'              : "tt0p8v25c",
-    'bc_corner'           : "ffg0p88v125c",
     'partial_write'       : False,
     # Hold target slack
     'hold_target_slack'   : 0.015,
@@ -111,7 +109,7 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  genlibdb       = Step( 'cadence-genus-genlib',           default=True )
+  genlibdb       = Step( 'synopsys-ptpx-genlibdb',           default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -128,8 +126,8 @@ def construct():
   # Add sram macro inputs to downstream nodes
 
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-  #pt_signoff.extend_inputs( ['sram_tt.db'] )
-  genlibdb.extend_inputs( ['sram_tt.lib'] )
+  pt_signoff.extend_inputs( ['sram_tt.db'] )
+  genlibdb.extend_inputs( ['sram_tt.lib', 'sram_tt.db'] )
 
   # These steps need timing and lef info for srams
 
