@@ -84,7 +84,7 @@ class GlobalBufferParams:
     gf_icg_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
     tsmc_sram_macro_prefix: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
     gf_sram_macro_prefix: str = "IN12LP_S1DB_"
-    sram_macro_depth: int = 2048
+    sram_macro_depth: int = 4096
     sram_macro_word_size: int = 64
     sram_macro_mux_size: int = 8
     sram_macro_num_subarrays: int = 2
