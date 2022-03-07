@@ -250,7 +250,7 @@ def construct():
 
   g.connect_by_name( signoff, genlib   )
   g.connect_by_name( adk,     genlib   )
-  
+
   g.connect_by_name( genlib,     lib2db )
 
   g.connect_by_name( adk,          pt_signoff   )
