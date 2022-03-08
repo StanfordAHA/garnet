@@ -28,7 +28,6 @@ set tile_margin_r [expr 50 * $horiz_pitch]
 
 set tiles [get_cells *glb_tile*]
 set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
-# set tile_gap [expr 60 * $horiz_pitch]
 set tile_gap 0
 set num_tiles_for_gap 4
 set tile_height [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_y]
