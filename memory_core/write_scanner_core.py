@@ -75,13 +75,14 @@ class WriteScannerCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        inner_offset, compressed, lowest_level, stop_lvl = config_tuple
+        inner_offset, compressed, lowest_level, stop_lvl, block_mode = config_tuple
         configs = []
         config_scanner = [("tile_en", 1)]
         config_scanner += self.dut.get_bitstream(inner_offset=inner_offset,
                                                  compressed=compressed,
                                                  lowest_level=lowest_level,
-                                                 stop_lvl=stop_lvl)
+                                                 stop_lvl=stop_lvl,
+                                                 block_mode=block_mode)
         for name, v in config_scanner:
             configs = [self.get_config_data(name, v)] + configs
         return configs
