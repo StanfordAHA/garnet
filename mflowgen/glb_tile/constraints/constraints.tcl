@@ -114,7 +114,10 @@ set_input_delay -clock ${clock_name} 0.3 [get_ports *_wst* -filter "direction==i
 set_output_delay -clock ${clock_name} 0.3 [all_outputs]
 set_output_delay -clock ${clock_name} 0.6 [get_ports *_est* -filter "direction==out"]
 set_output_delay -clock ${clock_name} 0.6 [get_ports *_wst* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.6 [get_ports cgra_cfg_g2f* -filter "direction==out"]
+
+# g2f output ports should have high output_dealy to make internal delay low
+set_output_delay -clock ${clock_name} 0.8 [get_ports cgra_cfg_*g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 0.8 [get_ports strm_data_*g2f* -filter "direction==out"]
 
 # set_min_delay for all tile-connected inputs
 set_min_delay -from [get_ports *_est* -filter "direction==in"] 0.3
