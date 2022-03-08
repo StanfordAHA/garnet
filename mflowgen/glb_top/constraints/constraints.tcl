@@ -57,17 +57,12 @@ set_driving_cell -no_design_rule \
 # set_input_delay constraints for input ports
 set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
 set_input_delay -clock ${clock_name} 0 [get_ports reset]
-# glb-cgra delay is high
-set_input_delay -clock ${clock_name} 0.4 [get_ports strm_data_*f2g*]
 
 #=========================================================================
 # output delay
 #=========================================================================
 # set_output_delay constraints for output ports
 set_output_delay -clock ${clock_name} 0.2 [all_outputs]
-# glb-cgra delay is high
-set_output_delay -clock ${clock_name} 0.4 [get_ports strm_data_*g2f*]
-set_output_delay -clock ${clock_name} 0.4 [get_ports cgra_cfg_g2f*]
 
 #=========================================================================
 # set_muticycle_path & set_false path
