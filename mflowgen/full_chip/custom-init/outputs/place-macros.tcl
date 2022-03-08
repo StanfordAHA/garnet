@@ -49,18 +49,26 @@ if { ! $::env(soc_only) } {
     -pgnetonly \
     -box $ic_x_loc $ic_ury $ic_urx [expr $ic_ury + $thickness]
 
-  # Prevent PMESH_BOT_LAYER stripes over IC
+  # Prevent vias to PMESH_BOT_LAYER stripes over IC
   createRouteBlk \
     -name ic_pmesh_bot_via \
     -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1] \
     -pgnetonly \
     -box $ic_x_loc $ic_y_loc $ic_urx $ic_ury
   
+  # Prevent PMESH_BOT_LAYER stripes over IC
   createRouteBlk \
     -name ic_pmesh_bot \
     -layer $ADK_POWER_MESH_BOT_LAYER \
     -pgnetonly \
     -box [expr $ic_x_loc + (8*$horiz_pitch)] $ic_y_loc [expr $ic_urx - (8*$horiz_pitch)] $ic_ury
+  
+  # Prevent PMESH_TOP_LAYER stripes over IC
+  createRouteBlk \
+    -name ic_pmesh_top \
+    -layer $ADK_POWER_MESH_TOP_LAYER \
+    -pgnetonly \
+    -box $ic_x_loc [expr $ic_y_loc + (2*$vert_pitch)] $ic_urx [expr $ic_ury - (2*$vert_pitch)]
   
   set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
   set glb_name [get_property $glb hierarchical_name]
@@ -89,18 +97,26 @@ if { ! $::env(soc_only) } {
     -pgnetonly \
     -box [expr $glb_x_loc - $thickness] $glb_y_loc $glb_x_loc $glb_ury
   
-  # Prevent PMESH_BOT_LAYER stripes over GLB
+  # Prevent vias to PMESH_BOT_LAYER stripes over GLB
   createRouteBlk \
     -name glb_pmesh_bot_via \
     -layer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
     -pgnetonly \
     -box $glb_x_loc $glb_y_loc $glb_urx $glb_ury
   
+  # Prevent PMESH_BOT_LAYER stripes over GLB
   createRouteBlk \
     -name glb_pmesh_bot \
     -layer $ADK_POWER_MESH_BOT_LAYER \
     -pgnetonly \
     -box [expr $glb_x_loc + (8*$horiz_pitch)] $glb_y_loc [expr $glb_urx - (8*$horiz_pitch)] $glb_ury
+  
+  # Prevent PMESH_TOP_LAYER stripes over GLB
+  createRouteBlk \
+    -name glb_pmesh_bot \
+    -layer $ADK_POWER_MESH_TOP_LAYER \
+    -pgnetonly \
+    -box $glb_x_loc [expr $glb_y_loc + (2*$vert_pitch)] $glb_urx [expr $glb_ury - (2*$vert_pitch)]
   
   set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
   set glc_name [get_property $glc hierarchical_name]
