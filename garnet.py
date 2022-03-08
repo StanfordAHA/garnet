@@ -78,6 +78,9 @@ class Garnet(Generator):
         self.width = width
         self.height = height
 
+        self.harden_flush = harden_flush
+        self.pipeline_config_interval = pipeline_config_interval
+
         # only north side has IO
         if standalone:
             io_side = IOSide.None_
@@ -339,7 +342,7 @@ class Garnet(Generator):
         dag = cutil.coreir_to_dag(nodes, cmod)
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
-        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only)
+        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only, self.harden_flush, self.height//self.pipeline_config_interval)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
@@ -356,7 +359,9 @@ class Garnet(Generator):
                                                          cwd=app_dir,
                                                          id_to_name=id_to_name,
                                                          fixed_pos=fixed_io,
-                                                         compact=compact)
+                                                         compact=compact,
+                                                         harden_flush=self.harden_flush,
+                                                         pipeline_config_interval=self.pipeline_config_interval)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
