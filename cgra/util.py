@@ -163,7 +163,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     ics = {}
 
     track_list = list(range(num_tracks))
-    io_in = {"f2io_1": [0], "f2io_16": [0]}
+    io_in = {"f2io_1": track_list, "f2io_16": track_list}
     io_out = {"io2f_1": track_list, "io2f_16": track_list}
 
     for bit_width in bit_widths:
