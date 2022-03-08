@@ -107,15 +107,18 @@ set_driving_cell -no_design_rule \
 # set_input_delay
 #=========================================================================
 set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
+set_input_delay -clock ${clock_name} 0.3 [get_ports *_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} 0.3 [get_ports *_wst* -filter "direction==in"]
 
 # set_output_delay constraints for output ports
 set_output_delay -clock ${clock_name} 0.3 [all_outputs]
-set_output_delay -clock ${clock_name} 0.5 [get_ports *_est* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.5 [get_ports *_wst* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 0.6 [get_ports *_est* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 0.6 [get_ports *_wst* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 0.6 [get_ports cgra_cfg_g2f* -filter "direction==out"]
 
 # set_min_delay for all tile-connected inputs
-set_min_delay -from [get_ports *_est* -filter "direction==in"] 0.5
-set_min_delay -from [get_ports *_wst* -filter "direction==in"] 0.5
+set_min_delay -from [get_ports *_est* -filter "direction==in"] 0.3
+set_min_delay -from [get_ports *_wst* -filter "direction==in"] 0.3
 set_max_delay -to [get_ports *_est* -filter "direction==out"] 1.0
 set_max_delay -to [get_ports *_wst* -filter "direction==out"] 1.0
 
