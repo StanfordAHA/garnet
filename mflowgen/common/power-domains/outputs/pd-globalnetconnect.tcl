@@ -15,4 +15,3 @@ globalNetConnect VDD    -type pgpin -pin VPP -inst *
 globalNetConnect VSS    -type pgpin -pin VBB -inst *
 globalNetConnect VDD    -type pgpin -pin TVDD -inst *HDR*
 
-
