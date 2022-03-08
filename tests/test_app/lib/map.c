@@ -85,8 +85,10 @@ int glb_map(void *kernel_)
       break;
   }
   // no available group
-  if (group_start == -1)
+  if (group_start == -1){
+    printf("Application does not fit on array. Possible error CGRA too small, applications overlapping\n");
     return 0;
+  }
 
   for (int i = group_start; i < group_start + num_groups; i++)
   {
