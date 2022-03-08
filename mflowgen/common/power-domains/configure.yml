@@ -22,6 +22,7 @@ outputs:
   - mem-constraints.tcl 
   - mem-constraints-2.tcl
   - pe-pd-params.tcl
+  - mem-pd-params.tcl
   - pd-add-endcaps-welltaps.tcl   
   - add-endcaps-welltaps-setup.tcl 
   - place-dont-use-constraints.tcl
