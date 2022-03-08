@@ -3890,6 +3890,228 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     nlb.display_names()
 
 
+def test_GLB_to_WS(trace, run_tb, cwd):
+    # Streams and code to create them and align them
+    num_cycles = 250
+    chip_size = 8
+    num_tracks = 5
+    altcore = [ScannerCore, WriteScannerCore]
+
+    interconnect = create_cgra(width=chip_size, height=chip_size,
+                               io_sides=NetlistBuilder.io_sides(),
+                               num_tracks=num_tracks,
+                               add_pd=True,
+                               mem_ratio=(1, 2),
+                               altcore=altcore)
+
+    nlb = NetlistBuilder(interconnect=interconnect, cwd=cwd)
+    # Create netlist builder and register the needed cores...
+
+    wscan_root = nlb.register_core("write_scanner", flushable=True, name="wscan_root")
+    wscan_rows = nlb.register_core("write_scanner", flushable=True, name="wscan_rows")
+    wscan_vals = nlb.register_core("write_scanner", flushable=True, name="wscan_vals")
+    mem_xroot = nlb.register_core("memtile", flushable=True, name="mem_xroot")
+    mem_xrows = nlb.register_core("memtile", flushable=True, name="mem_xrows")
+    mem_xvals = nlb.register_core("memtile", flushable=True, name="mem_xvals")
+
+    root_valid_in = nlb.register_core("io_1", name="root_valid_in")
+    root_eos_in = nlb.register_core("io_1", name="root_eos_in")
+    root_ready_out = nlb.register_core("io_1", name="root_ready_out")
+    root_data_in = nlb.register_core("io_16", name="root_data_in")
+
+    rows_valid_in = nlb.register_core("io_1", name="rows_valid_in")
+    rows_eos_in = nlb.register_core("io_1", name="rows_eos_in")
+    rows_ready_out = nlb.register_core("io_1", name="rows_ready_out")
+    rows_data_in = nlb.register_core("io_16", name="rows_data_in")
+
+    vals_valid_in = nlb.register_core("io_1", name="vals_valid_in")
+    vals_eos_in = nlb.register_core("io_1", name="vals_eos_in")
+    vals_ready_out = nlb.register_core("io_1", name="vals_ready_out")
+    vals_data_in = nlb.register_core("io_16", name="vals_data_in")
+
+    flush_in = nlb.register_core("io_1", name="flush_in")
+
+    # f2io_16
+    conn_dict = {
+        # Set up streaming out matrix from scan_mrows
+
+        'upper_coords_to_wscan': [
+            # Row Coord
+            ([(wscan_root, "ready_out_0"), (root_ready_out, "f2io_1")], 1),
+            ([(root_valid_in, "io2f_1 "), (wscan_root, "valid_in_0")], 1),
+            ([(root_eos_in, "io2f_1"), (wscan_root, "eos_in_0")], 1),
+            ([(root_data_in, "io2f_16"), (wscan_root, "data_in_0")], 16),
+            # Col coord
+            ([(wscan_rows, "ready_out_0"), (rows_ready_out, "f2io_1")], 1),
+            ([(rows_valid_in, "io2f_1"), (wscan_rows, "valid_in_0")], 1),
+            ([(rows_eos_in, "io2f_1"), (wscan_rows, "eos_in_0")], 1),
+            ([(rows_data_in, "io2f_16"), (wscan_rows, "data_in_0")], 16),
+            # Values
+            # ([(wscan_vals, "ready_out_0"), (scan_aroot, "ready_in_0")], 1),
+            ([(wscan_vals, "ready_out_0"), (vals_ready_out, "f2io_1")], 1),
+            ([(vals_valid_in, "io2f_1"), (wscan_vals, "valid_in_0")], 1),
+            ([(vals_eos_in, "io2f_1"), (wscan_vals, "eos_in_0")], 1),
+            ([(vals_data_in, "io2f_16"), (wscan_vals, "data_in_0")], 16),
+
+        ],
+
+        'wscan_to_mems': [
+            ([(wscan_root, "data_out"), (mem_xroot, "data_in_0")], 16),
+            ([(wscan_root, "addr_out"), (mem_xroot, "addr_in_0")], 16),
+            ([(wscan_root, "wen"), (mem_xroot, "wen_in_0")], 1),
+            ([(mem_xroot, "sram_ready_out"), (wscan_root, "ready_in")], 1),
+
+            ([(wscan_rows, "data_out"), (mem_xrows, "data_in_0")], 16),
+            ([(wscan_rows, "addr_out"), (mem_xrows, "addr_in_0")], 16),
+            ([(wscan_rows, "wen"), (mem_xrows, "wen_in_0")], 1),
+            ([(mem_xrows, "sram_ready_out"), (wscan_rows, "ready_in")], 1),
+
+            ([(wscan_vals, "data_out"), (mem_xvals, "data_in_0")], 16),
+            ([(wscan_vals, "addr_out"), (mem_xvals, "addr_in_0")], 16),
+            ([(wscan_vals, "wen"), (mem_xvals, "wen_in_0")], 1),
+            ([(mem_xvals, "sram_ready_out"), (wscan_vals, "ready_in")], 1),
+        ]
+    }
+
+    connections = nlb.connections_from_json(conn_dict)
+    connections += nlb.emit_flush_connection(flush_in)
+    # Add all flushes...
+    nlb.add_connections(connections=connections)
+    nlb.get_route_config()
+
+    # App data
+    matrix_size = 4
+    matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 6, 0]]
+    # matrix_a = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
+    # matrix = [[1, 2, 0, 0], [3, 0, 0, 4], [0, 0, 0, 0], [0, 5, 0, 6]]
+    (mouter, mptr, minner, mmatrix_vals) = compress_matrix(matrix, row=True)
+    mroot = [0, 3]
+    mroot = align_data(mroot, 4)
+    mouter = align_data(mouter, 4)
+    mptr = align_data(mptr, 4)
+    minner = align_data(minner, 4)
+    minner_offset_root = len(mroot)
+    mmatrix_vals = align_data(mmatrix_vals, 4)
+    mroot_data = mroot + mouter
+    minner_offset_row = len(mptr)
+    mrow_data = mptr + minner
+    max_outer_dim = matrix_size
+    mmatrix_vals_alt = [x + 5 for x in mmatrix_vals]
+
+    matA_strides = [0]
+    matA_ranges = [1]
+
+    matB_strides = [0]
+    matB_ranges = [1]
+
+    # nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, matA_strides, matA_ranges, 1, 1, 0, 3, 0))
+    # # nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, 0, 1, 1))
+    # nlb.configure_tile(scan_arows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0, 2))
+    # nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, matB_strides, matB_ranges, 1, 1, 1, 3, 0))
+    # # nlb.configure_tile(scan_broot, (minner_offset_root, max_outer_dim, 0, 1, 1))
+    # nlb.configure_tile(scan_brows, (minner_offset_row, max_outer_dim, [0], [4], 0, 0, 0, 0, 2))
+    # nlb.configure_tile(mem_aroot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
+    # nlb.configure_tile(mem_arows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
+    # nlb.configure_tile(mem_avals, {"config": ["mek", {"init": mmatrix_vals}], "mode": 2})
+    # nlb.configure_tile(mem_broot, {"config": ["mek", {"init": mroot_data}], "mode": 2})
+    # nlb.configure_tile(mem_brows, {"config": ["mek", {"init": mrow_data}], "mode": 2})
+    # nlb.configure_tile(mem_bvals, {"config": ["mek", {"init": mmatrix_vals_alt}], "mode": 2})
+    # Configure in WOM
+    nlb.configure_tile(mem_xroot, {"config": ["mek", {}], "mode": 4})
+    nlb.configure_tile(mem_xrows, {"config": ["mek", {}], "mode": 4})
+    nlb.configure_tile(mem_xvals, {"config": ["mek", {}], "mode": 4})
+    # nlb.configure_tile(isect_row, 5)
+    # nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, 0, 1, 1))
+    nlb.configure_tile(wscan_root, (16, 0, 0, 0, 1))
+    nlb.configure_tile(wscan_rows, (16, 0, 0, 1, 1))
+    nlb.configure_tile(wscan_vals, (0, 1, 1, 0, 1))
+    # nlb.configure_tile(isect_col, 5)
+    # # Configure the stop level
+    # nlb.configure_tile(accum_reg, (2))
+    # # nlb.configure_tile(pe_mul, asm.umult0())
+    # nlb.configure_tile(pe_mul, 1)
+    # nlb.configure_tile(mem_avals_lu, (0))
+    # nlb.configure_tile(mem_bvals_lu, (0))
+
+    # This does some cleanup like partitioning into compressed/uncompressed space
+    nlb.finalize_config()
+
+    # Create tester and perform init routine...
+    tester = nlb.get_tester()
+
+    h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
+    stall_in = nlb.get_handle_str("stall")
+    # h_ready_in = nlb.get_handle(ready_in, prefix="glb2io_1_")
+    # h_valid_out = nlb.get_handle(valid_out, prefix="io2glb_1_")
+    h_root_ready_out = nlb.get_handle(root_ready_out, prefix="io2glb_1_")
+    h_root_valid_in = nlb.get_handle(root_valid_in, prefix="glb2io_1_")
+    h_root_eos_in = nlb.get_handle(root_eos_in, prefix="glb2io_1_")
+    h_root_data_in = nlb.get_handle(root_data_in, prefix="glb2io_1_")
+    # h_eos_out = nlb.get_handle(eos_out, prefix="io2glb_1_")
+    h_rows_ready_out = nlb.get_handle(rows_ready_out, prefix="io2glb_1_")
+    h_rows_valid_in = nlb.get_handle(rows_valid_in, prefix="glb2io_1_")
+    h_rows_eos_in = nlb.get_handle(rows_eos_in, prefix="glb2io_1_")
+    h_rows_data_in = nlb.get_handle(rows_data_in, prefix="glb2io_1_")
+
+    h_vals_ready_out = nlb.get_handle(vals_ready_out, prefix="io2glb_1_")
+    h_vals_valid_in = nlb.get_handle(vals_valid_in, prefix="glb2io_1_")
+    h_vals_eos_in = nlb.get_handle(vals_eos_in, prefix="glb2io_1_")
+    h_vals_data_in = nlb.get_handle(vals_data_in, prefix="glb2io_1_")
+
+    tester.reset()
+    tester.zero_inputs()
+    # Stall during config
+    tester.poke(stall_in, 1)
+
+    # After stalling, we can configure the circuit
+    # with its configuration bitstream
+    nlb.configure_circuit()
+
+    tester.done_config()
+    tester.poke(stall_in, 0)
+    tester.eval()
+
+    # Get flush handle and apply flush to start off app
+    tester.poke(h_flush_in, 1)
+    tester.eval()
+    tester.step(2)
+    tester.poke(h_flush_in, 0)
+    tester.eval()
+
+    # 0 out the eos-s
+    tester.poke(h_root_eos_in, 0)
+    tester.poke(h_rows_eos_in, 0)
+    tester.poke(h_vals_eos_in, 0)
+
+    for i in range(num_cycles):
+        # tester.poke(h_ready_in, 1)
+        # tester.poke(circuit.interface[pop], 1)
+        tester.eval()
+
+        # If we have valid, print the two datas
+        # tester_if = tester._if(tester.peek(h_valid_out))
+        # tester_if.print("COORD: %d, VAL0: %d, VAL1: %d, EOS: %d\n",
+        #                 h_coord_out,
+        #                 h_val_out_0,
+        #                 h_val_out_1,
+        #                 h_eos_out)
+
+        tester_if = tester._if(tester.peek(h_valid_out))
+        tester_if.print("DATA: %d, EOS: %d\n",
+                        h_val_out_0,
+                        h_eos_out)
+        tester_finish = tester._if(tester.peek(h_valid_out) and tester.peek(h_eos_out) & (tester.peek(h_val_out_0) == 0))
+        tester_finish.print("Observed end of application...early finish...")
+        # tester_finish.finish()
+
+        tester.step(2)
+
+    run_tb(tester, trace=trace, disable_ndarray=True, cwd=cwd)
+
+    # Get the primitive mapping so it's easy to read the design.place
+    nlb.display_names()
+
+
 if __name__ == "__main__":
     # conv_3_3 - default tb - use command line to override
     from conftest import run_tb_fn
