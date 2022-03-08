@@ -23,7 +23,7 @@ def construct():
   adk_name = 'gf12-adk'
   #base_adk_view = 'multicorner-multivt'
   base_adk_view = 'view-standard'
-  pwr_aware = False
+  pwr_aware = True
 
   if pwr_aware:
       adk_view = base_adk_view + '-pm'
@@ -166,7 +166,7 @@ def construct():
   # Power aware setup
   if pwr_aware:
       synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
-      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
+      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pe-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
       place.extend_inputs(['place-dont-use-constraints.tcl', 'check-clamp-logic-structure.tcl', 'add-aon-tie-cells.tcl'])
       cts.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'])
@@ -386,10 +386,10 @@ def construct():
       order = init.get_param('order')
       read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
       order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
-      order.insert( read_idx + 2, 'pd-pe-floorplan.tcl' ) # add here
-      order.insert( read_idx + 3, 'pe-add-endcaps-welltaps-setup.tcl' ) # add here
-      order.insert( read_idx + 4, 'pd-add-endcaps-welltaps.tcl' ) # add here
-      order.insert( read_idx + 5, 'pe-power-switches-setup.tcl') # add here
+      order.insert( read_idx + 2, 'pe-pd-params.tcl' ) # add here
+      order.insert( read_idx + 3, 'pd-aon-floorplan.tcl' ) # add here
+      order.insert( read_idx + 4, 'add-endcaps-welltaps-setup.tcl' ) # add here
+      order.insert( read_idx + 5, 'pd-add-endcaps-welltaps.tcl' ) # add here
       order.insert( read_idx + 6, 'add-power-switches.tcl' ) # add here
       order.remove('add-endcaps-welltaps.tcl')
       order.append('check-clamp-logic-structure.tcl')
