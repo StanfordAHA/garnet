@@ -79,7 +79,7 @@ def construct():
     # Include SoC core? (use 0 for false, 1 for true)
     'include_core'      : 1,
     # Include sealring?
-    'include_sealring'  : True,
+    'include_sealring'  : False,
     # SRAM macros
     'num_words'         : 2048,
     'word_size'         : 64,
@@ -476,7 +476,7 @@ def construct():
     {'order': [
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-      #'alignment-cells.tcl',
+      'alignment-cells.tcl',
       #'analog-bumps/route-phy-bumps.tcl',
       #'analog-bumps/bump-connect.tcl',
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
