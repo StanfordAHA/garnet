@@ -247,8 +247,8 @@ def construct():
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  g.connect_by_name( signoff, genlib   )
-  g.connect_by_name( adk,     genlib   )
+  g.connect_by_name( signoff, genlib )
+  g.connect_by_name( adk,     genlib )
 
   g.connect_by_name( genlib,     lib2db )
 
