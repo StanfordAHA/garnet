@@ -23,7 +23,7 @@ set core_margin_l [expr 5 * $horiz_pitch]
 # Margins between glb tiles and core edge
 set tile_margin_t [expr 100 * $vert_pitch]
 set tile_margin_b [expr 100 * $vert_pitch]
-set tile_margin_l [expr 300 * $horiz_pitch]
+set tile_margin_l [expr 350 * $horiz_pitch]
 set tile_margin_r [expr 50 * $horiz_pitch]
 
 set tiles [get_cells *glb_tile*]
