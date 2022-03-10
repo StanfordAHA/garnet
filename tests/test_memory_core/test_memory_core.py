@@ -3468,9 +3468,9 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
     nlb.configure_tile(mem_xrows, {"config": ["mek", {}], "mode": 4})
     nlb.configure_tile(mem_xvals, {"config": ["mek", {}], "mode": 4})
 
-    nlb.configure_tile(wscan_root, (16, 0, 0, 0))
-    nlb.configure_tile(wscan_rows, (16, 0, 0, 1))
-    nlb.configure_tile(wscan_vals, (0, 1, 1, 0))
+    nlb.configure_tile(wscan_root, (16, 0, 0, 0, 0))
+    nlb.configure_tile(wscan_rows, (16, 0, 0, 1, 0))
+    nlb.configure_tile(wscan_vals, (0, 1, 1, 0, 0))
 
     nlb.configure_tile(pe_mul, 1)
     nlb.configure_tile(mem_avals_lu, (0))
