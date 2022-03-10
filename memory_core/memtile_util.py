@@ -480,7 +480,7 @@ class NetlistBuilder():
                 raise RuntimeError
         if self._placement_up_to_date:
             return
-        self._placement, self._routing = pnr(self._interconnect, (self._netlist, self._bus), cwd=self._cwd)
+        self._placement, self._routing, _ = pnr(self._interconnect, (self._netlist, self._bus), cwd=self._cwd)
         self._placement_up_to_date = True
 
     def get_route_config(self):
