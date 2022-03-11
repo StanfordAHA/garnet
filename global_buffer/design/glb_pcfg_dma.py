@@ -24,6 +24,9 @@ class GlbPcfgDma(Generator):
         self.cfg_pcfg_tile_connected_prev = self.input("cfg_pcfg_tile_connected_prev", 1)
         self.cfg_pcfg_tile_connected_next = self.input("cfg_pcfg_tile_connected_next", 1)
         self.cfg_pcfg_dma_ctrl_mode = self.input("cfg_pcfg_dma_ctrl_mode", 1)
+        self.cfg_pcfg_dma_ctrl_relocation_value = self.input(
+            "cfg_pcfg_dma_ctrl_relocation_value", self._params.cgra_cfg_addr_width // 2)
+        self.cfg_pcfg_dma_ctrl_relocation_is_msb = self.input("cfg_pcfg_dma_ctrl_relocation_is_msb", 1)
         self.cfg_pcfg_dma_header = self.input("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
         self.cfg_pcfg_network_latency = self.input("cfg_pcfg_network_latency", self._params.latency_width)
 
@@ -66,7 +69,7 @@ class GlbPcfgDma(Generator):
         self.add_always(self.rdrs_packet_ff)
         self.add_always(self.rdrq_packet_logic)
         self.add_always(self.rdrs_packet_logic)
-        self.assign_cgra_cfg_output()
+        self.add_always(self.cgra_cfg_output_logic)
         self.add_done_pulse_pipeline()
         self.add_done_pulse_last_pipeline()
         self.add_always(self.interrupt_ff)
@@ -182,15 +185,23 @@ class GlbPcfgDma(Generator):
             self.rdrs_packet_rd_data_r = 0
             self.rdrs_packet_rd_data_valid_r = 0
 
-    def assign_cgra_cfg_output(self):
-        self.wire(self.cgra_cfg_pcfg['rd_en'], 0)
-        self.wire(self.cgra_cfg_pcfg['wr_en'],
-                  self.rdrs_packet_rd_data_valid_r)
-        self.wire(self.cgra_cfg_pcfg['addr'],
-                  self.rdrs_packet_rd_data_r[self._params.cgra_cfg_data_width + self._params.cgra_cfg_addr_width - 1,
-                                             self._params.cgra_cfg_data_width])
-        self.wire(self.cgra_cfg_pcfg['data'],
-                  self.rdrs_packet_rd_data_r[self._params.cgra_cfg_data_width - 1, 0])
+    @always_comb
+    def cgra_cfg_output_logic(self):
+        self.cgra_cfg_pcfg['rd_en'] = 0
+        self.cgra_cfg_pcfg['wr_en'] = self.rdrs_packet_rd_data_valid_r
+        self.cgra_cfg_pcfg['data'] = self.rdrs_packet_rd_data_r[self._params.cgra_cfg_data_width - 1, 0]
+        # bitstream relocation
+        if self.cfg_pcfg_dma_ctrl_relocation_is_msb:
+            self.cgra_cfg_pcfg['addr'] = (self.rdrs_packet_rd_data_r[self._params.cgra_cfg_data_width
+                                                                     + self._params.cgra_cfg_addr_width - 1,
+                                                                     self._params.cgra_cfg_data_width]
+                                          + (self.cfg_pcfg_dma_ctrl_relocation_value
+                                             << (self._params.cgra_cfg_addr_width // 2)))
+        else:
+            self.cgra_cfg_pcfg['addr'] = (self.rdrs_packet_rd_data_r[self._params.cgra_cfg_data_width
+                                                                     + self._params.cgra_cfg_addr_width - 1,
+                                                                     self._params.cgra_cfg_data_width]
+                                          + self.cfg_pcfg_dma_ctrl_relocation_value)
 
     def add_done_pulse_pipeline(self):
         maximum_latency = (3 * self._params.num_glb_tiles
