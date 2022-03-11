@@ -1,5 +1,5 @@
 # Use full-chip agents so as not to hamper per-check-in jobs
-agents: { queue: "papers" }
+agents: { tech : "gf" }
 
 env:
   GOLD: /build/glb${BUILDKITE_BUILD_NUMBER}/full_chip
