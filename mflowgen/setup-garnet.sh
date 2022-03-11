@@ -1,7 +1,6 @@
 source /cad/modules/tcl/init/sh
 
 module load base/1.0
-module load genesis2
 module load xcelium/19.03.003
 module load icadv/12.30.712 
 module load incisive/15.20.022
