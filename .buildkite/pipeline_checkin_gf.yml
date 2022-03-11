@@ -1,4 +1,4 @@
-agents: { jobsize: "minutes", tech: "gf" }
+agents: { tech: "gf" }
 
 ##############################################################################
 # Use this to test a specific branch/commit:
