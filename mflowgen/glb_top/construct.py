@@ -78,6 +78,9 @@ def construct():
   genlib            = Step( this_dir + '/../common/cadence-innovus-genlib'    )
   lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
 
+  # Need sram.spi from gen_sram step for lvs
+  gen_sram = Step( this_dir + '/../common/gen_sram_macro'     )
+
   # Default steps
 
   info           = Step( 'info',                            default=True )
@@ -187,6 +190,7 @@ def construct():
 
   g.add_step( info           )
   g.add_step( rtl            )
+  g.add_step( gen_sram       ) # Need sram.spi for LVS
   g.add_step( testbench      )
   g.add_step( sim_compile    )
   g.add_step( sim_run        )
@@ -238,6 +242,8 @@ def construct():
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
   g.connect_by_name( adk,      genlib         )
+
+  g.connect_by_name( gen_sram,      lvs       ) # Need sram.spi for LVS
 
   g.connect_by_name( glb_tile,      synth        )
   g.connect_by_name( glb_tile,      iflow        )
