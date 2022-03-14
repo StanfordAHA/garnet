@@ -34,6 +34,7 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
      echo "--- MAKE GLB_TOP"; set -o pipefail;
-     echo exit 13 | make glb_top |& tee make-glb_top.log'
+     echo exit 13 | make glb_top |& tee make-glb_top.log;
+     egrep ^FAILED make-glb_top.log && exit 13'
 - wait: ~
 
