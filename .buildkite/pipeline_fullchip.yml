@@ -43,7 +43,7 @@ steps:
   - 'echo "--- DELETE SVDB"; set -x;
      find $$GOLD -name svdb -exec echo /bin/rm -rf {} \; > /tmp/tmp$$.sh;
      source /tmp/tmp$$.sh; /bin/rm /tmp/tmp$$.sh;
-     egrep ^FAILED make-tile_array.log && exit 13'
+     egrep ^FAILED make-tile_array.log && exit 13 || echo PASSED'
 - wait: ~
 
 # Unjumble the build logs for pe, mem tiles
@@ -69,7 +69,7 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 84G;
      echo "--- MAKE GLB_TOP"; set -o pipefail;
      echo exit 13 | make glb_top |& tee make-glb_top.log;
-     egrep ^FAILED make-glb_top.log && exit 13'
+     egrep ^FAILED make-glb_top.log && exit 13 || echo PASSED'
 - wait: ~
 
 - label: 'GLC'
@@ -77,7 +77,7 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 74G;
      echo "--- MAKE GLOBAL_CONTROLLER"; set -o pipefail;
      echo exit 13 | make global_controller |& tee make-GLC.log;
-     egrep ^FAILED make-GLC.log && exit 13'
+     egrep ^FAILED make-GLC.log && exit 13 || echo PASSED'
 - wait: ~
 
 - label: 'dragon'
