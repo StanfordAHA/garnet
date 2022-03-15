@@ -26,4 +26,4 @@ cp -L *gen_sram_macro/outputs/sram_tt.lib outputs/glb_tile_sram_tt.lib
 cp -L *gen_sram_macro/outputs/sram_ff.lib outputs/glb_tile_sram_ff.lib
 
 # Need sram for glb_top LVS
-cp -L *gen_sram_macro/outputs/sram.spi outputs/sram.spi
+# cp -L *gen_sram_macro/outputs/sram.spi outputs/sram.spi
