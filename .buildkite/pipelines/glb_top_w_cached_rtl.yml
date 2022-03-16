@@ -39,6 +39,7 @@ steps:
      : ------------------------------------------------------------------------;
      echo "--- Ready to build glb_tile!";
      '
+- wait: ~
 
 - label: 'glb_tile'
   commands:
