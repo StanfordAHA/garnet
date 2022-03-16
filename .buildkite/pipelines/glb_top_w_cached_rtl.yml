@@ -43,8 +43,7 @@ steps:
 
 - label: 'glb_tile'
   commands:
-  - 'cd $$BUILD/*-glb_top;
-     source mflowgen/bin/setup-buildkite.sh --dir . --need_space 1G;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$BUILD/*-glb_top --need_space 1G;
      echo "--- MAKE GLB_TILE"; set -o pipefail;
      echo exit 13 | make glb_tile |& tee make-glb_tile.log;
      echo "egrep ^FAILED make-glb_tile.log && exit 13";
@@ -53,8 +52,7 @@ steps:
 
 - label: 'glb_top'
   commands:
-  - 'cd $$BUILD/*-glb_top;
-     source mflowgen/bin/setup-buildkite.sh --dir . --need_space 1G;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$BUILD --need_space 1G;
      echo "--- MAKE GLB_TOP"; set -o pipefail;
      echo exit 13 | make glb_top |& tee make-glb_top.log;
      echo "egrep ^FAILED make-glb_top.log && exit 13";
