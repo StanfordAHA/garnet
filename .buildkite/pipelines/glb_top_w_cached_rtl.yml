@@ -12,13 +12,13 @@ steps:
   commands:
 
   # # "mflowgen run full_chip" to build full_chip framework (may not be necessary)
-  # Copy rtl collateral from $CACHE
+  # Copy rtl collateral from $REF
   # "mflowgen run full_chip" to reset rtl in the context of latest full_chip framework
 
   - '
      : ------------------------------------------------------------------------;
-     echo "--- Make BUILD dir $$BUILD/full_chip and cd to it";
-     source mflowgen/bin/setup-buildkite.sh --dir $$BUILD/full_chip --need_space 1G;
+     echo "--- Make BUILD dir $$BUILD and cd to it";
+     source mflowgen/bin/setup-buildkite.sh --dir $$BUILD --need_space 1G;
 
      : ------------------------------------------------------------------------;
      echo "--- Fetch fullchip/rtl from ref dir $$REF";
@@ -28,7 +28,7 @@ steps:
      echo "--- Build glb_top dir hierarchy";
      echo "(Fetch an inconsequential step to force dir hierarchy build.)";
      echo "Step will be rebuilt later...rigghht?";
-     (cd $$CACHE; rsync -aR full_chip/*-glb_top/*-glb_tile/*-constraints $$BUILD);
+     (cd $$REF; rsync -aR full_chip/*-glb_top/*-glb_tile/*-constraints $$BUILD);
 
      : ------------------------------------------------------------------------;
      echo "--- Renumber as necessary at each stage of the hierarchy";
