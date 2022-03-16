@@ -28,7 +28,7 @@ steps:
      echo "--- Build glb_top dir hierarchy";
      echo "(Fetch an inconsequential step to force dir hierarchy build.)";
      echo "Step will be rebuilt later...rigghht?";
-     (cd $$REF; rsync -aR full_chip/*-glb_top/*-glb_tile/*-constraints $$BUILD);
+     (cd $$REF; rsync -aR full_chip/*-glb_top/*-glb_tile/*-constraints $$BUILD/..);
 
      : ------------------------------------------------------------------------;
      echo "--- Renumber as necessary at each stage of the hierarchy";
