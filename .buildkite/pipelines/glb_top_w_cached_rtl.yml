@@ -1,0 +1,67 @@
+# Use full-chip agents so as not to hamper per-check-in jobs
+agents: { queue: "papers" }
+
+env:
+  GOLD: /build/glb${BUILDKITE_BUILD_NUMBER}/full_chip
+  REF : /sim/buildkite-agent/gold
+  # OVERRIDE_MFLOWGEN_BRANCH: placementCheck
+
+steps:
+
+- label: 'glb_top setup'
+  commands:
+
+  # # "mflowgen run full_chip" to build full_chip framework (may not be necessary)
+  # Copy rtl collateral from $CACHE
+  # "mflowgen run full_chip" to reset rtl in the context of latest full_chip framework
+
+  - '
+     : ------------------------------------------------------------------------;
+     echo "--- Make BUILD dir $$BUILD/full_chip and cd to it";
+     source mflowgen/bin/setup-buildkite.sh --dir $$BUILD/full_chip;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Fetch fullchip/rtl from ref dir $$REF";
+     pwd; set -x; cp -rp $$REF/full_chip/*-rtl .;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Build glb_top dir hierarchy";
+     echo "(Fetch an inconsequential step to force dir hierarchy build.)";
+     echo "Step will be rebuilt later...rigghht?";
+     (cd $$CACHE; rsync -aR full_chip/*-glb_top/*-glb_tile/*-constraints $$GOLD);
+
+     : ------------------------------------------------------------------------;
+     echo "--- Renumber as necessary at each stage of the hierarchy";
+     cd .;          mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+     cd *-glb_top;  mflowgen run --design $$GARNET_HOME/mflowgen/glb_top;
+     cd *-glb_tile; mflowgen run --design $$GARNET_HOME/mflowgen/glb_tile;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Ready to build glb_tile!";
+     '
+
+- label: 'glb_tile'
+  commands:
+  - 'cd $$BUILD/*-glb_top;
+     source mflowgen/bin/setup-buildkite.sh --dir . --need_space 1G;
+     echo "--- MAKE GLB_TILE"; set -o pipefail;
+     echo exit 13 | make glb_tile |& tee make-glb_tile.log;
+     echo "egrep ^FAILED make-glb_tile.log && exit 13";
+     egrep ^FAILED make-glb_tile.log && exit 13 || echo PASSED'
+- wait: ~
+
+- label: 'glb_top'
+  commands:
+  - 'cd $$BUILD/*-glb_top;
+     source mflowgen/bin/setup-buildkite.sh --dir . --need_space 1G;
+     echo "--- MAKE GLB_TOP"; set -o pipefail;
+     echo exit 13 | make glb_top |& tee make-glb_top.log;
+     echo "egrep ^FAILED make-glb_top.log && exit 13";
+     egrep ^FAILED make-glb_top.log && exit 13 || echo PASSED'
+- wait: ~
+
+
+
+
+
+

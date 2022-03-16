@@ -168,7 +168,10 @@ def construct():
 
   # Need sram spice file for LVS
 
-  lvs.extend_inputs( ['glb_tile_sram.spi'] )
+  # Paranoia: break it again and make sure it fails correctly
+  # lvs.extend_inputs( ['glb_tile_sram.spi'] )
+  lvs.extend_inputs( ['sram.spi'] )
+
 
   xlist = synth.get_postconditions()
   xlist = \
