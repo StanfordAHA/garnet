@@ -28,14 +28,39 @@ steps:
      make rtl |& tee make-rtl.log'
 - wait: ~
 
-# make glb_top
-# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
+- label: 'glb_tile'
+  commands:
+  - '
+     : Set up env and cd to GOLD (full_chip) dir
+     echo "--- MAKE GLB_TILE"; set -o pipefail;
+     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
+
+     : Build glb_top subdir using appropriate numbering scheme
+     stepname=(cd .mflowgen; /bin/ls -d *glb_top);
+     mkdir -p $$stepname; cd $$stepname;     
+     mflowgen run --design $$GARNET_HOME/mflowgen/glb_top;
+
+     : Early out if e.g. missing sram.spi input edge
+     $$GARNET_HOME/mflowgen/bin/find-unmatched-inputs.sh .mflowgen/graph.dot || exit 13;
+
+     : Build the tile
+     echo exit 13 | make glb_tile |& tee make-glb_tile.log;
+    '
+
 - label: 'glb_top'
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
+  - '
+     : Set up env and cd to GOLD (full_chip) dir
      echo "--- MAKE GLB_TOP"; set -o pipefail;
-     echo exit 13 | make glb_top |& tee make-glb_top.log;
-     echo "egrep ^FAILED make-glb_top.log && exit 13";
-     egrep ^FAILED make-glb_top.log && exit 13 || echo PASSED'
+     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
+
+     : Build everything up through LVS
+     cd *-glb_top;
+     echo exit 13 | make mentor-calibre-lbs |& tee make-lvs.log;
+
+     : Double check to make sure nothing failed!
+     echo "egrep ^FAILED make-*.log && exit 13";
+     egrep ^FAILED make-*.log && exit 13 || echo PASSED;
+    '
 - wait: ~
 
