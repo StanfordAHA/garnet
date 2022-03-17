@@ -1,5 +1,6 @@
-# Use full-chip agents so as not to hamper per-check-in jobs
-agents: { queue: "papers" }
+# Agents are specified by pipeline settings now
+# # Use full-chip agents so as not to hamper per-check-in jobs
+# agents: { queue: "papers" }
 
 env:
   GOLD: /build/glb${BUILDKITE_BUILD_NUMBER}/full_chip
