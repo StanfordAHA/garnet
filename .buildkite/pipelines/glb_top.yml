@@ -16,7 +16,7 @@ steps:
      echo "--- blubb"; set -o pipefail;
      stepname=$(echo .mflowgen foo; echo far);
      echo "$stepname"; echo "2 $$stepname";
-     echo 3 $stepname"; echo 4 $$stepname;
+     echo 3 $stepname; echo 4 $$stepname;
 
      source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
