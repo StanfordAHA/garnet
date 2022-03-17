@@ -1,6 +1,5 @@
-# Agents are specified by pipeline settings now
-# # Use full-chip agents so as not to hamper per-check-in jobs
-# agents: { queue: "papers" }
+# Use full-chip agents so as not to hamper per-check-in jobs
+agents: { queue: "papers" }
 
 env:
   GOLD: /build/glb${BUILDKITE_BUILD_NUMBER}/full_chip
@@ -11,86 +10,30 @@ steps:
 # Build mflowgen framework for full-chip
 - label: 'setup'
   commands:
-  - '
-     : "Set up env and cd to GOLD (ffull_chip) dir";
-     echo "--- blubb"; set -o pipefail;
-     stepname=$(echo .mflowgen foo; echo far);
-     echo "$stepname"; echo "2 $$stepname";
-     echo 3 $stepname; echo 4 $$stepname;
-
-     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 1G;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      set -x;
      grep mem_size  $$GARNET_HOME/mflowgen/glb_top/construct.py;
      grep mem_size .mflowgen/*glb_top/configure.yml;
      grep mem_size -r .mflowgen;
      '
+
 - wait: ~
 
-
-#      # Quick check of the flow graph
-# 
-#      : "Build glb_top subdir using appropriate numbering scheme";
-#      stepname=$(cd .mflowgen; /bin/ls -d *glb_top | head -1);
-#      mkdir -p $$stepname; cd $$stepname;     
-#      mflowgen run --design $$GARNET_HOME/mflowgen/glb_top;
-# 
-#      : "Early early out if e.g. missing input edges";
-#      $$GARNET_HOME/mflowgen/bin/find-unmatched-inputs.sh .mflowgen/graph.dot || exit 13;
-
-
-- label: 'full_chip rtl'
+# Build RTL from scratch
+- label: 'rtl'
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 1G;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
      echo "--- MAKE RTL"; set -o pipefail;
      make rtl |& tee make-rtl.log'
 - wait: ~
 
-- label: 'glb_top rtl'
-  commands:
-  - '
-     : "Set up env and cd to GOLD (full_chip) dir";
-     echo "--- GLB_TOP setup"; set -o pipefail;
-     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 1G;
-
-     echo "--- Build glb_top subdir using appropriate numbering scheme";
-     stepname=$(cd .mflowgen; /bin/ls -d *glb_top | head -1);
-     mkdir -p $$stepname; cd $$stepname;     
-     mflowgen run --design $$GARNET_HOME/mflowgen/glb_top;
-
-     echo "--- Early out if e.g. missing sram.spi input edge";
-     $$GARNET_HOME/mflowgen/bin/find-unmatched-inputs.sh .mflowgen/graph.dot || exit 13;
-
-     echo "--- MAKE RTL"; set -o pipefail;
-     make rtl |& tee make-rtl.log'
-- wait: ~
-
-- label: 'glb_tile'
-  commands:
-  - '
-     : "Set up env and cd to GOLD/glb_top dir";
-     echo "--- MAKE GLB_TILE"; set -o pipefail;
-     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 1G;
-     cd *-glb_top;
-
-     : "Build the tile";
-     echo exit 13 | make glb_tile |& tee make-glb_tile.log;
-    '
-
+# make glb_top
+# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
 - label: 'glb_top'
   commands:
-  - '
-     : Set up env and cd to GOLD (full_chip) dir
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
      echo "--- MAKE GLB_TOP"; set -o pipefail;
-     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 1G;
-
-     : Build everything up through LVS
-     cd *-glb_top;
-     echo exit 13 | make mentor-calibre-lvs |& tee make-lvs.log;
-
-     : Double check to make sure nothing failed!
-     echo "egrep ^FAILED make-*.log && exit 13";
-     egrep ^FAILED make-*.log && exit 13 || echo PASSED;
-    '
+     echo exit 13 | make glb_top |& tee make-glb_top.log'
 - wait: ~
 
