@@ -56,7 +56,7 @@ steps:
      echo "--- Early out if e.g. missing sram.spi input edge";
      $$GARNET_HOME/mflowgen/bin/find-unmatched-inputs.sh .mflowgen/graph.dot || exit 13;
 
-     echo "--- Use full_chip rtl";
+     echo "--- Use full_chip rtl"; mkdir -p inputs;
      (cd inputs; ln -sf ../../*-rtl/outputs/design.v design.v && touch .stamp.design.v);
      (cd inputs; ln -sf ../../*-rtl/outputs/header   header   && touch .stamp.header);
 
