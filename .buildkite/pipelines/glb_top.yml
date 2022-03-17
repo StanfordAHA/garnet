@@ -12,7 +12,7 @@ steps:
 - label: 'setup'
   commands:
   - '
-     : "Set up env and cd to GOLD (ffull_chip) dir";
+     : "Set up env and cd to GOLD (full_chip) dir";
      source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 1G;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      set -x;
@@ -57,13 +57,14 @@ steps:
      $$GARNET_HOME/mflowgen/bin/find-unmatched-inputs.sh .mflowgen/graph.dot || exit 13;
 
      echo "--- MAKE CONSTRAINTS"; set -o pipefail;
-     make constraints |& tee make-constraints.log'
+     make constraints |& tee make-constraints.log';
 
      echo "--- MAKE TSMC16"; set -o pipefail;
-     make tsmc16 |& tee make-tsmc16.log'
+     make tsmc16 |& tee make-tsmc16.log';
 
      echo "--- MAKE RTL"; set -o pipefail;
-     make rtl |& tee make-rtl.log'
+     make rtl |& tee make-rtl.log;
+    '
 - wait: ~
 
 - label: 'glb_tile'
