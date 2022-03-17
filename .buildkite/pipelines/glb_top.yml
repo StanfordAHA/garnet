@@ -11,7 +11,14 @@ steps:
 # Build mflowgen framework for full-chip
 - label: 'setup'
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
+  - '
+     : "Set up env and cd to GOLD (ffull_chip) dir";
+     echo "--- blubb"; set -o pipefail;
+     stepname=$(echo .mflowgen foo; echo far);
+     echo "$stepname"; echo "2 $$stepname";
+     echo 3 $stepname"; echo 4 $$stepname;
+
+     source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      set -x;
      grep mem_size  $$GARNET_HOME/mflowgen/glb_top/construct.py;
@@ -33,7 +40,7 @@ steps:
 - label: 'glb_tile'
   commands:
   - '
-     : "Set up env and cd to GOLD (full_chip) dir";
+     : "Set up env and cd to GOLD (ffull_chip) dir";
      echo "--- MAKE GLB_TILE"; set -o pipefail;
      source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
 
