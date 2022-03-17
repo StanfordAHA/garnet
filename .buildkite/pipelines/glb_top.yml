@@ -56,13 +56,13 @@ steps:
      echo "--- Early out if e.g. missing sram.spi input edge";
      $$GARNET_HOME/mflowgen/bin/find-unmatched-inputs.sh .mflowgen/graph.dot || exit 13;
 
-     echo "--- MAKE CONSTRAINTS"; set -o pipefail;
-     make constraints |& tee make-constraints.log';
+     echo "--- MAKE CONSTRAINTS";
+     make constraints |& tee make-constraints.log;
 
-     echo "--- MAKE TSMC16"; set -o pipefail;
-     make tsmc16 |& tee make-tsmc16.log';
+     echo "--- MAKE TSMC16";
+     make tsmc16 |& tee make-tsmc16.log;
 
-     echo "--- MAKE RTL"; set -o pipefail;
+     echo "--- MAKE RTL";
      make rtl |& tee make-rtl.log;
     '
 - wait: ~
