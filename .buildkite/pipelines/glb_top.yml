@@ -22,18 +22,6 @@ steps:
      '
 - wait: ~
 
-
-#      # Quick check of the flow graph
-# 
-#      : "Build glb_top subdir using appropriate numbering scheme";
-#      stepname=$(cd .mflowgen; /bin/ls -d *glb_top | head -1);
-#      mkdir -p $$stepname; cd $$stepname;     
-#      mflowgen run --design $$GARNET_HOME/mflowgen/glb_top;
-# 
-#      : "Early early out if e.g. missing input edges";
-#      $$GARNET_HOME/mflowgen/bin/find-unmatched-inputs.sh .mflowgen/graph.dot || exit 13;
-
-
 - label: 'full_chip rtl'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 1G;
@@ -65,13 +53,6 @@ steps:
     '
 - wait: ~
 
-#      echo "--- MAKE CONSTRAINTS";
-#      make constraints |& tee make-constraints.log;
-# 
-#      echo "--- MAKE TSMC16";
-#      make tsmc16 |& tee make-tsmc16.log;
-
-
 - label: 'glb_tile'
   commands:
   - '
@@ -83,6 +64,7 @@ steps:
      : "Build the tile";
      echo exit 13 | make glb_tile |& tee make-glb_tile.log;
     '
+- wait: ~
 
 - label: 'glb_top'
   commands:
