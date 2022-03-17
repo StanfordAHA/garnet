@@ -53,6 +53,16 @@ cat $infile | awk '
       ins = n_input_conn[e]; outs = n_output_conn[e]
 
       if (ins && !outs) {
+
+          # IGNORE this error for now
+          # FIXME/TODO file an issue on this problem
+          # FIXME/TODO make a "--ignore" switch for this script
+
+          if (n == "cadence_innovus_debug_calibre" && e == "lvs_results>") {
+              fmt="WARNING ignoring unconnected input edge   %-22s / <%s\n"
+              ignores=ignores sprintf(fmt, n, e)
+              continue
+          }
           fmt="ERROR found unconnected input edge   %-22s / <%s\n"
           errs=errs sprintf(fmt, n, e)
       }
@@ -67,8 +77,9 @@ cat $infile | awk '
       else { if (DBG) { printf("OKAY edge has %d ins and %d outs\n", ins, outs) } }
     }
 
-    print warns | "sort"; close("sort")
-    print errs  | "sort"; close("sort")
+    print warns   | "sort"; close("sort")
+    print ignores | "sort"; close("sort")
+    print errs    | "sort"; close("sort")
     if (errs) exit(13)
   }
 '

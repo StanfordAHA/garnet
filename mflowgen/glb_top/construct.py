@@ -168,10 +168,12 @@ def construct():
 
   # Need sram spice file for LVS
 
-  # Paranoia: break it again and make sure it fails correctly
-  # lvs.extend_inputs( ['glb_tile_sram.spi'] )
-  lvs.extend_inputs( ['sram.spi'] )
+  # lvs.extend_inputs( ['sram.spi'] )
+  # ERROR found unconnected input edge   mentor_calibre_lvs     / <sram_spi>
+  lvs.extend_inputs( ['glb_tile_sram.spi'] )
 
+  # Need glb_tile for genlib
+  genlib.extend_inputs( ['glb_tile_tt.lib'] )
 
   xlist = synth.get_postconditions()
   xlist = \

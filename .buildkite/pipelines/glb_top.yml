@@ -24,18 +24,30 @@ steps:
      grep mem_size  $$GARNET_HOME/mflowgen/glb_top/construct.py;
      grep mem_size .mflowgen/*glb_top/configure.yml;
      grep mem_size -r .mflowgen;
+
+     # Quick check of the flow graph
+
+     : "Build glb_top subdir using appropriate numbering scheme";
+     stepname=$(cd .mflowgen; /bin/ls -d *glb_top | head -1);
+     mkdir -p $$stepname; cd $$stepname;     
+     mflowgen run --design $$GARNET_HOME/mflowgen/glb_top;
+
+     : "Early early out if e.g. missing input edges";
+     $$GARNET_HOME/mflowgen/bin/find-unmatched-inputs.sh .mflowgen/graph.dot || exit 13;
      '
 
 - wait: ~
 
-# # Build RTL from scratch
-# - label: 'rtl'
-#   commands:
-#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
-#      foo=$(echo bar); echo $$foo;
-#      echo "--- MAKE RTL"; set -o pipefail;
-#      make rtl |& tee make-rtl.log'
-# - wait: ~
+
+
+# Build RTL from scratch
+- label: 'rtl'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 10G;
+     foo=$(echo bar); echo $$foo;
+     echo "--- MAKE RTL"; set -o pipefail;
+     make rtl |& tee make-rtl.log'
+- wait: ~
 
 
 
