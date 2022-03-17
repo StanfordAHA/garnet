@@ -1,5 +1,4 @@
-# Agents are specified by pipeline settings now
-# # Use full-chip agents so as not to hamper per-check-in jobs
+# Agents are specified in "pipeline settings" now
 # agents: { queue: "papers" }
 
 env:

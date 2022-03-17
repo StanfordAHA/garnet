@@ -167,9 +167,6 @@ def construct():
   lvs.extend_inputs( ['glb_tile.lvs.v'] )
 
   # Need sram spice file for LVS
-
-  # lvs.extend_inputs( ['sram.spi'] )
-  # ERROR found unconnected input edge   mentor_calibre_lvs     / <sram_spi>
   lvs.extend_inputs( ['glb_tile_sram.spi'] )
 
   # Need glb_tile for genlib
