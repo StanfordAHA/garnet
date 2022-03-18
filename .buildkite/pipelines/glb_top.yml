@@ -68,15 +68,15 @@ steps:
 - label: 'glb_top'
   commands:
   - '
-     : Set up env and cd to GOLD (full_chip) dir
+     : "Set up env and cd to GOLD/glb_top dir";
      echo "--- MAKE GLB_TOP"; set -o pipefail;
      source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 1G;
 
-     : Build everything up through LVS
+     : "Build everything up through LVS";
      cd *-glb_top;
      echo exit 13 | make mentor-calibre-lvs |& tee make-lvs.log;
 
-     : Double check to make sure nothing failed!
+     : "Double check to make sure nothing failed!";
      echo "egrep ^FAILED make-*.log && exit 13";
      egrep ^FAILED make-*.log && exit 13 || echo PASSED;
     '
