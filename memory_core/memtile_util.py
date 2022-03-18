@@ -40,7 +40,9 @@ ONYX_PORT_REMAP = {
         'data_in_0': 'input_width_16_num_2',
         'data_in_1': 'input_width_16_num_3',
         'valid_out_0': 'output_width_1_num_0',
-        'valid_out_1': 'output_width_1_num_1'
+        'valid_out_1': 'output_width_1_num_1',
+        'data_out_0': 'output_width_16_num_0',
+        'data_out_1': 'output_width_16_num_1',
     },
     'RAM': {
         'rd_addr_in_0': 'input_width_16_num_1',
