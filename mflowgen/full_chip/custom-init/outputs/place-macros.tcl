@@ -62,14 +62,60 @@ if { ! $::env(soc_only) } {
     -pgnetonly \
     -box [expr $ic_x_loc + (8*$horiz_pitch)] $ic_y_loc [expr $ic_urx - (8*$horiz_pitch)] $ic_ury
   
+
+  # GLB placement prep
   set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
   set glb_name [get_property $glb hierarchical_name]
   set glb_width [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_x]
   set glb_height [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_y]
-  
+
   set glb_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glb_y_dist)] $pmesh_bot_pitch]
   set glb_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $glb_width)/2.] $pmesh_top_pitch]
   
+  # Prevent GLB / alignment-cell overlap
+  proc avoid_alignment_cells { glb_x_loc glb_width pmesh_top_pitch } {
+
+    # Find left edge of alignment cell
+    set blockage [ lindex [ get_db route_blockages ifid_dtcd_feol_cc_42_bigblockgf ] 1 ]
+    set rects [ get_db $blockage .rects ]; # e.g. {3822.5 3822.5 3862.588 3862.588}
+    set llx [lindex [lindex $rects 0] 0];  # e.g. 3822.5
+    set alignment_cell_left_edge $llx;     # e.g. 3822.5
+    echo "Left edge of alignment halo = $alignment_cell_left_edge"
+
+    # Find right edge of glb, including some amount of margin for
+    # space between glb and alignment cell. Arbitrarily chose
+    # pmesh-top-pitch for the margin; TODO/FIXME: think about what the
+    # right number should be
+
+    set glb_margin $pmesh_top_pitch; 
+    set glb_right_edge [expr $glb_x_loc + $glb_width + $glb_margin]
+    echo "Right edge of global buffer = $glb_right_edge"
+
+    # If overlap exists, try and fix it.
+    if { $glb_right_edge > $alignment_cell_left_edge } {
+      echo "WARNING global buffer overlaps alignment cell";
+      set nshifts     0
+      set nshifts_max 10
+      while { $glb_right_edge > $alignment_cell_left_edge } {
+        echo "...Shifting global buffer left $pmesh_top_pitch microns";
+        set glb_x_loc [snap_to_grid [expr $glb_x_loc - $pmesh_top_pitch] $pmesh_top_pitch]
+        set glb_right_edge [expr $glb_x_loc + $glb_width + $glb_margin]
+
+        set nshifts [expr $nshifts + 1]
+        if { $nshifts >= $nshifts_max } {
+            echo "ERROR: Shifted global buffer left $nshifts times, still overlaps alignment cell"
+            echo exit 13
+        }
+      }
+      set gap [expr  $glb_margin + $alignment_cell_left_edge - $glb_right_edge]
+      echo "Now right edge of global buffer = $glb_right_edge"
+      echo "Gap between glb and align cell = $gap" 
+    }
+    return $glb_x_loc
+  }
+  set glb_x_loc [avoid_alignment_cells $glb_x_loc $glb_width $pmesh_top_pitch]
+
+  # GLB placement
   placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
   
