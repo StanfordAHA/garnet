@@ -27,9 +27,20 @@ proc add_core_fiducials {} {
   set x [snap_to_grid  700.00 0.09 99.99]
   # Put icovl array between bump rows near top of die
   set y 4008
-  # Put dtcd between four bumps and as close to UR corner as it can get
-  set ::env(DTCD_X) 3840; set ::env(DTCD_Y) 3840
   set cols [expr 42 - 2]; # 42 columns, this is how we do it :(
+
+  #   # Put dtcd between four bumps and as close to UR corner as it can get
+  #   set ::env(DTCD_X) 3840; set ::env(DTCD_Y) 3840
+  #
+  # Hm all the congestion is on the left side of the GLB. And this
+  # DTCD cell is below the top edge of the GLB, so if DTCD is near UR
+  # corner, that blocks GLB from moving further to the right.  How
+  # about we put DTCD symmetrically across on the LEFT side so GLB can
+  # move to the right when/if we want to alleviate congestion?
+  # FIXME these numbers should probably be a function of die size etc.
+  set ::env(DTCD_X) 1055; set ::env(DTCD_Y) 3840
+
+  # Place!
   gen_fiducial_set $x $y cc true $cols
 
   puts "--- @file_info end ICOVL"
