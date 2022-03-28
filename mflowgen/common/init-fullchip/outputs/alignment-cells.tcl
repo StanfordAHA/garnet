@@ -61,5 +61,5 @@ proc create_cell_grid {ori_x ori_y x_sep y_sep numrows numcols cellname instname
 # Create grid of alignment cells over center of chip
 set alignment_cellname "CDMMTYPE2_32422"
 set alignment_instname_base "core_alignment_grid"
-create_cell_grid 300 300 1500 1500 3 3 $alignment_cellname $alignment_instname_base
+#create_cell_grid 300 300 1500 1500 3 3 $alignment_cellname $alignment_instname_base
 

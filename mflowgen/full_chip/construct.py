@@ -79,7 +79,7 @@ def construct():
     # Include SoC core? (use 0 for false, 1 for true)
     'include_core'      : 1,
     # Include sealring?
-    'include_sealring'  : True,
+    'include_sealring'  : False,
     # SRAM macros
     'num_words'         : 2048,
     'word_size'         : 64,
@@ -195,6 +195,10 @@ def construct():
   # Antenna DRC Check
   antenna_drc = drc.clone()
   antenna_drc.set_name( 'antenna-drc' )
+  
+  # Pre-Fill DRC Check
+  prefill_drc = drc.clone()
+  prefill_drc.set_name( 'pre-fill-drc' )
 
   # Add cgra tile macro inputs to downstream nodes
 
@@ -289,6 +293,7 @@ def construct():
   g.add_step( netlist_fixing    )
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
+  g.add_step( prefill_drc       )
   g.add_step( fill              )
   g.add_step( merge_fill        )
   g.add_step( drc               )
@@ -324,6 +329,7 @@ def construct():
   g.connect_by_name( adk,      postroute      )
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
+  g.connect_by_name( adk,      prefill_drc    )
   g.connect_by_name( adk,      fill           )
   g.connect_by_name( adk,      merge_fill     )
   g.connect_by_name( adk,      drc            )
@@ -424,6 +430,8 @@ def construct():
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        lvs            )
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
+  # Run pre-fill DRC after signoff
+  g.connect(signoff.o('design-merged.gds'), prefill_drc.i('design_merged.gds'))
 
   # Run Fill on merged GDS
   g.connect( signoff.o('design-merged.gds'), fill.i('design.gds') )
@@ -476,7 +484,7 @@ def construct():
     {'order': [
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-      #'alignment-cells.tcl',
+      'alignment-cells.tcl',
       #'analog-bumps/route-phy-bumps.tcl',
       #'analog-bumps/bump-connect.tcl',
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
