@@ -32,9 +32,9 @@ proc add_core_fiducials {} {
   # Previously had DTCD on right side of GLB at (3840,3840). But all
   # the congestion appears to be on the left side of the GLB. The DTCD
   # cell was preventing us from moving the GLB rightward to alleviate
-  # the congestion. So now we hvae put DTCD symmetrically across on
-  # the LEFT side so GLB can move to the right when/if we want to
-  # alleviate congestion?
+  # the congestion. So now we hvae put DTCD symmetrically across on the
+  # LEFT side so GLB can move to the right whenever and however much we like.
+  #
   # FIXME the below numbers should probably be a function of die size etc.
   set ::env(DTCD_X) 1055; set ::env(DTCD_Y) 3840
 
