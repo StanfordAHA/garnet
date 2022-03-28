@@ -34,9 +34,6 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
 
     set core_llx [dbGet top.fPlan.coreBox_llx]
     
-    # We will insert an aon tap every <stripes_per_tap> set of M3 power stripes
-    set stripes_per_tap 8
-   
     # Pitch is a multiple of the M3 VDD stripe pitch 
     set horiz_tap_pitch [expr $stripes_per_tap * $M3_str_interset_pitch]
     
