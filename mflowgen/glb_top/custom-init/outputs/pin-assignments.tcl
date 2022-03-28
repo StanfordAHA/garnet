@@ -35,6 +35,7 @@ proc port_compare {a b} {
 
 set array_width $env(array_width)
 set num_glb_tiles $env(num_glb_tiles)
+# flush output pins are added every $prr_size glb_tiles
 set prr_size 4
 set cgra_data_width 16
 set cgra_cfg_addr_width 32
