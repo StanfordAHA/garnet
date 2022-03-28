@@ -20,7 +20,7 @@ if { ! $::env(soc_only) } {
   # squeezes up against a row of alignment cells, so I'm moving the
   # GLB down a bit to open it up.
   # Tried moving down 15u, that wasn't enough, now increased to 45u.
-  # (Note ic2glb_y_dist is in units of 'vert_pitches', so 45u ~ 
+  # (Note ic2glb_y_dist is in units of 'vert_pitches', and 45u ~ 78 vp's.)
   # FIXME later should express this as a function of alignment-cell location.
   set ic2glb_y_dist [expr $ic2glb_y_dist - 78]
 
