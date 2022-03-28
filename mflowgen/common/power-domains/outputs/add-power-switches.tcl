@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------
 
 # Choose the power switch name for this technology
-set switch_name "SC7P5T2V_HEADERBUFX8_SSC14R"
+set switch_name $ADK_POWER_SWITCH
 
 set switch_width [dbGet [dbGetCellByName $switch_name].size_x]
 
