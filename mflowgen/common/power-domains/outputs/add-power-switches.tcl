@@ -5,8 +5,8 @@
 # Add power switches for power aware flow
 # ------------------------------------------------------------------------
 
-# Choose the switch name
-set switch_name "HDR10XSICWDPDTD1BWP16P90"
+# Choose the power switch name for this technology
+set switch_name $ADK_POWER_SWITCH
 
 set switch_width [dbGet [dbGetCellByName $switch_name].size_x]
 
