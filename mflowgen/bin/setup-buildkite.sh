@@ -269,7 +269,7 @@ function check_pyversions {
 
 if [ "$USER" == "buildkite-agent" ]; then
     echo "--- ENVIRONMENT - VENV"; echo ""
-    venv=/usr/local/venv_garnet
+    venv=/sim/buildkite-agent/venv_garnet
     if ! test -d $venv; then
         echo "**ERROR: Cannot find pre-built environment '$venv'"
         return 13 || exit 13

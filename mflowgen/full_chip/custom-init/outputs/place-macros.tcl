@@ -33,7 +33,7 @@ if { ! $::env(soc_only) } {
   set ic_width [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_x]
   set ic_height [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_y]
 
-  set ic_y_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $ic_height)/20.] $pmesh_bot_pitch]
+  set ic_y_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $ic_height)/10.] $pmesh_bot_pitch]
   set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)/2.] $pmesh_top_pitch]
     
   placeinstance $interconnect_name $ic_x_loc $ic_y_loc -fixed
@@ -45,22 +45,30 @@ if { ! $::env(soc_only) } {
   set thickness [expr 10 * $vert_pitch]
   createRouteBlk \
     -name ic_top_pg_via_blk \
-    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -cutLayer {4 5 6 7 8 9 10 11 12} \
     -pgnetonly \
     -box $ic_x_loc $ic_ury $ic_urx [expr $ic_ury + $thickness]
 
-  # Prevent PMESH_BOT_LAYER stripes over IC
+  # Prevent vias to PMESH_BOT_LAYER stripes over IC
   createRouteBlk \
     -name ic_pmesh_bot_via \
-    -layer VIA$ADK_POWER_MESH_BOT_LAYER \
+    -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1] \
     -pgnetonly \
     -box $ic_x_loc $ic_y_loc $ic_urx $ic_ury
   
+  # Prevent PMESH_BOT_LAYER stripes over IC
   createRouteBlk \
     -name ic_pmesh_bot \
     -layer $ADK_POWER_MESH_BOT_LAYER \
     -pgnetonly \
     -box [expr $ic_x_loc + (8*$horiz_pitch)] $ic_y_loc [expr $ic_urx - (8*$horiz_pitch)] $ic_ury
+  
+  # Prevent PMESH_TOP_LAYER stripes over IC
+  createRouteBlk \
+    -name ic_pmesh_top \
+    -layer $ADK_POWER_MESH_TOP_LAYER \
+    -pgnetonly \
+    -box $ic_x_loc [expr $ic_y_loc + (2*$vert_pitch)] $ic_urx [expr $ic_ury - (2*$vert_pitch)]
   
   set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
   set glb_name [get_property $glb hierarchical_name]
@@ -79,28 +87,36 @@ if { ! $::env(soc_only) } {
   set thickness [expr 10 * $vert_pitch]
   createRouteBlk \
     -name glb_top_pg_via_blk \
-    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -cutLayer {4 5 6 7 8 9 10 11 12} \
     -pgnetonly \
     -box $glb_x_loc $glb_y_loc $glb_urx [expr $glb_y_loc - $thickness]
   
   createRouteBlk \
     -name glb_left_pg_via_blk \
-    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -cutLayer {4 5 6 7 8 9 10 11 12} \
     -pgnetonly \
     -box [expr $glb_x_loc - $thickness] $glb_y_loc $glb_x_loc $glb_ury
   
-  # Prevent PMESH_BOT_LAYER stripes over GLB
+  # Prevent vias to PMESH_BOT_LAYER stripes over GLB
   createRouteBlk \
     -name glb_pmesh_bot_via \
-    -layer VIA$ADK_POWER_MESH_BOT_LAYER \
+    -layer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
     -pgnetonly \
     -box $glb_x_loc $glb_y_loc $glb_urx $glb_ury
   
+  # Prevent PMESH_BOT_LAYER stripes over GLB
   createRouteBlk \
     -name glb_pmesh_bot \
     -layer $ADK_POWER_MESH_BOT_LAYER \
     -pgnetonly \
     -box [expr $glb_x_loc + (8*$horiz_pitch)] $glb_y_loc [expr $glb_urx - (8*$horiz_pitch)] $glb_ury
+  
+  # Prevent PMESH_TOP_LAYER stripes over GLB
+  createRouteBlk \
+    -name glb_pmesh_bot \
+    -layer $ADK_POWER_MESH_TOP_LAYER \
+    -pgnetonly \
+    -box $glb_x_loc [expr $glb_y_loc + (2*$vert_pitch)] $glb_urx [expr $glb_ury - (2*$vert_pitch)]
   
   set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
   set glc_name [get_property $glc hierarchical_name]
@@ -118,13 +134,13 @@ if { ! $::env(soc_only) } {
   set thickness [expr 10 * $vert_pitch]  
   createRouteBlk \
     -name glc_left_pg_via_blk \
-    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -cutLayer {4 5 6 7 8 9 10 11 12} \
     -pgnetonly \
     -box [expr $glc_x_loc - $thickness] $glc_y_loc $glc_x_loc $glc_ury
   
   createRouteBlk \
     -name glc_right_pg_via_blk \
-    -layer {VIA3 VIA4 VIA5 VIA6 VIA7} \
+    -cutLayer {4 5 6 7 8 9 10 11 12} \
     -pgnetonly \
     -box $glc_x_loc $glc_y_loc [expr $glc_urx + $thickness] $glc_ury
 }
@@ -201,22 +217,22 @@ foreach_in_collection sram $srams {
 
 # Place analog block
 # placeInstance iphy 1352.685 4098.000 -fixed ; # dragonphy
-  placeInstance iphy 1703.075 4098.000 -fixed ; # dragonphy2 11/2020
+  #placeInstance iphy 1703.075 4098.000 -fixed ; # dragonphy2 11/2020
 
 # Create route Blockage over dragonphy
-set llx [dbGet [dbGet -p top.insts.name iphy].box_llx]
-set lly [dbGet [dbGet -p top.insts.name iphy].box_lly]
-set urx [dbGet [dbGet -p top.insts.name iphy].box_urx]
-set ury [dbGet [dbGet -p top.insts.name iphy].box_ury]
-
-createRouteBlk \
-  -box [expr $llx - 5] [expr $lly - 5] [expr $urx + 5] [expr $ury + (3 * $vert_pitch)] \
-  -layer {3 9} \
-  -name dragonphy \
-  -pgnetonly
-
-set halo_margin [expr 3 * $vert_pitch]
-addHaloToBlock $halo_margin $halo_margin $halo_margin $halo_margin  iphy
+#set llx [dbGet [dbGet -p top.insts.name iphy].box_llx]
+#set lly [dbGet [dbGet -p top.insts.name iphy].box_lly]
+#set urx [dbGet [dbGet -p top.insts.name iphy].box_urx]
+#set ury [dbGet [dbGet -p top.insts.name iphy].box_ury]
+#
+#createRouteBlk \
+#  -box [expr $llx - 5] [expr $lly - 5] [expr $urx + 5] [expr $ury + (3 * $vert_pitch)] \
+#  -layer {3 9} \
+#  -name dragonphy \
+#  -pgnetonly
+#
+#set halo_margin [expr 3 * $vert_pitch]
+#addHaloToBlock $halo_margin $halo_margin $halo_margin $halo_margin  iphy
 
 
 # Skip routing on all analog nets

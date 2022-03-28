@@ -13,7 +13,7 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
     deleteInst *ENDCAP*
     deleteInst *tap*
 
-    set aon_tap_cell "SC7P5T_TAPPBIASX14_SSC14R"
+    set aon_tap_cell "SC7P5T_TAPNBIASX14_SSC14R"
 
     # Align tap cells with M3 pitch so that the M1 VPP pin is directly aligned with the M3 VDD net
 
