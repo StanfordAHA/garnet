@@ -56,7 +56,8 @@ class _PeakWrapper(metaclass=_PeakWrapperMeta):
             circuit, self.__asm.disassemble, self.__asm.width,
             HashableDict(self.__asm.layout),
             instr_magma_type)
-        data_gate(self.__circuit)
+        # this data gate will be moved into the PE
+        # data_gate(self.__circuit)
 
     @property
     def model(self):
