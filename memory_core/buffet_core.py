@@ -88,7 +88,7 @@ class BuffetCore(LakeCoreBase):
         return configs
 
     def pnr_info(self):
-        return PnRTag("w", self.DEFAULT_PRIORITY, 1)
+        return PnRTag("B", self.DEFAULT_PRIORITY, 1)
 
 
 if __name__ == "__main__":
