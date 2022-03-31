@@ -42,6 +42,7 @@
 //; my $cfg_op_width = parameter(Name=>'cfg_op_width',val=>5);
 //; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
 //; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
+//; my $cgra_width = parameter(NAME => 'cgra_width', VAL => 32, DOC => 'cgra array width');
 //; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
 //;
 //; # Set up IO list for JTAG interface to pass to JTAGDriver 
@@ -179,7 +180,7 @@ module `mname`();
     * **************************************************************************/
     //; my $tst_obj = generate('glc_prog', 'glc_prog', config_addr_width=>$cfg_addr_width, config_data_width=>$cfg_data_width,
     //;                         axi_addr_width=>$axi_addr_width, axi_data_width=>$axi_data_width, block_axi_addr_width=>$block_axi_addr_width,
-    //;                         num_glb_tiles=>$num_glb_tiles, block_axi_addr_width=>$block_axi_addr_width, num_glb_tiles=>$num_glb_tiles);
+    //;                         num_glb_tiles=>$num_glb_tiles, cgra_width=>$cgra_width);
     `$tst_obj->instantiate` (.dut_ifc(`$dut_ifc->iname()`), .jtag_ifc(`$jtag_ifc->iname()`), .axi_ifc(`$axil_ifc->iname()`));
       
 endmodule

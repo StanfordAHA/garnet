@@ -1,0 +1,9 @@
+// Test tile 6. sparse writing
+1
+00
+F2G 6 12 0 0
+2
+62 62
+10 640
+1 62
+testvectors/3844_v0.dat

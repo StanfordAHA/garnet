@@ -9,8 +9,8 @@ coreir>=2.0.123  # should be first so we get the latest version
 -e git+https://github.com/StanfordAHA/lake@dual_port_sram_joey#egg=lake-aha
 -e git+https://github.com/phanrahan/magma.git#egg=magma-lang
 -e git+https://github.com/phanrahan/mantle.git#egg=mantle
--e git+git://github.com/jack-melchert/peak_generator#egg=peak_gen
--e git+git://github.com/rdaly525/MetaMapper#egg=metamapper
+-e git+https://github.com/jack-melchert/peak_generator#egg=peak_gen
+-e git+https://github.com/rdaly525/MetaMapper#egg=metamapper
 ordered_set
 cosa
 -e git+https://github.com/leonardt/fault.git#egg=fault

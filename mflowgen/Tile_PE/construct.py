@@ -46,6 +46,7 @@ def construct():
     'topographical'     : True,
     # RTL Generation
     'interconnect_only' : True,
+    'rtl_docker_image'  : 'default', # Current default is 'stanfordaha/garnet:latest'
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
     'core_density_target': 0.63,

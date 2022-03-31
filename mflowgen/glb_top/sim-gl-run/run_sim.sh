@@ -1,13 +1,18 @@
 #!/bin/bash
-cp $GARNET_HOME/global_buffer/Makefile ./
-cp -r $GARNET_HOME/global_buffer/testvectors ./
-mkdir sim
-cp -r $GARNET_HOME/global_buffer/sim/dump*.tcl ./sim/
+ln -s ./inputs/Makefile
+ln -s ./inputs/sim
+ln -s ./inputs/testvectors
 
 if [ $waveform = "True" ]; then
     WAVEFORM=1
 else
     WAVEFORM=0
+fi
+
+if [ $saif = "True" ]; then
+    SAIF=1
+else
+    SAIF=0
 fi
 
 if [ $tool = "XCELIUM" ]; then
@@ -17,35 +22,12 @@ elif [ $tool = "VCS" ]; then
     ln -s ./inputs/simv.daidir
 fi
 
-# for test in $(echo $testvectors | sed "s/,/ /g")
-# do
-#     set -x;
-#     RUN_LOG=${test}.log \
-#     RUN_ARGS=+TEST=${test} \
-#     WAVEFORM=$WAVEFORM \
-#     SAIF=${saif} \
-#     TOOL=$tool \
-#     make run;
-#     cat ${test}.log >> outputs/run.log;
-#     if [ $saif = "True" ]; then
-#         mv run.saif ${test}.saif;
-#     fi
-# done
-# cd outputs
-# 
-# for test in $(echo $testvectors | sed "s/,/ /g")
-# do
-#     if [ $saif = "True" ]; then
-#         ln -s ../${test}.saif
-#     fi
-# done
-
 (
     set -x;
     RUN_LOG=${test}.log \
-    RUN_ARGS=+TEST=${test} \
+    RUN_ARGS=+${test} \
     WAVEFORM=$WAVEFORM \
-    SAIF=${saif} \
+    SAIF=${SAIF} \
     TOOL=$tool \
     make run;
     cat ${test}.log >> outputs/run.log;
@@ -59,7 +41,7 @@ if [ $waveform = "True" ]; then
     if [ $tool = "XCELIUM" ]; then
         ln -s ../global_buffer.shm global_buffer.shm
     elif [ $tool = "VCS" ]; then
-        ln -s ../global_buffer.fsdb global_buffer.fsdb
+        ln -s ../global_buffer.fsdb run.fsdb
     fi
 fi
 
