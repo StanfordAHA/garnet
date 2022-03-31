@@ -28,6 +28,7 @@
 //; my $axi_data_width = parameter(NAME => 'axi_data_width', VAL => 32, DOC => 'Width of axi_data');
 //; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
 //; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
+//; my $cgra_width = parameter(NAME => 'cgra_width', VAL => 32, DOC => 'cgra array width');
 //; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
 
 program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_ifc);
@@ -38,7 +39,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     int file_desc;
     int config_count=0;
     enum {other, cgra_reading, cgra_writing, glb_reading, glb_writing, sram_reading, sram_writing,
-          global_resetting, soft_resetting, strm_pulsing, pc_pulsing,
+          global_resetting, strm_pulsing, pc_pulsing,
           axi_cgra_writing, axi_cgra_reading} state = other; 
     enum {axi4, jtag} gc_interface = jtag; 
 
@@ -224,24 +225,6 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     assert property(correct_global_reset) else $error("incorrect global reset");
     
     //============================================================================//
-    // soft resetting
-    //============================================================================//
-    sequence begin_soft_reset;
-           ~(state==soft_resetting) ##1 (state==soft_resetting);
-    endsequence
-    
-    sequence assert_soft_reset;
-           ##[0:800] (state==soft_resetting) && (top.dut.soft_reset==1);
-    endsequence
-    
-    property correct_soft_reset;
-           @(posedge dut_ifc.Clk)
-           begin_soft_reset |-> assert_soft_reset;
-    endproperty
-       
-    assert property(correct_soft_reset) else $error("incorrect soft reset");
-    
-    //============================================================================//
     // strm pulsing
     //============================================================================//
     sequence begin_strm_pulsing;
@@ -359,39 +342,61 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
        
     // stall all
     @(posedge dut_ifc.Clk);
-    write_gc_reg(write_stall,{`2*$num_glb_tiles`{1'b1}});
+    write_gc_reg(write_stall, {`$cgra_width`{1'b1}});
     repeat(2) jtag_driver.Next_tck();
-    check_register(top.dut.glb_stall, {`$num_glb_tiles`{1'b1}});
-    check_register(top.dut.cgra_stall, {`$num_glb_tiles`{1'b1}});
+    check_register(top.dut.cgra_stall, {`$cgra_width`{1'b1}});
 
     // cgra stall
     @(posedge dut_ifc.Clk);
     write_gc_reg(write_stall,32'b11);
     repeat(2) jtag_driver.Next_tck();
-    check_register(top.dut.glb_stall, 0);
-    check_register(top.dut.cgra_stall, 16'b11);
-
-    // glb stall
-    @(posedge dut_ifc.Clk);
-    write_gc_reg(write_stall,32'b11 << 16);
-    repeat(2) jtag_driver.Next_tck();
-    check_register(top.dut.glb_stall, 16'b11);
-    check_register(top.dut.cgra_stall, 0);
+    check_register(top.dut.cgra_stall, 32'b11);
 
     // unstall
     @(posedge dut_ifc.Clk);
     write_gc_reg(write_stall, 32'b0);
     repeat(2) jtag_driver.Next_tck();
-    check_register(top.dut.glb_stall, 0);
     check_register(top.dut.cgra_stall, 0);
+
+    // glb stall
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(write_glb_pcfg_broadcast_stall, {`$num_glb_tiles`{1'b1}});
+    repeat(2) jtag_driver.Next_tck();
+    check_register(top.dut.glb_pcfg_broadcast_stall, {`$num_glb_tiles`{1'b1}});
+
+    // glb unstall
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(write_glb_pcfg_broadcast_stall, 32'b0);
+    repeat(2) jtag_driver.Next_tck();
+    check_register(top.dut.glb_pcfg_broadcast_stall, 0);
+
+    // glb clk_en_master
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(write_glb_clk_en_master, {`$num_glb_tiles`{1'b1}});
+    repeat(2) jtag_driver.Next_tck();
+    check_register(top.dut.glb_clk_en_master, {`$num_glb_tiles`{1'b1}});
+
+    // glb clk_en_master reset
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(write_glb_clk_en_master, {`$num_glb_tiles`{1'b0}});
+    repeat(2) jtag_driver.Next_tck();
+    check_register(top.dut.glb_clk_en_master, {`$num_glb_tiles`{1'b0}});
+
+    // glb clk_en_bank_master
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(write_glb_clk_en_bank_master, {`$num_glb_tiles`{1'b1}});
+    repeat(2) jtag_driver.Next_tck();
+    check_register(top.dut.glb_clk_en_bank_master, {`$num_glb_tiles`{1'b1}});
+
+    // glb clk_en_bank_master reset
+    @(posedge dut_ifc.Clk);
+    write_gc_reg(write_glb_clk_en_bank_master, {`$num_glb_tiles`{1'b0}});
+    repeat(2) jtag_driver.Next_tck();
+    check_register(top.dut.glb_clk_en_bank_master, {`$num_glb_tiles`{1'b0}});
 
     // global reset
     @(posedge dut_ifc.Clk);
     global_reset(32'd50);
-
-    // soft reset
-    @(posedge dut_ifc.Clk);
-    soft_reset(32'd50);
 
     // write glb config
     repeat(100) begin
@@ -433,7 +438,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
 
     // axi control - stall all
     @(posedge dut_ifc.Clk);
-    addrmap_write(am_stall, {`2*$num_glb_tiles`{1'b1}});
+    addrmap_write(am_stall, {`$cgra_width`{1'b1}});
 
     // axi control - stall
     @(posedge dut_ifc.Clk);
@@ -451,10 +456,46 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     @(posedge dut_ifc.Clk);
     addrmap_read(am_stall);
 
+    // axi control - glb core stall
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_glb_clk_en_master, {`$num_glb_tiles`{1'b1}});
+
+    // axi control
+    @(posedge dut_ifc.Clk);
+    addrmap_read(am_glb_clk_en_master);
+
+    // axi control - glb rtr stall
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_glb_clk_en_bank_master, {`$num_glb_tiles`{1'b1}});
+
+    // axi control
+    @(posedge dut_ifc.Clk);
+    addrmap_read(am_glb_clk_en_bank_master);
+
+    // axi control - glb pcfg rtr stall
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_glb_pcfg_broadcast_stall, {`$num_glb_tiles`{1'b1}});
+
+    // axi control
+    @(posedge dut_ifc.Clk);
+    addrmap_read(am_glb_pcfg_broadcast_stall);
+
+    // axi control - glb core unstall
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_glb_clk_en_master, 0);
+
+    // axi control - glb rtr unstall
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_glb_clk_en_bank_master, 0);
+
+    // axi control - glb pcfg rtr unstall
+    @(posedge dut_ifc.Clk);
+    addrmap_write(am_glb_pcfg_broadcast_stall, 0);
+
     // axi control - g2f_start_pulse
     repeat(100) begin
         @(posedge dut_ifc.Clk);
-        addrmap_write(am_strm_g2f_start_pulse, $urandom_range((2 ** `$num_glb_tiles`)-1));
+        addrmap_write(am_strm_start_pulse, $urandom_range((2 ** `$num_glb_tiles`)-1));
     end
 
     // axi control - pc
@@ -589,19 +630,6 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     end
     endtask
     
-    task soft_reset(int data_in);
-    begin
-        state = soft_resetting;
-        gc_interface = jtag;
-        jtag_trans.op = soft_reset;
-        jtag_trans.data_in = data_in;
-        jtag_trans.done = 0;
-        jtag_driver.Send(jtag_trans);
-        config_count++;
-        state = other;
-    end
-    endtask
-    
     task write_gc_reg(regfile_op_t op, int data_in);
     begin
         gc_interface = jtag;
@@ -668,14 +696,17 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         begin
             for (int i=0; i<10000; i++) begin
                 // Assume glb returns config read data after 3 cycles
-                if (cnt == 3) begin
+                if (top.dut.glb_cfg_rd_en==1) begin
+                    cnt = 4;
+                end
+                else if (cnt == 1) begin
                     dut_ifc.glb_cfg_rd_data_valid = 1;
                     dut_ifc.glb_cfg_rd_data = data_in;
                     @(posedge dut_ifc.Clk);
                     break;
                 end
-                else if (top.dut.glb_cfg_rd_en==1) begin
-                    cnt++;
+                else if (cnt > 1) begin
+                    cnt--;
                 end
                 @(posedge dut_ifc.Clk);
             end
@@ -724,15 +755,18 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         end
         begin
             for (int i=0; i<10000; i++) begin
-                // Assume sram returns config read data after 3 cycles
-                if (cnt == 3) begin
+                // Assume sram returns config read data after 5 cycles
+                if (top.dut.sram_cfg_rd_en==1) begin
+                    cnt = 5;
+                end
+                else if (cnt == 1) begin
                     dut_ifc.sram_cfg_rd_data_valid = 1;
                     dut_ifc.sram_cfg_rd_data = data_in;
                     @(posedge dut_ifc.Clk);
                     break;
                 end
-                else if (top.dut.sram_cfg_rd_en==1) begin
-                    cnt++;
+                else if (cnt > 1) begin
+                    cnt--;
                 end
                 @(posedge dut_ifc.Clk);
             end
@@ -775,50 +809,18 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     end
     endtask
 
-    task axi_soft_reset(int data);
-    begin
-        state = soft_resetting;
-        gc_interface = axi4;
-        config_count++;
-        axi_trans.addr = 'h8;
-        axi_trans.data_in = data;
-        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
-        axi_trans = axi_driver.GetResult();
-        $fdisplay(file_desc,"%t: %m: Trans %d (axi soft reset):  Address to CGRA=%d, Data to CGRA=%d",  
-            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
-        repeat (100) @(posedge dut_ifc.Clk); 
-        state = other;
-    end
-    endtask
-
-    task axi_rd_soft_reset();
-    begin
-        gc_interface = axi4;
-        config_count++;
-        axi_trans.addr = 'h8;
-        axi_trans.data_in = '0;
-        axi_driver.axi_read(axi_trans.addr);
-        axi_trans = axi_driver.GetResult();
-        $fdisplay(file_desc,"%t: %m: Trans %d (axi read soft reset):  Address to CGRA=%d, Data to CGRA=%d",  
-            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
-        repeat (100) @(posedge dut_ifc.Clk); 
-	    assert (axi_trans.data_out == top.dut.soft_reset) else $display("Soft reset axi read error");
-    end
-    endtask
-
     task axi_stall(int data);
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'hc;
+        axi_trans.addr = 'h8;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
         $fdisplay(file_desc,"%t: %m: Trans %d (axi stall):  Address to CGRA=%d, Data to CGRA=%d",  
             $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
         repeat (100) @(posedge dut_ifc.Clk); 
-        check_register(top.dut.glb_stall, data[`2*$num_glb_tiles-1`:`$num_glb_tiles`]);
-        check_register(top.dut.cgra_stall, data[`$num_glb_tiles-1`:0]);
+        check_register(top.dut.cgra_stall, data);
     end
     endtask
 
@@ -826,24 +828,114 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'hc;
+        axi_trans.addr = 'h8;
         axi_trans.data_in = '0;
         axi_driver.axi_read(axi_trans.addr);
         axi_trans = axi_driver.GetResult();
         $fdisplay(file_desc,"%t: %m: Trans %d (axi read stall):  Address to CGRA=%d, Data to CGRA=%d",  
             $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
         repeat (100) @(posedge dut_ifc.Clk); 
-	    assert (axi_trans.data_out == {top.dut.glb_stall, top.dut.cgra_stall}) else $display("Stall axi read error");
+	    assert (axi_trans.data_out == top.dut.cgra_stall) else $display("Stall axi read error");
     end
     endtask
 
-    task axi_strm_g2f_start_pulse(int data);
+    task axi_glb_clk_en_master(int data);
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'hc;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi glb core stall):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        check_register(top.dut.glb_clk_en_master, data);
+    end
+    endtask
+
+    task axi_rd_glb_clk_en_master();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'hc;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read glb core stall):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.glb_clk_en_master) else $display("Stall axi read error");
+    end
+    endtask
+
+    task axi_glb_clk_en_bank_master(int data);
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h10;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi glb rtr stall):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        check_register(top.dut.glb_clk_en_bank_master, data);
+    end
+    endtask
+
+    task axi_rd_glb_clk_en_bank_master();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h10;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read glb rtr stall):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.glb_clk_en_bank_master) else $display("Stall axi read error");
+    end
+    endtask
+
+    task axi_glb_pcfg_broadcast_stall(int data);
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h14;
+        axi_trans.data_in = data;
+        axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi glb pcfg rtr stall):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.awaddr, axi_ifc.wdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+        check_register(top.dut.glb_pcfg_broadcast_stall, data);
+    end
+    endtask
+
+    task axi_rd_glb_pcfg_broadcast_stall();
+    begin
+        gc_interface = axi4;
+        config_count++;
+        axi_trans.addr = 'h14;
+        axi_trans.data_in = '0;
+        axi_driver.axi_read(axi_trans.addr);
+        axi_trans = axi_driver.GetResult();
+        $fdisplay(file_desc,"%t: %m: Trans %d (axi read glb pcfg rtr stall):  Address to CGRA=%d, Data to CGRA=%d",  
+            $time, config_count, axi_ifc.araddr, axi_ifc.rdata);
+        repeat (100) @(posedge dut_ifc.Clk); 
+	    assert (axi_trans.data_out == top.dut.glb_pcfg_broadcast_stall) else $display("Stall axi read error");
+    end
+    endtask
+
+    task axi_strm_start_pulse(int data);
     begin
         assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
         state = strm_pulsing;
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h10;
+        axi_trans.addr = 'h18;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -860,7 +952,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         state = pc_pulsing;
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h14;
+        axi_trans.addr = 'h1c;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -876,7 +968,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h18;
+        axi_trans.addr = 'h20;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -891,7 +983,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h18;
+        axi_trans.addr = 'h20;
         axi_trans.data_in = '0;
         axi_driver.axi_read(axi_trans.addr);
         axi_trans = axi_driver.GetResult();
@@ -907,7 +999,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h28;
+        axi_trans.addr = 'h30;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -921,7 +1013,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h28;
+        axi_trans.addr = 'h30;
         axi_trans.data_in = '0;
         axi_driver.axi_read(axi_trans.addr);
         axi_trans = axi_driver.GetResult();
@@ -937,7 +1029,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h1c;
+        axi_trans.addr = 'h24;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -952,7 +1044,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h1c;
+        axi_trans.addr = 'h24;
         axi_trans.data_in = '0;
         axi_driver.axi_read(axi_trans.addr);
         axi_trans = axi_driver.GetResult();
@@ -968,7 +1060,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h2c;
+        axi_trans.addr = 'h34;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -982,7 +1074,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h2c;
+        axi_trans.addr = 'h34;
         axi_trans.data_in = '0;
         axi_driver.axi_read(axi_trans.addr);
         axi_trans = axi_driver.GetResult();
@@ -998,7 +1090,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h20;
+        axi_trans.addr = 'h28;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -1012,7 +1104,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h20;
+        axi_trans.addr = 'h28;
         axi_trans.data_in = '0;
         axi_driver.axi_read(axi_trans.addr);
         axi_trans = axi_driver.GetResult();
@@ -1028,7 +1120,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         assert (data < (2 ** `$num_glb_tiles`)) else $display("It should be one hot encoding style");
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h30;
+        axi_trans.addr = 'h38;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -1042,7 +1134,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h30;
+        axi_trans.addr = 'h38;
         axi_trans.data_in = '0;
         axi_driver.axi_read(axi_trans.addr);
         axi_trans = axi_driver.GetResult();
@@ -1058,7 +1150,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         assert (data < 3'b111) else $display("It should be one hot encoding style");
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h24;
+        axi_trans.addr = 'h2c;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -1072,7 +1164,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h24;
+        axi_trans.addr = 'h2c;
         axi_trans.data_in = 0;
         axi_driver.axi_read(axi_trans.addr);
         axi_trans = axi_driver.GetResult();
@@ -1087,7 +1179,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         assert (data < 3'b111) else $display("It should be one hot encoding style");
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h24;
+        axi_trans.addr = 'h3c;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -1101,7 +1193,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h34;
+        axi_trans.addr = 'h3c;
         axi_trans.data_in = 0;
         axi_driver.axi_read(axi_trans.addr);
         axi_trans = axi_driver.GetResult();
@@ -1189,7 +1281,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h38;
+        axi_trans.addr = 'h40;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -1204,7 +1296,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h3c;
+        axi_trans.addr = 'h44;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -1220,7 +1312,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         state = axi_cgra_writing;
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h40;
+        axi_trans.addr = 'h48;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -1236,7 +1328,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
         state = axi_cgra_reading;
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h44;
+        axi_trans.addr = 'h4c;
         axi_trans.data_in = data;
         axi_driver.axi_write(axi_trans.addr, axi_trans.data_in);
         axi_trans = axi_driver.GetResult();
@@ -1251,7 +1343,7 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
     begin
         gc_interface = axi4;
         config_count++;
-        axi_trans.addr = 'h48;
+        axi_trans.addr = 'h50;
         axi_trans.data_in = '0;
         axi_driver.axi_read(axi_trans.addr);
         axi_trans = axi_driver.GetResult();
@@ -1355,14 +1447,20 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             am_global_reset: begin
                 axi_global_reset(data);
             end
-            am_soft_reset: begin
-                axi_soft_reset(data);
-            end
             am_stall: begin
                 axi_stall(data);
             end
-            am_strm_g2f_start_pulse: begin
-                axi_strm_g2f_start_pulse(data);
+            am_glb_clk_en_master: begin
+                axi_glb_clk_en_master(data);
+            end
+            am_glb_clk_en_bank_master: begin
+                axi_glb_clk_en_bank_master(data);
+            end
+            am_glb_pcfg_broadcast_stall: begin
+                axi_glb_pcfg_broadcast_stall(data);
+            end
+            am_strm_start_pulse: begin
+                axi_strm_start_pulse(data);
             end
             am_pc_start_pulse: begin
                 axi_pc_start_pulse(data);
@@ -1417,13 +1515,19 @@ program automatic `mname`(interface dut_ifc, interface jtag_ifc, interface axi_i
             am_global_reset: begin
                 axi_rd_global_reset();
             end
-            am_soft_reset: begin
-                axi_rd_soft_reset();
-            end
             am_stall: begin
                 axi_rd_stall();
             end
-            am_strm_g2f_start_pulse: begin
+            am_glb_clk_en_master: begin
+                axi_rd_glb_clk_en_master();
+            end
+            am_glb_clk_en_bank_master: begin
+                axi_rd_glb_clk_en_bank_master();
+            end
+            am_glb_pcfg_broadcast_stall: begin
+                axi_rd_glb_pcfg_broadcast_stall();
+            end
+            am_strm_start_pulse: begin
             end
             am_pc_start_pulse: begin
             end

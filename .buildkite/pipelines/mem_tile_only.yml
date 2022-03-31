@@ -1,7 +1,7 @@
 agents: { jobsize: "hours" }
 
 env:
-  GOLD: /build/mem_tile_only.${BUILDKITE_BUILD_NUMBER}
+  GOLD: /build/mem${BUILDKITE_BUILD_NUMBER}
   OVERRIDE_MFLOWGEN_BRANCH: silent_fail
 
 steps:

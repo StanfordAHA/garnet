@@ -1,6 +1,7 @@
 #!/bin/bash
-cp $GARNET_HOME/global_buffer/Makefile ./
-cp -r $GARNET_HOME/global_buffer/sim ./
+ln -s ./inputs/Makefile
+ln -s ./inputs/gls
+ln -s ./inputs/sim
 
 # FIXME: PM standard cells should be removed!
 if [ $PWR_AWARE = "True" ]; then
@@ -15,9 +16,12 @@ else
   SDF=0
 fi
 
+CLK_PERIOD=$(echo $sim_clock_period*1000/1 | bc)ps
+
 (
     set -x;
     SDF=$SDF \
+    CLK_PERIOD=$CLK_PERIOD \
     HEADER_FILES="inputs/header/global_buffer_param.svh inputs/header/glb.svh" \
     NETLIST_FILES=$NETLIST_FILES \
     TB_FILES="-F sim/tb_global_buffer.f" \

@@ -62,7 +62,7 @@ def basic_tb(config_path,
     }
     bus = {"e0": 16, "e1": 16}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     # Regular Bootstrap

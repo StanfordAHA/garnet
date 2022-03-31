@@ -1,0 +1,31 @@
+agents: { jobsize: "hours" }
+
+########################################################################
+# What does this pipeline do?
+# It is able to run a single step in a subgraph without having to build
+# the entire subgraph. This particular pipeline specifically runs Tile_PE
+# synthesis step in the context of the full_chip/tile_array hierarchy.
+
+env:
+  GOLD: /build/pm${BUILDKITE_BUILD_NUMBER}
+  # OVERRIDE_MFLOWGEN_BRANCH: silent_fail
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+
+steps:
+
+- label: 'fc rtl'
+  commands:
+  - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array         --steps rtl
+- wait: ~
+
+
+- label: 'pe rtl'
+  commands:
+  - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps rtl
+- wait: ~
+
+
+- label: 'pe syn'
+  commands:
+  - $TEST --need_space 30G --build_dir $GOLD full_chip tile_array Tile_PE --steps synthesis
+- wait: ~

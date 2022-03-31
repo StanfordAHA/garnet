@@ -21,12 +21,12 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = 'tsmc16'
-  adk_view = 'multicorner'
+  adk_view = 'view-standard'
 
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'glb_tile',
-    'clock_period'   : 1.25,
+    'clock_period'   : 1.11,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
@@ -47,7 +47,7 @@ def construct():
      # Power Domains
     'PWR_AWARE'         : False,
     # hold target slack
-    'hold_target_slack' : 0.053
+    'hold_target_slack' : 0.03
 
   }
 
@@ -71,7 +71,8 @@ def construct():
   custom_power = Step( this_dir + '/../common/custom-power-leaf'  )
   short_fix    = Step( this_dir + '/../common/custom-short-fix'   )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'             )
-  lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db' )
+  genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'    )
+  lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
 
 
   # Default steps
@@ -90,7 +91,6 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff           = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff        = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlib            = Step( 'cadence-genus-genlib',          default=True )
   if which("calibre") is not None:
       drc               = Step( 'mentor-calibre-drc',            default=True )
       lvs               = Step( 'mentor-calibre-lvs',            default=True )
@@ -163,7 +163,7 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
-  g.add_step( lib2db         )
+  g.add_step( lib2db       )
   g.add_step( drc            )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
@@ -189,6 +189,7 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
+  g.connect_by_name( adk,      genlib         )
 
   g.connect_by_name( gen_sram,      synth          )
   g.connect_by_name( gen_sram,      iflow          )
@@ -224,6 +225,7 @@ def construct():
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    signoff        )
+  g.connect_by_name( iflow,    genlib         )
 
   # Fetch short-fix script in prep for eventual use by postroute_hold
   g.connect_by_name( short_fix, postroute_hold )
@@ -246,8 +248,8 @@ def construct():
 
   g.connect_by_name( signoff, genlib )
   g.connect_by_name( adk,     genlib )
-  
-  g.connect_by_name( genlib,  lib2db )
+
+  g.connect_by_name( genlib,     lib2db )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )

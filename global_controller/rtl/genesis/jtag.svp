@@ -154,11 +154,11 @@ module `$self->get_module_name()`
    //;					TC_CFG_BUS => 'no',
    //;					SC_CFG_OPCODES => {nop => 0, write => 1, read => 2, bypass =>3,                                                 
    //;                                                 wr_A050 => 4, wr_to_TST => 5, rd_TST => 6,
-   //; 						       global_reset => 7, soft_reset => 8, write_stall => 9,read_stall => 10, 
+   //; 						       global_reset => 7, write_stall => 9,read_stall => 10, 
    //;    					       adv_clk => 11, read_clk_domain => 12, switch_clk => 13,
    //;						       wr_rd_delay_reg => 14, rd_rd_delay_reg => 15, wr_delay_sel_reg => 16,
    //;						       rd_delay_sel_reg => 17, glb_wr_config=>18, glb_rd_config=>19, glb_sram_write_config=>20,
-   //;                              glb_sram_read_config=>21, axi_write=>22, axi_read=>23, wr_analog_reg => 24, rd_analog_reg => 25} 
+   //;                              glb_sram_read_config=>21, axi_write=>22, axi_read=>23, write_glb_stall => 24, read_glb_stall => 25} 
    //;					);#Should this really be bypass??
    //;
    

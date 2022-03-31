@@ -79,6 +79,7 @@ task AxilDriver::read(bit [CGRA_AXI_ADDR_WIDTH-1:0] addr,
     @(vif.cbd);
     this.vif.cbd.rready <= 0;
     @(vif.cbd);
+    // $display("AXI-Lite Read. Addr: %08h, Data: %08h", addr, data);
     axil_lock.put(1);
 endtask
 
