@@ -219,6 +219,8 @@ class MemCore(LakeCoreBase):
             instr['mode'] = 'UB'
             if 'stencil_valid' in instr['config']:
                 instr['mode'] = 'stencil_valid'
+        if 'mode' in instr and instr['mode'] == 'sram':
+            instr['mode'] = 'ROM'
         config_pre = self.dut.get_bitstream(instr)
         # Add the runtime configuration to the final config
         for name, v in config_pre:
