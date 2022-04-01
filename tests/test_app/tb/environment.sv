@@ -201,6 +201,10 @@ task Environment::kernel_test(Kernel kernel);
     cgra_unstall(cgra_stall_mask);
 
     start_time = $realtime;
+`ifdef SAIF 
+   $set_toggle_region(top);
+   $toggle_start;
+`endif
     $display("[%s] kernel start at %0t", kernel.name, start_time);
     cfg = kernel.get_strm_start_config();
     axil_drv.write(cfg.addr, cfg.data);
@@ -237,6 +241,10 @@ task Environment::kernel_test(Kernel kernel);
 
     end_time = $realtime;
     $display("[%s] kernel end at %0t", kernel.name, end_time);
+`ifdef SAIF 
+   $toggle_stop;
+   $toggle_report("run.saif", 1e-12, top);
+`endif
     $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);
 
     total_output_size = 0;
