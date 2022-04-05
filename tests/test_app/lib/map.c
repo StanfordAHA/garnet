@@ -13,7 +13,7 @@
 #define GROUP_SIZE 4
 #define MAX_NUM_GROUPS MAX_NUM_COLS / GROUP_SIZE
 
-int crossbar_config = 0;
+int crossbar_config[GROUP_SIZE];
 struct Monitor
 {
   int num_groups;
@@ -85,7 +85,8 @@ int glb_map(void *kernel_)
       break;
   }
   // no available group
-  if (group_start == -1){
+  if (group_start == -1)
+  {
     printf("Application does not fit on array. Possible error CGRA too small, applications overlapping\n");
     return 0;
   }
@@ -165,11 +166,14 @@ int glb_map(void *kernel_)
   int kernel_crossbar_config = 0;
   for (int i = group_start; i < group_start + num_groups; i++)
   {
-    kernel_crossbar_config += kernel_crossbar_config + (first_input_tile << (int)ceil(log(NUM_GLB_TILES) / log(2)));
+    crossbar_config[i] = first_input_tile;
   }
-  crossbar_config = kernel_crossbar_config + crossbar_config;
-  add_config(&kernel->config, GLC_GLB_FLUSH_CROSSBAR_R, crossbar_config << GLC_GLB_FLUSH_CROSSBAR_SEL_F_LSB);
-  printf("Configuration of flush signal crossbar is updated to 0x%0x\n", crossbar_config);
+  for (int i = 0; i < GROUP_SIZE; i++)
+  {
+    kernel_crossbar_config += (crossbar_config[i] << (((int)ceil(log(NUM_GLB_TILES) / log(2))) * i));
+  }
+  add_config(&kernel->config, GLC_GLB_FLUSH_CROSSBAR_R, kernel_crossbar_config << GLC_GLB_FLUSH_CROSSBAR_SEL_F_LSB);
+  printf("Configuration of flush signal crossbar is updated to 0x%0x\n", kernel_crossbar_config);
 
   return 1;
 }
