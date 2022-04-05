@@ -271,12 +271,13 @@ class GlbLoadDma(Generator):
 
     @always_comb
     def strm_data_mux(self):
+        self.strm_data_muxed = self.strm_data
         if self.cfg_ld_dma_ctrl_use_valid:
-            self.strm_data_muxed = self.strm_data
             self.strm_data_valid_muxed = self.strm_data_valid
-        else:
-            self.strm_data_muxed = self.strm_data
+        elif ~self.cfg_ld_dma_ctrl_use_flush:
             self.strm_data_valid_muxed = self.strm_data_start_pulse
+        else:
+            self.strm_data_valid_muxed = 0
 
     @always_comb
     def data_g2f_logic(self):
