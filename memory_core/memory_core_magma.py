@@ -225,7 +225,18 @@ class MemCore(LakeCoreBase):
         # Add the runtime configuration to the final config
         for name, v in config_pre:
             configs = [self.get_config_data(name, v)] + configs
-
+        # Add in preloaded memory
+        if "init" in instr:
+            # this is SRAM content
+            content = instr['init']
+            for addr, data in enumerate(content):
+                if (not isinstance(data, int)) and len(data) == 2:
+                    addr, data = data
+                addr = addr >> 2
+                feat_addr = addr // 256 + 1
+                addr = (addr % 256)
+                configs.append((addr, feat_addr, data))
+        print(configs)
         return configs
 
         # Extract the runtime + preload config
