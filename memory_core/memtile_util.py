@@ -53,7 +53,7 @@ ONYX_PORT_REMAP = {
         'wen_in_0': 'input_width_1_num_1',
     },
     'ROM': {
-        'rd_addr_in_0': 'input_width_16_num_1',
+        'rd_addr_in_0': 'input_width_16_num_2',
         'data_out_0': 'output_width_16_num_0',
         'ren_in_0': 'input_width_1_num_0',
     },
