@@ -109,7 +109,7 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  genlibdb       = Step( 'synopsys-ptpx-genlibdb',           default=True )
+  genlibdb       = Step( 'cadence-innovus-genlib',         default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -127,7 +127,7 @@ def construct():
 
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
-  genlibdb.extend_inputs( ['sram_tt.lib', 'sram_tt.db'] )
+  genlibdb.extend_inputs( ['sram_tt.lib'] )
 
   # These steps need timing and lef info for srams
 
@@ -280,6 +280,9 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
+  # Need this because we're using innovus for lib generation
+  g.connect_by_name( iflow,    genlibdb       )
+  
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -389,8 +392,8 @@ def construct():
 
   # Adding new input for genlibdb node to run
   order = genlibdb.get_param('order') # get the default script run order
-  read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
-  order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
+  extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
+  order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
   genlibdb.update_params( { 'order': order } )
 
 
