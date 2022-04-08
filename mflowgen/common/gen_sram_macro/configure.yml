@@ -28,7 +28,7 @@ parameters:
   mux_size: 8
   num_subarrays: 2
   corner: "TT_0P800V_025C"
-  bc_corner: "FFPG_0P945V_M40C"
+  bc_corner: "FFPG_0P945V_125C"
   partial_write: False
   leakage_opt: False
   redundancy: False
