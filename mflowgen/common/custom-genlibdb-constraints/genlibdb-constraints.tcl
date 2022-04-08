@@ -10,6 +10,10 @@
 # Authors: Alex Carsello, Teguh Hofstee
 # Date: 1/24/2020
 
+# Need to set interactive constraint mode when using
+# Innovus to generate .lib files
+set_interactive_constraint_modes [all_constraint_modes]
+
 # These RMUX instances have been marked dont_touch
 # in the synthesis constraints so we can more easily
 # do set_case_analysis on them here
