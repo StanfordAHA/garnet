@@ -11,7 +11,7 @@ else
     make cadence-pegasus-lvs
 fi
 
-make pwr-aware-gls
+#make pwr-aware-gls
 
 mkdir -p outputs
 cp -L *cadence-innovus-genlib/outputs/design.lib outputs/Tile_PE_tt.lib
