@@ -731,7 +731,7 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, i
     info["buses"] = bus_info
     info["netlist"] = {}
     for bid, ports in netlist.items():
-        info["netlist"][bid] = [(nodes_to_ids[node.iname], field) for node, field in ports]
+        info["netlist"][bid] = [(nodes_to_ids[node.iname], field.replace("pond_0", "pond")) for node, field in ports]
 
     CountTiles().doit(fdag)  
 
