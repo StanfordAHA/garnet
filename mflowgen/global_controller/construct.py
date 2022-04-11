@@ -37,7 +37,7 @@ def construct():
     # Power Domains (leave this false)
     'PWR_AWARE'         : False,
     # hold target slack
-    'hold_target_slack' : 0.030,
+    'hold_target_slack' : 30,
     # Utilization target
     'core_density_target' : 0.50
   }
@@ -77,7 +77,7 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlib       = Step( 'cadence-genus-genlib',          default=True )
+  genlib       = Step( 'cadence-innovus-genlib',        default=True )
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -147,15 +147,16 @@ def construct():
   g.connect_by_name( synth,    place        )
   g.connect_by_name( synth,    cts          )
 
-  g.connect_by_name( iflow,    init         )
-  g.connect_by_name( iflow,    power        )
-  g.connect_by_name( iflow,    place        )
-  g.connect_by_name( iflow,    cts          )
-  g.connect_by_name( iflow,    postcts_hold )
-  g.connect_by_name( iflow,    route        )
-  g.connect_by_name( iflow,    postroute    )
+  g.connect_by_name( iflow,    init           )
+  g.connect_by_name( iflow,    power          )
+  g.connect_by_name( iflow,    place          )
+  g.connect_by_name( iflow,    cts            )
+  g.connect_by_name( iflow,    postcts_hold   )
+  g.connect_by_name( iflow,    route          )
+  g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
-  g.connect_by_name( iflow,    signoff      )
+  g.connect_by_name( iflow,    signoff        )
+  g.connect_by_name( iflow,    genlib         )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
