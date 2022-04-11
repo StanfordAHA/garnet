@@ -11,6 +11,7 @@ from lake.passes.passes import change_sram_port_names
 from lake.utils.sram_macro import SRAMMacroInfo
 from lake.top.extract_tile_info import *
 import kratos as kts
+from lake.top.tech_maps import *
 
 if __name__ == "__main__":
     from memtile_util import LakeCoreBase
@@ -84,7 +85,7 @@ class MemCore(LakeCoreBase):
                  add_flush=True,
                  override_name=None,
                  gen_addr=True,
-                 tech='tsmc'):
+                 tech_map=TSMC_Tech_Map):
 
         lake_name = "LakeTop"
 
@@ -117,7 +118,7 @@ class MemCore(LakeCoreBase):
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
         self.gen_addr = gen_addr
-        self.tech = tech
+        self.tech_map = tech_map
         # self.app_ctrl_depth_width = app_ctrl_depth_width
         # self.stcl_valid_iter = stcl_valid_iter
         # Typedefs for ease
@@ -130,7 +131,7 @@ class MemCore(LakeCoreBase):
                      self.use_sim_sram, self.read_delay,
                      self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
                      self.num_tiles, self.fifo_mode,
-                     self.add_clk_enable, self.add_flush, self.gen_addr, self.tech)
+                     self.add_clk_enable, self.add_flush, self.gen_addr, self.tech_map)
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
@@ -159,7 +160,7 @@ class MemCore(LakeCoreBase):
                               add_flush=self.add_flush,
                               name=lake_name,
                               gen_addr=self.gen_addr,
-                              tech=self.tech)
+                              tech_map=self.tech_map)
 
             print(self.LT.dut)
             print(self.LT.dut.get_mode_map())
