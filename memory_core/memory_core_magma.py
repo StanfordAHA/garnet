@@ -73,8 +73,6 @@ class MemCore(LakeCoreBase):
                  mem_input_ports=1,
                  mem_output_ports=1,
                  use_sim_sram=True,
-                 sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S",
-                                               wtsel_value=0, rtsel_value=1),
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
                  rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
                  agg_height=4,
@@ -86,7 +84,7 @@ class MemCore(LakeCoreBase):
                  add_flush=True,
                  override_name=None,
                  gen_addr=True,
-                 GF=True):
+                 tech='tsmc'):
 
         lake_name = "LakeTop"
 
@@ -109,7 +107,6 @@ class MemCore(LakeCoreBase):
         self.mem_input_ports = mem_input_ports
         self.mem_output_ports = mem_output_ports
         self.use_sim_sram = use_sim_sram
-        self.sram_macro_info = sram_macro_info
         self.read_delay = read_delay
         self.rw_same_cycle = rw_same_cycle
         self.agg_height = agg_height
@@ -120,7 +117,7 @@ class MemCore(LakeCoreBase):
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
         self.gen_addr = gen_addr
-        self.GF = GF
+        self.tech = tech
         # self.app_ctrl_depth_width = app_ctrl_depth_width
         # self.stcl_valid_iter = stcl_valid_iter
         # Typedefs for ease
@@ -130,10 +127,10 @@ class MemCore(LakeCoreBase):
         cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
                      self.input_iterator_support, self.output_iterator_support,
                      self.interconnect_input_ports, self.interconnect_output_ports,
-                     self.use_sim_sram, self.sram_macro_info, self.read_delay,
+                     self.use_sim_sram, self.read_delay,
                      self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
                      self.num_tiles, self.fifo_mode,
-                     self.add_clk_enable, self.add_flush, self.gen_addr)
+                     self.add_clk_enable, self.add_flush, self.gen_addr, self.tech)
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
@@ -151,7 +148,6 @@ class MemCore(LakeCoreBase):
                               interconnect_input_ports=self.interconnect_input_ports,
                               interconnect_output_ports=self.interconnect_output_ports,
                               use_sim_sram=self.use_sim_sram,
-                              sram_macro_info=self.sram_macro_info,
                               read_delay=self.read_delay,
                               rw_same_cycle=self.rw_same_cycle,
                               agg_height=self.agg_height,
@@ -163,7 +159,7 @@ class MemCore(LakeCoreBase):
                               add_flush=self.add_flush,
                               name=lake_name,
                               gen_addr=self.gen_addr,
-                              GF=self.GF)
+                              tech=self.tech)
 
             print(self.LT.dut)
             print(self.LT.dut.get_mode_map())
@@ -171,13 +167,11 @@ class MemCore(LakeCoreBase):
             # Nonsensical but LakeTop now has its ow n internal dut
             self.dut = self.LT.dut
 
-            change_sram_port_pass = change_sram_port_names(self.use_sim_sram, sram_macro_info)
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
                                      optimize_if=False,
-                                     check_flip_flop_always_ff=False,
-                                     additional_passes={"change_sram_port": change_sram_port_pass})
+                                     check_flip_flop_always_ff=False)
             LakeCoreBase._circuit_cache[cache_key] = (circ, self.dut)
         else:
             circ, self.dut = LakeCoreBase._circuit_cache[cache_key]
