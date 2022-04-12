@@ -40,7 +40,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 tile_id_width: int = 16,
                 num_tracks: int = 5,
                 add_pd: bool = True,
-                use_sram_stub: bool = True,
+                use_sim_sram: bool = True,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
                 global_signal_wiring: GlobalSignalWiring =
@@ -95,7 +95,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             else:
                 use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
                 if use_mem_core:
-                    core = MemCore(use_sram_stub=use_sram_stub, gate_flush=not harden_flush)
+                    core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush)
                 else:
                     core = PeakCore(pe_fc)
                     if add_pond:
