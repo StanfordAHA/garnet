@@ -380,6 +380,8 @@ class GlbTile(Generator):
                        cfg_pcfg_tile_connected_prev=self.cfg_pcfg_tile_connected_prev,
                        cfg_pcfg_tile_connected_next=self.cfg_pcfg_tile_connected_next,
                        cfg_pcfg_dma_ctrl_mode=self.cfg_pcfg_dma_ctrl['mode'],
+                       cfg_pcfg_dma_ctrl_relocation_value=self.cfg_pcfg_dma_ctrl['relocation_value'],
+                       cfg_pcfg_dma_ctrl_relocation_is_msb=self.cfg_pcfg_dma_ctrl['relocation_is_msb'],
                        cfg_pcfg_network_latency=self.glb_cfg.cfg_pcfg_network['latency'],
                        cfg_pcfg_dma_header=self.cfg_pcfg_dma_header,
                        pcfg_dma_start_pulse=self.pcfg_start_pulse,

@@ -15,7 +15,7 @@ class GlobalBufferParams:
 
     @property
     def cgra_per_glb(self):
-        return self.num_cgra_tiles // self.num_glb_tiles  # 2
+        return self.num_cgra_cols // self.num_glb_tiles  # 2
 
     @property
     def bank_sel_addr_width(self):
@@ -61,7 +61,7 @@ class GlobalBufferParams:
 
     # architecture parameters
     num_prr: int = 16
-    num_cgra_tiles: int = 32
+    num_cgra_cols: int = 32
     num_glb_tiles: int = 16
     banks_per_tile: int = 2
     bank_addr_width: int = 17
@@ -170,7 +170,7 @@ def gen_global_buffer_params(**kwargs):
 
     params = GlobalBufferParams(num_prr=num_prr,
                                 num_glb_tiles=num_glb_tiles,
-                                num_cgra_tiles=num_cgra_cols,
+                                num_cgra_cols=num_cgra_cols,
                                 banks_per_tile=banks_per_tile,
                                 bank_data_width=bank_data_width,
                                 bank_addr_width=bank_addr_width,
