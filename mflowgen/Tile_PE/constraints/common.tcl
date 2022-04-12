@@ -62,7 +62,7 @@ set pt_outputs [get_ports " \
     config_out_config_addr* \
     config_out_read* \
     config_out_write* \
-    reset \
+    reset_out \
     flush_out"]
 
 # read_config_data passthrough signals
