@@ -15,6 +15,15 @@ if { ! $::env(soc_only) } {
   set ic2glb_y_dist 330
   set ic2glc_y_dist 600
 
+  ##############################################################################
+  # Lots of congestion at top left corner of GLB, where the top
+  # squeezes up against a row of alignment cells, so I'm moving the
+  # GLB down a bit to open it up.
+  # Tried moving down 15u, that wasn't enough, now increased to 45u.
+  # (Note ic2glb_y_dist is in units of 'vert_pitches', and 45u ~ 78 vp's.)
+  # FIXME later should express this as a function of alignment-cell location.
+  set ic2glb_y_dist [expr $ic2glb_y_dist - 78]
+
   # power mesh vars
   set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]    
   set M3_str_pitch [expr 10 * $M3_route_pitchX]
@@ -62,14 +71,26 @@ if { ! $::env(soc_only) } {
     -pgnetonly \
     -box [expr $ic_x_loc + (8*$horiz_pitch)] $ic_y_loc [expr $ic_urx - (8*$horiz_pitch)] $ic_ury
   
+  # GLB placement prep
   set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
   set glb_name [get_property $glb hierarchical_name]
   set glb_width [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_x]
   set glb_height [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_y]
-  
+
   set glb_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glb_y_dist)] $pmesh_bot_pitch]
   set glb_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $glb_width)/2.] $pmesh_top_pitch]
   
+  ##############################################################################
+  # Lots of congestion to the left of GLB where there are SRAMs and such.
+  # But nothing on the right side of the GLB really.
+  # So I moved the lone lower-alignment-cell from right side of GLB to
+  # left side (see alignment-cells.tcl), giving us room to move GLB to
+  # the right, away from the congested area.
+  # Currently adding ~ 300u (3300 horiz pitches), probably more than needed.
+  set glb_x_loc [ expr $glb_x_loc + (3300 * $horiz_pitch) ]
+  set glb_x_loc [ snap_to_grid $glb_x_loc $pmesh_bot_pitch ]
+  
+  # Place GLB
   placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
   
@@ -102,6 +123,7 @@ if { ! $::env(soc_only) } {
     -pgnetonly \
     -box [expr $glb_x_loc + (8*$horiz_pitch)] $glb_y_loc [expr $glb_urx - (8*$horiz_pitch)] $glb_ury
   
+  # Place GLB controller
   set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
   set glc_name [get_property $glc hierarchical_name]
   set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
@@ -142,6 +164,13 @@ set sram_spacing_x_odd 0
 # Set spacing between pinned sides of SRAMs to some 
 # reasonable number of pitches
 set sram_spacing_x_even [expr 200 * $horiz_pitch]
+
+# Lots of congestion around the SRAMs. Keep getting routing errors in
+# this area. So let's add some space to help it out.
+set sram_spacing_y      [expr 100 * $vert_pitch]
+set sram_spacing_x_odd  [expr 400 * $horiz_pitch]
+set sram_spacing_x_even [expr 400 * $horiz_pitch]
+
 # Parameter for how many SRAMs to stack vertically
 set bank_height 4
 
