@@ -24,6 +24,44 @@ from lake.utils.util import get_configs_dict, set_configs_sv, extract_formal_ann
 import math
 import kratos as kts
 
+ONYX_PORT_REMAP = {
+    'FIFO': {
+        'data_in_0': 'input_width_16_num_0',
+        'ren_in_0': 'input_width_1_num_0',
+        'wen_in_0': 'input_width_1_num_1',
+        'data_out_0': 'output_width_16_num_0',
+        'valid_out_0': 'output_width_1_num_2',
+        'empty': 'output_width_1_num_0',
+        'full': 'output_width_1_num_1',
+    },
+    'UB': {
+        'chain_data_in_0': 'input_width_16_num_0',
+        'chain_data_in_1': 'input_width_16_num_1',
+        'data_in_0': 'input_width_16_num_2',
+        'data_in_1': 'input_width_16_num_3',
+        'valid_out_0': 'output_width_1_num_0',
+        'valid_out_1': 'output_width_1_num_1',
+        'data_out_0': 'output_width_16_num_0',
+        'data_out_1': 'output_width_16_num_1',
+    },
+    'RAM': {
+        'rd_addr_in_0': 'input_width_16_num_1',
+        'wr_addr_in_0': 'input_width_16_num_2',
+        'data_in_0': 'input_width_16_num_0',
+        'data_out_0': 'output_width_16_num_0',
+        'ren_in_0': 'input_width_1_num_0',
+        'wen_in_0': 'input_width_1_num_1',
+    },
+    'ROM': {
+        'rd_addr_in_0': 'input_width_16_num_2',
+        'data_out_0': 'output_width_16_num_0',
+        'ren_in_0': 'input_width_1_num_0',
+    },
+    'STENCIL_VALID': {
+        'stencil_valid': 'output_width_1_num_3'
+    }
+}
+
 
 class LakeCoreBase(ConfigurableCore):
 
