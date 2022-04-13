@@ -32,7 +32,10 @@ class GlbHeader():
         self.cfg_dma_header_t = PackedStruct("dma_header_t", dma_header_struct_list)
 
         # pcfg dma header
-        self.cfg_pcfg_dma_ctrl_t = PackedStruct("pcfg_dma_ctrl_t", [("mode", 1)])
+        self.cfg_pcfg_dma_ctrl_t = PackedStruct("pcfg_dma_ctrl_t",
+                                                [("mode", 1),
+                                                 ("relocation_value", self._params.cgra_cfg_addr_width // 2),
+                                                 ("relocation_is_msb", 1)])
         self.cfg_pcfg_dma_header_t = PackedStruct("pcfg_dma_header_t",
                                                   [("start_addr", self._params.glb_addr_width),
                                                    ("num_cfg", self._params.max_num_cfg_width)])

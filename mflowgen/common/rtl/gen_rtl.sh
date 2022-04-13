@@ -20,7 +20,7 @@ else
     rm -f $GARNET_HOME/garnet.v
 
     # Build up the flags we want to pass to python garnet.v
-    flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --no-sram-stub --glb_tile_mem_size $glb_tile_mem_size"
+    flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --glb_tile_mem_size $glb_tile_mem_size"
 
     if [ $PWR_AWARE == False ]; then
      flags+=" --no-pd"
