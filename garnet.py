@@ -123,7 +123,6 @@ class Garnet(Generator):
                                    add_pd=add_pd,
                                    add_pond=add_pond,
                                    use_io_valid=use_io_valid,
-                                   harden_flush=harden_flush,
                                    use_sim_sram=use_sim_sram,
                                    harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
