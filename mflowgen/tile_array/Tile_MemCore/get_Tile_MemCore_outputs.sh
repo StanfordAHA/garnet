@@ -3,7 +3,7 @@
 set -e;    # FAIL if any individual command fails
 
 mflowgen run --design $GARNET_HOME/mflowgen/Tile_MemCore/
-make synopsys-ptpx-genlibdb
+make synopsys-dc-lib2db
 if command -v calibre &> /dev/null
 then
     make mentor-calibre-lvs
@@ -16,8 +16,8 @@ fi
 # make pwr-aware-gls
 
 mkdir -p outputs
-cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/Tile_MemCore_tt.lib
-cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/Tile_MemCore_tt.db
+cp -L *cadence-innovus-genlib/outputs/design.lib outputs/Tile_MemCore_tt.lib
+cp -L *synopsys-dc-lib2db/outputs/design.db outputs/Tile_MemCore_tt.db
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_MemCore.lef
 cp -L *cadence-innovus-signoff/outputs/design-merged.gds outputs/Tile_MemCore.gds
 cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/Tile_MemCore.vcs.v
