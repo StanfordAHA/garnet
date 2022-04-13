@@ -78,6 +78,9 @@ class Garnet(Generator):
         self.width = width
         self.height = height
 
+        self.harden_flush = harden_flush
+        self.pipeline_config_interval = pipeline_config_interval
+
         # only north side has IO
         if standalone:
             io_side = IOSide.None_
@@ -120,6 +123,7 @@ class Garnet(Generator):
                                    add_pd=add_pd,
                                    add_pond=add_pond,
                                    use_io_valid=use_io_valid,
+                                   harden_flush=harden_flush,
                                    use_sim_sram=use_sim_sram,
                                    harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
@@ -339,7 +343,7 @@ class Garnet(Generator):
         dag = cutil.coreir_to_dag(nodes, cmod)
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
-        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only)
+        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only, self.harden_flush, self.height//self.pipeline_config_interval)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
@@ -356,7 +360,9 @@ class Garnet(Generator):
                                                          cwd=app_dir,
                                                          id_to_name=id_to_name,
                                                          fixed_pos=fixed_io,
-                                                         compact=compact)
+                                                         compact=compact,
+                                                         harden_flush=self.harden_flush,
+                                                         pipeline_config_interval=self.pipeline_config_interval)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
@@ -440,7 +446,7 @@ def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
-    parser.add_argument('--pipeline_config_interval', type=int, default=8)
+    parser.add_argument('--pipeline_config_interval', type=int, default=16)
     parser.add_argument('--glb_tile_mem_size', type=int, default=256)
     parser.add_argument("--input-app", type=str, default="", dest="app")
     parser.add_argument("--input-file", type=str, default="", dest="input")
@@ -489,7 +495,8 @@ def main():
     garnet = Garnet(width=args.width, height=args.height,
                     glb_params=glb_params,
                     add_pd=not args.no_pd,
-                    pipeline_config_interval=args.pipeline_config_interval,
+                    # pipeline_config_interval=args.pipeline_config_interval,
+                    pipeline_config_interval = args.height,
                     add_pond=not args.no_pond,
                     harden_flush=not args.no_harden_flush,
                     use_io_valid=args.use_io_valid,

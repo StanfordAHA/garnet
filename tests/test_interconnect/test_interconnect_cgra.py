@@ -225,8 +225,8 @@ def test_interconnect_fifo(run_tb, io_sides, depth):
 
     configs_mem = [("mem_ctrl_strg_fifo_flat_strg_fifo_inst_fifo_depth", depth, 0),
                    ("mode", 1, 0),
-                   ("tile_en", 1, 0),
-                   ("flush_reg_sel", 1, 0)]
+                   ("tile_en", 1, 0)]
+
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]
     mcore = memtile.core
