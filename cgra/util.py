@@ -40,7 +40,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 tile_id_width: int = 16,
                 num_tracks: int = 5,
                 add_pd: bool = True,
-                use_sram_stub: bool = True,
+                use_sim_sram: bool = True,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
                 global_signal_wiring: GlobalSignalWiring =
@@ -203,7 +203,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     if pass_through_clk:
         clk_physical(interconnect)
-    
+
     pipeline_config_signals(interconnect, pipeline_config_interval)
 
     return interconnect
