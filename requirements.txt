@@ -15,6 +15,6 @@ ordered_set
 cosa
 -e git+https://github.com/leonardt/fault.git#egg=fault
 hwtypes
--e git+https://github.com/Kuree/archipelago.git#egg=archipelago
+-e git+https://github.com/Kuree/archipelago.git@pipeline-hard-flush#egg=archipelago
 systemrdl-compiler
 peakrdl-html
