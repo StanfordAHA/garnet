@@ -2,6 +2,7 @@ import argparse
 from lake.modules.reg_cr import Reg
 
 import os
+from memory_core.buffet_core import BuffetCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.lookup_core import LookupCore
 from peak_core.peak_core import PeakCore
@@ -3194,7 +3195,7 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
     num_cycles = 250
     chip_size = 12
     num_tracks = 10
-    altcore = [ScannerCore, IntersectCore, FakePECore, LookupCore, WriteScannerCore]
+    altcore = [ScannerCore, IntersectCore, FakePECore, LookupCore, WriteScannerCore, BuffetCore]
 
     interconnect = create_cgra(width=chip_size, height=chip_size,
                                io_sides=NetlistBuilder.io_sides(),
@@ -3535,9 +3536,9 @@ def spM_spM_elementwise_hierarchical_json_coords(trace, run_tb, cwd):
 def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # Streams and code to create them and align them
     num_cycles = 250
-    chip_size = 12
+    chip_size = 16
     num_tracks = 5
-    altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore, WriteScannerCore]
+    altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore, WriteScannerCore, BuffetCore]
 
     interconnect = create_cgra(width=chip_size, height=chip_size,
                                io_sides=NetlistBuilder.io_sides(),
@@ -3809,10 +3810,10 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     nlb.configure_tile(mem_xvals, {"config": ["mek", {}], "mode": 4})
     # nlb.configure_tile(isect_row, 5)
     # nlb.configure_tile(scan_aroot, (minner_offset_root, max_outer_dim, 0, 1, 1))
-    nlb.configure_tile(wscan_root, (16, 0, 0, 0))
-    nlb.configure_tile(wscan_rows, (16, 0, 0, 1))
-    nlb.configure_tile(wscan_vals, (0, 1, 1, 0))
-    nlb.configure_tile(isect_col, 5)
+    nlb.configure_tile(wscan_root, (16, 0, 0, 0, 0))
+    nlb.configure_tile(wscan_rows, (16, 0, 0, 1, 0))
+    nlb.configure_tile(wscan_vals, (0, 1, 1, 0, 0))
+    nlb.configure_tile(isect_col, (0, 0))
     # Configure the stop level
     nlb.configure_tile(accum_reg, (2))
     # nlb.configure_tile(pe_mul, asm.umult0())
@@ -4131,8 +4132,8 @@ if __name__ == "__main__":
     # Make sure DISABLE_GP=1
     os.environ['DISABLE_GP'] = "1"
 
-    spM_spM_elementwise_hierarchical_json_coords(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
-    # spM_spM_multiplication_hierarchical_json(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
+    # spM_spM_elementwise_hierarchical_json_coords(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
+    spM_spM_multiplication_hierarchical_json(trace=args.trace, run_tb=run_tb_fn, cwd="mek_dump")
     exit()
 
     spVspV_regress(dump_dir="mek_dump",

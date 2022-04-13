@@ -25,7 +25,7 @@ class IntersectCore(LakeCoreBase):
                  data_width=16,  # CGRA Params
                  config_data_width=32,
                  config_addr_width=8,
-                 use_merger=True):
+                 use_merger=False):
 
         scan_name = "Intersector"
         super().__init__(config_data_width=config_data_width,
