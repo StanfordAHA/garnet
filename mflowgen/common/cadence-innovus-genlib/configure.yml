@@ -10,8 +10,10 @@ inputs:
   - adk
   - innovus-foundation-flow
   - design.checkpoint
-  - glb_tile_tt.lib
-  - sram_tt.lib
+
+# use extend_inputs in construct.py instead
+#   - glb_tile_tt.lib
+#   - sram_tt.lib
 
 outputs:
   - design.lib
