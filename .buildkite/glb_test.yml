@@ -17,7 +17,7 @@ steps:
   - echo "--- Install requirements"
   - pip install -r /aha/garnet/requirements.txt
   - echo "--- Generating Garnet"
-  - aha garnet -v --width 8 --height 4
+  - aha garnet -v --width 8 --height 4 --use_sim_sram
   - echo "--- Generating Apps"
   - aha halide tests/conv_1_2
   - aha map tests/conv_1_2 --width 4 --height 4 --no-pd

@@ -34,10 +34,10 @@ class Environment;
     extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
     extern task kernel_test(Kernel kernel);
     extern task read_data(Kernel kernel);
-    extern function bit [NUM_CGRA_TILES-1:0] calculate_cgra_stall_mask(int start, int num);
+    extern function bit [NUM_CGRA_COLS-1:0] calculate_cgra_stall_mask(int start, int num);
     extern function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);
-    extern task cgra_stall(bit [NUM_CGRA_TILES-1:0] stall_mask);
-    extern task cgra_unstall(bit [NUM_CGRA_TILES-1:0] stall_mask);
+    extern task cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
+    extern task cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     extern task run();
     extern task compare();
 endclass
@@ -121,8 +121,8 @@ endtask
 task Environment::cgra_configure(Kernel kernel);
     Config cfg;
     int group_start, num_groups;
-    bit [ NUM_GLB_TILES-1:0] glb_stall_mask;
-    bit [NUM_CGRA_TILES-1:0] cgra_stall_mask;
+    bit [NUM_GLB_TILES-1:0] glb_stall_mask;
+    bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
 
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns");
@@ -154,14 +154,14 @@ function bit [NUM_GLB_TILES-1:0] Environment::calculate_glb_stall_mask(int start
     end
 endfunction
 
-function bit [NUM_CGRA_TILES-1:0] Environment::calculate_cgra_stall_mask(int start, int num);
+function bit [NUM_CGRA_COLS-1:0] Environment::calculate_cgra_stall_mask(int start, int num);
     calculate_cgra_stall_mask = '0;
     for (int i = 0; i < num; i++) begin
         calculate_cgra_stall_mask |= ((4'b1111) << ((start + i) * 4));
     end
 endfunction
 
-task Environment::cgra_stall(bit [NUM_CGRA_TILES-1:0] stall_mask);
+task Environment::cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     bit [CGRA_AXI_DATA_WIDTH-1:0] data;
     bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
 
@@ -173,7 +173,7 @@ task Environment::cgra_stall(bit [NUM_CGRA_TILES-1:0] stall_mask);
     $display("Stall CGRA with stall mask %8h", stall_mask);
 endtask
 
-task Environment::cgra_unstall(bit [NUM_CGRA_TILES-1:0] stall_mask);
+task Environment::cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     bit [CGRA_AXI_DATA_WIDTH-1:0] data;
     bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
 
@@ -189,8 +189,8 @@ task Environment::kernel_test(Kernel kernel);
     Config cfg;
     int total_output_size;
     int group_start, num_groups;
-    bit [ NUM_GLB_TILES-1:0] glb_stall_mask;
-    bit [NUM_CGRA_TILES-1:0] cgra_stall_mask;
+    bit [NUM_GLB_TILES-1:0] glb_stall_mask;
+    bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
     realtime start_time, end_time, g2f_end_time, latency;
     $timeformat(-9, 2, " ns");
 
@@ -296,7 +296,7 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
         end
         begin
             repeat (200_000) @(vifc_axil.cbd);
-            $display("@%0t: %m ERROR: Interrupt wait timeout ", $time);
+            $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
         end
     join_any
     disable fork;
