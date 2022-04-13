@@ -47,7 +47,8 @@ class BuffetCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = BuffetLike(data_width=data_width)
+            self.dut = BuffetLike(data_width=data_width,
+                                  num_ID=1)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
