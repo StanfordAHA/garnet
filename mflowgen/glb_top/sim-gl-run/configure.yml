@@ -23,5 +23,5 @@ postconditions:
   - assert File( 'outputs/run.log' )      # must exist
 
   # Basic error checking
-  - assert 'Error' not in File( 'outputs/run.log' )
+  - assert 'fail' not in File( 'outputs/run.log' )
   - assert '*E,' not in File( 'outputs/run.log' )

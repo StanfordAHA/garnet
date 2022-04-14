@@ -29,8 +29,11 @@ module top;
     logic [NUM_GLB_TILES-1:0] pcfg_broadcast_stall;
     logic [NUM_GLB_TILES-1:0] glb_clk_en_master;
     logic [NUM_GLB_TILES-1:0] glb_clk_en_bank_master;
+    logic [NUM_GROUPS-1:0][$clog2(NUM_GLB_TILES)-1:0] flush_crossbar_sel;
     logic reset;
     logic cgra_soft_reset;
+    logic [NUM_CGRA_COLS-1:0] cgra_stall_in;
+    logic [NUM_CGRA_COLS-1:0] cgra_stall;
 
     // cgra configuration from global controller
     logic cgra_cfg_jtag_gc2glb_wr_en;
@@ -86,6 +89,7 @@ module top;
     // glb to cgra streaming word
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_g2f;
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_valid_g2f;
+    logic [NUM_GROUPS-1:0] strm_data_flush_g2f;
 
     // cgra configuration to cgra
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_cfg_g2f_cfg_wr_en;
@@ -125,6 +129,7 @@ module top;
     endtask
 
     initial begin
+        cgra_stall_in = 0;
         clk = 0;
         dut_clk = 0;
         assert_reset();

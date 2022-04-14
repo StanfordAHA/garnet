@@ -16,11 +16,18 @@ class GlbHeader():
                                                [("tile_connected", 1),
                                                 ("latency", self._params.pcfg_latency_width)])
 
-        self.cfg_dma_ctrl_t = PackedStruct("dma_ctrl_t",
-                                           [("mode", 2),
-                                            ("use_valid", 1),
-                                            ("data_mux", 2),
-                                            ("num_repeat", clog2(self._params.queue_depth) + 1)])
+        self.cfg_store_dma_ctrl_t = PackedStruct("store_dma_ctrl_t",
+                                                 [("mode", 2),
+                                                  ("use_valid", 1),
+                                                     ("data_mux", 2),
+                                                     ("num_repeat", clog2(self._params.queue_depth) + 1)])
+
+        self.cfg_load_dma_ctrl_t = PackedStruct("load_dma_ctrl_t",
+                                                [("mode", 2),
+                                                 ("use_valid", 1),
+                                                 ("use_flush", 1),
+                                                    ("data_mux", 2),
+                                                    ("num_repeat", clog2(self._params.queue_depth) + 1)])
 
         dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
                                   ("cycle_start_addr", self._params.cycle_count_width)]
