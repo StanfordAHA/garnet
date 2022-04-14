@@ -2,6 +2,7 @@
 // Perl Embedding
 // ========================================================================
 <% 
+use POSIX;
 use constant NUM_GLB_TILES => 16;
 use constant CGRA_WIDTH => 32;
 use constant GLB_ADDR_WIDTH => 22;
@@ -50,6 +51,12 @@ addrmap glc {
         name = "GLB Stall";
         desc = "control each glb tile";
         field {} stall[<%=NUM_GLB_TILES%>] = 0x0;
+    };
+
+    reg crossbar_sel_r {
+        name = "GLB flush crossbar";
+        desc = "control flush signal crossbar";
+        field {} sel[<%=ceil(log(NUM_GLB_TILES)/log(2))*ceil(CGRA_WIDTH/4)%>] = 0x0;
     };
 
     reg glb_clk_en_r {
@@ -331,5 +338,6 @@ addrmap glc {
 
     // cgra configuration register file
     cgra_config_rf          cgra_config;
+    crossbar_sel_r          glb_flush_crossbar;
 };
 

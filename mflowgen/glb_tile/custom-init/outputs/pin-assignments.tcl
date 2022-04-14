@@ -59,6 +59,9 @@ for {set j 0} {$j < $cols_per_tile} {incr j} {
     }
     lappend bottom_col($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_wr_en[$j]"]]
     lappend bottom_col($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_rd_en[$j]"]]
+    if {$j == 0} {
+        lappend bottom_col($j) [get_object_name [get_ports "data_flush[$j]"]]
+    }
 }
 
 foreach port $left {
@@ -77,7 +80,7 @@ for {set i 0} {$i < $cols_per_tile} {incr i} {
 
 # top is a list that holds object name that is not in bottom_cols, left, or right
 foreach a [get_object_name $all] {
-    if {($a ni $cache)} {
+    if {($a ni $cache) && ($a ne "clk")} {
         lappend top $a
     }
 }
@@ -88,12 +91,15 @@ for {set j 0} {$j < $cols_per_tile} {incr j} {
 }
 set top [lsort -command port_compare $top]
 
-# control pins assignment 
-editPin -pin $top -side TOP -spreadType CENTER -layer M5
-
 # assignment
 set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
+
+# clk pin
+editPin -pin "clk" -side TOP -spreadType CENTER -layer M5
+
+# control pins assignment 
+editPin -pin $top -side TOP -spreadType RANGE -start [list 10 $height] -end [list [expr {$width - 10}] $height] -layer M5
 
 editPin -pin $left -start { 0 5 } -end [list 0 [expr {$height - 5}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M6
 editPin -pin $right -start [list $width  5] -end [list $width [expr {$height - 5}]] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M6

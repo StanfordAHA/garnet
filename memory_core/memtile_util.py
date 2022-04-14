@@ -71,6 +71,7 @@ class LakeCoreBase(ConfigurableCore):
                  config_data_width=32,
                  config_addr_width=8,
                  data_width=16,
+                 gate_flush=True,
                  name="LakeBase_inst"):
 
         self.__name = name
@@ -78,6 +79,7 @@ class LakeCoreBase(ConfigurableCore):
         self.__outputs = []
         self.__features = []
         self.data_width = data_width
+        self.__gate_flush = gate_flush
 
         super().__init__(config_addr_width=config_addr_width,
                          config_data_width=config_data_width)
@@ -161,6 +163,8 @@ class LakeCoreBase(ConfigurableCore):
 
         # put a 1-bit register and a mux to select the control signals
         for control_signal, width in control_signals:
+            if control_signal == "flush" and not self.__gate_flush:
+                continue
             if width == 1:
                 mux = MuxWrapper(2, 1, name=f"{control_signal}_sel")
                 reg_value_name = f"{control_signal}_reg_value"
@@ -333,8 +337,6 @@ class LakeCoreBase(ConfigurableCore):
 
             self.wire(or_all_cfg_rd.ports.O[0], self.underlying.ports.config_read[0])
             self.wire(or_all_cfg_wr.ports.O[0], self.underlying.ports.config_write[0])
-
-        self._setup_config()
 
     def get_config_bitstream(self, instr):
         return

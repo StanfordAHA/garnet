@@ -1,4 +1,4 @@
-from kratos import Generator, RawStringStmt, const
+from kratos import Generator, RawStringStmt
 from kratos.util import clock
 from global_buffer.design.glb_store_dma import GlbStoreDma
 from global_buffer.design.glb_load_dma import GlbLoadDma
@@ -151,6 +151,7 @@ class GlbTile(Generator):
                                          size=self._params.cgra_per_glb, packed=True)
         self.strm_data_valid_g2f = self.output(
             "strm_data_valid_g2f", 1, size=self._params.cgra_per_glb, packed=True)
+        self.data_flush = self.output("data_flush", 1)
 
         self.cgra_cfg_g2f_cfg_wr_en = self.output(
             "cgra_cfg_g2f_cfg_wr_en", 1, size=self._params.cgra_per_glb, packed=True)
@@ -179,11 +180,11 @@ class GlbTile(Generator):
         self.cfg_pcfg_tile_connected_next = self.var("cfg_pcfg_tile_connected_next", 1)
 
         # st dma
-        self.cfg_st_dma_ctrl = self.var("cfg_st_dma_ctrl", self.header.cfg_dma_ctrl_t)
+        self.cfg_st_dma_ctrl = self.var("cfg_st_dma_ctrl", self.header.cfg_store_dma_ctrl_t)
         self.cfg_st_dma_header = self.var("cfg_st_dma_header", self.header.cfg_dma_header_t,
                                           size=self._params.queue_depth)
         # ld dma
-        self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_dma_ctrl_t)
+        self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_load_dma_ctrl_t)
         self.cfg_ld_dma_header = self.var("cfg_ld_dma_header", self.header.cfg_dma_header_t,
                                           size=self._params.queue_depth)
         # pcfg dma
@@ -349,6 +350,7 @@ class GlbTile(Generator):
                        glb_tile_id=self.glb_tile_id,
                        data_g2f=self.strm_data_g2f,
                        data_valid_g2f=self.strm_data_valid_g2f,
+                       data_flush=self.data_flush,
                        rdrq_packet_dma2bank=self.rdrq_packet_dma2bank,
                        rdrq_packet_dma2ring=self.rdrq_packet_dma2ring,
                        rdrs_packet_bank2dma=self.rdrs_packet_bank2dma,
@@ -358,6 +360,7 @@ class GlbTile(Generator):
                        cfg_tile_connected_next=self.cfg_tile_connected_next,
                        cfg_ld_dma_num_repeat=self.cfg_ld_dma_ctrl['num_repeat'],
                        cfg_ld_dma_ctrl_use_valid=self.cfg_ld_dma_ctrl['use_valid'],
+                       cfg_ld_dma_ctrl_use_flush=self.cfg_ld_dma_ctrl['use_flush'],
                        cfg_ld_dma_ctrl_mode=self.cfg_ld_dma_ctrl['mode'],
                        cfg_data_network_latency=self.glb_cfg.cfg_data_network['latency'],
                        cfg_ld_dma_header=self.cfg_ld_dma_header,

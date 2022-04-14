@@ -59,10 +59,15 @@ class GlobalBufferParams:
     def max_num_cfg_width(self):
         return self.glb_addr_width - self.bank_byte_offset
 
+    @property
+    def num_groups(self):
+        return self.num_cgra_cols // self.num_cols_per_group
+
     # architecture parameters
     num_prr: int = 16
     num_cgra_cols: int = 32
     num_glb_tiles: int = 16
+    num_cols_per_group: int = 4
     banks_per_tile: int = 2
     bank_addr_width: int = 17
     bank_data_width: int = 64
@@ -74,8 +79,15 @@ class GlobalBufferParams:
     cgra_cfg_data_width: int = 32
 
     # cell parameters
-    cg_cell_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
-    sram_macro_depth: int = 2048
+    process: str = "GF"
+    tsmc_icg_name: str = "CKLNQD1BWP16P90"
+    gf_icg_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
+    tsmc_sram_macro_prefix: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
+    gf_sram_macro_prefix: str = "IN12LP_S1DB_"
+    sram_macro_depth: int = 4096
+    sram_macro_word_size: int = 64
+    sram_macro_mux_size: int = 8
+    sram_macro_num_subarrays: int = 2
 
     # dependent field
     num_prr_width: int = field(init=False, default=num_prr_width)
@@ -90,6 +102,8 @@ class GlobalBufferParams:
     axi_addr_reg_width: int = field(init=False, default=axi_addr_reg_width)
     axi_strb_width: int = field(init=False, default=axi_strb_width)
     axi_byte_offset: int = field(init=False, default=axi_byte_offset)
+    max_num_cfg_width: int = field(init=False, default=max_num_cfg_width)
+    num_groups: int = field(init=False, default=num_groups)
 
     # dma address generator
     queue_depth: int = 1
@@ -120,6 +134,7 @@ class GlobalBufferParams:
                                   + glb_bank2sw_pipeline_depth + sram_gen_output_pipeline_depth
                                   + sram_macro_read_latency
                                   )
+    flush_crossbar_pipeline_depth: int = 1
     rd_clk_en_margin: int = 3
     wr_clk_en_margin: int = 3
     proc_clk_en_margin: int = 4

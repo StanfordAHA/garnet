@@ -44,8 +44,7 @@ RUN_LOG ?= run.log
 # design files
 HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
-#FIXME: pm cells should be removed!
-NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-pm.v
+NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-prim.v
 TB_FILES ?= -F sim/tb_global_buffer.f 
 
 # -------------------------------------------------------------------
@@ -133,7 +132,7 @@ else ifeq ($(TOOL), VCS)
     COMPILE_RTL_ARGS += +lint=TFIPC-L
     COMPILE_GLS_ARGS += +neg_tchk
     COMPILE_GLS_ARGS += -negdelay
-    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0
+    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -exitstatus
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif

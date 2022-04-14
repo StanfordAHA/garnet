@@ -142,8 +142,6 @@ class IOCoreValid(ConfigurableCore, IOCoreBase):
         self.wire(self.ports.io2glb_1, self.core.ports.out)
         self.wire(self.ports.glb2io_1, self.core.ports.start)
 
-        self._setup_config()
-
     def get_config_bitstream(self, instr):
         return []  # pragma: nocover
 
