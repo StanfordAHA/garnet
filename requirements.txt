@@ -1,5 +1,5 @@
 coreir>=2.0.123  # should be first so we get the latest version
--e git+https://github.com/StanfordAHA/gemstone.git@flush#egg=gemstone
+-e git+https://github.com/StanfordAHA/gemstone.git#egg=gemstone
 -e git+https://github.com/StanfordAHA/canal.git@flush#egg=canal
 -e git+https://github.com/phanrahan/peak.git#egg=peak
 -e git+https://github.com/StanfordAHA/lassen.git#egg=lassen
