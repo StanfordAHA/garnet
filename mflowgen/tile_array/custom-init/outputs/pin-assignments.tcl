@@ -23,10 +23,15 @@ for {set col 0} {$col < $num_cgra_tiles} {incr col} {
         ]]
     set data_ports [sort_collection $data_ports hierarchical_name]
     # Config and stall signals
-    set config_ports [get_ports [list \
+    set port_names [list \
         stall\[${col}\] \
-        config_${col}_* \
-        ]]
+        config_${col}_*]
+    # Insert a flush for every PR region (every 4 cols)
+    if {[expr (($col + 3) % 4) == 0} {
+        set pr_region [expr (($col+3)/4) - 1]
+        lappend port_names flush\[${pr_region}\]
+    }
+    set config_ports [get_ports $port_names]
     set config_ports [sort_collection $config_ports hierarchical_name]
     set ports [concat $data_ports $config_ports]
     set tile_ports($col) [get_object_name $ports]

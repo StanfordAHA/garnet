@@ -29,8 +29,8 @@ set_domain_supply_net AON -primary_power_net VDD -primary_ground_net VSS
 set_domain_supply_net TOP -primary_power_net VDD_SW -primary_ground_net VSS
 
 ########### Set all Global Signals as AON
-set_related_supply_net -object_list {tile_id hi lo clk reset config_config_addr config_config_data config_read config_write read_config_data_in stall} -power VDD -ground VSS
-set_related_supply_net -object_list {clk_out reset_out config_out_config_addr config_out_config_data config_out_read config_out_write read_config_data stall_out} -power VDD -ground VSS
+set_related_supply_net -object_list {tile_id hi lo clk reset config_config_addr config_config_data config_read config_write read_config_data_in stall flush} -power VDD -ground VSS
+set_related_supply_net -object_list {clk_out reset_out config_out_config_addr config_out_config_data config_out_read config_out_write read_config_data stall_out flush_out} -power VDD -ground VSS
 
 
 ########### Create Shut-Down Logic for SD #######

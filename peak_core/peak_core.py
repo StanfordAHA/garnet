@@ -194,8 +194,6 @@ class PeakCore(ConfigurableCore):
         self.wire(self.stallInverter.ports.I, self.ports.stall)
         self.wire(self.stallInverter.ports.O[0], self.peak_circuit.ports.clk_en)
 
-        self._setup_config()
-
     def get_config_bitstream(self, instr):
         if isinstance(instr, self.wrapper.instruction_type()):
             instr = self.wrapper.assemble(instr)
