@@ -1,7 +1,7 @@
 agents: { jobsize: "hours" }
 
 env:
-  GOLD: /build/pe_tile_only.${BUILDKITE_BUILD_NUMBER}
+  GOLD: /build/pe${BUILDKITE_BUILD_NUMBER}
   OVERRIDE_MFLOWGEN_BRANCH: silent_fail
 
 steps:

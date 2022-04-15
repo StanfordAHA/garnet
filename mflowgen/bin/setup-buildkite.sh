@@ -13,7 +13,7 @@
 #   - source garnet-setup.sh for CAD paths
 #   - finds or creates requested build directory
 #   - makes local link to mflowgen repo "/sim/buildkite-agent/mflowgen"
-#   - makes local copy of adk
+#   - Clones adk repo locally
 
 # CHANGE LOG
 # sep 2021 better log output, rsync adks instead of cp
@@ -402,51 +402,20 @@ pushd $mflowgen
 popd
 
 echo ""
-
-
-########################################################################
-# NEW ADK SETUP --- see far below for old setup
-########################################################################
 echo "--- ADK SETUP / CHECK"
+echo 'CLONE LATEST ADK INTO MFLOWGEN LOCAL REPO'
 
-echo 'COPY LATEST ADK TO MFLOWGEN REPO'
-
-# Copy the latest tsmc16 adk from a nearby repo; we'll use the one in steveri.
-#
-# Note the adks must be touchable by current user, thus must copy
+# Clone/update tsmc16-adk for test rig and maintain symlink tsmc16 => tsmc16-adk
+# Note the adks must be touchable by current user, thus must copy/clone
 # locally and cannot e.g. use symlink to someone else's existing adk.
 
 if [ "$USER" == "buildkite-agent" ]; then
 
-    tsmc16=/sim/steveri/mflowgen/adks/tsmc16
+    # Local clone-adk script maintains repo w/o revealing password/token to github
+    /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
 
-    # Check to see that we have the latest copy
-    function check_adk {
-        # d=/sim/steveri/mflowgen/adks/tsmc16-adk
-        d=$1
-        pushd $d
-            git branch -v
-            ba=`git branch -v | awk '{print $4}'` # E.g. '[ahead' or '[behind'
-            if [ "$ba" == "[ahead" -o  "$ba" == "[behind" ]; then
-                echo "---------------------------------------------------------"
-                echo "**ERROR oops looks like tsmc16 libs are not up to date."
-                echo "  - Need to do a git pull on '$d'"
-                echo "  - Also see 'help adk'."
-                echo "---------------------------------------------------------"
-                return 13 || exit 13
-            fi
-        popd
-    }
-    check_adk $tsmc16 || return 13 || exit 13
-
-    # Copy the adk to test rig
-    echo "Copying adks from '$tsmc16'"; ls -l $tsmc16; adks=$mflowgen/adks
-    echo "Copying adks from '$tsmc16' to '$adks'"
-
-    # Note rsync is much faster than cp!
-    set -x; rsync -avR $tsmc16 $adks; set +x
-
-    export MFLOWGEN_PATH=$adks
+    # Need env var MFLOWGEN_PATH I think
+    export MFLOWGEN_PATH=$mflowgen/adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
 else

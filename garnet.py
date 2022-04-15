@@ -23,17 +23,34 @@ import archipelago.power
 import archipelago.io
 import math
 
+from peak_gen.peak_wrapper import wrapped_peak_class
+from peak_gen.arch import read_arch
+
+import metamapper.coreir_util as cutil
+from metamapper.node import Nodes
+from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
+from metamapper import CoreIRContext
+from metamapper.irs.coreir import gen_CoreIRNodes
+from metamapper.lake_mem import gen_MEM_fc
+from metamapper.lake_pond import gen_Pond_fc
+from metamapper.io_tiles import IO_fc, BitIO_fc
+from lassen.sim import PE_fc as lassen_fc
+import metamapper.peak_util as putil
+from mapper.netlist_util import create_netlist_info, print_netlist_info
+from metamapper.coreir_mapper import Mapper
+
 # set the debug mode to false to speed up construction
 set_debug_mode(False)
 
 
 class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
-                 use_sram_stub: bool = True, standalone: bool = False,
+                 use_sim_sram: bool = True, standalone: bool = False,
                  add_pond: bool = True,
                  use_io_valid: bool = False,
                  pipeline_config_interval: int = 8,
-                 glb_params: GlobalBufferParams = GlobalBufferParams()):
+                 glb_params: GlobalBufferParams = GlobalBufferParams(),
+                 pe_fc=lassen_fc):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -47,8 +64,8 @@ class Garnet(Generator):
         config_data_width = 32
         self.config_addr_width = config_addr_width
         self.config_data_width = config_data_width
-        axi_addr_width = 13
-        axi_data_width = 32
+        axi_addr_width = self.glb_params.cgra_axi_addr_width
+        axi_data_width = self.glb_params.axi_data_width
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
 
@@ -66,6 +83,8 @@ class Garnet(Generator):
         else:
             io_side = IOSide.North
 
+        self.pe_fc = pe_fc
+
         if not interconnect_only:
             # width must be even number
             assert (self.width % 2) == 0
@@ -81,6 +100,7 @@ class Garnet(Generator):
                                                       axi_addr_width=axi_addr_width,
                                                       axi_data_width=axi_data_width,
                                                       num_glb_tiles=glb_params.num_glb_tiles,
+                                                      cgra_width=glb_params.num_cgra_cols,
                                                       glb_addr_width=glb_params.glb_addr_width,
                                                       glb_tile_mem_size=glb_tile_mem_size,
                                                       block_axi_addr_width=glb_params.axi_addr_width)
@@ -98,11 +118,12 @@ class Garnet(Generator):
                                    add_pd=add_pd,
                                    add_pond=add_pond,
                                    use_io_valid=use_io_valid,
-                                   use_sram_stub=use_sram_stub,
+                                   use_sim_sram=use_sim_sram,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
                                    mem_ratio=(1, 4),
-                                   standalone=standalone)
+                                   standalone=standalone,
+                                   pe_fc=pe_fc)
 
         self.interconnect = interconnect
 
@@ -189,7 +210,7 @@ class Garnet(Generator):
                       self.ports.read_config_data)
 
     def map(self, halide_src):
-        return map_app(halide_src)
+        return map_app(halide_src, retiming=True)
 
     def get_placement_bitstream(self, placement, id_to_name, instrs):
         result = []
@@ -251,19 +272,85 @@ class Garnet(Generator):
         return input_interface, output_interface,\
             (reset_port_name, valid_port_name, en_port_name)
 
-    def compile(self, halide_src, unconstrained_io=False, compact=False):
-        id_to_name, instance_to_instr, netlist, bus = self.map(halide_src)
+    def load_netlist(self, app, load_only):
+        app_dir = os.path.dirname(app)
+
+        if self.pe_fc == lassen_fc:
+            pe_header = f"{app_dir}/lassen_header.json"
+        else:
+            pe_header = f"{app_dir}/pe_header.json"
+
+        mem_header = f"{app_dir}/mem_header.json"
+        io_header = f"{app_dir}/io_header.json"
+        bit_io_header = f"{app_dir}/bit_io_header.json"
+        pond_header = f"{app_dir}/pond_header.json"
+
+        app_file = app
+        c = CoreIRContext(reset=True)
+        cmod = cutil.load_from_json(app_file)
+        c = CoreIRContext()
+        cutil.load_libs(["commonlib", "float"])
+        c.run_passes(["flatten"])
+
+        MEM_fc = gen_MEM_fc()
+        Pond_fc = gen_Pond_fc()
+        nodes = gen_CoreIRNodes(16)
+
+        putil.load_and_link_peak(
+            nodes,
+            pe_header,
+            {"global.PE": self.pe_fc},
+        )
+        putil.load_and_link_peak(
+            nodes,
+            mem_header,
+            {"global.MEM": (MEM_fc, True)},
+        )
+
+        putil.load_and_link_peak(
+            nodes,
+            io_header,
+            {"global.IO": IO_fc},
+        )
+
+        putil.load_and_link_peak(
+            nodes,
+            bit_io_header,
+            {"global.BitIO": BitIO_fc},
+        )
+
+        putil.load_and_link_peak(
+            nodes,
+            pond_header,
+            {"global.Pond": (Pond_fc, True)},
+        )
+
+        dag = cutil.coreir_to_dag(nodes, cmod)
+        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
+                     "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
+        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only)
+        print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
+        return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
+                netlist_info["buses"])
+
+    def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False):
+        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src, load_only)
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
         else:
             fixed_io = place_io_blk(id_to_name)
-        placement, routing = archipelago.pnr(self.interconnect, (netlist, bus),
-                                             cwd="temp",
-                                             id_to_name=id_to_name,
-                                             fixed_pos=fixed_io,
-                                             compact=compact,
-                                             copy_to_dir=app_dir)
+        placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
+                                                         load_only=load_only,
+                                                         cwd=app_dir,
+                                                         id_to_name=id_to_name,
+                                                         fixed_pos=fixed_io,
+                                                         compact=compact)
+
+        return placement, routing, id_to_name, instance_to_instr, netlist, bus
+
+    def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
+                           compact=False):
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
@@ -279,7 +366,7 @@ class Garnet(Generator):
                                                        outputs,
                                                        placement,
                                                        id_to_name)
-        delay = 1 if has_rom(id_to_name) else 0
+        delay = 0
         # also write out the meta file
         archipelago.io.dump_meta_file(
             halide_src, "design", os.path.dirname(halide_src))
@@ -354,13 +441,16 @@ def main():
     parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--compact", action="store_true")
-    parser.add_argument("--no-sram-stub", action="store_true")
+    parser.add_argument("--use_sim_sram", action="store_true")
     parser.add_argument("--standalone", action="store_true")
     parser.add_argument("--unconstrained-io", action="store_true")
     parser.add_argument("--dump-config-reg", action="store_true")
     parser.add_argument("--virtualize-group-size", type=int, default=4)
     parser.add_argument("--virtualize", action="store_true")
     parser.add_argument("--use-io-valid", action="store_true")
+    parser.add_argument("--pipeline-pnr", action="store_true")
+    parser.add_argument("--generate-bitstream-only", action="store_true")
+    parser.add_argument('--pe', type=str, default="")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -369,6 +459,10 @@ def main():
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")
 
+    pe_fc = lassen_fc
+    if args.pe:
+        arch = read_arch(args.pe)
+        pe_fc = wrapped_peak_class(arch, debug=True)
     glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
                                           num_cgra_cols=args.width,
                                           # NOTE: We assume num_prr is same as num_glb_tiles
@@ -377,7 +471,7 @@ def main():
                                           bank_data_width=64,
                                           cfg_addr_width=32,
                                           cfg_data_width=32,
-                                          axi_addr_width=12,
+                                          cgra_axi_addr_width=13,
                                           axi_data_width=32)
 
     garnet = Garnet(width=args.width, height=args.height,
@@ -387,8 +481,9 @@ def main():
                     add_pond=not args.no_pond,
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
-                    use_sram_stub=not args.no_sram_stub,
-                    standalone=args.standalone)
+                    use_sim_sram=args.use_sim_sram,
+                    standalone=args.standalone,
+                    pe_fc=pe_fc)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
@@ -414,9 +509,19 @@ def main():
 
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
-        # do PnR and produce bitstream
+
+        placement, routing, id_to_name, instance_to_instr, \
+            netlist, bus = garnet.place_and_route(
+                args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact,
+                load_only=args.generate_bitstream_only)
+
+        if args.pipeline_pnr:
+            return
+
         bitstream, (inputs, outputs, reset, valid,
-                    en, delay) = garnet.compile(args.app, args.unconstrained_io, compact=args.compact)
+                    en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,
+                                                           netlist, bus, compact=args.compact)
+
         # write out the config file
         if len(inputs) > 1:
             if reset in inputs:

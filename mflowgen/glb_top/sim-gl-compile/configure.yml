@@ -3,8 +3,9 @@ name: sim-gl-compile
 parameters:
   sdf: False
   PWR_AWARE: False
-  tool: "XCELIUM"
+  tool: "VCS"
   num_glb_tiles: 16
+  sim_clock_period: 1.5
 
 commands:
   - bash run_sim.sh
@@ -20,6 +21,9 @@ inputs:
   - glb_tile.sdf
   - glb_tile_sram.v
   - glb_tile_sram_pwr.v
+  - sim
+  - gls
+  - Makefile
 
 outputs:
   - sim.log
@@ -28,5 +32,4 @@ postconditions:
   - assert File( 'outputs/sim.log' )      # must exist
 
   # Basic error checking
-  - assert 'Error,' not in File( 'outputs/sim.log' )
-  - assert '*E,' not in File( 'outputs/sim.log' )
+  - assert '*E' not in File( 'outputs/sim.log' )

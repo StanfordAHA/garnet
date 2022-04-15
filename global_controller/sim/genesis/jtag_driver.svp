@@ -72,7 +72,8 @@ parameter max_bus_width = max_int(max_int(sc_bus_width, tc_bus_width), 32);
 parameter max_addr_width = max_int(sc_addr_width, tc_addr_width);
 
 typedef enum {sc_domain, tc_domain} regfile_t;
-typedef enum logic [max_int(tc_op_width, sc_op_width)-1:0] {nop=0, write=1, read=2, wr_A050=4, wr_TST=5, rd_TST=6, global_reset=7, soft_reset=8, write_stall=9, read_stall=10, advance_clk=11, read_clk_domain=12, switch_clk=13, wr_rd_delay_reg=14, rd_rd_delay_reg=15, wr_delay_sel_reg=16, rd_delay_sel_reg=17, glb_write_config=18, glb_read_config=19, sram_write_config=20, sram_read_config=21, axi_write=22, axi_read=23} regfile_op_t;
+typedef enum logic [max_int(tc_op_width, sc_op_width)-1:0] {nop=0, write=1, read=2, wr_A050=4, wr_TST=5, rd_TST=6, global_reset=7, write_stall=9, read_stall=10, advance_clk=11, read_clk_domain=12, switch_clk=13, wr_rd_delay_reg=14, rd_rd_delay_reg=15, wr_delay_sel_reg=16, rd_delay_sel_reg=17, glb_write_config=18, glb_read_config=19, sram_write_config=20, sram_read_config=21, axi_write=22, axi_read=23, write_glb_clk_en_master=24, read_glb_clk_en_master=25,
+write_glb_clk_en_bank_master=26, read_glb_clk_en_bank_master=27, write_glb_pcfg_broadcast_stall=28, read_glb_pcfg_broadcast_stall=29, write_sram_en_delay_reg=30, read_sram_en_delay_reg=31} regfile_op_t;
 
 typedef struct {
    logic [max_bus_width-1:0] data_in;

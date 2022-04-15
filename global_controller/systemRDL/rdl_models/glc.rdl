@@ -3,6 +3,7 @@
 // ========================================================================
 <% 
 use constant NUM_GLB_TILES => 16;
+use constant CGRA_WIDTH => 32;
 use constant GLB_ADDR_WIDTH => 22;
 %>
 
@@ -39,17 +40,22 @@ addrmap glc {
         field { hw = rw; we; } cnt[31:0] = 0x0;
     };
 
-    reg soft_reset_r {
-        name = "Soft Reset Counter";
-        desc = "Number of cycles to hold soft reset signal";
-        field { hw = rw; we; } cnt[31:0] = 0x0;
+    reg cgra_stall_r {
+        name = "CGRA stall";
+        desc = "control each column";
+        field {} stall[<%=CGRA_WIDTH%>] = 0x0;
     };
 
-    reg stall_r {
-        name = "Stall";
-        desc = "MSB: global buffer stall, LSB: cgra stall";
-        field {} cgra_stall[<%=NUM_GLB_TILES%>] = 0x0;
-        field {} glb_stall[<%=NUM_GLB_TILES%>] = 0x0;
+    reg glb_stall_r {
+        name = "GLB Stall";
+        desc = "control each glb tile";
+        field {} stall[<%=NUM_GLB_TILES%>] = 0x0;
+    };
+
+    reg glb_clk_en_r {
+        name = "GLB clock enable";
+        desc = "control each glb tile";
+        field {} clk_en[<%=NUM_GLB_TILES%>] = 0x0;
     };
 
     reg stream_start_pulse_r {
@@ -179,7 +185,7 @@ addrmap glc {
                 'data_strm_cgra_to_glb', and 'parallel_config_glb_to_cgra'";
 
         default nonsticky intr;
-		default hw = na;
+		default hw = w;
         default sw = r; // Software can just read this. It clears the block interrupt to
 
         field { 
@@ -291,8 +297,10 @@ addrmap glc {
     // ========================================================================
     test_r                  test;
     global_reset_r          global_reset;
-    soft_reset_r            soft_reset;
-    stall_r                 stall;
+    cgra_stall_r            cgra_stall;
+    glb_clk_en_r            glb_clk_en_master;
+    glb_clk_en_r            glb_clk_en_bank_master;
+    glb_stall_r             glb_pcfg_broadcast_stall;
     stream_start_pulse_r    stream_start_pulse;
     pc_start_pulse_r        pc_start_pulse;
 

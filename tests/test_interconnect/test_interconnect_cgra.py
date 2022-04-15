@@ -1,7 +1,4 @@
 import tempfile
-import math
-import glob
-import shutil
 import os
 from gemstone.common.testers import BasicTester
 from canal.util import IOSide
@@ -13,6 +10,7 @@ from cgra import create_cgra, compress_config_data
 import magma
 from memory_core.memory_core_magma import config_mem_tile
 from collections import deque
+from memory_core.memtile_util import ONYX_PORT_REMAP
 
 
 @pytest.fixture()
@@ -49,7 +47,7 @@ def test_interconnect_point_wise(batch_size: int, run_tb, io_sides):
     }
     bus = {"e0": 16, "e1": 16, "e3": 16}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     x, y = placement["p0"]
@@ -104,14 +102,19 @@ def test_interconnect_sram(run_tb, io_sides):
                                add_pd=True,
                                mem_ratio=(1, 2))
 
+    # In this case, we use the write address for both addresses
+    addr_in_0 = ONYX_PORT_REMAP['RAM']['wr_addr_in_0']
+    data_out_0 = ONYX_PORT_REMAP['RAM']['data_out_0']
+    ren_in_0 = ONYX_PORT_REMAP['RAM']['ren_in_0']
+
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "addr_in_0")],
-        "e1": [("m0", "data_out_0"), ("I1", "f2io_16")],
-        "e2": [("i3", "io2f_1"), ("m0", "ren_in_0")]
+        "e0": [("I0", "io2f_16"), ("m0", addr_in_0)],
+        "e1": [("m0", data_out_0), ("I1", "f2io_16")],
+        "e2": [("i3", "io2f_1"), ("m0", ren_in_0)]
     }
     bus = {"e0": 16, "e1": 16, "e2": 1}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
     mode = 2  # Mode.SRAM
@@ -199,31 +202,31 @@ def test_interconnect_fifo(run_tb, io_sides, depth):
                                add_pd=True,
                                mem_ratio=(1, 2))
 
+    data_in_0 = ONYX_PORT_REMAP['FIFO']['data_in_0']
+    wen_in_0 = ONYX_PORT_REMAP['FIFO']['wen_in_0']
+    ren_in_0 = ONYX_PORT_REMAP['FIFO']['ren_in_0']
+    data_out_0 = ONYX_PORT_REMAP['FIFO']['data_out_0']
+    valid_out_0 = ONYX_PORT_REMAP['FIFO']['valid_out_0']
+    empty_p = ONYX_PORT_REMAP['FIFO']['empty']
+    full_p = ONYX_PORT_REMAP['FIFO']['full']
+
     netlist = {
-        "e0": [("I0", "io2f_16"), ("m0", "data_in_0")],
-        "e1": [("i3", "io2f_1"), ("m0", "wen_in_0")],
-        "e2": [("i4", "io2f_1"), ("m0", "ren_in_0")],
-        "e3": [("m0", "data_out_0"), ("I1", "f2io_16")],
-        "e4": [("m0", "valid_out_0"), ("i4", "f2io_1")],
-        "e5": [("m0", "empty"), ("i2", "f2io_1")],
-        "e6": [("m0", "full"), ("i3", "f2io_1")]
+        "e0": [("I0", "io2f_16"), ("m0", data_in_0)],
+        "e1": [("i3", "io2f_1"), ("m0", wen_in_0)],
+        "e2": [("i4", "io2f_1"), ("m0", ren_in_0)],
+        "e3": [("m0", data_out_0), ("I1", "f2io_16")],
+        "e4": [("m0", valid_out_0), ("i4", "f2io_1")],
+        "e5": [("m0", empty_p), ("i2", "f2io_1")],
+        "e6": [("m0", full_p), ("i3", "f2io_1")]
     }
     bus = {"e0": 16, "e1": 1, "e2": 1, "e3": 16, "e4": 1, "e5": 1, "e6": 1}
 
-    placement, routing = pnr(interconnect, (netlist, bus))
+    placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
-    # in this case we configure m0 as fifo mode
-    mode = 1  # Mode.FIFO
-    tile_en = 1
-
-    almost_count = 3
-    if(depth < 5):
-        almost_count = 0
-
-    configs_mem = [("fifo_ctrl_fifo_depth", depth, 0),
+    configs_mem = [("mem_ctrl_strg_fifo_flat_strg_fifo_inst_fifo_depth", depth, 0),
                    ("mode", 1, 0),
-                   ("tile_en", tile_en, 0),
+                   ("tile_en", 1, 0),
                    ("flush_reg_sel", 1, 0)]
     mem_x, mem_y = placement["m0"]
     memtile = interconnect.tile_circuits[(mem_x, mem_y)]

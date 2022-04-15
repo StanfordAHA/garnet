@@ -34,10 +34,12 @@ class Environment;
     extern task clear_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)-1:0] tile_num);
     extern task kernel_test(Kernel kernel);
     extern task read_data(Kernel kernel);
-    extern function bit [NUM_GLB_TILES-1:0] calculate_mask(int start, int num);
-    extern task stall(bit [NUM_GLB_TILES-1:0] stall_mask);
-    extern task unstall(bit [NUM_GLB_TILES-1:0] stall_mask);
+    extern function bit [NUM_CGRA_COLS-1:0] calculate_cgra_stall_mask(int start, int num);
+    extern function bit [NUM_GLB_TILES-1:0] calculate_glb_stall_mask(int start, int num);
+    extern task cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
+    extern task cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     extern task run();
+    extern task compare();
 endclass
 
 function Environment::new(Kernel kernels[], vAxilIfcDriver vifc_axil, vProcIfcDriver vifc_proc);
@@ -119,16 +121,18 @@ endtask
 task Environment::cgra_configure(Kernel kernel);
     Config cfg;
     int group_start, num_groups;
-    bit [NUM_GLB_TILES-1:0] stall_mask;
+    bit [NUM_GLB_TILES-1:0] glb_stall_mask;
+    bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
 
     realtime start_time, end_time;
     $timeformat(-9, 2, " ns");
 
     group_start = kernel.group_start;
-    num_groups  = kernel.num_groups;
-    stall_mask  = calculate_mask(group_start, num_groups);
+    num_groups = kernel.num_groups;
+    glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups);
+    cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
 
-    stall(stall_mask);
+    cgra_stall(cgra_stall_mask);
     start_time = $realtime;
     $display("[%s] fast configuration start at %0t", kernel.name, start_time);
     cfg = kernel.get_pcfg_start_config();
@@ -143,44 +147,58 @@ task Environment::cgra_configure(Kernel kernel);
 
 endtask
 
-function bit [NUM_GLB_TILES-1:0] Environment::calculate_mask(int start, int num);
-    calculate_mask = '0;
+function bit [NUM_GLB_TILES-1:0] Environment::calculate_glb_stall_mask(int start, int num);
+    calculate_glb_stall_mask = '0;
     for (int i = 0; i < num; i++) begin
-        calculate_mask |= ((2'b11) << ((start + i) * 2));
+        calculate_glb_stall_mask |= ((2'b11) << ((start + i) * 2));
     end
 endfunction
 
-task Environment::stall(bit [NUM_GLB_TILES-1:0] stall_mask);
+function bit [NUM_CGRA_COLS-1:0] Environment::calculate_cgra_stall_mask(int start, int num);
+    calculate_cgra_stall_mask = '0;
+    for (int i = 0; i < num; i++) begin
+        calculate_cgra_stall_mask |= ((4'b1111) << ((start + i) * 4));
+    end
+endfunction
+
+task Environment::cgra_stall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     bit [CGRA_AXI_DATA_WIDTH-1:0] data;
     bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
-    axil_drv.read(`GLC_STALL_R, data);
-    wr_data |= ((stall_mask << NUM_GLB_TILES) | stall_mask);
-    axil_drv.write(`GLC_STALL_R, wr_data);
-    $display("Stall GLB & CGRA with stall mask %4h", stall_mask);
+
+    // Stall CGRA
+    axil_drv.read(`GLC_CGRA_STALL_R, data);
+    wr_data = stall_mask | data;
+    axil_drv.write(`GLC_CGRA_STALL_R, wr_data);
+
+    $display("Stall CGRA with stall mask %8h", stall_mask);
 endtask
 
-
-task Environment::unstall(bit [NUM_GLB_TILES-1:0] stall_mask);
+task Environment::cgra_unstall(bit [NUM_CGRA_COLS-1:0] stall_mask);
     bit [CGRA_AXI_DATA_WIDTH-1:0] data;
     bit [CGRA_AXI_DATA_WIDTH-1:0] wr_data;
-    axil_drv.read(`GLC_STALL_R, data);
-    wr_data &= (((~stall_mask) << NUM_GLB_TILES) | (~stall_mask));
-    axil_drv.write(`GLC_STALL_R, wr_data);
-    $display("Unstall GLB & CGRA with stall mask %4h", stall_mask);
+
+    // Unstall CGRA
+    axil_drv.read(`GLC_CGRA_STALL_R, data);
+    wr_data = (~stall_mask) & data;
+    axil_drv.write(`GLC_CGRA_STALL_R, wr_data);
+
+    $display("Unstall CGRA with stall mask %4h", stall_mask);
 endtask
 
 task Environment::kernel_test(Kernel kernel);
     Config cfg;
     int total_output_size;
     int group_start, num_groups;
-    bit [NUM_GLB_TILES-1:0] stall_mask;
+    bit [NUM_GLB_TILES-1:0] glb_stall_mask;
+    bit [NUM_CGRA_COLS-1:0] cgra_stall_mask;
     realtime start_time, end_time, g2f_end_time, latency;
     $timeformat(-9, 2, " ns");
 
     group_start = kernel.group_start;
-    num_groups  = kernel.num_groups;
-    stall_mask  = calculate_mask(group_start, num_groups);
-    unstall(stall_mask);
+    num_groups = kernel.num_groups;
+    glb_stall_mask = calculate_glb_stall_mask(group_start, num_groups);
+    cgra_stall_mask = calculate_cgra_stall_mask(group_start, num_groups);
+    cgra_unstall(cgra_stall_mask);
 
     start_time = $realtime;
     $display("[%s] kernel start at %0t", kernel.name, start_time);
@@ -225,12 +243,12 @@ task Environment::kernel_test(Kernel kernel);
     foreach (kernel.output_size[i]) begin
         total_output_size += kernel.output_size[i];
     end
-    $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size * 2);
+    $display("[%s] The size of output is %0d Byte.", kernel.name, total_output_size);
 
     latency = end_time - g2f_end_time;
-    $display("[%s] The latency is %0t.", kernel.name, latency);
+    $display("[%s] The initial latency is %0t.", kernel.name, latency);
     $display("[%s] The throughput is %.3f (GB/s).", kernel.name,
-             (total_output_size * 2) / (g2f_end_time - start_time));
+             total_output_size / (g2f_end_time - start_time));
 
     foreach (kernel.outputs[i]) begin
         foreach (kernel.outputs[i].io_tiles[j]) begin
@@ -278,7 +296,7 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
         end
         begin
             repeat (200_000) @(vifc_axil.cbd);
-            $display("@%0t: %m ERROR: Interrupt wait timeout ", $time);
+            $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
         end
     join_any
     disable fork;
@@ -335,10 +353,11 @@ task Environment::run();
         join_none
     end
     wait fork;
-    repeat (20) @(vifc_axil.cbd);
+endtask
 
+task Environment::compare();
+    repeat (20) @(vifc_axil.cbd);
     foreach (kernels[i]) begin
         kernels[i].compare();
     end
-
 endtask

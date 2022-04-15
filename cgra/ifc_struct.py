@@ -33,31 +33,50 @@ class ProcPacketIfc:
 
 
 class GlbCfgIfc:
-    def __init__(self, addr_width, data_width):
+    def __init__(self, addr_width, data_width, is_clk_en=True):
         self.addr_width = addr_width
         self.data_width = data_width
 
-        self.slave = magma.Product.from_fields("GlbCfgIfcSlave", dict(
-            wr_en=magma.In(magma.Bit),
-            wr_clk_en=magma.In(magma.Bit),
-            wr_addr=magma.In(magma.Bits[addr_width]),
-            wr_data=magma.In(magma.Bits[data_width]),
-            rd_en=magma.In(magma.Bit),
-            rd_clk_en=magma.In(magma.Bit),
-            rd_addr=magma.In(magma.Bits[addr_width]),
-            rd_data=magma.Out(magma.Bits[data_width]),
-            rd_data_valid=magma.Out(magma.Bit)))
+        if is_clk_en:
+            self.slave = magma.Product.from_fields("GlbCfgIfcSlave", dict(
+                wr_en=magma.In(magma.Bit),
+                wr_clk_en=magma.In(magma.Bit),
+                wr_addr=magma.In(magma.Bits[addr_width]),
+                wr_data=magma.In(magma.Bits[data_width]),
+                rd_en=magma.In(magma.Bit),
+                rd_clk_en=magma.In(magma.Bit),
+                rd_addr=magma.In(magma.Bits[addr_width]),
+                rd_data=magma.Out(magma.Bits[data_width]),
+                rd_data_valid=magma.Out(magma.Bit)))
 
-        self.master = magma.Product.from_fields("GlbCfgIfcMaster", dict(
-            wr_en=magma.Out(magma.Bit),
-            wr_clk_en=magma.Out(magma.Bit),
-            wr_addr=magma.Out(magma.Bits[addr_width]),
-            wr_data=magma.Out(magma.Bits[data_width]),
-            rd_en=magma.Out(magma.Bit),
-            rd_clk_en=magma.Out(magma.Bit),
-            rd_addr=magma.Out(magma.Bits[addr_width]),
-            rd_data=magma.In(magma.Bits[data_width]),
-            rd_data_valid=magma.In(magma.Bit)))
+            self.master = magma.Product.from_fields("GlbCfgIfcMaster", dict(
+                wr_en=magma.Out(magma.Bit),
+                wr_clk_en=magma.Out(magma.Bit),
+                wr_addr=magma.Out(magma.Bits[addr_width]),
+                wr_data=magma.Out(magma.Bits[data_width]),
+                rd_en=magma.Out(magma.Bit),
+                rd_clk_en=magma.Out(magma.Bit),
+                rd_addr=magma.Out(magma.Bits[addr_width]),
+                rd_data=magma.In(magma.Bits[data_width]),
+                rd_data_valid=magma.In(magma.Bit)))
+        else:
+            self.slave = magma.Product.from_fields("GlbCfgIfcSlave", dict(
+                wr_en=magma.In(magma.Bit),
+                wr_addr=magma.In(magma.Bits[addr_width]),
+                wr_data=magma.In(magma.Bits[data_width]),
+                rd_en=magma.In(magma.Bit),
+                rd_addr=magma.In(magma.Bits[addr_width]),
+                rd_data=magma.Out(magma.Bits[data_width]),
+                rd_data_valid=magma.Out(magma.Bit)))
+
+            self.master = magma.Product.from_fields("GlbCfgIfcMaster", dict(
+                wr_en=magma.Out(magma.Bit),
+                wr_addr=magma.Out(magma.Bits[addr_width]),
+                wr_data=magma.Out(magma.Bits[data_width]),
+                rd_en=magma.Out(magma.Bit),
+                rd_addr=magma.Out(magma.Bits[addr_width]),
+                rd_data=magma.In(magma.Bits[data_width]),
+                rd_data_valid=magma.In(magma.Bit)))
 
 
 """

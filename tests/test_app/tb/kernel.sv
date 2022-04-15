@@ -332,6 +332,10 @@ endfunction
 function data_array_t Kernel::parse_input_data(int idx);
     int num_pixel = (input_size[idx] >> 1);  // Pixel is 2byte (16bit) size
     data_array_t result = new[num_pixel];
+    // FIXME: VCS does not support to read input to dynamic memory
+    // Use temporary register
+    bit [15:0] result_tmp[2048*1440-1:0];
+
     int fp = $fopen(input_filenames[idx], "rb");
     int name_len = input_filenames[idx].len();
     string tmp;
@@ -345,12 +349,20 @@ function data_array_t Kernel::parse_input_data(int idx);
             f_out = $fgets(tmp, fp);
         end
     end
-    if (input_filenames[idx].substr(name_len - 3, name_len - 1) == "pgm"
-        | input_filenames[idx].substr(name_len - 3, name_len - 1) == "raw") begin
-        cnt = $fread(result, fp);
+    if (input_filenames[idx].substr(
+            name_len - 3, name_len - 1
+        ) == "pgm" | input_filenames[idx].substr(
+            name_len - 3, name_len - 1
+        ) == "raw") begin
+        cnt = $fread(result_tmp, fp);
+        foreach (result[i]) begin
+            result[i] = result_tmp[i];
+        end
     end else begin
         cnt = 0;
-        while ($fscanf(fp, "%h\n", result[cnt]) == 1) begin
+        while ($fscanf(
+            fp, "%h\n", result[cnt]
+        ) == 1) begin
             cnt = cnt + 1;
         end
         // The total size in byte is the number of pixels times 2
@@ -368,6 +380,9 @@ endfunction
 function data_array_t Kernel::parse_gold_data(int idx);
     int num_pixel = (output_size[idx] >> 1);  // Pixel is 2byte (16bit) size
     data_array_t result = new[num_pixel];
+    // FIXME: VCS does not support to read input to dynamic memory
+    // Use temporary register
+    bit [15:0] result_tmp[2048*1440-1:0];
     int fp = $fopen(output_filenames[idx], "rb");
     int name_len = output_filenames[idx].len();
     string tmp;
@@ -385,7 +400,10 @@ function data_array_t Kernel::parse_gold_data(int idx);
         ) == "pgm" | output_filenames[idx].substr(
             name_len - 3, name_len - 1
         ) == "raw") begin
-        cnt = $fread(result, fp);
+        cnt = $fread(result_tmp, fp);
+        foreach (result[i]) begin
+            result[i] = result_tmp[i];
+        end
     end else begin
         cnt = 0;
         while ($fscanf(
@@ -540,7 +558,7 @@ function void Kernel::compare();
     if (result == 0) begin
         $display("%s passed", name);
     end else begin
-        $display("%s failed. %0d number of pixels are different.", name, result);
+        $error("%s failed. %0d number of pixels are different.", name, result);
     end
 endfunction
 
@@ -556,10 +574,11 @@ function int Kernel::compare_(int idx);
     for (int i = 0; i < gold_data[idx].size(); i++) begin
         if (gold_data[idx][i] != output_data[idx][i]) begin
             if (result < max_mismatch) begin
-                $display("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i, output_data[idx][i], gold_data[idx][i]);
-            end
-            else if (result == max_mismatch) begin
-                $display("The number of pixels mismatch is over %0d, so it will not print further.", max_mismatch);
+                $display("[%s]-Output[%0d], pixel[%0d] Get %02X but expect %02X", name, idx, i,
+                         output_data[idx][i], gold_data[idx][i]);
+            end else if (result == max_mismatch) begin
+                $display("The number of pixels mismatch is over %0d, so it will not print further.",
+                         max_mismatch);
             end
             result += 1;
         end

@@ -1,0 +1,136 @@
+agents: { jobsize: "hours" }
+
+########################################################################
+# What does this pipeline do?
+# It is able to run a single step in a subgraph using cached collateral.
+# Specifically: runs Tile_PE synthesis step using prebuilt collateral
+# from /build/gold (settable via CACHE env var below).
+
+
+########################################################################
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
+
+env:
+  GOLD: /build/pm${BUILDKITE_BUILD_NUMBER}
+  CACHE: /build/gold
+
+  # OVERRIDE_MFLOWGEN_BRANCH: droute-auto-stop
+  # stop_on_failed_routing: true
+
+
+steps:
+
+- label: 'Tile_PE setup (1m)'
+  commands:
+
+  # Copy existing rtl collateral;
+  # Think of setup-buildkite as a fancy "mkdir -p $d && cd $d"
+  # "mflowgen run" should maybe renumber rtl step if necessary?
+
+  # Make $GOLD directory and cd to it
+  # # "mflowgen run full_chip" to build full_chip framework (may not be necessary)
+  # Copy rtl collateral from $CACHE
+  # "mflowgen run full_chip" to reset rtl in the context of latest full_chip framework
+
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Fetch fullchip/rtl from $$CACHE";
+     pwd; set -x; cp -rp $$CACHE/full_chip/*-rtl .;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Build Tile_PE dir hierarchy";
+     echo "(Fetch an inconsequential step to force dir hierarchy build.)";
+     (cd $$CACHE; rsync -aR full_chip/*-tile_array/*-Tile_PE/*-constraints $$GOLD);
+
+     : ------------------------------------------------------------------------;
+     echo "--- Renumber as necessary at each stage of the hierarchy";
+     cd .;            mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+     cd *-tile_array; mflowgen run --design $$GARNET_HOME/mflowgen/tile_array;
+     cd *-Tile_PE;    mflowgen run --design $$GARNET_HOME/mflowgen/Tile_PE;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Dry run to see if everything is copacetic with the cache";
+     set -x;
+
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-place`;
+     ls -ld $$CACHE/$$step; echo "(cd $$CACHE; rsync -aR $$step $$GOLD)";
+
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-cts`;
+     ls -ld $$CACHE/$$step; echo "(cd $$CACHE; rsync -aR $$step $$GOLD)";
+
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-postcts_hold`;
+     ls -ld $$CACHE/$$step; echo "(cd $$CACHE; rsync -aR $$step $$GOLD)";
+
+     set +x; : verbosity OFF;'
+- wait: ~
+
+- label: 'make rtl->power (10m)'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
+     cd *-tile_array/*-Tile_PE;
+     : ------------------------------------------------------------------------;
+     echo "--- Build rtl,syn,power from scratch, should take like 10 minutes"; 
+     echo "--- - make rtl";       make rtl;
+     echo "--- - make synthesis"; make cadence-genus-synthesis;
+     echo "--- - make power";     make cadence-innovus-power;
+     '
+- wait: ~
+
+- label: 'make route, lvs (20m)'
+  commands:
+
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD/full_chip;
+     cd *-tile_array/*-Tile_PE;
+
+     : ------------------------------------------------------------------------;
+     echo "--- fetch place,cts,postcts_hold from $$CACHE";
+     set -x; : verbosity ON;
+
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-place`;
+     ls -ld $$CACHE/$$step;
+     (cd $$CACHE; rsync -aR $$step $$GOLD); touch $$GOLD/$$step/.prebuilt;
+     ls -ld $$GOLD/$$step;
+
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-cts`;
+     ls -ld $$CACHE/$$step;
+     (cd $$CACHE; rsync -aR $$step $$GOLD); touch $$GOLD/$$step/.prebuilt;
+     ls -ld $$GOLD/$$step;
+
+     step=`cd $$CACHE; /bin/ls -1d full_chip/*-tile_array/*-Tile_PE/*-postcts_hold`;
+     ls -ld $$CACHE/$$step;
+     (cd $$CACHE; rsync -aR $$step $$GOLD); touch $$GOLD/$$step/.prebuilt;
+     ls -ld $$GOLD/$$step;
+
+     set +x; : verbosity OFF;
+
+     : ------------------------------------------------------------------------;
+     : For "make" commands below:                                              ;
+     : "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail ;
+     : "pipefail" prevents "tee" from hiding "make" command failure            ;
+     : ------------------------------------------------------------------------;
+     set -o pipefail;
+
+     echo "--- make route"
+     echo exit 13 | make cadence-innovus-route |& tee make-route.log;
+
+     echo "--- make lvs";
+     echo exit 13 | make mentor-calibre-lvs |& tee make-lvs.log;
+     '
+- wait: ~
+
+
+# Looks like we can survive renumberings if we're careful:
+# Found the following existing build directories. Their numbering will be
+# preserved in the new graph, as will their build status (assuming the same
+# graph connectivity). This prevents unnecessary rebuilds due solely to
+# different numberings. This means that an existing step N will remain step
+# N. For a completely clean build, run the "clean-all" target.
+#  
+# -  10 : 10-rtl
+# -  12 : 12-soc-rtl
+# -  18 : 18-tile_array
