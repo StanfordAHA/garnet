@@ -26,3 +26,19 @@ steps:
      then echo oh no failed silently oh no;
      else exit 0;
      fi'
+
+
+# OR! (from pipeline_fullchip.yml)
+# steps:
+# - label: 'setup'
+#   commands:
+#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+#      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
+# - wait: ~
+# 
+# - label: 'rtl'
+#   commands:
+#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
+#      echo "--- MAKE RTL"; set -o pipefail;
+#      make rtl |& tee make-rtl.log'
+# - wait: ~
