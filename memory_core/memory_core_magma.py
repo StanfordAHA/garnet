@@ -83,6 +83,7 @@ class MemCore(LakeCoreBase):
                  fifo_mode=True,
                  add_clk_enable=True,
                  add_flush=True,
+                 gate_flush=True,
                  override_name=None,
                  gen_addr=True,
                  tech_map=TSMC_Tech_Map):
@@ -92,6 +93,7 @@ class MemCore(LakeCoreBase):
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
+                         gate_flush=gate_flush,
                          name="MemCore")
 
         # Capture everything to the tile object
@@ -283,6 +285,8 @@ class MemCore(LakeCoreBase):
 
         # Add the runtime configuration to the final config
         for name, v in config_runtime:
+            if name == "flush_reg_sel" or name == "flush_reg_value":
+                continue
             configs = [self.get_config_data(name, v)] + configs
 
         print(configs)

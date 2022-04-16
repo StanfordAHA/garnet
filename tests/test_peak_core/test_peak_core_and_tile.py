@@ -35,6 +35,7 @@ def sequence():
     * output - expected outputs given a, b
     """
     core = PeakCore(PE_fc)
+    core.finalize()
     sequence = []
     for _ in range(5):
         # Choose a random operation from lassen.asm
@@ -86,6 +87,7 @@ def test_peak_core_sequence(sequence, run_tb):
         tester.expect(tester._circuit.alu_res, output)
 
     core = PeakCore(PE_fc)
+    core.finalize()
     core.name = lambda: "PECore"
     circuit = core.circuit()
 

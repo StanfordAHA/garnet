@@ -12,7 +12,7 @@ from systemRDL.util import gen_rdl_header
 from global_controller.global_controller_magma import GlobalController
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
-from mini_mapper import map_app, has_rom, get_total_cycle_from_app
+from mini_mapper import map_app, get_total_cycle_from_app
 from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
 import json
 from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
@@ -48,6 +48,7 @@ class Garnet(Generator):
                  use_sim_sram: bool = True, standalone: bool = False,
                  add_pond: bool = True,
                  use_io_valid: bool = False,
+                 harden_flush: bool = True,
                  pipeline_config_interval: int = 8,
                  glb_params: GlobalBufferParams = GlobalBufferParams(),
                  pe_fc=lassen_fc):
@@ -77,6 +78,9 @@ class Garnet(Generator):
         self.width = width
         self.height = height
 
+        self.harden_flush = harden_flush
+        self.pipeline_config_interval = pipeline_config_interval
+
         # only north side has IO
         if standalone:
             io_side = IOSide.None_
@@ -103,7 +107,8 @@ class Garnet(Generator):
                                                       cgra_width=glb_params.num_cgra_cols,
                                                       glb_addr_width=glb_params.glb_addr_width,
                                                       glb_tile_mem_size=glb_tile_mem_size,
-                                                      block_axi_addr_width=glb_params.axi_addr_width)
+                                                      block_axi_addr_width=glb_params.axi_addr_width,
+                                                      group_size=glb_params.num_cols_per_group)
 
             self.global_buffer = GlobalBufferMagma(glb_params)
 
@@ -118,6 +123,7 @@ class Garnet(Generator):
                                    add_pd=add_pd,
                                    add_pond=add_pond,
                                    use_io_valid=use_io_valid,
+                                   harden_flush=harden_flush,
                                    use_sim_sram=use_sim_sram,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
@@ -128,7 +134,11 @@ class Garnet(Generator):
         self.interconnect = interconnect
 
         # make multiple stall ports
-        stall_port_pass(self.interconnect)
+        stall_port_pass(self.interconnect, port_name="stall", port_width=1, col_offset=1)
+        # make multiple flush ports
+        if harden_flush:
+            stall_port_pass(self.interconnect, port_name="flush", port_width=1,
+                            col_offset=glb_params.num_cols_per_group)
         # make multiple configuration ports
         config_port_pass(self.interconnect)
 
@@ -208,6 +218,10 @@ class Garnet(Generator):
 
             self.wire(self.interconnect.ports.read_config_data,
                       self.ports.read_config_data)
+
+            if harden_flush:
+                self.add_ports(flush=magma.In(magma.Bits[1]))
+                self.wire(self.ports.flush, self.interconnect.ports.flush)
 
     def map(self, halide_src):
         return map_app(halide_src, retiming=True)
@@ -328,7 +342,7 @@ class Garnet(Generator):
         dag = cutil.coreir_to_dag(nodes, cmod)
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
-        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only)
+        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only, self.harden_flush, self.height//self.pipeline_config_interval)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
@@ -345,7 +359,9 @@ class Garnet(Generator):
                                                          cwd=app_dir,
                                                          id_to_name=id_to_name,
                                                          fixed_pos=fixed_io,
-                                                         compact=compact)
+                                                         compact=compact,
+                                                         harden_flush=self.harden_flush,
+                                                         pipeline_config_interval=self.pipeline_config_interval)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
@@ -429,7 +445,7 @@ def main():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
-    parser.add_argument('--pipeline_config_interval', type=int, default=8)
+    parser.add_argument('--pipeline_config_interval', type=int, default=16)
     parser.add_argument('--glb_tile_mem_size', type=int, default=256)
     parser.add_argument("--input-app", type=str, default="", dest="app")
     parser.add_argument("--input-file", type=str, default="", dest="input")
@@ -447,6 +463,7 @@ def main():
     parser.add_argument("--dump-config-reg", action="store_true")
     parser.add_argument("--virtualize-group-size", type=int, default=4)
     parser.add_argument("--virtualize", action="store_true")
+    parser.add_argument("--no-harden-flush", action="store_true")
     parser.add_argument("--use-io-valid", action="store_true")
     parser.add_argument("--pipeline-pnr", action="store_true")
     parser.add_argument("--generate-bitstream-only", action="store_true")
@@ -477,8 +494,10 @@ def main():
     garnet = Garnet(width=args.width, height=args.height,
                     glb_params=glb_params,
                     add_pd=not args.no_pd,
-                    pipeline_config_interval=args.pipeline_config_interval,
+                    # pipeline_config_interval=args.pipeline_config_interval,
+                    pipeline_config_interval = args.height,
                     add_pond=not args.no_pond,
+                    harden_flush=not args.no_harden_flush,
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
                     use_sim_sram=args.use_sim_sram,
