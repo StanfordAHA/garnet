@@ -13,7 +13,8 @@ from gemstone.common.configurable import ConfigurationType
 # Circuit Definition for set of pipeline registers
 class PipelineStage(Generator):
     def __init__(self, config_addr_width: int,
-                 config_data_width: int):
+                 config_data_width: int,
+                 add_flush: bool):
         super().__init__()
         self.config_addr_width = config_addr_width
         self.config_data_width = config_data_width
@@ -24,6 +25,10 @@ class PipelineStage(Generator):
             config=magma.In(config_type),
             config_out=magma.Out(config_type)
         )
+        if add_flush:
+            self.add_ports(flush=magma.In(magma.Bits[1]),
+                           flush_out=magma.Out(magma.Bits[1]))
+
         # Pipeline registers
         config_addr_reg = FromMagma(DefineRegister(config_addr_width))
         config_data_reg = FromMagma(DefineRegister(config_data_width))
@@ -42,11 +47,16 @@ class PipelineStage(Generator):
         self.wire(config_read_reg.ports.O, self.ports.config_out.read)
         self.wire(config_write_reg.ports.O, self.ports.config_out.write)
 
+        if add_flush:
+            flush_reg = FromMagma(DefineRegister(1))
+            self.wire(self.ports.flush, flush_reg.ports.I)
+            self.wire(flush_reg.ports.O, self.ports.flush_out)
+
     def name(self):
-        return "ConfigPipeStage"
+        return "GlobalPipeStage"
 
 # Pass to insert pipeline registers
-def pipeline_config_signals(interconnect: Interconnect, interval):
+def pipeline_global_signals(interconnect: Interconnect, interval):
     # Right now in canal, the width of config_addr and config_data
     # are hard-coded to be the same. This should be changed.
     config_data_width = interconnect.config_data_width
@@ -60,7 +70,8 @@ def pipeline_config_signals(interconnect: Interconnect, interval):
         else:
             if interval != 0 and y % interval == 0 and ((x, y+1) in interconnect.tile_circuits):
                 tile_below = interconnect.tile_circuits[(x, y+1)]
-                pipe_stage = PipelineStage(config_addr_width, config_data_width)
+                has_flush = "flush" in tile_below.ports
+                pipe_stage = PipelineStage(config_addr_width, config_data_width, has_flush)
                 # remove existing config wire
                 interconnect.remove_wire(tile.ports.config_out, tile_below.ports.config)
                 # Now, wire config through the pipe stage
@@ -68,4 +79,10 @@ def pipeline_config_signals(interconnect: Interconnect, interval):
                 interconnect.wire(pipe_stage.ports.config_out, tile_below.ports.config)
                 # Wire up pipe stage clock input to output clock
                 interconnect.wire(tile.ports.clk_out, pipe_stage.ports.clk)
+
+                # if it has flush
+                if has_flush:
+                    interconnect.remove_wire(tile.ports.flush, tile_below.ports.flush)
+                    interconnect.wire(tile.ports.flush_out, pipe_stage.ports.flush)
+                    interconnect.wire(pipe_stage.ports.flush_out, tile_below.ports.flush)
             
