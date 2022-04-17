@@ -12,6 +12,7 @@
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  BDIR: /build/msyn${BUILDKITE_BUILD_NUMBER}
 
 steps:
 
@@ -19,15 +20,19 @@ steps:
 # INDIVIDUAL TILE RUNS
 # Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
-- label: '250MHz PE synth 12m'
-  commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-  - .buildkite/pipelines/check_pe_area.sh
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
+# - label: '250MHz PE synth 12m'
+#   commands:
+#   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
+#   - .buildkite/pipelines/check_pe_area.sh
+#   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
+# - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 - label: 'MemCore synth 17m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug --build_dir $BDIR
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+- label: 'CHECK'
+  commands:
+  - set -x; ls -l $BDIR
+  - set -x; mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
