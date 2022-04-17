@@ -20,7 +20,7 @@ else
     rm -f $GARNET_HOME/garnet.v
 
     # Build up the flags we want to pass to python garnet.v
-    flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --glb_tile_mem_size $glb_tile_mem_size"
+    flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --no-sram-stub --glb_tile_mem_size $glb_tile_mem_size"
 
     if [ $PWR_AWARE == False ]; then
      flags+=" --no-pd"
@@ -32,51 +32,88 @@ else
 
     # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
-      echo "Use aha docker container for all dependencies"
-
       # Clone AHA repo
       git clone https://github.com/StanfordAHA/aha.git
       cd aha
       # install the aha wrapper script
       pip install -e .
 
-      # Prune docker images...
+      echo "--- Docker pre-cleaning"; echo ""
+      docker images; echo ""
+      docker ps    ; echo ""
+
+      # Prune docker images ("yes" emits endless stream of y's)
+      echo ""; echo "Docker cleanup PRUNE (old)"
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
 
-      # Choose a docker image; can set via "rtl_docker_image" parameter
-      default_image="stanfordaha/garnet:latest"
-      if [ "$rtl_docker_image" == ""        ]; then rtl_docker_image=${default_image}; fi
-      if [ "$rtl_docker_image" == "default" ]; then rtl_docker_image=${default_image}; fi
+      echo ""; echo "After pruning:"; echo ""
+      docker images; echo ""
+      docker ps    ; echo ""
 
-      # To use a docker image with name other than "latest" can do e.g.
-      # rtl_docker_image="stanfordaha/garnet:cst"
+      echo ""; echo "# 1. Find untagged docker images"; echo ""
+      untagged_images=`docker images | grep "<none>" | awk '{print $3}'`
+      if [ "$untagged_images" ]; then echo "Found untagged images $untagged_images"; echo ""; fi
 
-      # To use a docker image based on sha hash can do e.g.
-      # rtl_docker_image="stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3..."
+      echo ""; echo "# 2. Find and kill jobs associated with each untagged image"; echo ""
+      for ui in $untagged_images; do
+          echo "================================================================"
+          echo docker ps --filter "ancestor=$ui"
+               docker ps --filter "ancestor=$ui"
+          echo ""
+          untagged_jobs=`docker ps --filter "ancestor=$ui" -q`
+          for uj in $untagged_jobs; do
+              echo -n "docker kill $uj ... "
+                   docker kill $uj
+          done
 
-      echo "Using image '$rtl_docker_image'"
-      docker pull ${rtl_docker_image}
+          # Wait a couple seconds for last job to die
+          sleep 10
+
+          echo ""; echo "# Now that jobs are dead, can delete untagged image"
+          echo docker rmi $ui
+               docker rmi $ui
+
+          echo "================================================================"
+      done
+
+      echo ""; echo "# Untagged jobs AFTER pre-cleaning"; echo ""
+      docker images; echo ""
+      docker ps    ; echo ""
+
+      echo "--- Continue..."
+
+      ##############################################################################
+      # steveri 02/2021 - Original code only supported image "latest";
+      # new code (below) allows use of any image based on new "which_image" parm
+
+      # See common/rtl/configure.yml for "which_image" setting; default = "latest"
+      if [ "$which_image" == "" ]; then which_image=latest; fi
+
+      # Or can simply uncomment below to e.g. use image 'stanfordaha/garnet:cst'
+      # which_image=cst
+
+      # pull docker image from docker hub
+      echo "--- docker pull stanfordaha/garnet:${which_image}"
+      docker pull stanfordaha/garnet:${which_image}
 
       # Display ID info for image e.g.
       #     RepoTags    [stanfordaha/garnet:latest]
       #     RepoDigests [stanfordaha/garnet@sha256:e43c853b4068992...]
-      docker inspect --format='RepoTags    {{.RepoTags}}'    ${rtl_docker_image}
-      docker inspect --format='RepoDigests {{.RepoDigests}}' ${rtl_docker_image}
+      docker inspect --format='RepoTags    {{.RepoTags}}'    stanfordaha/garnet:${which_image}
+      docker inspect --format='RepoDigests {{.RepoDigests}}' stanfordaha/garnet:${which_image}
 
-      # Run the image in a container
-      if [ "$rtl_docker_image" == "$default_image" ]; then
-          # Default image can use standard "aha docker" mechanism to run the image in a container.
-          # It will run in the background and delete the container when done.
-          # "aha docker" return-value is the name of the container.
+      if [ "$which_image" == "latest" ]; then
+          # run the container in the background and delete it when it exits
+          # ("aha docker" will print out the name of the container to attach to)
           container_name=$(aha docker)
       else
-          # Run (non-default) container in the background and delete it when it exits (--rm)
-          # Mount /cad and name it, and run container as a daemon in background
-          # Use container_name "gen_rtl_<proc_id>"
-          container_name=gen_rtl_$$
-          docker run -id --name ${container_name} --rm -v /cad:/cad ${rtl_docker_image} bash
+          # run the container in the background and delete it when it exits (--rm)
+          # mount /cad and name it, and run container as a daemon in background
+          container_name=${which_image}
+          docker run -id --name ${container_name} --rm -v /cad:/cad stanfordaha/garnet:cst bash
       fi
-      echo "Using docker container '$container_name'"
+      echo "container-name: $container_name"
+      ##############################################################################
 
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
@@ -87,6 +124,8 @@ else
       fi
 
       # run garnet.py in container and concat all verilog outputs
+      echo "---docker exec $container_name"
+
       docker exec $container_name /bin/bash -c \
         '# Func to check python package creds (Added 02/2021 as part of cst vetting)
          # (Single-quote regime)
@@ -117,18 +156,21 @@ else
          source /aha/bin/activate; # Set up the build environment
 
          if [ $interconnect_only == True ]; then
+           echo --- INTERCONNECT_ONLY: aha garnet $flags
            aha garnet $flags; # Here is where we build the verilog for the main chip
            cd garnet
            cp garnet.v design.v
          elif [ $glb_only == True ]; then
            cd garnet
 
+           echo --- GLB_ONLY: make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
            make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
            cp global_buffer/global_buffer.sv design.v
            cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
          else
+           echo --- DEFAULT: aha garnet $flags
            # Rename output verilog, final name must be 'design.v'
            aha garnet $flags; # Here is where we build the verilog for the main chip
            cd garnet
@@ -144,7 +186,8 @@ else
            cat global_controller/systemRDL/output/*.sv >> design.v
          fi"
 
-
+      echo +++ docker cleanup
+      set -x
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       if [ $glb_only == True ]; then
@@ -156,11 +199,6 @@ else
         cp -r ../glb_header/* ../outputs/header/
         cp -r ../glc_header/* ../outputs/header/
       fi
-
-      # See whassup with docker atm
-      docker ps
-      docker images --digests
-
       # Kill the container
       docker kill $container_name
       echo "killed docker container $container_name"
@@ -173,10 +211,11 @@ else
       if [ "$save_verilog_to_tmpdir" == "True" ]; then
           echo "+++ ENDGAME - Save verilog to /tmp before buildkite deletes it"
           set -x; # so user will know where the files are going
-          cp outputs/design.v /tmp/design.v.${container_name}.deleteme$$
-          cp mflowgen-run.log /tmp/log.${container_name}.deleteme$$
+          cp outputs/design.v /tmp/design.v.${which_image}.deleteme$$
+          cp mflowgen-run.log /tmp/log.${which_image}.deleteme$$
           set +x
       fi
+      set +x
 
     # Else we want to use local python env to generate rtl
     else
@@ -217,4 +256,3 @@ else
   fi
 fi
 
-echo "gen_rtl DONE"
