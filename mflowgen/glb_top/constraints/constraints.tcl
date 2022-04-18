@@ -11,6 +11,10 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
+
+#=========================================================================
+# clk
+#=========================================================================
 set clock_net  clk
 set clock_name ideal_clock
 
@@ -18,9 +22,23 @@ create_clock -name ${clock_name} \
              -period ${clock_period} \
              [get_ports ${clock_net}]
 
+#=========================================================================
+# clk_en multicycle path
+#=========================================================================
+set_multicycle_path -setup 10 -from {pcfg_broadcast_stall}
+set_multicycle_path -hold 9 -from {pcfg_broadcast_stall}
+set_multicycle_path -setup 10 -from {glb_clk_en_master}
+set_multicycle_path -hold 9 -from {glb_clk_en_master}
+set_multicycle_path -setup 10 -from {glb_clk_en_bank_master}
+set_multicycle_path -hold 9 -from {glb_clk_en_bank_master}
+set_multicycle_path -setup 10 -from {flush_crossbar_sel}
+set_multicycle_path -hold 9 -from {flush_crossbar_sel}
+
+#=========================================================================
+# load
+#=========================================================================
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
-
 set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 
 # This constraint sets the input drive strength of the input pins of
@@ -32,74 +50,50 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
-###############################
+#=========================================================================
+# input delay
+#=========================================================================
 # set_input_delay constraints for input ports
-###############################
+set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
+set_input_delay -clock ${clock_name} 0 [get_ports reset]
+# glb-cgra delay is high
+set_input_delay -clock ${clock_name} 0.4 [get_ports strm_data_*f2g*]
 
-# set min delay for all inputs
-set_min_delay -from [all_inputs -no_clocks] [expr ${clock_period}*0.45]
-set_min_delay -from [get_ports proc_wr_data] [expr ${clock_period}*0.50]
-set_min_delay -from [get_ports if_sram_cfg_rd_addr] [expr ${clock_period}*0.50]
-
-# default input delay is 0.30
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.30] [all_inputs -no_clocks]
-
-# reset input delay is 0.2
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.20] [get_ports reset]
-
-# set input delay for cgra to glb 
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.40] [get_ports stream_* -filter "direction==in"] -add_delay
-
-# cgra_cfg_jtag delay is 0.4 (from glc)
-set_input_delay -clock ${clock_name} [expr ${clock_period}*0.40] [get_ports cgra_cfg_jtag*]
-
-###############################
+#=========================================================================
+# output delay
+#=========================================================================
 # set_output_delay constraints for output ports
-###############################
-# default output delay is 0.30
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.30] [all_outputs]
+set_output_delay -clock ${clock_name} 0.2 [all_outputs]
+# glb-cgra delay is high
+set_output_delay -clock ${clock_name} 0.4 [get_ports strm_data_*g2f*]
+set_output_delay -clock ${clock_name} 0.4 [get_ports cgra_cfg_g2f*]
 
-# all output ports connected to cgra has high output delay
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.4] [get_ports cgra_* -filter "direction==out"] -add_delay
-set_output_delay -clock ${clock_name} [expr ${clock_period}*0.4] [get_ports stream_* -filter "direction==out"] -add_delay
+#=========================================================================
+# set_muticycle_path & set_false path
+#=========================================================================
+# glc reading configuration registers is multi_cycle path
+set_multicycle_path -setup 4 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
+set_multicycle_path -hold 3 -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 
-###############################
-# set_false path and multicycle path
-###############################
-# glc reading configuration registers is false path
-set_false_path -from [get_ports cgra_cfg_jtag_gc2glb_rd_en]
 # jtag bypass mode is false path
-set_false_path -through [get_pins glb_tile_gen_*/*bypass]
+set_false_path -through [get_pins glb_tile_gen_*/*bypass*]
 
-# jtag sram read
-set_multicycle_path -setup 10 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
-set_multicycle_path -hold 9 -from [get_ports if_sram_cfg*rd* -filter "direction==in"]
-set_multicycle_path -setup 10 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
-set_multicycle_path -hold 9 -to [get_ports if_sram_cfg*rd* -filter "direction==out"]
-set_multicycle_path -setup 10 -through [get_pins glb_tile_gen_*/if_sram*rd*]
-set_multicycle_path -hold 9 -through [get_pins glb_tile_gen_*/if_sram*rd*]
-
-# jtag write
-set_multicycle_path -setup 4 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
-set_multicycle_path -hold 3 -from [get_ports if_sram_cfg*wr* -filter "direction==in"]
-set_multicycle_path -setup 4 -through [get_pins glb_tile_gen_*/if_sram*wr*]
-set_multicycle_path -hold 3 -through [get_pins glb_tile_gen_*/if_sram*wr*]
-
-# interrupt is asserted for 4 cycles 
-set_multicycle_path -setup 4 -to [get_ports *interrupt_pulse -filter "direction==out"]
-set_multicycle_path -hold 3 -to [get_ports *interrupt_pulse -filter "direction==out"]
+#=========================================================================
+# interrupt
+#=========================================================================
+# interrupt is asserted for at least 3 cycles 
+set_multicycle_path -setup 3 -from [get_pins *glb_tile_gen*/*interrupt_pulse*]
+set_multicycle_path -hold 2 -from [get_pins *glb_tile_gen*/*interrupt_pulse*]
+set_multicycle_path -setup 3 -to [get_ports *interrupt_pulse -filter "direction==out"]
+set_multicycle_path -hold 2 -to [get_ports *interrupt_pulse -filter "direction==out"]
 
 # Make all signals limit their fanout
-
 set_max_fanout 20 $design_name
 
 # Make all signals meet good slew
-
 set_max_transition [expr 0.10*${clock_period}] $design_name
 
-#set_input_transition 1 [all_inputs]
-#set_max_transition 10 [all_outputs]
-
+# Do not touch nets
 set num_tiles [sizeof_collection [get_cells *glb_tile_gen_*]]
 for {set i 1} {$i < $num_tiles} {incr i} {
   # only need to set west since east pins are connected to same nets

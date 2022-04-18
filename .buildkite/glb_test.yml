@@ -3,16 +3,21 @@ steps:
   commands:
   - source /aha/bin/activate
   - source /cad/modules/tcl/init/sh
-  - module load base xcelium/19.03.003 vcs
+  - module load base xcelium/19.03.003 vcs/Q-2020.03-SP2
   - echo "--- Pruning Docker Images"
   - yes | docker image prune -a --filter "until=24h" --filter=label='description=garnet' || true
+    # make /bin/sh symlink to bash instead of dash:
+  - echo "dash dash/sh boolean false" | debconf-set-selections
+  - DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+  - apt update
+  - apt install time
     # use the mounted garnet
   - rm -rf /aha/garnet
   - cp -r /workdir /aha/garnet
   - echo "--- Install requirements"
   - pip install -r /aha/garnet/requirements.txt
   - echo "--- Generating Garnet"
-  - aha garnet -v --width 8 --height 4
+  - aha garnet -v --width 8 --height 4 --use_sim_sram
   - echo "--- Generating Apps"
   - aha halide tests/conv_1_2
   - aha map tests/conv_1_2 --width 4 --height 4 --no-pd

@@ -9,5 +9,6 @@ cp reports/${design_name}.power.cell.rpt outputs/power.cell
 for inst in $(echo $instances | sed "s/,/ /g")
 do
     python parse_report.py --filename reports/${inst}.power.cell.rpt --instances $(echo $parse_modules | sed "s/,/ /g") --csv reports/${inst}.csv
+    python parse_report.py --filename reports/${inst}.power.cell.cn.rpt --instances $(echo $parse_modules | sed "s/,/ /g") --csv reports/${inst}.cn.csv
 done
 

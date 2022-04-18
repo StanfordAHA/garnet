@@ -1,0 +1,27 @@
+// Test WR and F2G to the same tile, different banks. Test RD and G2F to the same tile, different banks.
+4
+00
+WR 0 0 0 0
+1
+4096
+1
+1
+testvectors/4096_v0.dat
+F2G 0 1 2 2
+2
+32 32
+1 33
+1 32
+testvectors/1024_v0.dat
+G2F 1 2 0 0
+1
+1024
+1
+1
+testvectors/1024_v1.dat
+RD 1 3 0 0
+1
+4096
+1
+1
+testvectors/4096_v1.dat

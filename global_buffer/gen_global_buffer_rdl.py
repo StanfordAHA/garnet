@@ -1,5 +1,6 @@
 from abc import ABC
 from kratos import clog2
+from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 import os
 
 
@@ -29,6 +30,15 @@ class RdlNonLeafNode(RdlNode):
 
     def add_children(self, children):
         self.children += children
+
+    def get_num_reg(self):
+        total_num = 0
+        if isinstance(self, Reg):
+            return self.size
+        else:
+            for child in self.children:
+                total_num += child.get_num_reg()
+            return self.size * total_num
 
 
 class AddrMap(RdlNonLeafNode):
@@ -67,7 +77,7 @@ class Field(RdlNode):
 
 
 class Rdl:
-    def __init__(self, top):
+    def __init__(self, top: AddrMap):
         self.top = top
 
     def dump_rdl(self, filename):
@@ -149,21 +159,26 @@ class Rdl:
         return expr
 
 
-def gen_global_buffer_rdl(name, params):
+def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     addr_map = AddrMap(name)
 
     # Data Network Ctrl Register
-    data_network_ctrl = Reg("data_network")
-    tile_connected_f = Field("tile_connected", 1)
-    strm_latency_f = Field("latency", params.latency_width)
-    data_network_ctrl.add_children([tile_connected_f, strm_latency_f])
+    data_network_ctrl = Reg("data_network_ctrl")
+    data_network_ctrl.add_child(Field("connected", 1))
     addr_map.add_child(data_network_ctrl)
 
+    data_network_latency = Reg("data_network_latency")
+    data_network_latency.add_child(Field("value", params.latency_width))
+    addr_map.add_child(data_network_latency)
+
     # Pcfg Network Ctrl Register
-    pcfg_network_ctrl = Reg("pcfg_network")
-    pcfg_network_ctrl.add_children([Field("tile_connected", 1),
-                                    Field("latency", params.latency_width)])
+    pcfg_network_ctrl = Reg("pcfg_network_ctrl")
+    pcfg_network_ctrl.add_child(Field("connected", 1))
     addr_map.add_child(pcfg_network_ctrl)
+
+    pcfg_network_latency = Reg("pcfg_network_latency")
+    pcfg_network_latency.add_child(Field("value", params.pcfg_latency_width))
+    addr_map.add_child(pcfg_network_latency)
 
     # Store DMA Ctrl
     st_dma_ctrl_r = Reg("st_dma_ctrl")
@@ -197,23 +212,24 @@ def gen_global_buffer_rdl(name, params):
 
     # cycle_start_addr reg
     cycle_start_addr_r = Reg(f"cycle_start_addr")
-    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.glb_addr_width)
+    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.cycle_count_width)
     cycle_start_addr_r.add_child(cycle_start_addr_f)
     st_dma_header_rf.add_child(cycle_start_addr_r)
 
     # num_word reg
-    range_r = Reg(f"range", size=params.loop_level)
-    range_f = Field("range", width=params.axi_data_width)
-    range_r.add_child(range_f)
-    stride_r = Reg(f"stride", size=params.loop_level)
-    stride_f = Field("stride", width=params.axi_data_width)
-    stride_r.add_child(stride_f)
-    cycle_stride_r = Reg(f"cycle_stride", size=params.loop_level)
-    cycle_stride_f = Field("cycle_stride", width=params.axi_data_width)
-    cycle_stride_r.add_child(cycle_stride_f)
-    st_dma_header_rf.add_child(range_r)
-    st_dma_header_rf.add_child(stride_r)
-    st_dma_header_rf.add_child(cycle_stride_r)
+    for i in range(params.loop_level):
+        range_r = Reg(f"range_{i}")
+        range_f = Field("range", width=params.axi_data_width)
+        range_r.add_child(range_f)
+        stride_r = Reg(f"stride_{i}")
+        stride_f = Field("stride", width=params.glb_addr_width + 1)
+        stride_r.add_child(stride_f)
+        cycle_stride_r = Reg(f"cycle_stride_{i}")
+        cycle_stride_f = Field("cycle_stride", width=params.cycle_count_width)
+        cycle_stride_r.add_child(cycle_stride_f)
+        st_dma_header_rf.add_child(range_r)
+        st_dma_header_rf.add_child(stride_r)
+        st_dma_header_rf.add_child(cycle_stride_r)
 
     addr_map.add_child(st_dma_header_rf)
 
@@ -223,6 +239,8 @@ def gen_global_buffer_rdl(name, params):
     ld_dma_ctrl_r.add_child(ld_dma_mode_f)
     ld_dma_use_valid_f = Field("use_valid", 1)
     ld_dma_ctrl_r.add_child(ld_dma_use_valid_f)
+    ld_dma_use_flush_f = Field("use_flush", 1)
+    ld_dma_ctrl_r.add_child(ld_dma_use_flush_f)
     ld_dma_data_mux_f = Field("data_mux", 2)
     ld_dma_ctrl_r.add_child(ld_dma_data_mux_f)
     ld_dma_num_repeat_f = Field("num_repeat", clog2(params.queue_depth) + 1)
@@ -249,30 +267,33 @@ def gen_global_buffer_rdl(name, params):
 
     # cycle_start_addr reg
     cycle_start_addr_r = Reg(f"cycle_start_addr")
-    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.glb_addr_width)
+    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.cycle_count_width)
     cycle_start_addr_r.add_child(cycle_start_addr_f)
     ld_dma_header_rf.add_child(cycle_start_addr_r)
 
     # num_word reg
-    range_r = Reg(f"range", size=params.loop_level)
-    range_f = Field("range", width=params.axi_data_width)
-    range_r.add_child(range_f)
-    stride_r = Reg(f"stride", size=params.loop_level)
-    stride_f = Field("stride", width=params.axi_data_width)
-    stride_r.add_child(stride_f)
-    cycle_stride_r = Reg(f"cycle_stride", size=params.loop_level)
-    cycle_stride_f = Field("cycle_stride", width=params.axi_data_width)
-    cycle_stride_r.add_child(cycle_stride_f)
-    ld_dma_header_rf.add_child(range_r)
-    ld_dma_header_rf.add_child(stride_r)
-    ld_dma_header_rf.add_child(cycle_stride_r)
+    for i in range(params.loop_level):
+        range_r = Reg(f"range_{i}")
+        range_f = Field("range", width=params.axi_data_width)
+        range_r.add_child(range_f)
+        stride_r = Reg(f"stride_{i}")
+        stride_f = Field("stride", width=params.glb_addr_width + 1)
+        stride_r.add_child(stride_f)
+        cycle_stride_r = Reg(f"cycle_stride_{i}")
+        cycle_stride_f = Field("cycle_stride", width=params.cycle_count_width)
+        cycle_stride_r.add_child(cycle_stride_f)
+        ld_dma_header_rf.add_child(range_r)
+        ld_dma_header_rf.add_child(stride_r)
+        ld_dma_header_rf.add_child(cycle_stride_r)
 
     addr_map.add_child(ld_dma_header_rf)
 
     # Pcfg DMA Ctrl
     pcfg_dma_ctrl_r = Reg("pcfg_dma_ctrl")
     pcfg_dma_mode_f = Field("mode", 1)
-    pcfg_dma_ctrl_r.add_child(pcfg_dma_mode_f)
+    pcfg_dma_relocation_value_f = Field("relocation_value", width=params.cgra_cfg_addr_width // 2)
+    pcfg_dma_relocation_is_msb_f = Field("relocation_is_msb", 1)
+    pcfg_dma_ctrl_r.add_children([pcfg_dma_mode_f, pcfg_dma_relocation_value_f, pcfg_dma_relocation_is_msb_f])
     addr_map.add_child(pcfg_dma_ctrl_r)
 
     # Pcfg DMA Header RegFile
@@ -288,6 +309,15 @@ def gen_global_buffer_rdl(name, params):
     num_cfg_r.add_child(num_cfg_f)
     pcfg_dma_header_rf.add_child(num_cfg_r)
     addr_map.add_child(pcfg_dma_header_rf)
+
+    # Pcfg broadcast mux ctrl
+    pcfg_broadcast_mux_r = Reg("pcfg_broadcast_mux")
+    west_f = Field("west", 2)
+    east_f = Field("east", 2)
+    south_f = Field("south", 2)
+    pcfg_broadcast_mux_r.add_children([west_f, east_f, south_f])
+    addr_map.add_child(pcfg_broadcast_mux_r)
+
     glb_rdl = Rdl(addr_map)
 
     return glb_rdl

@@ -1,7 +1,0 @@
-1
-F2G 0 0 2 0
-2
-64 64
-1 65
-1 64
-testvectors/out_4096.dat

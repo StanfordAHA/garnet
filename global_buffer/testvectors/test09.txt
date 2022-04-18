@@ -1,0 +1,9 @@
+// Test Sram configuration
+1
+00
+SRAM 0 29 0 0
+1
+64
+1
+1
+testvectors/64_v0.dat

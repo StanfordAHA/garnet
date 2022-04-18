@@ -5,12 +5,24 @@ current_dir := $(abspath $(dir $(mkfile_path)))
 # -------------------------------------------------------------------
 # Parameters
 # -------------------------------------------------------------------
-CLK_PERIOD ?= 800ps
+# time control
+CLK_PERIOD ?= 1500ps
+CLK_SRC_LATENCY ?= -500ps
+TIMEUNIT ?= 100ps
+TIMEPRECISION ?= 1ps
+TIMEUNIT_NUMBER_ONLY = $(shell echo $(TIMEUNIT) | rev | cut -c 3- | rev)
+CLK_PERIOD_NUMBER_ONLY = $(shell echo $(CLK_PERIOD) | rev | cut -c 3- | rev)
+CLK_SRC_LATENCY_NUMBER_ONLY = $(shell echo $(CLK_SRC_LATENCY) | rev | cut -c 3- | rev)
+CLK_PERIOD_TIMEUNIT = $(shell echo "scale=2; $(CLK_PERIOD_NUMBER_ONLY) / $(TIMEUNIT_NUMBER_ONLY)" | bc) 
+CLK_SRC_LATENCY_TIMEUNIT = $(shell echo "scale=2; $(CLK_SRC_LATENCY_NUMBER_ONLY) / $(TIMEUNIT_NUMBER_ONLY)" | bc) 
+
+# architecture
 CGRA_WIDTH ?= 32
 NUM_GLB_TILES ?= $(shell expr $(CGRA_WIDTH) / 2 )
 GLB_TILE_MEM_SIZE ?= 256
 
-TOOL ?= XCELIUM
+# tool chain
+TOOL ?= VCS
 SRAM_STUB ?= 0
 export WAVEFORM ?= 0
 export SAIF ?= 0
@@ -23,12 +35,13 @@ SDF_LOG ?= sdf_logs
 GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
-RUN_ARGS ?= +test1 +test2 +test3 +test4 +test5 +test6
-RUN_ARGS += +MAX_NUM_TEST=10
+# runtime
+RUN_ARGS ?= +test01 +test02 +test03 +test04 +test05 +test06 +test07 +test08 +test09 +test10 +test11
+RUN_ARGS += +MAX_NUM_TEST=11
 RUN_ARGS += +DEBUG
-
 RUN_LOG ?= run.log
 
+# design files
 HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
 #FIXME: pm cells should be removed!
@@ -38,23 +51,21 @@ TB_FILES ?= -F sim/tb_global_buffer.f
 # -------------------------------------------------------------------
 # Commands
 # -------------------------------------------------------------------
-
 GENERATE_TV = \
-    python testvectors/gen_glb_test.py --data testvectors/in_32.dat --num 32 --seed 1; \
-    python testvectors/gen_glb_test.py --data testvectors/out_32.dat --num 32 --seed 2; \
-    python testvectors/gen_glb_test.py --data testvectors/in_128.dat --num 128 --seed 3; \
-    python testvectors/gen_glb_test.py --data testvectors/out_128.dat --num 128 --seed 4; \
-    python testvectors/gen_glb_test.py --data testvectors/in_4096.dat --num 4096 --seed 5; \
-    python testvectors/gen_glb_test.py --data testvectors/in2_4096.dat --num 4096 --seed 6; \
-    python testvectors/gen_glb_test.py --data testvectors/out_3844.dat --num 3844 --seed 7; \
-    python testvectors/gen_glb_test.py --data testvectors/out_4096.dat --num 4096 --seed 8; \
-    python testvectors/gen_glb_test.py --data testvectors/out2_4096.dat --num 4096 --seed 9; \
-    python testvectors/gen_glb_test.py --data testvectors/14400.dat --num 14400 --seed 10;
+    python testvectors/gen_glb_test.py --data testvectors/64_v0.dat --num 64 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/512_v0.dat --num 512 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num 512 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/4096_v0.dat --num 4096 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/4096_v1.dat --num 4096 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/1024_v0.dat --num 1024 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/1024_v1.dat --num 1024 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/3844_v0.dat --num 3844 --seed 0;
 
 XRUN = xrun \
 	   -64bit \
 	   -sv \
 	   -sysv \
+	   -superlint \
 	   -l xrun.log \
 	   -debug \
 	   +access+rwc \
@@ -79,7 +90,6 @@ VCS = vcs \
 	  +vpi \
 	  +memcbk \
 	  +vcsd \
-	  +lint=TFIPC-L \
 	  +vcs+lic+wait \
 	  +vcs+initreg+random \
 	  +overlap \
@@ -108,9 +118,8 @@ rtl:
 # -------------------------------------------------------------------
 # Compile & Run
 # -------------------------------------------------------------------
-
-COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
-COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
+COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=$(CLK_SRC_LATENCY_TIMEUNIT) 
+COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=$(CLK_SRC_LATENCY_TIMEUNIT) 
 ifeq ($(TOOL), XCELIUM)
     COMPILE = $(XRUN)
     COMPILE_RTL_ARGS += -xminitialize 0 -xminit_log init.log -nospecify
@@ -120,7 +129,11 @@ ifeq ($(TOOL), XCELIUM)
 else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
-    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0
+    COMPILE_RTL_ARGS += +nbaopt
+    COMPILE_RTL_ARGS += +lint=TFIPC-L
+    COMPILE_GLS_ARGS += +neg_tchk
+    COMPILE_GLS_ARGS += -negdelay
+    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -exitstatus
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
@@ -132,6 +145,7 @@ else ifeq ($(TOOL), VCS)
 endif
 
 ifneq ($(SDF), 0)
+    $(shell $(GEN_SDF_CMD))
     ifeq ($(TOOL), XCELIUM)
         SDF_ARGS += -sdf_cmd_file $(SDF_CMD_FILE)
         SDF_ARGS += -sdfstats sdf_stats.txt -sdf_verbose
@@ -155,8 +169,7 @@ run:
 	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
 
 .PHONY: sim
-sim: compile
-	$(RUN) $(DUMP_ARGS) $(RUN_ARGS)
+sim: compile run
 
 # -------------------------------------------------------------------
 # GLS Compile
@@ -167,12 +180,10 @@ compile-gls: COMPILE_GLS_ARGS += +define+TSMC_CM_NO_WARNING
 compile-gls: COMPILE_GLS_ARGS += +define+TSMC_CM_UNIT_DELAY
 compile-gls: COMPILE_GLS_ARGS += +define+TSMC_INITIALIZE_MEM_USING_DEFAULT_TASKS
 compile-gls: COMPILE_GLS_ARGS += +define+TSMC_MEM_LOAD_0
-compile-gls: COMPILE_GLS_ARGS += -negdelay
 compile-gls: COMPILE_ARGS = $(COMPILE_GLS_ARGS)
 compile-gls: INPUT_ARGS = $(HEADER_FILES) $(NETLIST_FILES) $(TB_FILES)
 compile-gls:
 	@rm -rf $(SDF_LOG); mkdir $(SDF_LOG)
-	@if [ $(SDF) != 0 ]; then $(GEN_SDF_CMD); fi
 	$(COMPILE)
 
 .PHONY: clean

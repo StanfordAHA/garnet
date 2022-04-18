@@ -23,17 +23,22 @@ parameters:
   # If true, clone garnet locally and copy into the container
   use_local_garnet: True
 
-  # To try out a new docker image e.g. 'stanfordaha/garnet:cst'
-  # - set 'save_verilog_to_tmpdir' to "True", then build (latest) rtl
-  # - set 'which_image' to "cst", then build (cst) rtl
-  # - should see before-and-after designs in /tmp directory:
+  # If true, copies final verilog to /tmp
+  save_verilog_to_tmpdir: False
+
+  # Current default is 'stanfordaha/garnet:latest'
+  rtl_docker_image: default
+
+  ############################################################################
+  # To try out a new docker image e.g. 'stanfordaha/garnet:cst' or 'stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3...'
+  #   - set 'save_verilog_to_tmpdir' to "True"
+  #   - set rtl_docker_image to latest, then build (latest) rtl
+  #   - change rtl_docker_image to cst, then build (cst) rtl
+  #   - should see before-and-after designs in /tmp directory:
   # 
   #   % ls -lt /tmp/design.v.*
-  #       1745336 Feb  5 10:47 design.v.cst.deleteme13246
-  #       1785464 Feb  5 10:39 design.v.latest.deleteme9962
-  #
-  # which_image: cst              # If not set, defaults to 'latest'
-  # save_verilog_to_tmpdir: True  # If true, copies final verilog to /tmp
+  #       1745336 Feb  5 10:47 /tmp/design.v.cst.deleteme13246
+  #       1785464 Feb  5 10:39 /tmp/design.v.latest.deleteme9962
 
 postconditions:
   - assert File( 'outputs/design.v' )        # must exist

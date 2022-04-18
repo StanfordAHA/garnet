@@ -27,14 +27,15 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'   : 1.25,
+    'clock_period'      : 1.11,
+    'sim_clock_period'  : 1.42,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : True,
     # hold target slack
-    'hold_target_slack'   : 0.045,
+    'hold_target_slack'   : 0.03,
     # array_width = width of CGRA below GLB; `pin-assignments.tcl` uses
     # these parms to set up per-cgra-column ports connecting glb tile
     # signals in glb_top to corresponding CGRA tile columns below glb_top
@@ -42,9 +43,13 @@ def construct():
     'num_glb_tiles'       : 16,
     'tool'                : "VCS",
     # glb tile memory size (unit: KB)
+    'use_container' : False,
     'glb_tile_mem_size' : 256,
-    'rtl_testvectors' : ["test1", "test2", "test3", "test4"],
-    'gls_testvectors' : ["test1.pwr", "test2.pwr"]
+    'rtl_testvectors' : ["test01", "test02", "test03", "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11"],
+    'gls_testvectors' : ["test01", "test02", "test03", "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11"],
+    'sdf' : True,
+    'saif' : False,
+    'waveform' : True,
   }
 
   #-----------------------------------------------------------------------
@@ -61,6 +66,7 @@ def construct():
   # Custom steps
 
   rtl               = Step( this_dir + '/../common/rtl'                       )
+  testbench         = Step( this_dir + '/testbench'                           )
   sim_compile       = Step( this_dir + '/sim-compile'                         )
   sim_run           = Step( this_dir + '/sim-run'                             )
   sim_gl_compile    = Step( this_dir + '/sim-gl-compile'                      )
@@ -69,6 +75,7 @@ def construct():
   custom_init       = Step( this_dir + '/custom-init'                         )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical' )
+  genlib            = Step( this_dir + '/../common/cadence-innovus-genlib'    )
   lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
 
   # Default steps
@@ -86,7 +93,6 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
-  genlib         = Step( 'cadence-genus-genlib',            default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
@@ -123,6 +129,10 @@ def construct():
       sim_gl_run.extend_inputs(['simv', 'simv.daidir'])
     elif parameters['tool'] == 'XCELIUM':
       sim_gl_run.extend_inputs(['xcelium.d'])
+    if parameters['saif'] == True:
+      sim_gl_run.extend_postconditions( ["assert File( 'outputs/run.saif' ) "] )
+    if parameters['waveform'] == True:
+      sim_gl_run.extend_postconditions( ["assert File( 'outputs/run.fsdb' ) "] )
 
 
   # Add header files to outputs
@@ -157,8 +167,10 @@ def construct():
   lvs.extend_inputs( ['glb_tile.lvs.v'] )
 
   # Need sram spice file for LVS
+  lvs.extend_inputs( ['glb_tile_sram.spi'] )
 
-  lvs.extend_inputs( ['sram.spi'] )
+  # Need glb_tile for genlib
+  genlib.extend_inputs( ['glb_tile_tt.lib'] )
 
   xlist = synth.get_postconditions()
   xlist = \
@@ -177,6 +189,7 @@ def construct():
 
   g.add_step( info           )
   g.add_step( rtl            )
+  g.add_step( testbench      )
   g.add_step( sim_compile    )
   g.add_step( sim_run        )
   g.add_step( sim_gl_compile )
@@ -213,7 +226,7 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      synth             )
+  g.connect_by_name( adk,      synth          )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
   g.connect_by_name( adk,      power          )
@@ -226,8 +239,9 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
+  g.connect_by_name( adk,      genlib         )
 
-  g.connect_by_name( glb_tile,      synth           )
+  g.connect_by_name( glb_tile,      synth        )
   g.connect_by_name( glb_tile,      iflow        )
   g.connect_by_name( glb_tile,      init         )
   g.connect_by_name( glb_tile,      power        )
@@ -243,14 +257,16 @@ def construct():
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
 
-  g.connect_by_name( rtl,         sim_compile )
-  g.connect_by_name( sim_compile, sim_run     )
+  g.connect_by_name( rtl,         sim_compile  )
+  g.connect_by_name( testbench,   sim_compile  )
+  g.connect_by_name( testbench,   sim_run      )
+  g.connect_by_name( sim_compile, sim_run      )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
 
   # glb_tile can use the same rtl as glb_top
-  g.connect_by_name( rtl,         glb_tile      )
+  g.connect_by_name( rtl,         glb_tile     )
 
   g.connect_by_name( synth,       iflow        )
   g.connect_by_name( synth,       init         )
@@ -267,6 +283,7 @@ def construct():
   g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff      )
+  g.connect_by_name( iflow,    genlib       )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -288,17 +305,19 @@ def construct():
   g.connect_by_name( adk,          pt_signoff     )
   g.connect_by_name( signoff,      pt_signoff     )
 
-  g.connect_by_name( adk,          genlib   )
-  g.connect_by_name( signoff,      genlib   )
+  g.connect_by_name( adk,          genlib     )
+  g.connect_by_name( signoff,      genlib     )
 
   g.connect_by_name( rtl,        sim_gl_compile )
+  g.connect_by_name( testbench,  sim_gl_compile )
   g.connect_by_name( adk,        sim_gl_compile )
   g.connect_by_name( glb_tile,   sim_gl_compile )
   g.connect_by_name( signoff,    sim_gl_compile )
 
   for test in parameters["gls_testvectors"]:
+    g.connect_by_name( testbench, sim_gl_run_nodes[test] )
     g.connect_by_name( sim_gl_compile, sim_gl_run_nodes[test] )
-  
+
   for test in parameters["gls_testvectors"]:
     g.connect_by_name( adk,                    ptpx_gl_nodes[test] )
     g.connect_by_name( glb_tile,               ptpx_gl_nodes[test] )

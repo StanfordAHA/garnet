@@ -14,6 +14,7 @@
 //; my $block_axi_addr_width = parameter(NAME => 'block_axi_addr_width', VAL => 12, DOC => 'Width of axi_addr for sub block');
 //; my $glb_addr_width = parameter(NAME => 'glb_addr_width', VAL => 22, DOC => 'Width of glb_addr');
 //; my $num_glb_tiles = parameter(NAME => 'num_glb_tiles', VAL => 16, DOC => 'number of global buffer tiles');
+//; my $cgra_width = parameter(NAME => 'cgra_width', VAL => 32, DOC => 'cgra array width');
 
 // local parameter
 //; my $reg_addr_width = 5;
@@ -24,9 +25,11 @@ module `mname` (
 
     // cgra control signals
     output logic                                axi_global_reset,
-    output logic                                axi_soft_reset,
-    output logic [`$num_glb_tiles-1`:0]         axi_glb_stall, 
-    output logic [`$num_glb_tiles-1`:0]         axi_cgra_stall, 
+    output logic [`$num_glb_tiles-1`:0]         axi_glb_clk_en_master, 
+    output logic [`$num_glb_tiles-1`:0]         axi_glb_clk_en_bank_master, 
+    output logic [`$num_glb_tiles-1`:0]         axi_glb_pcfg_broadcast_stall, 
+    output logic [$clog2(`$num_glb_tiles`)*`$cgra_width/4`-1:0] axi_glb_flush_crossbar_sel, 
+    output logic [`$cgra_width-1`:0]            axi_cgra_stall, 
 
 	// global buffer control signals
 	output logic [`$num_glb_tiles-1`:0]         strm_g2f_start_pulse,
@@ -72,8 +75,6 @@ module `mname` (
     //------- inputs
     logic     [31:0] h2l_global_reset_cnt_w;
     logic    h2l_global_reset_cnt_we;
-    logic     [31:0] h2l_soft_reset_cnt_w;
-    logic    h2l_soft_reset_cnt_we;
     logic    h2l_strm_f2g_isr_tile_0_intr;
     logic    h2l_strm_f2g_isr_tile_1_intr;
     logic    h2l_strm_f2g_isr_tile_2_intr;
@@ -135,9 +136,14 @@ module `mname` (
 
     //------- outputs
     logic     [31:0] l2h_global_reset_cnt_r;
-    logic     [31:0] l2h_soft_reset_cnt_r;
-    logic     [15:0] l2h_stall_cgra_stall_r;
-    logic     [15:0] l2h_stall_glb_stall_r;
+    logic     [31:0] l2h_cgra_stall_stall_r;
+    logic     [15:0] l2h_glb_clk_en_master_clk_en_r;
+    logic     [15:0] l2h_glb_clk_en_bank_master_clk_en_r;
+    logic     [15:0] l2h_glb_pcfg_broadcast_stall_stall_r;
+    logic     [31:0] l2h_glb_flush_crossbar_sel_r;
+    logic    h2l_global_isr_strm_f2g_w;
+    logic    h2l_global_isr_strm_g2f_w;
+    logic    h2l_global_isr_par_cfg_g2f_w;
     logic    l2h_stream_start_pulse_g2f_glb_tile_0_r;
     logic    l2h_stream_start_pulse_g2f_glb_tile_1_r;
     logic    l2h_stream_start_pulse_g2f_glb_tile_2_r;
@@ -250,19 +256,19 @@ assign strm_f2g_start_pulse[`$i`] = l2h_stream_start_pulse_f2g_glb_tile_`$i`_r;
 assign pc_start_pulse[`$i`] = l2h_pc_start_pulse_glb_tile_`$i`_r;
 //; }
 
-assign axi_glb_stall = l2h_stall_glb_stall_r;
-assign axi_cgra_stall = l2h_stall_cgra_stall_r;
+assign axi_glb_clk_en_master = l2h_glb_clk_en_master_clk_en_r;
+assign axi_glb_clk_en_bank_master = l2h_glb_clk_en_bank_master_clk_en_r;
+assign axi_glb_pcfg_broadcast_stall = l2h_glb_pcfg_broadcast_stall_stall_r;
+assign axi_glb_flush_crossbar_sel = l2h_glb_flush_crossbar_sel_r;
+assign axi_cgra_stall = l2h_cgra_stall_stall_r;
 
 assign interrupt_internal = l2h_global_isr_intr_o;
 
-// global reset and soft reset controller
+// global reset controller
 assign axi_global_reset = (l2h_global_reset_cnt_r > 0);
-assign axi_soft_reset = (l2h_soft_reset_cnt_r > 0);
 
 assign h2l_global_reset_cnt_we = (l2h_global_reset_cnt_r > 0);
 assign h2l_global_reset_cnt_w = l2h_global_reset_cnt_r - 1;
-assign h2l_soft_reset_cnt_we = (l2h_soft_reset_cnt_r > 0);
-assign h2l_soft_reset_cnt_w = l2h_soft_reset_cnt_r - 1;
 
 //============================================================================//
 // interrupt register
