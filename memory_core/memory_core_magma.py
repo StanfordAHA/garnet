@@ -86,7 +86,7 @@ class MemCore(LakeCoreBase):
                  gate_flush=True,
                  override_name=None,
                  gen_addr=True,
-                 tech_map=TSMC_Tech_Map):
+                 tech_map=GF_Tech_Map(depth=512, width=32)):
 
         lake_name = "LakeTop"
 
@@ -133,7 +133,7 @@ class MemCore(LakeCoreBase):
                      self.use_sim_sram, self.read_delay,
                      self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
                      self.num_tiles, self.fifo_mode,
-                     self.add_clk_enable, self.add_flush, self.gen_addr, self.tech_map)
+                     self.add_clk_enable, self.add_flush, self.gen_addr, str(self.tech_map))
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
