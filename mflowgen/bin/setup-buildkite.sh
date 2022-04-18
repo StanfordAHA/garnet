@@ -377,7 +377,7 @@ fi
 
 # Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
 # persistence of non-master branch through to end of run.  The cost
-# of making local mflowgen clones is currently about 200M build.
+# of making local mflowgen clones is currently about 200M per build.
 
 # Build repo if not exists yet
 if ! test -e $mflowgen; then
