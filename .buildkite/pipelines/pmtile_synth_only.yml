@@ -35,4 +35,5 @@ steps:
 - label: 'CHECK'
   commands:
   - set -x; ls -l $BDIR
+  - set -x; find $BDIR -name genus.log -exec -exec grep 'Cannot resolve' {} \;
   - set -x; mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
