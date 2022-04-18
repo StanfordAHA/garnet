@@ -11,6 +11,7 @@ from lake.passes.passes import change_sram_port_names
 from lake.utils.sram_macro import SRAMMacroInfo
 from lake.top.extract_tile_info import *
 import kratos as kts
+from lake.top.tech_maps import *
 
 if __name__ == "__main__":
     from memtile_util import LakeCoreBase
@@ -67,33 +68,32 @@ class MemCore(LakeCoreBase):
                  banks=1,
                  input_iterator_support=6,  # Addr Controllers
                  output_iterator_support=6,
-                 input_config_width=16,
-                 output_config_width=16,
+                 config_width=16,
                  interconnect_input_ports=2,  # Connection to int
                  interconnect_output_ports=2,
                  mem_input_ports=1,
                  mem_output_ports=1,
-                 use_sram_stub=True,
-                 sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S",
-                                               wtsel_value=0, rtsel_value=1),
+                 use_sim_sram=True,
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
                  rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
                  agg_height=4,
-                 tb_sched_max=16,
                  config_data_width=32,
                  config_addr_width=8,
                  num_tiles=1,
                  fifo_mode=True,
                  add_clk_enable=True,
                  add_flush=True,
+                 gate_flush=True,
                  override_name=None,
-                 gen_addr=True):
+                 gen_addr=True,
+                 tech_map=TSMC_Tech_Map):
 
         lake_name = "LakeTop"
 
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
+                         gate_flush=gate_flush,
                          name="MemCore")
 
         # Capture everything to the tile object
@@ -104,14 +104,12 @@ class MemCore(LakeCoreBase):
         self.fw_int = int(self.mem_width / self.data_width)
         self.input_iterator_support = input_iterator_support
         self.output_iterator_support = output_iterator_support
-        self.input_config_width = input_config_width
-        self.output_config_width = output_config_width
+        self.config_width = config_width
         self.interconnect_input_ports = interconnect_input_ports
         self.interconnect_output_ports = interconnect_output_ports
         self.mem_input_ports = mem_input_ports
         self.mem_output_ports = mem_output_ports
-        self.use_sram_stub = use_sram_stub
-        self.sram_macro_info = sram_macro_info
+        self.use_sim_sram = use_sim_sram
         self.read_delay = read_delay
         self.rw_same_cycle = rw_same_cycle
         self.agg_height = agg_height
@@ -122,6 +120,7 @@ class MemCore(LakeCoreBase):
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
         self.gen_addr = gen_addr
+        self.tech_map = tech_map
         # self.app_ctrl_depth_width = app_ctrl_depth_width
         # self.stcl_valid_iter = stcl_valid_iter
         # Typedefs for ease
@@ -131,10 +130,10 @@ class MemCore(LakeCoreBase):
         cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
                      self.input_iterator_support, self.output_iterator_support,
                      self.interconnect_input_ports, self.interconnect_output_ports,
-                     self.use_sram_stub, self.sram_macro_info, self.read_delay,
+                     self.use_sim_sram, self.read_delay,
                      self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
                      self.num_tiles, self.fifo_mode,
-                     self.add_clk_enable, self.add_flush, self.gen_addr)
+                     self.add_clk_enable, self.add_flush, self.gen_addr, self.tech_map)
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
@@ -142,37 +141,40 @@ class MemCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = LakeTop(data_width=self.data_width,
-                               mem_width=self.mem_width,
-                               mem_depth=self.mem_depth,
-                               banks=self.banks,
-                               input_iterator_support=self.input_iterator_support,
-                               output_iterator_support=self.output_iterator_support,
-                               input_config_width=self.input_config_width,
-                               output_config_width=self.output_config_width,
-                               interconnect_input_ports=self.interconnect_input_ports,
-                               interconnect_output_ports=self.interconnect_output_ports,
-                               use_sram_stub=self.use_sram_stub,
-                               sram_macro_info=self.sram_macro_info,
-                               read_delay=self.read_delay,
-                               rw_same_cycle=self.rw_same_cycle,
-                               agg_height=self.agg_height,
-                               config_data_width=self.config_data_width,
-                               config_addr_width=self.config_addr_width,
-                               num_tiles=self.num_tiles,
-                               fifo_mode=self.fifo_mode,
-                               add_clk_enable=self.add_clk_enable,
-                               add_flush=self.add_flush,
-                               name=lake_name,
-                               gen_addr=self.gen_addr)
+            self.LT = LakeTop(data_width=self.data_width,
+                              mem_width=self.mem_width,
+                              mem_depth=self.mem_depth,
+                              banks=self.banks,
+                              input_iterator_support=self.input_iterator_support,
+                              output_iterator_support=self.output_iterator_support,
+                              config_width=self.config_width,
+                              interconnect_input_ports=self.interconnect_input_ports,
+                              interconnect_output_ports=self.interconnect_output_ports,
+                              use_sim_sram=self.use_sim_sram,
+                              read_delay=self.read_delay,
+                              rw_same_cycle=self.rw_same_cycle,
+                              agg_height=self.agg_height,
+                              config_data_width=self.config_data_width,
+                              config_addr_width=self.config_addr_width,
+                              num_tiles=self.num_tiles,
+                              fifo_mode=self.fifo_mode,
+                              add_clk_enable=self.add_clk_enable,
+                              add_flush=self.add_flush,
+                              name=lake_name,
+                              gen_addr=self.gen_addr,
+                              tech_map=self.tech_map)
 
-            change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
+            print(self.LT.dut)
+            print(self.LT.dut.get_mode_map())
+
+            # Nonsensical but LakeTop now has its ow n internal dut
+            self.dut = self.LT.dut
+
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
                                      optimize_if=False,
-                                     check_flip_flop_always_ff=False,
-                                     additional_passes={"change_sram_port": change_sram_port_pass})
+                                     check_flip_flop_always_ff=False)
             LakeCoreBase._circuit_cache[cache_key] = (circ, self.dut)
         else:
             circ, self.dut = LakeCoreBase._circuit_cache[cache_key]
@@ -215,6 +217,12 @@ class MemCore(LakeCoreBase):
         configs = []
         config_runtime = []
 
+        modes = {
+            'UB': 0,
+            'FIFO': 1,
+            'ROM': 2
+        }
+
         mode_map = {
             "lake": MemoryMode.UNIFIED_BUFFER,
             "rom": MemoryMode.ROM,
@@ -229,26 +237,53 @@ class MemCore(LakeCoreBase):
             3: MemoryMode.FIFO,
             4: MemoryMode.WOM
         }
-
-        # Extract the runtime + preload config
-        top_config = instr['config'][1]
-
+        if 'mode' in instr and instr['mode'] == 'lake':
+            instr['mode'] = 'UB'
+            if 'stencil_valid' in instr['config']:
+                instr['mode'] = 'stencil_valid'
+        if 'mode' in instr and instr['mode'] == 'sram':
+            instr['mode'] = 'ROM'
+        config_pre = self.dut.get_bitstream(instr)
+        # Add the runtime configuration to the final config
+        for name, v in config_pre:
+            configs = [self.get_config_data(name, v)] + configs
         # Add in preloaded memory
-        if "init" in top_config:
+        if "init" in instr:
             # this is SRAM content
-            content = top_config['init']
-            assert len(content) % self.fw_int == 0, f"ROM content size must be a multiple of {self.fw_int}"
+            content = instr['init']
             for addr, data in enumerate(content):
                 if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
                 addr = addr >> 2
                 feat_addr = addr // 256 + 1
-                addr = addr % 256
+                addr = (addr % 256)
+                configs.append((addr, feat_addr, data))
+        print(configs)
+        return configs
+
+        # Extract the runtime + preload config
+        if "config" in instr:
+            top_config = instr['config']
+            if "init" in top_config:
+                instr["init"] = top_config["init"]
+
+        # Add in preloaded memory
+        if "init" in instr:
+            # this is SRAM content
+            content = instr['init']
+            for addr, data in enumerate(content):
+                if (not isinstance(data, int)) and len(data) == 2:
+                    addr, data = data
+                addr = addr >> 2
+                feat_addr = addr // 256 + 1
+                addr = (addr % 256)
                 configs.append((addr, feat_addr, data))
 
         # Extract mode to the enum
-        # mode = mode_map[instr['mode'][1]]
-        mode = instr['mode']
+        if "is_rom" in instr and instr["is_rom"]:
+            mode = mode_map["rom"]
+        else:
+            mode = mode_map[instr['mode']]
 
         if type(mode) is int:
             mode = mode_num_map[mode]
@@ -285,6 +320,8 @@ class MemCore(LakeCoreBase):
 
         # Add the runtime configuration to the final config
         for name, v in config_runtime:
+            if name == "flush_reg_sel" or name == "flush_reg_value":
+                continue
             configs = [self.get_config_data(name, v)] + configs
 
         print(configs)

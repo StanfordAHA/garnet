@@ -24,20 +24,22 @@ class PondCore(LakeCoreBase):
     def __init__(self,
                  data_width=16,  # CGRA Params
                  mem_depth=32,
-                 default_iterator_support=2,
+                 default_iterator_support=3,
                  interconnect_input_ports=1,  # Connection to int
                  interconnect_output_ports=1,
                  config_data_width=32,
                  config_addr_width=8,
                  cycle_count_width=16,
                  add_clk_enable=True,
-                 add_flush=True):
+                 add_flush=True,
+                 gate_flush=True):
 
         lake_name = "Pond_pond"
 
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
+                         gate_flush=gate_flush,
                          name="PondCore")
 
         # Capture everything to the tile object
@@ -102,7 +104,7 @@ class PondCore(LakeCoreBase):
 
     def get_config_bitstream(self, instr):
         configs = []
-        if "init" in instr['config'][1]:
+        if "init" in instr:
             config_mem = [("tile_en", 1),
                           ("mode", 2),
                           ("wen_in_0_reg_sel", 1),
@@ -110,7 +112,7 @@ class PondCore(LakeCoreBase):
             for name, v in config_mem:
                 configs = [self.get_config_data(name, v)] + configs
             # this is SRAM content
-            content = instr['config'][1]['init']
+            content = instr['init']
             for addr, data in enumerate(content):
                 if (not isinstance(data, int)) and len(data) == 2:
                     addr, data = data
@@ -121,16 +123,14 @@ class PondCore(LakeCoreBase):
             return configs
         else:
             # need to download the csv and get configuration files
-            app_name = instr["app_name"]
-            # hardcode the config bitstream depends on the apps
             config_mem = []
-            print("app is", app_name)
             use_json = True
             if use_json:
-                top_controller_node = instr['config'][1]
+                top_controller_node = instr["config"]
                 config_mem = self.dut.get_static_bitstream_json(top_controller_node)
         for name, v in config_mem:
-            configs += [self.get_config_data(name, v)]
+            if name in self.registers.keys():
+                configs += [self.get_config_data(name, v)]
         # gate config signals
         conf_names = []
         for conf_name in conf_names:

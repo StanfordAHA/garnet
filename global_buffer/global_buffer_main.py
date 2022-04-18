@@ -33,7 +33,7 @@ def main():
     args = parser.parse_args()
     params = gen_global_buffer_params(num_glb_tiles=args.num_glb_tiles,
                                       num_cgra_cols=args.num_cgra_cols,
-                                      # FIXEME: We assume num_prr is same as num_glb_tiles
+                                      # FIXME: We assume num_prr is same as num_glb_tiles
                                       num_prr=args.num_glb_tiles,
                                       is_sram_stub=args.sram_stub,
                                       glb_tile_mem_size=args.glb_tile_mem_size)

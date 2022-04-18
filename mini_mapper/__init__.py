@@ -88,7 +88,6 @@ def __get_alu_mapping(op_str):
     elif op_str == "neq":
         return ALU.Sub, Signed.unsigned
     else:
-        print(op_str)
         raise NotImplemented
 
 
@@ -113,7 +112,7 @@ __PORT_RENAME = {
 def is_conn_out(raw_name):
     port_names = ["out", "outb", "valid", "rdata", "res", "res_p", "io2f_16",
                   "alu_res", "tofab", "data_out_0", "data_out_1",
-                  "stencil_valid", "data_out_pond"]
+                  "stencil_valid", "data_out_pond_0"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -127,7 +126,7 @@ def is_conn_out(raw_name):
 def is_conn_in(raw_name):
     port_names = ["in", "wen", "cg_en", "ren", "wdata", "in0", "in1", "in",
                   "inb", "data0", "data1", "f2io_16", "clk_en", "fromfab",
-                  "data_in_0", "wen_in_0", "ren_in_0", "data_in_pond"]
+                  "data_in_0", "wen_in_0", "ren_in_0", "data_in_pond_0"]
     if isinstance(raw_name, six.text_type):
         raw_name = raw_name.split(".")
     if len(raw_name) > 1:
@@ -215,18 +214,11 @@ def determine_track_bus(netlists, id_to_name):
     return track_mode
 
 
-def parse_and_pack_netlist(netlist_filename, fold_reg=True):
-    connections, instances = read_netlist_json(netlist_filename)
-    netlists, name_to_id = generate_netlists(connections, instances)
+def compute_stats(netlists):
     pes = set()
     ios = set()
     mems = set()
     regs = set()
-
-    id_to_name = {}
-    for name in name_to_id:
-        blk_id = name_to_id[name]
-        id_to_name[blk_id] = name
 
     for net_id in netlists:
         net = netlists[net_id]
@@ -239,9 +231,36 @@ def parse_and_pack_netlist(netlist_filename, fold_reg=True):
                 mems.add(blk_id)
             elif blk_id[0] == "r":
                 regs.add(blk_id)
+    return pes, ios, mems, regs
+
+
+def parse_and_pack_netlist(netlist_filename, fold_reg=True, retiming=False):
+    connections, instances = read_netlist_json(netlist_filename)
+    netlists, name_to_id = generate_netlists(connections, instances)
+
+    id_to_name = {}
+    for name in name_to_id:
+        blk_id = name_to_id[name]
+        id_to_name[blk_id] = name
+
+    pes, ios, mems, regs = compute_stats(netlists)
+
     print("Before packing:")
     print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
           len(regs))
+
+    bus_width = determine_track_bus(netlists, id_to_name)
+    if retiming:
+        from archipelago.retime import retime_netlist
+        bus_width = retime_netlist(netlists, id_to_name, bus_width, type_printout="mi")
+        pes, ios, mems, regs = compute_stats(netlists)
+        print("After retiming:")
+        print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
+              len(regs))
+
+    name_to_id = {}
+    for blk_id, name in id_to_name.items():
+        name_to_id[name] = blk_id
 
     before_packing = len(netlists)
     netlists, folded_blocks, changed_pe = pack_netlists(netlists, name_to_id,
@@ -250,31 +269,20 @@ def parse_and_pack_netlist(netlist_filename, fold_reg=True):
     print("Before packing: num of netlists:", before_packing,
           "After packing: num of netlists:", after_packing)
 
-    pes = set()
-    ios = set()
-    mems = set()
-    regs = set()
-
-    id_to_name = {}
-    for name in name_to_id:
-        blk_id = name_to_id[name]
-        id_to_name[blk_id] = name
-
-    for net_id in netlists:
-        net = netlists[net_id]
-        for blk_id, _ in net:
-            if blk_id[0] == "p":
-                pes.add(blk_id)
-            elif blk_id[0] == "i" or blk_id[0] == "I":
-                ios.add(blk_id)
-            elif blk_id[0] == "m":
-                mems.add(blk_id)
-            elif blk_id[0] == "r":
-                regs.add(blk_id)
+    pes, ios, mems, regs = compute_stats(netlists)
     print("After packing:")
     print("PE:", len(pes), "IO:", len(ios), "MEM:", len(mems), "REG:",
           len(regs))
-    return netlists, folded_blocks, id_to_name, changed_pe
+
+    # clean up bus width
+    removed_net = set()
+    for net_id in bus_width:
+        if net_id not in netlists:
+            removed_net.add(net_id)
+
+    for net_id in removed_net:
+        del bus_width[net_id]
+    return netlists, folded_blocks, id_to_name, changed_pe, bus_width
 
 
 def generate_netlists(connections, instances):
@@ -356,7 +364,7 @@ def pack_netlists(raw_netlists, name_to_id, fold_reg=True):
     for net_id in netlist_ids:
         net = raw_netlists[net_id]
         for index, (blk_id, port) in enumerate(net):
-            if blk_id[0] == "r" and port == "out":
+            if blk_id[0] == "r" and (port == "out" or port == "reg"):
                 for b_id, b_port in net:
                     if b_id == blk_id and port == b_port:
                         continue
@@ -388,7 +396,7 @@ def pack_netlists(raw_netlists, name_to_id, fold_reg=True):
                 next_blk, next_port = net[next_index]
             # replace them if they're already folded
             if (blk_id, port) in folded_blocks:
-                net[index] = folded_blocks[blk_id]
+                net[index] = folded_blocks[(blk_id, port)]
                 continue
             if blk_id[0] == "c" or blk_id[0] == "b":
                 # FIXME:
@@ -584,9 +592,12 @@ def get_tile_op(instance, blk_id, changed_pe, rename_op=True):
         if rename_op:
             # this depends on the mode
             mode = instance["modargs"]["mode"][-1]
-            assert mode in {"sram", "linebuffer", "unified_buffer", "lake"}
+            print(mode)
+            assert mode in {"sram", "linebuffer", "unified_buffer", "lake", "pond"}
             if mode == "lake":
                 op = "mem_lake_{}"
+            elif mode == "pond":
+                op = "mem_pond_{}"
             elif mode == "linebuffer":
                 op = "mem_lb_" + str(instance["modargs"]["depth"][-1])
             elif mode == "sram":
@@ -1107,12 +1118,11 @@ def get_total_cycle_from_app(halide_src):
     return 0
 
 
-def map_app(pre_map):
+def map_app(pre_map, retiming=False):
     src_file = pre_map
-    netlist, folded_blocks, id_to_name, changed_pe = \
-        parse_and_pack_netlist(src_file, fold_reg=True)
+    netlist, folded_blocks, id_to_name, changed_pe, bus = \
+        parse_and_pack_netlist(src_file, fold_reg=True, retiming=retiming)
     rename_id_changed(id_to_name, changed_pe)
-    bus = determine_track_bus(netlist, id_to_name)
     blks = get_blks(netlist)
     connections, instances = read_netlist_json(src_file)
 
@@ -1157,6 +1167,10 @@ def map_app(pre_map):
                 instr.update(instance["modargs"])
                 instr["mode"] = MemoryMode.ROM
             elif mem_mode == "lake":
+                instr["depth"] = 0
+                instr.update(instance["modargs"])
+                instr["mode"] = MemoryMode.UNIFIED_BUFFER
+            elif mem_mode == "pond":
                 instr["depth"] = 0
                 instr.update(instance["modargs"])
                 instr["mode"] = MemoryMode.UNIFIED_BUFFER

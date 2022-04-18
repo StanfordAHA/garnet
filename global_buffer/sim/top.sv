@@ -5,11 +5,16 @@
 ** Author: Taeyoung Kong
 ** Change history:  05/22/2021 - Implement first version of testbench
 **===========================================================================*/
-`define CLK_PERIOD 1000ps
+`define TIMEUNIT 100ps
+`define TIMEPRECISION 1ps
+`define CLK_PERIOD 15
+`define CLK_SRC_LATENCY -5
 
 import global_buffer_param::*;
 
 module top;
+    timeunit `TIMEUNIT;
+    timeprecision `TIMEPRECISION;
 
 `ifdef PWR
     supply1 VDD;
@@ -20,8 +25,11 @@ module top;
     // GLB signals
     // ---------------------------------------
     logic clk;
-    logic [NUM_GLB_TILES-1:0] stall;
-    logic [NUM_GLB_TILES-1:0] cgra_stall_in;
+    logic dut_clk;
+    logic [NUM_GLB_TILES-1:0] pcfg_broadcast_stall;
+    logic [NUM_GLB_TILES-1:0] glb_clk_en_master;
+    logic [NUM_GLB_TILES-1:0] glb_clk_en_bank_master;
+    logic [NUM_GROUPS-1:0][$clog2(NUM_GLB_TILES)-1:0] flush_crossbar_sel;
     logic reset;
     logic cgra_soft_reset;
 
@@ -51,9 +59,11 @@ module top;
 
     // configuration of glb from glc
     logic if_cfg_wr_en;
+    logic if_cfg_wr_clk_en;
     logic [AXI_ADDR_WIDTH-1:0] if_cfg_wr_addr;
     logic [AXI_DATA_WIDTH-1:0] if_cfg_wr_data;
     logic if_cfg_rd_en;
+    logic if_cfg_rd_clk_en;
     logic [AXI_ADDR_WIDTH-1:0] if_cfg_rd_addr;
     logic [AXI_DATA_WIDTH-1:0] if_cfg_rd_data;
     logic if_cfg_rd_data_valid;
@@ -69,15 +79,15 @@ module top;
 
     // BOTTOM
     // stall
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_stall;
 
     // cgra to glb streaming word
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] stream_data_f2g;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] stream_data_valid_f2g;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_f2g;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_valid_f2g;
 
     // glb to cgra streaming word
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] stream_data_g2f;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] stream_data_valid_g2f;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_g2f;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_valid_g2f;
+    logic [NUM_GROUPS-1:0] strm_data_flush_g2f;
 
     // cgra configuration to cgra
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_cfg_g2f_cfg_wr_en;
@@ -89,7 +99,6 @@ module top;
     // ---------------------------------------
     // CGRA signals
     // ---------------------------------------
-    logic [NUM_PRR-1:0] g2c_cgra_stall;
     logic [NUM_PRR-1:0] g2c_cfg_wr_en;
     logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0] g2c_cfg_wr_addr;
     logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0] g2c_cfg_wr_data;
@@ -102,7 +111,6 @@ module top;
     logic [NUM_PRR-1:0] c2g_io1;
     logic [NUM_PRR-1:0][15:0] c2g_io16;
 
-
     // max cycle set
     initial begin
         repeat (10000000) @(posedge clk);
@@ -110,18 +118,22 @@ module top;
         $finish(2);
     end
 
-    // clk generation
-    initial begin
-        #0.5ns clk = 0;
-        forever #(`CLK_PERIOD / 2.0) clk = !clk;
-    end
-
     // reset generation
-    initial begin
+    task automatic assert_reset();
         reset <= 1;
         repeat (10) @(posedge clk);
         reset <= 0;
+        repeat (10) @(posedge clk);
+    endtask
+
+    initial begin
+        clk = 0;
+        dut_clk = 0;
+        assert_reset();
     end
+    
+    always #(`CLK_PERIOD / 2.0) clk = !clk;
+    always @ (*) dut_clk <= #(`CLK_PERIOD + `CLK_SRC_LATENCY) clk;
 
     // instantiate test
     glb_test test (
@@ -138,9 +150,11 @@ module top;
         .proc_rd_data_valid       (proc_rd_data_valid),
         // config ifc
         .if_cfg_wr_en             (if_cfg_wr_en),
+        .if_cfg_wr_clk_en         (if_cfg_wr_clk_en),
         .if_cfg_wr_addr           (if_cfg_wr_addr),
         .if_cfg_wr_data           (if_cfg_wr_data),
         .if_cfg_rd_en             (if_cfg_rd_en),
+        .if_cfg_rd_clk_en         (if_cfg_rd_clk_en),
         .if_cfg_rd_addr           (if_cfg_rd_addr),
         .if_cfg_rd_data           (if_cfg_rd_data),
         .if_cfg_rd_data_valid     (if_cfg_rd_data_valid),
@@ -157,6 +171,7 @@ module top;
 
     // instantiate dut
     global_buffer dut (
+        .clk                      (dut_clk),
         // proc ifc
         .proc_wr_en               (proc_wr_en),
         .proc_wr_strb             (proc_wr_strb),
@@ -168,9 +183,11 @@ module top;
         .proc_rd_data_valid       (proc_rd_data_valid),
         // config ifc
         .if_cfg_wr_en             (if_cfg_wr_en),
+        .if_cfg_wr_clk_en         (if_cfg_wr_clk_en),
         .if_cfg_wr_addr           (if_cfg_wr_addr),
         .if_cfg_wr_data           (if_cfg_wr_data),
         .if_cfg_rd_en             (if_cfg_rd_en),
+        .if_cfg_rd_clk_en         (if_cfg_rd_clk_en),
         .if_cfg_rd_addr           (if_cfg_rd_addr),
         .if_cfg_rd_data           (if_cfg_rd_data),
         .if_cfg_rd_data_valid     (if_cfg_rd_data_valid),
@@ -182,6 +199,11 @@ module top;
         .if_sram_cfg_rd_addr      (if_sram_cfg_rd_addr),
         .if_sram_cfg_rd_data      (if_sram_cfg_rd_data),
         .if_sram_cfg_rd_data_valid(if_sram_cfg_rd_data_valid),
+
+        // cgra-glb
+        .strm_data_valid_f2g      (strm_data_valid_f2g),
+        .strm_data_f2g            (strm_data_f2g),
+
 `ifdef PWR
         .VDD                      (VDD),
         .VSS                      (VSS),
@@ -191,7 +213,7 @@ module top;
 
     cgra cgra (
         // stall
-        .stall      (g2c_cgra_stall),
+        .stall      ( {NUM_PRR{1'b0}} ),
         // configuration
         .cfg_wr_en  (g2c_cfg_wr_en),
         .cfg_wr_addr(g2c_cfg_wr_addr),
@@ -211,7 +233,6 @@ module top;
     // TODO: Assume that NUM_PRR == NUM_GLB_TILES. Use the first one among two signals.
     always_comb begin
         for (int i = 0; i < NUM_PRR; i++) begin
-            g2c_cgra_stall[i]  = cgra_stall[i][0];
             g2c_cfg_wr_en[i]   = cgra_cfg_g2f_cfg_wr_en[i][0];
             g2c_cfg_wr_addr[i] = cgra_cfg_g2f_cfg_addr[i][0];
             g2c_cfg_wr_data[i] = cgra_cfg_g2f_cfg_data[i][0];
@@ -224,13 +245,17 @@ module top;
     // Note: Connect g2f to [0] column. Connect f2g to [1] column.
     always_comb begin
         for (int i = 0; i < NUM_PRR; i++) begin
-            g2c_io1[i] = stream_data_valid_g2f[i][0];
-            g2c_io16[i] = stream_data_g2f[i][0];
+            g2c_io1[i] = strm_data_valid_g2f[i][0];
+            g2c_io16[i] = strm_data_g2f[i][0];
+        end
+    end
 
-            stream_data_valid_f2g[i][0] = 0;
-            stream_data_valid_f2g[i][1] = c2g_io1[i];
-            stream_data_f2g[i][0] = 0;
-            stream_data_f2g[i][1] = c2g_io16[i];
+    always @ (*) begin
+        for (int i = 0; i < NUM_PRR; i++) begin
+            strm_data_valid_f2g[i][0] <= #4 0;
+            strm_data_valid_f2g[i][1] <= #4 c2g_io1[i];
+            strm_data_f2g[i][0] <= #4 0;
+            strm_data_f2g[i][1] <= #4 c2g_io16[i];
         end
     end
 

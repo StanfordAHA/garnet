@@ -9,8 +9,10 @@ program glb_test (
     // LEFT
     input  logic                     clk,
     input  logic                     reset,
-    output logic [NUM_GLB_TILES-1:0] stall,
-    output logic [NUM_GLB_TILES-1:0] cgra_stall_in,
+    output logic [NUM_GLB_TILES-1:0] glb_clk_en_master,
+    output logic [NUM_GLB_TILES-1:0] glb_clk_en_bank_master,
+    output logic [NUM_GLB_TILES-1:0] pcfg_broadcast_stall,
+    output logic [NUM_GROUPS-1:0][$clog2(NUM_GLB_TILES)-1:0] flush_crossbar_sel,
 
     // proc
     output logic                         proc_wr_en,
@@ -24,9 +26,11 @@ program glb_test (
 
     // configuration of glb from glc
     output logic                      if_cfg_wr_en,
+    output logic                      if_cfg_wr_clk_en,
     output logic [AXI_ADDR_WIDTH-1:0] if_cfg_wr_addr,
     output logic [AXI_DATA_WIDTH-1:0] if_cfg_wr_data,
     output logic                      if_cfg_rd_en,
+    output logic                      if_cfg_rd_clk_en,
     output logic [AXI_ADDR_WIDTH-1:0] if_cfg_rd_addr,
     input  logic [AXI_DATA_WIDTH-1:0] if_cfg_rd_data,
     input  logic                      if_cfg_rd_data_valid,
@@ -55,12 +59,13 @@ program glb_test (
     input  logic [NUM_GLB_TILES-1:0] pcfg_g2f_interrupt_pulse,
 
     // cgra configuration to cgra
-    input logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_stall,
     input logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_cfg_g2f_cfg_wr_en,
     input logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] cgra_cfg_g2f_cfg_rd_en,
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cgra_cfg_g2f_cfg_addr,
     input  logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_CFG_DATA_WIDTH-1:0] cgra_cfg_g2f_cfg_data
 );
+    timeunit 100ps; timeprecision 1ps;
+
     const int MAX_NUM_ERRORS = 20;
     int test_toggle = 0;
     int tile_id = 0;
@@ -69,13 +74,8 @@ program glb_test (
 
     task automatic init_test();
         // Initialize global buffer configuration registers
-        for (int i = 0; i < NUM_GLB_TILES; i++) begin
-            g2f_dma_configure(i, 0, 0, LOOP_LEVEL, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}},
-                              '{LOOP_LEVEL{0}});
-            f2g_dma_configure(i, 0, 0, LOOP_LEVEL, '{LOOP_LEVEL{0}}, '{LOOP_LEVEL{0}},
-                              '{LOOP_LEVEL{0}});
-            pcfg_dma_configure(i, 0, 0);
-        end
+        $root.top.assert_reset();
+
         for (int i = 0; i < NUM_GLB_TILES; i++) begin
             void'($root.top.cgra.glb2prr_off(i));
             void'($root.top.cgra.prr2glb_off(i));
@@ -90,9 +90,59 @@ program glb_test (
         int err = 0;
         int i_addr = 0;
         int i_extent[LOOP_LEVEL];
+        int latency;
         int data_cnt = 0;
         bit done = 0;
+        int num_chained_prev = 0;
+        int num_chained_next = 0;
+
         Kernel kernels[] = test.kernels;
+
+        if (test.data_network_mask != 0) begin
+            foreach (kernels[i]) begin
+                num_chained_prev = 0;
+                num_chained_next = 0;
+                for (int j = kernels[i].tile_id; j <= NUM_GLB_TILES; j++) begin
+                    if (test.data_network_mask[j] == 1) begin
+                        num_chained_next++;
+                    end else begin
+                        break;
+                    end
+                end
+                for (int j = kernels[i].tile_id - 1; j >= 0; j--) begin
+                    if (test.data_network_mask[j] == 1) begin
+                        num_chained_prev++;
+                    end else begin
+                        break;
+                    end
+                end
+                for (
+                    int j = kernels[i].tile_id - num_chained_prev;
+                    j < kernels[i].tile_id + num_chained_next;
+                    j++
+                ) begin
+                    if (kernels[i].type_ == PCFG) begin
+                        pcfg_network_connect(j, 1);
+                    end else begin
+                        data_network_connect(j, 1);
+                    end
+                end
+                if (kernels[i].type_ == PCFG) begin
+                    pcfg_network_latency(kernels[i].tile_id,
+                                         (num_chained_prev + num_chained_next) * 2 + 3);
+                end else begin
+                    data_network_latency(kernels[i].tile_id,
+                                         (num_chained_prev + num_chained_next) * 2 + 3);
+                end
+            end
+        end
+        glb_pcfg_broadcast_stall(test.pcfg_broadcast_stall_mask);
+        foreach (kernels[i]) begin
+            if (kernels[i].type_ == PCFG) begin
+                glb_pcfg_broadcast_mux(test.pcfg_broadcast_mux_value);
+                break;
+            end
+        end
 
         foreach (kernels[i]) begin
             if (kernels[i].type_ == WR) begin
@@ -114,6 +164,19 @@ program glb_test (
                 // Since our hardware generator does not support ifdef or inline verilog, we have to run task 
                 // to write data to memory
                 proc_write_burst(kernels[i].start_addr, kernels[i].data64_arr);
+            end else if (kernels[i].type_ == PCFG) begin
+                kernels[i].data_arr = new[kernels[i].extent[0]];
+                kernels[i].data_arr_out = new[kernels[i].extent[0]];
+                $readmemh(kernels[i].filename, kernels[i].data_arr);
+                // Since data is in 16bit word, we have to convert it to 64bit data array
+                kernels[i].data64_arr = convert_16b_to_64b(kernels[i].data_arr);
+                kernels[i].data64_arr_out = new[kernels[i].data64_arr.size()];
+                // Note: In order to test PCFG, we have to load data to SRAM first.
+                // Since our hardware generator does not support ifdef or inline verilog, we have to run task 
+                // to write data to memory
+                proc_write_burst(kernels[i].start_addr, kernels[i].data64_arr);
+                pcfg_dma_configure(kernels[i].tile_id, 1, kernels[i].start_addr,
+                                   kernels[i].extent[0] / 4);
             end else if (kernels[i].type_ == G2F) begin
                 data_cnt = 1;
                 for (int j = 0; j < kernels[i].dim; j++) begin
@@ -134,27 +197,31 @@ program glb_test (
                 data_cnt = 0;
                 // Note: Again, we cannot call function to write data to memory, we have to run task 
                 // to write data to memory. Use partial wrtie function to do that.
-                while (1) begin
-                    i_addr = kernels[i].start_addr;
-                    for (int j = 0; j < kernels[i].dim; j++) begin
-                        i_addr += kernels[i].data_stride[j] * i_extent[j] * 2; // Convert 16bit-word address to byte address
-                    end
-                    // Update internal counter
-                    for (int j = 0; j < kernels[i].dim; j++) begin
-                        i_extent[j] += 1;
-                        if (i_extent[j] == kernels[i].extent[j]) begin
-                            i_extent[j] = 0;
-                            if (j == kernels[i].dim - 1) done = 1;
-                        end else begin
-                            break;
+                #2
+                    while (1) begin
+                        i_addr = kernels[i].start_addr;
+                        for (int j = 0; j < kernels[i].dim; j++) begin
+                            i_addr += kernels[i].data_stride[j] * i_extent[j] * 2; // Convert 16bit-word address to byte address
                         end
+                        // Update internal counter
+                        for (int j = 0; j < kernels[i].dim; j++) begin
+                            i_extent[j] += 1;
+                            if (i_extent[j] == kernels[i].extent[j]) begin
+                                i_extent[j] = 0;
+                                if (j == kernels[i].dim - 1) done = 1;
+                            end else begin
+                                break;
+                            end
+                        end
+                        proc_write_partial(i_addr,
+                                           kernels[i].mem[(i_addr-kernels[i].start_addr)/2]);
+                        kernels[i].data_arr[
+                        data_cnt++
+                        ] = kernels[i].mem[(i_addr-kernels[i].start_addr)/2];
+                        if (done == 1) break;
                     end
-                    proc_write_partial(i_addr, kernels[i].mem[i_addr / 2]);
-                    kernels[i].data_arr[data_cnt++] = kernels[i].mem[i_addr / 2];
-                    if (done == 1) break;
-                end
                 // Configure LD DMA
-                g2f_dma_configure(kernels[i].tile_id, kernels[i].start_addr,
+                g2f_dma_configure(kernels[i].tile_id, 1, kernels[i].start_addr,
                                   kernels[i].cycle_start_addr, kernels[i].dim,
                                   kernels[i].new_extent, kernels[i].new_cycle_stride,
                                   kernels[i].new_data_stride);
@@ -176,12 +243,20 @@ program glb_test (
                     kernels[i].tile_id, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride
                 ));
                 // Configure ST DMA
-                f2g_dma_configure(kernels[i].tile_id, kernels[i].start_addr,
+                f2g_dma_configure(kernels[i].tile_id, 1, kernels[i].start_addr,
                                   kernels[i].cycle_start_addr, kernels[i].dim,
                                   kernels[i].new_extent, kernels[i].new_cycle_stride,
                                   kernels[i].new_data_stride);
+            end else if (kernels[i].type_ == SRAM) begin
+                kernels[i].data_arr = new[kernels[i].extent[0]];
+                kernels[i].data_arr_out = new[kernels[i].extent[0]];
+                $readmemh(kernels[i].filename, kernels[i].data_arr);
+                // Since data is in 16bit word, we have to convert it to 64bit data array
+                kernels[i].data64_arr = convert_16b_to_64b(kernels[i].data_arr);
+                kernels[i].data64_arr_out = new[kernels[i].data64_arr.size()];
             end
         end
+
         repeat (50) @(posedge clk);
 
         $display("\n---- Test Run ----");
@@ -190,6 +265,7 @@ program glb_test (
         fork
             if (test.g2f_tile_mask != 0) g2f_start(test.g2f_tile_mask);
             if (test.f2g_tile_mask != 0) f2g_start(test.f2g_tile_mask);
+            if (test.pcfg_tile_mask != 0) pcfg_start(test.pcfg_tile_mask);
             begin
                 foreach (kernels[i]) begin
                     automatic int j = i;
@@ -203,6 +279,12 @@ program glb_test (
                             g2f_run(kernels[j].tile_id, kernels[j].total_cycle);
                         end else if (kernels[j].type_ == F2G) begin
                             f2g_run(kernels[j].tile_id, kernels[j].total_cycle);
+                        end else if (kernels[j].type_ == PCFG) begin
+                            pcfg_run(kernels[j].tile_id, kernels[j].check_tile_id, kernels[j].total_cycle,
+                                     kernels[j].data64_arr_out);
+                        end else if (kernels[j].type_ == SRAM) begin
+                            sram_write_burst(kernels[j].bank_id, kernels[j].data64_arr);
+                            sram_read_burst(kernels[j].bank_id, kernels[j].data64_arr_out);
                         end
                     join_none
                 end
@@ -234,8 +316,14 @@ program glb_test (
                 proc_read_burst(kernels[i].start_addr, kernels[i].data64_arr_out);
                 $display("F2G Comparison");
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
+            end else if (kernels[i].type_ == PCFG) begin
+                $display("PCFG Comparison");
+                err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
+            end else if (kernels[i].type_ == SRAM) begin
+                $display("SRAM Comparison");
+                err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
             end
-            repeat (10) @(posedge clk);
+            repeat (30) @(posedge clk);
         end
 
         if (err == 0) begin
@@ -252,9 +340,9 @@ program glb_test (
         string test_name;
         int max_num_test;
         initialize();
-        if (!($value$plusargs("MAX_NUM_TEST=%d", max_num_test))) max_num_test = 4;
+        if (!($value$plusargs("MAX_NUM_TEST=%d", max_num_test))) max_num_test = 10;
         for (int i = 1; i <= max_num_test; i++) begin
-            $sformat(test_name, "test%0d", i);
+            $sformat(test_name, "test%02d", i);
             if (($test$plusargs(test_name))) begin
                 $display("\n************** Test Start *****************");
                 $sformat(test_filename, "./testvectors/%s.txt", test_name);
@@ -268,11 +356,13 @@ program glb_test (
 
     task initialize();
         // control
-        stall <= 0;
-        cgra_stall_in <= 0;
+        glb_clk_en_master <= 0;
+        glb_clk_en_bank_master <= 0;
+        pcfg_broadcast_stall <= 0;
         pcfg_start_pulse <= 0;
         strm_g2f_start_pulse <= 0;
         strm_f2g_start_pulse <= 0;
+        flush_crossbar_sel <= 0;
 
         // proc
         proc_wr_en <= 0;
@@ -284,9 +374,11 @@ program glb_test (
 
         // cfg ifc
         if_cfg_wr_en <= 0;
+        if_cfg_wr_clk_en <= 0;
         if_cfg_wr_addr <= 0;
         if_cfg_wr_data <= 0;
         if_cfg_rd_en <= 0;
+        if_cfg_rd_clk_en <= 0;
         if_cfg_rd_addr <= 0;
 
         // sram ifc
@@ -307,121 +399,297 @@ program glb_test (
         repeat (10) @(posedge clk);
     endtask
 
-    task glb_tile_stall(logic [NUM_GLB_TILES-1:0] tile_sel);
-
-        $display("Glb tiles are stalled");
-        stall <= tile_sel;
-        repeat (1) @(posedge clk);
+    task glb_flush_crossbar_ctrl(logic [NUM_GROUPS-1:0][$clog2(NUM_GLB_TILES)-1:0] mask);
+        #2 $display("Glb flush signal crossbar configuration %8h", mask);
+        flush_crossbar_sel <= mask;
+        repeat (4) @(posedge clk);
 
     endtask
 
-    task pcfg_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,
-                            [AXI_DATA_WIDTH-1:0] num_word);
-        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_CTRL_R,
-                      (1 << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
+    task glb_clk_en_master_ctrl(logic [NUM_GLB_TILES-1:0] mask);
+        #2 $display("Glb tiles master clk enable with mask %16b", mask);
+        glb_clk_en_master <= mask;
+        repeat (4) @(posedge clk);
+
+    endtask
+
+    task glb_clk_en_bank_master_ctrl(logic [NUM_GLB_TILES-1:0] mask);
+        #2 $display("Glb tiles master bank clk enable with mask %16b", mask);
+        glb_clk_en_bank_master <= mask;
+        repeat (4) @(posedge clk);
+
+    endtask
+
+    task glb_pcfg_broadcast_stall(logic [NUM_GLB_TILES-1:0] mask);
+        #2 $display("Glb tiles PCFG broadcast logics are stalled with mask %16b", mask);
+        pcfg_broadcast_stall <= mask;
+        repeat (4) @(posedge clk);
+
+    endtask
+
+    task glb_pcfg_broadcast_mux(
+        logic [`GLB_PCFG_BROADCAST_MUX_R_MSB:0] mux_value[NUM_GLB_TILES-1:0]);
+        $display("Set pcfg broadcast muxes");
+        for (int i = 0; i < NUM_GLB_TILES; i++) begin
+            $display("Tile ID: %0d, South Mux: %2b, West Mux: %2b, East Mux: %2b", i,
+                     mux_value[i][`GLB_PCFG_BROADCAST_MUX_SOUTH_F_MSB : `GLB_PCFG_BROADCAST_MUX_SOUTH_F_LSB],
+                     mux_value[i][`GLB_PCFG_BROADCAST_MUX_WEST_F_MSB : `GLB_PCFG_BROADCAST_MUX_WEST_F_LSB],
+                     mux_value[i][`GLB_PCFG_BROADCAST_MUX_EAST_F_MSB : `GLB_PCFG_BROADCAST_MUX_EAST_F_LSB]);
+            glb_cfg_write(
+                (i << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_BROADCAST_MUX_R,
+                mux_value[i]);
+            glb_cfg_read(
+                (i << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_BROADCAST_MUX_R,
+                mux_value[i]);
+        end
+        repeat (4) @(posedge clk);
+
+    endtask
+
+    task automatic sram_write_burst(int bank_id, ref data64 data);
+        int start_addr = (1 << BANK_ADDR_WIDTH) * bank_id;
+        int write_data;
+        for (int i = 0; i < data.size(); i++) begin
+            for (int j = 0; j < 2; j++) begin
+                write_data = data[i][32*j+:32];
+                sram_write(start_addr + (i << BANK_BYTE_OFFSET) + (j << (BANK_BYTE_OFFSET - 1)),
+                           write_data);
+            end
+        end
+    endtask
+
+    task automatic sram_write(input bit [GLB_ADDR_WIDTH-1:0] addr, int data);
+        #2 if_sram_cfg_wr_en <= 1;
+        if_sram_cfg_wr_addr <= addr;
+        if_sram_cfg_wr_data <= data;
+        repeat (4) @(posedge clk);
+        #2 if_sram_cfg_wr_en <= 0;
+        if_sram_cfg_wr_addr <= 0;
+        if_sram_cfg_wr_data <= 0;
+        repeat (2) @(posedge clk);
+    endtask
+
+    task automatic sram_read_burst(int bank_id, ref data64 data);
+        int start_addr = (1 << BANK_ADDR_WIDTH) * bank_id;
+        int read_data;
+        for (int i = 0; i < data.size(); i++) begin
+            for (int j = 0; j < 2; j++) begin
+                sram_read(start_addr + (i << BANK_BYTE_OFFSET) + (j << (BANK_BYTE_OFFSET - 1)),
+                          read_data);
+                data[i][32*j+:32] = read_data;
+            end
+        end
+    endtask
+
+    task automatic sram_read(input bit [GLB_ADDR_WIDTH-1:0] addr, ref int data);
+        int read_delay = 40;
+        fork
+            begin
+                @(posedge clk);
+                #2 if_sram_cfg_rd_en <= 1;
+                if_sram_cfg_rd_addr <= addr;
+                repeat (4) @(posedge clk);
+                #2 if_sram_cfg_rd_en <= 0;
+                if_sram_cfg_rd_addr <= 0;
+            end
+            begin
+                for (int i = 0; i < read_delay; i++) begin
+                    if (if_sram_cfg_rd_data_valid == 1) begin
+                        data = if_sram_cfg_rd_data;
+                        break;
+                    end
+                    @(posedge clk);
+                end
+            end
+        join
+        repeat (20) @(posedge clk);
+    endtask
+
+    task automatic data_network_connect(input int tile_id, bit is_connected);
         glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_CTRL_R,
+            (is_connected << `GLB_DATA_NETWORK_CTRL_CONNECTED_F_LSB));
+    endtask
+
+    task automatic data_network_latency(input int tile_id, [LATENCY_WIDTH-1:0] latency);
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_DATA_NETWORK_LATENCY_R,
+            (latency << `GLB_DATA_NETWORK_LATENCY_VALUE_F_LSB));
+    endtask
+
+    task automatic pcfg_network_connect(input int tile_id, bit is_connected);
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_NETWORK_CTRL_R,
+            (is_connected << `GLB_PCFG_NETWORK_CTRL_CONNECTED_F_LSB));
+    endtask
+
+    task automatic pcfg_network_latency(input int tile_id, [LATENCY_WIDTH-1:0] latency);
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_NETWORK_LATENCY_R,
+            (latency << `GLB_PCFG_NETWORK_LATENCY_VALUE_F_LSB));
+    endtask
+
+    task automatic pcfg_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
+                                      [AXI_DATA_WIDTH-1:0] num_word);
+        glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_CTRL_R,
+                      (on << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
+        glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_CTRL_R,
+                     (on << `GLB_PCFG_DMA_CTRL_MODE_F_LSB));
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_HEADER_START_ADDR_R,
+            (start_addr << `GLB_PCFG_DMA_HEADER_START_ADDR_START_ADDR_F_LSB));
+        glb_cfg_read(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_HEADER_START_ADDR_R,
             (start_addr << `GLB_PCFG_DMA_HEADER_START_ADDR_START_ADDR_F_LSB));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_HEADER_NUM_CFG_R,
             (num_word << `GLB_PCFG_DMA_HEADER_NUM_CFG_NUM_CFG_F_LSB));
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_PCFG_DMA_HEADER_NUM_CFG_R,
+            (num_word << `GLB_PCFG_DMA_HEADER_NUM_CFG_NUM_CFG_F_LSB));
     endtask
 
-    task g2f_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,
-                           [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim, int extent[LOOP_LEVEL],
-                           int cycle_stride[LOOP_LEVEL], int data_stride[LOOP_LEVEL]);
+    task automatic g2f_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
+                                     [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
+                                     int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
+                                     int data_stride[LOOP_LEVEL]);
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
                       ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
-                       | (1 << `GLB_LD_DMA_CTRL_MODE_F_LSB)
-                       | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+                    | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
+                    | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+        glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
+                     ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
+                    | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
+                    | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
-
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
+            (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_R,
             (cycle_start_addr << `GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_CYCLE_START_ADDR_F_LSB));
-
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_R,
+            (cycle_start_addr << `GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_CYCLE_START_ADDR_F_LSB));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_DIM_R,
             (dim << `GLB_LD_DMA_HEADER_0_DIM_DIM_F_LSB));
-
-        // NOTE: Each stride/range address difference is 'h4
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_DIM_R,
+            (dim << `GLB_LD_DMA_HEADER_0_DIM_DIM_F_LSB));
+        // NOTE: Each stride/range address difference is 'hc
         for (int i = 0; i < dim; i++) begin
             glb_cfg_write(
-                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_RANGE_0_R + i * 'h4,
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_RANGE_0_R + i * 'hc,
+                (extent[i] << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+            glb_cfg_read(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_RANGE_0_R + i * 'hc,
                 (extent[i] << `GLB_LD_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
             glb_cfg_write(
-                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R + i * 'hc,
+                (data_stride[i] << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+            glb_cfg_read(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_STRIDE_0_R + i * 'hc,
                 (data_stride[i] << `GLB_LD_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
             glb_cfg_write(
-                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'h4,
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'hc,
+                (cycle_stride[i] << `GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
+            glb_cfg_read(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'hc,
                 (cycle_stride[i] << `GLB_LD_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
         end
-
     endtask
 
-    task automatic f2g_dma_configure(input int tile_id, [AXI_DATA_WIDTH-1:0] start_addr,
+    task automatic f2g_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
                                      int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
                                      int data_stride[LOOP_LEVEL]);
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
                       ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
-                       | (1 << `GLB_ST_DMA_CTRL_MODE_F_LSB)
-                       | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
+                    | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
+                    | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
+        glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
+                     ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
+                    | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
+                    | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
         glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_START_ADDR_R,
+            (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
+        glb_cfg_read(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
 
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_R,
             (cycle_start_addr << `GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_CYCLE_START_ADDR_F_LSB));
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_R,
+            (cycle_start_addr << `GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_CYCLE_START_ADDR_F_LSB));
 
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_DIM_R,
             (dim << `GLB_ST_DMA_HEADER_0_DIM_DIM_F_LSB));
-
-        // NOTE: Each stride/range address difference is 'h4
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_DIM_R,
+            (dim << `GLB_ST_DMA_HEADER_0_DIM_DIM_F_LSB));
+        // NOTE: Each stride/range address difference is 'hc
         for (int i = 0; i < dim; i++) begin
             glb_cfg_write(
-                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_RANGE_0_R + i * 'h4,
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_RANGE_0_R + i * 'hc,
+                (extent[i] << `GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
+            glb_cfg_read(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_RANGE_0_R + i * 'hc,
                 (extent[i] << `GLB_ST_DMA_HEADER_0_RANGE_0_RANGE_F_LSB));
             glb_cfg_write(
-                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_STRIDE_0_R + i * 'h4,
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_STRIDE_0_R + i * 'hc,
+                (data_stride[i] << `GLB_ST_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
+            glb_cfg_read(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_STRIDE_0_R + i * 'hc,
                 (data_stride[i] << `GLB_ST_DMA_HEADER_0_STRIDE_0_STRIDE_F_LSB));
             glb_cfg_write(
-                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'h4,
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'hc,
+                (cycle_stride[i] << `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
+            glb_cfg_read(
+                (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_R + i * 'hc,
                 (cycle_stride[i] << `GLB_ST_DMA_HEADER_0_CYCLE_STRIDE_0_CYCLE_STRIDE_F_LSB));
         end
     endtask
 
     task glb_cfg_write(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
         repeat (5) @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_wr_en <= 1;
+        #2 if_cfg_wr_clk_en <= 1;
+        @(posedge clk);
+        #2 if_cfg_wr_en <= 1;
         if_cfg_wr_addr <= addr;
         if_cfg_wr_data <= data;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_wr_en <= 0;
+        #2 if_cfg_wr_en <= 0;
         if_cfg_wr_addr <= 0;
         if_cfg_wr_data <= 0;
+        repeat (NUM_GLB_TILES + 10) @(posedge clk);
+        #2 if_cfg_wr_clk_en <= 0;
         repeat (2) @(posedge clk);
     endtask
 
-    task glb_cfg_read(input [AXI_ADDR_WIDTH-1:0] addr, output [AXI_DATA_WIDTH-1:0] data);
+    task glb_cfg_read(input [AXI_ADDR_WIDTH-1:0] addr, input [AXI_DATA_WIDTH-1:0] data);
         repeat (5) @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_rd_en <= 1;
+        #2 if_cfg_rd_clk_en <= 1;
+        @(posedge clk);
+        #2 if_cfg_rd_en <= 1;
         if_cfg_rd_addr <= addr;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) if_cfg_rd_en <= 0;
+        #2 if_cfg_rd_en <= 0;
         if_cfg_rd_addr <= 0;
         fork : glb_cfg_read_timeout
             begin
                 while (1) begin
-                    @(posedge clk);
                     if (if_cfg_rd_data_valid) begin
-                        data = if_cfg_rd_data;
+                        assert (data == if_cfg_rd_data);
                         break;
                     end
+                    @(posedge clk);
                 end
             end
             begin
@@ -430,6 +698,8 @@ program glb_test (
             end
         join_any
         disable fork;
+        @(posedge clk);
+        #2 if_cfg_rd_clk_en <= 0;
         repeat (2) @(posedge clk);
     endtask
 
@@ -437,10 +707,11 @@ program glb_test (
         int size = data.size();
         repeat (5) @(posedge clk);
         $display("Start glb-mem burst write. addr: 0x%0h, size %0d", addr, size);
-        foreach (data[i]) begin
-            proc_write(addr + 8 * i, data[i]);
-        end
-        #(`CLK_PERIOD * 0.3) proc_wr_en <= 0;
+        #2
+            foreach (data[i]) begin
+                proc_write(addr + 8 * i, data[i]);
+            end
+        #2 proc_wr_en <= 0;
         proc_wr_strb <= 0;
         $display("Finish glb-mem burst write");
         repeat (5) @(posedge clk);
@@ -452,7 +723,7 @@ program glb_test (
         proc_wr_addr <= addr;
         proc_wr_data <= data;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) proc_wr_en <= 0;
+        #2 proc_wr_en <= 0;
         proc_wr_strb <= 0;
     endtask
 
@@ -488,7 +759,7 @@ program glb_test (
         proc_wr_addr <= addr;
         proc_wr_data <= wr_data;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) proc_wr_en <= 0;
+        #2 proc_wr_en <= 0;
         proc_wr_strb <= 0;
     endtask
 
@@ -506,11 +777,11 @@ program glb_test (
         fork : proc_read
             begin
                 for (int i = 0; i < size; i++) begin
-                    #(`CLK_PERIOD * 0.4) proc_rd_en <= 1;
+                    #2 proc_rd_en <= 1;
                     proc_rd_addr <= addr + 8 * i;
                     @(posedge clk);
                 end
-                #(`CLK_PERIOD * 0.4) proc_rd_en <= 0;
+                #2 proc_rd_en <= 0;
             end
             begin
                 fork : proc_read_timeout
@@ -576,7 +847,7 @@ program glb_test (
                         end
                     end
                     begin
-                        repeat (size + 100) @(posedge clk);
+                        repeat (2 * size + 100) @(posedge clk);
                         $display("@%0t: %m ERROR: glb-mem burst read timeout ", $time);
                     end
                 join_any
@@ -599,9 +870,9 @@ program glb_test (
             end
         end
 
-        #(`CLK_PERIOD * 0.3) strm_g2f_start_pulse <= tile_id_mask;
+        #2 strm_g2f_start_pulse <= tile_id_mask;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) strm_g2f_start_pulse <= 0;
+        #2 strm_g2f_start_pulse <= 0;
     endtask
 
     task automatic g2f_run(input int tile_id, int total_cycle);
@@ -623,16 +894,17 @@ program glb_test (
     task automatic f2g_start(input [NUM_GLB_TILES-1:0] tile_id_mask);
         $display("f2g streaming start. tiles: 0x%4h", tile_id_mask);
 
+        #2 strm_f2g_start_pulse <= tile_id_mask;
+        @(posedge clk);
+        #2 strm_f2g_start_pulse <= 0;
+
+        repeat (GLS_PIPELINE_DEPTH + 3) @(posedge clk);
         // Enable glb2prr
         for (int i = 0; i < NUM_PRR; i++) begin
             if (tile_id_mask[i] == 1) begin
                 void'($root.top.cgra.prr2glb_on(i));
             end
         end
-
-        #(`CLK_PERIOD * 0.3) strm_f2g_start_pulse <= tile_id_mask;
-        @(posedge clk);
-        #(`CLK_PERIOD * 0.3) strm_f2g_start_pulse <= 0;
 
     endtask
 
@@ -655,12 +927,14 @@ program glb_test (
     task automatic pcfg_start(input [NUM_GLB_TILES-1:0] tile_id_mask);
         $display("pcfg streaming start. tiles: 0x%4h", tile_id_mask);
         repeat (5) @(posedge clk);
-        #(`CLK_PERIOD * 0.3) pcfg_start_pulse <= tile_id_mask;
+        #2 pcfg_start_pulse <= tile_id_mask;
         @(posedge clk);
-        #(`CLK_PERIOD * 0.3) pcfg_start_pulse <= 0;
+        #2 pcfg_start_pulse <= 0;
     endtask
 
-    task automatic pcfg_run(input int tile_id, int total_cycle);
+    task automatic pcfg_run(input int tile_id, int check_tile_id, int total_cycle,
+                            ref [CGRA_CFG_ADDR_WIDTH + CGRA_CFG_DATA_WIDTH - 1:0] cgra_cfg_out[]);
+        int cnt = 0;
         fork : interrupt_timeout
             begin
                 wait (pcfg_g2f_interrupt_pulse[tile_id]);
@@ -668,6 +942,20 @@ program glb_test (
             begin
                 repeat (total_cycle + 50) @(posedge clk);
                 $display("@%0t: %m ERROR: glb stream pcfg interrupt timeout ", $time);
+            end
+            begin
+                forever begin
+                    // Check the second column
+                    if (cgra_cfg_g2f_cfg_wr_en[check_tile_id][CGRA_PER_GLB-1] == 1) begin
+                        cgra_cfg_out[
+                        cnt++
+                        ] = {
+                            cgra_cfg_g2f_cfg_addr[check_tile_id][CGRA_PER_GLB-1],
+                            cgra_cfg_g2f_cfg_data[check_tile_id][CGRA_PER_GLB-1]
+                        };
+                    end
+                    @(posedge clk);
+                end
             end
         join_any
         disable fork;
