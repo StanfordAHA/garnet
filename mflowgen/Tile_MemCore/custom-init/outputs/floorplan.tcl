@@ -76,7 +76,7 @@ set sram_spacing_x_odd 0
 if $::env(PWR_AWARE) {
   set sram_spacing_x_even [expr 0 * $horiz_pitch]
 } else {
- set sram_spacing_x_even [expr 200 * $horiz_pitch]
+ set sram_spacing_x_even [expr 220 * $horiz_pitch]
 }
 
 # Parameter for how many SRAMs to stack vertically
