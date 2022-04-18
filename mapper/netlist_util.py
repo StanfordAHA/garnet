@@ -1,12 +1,14 @@
+import os, math
+from graphviz import Digraph
 from collections import defaultdict
+from hwtypes import Bit, BitVector
 from hwtypes.adt import Tuple, Product
 from metamapper.node import Dag, Input, Output, Combine, Select, DagNode, IODag, Constant, Sink, Common
-from metamapper.common_passes import AddID
+from metamapper.common_passes import AddID, print_dag
 from DagVisitor import Visitor, Transformer
-from hwtypes import Bit, BitVector
 from peak.mapper.utils import Unbound
-from graphviz import Digraph
-import os, math
+from lassen.sim import PE_fc as lassen_fc
+
 
 class CreateBuses(Visitor):
     def __init__(self, inst_info):
@@ -122,7 +124,6 @@ class CreateInstrs(Visitor):
             self.node_to_instr[src.iname] = self.node_to_instr[sink.iname]
         return self.node_to_instr
 
-
     def visit_Input(self, node):
         self.node_to_instr[node.iname] = 1
 
@@ -161,6 +162,7 @@ class CreateInstrs(Visitor):
         assert isinstance(instr_child, Constant), f"{node.node_name} {node.iname} {instr_child.node_name}"
         self.node_to_instr[node.iname] = instr_child.value
 
+
 class CreateMetaData(Visitor):
     def doit(self, dag):
         self.node_to_md = {}
@@ -188,12 +190,10 @@ class CreateIDs(Visitor):
     def visit_Source(self, node):
         pass
 
-
     def visit_Output(self, node: Output):
         Visitor.generic_visit(self, node)
         child = list(node.children())[0]
-        #assert isinstance(child, Combine)
-        #c_children = list(child.children())
+
         if "io16" in node.iname:
             is_bit = False
         else:
@@ -201,7 +201,6 @@ class CreateIDs(Visitor):
 
         if is_bit:
             id = f"i{self.i}"
-            #print(node)
         else:
             id = f"I{self.i}"
         self.i += 1
@@ -278,9 +277,11 @@ class IO_Input_t(Product):
     io2f_16=BitVector[16]
     io2f_1=Bit
 
+
 class IO_Output_t(Product):
     f2io_16=BitVector[16]
     f2io_1=Bit
+
 
 class FlattenIO(Visitor):
     def __init__(self):
@@ -365,9 +366,7 @@ class FlattenIO(Visitor):
         self.node_map[node] = new_node
 
 
-
 def print_netlist_info(info, filename):
-
     outfile = open(filename, 'w')
     print("id to instance name", file = outfile)
     for k, v in info["id_to_name"].items():
@@ -395,6 +394,7 @@ def print_netlist_info(info, filename):
 def is_unbound_const(node):
     return isinstance(node, Constant) and node.value is Unbound
 
+
 class DagToPdf(Visitor):
     def __init__(self, nodes_to_ids, no_unbound):
         self.no_unbound = no_unbound
@@ -415,13 +415,16 @@ class DagToPdf(Visitor):
             if self.no_unbound and not is_unbound_const(child):
                 self.graph.edge(n2s(child), n2s(node), label=str(i))
 
+
 def gen_dag_img(dag, file, info, no_unbound=True):
     DagToPdf(info, no_unbound).doit(dag).render(filename=file)
+
 
 class DagToPdfSimp(Visitor):
     def doit(self, dag: Dag):
         AddID().run(dag)
-        self.plotted_nodes = {"global.PE", "Input", "Output","PipelineRegister", "global.MEMSource", "global.MEMSink", "global.PondSource", "global.PondSink"}
+        self.plotted_nodes = {"global.PE", "Input", "Output","PipelineRegister",\
+                              "global.MEMSource", "global.MEMSink", "global.PondSource", "global.PondSink"}
         self.child_list = []
         self.graph = Digraph()
         self.run(dag)
@@ -460,8 +463,7 @@ class VerifyUniqueIname(Visitor):
     def generic_visit(self, node):
         Visitor.generic_visit(self, node)
         if node.iname in self.inames:
-            print(f"{node.iname} for {node} already used by {self.inames[node.iname]}")
-            #raise ValueError(f"{node.iname} for {node} already used by {self.inames[node.iname]}")
+            raise ValueError(f"{node.iname} for {node} already used by {self.inames[node.iname]}")
         self.inames[node.iname] = node
 
 
@@ -482,6 +484,7 @@ class PondFlushes(Transformer):
             node.set_children(*children)
         return node
 
+
 class PipelineBroadcastHelper(Visitor):
     def __init__(self):
         self.sinks = {}
@@ -498,13 +501,22 @@ class PipelineBroadcastHelper(Visitor):
             self.sinks[child].append(node)
         Visitor.generic_visit(self, node)
         
-RegisterSource, RegisterSink = Common.create_dag_node("Register", 1, True, static_attrs=dict(input_t = BitVector[16], output_t = BitVector[16]))
-BitRegisterSource, BitRegisterSink = Common.create_dag_node("Register", 1, True, static_attrs=dict(input_t = Bit, output_t = Bit))
+RegisterSource, RegisterSink = Common.create_dag_node("Register", 1, True, 
+                               static_attrs=dict(input_t = BitVector[16], output_t = BitVector[16]))
+BitRegisterSource, BitRegisterSink = Common.create_dag_node("Register", 1, True, 
+                               static_attrs=dict(input_t = Bit, output_t = Bit))
 
 
 class FixInputsOutputAndPipeline(Visitor):
-    def __init__(self, sinks):
+    def __init__(self, sinks, harden_flush, max_flush_cycles):
         self.sinks = sinks
+        self.harden_flush = harden_flush
+        self.max_flush_cycles = max_flush_cycles
+
+        # Control IO broadcast pipelining tree creation
+        self.max_tree_level = 16
+        self.tree_branch_factor = 4
+
         self.max_sinks = 0
         for _,sink in sinks.items():
             self.max_sinks = max(self.max_sinks, len(sink))
@@ -521,11 +533,11 @@ class FixInputsOutputAndPipeline(Visitor):
         real_sinks = [self.node_map[s] for s in self.dag_sinks[1:]]
         return IODag(inputs=self.inputs, outputs=self.outputs, sources=real_sources, sinks=real_sinks)
 
-
-    def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, bit, tree_leaves):
-        max_tree_level = 16
+    def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, 
+                             bit, tree_leaves, min_stages = 1, max_tree_level = 16):
+        return  
         max_curr_tree_level = min(max_tree_level, len(sinks))
-        num_stages = math.ceil(math.log(max_tree_level, 4)) + 1        
+        num_stages = max(math.ceil(math.log(max_tree_level, tree_leaves)) + 1, min_stages)
         
         print("Creating register tree for:", new_io_node.iname, "with", len(sinks), "sinks and", num_stages, "stages")
         
@@ -589,18 +601,23 @@ class FixInputsOutputAndPipeline(Visitor):
 
     def visit_Select(self, node: DagNode):
         Visitor.generic_visit(self, node)
-        if not ("hw_output" in [child.iname for child in node.children()] or "self" in [child.iname for child in node.children()]):
+        if not ("hw_output" in [child.iname for child in node.children()] or \
+                "self" in [child.iname for child in node.children()]):
             new_children = [self.node_map[child] for child in node.children()]
             io_child = new_children[0]
             pipeline = os.getenv('PIPELINED')
             if "io16in" in io_child.iname:
                 new_node = new_children[0].select("io2f_16")
                 if pipeline:
-                    self.create_register_tree(io_child, new_node, node, self.sinks[node], False, 4)
+                    self.create_register_tree(io_child, new_node, node, self.sinks[node], 
+                                              False, self.tree_branch_factor, min_stages=self.max_flush_cycles, 
+                                              max_tree_level=self.max_tree_level)
             elif "io1in" in io_child.iname:
                 new_node = new_children[0].select("io2f_1")
                 if pipeline:
-                    self.create_register_tree(io_child, new_node, node, self.sinks[node], True, 4)
+                    self.create_register_tree(io_child, new_node, node, self.sinks[node], 
+                                              True, self.tree_branch_factor, min_stages=1, 
+                                              max_tree_level=self.max_tree_level)
             else:
                 new_node = node.copy()
             
@@ -675,11 +692,8 @@ class CountTiles(Visitor):
         elif node.node_name == "Register":
             self.num_regs += 1
 
-
-from lassen.sim import PE_fc as lassen_fc
-from metamapper. common_passes import print_dag
-
-def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, id_to_name = None):
+def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False,
+                        harden_flush=False, max_flush_cycles=0):
         
     if load_only:
         id_to_name_filename = os.path.join(app_dir, f"design.id_to_name")
@@ -693,7 +707,7 @@ def create_netlist_info(app_dir, dag: Dag, tile_info: dict, load_only = False, i
             	id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
     
     sinks = PipelineBroadcastHelper().doit(dag)
-    fdag = FixInputsOutputAndPipeline(sinks).doit(dag)
+    fdag = FixInputsOutputAndPipeline(sinks, harden_flush, max_flush_cycles).doit(dag)
 
     def tile_to_char(t):
         if t.split(".")[1]=="PE":

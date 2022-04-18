@@ -31,6 +31,8 @@ set_multicycle_path -setup 10 -from {glb_clk_en_master}
 set_multicycle_path -hold 9 -from {glb_clk_en_master}
 set_multicycle_path -setup 10 -from {glb_clk_en_bank_master}
 set_multicycle_path -hold 9 -from {glb_clk_en_bank_master}
+set_multicycle_path -setup 10 -from {flush_crossbar_sel}
+set_multicycle_path -hold 9 -from {flush_crossbar_sel}
 
 #=========================================================================
 # load

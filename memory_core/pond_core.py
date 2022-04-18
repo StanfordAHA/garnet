@@ -31,13 +31,15 @@ class PondCore(LakeCoreBase):
                  config_addr_width=8,
                  cycle_count_width=16,
                  add_clk_enable=True,
-                 add_flush=True):
+                 add_flush=True,
+                 gate_flush=True):
 
         lake_name = "Pond_pond"
 
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
+                         gate_flush=gate_flush,
                          name="PondCore")
 
         # Capture everything to the tile object

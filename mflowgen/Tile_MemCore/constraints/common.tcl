@@ -32,21 +32,45 @@ set_load -pin_load $ADK_TYPICAL_ON_CHIP_LOAD [all_outputs]
 set_driving_cell -no_design_rule \
   -lib_cell $ADK_DRIVING_CELL [all_inputs]
 
-# Now rip this driving cell off of our passthrough signals
-# We are going to use an input/output slew and tighten a bit
-remove_driving_cell [get_ports stall]
-remove_driving_cell config_config_data*
-remove_driving_cell config_config_addr*
-remove_driving_cell config_read*
-remove_driving_cell config_write*
-remove_driving_cell [get_ports read_config_data_in]
-remove_driving_cell reset
-
 # Make all signals limit their fanout
 set_max_fanout 20 $design_name
 # Make all signals meet good slew
 # set_input_delay constraints for input ports
 set_max_transition 0.120 $design_name
+
+# Passthrough clock outputs
+set pt_clk_out [get_ports clk*out*]
+
+# Other Passthrough inputs
+set pt_inputs [get_ports " \
+    stall \
+    config_config_data* \
+    config_config_addr* \
+    config_read* \
+    config_write* \
+    reset \
+    flush"]
+
+# Other Passthrough Outputs
+set pt_outputs [get_ports " \
+    stall_out \
+    config_out_config_data* \
+    config_out_config_addr* \
+    config_out_read* \
+    config_out_write* \
+    reset_out \
+    flush_out"]
+
+# read_config_data passthrough signals
+# List these seprately because the constraints are slightly different
+# (more relaxed) than for the other pt signals
+set pt_read_data_inputs [get_ports read_config_data_in]
+set pt_read_data_outputs [get_ports read_config_data]
+
+# Now rip this driving cell off of our passthrough signals
+# We are going to use an input/output slew and tighten a bit
+remove_driving_cell $pt_inputs
+remove_driving_cell $pt_read_data_inputs
 
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
@@ -55,13 +79,8 @@ set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 # Fix config input delay to specific value
 set pt_i_delay 0.700
-set_input_delay -clock ${clock_name} ${pt_i_delay} stall
-set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_data*
-set_input_delay -clock ${clock_name} ${pt_i_delay} config_config_addr*
-set_input_delay -clock ${clock_name} ${pt_i_delay} config_read*
-set_input_delay -clock ${clock_name} ${pt_i_delay} config_write*
-set_input_delay -clock ${clock_name} ${pt_i_delay} read_config_data_in
-set_input_delay -clock ${clock_name} ${pt_i_delay} reset
+set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_inputs
+set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_read_data_inputs
 
 # Constrain OUTPUTS
 # set_output_delay constraints for output ports
@@ -72,31 +91,21 @@ set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 # Set timing on pass through clock
 # Set clock min delay and max delay
 set clock_max_delay 0.05
-set_max_delay -to clk_out $clock_max_delay
+set_max_delay -to $pt_clk_out $clock_max_delay
 
 # Min and max delay a little more than our clock
 set min_w_in [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
 #set min_w_in [expr $clock_max_delay]
-set_min_delay -to config_out_config_addr* ${min_w_in}
-set_min_delay -to config_out_config_data* ${min_w_in}
-set_min_delay -to config_out_read* ${min_w_in}
-set_min_delay -to config_out_write* ${min_w_in}
-set_min_delay -to stall_out ${min_w_in}
-set_min_delay -from read_config_data_in -to read_config_data ${min_w_in}
-set_min_delay -from reset -to reset_out ${min_w_in}
+set_min_delay -to $pt_outputs ${min_w_in}
+set_min_delay -to $pt_read_data_outputs ${min_w_in}
 
 # Pass through (not clock) timing margin
 set alt_passthru_margin 0.03
 set alt_passthru_max [expr ${min_w_in} + ${alt_passthru_margin}]
-set_max_delay -to config_out_config_addr* ${alt_passthru_max}
-set_max_delay -to config_out_config_data* ${alt_passthru_max}
-set_max_delay -to config_out_read* ${alt_passthru_max}
-set_max_delay -to config_out_write* ${alt_passthru_max}
-set_max_delay -to stall_out ${alt_passthru_max}
-set_max_delay -from reset -to reset_out ${alt_passthru_max}
+set_max_delay -to $pt_outputs ${alt_passthru_max}
 # This doesn't need to be as tight
 set rd_cfg_margin 0.300
-set_max_delay -from read_config_data_in -to read_config_data [expr ${rd_cfg_margin} + ${pt_i_delay} + ${o_delay}]
+set_max_delay -from $pt_read_data_inputs -to $pt_read_data_outputs [expr ${rd_cfg_margin} + ${pt_i_delay} + ${o_delay}]
 
 # Relax config_addr -> read_config_data path
 set_multicycle_path 2 -from [get_ports config_config_addr*] -to [get_ports read_config_data] -setup
@@ -106,34 +115,19 @@ set_multicycle_path 1 -to [get_ports read_config_data* -filter direction==out] -
 
 # 5fF approx load
 set mark_approx_cap 0.025
-set_load ${mark_approx_cap} config_out_config_addr*
-set_load ${mark_approx_cap} config_out_config_data*
-set_load ${mark_approx_cap} config_out_read* 
-set_load ${mark_approx_cap} config_out_write*
-set_load ${mark_approx_cap} stall_out*
-set_load ${mark_approx_cap} read_config_data
-set_load ${mark_approx_cap} reset_out
-set_load ${mark_approx_cap} clk_out
+set_load ${mark_approx_cap} $pt_outputs
+set_load ${mark_approx_cap} $pt_read_data_outputs
+set_load ${mark_approx_cap} $pt_clk_out
 
 # Set max transition on these outputs as well
 set max_trans_passthru .020
-set_max_transition ${max_trans_passthru} config_out_config_addr*
-set_max_transition ${max_trans_passthru} config_out_config_data*
-set_max_transition ${max_trans_passthru} config_out_read* 
-set_max_transition ${max_trans_passthru} config_out_write*
-set_max_transition ${max_trans_passthru} stall_out*
-set_max_transition ${max_trans_passthru} [get_ports read_config_data]
-set_max_transition ${max_trans_passthru} reset_out
-set_max_transition ${max_trans_passthru} clk_out
+set_max_transition ${max_trans_passthru} $pt_outputs
+set_max_transition ${max_trans_passthru} $pt_read_data_outputs
+set_max_transition ${max_trans_passthru} $pt_clk_out
 
 # Set input transition to match the max transition on outputs
-set_input_transition ${max_trans_passthru} [get_ports stall]
-set_input_transition ${max_trans_passthru} config_config_data*
-set_input_transition ${max_trans_passthru} config_config_addr*
-set_input_transition ${max_trans_passthru} config_read*
-set_input_transition ${max_trans_passthru} config_write*
-set_input_transition ${max_trans_passthru} [get_ports read_config_data_in]
-set_input_transition ${max_trans_passthru} reset
+set_input_transition ${max_trans_passthru} $pt_inputs
+set_input_transition ${max_trans_passthru} $pt_read_data_inputs
 
 #
 # Set max delay on REGOUT paths?
