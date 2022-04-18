@@ -60,9 +60,10 @@ proc snap_to_grid {input granularity} {
 # Place SRAMS
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set srams [get_cells -hier *mem_inst*]
-set sram_width [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_x]
-set sram_height [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_y]
+set srams [get_cells -quiet -hier -filter {is_memory_cell==true}]
+set sram_name [lindex [get_property $srams name] 0]
+set sram_width [dbGet [dbGet -p top.insts.name *$sram_name].cell.size_x]
+set sram_height [dbGet [dbGet -p top.insts.name *$sram_name].cell.size_y]
 
 # SRAM Placement params
 # SRAMs are abutted vertically
