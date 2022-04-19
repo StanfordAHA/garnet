@@ -13,7 +13,8 @@ if { ! $::env(soc_only) } {
   # Params
   # Vertical distance (in # pitches) betwween GLB and Tile array
   set ic2glb_y_dist 330
-  set ic2glc_y_dist 600
+  set glb2glc_y_dist 600
+  set glb2srams_y_dist 600
 
   ##############################################################################
   # Lots of congestion at top left corner of GLB, where the top
@@ -144,8 +145,8 @@ if { ! $::env(soc_only) } {
   set glc_name [get_property $glc hierarchical_name]
   set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
   set glc_height [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_y]
-  set glc_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glc_y_dist)] $pmesh_bot_pitch]
-  set glc_x_loc [snap_to_grid [expr $ic_x_loc + 100] $pmesh_top_pitch]
+  set glc_y_loc [snap_to_grid [expr $glb_ury + ($vert_pitch * $glb2glc_y_dist)] $pmesh_bot_pitch]
+  set glc_x_loc [snap_to_grid [expr $glb_x_loc + 100] $pmesh_top_pitch]
   
   placeinstance $glc_name $glc_x_loc $glc_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glc_name -snapToSite
@@ -188,7 +189,7 @@ set sram_spacing_x_odd  [expr 400 * $horiz_pitch]
 set sram_spacing_x_even [expr 400 * $horiz_pitch]
 
 # Parameter for how many SRAMs to stack vertically
-set bank_height 4
+set bank_height 2
 
 # Center the SRAMs within the core area of the tile
 set num_banks [expr [sizeof_collection $srams] / $bank_height]
@@ -199,8 +200,10 @@ set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_
 set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
 set block_height [expr ($sram_height * $bank_height) + ($sram_height * ($bank_height - 1))]
 
-set sram_start_y [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $block_height) * 0.75] $vert_pitch]
-set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/15.] $horiz_pitch]
+# Place SoC SRAMs above GLB
+set sram_start_y [snap_to_grid [expr $glb_ury + ($vert_pitch * $glb2srams_y_dist)] $vert_pitch]
+# Place SoC SRAMs near left quarter of chip
+set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/4.] $horiz_pitch]
 
 set y_loc $sram_start_y
 set x_loc $sram_start_x
