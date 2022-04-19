@@ -27,7 +27,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 5,
+    'clock_period'      : 2,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -98,7 +98,7 @@ def construct():
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
   #genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
-  genlib         = Step( 'cadence-genus-genlib',           default=True )
+  genlib         = Step( 'cadence-innovus-genlib',           default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -354,6 +354,7 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
+  g.connect_by_name( iflow,    genlib         )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
