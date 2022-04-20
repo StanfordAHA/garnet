@@ -1,5 +1,8 @@
 # 04/20/2022 added init and power steps (2 min each maybe)
-# TODO run both pe and mem in parallel
+# TODO
+# - run both pe and mem in parallel
+# - uncomment pe
+# - add init,power to pe steps maybe
 
 # Agents are specified in "pipeline settings" now
 # agents: { jobsize: "hours" }
