@@ -151,6 +151,28 @@ foreach_in_collection block $srams {
         -start_offset 1                                     \
         -stop_offset 1                                      \
         -area [dbGet selected.box]
+
+    # Now block PG Vias from dropping to these M5 stripes near top/bottom
+    # edges of each SRAMs to avoid DRCs caused by partial overlap of stripe
+    # and via.
+    set sram_llx [dbGet selected.box_llx]
+    set sram_urx [dbGet selected.box_urx]
+    set sram_lly [dbGet selected.box_lly]
+    set sram_ury [dbGet selected.box_ury]
+  
+    set blockage_height [expr 8 * $M3_str_width] 
+    # Blockage on bottom edge of sram 
+    createRouteBlk \
+       -cutLayer 6 \
+       -pgnetonly \
+       -box $sram_llx $sram_lly $sram_urx [expr $sram_lly + $blockage_height]
+    
+    # Blockage on top edge of sram 
+    createRouteBlk \
+       -cutLayer 6 \
+       -pgnetonly \
+       -box $sram_llx [expr $sram_ury - $blockage_height] $sram_urx $sram_ury
+    
     deselectAll
 }
 
