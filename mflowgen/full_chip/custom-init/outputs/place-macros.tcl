@@ -89,16 +89,6 @@ if { ! $::env(soc_only) } {
   set glb_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glb_y_dist)] $pmesh_bot_pitch]
   set glb_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $glb_width)/2.] $pmesh_top_pitch]
   
-  ##############################################################################
-  # Lots of congestion to the left of GLB where there are SRAMs and such.
-  # But nothing on the right side of the GLB really.
-  # So I moved the lone lower-alignment-cell from right side of GLB to
-  # left side (see alignment-cells.tcl), giving us room to move GLB to
-  # the right, away from the congested area.
-  # Currently adding ~ 300u (3300 horiz pitches), probably more than needed.
-  set glb_x_loc [ expr $glb_x_loc + (3300 * $horiz_pitch) ]
-  set glb_x_loc [ snap_to_grid $glb_x_loc $pmesh_bot_pitch ]
-  
   # Place GLB
   placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
   addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
