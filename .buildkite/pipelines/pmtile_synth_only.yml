@@ -32,7 +32,7 @@ steps:
 
 - label: 'MemCore synth 17m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis init power --debug --build_dir $BDIR
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis,init,power --debug --build_dir $BDIR
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 - label: 'CHECK'
