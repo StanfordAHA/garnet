@@ -1,8 +1,5 @@
 # 04/20/2022 added init and power steps (2 min each maybe)
-# TODO
-# - run both pe and mem in parallel
-# - uncomment pe
-# - add init,power to pe steps maybe
+# 04/20/2022 make pe and mem tests run at the same time
 
 # Agents are specified in "pipeline settings" now
 # agents: { jobsize: "hours" }
@@ -26,18 +23,22 @@ steps:
 # INDIVIDUAL TILE RUNS
 # Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
-# - label: '250MHz PE synth 12m'
-#   commands:
-#   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-#   - .buildkite/pipelines/check_pe_area.sh
-#   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
+- label: '250MHz PE synth 12m'
+  commands:
+  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis,init,power --debug
+  - .buildkite/pipelines/check_pe_area.sh
+  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
+
+# NO WAIT let's run them in parallel, why not
 # - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 - label: 'MemCore synth 17m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis,init,power --debug --build_dir $BDIR
+
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
+# Final check for errors and such
 - label: 'CHECK'
   commands:
   - set -x; ls -l $BDIR
