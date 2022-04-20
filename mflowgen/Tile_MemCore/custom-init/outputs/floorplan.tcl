@@ -19,7 +19,7 @@ set core_density_target $::env(core_density_target); # Placement density of 70% 
 # Maintain even row height
 set core_height 150
 
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set vert_pitch  [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
 # Calculate actual core height from height param
@@ -59,10 +59,19 @@ proc snap_to_grid {input granularity} {
 
 # Place SRAMS
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set srams [get_cells -hier *mem_inst*]
-set sram_width [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_x]
-set sram_height [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_y]
+set vert_pitch  [dbGet top.fPlan.coreSite.size_y]
+
+# Oops looks like mem cell names have changed (mem_inst => mem_stub) :(
+# Is there a good programmatic way to avoid this in the future??
+
+# set srams [get_cells -hier *mem_inst*]
+# set sram_width  [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_x]
+# set sram_height [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_y]
+
+set srams [get_cells -hier *mem_stub*]
+set sram_width  [dbGet [dbGet -p top.insts.name *mem_stub* -i 0].cell.size_x]
+set sram_height [dbGet [dbGet -p top.insts.name *mem_stub* -i 0].cell.size_y]
+
 
 # SRAM Placement params
 # SRAMs are abutted vertically
@@ -73,9 +82,9 @@ set sram_spacing_x_odd 0
 # reasonable number of pitches
 # Spread out further for power domains
 if $::env(PWR_AWARE) {
-  set sram_spacing_x_even [expr 0 * $horiz_pitch]
+  set sram_spacing_x_even [expr   0 * $horiz_pitch]
 } else {
- set sram_spacing_x_even [expr 200 * $horiz_pitch]
+  set sram_spacing_x_even [expr 200 * $horiz_pitch]
 }
 
 # Parameter for how many SRAMs to stack vertically
