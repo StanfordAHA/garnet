@@ -1,3 +1,6 @@
+# 04/20/2022 added init and power steps (2 min each maybe)
+# TODO run both pe and mem in parallel
+
 # Agents are specified in "pipeline settings" now
 # agents: { jobsize: "hours" }
 
@@ -29,7 +32,7 @@ steps:
 
 - label: 'MemCore synth 17m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug --build_dir $BDIR
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis init power --debug --build_dir $BDIR
 - wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 - label: 'CHECK'
