@@ -15,7 +15,8 @@
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
-  BDIR: /build/msyn${BUILDKITE_BUILD_NUMBER}
+  #BDIR: /build/msyn${BUILDKITE_BUILD_NUMBER} # (uncomment to preserve output)
+  BDIR: .
 
 steps:
 
@@ -25,7 +26,7 @@ steps:
 
 - label: '250MHz PE synth 12m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis,init,power --debug
+  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis,init,power --debug --build_dir $BDIR
   - .buildkite/pipelines/check_pe_area.sh
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 

@@ -81,10 +81,10 @@ else
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
 
-        echo "LAKE MASTER"
-        docker exec $container_name /bin/bash -c "cd /aha/lake/ && /bin/ls -l"
-        docker exec $container_name /bin/bash -c "cd /aha/lake/ && git branch -v || echo nope"
-        docker exec $container_name /bin/bash -c "cd /aha/lake/ && git checkout master && git pull"
+#         echo "LAKE MASTER"
+#         docker exec $container_name /bin/bash -c "cd /aha/lake/ && /bin/ls -l"
+#         docker exec $container_name /bin/bash -c "cd /aha/lake/ && git branch -v || echo nope"
+#         docker exec $container_name /bin/bash -c "cd /aha/lake/ && git checkout master && git pull"
 
 
         # Clone local garnet repo to prevent copying untracked files
@@ -122,8 +122,8 @@ else
 
          source /aha/bin/activate; # Set up the build environment
 
-         echo LAKE MASTER 2
-         (cd /aha/lake && git branch -v || echo NOPE)
+#          echo LAKE MASTER 2
+#          (cd /aha/lake && git branch -v || echo NOPE)
 
 
 
