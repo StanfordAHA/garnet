@@ -47,9 +47,22 @@ GLB_TILE ?= glb_tile
 TILE_ARRAY ?= tile_array
 TILE_PE ?= Tile_PE
 TILE_MEM ?= Tile_MemCore
-NETLIST_FILES ?= -v $(garnet_dir)/garnet.v -v $(netlist_dir)/glb_top.vcs.v -v $(netlist_dir)/glb_tile.vcs.v \
-				 -v $(netlist_dir)/global_controller.vcs.v -v $(netlist_dir)/tile_array.vcs.v -v $(netlist_dir)/Tile_PE.vcs.v -v $(netlist_dir)/Tile_MemCore.vcs.v \
-				 -v $(netlist_dir)/sram.v -v $(netlist_dir)/tile_array.sram.v -v $(netlist_dir)/stdcells.v -v $(netlist_dir)/stdcells-lvt.v -v $(netlist_dir)/stdcells-ulvt.v -v $(netlist_dir)/stdcells-pm.v
+NETLIST_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
+				$(garnet_dir)/global_buffer/header/glb.svh \
+				$(garnet_dir)/global_controller/header/glc.svh \
+                                $(garnet_dir)/garnet.v \
+				$(netlist_dir)/glb_top.vcs.v \
+				$(netlist_dir)/glb_tile.vcs.v \
+				$(netlist_dir)/global_controller.vcs.v \
+				$(netlist_dir)/tile_array.vcs.v \
+				$(netlist_dir)/Tile_PE.vcs.v \
+			       	$(netlist_dir)/Tile_MemCore.vcs.v \
+				$(netlist_dir)/Tile_MemCore.sram.v \
+				$(netlist_dir)/tile_array.sram.v \
+			       	$(netlist_dir)/stdcells.v \
+			       	$(netlist_dir)/stdcells-lvt.v \
+				$(netlist_dir)/stdcells-ulvt.v \
+				$(netlist_dir)/stdcells-pm.v
 
 # -------------------------------------------------------------------
 # Run Parameters
@@ -105,7 +118,8 @@ libcgra.so: $(shell find lib -type f) $(garnet_dir)/global_buffer/header/global_
 
 # -------------------------------------------------------------------
 # Compile & Run
-# -------------------------------------------------------------------
+# ------------------------------------------------------------------
+# GLS throws an error, remove exit status
 COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD)
 ifeq ($(TOOL), XCELIUM)
@@ -117,7 +131,9 @@ ifeq ($(TOOL), XCELIUM)
 else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
+    COMPILE_GLS_ARGS += +define+SAIF=1
     RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus
+	RUN_GLS = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
@@ -156,9 +172,14 @@ compile-gls: COMPILE_GLS_ARGS += -negdelay
 compile-gls: COMPILE_ARGS = $(COMPILE_GLS_ARGS)
 compile-gls: INPUT_ARGS = $(NETLIST_FILES) $(TB_FILES) $(IP_FILES)
 compile-gls:
-	@rm -rf $(SDF_LOG); mkdir $(SDF_LOG)
 	$(COMPILE)
 
+.PHONY: run-gls
+run-gls:
+	$(RUN_GLS) $(RUN_ARGS) $(APP_ARGS)
+
+.PHONY: sim-gls
+sim-gls: libcgra.so compile-gls run-gls 
 
 # -------------------------------------------------------------------
 # Clean
