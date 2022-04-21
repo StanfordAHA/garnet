@@ -27,7 +27,7 @@ for {set col 0} {$col < $num_cgra_tiles} {incr col} {
         stall\[${col}\] \
         config_${col}_*]
     # Insert a flush for every PR region (every 4 cols)
-    if {[expr (($col + 3) % 4) == 0} {
+    if {[expr (($col + 3) % 4)] == 0} {
         set pr_region [expr (($col+3)/4) - 1]
         lappend port_names flush\[${pr_region}\]
     }
