@@ -23,52 +23,25 @@ env:
 steps:
 
 ##############################################################################
-# INDIVIDUAL TILE RUNS
+# PE, MemCore, GLB, building in parallel
 # Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
-- label: 'common rtl'
-  commands:
-  - $TEST --need_space 30G full_chip --steps rtl $BDIR --debug
-
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-- label: '250MHz PE synth 12m'
+- label: 'PE 12m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE $STEPS $BDIR --debug
   - .buildkite/pipelines/check_pe_area.sh
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 
-- label: 'MemCore synth 17m'
+- label: 'MemCore 17m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_MemCore $STEPS $BDIR --debug
 
-# What if we do glb_top?
 - label: 'GLB'
   commands:
-  - $TEST --need_space 30G full_chip glb_top $STEPS $BDIR --debug
+  - $TEST --need_space 30G full_chip         --steps rtl $BDIR --debug
+  - $TEST --need_space 30G full_chip glb_top $STEPS      $BDIR --debug
 
-
-
-
-# - label: '250MHz PE synth 12m'
-#   commands:
-#   - $TEST --need_space 30G full_chip tile_array Tile_PE $STEPS $BDIR --debug
-#   - .buildkite/pipelines/check_pe_area.sh
-#   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
-# 
-# # NO WAIT let's run them in parallel, why not
-# # - wait: { continue_on_failure: true } # One step at a time + continue on failure
-# 
-# - label: 'MemCore synth 17m'
-#   commands:
-#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore $STEPS $BDIR --debug
-# 
-# # What if we do glb_top?
-# - label: 'GLB'
-#   commands:
-#   - $TEST --need_space 30G full_chip glb_top $STEPS $BDIR --debug
-# 
-# - wait: { continue_on_failure: true } # One step at a time + continue on failure
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
 
 
 
