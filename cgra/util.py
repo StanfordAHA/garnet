@@ -54,7 +54,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 port_conn_override: Dict[str,
                                          List[Tuple[SwitchBoxSide,
                                                     SwitchBoxIO]]] = None,
-                pe_fc = lassen_fc):
+                pe_fc = lassen_fc,
+                mem_width=64,
+                mem_depth=512,
+                dual_port=False):
     # currently only add 16bit io cores
     bit_widths = [1, 16]
     track_length = 1
@@ -95,7 +98,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             else:
                 use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
                 if use_mem_core:
-                    core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush)
+                    core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush,
+                                   mem_width=mem_width, mem_depth=mem_depth,
+                                   rw_same_cycle=dual_port)
                 else:
                     core = PeakCore(pe_fc)
                     if add_pond:

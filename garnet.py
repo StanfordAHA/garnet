@@ -51,7 +51,10 @@ class Garnet(Generator):
                  harden_flush: bool = True,
                  pipeline_config_interval: int = 8,
                  glb_params: GlobalBufferParams = GlobalBufferParams(),
-                 pe_fc=lassen_fc):
+                 pe_fc=lassen_fc,
+                 mem_width=64,
+                 mem_depth=512,
+                 dual_port=False):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -77,6 +80,10 @@ class Garnet(Generator):
         # size
         self.width = width
         self.height = height
+
+        self.mem_width = mem_width
+        self.mem_depth = mem_depth
+        self.rw_same_cycle = dual_port
 
         self.harden_flush = harden_flush
         self.pipeline_config_interval = pipeline_config_interval
@@ -129,7 +136,10 @@ class Garnet(Generator):
                                    pipeline_config_interval=pipeline_config_interval,
                                    mem_ratio=(1, 4),
                                    standalone=standalone,
-                                   pe_fc=pe_fc)
+                                   pe_fc=pe_fc,
+                                   mem_width=self.mem_width,
+                                   mem_depth=self.mem_depth,
+                                   dual_port=self.rw_same_cycle)
 
         self.interconnect = interconnect
 
@@ -468,6 +478,9 @@ def main():
     parser.add_argument("--pipeline-pnr", action="store_true")
     parser.add_argument("--generate-bitstream-only", action="store_true")
     parser.add_argument('--pe', type=str, default="")
+    parser.add_argument('--mem_width', type=int, default=64)
+    parser.add_argument('--mem_depth', type=int, default=512)
+    parser.add_argument('--dual_port', action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -501,7 +514,10 @@ def main():
                     interconnect_only=args.interconnect_only,
                     use_sim_sram=args.use_sim_sram,
                     standalone=args.standalone,
-                    pe_fc=pe_fc)
+                    pe_fc=pe_fc,
+                    mem_width=args.mem_width,
+                    mem_depth=args.mem_depth,
+                    dual_port=args.dual_port)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
