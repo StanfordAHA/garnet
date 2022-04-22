@@ -1,0 +1,63 @@
+#=========================================================================
+# Mentor Calibre Fill GF
+#=========================================================================
+# Author : Alex Carsello
+# Date   : April 22, 2022
+#
+
+name: mentor-calibre-fill-gf
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - design.gds
+  - adk
+
+outputs:
+  - fill.gds
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  # Generate the dummy fill GDS
+  - /bin/csh inputs/adk/run-fill.csh
+  - mkdir -p outputs && cd outputs
+  - ln -sf ../MERGED_OUTPUT/${design_name}_DummyMerge.gds fill.gds
+
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+  # Use the rule deck "inputs/adk/${fill_rule_deck}"
+  fill_rule_deck: calibre-fill.rule
+
+#-------------------------------------------------------------------------
+# Debug
+#-------------------------------------------------------------------------
+
+debug:
+  - calibredrv -m outputs/fill.gds \
+               -l inputs/adk/calibre.layerprops
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+preconditions:
+
+  - assert Tool( 'calibre' )
+  - assert File( 'inputs/adk' )
+  - assert File( 'inputs/design.gds' )
+
+postconditions:
+
+  - assert File( 'outputs/fill.gds' )
+
+
