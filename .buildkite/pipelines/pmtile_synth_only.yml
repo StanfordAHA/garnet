@@ -1,50 +1,54 @@
-# 04/20/2022 added init and power steps (2 min each maybe)
-# 04/20/2022 make pe and mem tests run at the same time
-
 # Agents are specified in "pipeline settings" now
-# agents: { jobsize: "hours" }
+# agents: { queue: "papers" }
 
-##############################################################################
-# Use this to test a specific branch/commit:
-# Add to env:
-#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
-# Add to commands:
-# - pwd; git branch; git checkout $$NOV11
-
-##############################################################################
-# Note: "echo exit 13" prevents hang at genus/innovus prompt
-# To preserve output, can set BDIR to e.g.
-# BDIR: '-- build_dir /build/msyn${BUILDKITE_BUILD_NUMBER}'
 env:
-  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
-  STEPS: '--steps synthesis,init,power'
-  BDIR: ''
+  # OVERRIDE_MFLOWGEN_BRANCH: placementCheck
+  # BDIR: '--dir /build/glb${BUILDKITE_BUILD_NUMBER}/full_chip'
+  BDIR: '.'
 
 steps:
 
-##############################################################################
-# PE, MemCore, GLB, building in parallel
-# Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
-
-- label: 'PE 12m'
+- label: 'PE'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE $STEPS $BDIR --debug
-  - .buildkite/pipelines/check_pe_area.sh
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
+  - '
+     echo "--- SETUP";
+     source mflowgen/bin/setup-buildkite.sh --dir $$BDIR/tile_array;
+     mflowgen run --design $$GARNET_HOME/mflowgen/tile_array;
 
-- label: 'MemCore 17m'
+     echo "--- MAKE TILE_PE";
+     set -o pipefail;
+     make Tile_PE |& tee make-pe.log;
+     '
+
+- label: 'MemTile'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore $STEPS $BDIR --debug
+  - '
+     echo "--- SETUP";
+     source mflowgen/bin/setup-buildkite.sh --dir $$BDIR/tile_array;
+     mflowgen run --design $$GARNET_HOME/mflowgen/tile_array;
+
+     echo "--- MAKE TILE_MEMCORE";
+     set -o pipefail;
+     make Tile_MemCore |& tee make-mem.log;
+     '
 
 - label: 'GLB'
   commands:
-  - $TEST --need_space 30G full_chip         --steps rtl $BDIR --debug
-  - $TEST --need_space 30G full_chip glb_top $STEPS      $BDIR --debug
+  - '
+     echo "--- SETUP";
+     source mflowgen/bin/setup-buildkite.sh --dir $$BDIR/full_chip;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
 
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
+     echo "--- MAKE RTL";
+     set -o pipefail; make rtl |& tee make-rtl.log;
 
+     echo "--- MAKE GLB_TOP";
+     set -o pipefail;  make glb_top |& tee make-glb.log;
 
+     '
 
+# Wait for all three tests to finish
+- wait: { continue_on_failure: true }
 
 
 # Final check for errors and such
