@@ -13,10 +13,12 @@
 
 ##############################################################################
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
+# To preserve output, can set BDIR to e.g.
+# BDIR: '-- build_dir /build/msyn${BUILDKITE_BUILD_NUMBER}'
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
- #BDIR: /build/msyn${BUILDKITE_BUILD_NUMBER} # (use this to preserve output if desired)
-  BDIR: .
+  STEPS: '--steps synthesis,init,power'
+  BDIR: ''
 
 steps:
 
@@ -24,25 +26,53 @@ steps:
 # INDIVIDUAL TILE RUNS
 # Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
+- label: 'common rtl'
+  commands:
+  - $TEST --need_space 30G full_chip --steps rtl $BDIR --debug
+
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
 - label: '250MHz PE synth 12m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis,init,power --debug --build_dir $BDIR
+  - $TEST --need_space 30G full_chip tile_array Tile_PE $STEPS $BDIR --debug
   - .buildkite/pipelines/check_pe_area.sh
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 
-# NO WAIT let's run them in parallel, why not
-# - wait: { continue_on_failure: true } # One step at a time + continue on failure
-
 - label: 'MemCore synth 17m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis,init,power --debug --build_dir $BDIR
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore $STEPS $BDIR --debug
 
 # What if we do glb_top?
 - label: 'GLB'
   commands:
-  - $TEST --need_space 30G full_chip glb_top --steps synthesis,init,power --debug --build_dir $BDIR
+  - $TEST --need_space 30G full_chip glb_top $STEPS $BDIR --debug
 
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+
+
+# - label: '250MHz PE synth 12m'
+#   commands:
+#   - $TEST --need_space 30G full_chip tile_array Tile_PE $STEPS $BDIR --debug
+#   - .buildkite/pipelines/check_pe_area.sh
+#   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
+# 
+# # NO WAIT let's run them in parallel, why not
+# # - wait: { continue_on_failure: true } # One step at a time + continue on failure
+# 
+# - label: 'MemCore synth 17m'
+#   commands:
+#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore $STEPS $BDIR --debug
+# 
+# # What if we do glb_top?
+# - label: 'GLB'
+#   commands:
+#   - $TEST --need_space 30G full_chip glb_top $STEPS $BDIR --debug
+# 
+# - wait: { continue_on_failure: true } # One step at a time + continue on failure
+
+
+
+
 
 # Final check for errors and such
 - label: 'CHECK'
