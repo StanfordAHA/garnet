@@ -388,13 +388,15 @@ if ! test -e $mflowgen; then
         -- https://github.com/mflowgen/mflowgen.git $mflowgen
 fi
 
+set -x
 echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
 
   # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
   while test -f .git/index.lock; do
-      echo "Found lock $mflowgen/.git/index.lock; wait a half sec now..."
-      sleep 0.5
+      wait=$[5+RANDOM%20]
+      echo "Found lock $mflowgen/.git/index.lock; wait $wait..."
+      sleep $wait
   done
 
   git checkout $mflowgen_branch; git pull
