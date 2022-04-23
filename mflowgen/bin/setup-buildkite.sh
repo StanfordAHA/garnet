@@ -390,6 +390,13 @@ fi
 
 echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
+
+  # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
+  while [ test -f .git/index.lock ]; do
+      echo "Found lock $mflowgen/.git/index.lock; wait a half sec now..."
+      sleep 0.5
+  done
+
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
 
