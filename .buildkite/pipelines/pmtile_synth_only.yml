@@ -18,17 +18,34 @@ steps:
      source mflowgen/bin/setup-buildkite.sh --dir $$FC;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
 
+     echo "--- SETUP - full_chip/glb_top";
+     set -x;
+     dir=$(cd .mflowgen; /bin/ls -1d *-glb_top); mkdir -p $$dir;
+     (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/glb_top);
+     set +x
+
      echo "--- SETUP - full_chip/tile_array";
-     set -x
-     tadir=$(cd .mflowgen; /bin/ls -1d *-tile_array)
-     echo $tadir
-     mkdir -p $tadir;
-     (cd $tadir; mflowgen run --design $$GARNET_HOME/mflowgen/tile_array);
+     set -x;
+     dir=$(cd .mflowgen; /bin/ls -1d *-tile_array); mkdir -p $$dir;
+     (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/tile_array);
+     cd $$dir
+     set +x
+
+     echo "--- SETUP - full_chip/tile_array/Tile_PE$";
+     set -x;
+     dir=$(cd .mflowgen; /bin/ls -1d *-Tile_PE); mkdir -p $$dir;
+     (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/Tile_PE);
+     set +x
+
+     echo "--- SETUP - full_chip/tile_array/Tile_MemCore";
+     set -x;
+     dir=$(cd .mflowgen; /bin/ls -1d *-Tile_MemCore); mkdir -p $$dir;
+     (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/Tile_MemCore);
      set +x
 
      echo "--- MAKE RTL";
      set -o pipefail;
-     make rtl |& tee make-rtl.log;
+     cd $$FC; make rtl |& tee make-rtl.log;
      '
 
 - wait: ~
@@ -37,22 +54,36 @@ steps:
   commands:
   - '
      echo "--- SETUP";
-     source mflowgen/bin/setup-buildkite.sh --dir $$FC/*-tile_array;
-
-     echo "--- MAKE TILE_PE";
+     source mflowgen/bin/setup-buildkite.sh --dir $$FC;
+     cd *-tile_array/*-Tile_PE;
      set -o pipefail;
-     make Tile_PE |& tee make-pe.log;
+
+     echo "--- MAKE RTL";
+     make rtl |& tee make-rtl.log;
+
+     echo "--- MAKE SYNTH";
+     make synth |& tee make-synth.log;
+
+     echo "--- MAKE INIT";
+     make init |& tee make-init.log;
      '
 
-- label: 'MemTile'
+- label: 'MemCore'
   commands:
   - '
      echo "--- SETUP";
-     source mflowgen/bin/setup-buildkite.sh --dir $$FC/*-tile_array;
-
-     echo "--- MAKE TILE_MEMCORE";
+     source mflowgen/bin/setup-buildkite.sh --dir $$FC;
+     cd *-tile_array/*-Tile_MemCore;
      set -o pipefail;
-     make Tile_MemCore |& tee make-mem.log;
+
+     echo "--- MAKE RTL";
+     make rtl |& tee make-rtl.log;
+
+     echo "--- MAKE SYNTH";
+     make synth |& tee make-synth.log;
+
+     echo "--- MAKE INIT";
+     make init |& tee make-init.log;
      '
 
 - label: 'GLB'
@@ -60,10 +91,17 @@ steps:
   - '
      echo "--- SETUP";
      source mflowgen/bin/setup-buildkite.sh --dir $$FC;
+     cd *-tile_array/*-glb_top;
+     set -o pipefail;
 
-     echo "--- MAKE GLB_TOP";
-     set -o pipefail;  make glb_top |& tee make-glb.log;
+     echo "--- MAKE RTL";
+     make rtl |& tee make-rtl.log;
 
+     echo "--- MAKE SYNTH";
+     make synth |& tee make-synth.log;
+
+     echo "--- MAKE INIT";
+     make init |& tee make-init.log;
      '
 
 # Wait for all three tests to finish
@@ -73,16 +111,18 @@ steps:
 # Final check for errors and such
 - label: 'CHECK'
   commands:
-  - set -x; ls -l $BDIR
-  - set -x; find $BDIR -name genus.log -exec -exec grep 'Cannot resolve' {} \;
-  - set -x; mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
+  - set -x; ls -l $FC
+  - set -x; find $FC -name genus.log -exec -exec grep 'Cannot resolve' {} \;
+  - set -x; mflowgen/bin/buildcheck.sh $FC --show-all-errors
 
 # Wait for all three tests to finish
 - wait: { continue_on_failure: true }
 
 - label: 'CLEANUP'
   commands:
+  - set -x; ls -l /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}
   - set -x; /bin/rm -rf /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}
+  - set -x; ls -l /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER} || echo pass
 
 # TODO/FIXME delete all deleteme subdirs older than 1 hour
 
