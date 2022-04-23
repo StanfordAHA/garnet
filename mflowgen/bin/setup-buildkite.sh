@@ -345,15 +345,15 @@ if [ "$build_dir" ]; then
     build_dir="$build_dir"
     if test -d $build_dir; then
         echo "--- Using existing cache dir '$build_dir'"
-        cd $build_dir
     else
         echo "--- Making new cache dir '$build_dir'"
         mkdir -p $build_dir
-        cd $build_dir
     fi
 fi
+cd $build_dir
 echo "--- Building in destination dir `pwd`"
 
+mflowgen=$build_dir/mflowgen
 
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds of a given branch
@@ -364,15 +364,20 @@ mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
-# If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
-# otherwise, install in /tmp/$USER
-if test -e /sim/buildkite-agent; then
-    mflowgen=/sim/buildkite-agent/mflowgen
-else
-    printf "***WARNING cannot find /sim/buildkite-agent\n"
-    printf "   Will install mflowgen in /tmp/$USER/mflowgen\n\n"
-    mkdir -p /tmp/$USER; mflowgen=/tmp/$USER/mflowgen
-fi
+# see above
+# # If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
+# # otherwise, install in /tmp/$USER
+# if test -e /sim/buildkite-agent; then
+#     mflowgen=/sim/buildkite-agent/mflowgen
+# else
+#     printf "***WARNING cannot find /sim/buildkite-agent\n"
+#     printf "   Will install mflowgen in /tmp/$USER/mflowgen\n\n"
+#     mkdir -p /tmp/$USER; mflowgen=/tmp/$USER/mflowgen
+# fi
+
+
+
+
 
 if [ "$mflowbranch" != "master" ]; then
     mflowgen=$mflowgen.$mflowgen_branch
@@ -392,12 +397,12 @@ set -x
 echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
 
-  # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
-  while test -f .git/index.lock; do
-      wait=$[5+RANDOM%20]
-      echo "Found lock $mflowgen/.git/index.lock; wait $wait..."
-      sleep $wait
-  done
+#   # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
+#   while test -f .git/index.lock; do
+#       wait=$[5+RANDOM%20]
+#       echo "Found lock $mflowgen/.git/index.lock; wait $wait..."
+#       sleep $wait
+#   done
 
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
@@ -412,6 +417,30 @@ pushd $mflowgen
   fi
 
 popd
+
+python -m pip install git+https://github.com/mflowgen/mflowgen.git@$mflwgen_branch
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 echo ""
 echo "--- ADK SETUP / CHECK"
