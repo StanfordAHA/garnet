@@ -263,32 +263,48 @@ function check_pyversions {
     echo "--------------"
 }
 
-# Buildkite agent uses pre-built common virtual environment
-# /usr/local/venv_garnet on buildkite host machine r7arm-aha
-# If you're not "buildkite-agent", you're on your own.
+# # Buildkite agent uses pre-built common virtual environment
+# # /usr/local/venv_garnet on buildkite host machine r7arm-aha
+# # If you're not "buildkite-agent", you're on your own.
+# 
+# if [ "$USER" == "buildkite-agent" ]; then
+#     echo "--- ENVIRONMENT - VENV"; echo ""
+# 
+# 
+#     venv=/usr/local/venv_garnet
+# 
+# 
+#     if ! test -d $venv; then
+#         echo "**ERROR: Cannot find pre-built environment '$venv'"
+#         return 13 || exit 13
+#     fi
+#     echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT '$venv'"
+#     source $venv/bin/activate
+# 
+#     check_pyversions
+# 
+# # !!?? We build in docker, yes? Why do we even ever need this ??
+# # 
+# #     # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
+# #     if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
+# #         pip install -U --exists-action s -r $garnet/requirements.txt
+# #     else
+# #         echo "INFO Not building RTL from scratch, so no need for requirements.txt"
+# #     fi
+# 
+# fi
+
 
 if [ "$USER" == "buildkite-agent" ]; then
-    echo "--- ENVIRONMENT - VENV"; echo ""
-    venv=/usr/local/venv_garnet
-    if ! test -d $venv; then
-        echo "**ERROR: Cannot find pre-built environment '$venv'"
-        return 13 || exit 13
-    fi
-    echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT '$venv'"
-    source $venv/bin/activate
-
+    test -d venv || python -m venv venv
+    source venv/bin/activate
     check_pyversions
-
-# !!?? We build in docker, yes? Why do we even ever need this ??
-# 
-#     # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
-#     if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
-#         pip install -U --exists-action s -r $garnet/requirements.txt
-#     else
-#         echo "INFO Not building RTL from scratch, so no need for requirements.txt"
-#     fi
-
 fi
+
+
+
+
+
 
 
 ########################################################################
