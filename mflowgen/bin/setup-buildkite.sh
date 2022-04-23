@@ -296,7 +296,10 @@ function check_pyversions {
 
 
 if [ "$USER" == "buildkite-agent" ]; then
-    test -d venv || python -m venv venv
+    if ! test -d venv; then
+        python -m pip install virtualenv
+        python -m venv venv
+    fi
     source venv/bin/activate
     check_pyversions
 fi
