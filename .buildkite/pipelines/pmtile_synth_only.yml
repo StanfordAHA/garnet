@@ -4,16 +4,40 @@
 env:
   # OVERRIDE_MFLOWGEN_BRANCH: placementCheck
   # BDIR: '--dir /build/glb${BUILDKITE_BUILD_NUMBER}/full_chip'
-  BDIR: '.'
+  # BDIR: '.'
+  FC: /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}/full_chip'
 
 steps:
+
+# 1. Build rtl in common area
+
+- label: 'RTL'
+  commands:
+  - '
+     echo "--- SETUP - full_chip";
+     source mflowgen/bin/setup-buildkite.sh --dir $$FC;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+
+     echo "--- SETUP - full_chip/tile_array";
+     set -x
+     tadir=$(cd .mflowgen; /bin/ls -1d *-tile_array)
+     echo $tadir
+     mkdir -p $tadir;
+     (cd $tadir; mflowgen run --design $$GARNET_HOME/mflowgen/tile_array);
+     set +x
+
+     echo "--- MAKE RTL";
+     set -o pipefail;
+     make rtl |& tee make-rtl.log;
+     '
+
+- wait: ~
 
 - label: 'PE'
   commands:
   - '
      echo "--- SETUP";
-     source mflowgen/bin/setup-buildkite.sh --dir $$BDIR/tile_array;
-     mflowgen run --design $$GARNET_HOME/mflowgen/tile_array;
+     source mflowgen/bin/setup-buildkite.sh --dir $$FC/*-tile_array;
 
      echo "--- MAKE TILE_PE";
      set -o pipefail;
@@ -24,8 +48,7 @@ steps:
   commands:
   - '
      echo "--- SETUP";
-     source mflowgen/bin/setup-buildkite.sh --dir $$BDIR/tile_array;
-     mflowgen run --design $$GARNET_HOME/mflowgen/tile_array;
+     source mflowgen/bin/setup-buildkite.sh --dir $$FC/*-tile_array;
 
      echo "--- MAKE TILE_MEMCORE";
      set -o pipefail;
@@ -36,11 +59,7 @@ steps:
   commands:
   - '
      echo "--- SETUP";
-     source mflowgen/bin/setup-buildkite.sh --dir $$BDIR/full_chip;
-     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
-
-     echo "--- MAKE RTL";
-     set -o pipefail; make rtl |& tee make-rtl.log;
+     source mflowgen/bin/setup-buildkite.sh --dir $$FC;
 
      echo "--- MAKE GLB_TOP";
      set -o pipefail;  make glb_top |& tee make-glb.log;
@@ -57,3 +76,13 @@ steps:
   - set -x; ls -l $BDIR
   - set -x; find $BDIR -name genus.log -exec -exec grep 'Cannot resolve' {} \;
   - set -x; mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
+
+# Wait for all three tests to finish
+- wait: { continue_on_failure: true }
+
+- label: 'CLEANUP'
+  commands:
+  - set -x; /bin/rm -rf /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}
+
+# TODO/FIXME delete all deleteme subdirs older than 1 hour
+
