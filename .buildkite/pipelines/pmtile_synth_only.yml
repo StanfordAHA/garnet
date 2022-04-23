@@ -31,6 +31,21 @@ steps:
      cd $$dir;
      set +x;
 
+     echo "--- SETUP - full_chip/tile_array/Tile_PE";
+     set -x;
+     dir=$(cd .mflowgen; /bin/ls -1d *-Tile_PE); mkdir -p $$dir;
+     (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/Tile_PE);
+     set +x;
+
+     echo "--- SETUP - full_chip/tile_array/Tile_MemCore";
+     set -x;
+     dir=$(cd .mflowgen; /bin/ls -1d *-Tile_MemCore); mkdir -p $$dir;
+     (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/Tile_MemCore);
+     set +x;
+
+     echo "--- MAKE RTL";
+     set -o pipefail;
+     cd $$FC; make rtl |& tee make-rtl.log;
      '
 
 - wait: ~
