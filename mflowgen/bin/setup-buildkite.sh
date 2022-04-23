@@ -296,6 +296,7 @@ function check_pyversions {
 
 
 if [ "$USER" == "buildkite-agent" ]; then
+    PATH=/usr/local/venv_garnet/bin/python3:"$PATH"
     if ! test -d venv; then
         python -m pip install virtualenv
         python -m venv venv
