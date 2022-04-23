@@ -305,8 +305,6 @@ fi
 
 
 
-
-
 ########################################################################
 # FIXME Probably don't need this (/usr/local/bin stuff) any more...
 # FIXME In fact it probably does more harm than good
