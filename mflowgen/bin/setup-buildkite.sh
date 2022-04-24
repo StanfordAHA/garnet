@@ -424,6 +424,20 @@ fi
 # persistence of non-master branch through to end of run.  The cost
 # of making local mflowgen clones is currently about 200M per build.
 
+
+##############################################################################
+# FIXME FIXME FIXME sort all this out...
+# Hmm you THINK it's building a per-branch clone e.g.
+# /sim/buildkite-agent/mflowgen.master
+# and that it will be distinct from competing jobs installing e.g.
+# /sim/buildkite-agent/mflowgen.some_branch
+# BUT they both try and install to the same place
+# /usr/local/venv_garnet/bin/mflowgen so...
+# but nvm the per-branch part is the steps and things in
+# /sim/buildkite-agent/mflowgen.some_branch;
+# the installed thing in /usr/local/venv_garnet/bin/mflowgen is just a shell maybe
+
+
 # Build repo if not exists yet
 if ! test -e $mflowgen; then
     git clone -b $mflowgen_branch \
@@ -446,7 +460,7 @@ pushd $mflowgen
   echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
   echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
-  echo "--- PIP INSTALL TIME (sec) " $($end - $begin)
+  echo "--- PIP INSTALL TIME (sec) " $(($end - $begin))
   echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
 
 # Mmmm seems like a bad idea...??
@@ -460,7 +474,7 @@ pushd $mflowgen
 #   fi
 
 popd
-echo "--- WHICH MFLOWGEN"
+echo "+++ WHICH MFLOWGEN"
 which mflowgen
 
 # ##############################################################################
@@ -588,10 +602,11 @@ if [ "$USER" == "buildkite-agent" ]; then
     test -e adks || ln -s /sim/buildkite-agent/adks
   popd
   pushd $mflowgen/adks/tsmc16-adk
-    while test -f .git/index.lock; do
+    lock=ORIG_HEAD.lock
+    while test -f .git/$lock; do
         wait=$[5+RANDOM%20]
         echo ''
-        echo "Found lock `pwd`/.git/index.lock"
+        echo "Found lock `pwd`/$lock"
         echo "Waiting $wait seconds before (re)trying git pull for adk..."
         echo ''
         sleep $wait
