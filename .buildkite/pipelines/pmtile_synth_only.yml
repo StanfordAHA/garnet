@@ -16,6 +16,7 @@ steps:
   - '
      echo "--- SETUP - full_chip";
      source mflowgen/bin/setup-buildkite.sh --dir $$FC;
+     which mflowgen;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
 
      echo "--- SETUP - full_chip/glb_top";

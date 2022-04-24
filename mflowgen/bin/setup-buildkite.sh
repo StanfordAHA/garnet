@@ -299,11 +299,13 @@ echo "--- VENV"
 if [ "$USER" == "buildkite-agent" ]; then
     PATH=/usr/local/venv_garnet/bin:"$PATH"
     check_pyversions
+    set -x
     if ! test -d venv; then
         python -m pip install virtualenv
         python -m venv venv
     fi
     source venv/bin/activate
+    set +x
     check_pyversions
 fi
 
@@ -458,14 +460,19 @@ echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
 #                               packages in <dir> with new versions.
 
 set -x
-python -m pip install -t $mflowgen \
+
+pushd $mflowgen
+# python -m pip install -t $mflowgen
+python -m pip install \
    git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
 set +x
-
+popd
+which mflowgen
 
 echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
-echo "--- PIP INSTALL TIME (sec) " $($end - $begin)
+echo "--- PIP INSTALL TIME (sec) " $(($end - $begin))
 echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
+which mflowgen
 
 ##############################################################################
 
@@ -489,6 +496,59 @@ echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
 
 
 
+# FIXME so...currently this adk clone is taking about ten minutes to complete(!?)
+# Maybe try just COPYING the files from 
+# url=gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
+# ... which lives... where ...?
+# /sim/ajcars/tsmc16-adk/
+#
+# why do they have to be copied at all? because must be able to "touch" files
+# so must be owned by buildkite-agent :(
+#
+# ALTERNATIVELY: maybe can add both to the same group?
+
+# Copies to e.g. /sim/buildkite-agent/deleteme/CI5104/full_chip/mflowgen.master/adks
+# 243M    stdview_old
+# 236M    .git
+# 27M     pkgs
+# 29K     stdview
+
+
+
+
+# /home/ajcars
+# -rw-rw-r-- 1 317409 ajcars  88248866 May 21  2021 tsmc16-adk.tar.gz
+# [r75576 /home/ajcars ] gunzip -c tsmc16-adk.tar.gz | tar t | grep stand |& less
+# tsmc16/view-standard/
+
+
+
+# /sim/ajcars
+
+# Master repo is here maybe:
+# /home/ajcars/aha/mflowgen/adks/tsmc16
+
+# ls /home/ajcars/aha/mflowgen/adks/tsmc16
+# configure.yml  multicorner/  multicorner-multivt/  multivt/  pkgs/  view-standard/
+
+
+# ls /sim/buildkite-agent/deleteme/CI5104/full_chip/mflowgen.master/adks/tsmc16-adk
+# configure.yml  multicorner/  multicorner-multivt/  multivt/  pkgs/  view-standard/
+
+# diff -r \
+#      /home/ajcars/aha/mflowgen/adks/tsmc16 \
+#      /sim/buildkite-agent/deleteme/CI5104/full_chip/mflowgen.master/adks/tsmc16-adk \
+#      |& less
+
+
+# Okay how about this:
+# check url for hash of latest, compare to cached version
+
+
+
+
+
+
 
 
 echo ""
@@ -503,6 +563,13 @@ if [ "$USER" == "buildkite-agent" ]; then
 
     # Local clone-adk script maintains repo w/o revealing password/token to github
     /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
+
+    cp -rp  /sim/ajcars/tsmc16-adk/
+
+
+
+
+
 
     # Need env var MFLOWGEN_PATH I think
     export MFLOWGEN_PATH=$mflowgen/adks
