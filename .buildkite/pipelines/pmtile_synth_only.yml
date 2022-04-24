@@ -16,10 +16,10 @@ steps:
   - '
      echo "--- SETUP - full_chip";
      source mflowgen/bin/setup-buildkite.sh --dir $$FC;
-     which mflowgen;
      mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
 
      echo "--- SETUP - full_chip/glb_top";
+     which mflowgen;
      set -x;
      dir=$(cd .mflowgen; /bin/ls -1d *-glb_top); mkdir -p $$dir;
      (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/glb_top);
@@ -45,6 +45,7 @@ steps:
      set +x;
 
      echo "--- MAKE RTL";
+     which mflowgen;
      set -o pipefail;
      cd $$FC; make rtl |& tee make-rtl.log;
      '

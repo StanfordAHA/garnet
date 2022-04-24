@@ -567,9 +567,20 @@ if [ "$USER" == "buildkite-agent" ]; then
 #     # Local clone-adk script maintains repo w/o revealing password/token to github
 #     /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
 
-  pushd $mflowgen; ln -s /sim/buildkite-agent/adks; popd
-  (cd $mflowgen/adks/tsmc16-adk; git pull)
-
+  pushd $mflowgen
+    test -e adks || ln -s /sim/buildkite-agent/adks
+  popd
+  pushd $mflowgen/adks/tsmc16-adk
+    while test -f .git/index.lock; do
+        wait=$[5+RANDOM%20]
+        echo ''
+        echo "Found lock `pwd`/.git/index.lock"
+        echo "Waiting $wait seconds before (re)trying git pull for adk..."
+        echo ''
+        sleep $wait
+    done
+    git pull
+  popd
 
     # Need env var MFLOWGEN_PATH I think
     export MFLOWGEN_PATH=$mflowgen/adks
