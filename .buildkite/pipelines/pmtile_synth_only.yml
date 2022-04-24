@@ -5,7 +5,7 @@ env:
   # OVERRIDE_MFLOWGEN_BRANCH: placementCheck
   # BDIR: '--dir /build/glb${BUILDKITE_BUILD_NUMBER}/full_chip'
   # BDIR: '.'
-  FC: /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}/full_chip'
+  FC: /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}/full_chip
 
 steps:
 
