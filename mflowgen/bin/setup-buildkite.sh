@@ -561,19 +561,16 @@ echo 'CLONE LATEST ADK INTO MFLOWGEN LOCAL REPO'
 
 if [ "$USER" == "buildkite-agent" ]; then
 
+set -x
     # Local clone-adk script maintains repo w/o revealing password/token to github
     /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
-
-    cp -rp  /sim/ajcars/tsmc16-adk/
-
-
-
-
 
 
     # Need env var MFLOWGEN_PATH I think
     export MFLOWGEN_PATH=$mflowgen/adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+set +x
+
 
 else
     # FIXME/TODO what about normal users, can they use this?
