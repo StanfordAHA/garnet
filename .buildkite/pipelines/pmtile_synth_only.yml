@@ -22,7 +22,9 @@ steps:
      which mflowgen;
      set -x;
      dir=$(cd .mflowgen; /bin/ls -1d *-glb_top); mkdir -p $$dir;
-     (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/glb_top);
+     # (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/glb_top);
+     (cd $$dir; echo FOO; pwd; mflowgen run --design $$GARNET_HOME/mflowgen/glb_top; ls .mflowgen);
+
      set +x;
 
      echo "--- SETUP - full_chip/tile_array";
@@ -93,7 +95,7 @@ steps:
   - '
      echo "--- SETUP";
      source mflowgen/bin/setup-buildkite.sh --dir $$FC;
-     cd *-tile_array/*-glb_top;
+     cd *-glb_top;
      set -o pipefail;
 
      echo "--- MAKE RTL";
@@ -120,10 +122,11 @@ steps:
 # Wait for all three tests to finish
 - wait: { continue_on_failure: true }
 
+# FIXME remove echo below
 - label: 'CLEANUP'
   commands:
   - set -x; ls -l /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}
-  - set -x; /bin/rm -rf /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}
+  - set -x; echo /bin/rm -rf /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}
   - set -x; ls -l /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER} || echo pass
 
 # TODO/FIXME delete all deleteme subdirs older than 1 hour
