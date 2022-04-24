@@ -449,14 +449,14 @@ set -x
 echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
 
-#   # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
-#   while test -f .git/index.lock; do
-#       wait=$[5+RANDOM%20]
-#       echo "Found lock $mflowgen/.git/index.lock; wait $wait..."
-#       sleep $wait
-#   done
-
+  # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
+  while test -f .git/index.lock; do
+      wait=$[5+RANDOM%20]
+      echo "Found lock $mflowgen/.git/index.lock; wait $wait..."
+      sleep $wait
+  done
   git checkout $mflowgen_branch; git pull
+
   echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
   echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
