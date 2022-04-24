@@ -461,7 +461,7 @@ echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
 
 set -x
 
-pushd $mflowgen
+mkdir -p $mflowgen; pushd $mflowgen
 # python -m pip install -t $mflowgen
 python -m pip install \
    git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
