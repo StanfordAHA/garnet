@@ -371,7 +371,7 @@ fi
 cd $build_dir
 echo "--- Building in destination dir `pwd`"
 
-mflowgen=$build_dir/mflowgen
+mflowgen=$build_dir/../mflowgen
 
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds of a given branch
@@ -467,9 +467,9 @@ python -m pip install \
    git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
 set +x
 popd
+echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
 which mflowgen
 
-echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
 echo "--- PIP INSTALL TIME (sec) " $(($end - $begin))
 echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
 which mflowgen
@@ -561,15 +561,49 @@ echo 'CLONE LATEST ADK INTO MFLOWGEN LOCAL REPO'
 
 if [ "$USER" == "buildkite-agent" ]; then
 
-set -x
-    # Local clone-adk script maintains repo w/o revealing password/token to github
-    /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
+  set -x
+
+
+#     # Local clone-adk script maintains repo w/o revealing password/token to github
+#     /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
+
+  pushd $mflowgen; ln -s /sim/buildkite-agent/adks; popd
+  (cd $mflowgen/adks/tsmc16-adk; git pull)
 
 
     # Need env var MFLOWGEN_PATH I think
     export MFLOWGEN_PATH=$mflowgen/adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
-set +x
+
+
+
+  set +x
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 else
