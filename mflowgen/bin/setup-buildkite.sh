@@ -295,7 +295,7 @@ function check_pyversions {
 # fi
 
 
-set -x
+echo "--- VENV"
 if [ "$USER" == "buildkite-agent" ]; then
     PATH=/usr/local/venv_garnet/bin:"$PATH"
     check_pyversions
@@ -306,10 +306,6 @@ if [ "$USER" == "buildkite-agent" ]; then
     source venv/bin/activate
     check_pyversions
 fi
-set +x
-
-
-
 
 ########################################################################
 # FIXME Probably don't need this (/usr/local/bin stuff) any more...
@@ -398,6 +394,8 @@ echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
 
 
+# FIXME don't need ".$mflowgen_branch suffix no more, since
+# we're not using a common per-branch dir for mflowgen...right?...
 
 if [ "$mflowbranch" != "master" ]; then
     mflowgen=$mflowgen.$mflowgen_branch
@@ -407,38 +405,69 @@ fi
 # persistence of non-master branch through to end of run.  The cost
 # of making local mflowgen clones is currently about 200M per build.
 
-# Build repo if not exists yet
-if ! test -e $mflowgen; then
-    git clone -b $mflowgen_branch \
-        -- https://github.com/mflowgen/mflowgen.git $mflowgen
-fi
+# # Build repo if not exists yet
+# if ! test -e $mflowgen; then
+#     git clone -b $mflowgen_branch \
+#         -- https://github.com/mflowgen/mflowgen.git $mflowgen
+# fi
+# 
+# echo "--- line 412 setx"
+# set -x
+# echo "Install mflowgen using repo in dir '$mflowgen'"
+# pushd $mflowgen
+# 
+# #   # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
+# #   while test -f .git/index.lock; do
+# #       wait=$[5+RANDOM%20]
+# #       echo "Found lock $mflowgen/.git/index.lock; wait $wait..."
+# #       sleep $wait
+# #   done
+# 
+#   git checkout $mflowgen_branch; git pull
+#   echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
+#   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+#   echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
+#   echo "--- PIP INSTALL TIME (sec) " $($end - $begin)
+#   echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
+# 
+# 
+# 
+#   # mflowgen might be hidden in $HOME/.local/bin
+#   if ! (type mflowgen >& /dev/null); then
+#       echo "***WARNING Cannot find mflowgen after install"
+#       echo "   Will try adding '$HOME/.local/bin' to your path why not"
+#       echo ""
+#       export PATH=${PATH}:$HOME/.local/bin
+#       which mflowgen
+#   fi
+# 
+# popd
+
+
+##############################################################################
+
+echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
+
+# pushd $mflowgen
+#   python -m pip install git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
+# popd
+
+#   -t, --target <dir>          Install packages into <dir>. By default this
+#                               will not replace existing files/folders in
+#                               <dir>. Use --upgrade to replace existing
+#                               packages in <dir> with new versions.
 
 set -x
-echo "Install mflowgen using repo in dir '$mflowgen'"
-pushd $mflowgen
+python -m pip install -t $mflowgen \
+   git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
+set +x
 
-#   # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
-#   while test -f .git/index.lock; do
-#       wait=$[5+RANDOM%20]
-#       echo "Found lock $mflowgen/.git/index.lock; wait $wait..."
-#       sleep $wait
-#   done
 
-  git checkout $mflowgen_branch; git pull
-  TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
+echo "--- PIP INSTALL TIME (sec) " $($end - $begin)
+echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
 
-  # mflowgen might be hidden in $HOME/.local/bin
-  if ! (type mflowgen >& /dev/null); then
-      echo "***WARNING Cannot find mflowgen after install"
-      echo "   Will try adding '$HOME/.local/bin' to your path why not"
-      echo ""
-      export PATH=${PATH}:$HOME/.local/bin
-      which mflowgen
-  fi
-
-popd
-
-python -m pip install git+https://github.com/mflowgen/mflowgen.git@$mflwgen_branch
+##############################################################################
 
 
 

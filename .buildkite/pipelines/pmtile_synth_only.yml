@@ -62,10 +62,10 @@ steps:
      make rtl |& tee make-rtl.log;
 
      echo "--- MAKE SYNTH";
-     make synth |& tee make-synth.log;
+     echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log;
 
      echo "--- MAKE INIT";
-     make init |& tee make-init.log;
+     echo exit 13 | make cadence-innovus-init |& tee make-init.log;
      '
 
 - label: 'MemCore'
@@ -80,10 +80,10 @@ steps:
      make rtl |& tee make-rtl.log;
 
      echo "--- MAKE SYNTH";
-     make synth |& tee make-synth.log;
+     echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log;
 
      echo "--- MAKE INIT";
-     make init |& tee make-init.log;
+     echo exit 13 | make cadence-innovus-init |& tee make-init.log;
      '
 
 - label: 'GLB'
@@ -98,10 +98,10 @@ steps:
      make rtl |& tee make-rtl.log;
 
      echo "--- MAKE SYNTH";
-     make synth |& tee make-synth.log;
+     echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log;
 
      echo "--- MAKE INIT";
-     make init |& tee make-init.log;
+     echo exit 13 | make cadence-innovus-init |& tee make-init.log;
      '
 
 # Wait for all three tests to finish
