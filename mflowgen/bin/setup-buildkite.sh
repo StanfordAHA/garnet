@@ -263,51 +263,73 @@ function check_pyversions {
     echo "--------------"
 }
 
-# # Buildkite agent uses pre-built common virtual environment
-# # /usr/local/venv_garnet on buildkite host machine r7arm-aha
-# # If you're not "buildkite-agent", you're on your own.
-# 
-# if [ "$USER" == "buildkite-agent" ]; then
-#     echo "--- ENVIRONMENT - VENV"; echo ""
-# 
-# 
-#     venv=/usr/local/venv_garnet
-# 
-# 
-#     if ! test -d $venv; then
-#         echo "**ERROR: Cannot find pre-built environment '$venv'"
-#         return 13 || exit 13
-#     fi
-#     echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT '$venv'"
-#     source $venv/bin/activate
-# 
-#     check_pyversions
-# 
-# # !!?? We build in docker, yes? Why do we even ever need this ??
-# # 
-# #     # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
-# #     if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
-# #         pip install -U --exists-action s -r $garnet/requirements.txt
-# #     else
-# #         echo "INFO Not building RTL from scratch, so no need for requirements.txt"
-# #     fi
-# 
-# fi
 
+
+# Buildkite agent uses pre-built common virtual environment
+# /usr/local/venv_garnet on buildkite host machine r7arm-aha
+# If you're not "buildkite-agent", you're on your own.
 
 echo "--- VENV"
 if [ "$USER" == "buildkite-agent" ]; then
-    PATH=/usr/local/venv_garnet/bin:"$PATH"
-    check_pyversions
-    set -x
-    if ! test -d venv; then
-        python -m pip install virtualenv
-        python -m venv venv
+    echo "--- ENVIRONMENT - VENV"; echo ""
+
+
+    venv=/usr/local/venv_garnet
+
+
+    if ! test -d $venv; then
+        echo "**ERROR: Cannot find pre-built environment '$venv'"
+        return 13 || exit 13
     fi
-    source venv/bin/activate
-    set +x
+    echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT '$venv'"
+    source $venv/bin/activate
+
     check_pyversions
+
+# !!?? We build in docker, yes? Why do we even ever need this ??
+# 
+#     # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
+#     if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
+#         pip install -U --exists-action s -r $garnet/requirements.txt
+#     else
+#         echo "INFO Not building RTL from scratch, so no need for requirements.txt"
+#     fi
+
 fi
+
+
+
+
+# echo "--- VENV"
+# # OLD: everybody shared the same venv in /usr/local/venv_garnet
+# # multiple per-build installs for mflowgen
+# 
+# # hoo boy.
+# # venv in $build_dir/../venv, mflowgen in $build_dir/../mflowgen i guess :(
+# 
+# pushd $build_dir/..
+# 
+# if [ "$USER" == "buildkite-agent" ]; then
+#     PATH=/usr/local/venv_garnet/bin:"$PATH"
+#     check_pyversions
+#     set -x
+#     if ! test -d venv; then
+#         # Should already exist (in /usr/local/venv_garnet)
+#         # python -m pip install virtualenv 
+#         python -m venv venv
+#     fi
+#     source venv/bin/activate
+#     set +x
+#     check_pyversions
+# fi
+# 
+# popd
+
+
+
+
+
+
 
 ########################################################################
 # FIXME Probably don't need this (/usr/local/bin stuff) any more...
@@ -383,21 +405,16 @@ mflowgen_branch=master
 echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
 # see above
-# # If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
-# # otherwise, install in /tmp/$USER
-# if test -e /sim/buildkite-agent; then
-#     mflowgen=/sim/buildkite-agent/mflowgen
-# else
-#     printf "***WARNING cannot find /sim/buildkite-agent\n"
-#     printf "   Will install mflowgen in /tmp/$USER/mflowgen\n\n"
-#     mkdir -p /tmp/$USER; mflowgen=/tmp/$USER/mflowgen
-# fi
+# If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
+# otherwise, install in /tmp/$USER
+if test -e /sim/buildkite-agent; then
+    mflowgen=/sim/buildkite-agent/mflowgen
+else
+    printf "***WARNING cannot find /sim/buildkite-agent\n"
+    printf "   Will install mflowgen in /tmp/$USER/mflowgen\n\n"
+    mkdir -p /tmp/$USER; mflowgen=/tmp/$USER/mflowgen
+fi
 
-
-
-
-# FIXME don't need ".$mflowgen_branch suffix no more, since
-# we're not using a common per-branch dir for mflowgen...right?...
 
 if [ "$mflowbranch" != "master" ]; then
     mflowgen=$mflowgen.$mflowgen_branch
@@ -407,33 +424,32 @@ fi
 # persistence of non-master branch through to end of run.  The cost
 # of making local mflowgen clones is currently about 200M per build.
 
-# # Build repo if not exists yet
-# if ! test -e $mflowgen; then
-#     git clone -b $mflowgen_branch \
-#         -- https://github.com/mflowgen/mflowgen.git $mflowgen
-# fi
-# 
-# echo "--- line 412 setx"
-# set -x
-# echo "Install mflowgen using repo in dir '$mflowgen'"
-# pushd $mflowgen
-# 
-# #   # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
-# #   while test -f .git/index.lock; do
-# #       wait=$[5+RANDOM%20]
-# #       echo "Found lock $mflowgen/.git/index.lock; wait $wait..."
-# #       sleep $wait
-# #   done
-# 
-#   git checkout $mflowgen_branch; git pull
-#   echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
-#   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
-#   echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
-#   echo "--- PIP INSTALL TIME (sec) " $($end - $begin)
-#   echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
-# 
-# 
-# 
+# Build repo if not exists yet
+if ! test -e $mflowgen; then
+    git clone -b $mflowgen_branch \
+        -- https://github.com/mflowgen/mflowgen.git $mflowgen
+fi
+
+echo "--- line 412 setx"
+set -x
+echo "Install mflowgen using repo in dir '$mflowgen'"
+pushd $mflowgen
+
+#   # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
+#   while test -f .git/index.lock; do
+#       wait=$[5+RANDOM%20]
+#       echo "Found lock $mflowgen/.git/index.lock; wait $wait..."
+#       sleep $wait
+#   done
+
+  git checkout $mflowgen_branch; git pull
+  echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
+  TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+  echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
+  echo "--- PIP INSTALL TIME (sec) " $($end - $begin)
+  echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
+
+# Mmmm seems like a bad idea...??
 #   # mflowgen might be hidden in $HOME/.local/bin
 #   if ! (type mflowgen >& /dev/null); then
 #       echo "***WARNING Cannot find mflowgen after install"
@@ -442,39 +458,40 @@ fi
 #       export PATH=${PATH}:$HOME/.local/bin
 #       which mflowgen
 #   fi
-# 
-# popd
 
-
-##############################################################################
-
-echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
-
-# pushd $mflowgen
-#   python -m pip install git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
-# popd
-
-#   -t, --target <dir>          Install packages into <dir>. By default this
-#                               will not replace existing files/folders in
-#                               <dir>. Use --upgrade to replace existing
-#                               packages in <dir> with new versions.
-
-set -x
-
-mkdir -p $mflowgen; pushd $mflowgen
-# python -m pip install -t $mflowgen
-python -m pip install \
-   git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
-set +x
 popd
-echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
+echo "--- WHICH MFLOWGEN"
 which mflowgen
 
-echo "--- PIP INSTALL TIME (sec) " $(($end - $begin))
-echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
-which mflowgen
-
-##############################################################################
+# ##############################################################################
+# 
+# echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
+# 
+# # pushd $mflowgen
+# #   python -m pip install git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
+# # popd
+# 
+# #   -t, --target <dir>          Install packages into <dir>. By default this
+# #                               will not replace existing files/folders in
+# #                               <dir>. Use --upgrade to replace existing
+# #                               packages in <dir> with new versions.
+# 
+# set -x
+# 
+# mkdir -p $mflowgen; pushd $mflowgen
+# # python -m pip install -t $mflowgen
+# python -m pip install \
+#    git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
+# set +x
+# popd
+# echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
+# which mflowgen
+# 
+# echo "--- PIP INSTALL TIME (sec) " $(($end - $begin))
+# echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
+# which mflowgen
+# 
+# ##############################################################################
 
 
 
