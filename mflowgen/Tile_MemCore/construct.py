@@ -357,6 +357,9 @@ def construct():
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
 
+  # Used in floorplan.tcl
+  init.update_params(  { 'adk': parameters['adk'] }, True )
+
   if pwr_aware:
       pwr_aware_gls.update_params( { 'design_name': parameters['design_name'] }, True )
      
