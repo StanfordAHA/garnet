@@ -176,7 +176,11 @@ def construct():
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
-      fill           = Step( 'mentor-calibre-fill',           default=True )
+      # GF has a different way of running fill
+      if adk_name == 'gf12_adk':
+          fill           = Step (this_dir + '/../common/mentor-calibre-fill-gf' )
+      else:
+          fill           = Step( 'mentor-calibre-fill',            default=True )
       merge_fill     = Step( 'mentor-calibre-gdsmerge-child', default=True )
   else:
       drc            = Step( 'cadence-pegasus-drc',            default=True )
@@ -436,14 +440,20 @@ def construct():
   # Run Fill on merged GDS
   g.connect( signoff.o('design-merged.gds'), fill.i('design.gds') )
 
-  # Merge fill
-  g.connect( signoff.o('design-merged.gds'), merge_fill.i('design.gds') )
-  g.connect( fill.o('fill.gds'), merge_fill.i('child.gds') )
+  # For GF, Fill is already merged during fill step
+  if adk_name == 'gf12-adk':
+      # Connect fill directly to DRC steps
+      g.connect( fill.o('fill.gds'), drc.i('design_merged.gds') )
+      g.connect( fill.o('fill.gds'), antenna_drc.i('design_merged.gds') )
+  else:
+      # Merge fill
+      g.connect( signoff.o('design-merged.gds'), merge_fill.i('design.gds') )
+      g.connect( fill.o('fill.gds'), merge_fill.i('child.gds') )
 
-  # Run DRC on merged and filled gds
-  g.connect_by_name( merge_fill, drc )
-  g.connect_by_name( merge_fill, antenna_drc )
-
+      # Run DRC on merged and filled gds
+      g.connect_by_name( merge_fill, drc )
+      g.connect_by_name( merge_fill, antenna_drc )
+   
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
