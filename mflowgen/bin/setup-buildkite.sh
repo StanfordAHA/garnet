@@ -263,20 +263,13 @@ function check_pyversions {
     echo "--------------"
 }
 
-
-
 # Buildkite agent uses pre-built common virtual environment
 # /usr/local/venv_garnet on buildkite host machine r7arm-aha
 # If you're not "buildkite-agent", you're on your own.
 
-echo "--- VENV"
 if [ "$USER" == "buildkite-agent" ]; then
     echo "--- ENVIRONMENT - VENV"; echo ""
-
-
     venv=/usr/local/venv_garnet
-
-
     if ! test -d $venv; then
         echo "**ERROR: Cannot find pre-built environment '$venv'"
         return 13 || exit 13
@@ -286,49 +279,13 @@ if [ "$USER" == "buildkite-agent" ]; then
 
     check_pyversions
 
-# !!?? We build in docker, yes? Why do we even ever need this ??
-# 
-#     # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
-#     if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
-#         pip install -U --exists-action s -r $garnet/requirements.txt
-#     else
-#         echo "INFO Not building RTL from scratch, so no need for requirements.txt"
-#     fi
-
+    # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
+    if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
+        pip install -U --exists-action s -r $garnet/requirements.txt
+    else
+        echo "INFO Not building RTL from scratch, so no need for requirements.txt"
+    fi
 fi
-
-
-
-
-# echo "--- VENV"
-# # OLD: everybody shared the same venv in /usr/local/venv_garnet
-# # multiple per-build installs for mflowgen
-# 
-# # hoo boy.
-# # venv in $build_dir/../venv, mflowgen in $build_dir/../mflowgen i guess :(
-# 
-# pushd $build_dir/..
-# 
-# if [ "$USER" == "buildkite-agent" ]; then
-#     PATH=/usr/local/venv_garnet/bin:"$PATH"
-#     check_pyversions
-#     set -x
-#     if ! test -d venv; then
-#         # Should already exist (in /usr/local/venv_garnet)
-#         # python -m pip install virtualenv 
-#         python -m venv venv
-#     fi
-#     source venv/bin/activate
-#     set +x
-#     check_pyversions
-# fi
-# 
-# popd
-
-
-
-
-
 
 
 ########################################################################
@@ -385,15 +342,15 @@ if [ "$build_dir" ]; then
     build_dir="$build_dir"
     if test -d $build_dir; then
         echo "--- Using existing cache dir '$build_dir'"
+        cd $build_dir
     else
         echo "--- Making new cache dir '$build_dir'"
         mkdir -p $build_dir
+        cd $build_dir
     fi
 fi
-cd $build_dir
 echo "--- Building in destination dir `pwd`"
 
-mflowgen=$build_dir/../mflowgen
 
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds of a given branch
@@ -404,7 +361,6 @@ mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
-# see above
 # If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
 # otherwise, install in /tmp/$USER
 if test -e /sim/buildkite-agent; then
@@ -415,28 +371,13 @@ else
     mkdir -p /tmp/$USER; mflowgen=/tmp/$USER/mflowgen
 fi
 
-
 if [ "$mflowbranch" != "master" ]; then
     mflowgen=$mflowgen.$mflowgen_branch
 fi
 
 # Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
 # persistence of non-master branch through to end of run.  The cost
-# of making local mflowgen clones is currently about 200M per build.
-
-
-##############################################################################
-# FIXME FIXME FIXME sort all this out...
-# Hmm you THINK it's building a per-branch clone e.g.
-# /sim/buildkite-agent/mflowgen.master
-# and that it will be distinct from competing jobs installing e.g.
-# /sim/buildkite-agent/mflowgen.some_branch
-# BUT they both try and install to the same place
-# /usr/local/venv_garnet/bin/mflowgen so...
-# but nvm the per-branch part is the steps and things in
-# /sim/buildkite-agent/mflowgen.some_branch;
-# the installed thing in /usr/local/venv_garnet/bin/mflowgen is just a shell maybe
-
+# of making local mflowgen clones is currently about 200M build.
 
 # Build repo if not exists yet
 if ! test -e $mflowgen; then
@@ -444,143 +385,21 @@ if ! test -e $mflowgen; then
         -- https://github.com/mflowgen/mflowgen.git $mflowgen
 fi
 
-echo "--- line 412 setx"
-set -x
 echo "Install mflowgen using repo in dir '$mflowgen'"
 pushd $mflowgen
-
-  # See https://buildkite.com/tapeout-aha/mflowgen/builds/5084
-  while test -f .git/index.lock; do
-      wait=$[5+RANDOM%20]
-      echo "Found lock $mflowgen/.git/index.lock; wait $wait..."
-      sleep $wait
-  done
   git checkout $mflowgen_branch; git pull
-
-  echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
   TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
-  echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
-  echo "--- PIP INSTALL TIME (sec) " $(($end - $begin))
-  echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
 
-# Mmmm seems like a bad idea...??
-#   # mflowgen might be hidden in $HOME/.local/bin
-#   if ! (type mflowgen >& /dev/null); then
-#       echo "***WARNING Cannot find mflowgen after install"
-#       echo "   Will try adding '$HOME/.local/bin' to your path why not"
-#       echo ""
-#       export PATH=${PATH}:$HOME/.local/bin
-#       which mflowgen
-#   fi
+  # mflowgen might be hidden in $HOME/.local/bin
+  if ! (type mflowgen >& /dev/null); then
+      echo "***WARNING Cannot find mflowgen after install"
+      echo "   Will try adding '$HOME/.local/bin' to your path why not"
+      echo ""
+      export PATH=${PATH}:$HOME/.local/bin
+      which mflowgen
+  fi
 
 popd
-echo "+++ WHICH MFLOWGEN"
-which mflowgen
-
-# ##############################################################################
-# 
-# echo "--- BEGIN PIP INSTALL " `date +%H:%M`; begin=`date +%s`
-# 
-# # pushd $mflowgen
-# #   python -m pip install git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
-# # popd
-# 
-# #   -t, --target <dir>          Install packages into <dir>. By default this
-# #                               will not replace existing files/folders in
-# #                               <dir>. Use --upgrade to replace existing
-# #                               packages in <dir> with new versions.
-# 
-# set -x
-# 
-# mkdir -p $mflowgen; pushd $mflowgen
-# # python -m pip install -t $mflowgen
-# python -m pip install \
-#    git+https://github.com/mflowgen/mflowgen.git@$mflowgen_branch
-# set +x
-# popd
-# echo "--- END PIP INSTALL " `date +%H:%M`; end=`date +%s`
-# which mflowgen
-# 
-# echo "--- PIP INSTALL TIME (sec) " $(($end - $begin))
-# echo "--- PIP INSTALL TIME (min) " $(( ($end - $begin) / 60 + 1 ))
-# which mflowgen
-# 
-# ##############################################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# FIXME so...currently this adk clone is taking about ten minutes to complete(!?)
-# Maybe try just COPYING the files from 
-# url=gitlab.r7arm-aha.localdomain/alexcarsello/tsmc16-adk.git
-# ... which lives... where ...?
-# /sim/ajcars/tsmc16-adk/
-#
-# why do they have to be copied at all? because must be able to "touch" files
-# so must be owned by buildkite-agent :(
-#
-# ALTERNATIVELY: maybe can add both to the same group?
-
-# Copies to e.g. /sim/buildkite-agent/deleteme/CI5104/full_chip/mflowgen.master/adks
-# 243M    stdview_old
-# 236M    .git
-# 27M     pkgs
-# 29K     stdview
-
-
-
-
-# /home/ajcars
-# -rw-rw-r-- 1 317409 ajcars  88248866 May 21  2021 tsmc16-adk.tar.gz
-# [r75576 /home/ajcars ] gunzip -c tsmc16-adk.tar.gz | tar t | grep stand |& less
-# tsmc16/view-standard/
-
-
-
-# /sim/ajcars
-
-# Master repo is here maybe:
-# /home/ajcars/aha/mflowgen/adks/tsmc16
-
-# ls /home/ajcars/aha/mflowgen/adks/tsmc16
-# configure.yml  multicorner/  multicorner-multivt/  multivt/  pkgs/  view-standard/
-
-
-# ls /sim/buildkite-agent/deleteme/CI5104/full_chip/mflowgen.master/adks/tsmc16-adk
-# configure.yml  multicorner/  multicorner-multivt/  multivt/  pkgs/  view-standard/
-
-# diff -r \
-#      /home/ajcars/aha/mflowgen/adks/tsmc16 \
-#      /sim/buildkite-agent/deleteme/CI5104/full_chip/mflowgen.master/adks/tsmc16-adk \
-#      |& less
-
-
-# Okay how about this:
-# check url for hash of latest, compare to cached version
-
-
-
-
-
-
-
 
 echo ""
 echo "--- ADK SETUP / CHECK"
@@ -592,62 +411,12 @@ echo 'CLONE LATEST ADK INTO MFLOWGEN LOCAL REPO'
 
 if [ "$USER" == "buildkite-agent" ]; then
 
-  set -x
-
-
-#     # Local clone-adk script maintains repo w/o revealing password/token to github
-#     /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
-
-  pushd $mflowgen
-    test -e adks || ln -s /sim/buildkite-agent/adks
-  popd
-  pushd $mflowgen/adks/tsmc16-adk
-    lock=ORIG_HEAD.lock
-    while test -f .git/$lock; do
-        wait=$[5+RANDOM%20]
-        echo ''
-        echo "Found lock `pwd`/$lock"
-        echo "Waiting $wait seconds before (re)trying git pull for adk..."
-        echo ''
-        sleep $wait
-    done
-    git pull
-  popd
+    # Local clone-adk script maintains repo w/o revealing password/token to github
+    /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
 
     # Need env var MFLOWGEN_PATH I think
     export MFLOWGEN_PATH=$mflowgen/adks
     echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
-
-
-
-  set +x
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 else
     # FIXME/TODO what about normal users, can they use this?

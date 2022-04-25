@@ -1,134 +1,33 @@
 # Agents are specified in "pipeline settings" now
-# agents: { queue: "papers" }
+# agents: { jobsize: "hours" }
 
+##############################################################################
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
+
+##############################################################################
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
-  # OVERRIDE_MFLOWGEN_BRANCH: placementCheck
-  # BDIR: '--dir /build/glb${BUILDKITE_BUILD_NUMBER}/full_chip'
-  # BDIR: '.'
-  FC: /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}/full_chip
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
 
 steps:
 
-# 1. Build rtl in common area
+##############################################################################
+# INDIVIDUAL TILE RUNS
+# Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
-- label: 'RTL'
+- label: '250MHz PE synth 12m'
   commands:
-  - '
-     echo "--- SETUP - full_chip";
-     source mflowgen/bin/setup-buildkite.sh --dir $$FC;
-     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
+  - .buildkite/pipelines/check_pe_area.sh
+  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
 
-     echo "--- SETUP - full_chip/glb_top";
-     which mflowgen;
-     set -x;
-     dir=$(cd .mflowgen; /bin/ls -1d *-glb_top); mkdir -p $$dir;
-     echo foo1;
-     (set -x; cd $$dir; echo FOO; pwd; mflowgen run --design $$GARNET_HOME/mflowgen/glb_top; ls .mflowgen);
-     echo foo2;
-
-     set +x;
-
-     echo "--- SETUP - full_chip/tile_array";
-     set -x;
-     dir=$(cd .mflowgen; /bin/ls -1d *-tile_array); mkdir -p $$dir;
-     (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/tile_array);
-     cd $$dir;
-     set +x;
-
-     echo "--- SETUP - full_chip/tile_array/Tile_PE";
-     set -x;
-     dir=$(cd .mflowgen; /bin/ls -1d *-Tile_PE); mkdir -p $$dir;
-     (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/Tile_PE);
-     set +x;
-
-     echo "--- SETUP - full_chip/tile_array/Tile_MemCore";
-     set -x;
-     dir=$(cd .mflowgen; /bin/ls -1d *-Tile_MemCore); mkdir -p $$dir;
-     (cd $$dir; mflowgen run --design $$GARNET_HOME/mflowgen/Tile_MemCore);
-     set +x;
-
-     echo "--- MAKE RTL";
-     which mflowgen;
-     set -o pipefail;
-     cd $$FC; make rtl |& tee make-rtl.log;
-     '
-
-- wait: ~
-
-- label: 'PE'
+- label: 'MemCore synth 17m'
   commands:
-  - '
-     echo "--- SETUP";
-     source mflowgen/bin/setup-buildkite.sh --dir $$FC;
-     cd *-tile_array/*-Tile_PE;
-     set -o pipefail;
-
-     echo "--- MAKE RTL";
-     make rtl |& tee make-rtl.log;
-
-     echo "--- MAKE SYNTH";
-     echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log;
-
-     echo "--- MAKE INIT";
-     echo exit 13 | make cadence-innovus-init |& tee make-init.log;
-     '
-
-- label: 'MemCore'
-  commands:
-  - '
-     echo "--- SETUP";
-     source mflowgen/bin/setup-buildkite.sh --dir $$FC;
-     cd *-tile_array/*-Tile_MemCore;
-     set -o pipefail;
-
-     echo "--- MAKE RTL";
-     make rtl |& tee make-rtl.log;
-
-     echo "--- MAKE SYNTH";
-     echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log;
-
-     echo "--- MAKE INIT";
-     echo exit 13 | make cadence-innovus-init |& tee make-init.log;
-     '
-
-- label: 'GLB'
-  commands:
-  - '
-     echo "--- SETUP";
-     source mflowgen/bin/setup-buildkite.sh --dir $$FC;
-     cd *-glb_top;
-     set -o pipefail;
-
-     echo "--- MAKE RTL";
-     make rtl |& tee make-rtl.log;
-
-     echo "--- MAKE SYNTH";
-     echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log;
-
-     echo "--- MAKE INIT";
-     echo exit 13 | make cadence-innovus-init |& tee make-init.log;
-     '
-
-# Wait for all three tests to finish
-- wait: { continue_on_failure: true }
-
-
-# Final check for errors and such
-- label: 'CHECK'
-  commands:
-  - set -x; ls -l $FC
-  - set -x; find $FC -name genus.log -exec -exec grep 'Cannot resolve' {} \;
-  - set -x; mflowgen/bin/buildcheck.sh $FC --show-all-errors
-
-# Wait for all three tests to finish
-- wait: { continue_on_failure: true }
-
-# FIXME remove echo below
-- label: 'CLEANUP'
-  commands:
-  - set -x; ls -l /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}
-  - set -x; echo /bin/rm -rf /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}
-  - set -x; ls -l /sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER} || echo pass
-
-# TODO/FIXME delete all deleteme subdirs older than 1 hour
-
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
+  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
+- wait: { continue_on_failure: true } # One step at a time + continue on failure

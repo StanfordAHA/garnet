@@ -80,13 +80,7 @@ else
 
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
-
-#         echo "LAKE MASTER"
-#         docker exec $container_name /bin/bash -c "cd /aha/lake/ && /bin/ls -l"
-#         docker exec $container_name /bin/bash -c "cd /aha/lake/ && git branch -v || echo nope"
-#         docker exec $container_name /bin/bash -c "cd /aha/lake/ && git checkout master && git pull"
-
-
+        # docker exec $container_name /bin/bash -c "cd /aha/lake/ && git checkout master && git pull"
         # Clone local garnet repo to prevent copying untracked files
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
@@ -121,12 +115,6 @@ else
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
 
          source /aha/bin/activate; # Set up the build environment
-
-#          echo LAKE MASTER 2
-#          (cd /aha/lake && git branch -v || echo NOPE)
-
-
-
 
          if [ $interconnect_only == True ]; then
            aha garnet $flags; # Here is where we build the verilog for the main chip

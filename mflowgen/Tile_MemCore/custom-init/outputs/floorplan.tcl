@@ -28,7 +28,7 @@ set core_density_target $::env(core_density_target); # Placement density of 70% 
 set core_height 180; # For gf12, specifically
 if { $adk == "tsmc16" } { set core_height 150 }
 
-set vert_pitch  [dbGet top.fPlan.coreSite.size_y]
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
 # Calculate actual core height from height param
@@ -69,7 +69,7 @@ proc snap_to_grid {input granularity} {
 # Place SRAMS
 set srams [get_cells -quiet -hier -filter {is_memory_cell==true}]
 set sram_name [lindex [get_property $srams name] 0]
-set sram_width  [dbGet [dbGet -p top.insts.name *$sram_name].cell.size_x]
+set sram_width [dbGet [dbGet -p top.insts.name *$sram_name].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name *$sram_name].cell.size_y]
 
 # SRAM Placement params

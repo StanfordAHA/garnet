@@ -353,7 +353,7 @@ def construct():
 
   # Update PWR_AWARE variable
   synth.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
-  init.update_params(  { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
+  init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
   power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, True )
 
   # Used in floorplan.tcl
