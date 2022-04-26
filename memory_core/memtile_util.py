@@ -446,6 +446,8 @@ class NetlistBuilder():
             tag = "w"
         elif core == "buffet":
             tag = "B"
+        elif core == "glb":
+            tag = "G"
         else:
             tag = core.pnr_info().tag_name
 
