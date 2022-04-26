@@ -35,7 +35,7 @@ class SparseTBBuilder():
             new_name = node.get_attributes()['label']
             if hw_node_type == f"{HWNodeType.GLB}":
                 new_node = GLBNode(name=new_name)
-                core_tag = ""
+                core_tag = "glb"
             elif hw_node_type == f"{HWNodeType.Buffet}":
                 new_node = BuffetNode(name=new_name)
                 core_tag = "buffet"
@@ -62,7 +62,7 @@ class SparseTBBuilder():
                 core_tag = "intersect"
             elif hw_node_type == f"{HWNodeType.Repeat}":
                 new_node = RepeatNode(name=new_name)
-                core_tag = ""
+                core_tag = "repeat"
             elif hw_node_type == f"{HWNodeType.Compute}":
                 new_node = ComputeNode(name=new_name)
                 core_tag = "intersect"
@@ -76,7 +76,6 @@ class SparseTBBuilder():
             assert new_node is not None
             assert core_tag != ""
             self.core_nodes[node.get_name()] = new_node
-            print(core_tag)
             self.nlb.register_core(core_tag, flushable=True, name=new_name)
 
     def display_names(self):
