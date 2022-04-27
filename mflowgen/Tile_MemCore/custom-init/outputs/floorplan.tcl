@@ -7,6 +7,12 @@
 # Date   : March 26, 2018
 
 #-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+set adk $::env(adk)
+
+#-------------------------------------------------------------------------
 # Floorplan variables
 #-------------------------------------------------------------------------
 
@@ -17,7 +23,10 @@ set core_density_target $::env(core_density_target); # Placement density of 70% 
 # must be the same to allow for abutment at the top level
 
 # Maintain even row height
-set core_height 150
+# gf12 wants core_height 180, tsmc16 wants 150.
+# Eventually this will be programmatical based on row_height or maybe a parameter
+set core_height 180; # For gf12, specifically
+if { $adk == "tsmc16" } { set core_height 150 }
 
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
@@ -58,11 +67,10 @@ proc snap_to_grid {input granularity} {
 }
 
 # Place SRAMS
-set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set srams [get_cells -hier *mem_inst*]
-set sram_width [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_x]
-set sram_height [dbGet [dbGet -p top.insts.name *mem_inst* -i 0].cell.size_y]
+set srams [get_cells -quiet -hier -filter {is_memory_cell==true}]
+set sram_name [lindex [get_property $srams name] 0]
+set sram_width [dbGet [dbGet -p top.insts.name *$sram_name].cell.size_x]
+set sram_height [dbGet [dbGet -p top.insts.name *$sram_name].cell.size_y]
 
 # SRAM Placement params
 # SRAMs are abutted vertically
@@ -73,9 +81,9 @@ set sram_spacing_x_odd 0
 # reasonable number of pitches
 # Spread out further for power domains
 if $::env(PWR_AWARE) {
-  set sram_spacing_x_even [expr 0 * $horiz_pitch]
+  set sram_spacing_x_even [expr   0 * $horiz_pitch]
 } else {
- set sram_spacing_x_even [expr 200 * $horiz_pitch]
+  set sram_spacing_x_even [expr 200 * $horiz_pitch]
 }
 
 # Parameter for how many SRAMs to stack vertically
