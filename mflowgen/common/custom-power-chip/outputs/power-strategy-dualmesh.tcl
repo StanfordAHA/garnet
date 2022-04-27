@@ -97,7 +97,7 @@ set M3_str_offset           [expr $M3_str_pitch + $M3_route_pitchX/2 - $M3_str_w
 
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC true
+setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 1 \
