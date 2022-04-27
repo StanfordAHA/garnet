@@ -504,7 +504,6 @@ def main():
                     num_tracks=args.num_tracks,
                     tile_layout_option=args.tile_layout_option,
                     pipeline_config_interval=args.pipeline_config_interval,
-                    pipeline_config_interval = args.height,
                     add_pond=not args.no_pond,
                     harden_flush=not args.no_harden_flush,
                     use_io_valid=args.use_io_valid,
