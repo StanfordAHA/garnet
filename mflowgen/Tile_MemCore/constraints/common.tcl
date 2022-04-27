@@ -165,3 +165,8 @@ set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB
 # False paths from config input ports to SB registers
 set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg*/*
 set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
+
+# Timing path to read_config_data output should never transition through a configuration
+# register because we assume the register's value is constant during a read. 
+set_false_path -through [get_cells -hier *config_reg_*] -to [get_ports read_config_data]
+
