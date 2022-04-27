@@ -23,6 +23,7 @@ class SparseTBBuilder():
         self.core_nodes = {}
 
         self.register_cores()
+        self.connect_cores()
 
     def register_cores(self):
         '''
@@ -77,6 +78,22 @@ class SparseTBBuilder():
             assert core_tag != ""
             self.core_nodes[node.get_name()] = new_node
             self.nlb.register_core(core_tag, flushable=True, name=new_name)
+
+
+    def connect_cores(self):
+        '''
+        Iterate through the edges of the graph and connect each core up
+        '''
+
+        edges = self.graph.get_edges()
+        for edge in edges:
+            src = edge.get_source()
+            dst = edge.get_destination()
+            src_name = src
+            dst_name = dst
+            addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name])
+            self.nlb.add_connections(addtl_conns)
+
 
     def display_names(self):
         self.nlb.display_names()
