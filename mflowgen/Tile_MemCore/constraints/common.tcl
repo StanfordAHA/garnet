@@ -150,9 +150,10 @@ if $::env(PWR_AWARE) {
     set_dont_touch [get_cells -hierarchical *u_mux_logic*]
 }
 
-# HI LO False path
+# Tile ID false paths
 set_false_path -to [get_ports hi]
 set_false_path -to [get_ports lo]
+set_false_path -from [get_ports tile_id]
 
 # Preserve the RMUXes so that we can easily constrain them later
 set rmux_cells [get_cells -hier RMUX_T*sel_inst0]
