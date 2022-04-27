@@ -1,4 +1,3 @@
-from git import Blob
 from pydot import Graph
 from cgra.util import create_cgra
 from memory_core.buffet_core import BuffetCore
