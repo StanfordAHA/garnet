@@ -33,6 +33,31 @@ if [ "${BASH_SOURCE[0]}" -ef "$0" ]; then
 fi
 
 ##############################################################################
+# LOCK so that no two script instances can run at the same time.
+# In particular, do not want e.g. competing 'git clone' or
+# 'pip install' ops trying to access the same directory etc.
+
+echo "--- LOCK"
+LOCK=/tmp/setup-buildkite.lock
+exec 9>> $LOCK
+date; echo "I am process $$ and I want lock '$LOCK'"
+if ! flock -n 9; then
+    echo "Waiting for process `cat $LOCK` to release the lock..."
+    if ! flock -w 600 9; then
+        echo "ERROR waited ten minutes and could not get lock '$LOCK'"
+        echo "apparently held by process `cat $LOCK`"
+        exit 13
+    fi
+fi
+date; echo -n "Lock acquired! Prev owner was "; cat $LOCK
+echo $$ > $LOCK; # Record who has the lock (i.e. me)
+
+# Failsafe: Release lock on exit (if not before).  Note, because this
+# script is sourced, this trap won't kick in until calling process dies.
+trap "flock -u 9" EXIT
+
+
+##############################################################################
 # Usage
 
 # Note if file is sourced with no args, "$1" etc. defaults to
@@ -522,3 +547,6 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
+
+echo "--- UNLOCK "; date
+echo -n "Release! The lock!"; flock -u 9
