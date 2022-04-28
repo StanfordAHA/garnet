@@ -177,7 +177,7 @@ def construct():
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
       # GF has a different way of running fill
-      if adk_name == 'gf12_adk':
+      if adk_name == 'gf12-adk':
           fill           = Step (this_dir + '/../common/mentor-calibre-fill-gf' )
       else:
           fill           = Step( 'mentor-calibre-fill',            default=True )
