@@ -22,7 +22,7 @@ steps:
 # INDIVIDUAL TILE RUNS
 # Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
-- label: '250MHz PE synth 20m'
+- label: 'PE synth 20m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
   - .buildkite/pipelines/check_pe_area.sh
