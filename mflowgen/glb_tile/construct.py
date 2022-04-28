@@ -47,8 +47,8 @@ def construct():
      # Power Domains
     'PWR_AWARE'         : False,
     # hold target slack
-    'hold_target_slack' : 0.03
-
+    'hold_target_slack' : 0.03,
+    'drc_env_setup': 'drcenv-block.sh'
   }
 
   #-----------------------------------------------------------------------

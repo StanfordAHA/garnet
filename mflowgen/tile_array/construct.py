@@ -51,6 +51,7 @@ def construct():
     # I am defaulting to True because nothing is worse than finishing
     # a sim and needing the wave but not having it...
     'waves'             : True,
+    'drc_env_setup'     : 'drcenv-block.sh'
   }
 
   #-----------------------------------------------------------------------

@@ -61,7 +61,8 @@ def construct():
     'app_to_run'        : 'tests/conv_3_3',
     'saif_instance'     : 'testbench/dut',
     'testbench_name'    : 'testbench',
-    'strip_path'        : 'testbench/dut'
+    'strip_path'        : 'testbench/dut',
+    'drc_env_setup'     : 'drcenv-block.sh'
     }
 
   # steveri 2101: Hoping this is temporary.
