@@ -9,7 +9,20 @@ from memory_core.reg_core import RegCore
 from memory_core.scanner_core import ScannerCore
 from memory_core.write_scanner_core import WriteScannerCore
 from sam.onyx.parse_dot import *
-from sam.onyx.hw_node import *
+from sam.onyx.hw_nodes.hw_node import *
+from sam.onyx.hw_nodes.memory_node import MemoryNode
+from sam.onyx.hw_nodes.broadcast_node import BroadcastNode
+from sam.onyx.hw_nodes.compute_node import ComputeNode
+from sam.onyx.hw_nodes.glb_node import GLBNode
+from sam.onyx.hw_nodes.buffet_node import BuffetNode
+from sam.onyx.hw_nodes.read_scanner_node import ReadScannerNode
+from sam.onyx.hw_nodes.write_scanner_node import WriteScannerNode
+from sam.onyx.hw_nodes.intersect_node import IntersectNode
+from sam.onyx.hw_nodes.reduce_node import ReduceNode
+from sam.onyx.hw_nodes.lookup_node import LookupNode
+from sam.onyx.hw_nodes.merge_node import MergeNode
+from sam.onyx.hw_nodes.repeat_node import RepeatNode
+from sam.onyx.hw_nodes.repsiggen_node import RepSigGenNode
 
 
 class SparseTBBuilder():
