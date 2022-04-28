@@ -12,7 +12,7 @@ from systemRDL.util import gen_rdl_header
 from global_controller.global_controller_magma import GlobalController
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 from canal.global_signal import GlobalSignalWiring
-from mini_mapper import map_app, has_rom, get_total_cycle_from_app
+from mini_mapper import map_app, get_total_cycle_from_app
 from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
 import json
 from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
@@ -45,9 +45,13 @@ set_debug_mode(False)
 
 class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
-                 use_sram_stub: bool = True, standalone: bool = False,
+                 use_sim_sram: bool = True, standalone: bool = False,
+                 mem_ratio: int = 4,
+                 num_tracks: int = 5,
+                 tile_layout_option: int = 0,
                  add_pond: bool = True,
                  use_io_valid: bool = False,
+                 harden_flush: bool = True,
                  pipeline_config_interval: int = 8,
                  glb_params: GlobalBufferParams = GlobalBufferParams(),
                  pe_fc=lassen_fc):
@@ -71,11 +75,13 @@ class Garnet(Generator):
 
         tile_id_width = 16
         config_addr_reg_width = 8
-        num_tracks = 5
 
         # size
         self.width = width
         self.height = height
+
+        self.harden_flush = harden_flush
+        self.pipeline_config_interval = pipeline_config_interval
 
         # only north side has IO
         if standalone:
@@ -103,7 +109,8 @@ class Garnet(Generator):
                                                       cgra_width=glb_params.num_cgra_cols,
                                                       glb_addr_width=glb_params.glb_addr_width,
                                                       glb_tile_mem_size=glb_tile_mem_size,
-                                                      block_axi_addr_width=glb_params.axi_addr_width)
+                                                      block_axi_addr_width=glb_params.axi_addr_width,
+                                                      group_size=glb_params.num_cols_per_group)
 
             self.global_buffer = GlobalBufferMagma(glb_params)
 
@@ -118,17 +125,23 @@ class Garnet(Generator):
                                    add_pd=add_pd,
                                    add_pond=add_pond,
                                    use_io_valid=use_io_valid,
-                                   use_sram_stub=use_sram_stub,
+                                   harden_flush=harden_flush,
+                                   use_sim_sram=use_sim_sram,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
-                                   mem_ratio=(1, 4),
+                                   mem_ratio=(1, mem_ratio),
+                                   tile_layout_option=tile_layout_option,
                                    standalone=standalone,
                                    pe_fc=pe_fc)
 
         self.interconnect = interconnect
 
         # make multiple stall ports
-        stall_port_pass(self.interconnect)
+        stall_port_pass(self.interconnect, port_name="stall", port_width=1, col_offset=1)
+        # make multiple flush ports
+        if harden_flush:
+            stall_port_pass(self.interconnect, port_name="flush", port_width=1,
+                            col_offset=glb_params.num_cols_per_group)
         # make multiple configuration ports
         config_port_pass(self.interconnect)
 
@@ -208,6 +221,10 @@ class Garnet(Generator):
 
             self.wire(self.interconnect.ports.read_config_data,
                       self.ports.read_config_data)
+
+            if harden_flush:
+                self.add_ports(flush=magma.In(magma.Bits[1]))
+                self.wire(self.ports.flush, self.interconnect.ports.flush)
 
     def map(self, halide_src):
         return map_app(halide_src, retiming=True)
@@ -328,7 +345,7 @@ class Garnet(Generator):
         dag = cutil.coreir_to_dag(nodes, cmod)
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
-        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only)
+        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only, self.harden_flush, self.height//self.pipeline_config_interval)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
@@ -345,7 +362,9 @@ class Garnet(Generator):
                                                          cwd=app_dir,
                                                          id_to_name=id_to_name,
                                                          fixed_pos=fixed_io,
-                                                         compact=compact)
+                                                         compact=compact,
+                                                         harden_flush=self.harden_flush,
+                                                         pipeline_config_interval=self.pipeline_config_interval)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
@@ -441,16 +460,20 @@ def main():
     parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--compact", action="store_true")
-    parser.add_argument("--no-sram-stub", action="store_true")
+    parser.add_argument("--use_sim_sram", action="store_true")
     parser.add_argument("--standalone", action="store_true")
     parser.add_argument("--unconstrained-io", action="store_true")
     parser.add_argument("--dump-config-reg", action="store_true")
     parser.add_argument("--virtualize-group-size", type=int, default=4)
     parser.add_argument("--virtualize", action="store_true")
+    parser.add_argument("--no-harden-flush", action="store_true")
     parser.add_argument("--use-io-valid", action="store_true")
     parser.add_argument("--pipeline-pnr", action="store_true")
     parser.add_argument("--generate-bitstream-only", action="store_true")
     parser.add_argument('--pe', type=str, default="")
+    parser.add_argument('--mem-ratio', type=int, default=4)
+    parser.add_argument('--num-tracks', type=int, default=5)
+    parser.add_argument('--tile-layout-option', type=int, default=0)
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -477,11 +500,15 @@ def main():
     garnet = Garnet(width=args.width, height=args.height,
                     glb_params=glb_params,
                     add_pd=not args.no_pd,
+                    mem_ratio=args.mem_ratio,
+                    num_tracks=args.num_tracks,
+                    tile_layout_option=args.tile_layout_option,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
+                    harden_flush=not args.no_harden_flush,
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
-                    use_sram_stub=not args.no_sram_stub,
+                    use_sim_sram=args.use_sim_sram,
                     standalone=args.standalone,
                     pe_fc=pe_fc)
 

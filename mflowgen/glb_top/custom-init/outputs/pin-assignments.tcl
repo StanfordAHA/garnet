@@ -35,6 +35,7 @@ proc port_compare {a b} {
 
 set array_width $env(array_width)
 set num_glb_tiles $env(num_glb_tiles)
+set prr_size 4
 set cgra_data_width 16
 set cgra_cfg_addr_width 32
 set cgra_cfg_data_width 32
@@ -59,6 +60,9 @@ for {set j 0} {$j < $array_width} {incr j} {
     }
     lappend tile_ports($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_wr_en[$j]"]]
     lappend tile_ports($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_rd_en[$j]"]]
+    if {[expr {($j % $prr_size) == 0}]} {
+        lappend tile_ports($j) [get_object_name [get_ports "strm_data_flush_g2f[[expr {$j / $prr_size}]]"]]
+    }
 }
 
 for {set j 0} {$j < $array_width} {incr j} {

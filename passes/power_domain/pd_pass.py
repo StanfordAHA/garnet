@@ -1,6 +1,6 @@
 from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper, AOIMuxType
 from gemstone.common.transform import replace, Generator, FromMagma
-from io_core.io_core_magma import IOCoreValid
+from io_core.io_core_magma import IOCoreBase
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import Configurable, ConfigurationType
 from canal.circuit import flatten_mux
@@ -21,7 +21,6 @@ class PowerDomainConfigReg(Configurable):
         )
         self.add_port("ps_en_out", magma.Out(magma.Bits[1]))
         self.wire(self.ports.ps_en_out, self.registers.ps_en.ports.O)
-        self._setup_config()
 
     def name(self):
         return "PowerDomainConfigReg"
@@ -140,6 +139,9 @@ def add_aon_read_config_data(interconnect: Interconnect):
     # it should be in the children
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
+        if isinstance(tile.core, IOCoreBase):
+            # io core is always on
+            continue
         children = tile.children()
         for child in children:
             if isinstance(child, FromMagma) and \

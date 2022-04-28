@@ -239,6 +239,8 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     ld_dma_ctrl_r.add_child(ld_dma_mode_f)
     ld_dma_use_valid_f = Field("use_valid", 1)
     ld_dma_ctrl_r.add_child(ld_dma_use_valid_f)
+    ld_dma_use_flush_f = Field("use_flush", 1)
+    ld_dma_ctrl_r.add_child(ld_dma_use_flush_f)
     ld_dma_data_mux_f = Field("data_mux", 2)
     ld_dma_ctrl_r.add_child(ld_dma_data_mux_f)
     ld_dma_num_repeat_f = Field("num_repeat", clog2(params.queue_depth) + 1)

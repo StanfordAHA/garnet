@@ -34,12 +34,12 @@ class GlbCfg(Generator):
         self.cfg_pcfg_network = self.output("cfg_pcfg_network", self.header.cfg_pcfg_network_t)
 
         # st dma
-        self.cfg_st_dma_ctrl = self.output("cfg_st_dma_ctrl", self.header.cfg_dma_ctrl_t)
+        self.cfg_st_dma_ctrl = self.output("cfg_st_dma_ctrl", self.header.cfg_store_dma_ctrl_t)
 
         self.cfg_st_dma_header = self.output("cfg_st_dma_header", self.header.cfg_dma_header_t,
                                              size=self._params.queue_depth)
         # ld dma
-        self.cfg_ld_dma_ctrl = self.output("cfg_ld_dma_ctrl", self.header.cfg_dma_ctrl_t)
+        self.cfg_ld_dma_ctrl = self.output("cfg_ld_dma_ctrl", self.header.cfg_load_dma_ctrl_t)
 
         self.cfg_ld_dma_header = self.output("cfg_ld_dma_header", self.header.cfg_dma_header_t,
                                              size=self._params.queue_depth)
@@ -140,6 +140,8 @@ class GlbCfg(Generator):
         self.wire(self.cfg_ld_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_mode_r"])
         self.wire(self.cfg_ld_dma_ctrl['use_valid'],
                   self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_use_valid_r"])
+        self.wire(self.cfg_ld_dma_ctrl['use_flush'],
+                  self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_use_flush_r"])
         self.wire(self.cfg_ld_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_num_repeat_r"])
 
         for i in range(self._params.queue_depth):
