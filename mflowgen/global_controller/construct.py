@@ -39,7 +39,8 @@ def construct():
     # hold target slack
     'hold_target_slack' : 30,
     # Utilization target
-    'core_density_target' : 0.50
+    'core_density_target' : 0.50,
+    'drc_env_setup'     : 'drcenv-block.sh'
   }
 
   #-----------------------------------------------------------------------

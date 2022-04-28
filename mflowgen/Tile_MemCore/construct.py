@@ -59,7 +59,8 @@ def construct():
     'app_to_run'        : 'tests/conv_3_3',
     'saif_instance'     : 'testbench/dut',
     'testbench_name'    : 'testbench',
-    'strip_path'        : 'testbench/dut'
+    'strip_path'        : 'testbench/dut',
+    'drc_env_setup'     : 'drcenv-block.sh'
   }
 
   #-----------------------------------------------------------------------
@@ -96,7 +97,7 @@ def construct():
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
   # Default steps
-  info           = Step( 'info',                           default=True )
+  nfo           = Step( 'info',                           default=True )
   synth          = Step( 'cadence-genus-synthesis',        default=True )
   iflow          = Step( 'cadence-innovus-flowsetup',      default=True )
   init           = Step( 'cadence-innovus-init',           default=True )
