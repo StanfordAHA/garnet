@@ -263,29 +263,45 @@ function check_pyversions {
     echo "--------------"
 }
 
-# Buildkite agent uses pre-built common virtual environment
-# /usr/local/venv_garnet on buildkite host machine r7arm-aha
-# If you're not "buildkite-agent", you're on your own.
+# Use per-build venv e.g. ~/deleteme/CI544/venv
+# This may cost 800M per build but I guess it's the right thing to do.
+# 
+# Note if you're not "buildkite-agent", you're on your own.
 
+echo "--- ENVIRONMENT - VENV"; echo ""
 if [ "$USER" == "buildkite-agent" ]; then
-    echo "--- ENVIRONMENT - VENV"; echo ""
-    venv=/usr/local/venv_garnet
-    if ! test -d $venv; then
-        echo "**ERROR: Cannot find pre-built environment '$venv'"
-        return 13 || exit 13
-    fi
-    echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT '$venv'"
-    source $venv/bin/activate
 
-    check_pyversions
+    # venv=/usr/local/venv_garnet
+    vdir=~/deleteme/CI${BUILDKITE_BUILD_NUMBER}; venv=$vdir/venv
 
-    # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
-    if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
-        pip install -U --exists-action s -r $garnet/requirements.txt
+    if test -e $venv; then
+        echo "Found existing venv '$venv'"
+        source $venv/bin/activate
     else
-        echo "INFO Not building RTL from scratch, so no need for requirements.txt"
+        echo "Building new venv '$venv'"
+        mkdir -p $vdir
+        # python3.7 -m pip install virtualenv
+        python3.7 -m venv $venv
+        source $venv/bin/activate
+
+        # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
+        if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
+            pip install -U --exists-action s -r $garnet/requirements.txt
+        else
+            echo "INFO Not building RTL from scratch, so no need for requirements.txt"
+        fi
     fi
+    check_pyversions
+    
+    # trap "deactivate" EXIT
+    # trap "rm -rf $venv" EXIT
+else
+    echo "Not buildkite: using default user python environment"
 fi
+
+
+
+
 
 
 ########################################################################
