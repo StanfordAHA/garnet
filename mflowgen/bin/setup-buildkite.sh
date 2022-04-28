@@ -17,6 +17,7 @@
 
 # CHANGE LOG
 # sep 2021 better log output, rsync adks instead of cp
+# apr 2022 removed 'pip install requirements.txt' b/c docker
 
 ##############################################################################
 # Script must be sourced; complain if someone tries to execute it instead.
@@ -99,10 +100,6 @@ if ! [ "$1" == "--dir" ]; then
     setup_buildkite_usage; return 13 || exit 13
 fi
 
-# Default is to use pre-built RTL from docker,
-# so no need for elaborate garnet python env
-PIP_INSTALL_REQUIREMENTS=true
-
 build_dir=
 VERBOSE=false
 need_space=100G
@@ -116,8 +113,6 @@ while [ $# -gt 0 ] ; do
         # E.g. '--need_space' or '--want_space' or '--need-space'...
         --*_space)    shift; need_space="$1"; ;;
         --*-space)    shift; need_space="$1"; ;;
-
-        --pip_install_requirements) shift; PIP_INSTALL_REQUIREMENTS=true; ;;
 
         # Any other 'dashed' arg
         -*)
@@ -288,9 +283,7 @@ function check_pyversions {
     echo "--------------"
 }
 
-# Use per-build venv e.g. ~/deleteme/CI544/venv
-# This may cost 800M per build but I guess it's the right thing to do.
-# 
+# Use per-build venv e.g. /sim/buildkite-agent/deleteme/CI544/venv
 # Note if you're not "buildkite-agent", you're on your own.
 
 echo "--- ENVIRONMENT - VENV"; echo ""
@@ -303,38 +296,15 @@ if [ "$USER" == "buildkite-agent" ]; then
 
     if test -e $venv; then
         echo "Found existing venv '$venv'"
-        source $venv/bin/activate
     else
         echo "Building new venv '$venv'"
-        mkdir -p $vdir
-        # python3.7 -m pip install virtualenv
-        python3.7 -m venv $venv
-        source $venv/bin/activate
-
-
-# what if...? what if we don't need this because docker...?
-#         # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
-#         if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
-#             pip install -U --exists-action s -r $garnet/requirements.txt
-#         else
-#             echo "INFO Not building RTL from scratch, so no need for requirements.txt"
-#         fi
-
-
-
+        mkdir -p $vdir; python3.7 -m venv $venv
     fi
+    source $venv/bin/activate
     check_pyversions
-    
-    # trap "deactivate" EXIT
-    # trap "rm -rf $venv" EXIT
 else
-    echo "Not buildkite: using default user python environment"
+    echo "WARNING using default user python environment"
 fi
-
-
-
-
-
 
 ########################################################################
 # FIXME Probably don't need this (/usr/local/bin stuff) any more...

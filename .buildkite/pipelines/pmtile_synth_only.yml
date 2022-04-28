@@ -1,5 +1,8 @@
-# Agents are specified in "pipeline settings" now
+# Agents are specified in "pipeline settings" now, see e.g. buildkite.com/tapeout-aha/steps
 # agents: { jobsize: "hours" }
+
+# 04/2022 Now running tests in parallel
+# Old runtime 30-35m, new runtime 20-25m
 
 ##############################################################################
 # Use this to test a specific branch/commit:
@@ -19,16 +22,14 @@ steps:
 # INDIVIDUAL TILE RUNS
 # Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
-- label: '250MHz PE synth 12m'
+- label: '250MHz PE synth 20m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
   - .buildkite/pipelines/check_pe_area.sh
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 
-# - wait: { continue_on_failure: true } # One step at a time + continue on failure
-
-- label: 'MemCore synth 17m'
+- label: 'MemCore synth 25m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
-- wait: { continue_on_failure: true } # One step at a time + continue on failure
+
