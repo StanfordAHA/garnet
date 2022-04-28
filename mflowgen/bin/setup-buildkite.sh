@@ -284,12 +284,17 @@ if [ "$USER" == "buildkite-agent" ]; then
         python3.7 -m venv $venv
         source $venv/bin/activate
 
-        # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
-        if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
-            pip install -U --exists-action s -r $garnet/requirements.txt
-        else
-            echo "INFO Not building RTL from scratch, so no need for requirements.txt"
-        fi
+
+# what if...? what if we don't need this because docker...?
+#         # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
+#         if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
+#             pip install -U --exists-action s -r $garnet/requirements.txt
+#         else
+#             echo "INFO Not building RTL from scratch, so no need for requirements.txt"
+#         fi
+
+
+
     fi
     check_pyversions
     
