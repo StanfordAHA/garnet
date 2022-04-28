@@ -150,9 +150,10 @@ if $::env(PWR_AWARE) {
     set_dont_touch [get_cells -hierarchical *u_mux_logic*]
 }
 
-# HI LO False path
+# Tile ID false paths
 set_false_path -to [get_ports hi]
 set_false_path -to [get_ports lo]
+set_false_path -from [get_ports tile_id]
 
 # Preserve the RMUXes so that we can easily constrain them later
 set rmux_cells [get_cells -hier RMUX_T*sel_inst0]
@@ -165,3 +166,8 @@ set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB
 # False paths from config input ports to SB registers
 set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg*/*
 set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
+
+# Timing path to read_config_data output should never transition through a configuration
+# register because we assume the register's value is constant during a read. 
+set_false_path -through [get_cells -hier *config_reg_*] -to [get_ports read_config_data]
+
