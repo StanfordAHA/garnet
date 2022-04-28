@@ -26,7 +26,7 @@ commands:
   # Generate the dummy fill GDS
   - /bin/csh inputs/adk/run-fill.csh
   - mkdir -p outputs && cd outputs
-  - ln -sf ../MERGED_OUTPUT/${design_name}_DummyMerge.gds fill.gds
+  - ln -sf ../MERGED_OUTPUT/{design_name}_DummyMerge.gds fill.gds
 
 
 #-------------------------------------------------------------------------
