@@ -97,7 +97,7 @@ def construct():
       pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
   # Default steps
-  nfo           = Step( 'info',                           default=True )
+  info           = Step( 'info',                           default=True )
   synth          = Step( 'cadence-genus-synthesis',        default=True )
   iflow          = Step( 'cadence-innovus-flowsetup',      default=True )
   init           = Step( 'cadence-innovus-init',           default=True )
