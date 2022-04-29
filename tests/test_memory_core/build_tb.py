@@ -43,41 +43,42 @@ class SparseTBBuilder():
         '''
         for node in self.graph.get_nodes():
             hw_node_type = node.get_attributes()['hwnode']
-            new_node = None
+            new_node_type = None
             core_tag = None
             new_name = node.get_attributes()['label']
             if hw_node_type == f"{HWNodeType.GLB}":
-                new_node = GLBNode(name=new_name)
+                new_node_type = GLBNode
                 core_tag = "glb"
             elif hw_node_type == f"{HWNodeType.Buffet}":
-                new_node = BuffetNode(name=new_name)
+                new_node_type = BuffetNode
                 core_tag = "buffet"
             elif hw_node_type == f"{HWNodeType.Memory}":
-                new_node = MemoryNode(name=new_name)
+                new_node_type = MemoryNode
                 core_tag = "memtile"
             elif hw_node_type == f"{HWNodeType.ReadScanner}":
-                new_node = ReadScannerNode(name=new_name)
+                print("MAKING SCANNER")
+                new_node_type = ReadScannerNode
                 core_tag = "scanner"
             elif hw_node_type == f"{HWNodeType.WriteScanner}":
-                new_node = WriteScannerNode(name=new_name)
+                new_node_type = WriteScannerNode
                 core_tag = "write_scanner"
             elif hw_node_type == f"{HWNodeType.Intersect}":
-                new_node = IntersectNode(name=new_name)
+                new_node_type = IntersectNode
                 core_tag = "intersect"
             elif hw_node_type == f"{HWNodeType.Reduce}":
-                new_node = ReduceNode(name=new_name)
+                new_node_type = ReduceNode
                 core_tag = "regcore"
             elif hw_node_type == f"{HWNodeType.Lookup}":
-                new_node = LookupNode(name=new_name)
+                new_node_type = LookupNode
                 core_tag = "lookup"
             elif hw_node_type == f"{HWNodeType.Merge}":
-                new_node = MergeNode(name=new_name)
+                new_node_type = MergeNode
                 core_tag = "intersect"
             elif hw_node_type == f"{HWNodeType.Repeat}":
-                new_node = RepeatNode(name=new_name)
+                new_node_type = RepeatNode
                 core_tag = "repeat"
             elif hw_node_type == f"{HWNodeType.Compute}":
-                new_node = ComputeNode(name=new_name)
+                new_node_type = ComputeNode
                 core_tag = "intersect"
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
@@ -86,10 +87,10 @@ class SparseTBBuilder():
             else:
                 raise NotImplementedError(f"{hw_node_type} not supported....")
 
-            assert new_node is not None
+            assert new_node_type is not None
             assert core_tag != ""
-            self.core_nodes[node.get_name()] = new_node
-            self.nlb.register_core(core_tag, flushable=True, name=new_name)
+            reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
+            self.core_nodes[node.get_name()] = new_node_type(name=reg_ret)
 
 
     def connect_cores(self):
@@ -97,14 +98,16 @@ class SparseTBBuilder():
         Iterate through the edges of the graph and connect each core up
         '''
 
+        self.display_names()
         edges = self.graph.get_edges()
         for edge in edges:
             src = edge.get_source()
             dst = edge.get_destination()
             src_name = src
             dst_name = dst
-            addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name])
-            self.nlb.add_connections(addtl_conns)
+            addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
+            if addtl_conns is not None:
+                self.nlb.add_connections(addtl_conns, defer_placement=True)
 
 
     def display_names(self):
