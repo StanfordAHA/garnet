@@ -292,7 +292,14 @@ if [ "$USER" == "buildkite-agent" ]; then
     # venv=/usr/local/venv_garnet
     # vdir=~/deleteme/CI${BUILDKITE_BUILD_NUMBER}; venv=$vdir/venv
     # Oops remember ~ is not /sim/buildkite-agent, it's /var/lib/buildkite-agent!
-    vdir=/sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}; venv=$vdir/venv
+
+    # vdir=/sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}; venv=$vdir/venv
+
+    # Huh per build did not work for parallel execution :(
+    # Maybe try per agent?
+
+    vdir=.; venv=$vdir/venv
+
 
     if test -e $venv; then
         echo "Found existing venv '$venv'"
