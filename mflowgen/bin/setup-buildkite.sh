@@ -404,8 +404,8 @@ fi
 # maybe 'cd $mflowgen; git log' and compare to repo or something
 
 if [ "$skip_mflowgen" == "true" ]; then
-  echo "--- SKIP MFLOWGEN install because of cmd-line arg"
-  echo "--- WILL USE MFLOWGEN IN '$mflowgen'"
+  echo "+++ SKIP MFLOWGEN INSTALL because of cmd-line arg '--skip_mflowgen'"
+  echo "WILL USE MFLOWGEN IN '$mflowgen'"
   ls -ld $mflowgen || return 13 || exit 13
 
 else
@@ -418,7 +418,7 @@ else
           -- https://github.com/mflowgen/mflowgen.git $mflowgen
   fi
 
-  # Check out the desired branch
+  # Check out latest version of the desired branch
   pushd $mflowgen
     git checkout $mflowgen_branch; git pull
     TOP=$PWD; pip install -e .
@@ -452,18 +452,14 @@ if [ "$skip_mflowgen" == "true" ]; then
 else
     echo "CLONE LATEST ADK into mflowgen local repo '$MFLOWGEN_PATH'"
 
-    # Clone/update tsmc16-adk for test rig and maintain symlink tsmc16 => tsmc16-adk
-    # Note the adks must be touchable by current user, thus must copy/clone
-    # locally and cannot e.g. use symlink to someone else's existing adk.
+    # Note adks must be touchable by current user, thus 
+    # cannot e.g. symlink to someone else's existing adk.
 
     # flock above and below prevents competition for the 'git pull' command maybe
 
-#    # Local clone-adk script maintains repo w/o revealing password/token to github
-#    /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
-
     pushd $mflowgen
       test -e adks || ln -s /sim/buildkite-agent/adks
-      cd $mflowgen/adks/tsmc16-adk; git pull
+      cd adks/tsmc16-adk; git pull
     popd
 fi
 
