@@ -36,6 +36,7 @@ class SparseTBBuilder():
 
         self.register_cores()
         self.connect_cores()
+        self.configure_cores()
 
     def register_cores(self):
         '''
@@ -108,6 +109,16 @@ class SparseTBBuilder():
             addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
             if addtl_conns is not None:
                 self.nlb.add_connections(addtl_conns, defer_placement=True)
+
+
+    def configure_cores(self):
+        '''
+        Go through nodes and configure each based on the attributes...
+        '''
+        for node in self.graph.get_nodes():
+            node_attr = node.get_attributes()
+            node_config = self.core_nodes[node.get_name()].configure()
+            self.nlb
 
 
     def display_names(self):
