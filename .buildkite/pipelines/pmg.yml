@@ -15,8 +15,24 @@
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  SETUP: 'source mflowgen/bin/setup-buildkite.sh'
+  TEST_MODULE_SBFLAGS: '--skip_mflowgen'
 
 steps:
+
+##############################################################################
+# COMMON SETUP to initialize mflowgen
+
+- label: 'setup 3m'
+  commands:
+  - '
+     echo "--- SETUP";
+     set -o pipefail;
+     $$SETUP --dir .;
+    '
+
+- wait
+
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
