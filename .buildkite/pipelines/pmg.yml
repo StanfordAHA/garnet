@@ -1,0 +1,40 @@
+# Agents are specified in "pipeline settings" now, see e.g. buildkite.com/tapeout-aha/steps
+# agents: { jobsize: "hours" }
+
+# 04/2022 Now running tests in parallel
+# Old runtime 30-35m, new runtime 20-25m
+
+##############################################################################
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
+
+##############################################################################
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
+env:
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+
+steps:
+
+##############################################################################
+# INDIVIDUAL TILE RUNS
+# Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
+
+- label: 'PE synth 20m'
+  commands:
+  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
+  - .buildkite/pipelines/check_pe_area.sh
+  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
+
+- label: 'MemCore synth 25m'
+  commands:
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
+  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
+
+- label: 'GLB synth 25m'
+  commands:
+  - $TEST --need_space 30G full_chip glb_top glb_tile --steps synthesis --debug
+  - mflowgen/bin/buildcheck.sh full_chip/*glb_top/*glb_tile --show-all-errors
+
