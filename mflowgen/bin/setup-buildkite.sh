@@ -104,30 +104,6 @@ echo ""
 echo "Using build dir '$build_dir'"
 echo "Will want $need_space available space."
 
-##############################################################################
-# LOCK so that no two script instances can run at the same time.
-# In particular, do not want e.g. competing 'git clone' or
-# 'pip install' ops trying to access the same directory etc.
-
-echo "--- LOCK"
-LOCK=/tmp/setup-buildkite.lock
-exec 9>> $LOCK
-date; echo "I am process $$ and I want lock '$LOCK'"
-if ! flock -n 9; then
-    echo "Waiting for process `cat $LOCK` to release the lock..."
-    if ! flock -w 600 9; then
-        echo "ERROR waited ten minutes and could not get lock '$LOCK'"
-        echo "apparently held by process `cat $LOCK`"
-        return 13 || exit 13
-    fi
-fi
-date; echo -n "Lock acquired! Prev owner was "; cat $LOCK
-echo $$ > $LOCK; # Record who has the lock (i.e. me)
-
-# Failsafe: Release lock on exit (if not before).  Note, because this
-# script is sourced, this trap won't kick in until calling process dies.
-trap "flock -u 9" EXIT
-
 # Unit tests
 DO_UNIT_TESTS=false
 if [ "$DO_UNIT_TESTS" == "true" ]; then # cut'n'paste
@@ -267,6 +243,30 @@ else
     printf "Using default TMPDIR '$TMPDIR'\n\n"
 fi
 
+
+##############################################################################
+# LOCK so that no two script instances can run at the same time.
+# In particular, do not want e.g. competing 'git clone' or
+# 'pip install' ops trying to access the same directory etc.
+
+echo "--- LOCK"
+LOCK=/tmp/setup-buildkite.lock
+exec 9>> $LOCK
+date; echo "I am process $$ and I want lock '$LOCK'"
+if ! flock -n 9; then
+    echo "Waiting for process `cat $LOCK` to release the lock..."
+    if ! flock -w 600 9; then
+        echo "ERROR waited ten minutes and could not get lock '$LOCK'"
+        echo "apparently held by process `cat $LOCK`"
+        return 13 || exit 13
+    fi
+fi
+date; echo -n "Lock acquired! Prev owner was "; cat $LOCK
+echo $$ > $LOCK; # Record who has the lock (i.e. me)
+
+# Failsafe: Release lock on exit (if not before).  Note, because this
+# script is sourced, this trap won't kick in until calling process dies.
+trap "flock -u 9" EXIT
 
 ########################################################################
 # Clean up debris in /sim/tmp
