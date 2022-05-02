@@ -23,22 +23,20 @@ steps:
 ##############################################################################
 # COMMON SETUP to initialize mflowgen
 
-- label: 'setup 3m'
+- label: 'setup 2m'
   commands:
   - '
      echo "--- SETUP";
      set -o pipefail;
      $$SETUP --dir .;
     '
-
 - wait
-
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
 # Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
-- label: 'ptile synth 25m'
+- label: 'ptile synth 20m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
   - .buildkite/pipelines/check_pe_area.sh

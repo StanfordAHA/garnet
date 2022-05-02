@@ -379,10 +379,9 @@ if [ "$build_dir" ]; then
 fi
 echo "--- Building in destination dir `pwd`"
 
+
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds of a given branch
-#
-# Mar 2102 - Added option to use a different mflowgen branch when/if desired
 
 mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
@@ -401,36 +400,29 @@ if [ "$mflowbranch" != "master" ]; then
     mflowgen=$mflowgen.$mflowgen_branch
 fi
 
-
-########################################################################
-# BEGIN SKIP_MFLOWGEN REGION ###########################################
-########################################################################
-
-# FIXME/TODO better mechanism to decide when to skip mflowgen install;
+# FIXME/TODO could have better mechanism to decide when to skip mflowgen install;
 # maybe 'cd $mflowgen; git log' and compare to repo or something
 
 if [ "$skip_mflowgen" == "true" ]; then
   echo "--- SKIP MFLOWGEN install because of cmd-line arg"
   echo "--- WILL USE MFLOWGEN IN '$mflowgen'"
   ls -ld $mflowgen || return 13 || exit 13
+
 else
+  echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
+  echo "Install mflowgen in dir '$mflowgen'"
 
-echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
+  # Build repo if not exists yet
+  if ! test -e $mflowgen; then
+      git clone -b $mflowgen_branch \
+          -- https://github.com/mflowgen/mflowgen.git $mflowgen
+  fi
 
-# Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
-# persistence of non-master branch through to end of run.  The cost
-# of making local mflowgen clones is currently about 200M build.
-
-# Build repo if not exists yet
-if ! test -e $mflowgen; then
-    git clone -b $mflowgen_branch \
-        -- https://github.com/mflowgen/mflowgen.git $mflowgen
-fi
-
-echo "Install mflowgen using repo in dir '$mflowgen'"
-pushd $mflowgen
-  git checkout $mflowgen_branch; git pull
-  TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+  # Check out the desired branch
+  pushd $mflowgen
+    git checkout $mflowgen_branch; git pull
+    TOP=$PWD; pip install -e .
+  popd
 
   # mflowgen might be hidden in $HOME/.local/bin
   if ! (type mflowgen >& /dev/null); then
@@ -441,21 +433,18 @@ pushd $mflowgen
       which mflowgen
   fi
 
-popd
+  # See what we got
+  which mflowgen; pip list | grep mflowgen
 
 fi
-########################################################################
-# END SKIP_MFLOWGEN REGION #############################################
-########################################################################
-# BEGIN SKIP_MFLOWGEN REGION (ADK) #####################################
-########################################################################
 
-
+########################################################################
+# ADK
 
 echo ""
 echo "--- ADK SETUP / CHECK"
-echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 export MFLOWGEN_PATH=$mflowgen/adks
+echo "set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
 if [ "$skip_mflowgen" == "true" ]; then
     echo "SKIP ADK INSTALL because of cmd-line arg '--skip_mflowgen'"
@@ -467,8 +456,15 @@ else
     # Note the adks must be touchable by current user, thus must copy/clone
     # locally and cannot e.g. use symlink to someone else's existing adk.
 
-    # Local clone-adk script maintains repo w/o revealing password/token to github
-    /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
+    # flock above and below prevents competition for the 'git pull' command maybe
+
+#    # Local clone-adk script maintains repo w/o revealing password/token to github
+#    /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
+
+    pushd $mflowgen
+      test -e adks || ln -s /sim/buildkite-agent/adks
+      cd $mflowgen/adks/tsmc16-adk; git pull
+    popd
 fi
 
 if ! touch $MFLOWGEN_PATH/is_touchable; then
@@ -476,10 +472,6 @@ if ! touch $MFLOWGEN_PATH/is_touchable; then
     echo "Setup FAILED"
     return 13 || exit 13
 fi
-
-########################################################################
-# END SKIP_MFLOWGEN REGION (ADK) #######################################
-########################################################################
 
 
 ########################################################################
