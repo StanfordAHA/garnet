@@ -34,31 +34,6 @@ if [ "${BASH_SOURCE[0]}" -ef "$0" ]; then
 fi
 
 ##############################################################################
-# LOCK so that no two script instances can run at the same time.
-# In particular, do not want e.g. competing 'git clone' or
-# 'pip install' ops trying to access the same directory etc.
-
-echo "--- LOCK"
-LOCK=/tmp/setup-buildkite.lock
-exec 9>> $LOCK
-date; echo "I am process $$ and I want lock '$LOCK'"
-if ! flock -n 9; then
-    echo "Waiting for process `cat $LOCK` to release the lock..."
-    if ! flock -w 600 9; then
-        echo "ERROR waited ten minutes and could not get lock '$LOCK'"
-        echo "apparently held by process `cat $LOCK`"
-        exit 13
-    fi
-fi
-date; echo -n "Lock acquired! Prev owner was "; cat $LOCK
-echo $$ > $LOCK; # Record who has the lock (i.e. me)
-
-# Failsafe: Release lock on exit (if not before).  Note, because this
-# script is sourced, this trap won't kick in until calling process dies.
-trap "flock -u 9" EXIT
-
-
-##############################################################################
 # Usage
 
 # Note if file is sourced with no args, "$1" etc. defaults to
@@ -102,6 +77,7 @@ fi
 
 build_dir=
 VERBOSE=false
+skip_mflowgen=false
 need_space=100G
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -109,6 +85,9 @@ while [ $# -gt 0 ] ; do
         -v|--verbose) VERBOSE=true;  ;;
         -q|--quiet)   VERBOSE=false; ;;
         --dir)        shift; build_dir="$1"; ;;
+
+        # E.g. '--skip_mflowgen' or '--skip-mflowgen'
+        --skip?mf*)   skip_mflowgen=true; ;;
 
         # E.g. '--need_space' or '--want_space' or '--need-space'...
         --*_space)    shift; need_space="$1"; ;;
@@ -124,6 +103,30 @@ done
 echo ""
 echo "Using build dir '$build_dir'"
 echo "Will want $need_space available space."
+
+##############################################################################
+# LOCK so that no two script instances can run at the same time.
+# In particular, do not want e.g. competing 'git clone' or
+# 'pip install' ops trying to access the same directory etc.
+
+echo "--- LOCK"
+LOCK=/tmp/setup-buildkite.lock
+exec 9>> $LOCK
+date; echo "I am process $$ and I want lock '$LOCK'"
+if ! flock -n 9; then
+    echo "Waiting for process `cat $LOCK` to release the lock..."
+    if ! flock -w 600 9; then
+        echo "ERROR waited ten minutes and could not get lock '$LOCK'"
+        echo "apparently held by process `cat $LOCK`"
+        return 13 || exit 13
+    fi
+fi
+date; echo -n "Lock acquired! Prev owner was "; cat $LOCK
+echo $$ > $LOCK; # Record who has the lock (i.e. me)
+
+# Failsafe: Release lock on exit (if not before).  Note, because this
+# script is sourced, this trap won't kick in until calling process dies.
+trap "flock -u 9" EXIT
 
 # Unit tests
 DO_UNIT_TESTS=false
@@ -376,15 +379,8 @@ if [ "$build_dir" ]; then
 fi
 echo "--- Building in destination dir `pwd`"
 
-
-########################################################################
-# MFLOWGEN: Use a single common mflowgen for all builds of a given branch
-#
-# Mar 2102 - Added option to use a different mflowgen branch when/if desired
-
 mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
-echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
 # If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
 # otherwise, install in /tmp/$USER
@@ -399,6 +395,27 @@ fi
 if [ "$mflowbranch" != "master" ]; then
     mflowgen=$mflowgen.$mflowgen_branch
 fi
+
+
+########################################################################
+# BEGIN SKIP_MFLOWGEN REGION ###########################################
+########################################################################
+
+# FIXME/TODO better mechanism to decide when to skip mflowgen install;
+# maybe 'cd $mflowgen; git log' and compare to repo or something
+
+if [ "$skip_mflowgen" == "true" ]; then
+  echo "--- SKIP MFLOWGEN install because of cmd-line arg"
+  echo "--- WILL USE MFLOWGEN IN '$mflowgen'"
+  ls -ld $mflowgen || return 13 || exit 13
+else
+
+########################################################################
+# MFLOWGEN: Use a single common mflowgen for all builds of a given branch
+#
+# Mar 2102 - Added option to use a different mflowgen branch when/if desired
+
+echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
 # Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
 # persistence of non-master branch through to end of run.  The cost
@@ -453,6 +470,12 @@ else
     echo ""
     echo "Meanwhile: found MFLOWGEN_PATH='$MFLOWGEN_PATH'"; echo ""
 fi
+
+fi
+########################################################################
+# END SKIP_MFLOWGEN REGION #############################################
+########################################################################
+
 
 ########################################################################
 # TCLSH VERSION CHECK
