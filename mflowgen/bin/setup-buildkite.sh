@@ -379,6 +379,11 @@ if [ "$build_dir" ]; then
 fi
 echo "--- Building in destination dir `pwd`"
 
+########################################################################
+# MFLOWGEN: Use a single common mflowgen for all builds of a given branch
+#
+# Mar 2102 - Added option to use a different mflowgen branch when/if desired
+
 mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
 
@@ -410,11 +415,6 @@ if [ "$skip_mflowgen" == "true" ]; then
   ls -ld $mflowgen || return 13 || exit 13
 else
 
-########################################################################
-# MFLOWGEN: Use a single common mflowgen for all builds of a given branch
-#
-# Mar 2102 - Added option to use a different mflowgen branch when/if desired
-
 echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
 # Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
@@ -443,37 +443,42 @@ pushd $mflowgen
 
 popd
 
-echo ""
-echo "--- ADK SETUP / CHECK"
-echo 'CLONE LATEST ADK INTO MFLOWGEN LOCAL REPO'
-
-# Clone/update tsmc16-adk for test rig and maintain symlink tsmc16 => tsmc16-adk
-# Note the adks must be touchable by current user, thus must copy/clone
-# locally and cannot e.g. use symlink to someone else's existing adk.
-
-if [ "$USER" == "buildkite-agent" ]; then
-
-    # Local clone-adk script maintains repo w/o revealing password/token to github
-    /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
-
-    # Need env var MFLOWGEN_PATH I think
-    export MFLOWGEN_PATH=$mflowgen/adks
-    echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
-
-else
-    # FIXME/TODO what about normal users, can they use this?
-    echo
-    echo "WARNING you are not buildkite agent."
-    echo "You'll probably need to find your own way to the adks."
-    echo "Maybe something like:"
-    echo "export MFLOWGEN_PATH='/my/path/to/adks/tsmc16'"
-    echo ""
-    echo "Meanwhile: found MFLOWGEN_PATH='$MFLOWGEN_PATH'"; echo ""
-fi
-
 fi
 ########################################################################
 # END SKIP_MFLOWGEN REGION #############################################
+########################################################################
+# BEGIN SKIP_MFLOWGEN REGION (ADK) #####################################
+########################################################################
+
+
+
+echo ""
+echo "--- ADK SETUP / CHECK"
+echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+export MFLOWGEN_PATH=$mflowgen/adks
+
+if [ "$skip_mflowgen" == "true" ]; then
+    echo "SKIP ADK INSTALL because of cmd-line arg '--skip_mflowgen'"
+
+else
+    echo "CLONE LATEST ADK into mflowgen local repo '$MFLOWGEN_PATH'"
+
+    # Clone/update tsmc16-adk for test rig and maintain symlink tsmc16 => tsmc16-adk
+    # Note the adks must be touchable by current user, thus must copy/clone
+    # locally and cannot e.g. use symlink to someone else's existing adk.
+
+    # Local clone-adk script maintains repo w/o revealing password/token to github
+    /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
+fi
+
+if ! touch $MFLOWGEN_PATH/is_touchable; then
+    echo "ERROR cannot touch files in '$MFLOWGEN_PATH'"
+    echo "Setup FAILED"
+    return 13 || exit 13
+fi
+
+########################################################################
+# END SKIP_MFLOWGEN REGION (ADK) #######################################
 ########################################################################
 
 
