@@ -18,7 +18,7 @@ export SAIF ?= 0
 # -------------------------------------------------------------------
 # Compile Parameters
 # -------------------------------------------------------------------
-CLK_PERIOD ?= 1ns
+CLK_PERIOD ?= 10ns
 
 DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_buffer/header/glb.svh \
@@ -31,7 +31,9 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_decode.sv \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_logic.sv \
 				-v $(garnet_dir)/tests/SC7P5T_AN2X0P5_SSC14R.sv -v $(garnet_dir)/tests/SC7P5T_AO22X0P5_SSC14R.sv \
-				$(garnet_dir)/genesis_verif/*.sv
+				$(garnet_dir)/genesis_verif/*.sv \
+				$(garnet_dir)/glb_sram.v \
+				$(garnet_dir)/tile_array_sram.v
 
 TB_FILES += -F tb/tb_cgra.f
 
@@ -62,7 +64,8 @@ NETLIST_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 			       	$(netlist_dir)/stdcells.v \
 			       	$(netlist_dir)/stdcells-lvt.v \
 				$(netlist_dir)/stdcells-ulvt.v \
-				$(netlist_dir)/stdcells-pm.v
+				$(netlist_dir)/stdcells-pm.v \
+				$(netlist_dir)/stdcells-prim.v
 
 # -------------------------------------------------------------------
 # Run Parameters
@@ -132,6 +135,9 @@ else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
     COMPILE_GLS_ARGS += +define+SAIF=1
+    COMPILE_GLS_ARGS += +define+IVCS_CYCLE_SIM
+    COMPILE_GLS_ARGS += +notimingcheck
+    COMPILE_RTL_ARGS += +define+IVCS_CYCLE_SIM
     RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus
 	RUN_GLS = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra
 else
@@ -176,7 +182,7 @@ compile-gls:
 
 .PHONY: run-gls
 run-gls:
-	$(RUN_GLS) $(RUN_ARGS) $(APP_ARGS)
+	$(RUN_GLS) $(RUN_ARGS) $(APP_ARGS) $(DUMP_ARGS)
 
 .PHONY: sim-gls
 sim-gls: libcgra.so compile-gls run-gls 

@@ -31,7 +31,7 @@ module top;
     // reset generation
     initial begin
         reset <= 1;
-        repeat (3) @(posedge clk);
+        repeat (10) @(posedge clk);
         reset <= 0;
     end
 
@@ -95,11 +95,11 @@ module top;
         .axi4_slave_wvalid (axil_ifc.wvalid),
 
         // jtag ifc
-        .jtag_tck   (  /*unused*/),
-        .jtag_tdi   (  /*unused*/),
-        .jtag_tdo   (  /*unused*/),
-        .jtag_tms   (  /*unused*/),
-        .jtag_trst_n(  /*unused*/)
+        .jtag_tck   (  1'b1),
+        .jtag_tdi   (  1'b1),
+        .jtag_tdo   (  1'b1),
+        .jtag_tms   (  1'b1),
+        .jtag_trst_n( ~reset)
     );
 
 

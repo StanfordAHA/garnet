@@ -5,8 +5,8 @@ import os
 # scrit to copy pd files for gls sim and ptpx into netlist folder
 os.makedirs('netlist', exist_ok=True)
 
-build_folder = '/build/gold.374/full_chip'
-tech = 'tsmc16'
+build_folder = '/sim/ajcars/fc-4-25/'
+tech = 'gf12'
 
 design_list = ['GarnetSOC_pad_frame', 'global_controller', 'glb_top', 'glb_tile', 'tile_array', 'Tile_PE', "Tile_MemCore"]
 
@@ -35,12 +35,12 @@ for ext in file_type:
     shutil.copy(glob.glob(build_folder + '/*tile_array/*Tile_PE/*cadence-innovus-signoff/outputs/'+ ext, recursive=True)[0], 'netlist/Tile_PE' + ext[1:])
     shutil.copy(glob.glob(build_folder + '/*tile_array/*Tile_MemCore/*cadence-innovus-signoff/outputs/'+ ext, recursive=True)[0], 'netlist/Tile_MemCore' + ext[1:])
 
-file_type = ['stdcells.v', 'stdcells-lvt.v', 'stdcells-ulvt.v', 'stdcells-pm.v', 'stdcells.db', 'stdcells-lvt.db', 'stdcells-ulvt.db', 'stdcells-pm.db']
+file_type = ['stdcells.v', 'stdcells-prim.v', 'stdcells-lvt.v', 'stdcells-ulvt.v', 'stdcells-pm.v', 'stdcells.db', 'stdcells-lvt.db', 'stdcells-ulvt.db', 'stdcells-pm.db']
 
 # copy std cells
 # TODO currently hardcoded for tsmc16
 for ext in file_type:
-    shutil.copy(glob.glob(build_folder + '/*+' + tech + '+/multivt/'+ ext, recursive=True)[0], 'netlist/')
+    shutil.copy(glob.glob(build_folder + '/*' + tech + '*/stdcells*/'+ ext, recursive=True)[0], 'netlist/')
 
 # mem tile and glb srams
 shutil.copy(glob.glob(build_folder + '/*glb_top/*glb_tile/*gen_sram_macro/outputs/sram.v', recursive=True)[0], 'netlist/Tile_MemCore.sram.v')
