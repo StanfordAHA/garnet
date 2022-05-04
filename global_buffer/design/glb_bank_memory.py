@@ -71,8 +71,6 @@ class GlbBankMemory(Generator):
         else:
             self.glb_bank_sram_gen = GlbBankSramGen(addr_width=(self._params.bank_addr_width
                                                                 - self._params.bank_byte_offset),
-                                                    sram_macro_width=self._params.bank_data_width,
-                                                    sram_macro_depth=self._params.sram_macro_depth,
                                                     _params=self._params)
             self.add_child("glb_bank_sram_gen",
                            self.glb_bank_sram_gen,
@@ -82,8 +80,11 @@ class GlbBankMemory(Generator):
                            WEB=(~self.sram_wen_d),
                            A=self.sram_addr_d,
                            D=self.sram_data_in_d,
-                           BWEB=(~self.sram_data_in_bit_sel_d),
                            Q=self.sram_data_out)
+            if self._params.process == "TSMC":
+                self.wire(self.glb_bank_sram_gen.BWEB, ~self.sram_data_in_bit_sel_d)
+            elif self._params.process == "GF":
+                self.wire(self.glb_bank_sram_gen.BW, self.sram_data_in_bit_sel_d)
 
     @always_comb
     def sram_ctrl_logic(self):
