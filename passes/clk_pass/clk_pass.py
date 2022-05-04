@@ -40,14 +40,14 @@ from gemstone.common.transform import pass_signal_through
 # having to balance clk pass through delays between PE and memory tiles, which
 # frequently required manual post-P&R intervention.
 
-def clk_physical(interconnect: Interconnect):
+def clk_physical(interconnect: Interconnect, tile_layout_option):
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
         # We only want to do this on PE and memory tiles
         if tile_core is None or isinstance(tile_core, IOCoreBase):
             continue
-        elif isinstance(tile_core, MemCore):
+        elif isinstance(tile_core, MemCore) and tile_layout_option==0:
             if (x, y+1) in interconnect.tile_circuits:
                 tile_below = interconnect.tile_circuits[(x, y+1)]
                 if isinstance(tile_below.core, MemCore):
@@ -71,11 +71,12 @@ def clk_physical(interconnect: Interconnect):
                 pass_through_input, magma.clock)
             # Create 2 new clk pass through outputs (bottom and right)
             tile.add_port("clk_pass_through_out_bot", magma.Out(magma.Bit))
-            tile.add_port("clk_pass_through_out_right", magma.Out(magma.Clock))
+            if tile_layout_option==0:
+                tile.add_port("clk_pass_through_out_right", magma.Out(magma.Clock))
             tile.wire(tile.ports.clk_pass_through,
                       tile.ports.clk_pass_through_out_bot)
-            tile.wire(pass_through_input_as_clk,
-                      tile.ports.clk_pass_through_out_right)
+            if tile_layout_option==0:
+                tile.wire(pass_through_input_as_clk, tile.ports.clk_pass_through_out_right)
 
             # Connect new clk pass through input to old pass through output
             tile.wire(pass_through_input_as_clk, orig_out_port)
