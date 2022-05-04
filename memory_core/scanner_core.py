@@ -76,7 +76,8 @@ class ScannerCore(LakeCoreBase):
 
     def get_config_bitstream(self, config_tuple):
         inner_offset, max_outer_dim, strides, ranges, is_root, \
-            do_repeat, repeat_outer, repeat_factor, stop_lvl = config_tuple
+            do_repeat, repeat_outer, repeat_factor, stop_lvl, \
+            block_mode, lookup = config_tuple
         configs = []
         config_scanner = [("tile_en", 1)]
         if is_root:
@@ -89,7 +90,9 @@ class ScannerCore(LakeCoreBase):
                                                  do_repeat=do_repeat,
                                                  repeat_outer=repeat_outer,
                                                  repeat_factor=repeat_factor,
-                                                 stop_lvl=stop_lvl)
+                                                 stop_lvl=stop_lvl,
+                                                 block_mode=block_mode,
+                                                 lookup=lookup)
         for name, v in config_scanner:
             configs = [self.get_config_data(name, v)] + configs
         return configs
