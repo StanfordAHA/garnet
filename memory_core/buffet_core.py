@@ -48,7 +48,7 @@ class BuffetCore(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.dut = BuffetLike(data_width=data_width,
-                                  num_ID=1)
+                                  num_ID=2)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -76,14 +76,10 @@ class BuffetCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        inner_offset, compressed, lowest_level, stop_lvl, block_mode = config_tuple
+        capacity_0, capacity_1 = config_tuple
         configs = []
         config_scanner = [("tile_en", 1)]
-        config_scanner += self.dut.get_bitstream(inner_offset=inner_offset,
-                                                 compressed=compressed,
-                                                 lowest_level=lowest_level,
-                                                 stop_lvl=stop_lvl,
-                                                 block_mode=block_mode)
+        config_scanner += self.dut.get_bitstream(capacity_0, capacity_1)
         for name, v in config_scanner:
             configs = [self.get_config_data(name, v)] + configs
         return configs

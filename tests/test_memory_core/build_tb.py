@@ -38,6 +38,11 @@ class SparseTBBuilder():
         self.connect_cores()
         self.configure_cores()
 
+        # Add flush connection
+        flush_in = self.nlb.register_core("io_1", name="flush_in")
+        self.nlb.add_connections(connections=self.nlb.emit_flush_connection(flush_in))
+        # Now we have the configured CGRA...
+
     def register_cores(self):
         '''
         Go through each core and register it, also add it to dict of core nodes
@@ -47,6 +52,7 @@ class SparseTBBuilder():
             new_node_type = None
             core_tag = None
             new_name = node.get_attributes()['label']
+            print(node.get_attributes())
             if hw_node_type == f"{HWNodeType.GLB}":
                 new_node_type = GLBNode
                 core_tag = "glb"
@@ -57,7 +63,6 @@ class SparseTBBuilder():
                 new_node_type = MemoryNode
                 core_tag = "memtile"
             elif hw_node_type == f"{HWNodeType.ReadScanner}":
-                print("MAKING SCANNER")
                 new_node_type = ReadScannerNode
                 core_tag = "scanner"
             elif hw_node_type == f"{HWNodeType.WriteScanner}":
@@ -90,8 +95,37 @@ class SparseTBBuilder():
 
             assert new_node_type is not None
             assert core_tag != ""
-            reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
-            self.core_nodes[node.get_name()] = new_node_type(name=reg_ret)
+            print("MEK")
+            print(node.get_attributes()['type'])
+            if new_node_type == GLBNode:
+                # Have to handle the GLB nodes slightly differently
+                # Instead of directly registering a core, we are going to register the io,
+                # connect them to the appropriate block, then instantiate and wire a
+                # systemverilog wrapper of the simulation level transactions for GLB
+                if node.get_attributes()['type'].strip('"') == 'fiberlookup':
+                    # GLB write wants a data input, ready, valid
+                    glb_name = "GLB_TO_CGRA"
+                    data = self.nlb.register_core("io_16", name="data_in_")
+                    ready = self.nlb.register_core("io_1", name="ready_out_")
+                    valid = self.nlb.register_core("io_1", name="valid_in_")
+                elif node.get_attributes()['type'].strip('"') == 'fiberwrite':
+                    # GLB read wants a data output, ready, valid
+                    data = self.nlb.register_core("io_16", name="data_out_")
+                    ready = self.nlb.register_core("io_1", name="ready_in_")
+                    valid = self.nlb.register_core("io_1", name="valid_out_")
+                    glb_name = "CGRA_TO_GLB"
+                elif node.get_attributes()['type'].strip('"') == 'arrayvals':
+                    # GLB write wants a data input, ready, valid
+                    glb_name = "GLB_TO_CGRA"
+                    data = self.nlb.register_core("io_16", name="data_in_")
+                    ready = self.nlb.register_core("io_1", name="ready_out_")
+                    valid = self.nlb.register_core("io_1", name="valid_in_")
+                else:
+                    raise NotImplementedError
+                self.core_nodes[node.get_name()] = GLBNode(name=glb_name, data=data, valid=valid, ready=ready)
+            else:
+                reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
+                self.core_nodes[node.get_name()] = new_node_type(name=reg_ret)
 
 
     def connect_cores(self):
@@ -117,8 +151,11 @@ class SparseTBBuilder():
         '''
         for node in self.graph.get_nodes():
             node_attr = node.get_attributes()
-            node_config = self.core_nodes[node.get_name()].configure()
-            self.nlb
+            print(node_attr)
+            node_config = self.core_nodes[node.get_name()].configure(node_attr)
+            # GLB tiles return none so that we don't try to config map them...
+            if node_config is not None:
+                self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config)
 
 
     def display_names(self):
