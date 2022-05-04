@@ -46,6 +46,9 @@ set_debug_mode(False)
 class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
                  use_sim_sram: bool = True, standalone: bool = False,
+                 mem_ratio: int = 4,
+                 num_tracks: int = 5,
+                 tile_layout_option: int = 0,
                  add_pond: bool = True,
                  use_io_valid: bool = False,
                  harden_flush: bool = True,
@@ -72,7 +75,6 @@ class Garnet(Generator):
 
         tile_id_width = 16
         config_addr_reg_width = 8
-        num_tracks = 5
 
         # size
         self.width = width
@@ -127,7 +129,8 @@ class Garnet(Generator):
                                    harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
-                                   mem_ratio=(1, 4),
+                                   mem_ratio=(1, mem_ratio),
+                                   tile_layout_option=tile_layout_option,
                                    standalone=standalone,
                                    pe_fc=pe_fc)
 
@@ -468,6 +471,9 @@ def main():
     parser.add_argument("--pipeline-pnr", action="store_true")
     parser.add_argument("--generate-bitstream-only", action="store_true")
     parser.add_argument('--pe', type=str, default="")
+    parser.add_argument('--mem-ratio', type=int, default=4)
+    parser.add_argument('--num-tracks', type=int, default=5)
+    parser.add_argument('--tile-layout-option', type=int, default=0)
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -494,6 +500,9 @@ def main():
     garnet = Garnet(width=args.width, height=args.height,
                     glb_params=glb_params,
                     add_pd=not args.no_pd,
+                    mem_ratio=args.mem_ratio,
+                    num_tracks=args.num_tracks,
+                    tile_layout_option=args.tile_layout_option,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
                     harden_flush=not args.no_harden_flush,

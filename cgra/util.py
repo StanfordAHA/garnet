@@ -43,6 +43,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 use_sim_sram: bool = True,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
+                tile_layout_option: int = 0, # 0: column-based, 1: row-based
                 global_signal_wiring: GlobalSignalWiring =
                 GlobalSignalWiring.Meso,
                 pipeline_config_interval: int = 8,
@@ -93,7 +94,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 else:
                     core = IOCore()
             else:
-                use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
+                if tile_layout_option == 0:
+                    use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
+                elif tile_layout_option == 1:
+                    use_mem_core = (y - y_min) % tile_max >= mem_tile_ratio
+
                 if use_mem_core:
                     core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush)
                 else:
@@ -202,8 +207,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         add_aon_read_config_data(interconnect)
 
     if pass_through_clk:
-        clk_physical(interconnect)
-
+        clk_physical(interconnect, tile_layout_option)
+    
     pipeline_global_signals(interconnect, pipeline_config_interval)
 
     return interconnect

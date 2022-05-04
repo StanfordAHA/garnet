@@ -17,6 +17,7 @@
 
 # CHANGE LOG
 # sep 2021 better log output, rsync adks instead of cp
+# apr 2022 removed 'pip install requirements.txt' b/c docker
 
 ##############################################################################
 # Script must be sourced; complain if someone tries to execute it instead.
@@ -74,12 +75,9 @@ if ! [ "$1" == "--dir" ]; then
     setup_buildkite_usage; return 13 || exit 13
 fi
 
-# Default is to use pre-built RTL from docker,
-# so no need for elaborate garnet python env
-PIP_INSTALL_REQUIREMENTS=true
-
 build_dir=
 VERBOSE=false
+skip_mflowgen=false
 need_space=100G
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -88,11 +86,12 @@ while [ $# -gt 0 ] ; do
         -q|--quiet)   VERBOSE=false; ;;
         --dir)        shift; build_dir="$1"; ;;
 
+        # E.g. '--skip_mflowgen' or '--skip-mflowgen'
+        --skip?mf*)   skip_mflowgen=true; ;;
+
         # E.g. '--need_space' or '--want_space' or '--need-space'...
         --*_space)    shift; need_space="$1"; ;;
         --*-space)    shift; need_space="$1"; ;;
-
-        --pip_install_requirements) shift; PIP_INSTALL_REQUIREMENTS=true; ;;
 
         # Any other 'dashed' arg
         -*)
@@ -245,6 +244,30 @@ else
 fi
 
 
+##############################################################################
+# LOCK so that no two script instances can run at the same time.
+# In particular, do not want e.g. competing 'git clone' or
+# 'pip install' ops trying to access the same directory etc.
+
+echo "--- LOCK"
+LOCK=/tmp/setup-buildkite.lock
+exec 9>> $LOCK
+date; echo "I am process $$ and I want lock '$LOCK'"
+if ! flock -n 9; then
+    echo "Waiting for process `cat $LOCK` to release the lock..."
+    if ! flock -w 600 9; then
+        echo "ERROR waited ten minutes and could not get lock '$LOCK'"
+        echo "apparently held by process `cat $LOCK`"
+        return 13 || exit 13
+    fi
+fi
+date; echo -n "Lock acquired! Prev owner was "; cat $LOCK
+echo $$ > $LOCK; # Record who has the lock (i.e. me)
+
+# Failsafe: Release lock on exit (if not before).  Note, because this
+# script is sourced, this trap won't kick in until calling process dies.
+trap "flock -u 9" EXIT
+
 ########################################################################
 # Clean up debris in /sim/tmp
 echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
@@ -263,30 +286,35 @@ function check_pyversions {
     echo "--------------"
 }
 
-# Buildkite agent uses pre-built common virtual environment
-# /usr/local/venv_garnet on buildkite host machine r7arm-aha
-# If you're not "buildkite-agent", you're on your own.
+# Use per-build venv e.g. /sim/buildkite-agent/deleteme/CI544/venv
+# Note if you're not "buildkite-agent", you're on your own.
 
+echo "--- ENVIRONMENT - VENV"; echo ""
 if [ "$USER" == "buildkite-agent" ]; then
-    echo "--- ENVIRONMENT - VENV"; echo ""
-    venv=/sim/buildkite-agent/venv_garnet
-    if ! test -d $venv; then
-        echo "**ERROR: Cannot find pre-built environment '$venv'"
-        return 13 || exit 13
-    fi
-    echo "USING PRE-BUILT PYTHON VIRTUAL ENVIRONMENT '$venv'"
-    source $venv/bin/activate
 
-    check_pyversions
+    # venv=/usr/local/venv_garnet
+    # vdir=~/deleteme/CI${BUILDKITE_BUILD_NUMBER}; venv=$vdir/venv
+    # Oops remember ~ is not /sim/buildkite-agent, it's /var/lib/buildkite-agent!
 
-    # Can skip requirements if using prebuilt RTL (--pip_install_requirements)
-    if [ "$PIP_INSTALL_REQUIREMENTS" == "true" ]; then
-        pip install -U --exists-action s -r $garnet/requirements.txt
+    # vdir=/sim/buildkite-agent/deleteme/CI${BUILDKITE_BUILD_NUMBER}; venv=$vdir/venv
+
+    # Huh per build did not work for parallel execution :(
+    # Maybe try per agent?
+
+    vdir=.; venv=$vdir/venv
+
+
+    if test -e $venv; then
+        echo "Found existing venv '$venv'"
     else
-        echo "INFO Not building RTL from scratch, so no need for requirements.txt"
+        echo "Building new venv '$venv'"
+        mkdir -p $vdir; python3.7 -m venv $venv
     fi
+    source $venv/bin/activate
+    check_pyversions
+else
+    echo "WARNING using default user python environment"
 fi
-
 
 ########################################################################
 # FIXME Probably don't need this (/usr/local/bin stuff) any more...
@@ -354,12 +382,9 @@ echo "--- Building in destination dir `pwd`"
 
 ########################################################################
 # MFLOWGEN: Use a single common mflowgen for all builds of a given branch
-#
-# Mar 2102 - Added option to use a different mflowgen branch when/if desired
 
 mflowgen_branch=master
 [ "$OVERRIDE_MFLOWGEN_BRANCH" ] && mflowgen_branch=$OVERRIDE_MFLOWGEN_BRANCH
-echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
 
 # If /sim/buildkite agent exists, install mflowgen in /sim/buildkite agent;
 # otherwise, install in /tmp/$USER
@@ -375,20 +400,29 @@ if [ "$mflowbranch" != "master" ]; then
     mflowgen=$mflowgen.$mflowgen_branch
 fi
 
-# Mar 2102 - Without a per-build mflowgen clone, cannot guarantee
-# persistence of non-master branch through to end of run.  The cost
-# of making local mflowgen clones is currently about 200M build.
+# FIXME/TODO could have better mechanism to decide when to skip mflowgen install;
+# maybe 'cd $mflowgen; git log' and compare to repo or something
 
-# Build repo if not exists yet
-if ! test -e $mflowgen; then
-    git clone -b $mflowgen_branch \
-        -- https://github.com/mflowgen/mflowgen.git $mflowgen
-fi
+if [ "$skip_mflowgen" == "true" ]; then
+  echo "+++ SKIP MFLOWGEN INSTALL because of cmd-line arg '--skip_mflowgen'"
+  echo "WILL USE MFLOWGEN IN '$mflowgen'"
+  ls -ld $mflowgen || return 13 || exit 13
 
-echo "Install mflowgen using repo in dir '$mflowgen'"
-pushd $mflowgen
-  git checkout $mflowgen_branch; git pull
-  TOP=$PWD; pip install -e .; which mflowgen; pip list | grep mflowgen
+else
+  echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
+  echo "Install mflowgen in dir '$mflowgen'"
+
+  # Build repo if not exists yet
+  if ! test -e $mflowgen; then
+      git clone -b $mflowgen_branch \
+          -- https://github.com/mflowgen/mflowgen.git $mflowgen
+  fi
+
+  # Check out latest version of the desired branch
+  pushd $mflowgen
+    git checkout $mflowgen_branch; git pull
+    TOP=$PWD; pip install -e .
+  popd
 
   # mflowgen might be hidden in $HOME/.local/bin
   if ! (type mflowgen >& /dev/null); then
@@ -399,35 +433,42 @@ pushd $mflowgen
       which mflowgen
   fi
 
-popd
+  # See what we got
+  which mflowgen; pip list | grep mflowgen
+
+fi
+
+########################################################################
+# ADK
 
 echo ""
 echo "--- ADK SETUP / CHECK"
-echo 'CLONE LATEST ADK INTO MFLOWGEN LOCAL REPO'
+export MFLOWGEN_PATH=$mflowgen/adks
+echo "set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
 
-# Clone/update tsmc16-adk for test rig and maintain symlink tsmc16 => tsmc16-adk
-# Note the adks must be touchable by current user, thus must copy/clone
-# locally and cannot e.g. use symlink to someone else's existing adk.
-
-if [ "$USER" == "buildkite-agent" ]; then
-
-    # Local clone-adk script maintains repo w/o revealing password/token to github
-    /sim/buildkite-agent/bin/clone-adk.sh $mflowgen/adks
-
-    # Need env var MFLOWGEN_PATH I think
-    export MFLOWGEN_PATH=$mflowgen/adks
-    echo "Set MFLOWGEN_PATH=$MFLOWGEN_PATH"; echo ""
+if [ "$skip_mflowgen" == "true" ]; then
+    echo "SKIP ADK INSTALL because of cmd-line arg '--skip_mflowgen'"
 
 else
-    # FIXME/TODO what about normal users, can they use this?
-    echo
-    echo "WARNING you are not buildkite agent."
-    echo "You'll probably need to find your own way to the adks."
-    echo "Maybe something like:"
-    echo "export MFLOWGEN_PATH='/my/path/to/adks/tsmc16'"
-    echo ""
-    echo "Meanwhile: found MFLOWGEN_PATH='$MFLOWGEN_PATH'"; echo ""
+    echo "CLONE LATEST ADK into mflowgen local repo '$MFLOWGEN_PATH'"
+
+    # Note adks must be touchable by current user, thus 
+    # cannot e.g. symlink to someone else's existing adk.
+
+    # flock above and below prevents competition for the 'git pull' command maybe
+
+    pushd $mflowgen
+      test -e adks || ln -s /sim/buildkite-agent/adks
+      cd adks/tsmc16-adk; git pull
+    popd
 fi
+
+if ! touch $MFLOWGEN_PATH/is_touchable; then
+    echo "ERROR cannot touch files in '$MFLOWGEN_PATH'"
+    echo "Setup FAILED"
+    return 13 || exit 13
+fi
+
 
 ########################################################################
 # TCLSH VERSION CHECK
@@ -499,3 +540,6 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
+
+echo "--- UNLOCK "; date
+echo -n "Release! The lock!"; flock -u 9
