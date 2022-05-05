@@ -23,9 +23,10 @@ from sam.onyx.hw_nodes.lookup_node import LookupNode
 from sam.onyx.hw_nodes.merge_node import MergeNode
 from sam.onyx.hw_nodes.repeat_node import RepeatNode
 from sam.onyx.hw_nodes.repsiggen_node import RepSigGenNode
+import magma as m
 
 
-class SparseTBBuilder():
+class SparseTBBuilder(m.Circuit):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None) -> None:
         assert nlb is not None, "NLB is none..."
         assert graph is not None, "Graph is none..."
@@ -42,6 +43,90 @@ class SparseTBBuilder():
         flush_in = self.nlb.register_core("io_1", name="flush_in")
         self.nlb.add_connections(connections=self.nlb.emit_flush_connection(flush_in))
         # Now we have the configured CGRA...
+        self.nlb.finalize_config()
+
+        # Now attach global buffers based on placement...
+        # Get circuit
+        self.circuit = self.nlb.get_circuit()
+        self.attach_glb()
+
+        h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
+        stall_in = nlb.get_handle_str("stall")
+
+        tester = nlb.get_tester()
+
+        tester.reset()
+        tester.zero_inputs()
+
+        # Stall during config
+        tester.poke(stall_in, 1)
+
+        # After stalling, we can configure the circuit
+        # with its configuration bitstream
+        nlb.configure_circuit()
+
+        tester.done_config()
+
+        tester.poke(stall_in, 0)
+        tester.eval()
+
+        # Get flush handle and apply flush to start off app
+        tester.poke(h_flush_in, 1)
+        tester.eval()
+        tester.step(2)
+        tester.poke(h_flush_in, 0)
+        tester.eval()
+        
+        from conftest import run_tb_fn
+        run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
+
+    def attach_glb(self):
+
+        self._all_dones = []
+
+        glb_nodes = [node for node in self.core_nodes.values() if type(node) == GLBNode]
+        print(glb_nodes)
+        if len(glb_nodes) < 3:
+            print('STOPPING')
+            exit()
+        for node in glb_nodes:
+            # Now we can realize and connect the glb nodes based on the placement
+            glb_data = node.get_data()
+            glb_ready = node.get_ready()
+            glb_valid = node.get_valid()
+
+            # Get the handle for these pins, then instantiate glb
+            glb_dir = node.get_direction()
+            if glb_dir == 'write':
+
+                data_h = self.nlb.get_handle(glb_data, prefix="glb2io_16_")
+                ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
+                valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
+
+                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv')[0]
+                print(test_glb)
+                test_glb = test_glb()
+                print(test_glb)
+
+                m.wire(test_glb['data'], data_h)
+                m.wire(ready_h, test_glb['ready'])
+                m.wire(test_glb['valid'], valid_h)
+            elif glb_dir == 'read':
+                data_h = self.nlb.get_handle(glb_data, prefix="io2glb_16_")
+                ready_h = self.nlb.get_handle(glb_ready, prefix="glb2io_1_")
+                valid_h = self.nlb.get_handle(glb_valid, prefix="io2glb_1_")
+
+                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv')[0]
+                # test_glb = m.define_from_verilog_file('./glb_read.sv')[0]
+                print(test_glb)
+                test_glb = test_glb()
+                print(test_glb)
+
+                m.wire(data_h, test_glb['data'])
+                m.wire(test_glb['ready'], ready_h)
+                m.wire(valid_h, test_glb['valid'])
+            else:
+                raise NotImplementedError(f"glb_dir was {glb_dir}")
 
     def register_cores(self):
         '''
@@ -108,11 +193,14 @@ class SparseTBBuilder():
                     data = self.nlb.register_core("io_16", name="data_in_")
                     ready = self.nlb.register_core("io_1", name="ready_out_")
                     valid = self.nlb.register_core("io_1", name="valid_in_")
+                    direction = "write"
+                    # glb_writer = m.define_from_verilog_file()
                 elif node.get_attributes()['type'].strip('"') == 'fiberwrite':
                     # GLB read wants a data output, ready, valid
                     data = self.nlb.register_core("io_16", name="data_out_")
                     ready = self.nlb.register_core("io_1", name="ready_in_")
                     valid = self.nlb.register_core("io_1", name="valid_out_")
+                    direction = "read"
                     glb_name = "CGRA_TO_GLB"
                 elif node.get_attributes()['type'].strip('"') == 'arrayvals':
                     # GLB write wants a data input, ready, valid
@@ -120,9 +208,10 @@ class SparseTBBuilder():
                     data = self.nlb.register_core("io_16", name="data_in_")
                     ready = self.nlb.register_core("io_1", name="ready_out_")
                     valid = self.nlb.register_core("io_1", name="valid_in_")
+                    direction = "write"
                 else:
                     raise NotImplementedError
-                self.core_nodes[node.get_name()] = GLBNode(name=glb_name, data=data, valid=valid, ready=ready)
+                self.core_nodes[node.get_name()] = GLBNode(name=glb_name, data=data, valid=valid, ready=ready, direction=direction)
             else:
                 reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
                 self.core_nodes[node.get_name()] = new_node_type(name=reg_ret)
@@ -163,6 +252,16 @@ class SparseTBBuilder():
 
 
 if __name__ == "__main__":
+
+
+    # test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv')
+    # test_glb = test_glb[0]
+    # print(test_glb)
+    # test_glb = test_glb()
+    # print(test_glb)
+
+    # exit()
+
     matmul_dot = "/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/" + "mat_identity.gv"
     sdg = SAMDotGraph(filename=matmul_dot)
     # Now use the graph to build an nlb

@@ -1,7 +1,7 @@
 module glb_read #(
-    parameter NUM_BLOCKS = 1;
-    parameter DATA_FILE0 = "generic_memory_0.txt";
-    parameter DATA_FILE1 = "generic_memory_1.txt";
+    parameter NUM_BLOCKS = 1
+    // parameter DATA_FILE0 = "generic_memory_0.txt",
+    // parameter DATA_FILE1 = "generic_memory_1.txt"
 )
 (
     input logic clk,
@@ -43,15 +43,16 @@ initial begin
         end
     end
 
-    @(posedge clk)
+    @(posedge clk);
     ready = 0;
-    $writememh(DATA_FILE0, local_mem_0)
+    $writememh("generic_memory_0.txt", local_mem_0)
 
     if(NUM_BLOCKS == 2) begin
 
         // Do second transfer...
         while(1) begin
             @(posedge clk);
+            ready = 1;
             if(ready == 1 && valid == 1) begin
                 size_1 = data;
                 num_rx = 0
@@ -66,7 +67,9 @@ initial begin
             end
         end
 
-        $writememh(DATA_FILE1, local_mem_1)
+        @(posedge clk);
+        ready = 0;
+        $writememh("generic_memory_1.txt", local_mem_1)
 
     end
 

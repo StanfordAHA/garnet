@@ -1,6 +1,6 @@
 module glb_write #(
-    parameter TX_SIZE = 32;
-    parameter DATA_FILE = "generic_memory.txt";
+    parameter TX_SIZE = 32
+    // parameter DATA_FILE = "generic_memory.txt"
 )
 (
     input logic clk,
@@ -14,7 +14,7 @@ module glb_write #(
 logic [15:0] local_mem [0:1023];
 integer num_tx;
 
-initial $readmemh(DATA_FILE, local_mem);
+initial $readmemh("generic_memory.txt", local_mem);
 
 initial begin
     
@@ -30,9 +30,9 @@ initial begin
             num_tx = num_tx + 1;
         end
     end
-    @(posedge clk)
+    @(posedge clk);
     done = 1;
 
 end
 
-endmodule: glb_write
+endmodule
