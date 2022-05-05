@@ -18,7 +18,7 @@ export SAIF ?= 0
 # -------------------------------------------------------------------
 # Compile Parameters
 # -------------------------------------------------------------------
-CLK_PERIOD ?= 10ns
+CLK_PERIOD ?= 1ns
 
 DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_buffer/header/glb.svh \
@@ -138,8 +138,8 @@ else ifeq ($(TOOL), VCS)
     COMPILE_GLS_ARGS += +define+IVCS_CYCLE_SIM
     COMPILE_GLS_ARGS += +notimingcheck
     COMPILE_RTL_ARGS += +define+IVCS_CYCLE_SIM
-    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus
-	RUN_GLS = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra
+    RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 +notimingcheck -sv_lib libcgra -exitstatus
+	RUN_GLS = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 +notimingcheck -sv_lib libcgra 
 else
     @echo "TOOL must be either XCELIUM or VCS"
 endif
