@@ -170,6 +170,10 @@ set_false_path -to [get_ports hi]
 set_false_path -to [get_ports lo]
 set_false_path -from [get_ports tile_id]
 
+# Timing path to read_config_data output should never transition through a configuration
+# register because we assume the register's value is constant during a read. 
+set_false_path -through [get_cells -hier *config_reg_*] -to [get_ports read_config_data]
+
 #set_tlu_plus_files -max_tluplus  $tluplus_max \
 #                   -min_tluplus  $tluplus_min \
 #                   -tech2itf_map $tluplus_map

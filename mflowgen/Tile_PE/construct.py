@@ -44,7 +44,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
-    'clock_period'      : 2,
+    'clock_period'      : 1.1,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -61,7 +61,8 @@ def construct():
     'app_to_run'        : 'tests/conv_3_3',
     'saif_instance'     : 'testbench/dut',
     'testbench_name'    : 'testbench',
-    'strip_path'        : 'testbench/dut'
+    'strip_path'        : 'testbench/dut',
+    'drc_env_setup'     : 'drcenv-block.sh'
     }
 
   # steveri 2101: Hoping this is temporary.

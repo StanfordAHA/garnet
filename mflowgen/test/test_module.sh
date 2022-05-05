@@ -135,10 +135,13 @@ export TMPDIR=/sim/tmp
 
 ##############################################################################
 # Set up the build environment
+# - to skip mflowgen setup can do e.g.
+#   'export TEST_MODULE_SBFLAGS='--skip_mflowgen'
 echo Sourcing $garnet/mflowgen/bin/setup-buildkite.sh ...
 source $garnet/mflowgen/bin/setup-buildkite.sh \
        --dir $build_dir \
        --need_space $need_space \
+       $TEST_MODULE_SBFLAGS \
        || exit 13
 
 echo "--- Building in destination dir `pwd`"
