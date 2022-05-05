@@ -617,14 +617,16 @@ class NetlistBuilder():
             if used == 0:
                 print(f"Core {core} is not being used...any accesses to its handle will cause a crash...")
         self._config_finalized = True
+        self._circuit = self._interconnect.circuit()
 
     def get_tester(self):
         assert self._interconnect is not None, "Need to define the interconnect first..."
-        self._circuit = self._interconnect.circuit()
+        # self._circuit = self._interconnect.circuit()
         self._tester = BasicTester(self._circuit, self._circuit.clk, self._circuit.reset)
         return self._tester
 
     def get_circuit(self):
+        # self._circuit = self._interconnect.circuit()
         return self._circuit
 
     def configure_circuit(self, readback=False):
