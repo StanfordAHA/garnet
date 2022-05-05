@@ -40,15 +40,8 @@ else
       # install the aha wrapper script
       pip install -e .
 
+      # Added because "docker image prune" by itself (below) was not doing the job...!
       echo "--- Docker pre-cleaning"; echo ""
-      docker images; echo ""
-      docker ps    ; echo ""
-
-      # Prune docker images ("yes" emits endless stream of y's)
-      echo ""; echo "Docker cleanup PRUNE (old)"
-      yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
-
-      echo ""; echo "After pruning:"; echo ""
       docker images; echo ""
       docker ps    ; echo ""
 
@@ -79,6 +72,15 @@ else
       done
 
       echo ""; echo "# Untagged jobs AFTER pre-cleaning"; echo ""
+      docker images; echo ""
+      docker ps    ; echo ""
+
+      # Prune docker images...
+      # ("yes" emits endless stream of y's)
+      echo ""; echo "Docker cleanup PRUNE (old)"
+      yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
+
+      echo ""; echo "After pruning:"; echo ""
       docker images; echo ""
       docker ps    ; echo ""
 
