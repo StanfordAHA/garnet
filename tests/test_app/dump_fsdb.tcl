@@ -7,19 +7,6 @@ if { $::env(WAVEFORM) != "0" } {
   dump -add "top.dut.global_buffer*" -fsdb_opt +mda+packedmda+struct
 }
 
-if { $::env(SAIF) == "0" } {
-  run
-  exit
-} else {
-  stop -change top.test.test_toggle
+run
+exit
 
-  run
-  power -gate_level on mda sv
-  power top.dut
-  power -enable
-  run
-  power -disable
-  power -report run.saif 1e-15 top.dut
-  run
-  exit
-}

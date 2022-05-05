@@ -182,7 +182,7 @@ compile-gls:
 
 .PHONY: run-gls
 run-gls:
-	$(RUN_GLS) $(RUN_ARGS) $(APP_ARGS) $(DUMP_ARGS)
+	$(RUN_GLS) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
 
 .PHONY: sim-gls
 sim-gls: libcgra.so compile-gls run-gls 
