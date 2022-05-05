@@ -462,15 +462,15 @@ class NetlistBuilder():
             self._core_config[ret_str] = (config, 0)
         return ret_str
 
-    def add_connections_dict(self, connection_dict):
+    def add_connections_dict(self, connection_dict, defer_placement=False):
         for conn_block_name, connections_list in connection_dict.items():
             print(f"Adding connection block: {conn_block_name}")
             assert isinstance(connections_list, list), f"Expecting list of connections at: {conn_block_name}"
-            self.add_connections(connections_list)
+            self.add_connections(connections_list, defer_placement=defer_placement)
 
     def add_connections(self, connections, defer_placement=False):
         if isinstance(connections, dict):
-            self.add_connections_dict(connections)
+            self.add_connections_dict(connections, defer_placement=defer_placement)
         else:
             for connection, width in connections:
                 self.add_connection(connection, width)
@@ -482,7 +482,7 @@ class NetlistBuilder():
             self.generate_placement()
 
     def add_connection(self, connection, width):
-        print(connection)
+        # print(connection)
         conn_name = f"e{self._connection_num}"
         self._connection_num += 1
         # Dissect the connection to check if a core is used
@@ -610,6 +610,8 @@ class NetlistBuilder():
         self._config_data += core_config_data
 
     def finalize_config(self):
+        # Also generate placement..
+        self.generate_placement()
         skip_addr = self._interconnect.get_skip_addr()
         self._config_data = compress_config_data(self._config_data, skip_compression=skip_addr)
         # Check for unused potential handles...
@@ -628,6 +630,9 @@ class NetlistBuilder():
     def get_circuit(self):
         # self._circuit = self._interconnect.circuit()
         return self._circuit
+
+    def get_config_data(self):
+        return self._config_data
 
     def configure_circuit(self, readback=False):
         cfgdat = self._config_data

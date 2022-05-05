@@ -24,6 +24,7 @@ initial begin
     ready = 0;
     size_0 = 0;
     size_1 = 0;
+    done = 0;
 
     // Do first transfer...
     while(1) begin
@@ -31,21 +32,21 @@ initial begin
         ready = 1;
         if(ready == 1 && valid == 1) begin
             size_0 = data;
-            num_rx = 0
+            num_rx = 0;
         end
     end
 
     while(num_rx < size_0) begin
         @(posedge clk);
         if(ready == 1 && valid == 1) begin
-            local_mem_0[num_rx] = data
+            local_mem_0[num_rx] = data;
             num_rx = num_rx + 1;
         end
     end
 
     @(posedge clk);
     ready = 0;
-    $writememh("generic_memory_0.txt", local_mem_0)
+    $writememh("/home/max/Documents/SPARSE/garnet/generic_memory_0.txt", local_mem_0);
 
     if(NUM_BLOCKS == 2) begin
 
@@ -55,28 +56,28 @@ initial begin
             ready = 1;
             if(ready == 1 && valid == 1) begin
                 size_1 = data;
-                num_rx = 0
+                num_rx = 0;
             end
         end
 
         while(num_rx < size_1) begin
             @(posedge clk);
             if(ready == 1 && valid == 1) begin
-                local_mem_1[num_rx] = data
+                local_mem_1[num_rx] = data;
                 num_rx = num_rx + 1;
             end
         end
 
         @(posedge clk);
         ready = 0;
-        $writememh("generic_memory_1.txt", local_mem_1)
+        $writememh("generic_memory_1.txt", local_mem_1);
 
     end
 
-    @(posedge clk)
+    @(posedge clk);
     ready = 0;
     done = 1;
 
 end
 
-endmodule: glb_write
+endmodule
