@@ -12,6 +12,7 @@ program glb_test (
     output logic [NUM_GLB_TILES-1:0] glb_clk_en_master,
     output logic [NUM_GLB_TILES-1:0] glb_clk_en_bank_master,
     output logic [NUM_GLB_TILES-1:0] pcfg_broadcast_stall,
+    output logic [NUM_GROUPS-1:0][$clog2(NUM_GLB_TILES)-1:0] flush_crossbar_sel,
 
     // proc
     output logic                         proc_wr_en,
@@ -361,6 +362,7 @@ program glb_test (
         pcfg_start_pulse <= 0;
         strm_g2f_start_pulse <= 0;
         strm_f2g_start_pulse <= 0;
+        flush_crossbar_sel <= 0;
 
         // proc
         proc_wr_en <= 0;
@@ -395,6 +397,13 @@ program glb_test (
         // wait for reset clear
         wait (reset == 0);
         repeat (10) @(posedge clk);
+    endtask
+
+    task glb_flush_crossbar_ctrl(logic [NUM_GROUPS-1:0][$clog2(NUM_GLB_TILES)-1:0] mask);
+        #2 $display("Glb flush signal crossbar configuration %8h", mask);
+        flush_crossbar_sel <= mask;
+        repeat (4) @(posedge clk);
+
     endtask
 
     task glb_clk_en_master_ctrl(logic [NUM_GLB_TILES-1:0] mask);

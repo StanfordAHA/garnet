@@ -1,15 +1,16 @@
 def place_io_blk(id_to_name):
     """Hacky function to place the IO blocks"""
+
+    blks = [blk for blk, _ in sorted(id_to_name.items(), key=lambda item: item[1])]
+
     placement = {}
     # find out all the IO blocks
     ios = []
-    for blk_id in id_to_name:
+    for blk_id in blks:
         if blk_id[0] in {"i", "I"}:
             assert blk_id not in ios
             ios.append(blk_id)
 
-    # make it deterministic
-    ios.sort()
 
     # need to know if it's an input or output
 

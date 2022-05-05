@@ -28,6 +28,7 @@ module `mname` (
     output logic [`$num_glb_tiles-1`:0]         axi_glb_clk_en_master, 
     output logic [`$num_glb_tiles-1`:0]         axi_glb_clk_en_bank_master, 
     output logic [`$num_glb_tiles-1`:0]         axi_glb_pcfg_broadcast_stall, 
+    output logic [$clog2(`$num_glb_tiles`)*`$cgra_width/4`-1:0] axi_glb_flush_crossbar_sel, 
     output logic [`$cgra_width-1`:0]            axi_cgra_stall, 
 
 	// global buffer control signals
@@ -139,6 +140,7 @@ module `mname` (
     logic     [15:0] l2h_glb_clk_en_master_clk_en_r;
     logic     [15:0] l2h_glb_clk_en_bank_master_clk_en_r;
     logic     [15:0] l2h_glb_pcfg_broadcast_stall_stall_r;
+    logic     [31:0] l2h_glb_flush_crossbar_sel_r;
     logic    h2l_global_isr_strm_f2g_w;
     logic    h2l_global_isr_strm_g2f_w;
     logic    h2l_global_isr_par_cfg_g2f_w;
@@ -257,6 +259,7 @@ assign pc_start_pulse[`$i`] = l2h_pc_start_pulse_glb_tile_`$i`_r;
 assign axi_glb_clk_en_master = l2h_glb_clk_en_master_clk_en_r;
 assign axi_glb_clk_en_bank_master = l2h_glb_clk_en_bank_master_clk_en_r;
 assign axi_glb_pcfg_broadcast_stall = l2h_glb_pcfg_broadcast_stall_stall_r;
+assign axi_glb_flush_crossbar_sel = l2h_glb_flush_crossbar_sel_r;
 assign axi_cgra_stall = l2h_cgra_stall_stall_r;
 
 assign interrupt_internal = l2h_global_isr_intr_o;

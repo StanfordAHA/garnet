@@ -83,15 +83,17 @@ class MemCore(LakeCoreBase):
                  fifo_mode=True,
                  add_clk_enable=True,
                  add_flush=True,
+                 gate_flush=True,
                  override_name=None,
                  gen_addr=True,
-                 tech_map=TSMC_Tech_Map):
+                 tech_map=TSMC_Tech_Map(depth=512, width=32)):
 
         lake_name = "LakeTop"
 
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
+                         gate_flush=gate_flush,
                          name="MemCore")
 
         # Capture everything to the tile object
@@ -131,7 +133,7 @@ class MemCore(LakeCoreBase):
                      self.use_sim_sram, self.read_delay,
                      self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
                      self.num_tiles, self.fifo_mode,
-                     self.add_clk_enable, self.add_flush, self.gen_addr, self.tech_map)
+                     self.add_clk_enable, self.add_flush, self.gen_addr, str(self.tech_map))
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
@@ -283,6 +285,8 @@ class MemCore(LakeCoreBase):
 
         # Add the runtime configuration to the final config
         for name, v in config_runtime:
+            if name == "flush_reg_sel" or name == "flush_reg_value":
+                continue
             configs = [self.get_config_data(name, v)] + configs
 
         print(configs)
