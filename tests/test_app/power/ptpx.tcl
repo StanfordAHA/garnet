@@ -95,7 +95,8 @@ if { $::env(reports) == "True" } {
 }
 
 # Read in switching activity
-read_saif "./../run.saif" -strip_path "top/dut" -path "core/u_aha_garnet/u_garnet" -quiet
+read_fsdb "./../novas.fsdb" -strip_path "top/dut" -path "core/u_aha_garnet/u_garnet"
+#read_saif "./../run.saif" -strip_path "top/dut" -path "core/u_aha_garnet/u_garnet" -quiet
 
 if { $::env(chkpt) == "True" } {
   save_session chk_post_saif
