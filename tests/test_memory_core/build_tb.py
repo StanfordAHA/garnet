@@ -1,3 +1,5 @@
+from gemstone.common.testers import BasicTester
+from gemstone.common.configurable import ConfigurationType
 from pydot import Graph
 from cgra.util import create_cgra
 from memory_core.buffet_core import BuffetCore
@@ -26,7 +28,7 @@ from sam.onyx.hw_nodes.repsiggen_node import RepSigGenNode
 import magma as m
 
 
-class SparseTBBuilder(m.Circuit):
+class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None) -> None:
         assert nlb is not None, "NLB is none..."
         assert graph is not None, "Graph is none..."
@@ -35,9 +37,21 @@ class SparseTBBuilder(m.Circuit):
         self.graph = graph
         self.core_nodes = {}
 
+        self._ctr = 0
+
+        self.io = m.IO(
+            clk=m.In(m.Clock),
+            rst_n=m.In(m.AsyncReset),
+            stall=m.In(m.Bit),
+            flush=m.In(m.Bit),
+            config=m.In(ConfigurationType(32, 32))
+        )
+
         self.register_cores()
         self.connect_cores()
         self.configure_cores()
+
+        # self.config = self.io.config
 
         # Add flush connection
         flush_in = self.nlb.register_core("io_1", name="flush_in")
@@ -47,38 +61,51 @@ class SparseTBBuilder(m.Circuit):
 
         # Now attach global buffers based on placement...
         # Get circuit
-        self.circuit = self.nlb.get_circuit()
+        self.interconnect_circuit = self.nlb.get_circuit()
+        self.interconnect_circuit = self.interconnect_circuit()
+
+        m.wire(self.interconnect_circuit['clk'], self.io.clk)
+        m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
+        m.wire(self.io.stall, self.interconnect_circuit['stall'][0])
+        m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
+        m.wire(self.interconnect_circuit.config, self.io.config)
+
+        # Get the initial list of inputs to interconnect and cross them off
+        self.interconnect_ins = self.get_interconnect_ins()
+
         self.attach_glb()
+        self.wire_interconnect_ins()
 
-        h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
-        stall_in = nlb.get_handle_str("stall")
+    def get_next_seq(self):
+        tmp = self._ctr
+        self._ctr += 1
+        return tmp
 
-        tester = nlb.get_tester()
+    def get_interconnect_ins(self):
+        '''
+        Need to ascertain all inputs to interconnect so we can later make sure they are driven
+        Want to do this early so we can delete references while processing the glb attachments
+        '''
+        in_list = []
 
-        tester.reset()
-        tester.zero_inputs()
-
-        # Stall during config
-        tester.poke(stall_in, 1)
-
-        # After stalling, we can configure the circuit
-        # with its configuration bitstream
-        nlb.configure_circuit()
-
-        tester.done_config()
-
-        tester.poke(stall_in, 0)
-        tester.eval()
-
-        # Get flush handle and apply flush to start off app
-        tester.poke(h_flush_in, 1)
-        tester.eval()
-        tester.step(2)
-        tester.poke(h_flush_in, 0)
-        tester.eval()
+        all_ports = self.interconnect_circuit.interface
+        print(all_ports)
+        for port in all_ports:
+            print(port)
+            if 'glb2io' in port:
+                in_list.append(port)
         
-        from conftest import run_tb_fn
-        run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
+        return in_list
+
+    def wire_interconnect_ins(self):
+        '''
+        Here we are going to wire all of the relevant interconnect inputs to 0
+        '''
+        for ic_in in self.interconnect_ins:
+            # Get width from name
+            width = int(ic_in.split("_")[1])
+            m.wire(self.interconnect_circuit[ic_in], m.Bits[width](0))
+
 
     def attach_glb(self):
 
@@ -103,28 +130,66 @@ class SparseTBBuilder(m.Circuit):
                 ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
                 valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
 
-                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv')[0]
-                print(test_glb)
-                test_glb = test_glb()
-                print(test_glb)
+                # Get rid of these signals from leftover inputs...
+                self.interconnect_ins.remove(str(data_h))
+                self.interconnect_ins.remove(str(valid_h))
 
+                data_h = self.interconnect_circuit[str(data_h)]
+                ready_h = self.interconnect_circuit[str(ready_h)]
+                valid_h = self.interconnect_circuit[str(valid_h)]
+
+                glb_type_map = {
+                    "clk": m.In(m.Clock),
+                    "rst_n": m.In(m.AsyncReset),
+                    "data": m.Out(m.Bits[16]),
+                    "ready": m.In(m.Bit),
+                    "valid": m.Out(m.Bit),
+                    "done": m.Out(m.Bit)
+                }
+
+                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv', type_map=glb_type_map)[0]
+                test_glb = test_glb(TX_SIZE=10)
+
+                # m.wire(test_glb['data'], data_h)
+                # m.wire(ready_h, test_glb['ready'])
+                # m.wire(test_glb['valid'], valid_h)
                 m.wire(test_glb['data'], data_h)
-                m.wire(ready_h, test_glb['ready'])
-                m.wire(test_glb['valid'], valid_h)
+                m.wire(ready_h[0], test_glb['ready'])
+                m.wire(test_glb['valid'], valid_h[0])
+                m.wire(test_glb.clk, self.io.clk)
+                m.wire(test_glb.rst_n, self.io.rst_n)
+
             elif glb_dir == 'read':
                 data_h = self.nlb.get_handle(glb_data, prefix="io2glb_16_")
                 ready_h = self.nlb.get_handle(glb_ready, prefix="glb2io_1_")
                 valid_h = self.nlb.get_handle(glb_valid, prefix="io2glb_1_")
 
-                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv')[0]
+                # Get rid of this signal from leftover inputs...
+                self.interconnect_ins.remove(str(ready_h))
+
+                data_h = self.interconnect_circuit[str(data_h)]
+                ready_h = self.interconnect_circuit[str(ready_h)]
+                valid_h = self.interconnect_circuit[str(valid_h)]
+
+                glb_type_map = {
+                    "clk": m.In(m.Clock),
+                    "rst_n": m.In(m.AsyncReset),
+                    "data": m.In(m.Bits[16]),
+                    "ready": m.Out(m.Bit),
+                    "valid": m.In(m.Bit),
+                    "done": m.Out(m.Bit)
+                }
+
+                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv', type_map=glb_type_map)[0]
                 # test_glb = m.define_from_verilog_file('./glb_read.sv')[0]
-                print(test_glb)
-                test_glb = test_glb()
-                print(test_glb)
+                # test_glb = test_glb()
+                test_glb = test_glb(NUM_BLOCKS=1)
 
                 m.wire(data_h, test_glb['data'])
-                m.wire(test_glb['ready'], ready_h)
-                m.wire(valid_h, test_glb['valid'])
+                m.wire(test_glb['ready'], ready_h[0])
+                m.wire(valid_h[0], test_glb['valid'])
+                m.wire(self.io.clk, test_glb.clk)
+                m.wire(self.io.rst_n, test_glb.rst_n)
             else:
                 raise NotImplementedError(f"glb_dir was {glb_dir}")
 
@@ -137,7 +202,7 @@ class SparseTBBuilder(m.Circuit):
             new_node_type = None
             core_tag = None
             new_name = node.get_attributes()['label']
-            print(node.get_attributes())
+            # print(node.get_attributes())
             if hw_node_type == f"{HWNodeType.GLB}":
                 new_node_type = GLBNode
                 core_tag = "glb"
@@ -180,8 +245,7 @@ class SparseTBBuilder(m.Circuit):
 
             assert new_node_type is not None
             assert core_tag != ""
-            print("MEK")
-            print(node.get_attributes()['type'])
+            # print(node.get_attributes()['type'])
             if new_node_type == GLBNode:
                 # Have to handle the GLB nodes slightly differently
                 # Instead of directly registering a core, we are going to register the io,
@@ -240,7 +304,7 @@ class SparseTBBuilder(m.Circuit):
         '''
         for node in self.graph.get_nodes():
             node_attr = node.get_attributes()
-            print(node_attr)
+            # print(node_attr)
             node_config = self.core_nodes[node.get_name()].configure(node_attr)
             # GLB tiles return none so that we don't try to config map them...
             if node_config is not None:
@@ -253,12 +317,15 @@ class SparseTBBuilder(m.Circuit):
 
 if __name__ == "__main__":
 
+    # class TestCode(m.Generator2):
+    #     def __init__(self) -> None:
+    #         test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv')
+    #         test_glb = test_glb[0]
+    #         print(test_glb)
+    #         test_glb = test_glb()
+    #         print(test_glb)
 
-    # test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv')
-    # test_glb = test_glb[0]
-    # print(test_glb)
-    # test_glb = test_glb()
-    # print(test_glb)
+    # tc = TestCode()
 
     # exit()
 
@@ -283,3 +350,48 @@ if __name__ == "__main__":
     stb = SparseTBBuilder(nlb=nlb, graph=graph)
 
     stb.display_names()
+
+    interconnect.dump_pnr(dir_name="/home/max/Documents/SPARSE/garnet/mek_dump/", design_name="matrix_identity")
+
+    # h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
+    # stall_in = nlb.get_handle_str("stall")
+
+    # tester = nlb.get_tester()
+    tester = BasicTester(stb, stb.clk, stb.rst_n)
+
+    tester.reset()
+    tester.zero_inputs()
+
+    # Stall during config
+    tester.poke(stb.io.stall, 1)
+
+    # After stalling, we can configure the circuit
+    # with its configuration bitstream
+    cfgdat = nlb.get_config_data()
+    for addr, index in cfgdat:
+        tester.configure(addr, index)
+        # if readback is True:
+        #     self._tester.config_read(addr)
+        tester.eval()
+
+    tester.done_config()
+
+    tester.poke(stb.io.stall, 0)
+    tester.eval()
+
+    # Get flush handle and apply flush to start off app
+    tester.poke(stb.io.flush, 1)
+    tester.eval()
+    tester.step(2)
+    tester.step(2)
+    # tester.step(2)
+    # tester.step(2)
+    # tester.step(2)
+    # for i in range(1000):
+    #     tester.step(2)
+    tester.poke(stb.io.flush, 0)
+    tester.eval()
+    
+    from conftest import run_tb_fn
+    run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="mek_dump")
+    # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")

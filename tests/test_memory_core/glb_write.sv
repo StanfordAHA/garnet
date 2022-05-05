@@ -14,12 +14,14 @@ module glb_write #(
 logic [15:0] local_mem [0:1023];
 integer num_tx;
 
-initial $readmemh("generic_memory.txt", local_mem);
+initial $readmemh("/home/max/Documents/SPARSE/garnet/generic_memory.txt", local_mem);
 
 initial begin
     
     num_tx = 0;
     valid = 0;
+    done = 0;
+    data = 0;
 
     // Make as many transfers from the memory as needed.
     while(num_tx < TX_SIZE) begin
