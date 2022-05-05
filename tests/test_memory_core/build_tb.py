@@ -64,14 +64,20 @@ class SparseTBBuilder(m.Generator2):
         self.interconnect_circuit = self.nlb.get_circuit()
         self.interconnect_circuit = self.interconnect_circuit()
 
+        flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_") 
+
         m.wire(self.interconnect_circuit['clk'], self.io.clk)
         m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
         m.wire(self.io.stall, self.interconnect_circuit['stall'][0])
         m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
+        m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
+
         m.wire(self.interconnect_circuit.config, self.io.config)
 
         # Get the initial list of inputs to interconnect and cross them off
         self.interconnect_ins = self.get_interconnect_ins()
+        # Make sure to remove the flush port or it will get grounded.
+        self.interconnect_ins.remove(str(flush_h))
 
         self.attach_glb()
         self.wire_interconnect_ins()
@@ -345,7 +351,7 @@ if __name__ == "__main__":
                                mem_ratio=(1, 2),
                                altcore=altcore)
 
-    nlb = NetlistBuilder(interconnect=interconnect, cwd="/home/max/Documents/SPARSE/")
+    nlb = NetlistBuilder(interconnect=interconnect, cwd="/home/max/Documents/SPARSE/garnet/mek_dump/")
 
     stb = SparseTBBuilder(nlb=nlb, graph=graph)
 
