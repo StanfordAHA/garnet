@@ -68,6 +68,9 @@ def test_interconnect_point_wise(batch_size: int, run_tb, io_sides):
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, index)
+        # insert one dummy cycle for the new debugging read
+        tester.done_config()
+        tester.eval()
 
     tester.done_config()
 
@@ -147,6 +150,9 @@ def test_interconnect_sram(run_tb, io_sides):
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, index)
+        # insert one dummy cycle for the new debugging read
+        tester.done_config()
+        tester.eval()
 
     for addr, data in sram_data:
         for i in range(4):
@@ -157,12 +163,18 @@ def test_interconnect_sram(run_tb, io_sides):
             tester.config_read(addr)
             tester.eval()
             tester.expect(circuit.read_config_data, data * 4 + i)
+            # insert one dummy cycle for the new debugging read
+            tester.done_config()
+            tester.eval()
 
     for addr, index in config_data:
         tester.configure(addr, index)
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, index)
+        # insert one dummy cycle for the new debugging read
+        tester.done_config()
+        tester.eval()
 
     tester.done_config()
 
@@ -243,6 +255,9 @@ def test_interconnect_fifo(run_tb, io_sides, depth):
         tester.config_read(addr)
         tester.eval()
         tester.expect(circuit.read_config_data, index)
+        # insert one dummy cycle for the new debugging read
+        tester.done_config()
+        tester.eval()
 
     src_coord = placement["I0"]
     src = interconnect.get_top_input_port_by_coord(src_coord, 16)
