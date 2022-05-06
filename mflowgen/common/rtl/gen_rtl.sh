@@ -180,8 +180,11 @@ else
       docker images --digests
 
       # Kill the container
-      docker kill $container_name
-      echo "killed docker container $container_name"
+      if docker kill $container_name; then
+          echo "killed docker container $container_name"
+      else
+          echo "could not kill docker container $container_name (maybe already dead?)"
+      fi
       cd .. ; # pop out from e.g. "9-rtl/aha/" back to "9-rtl/"
 
       # Set 'save_verilog_to_tmpdir' "True" if want to capture the output
