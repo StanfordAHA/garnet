@@ -64,12 +64,13 @@ class SparseTBBuilder(m.Generator2):
         self.interconnect_circuit = self.nlb.get_circuit()
         self.interconnect_circuit = self.interconnect_circuit()
 
-        flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_") 
+        flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_")
 
         m.wire(self.interconnect_circuit['clk'], self.io.clk)
         m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
         m.wire(self.io.stall, self.interconnect_circuit['stall'][0])
-        m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
+        # m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
+        print(str(flush_h))
         m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
 
         m.wire(self.interconnect_circuit.config, self.io.config)
@@ -78,6 +79,8 @@ class SparseTBBuilder(m.Generator2):
         self.interconnect_ins = self.get_interconnect_ins()
         # Make sure to remove the flush port or it will get grounded.
         self.interconnect_ins.remove(str(flush_h))
+
+        # self.nlb.get_route_config()
 
         self.attach_glb()
         self.wire_interconnect_ins()
@@ -95,12 +98,12 @@ class SparseTBBuilder(m.Generator2):
         in_list = []
 
         all_ports = self.interconnect_circuit.interface
-        print(all_ports)
+        # print(all_ports)
         for port in all_ports:
-            print(port)
+            # print(port)
             if 'glb2io' in port:
                 in_list.append(port)
-        
+
         return in_list
 
     def wire_interconnect_ins(self):
@@ -111,7 +114,6 @@ class SparseTBBuilder(m.Generator2):
             # Get width from name
             width = int(ic_in.split("_")[1])
             m.wire(self.interconnect_circuit[ic_in], m.Bits[width](0))
-
 
     def attach_glb(self):
 
@@ -150,10 +152,12 @@ class SparseTBBuilder(m.Generator2):
                     "data": m.Out(m.Bits[16]),
                     "ready": m.In(m.Bit),
                     "valid": m.Out(m.Bit),
-                    "done": m.Out(m.Bit)
+                    "done": m.Out(m.Bit),
+                    "flush": m.In(m.Bit)
                 }
 
-                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv', type_map=glb_type_map)[0]
+                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv',
+                                                      type_map=glb_type_map)[0]
                 test_glb = test_glb(TX_SIZE=10)
 
                 # m.wire(test_glb['data'], data_h)
@@ -164,6 +168,7 @@ class SparseTBBuilder(m.Generator2):
                 m.wire(test_glb['valid'], valid_h[0])
                 m.wire(test_glb.clk, self.io.clk)
                 m.wire(test_glb.rst_n, self.io.rst_n)
+                m.wire(test_glb.flush, self.io.flush)
 
             elif glb_dir == 'read':
                 data_h = self.nlb.get_handle(glb_data, prefix="io2glb_16_")
@@ -183,10 +188,12 @@ class SparseTBBuilder(m.Generator2):
                     "data": m.In(m.Bits[16]),
                     "ready": m.Out(m.Bit),
                     "valid": m.In(m.Bit),
-                    "done": m.Out(m.Bit)
+                    "done": m.Out(m.Bit),
+                    "flush": m.In(m.Bit)
                 }
 
-                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv', type_map=glb_type_map)[0]
+                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv',
+                                                      type_map=glb_type_map)[0]
                 # test_glb = m.define_from_verilog_file('./glb_read.sv')[0]
                 # test_glb = test_glb()
                 test_glb = test_glb(NUM_BLOCKS=1)
@@ -194,8 +201,9 @@ class SparseTBBuilder(m.Generator2):
                 m.wire(data_h, test_glb['data'])
                 m.wire(test_glb['ready'], ready_h[0])
                 m.wire(valid_h[0], test_glb['valid'])
-                m.wire(self.io.clk, test_glb.clk)
-                m.wire(self.io.rst_n, test_glb.rst_n)
+                m.wire(test_glb.clk, self.io.clk)
+                m.wire(test_glb.rst_n, self.io.rst_n)
+                m.wire(test_glb.flush, self.io.flush)
             else:
                 raise NotImplementedError(f"glb_dir was {glb_dir}")
 
@@ -286,7 +294,6 @@ class SparseTBBuilder(m.Generator2):
                 reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
                 self.core_nodes[node.get_name()] = new_node_type(name=reg_ret)
 
-
     def connect_cores(self):
         '''
         Iterate through the edges of the graph and connect each core up
@@ -303,7 +310,6 @@ class SparseTBBuilder(m.Generator2):
             if addtl_conns is not None:
                 self.nlb.add_connections(addtl_conns, defer_placement=True)
 
-
     def configure_cores(self):
         '''
         Go through nodes and configure each based on the attributes...
@@ -315,7 +321,6 @@ class SparseTBBuilder(m.Generator2):
             # GLB tiles return none so that we don't try to config map them...
             if node_config is not None:
                 self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config)
-
 
     def display_names(self):
         self.nlb.display_names()
@@ -348,6 +353,8 @@ if __name__ == "__main__":
                                io_sides=NetlistBuilder.io_sides(),
                                num_tracks=num_tracks,
                                add_pd=True,
+                               # Soften the flush...?
+                               harden_flush=False,
                                mem_ratio=(1, 2),
                                altcore=altcore)
 
@@ -397,7 +404,7 @@ if __name__ == "__main__":
     #     tester.step(2)
     tester.poke(stb.io.flush, 0)
     tester.eval()
-    
+
     from conftest import run_tb_fn
     run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="mek_dump")
     # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")

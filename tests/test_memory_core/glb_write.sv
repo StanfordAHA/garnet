@@ -8,7 +8,8 @@ module glb_write #(
     output logic [15:0] data,
     input logic ready,
     output logic valid,
-    output logic done
+    output logic done,
+    input logic flush
 );
 
 logic [15:0] local_mem [0:1023];
@@ -22,6 +23,8 @@ initial begin
     valid = 0;
     done = 0;
     data = 0;
+
+    @(posedge flush);
 
     // Make as many transfers from the memory as needed.
     while(num_tx < TX_SIZE) begin

@@ -9,7 +9,8 @@ module glb_read #(
     input logic [15:0] data,
     output logic ready,
     input logic valid,
-    output logic done
+    output logic done,
+    input logic flush
 );
 
 logic [15:0] local_mem_0 [0:1023];
@@ -25,6 +26,8 @@ initial begin
     size_0 = 0;
     size_1 = 0;
     done = 0;
+
+    @(posedge flush);
 
     // Do first transfer...
     while(1) begin
