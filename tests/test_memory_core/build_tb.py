@@ -49,13 +49,14 @@ class SparseTBBuilder(m.Generator2):
 
         self.register_cores()
         self.connect_cores()
-        self.configure_cores()
-
-        # self.config = self.io.config
-
         # Add flush connection
         flush_in = self.nlb.register_core("io_1", name="flush_in")
         self.nlb.add_connections(connections=self.nlb.emit_flush_connection(flush_in))
+        self.nlb.get_route_config()
+
+        self.configure_cores()
+
+        # self.config = self.io.config
         # Now we have the configured CGRA...
         self.nlb.finalize_config()
 
@@ -79,8 +80,6 @@ class SparseTBBuilder(m.Generator2):
         self.interconnect_ins = self.get_interconnect_ins()
         # Make sure to remove the flush port or it will get grounded.
         self.interconnect_ins.remove(str(flush_h))
-
-        # self.nlb.get_route_config()
 
         self.attach_glb()
         self.wire_interconnect_ins()
