@@ -87,7 +87,7 @@ else
       echo "Using docker container '$container_name'"
 
       # MAKE SURE the docker container gets killed when this script dies.
-      trap "docker kill $container_name" EXIT
+      trap "docker kill $container_name || echo okay" EXIT
 
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
