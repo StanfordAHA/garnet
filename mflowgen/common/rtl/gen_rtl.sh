@@ -87,7 +87,7 @@ else
       echo "Using docker container '$container_name'"
 
       # MAKE SURE the docker container gets killed when this script dies.
-      trap "docker kill $container_name || echo okay" EXIT
+      trap "docker kill $container_name" EXIT
 
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
@@ -185,6 +185,8 @@ else
       else
           echo "could not kill docker container $container_name (maybe already dead?)"
       fi
+      trap - EXIT; # Remove the docker-kill trap, don't need it anymore.
+
       cd .. ; # pop out from e.g. "9-rtl/aha/" back to "9-rtl/"
 
       # Set 'save_verilog_to_tmpdir' "True" if want to capture the output
