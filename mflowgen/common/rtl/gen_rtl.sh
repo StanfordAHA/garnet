@@ -40,44 +40,9 @@ else
       # install the aha wrapper script
       pip install -e .
 
-      # Added because "docker image prune" by itself (below) was not doing the job...!
-      echo "--- Docker pre-cleaning"; echo ""
-      docker images; echo ""
-      docker ps    ; echo ""
-
-      echo ""; echo "# 1. Find untagged docker images"; echo ""
-      untagged_images=`docker images | grep "<none>" | awk '{print $3}'`
-      if [ "$untagged_images" ]; then echo "Found untagged images $untagged_images"; echo ""; fi
-
-      echo ""; echo "# 2. Find and kill jobs associated with each untagged image"; echo ""
-      for ui in $untagged_images; do
-          echo "================================================================"
-          echo docker ps --filter "ancestor=$ui"
-               docker ps --filter "ancestor=$ui"
-          echo ""
-          untagged_jobs=`docker ps --filter "ancestor=$ui" -q`
-          for uj in $untagged_jobs; do
-              echo -n "docker kill $uj ... "
-                   docker kill $uj
-          done
-
-          # Wait a couple seconds for last job to die
-          sleep 10
-
-          echo ""; echo "# Now that jobs are dead, can delete untagged image"
-          echo docker rmi $ui
-               docker rmi $ui
-
-          echo "================================================================"
-      done
-
-      echo ""; echo "# Untagged jobs AFTER pre-cleaning"; echo ""
-      docker images; echo ""
-      docker ps    ; echo ""
-
       # Prune docker images...
       # ("yes" emits endless stream of y's)
-      echo ""; echo "Docker cleanup PRUNE (old)"
+      echo ""; echo "Docker cleanup PRUNE"
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
 
       echo ""; echo "After pruning:"; echo ""
@@ -120,6 +85,9 @@ else
           docker run -id --name ${container_name} --rm -v /cad:/cad ${rtl_docker_image} bash
       fi
       echo "Using docker container '$container_name'"
+
+      # MAKE SURE the docker container gets killed when this script dies.
+      trap "docker kill $container_name" EXIT
 
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
