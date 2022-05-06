@@ -404,6 +404,8 @@ if __name__ == "__main__":
     #     tester.step(2)
     tester.poke(stb.io.flush, 0)
     tester.eval()
+    for i in range(10):
+        tester.step(2)
 
     from conftest import run_tb_fn
     run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="mek_dump")
