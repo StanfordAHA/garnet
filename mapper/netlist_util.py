@@ -535,7 +535,6 @@ class FixInputsOutputAndPipeline(Visitor):
 
     def create_register_tree(self, new_io_node, new_select_node, old_select_node, sinks, 
                              bit, tree_leaves, min_stages = 1, max_tree_level = 16):
-        return  
         max_curr_tree_level = min(max_tree_level, len(sinks))
         num_stages = max(math.ceil(math.log(max_tree_level, tree_leaves)) + 1, min_stages)
         

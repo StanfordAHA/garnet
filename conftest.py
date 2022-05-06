@@ -92,7 +92,7 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
             runtime_kwargs["simulator"] = "xcelium"
             runtime_kwargs["flags"] = ["-sv"]
             if trace:
-                runtime_kwargs["dump_vcd"] = True
+                runtime_kwargs["dump_waveforms"] = True
         else:
             target = "verilator"
             if trace:
