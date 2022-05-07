@@ -157,33 +157,35 @@ class KratosIOCoreDelay(Generator):
         glb_ports = []
         for width in [1, 16]:
             glb_name = f"glb2io_{width}"
-            glb_ports.append(self.input(glb_name, width).name)
+            glb_ports.append(self.input(glb_name, width))
             self.input(f"f2io_{width}", width)
         for width in [1, 16]:
-            glb_ports.append(self.output(f"io2glb_{width}", width).name)
+            glb_ports.append(self.output(f"io2glb_{width}", width))
             self.output(f"io2f_{width}", width)
 
         clk = self.clock("clk")
 
         @always_ff((posedge, clk))
-        def delay_logic(port_name):
-            if self.ports[port_name + "_delay_en"]:
-                self.vars[port_name + "_reg"] = self.ports[port_name]
+        def delay_logic(en_name, reg_name):
+            if self.ports[en_name]:
+                self.vars[reg_name] = self.ports[port_name]
 
         for port in glb_ports:
-            self.var(port + "_reg", port.width)
-            self.input(port + "_delay_en", 1)
-            self.add_always(delay_logic, port_name=port)
+            port_name = port.name
+            reg = self.var(port_name + "_reg", port.width)
+            delay = self.input(port_name + "_delay_en", 1)
+            self.add_always(delay_logic, en_name=delay.name, reg_name=reg.name)
 
         # dealing with pass though logic or muxing logic
         for width in [1, 16]:
             glb_port = f"glb2io_{width}"
-            if glb_port in glb_ports:
-                self.wire(self.ports[f"io2f_{width}"],
-                          ternary(self.ports[f"glb2io_{width}_delay_en"], self.vars[f"glb2io_{width}_reg"],
-                          self.ports[glb_port]))
-            else:
-                self.wire(self.ports[f"io2f_{width}"], self.ports[glb_port])
+            self.wire(self.ports[f"io2f_{width}"],
+                      ternary(self.ports[f"glb2io_{width}_delay_en"], self.vars[f"glb2io_{width}_reg"],
+                              self.ports[glb_port]))
+            glb_port = f"f2io_{width}"
+            self.wire(self.ports[f"io2glb_{width}"],
+                      ternary(self.ports[f"io2glb_{width}_delay_en"], self.vars[f"io2glb_{width}_reg"],
+                              self.ports[glb_port]))
 
     @staticmethod
     def get_core():
@@ -209,7 +211,9 @@ class IOCoreDelay(ConfigurableCore, IOCoreBase):
                 self.wire(self.ports[port_name], self.core.ports[port_name])
             # add config
             for prefix in ["glb2io", "io2glb"]:
-                self.add_config()
+                reg_name = f"{prefix}_{width}_delay_en"
+                self.add_config(reg_name, 1)
+                self.wire(self.registers[reg_name].ports.O, self.core.ports[reg_name])
 
     def get_config_bitstream(self, instr):
         return []  # pragma: nocover
