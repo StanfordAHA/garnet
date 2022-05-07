@@ -31,7 +31,7 @@ def test_regression(run_tb, core_type):
 
     run_tb(tester)
 
-@pytest.mark.skip("skipping this test for now since there is a logic bug")
+
 def test_delay_io(run_tb):
     io_core = IOCoreDelay()
     io_core.finalize()
@@ -58,18 +58,18 @@ def test_delay_io(run_tb):
         tester.eval()
         tester.expect(io_core_circuit.read_config_data, data)
 
-    for width in [1]:
+    for width in [1, 16]:
         vectors = [(random_bv(width), (random_bv(width))) for _ in range(10)]
         for i, (v1, v2) in enumerate(vectors):
-            tester.poke(io_core_circuit.glb2io_1, v1)
-            tester.poke(io_core_circuit.f2io_1, v2)
+            tester.poke(getattr(io_core_circuit, f"glb2io_{width}"), v1)
+            tester.poke(getattr(io_core_circuit, f"f2io_{width}"), v2)
 
             tester.eval()
 
             if i > 0:
                 pre_v1, pre_v2 = vectors[i - 1]
-                tester.expect(io_core_circuit.io2f_1, pre_v1)
-                tester.expect(io_core_circuit.io2glb_1, pre_v2)
+                tester.expect(getattr(io_core_circuit, f"io2f_{width}"), pre_v1)
+                tester.expect(getattr(io_core_circuit, f"io2glb_{width}"), pre_v2)
 
             tester.step(2)
 
