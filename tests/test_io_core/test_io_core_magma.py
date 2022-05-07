@@ -1,13 +1,15 @@
-import tempfile
+import pytest
 from gemstone.common.testers import BasicTester
 from gemstone.common.util import compress_config_data
-from io_core.io_core_magma import IOCoreValid, IOCore
+from io_core.io_core_magma import IOCoreValid, IOCore, IOCoreDelay
 from fault.tester import Tester
 from fault.random import random_bv
 
 
-def test_regression(run_tb):
-    io_core = IOCore()
+@pytest.mark.parametrize("core_type", [IOCore, IOCoreDelay])
+def test_regression(run_tb, core_type):
+    io_core = core_type()
+    io_core.finalize()
     io_core_circuit = io_core.circuit()
     tester = Tester(io_core_circuit)
 
