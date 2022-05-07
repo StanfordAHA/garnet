@@ -112,6 +112,9 @@ class IOCore(IOCoreBase):
         self.wire(self.ports.f2io_16, self.ports.io2glb_16)
         self.wire(self.ports.f2io_1, self.ports.io2glb_1)
 
+    def finalize(self):
+        pass
+
 
 class IOCoreValid(ConfigurableCore, IOCoreBase):
     def __init__(self, config_addr_width=8, config_data_width=32):
@@ -170,22 +173,31 @@ class KratosIOCoreDelay(Generator):
             if self.ports[en_name]:
                 self.vars[reg_name] = self.ports[p_name]
 
+        # compute name mapping
+        mapping = {}
+        target_port = {}
+        for width in [1, 16]:
+            mapping[f"glb2io_{width}"] = f"glb2io_{width}"
+            mapping[f"io2glb_{width}"] = f"f2io_{width}"
+            target_port[f"glb2io_{width}"] = f"io2f_{width}"
+            target_port[f"io2glb_{width}"] = f"io2glb_{width}"
+
         for port in glb_ports:
             port_name = port.name
             reg = self.var(port_name + "_reg", port.width)
             delay = self.input(port_name + "_delay_en", 1)
-            self.add_always(delay_logic, en_name=delay.name, reg_name=reg.name, p_name=port_name)
+            target_name = mapping[port_name]
+            self.add_always(delay_logic, en_name=delay.name, reg_name=reg.name, p_name=target_name)
 
         # dealing with pass though logic or muxing logic
         for width in [1, 16]:
-            glb_port = f"glb2io_{width}"
-            self.wire(self.ports[f"io2f_{width}"],
-                      ternary(self.ports[f"glb2io_{width}_delay_en"], self.vars[f"glb2io_{width}_reg"],
-                              self.ports[glb_port]))
-            glb_port = f"f2io_{width}"
-            self.wire(self.ports[f"io2glb_{width}"],
-                      ternary(self.ports[f"io2glb_{width}_delay_en"], self.vars[f"io2glb_{width}_reg"],
-                              self.ports[glb_port]))
+            for prefix in ["glb2io", "io2glb"]:
+                glb_port = f"{prefix}_{width}"
+                dst_name = mapping[glb_port]
+                target_name = target_port[glb_port]
+                self.wire(self.ports[target_name],
+                          ternary(self.ports[f"{glb_port}_delay_en"], self.vars[f"{glb_port}_reg"],
+                                  self.ports[dst_name]))
 
     @staticmethod
     def get_core():
