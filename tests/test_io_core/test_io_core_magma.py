@@ -31,6 +31,50 @@ def test_regression(run_tb, core_type):
 
     run_tb(tester)
 
+@pytest.mark.skip("skipping this test for now since there is a logic bug")
+def test_delay_io(run_tb):
+    io_core = IOCoreDelay()
+    io_core.finalize()
+
+    io_core_circuit = io_core.circuit()
+    tester = BasicTester(io_core_circuit, io_core_circuit.clk, io_core_circuit.reset)
+
+    # configure everything to delay mode
+    instr = {}
+    for width in [1, 16]:
+        for prefix in ["glb2io", "io2glb"]:
+            reg_name = f"{prefix}_{width}_delay_en"
+            instr[reg_name] = 1
+
+    config_data = io_core.get_config_bitstream(instr)
+    config_data = compress_config_data(config_data)
+
+    tester.zero_inputs()
+    tester.reset()
+
+    for addr, data in config_data:
+        tester.configure(addr, data)
+        tester.config_read(addr)
+        tester.eval()
+        tester.expect(io_core_circuit.read_config_data, data)
+
+    for width in [1]:
+        vectors = [(random_bv(width), (random_bv(width))) for _ in range(10)]
+        for i, (v1, v2) in enumerate(vectors):
+            tester.poke(io_core_circuit.glb2io_1, v1)
+            tester.poke(io_core_circuit.f2io_1, v2)
+
+            tester.eval()
+
+            if i > 0:
+                pre_v1, pre_v2 = vectors[i - 1]
+                tester.expect(io_core_circuit.io2f_1, pre_v1)
+                tester.expect(io_core_circuit.io2glb_1, pre_v2)
+
+            tester.step(2)
+
+    run_tb(tester, cwd="temp", trace=True)
+
 
 def test_valid_generation(run_tb):
     io_core = IOCoreValid()
