@@ -166,15 +166,15 @@ class KratosIOCoreDelay(Generator):
         clk = self.clock("clk")
 
         @always_ff((posedge, clk))
-        def delay_logic(en_name, reg_name):
+        def delay_logic(en_name, reg_name, p_name):
             if self.ports[en_name]:
-                self.vars[reg_name] = self.ports[port_name]
+                self.vars[reg_name] = self.ports[p_name]
 
         for port in glb_ports:
             port_name = port.name
             reg = self.var(port_name + "_reg", port.width)
             delay = self.input(port_name + "_delay_en", 1)
-            self.add_always(delay_logic, en_name=delay.name, reg_name=reg.name)
+            self.add_always(delay_logic, en_name=delay.name, reg_name=reg.name, p_name=port_name)
 
         # dealing with pass though logic or muxing logic
         for width in [1, 16]:
@@ -216,7 +216,14 @@ class IOCoreDelay(ConfigurableCore, IOCoreBase):
                 self.wire(self.registers[reg_name].ports.O, self.core.ports[reg_name])
 
     def get_config_bitstream(self, instr):
-        return []  # pragma: nocover
+        configs = []
+        for width in [1, 16]:
+            for prefix in ["glb2io", "io2glb"]:
+                reg_name = f"{prefix}_{width}_delay_en"
+                if reg_name in instr:
+                    v = instr[reg_name]
+                    configs.append(self.get_config_data(reg_name, v))
+        return configs
 
     def instruction_type(self):
         raise NotImplementedError()  # pragma: nocover
