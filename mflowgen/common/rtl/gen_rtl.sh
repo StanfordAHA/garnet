@@ -41,7 +41,15 @@ else
       pip install -e .
 
       # Prune docker images...
+      # ("yes" emits endless stream of y's)
+      echo ""; echo "Docker cleanup PRUNE"
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
+
+      echo ""; echo "After pruning:"; echo ""
+      docker images; echo ""
+      docker ps    ; echo ""
+
+      echo "--- Continue..."
 
       # Choose a docker image; can set via "rtl_docker_image" parameter
       default_image="stanfordaha/garnet:latest"
@@ -78,6 +86,9 @@ else
       fi
       echo "Using docker container '$container_name'"
 
+      # MAKE SURE the docker container gets killed when this script dies.
+      trap "docker kill $container_name" EXIT
+
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # docker exec $container_name /bin/bash -c "cd /aha/lake/ && git checkout master && git pull"
@@ -87,6 +98,8 @@ else
       fi
 
       # run garnet.py in container and concat all verilog outputs
+      echo "---docker exec $container_name"
+
       docker exec $container_name /bin/bash -c \
         '# Func to check python package creds (Added 02/2021 as part of cst vetting)
          # (Single-quote regime)
@@ -117,18 +130,22 @@ else
          source /aha/bin/activate; # Set up the build environment
 
          if [ $interconnect_only == True ]; then
+           echo --- INTERCONNECT_ONLY: aha garnet $flags
            aha garnet $flags; # Here is where we build the verilog for the main chip
            cd garnet
            cp garnet.v design.v
          elif [ $glb_only == True ]; then
            cd garnet
 
+           echo '--- GLB_ONLY requested; do special glb things'
+           echo make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
            make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
            cp global_buffer/global_buffer.sv design.v
            cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
          else
+           echo --- DEFAULT rtl build: aha garnet $flags
            # Rename output verilog, final name must be 'design.v'
            aha garnet $flags; # Here is where we build the verilog for the main chip
            cd garnet
@@ -145,6 +162,7 @@ else
          fi"
 
 
+      echo +++ docker cleanup; set -x
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       if [ $glb_only == True ]; then
@@ -162,8 +180,13 @@ else
       docker images --digests
 
       # Kill the container
-      docker kill $container_name
-      echo "killed docker container $container_name"
+      if docker kill $container_name; then
+          echo "killed docker container $container_name"
+      else
+          echo "could not kill docker container $container_name (maybe already dead?)"
+      fi
+      trap - EXIT; # Remove the docker-kill trap, don't need it anymore.
+
       cd .. ; # pop out from e.g. "9-rtl/aha/" back to "9-rtl/"
 
       # Set 'save_verilog_to_tmpdir' "True" if want to capture the output
@@ -177,6 +200,7 @@ else
           cp mflowgen-run.log /tmp/log.${container_name}.deleteme$$
           set +x
       fi
+      set +x
 
     # Else we want to use local python env to generate rtl
     else
