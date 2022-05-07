@@ -270,6 +270,10 @@ class SparseTBBuilder(m.Generator2):
                     data = self.nlb.register_core("io_16", name="data_in_")
                     ready = self.nlb.register_core("io_1", name="ready_out_")
                     valid = self.nlb.register_core("io_1", name="valid_in_")
+                    # print("D/R/V")
+                    # print(data)
+                    # print(ready)
+                    # print(valid)
                     direction = "write"
                     # glb_writer = m.define_from_verilog_file()
                 elif node.get_attributes()['type'].strip('"') == 'fiberwrite':
@@ -363,17 +367,13 @@ if __name__ == "__main__":
 
     stb.display_names()
 
-    interconnect.dump_pnr(dir_name="/home/max/Documents/SPARSE/garnet/mek_dump/", design_name="matrix_identity")
-
-    # h_flush_in = nlb.get_handle(flush_in, prefix="glb2io_1_")
-    # stall_in = nlb.get_handle_str("stall")
-
-    # tester = nlb.get_tester()
     tester = BasicTester(stb, stb.clk, stb.rst_n)
 
-    tester.reset()
     tester.zero_inputs()
 
+    tester.reset()
+
+    tester.step(2)
     # Stall during config
     tester.poke(stb.io.stall, 1)
 
