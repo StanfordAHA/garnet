@@ -1,7 +1,7 @@
 import magma
 from gemstone.common.core import ConfigurableCore, PnRTag, ConfigurationType, Core
 from gemstone.generator import FromMagma
-from kratos import Generator, posedge, always_ff, mux
+from kratos import Generator, posedge, always_ff, mux, ternary
 from kratos.util import to_magma
 
 
@@ -141,6 +141,75 @@ class IOCoreValid(ConfigurableCore, IOCoreBase):
         self.wire(self.ports.f2io_1, self.core.ports.f2io_1)
         self.wire(self.ports.io2glb_1, self.core.ports.out)
         self.wire(self.ports.glb2io_1, self.core.ports.start)
+
+    def get_config_bitstream(self, instr):
+        return []  # pragma: nocover
+
+    def instruction_type(self):
+        raise NotImplementedError()  # pragma: nocover
+
+
+class KratosIOCoreDelay(Generator):
+    core = None
+
+    def __init__(self):
+        super(KratosIOCoreDelay, self).__init__("KratosIOCoreDelay")
+        glb_ports = []
+        for width in [1, 16]:
+            glb_name = f"glb2io_{width}"
+            glb_ports.append(self.input(glb_name, width).name)
+            self.input(f"f2io_{width}", width)
+        for width in [1, 16]:
+            glb_ports.append(self.output(f"io2glb_{width}", width).name)
+            self.output(f"io2f_{width}", width)
+
+        clk = self.clock("clk")
+
+        @always_ff((posedge, clk))
+        def delay_logic(port_name):
+            if self.ports[port_name + "_delay_en"]:
+                self.vars[port_name + "_reg"] = self.ports[port_name]
+
+        for port in glb_ports:
+            self.var(port + "_reg", port.width)
+            self.input(port + "_delay_en", 1)
+            self.add_always(delay_logic, port_name=port)
+
+        # dealing with pass though logic or muxing logic
+        for width in [1, 16]:
+            glb_port = f"glb2io_{width}"
+            if glb_port in glb_ports:
+                self.wire(self.ports[f"io2f_{width}"],
+                          ternary(self.ports[f"glb2io_{width}_delay_en"], self.vars[f"glb2io_{width}_reg"],
+                          self.ports[glb_port]))
+            else:
+                self.wire(self.ports[f"io2f_{width}"], self.ports[glb_port])
+
+    @staticmethod
+    def get_core():
+        if KratosIOCoreDelay.core is None:
+            c = KratosIOCoreDelay()
+            circ = to_magma(c)
+            KratosIOCoreDelay.core = circ
+        return KratosIOCoreDelay.core
+
+
+class IOCoreDelay(ConfigurableCore, IOCoreBase):
+    def __init__(self, config_addr_width=8, config_data_width=32):
+        super().__init__(config_addr_width, config_data_width)
+        self._add_ports()
+        self.add_port("config", magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
+
+        self.core = FromMagma(KratosIOCoreDelay.get_core())
+        # wiring up the ports
+        self.wire(self.ports.clk, self.core.ports.clk)
+        for width in [1, 16]:
+            for prefix in ["glb2io", "io2f", "f2io", "io2glb"]:
+                port_name = f"{prefix}_{width}"
+                self.wire(self.ports[port_name], self.core.ports[port_name])
+            # add config
+            for prefix in ["glb2io", "io2glb"]:
+                self.add_config()
 
     def get_config_bitstream(self, instr):
         return []  # pragma: nocover
