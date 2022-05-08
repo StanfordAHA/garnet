@@ -73,7 +73,7 @@ def test_delay_io(run_tb):
 
             tester.step(2)
 
-    run_tb(tester, cwd="temp", trace=True)
+    run_tb(tester)
 
 
 def test_valid_generation(run_tb):
