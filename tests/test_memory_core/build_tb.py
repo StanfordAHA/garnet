@@ -184,6 +184,8 @@ class SparseTBBuilder(m.Generator2):
                 }
 
                 test_glb = GLBWrite(ID=self.get_next_seq())
+                test_glb.TX_SIZE_PARAM = glb_tx_size
+                test_glb.FILE_NO_PARAM = glb_file_number
 
                 # test_glb = kratos.Generator.from_verilog('glb_write', '/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv',
                 #                                          port_mapping=glb_port_map,
@@ -196,7 +198,8 @@ class SparseTBBuilder(m.Generator2):
                 # test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv',
                 #                                       type_map=glb_type_map)[0]
 
-                test_glb = test_glb(TX_SIZE=glb_tx_size, FILE_NO=glb_file_number)
+                # test_glb = test_glb(TX_SIZE=glb_tx_size, FILE_NO=glb_file_number)
+                test_glb = test_glb()
 
                 # m.wire(test_glb['data'], data_h)
                 # m.wire(ready_h, test_glb['ready'])
@@ -242,6 +245,7 @@ class SparseTBBuilder(m.Generator2):
 
                 test_glb = GLBRead(ID=self.get_next_seq())
 
+                test_glb.NUM_BLOCKS_PARAM = glb_num_blocks
                 # test_glb = kratos.Generator.from_verilog('glb_write', '/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv',
                 #                                          port_mapping=glb_port_map,
                 #                                          lib_files=[])
@@ -254,7 +258,8 @@ class SparseTBBuilder(m.Generator2):
                 #                                       type_map=glb_type_map)[0]
                 # test_glb = m.define_from_verilog_file('./glb_read.sv')[0]
                 # test_glb = test_glb()
-                test_glb = test_glb(NUM_BLOCKS=glb_num_blocks)
+                # test_glb = test_glb(NUM_BLOCKS=glb_num_blocks)
+                test_glb = test_glb()
 
                 m.wire(data_h, test_glb['data'])
                 m.wire(test_glb['ready'], ready_h)
