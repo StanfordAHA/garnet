@@ -28,6 +28,7 @@ initial begin
     done = 0;
 
     @(posedge flush);
+    @(negedge flush);
 
     // Do first transfer...
     while(1) begin
