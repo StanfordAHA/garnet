@@ -26,6 +26,9 @@ from sam.onyx.hw_nodes.merge_node import MergeNode
 from sam.onyx.hw_nodes.repeat_node import RepeatNode
 from sam.onyx.hw_nodes.repsiggen_node import RepSigGenNode
 import magma as m
+import kratos
+from lake.modules.glb_write import GLBWrite
+from lake.modules.glb_read import GLBRead
 
 
 class SparseTBBuilder(m.Generator2):
@@ -36,6 +39,7 @@ class SparseTBBuilder(m.Generator2):
         self.nlb = nlb
         self.graph = graph
         self.core_nodes = {}
+        self.glb_dones = []
 
         self._ctr = 0
 
@@ -44,7 +48,8 @@ class SparseTBBuilder(m.Generator2):
             rst_n=m.In(m.AsyncReset),
             stall=m.In(m.Bit),
             flush=m.In(m.Bit),
-            config=m.In(ConfigurationType(32, 32))
+            config=m.In(ConfigurationType(32, 32)),
+            done=m.Out(m.Bit)
         )
 
         self.register_cores()
@@ -82,6 +87,16 @@ class SparseTBBuilder(m.Generator2):
         self.interconnect_ins.remove(str(flush_h))
 
         self.attach_glb()
+
+        # AND together all the dones
+        if len(self.glb_dones) == 1:
+            m.wire(self.io.done, self.glb_dones[0])
+        else:
+            tmp = self.glb_dones[0]
+            for i in range(len(self.glb_dones) - 1):
+                tmp = tmp & self.glb_dones[i + 1]
+            m.wire(self.io.done, tmp[0])
+
         self.wire_interconnect_ins()
 
     def get_next_seq(self):
@@ -128,6 +143,9 @@ class SparseTBBuilder(m.Generator2):
             glb_data = node.get_data()
             glb_ready = node.get_ready()
             glb_valid = node.get_valid()
+            glb_num_blocks = node.get_num_blocks()
+            glb_file_number = node.get_file_number()
+            glb_tx_size = node.get_tx_size()
 
             # Get the handle for these pins, then instantiate glb
             glb_dir = node.get_direction()
@@ -155,19 +173,40 @@ class SparseTBBuilder(m.Generator2):
                     "flush": m.In(m.Bit)
                 }
 
-                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv',
-                                                      type_map=glb_type_map)[0]
-                test_glb = test_glb(TX_SIZE=10)
+                glb_port_map = {
+                    "clk": kratos.generator.PortType.Clock,
+                    "rst_n": kratos.generator.PortType.AsyncReset,
+                    # "data": kratos.generator.PortType.Data,
+                    # "ready": kratos.generator.PortType.Data,
+                    # "valid": kratos.generator.PortType.Data,
+                    # "done": kratos.generator.PortType.Data,
+                    # "flush": kratos.generator.PortType.Data
+                }
+
+                test_glb = GLBWrite(ID=self.get_next_seq())
+
+                # test_glb = kratos.Generator.from_verilog('glb_write', '/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv',
+                #                                          port_mapping=glb_port_map,
+                #                                          lib_files=[])
+
+                # test_glb_inst = test_glb()
+
+                test_glb = kratos.util.to_magma(test_glb)
+
+                # test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv',
+                #                                       type_map=glb_type_map)[0]
+
+                test_glb = test_glb(TX_SIZE=glb_tx_size, FILE_NO=glb_file_number)
 
                 # m.wire(test_glb['data'], data_h)
                 # m.wire(ready_h, test_glb['ready'])
                 # m.wire(test_glb['valid'], valid_h)
                 m.wire(test_glb['data'], data_h)
-                m.wire(ready_h[0], test_glb['ready'])
-                m.wire(test_glb['valid'], valid_h[0])
+                m.wire(ready_h, test_glb['ready'])
+                m.wire(test_glb['valid'], valid_h)
                 m.wire(test_glb.clk, self.io.clk)
                 m.wire(test_glb.rst_n, self.io.rst_n)
-                m.wire(test_glb.flush, self.io.flush)
+                m.wire(test_glb.flush[0], self.io.flush)
 
             elif glb_dir == 'read':
                 data_h = self.nlb.get_handle(glb_data, prefix="io2glb_16_")
@@ -191,20 +230,42 @@ class SparseTBBuilder(m.Generator2):
                     "flush": m.In(m.Bit)
                 }
 
-                test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv',
-                                                      type_map=glb_type_map)[0]
+                glb_port_map = {
+                    "clk": kratos.generator.PortType.Clock,
+                    "rst_n": kratos.generator.PortType.AsyncReset,
+                    # "data": kratos.generator.PortType.Data,
+                    # "ready": kratos.generator.PortType.Data,
+                    # "valid": kratos.generator.PortType.Data,
+                    # "done": kratos.generator.PortType.Data,
+                    # "flush": kratos.generator.PortType.Data
+                }
+
+                test_glb = GLBRead(ID=self.get_next_seq())
+
+                # test_glb = kratos.Generator.from_verilog('glb_write', '/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv',
+                #                                          port_mapping=glb_port_map,
+                #                                          lib_files=[])
+
+                # test_glb_inst = test_glb()
+
+                test_glb = kratos.util.to_magma(test_glb)
+
+                # test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv',
+                #                                       type_map=glb_type_map)[0]
                 # test_glb = m.define_from_verilog_file('./glb_read.sv')[0]
                 # test_glb = test_glb()
-                test_glb = test_glb(NUM_BLOCKS=1)
+                test_glb = test_glb(NUM_BLOCKS=glb_num_blocks)
 
                 m.wire(data_h, test_glb['data'])
-                m.wire(test_glb['ready'], ready_h[0])
-                m.wire(valid_h[0], test_glb['valid'])
+                m.wire(test_glb['ready'], ready_h)
+                m.wire(valid_h, test_glb['valid'])
                 m.wire(test_glb.clk, self.io.clk)
                 m.wire(test_glb.rst_n, self.io.rst_n)
-                m.wire(test_glb.flush, self.io.flush)
+                m.wire(test_glb.flush[0], self.io.flush)
             else:
                 raise NotImplementedError(f"glb_dir was {glb_dir}")
+
+            self.glb_dones.append(test_glb.done)
 
     def register_cores(self):
         '''
@@ -275,6 +336,12 @@ class SparseTBBuilder(m.Generator2):
                     # print(ready)
                     # print(valid)
                     direction = "write"
+                    num_blocks = 1
+                    file_number = 0
+                    tx_size = 7
+                    if node.get_attributes()['mode'].strip('"') == 1 or node.get_attributes()['mode'].strip('"') == '1':
+                        file_number = 1
+                        tx_size = 12
                     # glb_writer = m.define_from_verilog_file()
                 elif node.get_attributes()['type'].strip('"') == 'fiberwrite':
                     # GLB read wants a data output, ready, valid
@@ -283,6 +350,11 @@ class SparseTBBuilder(m.Generator2):
                     valid = self.nlb.register_core("io_1", name="valid_out_")
                     direction = "read"
                     glb_name = "CGRA_TO_GLB"
+                    if 'val' in node.get_attributes()['label']:
+                        num_blocks = 1
+                    else:
+                        num_blocks = 2
+                    tx_size = 1
                 elif node.get_attributes()['type'].strip('"') == 'arrayvals':
                     # GLB write wants a data input, ready, valid
                     glb_name = "GLB_TO_CGRA"
@@ -290,9 +362,19 @@ class SparseTBBuilder(m.Generator2):
                     ready = self.nlb.register_core("io_1", name="ready_out_")
                     valid = self.nlb.register_core("io_1", name="valid_in_")
                     direction = "write"
+                    num_blocks = 1
+                    tx_size = 7
+                    file_number = 2
                 else:
                     raise NotImplementedError
-                self.core_nodes[node.get_name()] = GLBNode(name=glb_name, data=data, valid=valid, ready=ready, direction=direction)
+                self.core_nodes[node.get_name()] = GLBNode(name=glb_name,
+                                                           data=data,
+                                                           valid=valid,
+                                                           ready=ready,
+                                                           direction=direction,
+                                                           num_blocks=num_blocks,
+                                                           file_number=file_number,
+                                                           tx_size=tx_size)
             else:
                 reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
                 self.core_nodes[node.get_name()] = new_node_type(name=reg_ret)
@@ -405,6 +487,7 @@ if __name__ == "__main__":
     tester.eval()
     for i in range(10):
         tester.step(2)
+    tester.wait_until_high(tester.circuit.done, timeout=50)
 
     from conftest import run_tb_fn
     run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="mek_dump")

@@ -77,12 +77,19 @@ class WriteScannerCore(LakeCoreBase):
     def get_config_bitstream(self, config_tuple):
         inner_offset, compressed, lowest_level, stop_lvl, block_mode = config_tuple
         configs = []
-        config_scanner = [("tile_en", 1)]
+        config_scanner = [("tile_en", 1),
+                          ("valid_in_1_reg_sel", 1 - lowest_level)]
         config_scanner += self.dut.get_bitstream(inner_offset=inner_offset,
                                                  compressed=compressed,
                                                  lowest_level=lowest_level,
                                                  stop_lvl=stop_lvl,
                                                  block_mode=block_mode)
+
+        # Need to hardcode some wires to 0...
+        # If we are not at the lowest level, then the write scanner only
+        # uses a single input...
+        # configs.append(("valid_in_1_reg_sel", 1))
+
         for name, v in config_scanner:
             configs = [self.get_config_data(name, v)] + configs
         return configs

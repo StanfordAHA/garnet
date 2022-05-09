@@ -1,5 +1,6 @@
 module glb_write #(
-    parameter TX_SIZE = 32
+    parameter TX_SIZE = 32,
+    parameter FILE_NO = 0
     // parameter DATA_FILE = "generic_memory.txt"
 )
 (
@@ -15,7 +16,12 @@ module glb_write #(
 logic [15:0] local_mem [0:1023];
 integer num_tx;
 
-initial $readmemh("/home/max/Documents/SPARSE/garnet/generic_memory.txt", local_mem);
+
+initial begin
+    string file_str;
+    file_str = $sformatf("/home/max/Documents/SPARSE/garnet/generic_memory_%d.txt", FILE_NO);
+    $readmemh(file_str, local_mem);
+end
 
 initial begin
     
@@ -25,6 +31,7 @@ initial begin
     data = 0;
 
     @(posedge flush);
+    @(negedge flush);
 
     // Make as many transfers from the memory as needed.
     while(num_tx < TX_SIZE) begin
@@ -37,6 +44,7 @@ initial begin
     end
     @(posedge clk);
     done = 1;
+    valid = 0;
 
 end
 
