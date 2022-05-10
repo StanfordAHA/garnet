@@ -1,6 +1,6 @@
 module glb_write #(
     parameter TX_SIZE = 32,
-    parameter FILE_NO = 0
+    parameter FILE_NAME = "/home/max/Documents/SPARSE/garnet/generic_memory_0.txt"
     // parameter DATA_FILE = "generic_memory.txt"
 )
 (
@@ -18,9 +18,9 @@ integer num_tx;
 
 
 initial begin
-    string file_str;
-    file_str = $sformatf("/home/max/Documents/SPARSE/garnet/generic_memory_%d.txt", FILE_NO);
-    $readmemh(file_str, local_mem);
+    // string file_str;
+    // file_str = $sformatf("/home/max/Documents/SPARSE/garnet/generic_memory_%d.txt", FILE_NO);
+    $readmemh(FILE_NAME, local_mem);
 end
 
 initial begin
