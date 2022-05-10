@@ -163,8 +163,6 @@ class SparseTBBuilder(m.Generator2):
                 ready_h = self.interconnect_circuit[str(ready_h)]
                 valid_h = self.interconnect_circuit[str(valid_h)]
 
-
-
                 class _Definition(m.Generator2):
                     def __init__(self, TX_SIZE, FILE_NAME, ID_no) -> None:
                         # super().__init__()
@@ -215,9 +213,9 @@ class SparseTBBuilder(m.Generator2):
                 valid_h = self.interconnect_circuit[str(valid_h)]
 
                 class _Definition(m.Generator2):
-                    def __init__(self, NUM_BLOCKS) -> None:
+                    def __init__(self, NUM_BLOCKS, FILE_NAME1, FILE_NAME2, ID_no) -> None:
                         # super().__init__()
-                        self.name = f"glb_read_{NUM_BLOCKS}"
+                        self.name = f"glb_read_wrapper_{NUM_BLOCKS}_{ID_no}"
                         self.io = m.IO(**{
                             "clk": m.In(m.Clock),
                             "rst_n": m.In(m.AsyncReset),
@@ -229,7 +227,7 @@ class SparseTBBuilder(m.Generator2):
                         })
 
                         self.verilog = f"""
-                glb_read #(.NUM_BLOCKS({NUM_BLOCKS}))
+                glb_read #(.NUM_BLOCKS({NUM_BLOCKS}), .FILE_NAME1({FILE_NAME1}), .FILE_NAME2({FILE_NAME2}))
                 test_glb_inst
                 (
                     .clk(clk),
@@ -241,7 +239,12 @@ class SparseTBBuilder(m.Generator2):
                     .flush(flush)
                 );
                 """
-                test_glb = _Definition(NUM_BLOCKS=glb_num_blocks)()
+
+                ID_no = self.get_next_seq()
+                f1 = f"\"/home/max/Documents/SPARSE/garnet/generic_memory_out_id_{ID_no}_block_0.txt\""
+                f2 = f"\"/home/max/Documents/SPARSE/garnet/generic_memory_out_id_{ID_no}_block_1.txt\""
+
+                test_glb = _Definition(NUM_BLOCKS=glb_num_blocks, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
 
                 m.wire(data_h, test_glb['data'])
                 m.wire(test_glb['ready'], ready_h[0])
@@ -479,3 +482,5 @@ if __name__ == "__main__":
     from conftest import run_tb_fn
     run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="mek_dump")
     # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
+
+    stb.display_names()
