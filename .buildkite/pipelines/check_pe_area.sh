@@ -19,14 +19,13 @@ echo $pe_dir
 
 # "echo" to unglob why not
 resdir=`echo $pe_dir/*synthesis/results_syn`
-egrep ^Tile_PE $resdir/final_area.rpt | awk '
+egrep ^Tile_PE $resdir/final_area.rpt | awk -v max_area=8500 '
 { printf("Total area: %d\n", $NF);
-  max_area=8500
-  if ($NF > $max_area) {
+  if ($NF > max_area) {
     print ""
     print  "**ERROR '$resdir/final_area.rpt'"
-    printf("**ERROR TILE area %d TOO BIG, should be < %d\n", $NF, $max_area);
-    printf("+++ FAIL TILE area %d TOO BIG, should be < %d\n", $NF, $max_area);
+    printf("**ERROR TILE area %d TOO BIG, should be < %d\n", $NF, max_area);
+    printf("+++ FAIL TILE area %d TOO BIG, should be < %d\n", $NF, max_area);
     print ""; exit 13; }}
 '
 
