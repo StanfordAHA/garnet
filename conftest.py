@@ -73,6 +73,9 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
         for aoi_mux in glob.glob(os.path.join(root_dir, "tests/*.sv")):
             shutil.copy(aoi_mux, tempdir)
             rtl_lib.append(os.path.basename(aoi_mux))
+        for glb_module in glob.glob(os.path.join(root_dir, "tests/test_memory_core/*.sv")):
+            shutil.copy(glb_module, tempdir)
+            rtl_lib.append(os.path.basename(glb_module))
 
         if use_dw:
             coreir_lib_name = "float_DW"

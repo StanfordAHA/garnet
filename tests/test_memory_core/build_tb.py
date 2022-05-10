@@ -95,7 +95,7 @@ class SparseTBBuilder(m.Generator2):
             tmp = self.glb_dones[0]
             for i in range(len(self.glb_dones) - 1):
                 tmp = tmp & self.glb_dones[i + 1]
-            m.wire(self.io.done, tmp[0])
+            m.wire(self.io.done, tmp)
 
         self.wire_interconnect_ins()
 
@@ -163,53 +163,44 @@ class SparseTBBuilder(m.Generator2):
                 ready_h = self.interconnect_circuit[str(ready_h)]
                 valid_h = self.interconnect_circuit[str(valid_h)]
 
-                glb_type_map = {
-                    "clk": m.In(m.Clock),
-                    "rst_n": m.In(m.AsyncReset),
-                    "data": m.Out(m.Bits[16]),
-                    "ready": m.In(m.Bit),
-                    "valid": m.Out(m.Bit),
-                    "done": m.Out(m.Bit),
-                    "flush": m.In(m.Bit)
-                }
 
-                glb_port_map = {
-                    "clk": kratos.generator.PortType.Clock,
-                    "rst_n": kratos.generator.PortType.AsyncReset,
-                    # "data": kratos.generator.PortType.Data,
-                    # "ready": kratos.generator.PortType.Data,
-                    # "valid": kratos.generator.PortType.Data,
-                    # "done": kratos.generator.PortType.Data,
-                    # "flush": kratos.generator.PortType.Data
-                }
 
-                test_glb = GLBWrite(ID=self.get_next_seq())
-                test_glb.TX_SIZE_PARAM = glb_tx_size
-                test_glb.FILE_NO_PARAM = glb_file_number
+                class _Definition(m.Generator2):
+                    def __init__(self, TX_SIZE, FILE_NAME, ID_no) -> None:
+                        # super().__init__()
+                        self.name = f"glb_write_wrapper_{TX_SIZE}_{ID_no}"
+                        self.io = m.IO(**{
+                            "clk": m.In(m.Clock),
+                            "rst_n": m.In(m.AsyncReset),
+                            "data": m.Out(m.Bits[16]),
+                            "ready": m.In(m.Bit),
+                            "valid": m.Out(m.Bit),
+                            "done": m.Out(m.Bit),
+                            "flush": m.In(m.Bit)
+                        })
+                        self.verilog = f"""
+                glb_write  #(.TX_SIZE({TX_SIZE}), .FILE_NAME({FILE_NAME}))
+                test_glb_inst
+                (
+                    .clk(clk),
+                    .rst_n(rst_n),
+                    .data(data),
+                    .ready(ready),
+                    .valid(valid),
+                    .done(done),
+                    .flush(flush)
+                );
+                """
 
-                # test_glb = kratos.Generator.from_verilog('glb_write', '/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv',
-                #                                          port_mapping=glb_port_map,
-                #                                          lib_files=[])
+                file_full = f"\"/home/max/Documents/SPARSE/garnet/generic_memory_{glb_file_number}.txt\""
+                test_glb = _Definition(TX_SIZE=glb_tx_size, FILE_NAME=file_full, ID_no=self.get_next_seq())()
 
-                # test_glb_inst = test_glb()
-
-                test_glb = kratos.util.to_magma(test_glb)
-
-                # test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_write.sv',
-                #                                       type_map=glb_type_map)[0]
-
-                # test_glb = test_glb(TX_SIZE=glb_tx_size, FILE_NO=glb_file_number)
-                test_glb = test_glb()
-
-                # m.wire(test_glb['data'], data_h)
-                # m.wire(ready_h, test_glb['ready'])
-                # m.wire(test_glb['valid'], valid_h)
                 m.wire(test_glb['data'], data_h)
-                m.wire(ready_h, test_glb['ready'])
-                m.wire(test_glb['valid'], valid_h)
+                m.wire(ready_h[0], test_glb['ready'])
+                m.wire(test_glb['valid'], valid_h[0])
                 m.wire(test_glb.clk, self.io.clk)
                 m.wire(test_glb.rst_n, self.io.rst_n)
-                m.wire(test_glb.flush[0], self.io.flush)
+                m.wire(test_glb.flush, self.io.flush)
 
             elif glb_dir == 'read':
                 data_h = self.nlb.get_handle(glb_data, prefix="io2glb_16_")
@@ -223,50 +214,41 @@ class SparseTBBuilder(m.Generator2):
                 ready_h = self.interconnect_circuit[str(ready_h)]
                 valid_h = self.interconnect_circuit[str(valid_h)]
 
-                glb_type_map = {
-                    "clk": m.In(m.Clock),
-                    "rst_n": m.In(m.AsyncReset),
-                    "data": m.In(m.Bits[16]),
-                    "ready": m.Out(m.Bit),
-                    "valid": m.In(m.Bit),
-                    "done": m.Out(m.Bit),
-                    "flush": m.In(m.Bit)
-                }
+                class _Definition(m.Generator2):
+                    def __init__(self, NUM_BLOCKS) -> None:
+                        # super().__init__()
+                        self.name = f"glb_read_{NUM_BLOCKS}"
+                        self.io = m.IO(**{
+                            "clk": m.In(m.Clock),
+                            "rst_n": m.In(m.AsyncReset),
+                            "data": m.In(m.Bits[16]),
+                            "ready": m.Out(m.Bit),
+                            "valid": m.In(m.Bit),
+                            "done": m.Out(m.Bit),
+                            "flush": m.In(m.Bit)
+                        })
 
-                glb_port_map = {
-                    "clk": kratos.generator.PortType.Clock,
-                    "rst_n": kratos.generator.PortType.AsyncReset,
-                    # "data": kratos.generator.PortType.Data,
-                    # "ready": kratos.generator.PortType.Data,
-                    # "valid": kratos.generator.PortType.Data,
-                    # "done": kratos.generator.PortType.Data,
-                    # "flush": kratos.generator.PortType.Data
-                }
-
-                test_glb = GLBRead(ID=self.get_next_seq())
-
-                test_glb.NUM_BLOCKS_PARAM = glb_num_blocks
-                # test_glb = kratos.Generator.from_verilog('glb_write', '/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv',
-                #                                          port_mapping=glb_port_map,
-                #                                          lib_files=[])
-
-                # test_glb_inst = test_glb()
-
-                test_glb = kratos.util.to_magma(test_glb)
-
-                # test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv',
-                #                                       type_map=glb_type_map)[0]
-                # test_glb = m.define_from_verilog_file('./glb_read.sv')[0]
-                # test_glb = test_glb()
-                # test_glb = test_glb(NUM_BLOCKS=glb_num_blocks)
-                test_glb = test_glb()
+                        self.verilog = f"""
+                glb_read #(.NUM_BLOCKS({NUM_BLOCKS}))
+                test_glb_inst
+                (
+                    .clk(clk),
+                    .rst_n(rst_n),
+                    .data(data),
+                    .ready(ready),
+                    .valid(valid),
+                    .done(done),
+                    .flush(flush)
+                );
+                """
+                test_glb = _Definition(NUM_BLOCKS=glb_num_blocks)()
 
                 m.wire(data_h, test_glb['data'])
-                m.wire(test_glb['ready'], ready_h)
-                m.wire(valid_h, test_glb['valid'])
+                m.wire(test_glb['ready'], ready_h[0])
+                m.wire(valid_h[0], test_glb['valid'])
                 m.wire(test_glb.clk, self.io.clk)
                 m.wire(test_glb.rst_n, self.io.rst_n)
-                m.wire(test_glb.flush[0], self.io.flush)
+                m.wire(test_glb.flush, self.io.flush)
             else:
                 raise NotImplementedError(f"glb_dir was {glb_dir}")
 
