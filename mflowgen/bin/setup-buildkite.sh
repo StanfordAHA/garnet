@@ -438,6 +438,14 @@ else
 
 fi
 
+
+########################################################################
+# GARNET-PD: Installs garnet-pd package so to enable import
+# and reuse in mflowgen graph construction
+
+pip install -e $GARNET_HOME/mflowgen
+
+
 ########################################################################
 # ADK
 
