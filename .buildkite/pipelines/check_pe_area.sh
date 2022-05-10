@@ -21,11 +21,12 @@ echo $pe_dir
 resdir=`echo $pe_dir/*synthesis/results_syn`
 egrep ^Tile_PE $resdir/final_area.rpt | awk '
 { printf("Total area: %d\n", $NF);
-  if ($NF > 7500) {
+  max_area=8500
+  if ($NF > $max_area) {
     print ""
     print  "**ERROR '$resdir/final_area.rpt'"
-    printf("**ERROR TILE area %d TOO BIG, should be < 7500\n", $NF);
-    printf("+++ FAIL TILE area %d TOO BIG, should be < 7500\n", $NF);
+    printf("**ERROR TILE area %d TOO BIG, should be < %d\n", $NF, $max_area);
+    printf("+++ FAIL TILE area %d TOO BIG, should be < %d\n", $NF, $max_area);
     print ""; exit 13; }}
 '
 
