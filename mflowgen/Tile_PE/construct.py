@@ -58,11 +58,6 @@ def construct():
     'strip_path'        : 'testbench/dut'
     }
 
-  # steveri 2101: Hoping this is temporary.
-  # But for now, 1.1ns pe tile is too big and full-chip CI test FAILS
-  if (os.getenv('USER') == "buildkite-agent"):
-      parameters['clock_period'] = 4.0; # 4ns = 250 MHz
-
   # User-level option to change clock frequency
   # E.g. 'export clock_period_PE="4.0"' to target 250MHz
   # Optionally could restrict to bk only: if (os.getenv('USER') == "buildkite-agent")
