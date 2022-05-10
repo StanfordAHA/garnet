@@ -1,5 +1,7 @@
 module glb_read #(
-    parameter NUM_BLOCKS = 1
+    parameter NUM_BLOCKS = 1,
+    parameter FILE_NAME1 = "generic_file_0.txt",
+    parameter FILE_NAME2 = "generic_file_1.txt"
     // parameter DATA_FILE0 = "generic_memory_0.txt",
     // parameter DATA_FILE1 = "generic_memory_1.txt"
 )
@@ -37,6 +39,7 @@ initial begin
         if(ready == 1 && valid == 1) begin
             size_0 = data;
             num_rx = 0;
+            break;
         end
     end
 
@@ -50,7 +53,7 @@ initial begin
 
     @(posedge clk);
     ready = 0;
-    $writememh("/home/max/Documents/SPARSE/garnet/generic_memory_0.txt", local_mem_0);
+    $writememh(FILE_NAME1, local_mem_0);
 
     if(NUM_BLOCKS == 2) begin
 
@@ -61,6 +64,7 @@ initial begin
             if(ready == 1 && valid == 1) begin
                 size_1 = data;
                 num_rx = 0;
+                break;
             end
         end
 
@@ -74,7 +78,7 @@ initial begin
 
         @(posedge clk);
         ready = 0;
-        $writememh("generic_memory_1.txt", local_mem_1);
+        $writememh(FILE_NAME2, local_mem_1);
 
     end
 
