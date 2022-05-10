@@ -108,6 +108,7 @@ def construct():
     'antenna_drc_rule_deck' : antenna_drc_rule_deck,
     'power_drc_rule_deck'   : power_drc_rule_deck,
     'nthreads'              : 16,
+    'drc_env_setup'         : 'drcenv-chip.sh',
     # Testbench
     'cgra_apps' : ["tests/conv_1_2", "tests/conv_2_1"]
   }
