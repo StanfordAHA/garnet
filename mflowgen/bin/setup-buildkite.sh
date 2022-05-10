@@ -459,7 +459,11 @@ else
 
     pushd $mflowgen
       test -e adks || ln -s /sim/buildkite-agent/adks
-      cd adks/tsmc16-adk; git pull
+      if [ "$tech" == "gf" ]; then
+          cd adks/gf12-adk; git pull
+      else
+          cd adks/tsmc16-adk; git pull
+      fi
     popd
 fi
 
