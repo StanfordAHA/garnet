@@ -417,6 +417,7 @@ else
       git clone -b $mflowgen_branch \
           -- https://github.com/mflowgen/mflowgen.git $mflowgen
   fi
+fi
 
   # Check out latest version of the desired branch
   pushd $mflowgen
@@ -436,7 +437,7 @@ else
   # See what we got
   which mflowgen; pip list | grep mflowgen
 
-fi
+# fi
 
 
 ########################################################################
