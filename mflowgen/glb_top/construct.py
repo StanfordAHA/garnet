@@ -12,6 +12,7 @@ import pathlib
 
 from mflowgen.components import Graph, Step
 from shutil import which
+from common.get_sys_adk import get_sys_adk
 
 def construct():
 
@@ -21,7 +22,7 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'tsmc16'
+  adk_name = get_sys_adk()
   adk_view = 'view-standard'
 
   parameters = {
