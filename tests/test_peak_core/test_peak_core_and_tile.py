@@ -72,7 +72,7 @@ class CoreDriver(Driver):
 
 class CoreMonitor(Monitor):
     def observe(self, config_data, a, b, output):
-        self.tester.circuit.alu_res.expect(output)
+        self.tester.circuit.res.expect(output)
 
 
 def test_peak_core_sequence(sequence, run_tb):
@@ -80,11 +80,11 @@ def test_peak_core_sequence(sequence, run_tb):
     Core level test
     * configures core using instruction bitstream
     * drives input values onto data0 and data1 ports
-    * checks alu_res output
+    * checks res output
     """
 
     def core_output_monitor(tester, config_data, a, b, output):
-        tester.expect(tester._circuit.alu_res, output)
+        tester.expect(tester._circuit.res, output)
 
     core = PeakCore(PE_fc)
     core.finalize()
@@ -113,7 +113,7 @@ def test_peak_tile_sequence(sequence, seed, run_tb):
                                standalone=True)
 
     routing, port_mapping = route_one_tile(interconnect, 0, 0,
-                                           ports=["data0", "data1", "alu_res"],
+                                           ports=["data0", "data1", "res"],
                                            seed=seed)
     route_config = interconnect.get_route_bitstream(routing)
     route_config = compress_config_data(route_config)
@@ -122,7 +122,7 @@ def test_peak_tile_sequence(sequence, seed, run_tb):
     circuit = interconnect.circuit()
     input_a = port_mapping["data0"]
     input_b = port_mapping["data1"]
-    output_port = port_mapping["alu_res"]
+    output_port = port_mapping["res"]
 
     class TileDriver(Driver):
         def lower(self, config_data, a, b, output):
