@@ -321,10 +321,6 @@ class SparseTBBuilder(m.Generator2):
                     data = self.nlb.register_core("io_16", name="data_in_")
                     ready = self.nlb.register_core("io_1", name="ready_out_")
                     valid = self.nlb.register_core("io_1", name="valid_in_")
-                    # print("D/R/V")
-                    # print(data)
-                    # print(ready)
-                    # print(valid)
                     direction = "write"
                     num_blocks = 1
                     file_number = 0
@@ -340,9 +336,13 @@ class SparseTBBuilder(m.Generator2):
                     valid = self.nlb.register_core("io_1", name="valid_out_")
                     direction = "read"
                     glb_name = "CGRA_TO_GLB"
-                    if 'val' in node.get_attributes()['label']:
+                    # print(node.get_attributes())
+                    # print(node.get_attributes()['mode'].strip('"'))
+                    if 'vals' in node.get_attributes()['mode'].strip('"'):
+                        # print("NUM 1")
                         num_blocks = 1
                     else:
+                        # print("NUM 2")
                         num_blocks = 2
                     tx_size = 1
                 elif node.get_attributes()['type'].strip('"') == 'arrayvals':
@@ -402,18 +402,6 @@ class SparseTBBuilder(m.Generator2):
 
 
 if __name__ == "__main__":
-
-    # class TestCode(m.Generator2):
-    #     def __init__(self) -> None:
-    #         test_glb = m.define_from_verilog_file('/home/max/Documents/SPARSE/garnet/tests/test_memory_core/glb_read.sv')
-    #         test_glb = test_glb[0]
-    #         print(test_glb)
-    #         test_glb = test_glb()
-    #         print(test_glb)
-
-    # tc = TestCode()
-
-    # exit()
 
     matmul_dot = "/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/" + "mat_identity.gv"
     sdg = SAMDotGraph(filename=matmul_dot)
@@ -477,7 +465,7 @@ if __name__ == "__main__":
     tester.eval()
     for i in range(10):
         tester.step(2)
-    tester.wait_until_high(tester.circuit.done, timeout=50)
+    tester.wait_until_high(tester.circuit.done, timeout=1000)
 
     from conftest import run_tb_fn
     run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="mek_dump")
