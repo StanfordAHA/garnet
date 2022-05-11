@@ -100,7 +100,7 @@ set stripeLly [expr [dbGet top.fPlan.coreBox_lly] - [dbGet [dbGetLayerByZ 1].pit
 set stripeUrx [dbGet top.fPlan.coreBox_urx]
 set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + [dbGet [dbGetLayerByZ 1].pitchY]]
 if $::env(PWR_AWARE) {
-  setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry] -ignore_nondefault_domains true
+  setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry] -ignore_nondefault_domains true -skip_via_on_pin {}
 } else {
   setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
 }
