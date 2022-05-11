@@ -11,6 +11,7 @@ import sys
 
 from mflowgen.components import Graph, Step
 from shutil import which
+from common.get_sys_adk import get_sys_adk
 
 def construct():
 
@@ -20,7 +21,7 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'gf12-adk'
+  adk_name = get_sys_adk()
   #base_adk_view = 'multicorner-multivt'
   base_adk_view = 'view-standard'
   pwr_aware = False
@@ -64,11 +65,6 @@ def construct():
     'strip_path'        : 'testbench/dut',
     'drc_env_setup'     : 'drcenv-block.sh'
     }
-
-  # steveri 2101: Hoping this is temporary.
-  # But for now, 1.1ns pe tile is too big and full-chip CI test FAILS
-  if (os.getenv('USER') == "buildkite-agent"):
-      parameters['clock_period'] = 4.0; # 4ns = 250 MHz
 
   # User-level option to change clock frequency
   # E.g. 'export clock_period_PE="4.0"' to target 250MHz
