@@ -30,6 +30,6 @@ def test_pe_stall(run_tb):
         tester.poke(circuit.interface["data0"], i + 1)
         tester.poke(circuit.interface["data1"], i + 1)
         tester.eval()
-        tester.expect(circuit.interface["alu_res"], 0)
+        tester.expect(circuit.interface["res"], 0)
 
     run_tb(tester)

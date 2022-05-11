@@ -11,6 +11,7 @@ import sys
 
 from mflowgen.components import Graph, Step
 from shutil import which
+from common.get_sys_adk import get_sys_adk
 
 def construct():
 
@@ -20,7 +21,7 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'gf12-adk'
+  adk_name = get_sys_adk()
   adk_view = 'view-standard'
   pwr_aware = False
 
