@@ -417,26 +417,26 @@ else
       git clone -b $mflowgen_branch \
           -- https://github.com/mflowgen/mflowgen.git $mflowgen
   fi
-
-  # Check out latest version of the desired branch
-  pushd $mflowgen
-    git checkout $mflowgen_branch; git pull
-    TOP=$PWD; pip install -e .
-  popd
-
-  # mflowgen might be hidden in $HOME/.local/bin
-  if ! (type mflowgen >& /dev/null); then
-      echo "***WARNING Cannot find mflowgen after install"
-      echo "   Will try adding '$HOME/.local/bin' to your path why not"
-      echo ""
-      export PATH=${PATH}:$HOME/.local/bin
-      which mflowgen
-  fi
-
-  # See what we got
-  which mflowgen; pip list | grep mflowgen
-
 fi
+
+# Check out latest version of the desired branch
+pushd $mflowgen
+  git checkout $mflowgen_branch; git pull
+  TOP=$PWD; pip install -e .
+popd
+
+# mflowgen might be hidden in $HOME/.local/bin
+if ! (type mflowgen >& /dev/null); then
+    echo "***WARNING Cannot find mflowgen after install"
+    echo "   Will try adding '$HOME/.local/bin' to your path why not"
+    echo ""
+    export PATH=${PATH}:$HOME/.local/bin
+    which mflowgen
+fi
+
+# See what we got
+which mflowgen; pip list | grep mflowgen
+
 
 
 ########################################################################
