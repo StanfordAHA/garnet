@@ -18,7 +18,7 @@ export SAIF ?= 0
 # -------------------------------------------------------------------
 # Compile Parameters
 # -------------------------------------------------------------------
-CLK_PERIOD ?= 1ns
+CLK_PERIOD ?= 10ns
 
 DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_buffer/header/glb.svh \
@@ -47,10 +47,27 @@ GLB_TILE ?= glb_tile
 TILE_ARRAY ?= tile_array
 TILE_PE ?= Tile_PE
 TILE_MEM ?= Tile_MemCore
+#NETLIST_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
+#				$(garnet_dir)/global_buffer/header/glb.svh \
+#				$(garnet_dir)/global_controller/header/glc.svh \
+#                                $(garnet_dir)/garnet.v \
+#				$(netlist_dir)/glb_top.vcs.v \
+#				$(netlist_dir)/glb_tile.vcs.v \
+#				$(netlist_dir)/global_controller.vcs.v \
+#				$(netlist_dir)/tile_array.vcs.v \
+#				$(netlist_dir)/Tile_PE.vcs.v \
+#			       	$(netlist_dir)/Tile_MemCore.vcs.v \
+#				$(netlist_dir)/Tile_MemCore.sram.v \
+#				$(netlist_dir)/tile_array.sram.v \
+#			       	$(netlist_dir)/stdcells.v \
+#			       	$(netlist_dir)/stdcells-lvt.v \
+#				$(netlist_dir)/stdcells-ulvt.v \
+#				$(netlist_dir)/stdcells-pm.v
+
 NETLIST_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_buffer/header/glb.svh \
 				$(garnet_dir)/global_controller/header/glc.svh \
-                                $(garnet_dir)/garnet.v \
+				$(netlist_dir)/design.vcs.v \
 				$(netlist_dir)/glb_top.vcs.v \
 				$(netlist_dir)/glb_tile.vcs.v \
 				$(netlist_dir)/global_controller.vcs.v \
@@ -63,6 +80,8 @@ NETLIST_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 			       	$(netlist_dir)/stdcells-lvt.v \
 				$(netlist_dir)/stdcells-ulvt.v \
 				$(netlist_dir)/stdcells-pm.v
+
+
 
 # -------------------------------------------------------------------
 # Run Parameters
@@ -173,10 +192,11 @@ compile-gls: COMPILE_ARGS = $(COMPILE_GLS_ARGS)
 compile-gls: INPUT_ARGS = $(NETLIST_FILES) $(TB_FILES) $(IP_FILES)
 compile-gls:
 	$(COMPILE)
+# $(COMPILE) +neg_tchk -negdelay
 
 .PHONY: run-gls
 run-gls:
-	$(RUN_GLS) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
+	$(RUN_GLS) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS) 
 
 .PHONY: sim-gls
 sim-gls: libcgra.so compile-gls run-gls 
@@ -186,4 +206,4 @@ sim-gls: libcgra.so compile-gls run-gls
 # -------------------------------------------------------------------
 .PHONY: clean
 clean:
-	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log cgra.shm cgra.fsdb sdf_stats.txt sdf_logs
+	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log cgra.shm novas.* sdf_stats.txt sdf_logs
