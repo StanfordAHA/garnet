@@ -468,7 +468,7 @@ class NetlistBuilder():
             assert isinstance(connections_list, list), f"Expecting list of connections at: {conn_block_name}"
             self.add_connections(connections_list, defer_placement=defer_placement)
 
-    def add_connections(self, connections, defer_placement=False):
+    def add_connections(self, connections, defer_placement=False, verbose=False):
         if isinstance(connections, dict):
             self.add_connections_dict(connections, defer_placement=defer_placement)
         else:
@@ -476,9 +476,11 @@ class NetlistBuilder():
                 self.add_connection(connection, width)
         self._placement_up_to_date = False
         if defer_placement:
-            print("Deferring new placement...")
+            if verbose:
+                print("Deferring new placement...")
         else:
-            print("Used add connections...automatically updating placement + routing")
+            if verbose:
+                print("Used add connections...automatically updating placement + routing")
             self.generate_placement()
 
     def add_connection(self, connection, width):

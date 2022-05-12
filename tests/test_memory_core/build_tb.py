@@ -261,7 +261,9 @@ class SparseTBBuilder(m.Generator2):
         '''
         Go through each core and register it, also add it to dict of core nodes
         '''
+
         for node in self.graph.get_nodes():
+            kwargs = {}
             hw_node_type = node.get_attributes()['hwnode']
             new_node_type = None
             core_tag = None
@@ -279,10 +281,13 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.ReadScanner}":
                 new_node_type = ReadScannerNode
                 core_tag = "scanner"
+                tensor = node.get_attributes()['tensor'].strip('"')
+                kwargs = {'tensor': tensor}
             elif hw_node_type == f"{HWNodeType.WriteScanner}":
                 new_node_type = WriteScannerNode
                 core_tag = "write_scanner"
-            elif hw_node_type == f"{HWNodeType.Intersect}":
+            # Can't explain this but it's not a string when it's intersect?
+            elif hw_node_type == f"{HWNodeType.Intersect}" or hw_node_type == HWNodeType.Intersect:
                 new_node_type = IntersectNode
                 core_tag = "intersect"
             elif hw_node_type == f"{HWNodeType.Reduce}":
@@ -297,9 +302,9 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.Repeat}":
                 new_node_type = RepeatNode
                 core_tag = "repeat"
-            elif hw_node_type == f"{HWNodeType.Compute}":
+            elif hw_node_type == f"{HWNodeType.Compute}" or hw_node_type == HWNodeType.Compute:
                 new_node_type = ComputeNode
-                core_tag = "intersect"
+                core_tag = "fake_pe"
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
             # elif hw_node_type == f"{HWNodeType.RepSigGen}":
@@ -367,7 +372,7 @@ class SparseTBBuilder(m.Generator2):
                                                            tx_size=tx_size)
             else:
                 reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
-                self.core_nodes[node.get_name()] = new_node_type(name=reg_ret)
+                self.core_nodes[node.get_name()] = new_node_type(name=reg_ret, **kwargs)
 
     def connect_cores(self):
         '''
@@ -403,16 +408,20 @@ class SparseTBBuilder(m.Generator2):
 
 if __name__ == "__main__":
 
-    matmul_dot = "/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/" + "mat_identity.gv"
-    sdg = SAMDotGraph(filename=matmul_dot)
+    base_path = "/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/"
+
+    matmul_dot = base_path + "mat_identity.gv"
+    mat_element_mul = base_path + "mat_elemmul.gv"
+    sdg = SAMDotGraph(filename=mat_element_mul)
     # Now use the graph to build an nlb
     graph = sdg.get_graph()
 
-    chip_size = 16
+    chip_width = 16
+    chip_height = 32
     num_tracks = 5
     altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore, WriteScannerCore, BuffetCore]
 
-    interconnect = create_cgra(width=chip_size, height=chip_size,
+    interconnect = create_cgra(width=chip_width, height=chip_height,
                                io_sides=NetlistBuilder.io_sides(),
                                num_tracks=num_tracks,
                                add_pd=True,
@@ -463,9 +472,9 @@ if __name__ == "__main__":
     #     tester.step(2)
     tester.poke(stb.io.flush, 0)
     tester.eval()
-    for i in range(10):
+    for i in range(1000):
         tester.step(2)
-    tester.wait_until_high(tester.circuit.done, timeout=1000)
+    tester.wait_until_high(tester.circuit.done, timeout=500)
 
     from conftest import run_tb_fn
     run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="mek_dump")

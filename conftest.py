@@ -88,7 +88,8 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
                           "include_verilog_libraries": rtl_lib,
                           "directory": tempdir,
                           "flags": ["-Wno-fatal"],
-                          "disp_type": "realtime"
+                          "disp_type": "realtime",
+                          "num_cycles": 10000 * 10
         }
         if not use_verilator:
             target = "system-verilog"
