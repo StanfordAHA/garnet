@@ -601,12 +601,12 @@ module top;
     //============================================================================//
     // instantiate dut
     //============================================================================//
-    GarnetSOC_pad_frame_Garnet dut (
-    //Garnet dut (
+    //GarnetSOC_pad_frame_Garnet dut (
+    Garnet dut (
         // clk/reset/interrupt
         .clk_in              (clk),
-        .clk_in_clone1              (clk),
-        .clk_in_clone2              (clk),
+    //    .clk_in_clone1              (clk),
+    //    .clk_in_clone2              (clk),
         .reset_in            (reset),
         .interrupt           (interrupt),
         .cgra_running_clk_out(  /*unused*/),
