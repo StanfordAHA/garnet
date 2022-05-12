@@ -376,6 +376,7 @@ if [ "$mflowbranch" != "master" ]; then
     mflowgen=$mflowgen.$mflowgen_branch
 fi
 
+# Side effect: defines function 'flockmsg'
 echo "--- LOCK"; source $GARNET_HOME/mflowgen/bin/setup-buildkite-flock.sh
 
 # FIXME/TODO could have better mechanism to decide when to skip mflowgen install;
@@ -398,6 +399,7 @@ else
 fi
 
 # Check out latest version of the desired branch
+echo "PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .
@@ -415,19 +417,14 @@ fi
 # See what we got
 which mflowgen; pip list | grep mflowgen
 
-echo "--- UNLOCK "; date; echo `flockdate` $$ "Release! The lock!"; flock -u 9
-echo "--- LOCK"; source $GARNET_HOME/mflowgen/bin/setup-buildkite-flock.sh
 
 
 ########################################################################
 # GARNET-PD: Installs garnet-pd package so to enable import
 # and reuse in mflowgen graph construction
 
-echo "--- PIP INSTALL $GARNET_HOME/mflowgen"
+echo "--- PIP INSTALL $GARNET_HOME/mflowgen"; date
 pip install -e $GARNET_HOME/mflowgen
-
-echo "--- UNLOCK "; date; echo `flockdate` $$ "Release! The lock!"; flock -u 9
-echo "--- LOCK"; source $GARNET_HOME/mflowgen/bin/setup-buildkite-flock.sh
 
 ########################################################################
 # ADK
@@ -462,7 +459,7 @@ fi
 
 
 echo "--- UNLOCK "; date
-echo `flockdate` $$ "Release! The lock!"; flock -u 9
+flockmsg "Release! The lock!"; flock -u 9
 
 
 ########################################################################
