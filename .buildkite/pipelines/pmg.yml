@@ -36,8 +36,8 @@ steps:
 # INDIVIDUAL TILE RUNS
 # Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
-- label: 'ptile init 20m'
+- label: 'gtile init 20m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
-  - .buildkite/pipelines/check_pe_area.sh
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
+  - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
+  - mflowgen/bin/buildcheck.sh full_chip/*glb_top/*glb_tile --show-all-errors
+
