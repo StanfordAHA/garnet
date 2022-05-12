@@ -1,4 +1,5 @@
-agents: { jobsize: "hours" }
+# Agents are specified in "pipeline settings" now
+# agents: { jobsize: "hours" }
 
 ##############################################################################
 # Use this to test a specific branch/commit:
