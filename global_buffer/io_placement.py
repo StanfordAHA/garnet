@@ -37,7 +37,6 @@ def place_io_blk(id_to_name):
     inputs = []
     outputs = []
     for blk_id in ios:
-        print(blk_id, id_to_name[blk_id])
         if "output" in id_to_name[blk_id]:
             assert "write" in id_to_name[blk_id]
             outputs.append(blk_id)
