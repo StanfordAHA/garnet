@@ -1,0 +1,36 @@
+agents: { queue: "papers" }
+
+env:
+  GOLD: /build/rtl.${BUILDKITE_BUILD_NUMBER}/full_chip
+  LVS_CHECK: ./mflowgen/bin/buildcheck.sh --lvs
+
+  # To support postroute_hold retries
+  PRH    : 'eval $$GARNET_HOME/.buildkite/bin/prh.sh'
+
+  # ($FAIL|$UPLOAD): Inserts a "fail" bubble in the buildkite pipeline log
+  FAIL1  : 'echo steps : [ { label : FAIL->retry1 , command : exit } ]'
+  FAIL2  : 'echo steps : [ { label : FAIL->retry2 , command : exit } ]'
+  UPLOAD : 'buildkite-agent pipeline upload'
+
+  # Set slack to -0.3 to make postroute_hold much faster.
+  # Default targ slack for full_chip @ 0.06 takes 6 hours atm.
+  # With hack target -0.3, should be about 2.5 hours (saves 3.5 hours)
+  # MFLOWGEN_PARM_OVERRIDE_hold_target_slack : -0.3
+
+  # Can use this to change target mflowgen branch
+  # OVERRIDE_MFLOWGEN_BRANCH: glob-prob
+
+steps:
+- label: 'setup'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip'
+- wait: ~
+
+- label: 'rtl'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
+     echo "--- MAKE RTL"; set -o pipefail;
+     make rtl |& tee make-rtl.log'
+- wait: ~
+
