@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e; # DIE if any of the below commands exits with error status
 
+echo '--- gen_rtl BEGIN' `date +%H:%M`
+
 # Hierarchical flows can accept RTL as an input from parent graph
 if [ -f ../inputs/design.v ]; then
   echo "Using RTL from parent graph"
@@ -35,21 +37,26 @@ else
       echo "Use aha docker container for all dependencies"
 
       # Clone AHA repo
+      echo '--- gen_rtl aha clone BEGIN' `date +%H:%M`
       git clone https://github.com/StanfordAHA/aha.git
       cd aha
+
       # install the aha wrapper script
+      echo '--- gen_rtl pip install BEGIN' `date +%H:%M`
       pip install -e .
 
       # Prune docker images...
       # ("yes" emits endless stream of y's)
-      echo ""; echo "Docker cleanup PRUNE"
+      echo ""
+      echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
+      echo "Docker cleanup PRUNE"
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
 
       echo ""; echo "After pruning:"; echo ""
       docker images; echo ""
       docker ps    ; echo ""
 
-      echo "--- Continue..."
+      echo '--- gen_rtl docker prune END' `date +%H:%M`
 
       # Choose a docker image; can set via "rtl_docker_image" parameter
       default_image="stanfordaha/garnet:latest"
@@ -162,7 +169,8 @@ else
          fi"
 
 
-      echo +++ docker cleanup; set -x
+      echo '--- gen_rtl docker cleanup BEGIN' `date +%H:%M`
+      set -x
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       if [ $glb_only == True ]; then
@@ -241,4 +249,4 @@ else
   fi
 fi
 
-echo "gen_rtl DONE"
+echo '--- gen_rtl END' `date +%H:%M`
