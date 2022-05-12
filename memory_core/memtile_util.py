@@ -448,6 +448,10 @@ class NetlistBuilder():
             tag = "B"
         elif core == "glb":
             tag = "G"
+        elif core == "repeat":
+            tag = "Q"
+        elif core == "repeat_signal_generator":
+            tag = "q"
         else:
             tag = core.pnr_info().tag_name
 
