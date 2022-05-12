@@ -296,10 +296,16 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.Lookup}":
                 new_node_type = LookupNode
                 core_tag = "lookup"
-            elif hw_node_type == f"{HWNodeType.Merge}":
+            elif hw_node_type == f"{HWNodeType.Merge}" or hw_node_type == HWNodeType.Merge:
                 new_node_type = MergeNode
                 core_tag = "intersect"
-            elif hw_node_type == f"{HWNodeType.Repeat}":
+                outer = node.get_attributes()['outer'].strip('"')
+                inner = node.get_attributes()['inner'].strip('"')
+                kwargs = {
+                    "outer": outer,
+                    "inner": inner
+                }
+            elif hw_node_type == f"{HWNodeType.Repeat}" or hw_node_type == HWNodeType.Repeat:
                 new_node_type = RepeatNode
                 core_tag = "repeat"
             elif hw_node_type == f"{HWNodeType.Compute}" or hw_node_type == HWNodeType.Compute:
@@ -307,8 +313,9 @@ class SparseTBBuilder(m.Generator2):
                 core_tag = "fake_pe"
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
-            # elif hw_node_type == f"{HWNodeType.RepSigGen}":
-                # new_node = GLBNode()
+            elif hw_node_type == f"{HWNodeType.RepSigGen}" or hw_node_type == HWNodeType.RepSigGen:
+                new_node_type = RepSigGenNode
+                core_tag = "repeat_signal_generator"
             else:
                 raise NotImplementedError(f"{hw_node_type} not supported....")
 
