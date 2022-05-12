@@ -388,11 +388,12 @@ if [ "$skip_mflowgen" == "true" ]; then
   ls -ld $mflowgen || return 13 || exit 13
 
 else
-  echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
+  echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"; date
   echo "Install mflowgen in dir '$mflowgen'"
 
   # Build repo if not exists yet
   if ! test -e $mflowgen; then
+      echo "No mflowgen yet; cloning a new one"
       git clone -b $mflowgen_branch \
           -- https://github.com/mflowgen/mflowgen.git $mflowgen
   fi
