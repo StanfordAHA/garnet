@@ -59,7 +59,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'GarnetSOC_pad_frame',
-    'clock_period'      : 2,
+    'clock_period'      : 1.1,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -110,6 +110,7 @@ def construct():
     'power_drc_rule_deck'   : power_drc_rule_deck,
     'nthreads'              : 16,
     'drc_env_setup'         : 'drcenv-chip.sh',
+    'antenna_drc_env_setup' : 'drcenv-chip-ant.sh',
     # Testbench
     'cgra_apps' : ["tests/conv_1_2", "tests/conv_2_1"]
   }
@@ -544,7 +545,8 @@ def construct():
   merge_fill.update_params( {'design_top_cell': parameters['design_name'], 'child_top_cell': f"{parameters['design_name']}_F16a"} )
 
   # Antenna DRC node needs to use antenna rule deck
-  antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'] } )
+  antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'],
+                               'drc_env_setup': parameters['antenna_drc_env_setup'] } )
 
   # Power DRC node should use block level rule deck to improve runtimes and not report false errors
   power_drc.update_params( {'drc_rule_deck': parameters['power_drc_rule_deck'] } )
