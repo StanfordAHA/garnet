@@ -74,10 +74,10 @@ class RepeatCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        stop_lvl = config_tuple
+        stop_lvl, root = config_tuple
         configs = []
         config_lu = [("tile_en", 1)]
-        config_lu += self.dut.get_bitstream(stop_lvl=stop_lvl)
+        config_lu += self.dut.get_bitstream(stop_lvl=stop_lvl, root=root)
 
         for name, v in config_lu:
             configs = [self.get_config_data(name, v)] + configs
