@@ -35,10 +35,10 @@
     #   throws errs when used in conjunction w/Soong-jin's ANAIOPAD shenanigans
     # add_io_fillers -cells "$ioFillerCells" -logic -derive_connectivity
     # add_io_fillers -cells "$ioFillerCells" -logic
-    addIoFiller -cell $ADK_IO_FILLER_CELLS_V -fillAnyGap -logic -side top
-    addIoFiller -cell $ADK_IO_FILLER_CELLS_V -fillAnyGap -logic -side bottom
-    addIoFiller -cell $ADK_IO_FILLER_CELLS_H -fillAnyGap -logic -side left
-    addIoFiller -cell $ADK_IO_FILLER_CELLS_H -fillAnyGap -logic -side right
+    addIoFiller -cell $ADK_IO_FILLER_CELLS_V  -logic -side top
+    addIoFiller -cell $ADK_IO_FILLER_CELLS_V  -logic -side bottom
+    addIoFiller -cell $ADK_IO_FILLER_CELLS_H  -logic -side left
+    addIoFiller -cell $ADK_IO_FILLER_CELLS_H  -logic -side right
 
     # Tell Innovus not to touch or try to route pad ring control signal nets
     set_db [get_db nets rte*] .skip_routing true
