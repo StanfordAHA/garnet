@@ -30,7 +30,7 @@ def test_interconnect_reset(batch_size: int, run_tb, io_sides):
     netlist = {
         "e0": [("I0", "io2f_16"), ("p0", "data0")],
         "e1": [("I1", "io2f_16"), ("p0", "data1")],
-        "e3": [("p0", "alu_res"), ("I2", "f2io_16")],
+        "e3": [("p0", "res"), ("I2", "f2io_16")],
     }
     bus = {"e0": 16, "e1": 16, "e3": 16}
 
