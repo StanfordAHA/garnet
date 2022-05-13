@@ -80,7 +80,7 @@ class MemCore(LakeCoreBase):
                  config_data_width=32,
                  config_addr_width=8,
                  num_tiles=1,
-                 fifo_mode=True,
+                 fifo_mode=False,
                  add_clk_enable=True,
                  add_flush=True,
                  gate_flush=True,
