@@ -6,6 +6,8 @@ from memory_core.buffet_core import BuffetCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.intersect_core import IntersectCore
 from memory_core.lookup_core import LookupCore
+from memory_core.repeat_core import RepeatCore
+from memory_core.repeat_signal_generator_core import RepeatSignalGeneratorCore
 from memory_core.memtile_util import NetlistBuilder
 from memory_core.reg_core import RegCore
 from memory_core.scanner_core import ScannerCore
@@ -419,14 +421,16 @@ if __name__ == "__main__":
 
     matmul_dot = base_path + "mat_identity.gv"
     mat_element_mul = base_path + "mat_elemmul.gv"
-    sdg = SAMDotGraph(filename=mat_element_mul)
+    mat_mul = base_path + "matmul_ijk.gv"
+    sdg = SAMDotGraph(filename=mat_mul)
     # Now use the graph to build an nlb
     graph = sdg.get_graph()
 
-    chip_width = 16
+    chip_width = 20
     chip_height = 32
-    num_tracks = 5
-    altcore = [ScannerCore, IntersectCore, FakePECore, RegCore, LookupCore, WriteScannerCore, BuffetCore]
+    num_tracks = 10
+    altcore = [ScannerCore, IntersectCore, FakePECore, RegCore,
+               LookupCore, WriteScannerCore, BuffetCore, RepeatSignalGeneratorCore, RepeatCore]
 
     interconnect = create_cgra(width=chip_width, height=chip_height,
                                io_sides=NetlistBuilder.io_sides(),
