@@ -519,6 +519,11 @@ class FixInputsOutputAndPipeline(Visitor):
         for _, sink in sinks.items():
             self.max_sinks = max(self.max_sinks, len(sink))
 
+        max_curr_tree_leaves = min(self.max_tree_leaves, self.max_sinks)
+        self.num_stages = (
+            math.ceil(math.log(max_curr_tree_leaves, self.tree_branch_factor)) + 1
+        )
+
     def doit(self, dag: Dag):
         self.node_map = {}
         self.added_regs = 0
@@ -543,7 +548,6 @@ class FixInputsOutputAndPipeline(Visitor):
         old_select_node,
         sinks,
         bit,
-        tree_leaves,
         min_stages=1,
     ):
 
@@ -555,9 +559,7 @@ class FixInputsOutputAndPipeline(Visitor):
             register_sink = RegisterSink
 
         max_curr_tree_leaves = min(self.max_tree_leaves, len(sinks))
-        num_stages = max(
-            math.ceil(math.log(max_curr_tree_leaves, tree_leaves)) + 1, min_stages
-        )
+        num_stages = max(self.num_stages, min_stages)
 
         print(
             "Creating register tree for:",
@@ -572,7 +574,7 @@ class FixInputsOutputAndPipeline(Visitor):
         levels = [max_curr_tree_leaves]
 
         while 1 not in levels:
-            levels.insert(0, math.ceil(levels[0] / tree_leaves))
+            levels.insert(0, math.ceil(levels[0] / self.tree_branch_factor))
         if num_stages > len(levels):
             for _ in range(num_stages - len(levels)):
                 levels.insert(0, 1)
@@ -611,7 +613,7 @@ class FixInputsOutputAndPipeline(Visitor):
                 self.node_map[new_reg_source] = new_reg_source
                 self.node_map[new_reg_sink] = new_reg_sink
                 new_sources.append(new_reg_source)
-                if (idx + 1) % tree_leaves == 0:
+                if (idx + 1) % self.tree_branch_factor == 0:
                     sources_idx += 1
             sources = new_sources
 
@@ -643,7 +645,6 @@ class FixInputsOutputAndPipeline(Visitor):
                         node,
                         self.sinks[node],
                         False,
-                        self.tree_branch_factor,
                         min_stages=self.max_flush_cycles,
                     )
             elif "io1in" in io_child.iname:
@@ -655,7 +656,6 @@ class FixInputsOutputAndPipeline(Visitor):
                         node,
                         self.sinks[node],
                         True,
-                        self.tree_branch_factor,
                         min_stages=1,
                     )
             else:
