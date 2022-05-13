@@ -516,8 +516,9 @@ class FixInputsOutputAndPipeline(Visitor):
         self.tree_branch_factor = tree_branch_factor
 
         self.max_sinks = 0
-        for _, sink in sinks.items():
-            self.max_sinks = max(self.max_sinks, len(sink))
+        for node, sink in sinks.items():
+            if "io16in_" in node.iname or "io1in_" in node.iname:
+                self.max_sinks = max(self.max_sinks, len(sink))
 
         max_curr_tree_leaves = min(self.max_tree_leaves, self.max_sinks)
         self.num_stages = (
