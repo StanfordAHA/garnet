@@ -43,7 +43,8 @@ else
 
       # install the aha wrapper script
       echo '--- gen_rtl pip install BEGIN' `date +%H:%M`
-      pip install -e .
+      echo "NO MORE PIP INSTALL OMG"
+#       pip install -e .
 
       # Prune docker images...
       # ("yes" emits endless stream of y's)
