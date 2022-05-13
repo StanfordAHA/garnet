@@ -29,14 +29,22 @@ connect_global_net VDD -type pgpin -pin VNW -inst *
 floorPlan \
     -coreMarginsBy die \
     -dieSizeByIoHeight max \
+    -adjustToSite \
     -d 4900.0 4900.0 200 200 200 200
 
 # read_io_file inputs/io_file -no_die_size_adjust 
 loadIoFile inputs/io_file -noAdjustDieSize
 
-# snap_floorplan_io - Snaps I/O cells to a user-defined grid
+# Use IO_PAD tech site to create grid for pad placement
+# This ensures that all gaps between pads will be fillable
+# by io filler cells. 
+set io_site [dbGet -p head.sites.name IO_PAD]
+set_preference ConstraintUserXGrid [dbGet ${io_site}.size_x]
+set_preference ConstraintUserYGrid [dbGet ${io_site}.size_y]
 
-snapFPlanIO
+# snap_floorplan_io - Snaps I/O cells to user-defined grid
+
+snapFPlanIO -userGrid
 
 # Do we need/want this?? It's from tile_array or something
 # # setFlipping - Specifies the orientation of the bottom row in the core area
