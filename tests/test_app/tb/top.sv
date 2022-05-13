@@ -35,8 +35,10 @@ module top;
         reset <= 0;
     end
 
+    `ifdef SDF 
+     if(`SDF == 1) begin
     // sdf annotation
-    /*initial begin
+    initial begin
         $sdf_annotate("./netlist/Tile_PE.sdf", top.dut.Interconnect_inst0.Tile_X00_Y0A,,,"MAXIMUM");
         $sdf_annotate("./netlist/Tile_PE.sdf", top.dut.Interconnect_inst0.Tile_X00_Y0B,,,"MAXIMUM");
         $sdf_annotate("./netlist/Tile_PE.sdf", top.dut.Interconnect_inst0.Tile_X00_Y0C,,,"MAXIMUM");
@@ -575,7 +577,9 @@ module top;
 
 //$sdf_annotate("netlist/design.sdf",Tbench.u_soc,,"sdf_soc.log","MAXIMUM");
 
-    end*/
+    end
+    end
+    `endif
 
     //============================================================================//
     // interfaces
@@ -605,8 +609,8 @@ module top;
     Garnet dut (
         // clk/reset/interrupt
         .clk_in              (clk),
-    //    .clk_in_clone1              (clk),
-    //    .clk_in_clone2              (clk),
+        //.clk_in_clone1              (clk),
+        //.clk_in_clone2              (clk),
         .reset_in            (reset),
         .interrupt           (interrupt),
         .cgra_running_clk_out(  /*unused*/),

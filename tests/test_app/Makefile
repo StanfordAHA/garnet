@@ -151,6 +151,7 @@ else ifeq ($(TOOL), VCS)
     COMPILE = $(VCS)
     COMPILE_RTL_ARGS += +nospecify
     COMPILE_GLS_ARGS += +define+SAIF=1
+    COMPILE_GLS_ARGS += +define+SDF=1
     RUN = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus
 	RUN_GLS = ./simv -lca -l $(RUN_LOG) +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra
 else
@@ -191,8 +192,7 @@ compile-gls: COMPILE_GLS_ARGS += -negdelay
 compile-gls: COMPILE_ARGS = $(COMPILE_GLS_ARGS)
 compile-gls: INPUT_ARGS = $(NETLIST_FILES) $(TB_FILES) $(IP_FILES)
 compile-gls:
-	$(COMPILE)
-# $(COMPILE) +neg_tchk -negdelay
+	$(COMPILE) +neg_tchk -negdelay
 
 .PHONY: run-gls
 run-gls:
