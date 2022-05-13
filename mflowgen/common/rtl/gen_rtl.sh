@@ -84,7 +84,14 @@ else
           # Default image can use standard "aha docker" mechanism to run the image in a container.
           # It will run in the background and delete the container when done.
           # "aha docker" return-value is the name of the container.
-          container_name=$(aha docker)
+          # container_name=$(aha docker)
+
+          container_name=gen_rtl_$$
+          docker run -id --name ${container_name} --rm -v /cad:/cad ${rtl_docker_image} bash
+
+
+
+
       else
           # Run (non-default) container in the background and delete it when it exits (--rm)
           # Mount /cad and name it, and run container as a daemon in background

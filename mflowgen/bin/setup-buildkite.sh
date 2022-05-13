@@ -383,7 +383,7 @@ echo "--- LOCK"; source $GARNET_HOME/mflowgen/bin/setup-buildkite-flock.sh
 # maybe 'cd $mflowgen; git log' and compare to repo or something
 
 if [ "$skip_mflowgen" == "true" ]; then
-  echo "+++ SKIP MFLOWGEN INSTALL because of cmd-line arg '--skip_mflowgen'"
+  echo "--- SKIP MFLOWGEN INSTALL because of cmd-line arg '--skip_mflowgen'"
   echo "WILL USE MFLOWGEN IN '$mflowgen'"
   ls -ld $mflowgen || return 13 || exit 13
 
@@ -400,7 +400,7 @@ else
 fi
 
 # Check out latest version of the desired branch
-echo "PIP INSTALL $mflowgen branch $mflowgen_branch"; date
+echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .
