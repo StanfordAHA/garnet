@@ -289,7 +289,8 @@ class Garnet(Generator):
         return input_interface, output_interface,\
             (reset_port_name, valid_port_name, en_port_name)
 
-    def load_netlist(self, app, load_only):
+    def load_netlist(self, app, load_only, pipeline_input_broadcasts, 
+                     input_broadcast_branch_factor, input_broadcast_max_leaves):
         app_dir = os.path.dirname(app)
 
         if self.pe_fc == lassen_fc:
@@ -345,13 +346,26 @@ class Garnet(Generator):
         dag = cutil.coreir_to_dag(nodes, cmod)
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
-        netlist_info = create_netlist_info(app_dir, dag, tile_info, load_only, self.harden_flush, self.height//self.pipeline_config_interval)
+        netlist_info = create_netlist_info(app_dir, 
+                                            dag, 
+                                            tile_info, 
+                                            load_only, 
+                                            self.harden_flush, 
+                                            self.height//self.pipeline_config_interval,
+                                            pipeline_input_broadcasts, 
+                                            input_broadcast_branch_factor, 
+                                            input_broadcast_max_leaves)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
 
-    def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False):
-        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src, load_only)
+    def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False,
+                        pipeline_input_broadcasts=False, input_broadcast_branch_factor=4, input_broadcast_max_leaves=16):
+        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src, 
+                                                                        load_only, 
+                                                                        pipeline_input_broadcasts, 
+                                                                        input_broadcast_branch_factor, 
+                                                                        input_broadcast_max_leaves)
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
@@ -470,6 +484,9 @@ def main():
     parser.add_argument("--use-io-valid", action="store_true")
     parser.add_argument("--pipeline-pnr", action="store_true")
     parser.add_argument("--generate-bitstream-only", action="store_true")
+    parser.add_argument("--no-input-broadcast-pipelining", action="store_true")
+    parser.add_argument("--input-broadcast-branch-factor", type=int, default=4)
+    parser.add_argument("--input-broadcast-max-leaves", type=int, default=16)
     parser.add_argument('--pe', type=str, default="")
     parser.add_argument('--mem-ratio', type=int, default=4)
     parser.add_argument('--num-tracks', type=int, default=5)
@@ -540,7 +557,8 @@ def main():
         placement, routing, id_to_name, instance_to_instr, \
             netlist, bus = garnet.place_and_route(
                 args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact,
-                load_only=args.generate_bitstream_only)
+                load_only=args.generate_bitstream_only, pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
+                input_broadcast_branch_factor=args.input_broadcast_branch_factor, input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
         if args.pipeline_pnr:
             return
