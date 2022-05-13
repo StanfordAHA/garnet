@@ -11,10 +11,6 @@
 # Previously this was "proc done_fp {}" in "gen_floorplan.tcl"
 # proc io_fillers {} {
 
-    # Snap the right and left IO drivers to the 0.048um fin grid
-    # snap_floorplan -io_pad 
-    snapFPlan -ioPad
-    
     # [stevo]: delete upper right corner cell, because LOGO can't be close to metal
     # delete_inst -inst corner_ur*
     #deleteInst corner_ur*
