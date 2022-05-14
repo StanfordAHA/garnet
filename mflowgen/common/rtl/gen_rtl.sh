@@ -41,23 +41,14 @@ else
       git clone https://github.com/StanfordAHA/aha.git
       cd aha
 
-      # install the aha wrapper script
-      echo '--- gen_rtl pip install BEGIN' `date +%H:%M`
-      echo "NO MORE PIP INSTALL OMG"
-#       pip install -e .
-
       # Prune docker images...
       # ("yes" emits endless stream of y's)
-      echo ""
       echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
-      echo "Docker cleanup PRUNE"
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
 
       echo ""; echo "After pruning:"; echo ""
       docker images; echo ""
       docker ps    ; echo ""
-
-      echo '--- gen_rtl docker prune END' `date +%H:%M`
 
       # Choose a docker image; can set via "rtl_docker_image" parameter
       default_image="stanfordaha/garnet:latest"
@@ -70,6 +61,7 @@ else
       # To use a docker image based on sha hash can do e.g.
       # rtl_docker_image="stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3..."
 
+      echo '--- gen_rtl docker pull BEGIN' `date +%H:%M`
       echo "Using image '$rtl_docker_image'"
       docker pull ${rtl_docker_image}
 
@@ -79,31 +71,13 @@ else
       docker inspect --format='RepoTags    {{.RepoTags}}'    ${rtl_docker_image}
       docker inspect --format='RepoDigests {{.RepoDigests}}' ${rtl_docker_image}
 
+      # Run (container in the background and delete it when it exits (--rm)
+      # Mount /cad and name it, and run container as a daemon in background
+      # Use container_name "gen_rtl_<proc_id>"
 
-
-      # FIXME note that if this works (below) "then" and "else" clauses are identical :o
-
-      # Run the image in a container
-      if [ "$rtl_docker_image" == "$default_image" ]; then
-          # Default image can use standard "aha docker" mechanism to run the image in a container.
-          # It will run in the background and delete the container when done.
-          # "aha docker" return-value is the name of the container.
-          # container_name=$(aha docker)
-
-          container_name=gen_rtl_$$
-          docker run -id --name ${container_name} --rm -v /cad:/cad ${rtl_docker_image} bash
-
-
-
-
-      else
-          # Run (non-default) container in the background and delete it when it exits (--rm)
-          # Mount /cad and name it, and run container as a daemon in background
-          # Use container_name "gen_rtl_<proc_id>"
-          container_name=gen_rtl_$$
-          docker run -id --name ${container_name} --rm -v /cad:/cad ${rtl_docker_image} bash
-      fi
       echo "Using docker container '$container_name'"
+      container_name=gen_rtl_$$
+      docker run -id --name ${container_name} --rm -v /cad:/cad ${rtl_docker_image} bash
 
       # MAKE SURE the docker container gets killed when this script dies.
       trap "docker kill $container_name" EXIT
@@ -182,7 +156,7 @@ else
 
 
       echo '--- gen_rtl docker cleanup BEGIN' `date +%H:%M`
-      set -x
+
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
       if [ $glb_only == True ]; then
