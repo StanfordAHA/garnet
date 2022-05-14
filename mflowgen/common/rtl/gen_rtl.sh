@@ -79,6 +79,10 @@ else
       docker inspect --format='RepoTags    {{.RepoTags}}'    ${rtl_docker_image}
       docker inspect --format='RepoDigests {{.RepoDigests}}' ${rtl_docker_image}
 
+
+
+      # FIXME note that if this works (below) "then" and "else" clauses are identical :o
+
       # Run the image in a container
       if [ "$rtl_docker_image" == "$default_image" ]; then
           # Default image can use standard "aha docker" mechanism to run the image in a container.
