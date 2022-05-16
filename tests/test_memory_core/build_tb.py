@@ -29,66 +29,118 @@ from sam.onyx.hw_nodes.repeat_node import RepeatNode
 from sam.onyx.hw_nodes.repsiggen_node import RepSigGenNode
 import magma as m
 import kratos
+import _kratos
 from lake.modules.glb_write import GLBWrite
 from lake.modules.glb_read import GLBRead
+from lake.modules.buffet_like import BuffetLike
+from lake.top.lake_top import LakeTop
+from lake.modules.repeat import Repeat
+from lake.modules.repeat_signal_generator import RepeatSignalGenerator
+from lake.modules.scanner import Scanner
+from lake.modules.write_scanner import WriteScanner
+from lake.modules.pe import PE
+from lake.modules.intersect import Intersect
+from lake.modules.reg_cr import Reg
 
 
 class SparseTBBuilder(m.Generator2):
-    def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None) -> None:
-        assert nlb is not None, "NLB is none..."
+    def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False) -> None:
+        assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
         self.nlb = nlb
         self.graph = graph
         self.core_nodes = {}
         self.glb_dones = []
+        self.bespoke = bespoke
+        self.core_gens = {}
 
         self._ctr = 0
 
-        self.io = m.IO(
-            clk=m.In(m.Clock),
-            rst_n=m.In(m.AsyncReset),
-            stall=m.In(m.Bit),
-            flush=m.In(m.Bit),
-            config=m.In(ConfigurationType(32, 32)),
-            done=m.Out(m.Bit)
-        )
+        if bespoke is False:
+            self.io = m.IO(
+                clk=m.In(m.Clock),
+                rst_n=m.In(m.AsyncReset),
+                stall=m.In(m.Bit),
+                flush=m.In(m.Bit),
+                config=m.In(ConfigurationType(32, 32)),
+                done=m.Out(m.Bit)
+            )
 
-        self.register_cores()
-        self.connect_cores()
-        # Add flush connection
-        flush_in = self.nlb.register_core("io_1", name="flush_in")
-        self.nlb.add_connections(connections=self.nlb.emit_flush_connection(flush_in))
-        self.nlb.get_route_config()
+            # CGRA Path
+            self.register_cores()
+            self.connect_cores()
+            # Add flush connection
+            flush_in = self.nlb.register_core("io_1", name="flush_in")
+            self.nlb.add_connections(connections=self.nlb.emit_flush_connection(flush_in))
+            self.nlb.get_route_config()
 
-        self.configure_cores()
+            self.configure_cores()
 
-        # self.config = self.io.config
-        # Now we have the configured CGRA...
-        self.nlb.finalize_config()
+            # self.config = self.io.config
+            # Now we have the configured CGRA...
+            self.nlb.finalize_config()
 
-        # Now attach global buffers based on placement...
-        # Get circuit
-        self.interconnect_circuit = self.nlb.get_circuit()
-        self.interconnect_circuit = self.interconnect_circuit()
+            # Now attach global buffers based on placement...
+            # Get circuit
+            self.interconnect_circuit = self.nlb.get_circuit()
+            self.interconnect_circuit = self.interconnect_circuit()
 
-        flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_")
+            flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_")
 
-        m.wire(self.interconnect_circuit['clk'], self.io.clk)
-        m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
-        m.wire(self.io.stall, self.interconnect_circuit['stall'][0])
-        # m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
-        print(str(flush_h))
-        m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
+            m.wire(self.interconnect_circuit['clk'], self.io.clk)
+            m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
+            m.wire(self.io.stall, self.interconnect_circuit['stall'][0])
+            # m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
+            print(str(flush_h))
+            m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
 
-        m.wire(self.interconnect_circuit.config, self.io.config)
+            m.wire(self.interconnect_circuit.config, self.io.config)
 
-        # Get the initial list of inputs to interconnect and cross them off
-        self.interconnect_ins = self.get_interconnect_ins()
-        # Make sure to remove the flush port or it will get grounded.
-        self.interconnect_ins.remove(str(flush_h))
+            # Get the initial list of inputs to interconnect and cross them off
+            self.interconnect_ins = self.get_interconnect_ins()
+            # Make sure to remove the flush port or it will get grounded.
+            self.interconnect_ins.remove(str(flush_h))
 
-        self.attach_glb()
+            self.attach_glb()
+        else:
+
+            self.io = m.IO(
+                clk=m.In(m.Clock),
+                rst_n=m.In(m.AsyncReset),
+                stall=m.In(m.Bit),
+                flush=m.In(m.Bit),
+                done=m.Out(m.Bit)
+            )
+
+            # Custom circuit path
+
+            # First need to instantiate all the children
+            self.fabric = kratos.Generator(name='fabric_proxy')
+            self._u_clk = self.fabric.clock("clk")
+            self._u_rst_n = self.fabric.reset("rst_n")
+            self._u_flush = self.fabric.input("flush", 1)
+            self._u_clk_en = self.fabric.input("stall", 1)
+            self.build_fabric()
+            self.wire_fabric()
+            self.configure_cores()
+            self.add_clk_reset()
+            self.zero_alt_inputs()
+
+            # Now we want to magma-ize this
+            self.wrap_circ = kratos.util.to_magma(self.fabric,
+                                                  flatten_array=False,
+                                                  check_multiple_driver=False,
+                                                  optimize_if=False,
+                                                  check_flip_flop_always_ff=False)
+
+            m.wire(self.io.clk, self.wrap_circ['clk'])
+            m.wire(self.io.rst_n, self.wrap_circ['reset'])
+            m.wire(self.io.stall, self.wrap_circ['stall'][0])
+            m.wire(self.io.flush, self.wrap_circ['flush'][0])
+
+            # m.wire(self.interconnect_circuit.config, self.io.config)
+            return
 
         # AND together all the dones
         if len(self.glb_dones) == 1:
@@ -100,6 +152,269 @@ class SparseTBBuilder(m.Generator2):
             m.wire(self.io.done, tmp)
 
         self.wire_interconnect_ins()
+
+
+    def zero_alt_inputs(self):
+        '''
+        Go through each child instance and zero their untouched inputs
+        '''
+        children = self.fabric.child_generator()
+        for child in children:
+            for cp in self.fabric[child].ports:
+                actual_port = self.fabric[child].ports[cp]
+                if 'intersect_4' in child:
+                    print("MEK MEK")
+                    for p in actual_port.sources:
+                        print(p.left.high)
+                        print(p.left.low)
+                print(actual_port)
+                print(actual_port.sources)
+                print(actual_port.sinks)
+                print(actual_port.width)
+                if len(actual_port.sources) == 0 and str(actual_port.port_direction) == "PortDirection.In":
+                    # Wire it to 0
+                    print("WIRED TO 0...")
+                    self.fabric.wire(actual_port, kratos.const(0, actual_port.width))
+                print(f"number sources: {len(actual_port.sources)}")
+                # Check that it is an input
+
+    def add_clk_reset(self):
+        '''
+        Go through each child instance wire up clk, rst_n, flush, clk_en
+        '''
+        children = self.fabric.child_generator()
+        for child in children:
+            # print(child)
+            self.fabric.wire(self._u_clk, self.fabric[child].ports['clk'])
+            self.fabric.wire(self._u_rst_n, self.fabric[child].ports['rst_n'])
+            self.fabric.wire(self._u_flush, self.fabric[child].ports['flush'])
+            self.fabric.wire(self._u_clk_en, self.fabric[child].ports['clk_en'])
+
+    def wire_fabric(self):
+        '''
+        Bespoke way of connecting all the blocks in the underlying fabric
+        '''
+        children = self.fabric.child_generator()
+        edges = self.graph.get_edges()
+        for edge in edges:
+            src = edge.get_source()
+            dst = edge.get_destination()
+            src_name = src
+            dst_name = dst
+            # src_inst = self.fabric.children[src_name]
+            # dst_inst = self.fabric.children[dst_name]
+            addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
+            if addtl_conns is not None:
+                conn_list = None
+                for conn_block, cl in addtl_conns.items():
+                    conn_list = cl
+                for addtl_conn in conn_list:
+                    print(addtl_conn)
+                    # Now wire them up
+                    conn_des, width = addtl_conn
+
+                    conn_src, conn_src_prt = conn_des[0]
+                    for i in range(len(conn_des) - 1):
+                        # conn_dst, conn_dst_prt = conn_des[1]
+                        conn_dst, conn_dst_prt = conn_des[i + 1]
+
+                        if type(conn_src) is _kratos.Port:
+                            wire_use_src = conn_src
+                        else:
+                            conn_src_inst = children[conn_src]
+                            try:
+                                wire_use_src = conn_src_inst.ports[conn_src_prt]
+                            except:
+                                tk = conn_src_prt.split('_')
+                                idx_str = tk[-1]
+                                new_port = conn_src_prt.rstrip(f"_{idx_str}")
+                                wire_use_src = conn_src_inst.ports[new_port][int(idx_str)]
+
+                        if type(conn_dst) is _kratos.Port:
+                            wire_use_dst = conn_dst
+                        else:
+                            conn_dst_inst = children[conn_dst]
+                            try:
+                                print(conn_dst_inst.ports)
+                                wire_use_dst = conn_dst_inst.ports[conn_dst_prt]
+                                # wire_use_src = conn_src_inst.ports[conn_src_prt]
+                            except:
+                                tk = conn_dst_prt.split('_')
+                                idx_str = tk[-1]
+                                new_port = conn_dst_prt.rstrip(f"_{idx_str}")
+                                wire_use_dst = conn_dst_inst.ports[new_port][int(idx_str)]
+
+                        self.fabric.wire(wire_use_src, wire_use_dst)
+
+    def build_fabric(self):
+        '''
+        Go through each node and instantiate the required resources
+        '''
+        print(self.core_nodes)
+
+        self.__cache_gens = {}
+
+        for node in self.graph.get_nodes():
+            kwargs = {}
+            hw_node_type = node.get_attributes()['hwnode']
+            new_node_type = None
+            core_name = None
+            core_inst = None
+            new_name = node.get_attributes()['label']
+            # print(node.get_attributes())
+            if hw_node_type == f"{HWNodeType.GLB}":
+                new_node_type = GLBNode
+                core_name = "glb"
+            elif hw_node_type == f"{HWNodeType.Buffet}":
+                new_node_type = BuffetNode
+                core_name = "buffet"
+                # if 'buffet' in self.__cache_gens:
+                    # core_inst = self.__cache_gens['buffet']
+                # else:
+                    # core_inst = BuffetLike()
+                    # self.__cache_gens['buffet'] = core_inst
+                core_inst = BuffetLike()
+            elif hw_node_type == f"{HWNodeType.Memory}":
+                new_node_type = MemoryNode
+                core_name = "memtile"
+                # if 'lake' in self.__cache_gens:
+                #     core_inst = self.__cache_gens['lake']
+                # else:
+                #     core_inst = LakeTop()
+                #     self.__cache_gens['lake'] = core_inst
+                core_inst = LakeTop()
+            elif hw_node_type == f"{HWNodeType.ReadScanner}":
+                new_node_type = ReadScannerNode
+                core_name = "scanner"
+                tensor = node.get_attributes()['tensor'].strip('"')
+                kwargs = {'tensor': tensor}
+                core_inst = Scanner()
+            elif hw_node_type == f"{HWNodeType.WriteScanner}":
+                new_node_type = WriteScannerNode
+                core_name = "write_scanner"
+                core_inst = WriteScanner()
+            # Can't explain this but it's not a string when it's intersect?
+            elif hw_node_type == f"{HWNodeType.Intersect}" or hw_node_type == HWNodeType.Intersect:
+                new_node_type = IntersectNode
+                core_name = "intersect"
+                core_inst = Intersect(use_merger=False)
+            elif hw_node_type == f"{HWNodeType.Reduce}":
+                new_node_type = ReduceNode
+                core_name = "regcore"
+                core_inst = Reg()
+            elif hw_node_type == f"{HWNodeType.Lookup}":
+                new_node_type = LookupNode
+                core_name = "lookup"
+            elif hw_node_type == f"{HWNodeType.Merge}" or hw_node_type == HWNodeType.Merge:
+                new_node_type = MergeNode
+                core_name = "intersect"
+                outer = node.get_attributes()['outer'].strip('"')
+                inner = node.get_attributes()['inner'].strip('"')
+                kwargs = {
+                    "outer": outer,
+                    "inner": inner
+                }
+                core_inst = Intersect(use_merger=True)
+            elif hw_node_type == f"{HWNodeType.Repeat}" or hw_node_type == HWNodeType.Repeat:
+                new_node_type = RepeatNode
+                core_name = "repeat"
+                core_inst = Repeat()
+            elif hw_node_type == f"{HWNodeType.Compute}" or hw_node_type == HWNodeType.Compute:
+                new_node_type = ComputeNode
+                core_name = "fake_pe"
+                core_inst = PE()
+            # elif hw_node_type == f"{HWNodeType.Broadcast}":
+                # new_node = GLBNode()
+            elif hw_node_type == f"{HWNodeType.RepSigGen}" or hw_node_type == HWNodeType.RepSigGen:
+                new_node_type = RepSigGenNode
+                core_name = "repeat_signal_generator"
+                core_inst = RepeatSignalGenerator()
+            else:
+                raise NotImplementedError(f"{hw_node_type} not supported....")
+
+            assert new_node_type is not None
+            assert core_name != ""
+            # print(node.get_attributes()['type'])
+            if new_node_type == GLBNode:
+                conn_id = self.get_next_seq()
+                # Have to handle the GLB nodes slightly differently
+                # Instead of directly registering a core, we are going to register the io,
+                # connect them to the appropriate block, then instantiate and wire a
+                # systemverilog wrapper of the simulation level transactions for GLB
+                if node.get_attributes()['type'].strip('"') == 'fiberlookup':
+                    # GLB write wants a data input, ready, valid
+                    glb_name = "GLB_TO_CGRA"
+                    direction = "write"
+                    num_blocks = 1
+                    file_number = 0
+                    # data = self.nlb.register_core("io_16", name="data_in_")
+                    # ready = self.nlb.register_core("io_1", name="ready_out_")
+                    # valid = self.nlb.register_core("io_1", name="valid_in_")
+                    data = self.fabric.input(f'data_in_{conn_id}', 16)
+                    ready = self.fabric.output(f'ready_out_{conn_id}', 1)
+                    valid = self.fabric.input(f'valid_in_{conn_id}', 1)
+                    tx_size = 7
+                    if node.get_attributes()['mode'].strip('"') == 1 or node.get_attributes()['mode'].strip('"') == '1':
+                        file_number = 1
+                        tx_size = 12
+                    # glb_writer = m.define_from_verilog_file()
+                elif node.get_attributes()['type'].strip('"') == 'fiberwrite':
+                    # GLB read wants a data output, ready, valid
+                    direction = "read"
+                    glb_name = "CGRA_TO_GLB"
+                    # print(node.get_attributes())
+                    # print(node.get_attributes()['mode'].strip('"'))
+                    # data = self.nlb.register_core("io_16", name="data_out_")
+                    # ready = self.nlb.register_core("io_1", name="ready_in_")
+                    # valid = self.nlb.register_core("io_1", name="valid_out_")
+                    data = self.fabric.output(f'data_out_{conn_id}', 16)
+                    ready = self.fabric.input(f'ready_in_{conn_id}', 1)
+                    valid = self.fabric.output(f'valid_out_{conn_id}', 1)
+                    if 'vals' in node.get_attributes()['mode'].strip('"'):
+                        # print("NUM 1")
+                        num_blocks = 1
+                    else:
+                        # print("NUM 2")
+                        num_blocks = 2
+                    tx_size = 1
+                elif node.get_attributes()['type'].strip('"') == 'arrayvals':
+                    # GLB write wants a data input, ready, valid
+                    glb_name = "GLB_TO_CGRA"
+                    data = self.fabric.input(f'data_in_{conn_id}', 16)
+                    ready = self.fabric.output(f'ready_out_{conn_id}', 1)
+                    valid = self.fabric.input(f'valid_in_{conn_id}', 1)
+                    # data = self.nlb.register_core("io_16", name="data_in_")
+                    # ready = self.nlb.register_core("io_1", name="ready_out_")
+                    # valid = self.nlb.register_core("io_1", name="valid_in_")
+                    direction = "write"
+                    num_blocks = 1
+                    tx_size = 7
+                    file_number = 2
+                else:
+                    raise NotImplementedError
+                self.core_nodes[node.get_name()] = GLBNode(name=glb_name,
+                                                           data=data,
+                                                           valid=valid,
+                                                           ready=ready,
+                                                           direction=direction,
+                                                           num_blocks=num_blocks,
+                                                           file_number=file_number,
+                                                           tx_size=tx_size,
+                                                           IO_id=self.get_next_seq(),
+                                                           bespoke=True)
+            else:
+                # reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
+                inst_name = f"{core_name}_{self.get_next_seq()}"
+                self.core_nodes[node.get_name()] = new_node_type(name=inst_name, **kwargs)
+                # Need to flatten first - but not if memory tile because of some bad code
+                if new_node_type == MemoryNode:
+                    self.core_gens[node.get_name()] = core_inst.dut
+                    self.fabric.add_child(inst_name, core_inst.dut)
+                else:
+                    self.core_gens[node.get_name()] = core_inst
+                    flattened = _kratos.create_wrapper_flatten(core_inst.internal_generator, f"{core_inst.name}_flat")
+                    flattened_gen = kratos.Generator(f"{core_inst.name}_flat", internal_generator=flattened)
+                    self.fabric.add_child(inst_name, flattened_gen)
 
     def get_next_seq(self):
         tmp = self._ctr
@@ -387,7 +702,6 @@ class SparseTBBuilder(m.Generator2):
         '''
         Iterate through the edges of the graph and connect each core up
         '''
-
         self.display_names()
         edges = self.graph.get_edges()
         for edge in edges:
@@ -405,14 +719,39 @@ class SparseTBBuilder(m.Generator2):
         '''
         for node in self.graph.get_nodes():
             node_attr = node.get_attributes()
+            # print(node)
             # print(node_attr)
-            node_config = self.core_nodes[node.get_name()].configure(node_attr)
+            node_config_ret = self.core_nodes[node.get_name()].configure(node_attr)
+            if node_config_ret is not None:
+                node_config_tuple, node_config_kwargs = node_config_ret
             # GLB tiles return none so that we don't try to config map them...
-            if node_config is not None:
-                self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config)
+            if self.bespoke:
+                if node_attr['hwnode'] == 'HWNodeType.GLB':
+                    print("SAW GLB...skipping")
+                    continue
+                node_name = node.get_name()
+                # node_inst = self.fabric[self.core_gens[node_name].get_name()]
+                node_inst = self.core_gens[node_name]
+                # print(node_inst)
+                if node_attr['hwnode'] == 'HWNodeType.Memory':
+                    node_cfg = node_inst.get_bitstream(node_config_kwargs)
+                else:
+                    node_cfg = node_inst.get_bitstream(**node_config_kwargs)
+                # Now for the configurations, wire them directly
+                # print(node_cfg)
+                for cfg_port, cfg_val in node_cfg:
+                    # Now we need the flattened wrapper/actually used instance
+                    child_inst = self.fabric[self.core_nodes[node.get_name()].get_name()]
+                    self.fabric.wire(child_inst.ports[cfg_port], kratos.const(cfg_val, child_inst.ports[cfg_port].width))
+
+            else:
+                self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
 
     def display_names(self):
-        self.nlb.display_names()
+        if self.bespoke:
+            print(self.core_nodes)
+        else:
+            self.nlb.display_names()
 
 
 if __name__ == "__main__":
@@ -426,24 +765,28 @@ if __name__ == "__main__":
     # Now use the graph to build an nlb
     graph = sdg.get_graph()
 
-    chip_width = 20
-    chip_height = 32
-    num_tracks = 10
-    altcore = [ScannerCore, IntersectCore, FakePECore, RegCore,
-               LookupCore, WriteScannerCore, BuffetCore, RepeatSignalGeneratorCore, RepeatCore]
+    nlb = None
+    interconnect = None
+    # # chip_width = 20
+    # chip_width = 4
+    # # chip_height = 32
+    # chip_height = 4
+    # num_tracks = 10
+    # altcore = [ScannerCore, IntersectCore, FakePECore, RegCore,
+    #            LookupCore, WriteScannerCore, BuffetCore, RepeatSignalGeneratorCore, RepeatCore]
 
-    interconnect = create_cgra(width=chip_width, height=chip_height,
-                               io_sides=NetlistBuilder.io_sides(),
-                               num_tracks=num_tracks,
-                               add_pd=True,
-                               # Soften the flush...?
-                               harden_flush=False,
-                               mem_ratio=(1, 2),
-                               altcore=altcore)
+    # interconnect = create_cgra(width=chip_width, height=chip_height,
+    #                            io_sides=NetlistBuilder.io_sides(),
+    #                            num_tracks=num_tracks,
+    #                            add_pd=True,
+    #                            # Soften the flush...?
+    #                            harden_flush=False,
+    #                            mem_ratio=(1, 2),
+    #                            altcore=altcore)
 
-    nlb = NetlistBuilder(interconnect=interconnect, cwd="/home/max/Documents/SPARSE/garnet/mek_dump/")
+    # nlb = NetlistBuilder(interconnect=interconnect, cwd="/home/max/Documents/SPARSE/garnet/mek_dump/")
 
-    stb = SparseTBBuilder(nlb=nlb, graph=graph)
+    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=True)
 
     stb.display_names()
 
@@ -459,14 +802,15 @@ if __name__ == "__main__":
 
     # After stalling, we can configure the circuit
     # with its configuration bitstream
-    cfgdat = nlb.get_config_data()
-    for addr, index in cfgdat:
-        tester.configure(addr, index)
-        # if readback is True:
-        #     self._tester.config_read(addr)
-        tester.eval()
+    if nlb is not None:
+        cfgdat = nlb.get_config_data()
+        for addr, index in cfgdat:
+            tester.configure(addr, index)
+            # if readback is True:
+            #     self._tester.config_read(addr)
+            tester.eval()
 
-    tester.done_config()
+        tester.done_config()
 
     tester.poke(stb.io.stall, 0)
     tester.eval()
