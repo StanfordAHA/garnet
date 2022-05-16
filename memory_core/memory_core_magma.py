@@ -86,7 +86,7 @@ class MemCore(LakeCoreBase):
                  gate_flush=True,
                  override_name=None,
                  gen_addr=True,
-                 tech_map=TSMC_Tech_Map(depth=512, width=32)):
+                 tech_map=GF_Tech_Map(depth=2048, width=16, dual_port=True)):
 
         lake_name = "LakeTop"
 
