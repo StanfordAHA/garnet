@@ -86,7 +86,7 @@ class MemCore(LakeCoreBase):
                  gate_flush=True,
                  override_name=None,
                  gen_addr=True,
-                 tech_map=GF_Tech_Map(depth=512, width=32, dual_port=True)):
+                 tech_map=GF_Tech_Map(depth=2048, width=16, dual_port=True)):
 
         lake_name = "LakeTop"
 
@@ -120,7 +120,7 @@ class MemCore(LakeCoreBase):
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
         self.gen_addr = gen_addr
-        self.tech_map = GF_Tech_Map(depth=self.mem_depth, width=self.mem_width, dual_port=True)
+        self.tech_map = tech_map
         # self.app_ctrl_depth_width = app_ctrl_depth_width
         # self.stcl_valid_iter = stcl_valid_iter
         # Typedefs for ease
