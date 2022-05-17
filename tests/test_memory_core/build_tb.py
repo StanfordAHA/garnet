@@ -41,11 +41,11 @@ from lake.modules.write_scanner import WriteScanner
 from lake.modules.pe import PE
 from lake.modules.intersect import Intersect
 from lake.modules.reg_cr import Reg
-from gemstone.generator.from_magma import FromMagma
+import os
 
 
 class SparseTBBuilder(m.Generator2):
-    def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False) -> None:
+    def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False, output_dir=None) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -55,6 +55,8 @@ class SparseTBBuilder(m.Generator2):
         self.glb_dones = []
         self.bespoke = bespoke
         self.core_gens = {}
+        self.name_maps = {}
+        self.output_dir = output_dir
 
         self._ctr = 0
 
@@ -93,7 +95,7 @@ class SparseTBBuilder(m.Generator2):
             m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
             m.wire(self.io.stall, self.interconnect_circuit['stall'][0])
             # m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
-            print(str(flush_h))
+            # print(str(flush_h))
             m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
 
             m.wire(self.interconnect_circuit.config, self.io.config)
@@ -103,7 +105,6 @@ class SparseTBBuilder(m.Generator2):
             # Make sure to remove the flush port or it will get grounded.
             self.interconnect_ins.remove(str(flush_h))
 
-            self.attach_glb()
         else:
 
             self.io = m.IO(
@@ -135,16 +136,16 @@ class SparseTBBuilder(m.Generator2):
                                                   optimize_if=False,
                                                   check_flip_flop_always_ff=False)
 
-            self.wrap_circ = FromMagma(self.wrap_circ)
+            # Instance it!
+            self.wrap_circ = self.wrap_circ()
 
-            # m.wire(self.io.clk, self.wrap_circ.ports.clk)
-            m.wire(self.io.clk, self.wrap_circ.ports.clk)
+            m.wire(self.io.clk, self.wrap_circ.clk)
             m.wire(self.io.rst_n, self.wrap_circ.rst_n)
-            m.wire(self.io.stall, self.wrap_circ.stall)
-            m.wire(self.io.flush, self.wrap_circ.flush)
-
+            m.wire(self.io.stall, self.wrap_circ.stall[0])
+            m.wire(self.io.flush, self.wrap_circ.flush[0])
             # m.wire(self.interconnect_circuit.config, self.io.config)
-            return
+
+        self.attach_glb()
 
         # AND together all the dones
         if len(self.glb_dones) == 1:
@@ -155,7 +156,8 @@ class SparseTBBuilder(m.Generator2):
                 tmp = tmp & self.glb_dones[i + 1]
             m.wire(self.io.done, tmp)
 
-        self.wire_interconnect_ins()
+        if self.bespoke is False:
+            self.wire_interconnect_ins()
 
     def zero_alt_inputs(self):
         '''
@@ -165,10 +167,10 @@ class SparseTBBuilder(m.Generator2):
         for child in children:
             for cp in self.fabric[child].ports:
                 actual_port = self.fabric[child].ports[cp]
-                print(actual_port)
-                print(actual_port.sources)
-                print(actual_port.sinks)
-                print(actual_port.width)
+                # print(actual_port)
+                # print(actual_port.sources)
+                # print(actual_port.sinks)
+                # print(actual_port.width)
                 sourced_mask = [0 for i in range(actual_port.width)]
                 if str(actual_port.port_direction) == "PortDirection.In" and str(actual_port.port_type) == "PortType.Data":
                     # If no sources, wire to 0 unless it's a ready path, then wire each bit to 1
@@ -183,7 +185,7 @@ class SparseTBBuilder(m.Generator2):
                         # then we need to dissect them
                         try:
                             for p in actual_port.sources:
-                                print(actual_port.port_type)
+                                # print(actual_port.port_type)
                                 for i in range(p.left.high + 1 - p.left.low):
                                     sourced_mask[i + p.left.low] = 1
                             for i in range(len(sourced_mask)):
@@ -192,7 +194,7 @@ class SparseTBBuilder(m.Generator2):
                                     if 'ready' in actual_port.name:
                                         val = 1
                                     self.fabric.wire(actual_port[i], kratos.const(val, 1))
-                        except:
+                        except AttributeError:
                             print(f"Couldn't get bit slice, must be fully driven...{actual_port.name}")
 
     def add_clk_reset(self):
@@ -226,7 +228,7 @@ class SparseTBBuilder(m.Generator2):
                 for conn_block, cl in addtl_conns.items():
                     conn_list = cl
                 for addtl_conn in conn_list:
-                    print(addtl_conn)
+                    # print(addtl_conn)
                     # Now wire them up
                     conn_des, width = addtl_conn
 
@@ -241,7 +243,7 @@ class SparseTBBuilder(m.Generator2):
                             conn_src_inst = children[conn_src]
                             try:
                                 wire_use_src = conn_src_inst.ports[conn_src_prt]
-                            except:
+                            except AttributeError:
                                 tk = conn_src_prt.split('_')
                                 idx_str = tk[-1]
                                 new_port = conn_src_prt.rstrip(f"_{idx_str}")
@@ -252,10 +254,10 @@ class SparseTBBuilder(m.Generator2):
                         else:
                             conn_dst_inst = children[conn_dst]
                             try:
-                                print(conn_dst_inst.ports)
+                                # print(conn_dst_inst.ports)
                                 wire_use_dst = conn_dst_inst.ports[conn_dst_prt]
-                                # wire_use_src = conn_src_inst.ports[conn_src_prt]
-                            except:
+                            #     # wire_use_src = conn_src_inst.ports[conn_src_prt]
+                            except AttributeError:
                                 tk = conn_dst_prt.split('_')
                                 idx_str = tk[-1]
                                 new_port = conn_dst_prt.rstrip(f"_{idx_str}")
@@ -267,7 +269,7 @@ class SparseTBBuilder(m.Generator2):
         '''
         Go through each node and instantiate the required resources
         '''
-        print(self.core_nodes)
+        # print(self.core_nodes)
 
         self.__cache_gens = {}
 
@@ -417,6 +419,7 @@ class SparseTBBuilder(m.Generator2):
             else:
                 # reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
                 inst_name = f"{core_name}_{self.get_next_seq()}"
+                self.name_maps[inst_name] = node.get_attributes()['label'].strip('"')
                 self.core_nodes[node.get_name()] = new_node_type(name=inst_name, **kwargs)
                 # Need to flatten first - but not if memory tile because of some bad code
                 if new_node_type == MemoryNode:
@@ -463,7 +466,7 @@ class SparseTBBuilder(m.Generator2):
         self._all_dones = []
 
         glb_nodes = [node for node in self.core_nodes.values() if type(node) == GLBNode]
-        print(glb_nodes)
+        # print(glb_nodes)
         if len(glb_nodes) < 3:
             print('STOPPING')
             exit()
@@ -480,17 +483,23 @@ class SparseTBBuilder(m.Generator2):
             glb_dir = node.get_direction()
             if glb_dir == 'write':
 
-                data_h = self.nlb.get_handle(glb_data, prefix="glb2io_16_")
-                ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
-                valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
+                # In the bespoke case we can use the data ports
+                if self.bespoke:
+                    data_h = self.wrap_circ[glb_data.name]
+                    ready_h = self.wrap_circ[glb_ready.name]
+                    valid_h = self.wrap_circ[glb_valid.name]
+                else:
+                    data_h = self.nlb.get_handle(glb_data, prefix="glb2io_16_")
+                    ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
+                    valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
 
-                # Get rid of these signals from leftover inputs...
-                self.interconnect_ins.remove(str(data_h))
-                self.interconnect_ins.remove(str(valid_h))
+                    # Get rid of these signals from leftover inputs...
+                    self.interconnect_ins.remove(str(data_h))
+                    self.interconnect_ins.remove(str(valid_h))
 
-                data_h = self.interconnect_circuit[str(data_h)]
-                ready_h = self.interconnect_circuit[str(ready_h)]
-                valid_h = self.interconnect_circuit[str(valid_h)]
+                    data_h = self.interconnect_circuit[str(data_h)]
+                    ready_h = self.interconnect_circuit[str(ready_h)]
+                    valid_h = self.interconnect_circuit[str(valid_h)]
 
                 class _Definition(m.Generator2):
                     def __init__(self, TX_SIZE, FILE_NAME, ID_no) -> None:
@@ -530,16 +539,22 @@ class SparseTBBuilder(m.Generator2):
                 m.wire(test_glb.flush, self.io.flush)
 
             elif glb_dir == 'read':
-                data_h = self.nlb.get_handle(glb_data, prefix="io2glb_16_")
-                ready_h = self.nlb.get_handle(glb_ready, prefix="glb2io_1_")
-                valid_h = self.nlb.get_handle(glb_valid, prefix="io2glb_1_")
 
-                # Get rid of this signal from leftover inputs...
-                self.interconnect_ins.remove(str(ready_h))
+                if self.bespoke:
+                    data_h = self.wrap_circ[glb_data.name]
+                    ready_h = self.wrap_circ[glb_ready.name]
+                    valid_h = self.wrap_circ[glb_valid.name]
+                else:
+                    data_h = self.nlb.get_handle(glb_data, prefix="io2glb_16_")
+                    ready_h = self.nlb.get_handle(glb_ready, prefix="glb2io_1_")
+                    valid_h = self.nlb.get_handle(glb_valid, prefix="io2glb_1_")
 
-                data_h = self.interconnect_circuit[str(data_h)]
-                ready_h = self.interconnect_circuit[str(ready_h)]
-                valid_h = self.interconnect_circuit[str(valid_h)]
+                    # Get rid of this signal from leftover inputs...
+                    self.interconnect_ins.remove(str(ready_h))
+
+                    data_h = self.interconnect_circuit[str(data_h)]
+                    ready_h = self.interconnect_circuit[str(ready_h)]
+                    valid_h = self.interconnect_circuit[str(valid_h)]
 
                 class _Definition(m.Generator2):
                     def __init__(self, NUM_BLOCKS, FILE_NAME1, FILE_NAME2, ID_no) -> None:
@@ -570,8 +585,10 @@ class SparseTBBuilder(m.Generator2):
                 """
 
                 ID_no = self.get_next_seq()
-                f1 = f"\"/home/max/Documents/SPARSE/garnet/generic_memory_out_id_{ID_no}_block_0.txt\""
-                f2 = f"\"/home/max/Documents/SPARSE/garnet/generic_memory_out_id_{ID_no}_block_1.txt\""
+                f1 = f"\"{self.output_dir}/generic_memory_out_id_{ID_no}_block_0.txt\""
+                # f1 = f"\"/home/max/Documents/SPARSE/garnet/generic_memory_out_id_{ID_no}_block_0.txt\""
+                f2 = f"\"{self.output_dir}/generic_memory_out_id_{ID_no}_block_1.txt\""
+                # f2 = f"\"/home/max/Documents/SPARSE/garnet/generic_memory_out_id_{ID_no}_block_1.txt\""
 
                 test_glb = _Definition(NUM_BLOCKS=glb_num_blocks, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
 
@@ -714,7 +731,7 @@ class SparseTBBuilder(m.Generator2):
         '''
         Iterate through the edges of the graph and connect each core up
         '''
-        self.display_names()
+        # self.display_names()
         edges = self.graph.get_edges()
         for edge in edges:
             src = edge.get_source()
@@ -739,7 +756,7 @@ class SparseTBBuilder(m.Generator2):
             # GLB tiles return none so that we don't try to config map them...
             if self.bespoke:
                 if node_attr['hwnode'] == 'HWNodeType.GLB':
-                    print("SAW GLB...skipping")
+                    # print("SAW GLB...skipping")
                     continue
                 node_name = node.get_name()
                 # node_inst = self.fabric[self.core_gens[node_name].get_name()]
@@ -761,7 +778,10 @@ class SparseTBBuilder(m.Generator2):
 
     def display_names(self):
         if self.bespoke:
-            print(self.core_nodes)
+            # print(self.core_nodes)
+            # print(self.name_maps)
+            for key, val in self.name_maps.items():
+                print(f"{key} => {val}")
         else:
             self.nlb.display_names()
 
@@ -777,28 +797,41 @@ if __name__ == "__main__":
     # Now use the graph to build an nlb
     graph = sdg.get_graph()
 
+    bespoke = True
+    output_dir = "/home/max/Documents/SPARSE/garnet/mek_outputs"
+
+    # Clean up output dir...
+    # If it doesn't exist, make it
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+    else:
+        # Otherwise clean it
+        for filename in os.listdir(output_dir):
+            ret = os.remove(output_dir + "/" + filename)
+
     nlb = None
     interconnect = None
-    # # chip_width = 20
-    # chip_width = 4
-    # # chip_height = 32
-    # chip_height = 4
-    # num_tracks = 10
-    # altcore = [ScannerCore, IntersectCore, FakePECore, RegCore,
-    #            LookupCore, WriteScannerCore, BuffetCore, RepeatSignalGeneratorCore, RepeatCore]
+    if bespoke is False:
+        # chip_width = 20
+        chip_width = 4
+        # chip_height = 32
+        chip_height = 4
+        num_tracks = 10
+        altcore = [ScannerCore, IntersectCore, FakePECore, RegCore,
+                   LookupCore, WriteScannerCore, BuffetCore, RepeatSignalGeneratorCore, RepeatCore]
 
-    # interconnect = create_cgra(width=chip_width, height=chip_height,
-    #                            io_sides=NetlistBuilder.io_sides(),
-    #                            num_tracks=num_tracks,
-    #                            add_pd=True,
-    #                            # Soften the flush...?
-    #                            harden_flush=False,
-    #                            mem_ratio=(1, 2),
-    #                            altcore=altcore)
+        interconnect = create_cgra(width=chip_width, height=chip_height,
+                                   io_sides=NetlistBuilder.io_sides(),
+                                   num_tracks=num_tracks,
+                                   add_pd=True,
+                                   # Soften the flush...?
+                                   harden_flush=False,
+                                   mem_ratio=(1, 2),
+                                   altcore=altcore)
 
-    # nlb = NetlistBuilder(interconnect=interconnect, cwd="/home/max/Documents/SPARSE/garnet/mek_dump/")
+        nlb = NetlistBuilder(interconnect=interconnect, cwd="/home/max/Documents/SPARSE/garnet/mek_dump/")
 
-    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=True)
+    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, output_dir=output_dir)
 
     stb.display_names()
 
@@ -806,7 +839,14 @@ if __name__ == "__main__":
 
     tester.zero_inputs()
 
-    tester.reset()
+    if nlb is not None:
+        tester.reset()
+    else:
+        # pulse reset manually
+        tester.poke(stb.rst_n, 0)
+        tester.step(2)
+        tester.poke(stb.rst_n, 1)
+        tester.step(2)
 
     tester.step(2)
     # Stall during config
@@ -824,7 +864,7 @@ if __name__ == "__main__":
 
         tester.done_config()
 
-    tester.poke(stb.io.stall, 0)
+        tester.poke(stb.io.stall, 0)
     tester.eval()
 
     # Get flush handle and apply flush to start off app

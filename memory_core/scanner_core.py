@@ -80,8 +80,6 @@ class ScannerCore(LakeCoreBase):
             block_mode, lookup = config_tuple
         configs = []
         config_scanner = [("tile_en", 1)]
-        if is_root:
-            config_scanner += [("root", 1)]
         config_scanner += self.dut.get_bitstream(inner_offset=inner_offset,
                                                  max_out=max_outer_dim,
                                                  ranges=ranges,
