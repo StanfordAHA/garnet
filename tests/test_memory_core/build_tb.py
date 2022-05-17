@@ -41,6 +41,7 @@ from lake.modules.write_scanner import WriteScanner
 from lake.modules.pe import PE
 from lake.modules.intersect import Intersect
 from lake.modules.reg_cr import Reg
+from gemstone.generator.from_magma import FromMagma
 
 
 class SparseTBBuilder(m.Generator2):
@@ -134,10 +135,13 @@ class SparseTBBuilder(m.Generator2):
                                                   optimize_if=False,
                                                   check_flip_flop_always_ff=False)
 
-            m.wire(self.io.clk, self.wrap_circ['clk'])
-            m.wire(self.io.rst_n, self.wrap_circ['reset'])
-            m.wire(self.io.stall, self.wrap_circ['stall'][0])
-            m.wire(self.io.flush, self.wrap_circ['flush'][0])
+            self.wrap_circ = FromMagma(self.wrap_circ)
+
+            # m.wire(self.io.clk, self.wrap_circ.ports.clk)
+            m.wire(self.io.clk, self.wrap_circ.ports.clk)
+            m.wire(self.io.rst_n, self.wrap_circ.rst_n)
+            m.wire(self.io.stall, self.wrap_circ.stall)
+            m.wire(self.io.flush, self.wrap_circ.flush)
 
             # m.wire(self.interconnect_circuit.config, self.io.config)
             return
@@ -153,7 +157,6 @@ class SparseTBBuilder(m.Generator2):
 
         self.wire_interconnect_ins()
 
-
     def zero_alt_inputs(self):
         '''
         Go through each child instance and zero their untouched inputs
@@ -162,21 +165,35 @@ class SparseTBBuilder(m.Generator2):
         for child in children:
             for cp in self.fabric[child].ports:
                 actual_port = self.fabric[child].ports[cp]
-                if 'intersect_4' in child:
-                    print("MEK MEK")
-                    for p in actual_port.sources:
-                        print(p.left.high)
-                        print(p.left.low)
                 print(actual_port)
                 print(actual_port.sources)
                 print(actual_port.sinks)
                 print(actual_port.width)
-                if len(actual_port.sources) == 0 and str(actual_port.port_direction) == "PortDirection.In":
-                    # Wire it to 0
-                    print("WIRED TO 0...")
-                    self.fabric.wire(actual_port, kratos.const(0, actual_port.width))
-                print(f"number sources: {len(actual_port.sources)}")
-                # Check that it is an input
+                sourced_mask = [0 for i in range(actual_port.width)]
+                if str(actual_port.port_direction) == "PortDirection.In" and str(actual_port.port_type) == "PortType.Data":
+                    # If no sources, wire to 0 unless it's a ready path, then wire each bit to 1
+                    if len(actual_port.sources) == 0:
+                        if 'ready' in actual_port.name:
+                            for i in range(actual_port.width):
+                                self.fabric.wire(actual_port[i], kratos.const(1, 1))
+                        else:
+                            self.fabric.wire(actual_port, kratos.const(0, actual_port.width))
+                    elif len(actual_port.sources) != 0 and actual_port.width != 1 and actual_port.width != 16:
+                        # If there are sources and it's not 1 or 16 wide (implies they are fully driven anyway),
+                        # then we need to dissect them
+                        try:
+                            for p in actual_port.sources:
+                                print(actual_port.port_type)
+                                for i in range(p.left.high + 1 - p.left.low):
+                                    sourced_mask[i + p.left.low] = 1
+                            for i in range(len(sourced_mask)):
+                                if sourced_mask[i] == 0:
+                                    val = 0
+                                    if 'ready' in actual_port.name:
+                                        val = 1
+                                    self.fabric.wire(actual_port[i], kratos.const(val, 1))
+                        except:
+                            print(f"Couldn't get bit slice, must be fully driven...{actual_port.name}")
 
     def add_clk_reset(self):
         '''
@@ -268,11 +285,6 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.Buffet}":
                 new_node_type = BuffetNode
                 core_name = "buffet"
-                # if 'buffet' in self.__cache_gens:
-                    # core_inst = self.__cache_gens['buffet']
-                # else:
-                    # core_inst = BuffetLike()
-                    # self.__cache_gens['buffet'] = core_inst
                 core_inst = BuffetLike()
             elif hw_node_type == f"{HWNodeType.Memory}":
                 new_node_type = MemoryNode
