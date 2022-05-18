@@ -68,5 +68,5 @@ set_max_transition [expr 0.05*${clock_period}] $design_name
 # Don't care if clock passess through global controller too quickly.
 # Also we don't use this clock anyway.
 
-set_min_delay 0 -from [ get_ports clk_in ] -to [ get_ports clk_out ]
+set_false_path -hold -from [ get_ports clk_in ] -to [ get_ports clk_out ]
 
