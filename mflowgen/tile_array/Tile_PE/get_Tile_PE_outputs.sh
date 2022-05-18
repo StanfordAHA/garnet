@@ -11,8 +11,7 @@ else
     make cadence-pegasus-lvs
 fi
 
-# Temporarily(?) disabling GLS because it is mysteriously failing.
-# make pwr-aware-gls
+make pwr-aware-gls
 
 mkdir -p outputs
 cp -L *cadence-genus-genlib/outputs/design.lib outputs/Tile_PE_tt.lib
