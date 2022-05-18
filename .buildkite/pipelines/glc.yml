@@ -39,5 +39,5 @@ steps:
 
 - label: 'glc signoff'
   commands:
-  - $TEST --dir $BUILD --need_space 30G full_chip global_controller
+  - $TEST --build_dir $BUILD --need_space 30G full_chip global_controller
     --steps cadence-innovus-signoff --debug 
