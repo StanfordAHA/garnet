@@ -1,8 +1,17 @@
 ######## Create Power Domains ###########
 # Default Power Domain - SD when tile not used 
 create_power_domain TOP -include_scope
+
 # AON Domain - Modules that stay ON when tile is OFF 
 # PS configuration logic and tie cells for hi/lo outputs that drive the tile_id
+
+# FIXME note that DECODE_FEATURE and FEATURE_AND modules (at least)
+# are auto-generated names that may change at the whim of the
+# generator. We have had to manually change the name here, at least
+# twice so far as a result of failing CI tests, i.e.
+#    DECODE_FEATURE_8 => DECODE_FEATURE_12 => DECODE_FEATURE_13
+# For further info see steveri notes ~/0notes/vto/pwr-aware-gls.txt
+
 create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_13 coreir_eq_16_inst0 and_inst1 FEATURE_AND_13 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
 
 ### Toplevel Connections ######
