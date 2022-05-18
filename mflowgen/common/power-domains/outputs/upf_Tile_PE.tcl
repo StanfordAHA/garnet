@@ -3,7 +3,7 @@
 create_power_domain TOP -include_scope
 # AON Domain - Modules that stay ON when tile is OFF 
 # PS configuration logic and tie cells for hi/lo outputs that drive the tile_id
-create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_12 coreir_eq_16_inst0 and_inst1 FEATURE_AND_12 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
+create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_13 coreir_eq_16_inst0 and_inst1 FEATURE_AND_12 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
 
 ### Toplevel Connections ######
 ## VDD 
