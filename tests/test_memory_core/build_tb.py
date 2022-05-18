@@ -1,3 +1,4 @@
+import argparse
 from gemstone.common.testers import BasicTester
 from gemstone.common.configurable import ConfigurationType
 from pydot import Graph
@@ -788,16 +789,24 @@ class SparseTBBuilder(m.Generator2):
 
 if __name__ == "__main__":
 
-    base_path = "/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/"
+    parser = argparse.ArgumentParser(description='Sparse TB Generator')
+    parser.add_argument('--sam_graph',
+                        type=str,
+                        default="/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/mat_identity.gv")
+    parser.add_argument('--trace', action="store_true")
+    parser.add_argument('--bespoke', action="store_true")
+    args = parser.parse_args()
 
-    matmul_dot = base_path + "mat_identity.gv"
-    mat_element_mul = base_path + "mat_elemmul.gv"
-    mat_mul = base_path + "matmul_ijk.gv"
-    sdg = SAMDotGraph(filename=mat_mul)
+    # base_path = "/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/"
+
+    # matmul_dot = base_path + "mat_identity.gv"
+    # mat_element_mul = base_path + "mat_elemmul.gv"
+    # mat_mul = base_path + "matmul_ijk.gv"
+    sdg = SAMDotGraph(filename=args.sam_graph)
     # Now use the graph to build an nlb
     graph = sdg.get_graph()
 
-    bespoke = True
+    bespoke = args.bespoke
     output_dir = "/home/max/Documents/SPARSE/garnet/mek_outputs"
 
     # Clean up output dir...
@@ -884,7 +893,7 @@ if __name__ == "__main__":
     tester.wait_until_high(tester.circuit.done, timeout=500)
 
     from conftest import run_tb_fn
-    run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="mek_dump")
+    run_tb_fn(tester, trace=args.trace, disable_ndarray=True, cwd="mek_dump")
     # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
 
     stb.display_names()
