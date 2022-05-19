@@ -289,7 +289,7 @@ class Garnet(Generator):
         return input_interface, output_interface,\
             (reset_port_name, valid_port_name, en_port_name)
 
-    def load_netlist(self, app, load_only, pipeline_input_broadcasts, 
+    def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves):
         app_dir = os.path.dirname(app)
 
@@ -346,14 +346,14 @@ class Garnet(Generator):
         dag = cutil.coreir_to_dag(nodes, cmod)
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
-        netlist_info = create_netlist_info(app_dir, 
-                                            dag, 
-                                            tile_info, 
-                                            load_only, 
-                                            self.harden_flush, 
+        netlist_info = create_netlist_info(app_dir,
+                                            dag,
+                                            tile_info,
+                                            load_only,
+                                            self.harden_flush,
                                             self.height//self.pipeline_config_interval,
-                                            pipeline_input_broadcasts, 
-                                            input_broadcast_branch_factor, 
+                                            pipeline_input_broadcasts,
+                                            input_broadcast_branch_factor,
                                             input_broadcast_max_leaves)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
@@ -361,10 +361,10 @@ class Garnet(Generator):
 
     def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False,
                         pipeline_input_broadcasts=False, input_broadcast_branch_factor=4, input_broadcast_max_leaves=16):
-        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src, 
-                                                                        load_only, 
-                                                                        pipeline_input_broadcasts, 
-                                                                        input_broadcast_branch_factor, 
+        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src,
+                                                                        load_only,
+                                                                        pipeline_input_broadcasts,
+                                                                        input_broadcast_branch_factor,
                                                                         input_broadcast_max_leaves)
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
@@ -534,7 +534,6 @@ def main():
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_CW"},
                       passes=["rungenerators", "inline_single_instances", "clock_gate"],
-                      disable_ndarray=True,
                       inline=False)
         garnet.create_stub()
         if not args.interconnect_only:
