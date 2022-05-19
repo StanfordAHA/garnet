@@ -1,0 +1,43 @@
+# Agents are specified in "pipeline settings" now, see e.g. buildkite.com/tapeout-aha/steps
+# agents: { jobsize: "hours" }
+
+# 04/2022 Now running tests in parallel
+# Old runtime 30-35m, new runtime 20-25m
+
+##############################################################################
+# Use this to test a specific branch/commit:
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+# - pwd; git branch; git checkout $$NOV11
+
+##############################################################################
+# Note: "echo exit 13" prevents hang at genus/innovus prompt
+env:
+  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  SETUP: 'source mflowgen/bin/setup-buildkite.sh'
+  TEST_MODULE_SBFLAGS: '--skip_mflowgen'
+  BUILD: /build/glc${BUILDKITE_BUILD_NUMBER}
+
+steps:
+
+##############################################################################
+# COMMON SETUP to initialize mflowgen
+
+- label: 'setup 2m'
+  commands:
+  - '
+     echo "--- SETUP";
+     set -o pipefail;
+     $$SETUP --dir .;
+    '
+- wait
+
+##############################################################################
+# INDIVIDUAL TILE RUNS
+# Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
+
+- label: 'glc signoff'
+  commands:
+  - $TEST --build_dir $BUILD --need_space 30G full_chip global_controller
+    --steps cadence-innovus-signoff --debug 
