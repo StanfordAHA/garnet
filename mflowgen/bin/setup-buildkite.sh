@@ -439,7 +439,7 @@ if [ "$skip_mflowgen" == "true" ]; then
     echo "SKIP ADK INSTALL because of cmd-line arg '--skip_mflowgen'"
 
 else
-    echo "CLONE LATEST ADK into mflowgen local repo '$MFLOWGEN_PATH'"
+    echo "USE EXISTING ADK: cd $mflowgen && ln -s /sim/buildkite-agent/adks"
 
     # Note adks must be touchable by current user, thus 
     # cannot e.g. symlink to someone else's existing adk.
