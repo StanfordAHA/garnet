@@ -29,4 +29,4 @@ steps:
 - label: 'Check'
   commands:
   - ls -l $BDIR/Tile_PE/*rtl/outputs/design.v
-  - grep 'module Tile_PE' $BDIR/Tile_PE/*rtl/outputs/design.v
+  - grep 'module Tile_PE' $BDIR/Tile_PE/*rtl/outputs/design.v | grep unq && exit 13
