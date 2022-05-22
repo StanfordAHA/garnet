@@ -1,3 +1,5 @@
+# Run PE SYNTH ONLY in context of full_chip
+
 agents: { jobsize: "hours" }
 
 env:
