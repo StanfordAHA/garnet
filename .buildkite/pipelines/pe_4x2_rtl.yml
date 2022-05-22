@@ -23,6 +23,8 @@ steps:
      make rtl |& tee make-rtl.log;
     '
 
+- wait
+
 # Final check for errors and such
 - label: 'Check'
   commands:
