@@ -54,7 +54,8 @@ class Garnet(Generator):
                  harden_flush: bool = True,
                  pipeline_config_interval: int = 8,
                  glb_params: GlobalBufferParams = GlobalBufferParams(),
-                 pe_fc=lassen_fc):
+                 pe_fc=lassen_fc,
+                 ready_valid: bool = False):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -132,7 +133,8 @@ class Garnet(Generator):
                                    mem_ratio=(1, mem_ratio),
                                    tile_layout_option=tile_layout_option,
                                    standalone=standalone,
-                                   pe_fc=pe_fc)
+                                   pe_fc=pe_fc,
+                                   ready_valid=ready_valid)
 
         self.interconnect = interconnect
 
@@ -491,6 +493,7 @@ def main():
     parser.add_argument('--mem-ratio', type=int, default=4)
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
+    parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -527,7 +530,8 @@ def main():
                     interconnect_only=args.interconnect_only,
                     use_sim_sram=args.use_sim_sram,
                     standalone=args.standalone,
-                    pe_fc=pe_fc)
+                    pe_fc=pe_fc,
+                    ready_valid=args.ready_valid)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
