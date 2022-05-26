@@ -68,6 +68,7 @@ class LakeCoreBase(ConfigurableCore):
         self.__name = name
         self.__inputs = []
         self.__outputs = []
+        self.__blacklist = []
         self.__features = []
         self.data_width = data_width
         self.__gate_flush = gate_flush
@@ -127,10 +128,20 @@ class LakeCoreBase(ConfigurableCore):
             if ind_ports > 1:
                 for i in range(ind_ports):
                     self.add_port(f"{io_info.port_name}_{i}", dir_type(intf_type))
-                    app_list.append(self.ports[f"{io_info.port_name}_{i}"])
+                    if '_ready' in io_info.port_name or '_valid' in io_info.port_name:
+                        pass
+                    else:
+                        app_list.append(self.ports[f"{io_info.port_name}_{i}"])
             else:
                 self.add_port(io_info.port_name, dir_type(intf_type))
-                app_list.append(self.ports[io_info.port_name])
+                if '_ready' in io_info.port_name or '_valid' in io_info.port_name:
+                    pass
+                else:
+                    app_list.append(self.ports[io_info.port_name])
+
+            # Blacklist flush from ready/validness...
+            if io_info.port_name == 'flush':
+                self.__blacklist.append(self.ports[io_info.port_name])
 
             # classify each signal for wiring to underlying representation...
             if io_info.is_ctrl:
@@ -352,6 +363,9 @@ class LakeCoreBase(ConfigurableCore):
 
     def outputs(self):
         return self.__outputs
+
+    def combinationa_ports(self):
+        return self.__blacklist
 
     def features(self):
         return self.__features

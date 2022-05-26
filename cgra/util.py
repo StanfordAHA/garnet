@@ -46,7 +46,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 use_sim_sram: bool = True,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
-                tile_layout_option: int = 0, # 0: column-based, 1: row-based
+                tile_layout_option: int = 0,  # 0: column-based, 1: row-based
                 global_signal_wiring: GlobalSignalWiring =
                 GlobalSignalWiring.Meso,
                 pipeline_config_interval: int = 8,
@@ -109,26 +109,27 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 else:
                     core = IOCore()
             else:
-                if tile_layout_option == 0:
-                    use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
-                elif tile_layout_option == 1:
-                    use_mem_core = (y - y_min) % tile_max >= mem_tile_ratio
-
-                if use_mem_core:
-                    core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush)
+                # now override this...to just use the altcore list to not waste space
+                if altcore is not None:
+                    altcore_used = True
+                    if altcore[altcore_ind] == PeakCore:
+                        core = PeakCore(pe_fc)
+                    else:
+                        core_type, core_kwargs = altcore[altcore_ind]
+                        core = core_type(**core_kwargs)
                 else:
-                    # Hack in scanner unit rn
-                    if altcore is None:
+                    if tile_layout_option == 0:
+                        use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
+                    elif tile_layout_option == 1:
+                        use_mem_core = (y - y_min) % tile_max >= mem_tile_ratio
+
+                    if use_mem_core:
+                        core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush)
+                    else:
                         core = PeakCore(pe_fc)
                         if add_pond:
                             additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
-                    else:
-                        altcore_used = True
-                        if altcore[altcore_ind] == PeakCore:
-                            core = PeakCore(pe_fc)
-                        else:
-                            core_type, core_kwargs = altcore[altcore_ind]
-                            core = core_type(**core_kwargs)
+
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
@@ -241,7 +242,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     if pass_through_clk:
         clk_physical(interconnect, tile_layout_option)
-    
+
     pipeline_global_signals(interconnect, pipeline_config_interval)
 
     return interconnect
