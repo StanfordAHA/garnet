@@ -853,11 +853,12 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 10
+        chip_width = 2
         # chip_height = 32
         chip_height = 10
         num_tracks = 10
-        altcore = [(ScannerCore, {}), (IntersectCore, {}),
+        # altcore = [(ScannerCore, {}), (IntersectCore, {}),
+        altcore = [(ScannerCore, {}),
                    (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
