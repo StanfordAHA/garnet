@@ -216,7 +216,7 @@ if [ "$use_cached" ]; then
         echo "+++ Jimmy up the adks"
         set -x; pwd
         ls -l mflowgen/adks || echo NOPE adks not connected yet
-        ln -s /sim/buildkite-agent/gold/full_chip/mflowgen
+        ln -s /sim/buildkite-agent/mflowgen.master mflowgen
         ls -l mflowgen/adks
         set +x
         echo "--- Continue"

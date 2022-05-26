@@ -42,53 +42,10 @@ def add_power_domain(interconnect: Interconnect):
                                           tile.config_data_width)
         tile.add_feature(pd_feature)
 
-    # replace all the interconnect mux with aoi mux. cb mux to aoi const
-    # mux
-    # note that because we have an index to all mux created, it is fairly
-    # straight-forward
+    # interconnect for default uses AOI mux. we don't need to replace
+    # the inefficient coreir mux anymore
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
-        for bit_width, sb in tile.sbs.items():
-            # we need more efficient implementation for a simple replacement
-            # pass. in other words, instead of an O(n^2) implementation, we
-            # hand-crafted an O(n) with smaller constants
-            sb_muxs = sb.sb_muxs
-            mux_table = {}
-            for _, (node, old_mux) in sb_muxs.items():
-                assert node.width == bit_width
-                new_mux = AOIMuxWrapper(old_mux.height, bit_width,
-                                        AOIMuxType.Regular,
-                                        old_mux.instance_name)
-                new_mux = flatten_mux(new_mux)
-                mux_table[old_mux] = new_mux
-
-            reg_mux = sb.reg_muxs
-            for _, (node, old_mux) in reg_mux.items():
-                assert node.width == bit_width
-                new_mux = AOIMuxWrapper(old_mux.height, bit_width,
-                                        AOIMuxType.Regular,
-                                        old_mux.instance_name)
-                new_mux = flatten_mux(new_mux)
-                mux_table[old_mux] = new_mux
-
-            assert len(mux_table) == len(sb_muxs) + len(reg_mux)
-            wires = set()
-            for conn1, conn2 in sb.wires:
-                if conn1.owner() in mux_table or conn2.owner() in mux_table:
-                    wires.add((conn1, conn2))
-            for conn1, conn2 in wires:
-                # avoid O(n) search to remove the wires. this is safe
-                # since we directly load these connection in sorted order
-                sb.wires.remove((conn1, conn2))
-
-            for conn1, conn2 in wires:
-                conn1_owner = conn1.owner()
-                conn2_owner = conn2.owner()
-                if conn1_owner in mux_table:
-                    conn1 = conn1.get_port(mux_table[conn1_owner].ports)
-                if conn2_owner in mux_table:
-                    conn2 = conn2.get_port(mux_table[conn2_owner].ports)
-                sb.wire(conn1, conn2)
         # cb is const aoi
         for _, cb in tile.cbs.items():
             old_mux = cb.mux
