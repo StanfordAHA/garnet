@@ -1,0 +1,80 @@
+# Use full-chip agents so as not to hamper per-check-in jobs
+agents: { queue: "papers" }
+
+env:
+  BUILD: /build/tid${BUILDKITE_BUILD_NUMBER}/full_chip
+  REF  : /sim/buildkite-agent/gold
+  # OVERRIDE_MFLOWGEN_BRANCH: placementCheck
+
+steps:
+
+- label: 'tile_array'
+  commands:
+  - '
+     : ------------------------------------------------------------------------;
+     echo "--- Make BUILD dir $$BUILD and cd to it";
+     source mflowgen/bin/setup-buildkite.sh --dir $$BUILD --need_space 1G;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Fetch fullchip/rtl from ref dir $$REF";
+     pwd; set -x; cp -rp $$REF/full_chip/*-rtl .;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Initialize mflowgen + renumbers copied-in steps where needed";
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Copy pre-cached steps from $$REF";
+     mkdir -p tile_array; cd tile_array;
+     
+     cp -rp $$REF/full_chip/*-tile_array/inputs .;
+
+     step=`cd $$REF/full_chip/*-tile_array; /bin/ls -d *-constraints`;
+     cp -rp $$REF/full_chip/*-tile_array/$$step .; touch $$step/.prebuilt;
+
+     step=`cd $$REF/full_chip/*-tile_array; /bin/ls -d *-custom-cts-overrides`;
+     cp -rp $$REF/full_chip/*-tile_array/$$step .; touch $$step/.prebuilt;
+
+     step=`cd $$REF/full_chip/*-tile_array; /bin/ls -d *-custom-init`;
+     cp -rp $$REF/full_chip/*-tile_array/$$step .; touch $$step/.prebuilt;
+
+     step=`cd $$REF/full_chip/*-tile_array; /bin/ls -d *-custom-lvs-rules`;
+     cp -rp $$REF/full_chip/*-tile_array/$$step .; touch $$step/.prebuilt;
+
+     step=`cd $$REF/full_chip/*-tile_array; /bin/ls -d *-custom-power-hierarchical`;
+     cp -rp $$REF/full_chip/*-tile_array/$$step .; touch $$step/.prebuilt;
+
+     step=`cd $$REF/full_chip/*-tile_array; /bin/ls -d *-rtl`;
+     cp -rp $$REF/full_chip/*-tile_array/$$step .; touch $$step/.prebuilt;
+
+     step=`cd $$REF/full_chip/*-tile_array; /bin/ls -d *-tsmc16`;
+     cp -rp $$REF/full_chip/*-tile_array/$$step .; touch $$step/.prebuilt;
+
+     step=`cd $$REF/full_chip/*-tile_array; /bin/ls -d *-Tile_MemCore`;
+     cp -rp $$REF/full_chip/*-tile_array/$$step .; touch $$step/.prebuilt;
+
+     step=`cd $$REF/full_chip/*-tile_array; /bin/ls -d *-Tile_PE`;
+     cp -rp $$REF/full_chip/*-tile_array/$$step .; touch $$step/.prebuilt;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Initialize mflowgen + renumbers copied-in steps where needed";
+     mflowgen run --design $$GARNET_HOME/mflowgen/tile_array;
+
+     : ------------------------------------------------------------------------;
+     echo "--- Ready to do tile_array synthesis!";
+     echo "--- GENUS " `which genus`;
+     make -n cadence-genus-synthesis |& egrep -v ^Make | egrep "^mkdir.*output" | sed "s/output.*//";
+     '
+- wait: ~
+
+- label: 'tile_array synthesis'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$BUILD/tile_array --need_space 1G;
+     echo "--- MAKE SYNTHESIS"; set -o pipefail;
+     pwd;
+     echo "--- GENUS " `which genus`;
+     echo exit 13 | make cadence-genus-synthesis |& tee make-syn.log;
+
+     echo "+++ CHECK TILE_ID";
+     grep tile_id *-cadence-genus-synthesis/outputs/design.v | tail
+    '
