@@ -823,22 +823,15 @@ if __name__ == "__main__":
     parser.add_argument('--sam_graph',
                         type=str,
                         default="/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/mat_identity.gv")
+    parser.add_argument('--output_dir',
+                        type=str,
+                        default="/home/max/Documents/SPARSE/garnet/mek_outputs")
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
     parser.add_argument('--remote_mems', action="store_true")
     args = parser.parse_args()
-
-    # base_path = "/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/"
-
-    # matmul_dot = base_path + "mat_identity.gv"
-    # mat_element_mul = base_path + "mat_elemmul.gv"
-    # mat_mul = base_path + "matmul_ijk.gv"
-    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems)
-    # Now use the graph to build an nlb
-    graph = sdg.get_graph()
-
     bespoke = args.bespoke
-    output_dir = "/home/max/Documents/SPARSE/garnet/mek_outputs"
+    output_dir = args.output_dir
 
     # Clean up output dir...
     # If it doesn't exist, make it
@@ -871,6 +864,10 @@ if __name__ == "__main__":
                                    ready_valid=True)
 
         nlb = NetlistBuilder(interconnect=interconnect, cwd="/home/max/Documents/SPARSE/garnet/mek_dump/")
+
+    # Get SAM graph
+    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems)
+    graph = sdg.get_graph()
 
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, output_dir=output_dir, local_mems=not args.remote_mems)
 
