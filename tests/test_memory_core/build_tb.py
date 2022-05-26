@@ -822,12 +822,14 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 4
+        chip_width = 10
         # chip_height = 32
-        chip_height = 4
+        chip_height = 10
         num_tracks = 10
-        altcore = [ScannerCore, IntersectCore, FakePECore, RegCore,
-                   LookupCore, WriteScannerCore, BuffetCore, RepeatSignalGeneratorCore, RepeatCore]
+        altcore = [ScannerCore, IntersectCore,
+                   WriteScannerCore, BuffetCore]
+        # altcore = [ScannerCore, IntersectCore, FakePECore, RegCore,
+        #            WriteScannerCore, BuffetCore, RepeatSignalGeneratorCore, RepeatCore]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    io_sides=NetlistBuilder.io_sides(),
@@ -836,7 +838,8 @@ if __name__ == "__main__":
                                    # Soften the flush...?
                                    harden_flush=False,
                                    mem_ratio=(1, 2),
-                                   altcore=altcore)
+                                   altcore=altcore,
+                                   ready_valid=True)
 
         nlb = NetlistBuilder(interconnect=interconnect, cwd="/home/max/Documents/SPARSE/garnet/mek_dump/")
 
