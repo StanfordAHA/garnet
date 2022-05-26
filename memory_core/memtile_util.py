@@ -114,12 +114,12 @@ class LakeCoreBase(ConfigurableCore):
             # For our purposes, an explicit array means the inner data HAS to be 16 bits
             if io_info.expl_arr:
                 ind_ports = io_info.port_size[0]
-                intf_type = TData
+                intf_type = magma.Bits[io_info.port_width]
             # Due to some tooling weirdness, I've also included a way to explicitly mark
             # a wire as a "full" (16b) bus...
             elif io_info.full_bus:
                 ind_ports = 1
-                intf_type = TData
+                intf_type = magma.Bits[io_info.port_width]
             dir_type = magma.In
             app_list = self.__inputs
             if io_info.port_dir == "PortDirection.Out":
