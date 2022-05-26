@@ -62,7 +62,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 pe_fc=lassen_fc,
                 ready_valid: bool = False):
     # currently only add 16bit io cores
-    bit_widths = [1, 16]
+    bit_widths = [1, 16, 17]
     track_length = 1
 
     # compute the actual size
@@ -127,7 +127,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                         if altcore[altcore_ind] == PeakCore:
                             core = PeakCore(pe_fc)
                         else:
-                            core = altcore[altcore_ind]()
+                            core_type, core_kwargs = altcore[altcore_ind]
+                            core = core_type(**core_kwargs)
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):

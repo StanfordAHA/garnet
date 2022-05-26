@@ -46,7 +46,7 @@ import os
 
 
 class SparseTBBuilder(m.Generator2):
-    def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False, output_dir=None) -> None:
+    def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False, output_dir=None, local_mems=True) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -58,6 +58,7 @@ class SparseTBBuilder(m.Generator2):
         self.core_gens = {}
         self.name_maps = {}
         self.output_dir = output_dir
+        self.local_mems = local_mems
 
         self._ctr = 0
 
@@ -224,6 +225,24 @@ class SparseTBBuilder(m.Generator2):
             # src_inst = self.fabric.children[src_name]
             # dst_inst = self.fabric.children[dst_name]
             addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
+
+            # Need to automatically add in the ready/valid interface in the bespoke case...
+            if addtl_conns is not None:
+                for c_b, c_l in addtl_conns.items():
+                    c_l_init_length = len(c_l)
+                    for i in range(c_l_init_length):
+                        curr_conn = c_l[i]
+                        # TODO: Handle forked connection
+                        conn_spec, _ = curr_conn
+                        src_c, dst_c = conn_spec
+                        src_n, src_s = src_c
+                        dst_n, dst_s = dst_c
+                        if 'io2f' in src_s or 'f2io' in dst_s:
+                            pass
+                        else:
+                            addtl_conns[c_b].append(([(src_n, f'{src_s}_valid'), (dst_n, f'{dst_s}_valid')], 1))
+                            addtl_conns[c_b].append(([(dst_n, f'{dst_s}_ready'), (src_n, f'{src_s}_ready')], 1))
+
             if addtl_conns is not None:
                 conn_list = None
                 for conn_block, cl in addtl_conns.items():
@@ -264,6 +283,15 @@ class SparseTBBuilder(m.Generator2):
                                 new_port = conn_dst_prt.rstrip(f"_{idx_str}")
                                 wire_use_dst = conn_dst_inst.ports[new_port][int(idx_str)]
 
+                        if 'valid_out_18' in wire_use_dst.name or 'valid_out_18' in wire_use_src.name:
+                            print("MEK")
+                            print("MEK")
+                            print("MEK")
+                            print("MEK")
+
+                            print(wire_use_src)
+                            print(wire_use_dst)
+
                         self.fabric.wire(wire_use_src, wire_use_dst)
 
     def build_fabric(self):
@@ -288,7 +316,7 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.Buffet}":
                 new_node_type = BuffetNode
                 core_name = "buffet"
-                core_inst = BuffetLike()
+                core_inst = BuffetLike(local_memory=self.local_mems)
             elif hw_node_type == f"{HWNodeType.Memory}":
                 new_node_type = MemoryNode
                 core_name = "memtile"
@@ -365,7 +393,7 @@ class SparseTBBuilder(m.Generator2):
                     # data = self.nlb.register_core("io_16", name="data_in_")
                     # ready = self.nlb.register_core("io_1", name="ready_out_")
                     # valid = self.nlb.register_core("io_1", name="valid_in_")
-                    data = self.fabric.input(f'data_in_{conn_id}', 16)
+                    data = self.fabric.input(f'data_in_{conn_id}', 17)
                     ready = self.fabric.output(f'ready_out_{conn_id}', 1)
                     valid = self.fabric.input(f'valid_in_{conn_id}', 1)
                     tx_size = 7
@@ -382,8 +410,10 @@ class SparseTBBuilder(m.Generator2):
                     # data = self.nlb.register_core("io_16", name="data_out_")
                     # ready = self.nlb.register_core("io_1", name="ready_in_")
                     # valid = self.nlb.register_core("io_1", name="valid_out_")
-                    data = self.fabric.output(f'data_out_{conn_id}', 16)
+                    data = self.fabric.output(f'data_out_{conn_id}', 17)
                     ready = self.fabric.input(f'ready_in_{conn_id}', 1)
+                    if conn_id == 18:
+                        print("HELLO")
                     valid = self.fabric.output(f'valid_out_{conn_id}', 1)
                     if 'vals' in node.get_attributes()['mode'].strip('"'):
                         # print("NUM 1")
@@ -395,7 +425,7 @@ class SparseTBBuilder(m.Generator2):
                 elif node.get_attributes()['type'].strip('"') == 'arrayvals':
                     # GLB write wants a data input, ready, valid
                     glb_name = "GLB_TO_CGRA"
-                    data = self.fabric.input(f'data_in_{conn_id}', 16)
+                    data = self.fabric.input(f'data_in_{conn_id}', 17)
                     ready = self.fabric.output(f'ready_out_{conn_id}', 1)
                     valid = self.fabric.input(f'valid_in_{conn_id}', 1)
                     # data = self.nlb.register_core("io_16", name="data_in_")
@@ -509,7 +539,7 @@ class SparseTBBuilder(m.Generator2):
                         self.io = m.IO(**{
                             "clk": m.In(m.Clock),
                             "rst_n": m.In(m.AsyncReset),
-                            "data": m.Out(m.Bits[16]),
+                            "data": m.Out(m.Bits[17]),
                             "ready": m.In(m.Bit),
                             "valid": m.Out(m.Bit),
                             "done": m.Out(m.Bit),
@@ -564,7 +594,7 @@ class SparseTBBuilder(m.Generator2):
                         self.io = m.IO(**{
                             "clk": m.In(m.Clock),
                             "rst_n": m.In(m.AsyncReset),
-                            "data": m.In(m.Bits[16]),
+                            "data": m.In(m.Bits[17]),
                             "ready": m.Out(m.Bit),
                             "valid": m.In(m.Bit),
                             "done": m.Out(m.Bit),
@@ -795,6 +825,7 @@ if __name__ == "__main__":
                         default="/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/mat_identity.gv")
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
+    parser.add_argument('--remote_mems', action="store_true")
     args = parser.parse_args()
 
     # base_path = "/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/"
@@ -802,7 +833,7 @@ if __name__ == "__main__":
     # matmul_dot = base_path + "mat_identity.gv"
     # mat_element_mul = base_path + "mat_elemmul.gv"
     # mat_mul = base_path + "matmul_ijk.gv"
-    sdg = SAMDotGraph(filename=args.sam_graph)
+    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems)
     # Now use the graph to build an nlb
     graph = sdg.get_graph()
 
@@ -826,10 +857,8 @@ if __name__ == "__main__":
         # chip_height = 32
         chip_height = 10
         num_tracks = 10
-        altcore = [ScannerCore, IntersectCore,
-                   WriteScannerCore, BuffetCore]
-        # altcore = [ScannerCore, IntersectCore, FakePECore, RegCore,
-        #            WriteScannerCore, BuffetCore, RepeatSignalGeneratorCore, RepeatCore]
+        altcore = [(ScannerCore, {}), (IntersectCore, {}),
+                   (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    io_sides=NetlistBuilder.io_sides(),
@@ -843,7 +872,7 @@ if __name__ == "__main__":
 
         nlb = NetlistBuilder(interconnect=interconnect, cwd="/home/max/Documents/SPARSE/garnet/mek_dump/")
 
-    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, output_dir=output_dir)
+    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, output_dir=output_dir, local_mems=not args.remote_mems)
 
     stb.display_names()
 

@@ -6,7 +6,7 @@ module glb_write #(
 (
     input logic clk,
     input logic rst_n,
-    output logic [15:0] data,
+    output logic [16:0] data,
     input logic ready,
     output logic valid,
     output logic done,
