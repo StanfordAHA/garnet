@@ -853,7 +853,7 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 2
+        chip_width = 8
         # chip_height = 32
         chip_height = 10
         num_tracks = 10
@@ -867,7 +867,6 @@ if __name__ == "__main__":
                                    add_pd=True,
                                    # Soften the flush...?
                                    harden_flush=False,
-                                   mem_ratio=(1, 2),
                                    altcore=altcore,
                                    ready_valid=True)
 

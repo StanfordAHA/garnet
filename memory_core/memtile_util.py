@@ -364,7 +364,7 @@ class LakeCoreBase(ConfigurableCore):
     def outputs(self):
         return self.__outputs
 
-    def combinationa_ports(self):
+    def combinational_ports(self):
         return self.__blacklist
 
     def features(self):
