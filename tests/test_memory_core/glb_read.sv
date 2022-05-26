@@ -8,7 +8,7 @@ module glb_read #(
 (
     input logic clk,
     input logic rst_n,
-    input logic [15:0] data,
+    input logic [16:0] data,
     output logic ready,
     input logic valid,
     output logic done,
