@@ -43,6 +43,7 @@ from lake.modules.pe import PE
 from lake.modules.intersect import Intersect
 from lake.modules.reg_cr import Reg
 import os
+from canal.util import IOSide
 
 
 class SparseTBBuilder(m.Generator2):
@@ -826,6 +827,9 @@ if __name__ == "__main__":
     parser.add_argument('--output_dir',
                         type=str,
                         default="/home/max/Documents/SPARSE/garnet/mek_outputs")
+    parser.add_argument('--test_dump_dir',
+                        type=str,
+                        default="/home/max/Documents/SPARSE/garnet/mek_dump/")
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
     parser.add_argument('--remote_mems', action="store_true")
@@ -846,24 +850,30 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 8
+        chip_width = 5
         # chip_height = 32
-        chip_height = 10
-        num_tracks = 10
+        chip_height = 5
+        num_tracks = 3
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
         altcore = [(ScannerCore, {}),
                    (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
-                                   io_sides=NetlistBuilder.io_sides(),
+                                #    io_sides=NetlistBuilder.io_sides(),
+                                   io_sides=IOSide.None_,
                                    num_tracks=num_tracks,
-                                   add_pd=True,
+                                   add_pd=False,
                                    # Soften the flush...?
                                    harden_flush=False,
                                    altcore=altcore,
                                    ready_valid=True)
 
-        nlb = NetlistBuilder(interconnect=interconnect, cwd="/home/max/Documents/SPARSE/garnet/mek_dump/")
+        # circuit = interconnect.circuit()
+        # import magma
+        # magma.compile("tests", circuit)
+        # exit(0)
+
+        nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir)
 
     # Get SAM graph
     sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems)
