@@ -39,7 +39,7 @@ steps:
 - label: 'ptile init 20m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
-  - .buildkite/pipelines/check_pe_area.sh
+  - cd full_chip/*tile_array/*Tile_PE; .buildkite/pipelines/check_tile_width.sh pe
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 
 - label: 'mtile init 25m'
