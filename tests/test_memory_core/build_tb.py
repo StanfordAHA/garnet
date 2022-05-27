@@ -44,6 +44,7 @@ from lake.modules.intersect import Intersect
 from lake.modules.reg_cr import Reg
 import os
 from canal.util import IOSide
+from io_core.io_core_magma import IOCoreValid, IOCore
 
 
 class SparseTBBuilder(m.Generator2):
@@ -850,12 +851,12 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 5
+        chip_width = 4
         # chip_height = 32
         chip_height = 5
         num_tracks = 3
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
-        altcore = [(ScannerCore, {}),
+        altcore = [(IOCore, {}), (ScannerCore, {}),
                    (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
