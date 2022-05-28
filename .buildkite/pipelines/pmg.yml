@@ -39,13 +39,13 @@ steps:
 - label: 'ptile init 20m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
-  - .buildkite/pipelines/check_tile_width.sh Tile_PE
+  - .buildkite/pipelines/check_tile_width.sh Tile_PE 110
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 
 - label: 'mtile init 25m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
-  - .buildkite/pipelines/check_tile_width.sh Tile_MemCore
+  - .buildkite/pipelines/check_tile_width.sh Tile_MemCore 250
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
 
 - label: 'gtile init 20m'
