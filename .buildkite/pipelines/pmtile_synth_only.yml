@@ -25,7 +25,7 @@ steps:
 - label: 'PE synth 20m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-  - .buildkite/pipelines/check_pe_area.sh
+  - .buildkite/pipelines/check_tile_width.sh Tile_PE
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 
 - label: 'MemCore synth 25m'

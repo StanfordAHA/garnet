@@ -47,8 +47,7 @@ else
     echo "ERROR must specify either 'Tile_PE' or 'Tile_Memcore'"
     usage; exit 13
 fi
-
-max_width=10; # Uncomment this line to test failure mode
+# max_width=10; # Uncomment this line to test failure mode
 
 cat <<EOF
 
