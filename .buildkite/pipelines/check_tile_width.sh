@@ -1,11 +1,12 @@
 #!/usr/bin/bash
 
-# Can do e.g. "$0 215" to check dir /build/gold.215
+# Searches for e.g. 'Tile_PE.fp.gz' and checks to see if tile width is
+# within acceptable bounds.
 # 
 # Also used in per-checkin CI test e.g. pmg.yml:
 #   commands:
 #   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
-#   - .buildkite/pipelines/check_pe_area.sh
+#   - .buildkite/pipelines/check_pe_area.sh Tile_PE .
 
 function usage {
 cat <<EOF
@@ -14,8 +15,8 @@ Usage:
   $0 < Tile_PE | Tile_MemCore > [ build_dir ] 
 
 Examples:
-  $0 Tile_PE          ; # Looks for tile starting in curdir
-  $0 Tile_MemCore 377 ; # Looks for tile starting in /build/gold.377
+  $0 Tile_PE                      ; # Looks for tile starting in curdir
+  $0 Tile_MemCore /build/gold.377 ; # Looks for tile starting in /build/gold.377
 
 EOF
 }
@@ -27,9 +28,9 @@ which_tile=$1
 [ "$which_tile" == "pe"  ] && which_tile="Tile_PE"
 [ "$which_tile" == "mem" ] && which_tile="Tile_MemCore"
 
-if [ "$2" != "" ]; then
-    cd /build/gold.$2/full_chip/*tile_array/*${which_tile}
-fi
+# Search dir defaults to curdir [and all its subdirs]
+[ "$2" == "" ] && dir="*" || dir="$2"
+
 
 ###################################################
 # Assuming a ratio of 3:1 for mem:pe widths
@@ -47,25 +48,31 @@ else
     usage; exit 13
 fi
 
+max_width=10; # Uncomment this line to test failure mode
+
 cat <<EOF
 
 --- FINAL CHECK: ${which_tile} total width must be < ${max_width}u
 EOF
 
-# Designed to run from $garnet directory
+# fp=*cadence-innovus-init/outputs/design.checkpoint/save.enc.dat/Tile_PE.fp.gz
+# E.g.
+# fp="/build/gold.377/full_chip/19-tile_array/17-Tile_PE/17-cadence-innovus-init/checkpoints/.../Tile_PE.fp.gz"
+# line1="/build/gold.377/full_chip/19-tile_array/17-Tile_PE/"
+# line2="17-cadence-innovus-init/checkpoints/.../Tile_PE.fp.gz"
 
-fp=*cadence-innovus-init/outputs/design.checkpoint/save.enc.dat/Tile_PE.fp.gz
-
-# Uncomment to test failure mode
-max_width=10
+fp=`find $dir -name ${which_tile}.fp.gz | head -1`
+line1=`echo $fp | sed 's|^\(.*/\)[0-9]*[-][^0-9]*$|\1|'`
+line2=`echo $fp | sed 's|^.*/\([0-9]*[-][^0-9]*$\)|\1|'`
+line2=`echo $line2 | sed 's|\w*/design.checkpoint/save.enc.dat|...|'`
+echo ""
+printf "  Found design\n    %s\n      %s\n" $line1 $line2
+echo ""
 
 # Head Box: 0.0000 0.0000 93.1500 87.5520 [ i.e. 93w and 82.5h ]
-
-echo "grep 'Head Box' $fp"
 gunzip -c $fp | awk -v max_width=$max_width '
   /^Head Box/ {
-    print "  " $0
-    print "  Actual width = "$5
+    print "  " $0 " => width = " $5
     if ($5 > max_width) {
       print ""
       printf( "**ERROR TILE width %d TOO BIG, should be < %d\n", $NF, max_width);
