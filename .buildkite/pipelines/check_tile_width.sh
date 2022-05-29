@@ -34,23 +34,16 @@ which_tile=$1; max_width=$2; dir=$3
 
 cat <<EOF
 
---- FINAL CHECK: ${which_tile} total width must be < ${max_width}u
++++ FINAL CHECK: ${which_tile} total width must be < ${max_width}u
 EOF
 
-# Find floorplan doc and divide in two lines for printing e.g.
-# line1="/build/gold.377/full_chip/19-tile_array/17-Tile_PE/"
-# line2="17-cadence-innovus-init/checkpoints/.../Tile_PE.fp.gz"
+# Find floorplan doc
 fp=`find $dir -name ${which_tile}.fp.gz | head -1`
 if ! [ "$fp" ]; then 
-    echo "ERROR cannot find design file '${which_tile}.fp.gz' underneath dir '$dir'"
+    echo "ERROR cannot find floorplan '${which_tile}.fp.gz' underneath dir '$dir'"
     usage; exit 13
 fi
-line1=`echo $fp | sed 's|^\(.*/\)[0-9]*[-][^0-9]*$|\1|'`
-line2=`echo $fp | sed 's|^.*/\([0-9]*[-][^0-9]*$\)|\1|'`
-line2=`echo $line2 | sed 's|\w*/design.checkpoint/save.enc.dat|...|'`
-echo ""
-printf "  Found design\n    %s\n      %s\n" $line1 $line2
-echo ""
+printf "  Looking at width in floorplan '%s'\n"
 
 # Look in $fp for tile box (llx lly urx ury)
 # Head Box: 0.0000 0.0000 93.1500 87.5520 [ i.e. 93w and 82.5h ]
@@ -70,6 +63,7 @@ gunzip -c $fp | awk -v max_width=${max_width} '
     exit
   }
 '
+echo ""
 
 
 ##############################################################################
