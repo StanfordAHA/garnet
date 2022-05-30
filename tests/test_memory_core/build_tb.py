@@ -852,9 +852,9 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 6
+        chip_width = 8
         # chip_height = 32
-        chip_height = 6
+        chip_height = 5
         num_tracks = 3
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
         altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}),
