@@ -857,13 +857,13 @@ if __name__ == "__main__":
         chip_height = 5
         num_tracks = 3
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
-        # altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}),
-        altcore = [(ScannerCore, {}),
+        altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}),
+        # altcore = [(ScannerCore, {}),
                    (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
-                                   io_sides=NetlistBuilder.io_sides(),
-                                #    io_sides=IOSide.None_,
+                                #    io_sides=NetlistBuilder.io_sides(),
+                                   io_sides=IOSide.None_,
                                    num_tracks=num_tracks,
                                    add_pd=False,
                                    # Soften the flush...?
