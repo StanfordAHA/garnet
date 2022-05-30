@@ -6,6 +6,7 @@ from cgra.util import create_cgra
 from memory_core.buffet_core import BuffetCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.intersect_core import IntersectCore
+from memory_core.io_core_rv import IOCoreReadyValid
 from memory_core.lookup_core import LookupCore
 from memory_core.repeat_core import RepeatCore
 from memory_core.repeat_signal_generator_core import RepeatSignalGeneratorCore
@@ -856,12 +857,13 @@ if __name__ == "__main__":
         chip_height = 5
         num_tracks = 3
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
-        altcore = [(IOCore, {}), (ScannerCore, {}),
+        # altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}),
+        altcore = [(ScannerCore, {}),
                    (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
-                                #    io_sides=NetlistBuilder.io_sides(),
-                                   io_sides=IOSide.None_,
+                                   io_sides=NetlistBuilder.io_sides(),
+                                #    io_sides=IOSide.None_,
                                    num_tracks=num_tracks,
                                    add_pd=False,
                                    # Soften the flush...?

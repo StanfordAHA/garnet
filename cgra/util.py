@@ -4,6 +4,7 @@ from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring,\
 from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
 from canal.interconnect import Interconnect
+from memory_core.io_core_rv import IOCoreReadyValid
 from passes.power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import PE_fc as lassen_fc
 from io_core.io_core_magma import IOCoreValid, IOCore
@@ -103,7 +104,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     or x in range(x_max + 1, width) \
                     or y in range(y_min) \
                     or y in range(y_max + 1, height):
-                if use_io_valid:
+                if ready_valid:
+                    core = IOCoreReadyValid()
+                elif use_io_valid:
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
                 else:
@@ -156,6 +159,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             continue
         inputs |= {i.qualified_name() for i in core.inputs()}
         outputs |= {o.qualified_name() for o in core.outputs()}
+
+    # inputs.remove("glb2io_1")
+    # inputs.remove("glb2io_16")
+    # inputs.remove("glb2io_17")
+    # outputs.remove("io2glb_1")
+    # outputs.remove("io2glb_16")
+    # outputs.remove("io2glb_17")
 
     if add_pond:
         print("Adding inputs")
