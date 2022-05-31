@@ -6,7 +6,7 @@
 # Also used in per-checkin CI test e.g. pmg.yml:
 #   commands:
 #   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
-#   - .buildkite/pipelines/check_pe_area.sh Tile_PE .
+#   - .buildkite/pipelines/check_pe_area.sh Tile_PE --max 110
 
 function usage {
 cat <<EOF
@@ -15,8 +15,8 @@ Usage:
   $0 < Tile_PE | Tile_MemCore > --max <max_width> [ build_dir ] 
 
 Examples:
-  $0 Tile_PE 100                      ; # Look for tile starting in curdir
-  $0 Tile_MemCore 300 /build/gold.377 ; # Look for tile starting in /build/gold.377
+  $0 Tile_PE --max 100                      ; # Look for tile starting in curdir
+  $0 Tile_MemCore --max 300 /build/gold.377 ; # Look for tile starting in /build/gold.377
 
 EOF
 }
