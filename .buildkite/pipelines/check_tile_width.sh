@@ -12,7 +12,7 @@ function usage {
 cat <<EOF
 
 Usage:
-  $0 < Tile_PE | Tile_MemCore > <max_width> [ build_dir ] 
+  $0 < Tile_PE | Tile_MemCore > --max <max_width> [ build_dir ] 
 
 Examples:
   $0 Tile_PE 100                      ; # Look for tile starting in curdir
@@ -23,11 +23,16 @@ EOF
 if [ "$1" == "--help" ]; then usage; exit; fi
 
 # Unpack the args
-which_tile=$1; max_width=$2; dir=$3
+which_tile=$1; dashdashmax=$2; max_width=$3; dir=$4
 
 # Can use 'pe' or 'mem' shorthand
 [ "$which_tile" == "pe"  ] && which_tile="Tile_PE"
 [ "$which_tile" == "mem" ] && which_tile="Tile_MemCore"
+
+if ! [ "$dashdashmax" == "--max" ]; then
+    echo 'ERROR forgot "--max" arg'
+    usage; exit 13
+fi
 
 # Search-dir defaults to curdir [and all its subdirs]
 [ "$dir" == "" ] && dir="*"
