@@ -204,7 +204,7 @@ if [ "$do_sizes" ]; then
       expr $f1 : '.*lef' > /dev/null && f1=$(basename `pwd`)
       printf "%-30s %s %4.0f %s %4.0f %s\n" $f1 `grep SIZE $f`
     done
-    if [ "$found_lefs == "false"]; then echo "  No lefs found"; fi
+    if [ "$found_lefs" == "false"]; then echo "  No lefs found"; fi
 fi
 
 if [ "$do_lvs" ]; then
