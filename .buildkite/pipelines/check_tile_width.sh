@@ -69,22 +69,3 @@ gunzip -c $fp | awk -v max_width=${max_width} '
   }
 '
 echo ""
-
-
-##############################################################################
-# OLD
-# 
-# # Assuming a ratio of 3:1 for mem:pe widths
-# # (current TSMC build = 93u and 279u respectively);
-# # assuming a max chip width of 4800u;
-# # assuming 24 pe columns and 8 mem columns;
-# # (equal to 48 pe columns);
-# # max pe size would be 4800/48 or ... 100u
-# # max mem sixe would be 300u
-# 
-# if   [ "$which_tile" == "Tile_PE" ];      then max_width=100
-# elif [ "$which_tile" == "Tile_MemCore" ]; then max_width=300
-# else
-#     echo "ERROR must specify either 'Tile_PE' or 'Tile_Memcore'"
-#     usage; exit 13
-# fi
