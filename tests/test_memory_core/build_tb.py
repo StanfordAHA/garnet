@@ -526,8 +526,8 @@ class SparseTBBuilder(m.Generator2):
                     data_h = self.nlb.get_handle(glb_data, prefix="glb2io_16_")
                     # ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
                     # valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
-                    ready_h = f"{data_h}_ready"
-                    valid_h = f"{data_h}_valid"
+                    ready_h = f"{str(data_h)}_ready"
+                    valid_h = f"{str(data_h)}_valid"
 
                     # Get rid of these signals from leftover inputs...
                     self.interconnect_ins.remove(str(data_h))
@@ -584,8 +584,8 @@ class SparseTBBuilder(m.Generator2):
                     data_h = self.nlb.get_handle(glb_data, prefix="io2glb_16_")
                     # ready_h = self.nlb.get_handle(glb_ready, prefix="glb2io_1_")
                     # valid_h = self.nlb.get_handle(glb_valid, prefix="io2glb_1_")
-                    ready_h = f"{data_h}_ready"
-                    valid_h = f"{data_h}_valid"
+                    ready_h = f"{str(data_h)}_ready"
+                    valid_h = f"{str(data_h)}_valid"
 
                     # Get rid of this signal from leftover inputs...
                     self.interconnect_ins.remove(str(ready_h))
