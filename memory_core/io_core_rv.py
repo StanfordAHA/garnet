@@ -89,17 +89,17 @@ class IOCoreReadyValid(LakeCoreBase):
     def pnr_info(self):
         return [PnRTag("I", 2, self.DEFAULT_PRIORITY),
                 PnRTag("i", 1, self.DEFAULT_PRIORITY),
-                    ]
+                ]
 
-    def inputs(self):
-        raw_inputs = super(IOCoreReadyValid, self).inputs()
-        ins = [p for p in raw_inputs if "glb2io" not in p.qualified_name()]
-        return ins
+    # def inputs(self):
+    #     raw_inputs = super(IOCoreReadyValid, self).inputs()
+    #     ins = [p for p in raw_inputs if "glb2io" not in p.qualified_name()]
+    #     return ins
 
-    def outputs(self):
-        raw_outputs = super(IOCoreReadyValid, self).outputs()
-        outs = [p for p in raw_outputs if "io2glb" not in p.qualified_name()]
-        return outs
+    # def outputs(self):
+    #     raw_outputs = super(IOCoreReadyValid, self).outputs()
+    #     outs = [p for p in raw_outputs if "io2glb" not in p.qualified_name()]
+    #     return outs
 
 
 if __name__ == "__main__":
