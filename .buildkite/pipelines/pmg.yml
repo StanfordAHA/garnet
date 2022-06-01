@@ -20,8 +20,8 @@ env:
   # Env var used by test_module.sh :(
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
 
-  # For debugging, can keep results in a local directory
-  BUILD: --build /build/pmg${BUILDKITE_BUILD_NUMBER}
+  # Uncomment for debugging, keep results in local directory $BUILD
+  BUILD: /build/pmg${BUILDKITE_BUILD_NUMBER}
   TEST:  echo exit 13 | mflowgen/test/test_module.sh --build_dir $BUILD
 
 
