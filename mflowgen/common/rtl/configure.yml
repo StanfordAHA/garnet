@@ -42,3 +42,34 @@ parameters:
 
 postconditions:
   - assert File( 'outputs/design.v' )        # must exist
+
+  # Uniquified tiles means something bad has happened
+  - assert 'Tile_PE_unq'      not in File( 'outputs/design.v' )
+  - assert 'Tile_MemCore_unq' not in File( 'outputs/design.v' )
+
+  # if PWR_AWARE, must not have commonlib muxes!
+  #
+  # Sample output:
+  # 
+  # Traceback (most recent call last):
+  #   File "/home/steveri/tmpdir/assertion_test/assertion_test.py", line 11, in <module>
+  #     assert not re.search('MUX_SB.*common', line), errmsg1 + errmsg2
+  # AssertionError: Found unwrapped SB mux, outputs/design.v line 28359
+  # 
+  #  28359 wire [0:0] MUX_SB_T0_EAST_SB_OUT_B1$Mux5xBits1_inst0$coreir_commonlib_mux5x1_inst0_out;
+  #
+  - |
+    import os; import re
+    if os.getenv('PWR_AWARE') == 'True':
+      lno=0
+        for line in File('outputs/design.v'):
+        lno=lno+1
+        # Uncomment when ready to deploy
+        # if re.search('MUX_SB.*common', line):
+        if re.search('MUX_SB', line):
+            errmsg1 = f"Found unwrapped SB mux, outputs/design.v line {lno}\n"
+            errmsg2 = f"\n {lno} {line}"
+            # Uncomment when ready to deploy
+            # assert not re.search('MUX_SB.*common', line), errmsg1 + errmsg2
+            assert not re.search('MUX_SB', line), errmsg1 + errmsg2
+
