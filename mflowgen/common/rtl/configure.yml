@@ -47,9 +47,7 @@ postconditions:
   - assert 'Tile_PE_unq'      not in File( 'outputs/design.v' )
   - assert 'Tile_MemCore_unq' not in File( 'outputs/design.v' )
 
-  # if PWR_AWARE, must not have commonlib muxes!
-  #
-  # Sample output:
+  # Test: If PWR_AWARE, must not have commonlib muxes! Sample output:
   # 
   # Traceback (most recent call last):
   #   File "/home/steveri/tmpdir/assertion_test/assertion_test.py", line 11, in <module>
@@ -59,8 +57,8 @@ postconditions:
   #  28359 wire [0:0] MUX_SB_T0_EAST_SB_OUT_B1$Mux5xBits1_inst0$coreir_commonlib_mux5x1_inst0_out;
   #
   - |
-    import os; import re
-    if os.getenv('PWR_AWARE') == 'True':
+    import re
+    if 'PWR_AWARE=True' in ( 'mflowgen-run' ):
       lno=0
       for line in File('outputs/design.v'):
         lno=lno+1
