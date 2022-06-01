@@ -20,9 +20,10 @@ env:
   # Env var used by test_module.sh :(
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
 
-  # Uncomment one of these as appropriate for debugging
-  # TEST:  echo exit 13 | mflowgen/test/test_module.sh
-  TEST:  echo exit 13 | mflowgen/test/test_module.sh $BUILD
+  TEST: echo exit 13 | mflowgen/test/test_module.sh
+
+  # For debugging, can do this instead:
+  # TEST: echo exit 13 | mflowgen/test/test_module.sh $BUILD
 
 
 steps:
@@ -45,19 +46,16 @@ steps:
 
 - label: 'ptile init 20m'
   commands:
-  - echo "$TEST --need_space 30G full_chip tile_array Tile_PE --steps rtl --debug"
-  - set -x ; $TEST --need_space 30G full_chip tile_array Tile_PE --steps rtl --debug
+  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
+  - .buildkite/pipelines/check_pe_area.sh
+  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 
+- label: 'mtile init 25m'
+  commands:
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
+  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
 
-#   - .buildkite/pipelines/check_pe_area.sh
-#   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
-# 
-# - label: 'mtile init 25m'
-#   commands:
-#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
-#   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
-# 
-# - label: 'gtile init 20m'
-#   commands:
-#   - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
-#   - mflowgen/bin/buildcheck.sh full_chip/*glb_top/*glb_tile --show-all-errors
+- label: 'gtile init 20m'
+  commands:
+  - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
+  - mflowgen/bin/buildcheck.sh full_chip/*glb_top/*glb_tile --show-all-errors
