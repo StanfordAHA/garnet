@@ -523,14 +523,17 @@ class SparseTBBuilder(m.Generator2):
                     ready_h = self.wrap_circ[glb_ready.name]
                     valid_h = self.wrap_circ[glb_valid.name]
                 else:
-                    data_h = self.nlb.get_handle(glb_data, prefix="glb2io_16_")
+                    data_h = self.nlb.get_handle(glb_data, prefix="glb2io_17_")
+                    suffix = str(data_h)[10:]
                     # ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
                     # valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
-                    ready_h = f"{str(data_h)}_ready"
-                    valid_h = f"{str(data_h)}_valid"
+                    print(suffix)
+                    ready_h = f"glb2io_17_ready_{suffix}"
+                    valid_h = f"glb2io_17_valid_{suffix}"
 
                     # Get rid of these signals from leftover inputs...
                     self.interconnect_ins.remove(str(data_h))
+                    print(str(valid_h))
                     self.interconnect_ins.remove(str(valid_h))
 
                     data_h = self.interconnect_circuit[str(data_h)]
@@ -568,8 +571,8 @@ class SparseTBBuilder(m.Generator2):
                 test_glb = _Definition(TX_SIZE=glb_tx_size, FILE_NAME=file_full, ID_no=self.get_next_seq())()
 
                 m.wire(test_glb['data'], data_h)
-                m.wire(ready_h[0], test_glb['ready'])
-                m.wire(test_glb['valid'], valid_h[0])
+                m.wire(ready_h, test_glb['ready'])
+                m.wire(test_glb['valid'], valid_h)
                 m.wire(test_glb.clk, self.io.clk)
                 m.wire(test_glb.rst_n, self.io.rst_n)
                 m.wire(test_glb.flush, self.io.flush)
@@ -581,11 +584,14 @@ class SparseTBBuilder(m.Generator2):
                     ready_h = self.wrap_circ[glb_ready.name]
                     valid_h = self.wrap_circ[glb_valid.name]
                 else:
-                    data_h = self.nlb.get_handle(glb_data, prefix="io2glb_16_")
+                    data_h = self.nlb.get_handle(glb_data, prefix="io2glb_17_")
+                    suffix = str(data_h)[10:]
+                    print(suffix)
                     # ready_h = self.nlb.get_handle(glb_ready, prefix="glb2io_1_")
                     # valid_h = self.nlb.get_handle(glb_valid, prefix="io2glb_1_")
-                    ready_h = f"{str(data_h)}_ready"
-                    valid_h = f"{str(data_h)}_valid"
+                    ready_h = f"io2glb_17_ready_{suffix}"
+                    valid_h = f"io2glb_17_valid_{suffix}"
+                    print(ready_h)
 
                     # Get rid of this signal from leftover inputs...
                     self.interconnect_ins.remove(str(ready_h))
@@ -631,8 +637,8 @@ class SparseTBBuilder(m.Generator2):
                 test_glb = _Definition(NUM_BLOCKS=glb_num_blocks, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
 
                 m.wire(data_h, test_glb['data'])
-                m.wire(test_glb['ready'], ready_h[0])
-                m.wire(valid_h[0], test_glb['valid'])
+                m.wire(test_glb['ready'], ready_h)
+                m.wire(valid_h, test_glb['valid'])
                 m.wire(test_glb.clk, self.io.clk)
                 m.wire(test_glb.rst_n, self.io.rst_n)
                 m.wire(test_glb.flush, self.io.flush)
@@ -864,12 +870,12 @@ if __name__ == "__main__":
         chip_height = 5
         num_tracks = 3
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
-        altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}),
         # altcore = [(ScannerCore, {}),
+        altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}),
                    (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
-                                #    io_sides=NetlistBuilder.io_sides(),
+                                   # io_sides=NetlistBuilder.io_sides(),
                                    io_sides=IOSide.None_,
                                    num_tracks=num_tracks,
                                    add_pd=False,

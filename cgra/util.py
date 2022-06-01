@@ -160,12 +160,16 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         inputs |= {i.qualified_name() for i in core.inputs()}
         outputs |= {o.qualified_name() for o in core.outputs()}
 
-    # inputs.remove("glb2io_1")
-    # inputs.remove("glb2io_16")
-    # inputs.remove("glb2io_17")
-    # outputs.remove("io2glb_1")
-    # outputs.remove("io2glb_16")
-    # outputs.remove("io2glb_17")
+    inputs.remove("glb2io_1")
+    inputs.remove("glb2io_16")
+    inputs.remove("glb2io_17")
+    # inputs.remove("glb2io_17_valid")
+    # inputs.remove("io2glb_17_ready")
+    outputs.remove("io2glb_1")
+    outputs.remove("io2glb_16")
+    outputs.remove("io2glb_17")
+    # outputs.remove("glb2io_17_ready")
+    # outputs.remove("io2glb_17_valid")
 
     if add_pond:
         print("Adding inputs")
