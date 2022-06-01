@@ -48,24 +48,19 @@ postconditions:
   - assert 'Tile_MemCore_unq' not in File( 'outputs/design.v' )
 
   # Test: If PWR_AWARE, must not have commonlib muxes! Sample output:
-  # 
-  # Traceback (most recent call last):
-  #   File "/home/steveri/tmpdir/assertion_test/assertion_test.py", line 11, in <module>
-  #     assert not re.search('MUX_SB.*common', line), errmsg1 + errmsg2
-  # AssertionError: Found unwrapped SB mux, outputs/design.v line 28359
-  # 
-  #  28359 wire [0:0] MUX_SB_T0_EAST_SB_OUT_B1$Mux5xBits1_inst0$coreir_commonlib_mux5x1_inst0_out;
   #
+  # E AssertionError: Found unwrapped SB mux, outputs/design.v line 27526
+  # E   
+  # E    27526 wire [0:0] MUX_SB_T0_EAST_SB_OUT_B1_O;
+  # E   
   - |
     import re
-    if 'PWR_AWARE=True' in ( 'mflowgen-run' ):
+    if 'PWR_AWARE=True' in File( 'mflowgen-run' ):
       lno=0
       for line in File('outputs/design.v'):
         lno=lno+1
         # if re.search('MUX_SB.*common', line):
-
-        # Uncomment to test failure mode
-        if re.search('MUX_SB', line):
+        if re.search('MUX_SB', line): # Uncomment to test failure mode
             errmsg1 = f"Found unwrapped SB mux, outputs/design.v line {lno}\n"
             errmsg2 = f"\n {lno} {line}"
             # Uncomment when ready to deploy
