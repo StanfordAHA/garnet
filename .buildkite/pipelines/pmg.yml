@@ -14,9 +14,14 @@
 ##############################################################################
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
-  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
-  SETUP: 'source mflowgen/bin/setup-buildkite.sh'
+  TEST:  echo exit 13 | mflowgen/test/test_module.sh
+  SETUP: source mflowgen/bin/setup-buildkite.sh
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
+
+  # For debugging, can keep results in a local directory
+  BUILD: --build /build/pmg${BUILDKITE_BUILD_NUMBER}
+  TEST:  echo exit 13 | mflowgen/test/test_module.sh --build_dir $BUILD
+
 
 steps:
 
@@ -38,17 +43,18 @@ steps:
 
 - label: 'ptile init 20m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
+  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps rtl --debug
   - .buildkite/pipelines/check_pe_area.sh
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 
-- label: 'mtile init 25m'
-  commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
 
-- label: 'gtile init 20m'
-  commands:
-  - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
-  - mflowgen/bin/buildcheck.sh full_chip/*glb_top/*glb_tile --show-all-errors
 
+# - label: 'mtile init 25m'
+#   commands:
+#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
+#   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
+# 
+# - label: 'gtile init 20m'
+#   commands:
+#   - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
+#   - mflowgen/bin/buildcheck.sh full_chip/*glb_top/*glb_tile --show-all-errors
