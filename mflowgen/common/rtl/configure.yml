@@ -62,10 +62,11 @@ postconditions:
     import os; import re
     if os.getenv('PWR_AWARE') == 'True':
       lno=0
-        for line in File('outputs/design.v'):
+      for line in File('outputs/design.v'):
         lno=lno+1
-        # Uncomment when ready to deploy
         # if re.search('MUX_SB.*common', line):
+
+        # Uncomment to test failure mode
         if re.search('MUX_SB', line):
             errmsg1 = f"Found unwrapped SB mux, outputs/design.v line {lno}\n"
             errmsg2 = f"\n {lno} {line}"

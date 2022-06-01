@@ -14,8 +14,8 @@
 ##############################################################################
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
-#   TEST:  echo exit 13 | mflowgen/test/test_module.sh
   SETUP: source mflowgen/bin/setup-buildkite.sh
+  TEST:  echo exit 13 | mflowgen/test/test_module.sh
 
   # Env var used by test_module.sh :(
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
