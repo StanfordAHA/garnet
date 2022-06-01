@@ -524,8 +524,8 @@ class SparseTBBuilder(m.Generator2):
                     valid_h = self.wrap_circ[glb_valid.name]
                 else:
                     data_h = self.nlb.get_handle(glb_data, prefix="glb2io_16_")
-                    ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
-                    valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
+                    # ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
+                    # valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
 
                     # Get rid of these signals from leftover inputs...
                     self.interconnect_ins.remove(str(data_h))
@@ -580,8 +580,8 @@ class SparseTBBuilder(m.Generator2):
                     valid_h = self.wrap_circ[glb_valid.name]
                 else:
                     data_h = self.nlb.get_handle(glb_data, prefix="io2glb_16_")
-                    ready_h = self.nlb.get_handle(glb_ready, prefix="glb2io_1_")
-                    valid_h = self.nlb.get_handle(glb_valid, prefix="io2glb_1_")
+                    # ready_h = self.nlb.get_handle(glb_ready, prefix="glb2io_1_")
+                    # valid_h = self.nlb.get_handle(glb_valid, prefix="io2glb_1_")
 
                     # Get rid of this signal from leftover inputs...
                     self.interconnect_ins.remove(str(ready_h))
@@ -808,6 +808,9 @@ class SparseTBBuilder(m.Generator2):
                     self.fabric.wire(child_inst.ports[cfg_port], kratos.const(cfg_val, child_inst.ports[cfg_port].width))
 
             else:
+                if node_attr['hwnode'] == 'HWNodeType.GLB':
+                    # print("SAW GLB...skipping")
+                    continue
                 self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
 
     def display_names(self):
@@ -852,7 +855,7 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 8
+        chip_width = 20
         # chip_height = 32
         chip_height = 5
         num_tracks = 3

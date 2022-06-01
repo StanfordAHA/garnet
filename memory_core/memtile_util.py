@@ -581,6 +581,7 @@ class NetlistBuilder():
 
     def get_handle(self, core, prefix="glb2io_1_X"):
         self.get_placement()
+        print(self._placement)
         if core in self._placement:
             core_x, core_y = self._placement[core]
         else:
