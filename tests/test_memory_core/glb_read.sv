@@ -32,6 +32,10 @@ initial begin
     @(posedge flush);
     @(negedge flush);
 
+    @(posedge clk);
+    @(posedge clk);
+    @(posedge clk);
+
     // Do first transfer...
     while(1) begin
         @(posedge clk);

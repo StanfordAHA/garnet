@@ -160,6 +160,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         inputs |= {i.qualified_name() for i in core.inputs()}
         outputs |= {o.qualified_name() for o in core.outputs()}
 
+    print(inputs)
     inputs.remove("glb2io_1")
     inputs.remove("glb2io_16")
     inputs.remove("glb2io_17")

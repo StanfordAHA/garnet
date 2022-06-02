@@ -95,6 +95,8 @@ class SparseTBBuilder(m.Generator2):
             self.interconnect_circuit = self.interconnect_circuit()
 
             flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_")
+            flush_tile = str(flush_h)[9:]
+            flush_valid_h = f"glb2io_1_valid_{flush_tile}"
 
             m.wire(self.interconnect_circuit['clk'], self.io.clk)
             m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
@@ -102,6 +104,7 @@ class SparseTBBuilder(m.Generator2):
             # m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
             # print(str(flush_h))
             m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
+            m.wire(m.Bits[1](1)[0], self.interconnect_circuit[str(flush_valid_h)])
 
             m.wire(self.interconnect_circuit.config, self.io.config)
 
@@ -109,6 +112,7 @@ class SparseTBBuilder(m.Generator2):
             self.interconnect_ins = self.get_interconnect_ins()
             # Make sure to remove the flush port or it will get grounded.
             self.interconnect_ins.remove(str(flush_h))
+            self.interconnect_ins.remove(str(flush_valid_h))
 
         else:
 
@@ -285,15 +289,6 @@ class SparseTBBuilder(m.Generator2):
                                 idx_str = tk[-1]
                                 new_port = conn_dst_prt.rstrip(f"_{idx_str}")
                                 wire_use_dst = conn_dst_inst.ports[new_port][int(idx_str)]
-
-                        if 'valid_out_18' in wire_use_dst.name or 'valid_out_18' in wire_use_src.name:
-                            print("MEK")
-                            print("MEK")
-                            print("MEK")
-                            print("MEK")
-
-                            print(wire_use_src)
-                            print(wire_use_dst)
 
                         self.fabric.wire(wire_use_src, wire_use_dst)
 
@@ -481,7 +476,9 @@ class SparseTBBuilder(m.Generator2):
         # print(all_ports)
         for port in all_ports:
             # print(port)
-            if 'glb2io' in port:
+            if 'glb2io' in port and 'ready' not in port:
+                in_list.append(port)
+            elif 'io2glb' in port and 'ready' in port:
                 in_list.append(port)
 
         return in_list
@@ -490,10 +487,16 @@ class SparseTBBuilder(m.Generator2):
         '''
         Here we are going to wire all of the relevant interconnect inputs to 0
         '''
+        # print("HERE I AM WIRE")
+        # print(self.interconnect_ins)
         for ic_in in self.interconnect_ins:
             # Get width from name
-            width = int(ic_in.split("_")[1])
-            m.wire(self.interconnect_circuit[ic_in], m.Bits[width](0))
+            if 'ready' not in ic_in and 'valid' not in ic_in:
+                width = int(ic_in.split("_")[1])
+                m.wire(self.interconnect_circuit[ic_in], m.Bits[width](0))
+            else:
+                width = 1
+                m.wire(self.interconnect_circuit[ic_in], m.Bits[width](0)[0])
 
     def attach_glb(self):
 
@@ -527,13 +530,13 @@ class SparseTBBuilder(m.Generator2):
                     suffix = str(data_h)[10:]
                     # ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
                     # valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
-                    print(suffix)
+                    # print(suffix)
                     ready_h = f"glb2io_17_ready_{suffix}"
                     valid_h = f"glb2io_17_valid_{suffix}"
 
                     # Get rid of these signals from leftover inputs...
                     self.interconnect_ins.remove(str(data_h))
-                    print(str(valid_h))
+                    # print(str(valid_h))
                     self.interconnect_ins.remove(str(valid_h))
 
                     data_h = self.interconnect_circuit[str(data_h)]
@@ -592,6 +595,9 @@ class SparseTBBuilder(m.Generator2):
                     ready_h = f"io2glb_17_ready_{suffix}"
                     valid_h = f"io2glb_17_valid_{suffix}"
                     print(ready_h)
+
+                    print(self.interconnect_ins)
+                    # print(self.interconnect_circuit)
 
                     # Get rid of this signal from leftover inputs...
                     self.interconnect_ins.remove(str(ready_h))
@@ -721,8 +727,8 @@ class SparseTBBuilder(m.Generator2):
                     # GLB write wants a data input, ready, valid
                     glb_name = "GLB_TO_CGRA"
                     data = self.nlb.register_core("io_16", name="data_in_")
-                    ready = self.nlb.register_core("io_1", name="ready_out_")
-                    valid = self.nlb.register_core("io_1", name="valid_in_")
+                    # ready = self.nlb.register_core("io_1", name="ready_out_")
+                    # valid = self.nlb.register_core("io_1", name="valid_in_")
                     direction = "write"
                     num_blocks = 1
                     file_number = 0
@@ -734,8 +740,8 @@ class SparseTBBuilder(m.Generator2):
                 elif node.get_attributes()['type'].strip('"') == 'fiberwrite':
                     # GLB read wants a data output, ready, valid
                     data = self.nlb.register_core("io_16", name="data_out_")
-                    ready = self.nlb.register_core("io_1", name="ready_in_")
-                    valid = self.nlb.register_core("io_1", name="valid_out_")
+                    # ready = self.nlb.register_core("io_1", name="ready_in_")
+                    # valid = self.nlb.register_core("io_1", name="valid_out_")
                     direction = "read"
                     glb_name = "CGRA_TO_GLB"
                     # print(node.get_attributes())
@@ -751,18 +757,20 @@ class SparseTBBuilder(m.Generator2):
                     # GLB write wants a data input, ready, valid
                     glb_name = "GLB_TO_CGRA"
                     data = self.nlb.register_core("io_16", name="data_in_")
-                    ready = self.nlb.register_core("io_1", name="ready_out_")
-                    valid = self.nlb.register_core("io_1", name="valid_in_")
+                    # ready = self.nlb.register_core("io_1", name="ready_out_")
+                    # valid = self.nlb.register_core("io_1", name="valid_in_")
                     direction = "write"
                     num_blocks = 1
                     tx_size = 7
                     file_number = 2
                 else:
                     raise NotImplementedError
-                self.core_nodes[node.get_name()] = GLBNode(name=glb_name,
+                self.core_nodes[node.get_name()] = GLBNode(name=data,
                                                            data=data,
-                                                           valid=valid,
-                                                           ready=ready,
+                                                           valid=None,
+                                                           # valid=valid,
+                                                           ready=None,
+                                                           # ready=ready,
                                                            direction=direction,
                                                            num_blocks=num_blocks,
                                                            file_number=file_number,
@@ -792,7 +800,7 @@ class SparseTBBuilder(m.Generator2):
         '''
         for node in self.graph.get_nodes():
             node_attr = node.get_attributes()
-            # print(node)
+            print(node)
             # print(node_attr)
             node_config_ret = self.core_nodes[node.get_name()].configure(node_attr)
             if node_config_ret is not None:
@@ -819,8 +827,10 @@ class SparseTBBuilder(m.Generator2):
 
             else:
                 if node_attr['hwnode'] == 'HWNodeType.GLB':
-                    # print("SAW GLB...skipping")
-                    continue
+                    print("SAW GLB...skipping")
+                    # self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
+                    # continue
+                print(f"Node name --- {self.core_nodes[node.get_name()].get_name()}")
                 self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
 
     def display_names(self):
@@ -867,12 +877,13 @@ if __name__ == "__main__":
         # chip_width = 20
         chip_width = 20
         # chip_height = 32
-        chip_height = 5
+        chip_height = 10
         num_tracks = 3
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
         # altcore = [(ScannerCore, {}),
         altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}),
-                   (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems})]
+                   (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems}),
+                   (IntersectCore, {'use_merger': True}), (FakePECore, {})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    # io_sides=NetlistBuilder.io_sides(),
@@ -902,6 +913,8 @@ if __name__ == "__main__":
     tester = BasicTester(stb, stb.clk, stb.rst_n)
 
     tester.zero_inputs()
+    tester.poke(stb.io.stall, 1)
+    tester.eval()
 
     if nlb is not None:
         tester.reset()
@@ -928,12 +941,23 @@ if __name__ == "__main__":
 
         tester.done_config()
 
+        tester.poke(stb.io.flush, 1)
+        tester.eval()
+        tester.step(2)
+        tester.step(2)
+        tester.step(2)
+        tester.step(2)
+        tester.step(2)
+        tester.step(2)
+        tester.step(2)
+        tester.step(2)
+
         tester.poke(stb.io.stall, 0)
     tester.eval()
 
     # Get flush handle and apply flush to start off app
-    tester.poke(stb.io.flush, 1)
-    tester.eval()
+    # tester.poke(stb.io.flush, 1)
+    # tester.eval()
     tester.step(2)
     tester.step(2)
     # tester.step(2)
@@ -948,7 +972,7 @@ if __name__ == "__main__":
     tester.wait_until_high(tester.circuit.done, timeout=500)
 
     from conftest import run_tb_fn
-    run_tb_fn(tester, trace=args.trace, disable_ndarray=True, cwd="mek_dump")
+    run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd="mek_dump")
     # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
 
     stb.display_names()

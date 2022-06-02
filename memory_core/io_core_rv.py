@@ -78,13 +78,14 @@ class IOCoreReadyValid(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        capacity_0, capacity_1 = config_tuple
         configs = []
+        return []
+        print("Configuring io core...")
         config_lower = [("tile_en", 1)]
-        config_lower += self.dut.get_bitstream(capacity_0, capacity_1)
+        config_lower += self.dut.get_bitstream()
         for name, v in config_lower:
             configs = [self.get_config_data(name, v)] + configs
-        return configs
+        # return configs
 
     def pnr_info(self):
         return [PnRTag("I", 2, self.DEFAULT_PRIORITY),
