@@ -862,6 +862,9 @@ if __name__ == "__main__":
     bespoke = args.bespoke
     output_dir = args.output_dir
 
+    # Make sure to force DISABLE_GP for much quicker runs
+    os.environ['DISABLE_GP'] = 1
+
     # Clean up output dir...
     # If it doesn't exist, make it
     if not os.path.isdir(output_dir):
@@ -875,15 +878,16 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 20
+        chip_width = 9
         # chip_height = 32
         chip_height = 10
-        num_tracks = 3
+        num_tracks = 5
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
         # altcore = [(ScannerCore, {}),
         altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}),
                    (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems}),
-                   (IntersectCore, {'use_merger': True}), (FakePECore, {})]
+                   (IntersectCore, {'use_merger': True}), (FakePECore, {}), (RepeatCore, {}),
+                   (RepeatSignalGeneratorCore, {}), (RegCore, {})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    # io_sides=NetlistBuilder.io_sides(),
@@ -914,16 +918,20 @@ if __name__ == "__main__":
 
     tester.zero_inputs()
     tester.poke(stb.io.stall, 1)
+    tester.poke(stb.io.rst_n, 0)
     tester.eval()
 
-    if nlb is not None:
-        tester.reset()
-    else:
+    tester.step(2)
+    tester.poke(stb.rst_n, 1)
+    
+    #if nlb is not None:
+    #    tester.reset()
+    #else:
         # pulse reset manually
-        tester.poke(stb.rst_n, 0)
-        tester.step(2)
-        tester.poke(stb.rst_n, 1)
-        tester.step(2)
+    #    tester.poke(stb.rst_n, 0)
+    #    tester.step(2)
+    #    tester.poke(stb.rst_n, 1)
+    #    tester.step(2)
 
     tester.step(2)
     # Stall during config
