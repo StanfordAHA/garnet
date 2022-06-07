@@ -858,12 +858,14 @@ if __name__ == "__main__":
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
     parser.add_argument('--remote_mems', action="store_true")
+    parser.add_argument('--ic_fork', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
+    use_fork = args.ic_fork
 
     # Make sure to force DISABLE_GP for much quicker runs
-    os.environ['DISABLE_GP'] = 1
+    os.environ['DISABLE_GP'] = '1'
 
     # Clean up output dir...
     # If it doesn't exist, make it
@@ -887,7 +889,7 @@ if __name__ == "__main__":
         altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}),
                    (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems}),
                    (IntersectCore, {'use_merger': True}), (FakePECore, {}), (RepeatCore, {}),
-                   (RepeatSignalGeneratorCore, {}), (RegCore, {})]
+                   (RepeatSignalGeneratorCore, {'passthru': not use_fork}), (RegCore, {})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    # io_sides=NetlistBuilder.io_sides(),
@@ -907,7 +909,7 @@ if __name__ == "__main__":
         nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir)
 
     # Get SAM graph
-    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems)
+    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
     graph = sdg.get_graph()
 
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, output_dir=output_dir, local_mems=not args.remote_mems)
@@ -923,15 +925,15 @@ if __name__ == "__main__":
 
     tester.step(2)
     tester.poke(stb.rst_n, 1)
-    
-    #if nlb is not None:
-    #    tester.reset()
-    #else:
-        # pulse reset manually
-    #    tester.poke(stb.rst_n, 0)
-    #    tester.step(2)
-    #    tester.poke(stb.rst_n, 1)
-    #    tester.step(2)
+
+    # if nlb is not None:
+    #     tester.reset()
+    # else:
+    #     # pulse reset manually
+    #     tester.poke(stb.rst_n, 0)
+    #     tester.step(2)
+    #     tester.poke(stb.rst_n, 1)
+    #     tester.step(2)
 
     tester.step(2)
     # Stall during config

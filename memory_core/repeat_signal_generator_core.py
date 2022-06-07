@@ -23,7 +23,8 @@ class RepeatSignalGeneratorCore(LakeCoreBase):
     def __init__(self,
                  data_width=16,  # CGRA Params
                  config_data_width=32,
-                 config_addr_width=8):
+                 config_addr_width=8,
+                 passthru=True):
 
         lookup_name = "RepeatSignalGenerator"
         super().__init__(config_data_width=config_data_width,
@@ -35,10 +36,12 @@ class RepeatSignalGeneratorCore(LakeCoreBase):
         self.data_width = data_width
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
+        self.passthru = passthru
 
         cache_key = (self.data_width,
                      self.config_data_width,
                      self.config_addr_width,
+                     self.passthru,
                      "RepeatSignalGeneratorCore")
 
         # Check for circuit caching
@@ -46,7 +49,8 @@ class RepeatSignalGeneratorCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = RepeatSignalGenerator(data_width=data_width)
+            self.dut = RepeatSignalGenerator(data_width=data_width,
+                                             passthru=self.passthru)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
