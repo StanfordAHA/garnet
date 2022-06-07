@@ -401,7 +401,7 @@ egrep '^make: .* Error 1' make*.log && exit 13 || echo 'Did not fail. Right?'
 ########################################################################
 echo '+++ SUMMARY of what we did'
 logs=`/bin/ls -t make*.log`
-cat -n $logs | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
+cat -n $logs | grep '^mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
     >> tmp.summary \
     || PASS
 cat tmp.summary \
