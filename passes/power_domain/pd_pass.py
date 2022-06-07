@@ -49,9 +49,11 @@ def add_power_domain(interconnect: Interconnect):
         # cb is const aoi
         for _, cb in tile.cbs.items():
             old_mux = cb.mux
+            mux_type = AOIMuxType.ConstReadyValid if \
+                interconnect.ready_valid else AOIMuxType.Const
             new_mux = AOIMuxWrapper(old_mux.height, cb.node.width,
-                                    AOIMuxType.Const, cb.instance_name)
-            new_mux = flatten_mux(new_mux)
+                                    mux_type, cb.instance_name)
+            new_mux = flatten_mux(new_mux, ready_valid=interconnect.ready_valid)
             # replace it!
             replace(cb, old_mux, new_mux)
 
