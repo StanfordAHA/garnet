@@ -244,11 +244,17 @@ class SparseTBBuilder(m.Generator2):
                         src_c, dst_c = conn_spec
                         src_n, src_s = src_c
                         dst_n, dst_s = dst_c
-                        if 'io2f' in src_s or 'f2io' in dst_s:
+                        if 'io2f' in src_s:
+                            src_s = src_n
+
+                        if 'f2io' in dst_s:
                             pass
-                        else:
-                            addtl_conns[c_b].append(([(src_n, f'{src_s}_valid'), (dst_n, f'{dst_s}_valid')], 1))
-                            addtl_conns[c_b].append(([(dst_n, f'{dst_s}_ready'), (src_n, f'{src_s}_ready')], 1))
+                            # src_s = src_n
+                            # dst_s = dst_n
+
+                        # else:
+                        addtl_conns[c_b].append(([(src_n, f'{src_s}_valid'), (dst_n, f'{dst_s}_valid')], 1))
+                        addtl_conns[c_b].append(([(dst_n, f'{dst_s}_ready'), (src_n, f'{src_s}_ready')], 1))
 
             if addtl_conns is not None:
                 conn_list = None
@@ -260,6 +266,7 @@ class SparseTBBuilder(m.Generator2):
                     conn_des, width = addtl_conn
 
                     conn_src, conn_src_prt = conn_des[0]
+
                     for i in range(len(conn_des) - 1):
                         # conn_dst, conn_dst_prt = conn_des[1]
                         conn_dst, conn_dst_prt = conn_des[i + 1]
@@ -392,9 +399,11 @@ class SparseTBBuilder(m.Generator2):
                     # ready = self.nlb.register_core("io_1", name="ready_out_")
                     # valid = self.nlb.register_core("io_1", name="valid_in_")
                     data = self.fabric.input(f'data_in_{conn_id}', 17)
-                    ready = self.fabric.output(f'ready_out_{conn_id}', 1)
-                    valid = self.fabric.input(f'valid_in_{conn_id}', 1)
+                    ready = self.fabric.output(f'data_in_{conn_id}_ready', 1)
+                    valid = self.fabric.input(f'data_in_{conn_id}_valid', 1)
                     tx_size = 7
+                    if conn_id == 13:
+                        print("MEK2")
                     if node.get_attributes()['mode'].strip('"') == 1 or node.get_attributes()['mode'].strip('"') == '1':
                         file_number = 1
                         tx_size = 12
@@ -409,10 +418,8 @@ class SparseTBBuilder(m.Generator2):
                     # ready = self.nlb.register_core("io_1", name="ready_in_")
                     # valid = self.nlb.register_core("io_1", name="valid_out_")
                     data = self.fabric.output(f'data_out_{conn_id}', 17)
-                    ready = self.fabric.input(f'ready_in_{conn_id}', 1)
-                    if conn_id == 18:
-                        print("HELLO")
-                    valid = self.fabric.output(f'valid_out_{conn_id}', 1)
+                    ready = self.fabric.input(f'data_out_{conn_id}_ready', 1)
+                    valid = self.fabric.output(f'data_out_{conn_id}_valid', 1)
                     if 'vals' in node.get_attributes()['mode'].strip('"'):
                         # print("NUM 1")
                         num_blocks = 1
@@ -423,9 +430,11 @@ class SparseTBBuilder(m.Generator2):
                 elif node.get_attributes()['type'].strip('"') == 'arrayvals':
                     # GLB write wants a data input, ready, valid
                     glb_name = "GLB_TO_CGRA"
+                    if conn_id == 13:
+                        print("MEK")
                     data = self.fabric.input(f'data_in_{conn_id}', 17)
-                    ready = self.fabric.output(f'ready_out_{conn_id}', 1)
-                    valid = self.fabric.input(f'valid_in_{conn_id}', 1)
+                    ready = self.fabric.output(f'data_in_{conn_id}_ready', 1)
+                    valid = self.fabric.input(f'data_in_{conn_id}_valid', 1)
                     # data = self.nlb.register_core("io_16", name="data_in_")
                     # ready = self.nlb.register_core("io_1", name="ready_out_")
                     # valid = self.nlb.register_core("io_1", name="valid_in_")
@@ -525,6 +534,9 @@ class SparseTBBuilder(m.Generator2):
                     data_h = self.wrap_circ[glb_data.name]
                     ready_h = self.wrap_circ[glb_ready.name]
                     valid_h = self.wrap_circ[glb_valid.name]
+                    print(data_h)
+                    print(ready_h)
+                    print(valid_h)
                 else:
                     data_h = self.nlb.get_handle(glb_data, prefix="glb2io_17_")
                     suffix = str(data_h)[10:]
