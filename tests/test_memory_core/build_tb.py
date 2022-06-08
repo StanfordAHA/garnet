@@ -46,10 +46,12 @@ from lake.modules.reg_cr import Reg
 import os
 from canal.util import IOSide
 from io_core.io_core_magma import IOCoreValid, IOCore
+from sam.onyx.generate_matrices import MatrixGenerator
 
 
 class SparseTBBuilder(m.Generator2):
-    def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False, output_dir=None, local_mems=True) -> None:
+    def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
+                 input_dir=None, output_dir=None, local_mems=True) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -61,6 +63,7 @@ class SparseTBBuilder(m.Generator2):
         self.core_gens = {}
         self.name_maps = {}
         self.output_dir = output_dir
+        self.input_dir = input_dir
         self.local_mems = local_mems
 
         self._ctr = 0
@@ -444,6 +447,13 @@ class SparseTBBuilder(m.Generator2):
                     file_number = 2
                 else:
                     raise NotImplementedError
+
+                glb_tensor = node.get_attributes()['tensor'].strip('"')
+                if 'arrayvals' in node.get_attributes()['type'].strip('"'):
+                    glb_mode = 'vals'
+                else:
+                    glb_mode = node.get_attributes()['mode'].strip('"')
+
                 self.core_nodes[node.get_name()] = GLBNode(name=glb_name,
                                                            data=data,
                                                            valid=valid,
@@ -453,7 +463,9 @@ class SparseTBBuilder(m.Generator2):
                                                            file_number=file_number,
                                                            tx_size=tx_size,
                                                            IO_id=self.get_next_seq(),
-                                                           bespoke=True)
+                                                           bespoke=True,
+                                                           tensor=glb_tensor,
+                                                           mode=glb_mode)
             else:
                 # reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
                 inst_name = f"{core_name}_{self.get_next_seq()}"
@@ -525,6 +537,9 @@ class SparseTBBuilder(m.Generator2):
             glb_file_number = node.get_file_number()
             glb_tx_size = node.get_tx_size()
 
+            glb_tensor = node.get_tensor()
+            glb_mode = node.get_mode()
+
             # Get the handle for these pins, then instantiate glb
             glb_dir = node.get_direction()
             if glb_dir == 'write':
@@ -582,7 +597,12 @@ class SparseTBBuilder(m.Generator2):
                 );
                 """
 
-                file_full = f"\"/home/max/Documents/SPARSE/garnet/generic_memory_{glb_file_number}.txt\""
+                file_full = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode}"
+                # Get tx size now
+                with open(file_full, "r") as ff:
+                    glb_tx_size = len(ff.readlines())
+
+                file_full = f"\"{file_full}\""
                 test_glb = _Definition(TX_SIZE=glb_tx_size, FILE_NAME=file_full, ID_no=self.get_next_seq())()
 
                 m.wire(test_glb['data'], data_h)
@@ -647,10 +667,12 @@ class SparseTBBuilder(m.Generator2):
                 """
 
                 ID_no = self.get_next_seq()
-                f1 = f"\"{self.output_dir}/generic_memory_out_id_{ID_no}_block_0.txt\""
-                # f1 = f"\"/home/max/Documents/SPARSE/garnet/generic_memory_out_id_{ID_no}_block_0.txt\""
-                f2 = f"\"{self.output_dir}/generic_memory_out_id_{ID_no}_block_1.txt\""
-                # f2 = f"\"/home/max/Documents/SPARSE/garnet/generic_memory_out_id_{ID_no}_block_1.txt\""
+
+                if str(glb_mode) == "vals":
+                    f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
+                else:
+                    f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_seg\""
+                    f2 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
 
                 test_glb = _Definition(NUM_BLOCKS=glb_num_blocks, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
 
@@ -777,6 +799,14 @@ class SparseTBBuilder(m.Generator2):
                     file_number = 2
                 else:
                     raise NotImplementedError
+
+                # Set tensor and mode for writing
+                glb_tensor = node.get_attributes()['tensor'].strip('"')
+                if 'arrayvals' in node.get_attributes()['type'].strip('"'):
+                    glb_mode = 'vals'
+                else:
+                    glb_mode = node.get_attributes()['mode'].strip('"')
+
                 self.core_nodes[node.get_name()] = GLBNode(name=data,
                                                            data=data,
                                                            valid=None,
@@ -786,7 +816,9 @@ class SparseTBBuilder(m.Generator2):
                                                            direction=direction,
                                                            num_blocks=num_blocks,
                                                            file_number=file_number,
-                                                           tx_size=tx_size)
+                                                           tx_size=tx_size,
+                                                           tensor=glb_tensor,
+                                                           mode=glb_mode)
             else:
                 reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
                 self.core_nodes[node.get_name()] = new_node_type(name=reg_ret, **kwargs)
@@ -855,6 +887,51 @@ class SparseTBBuilder(m.Generator2):
             self.nlb.display_names()
 
 
+def write_glb_file(file_list, out_dir, out_name):
+
+    output_lines = []
+
+    for f in file_list:
+        with open(f, 'r') as curr_file:
+            all_lines = curr_file.readlines()
+            print(all_lines)
+            print(len(all_lines))
+            output_lines.append(f"{len(all_lines)}\n")
+            for l in all_lines:
+                output_lines.append(l)
+    print("OUT LINES")
+    print(output_lines)
+    out_path = f"{out_dir}/{out_name}"
+    with open(out_path, "w+") as curr_file:
+        curr_file.writelines(output_lines)
+
+
+def coalesce_files(in_dir, out_dir):
+    # First, find the unique guys in the in_dir (tensors)
+    tensors = {}
+    all_in_files = os.listdir(in_dir)
+    for fname in all_in_files:
+        tname = fname.split("_")[1]
+        if tname not in tensors:
+            tensors[tname] = 1
+    for tname, _ in tensors.items():
+        # Assume everything CSF right now - always a seg/crd array
+        mode_num = 0
+        done = False
+        while done is False:
+            if f'tensor_{tname}_mode_{mode_num}_seg' in all_in_files:
+                # Found it...
+                # Now coalesce the seg/crd into a single file
+                write_glb_file([f'{in_dir}/tensor_{tname}_mode_{mode_num}_seg',
+                               f'{in_dir}/tensor_{tname}_mode_{mode_num}_crd'],
+                               out_dir=out_dir, out_name=f'tensor_{tname}_mode_{mode_num}')
+                mode_num = mode_num + 1
+            else:
+                done = True
+        # Now do vals
+        write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'], out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Sparse TB Generator')
@@ -864,9 +941,15 @@ if __name__ == "__main__":
     parser.add_argument('--output_dir',
                         type=str,
                         default="/home/max/Documents/SPARSE/garnet/mek_outputs")
+    parser.add_argument('--input_dir',
+                        type=str,
+                        default="/Users/maxwellstrange/Documents/SPARSE/garnet/final_matrix_inputs")
     parser.add_argument('--test_dump_dir',
                         type=str,
                         default="/home/max/Documents/SPARSE/garnet/mek_dump/")
+    parser.add_argument('--matrix_tmp_dir',
+                        type=str,
+                        default="/Users/maxwellstrange/Documents/SPARSE/garnet/tmp_matrix_inputs")
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
     parser.add_argument('--remote_mems', action="store_true")
@@ -874,10 +957,21 @@ if __name__ == "__main__":
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
+    input_dir = args.input_dir
     use_fork = args.ic_fork
+    matrix_tmp_dir = args.matrix_tmp_dir
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
+
+    # Generate two matrices...
+    b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    b_matrix.dump_outputs()
+    c_matrix.dump_outputs()
+
+    # Now coalesce them into combo files and put in final landing zone
+    coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir)
 
     # Clean up output dir...
     # If it doesn't exist, make it
@@ -924,7 +1018,8 @@ if __name__ == "__main__":
     sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
     graph = sdg.get_graph()
 
-    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, output_dir=output_dir, local_mems=not args.remote_mems)
+    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
+                          output_dir=output_dir, local_mems=not args.remote_mems)
 
     stb.display_names()
 
