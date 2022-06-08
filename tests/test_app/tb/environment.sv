@@ -203,11 +203,11 @@ task Environment::kernel_test(Kernel kernel);
     start_time = $realtime;
 `ifdef SAIF 
    if(`SAIF == 1) begin
-     //$set_toggle_region(top);
-     //$toggle_start;
+     $set_toggle_region(top);
+     $toggle_start;
      //$fsdbDumpfile(top.fsdb);
-     $fsdbDumpvars(0, top);
-     $fsdbDumpon;
+     //$fsdbDumpvars(0, top);
+     //$fsdbDumpon;
    end
 `endif
     $display("[%s] kernel start at %0t", kernel.name, start_time);
@@ -248,9 +248,9 @@ task Environment::kernel_test(Kernel kernel);
     $display("[%s] kernel end at %0t", kernel.name, end_time);
 `ifdef SAIF 
    if(`SAIF == 1) begin
-   //$toggle_stop;
-   //$toggle_report("run.saif", 1e-12, top);
-   $fsdbDumpoff;
+   $toggle_stop;
+   $toggle_report("run.saif", 1e-12, top);
+   //$fsdbDumpoff;
    end
 `endif
     $display("[%s] It takes %0t total time to run kernel.", kernel.name, end_time - start_time);

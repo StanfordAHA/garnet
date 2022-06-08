@@ -6,7 +6,7 @@ import os
 os.makedirs('netlist', exist_ok=True)
 
 build_folder = '/sim/ajcars/fc-4-25/'
-pe_folder = '/sim/melchert/pe/'
+pe_folder = '/sim/melchert/pe_g/'
 tech = 'gf12'
 
 design_list = ['GarnetSOC_pad_frame', 'global_controller', 'glb_top', 'glb_tile', 'tile_array', 'Tile_PE', "Tile_MemCore"]

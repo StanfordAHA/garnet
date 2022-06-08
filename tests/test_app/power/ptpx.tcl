@@ -95,8 +95,8 @@ if { $::env(reports) == "True" } {
 }
 
 # Read in switching activity
-read_fsdb "./../novas.fsdb" -strip_path "top/dut" -path "core/u_aha_garnet/u_garnet"
-#read_saif "./../run.saif" -strip_path "top/dut" -path "core/u_aha_garnet/u_garnet" -quiet
+#read_fsdb "./../novas.fsdb" -strip_path "top/dut" -path "core/u_aha_garnet/u_garnet"
+read_saif "./../run.saif" -strip_path "top/dut" -path "core/u_aha_garnet/u_garnet" -quiet
 
 if { $::env(chkpt) == "True" } {
   save_session chk_post_saif
@@ -123,7 +123,7 @@ if { $::env(reports) == "True" } {
   report_switching_activity > reports/${ptpx_design_name}.activity.post.rpt
 }
 
-report_power -nosplit -hierarchy -levels 6 -sort_by total_power > reports/${ptpx_design_name}.power.rpt
+report_power -nosplit -hierarchy -levels 6 -leaf -sort_by total_power > reports/${ptpx_design_name}.power.rpt
 
 if { $::env(reports) == "True" } {
   report_power -nosplit -hierarchy > reports/${ptpx_design_name}.power.hier.rpt

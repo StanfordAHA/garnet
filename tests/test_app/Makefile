@@ -192,4 +192,4 @@ sim-gls: libcgra.so compile-gls run-gls
 # -------------------------------------------------------------------
 .PHONY: clean
 clean:
-	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log cgra.shm cgra.fsdb sdf_stats.txt sdf_logs novas.fsdb
+	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log cgra.shm cgra.fsdb sdf_stats.txt sdf_logs novas*
