@@ -48,7 +48,7 @@ if ! [ "$fp" ]; then
     echo "ERROR cannot find floorplan '${which_tile}.fp.gz' underneath dir '$dir'"
     usage; exit 13
 fi
-printf "  Looking at width in floorplan '%s'\n"
+printf "  Looking at width in floorplan '%s'\n" ${which_tile}.fp.gz
 
 # Look in $fp for tile box (llx lly urx ury)
 # Head Box: 0.0000 0.0000 93.1500 87.5520 [ i.e. 93w and 82.5h ]
