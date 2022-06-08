@@ -45,6 +45,7 @@ initial begin
     while(1) begin
         @(posedge clk);
         // Randomzie ready for backpressure
+        #1
         ready = $urandom();
         if(ready == 1 && valid == 1) begin
             size_0 = data;
@@ -55,6 +56,7 @@ initial begin
 
     while(num_rx < size_0) begin
         @(posedge clk);
+        #1
         ready = $urandom();
         if(ready == 1 && valid == 1) begin
             local_mem_0[num_rx] = data;
@@ -71,6 +73,7 @@ initial begin
         // Do second transfer...
         while(1) begin
             @(posedge clk);
+            #1
             ready = $urandom();
             if(ready == 1 && valid == 1) begin
                 size_1 = data;
@@ -81,6 +84,7 @@ initial begin
 
         while(num_rx < size_1) begin
             @(posedge clk);
+            #1
             ready = $urandom();
             if(ready == 1 && valid == 1) begin
                 local_mem_1[num_rx] = data;
