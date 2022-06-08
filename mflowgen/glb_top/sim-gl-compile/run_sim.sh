@@ -3,10 +3,11 @@ ln -s ./inputs/Makefile
 ln -s ./inputs/gls
 ln -s ./inputs/sim
 
+# FIXME: PM standard cells should be removed!
 if [ $PWR_AWARE = "True" ]; then
-  NETLIST_FILES="inputs/adk/stdcells-pwr.v inputs/glb_tile_sram_pwr.v inputs/glb_tile.vcs.pg.v inputs/design.vcs.pg.v"
+  NETLIST_FILES="inputs/adk/stdcells-pwr.v inputs/adk/stdcells-pm-pwr.v inputs/glb_tile_sram_pwr.v inputs/glb_tile.vcs.pg.v inputs/design.vcs.pg.v"
 else
-  NETLIST_FILES="inputs/glb_tile_sram.v inputs/adk/stdcells-prim.v inputs/adk/stdcells.v inputs/glb_tile.vcs.v inputs/design.vcs.v"
+  NETLIST_FILES="inputs/glb_tile_sram.v inputs/adk/stdcells.v inputs/adk/stdcells-pm.v inputs/glb_tile.vcs.v inputs/design.vcs.v"
 fi
 
 if [ $sdf = "True" ]; then

@@ -157,6 +157,7 @@ set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE
 # END
 ########################################################################
 
+set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
 
 if $::env(PWR_AWARE) {
     source inputs/dc-dont-use-constraints.tcl

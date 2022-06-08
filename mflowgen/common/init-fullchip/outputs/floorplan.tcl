@@ -3,18 +3,16 @@
 #=========================================================================
 # This script is called from the Innovus init flow step.
 
-# Run this in floorplanning step to make io filler addition step happy
-# (see add-io-fillers.tcl). Will be re-run in power step
+# Should this be in power step??
 delete_global_net_connections
-connect_global_net VDDPST -type pgpin -pin VDDIO -inst *
-connect_global_net VSS -type pgpin -pin VSSIO -inst * 
-connect_global_net VDD -type pgpin -pin VDDC -inst *
+connect_global_net VDDPST -type pgpin -pin VDDPST -inst *
+connect_global_net VSS -type pgpin -pin VSSPST -inst * 
+connect_global_net VDD -type pgpin -pin VDD -inst *
 connect_global_net VDD -type tiehi
-connect_global_net VSS -type pgpin -pin VSSC -inst *
-connect_global_net VSS -type pgpin -pin VSS_CM -inst *
+connect_global_net VSS -type pgpin -pin VSS -inst *
 connect_global_net VSS -type tielo
-connect_global_net VSS -type pgpin -pin VPW -inst *
-connect_global_net VDD -type pgpin -pin VNW -inst *
+connect_global_net VDD -type pgpin -pin VPP -inst *
+connect_global_net VSS -type pgpin -pin VBB -inst *
 
 
 
@@ -29,14 +27,39 @@ connect_global_net VDD -type pgpin -pin VNW -inst *
 floorPlan \
     -coreMarginsBy die \
     -dieSizeByIoHeight max \
-    -d 4900.0 4900.0 200 200 200 200
+    -site core \
+    -d 4900.0 4900.0 100 100 100 100
+
+# Adding PCORNER cells here, io_file will take
+# care of orientation and location
+create_inst -inst corner_lr -cell PCORNER
+create_inst -inst corner_ll -cell PCORNER
+create_inst -inst corner_ul -cell PCORNER
 
 # read_io_file inputs/io_file -no_die_size_adjust 
 loadIoFile inputs/io_file -noAdjustDieSize
 
+# Disconnect IO-pad RTE pins
+foreach x \
+    [get_property \
+         [get_cells -filter "ref_name=~*PDD* || ref_name=~*PRW* || ref_name=~*FILL* || ref_name=~*PVDD1* || ref_name=~*PVDD2* || ref_name=~*PDB2* || ref_name=~PCORNER" ]\
+         full_name \
+        ] \
+    {
+        # disconnect_pin -inst $x -pin RTE
+        detachTerm $x RTE
+    }
+
 # snap_floorplan_io - Snaps I/O cells to a user-defined grid
 
 snapFPlanIO
+
+
+# insert io fillers. previously, this was done *after* routing bumps
+# copied from "proc done_fp" in "gen_floorplan.tcl"
+
+
+
 
 # Do we need/want this?? It's from tile_array or something
 # # setFlipping - Specifies the orientation of the bottom row in the core area
@@ -45,7 +68,6 @@ snapFPlanIO
 
 # Checks the quality of the floorplan to detect potential
 # problems before the design is passed on to other tools.
-
 # check_floorplan
 checkFPlan
 

@@ -15,9 +15,6 @@
 # configurations.  The general flow is to define a scenario, read in a script
 # containing generalized constraints for the designs, then provide overriding
 # constraints in different operational modes.
-
-set_units -time ns -capacitance pF
-
 set common_cnst inputs/common.tcl
 
 ##############################

@@ -1,6 +1,6 @@
 #!/bin/bash
 mflowgen run --design $GARNET_HOME/mflowgen/tile_array/
-make synopsys-ptpx-genlibdb -j 2
+make synopsys-dc-lib2db -j 2
 if command -v calibre &> /dev/null
 then
     make mentor-calibre-lvs
@@ -8,8 +8,8 @@ else
     make cadence-pegasus-lvs
 fi
 mkdir -p outputs
-cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/tile_array_tt.db
-cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/tile_array_tt.lib
+cp -L *cadence-genus-genlib/outputs/design.lib outputs/tile_array_tt.lib
+cp -L *synopsys-dc-lib2db/outputs/design.db outputs/tile_array_tt.db
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/tile_array.lef
 cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/tile_array.vcs.v
 cp -L *cadence-innovus-signoff/outputs/design.sdf outputs/tile_array.sdf

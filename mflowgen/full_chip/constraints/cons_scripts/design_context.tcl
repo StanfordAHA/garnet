@@ -13,7 +13,7 @@
 # Set design context
 # ------------------------------------------------------------------------------
 
-set clock_ports   [list   $port_names(gcd_jtag_clk) \
+set clock_ports   [list   $port_names(btfy_jtag_clk) \
                           $port_names(tlx_rev_clk) \
                           $port_names(dp_jtag_clk) \
                           $port_names(cgra_jtag_clk) \

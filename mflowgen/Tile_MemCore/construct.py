@@ -11,6 +11,7 @@ import sys
 
 from mflowgen.components import Graph, Step
 from shutil import which
+from common.get_sys_adk import get_sys_adk
 
 def construct():
 
@@ -20,9 +21,9 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'gf12-adk'
-  adk_view = 'view-standard'
-  pwr_aware = False
+  adk_name = get_sys_adk()
+  adk_view = 'multicorner-multivt'
+  pwr_aware = True
 
   synth_power = False
   if os.environ.get('SYNTH_POWER') == 'True':
@@ -44,6 +45,8 @@ def construct():
     'num_words'           : 512,
     'word_size'           : 32,
     'mux_size'            : 4,
+    'corner'              : "tt0p8v25c",
+    'bc_corner'           : "ffg0p88v125c",
     'partial_write'       : False,
     # Hold target slack
     'hold_target_slack'   : 0.015,
@@ -59,8 +62,7 @@ def construct():
     'app_to_run'        : 'tests/conv_3_3',
     'saif_instance'     : 'testbench/dut',
     'testbench_name'    : 'testbench',
-    'strip_path'        : 'testbench/dut',
-    'drc_env_setup'     : 'drcenv-block.sh'
+    'strip_path'        : 'testbench/dut'
   }
 
   #-----------------------------------------------------------------------
@@ -110,7 +112,7 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  genlibdb       = Step( 'cadence-innovus-genlib',         default=True )
+  genlibdb       = Step( 'cadence-genus-genlib',           default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -127,7 +129,7 @@ def construct():
   # Add sram macro inputs to downstream nodes
 
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-  pt_signoff.extend_inputs( ['sram_tt.db'] )
+  #pt_signoff.extend_inputs( ['sram_tt.db'] )
   genlibdb.extend_inputs( ['sram_tt.lib'] )
 
   # These steps need timing and lef info for srams
@@ -171,7 +173,7 @@ def construct():
   # Power aware setup
   if pwr_aware:
       synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
-      init.extend_inputs(['check-clamp-logic-structure.tcl', 'upf_Tile_MemCore.tcl', 'mem-load-upf.tcl', 'dont-touch-constraints.tcl', 'mem-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl'])
+      init.extend_inputs(['check-clamp-logic-structure.tcl', 'upf_Tile_MemCore.tcl', 'mem-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-mem-floorplan.tcl', 'mem-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'mem-power-switches-setup.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['check-clamp-logic-structure.tcl', 'place-dont-use-constraints.tcl', 'add-aon-tie-cells.tcl'])
       power.extend_inputs(['pd-globalnetconnect.tcl'] )
       cts.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl'])
@@ -281,9 +283,6 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
-  # Need this because we're using innovus for lib generation
-  g.connect_by_name( iflow,    genlibdb       )
-  
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -396,8 +395,8 @@ def construct():
 
   # Adding new input for genlibdb node to run
   order = genlibdb.get_param('order') # get the default script run order
-  extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
-  order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
+  read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
+  order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
   genlibdb.update_params( { 'order': order } )
 
 
@@ -407,10 +406,10 @@ def construct():
       order = init.get_param('order')
       read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
       order.insert( read_idx + 1, 'mem-load-upf.tcl' ) # add here
-      order.insert( read_idx + 2, 'mem-pd-params.tcl') # add here
-      order.insert( read_idx + 3, 'pd-aon-floorplan.tcl' ) # add here
-      order.insert( read_idx + 4, 'mem-add-endcaps-welltaps-setup.tcl' ) # add here
-      order.insert( read_idx + 5, 'pd-add-endcaps-welltaps.tcl' ) # add here
+      order.insert( read_idx + 2, 'pd-mem-floorplan.tcl' ) # add here
+      order.insert( read_idx + 3, 'mem-add-endcaps-welltaps-setup.tcl' ) # add here
+      order.insert( read_idx + 4, 'pd-add-endcaps-welltaps.tcl' ) # add here
+      order.insert( read_idx + 5, 'mem-power-switches-setup.tcl') # add here
       order.insert( read_idx + 6, 'add-power-switches.tcl' ) # add here
       order.remove('add-endcaps-welltaps.tcl')
       order.append('check-clamp-logic-structure.tcl')

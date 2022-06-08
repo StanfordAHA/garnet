@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e; # DIE if any of the below commands exits with error status
 
+echo '--- gen_rtl BEGIN' `date +%H:%M`
+
 # Hierarchical flows can accept RTL as an input from parent graph
 if [ -f ../inputs/design.v ]; then
   echo "Using RTL from parent graph"
@@ -35,13 +37,18 @@ else
       echo "Use aha docker container for all dependencies"
 
       # Clone AHA repo
+      echo '--- gen_rtl aha clone BEGIN' `date +%H:%M`
       git clone https://github.com/StanfordAHA/aha.git
       cd aha
-      # install the aha wrapper script
-      pip install -e .
 
       # Prune docker images...
+      # ("yes" emits endless stream of y's)
+      echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
       yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
+
+      echo ""; echo "After pruning:"; echo ""
+      docker images; echo ""
+      docker ps    ; echo ""
 
       # Choose a docker image; can set via "rtl_docker_image" parameter
       default_image="stanfordaha/garnet:latest"
@@ -54,6 +61,7 @@ else
       # To use a docker image based on sha hash can do e.g.
       # rtl_docker_image="stanfordaha/garnet@sha256:1e4a0bf29f3bad8e3..."
 
+      echo '--- gen_rtl docker pull BEGIN' `date +%H:%M`
       echo "Using image '$rtl_docker_image'"
       docker pull ${rtl_docker_image}
 
@@ -63,20 +71,16 @@ else
       docker inspect --format='RepoTags    {{.RepoTags}}'    ${rtl_docker_image}
       docker inspect --format='RepoDigests {{.RepoDigests}}' ${rtl_docker_image}
 
-      # Run the image in a container
-      if [ "$rtl_docker_image" == "$default_image" ]; then
-          # Default image can use standard "aha docker" mechanism to run the image in a container.
-          # It will run in the background and delete the container when done.
-          # "aha docker" return-value is the name of the container.
-          container_name=$(aha docker)
-      else
-          # Run (non-default) container in the background and delete it when it exits (--rm)
-          # Mount /cad and name it, and run container as a daemon in background
-          # Use container_name "gen_rtl_<proc_id>"
-          container_name=gen_rtl_$$
-          docker run -id --name ${container_name} --rm -v /cad:/cad ${rtl_docker_image} bash
-      fi
+      # Run (container in the background and delete it when it exits (--rm)
+      # Mount /cad and name it, and run container as a daemon in background
+      # Use container_name "gen_rtl_<proc_id>"
+
       echo "Using docker container '$container_name'"
+      container_name=gen_rtl_$$
+      docker run -id --name ${container_name} --rm -v /cad:/cad ${rtl_docker_image} bash
+
+      # MAKE SURE the docker container gets killed when this script dies.
+      trap "docker kill $container_name" EXIT
 
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
@@ -87,6 +91,8 @@ else
       fi
 
       # run garnet.py in container and concat all verilog outputs
+      echo "---docker exec $container_name"
+
       docker exec $container_name /bin/bash -c \
         '# Func to check python package creds (Added 02/2021 as part of cst vetting)
          # (Single-quote regime)
@@ -117,18 +123,22 @@ else
          source /aha/bin/activate; # Set up the build environment
 
          if [ $interconnect_only == True ]; then
+           echo --- INTERCONNECT_ONLY: aha garnet $flags
            aha garnet $flags; # Here is where we build the verilog for the main chip
            cd garnet
            cp garnet.v design.v
          elif [ $glb_only == True ]; then
            cd garnet
 
+           echo '--- GLB_ONLY requested; do special glb things'
+           echo make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
            make -C global_buffer rtl CGRA_WIDTH=${array_width} GLB_TILE_MEM_SIZE=${glb_tile_mem_size}
            cp global_buffer/global_buffer.sv design.v
            cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
            cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
          else
+           echo --- DEFAULT rtl build: aha garnet $flags
            # Rename output verilog, final name must be 'design.v'
            aha garnet $flags; # Here is where we build the verilog for the main chip
            cd garnet
@@ -144,6 +154,8 @@ else
            cat global_controller/systemRDL/output/*.sv >> design.v
          fi"
 
+
+      echo '--- gen_rtl docker cleanup BEGIN' `date +%H:%M`
 
       # Copy the concatenated design.v output out of the container
       docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
@@ -162,8 +174,13 @@ else
       docker images --digests
 
       # Kill the container
-      docker kill $container_name
-      echo "killed docker container $container_name"
+      if docker kill $container_name; then
+          echo "killed docker container $container_name"
+      else
+          echo "could not kill docker container $container_name (maybe already dead?)"
+      fi
+      trap - EXIT; # Remove the docker-kill trap, don't need it anymore.
+
       cd .. ; # pop out from e.g. "9-rtl/aha/" back to "9-rtl/"
 
       # Set 'save_verilog_to_tmpdir' "True" if want to capture the output
@@ -177,6 +194,7 @@ else
           cp mflowgen-run.log /tmp/log.${container_name}.deleteme$$
           set +x
       fi
+      set +x
 
     # Else we want to use local python env to generate rtl
     else
@@ -217,4 +235,4 @@ else
   fi
 fi
 
-echo "gen_rtl DONE"
+echo '--- gen_rtl END' `date +%H:%M`

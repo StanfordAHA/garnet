@@ -13,8 +13,7 @@ inputs:
 
 # FIXME  I'm sure this is not how this is supposed to work...[sr02.2020]
 commands:
-  - cd outputs 
-  - ln -s ../inputs/io_file io_file
+  - cp inputs/io_file outputs/io_file
 
 # Default order can be found in e.g.
 # mflowgen/steps/cadence-innovus-init/configure.yml

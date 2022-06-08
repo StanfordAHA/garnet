@@ -14,17 +14,19 @@ outputs:
   - add-power-switches.tcl
   - pe-load-upf.tcl
   - mem-load-upf.tcl 
+  - pd-mem-floorplan.tcl
   - pd-globalnetconnect.tcl        
   - pe-constraints.tcl
   - pe-constraints-2.tcl
-  - pd-aon-floorplan.tcl        
+  - mem-add-endcaps-welltaps-setup.tcl  
+  - mem-power-switches-setup.tcl  
+  - pd-pe-floorplan.tcl        
+  - pe-power-switches-setup.tcl
   - dc-dont-use-constraints.tcl  
   - mem-constraints.tcl 
-  - mem-constraints-2.tcl
-  - pe-pd-params.tcl
-  - mem-pd-params.tcl
+  - mem-constraints-2.tcl 
   - pd-add-endcaps-welltaps.tcl   
-  - add-endcaps-welltaps-setup.tcl 
+  - pe-add-endcaps-welltaps-setup.tcl 
   - place-dont-use-constraints.tcl
   - dont-touch-constraints.tcl
   - pd-generate-lvs-netlist.tcl

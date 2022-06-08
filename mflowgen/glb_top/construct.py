@@ -12,6 +12,7 @@ import pathlib
 
 from mflowgen.components import Graph, Step
 from shutil import which
+from common.get_sys_adk import get_sys_adk
 
 def construct():
 
@@ -21,7 +22,7 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'gf12-adk'
+  adk_name = get_sys_adk()
   adk_view = 'view-standard'
 
   parameters = {
@@ -35,7 +36,7 @@ def construct():
     'flatten_effort' : 3,
     'topographical'  : True,
     # hold target slack
-    'hold_target_slack'   : 0.1,
+    'hold_target_slack'   : 0.03,
     # array_width = width of CGRA below GLB; `pin-assignments.tcl` uses
     # these parms to set up per-cgra-column ports connecting glb tile
     # signals in glb_top to corresponding CGRA tile columns below glb_top
@@ -43,14 +44,13 @@ def construct():
     'num_glb_tiles'       : 16,
     'tool'                : "VCS",
     # glb tile memory size (unit: KB)
-    'use_container' : True,
+    'use_container' : False,
     'glb_tile_mem_size' : 256,
     'rtl_testvectors' : ["test01", "test02", "test03", "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11"],
     'gls_testvectors' : ["test01", "test02", "test03", "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11"],
     'sdf' : True,
     'saif' : False,
     'waveform' : True,
-    'drc_env_setup': 'drcenv-block.sh'
   }
 
   #-----------------------------------------------------------------------
@@ -150,7 +150,6 @@ def construct():
   # Add glb_tile macro inputs to downstream nodes
 
   pt_signoff.extend_inputs( ['glb_tile_tt.db'] )
-  genlib.extend_inputs( ['glb_tile_tt.db'] )
 
   # These steps need timing info for glb_tiles
   tile_steps = \
@@ -170,6 +169,9 @@ def construct():
 
   # Need sram spice file for LVS
   lvs.extend_inputs( ['glb_tile_sram.spi'] )
+
+  # Need glb_tile for genlib
+  genlib.extend_inputs( ['glb_tile_tt.lib'] )
 
   xlist = synth.get_postconditions()
   xlist = \

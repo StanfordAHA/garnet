@@ -16,7 +16,7 @@ fi
 # make pwr-aware-gls
 
 mkdir -p outputs
-cp -L *cadence-innovus-genlib/outputs/design.lib outputs/Tile_MemCore_tt.lib
+cp -L *cadence-genus-genlib/outputs/design.lib outputs/Tile_MemCore_tt.lib
 cp -L *synopsys-dc-lib2db/outputs/design.db outputs/Tile_MemCore_tt.db
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_MemCore.lef
 cp -L *cadence-innovus-signoff/outputs/design-merged.gds outputs/Tile_MemCore.gds

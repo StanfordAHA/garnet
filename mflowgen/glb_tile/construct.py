@@ -11,6 +11,7 @@ import sys
 
 from mflowgen.components import Graph, Step
 from shutil import which
+from common.get_sys_adk import get_sys_adk
 
 def construct():
 
@@ -20,8 +21,7 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'gf12-adk'
-  #adk_view = 'multicorner'
+  adk_name = get_sys_adk()
   adk_view = 'view-standard'
 
   parameters = {
@@ -34,21 +34,22 @@ def construct():
     'flatten_effort' : 3,
     'topographical'  : True,
     # Floorplan
+    'bank_height'    : 8,
     'array_width' : 32,
     'num_glb_tiles'       : 16,
     # Memory size (unit: KB)
     'glb_tile_mem_size' : 256,
     # SRAM macros
-    'num_words'      : 4096,
+    'num_words'      : 2048,
     'word_size'      : 64,
     'mux_size'       : 8,
-    'num_subarrays'  : 2,
+    'corner'         : "tt0p8v25c",
     'partial_write'  : True,
      # Power Domains
     'PWR_AWARE'         : False,
     # hold target slack
-    'hold_target_slack' : 0.03,
-    'drc_env_setup': 'drcenv-block.sh'
+    'hold_target_slack' : 0.03
+
   }
 
   #-----------------------------------------------------------------------
@@ -108,7 +109,6 @@ def construct():
 
   # Add sram macro inputs to downstream nodes
 
-  genlib.extend_inputs( ['sram_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   # These steps need timing and lef info for srams
@@ -271,9 +271,7 @@ def construct():
   g.update_params( parameters )
 
   # Add bank height param to init
-  # number of banks is fixed to 2
-  bank_height = (parameters['glb_tile_mem_size'] * 1024 // 2) // (parameters['num_words'] * (parameters['word_size'] // 8))
-  init.update_params( { 'bank_height': bank_height }, True )
+  init.update_params( { 'bank_height': parameters['bank_height'] }, True )
 
   # Change nthreads
   synth.update_params( { 'nthreads': 4 } )

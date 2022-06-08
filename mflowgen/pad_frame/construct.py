@@ -8,6 +8,7 @@ import sys
 
 from mflowgen.components import Graph, Step
 from shutil import which
+from common.get_sys_adk import get_sys_adk
 
 def construct():
   g = Graph()
@@ -16,7 +17,7 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = 'gf12-adk'
+  adk_name = get_sys_adk()
   adk_view = 'view-standard'
 
   parameters = {
@@ -52,6 +53,15 @@ def construct():
   constraints          = Step( this_dir + '/constraints'                 )
   init_fullchip        = Step( this_dir + '/../common/init-fullchip'     )
   netlist_fixing       = Step( this_dir + '/../common/fc-netlist-fixing' )
+
+  # Custom step 'pre-flowsetup'
+  # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
+  # - create new step 'pre_flowsetup' whose outputs are icovl cells
+  # -- link via "commands" group in pre-iflow/configure.yml
+  # - connect pre-flowsetup step to flowsetup (iflow) step
+  # - extend iflow inputs to include icovl cells
+  # - iflow "setup.tcl" automatically includes "inputs/*.lef"
+  pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
 
   # More custom steps
   custom_power         = Step( this_dir + '/../common/custom-power-chip' )
@@ -118,6 +128,15 @@ def construct():
 
   # Ouch. iflow and everyone that connects to iflow must also include
   # the icovl/dtcd lefs I guess?
+  pre_flowsetup_followers = [
+    # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+    iflow, init # can we get away with this?
+  ]
+  for step in pre_flowsetup_followers:
+    step.extend_inputs( [ 
+      "icovl-cells.lef", "dtcd-cells.lef", 
+      "bumpcells.lef" 
+    ] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -129,6 +148,8 @@ def construct():
   g.add_step( constraints              )
   g.add_step( dc                       )
 
+  # pre_flowsetup => iflow
+  g.add_step( pre_flowsetup            )
   g.add_step( iflow                    )
   g.add_step( init_fullchip            )
   g.add_step( init                     )
@@ -156,6 +177,7 @@ def construct():
   # Connect by name
 
   g.connect_by_name( adk,      dc            )
+  g.connect_by_name( adk,      pre_flowsetup )
   g.connect_by_name( adk,      iflow         )
   g.connect_by_name( adk,      init          )
   g.connect_by_name( adk,      init_fill     )
@@ -179,6 +201,11 @@ def construct():
   g.connect_by_name( dc,       init         )
   g.connect_by_name( dc,       power        )
   g.connect_by_name( dc,       place        )
+
+  # g.connect_by_name( pre_flowsetup,  iflow   )
+  # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+  for step in pre_flowsetup_followers:
+    g.connect_by_name( pre_flowsetup, step)
 
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
@@ -253,6 +280,8 @@ def construct():
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'attach-results-to-outputs.tcl',
       'alignment-cells.tcl',
+      'analog-bumps/route-phy-bumps.tcl', 
+      'analog-bumps/bump-connect.tcl',
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
       'innovus-foundation-flow/custom-scripts/stream-out.tcl',
     ]}
