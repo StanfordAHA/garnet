@@ -14,9 +14,15 @@
 ##############################################################################
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
-  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
-  SETUP: 'source mflowgen/bin/setup-buildkite.sh'
+  SETUP: source mflowgen/bin/setup-buildkite.sh
+
+  # Env var used by test_module.sh :(
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
+
+  # For debugging, use $BUILD flag to build in indicated local dir
+  TEST: echo exit 13 | mflowgen/test/test_module.sh
+# TEST: echo exit 13 | mflowgen/test/test_module.sh --build_dir /build/pmg${BUILDKITE_BUILD_NUMBER}
+
 
 steps:
 
