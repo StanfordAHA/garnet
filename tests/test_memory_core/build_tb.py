@@ -894,13 +894,13 @@ def write_glb_file(file_list, out_dir, out_name):
     for f in file_list:
         with open(f, 'r') as curr_file:
             all_lines = curr_file.readlines()
-            print(all_lines)
-            print(len(all_lines))
-            output_lines.append(f"{len(all_lines)}\n")
+            # Get rid of 0x for readmemh compatibility
+            hexified = str(hex(len(all_lines)))[2:]
+            output_lines.append(f"{hexified}\n")
             for l in all_lines:
-                output_lines.append(l)
-    print("OUT LINES")
-    print(output_lines)
+                # Get rid of 0x for readmemh compatibility
+                hexified = str(hex(int(l)))[2:]
+                output_lines.append(f"{hexified}\n")
     out_path = f"{out_dir}/{out_name}"
     with open(out_path, "w+") as curr_file:
         curr_file.writelines(output_lines)
