@@ -129,6 +129,7 @@ done
 # User can optionally leave final "/full_chip" off of the dir pathname
 cd $bd
 test -d full_chip && cd full_chip
+echo "--- $0"
 echo "Found test dir `pwd`"
 
 if [ "$do_sizes" ]; then
@@ -159,11 +160,13 @@ if [ "$do_sizes" ]; then
     #     full_chip                        11765284
 
     echo ''; echo '+++ SIZE CHECK (synthesis report)'
+
+    # Expected / prev values
     declare -A size
       size[glb_tile]=69069
       size[glb_top]=2839952
       size[global_controller]=3702
-      size[Tile_PE]=6989
+      size[Tile_PE]=8131
       size[Tile_MemCore]=20500
       size[tile_array]=29914
       size[full_chip]=11765284
@@ -178,7 +181,7 @@ if [ "$do_sizes" ]; then
       # echo $area $f1
       for key in "${!size[@]}"; do
           expr $f1 : ".*${key}$" > /dev/null \
-          && msg=$(printf " (should be ? %8.0f ?)" ${size[$key]})
+          && msg=$(printf " (prev was ? %8.0f ?)" ${size[$key]})
       done
       printf "%-30s %8.0f$msg\n" $f1 $area
     done
@@ -191,6 +194,7 @@ if [ "$do_sizes" ]; then
     # 17-tile_array/17-Tile_PE       SIZE  102 BY   88 ;
     # 17-tile_array                  SIZE 4749 BY 1632 ;
 
+    found_lefs=false
     echo ''; echo '+++ SIZE CHECK (lef)'
     for f in `find * -name 'design.lef'`; do
       # e.g. "17-Tile_PE/24-cadence-innovus-signoff/outputs/design.lef" => "17-Tile_PE"
@@ -200,6 +204,7 @@ if [ "$do_sizes" ]; then
       expr $f1 : '.*lef' > /dev/null && f1=$(basename `pwd`)
       printf "%-30s %s %4.0f %s %4.0f %s\n" $f1 `grep SIZE $f`
     done
+    if [ "$found_lefs" == "false"]; then echo "  No lefs found"; fi
 fi
 
 if [ "$do_lvs" ]; then
@@ -226,7 +231,7 @@ if [ "$do_runtimes" ]; then
     ########################################################################
     # Status check e.g.
     # 
-    # +++ CURRENT STATUS (runtimes)
+    # +++ RUNTIMES
     # --------------------------------------------------------------------------------
     # 9-rtl                               --         26 min  6 sec 
     # 14-glb_top                          --    1 hr 18 min 35 sec  <-- in progress
@@ -241,7 +246,7 @@ if [ "$do_runtimes" ]; then
         get_runtimes="/sim/buildkite-agent/mflowgen.master/mflowgen/scripts/mflowgen-runtimes"
     fi
     $get_runtimes |& egrep -v '^(Total|echo|runtimes)' \
-        | grep -vi warning | sed '1d; s/Runtimes/+++ CURRENT STATUS (runtimes)/'
+        | grep -vi warning | sed '1d; s/Runtimes/+++ RUNTIMES/'
 fi
 
 ########################################################################
