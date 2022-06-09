@@ -47,6 +47,8 @@ import os
 from canal.util import IOSide
 from io_core.io_core_magma import IOCoreValid, IOCore
 from sam.onyx.generate_matrices import MatrixGenerator
+import numpy
+import random
 
 
 class SparseTBBuilder(m.Generator2):
@@ -950,6 +952,7 @@ if __name__ == "__main__":
     parser.add_argument('--matrix_tmp_dir',
                         type=str,
                         default="/Users/maxwellstrange/Documents/SPARSE/garnet/tmp_matrix_inputs")
+    parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
     parser.add_argument('--remote_mems', action="store_true")
@@ -960,15 +963,32 @@ if __name__ == "__main__":
     input_dir = args.input_dir
     use_fork = args.ic_fork
     matrix_tmp_dir = args.matrix_tmp_dir
+    seed = args.seed
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
+
+    numpy.random.seed(seed)
+    random.seed(seed)
 
     # Generate two matrices...
     b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
     c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
     b_matrix.dump_outputs()
     c_matrix.dump_outputs()
+
+    b_mat = b_matrix.get_matrix()
+    c_mat = c_matrix.get_matrix()
+
+    if 'identity' in args.sam_graph:
+        output_matrix = b_mat
+    elif 'matmul' in args.sam_graph:
+        output_matrix = numpy.matmul(b_mat, c_mat)
+    elif 'elemmul' in args.sam_graph:
+        output_matrix = numpy.multiply(b_mat, c_mat)
+
+    out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format='CSF', dump_dir="./gold_out", tensor=output_matrix)
+    out_mat.dump_outputs()
 
     # Now coalesce them into combo files and put in final landing zone
     coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir)
@@ -1086,7 +1106,7 @@ if __name__ == "__main__":
     tester.eval()
     for i in range(1000):
         tester.step(2)
-    tester.wait_until_high(tester.circuit.done, timeout=500)
+    tester.wait_until_high(tester.circuit.done, timeout=2000)
 
     from conftest import run_tb_fn
     run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd="mek_dump")
