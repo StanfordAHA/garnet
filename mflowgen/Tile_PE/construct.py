@@ -22,14 +22,11 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = get_sys_adk()
-  #base_adk_view = 'multicorner-multivt'
-  base_adk_view = 'view-standard'
+  adk_view = 'view-standard'
   pwr_aware = False
 
   if pwr_aware:
-      adk_view = base_adk_view + '-pm'
-  else:
-      adk_view = base_adk_view
+      adk_view = adk_view + '-pm'
 
   flatten = 3
   if os.environ.get('FLATTEN'):

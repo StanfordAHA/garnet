@@ -25,6 +25,9 @@ def construct():
   adk_view = 'view-standard'
   pwr_aware = False
 
+  if pwr_aware:
+      adk_view = adk_view + '-pm'
+
   synth_power = False
   if os.environ.get('SYNTH_POWER') == 'True':
       synth_power = True

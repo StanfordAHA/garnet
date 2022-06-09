@@ -140,8 +140,5 @@ def glc_interconnect_wiring(garnet):
                 garnet.interconnect.ports.reset)
     garnet.wire(garnet.interconnect.ports.read_config_data,
                 garnet.global_controller.ports.read_data_in)
-    # stall signal wiring
-    garnet.wire(garnet.global_controller.ports.cgra_stall,
-                garnet.interconnect.ports.stall)
 
     return garnet
