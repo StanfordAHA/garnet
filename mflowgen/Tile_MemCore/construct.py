@@ -413,7 +413,7 @@ def construct():
       order.insert( read_idx + 1, 'mem-load-upf.tcl' ) # add here
       order.insert( read_idx + 2, 'mem-pd-params.tcl') # add here
       order.insert( read_idx + 3, 'pd-aon-floorplan.tcl' ) # add here
-      order.insert( read_idx + 4, 'mem-add-endcaps-welltaps-setup.tcl' ) # add here
+      order.insert( read_idx + 4, 'add-endcaps-welltaps-setup.tcl' ) # add here
       order.insert( read_idx + 5, 'pd-add-endcaps-welltaps.tcl' ) # add here
       order.insert( read_idx + 6, 'add-power-switches.tcl' ) # add here
       order.remove('add-endcaps-welltaps.tcl')
