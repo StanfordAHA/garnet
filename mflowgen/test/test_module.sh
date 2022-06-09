@@ -216,7 +216,7 @@ if [ "$use_cached" ]; then
         echo "+++ Jimmy up the adks"
         set -x; pwd
         ls -l mflowgen/adks || echo NOPE adks not connected yet
-        ln -s /sim/buildkite-agent/gold/full_chip/mflowgen
+        ln -s /sim/buildkite-agent/mflowgen.master mflowgen
         ls -l mflowgen/adks
         set +x
         echo "--- Continue"
@@ -401,7 +401,7 @@ egrep '^make: .* Error 1' make*.log && exit 13 || echo 'Did not fail. Right?'
 ########################################################################
 echo '+++ SUMMARY of what we did'
 logs=`/bin/ls -t make*.log`
-cat -n $logs | grep 'mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
+cat -n $logs | grep '^mkdir.*output' | sed 's/.output.*//' | sed 's/mkdir -p/  make/' \
     >> tmp.summary \
     || PASS
 cat tmp.summary \

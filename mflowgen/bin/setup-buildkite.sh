@@ -244,30 +244,6 @@ else
 fi
 
 
-##############################################################################
-# LOCK so that no two script instances can run at the same time.
-# In particular, do not want e.g. competing 'git clone' or
-# 'pip install' ops trying to access the same directory etc.
-
-echo "--- LOCK"
-LOCK=/tmp/setup-buildkite.lock
-exec 9>> $LOCK
-date; echo "I am process $$ and I want lock '$LOCK'"
-if ! flock -n 9; then
-    echo "Waiting for process `cat $LOCK` to release the lock..."
-    if ! flock -w 600 9; then
-        echo "ERROR waited ten minutes and could not get lock '$LOCK'"
-        echo "apparently held by process `cat $LOCK`"
-        return 13 || exit 13
-    fi
-fi
-date; echo -n "Lock acquired! Prev owner was "; cat $LOCK
-echo $$ > $LOCK; # Record who has the lock (i.e. me)
-
-# Failsafe: Release lock on exit (if not before).  Note, because this
-# script is sourced, this trap won't kick in until calling process dies.
-trap "flock -u 9" EXIT
-
 ########################################################################
 # Clean up debris in /sim/tmp
 echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
@@ -400,26 +376,31 @@ if [ "$mflowbranch" != "master" ]; then
     mflowgen=$mflowgen.$mflowgen_branch
 fi
 
+# Side effect: defines function 'flockmsg'
+echo "--- LOCK"; source $GARNET_HOME/mflowgen/bin/setup-buildkite-flock.sh
+
 # FIXME/TODO could have better mechanism to decide when to skip mflowgen install;
 # maybe 'cd $mflowgen; git log' and compare to repo or something
 
 if [ "$skip_mflowgen" == "true" ]; then
-  echo "+++ SKIP MFLOWGEN INSTALL because of cmd-line arg '--skip_mflowgen'"
+  echo "--- SKIP MFLOWGEN INSTALL because of cmd-line arg '--skip_mflowgen'"
   echo "WILL USE MFLOWGEN IN '$mflowgen'"
   ls -ld $mflowgen || return 13 || exit 13
 
 else
-  echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"
+  echo "--- INSTALL LATEST MFLOWGEN using branch '$mflowgen_branch'"; date
   echo "Install mflowgen in dir '$mflowgen'"
 
   # Build repo if not exists yet
   if ! test -e $mflowgen; then
+      echo "No mflowgen yet; cloning a new one"
       git clone -b $mflowgen_branch \
           -- https://github.com/mflowgen/mflowgen.git $mflowgen
   fi
 fi
 
 # Check out latest version of the desired branch
+echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
   TOP=$PWD; pip install -e .
@@ -443,8 +424,8 @@ which mflowgen; pip list | grep mflowgen
 # GARNET-PD: Installs garnet-pd package so to enable import
 # and reuse in mflowgen graph construction
 
+echo "--- PIP INSTALL $GARNET_HOME/mflowgen"; date
 pip install -e $GARNET_HOME/mflowgen
-
 
 ########################################################################
 # ADK
@@ -458,7 +439,7 @@ if [ "$skip_mflowgen" == "true" ]; then
     echo "SKIP ADK INSTALL because of cmd-line arg '--skip_mflowgen'"
 
 else
-    echo "CLONE LATEST ADK into mflowgen local repo '$MFLOWGEN_PATH'"
+    echo "USE EXISTING ADK: cd $mflowgen && ln -s /sim/buildkite-agent/adks"
 
     # Note adks must be touchable by current user, thus 
     # cannot e.g. symlink to someone else's existing adk.
@@ -483,6 +464,10 @@ if ! touch $MFLOWGEN_PATH/is_touchable; then
     echo "Setup FAILED"
     return 13 || exit 13
 fi
+
+
+echo "--- UNLOCK "; date
+flockmsg "Release! The lock!"; flock -u 9
 
 
 ########################################################################
@@ -555,6 +540,3 @@ else
     echo "  "`type tclsh`", version $tclsh_version"
 fi
 echo ""
-
-echo "--- UNLOCK "; date
-echo -n "Release! The lock!"; flock -u 9

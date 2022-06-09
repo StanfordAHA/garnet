@@ -65,3 +65,11 @@ set_max_fanout 20 $design_name
 # Make all signals meet good slew
 
 set_max_transition [expr 0.05*${clock_period}] $design_name
+
+# steveri 05/2022
+# Get rid of violation "Early External Delay Assertion" assoc. w/clk_in.
+# Don't care if this clock passes through global controller too quickly.
+# Also we don't use this clock anyway.
+
+set_false_path -hold -from [ get_ports clk_in ] -to [ get_ports clk_out ]
+

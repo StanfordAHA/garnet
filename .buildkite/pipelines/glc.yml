@@ -15,22 +15,29 @@
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
+  SETUP: 'source mflowgen/bin/setup-buildkite.sh'
+  TEST_MODULE_SBFLAGS: '--skip_mflowgen'
+  BUILD: /build/glc${BUILDKITE_BUILD_NUMBER}
 
 steps:
+
+##############################################################################
+# COMMON SETUP to initialize mflowgen
+
+- label: 'setup 2m'
+  commands:
+  - '
+     echo "--- SETUP";
+     set -o pipefail;
+     $$SETUP --dir .;
+    '
+- wait
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
 # Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
-- label: 'PE synth 20m'
+- label: 'glc signoff'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-  - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 110
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
-
-- label: 'MemCore synth 25m'
-  commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps synthesis --debug
-  - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
-
+  - $TEST --build_dir $BUILD --need_space 30G full_chip global_controller
+    --steps cadence-innovus-signoff --debug 
