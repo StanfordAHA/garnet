@@ -1,4 +1,4 @@
-# run PE PWR-AWARE-GLS ONLY
+# run PE PWR-AWARE-GLS ONLY in context of full_chip
 
 # Agents are specified in "pipeline settings" now, see e.g. buildkite.com/tapeout-aha/steps
 # agents: { jobsize: "hours" }
