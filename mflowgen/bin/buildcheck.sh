@@ -137,39 +137,40 @@ if [ "$do_sizes" ]; then
     # Size matters
     # 
     # First area indication comes from synthesis report,
-    # as much as two hours earlierm as in below example:
+    # as much as two hours earlier vs. signoff report, as in the example below:
     # 
-    # % lsl 14-cadence-genus-synthesis/results_syn/final_area.rpt 
     # May  4 08:07 14-cadence-genus-synthesis/results_syn/final_area.rpt
-    # 
-    # % lsl 24-cadence-innovus-signoff/results/Tile_PE.lef
     # May  4 10:16 24-cadence-innovus-signoff/results/Tile_PE.lef
+    # 
     # ------------------------------------------------------------------------
     # % cat 14-cadence-genus-synthesis/results_syn/final_area.rpt
     #     Instance Module  Cell Count  Cell Area  Net Area   Total Area 
     #     -------------------------------------------------------------
     #     Tile_PE            10176      4774.620  2214.236     6988.855 
-    # ------------------------------------------------------------------------
-    # Latest "correct" sizes:
-    #     17-global_controller                 3702
-    #     19-tile_array/17-Tile_PE             6989
-    #     19-tile_array/16-Tile_MemCore       20500
-    #     19-tile_array                       29914
-    #     16-glb_top/9-glb_tile               69069
-    #     16-glb_top                        2839952
-    #     full_chip                        11765284
+
+
+    ####################################################################
+    # Latest actual/"correct" sizes as of Jun 2022
+    #  16-glb_top/8-glb_tile            231449
+    #  16-glb_top                      5139979
+    #  17-global_controller               4044
+    #  19-tile_array/16-Tile_MemCore     17567
+    #  19-tile_array/17-Tile_PE           8131
+    #  19-tile_array                     30277
+    #  full_chip                      14334645
 
     echo ''; echo '+++ SIZE CHECK (synthesis report)'
 
     # Expected / prev values
     declare -A size
-      size[glb_tile]=69069
-      size[glb_top]=2839952
-      size[global_controller]=3702
-      size[Tile_PE]=8131
-      size[Tile_MemCore]=20500
-      size[tile_array]=29914
-      size[full_chip]=11765284
+    size[glb_tile]=231449
+    size[glb_top]=5139979
+    size[global_controller]=4044
+    size[Tile_MemCore]=17567
+    size[Tile_PE]=8131
+    size[tile_array]=30277
+    size[full_chip]=1433645
+
     for f in `find * -path '*results_syn/final_area.rpt'`; do
       msg=''
       # e.g. "17-Tile_PE/24-cadence-innovus-signoff/outputs/design.lef" => "17-Tile_PE"
@@ -194,17 +195,44 @@ if [ "$do_sizes" ]; then
     # 17-tile_array/17-Tile_PE       SIZE  102 BY   88 ;
     # 17-tile_array                  SIZE 4749 BY 1632 ;
 
-    found_lefs=false
-    echo ''; echo '+++ SIZE CHECK (lef)'
+    found_lefs=
+    echo ''; echo '+++ SIZE CHECK (signoff)'
     for f in `find * -name 'design.lef'`; do
-      # e.g. "17-Tile_PE/24-cadence-innovus-signoff/outputs/design.lef" => "17-Tile_PE"
+
+      # E.g. if f="17-Tile_PE/24-cadence-innovus-signoff/outputs/design.lef"
+      # then   f1="17-Tile_PE"
       f1=`echo $f | sed 's/\/[0-9]*-cadence-innovus.*//'`
-      # in case e.g. pwd="17-tile-array" and f="28-cadence-innovus-signoff/outputs/design.lef"
-      # aka full_chip area has no substep so just use e.g. "full_chip"
+
+      # E.g. if f="24-cadence-innovus-signoff/outputs/design.lef"
+      # get f1 from curdir name 'pwd'; e.g. if pwd="19-tile_array" and
+      # f="24-cadence-innovus-signoff/outputs/design.lef" then
+      # f1="tile_array"
       expr $f1 : '.*lef' > /dev/null && f1=$(basename `pwd`)
-      printf "%-30s %s %4.0f %s %4.0f %s\n" $f1 `grep SIZE $f`
+
+      # E.g. `grep SIZE 28-cadence-innovus-signoff/outputs/design.lef`
+      # => "SIZE 4504.140000 BY 1632.384000 ;"
+      lef_size=`grep SIZE $f`
+
+      found_lefs=True
+
+      # Find and report signoff actual area
+      # E.g. if f="17-Tile_PE/24-cadence-innovus-signoff/outputs/design.lef"
+      # then area_rpt="17-Tile_PE/24-cadence-innovus-signoff/reports/signoff.area.rpt"
+      area_rpt=`echo $f | sed 's|outputs/design.lef|reports/signoff.area.rpt|'`
+
+      # E.g. `cat $area_rpt`=
+      #      Hinst Name   Module Name  Inst Count       Total Area   ...
+      #      ------------------------------------------------------- ...
+      #      Interconnect                   17177      6226111.682   ...
+
+      # echo "area_rpt=$area_rpt"
+      signoff_area=`cat $area_rpt | awk 'NR==3{print $3}'`
+
+      # E.g. "16-Tile_MemCore   SIZE  243 BY   88 ; AREA     15645"
+      printf "%-30s %s %4.0f %s %4.0f %s AREA %9.0f\n" $f1 $lef_size $signoff_area
+
     done
-    if [ "$found_lefs" == "false"]; then echo "  No lefs found"; fi
+    if [ "$found_lefs" != "True" ]; then echo "  No lefs found"; fi
 fi
 
 if [ "$do_lvs" ]; then

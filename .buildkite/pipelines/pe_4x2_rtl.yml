@@ -1,0 +1,21 @@
+# Quick-build makes RTL for 4x2 tile_array
+
+env:
+  BDIR:  /sim/buildkite-agent/rtl${BUILDKITE_BUILD_NUMBER}
+  SETUP: 'source mflowgen/bin/setup-buildkite.sh'
+
+steps:
+
+- label: 'Setup and RTL 6m'
+  commands:
+  # RTL builds have a serial dependence on '/usr/local/venv_garnet/bin/aha' :(
+  - '
+     echo "--- SETUP";
+     set -o pipefail;
+     $$SETUP --dir $$BDIR;
+
+     echo "--- MAKE RTL (PE)"; d=$$BDIR/Tile_PE;
+     mkdir $$d; cd $$d;
+     mflowgen run --design $$GARNET_HOME/mflowgen/Tile_PE;
+     make rtl |& tee make-rtl.log;
+    '
