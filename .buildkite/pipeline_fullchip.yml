@@ -198,5 +198,5 @@ steps:
   commands:
   - 'mflowgen/bin/buildcheck.sh $$GOLD --show-all-errors;
      echo ""; echo "+++ SIZE HISTORY"; echo "";
-     test -f /build/size-history && cat size-history;
+     test -f /build/size-history && cat /build/size-history;
     '
