@@ -46,19 +46,28 @@ from lake.modules.reg_cr import Reg
 import os
 from canal.util import IOSide
 from io_core.io_core_magma import IOCoreValid, IOCore
-from sam.onyx.generate_matrices import MatrixGenerator
+from sam.onyx.generate_matrices import MatrixGenerator, get_tensor_from_files
 import numpy
 import random
 
 
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
-                 input_dir=None, output_dir=None, local_mems=True) -> None:
+                 input_dir=None, output_dir=None, local_mems=True, mode_map=None) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
         self.nlb = nlb
         self.graph = graph
+        assert mode_map is not None
+        self.mode_map_ = mode_map
+        self.mode_map = {}
+        # Redictionary the tuples
+        for k, v in self.mode_map_:
+            sub_dict = {}
+            for k_, v_ in v:
+                sub_dict[k_] = v_
+            self.mode_map[k] = sub_dict
         self.core_nodes = {}
         self.glb_dones = []
         self.bespoke = bespoke
@@ -172,6 +181,9 @@ class SparseTBBuilder(m.Generator2):
 
         if self.bespoke is False:
             self.wire_interconnect_ins()
+
+    def set_mode_map(self, mode_map):
+        self.mode_map = mode_map
 
     def zero_alt_inputs(self):
         '''
@@ -540,7 +552,12 @@ class SparseTBBuilder(m.Generator2):
             glb_tx_size = node.get_tx_size()
 
             glb_tensor = node.get_tensor()
-            glb_mode = node.get_mode()
+            glb_mode_ = node.get_mode()
+            if 'vals' not in glb_mode_:
+                glb_mode_ = int(glb_mode_)
+                glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+            else:
+                glb_mode = glb_mode_
 
             # Get the handle for these pins, then instantiate glb
             glb_dir = node.get_direction()
@@ -913,6 +930,8 @@ def coalesce_files(in_dir, out_dir):
     tensors = {}
     all_in_files = os.listdir(in_dir)
     for fname in all_in_files:
+        if fname == "shape":
+            continue
         tname = fname.split("_")[1]
         if tname not in tensors:
             tensors[tname] = 1
@@ -932,6 +951,199 @@ def coalesce_files(in_dir, out_dir):
                 done = True
         # Now do vals
         write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'], out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
+
+
+def software_gold(app_name, matrix_tmp_dir):
+
+    output_matrix = None
+
+    if 'mat_elemadd.gv' in app_name:
+        # PASSES
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+    elif 'mat_elemadd3.gv' in app_name:
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        d_matrix = MatrixGenerator(name="D", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        d_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        d_mat = c_matrix.get_matrix()
+
+        output_matrix = numpy.add(d_mat, numpy.add(b_mat, c_mat,
+                                                   dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16, casting='unsafe')
+    elif 'mat_elemmul.gv' in app_name:
+        # PASSES
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        output_matrix = numpy.multiply(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+    elif 'mat_identity.gv' in app_name:
+        # PASSES
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        output_matrix = b_mat
+    elif 'mat_mattransmul.gv' in app_name:
+        # WRONG GRAPH
+        raise NotImplementedError
+    elif 'mat_residual.gv' in app_name:
+        # WRONG GRAPH
+        raise NotImplementedError
+    elif 'mat_sddmm.gv' in app_name:
+        # NEED DENSE
+        raise NotImplementedError
+    elif 'mat_vecmul_ij.gv' in app_name:
+        # PASSES
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="c", shape=[10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+    elif 'mat_vecmul_ji.gv' in app_name:
+        raise NotImplementedError
+    elif 'matmul_ijk.gv' in app_name:
+        # PASSES
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+    elif 'matmul_ikj.gv' in app_name:
+        raise NotImplementedError
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.matmul(b_mat, c_mat_trans)
+    elif 'matmul_jik.gv' in app_name:
+        # PASSED
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_matrix = numpy.transpose(output_matrix)
+    elif 'matmul_jki.gv' in app_name:
+        raise NotImplementedError
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.matmul(b_mat, c_mat_trans)
+    elif 'matmul_kij.gv' in app_name:
+        raise NotImplementedError
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.matmul(b_mat, c_mat_trans)
+    elif 'matmul_kji.gv' in app_name:
+        raise NotImplementedError
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.matmul(b_mat, c_mat_trans)
+    elif 'tensor3_elemadd.gv' in app_name:
+        b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+    elif 'tensor3_elemmul.gv' in app_name:
+        pass
+    elif 'tensor3_identity.gv' in app_name:
+        pass
+    elif 'tensor3_innerprod.gv' in app_name:
+        pass
+    elif 'tensor3_mttkrp.gv' in app_name:
+        pass
+    elif 'tensor3_ttm.gv' in app_name:
+        pass
+    elif 'tensor3_ttv.gv' in app_name:
+        pass
+    elif 'vec_elemadd.gv' in app_name:
+        # PASSES
+        b_matrix = MatrixGenerator(name="b", shape=[50], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="c", shape=[50], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+    elif 'vec_elemmul.gv' in app_name:
+        # PASSES
+        b_matrix = MatrixGenerator(name="b", shape=[50], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="c", shape=[50], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+    elif 'vec_identity.gv' in app_name:
+        # PASSES
+        b_matrix = MatrixGenerator(name="b", shape=[100], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        output_matrix = b_mat
+    elif 'vec_scalar_mul.gv' in app_name:
+        # PASSES
+        b_matrix = MatrixGenerator(name="b", shape=[1], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="c", shape=[10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+    else:
+        raise NotImplementedError
+
+    return output_matrix
 
 
 if __name__ == "__main__":
@@ -965,28 +1177,37 @@ if __name__ == "__main__":
     matrix_tmp_dir = args.matrix_tmp_dir
     seed = args.seed
 
+    sam_graph = args.sam_graph
+
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
 
     numpy.random.seed(seed)
     random.seed(seed)
 
-    # Generate two matrices...
-    b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-    c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-    b_matrix.dump_outputs()
-    c_matrix.dump_outputs()
+    # # Generate two matrices...
+    # b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    # c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+    # b_matrix.dump_outputs()
+    # c_matrix.dump_outputs()
 
-    b_mat = b_matrix.get_matrix()
-    c_mat = c_matrix.get_matrix()
+    # b_mat = b_matrix.get_matrix()
+    # c_mat = c_matrix.get_matrix()
 
-    if 'identity' in args.sam_graph:
-        output_matrix = b_mat
-    elif 'matmul' in args.sam_graph:
-        output_matrix = numpy.matmul(b_mat, c_mat)
-    elif 'elemmul' in args.sam_graph:
-        output_matrix = numpy.multiply(b_mat, c_mat)
+    # if 'identity' in args.sam_graph:
+    #     output_matrix = b_mat
+    # elif 'matmul' in args.sam_graph:
+    #     # First transpose c_mat
+    #     c_mat_trans = numpy.transpose(c_mat)
+    #     output_matrix = numpy.matmul(b_mat, c_mat_trans)
+    # elif 'elemmul' in args.sam_graph:
+    #     output_matrix = numpy.multiply(b_mat, c_mat)
+    # elif 'elemadd' in args.sam_graph:
+    #     output_matrix = numpy.add(b_mat, c_mat)
+    # else:
+    #     raise ValueError
 
+    output_matrix = software_gold(sam_graph, matrix_tmp_dir)
     out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format='CSF', dump_dir="./gold_out", tensor=output_matrix)
     out_mat.dump_outputs()
 
@@ -1002,18 +1223,23 @@ if __name__ == "__main__":
         for filename in os.listdir(output_dir):
             ret = os.remove(output_dir + "/" + filename)
 
+    # Get SAM graph
+    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
+    mode_map = sdg.get_mode_map()
+    graph = sdg.get_graph()
+
     nlb = None
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 9
+        chip_width = 10
         # chip_height = 32
-        chip_height = 10
+        chip_height = 12
         num_tracks = 5
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
         # altcore = [(ScannerCore, {}),
-        altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}),
-                   (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems}),
+        altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}), (IOCoreReadyValid, {}),
+                   (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems, 'physical_mem': False}),
                    (IntersectCore, {'use_merger': True}), (FakePECore, {}), (RepeatCore, {}),
                    (RepeatSignalGeneratorCore, {'passthru': not use_fork}), (RegCore, {})]
 
@@ -1034,12 +1260,8 @@ if __name__ == "__main__":
 
         nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir)
 
-    # Get SAM graph
-    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
-    graph = sdg.get_graph()
-
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
-                          output_dir=output_dir, local_mems=not args.remote_mems)
+                          output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
 
     stb.display_names()
 
@@ -1104,12 +1326,26 @@ if __name__ == "__main__":
     #     tester.step(2)
     tester.poke(stb.io.flush, 0)
     tester.eval()
-    for i in range(1000):
+    for i in range(5000):
         tester.step(2)
-    tester.wait_until_high(tester.circuit.done, timeout=2000)
+        tester_if = tester._if(tester.circuit.done)
+        tester_if.print("Test is done...\n")
+        tester_if.finish()
+    # tester.wait_until_high(tester.circuit.done, timeout=2000)
 
     from conftest import run_tb_fn
     run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd="mek_dump")
     # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
 
     stb.display_names()
+
+    # Now check it...
+    sim_mat = get_tensor_from_files(name='X', files_dir=output_dir, shape=output_matrix.shape)
+    sim_mat_np = sim_mat.get_matrix()
+
+    print(f"GOLD")
+    print(output_matrix)
+    print(f"SIM")
+    print(sim_mat_np)
+
+    assert numpy.array_equal(output_matrix, sim_mat_np)

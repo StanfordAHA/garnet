@@ -25,7 +25,8 @@ class BuffetCore(LakeCoreBase):
                  data_width=16,  # CGRA Params
                  config_data_width=32,
                  config_addr_width=8,
-                 local_mems=True):
+                 local_mems=True,
+                 physical_mem=False):
 
         buffet_name = "Buffet"
         super().__init__(config_data_width=config_data_width,
@@ -42,6 +43,8 @@ class BuffetCore(LakeCoreBase):
         cache_key = (self.data_width,
                      self.config_data_width,
                      self.config_addr_width,
+                     local_mems,
+                     physical_mem,
                      "BuffetCore")
 
         # Check for circuit caching
@@ -51,7 +54,8 @@ class BuffetCore(LakeCoreBase):
             # in the following steps.
             self.dut = BuffetLike(data_width=data_width,
                                   num_ID=2,
-                                  local_memory=self.local_mems)
+                                  local_memory=self.local_mems,
+                                  physical_mem=physical_mem)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
