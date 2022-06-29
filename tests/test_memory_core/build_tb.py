@@ -1085,6 +1085,7 @@ def software_gold(app_name, matrix_tmp_dir):
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans)
     elif 'tensor3_elemadd.gv' in app_name:
+        # Passes
         b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1340,7 +1341,7 @@ if __name__ == "__main__":
     stb.display_names()
 
     # Now check it...
-    sim_mat = get_tensor_from_files(name='X', files_dir=output_dir, shape=output_matrix.shape)
+    sim_mat = get_tensor_from_files(name='X', files_dir=output_dir, shape=output_matrix.shape, base=16, early_terminate='x')
     sim_mat_np = sim_mat.get_matrix()
 
     print(f"GOLD")
