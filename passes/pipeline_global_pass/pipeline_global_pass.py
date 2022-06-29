@@ -65,7 +65,7 @@ def pipeline_global_signals(interconnect: Interconnect, interval):
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
         # We only want to do this on PE and memory tiles
-        if tile_core is None or "config" not in tile_core.ports or y == 0:
+        if tile_core is None or "config" not in tile_core.ports:
             continue
         else:
             if interval != 0 and y % interval == 0 and ((x, y+1) in interconnect.tile_circuits):
