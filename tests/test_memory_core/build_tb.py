@@ -1134,7 +1134,14 @@ def software_gold(app_name, matrix_tmp_dir):
     elif 'tensor3_mttkrp.gv' in app_name:
         pass
     elif 'tensor3_ttm.gv' in app_name:
-        pass
+        b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
     elif 'tensor3_ttv.gv' in app_name:
         pass
     elif 'vec_elemadd.gv' in app_name:
