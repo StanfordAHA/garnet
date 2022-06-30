@@ -98,6 +98,8 @@ def wire_core_flush_pass(interconnect: Interconnect):
         # add the flush signal to global signals
         interconnect.globals = list(interconnect.globals) + [interconnect.ports.flush.qualified_name()]
         for tile in interconnect.tile_circuits.values():
+            # If we have flushes in other tiles, we'll add a flush input to all tiles
+            # so pass-through routing of flush signal works
             if "flush" not in tile.ports:
-                continue
+                tile.add_ports(flush=magma.In(TBit))
             interconnect.wire(interconnect.ports.flush, tile.ports.flush)
