@@ -689,6 +689,7 @@ class SparseTBBuilder(m.Generator2):
 
                 if str(glb_mode) == "vals":
                     f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
+                    f2 = f1
                 else:
                     f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_seg\""
                     f2 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
@@ -853,6 +854,15 @@ class SparseTBBuilder(m.Generator2):
             dst = edge.get_destination()
             src_name = src
             dst_name = dst
+            print("MEK")
+            print(edge)
+            print(src_name)
+            print(src)
+            print(dst_name)
+            print(dst)
+            print(self.core_nodes[src_name])
+            print(self.core_nodes[dst_name])
+
             addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
             if addtl_conns is not None:
                 self.nlb.add_connections(addtl_conns, defer_placement=True)
@@ -1085,7 +1095,7 @@ def software_gold(app_name, matrix_tmp_dir):
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans)
     elif 'tensor3_elemadd.gv' in app_name:
-        # Passes
+        # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1095,11 +1105,32 @@ def software_gold(app_name, matrix_tmp_dir):
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
     elif 'tensor3_elemmul.gv' in app_name:
-        pass
+        # NEED MAPPING
+        b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
     elif 'tensor3_identity.gv' in app_name:
-        pass
+        # PASSES
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        # First transpose c_mat
+        output_matrix = b_mat
     elif 'tensor3_innerprod.gv' in app_name:
-        pass
+        b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        # First transpose c_mat
+        output_matrix = numpy.zeros([1])
+        output_matrix[0] = numpy.sum(numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16)
     elif 'tensor3_mttkrp.gv' in app_name:
         pass
     elif 'tensor3_ttm.gv' in app_name:
@@ -1327,7 +1358,7 @@ if __name__ == "__main__":
     #     tester.step(2)
     tester.poke(stb.io.flush, 0)
     tester.eval()
-    for i in range(5000):
+    for i in range(10000):
         tester.step(2)
         tester_if = tester._if(tester.circuit.done)
         tester_if.print("Test is done...\n")
