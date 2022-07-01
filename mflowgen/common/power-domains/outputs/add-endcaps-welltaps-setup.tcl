@@ -72,7 +72,7 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
        # the pitch was off by 1 for some reason
        set tap_interval [expr $horiz_tap_pitch + $polypitch_x]
        # Start the taps 2 stripe set intervals to the left of the pwr switches
-       set tap_edge_offset [expr $M3_str_offset + (2 * $M3_str_intraset_spacing + $M3_str_width) - ($tap_width / 2) + $horiz_switch_pitch - (2 * $M3_str_interset_pitch)]
+       set tap_edge_offset [expr $M3_str_offset + (2 * $M3_str_intraset_spacing + $M3_str_width) - ($tap_width / 3) + $horiz_switch_pitch - (2 * $M3_str_interset_pitch)]
        # Try adding well tap to SD domain
        addWellTap -cell $aon_tap_cell \
                   -prefix WELLTAP \
