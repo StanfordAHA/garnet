@@ -1203,6 +1203,9 @@ if __name__ == "__main__":
     parser.add_argument('--matrix_tmp_dir',
                         type=str,
                         default="/Users/maxwellstrange/Documents/SPARSE/garnet/tmp_matrix_inputs")
+    parser.add_argument('--gold_dir',
+                        type=str,
+                        default="/Users/maxwellstrange/Documents/SPARSE/garnet/gold_out")
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
@@ -1215,6 +1218,8 @@ if __name__ == "__main__":
     use_fork = args.ic_fork
     matrix_tmp_dir = args.matrix_tmp_dir
     seed = args.seed
+    test_dump_dir = args.test_dump_dir
+    gold_dir = args.gold_dir
 
     sam_graph = args.sam_graph
 
@@ -1247,7 +1252,7 @@ if __name__ == "__main__":
     #     raise ValueError
 
     output_matrix = software_gold(sam_graph, matrix_tmp_dir)
-    out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format='CSF', dump_dir="./gold_out", tensor=output_matrix)
+    out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format='CSF', dump_dir=gold_dir, tensor=output_matrix)
     out_mat.dump_outputs()
 
     # Now coalesce them into combo files and put in final landing zone
@@ -1373,7 +1378,7 @@ if __name__ == "__main__":
     # tester.wait_until_high(tester.circuit.done, timeout=2000)
 
     from conftest import run_tb_fn
-    run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd="mek_dump")
+    run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd=test_dump_dir)
     # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
 
     stb.display_names()
