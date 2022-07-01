@@ -35,5 +35,3 @@ addPowerSwitch -column -powerDomain TOP \
      -noFixedStdCellOverlap  \
      -globalSwitchCellName $switch_name
 
-
-
