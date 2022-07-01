@@ -34,8 +34,9 @@ set aon_width 160
 # AON region can start an end on an even-numbered row.
 set aon_height 24
 
-# Sets AON box horizontal offset from center in # of unit stdcell widths
-set aon_horiz_offset 0
+# Sets AON box horizontal offset from center
+# We went to move this to the right of the SRAM macros for mem tile.
+set aon_horiz_offset 80
 
-# Sets AON box vertical offset from center in # of unit std cell heights
+# Sets AON box vertical offset from center
 set aon_vert_offset 15
