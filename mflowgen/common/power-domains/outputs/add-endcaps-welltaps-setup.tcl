@@ -30,8 +30,8 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
     set core_llx [dbGet top.fPlan.coreBox_llx]
     
     # Only add boundary taps if ADK specifies an AON boundary tap cell
-    if {[info exists ADK_AON_TAP_CELL] && [expr {$ADK_AON_TAP_CELL ne ""}]} {
-        set aon_tap_cell $ADK_AON_TAP_CELL
+    if {[info exists ADK_AON_BOUNDARY_TAP_CELL] && [expr {$ADK_AON_BOUNDARY_TAP_CELL ne ""}]} {
+        set aon_tap_cell $ADK_AON_BOUNDARY_TAP_CELL
         set aon_tap_cell_width [dbGet [dbGetCellByName $aon_tap_cell].size_x]
 
         # Align tap cells with M3 pitch so that the M1 VPP pin is directly aligned with the M3 VDD net
@@ -61,7 +61,7 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
            set i [expr $i + 1]
         }
     } else {
-        echo "WARNING: Not adding boundary taps because ADK doesn't specify ADK_AON_TAP_CELL"
+        echo "WARNING: Not adding boundary taps because ADK doesn't specify ADK_AON_BOUNDARY_TAP_CELL"
     }
 }
 
