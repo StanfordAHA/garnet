@@ -74,7 +74,7 @@ def construct():
     # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
     'glb_tile_mem_size' : 256,   # 256*16 => 4M global buffer
     # Power Domains
-    'PWR_AWARE'         : False,
+    'PWR_AWARE'         : True,
     # Include Garnet?
     'soc_only'          : False,
     # Include SoC core? (use 0 for false, 1 for true)
