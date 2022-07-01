@@ -23,7 +23,7 @@ def construct():
 
   adk_name = get_sys_adk()
   adk_view = 'view-standard'
-  pwr_aware = False
+  pwr_aware = True
 
   if pwr_aware:
       adk_view = adk_view + '-pm'
