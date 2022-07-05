@@ -43,6 +43,7 @@ from lake.modules.write_scanner import WriteScanner
 from lake.modules.pe import PE
 from lake.modules.intersect import Intersect
 from lake.modules.reg_cr import Reg
+from lake.modules.counter import Counter
 import os
 from canal.util import IOSide
 from io_core.io_core_magma import IOCoreValid, IOCore
@@ -86,7 +87,8 @@ class SparseTBBuilder(m.Generator2):
                 stall=m.In(m.Bit),
                 flush=m.In(m.Bit),
                 config=m.In(ConfigurationType(32, 32)),
-                done=m.Out(m.Bit)
+                done=m.Out(m.Bit),
+                cycle_count=m.Out(m.Bits[64])
             )
 
             # CGRA Path
@@ -127,6 +129,17 @@ class SparseTBBuilder(m.Generator2):
             # Make sure to remove the flush port or it will get grounded.
             self.interconnect_ins.remove(str(flush_h))
             self.interconnect_ins.remove(str(flush_valid_h))
+
+            # Now add the counter
+            ctr = Counter(name="cycle_counter", bitwidth=64)
+            ctr_magma = kratos.util.to_magma(ctr,
+                                             flatten_array=False,
+                                             check_multiple_driver=False,
+                                             optimize_if=False,
+                                             check_flip_flop_always_ff=False)
+
+            ctr_magma_inst = ctr_magma()
+            m.wire(self.io.cycle_count, ctr_magma_inst.count_out)
 
         else:
 
