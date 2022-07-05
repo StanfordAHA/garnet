@@ -131,7 +131,7 @@ class SparseTBBuilder(m.Generator2):
             self.interconnect_ins.remove(str(flush_valid_h))
 
             # Now add the counter
-            ctr = Counter(name="cycle_counter", bitwidth=64)
+            ctr = Counter(name="cycle_counter", bitwidth=64, pos_reset=True)
             ctr_magma = kratos.util.to_magma(ctr,
                                              flatten_array=False,
                                              check_multiple_driver=False,
@@ -140,6 +140,9 @@ class SparseTBBuilder(m.Generator2):
 
             ctr_magma_inst = ctr_magma()
             m.wire(self.io.cycle_count, ctr_magma_inst.count_out)
+            m.wire(self.io.clk, ctr_magma_inst.clk)
+            m.wire(self.io.rst_n, ctr_magma_inst.rst_n)
+            m.wire(self.io.flush, ctr_magma_inst.flush[0])
 
         else:
 
@@ -1387,6 +1390,7 @@ if __name__ == "__main__":
         tester.step(2)
         tester_if = tester._if(tester.circuit.done)
         tester_if.print("Test is done...\n")
+        tester_if.print("Cycle Count...%d\n", stb.io.cycle_count)
         tester_if.finish()
     # tester.wait_until_high(tester.circuit.done, timeout=2000)
 
