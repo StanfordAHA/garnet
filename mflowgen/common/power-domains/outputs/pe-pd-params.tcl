@@ -19,7 +19,10 @@ set stripes_per_tap 12
 # with M3 VDD stripes. stripes_per switch controls 
 # space betwen power switches as a multiple of the M3
 # power stripe pitch.
-set stripes_per_switch 12
+#
+# If this is set to 12 in amber (TSMC) design, get five columns of switches
+# But we only want/need three columns, so set it to 24
+set stripes_per_switch 24
 
 
 # AON box floorplanning params
