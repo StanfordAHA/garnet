@@ -42,4 +42,6 @@ set aon_height 24
 set aon_horiz_offset 0
 
 # Sets AON box vertical offset from center in # of unit std cell heights
-set aon_vert_offset 15
+# 15 => centered in upper half of cell ish (TSMC amber)
+# try 30, see if that's closer to where it was before
+set aon_vert_offset 30
