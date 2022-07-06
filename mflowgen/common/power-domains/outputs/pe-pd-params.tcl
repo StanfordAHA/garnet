@@ -23,7 +23,9 @@ set stripes_per_tap 12
 # If this is set to 12 in amber (TSMC) design, get five columns of switches.
 # But we only want/need three columns, so set it to 24.
 # Okay 24 only gives two columns. Surely 18 will do the right thing :/
-set stripes_per_switch 18
+# 18 has three stripes kind of all in the middle of the chip
+# 20 is probably the right number
+set stripes_per_switch 20
 
 
 # AON box floorplanning params
