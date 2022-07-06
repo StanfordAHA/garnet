@@ -20,12 +20,10 @@ set stripes_per_tap 12
 # space betwen power switches as a multiple of the M3
 # power stripe pitch.
 #
-# If this is set to 12 in amber (TSMC) design, get five columns of switches.
-# But we only want/need three columns, so set it to 24.
-# Okay 24 only gives two columns. Surely 18 will do the right thing :/
-# 18 has three stripes kind of all in the middle of the chip
-# 20 is probably the right number
-set stripes_per_switch 20
+# If set to 12 in amber (TSMC) design, get five columns of switches.
+# If set to 18, get 3 cols symmetrically placed, center col at center chip.
+# 3 cols vs. 5 cuts build time from 8 hours ish to 7 ish.
+set stripes_per_switch 18
 
 
 # AON box floorplanning params
