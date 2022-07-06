@@ -23,7 +23,9 @@ set stripes_per_tap 12
 # If set to 12 in amber (TSMC) design, get five columns of switches.
 # If set to 18, get 3 cols symmetrically placed, center col at center chip.
 # 3 cols vs. 5 cuts build time from 8 hours ish to 7 ish.
-set stripes_per_switch 18
+# ?? Does asymmetrical 20 do better than symmetrical 18?
+# set stripes_per_switch 18
+set stripes_per_switch 20
 
 
 # AON box floorplanning params
