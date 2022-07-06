@@ -33,5 +33,5 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$MBUILD --need_space 30G;
      set -o pipefail;
-     echo exit 13 | make Tile_Mem |& tee make-mem.log;
+     echo exit 13 | make Tile_MemCore |& tee make-mem.log;
     '
