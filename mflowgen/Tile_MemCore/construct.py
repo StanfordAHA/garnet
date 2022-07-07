@@ -22,7 +22,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = get_sys_adk()
-  adk_view = 'view-standard'
+  adk_view = 'multivt'
   pwr_aware = True
 
   if pwr_aware:
