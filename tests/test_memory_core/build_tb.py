@@ -50,7 +50,7 @@ from io_core.io_core_magma import IOCoreValid, IOCore
 from sam.onyx.generate_matrices import MatrixGenerator, get_tensor_from_files
 import numpy
 import random
-
+from sam.sim.test.test import read_inputs
 
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
@@ -956,7 +956,7 @@ def coalesce_files(in_dir, out_dir):
     tensors = {}
     all_in_files = os.listdir(in_dir)
     for fname in all_in_files:
-        if fname == "shape":
+        if "shape" in fname:
             continue
         tname = fname.split("_")[1]
         if tname not in tensors:
@@ -979,16 +979,22 @@ def coalesce_files(in_dir, out_dir):
         write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'], out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
 
 
-def software_gold(app_name, matrix_tmp_dir):
+def software_gold(app_name, matrix_tmp_dir, give_tensor=false):
 
     output_matrix = None
 
     if 'mat_elemadd.gv' in app_name:
         # PASSES
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        c_matrix.dump_outputs()
+        if give_tensor:
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "Bshape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "Cshape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x')
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
+        else:
+            b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            b_matrix.dump_outputs()
+            c_matrix.dump_outputs()
 
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
@@ -1045,6 +1051,16 @@ def software_gold(app_name, matrix_tmp_dir):
         raise NotImplementedError
     elif 'matmul_ijk.gv' in app_name:
         # PASSES
+        if give_tensor:
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "Bshape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "Cshape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x')
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
+        else:
+            b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            b_matrix.dump_outputs()
+            c_matrix.dump_outputs()
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1227,6 +1243,7 @@ if __name__ == "__main__":
     parser.add_argument('--bespoke', action="store_true")
     parser.add_argument('--remote_mems', action="store_true")
     parser.add_argument('--ic_fork', action="store_true")
+    parser.add_argument('--give_tensor', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1236,6 +1253,7 @@ if __name__ == "__main__":
     seed = args.seed
     test_dump_dir = args.test_dump_dir
     gold_dir = args.gold_dir
+    give_tensor = args.give_tensor
 
     sam_graph = args.sam_graph
 
@@ -1267,7 +1285,7 @@ if __name__ == "__main__":
     # else:
     #     raise ValueError
 
-    output_matrix = software_gold(sam_graph, matrix_tmp_dir)
+    output_matrix = software_gold(sam_graph, matrix_tmp_dir, give_tensor)
     out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format='CSF', dump_dir=gold_dir, tensor=output_matrix)
     out_mat.dump_outputs()
 
