@@ -20,8 +20,7 @@ set stripes_per_tap 12
 # space betwen power switches as a multiple of the M3
 # power stripe pitch.
 
-# set stripes_per_switch 12
-set stripes_per_switch 26
+set stripes_per_switch 12
 
 
 # AON box floorplanning params
@@ -29,7 +28,6 @@ set stripes_per_switch 26
 # Sets width of AON region as a multiple of the 
 # unit stdcell width
 set aon_width 160
-# set aon_width 110
 
 # Sets height of AON region as a multiple of the
 # unit stdcell height.
@@ -40,8 +38,12 @@ set aon_height 24
 # Sets AON box horizontal offset from center
 # We went to move this to the right of the SRAM macros for mem tile.
 set aon_horiz_offset 80
-# set aon_horiz_offset -80
 
 # Sets AON box vertical offset from center
 set aon_vert_offset 15
-# set aon_vert_offset 30
+
+# Experimental overrides
+set stripes_per_switch 12
+set aon_width 160
+set aon_horiz_offset 80
+set aon_vert_offset 30
