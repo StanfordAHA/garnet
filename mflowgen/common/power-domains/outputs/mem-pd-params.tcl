@@ -47,5 +47,5 @@ set aon_vert_offset 15
 # Experimental overrides
 set stripes_per_switch 26
 set aon_width 160
-set aon_horiz_offset 80
-set aon_vert_offset 26
+set aon_horiz_offset -80
+set aon_vert_offset 15
