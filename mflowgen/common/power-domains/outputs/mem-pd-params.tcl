@@ -20,9 +20,8 @@ set stripes_per_tap 12
 # space betwen power switches as a multiple of the M3
 # power stripe pitch.
 
-# sps12 yields 14 columns of switches and 4.5 hr runtime
-# sps26 yields six columns and finishes in 2.5 hr
-# set stripes_per_switch 12
+# sps12 (original default) yields 14 columns of switches and 4.5 hr runtime
+# sps26 (below) yields six columns and finishes in 2.5 hr
 set stripes_per_switch 26
 
 # AON box floorplanning params
@@ -45,7 +44,7 @@ set aon_horiz_offset 80
 set aon_vert_offset 15
 
 # Experimental overrides
-set stripes_per_switch 18
-set aon_width 160
-set aon_horiz_offset -80
-set aon_vert_offset 30
+# set stripes_per_switch 18
+# set aon_width 160
+# set aon_horiz_offset -80
+# set aon_vert_offset 30
