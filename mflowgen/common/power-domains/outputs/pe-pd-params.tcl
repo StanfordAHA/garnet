@@ -24,9 +24,8 @@ set stripes_per_tap 12
 # If set to 18, get 3 cols symmetrically placed, center col at center chip.
 # 3 cols vs. 5 cuts build time from 8 hours ish to 7 ish.
 # ?? Does asymmetrical 20 do better than symmetrical 18?
-# set stripes_per_switch 18
-set stripes_per_switch 20
-
+# NO! 20 takes 7 hours, 18 "just" 5h
+set stripes_per_switch 18
 
 # AON box floorplanning params
 
