@@ -1,6 +1,6 @@
 import magma
 from gemstone.common.core import ConfigurableCore, PnRTag, ConfigurationType, Core
-from gemstone.generator import FromMagma
+from gemstone.generator import FromMagma, Const
 from kratos import Generator, posedge, always_ff, mux, ternary
 from kratos.util import to_magma
 
@@ -209,7 +209,7 @@ class KratosIOCoreDelay(Generator):
 
 
 class IOCoreDelay(ConfigurableCore, IOCoreBase):
-    def __init__(self, config_addr_width=8, config_data_width=32):
+    def __init__(self, config_addr_width=8, config_data_width=32, ready_valid=False):
         super().__init__(config_addr_width, config_data_width)
         self._add_ports()
         self.add_port("config", magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
@@ -221,6 +221,22 @@ class IOCoreDelay(ConfigurableCore, IOCoreBase):
             for prefix in ["glb2io", "io2f", "f2io", "io2glb"]:
                 port_name = f"{prefix}_{width}"
                 self.wire(self.ports[port_name], self.core.ports[port_name])
+            # add dummy ready-valid interface
+            if ready_valid:
+                p1 = self.add_port(f"glb2io_{width}_valid", magma.BitIn)
+                p2 = self.add_port(f"io2f_{width}_valid", magma.BitOut)
+                self.wire(p1, p2)
+                p1 = self.add_port(f"glb2io_{width}_ready", magma.BitOut)
+                p2 = self.add_port(f"io2f_{width}_ready", magma.BitIn)
+                self.wire(p1, p2)
+
+                p1 = self.add_port(f"io2glb_{width}_valid", magma.BitOut)
+                p2 = self.add_port(f"f2io_{width}_valid", magma.BitIn)
+                self.wire(p1, p2)
+                p1 = self.add_port(f"io2glb_{width}_ready", magma.BitIn)
+                p2 = self.add_port(f"f2io_{width}_ready", magma.BitOut)
+                self.wire(p1, p2)
+
             # add config
             for prefix in ["glb2io", "io2glb"]:
                 reg_name = f"{prefix}_{width}_delay_en"

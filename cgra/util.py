@@ -93,7 +93,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
                 else:
-                    core = IOCoreDelay()
+                    core = IOCoreDelay(ready_valid=ready_valid)
             else:
                 if tile_layout_option == 0:
                     use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
@@ -101,11 +101,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     use_mem_core = (y - y_min) % tile_max >= mem_tile_ratio
 
                 if use_mem_core:
-                    core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush)
+                    core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush,
+                                   ready_valid=ready_valid)
                 else:
                     core = PeakCore(pe_fc, ready_valid=ready_valid)
                     if add_pond:
-                        additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
+                        additional_core[(x, y)] = PondCore(gate_flush=not harden_flush,
+                                                           ready_valid=ready_valid)
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
