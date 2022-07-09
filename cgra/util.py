@@ -103,7 +103,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 if use_mem_core:
                     core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush)
                 else:
-                    core = PeakCore(pe_fc)
+                    core = PeakCore(pe_fc, ready_valid=ready_valid)
                     if add_pond:
                         additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
             cores[(x, y)] = core
