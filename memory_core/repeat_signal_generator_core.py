@@ -24,7 +24,8 @@ class RepeatSignalGeneratorCore(LakeCoreBase):
                  data_width=16,  # CGRA Params
                  config_data_width=32,
                  config_addr_width=8,
-                 passthru=True):
+                 passthru=True,
+                 fifo_depth=8):
 
         lookup_name = "RepeatSignalGenerator"
         super().__init__(config_data_width=config_data_width,
@@ -50,7 +51,8 @@ class RepeatSignalGeneratorCore(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.dut = RepeatSignalGenerator(data_width=data_width,
-                                             passthru=self.passthru)
+                                             passthru=self.passthru,
+                                             fifo_depth=fifo_depth)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,

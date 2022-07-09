@@ -15,8 +15,8 @@ module glb_read #(
     input logic flush
 );
 
-logic [15:0] local_mem_0 [0:1023];
-logic [15:0] local_mem_1 [0:1023];
+logic [15:0] local_mem_0 [0:2047];
+logic [15:0] local_mem_1 [0:2047];
 integer num_rx;
 integer size_0;
 integer size_1;

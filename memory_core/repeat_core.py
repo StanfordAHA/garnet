@@ -23,7 +23,8 @@ class RepeatCore(LakeCoreBase):
     def __init__(self,
                  data_width=16,  # CGRA Params
                  config_data_width=32,
-                 config_addr_width=8):
+                 config_addr_width=8,
+                 fifo_depth=8):
 
         lookup_name = "Repeat"
         super().__init__(config_data_width=config_data_width,
@@ -46,7 +47,8 @@ class RepeatCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = Repeat(data_width=data_width)
+            self.dut = Repeat(data_width=data_width,
+                              fifo_depth=fifo_depth)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,

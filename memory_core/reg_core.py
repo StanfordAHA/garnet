@@ -24,7 +24,8 @@ class RegCore(LakeCoreBase):
     def __init__(self,
                  data_width=16,  # CGRA Params
                  config_data_width=32,
-                 config_addr_width=8):
+                 config_addr_width=8,
+                 fifo_depth=8):
 
         reg_name = "Reg"
         super().__init__(config_data_width=config_data_width,
@@ -47,7 +48,8 @@ class RegCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = Reg(data_width=data_width)
+            self.dut = Reg(data_width=data_width,
+                           fifo_depth=fifo_depth)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,

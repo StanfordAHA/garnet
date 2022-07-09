@@ -25,7 +25,8 @@ class IntersectCore(LakeCoreBase):
                  data_width=16,  # CGRA Params
                  config_data_width=32,
                  config_addr_width=8,
-                 use_merger=True):
+                 use_merger=True,
+                 fifo_depth=8):
 
         scan_name = "Intersector"
         super().__init__(config_data_width=config_data_width,
@@ -51,7 +52,8 @@ class IntersectCore(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.dut = Intersect(data_width=self.data_width,
-                                 use_merger=self.use_merger)
+                                 use_merger=self.use_merger,
+                                 fifo_depth=fifo_depth)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,

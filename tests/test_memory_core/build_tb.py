@@ -52,6 +52,7 @@ import numpy
 import random
 from sam.sim.test.test import read_inputs
 
+
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
                  input_dir=None, output_dir=None, local_mems=True, mode_map=None) -> None:
@@ -979,7 +980,7 @@ def coalesce_files(in_dir, out_dir):
         write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'], out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
 
 
-def software_gold(app_name, matrix_tmp_dir, give_tensor=false):
+def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
 
     output_matrix = None
 
@@ -1061,10 +1062,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=false):
             c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
             b_matrix.dump_outputs()
             c_matrix.dump_outputs()
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix.dump_outputs()
-        c_matrix.dump_outputs()
+        # b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # b_matrix.dump_outputs()
+        # c_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
         # First transpose c_mat
@@ -1238,6 +1239,9 @@ if __name__ == "__main__":
     parser.add_argument('--gold_dir',
                         type=str,
                         default="/Users/maxwellstrange/Documents/SPARSE/garnet/gold_out")
+    parser.add_argument('--fifo_depth',
+                        type=int,
+                        default=8)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
@@ -1254,6 +1258,7 @@ if __name__ == "__main__":
     test_dump_dir = args.test_dump_dir
     gold_dir = args.gold_dir
     give_tensor = args.give_tensor
+    fifo_depth = args.fifo_depth
 
     sam_graph = args.sam_graph
 
@@ -1316,10 +1321,12 @@ if __name__ == "__main__":
         num_tracks = 5
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
         # altcore = [(ScannerCore, {}),
-        altcore = [(IOCoreReadyValid, {}), (ScannerCore, {}), (IOCoreReadyValid, {}),
-                   (WriteScannerCore, {}), (BuffetCore, {'local_mems': not args.remote_mems, 'physical_mem': False}),
-                   (IntersectCore, {'use_merger': True}), (FakePECore, {}), (RepeatCore, {}),
-                   (RepeatSignalGeneratorCore, {'passthru': not use_fork}), (RegCore, {})]
+        altcore = [(IOCoreReadyValid, {'fifo_depth': 2}), (ScannerCore, {'fifo_depth': fifo_depth}), (IOCoreReadyValid, {'fifo_depth': 2}),
+                   (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
+                                                                                 'physical_mem': False, 'fifo_depth': fifo_depth}),
+                   (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}), (FakePECore, {'fifo_depth': fifo_depth}),
+                   (RepeatCore, {'fifo_depth': fifo_depth}),
+                   (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    # io_sides=NetlistBuilder.io_sides(),
@@ -1404,7 +1411,7 @@ if __name__ == "__main__":
     #     tester.step(2)
     tester.poke(stb.io.flush, 0)
     tester.eval()
-    for i in range(10000):
+    for i in range(100000):
         tester.step(2)
         tester_if = tester._if(tester.circuit.done)
         tester_if.print("Test is done...\n")
