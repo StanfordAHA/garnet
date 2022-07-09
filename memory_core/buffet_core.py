@@ -26,7 +26,8 @@ class BuffetCore(LakeCoreBase):
                  config_data_width=32,
                  config_addr_width=8,
                  local_mems=True,
-                 physical_mem=False):
+                 physical_mem=False,
+                 fifo_depth=8):
 
         buffet_name = "Buffet"
         super().__init__(config_data_width=config_data_width,
@@ -55,7 +56,8 @@ class BuffetCore(LakeCoreBase):
             self.dut = BuffetLike(data_width=data_width,
                                   num_ID=2,
                                   local_memory=self.local_mems,
-                                  physical_mem=physical_mem)
+                                  physical_mem=physical_mem,
+                                  fifo_depth=fifo_depth)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,

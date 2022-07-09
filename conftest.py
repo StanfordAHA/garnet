@@ -89,7 +89,7 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
                           "directory": tempdir,
                           "flags": ["-Wno-fatal"],
                           "disp_type": "realtime",
-                          "num_cycles": 10000 * 10
+                          "num_cycles": 100000 * 10
         }
         if not use_verilator:
             target = "system-verilog"

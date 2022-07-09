@@ -25,7 +25,8 @@ class IOCoreReadyValid(LakeCoreBase):
                  data_width=16,  # CGRA Params
                  config_data_width=32,
                  config_addr_width=8,
-                 tracks_supported=[1, 16, 17]):
+                 tracks_supported=[1, 16, 17],
+                 fifo_depth=2):
 
         buffet_name = "IOCoreReadyValid"
         super().__init__(config_data_width=config_data_width,
@@ -50,7 +51,8 @@ class IOCoreReadyValid(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.dut = IOCore(data_width=data_width,
-                              tracks_supported=self.tracks_supported)
+                              tracks_supported=self.tracks_supported,
+                              fifo_depth=fifo_depth)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
