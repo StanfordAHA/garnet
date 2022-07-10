@@ -1,17 +1,17 @@
 module cgra (
-    input  logic                                        clk,
-    input  logic                                        reset,
-    input  logic [NUM_PRR-1:0]                          stall,
-    input  logic [NUM_PRR-1:0]                          cfg_wr_en,
-    input  logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cfg_wr_addr,
-    input  logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0] cfg_wr_data,
-    input  logic [NUM_PRR-1:0]                          cfg_rd_en,
-    input  logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0] cfg_rd_addr,
-    output logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0] cfg_rd_data,
-    input  logic [NUM_PRR-1:0]                          io1_g2io,
-    input  logic [NUM_PRR-1:0][                   15:0] io16_g2io,
-    output logic [NUM_PRR-1:0]                          io1_io2g,
-    output logic [NUM_PRR-1:0][                   15:0] io16_io2g
+    input  logic                                              clk,
+    input  logic                                              reset,
+    input  logic [NUM_PRR-1:0]                                stall,
+    input  logic [NUM_PRR-1:0]                                cfg_wr_en,
+    input  logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0]       cfg_wr_addr,
+    input  logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0]       cfg_wr_data,
+    input  logic [NUM_PRR-1:0]                                cfg_rd_en,
+    input  logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0]       cfg_rd_addr,
+    output logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0]       cfg_rd_data,
+    input  logic [NUM_PRR-1:0][       CGRA_PER_GLB-1:0]       io1_g2io,
+    input  logic [NUM_PRR-1:0][       CGRA_PER_GLB-1:0][15:0] io16_g2io,
+    output logic [NUM_PRR-1:0][       CGRA_PER_GLB-1:0]       io1_io2g,
+    output logic [NUM_PRR-1:0][       CGRA_PER_GLB-1:0][15:0] io16_io2g
 );
     localparam int PRR_CFG_REG_DEPTH = 16;
 
@@ -86,8 +86,8 @@ module cgra (
                     glb2prr_q[i] = {};
                 end else if (!stall[i]) begin
                     if (is_glb2prr_on[i] == 1) begin
-                        if (io1_g2io[i] == 1) begin
-                            glb2prr_q[i].push_back(io16_g2io[i]);
+                        if (io1_io2g[i][0] == 1 && io1_g2io[i][0] == 1) begin
+                            glb2prr_q[i].push_back(io16_g2io[i][0]);
                         end
                     end
                 end
@@ -95,12 +95,29 @@ module cgra (
         end
     end
 
-    always @(posedge clk or posedge reset) begin
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            for (int i = 0; i < NUM_PRR; i++) begin
+                io1_io2g[i][0]  <= 0;
+                io16_io2g[i][0] <= 0;
+            end
+        end
+        for (int i = 0; i < NUM_PRR; i++) begin
+            if (is_glb2prr_on[i] == 1) begin
+                // randomly generate ready signal
+                io1_io2g[i][0] <= $urandom_range(1);
+            end else begin
+                io1_io2g[i][0] <= 0;
+            end
+        end
+    end
+
+    always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             for (int i = 0; i < NUM_PRR; i++) begin
                 prr2glb_q[i] = {};
-                io1_io2g[i]  <= 0;
-                io16_io2g[i] <= 0;
+                io1_io2g[i][1]  <= 0;
+                io16_io2g[i][1] <= 0;
             end
         end else begin
             for (int i = 0; i < NUM_PRR; i++) begin
@@ -108,11 +125,11 @@ module cgra (
                     prr2glb_q[i] = {};
                 end else if (!stall[i]) begin
                     if (prr2glb_valid[i] == 1 && (prr2glb_q[i].size() > 0)) begin
-                        io1_io2g[i]  <= 1;
-                        io16_io2g[i] <= prr2glb_q[i].pop_front();
+                        io1_io2g[i][1]  <= 1;
+                        io16_io2g[i][1] <= prr2glb_q[i].pop_front();
                     end else begin
-                        io1_io2g[i]  <= 0;
-                        io16_io2g[i] <= 0;
+                        io1_io2g[i][1]  <= 0;
+                        io16_io2g[i][1] <= 0;
                     end
                 end
             end
