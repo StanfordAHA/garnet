@@ -146,11 +146,10 @@ class GlbTile(Generator):
 
         self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width,
                                         size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_valid_f2g = self.input("strm_data_valid_f2g", 1, size=self._params.cgra_per_glb, packed=True)
+        self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=self._params.cgra_per_glb, packed=True)
         self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
                                          size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_valid_g2f = self.output(
-            "strm_data_valid_g2f", 1, size=self._params.cgra_per_glb, packed=True)
+        self.strm_ctrl_g2f = self.output("strm_ctrl_g2f", 1, size=self._params.cgra_per_glb, packed=True)
         self.data_flush = self.output("data_flush", 1)
 
         self.cgra_cfg_g2f_cfg_wr_en = self.output(
@@ -327,7 +326,7 @@ class GlbTile(Generator):
                        reset=self.reset,
                        clk_en_dma2bank=self.clk_en_stdma2bank,
                        data_f2g=self.strm_data_f2g,
-                       data_valid_f2g=self.strm_data_valid_f2g,
+                       data_valid_f2g=self.strm_ctrl_f2g,
                        wr_packet_dma2bank=self.wr_packet_dma2bank,
                        wr_packet_dma2ring=self.wr_packet_dma2ring,
                        # TODO: How to make this automatic
@@ -349,7 +348,8 @@ class GlbTile(Generator):
                        clk_en_dma2bank=self.clk_en_lddma2bank,
                        glb_tile_id=self.glb_tile_id,
                        data_g2f=self.strm_data_g2f,
-                       data_valid_g2f=self.strm_data_valid_g2f,
+                       data_valid_g2f=self.strm_ctrl_g2f,
+                       data_ready_f2g=self.strm_ctrl_f2g,
                        data_flush=self.data_flush,
                        rdrq_packet_dma2bank=self.rdrq_packet_dma2bank,
                        rdrq_packet_dma2ring=self.rdrq_packet_dma2ring,
@@ -359,8 +359,7 @@ class GlbTile(Generator):
                        cfg_tile_connected_prev=self.cfg_tile_connected_prev,
                        cfg_tile_connected_next=self.cfg_tile_connected_next,
                        cfg_ld_dma_num_repeat=self.cfg_ld_dma_ctrl['num_repeat'],
-                       cfg_ld_dma_ctrl_use_valid=self.cfg_ld_dma_ctrl['use_valid'],
-                       cfg_ld_dma_ctrl_use_flush=self.cfg_ld_dma_ctrl['use_flush'],
+                       cfg_ld_dma_ctrl_valid_mode=self.cfg_ld_dma_ctrl['valid_mode'],
                        cfg_ld_dma_ctrl_mode=self.cfg_ld_dma_ctrl['mode'],
                        cfg_data_network_latency=self.glb_cfg.cfg_data_network['latency'],
                        cfg_ld_dma_header=self.cfg_ld_dma_header,

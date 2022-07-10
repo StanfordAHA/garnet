@@ -1,10 +1,8 @@
-from kratos import PackedStruct, clog2
+from kratos import PackedStruct, clog2, enum
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
 class GlbHeader():
-    enum_cache = {}
-
     def __init__(self, _params: GlobalBufferParams):
         self._params = _params
 
@@ -24,10 +22,13 @@ class GlbHeader():
 
         self.cfg_load_dma_ctrl_t = PackedStruct("load_dma_ctrl_t",
                                                 [("mode", 2),
-                                                 ("use_valid", 1),
-                                                 ("use_flush", 1),
+                                                 ("valid_mode", 2),
                                                     ("data_mux", 2),
                                                     ("num_repeat", clog2(self._params.queue_depth) + 1)])
+
+        self.valid_mode_e = {"valid": 0, "ready_valid": 1, "internal_flush": 2, "external_flush": 3}
+        # self.valid_mode_e = enum("valid_mode_e", {"valid": 0, "ready_valid": 1,
+        #                          "internal_flush": 2, "external_flush": 3})
 
         dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
                                   ("cycle_start_addr", self._params.cycle_count_width)]

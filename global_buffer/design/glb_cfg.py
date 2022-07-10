@@ -138,10 +138,7 @@ class GlbCfg(Generator):
         self.wire(self.cfg_ld_dma_ctrl['data_mux'],
                   self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_data_mux_r"])
         self.wire(self.cfg_ld_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_mode_r"])
-        self.wire(self.cfg_ld_dma_ctrl['use_valid'],
-                  self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_use_valid_r"])
-        self.wire(self.cfg_ld_dma_ctrl['use_flush'],
-                  self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_use_flush_r"])
+        self.wire(self.cfg_ld_dma_ctrl['valid_mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_valid_mode_r"])
         self.wire(self.cfg_ld_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_num_repeat_r"])
 
         for i in range(self._params.queue_depth):

@@ -276,9 +276,11 @@ program glb_test (
                         end else if (kernels[j].type_ == RD) begin
                             proc_read_burst(kernels[j].start_addr, kernels[j].data64_arr_out);
                         end else if (kernels[j].type_ == G2F) begin
-                            g2f_run(kernels[j].tile_id, kernels[j].total_cycle);
+                            // TODO: For now, just set really large number for total cycle.
+                            // For ready/valid mode, we cannot expect how many cycles it takes.
+                            g2f_run(kernels[j].tile_id, kernels[j].total_cycle * 10);
                         end else if (kernels[j].type_ == F2G) begin
-                            f2g_run(kernels[j].tile_id, kernels[j].total_cycle);
+                            f2g_run(kernels[j].tile_id, kernels[j].total_cycle * 10);
                         end else if (kernels[j].type_ == PCFG) begin
                             pcfg_run(kernels[j].tile_id, kernels[j].check_tile_id, kernels[j].total_cycle,
                                      kernels[j].data64_arr_out);
@@ -293,6 +295,7 @@ program glb_test (
         join_none
         wait fork;
         // end
+        repeat (10) @(posedge clk);
         test_toggle = 0;
 
         repeat (50) @(posedge clk);
@@ -556,11 +559,11 @@ program glb_test (
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
                       ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
-                    | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+                    | (1 << `GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
         glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
                      ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
-                    | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+                    | (1 << `GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
