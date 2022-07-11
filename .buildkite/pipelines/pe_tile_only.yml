@@ -1,8 +1,5 @@
 # Run PE TILE in context of tile_array. Save build in e.g. /build/pe4458
 
-# Agents are specified in "pipeline settings" now, see e.g. buildkite.com/tapeout-aha/steps
-# agents: { jobsize: "hours" }
-
 env:
   GOLD: /build/pe${BUILDKITE_BUILD_NUMBER}
   # OVERRIDE_MFLOWGEN_BRANCH: silent_fail

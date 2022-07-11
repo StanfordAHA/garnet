@@ -20,11 +20,8 @@ set stripes_per_tap 12
 # space betwen power switches as a multiple of the M3
 # power stripe pitch.
 #
-# If set to 12 in amber (TSMC) design, get five columns of switches.
+# If set to 12 in Amber (TSMC) design, get five columns of switches.
 # If set to 18, get 3 cols symmetrically placed, center col at center chip.
-# 3 cols vs. 5 cuts build time from 8 hours ish to 7 ish.
-# ?? Does asymmetrical 20 do better than symmetrical 18?
-# NO! 20 takes 7 hours, 18 "just" 5h
 set stripes_per_switch 18
 
 # AON box floorplanning params
@@ -43,6 +40,4 @@ set aon_height 24
 set aon_horiz_offset 0
 
 # Sets AON box vertical offset from center in # of unit std cell heights
-# 15 => centered in upper half of cell ish (TSMC amber)
-# try 30, see if that's closer to where it was before
 set aon_vert_offset 30
