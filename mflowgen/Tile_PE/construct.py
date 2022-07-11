@@ -391,8 +391,9 @@ def construct():
 
       # power node
       order = power.get_param('order')
-      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
-      order.remove('globalnetconnect.tcl')
+      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add new pd-globalnetconnect
+      order.remove('globalnetconnect.tcl')         # remove old globalnetconnect
+      order.insert( 0, 'pe-pd-params.tcl' )        # add params file
       power.update_params( { 'order': order } )
 
       # place node
