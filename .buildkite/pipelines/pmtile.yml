@@ -1,4 +1,5 @@
-# Run PE TILE in context of tile_array. Save build in e.g. /build/pe4458
+# Builds complete PE and Memtiles in parallel, from RTL through signoff.
+# Save builds in e.g. /build/pe4458 and /build/mem4458
 
 env:
   PBUILD: /build/pe${BUILDKITE_BUILD_NUMBER}
