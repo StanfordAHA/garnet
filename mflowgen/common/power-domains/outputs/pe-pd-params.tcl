@@ -41,3 +41,10 @@ set aon_horiz_offset 0
 
 # Sets AON box vertical offset from center in # of unit std cell heights
 set aon_vert_offset 30
+
+
+# Always-on domain is much smaller than the switching domain, so need
+# fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
+# Sparsity parm controls VDD stripe sparsity for M3 power stripes;
+# sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
+set vdd_m3_stripe_sparsity 3

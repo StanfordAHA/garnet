@@ -185,7 +185,7 @@ steps:
     - ($LVS_CHECK $GOLD | grep INCORRECT > /dev/null) && exit 13 || exit 0
 - wait: ~
 
-# Not sure if this is ever useful...
+# Optional DRC check. Not sure if this is ever useful...
 # - label: 'drc'
 #   commands:
 #   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 18G;
@@ -196,7 +196,7 @@ steps:
 # Final summary
 - label: 'summary'
   commands:
-  - 'mflowgen/bin/buildcheck.sh $$GOLD --show-all-errors;
+  - 'mflowgen/bin/buildcheck.sh $$GOLD --show-all-errors |& tee $$GOLD/buildcheck.out;
      echo ""; echo "+++ SIZE HISTORY"; echo "";
      test -f /build/size-history && cat /build/size-history;
     '
