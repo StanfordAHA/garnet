@@ -2,26 +2,24 @@ from kratos import *
 
 
 class FIFO(Generator):
-    def __init__(self, data_width, depth, almost_full_diff=2, almost_empty_diff=2):
+    def __init__(self, data_width, depth):
 
         super().__init__(f"reg_fifo_d_{depth}_w_{data_width}", debug=True)
 
         self.data_width = self.parameter("data_width", 16)
         self.data_width.value = data_width
         self.depth = depth
-        self.almost_full_diff = almost_full_diff
-        self.almost_empty_diff = almost_empty_diff
-
-        assert not (depth & (depth - 1)), "FIFO depth needs to be a power of 2"
 
         # CLK and RST
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
-        self.clk_en = self.input("clk_en", 1)
+        self.clk_en = self.clock_en("clk_en", 1)
 
         # INPUTS
         self._data_in = self.input("data_in", self.data_width)
         self._data_out = self.output("data_out", self.data_width)
+        self.almost_full_diff = self.input("almost_full_diff", clog2(self.depth))
+        self.almost_empty_diff = self.input("almost_empty_diff", clog2(self.depth))
 
         self._push = self.input("push", 1)
         self._pop = self.input("pop", 1)
@@ -40,17 +38,21 @@ class FIFO(Generator):
 
         self._num_items = self.var("num_items", clog2(self.depth) + 1)
         self.wire(self._full, self._num_items == self.depth)
-        self.wire(self._almost_full, self._num_items >= (self.depth - self.almost_full_diff))
-        self.wire(self._almost_empty, self._num_items <= self.almost_empty_diff)
         self.wire(self._empty, self._num_items == 0)
         self.wire(self._read, self._pop & ~self._empty)
 
         self.wire(self._write, self._push & ~self._full)
+        self.add_code(self.almost_full_empty_logic)
         self.add_code(self.set_num_items)
         self.add_code(self.reg_array_ff)
         self.add_code(self.wr_ptr_ff)
         self.add_code(self.rd_ptr_ff)
         self.add_code(self.data_out_ff)
+
+    @always_comb
+    def almost_full_empty_logic(self):
+        self._almost_full = self._num_items >= const(self.depth, clog2(self.depth) + 1) - resize(self.almost_full_diff, (clog2(self.depth) + 1))
+        self._almost_empty = self._num_items <= self.almost_empty_diff
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rd_ptr_ff(self):
