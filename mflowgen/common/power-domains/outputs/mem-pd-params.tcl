@@ -37,8 +37,14 @@ set aon_width 160
 set aon_height 24
 
 # Sets AON box horizontal offset from center
-# We went to move this to the right of the SRAM macros for mem tile.
+# We want to move this to the right of the SRAM macros for mem tile.
 set aon_horiz_offset 80
 
 # Sets AON box vertical offset from center
 set aon_vert_offset 15
+
+# Always-on domain is much smaller than the switching domain, so need
+# fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
+# Sparsity parm controls VDD stripe sparsity for M3 power stripes;
+# sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
+set vdd_m3_stripe_sparsity 3
