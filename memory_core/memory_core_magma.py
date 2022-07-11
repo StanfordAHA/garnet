@@ -167,7 +167,7 @@ class MemCore(LakeCoreBase):
             print(self.LT.dut)
             print(self.LT.dut.get_mode_map())
 
-            # Nonsensical but LakeTop now has its ow n internal dut
+            # Nonsensical but LakeTop now has its own internal dut
             self.dut = self.LT.dut
 
             circ = kts.util.to_magma(self.dut,
