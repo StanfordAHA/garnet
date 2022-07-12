@@ -10,7 +10,7 @@
 # AON boundary taps must line up with M3 VDD stripes.
 # stripes_per_tap controls the space between AON taps
 # as a multiple of the M3 power stripe pitch
-set stripes_per_tap 12
+set stripes_per_tap 18
 
 
 # Power Switch Params
