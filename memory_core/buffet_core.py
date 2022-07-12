@@ -10,6 +10,7 @@ from lake.top.pond import Pond
 from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
 from lake.modules.buffet_like import *
+from lake.top.tech_maps import GF_Tech_Map, SKY_Tech_Map, TSMC_Tech_Map
 
 import kratos as kts
 
@@ -27,7 +28,8 @@ class BuffetCore(LakeCoreBase):
                  config_addr_width=8,
                  local_mems=True,
                  physical_mem=False,
-                 fifo_depth=8):
+                 fifo_depth=8,
+                 tech_map=TSMC_Tech_Map(depth=512, width=32)):
 
         buffet_name = "Buffet"
         super().__init__(config_data_width=config_data_width,
@@ -40,6 +42,7 @@ class BuffetCore(LakeCoreBase):
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
         self.local_mems = local_mems
+        self.tech_map = tech_map
 
         cache_key = (self.data_width,
                      self.config_data_width,
@@ -57,7 +60,8 @@ class BuffetCore(LakeCoreBase):
                                   num_ID=2,
                                   local_memory=self.local_mems,
                                   physical_mem=physical_mem,
-                                  fifo_depth=fifo_depth)
+                                  fifo_depth=fifo_depth,
+                                  tech_map=self.tech_map)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
