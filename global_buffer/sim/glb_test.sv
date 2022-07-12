@@ -237,7 +237,7 @@ program glb_test (
                 kernels[i].data64_arr_out = new[kernels[i].data64_arr.size()];
 
                 // Store the data to PRR queue.
-                write_prr(kernels[i].tile_id, kernels[i].data_arr);
+                write_prr(kernels[i].tile_id, kernels[i].data_arr, 1);
                 // Configure PRR controller to follow cycle stride/extent pattern.
                 void'($root.top.cgra.prr2glb_configure(
                     kernels[i].tile_id, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride
@@ -556,14 +556,16 @@ program glb_test (
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
                                      int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
                                      int data_stride[LOOP_LEVEL]);
+        bit[1:0] valid_mode = 3;
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
                       ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
-                    | (1 << `GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
+                    | (valid_mode << `GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
         glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
                      ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
-                    | (1 << `GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
+                    | (valid_mode << `GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
+        void'($root.top.cgra.set_glb2prr_valid_mode(tile_id, valid_mode));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
@@ -609,14 +611,16 @@ program glb_test (
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
                                      int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
                                      int data_stride[LOOP_LEVEL]);
+        bit[1:0] valid_mode = 1;
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
                       ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
-                    | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
+                    | (valid_mode << `GLB_ST_DMA_CTRL_VALID_MODE_F_LSB)));
         glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
                      ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
-                    | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
+                    | (valid_mode << `GLB_ST_DMA_CTRL_VALID_MODE_F_LSB)));
+        void'($root.top.cgra.set_prr2glb_valid_mode(tile_id, valid_mode));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
@@ -980,14 +984,17 @@ program glb_test (
     endfunction
 
     function automatic void write_prr(input int prr_id,
-                                      ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr[]);
+                                      ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr[], input int is_metadata);
         foreach (cgra_data_arr[i]) begin
             $root.top.cgra.prr2glb_q[prr_id][i] = cgra_data_arr[i];
+        end
+        if (is_metadata) begin
+            $root.top.cgra.prr2glb_q[prr_id].push_front(cgra_data_arr.size());
         end
     endfunction
 
     function automatic bit [NUM_GLB_TILES-1:0] update_tile_mask(
-        int tile_id, [NUM_GLB_TILES-1:0] tile_id_mask);
+        int tile_id, bit [NUM_GLB_TILES-1:0] tile_id_mask);
         bit [NUM_GLB_TILES-1:0] new_tile_id_mask;
         new_tile_id_mask = tile_id_mask | (1 << tile_id);
         return new_tile_id_mask;

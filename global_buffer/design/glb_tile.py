@@ -172,6 +172,11 @@ class GlbTile(Generator):
         self.struct_wiring()
 
         # Local variables
+        # strm_ctrl_g2f
+        self.strm_ctrl_g2f_ld_dma = self.var("strm_ctrl_g2f_ld_dma", 1, size=self._params.cgra_per_glb, packed=True)
+        self.strm_ctrl_g2f_st_dma = self.var("strm_ctrl_g2f_st_dma", 1, size=self._params.cgra_per_glb, packed=True)
+        self.wire(self.strm_ctrl_g2f, self.strm_ctrl_g2f_ld_dma | self.strm_ctrl_g2f_st_dma)
+
         # configuration
         self.cfg_tile_connected_prev = self.var("cfg_tile_connected_prev", 1)
         self.cfg_tile_connected_next = self.var("cfg_tile_connected_next", 1)
@@ -327,13 +332,14 @@ class GlbTile(Generator):
                        clk_en_dma2bank=self.clk_en_stdma2bank,
                        data_f2g=self.strm_data_f2g,
                        data_valid_f2g=self.strm_ctrl_f2g,
+                       data_ready_g2f=self.strm_ctrl_g2f_st_dma,
                        wr_packet_dma2bank=self.wr_packet_dma2bank,
                        wr_packet_dma2ring=self.wr_packet_dma2ring,
                        # TODO: How to make this automatic
                        cfg_tile_connected_prev=self.cfg_tile_connected_prev,
                        cfg_tile_connected_next=self.cfg_tile_connected_next,
                        cfg_st_dma_num_repeat=self.cfg_st_dma_ctrl['num_repeat'],
-                       cfg_st_dma_ctrl_use_valid=self.cfg_st_dma_ctrl['use_valid'],
+                       cfg_st_dma_ctrl_valid_mode=self.cfg_st_dma_ctrl['valid_mode'],
                        cfg_st_dma_ctrl_mode=self.cfg_st_dma_ctrl['mode'],
                        cfg_data_network_latency=self.glb_cfg.cfg_data_network['latency'],
                        cfg_st_dma_header=self.cfg_st_dma_header,
@@ -348,7 +354,7 @@ class GlbTile(Generator):
                        clk_en_dma2bank=self.clk_en_lddma2bank,
                        glb_tile_id=self.glb_tile_id,
                        data_g2f=self.strm_data_g2f,
-                       data_valid_g2f=self.strm_ctrl_g2f,
+                       data_valid_g2f=self.strm_ctrl_g2f_ld_dma,
                        data_ready_f2g=self.strm_ctrl_f2g,
                        data_flush=self.data_flush,
                        rdrq_packet_dma2bank=self.rdrq_packet_dma2bank,
