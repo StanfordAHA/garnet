@@ -4,6 +4,7 @@ from gemstone.common.configurable import ConfigurationType
 from pydot import Graph
 from cgra.util import create_cgra
 from memory_core.buffet_core import BuffetCore
+from memory_core.core_combiner_core import CoreCombinerCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.intersect_core import IntersectCore
 from memory_core.io_core_rv import IOCoreReadyValid
@@ -1315,10 +1316,23 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 10
+        chip_width = 11
         # chip_height = 32
         chip_height = 12
         num_tracks = 5
+
+        controllers = []
+
+        scan = Scanner(data_width=16,
+                       fifo_depth=8)
+
+        isect = Intersect(data_width=16,
+                          use_merger=True,
+                          fifo_depth=8)
+
+        controllers.append(scan)
+        controllers.append(isect)
+
         # altcore = [(ScannerCore, {}), (IntersectCore, {}),
         # altcore = [(ScannerCore, {}),
         altcore = [(IOCoreReadyValid, {'fifo_depth': 2}), (ScannerCore, {'fifo_depth': fifo_depth}), (IOCoreReadyValid, {'fifo_depth': 2}),
@@ -1326,7 +1340,8 @@ if __name__ == "__main__":
                                                                                  'physical_mem': False, 'fifo_depth': fifo_depth}),
                    (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}), (FakePECore, {'fifo_depth': fifo_depth}),
                    (RepeatCore, {'fifo_depth': fifo_depth}),
-                   (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
+                   (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth}),
+                   (CoreCombinerCore, {'controllers_list': controllers})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    # io_sides=NetlistBuilder.io_sides(),
