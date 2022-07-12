@@ -56,14 +56,14 @@ class CoreCombinerCore(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.CC = CoreCombiner(data_width=data_width,
-                                    mem_width=64,
-                                    mem_depth=512,
-                                    banks=1,
-                                    config_width=16,
-                                    config_addr_width=8,
-                                    config_data_width=32,
-                                    name=cc_core_name,
-                                    controllers=controllers_list)
+                                   mem_width=64,
+                                   mem_depth=512,
+                                   banks=1,
+                                   config_width=16,
+                                   config_addr_width=8,
+                                   config_data_width=32,
+                                   name=cc_core_name,
+                                   controllers=controllers_list)
 
             print(self.CC.dut)
             print(self.CC.dut.get_mode_map())
