@@ -55,6 +55,7 @@ class CoreCombinerCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
+
             self.CC = CoreCombiner(data_width=data_width,
                                    mem_width=64,
                                    mem_depth=512,
@@ -69,6 +70,9 @@ class CoreCombinerCore(LakeCoreBase):
             print(self.CC.dut.get_mode_map())
 
             self.dut = self.CC.dut
+
+            pts = self.dut.internal_generator.get_port_names()
+            print(pts)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
