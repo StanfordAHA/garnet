@@ -63,7 +63,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 pe_fc=lassen_fc,
                 ready_valid: bool = False):
     # currently only add 16bit io cores
-    bit_widths = [1, 16, 17]
+    # bit_widths = [1, 16, 17]
+    bit_widths = [1, 17]
     track_length = 1
 
     # compute the actual size
@@ -162,12 +163,12 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     print(inputs)
     inputs.remove("glb2io_1")
-    inputs.remove("glb2io_16")
+    # inputs.remove("glb2io_16")
     inputs.remove("glb2io_17")
     # inputs.remove("glb2io_17_valid")
     # inputs.remove("io2glb_17_ready")
     outputs.remove("io2glb_1")
-    outputs.remove("io2glb_16")
+    # outputs.remove("io2glb_16")
     outputs.remove("io2glb_17")
     # outputs.remove("glb2io_17_ready")
     # outputs.remove("io2glb_17_valid")
