@@ -52,6 +52,7 @@ from sam.onyx.generate_matrices import MatrixGenerator, get_tensor_from_files
 import numpy
 import random
 from sam.sim.test.test import read_inputs
+from lake.top.tech_maps import GF_Tech_Map
 
 
 class SparseTBBuilder(m.Generator2):
@@ -1337,7 +1338,8 @@ if __name__ == "__main__":
         # altcore = [(ScannerCore, {}),
         altcore = [(IOCoreReadyValid, {'fifo_depth': 2}), (ScannerCore, {'fifo_depth': fifo_depth}), (IOCoreReadyValid, {'fifo_depth': 2}),
                    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
-                                                                                 'physical_mem': False, 'fifo_depth': fifo_depth}),
+                                                                                 'physical_mem': False, 'fifo_depth': fifo_depth,
+                                                                                 'tech_map': GF_Tech_Map(depth=512, width=32)}),
                    (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}), (FakePECore, {'fifo_depth': fifo_depth}),
                    (RepeatCore, {'fifo_depth': fifo_depth}),
                    (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth}),

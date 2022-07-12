@@ -71,9 +71,6 @@ class CoreCombinerCore(LakeCoreBase):
 
             self.dut = self.CC.dut
 
-            pts = self.dut.internal_generator.get_port_names()
-            print(pts)
-
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
@@ -110,7 +107,7 @@ class CoreCombinerCore(LakeCoreBase):
         return configs
 
     def pnr_info(self):
-        return PnRTag("C", self.DEFAULT_PRIORITY, 1)
+        return PnRTag("A", self.DEFAULT_PRIORITY, 1)
 
 
 if __name__ == "__main__":
