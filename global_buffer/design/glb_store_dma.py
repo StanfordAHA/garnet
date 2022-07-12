@@ -381,7 +381,7 @@ class GlbStoreDma(Generator):
         if self.cycle_counter_en:
             self.iter_step_valid = self.cycle_valid
         elif self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['ready_valid']:
-            self.iter_step_valid = self.strm_run & self.fifo_pop_ready
+            self.iter_step_valid = self.strm_run & self.fifo_pop_ready & ~self.rv_is_metadata
         else:
             self.iter_step_valid = self.strm_data_valid
 

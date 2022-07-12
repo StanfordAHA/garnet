@@ -147,30 +147,30 @@ module cgra (
                                 io16_io2g[i][1] <= 0;
                             end
                         end else if (prr2glb_valid_mode[i] == 1) begin
-                            if (io1_io2g[i][1] == 1 && io1_g2io[i][1] == 1) begin
-                                if (prr2glb_q[i].size() > 0) begin
+                            if (prr2glb_q[i].size() > 0) begin
+                                if (io1_io2g[i][1] == 1 && io1_g2io[i][1] == 1) begin
                                     if ($urandom_range(1) == 1) begin
                                         io16_io2g[i][1] <= prr2glb_q[i].pop_front();
-                                        io1_io2g[i][1] <= 1;
+                                        io1_io2g[i][1]  <= 1;
                                     end else begin
                                         io1_io2g[i][1] <= 0;
                                     end
-                                end else begin
-                                    io16_io2g[i][1] <= 0;
-                                    io1_io2g[i][1] <= 0;
+                                end else if (io1_io2g[i][1] == 0) begin
+                                    if ($urandom_range(1) == 1) begin
+                                        io16_io2g[i][1] <= prr2glb_q[i].pop_front();
+                                        io1_io2g[i][1]  <= 1;
+                                    end else begin
+                                        io1_io2g[i][1] <= 0;
+                                    end
                                 end
-                            end else if (io1_io2g[i][1] == 0) begin
-                                if ($urandom_range(1) == 1) begin
-                                    io16_io2g[i][1] <= prr2glb_q[i].pop_front();
-                                    io1_io2g[i][1] <= 1;
-                                end else begin
-                                    io1_io2g[i][1] <= 0;
-                                end
+                            end else begin
+                                io16_io2g[i][1] <= 0;
+                                io1_io2g[i][1]  <= 0;
                             end
                         end
                     end else begin
                         io16_io2g[i][1] <= 0;
-                        io1_io2g[i][1] <= 0;
+                        io1_io2g[i][1]  <= 0;
                     end
                 end
             end
@@ -238,11 +238,11 @@ module cgra (
         end
     endfunction
 
-    function set_glb2prr_valid_mode(int prr_id, bit[1:0] mode);
+    function set_glb2prr_valid_mode(int prr_id, bit [1:0] mode);
         glb2prr_valid_mode[prr_id] = mode;
     endfunction
 
-    function set_prr2glb_valid_mode(int prr_id, bit[1:0] mode);
+    function set_prr2glb_valid_mode(int prr_id, bit [1:0] mode);
         prr2glb_valid_mode[prr_id] = mode;
     endfunction
 
