@@ -10,7 +10,7 @@
 # fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
 # Sparsity parm controls VDD stripe sparsity for M3 power stripes;
 # sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
-set vdd_m3_stripe_sparsity 3
+set vdd_m3_stripe_sparsity 2
 
 
 # Boundary AON TAP params
@@ -32,7 +32,7 @@ set stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
 
 # sps12/vmss (original default) yields 14 columns of switches and 4.5 hr runtime
 # sps26/vmss yields six columns and finishes in 2.5 hr
-set vdd_stripes_per_switch [ expr 30 / $vdd_m3_stripe_sparsity ]
+set vdd_stripes_per_switch [ expr 26 / $vdd_m3_stripe_sparsity ]
 set stripes_per_switch [ expr $vdd_stripes_per_switch * $vdd_m3_stripe_sparsity ]
 
 
