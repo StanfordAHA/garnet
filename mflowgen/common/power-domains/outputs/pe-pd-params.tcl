@@ -4,34 +4,43 @@
 # Author: Alex Carsello
 # Date: 3/7/21
 
+# VDD stripe sparsity params
 
-# Boundary AON TAP Params
+# Always-on domain is much smaller than the switching domain, so need
+# fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
+# Sparsity parm controls VDD stripe sparsity for M3 power stripes;
+# sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
+set vdd_m3_stripe_sparsity 3
+
+
+# Boundary AON TAP params
 
 # AON boundary taps must line up with M3 VDD stripes.
-# stripes_per_tap controls the space between AON taps
-# as a multiple of the M3 power stripe pitch
-set stripes_per_tap 12
+# 'stripes_per_tap' controls the space between AON taps
+# as a multiple of the M3 power stripe pitch.
+# Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
+set vdd_stripes_per_tap [ expr 12 / $vdd_m3_stripe_sparsity ]
+set stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
 
 
-# Power Switch Params
+# Power switch params
 
-# Like the taps, power switches must also line up
-# with M3 VDD stripes. stripes_per switch controls 
-# space betwen power switches as a multiple of the M3
-# power stripe pitch.
-#
+# Like the taps, power switches must line up with M3 VDD stripes.
+# 'stripes_per switch' controls space betwen power switches as a
+# multiple of the M3 power stripe pitch.
+# Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
+
 # If set to 12 in Amber (TSMC) design, get five columns of switches.
 # If set to 18, get 3 cols symmetrically placed, center col at center chip.
-set stripes_per_switch 18
+set vdd_stripes_per_switch [ expr 18 / $vdd_m3_stripe_sparsity ]
+set stripes_per_switch [ expr $vdd_stripes_per_switch * $vdd_m3_stripe_sparsity ]
 
 # AON box floorplanning params
 
-# Sets width of AON region as a multiple of the 
-# unit stdcell width
+# Sets width of AON region as a multiple of the unit stdcell width
 set aon_width 160
 
-# Sets height of AON region as a multiple of the
-# unit stdcell height.
+# Sets height of AON region as a multiple of the unit stdcell height.
 # This should always be an even number so that the
 # AON region can start an end on an even-numbered row.
 set aon_height 24
@@ -41,10 +50,3 @@ set aon_horiz_offset 0
 
 # Sets AON box vertical offset from center in # of unit std cell heights
 set aon_vert_offset 30
-
-
-# Always-on domain is much smaller than the switching domain, so need
-# fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
-# Sparsity parm controls VDD stripe sparsity for M3 power stripes;
-# sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
-set vdd_m3_stripe_sparsity 3
