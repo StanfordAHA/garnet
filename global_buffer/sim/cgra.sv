@@ -88,13 +88,12 @@ module cgra (
                     glb2prr_q[i] = {};
                 end else if (!stall[i]) begin
                     if (is_glb2prr_on[i] == 1) begin
-                        // FIXME: Mode value is hard-coded for now.
-                        if (glb2prr_valid_mode[i] == 3) begin
+                        if (glb2prr_valid_mode[i] == LD_DMA_VALID_MODE_READY_VALID) begin
                             // ready/valid mode
                             if (io1_io2g[i][0] == 1 && io1_g2io[i][0] == 1) begin
                                 glb2prr_q[i].push_back(io16_g2io[i][0]);
                             end
-                        end else if (glb2prr_valid_mode[i] == 2) begin
+                        end else if (glb2prr_valid_mode[i] == LD_DMA_VALID_MODE_VALID) begin
                             // valid mode
                             if (io1_g2io[i][0] == 1) begin
                                 glb2prr_q[i].push_back(io16_g2io[i][0]);
@@ -138,7 +137,7 @@ module cgra (
                 end else if (!stall[i]) begin
                     // FIXME: Mode value is hard-coded for now.
                     if (is_prr2glb_on[i] == 1) begin
-                        if (prr2glb_valid_mode[i] == 0 | prr2glb_valid_mode[i] == 2) begin
+                        if (prr2glb_valid_mode[i] == ST_DMA_VALID_MODE_VALID | prr2glb_valid_mode[i] == ST_DMA_VALID_MODE_STATIC) begin
                             if (prr2glb_valid[i] == 1 && (prr2glb_q[i].size() > 0)) begin
                                 io1_io2g[i][1]  <= 1;
                                 io16_io2g[i][1] <= prr2glb_q[i].pop_front();
@@ -146,7 +145,7 @@ module cgra (
                                 io1_io2g[i][1]  <= 0;
                                 io16_io2g[i][1] <= 0;
                             end
-                        end else if (prr2glb_valid_mode[i] == 1) begin
+                        end else begin
                             if (prr2glb_q[i].size() > 0) begin
                                 if (io1_io2g[i][1] == 1 && io1_g2io[i][1] == 1) begin
                                     if ($urandom_range(1) == 1) begin

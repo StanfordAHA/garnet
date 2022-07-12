@@ -164,7 +164,7 @@ class GlbLoadDma(Generator):
             self.wire(self.loop_iter.ranges[i], self.current_dma_header[f"range_{i}"])
 
         # Cycle stride
-        self.wire(self.cycle_counter_en, self.cfg_ld_dma_ctrl_valid_mode != self.header.ld_dma_valid_mode_e['ready_valid'])
+        self.wire(self.cycle_counter_en, self.cfg_ld_dma_ctrl_valid_mode != self._params.ld_dma_valid_mode_ready_valid)
         self.cycle_stride_sched_gen = GlbSchedGen(self._params)
         self.add_child("cycle_stride_sched_gen",
                        self.cycle_stride_sched_gen,
@@ -215,8 +215,9 @@ class GlbLoadDma(Generator):
         self.add_child("data_g2f_fifo",
                        self.data_g2f_fifo,
                        clk=self.clk,
-                       clk_en=clock_en(self.cfg_ld_dma_ctrl_valid_mode == self.header.ld_dma_valid_mode_e['ready_valid']),
+                       clk_en=clock_en(self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_ready_valid),
                        reset=self.reset,
+                       flush=self.ld_dma_start_pulse_r,
                        data_in=self.data_dma2fifo,
                        data_out=self.data_fifo2cgra,
                        push=self.fifo_push,
@@ -327,19 +328,19 @@ class GlbLoadDma(Generator):
 
     @ always_comb
     def strm_data_mux(self):
-        if self.cfg_ld_dma_ctrl_valid_mode == self.header.ld_dma_valid_mode_e['valid']:
+        if self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_valid:
             self.strm_data_mode_muxed = self.strm_data
             self.strm_data_valid_mode_muxed = self.strm_data_valid
             self.data_flush_w = 0
-        elif self.cfg_ld_dma_ctrl_valid_mode == self.header.ld_dma_valid_mode_e['ready_valid']:
+        elif self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_ready_valid:
             self.strm_data_mode_muxed = self.data_fifo2cgra
             self.strm_data_valid_mode_muxed = ~self.fifo_empty
             self.data_flush_w = 0
-        elif self.cfg_ld_dma_ctrl_valid_mode == self.header.ld_dma_valid_mode_e['internal_flush']:
+        elif self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_internal_flush:
             self.strm_data_mode_muxed = self.strm_data
             self.strm_data_valid_mode_muxed = self.strm_data_start_pulse
             self.data_flush_w = 0
-        elif self.cfg_ld_dma_ctrl_valid_mode == self.header.ld_dma_valid_mode_e['external_flush']:
+        elif self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_external_flush:
             self.strm_data_mode_muxed = self.strm_data
             self.strm_data_valid_mode_muxed = 0
             self.data_flush_w = self.strm_data_start_pulse
@@ -568,7 +569,7 @@ class GlbLoadDma(Generator):
 
     @ always_comb
     def done_pulse_muxed(self):
-        if self.cfg_ld_dma_ctrl_valid_mode != self.header.ld_dma_valid_mode_e['ready_valid']:
+        if self.cfg_ld_dma_ctrl_valid_mode != self._params.ld_dma_valid_mode_ready_valid:
             self.ld_dma_done_pulse = self.ld_dma_done_pulse_pipeline_out
         else:
             self.ld_dma_done_pulse = self.ld_dma_done_pulse_anded
