@@ -1250,6 +1250,7 @@ if __name__ == "__main__":
     parser.add_argument('--remote_mems', action="store_true")
     parser.add_argument('--ic_fork', action="store_true")
     parser.add_argument('--give_tensor', action="store_true")
+    parser.add_argument('--physical_sram', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1261,6 +1262,7 @@ if __name__ == "__main__":
     gold_dir = args.gold_dir
     give_tensor = args.give_tensor
     fifo_depth = args.fifo_depth
+    physical_sram = args.physical_sram
 
     sam_graph = args.sam_graph
 
@@ -1338,7 +1340,7 @@ if __name__ == "__main__":
         # altcore = [(ScannerCore, {}),
         altcore = [(IOCoreReadyValid, {'fifo_depth': 2}), (ScannerCore, {'fifo_depth': fifo_depth}), (IOCoreReadyValid, {'fifo_depth': 2}),
                    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
-                                                                                 'physical_mem': False, 'fifo_depth': fifo_depth,
+                                                                                 'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
                                                                                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
                    (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}), (FakePECore, {'fifo_depth': fifo_depth}),
                    (RepeatCore, {'fifo_depth': fifo_depth}),
