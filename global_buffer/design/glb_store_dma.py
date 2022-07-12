@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, const, resize, ext, clog2
+from kratos import Generator, always_ff, always_comb, posedge, const, resize, ext, clog2, clock_en
 from global_buffer.design.glb_loop_iter import GlbLoopIter
 from global_buffer.design.glb_sched_gen import GlbSchedGen
 from global_buffer.design.glb_addr_gen import GlbAddrGen
@@ -6,6 +6,7 @@ from global_buffer.design.pipeline import Pipeline
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
+from global_buffer.design.fifo import FIFO
 
 
 class GlbStoreDma(Generator):
@@ -22,6 +23,7 @@ class GlbStoreDma(Generator):
         self.data_f2g = self.input("data_f2g", width=self._params.cgra_data_width,
                                    size=self._params.cgra_per_glb, packed=True)
         self.data_valid_f2g = self.input("data_valid_f2g", 1, size=self._params.cgra_per_glb, packed=True)
+        self.data_ready_g2f = self.output("data_ready_g2f", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.wr_packet_dma2bank = self.output("wr_packet_dma2bank", self.header.wr_packet_t)
         self.wr_packet_dma2ring = self.output("wr_packet_dma2ring", self.header.wr_packet_t)
@@ -30,7 +32,7 @@ class GlbStoreDma(Generator):
         self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
         self.cfg_st_dma_num_repeat = self.input("cfg_st_dma_num_repeat", clog2(self._params.queue_depth) + 1)
         self.cfg_st_dma_ctrl_mode = self.input("cfg_st_dma_ctrl_mode", 2)
-        self.cfg_st_dma_ctrl_use_valid = self.input("cfg_st_dma_ctrl_use_valid", 1)
+        self.cfg_st_dma_ctrl_valid_mode = self.input("cfg_st_dma_ctrl_valid_mode", 2)
         self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width)
         self.cfg_st_dma_header = self.input("cfg_st_dma_header", self.header.cfg_dma_header_t,
                                             size=self._params.queue_depth, explicit_array=True)
@@ -74,13 +76,30 @@ class GlbStoreDma(Generator):
         self.is_last = self.var("is_last", 1)
         self.strm_run = self.var("strm_run", 1)
         self.loop_done = self.var("loop_done", 1)
+        self.loop_done_muxed = self.var("loop_done_muxed", 1)
         self.cycle_valid = self.var("cycle_valid", 1)
-        self.cycle_valid_muxed = self.var("cycle_valid_muxed", 1)
         self.cycle_count = self.var("cycle_count", self._params.cycle_count_width)
         self.cycle_current_addr = self.var("cycle_current_addr", self._params.cycle_count_width)
         self.data_current_addr = self.var("data_current_addr", self._params.glb_addr_width + 1)
         self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
+
+        # ready_valid controller
+        self.data_ready_g2f_w = self.var("data_ready_g2f_w", 1)
+        self.cycle_counter_en = self.var("cycle_counter_en", 1)
+        self.fifo_almost_full_diff = self.var("fifo_almost_full_diff", clog2(self._params.store_dma_fifo_depth))
+        self.iter_step_valid = self.var("iter_step_valid", 1)
+        self.fifo_pop_ready = self.var("fifo_pop_ready", 1)
+        self.data_cgra2fifo = self.var("data_cgra2fifo", self._params.cgra_data_width)
+        self.data_fifo2dma = self.var("data_fifo2dma", self._params.cgra_data_width)
+        self.fifo_push = self.var("fifo_push", 1)
+        self.fifo_pop = self.var("fifo_pop", 1)
+        self.fifo_empty = self.var("fifo_empty", 1)
+        self.fifo_almost_full = self.var("fifo_almost_full", 1)
+        self.fifo_full = self.var("fifo_full", 1)
+        self.fifo2cgra_ready = self.var("fifo2cgra_ready", 1)
+        self.rv_is_metadata = self.var("rv_is_metadata", 1)
+        self.rv_num_data_cnt = self.var("rv_num_data_cnt", self._params.cgra_data_width)
 
         if self._params.queue_depth != 1:
             self.queue_sel_r = self.var("queue_sel_r", max(1, clog2(self.repeat_cnt.width)))
@@ -118,6 +137,33 @@ class GlbStoreDma(Generator):
         self.add_done_pulse_pipeline()
         self.add_done_pulse_last_pipeline()
         self.add_always(self.interrupt_ff)
+        self.add_always(self.loop_done_muxed_logic)
+        self.add_always(self.rv_is_first_data_ff)
+        self.add_always(self.rv_num_data_cnt_ff)
+        self.add_always(self.data_ready_g2f_comb)
+
+        # FIFO for ready/valid
+        self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self._params.store_dma_fifo_depth)
+        self.add_child("data_f2g_fifo",
+                       self.data_g2f_fifo,
+                       clk=self.clk,
+                       clk_en=clock_en(self.cfg_st_dma_ctrl_valid_mode
+                                       == self.header.st_dma_valid_mode_e['ready_valid']),
+                       reset=self.reset,
+                       data_in=self.data_cgra2fifo,
+                       data_out=self.data_fifo2dma,
+                       push=self.fifo_push,
+                       pop=self.fifo_pop,
+                       empty=self.fifo_empty,
+                       almost_full=self.fifo_almost_full,
+                       almost_full_diff=const(2, clog2(self._params.store_dma_fifo_depth)),
+                       almost_empty_diff=const(2, clog2(self._params.store_dma_fifo_depth)))
+
+        self.wire(self.data_cgra2fifo, self.strm_data)
+        self.wire(self.fifo_pop_ready, ~self.fifo_empty)
+        self.wire(self.fifo_pop, ~self.fifo_empty & self.strm_run)
+        self.wire(self.fifo_push, ~self.fifo_full & self.strm_data_valid)
+        self.wire(self.fifo2cgra_ready, ~self.fifo_almost_full)
 
         # Loop iteration shared for cycle and data
         self.loop_iter = GlbLoopIter(self._params)
@@ -126,7 +172,7 @@ class GlbStoreDma(Generator):
                        clk=self.clk,
                        clk_en=const(1, 1),
                        reset=self.reset,
-                       step=self.cycle_valid_muxed,
+                       step=self.iter_step_valid,
                        mux_sel_out=self.loop_mux_sel,
                        restart=self.loop_done)
         self.wire(self.loop_iter.dim, self.current_dma_header[f"dim"])
@@ -134,16 +180,17 @@ class GlbStoreDma(Generator):
             self.wire(self.loop_iter.ranges[i], self.current_dma_header[f"range_{i}"])
 
         # Cycle stride
+        self.wire(self.cycle_counter_en, self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['static'])
         self.cycle_stride_sched_gen = GlbSchedGen(self._params)
         self.add_child("cycle_stride_sched_gen",
                        self.cycle_stride_sched_gen,
                        clk=self.clk,
-                       clk_en=const(1, 1),
+                       clk_en=clock_en(self.cycle_counter_en),
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
                        cycle_count=self.cycle_count,
                        current_addr=self.cycle_current_addr,
-                       finished=self.loop_done,
+                       finished=self.loop_done_muxed,
                        valid_output=self.cycle_valid)
 
         self.cycle_stride_addr_gen = GlbAddrGen(self._params)
@@ -151,10 +198,10 @@ class GlbStoreDma(Generator):
         self.add_child("cycle_stride_addr_gen",
                        self.cycle_stride_addr_gen,
                        clk=self.clk,
-                       clk_en=const(1, 1),
+                       clk_en=clock_en(self.cycle_counter_en),
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
-                       step=self.cycle_valid_muxed,
+                       step=self.iter_step_valid,
                        mux_sel=self.loop_mux_sel)
         self.wire(self.cycle_stride_addr_gen.addr_out, self.cycle_current_addr)
         self.wire(self.cycle_stride_addr_gen.start_addr, self.current_dma_header[f"cycle_start_addr"])
@@ -171,13 +218,40 @@ class GlbStoreDma(Generator):
                        clk_en=const(1, 1),
                        reset=self.reset,
                        restart=self.st_dma_start_pulse_r,
-                       step=self.cycle_valid_muxed,
+                       step=self.iter_step_valid,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
         self.wire(self.data_stride_addr_gen.start_addr, ext(self.current_dma_header[f"start_addr"],
                                                             self._params.glb_addr_width + 1))
         for i in range(self._params.loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
+
+    @always_comb
+    def loop_done_muxed_logic(self):
+        if self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['ready_valid']:
+            self.loop_done_muxed = self.strm_run & ~self.rv_is_metadata & (((self.rv_num_data_cnt == 1) & self.fifo_pop_ready) | (self.rv_num_data_cnt == 0))
+        else:
+            self.loop_done_muxed = self.loop_done
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def rv_is_first_data_ff(self):
+        if self.reset:
+            self.rv_is_metadata = 0
+        else:
+            if self.st_dma_start_pulse_r:
+                self.rv_is_metadata = 1
+            elif self.rv_is_metadata & self.fifo_pop_ready:
+                self.rv_is_metadata = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def rv_num_data_cnt_ff(self):
+        if self.reset:
+            self.rv_num_data_cnt = 0
+        else:
+            if self.strm_run & self.rv_is_metadata & self.fifo_pop_ready:
+                self.rv_num_data_cnt = self.data_fifo2dma
+            elif (self.rv_num_data_cnt > 0) & self.fifo_pop_ready:
+                self.rv_num_data_cnt = self.rv_num_data_cnt - 1
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def repeat_cnt_ff(self):
@@ -221,7 +295,7 @@ class GlbStoreDma(Generator):
         if self.reset:
             self.is_last = 0
         else:
-            if self.loop_done:
+            if self.loop_done_muxed:
                 self.is_last = 1
             elif self.bank_wr_en:
                 self.is_last = 0
@@ -233,7 +307,7 @@ class GlbStoreDma(Generator):
         else:
             if self.st_dma_start_pulse_r:
                 self.strm_run = 1
-            elif self.loop_done:
+            elif self.loop_done_muxed:
                 self.strm_run = 0
 
     @always_comb
@@ -266,9 +340,9 @@ class GlbStoreDma(Generator):
         else:
             if self.st_dma_start_pulse_r:
                 self.cycle_count = 0
-            elif self.loop_done:
+            elif self.loop_done_muxed:
                 self.cycle_count = 0
-            elif self.strm_run:
+            elif self.cycle_counter_en & self.strm_run:
                 self.cycle_count = self.cycle_count + 1
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -282,6 +356,13 @@ class GlbStoreDma(Generator):
                 self.data_valid_f2g_r[i] = self.data_valid_f2g[i]
 
     @always_comb
+    def data_ready_g2f_comb(self):
+        if self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['ready_valid']:
+            self.data_ready_g2f_w = self.fifo2cgra_ready
+        else:
+            self.data_ready_g2f_w = 0
+
+    @always_comb
     def data_f2g_logic(self):
         self.strm_data = 0
         self.strm_data_valid = 0
@@ -289,22 +370,30 @@ class GlbStoreDma(Generator):
             if self.cfg_data_network_f2g_mux[i] == 1:
                 self.strm_data = self.data_f2g_r[i]
                 self.strm_data_valid = self.data_valid_f2g_r[i]
+                self.data_ready_g2f[i] = self.data_ready_g2f_w
             else:
                 self.strm_data = self.strm_data
                 self.strm_data_valid = self.strm_data_valid
+                self.data_ready_g2f[i] = 0
 
     @always_comb
     def cycle_valid_comb(self):
-        if self.cfg_st_dma_ctrl_use_valid:
-            self.cycle_valid_muxed = self.strm_data_valid
+        if self.cycle_counter_en:
+            self.iter_step_valid = self.cycle_valid
+        elif self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['ready_valid']:
+            self.iter_step_valid = self.strm_run & self.fifo_pop_ready
         else:
-            self.cycle_valid_muxed = self.cycle_valid
+            self.iter_step_valid = self.strm_data_valid
 
     @always_comb
     def strm_wr_packet_comb(self):
-        self.strm_wr_en_w = self.cycle_valid_muxed
-        self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
-        self.strm_wr_data_w = self.strm_data
+        self.strm_wr_en_w = self.iter_step_valid
+        if self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['ready_valid']:
+            self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
+            self.strm_wr_data_w = self.data_fifo2dma
+        else:
+            self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
+            self.strm_wr_data_w = self.strm_data
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def last_strm_wr_addr_ff(self):
@@ -409,7 +498,7 @@ class GlbStoreDma(Generator):
 
     @always_comb
     def strm_done_pulse_logic(self):
-        self.done_pulse_w = self.loop_done & self.strm_run
+        self.done_pulse_w = self.loop_done_muxed & self.strm_run
 
     def add_done_pulse_pipeline(self):
         maximum_latency = (2 * self._params.num_glb_tiles + self._params.tile2sram_wr_delay

@@ -16,7 +16,7 @@ class GlbHeader():
 
         self.cfg_store_dma_ctrl_t = PackedStruct("store_dma_ctrl_t",
                                                  [("mode", 2),
-                                                  ("use_valid", 1),
+                                                  ("valid_mode", 2),
                                                      ("data_mux", 2),
                                                      ("num_repeat", clog2(self._params.queue_depth) + 1)])
 
@@ -26,9 +26,8 @@ class GlbHeader():
                                                     ("data_mux", 2),
                                                     ("num_repeat", clog2(self._params.queue_depth) + 1)])
 
-        self.valid_mode_e = {"valid": 0, "ready_valid": 1, "internal_flush": 2, "external_flush": 3}
-        # self.valid_mode_e = enum("valid_mode_e", {"valid": 0, "ready_valid": 1,
-        #                          "internal_flush": 2, "external_flush": 3})
+        self.ld_dma_valid_mode_e = {"external_flush": 0, "internal_flush": 1, "valid": 2, "ready_valid": 3}
+        self.st_dma_valid_mode_e = {"valid": 0, "ready_valid": 1, "static": 2}
 
         dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
                                   ("cycle_start_addr", self._params.cycle_count_width)]

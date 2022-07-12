@@ -77,6 +77,8 @@ class GlobalBufferParams:
     cgra_axi_data_width: int = 32
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
+    load_dma_fifo_depth: int = 32
+    store_dma_fifo_depth: int = 4
 
     # cell parameters
     cg_cell_name: str = "CKLNQD1BWP16P90"
