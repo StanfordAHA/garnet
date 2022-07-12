@@ -85,6 +85,17 @@ class GlobalBufferParams:
     sram_macro_name: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
     sram_macro_depth: int = 2048
 
+    # constant variables
+    st_dma_valid_mode_valid: int = 0
+    st_dma_valid_mode_ready_valid: int = 1
+    st_dma_valid_mode_ready_valid_compressed: int = 2
+    st_dma_valid_mode_static: int = 3
+
+    ld_dma_valid_mode_external_flush: int = 0
+    ld_dma_valid_mode_internal_flush: int = 1
+    ld_dma_valid_mode_valid: int = 2
+    ld_dma_valid_mode_ready_valid: int = 3
+
     # dependent field
     num_prr_width: int = field(init=False, default=num_prr_width)
     tile_sel_addr_width: int = field(init=False, default=tile_sel_addr_width)

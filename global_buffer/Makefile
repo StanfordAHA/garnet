@@ -36,8 +36,8 @@ GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
 # runtime
-RUN_ARGS ?= +test01 +test02 +test03 +test04 +test05 +test06 +test07 +test08 +test09 +test10 +test11
-RUN_ARGS += +MAX_NUM_TEST=11
+RUN_ARGS ?= +test01 +test02 +test03 +test04 +test05 +test06 +test07 +test08 +test09 +test10 +test11 +test12 +test13
+RUN_ARGS += +MAX_NUM_TEST=13
 RUN_ARGS += +DEBUG
 RUN_LOG ?= run.log
 

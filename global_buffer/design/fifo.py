@@ -16,6 +16,7 @@ class FIFO(Generator):
         self.clk_en = self.clock_en("clk_en", 1)
 
         # INPUTS
+        self.flush = self.input("flush", 1)
         self._data_in = self.input("data_in", self.data_width)
         self._data_out = self.output("data_out", self.data_width)
         self.almost_full_diff = self.input("almost_full_diff", clog2(self.depth))
@@ -58,12 +59,16 @@ class FIFO(Generator):
     def rd_ptr_ff(self):
         if self.reset:
             self._rd_ptr = 0
+        elif self.flush:
+            self._rd_ptr = 0
         elif self._read:
             self._rd_ptr = self._rd_ptr + 1
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def wr_ptr_ff(self):
         if self.reset:
+            self._wr_ptr = 0
+        elif self.flush:
             self._wr_ptr = 0
         elif self._write:
             if self._wr_ptr == (self.depth - 1):
@@ -85,6 +90,8 @@ class FIFO(Generator):
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def set_num_items(self):
         if self.reset:
+            self._num_items = 0
+        elif self.flush:
             self._num_items = 0
         elif self._write & ~self._read:
             self._num_items = self._num_items + 1

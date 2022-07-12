@@ -85,8 +85,11 @@ class GlbStoreDma(Generator):
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
 
         # ready_valid controller
+        self.block_done = self.var("block_done", 1)
+        self.is_last_block = self.var("is_last_block", 1)
         self.data_ready_g2f_w = self.var("data_ready_g2f_w", 1)
         self.cycle_counter_en = self.var("cycle_counter_en", 1)
+        self.rv_mode_on = self.var("rv_mode_on", 1)
         self.fifo_almost_full_diff = self.var("fifo_almost_full_diff", clog2(self._params.store_dma_fifo_depth))
         self.iter_step_valid = self.var("iter_step_valid", 1)
         self.fifo_pop_ready = self.var("fifo_pop_ready", 1)
@@ -137,19 +140,25 @@ class GlbStoreDma(Generator):
         self.add_done_pulse_pipeline()
         self.add_done_pulse_last_pipeline()
         self.add_always(self.interrupt_ff)
+        self.add_always(self.block_done_logic)
         self.add_always(self.loop_done_muxed_logic)
-        self.add_always(self.rv_is_first_data_ff)
+        self.add_always(self.rv_is_last_block_ff)
+        self.add_always(self.rv_metadata_ff)
         self.add_always(self.rv_num_data_cnt_ff)
         self.add_always(self.data_ready_g2f_comb)
+
+        # ready/valid control
+        self.wire(self.rv_mode_on, (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid)
+                  | (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid_compressed))
 
         # FIFO for ready/valid
         self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self._params.store_dma_fifo_depth)
         self.add_child("data_f2g_fifo",
                        self.data_g2f_fifo,
                        clk=self.clk,
-                       clk_en=clock_en(self.cfg_st_dma_ctrl_valid_mode
-                                       == self.header.st_dma_valid_mode_e['ready_valid']),
+                       clk_en=clock_en(self.rv_mode_on),
                        reset=self.reset,
+                       flush=self.st_dma_start_pulse_r,
                        data_in=self.data_cgra2fifo,
                        data_out=self.data_fifo2dma,
                        push=self.fifo_push,
@@ -180,7 +189,7 @@ class GlbStoreDma(Generator):
             self.wire(self.loop_iter.ranges[i], self.current_dma_header[f"range_{i}"])
 
         # Cycle stride
-        self.wire(self.cycle_counter_en, self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['static'])
+        self.wire(self.cycle_counter_en, self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_static)
         self.cycle_stride_sched_gen = GlbSchedGen(self._params)
         self.add_child("cycle_stride_sched_gen",
                        self.cycle_stride_sched_gen,
@@ -227,18 +236,43 @@ class GlbStoreDma(Generator):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
     @always_comb
+    def block_done_logic(self):
+        if self.rv_mode_on:
+            self.block_done = self.strm_run & ~self.rv_is_metadata & (
+                ((self.rv_num_data_cnt == 1) & self.fifo_pop_ready) | (self.rv_num_data_cnt == 0))
+        else:
+            self.block_done = 0
+
+    @always_comb
     def loop_done_muxed_logic(self):
-        if self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['ready_valid']:
-            self.loop_done_muxed = self.strm_run & ~self.rv_is_metadata & (((self.rv_num_data_cnt == 1) & self.fifo_pop_ready) | (self.rv_num_data_cnt == 0))
+        if self.rv_mode_on:
+            if (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid):
+                self.loop_done_muxed = self.block_done
+            else:
+                self.loop_done_muxed = self.block_done & self.is_last_block
         else:
             self.loop_done_muxed = self.loop_done
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
-    def rv_is_first_data_ff(self):
+    def rv_is_last_block_ff(self):
+        if self.reset:
+            self.is_last_block = 0
+        elif self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid_compressed:
+            if self.st_dma_start_pulse_r:
+                self.is_last_block = 0
+            elif self.block_done & ~self.is_last_block:
+                self.is_last_block = 1
+            elif self.loop_done_muxed:
+                self.is_last_block = 0
+
+    @always_ff((posedge, "clk"), (posedge, "reset"))
+    def rv_metadata_ff(self):
         if self.reset:
             self.rv_is_metadata = 0
-        else:
+        elif self.rv_mode_on:
             if self.st_dma_start_pulse_r:
+                self.rv_is_metadata = 1
+            elif ((self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid_compressed) & self.block_done & ~self.is_last_block):
                 self.rv_is_metadata = 1
             elif self.rv_is_metadata & self.fifo_pop_ready:
                 self.rv_is_metadata = 0
@@ -357,7 +391,7 @@ class GlbStoreDma(Generator):
 
     @always_comb
     def data_ready_g2f_comb(self):
-        if self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['ready_valid']:
+        if self.rv_mode_on:
             self.data_ready_g2f_w = self.fifo2cgra_ready
         else:
             self.data_ready_g2f_w = 0
@@ -380,7 +414,7 @@ class GlbStoreDma(Generator):
     def cycle_valid_comb(self):
         if self.cycle_counter_en:
             self.iter_step_valid = self.cycle_valid
-        elif self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['ready_valid']:
+        elif self.rv_mode_on:
             self.iter_step_valid = self.strm_run & self.fifo_pop_ready & ~self.rv_is_metadata
         else:
             self.iter_step_valid = self.strm_data_valid
@@ -388,7 +422,7 @@ class GlbStoreDma(Generator):
     @always_comb
     def strm_wr_packet_comb(self):
         self.strm_wr_en_w = self.iter_step_valid
-        if self.cfg_st_dma_ctrl_valid_mode == self.header.st_dma_valid_mode_e['ready_valid']:
+        if self.rv_mode_on:
             self.strm_wr_addr_w = resize(self.data_current_addr, self._params.glb_addr_width)
             self.strm_wr_data_w = self.data_fifo2dma
         else:
