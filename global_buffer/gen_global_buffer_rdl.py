@@ -192,6 +192,13 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     st_dma_ctrl_r.add_child(st_dma_num_repeat_f)
     addr_map.add_child(st_dma_ctrl_r)
 
+    st_dma_block_size_r = Reg("st_dma_block_size")
+    st_dma_first_block_size_f = Field("first_block_size", params.cgra_data_width, ["hw = w", "sw = r"])
+    st_dma_block_size_r.add_child(st_dma_first_block_size_f)
+    st_dma_second_block_size_f = Field("second_block_size", params.cgra_data_width, ["hw = w", "sw = r"])
+    st_dma_block_size_r.add_child(st_dma_second_block_size_f)
+    addr_map.add_child(st_dma_block_size_r)
+
     # Store DMA Header
     if params.queue_depth == 1:
         st_dma_header_rf = RegFile(f"st_dma_header_0", size=params.queue_depth)
@@ -200,7 +207,7 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
 
     # dim reg
     dim_r = Reg(f"dim")
-    dim_f = Field(f"dim", width=clog2(params.loop_level) + 1)
+    dim_f = Field(f"dim", width=clog2(params.store_dma_loop_level) + 1)
     dim_r.add_child(dim_f)
     st_dma_header_rf.add_child(dim_r)
 
@@ -217,7 +224,7 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     st_dma_header_rf.add_child(cycle_start_addr_r)
 
     # num_word reg
-    for i in range(params.loop_level):
+    for i in range(params.store_dma_loop_level):
         range_r = Reg(f"range_{i}")
         range_f = Field("range", width=params.axi_data_width)
         range_r.add_child(range_f)
@@ -253,7 +260,7 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
 
     # dim reg
     dim_r = Reg(f"dim")
-    dim_f = Field(f"dim", width=clog2(params.loop_level) + 1)
+    dim_f = Field(f"dim", width=clog2(params.load_dma_loop_level) + 1)
     dim_r.add_child(dim_f)
     ld_dma_header_rf.add_child(dim_r)
 
@@ -270,7 +277,7 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     ld_dma_header_rf.add_child(cycle_start_addr_r)
 
     # num_word reg
-    for i in range(params.loop_level):
+    for i in range(params.load_dma_loop_level):
         range_r = Reg(f"range_{i}")
         range_f = Field("range", width=params.axi_data_width)
         range_r.add_child(range_f)

@@ -210,14 +210,14 @@ module cgra (
         end
     end
 
-    function prr2glb_configure(int prr_id, int dim, int extent[LOOP_LEVEL],
-                               int cycle_stride[LOOP_LEVEL]);
+    function prr2glb_configure(int prr_id, int dim, int extent[LOAD_DMA_LOOP_LEVEL],
+                               int cycle_stride[LOAD_DMA_LOOP_LEVEL]);
         bit [99:0] cnt;
         bit done;
-        int i_extent[LOOP_LEVEL];
+        int i_extent[LOAD_DMA_LOOP_LEVEL];
         prr2glb_valid_cnt_q[prr_id] = {};
         done = 0;
-        i_extent = '{LOOP_LEVEL{0}};
+        i_extent = '{LOAD_DMA_LOOP_LEVEL{0}};
         while (1) begin
             cnt = 0;
             for (int i = 0; i < dim; i++) begin
