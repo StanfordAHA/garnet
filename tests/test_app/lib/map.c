@@ -204,7 +204,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
 
   if (io_tile_info->io == Input)
   {
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R, ((0b01 << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (1 << GLB_LD_DMA_CTRL_USE_FLUSH_F_LSB) | (0 << GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R, ((0b01 << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (LD_DMA_VALID_MODE_EXTERNAL_FLUSH << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_DIM_R, loop_dim);
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_START_ADDR_R, start_addr);
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
@@ -238,7 +238,7 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
   }
   else
   {
-    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R, ((0b10 << GLB_ST_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) | (1 << GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
+    add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R, ((0b10 << GLB_ST_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) | (ST_DMA_VALID_MODE_VALID << GLB_ST_DMA_CTRL_VALID_MODE_F_LSB)));
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R, loop_dim);
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_START_ADDR_R, start_addr);
     add_config(config_info, (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_CYCLE_START_ADDR_R, cycle_start_addr);
