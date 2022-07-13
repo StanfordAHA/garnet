@@ -10,7 +10,7 @@
 # AON boundary taps must line up with M3 VDD stripes.
 # stripes_per_tap controls the space between AON taps
 # as a multiple of the M3 power stripe pitch
-set stripes_per_tap 26
+set stripes_per_tap 18
 
 
 # Power Switch Params
@@ -23,7 +23,7 @@ set stripes_per_tap 26
 # sps12 (original default) yields 14 columns of switches and 4.5 hr runtime
 # sps26 yields six columns and finishes in 2.5 hr
 # now using sps18 to match pe tile, at alex's request
-set stripes_per_switch 26
+set stripes_per_switch 18
 
 # AON box floorplanning params
 
@@ -39,7 +39,7 @@ set aon_height 24
 
 # Sets AON box horizontal offset from center
 # We went to move this to the right of the SRAM macros for mem tile.
-set aon_horiz_offset 80
+set aon_horiz_offset -80
 
 # Sets AON box vertical offset from center
-set aon_vert_offset 15
+set aon_vert_offset 30

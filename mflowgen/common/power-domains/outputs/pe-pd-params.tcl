@@ -10,7 +10,7 @@
 # AON boundary taps must line up with M3 VDD stripes.
 # stripes_per_tap controls the space between AON taps
 # as a multiple of the M3 power stripe pitch
-set stripes_per_tap 26
+set stripes_per_tap 18
 
 
 # Power Switch Params
@@ -22,7 +22,7 @@ set stripes_per_tap 26
 #
 # If set to 12 in Amber (TSMC) design, get five columns of switches.
 # If set to 18, get 3 cols symmetrically placed, center col at center chip.
-set stripes_per_switch 26
+set stripes_per_switch 18
 
 # AON box floorplanning params
 
