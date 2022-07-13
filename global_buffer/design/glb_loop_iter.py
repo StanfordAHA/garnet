@@ -5,9 +5,10 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 class GlbLoopIter(Generator):
     ''' Generate loop iteration '''
 
-    def __init__(self, _params: GlobalBufferParams):
+    def __init__(self, _params: GlobalBufferParams, loop_level: int):
         super().__init__(f"glb_loop_iter")
         self._params = _params
+        self.loop_level = loop_level
 
         # INPUTS
         self.clk = self.clock("clk")
@@ -15,33 +16,33 @@ class GlbLoopIter(Generator):
         self.reset = self.reset("reset")
 
         self.ranges = self.input("ranges", self._params.axi_data_width,
-                                 size=self._params.loop_level,
+                                 size=self.loop_level,
                                  packed=True, explicit_array=True)
-        self.dim = self.input("dim", 1 + clog2(self._params.loop_level))
+        self.dim = self.input("dim", 1 + clog2(self.loop_level))
         self.step = self.input("step", 1)
-        self.mux_sel_out = self.output("mux_sel_out", max(clog2(self._params.loop_level), 1))
+        self.mux_sel_out = self.output("mux_sel_out", max(clog2(self.loop_level), 1))
         self.restart = self.output("restart", 1)
 
         # local varaibles
         self.dim_counter = self.var("dim_counter", self._params.axi_data_width,
-                                    size=self._params.loop_level,
+                                    size=self.loop_level,
                                     packed=True,
                                     explicit_array=True)
 
-        self.max_value = self.var("max_value", self._params.loop_level)
-        self.mux_sel = self.var("mux_sel", max(clog2(self._params.loop_level), 1))
+        self.max_value = self.var("max_value", self.loop_level)
+        self.mux_sel = self.var("mux_sel", max(clog2(self.loop_level), 1))
         self.wire(self.mux_sel_out, self.mux_sel)
 
         self.not_done = self.var("not_done", 1)
-        self.clear = self.var("clear", self._params.loop_level)
-        self.inc = self.var("inc", self._params.loop_level)
+        self.clear = self.var("clear", self.loop_level)
+        self.inc = self.var("inc", self.loop_level)
 
         self.is_maxed = self.var("is_maxed", 1)
         self.wire(self.is_maxed, (self.dim_counter[self.mux_sel]
                                   == self.ranges[self.mux_sel]) & self.inc[self.mux_sel])
 
         self.add_code(self.set_mux_sel)
-        for i in range(self._params.loop_level):
+        for i in range(self.loop_level):
             self.add_code(self.set_clear, idx=i)
             self.add_code(self.set_inc, idx=i)
             self.add_code(self.dim_counter_update, idx=i)
@@ -54,7 +55,7 @@ class GlbLoopIter(Generator):
     def set_mux_sel(self):
         self.mux_sel = 0
         self.not_done = 0
-        for i in range(self._params.loop_level):
+        for i in range(self.loop_level):
             if ~self.not_done:
                 if ~self.max_value[i] & (i < self.dim):
                     self.mux_sel = i

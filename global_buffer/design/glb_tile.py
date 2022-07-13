@@ -185,11 +185,14 @@ class GlbTile(Generator):
 
         # st dma
         self.cfg_st_dma_ctrl = self.var("cfg_st_dma_ctrl", self.header.cfg_store_dma_ctrl_t)
-        self.cfg_st_dma_header = self.var("cfg_st_dma_header", self.header.cfg_dma_header_t,
+        self.cfg_st_dma_header = self.var("cfg_st_dma_header", self.header.cfg_store_dma_header_t,
                                           size=self._params.queue_depth)
+        self.cfg_st_dma_first_block_size = self.var("cfg_st_dma_first_block_size", self._params.cgra_data_width)
+        self.cfg_st_dma_second_block_size = self.var("cfg_st_dma_second_block_size", self._params.cgra_data_width)
+
         # ld dma
         self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_load_dma_ctrl_t)
-        self.cfg_ld_dma_header = self.var("cfg_ld_dma_header", self.header.cfg_dma_header_t,
+        self.cfg_ld_dma_header = self.var("cfg_ld_dma_header", self.header.cfg_load_dma_header_t,
                                           size=self._params.queue_depth)
         # pcfg dma
         self.cfg_pcfg_dma_ctrl = self.var("cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
@@ -316,6 +319,8 @@ class GlbTile(Generator):
         self.wire(self.cfg_pcfg_dma_ctrl, self.glb_cfg.cfg_pcfg_dma_ctrl)
         self.wire(self.cfg_pcfg_dma_header, self.glb_cfg.cfg_pcfg_dma_header)
         self.wire(self.cfg_pcfg_broadcast_mux, self.glb_cfg.cfg_pcfg_broadcast_mux)
+        self.wire(self.cfg_st_dma_first_block_size, self.glb_cfg.cfg_st_dma_first_block_size)
+        self.wire(self.cfg_st_dma_second_block_size, self.glb_cfg.cfg_st_dma_second_block_size)
 
         self.glb_pcfg_broadcast = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_broadcast",
@@ -345,7 +350,9 @@ class GlbTile(Generator):
                        cfg_st_dma_header=self.cfg_st_dma_header,
                        st_dma_start_pulse=self.strm_f2g_start_pulse,
                        st_dma_done_interrupt=self.strm_f2g_interrupt_pulse,
-                       cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'])
+                       cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'],
+                       cfg_st_dma_first_block_size=self.cfg_st_dma_first_block_size,
+                       cfg_st_dma_second_block_size=self.cfg_st_dma_second_block_size)
 
         self.add_child("glb_load_dma",
                        GlbLoadDma(_params=self._params),

@@ -38,7 +38,7 @@ class GlbLoadDma(Generator):
         self.cfg_ld_dma_ctrl_mode = self.input("cfg_ld_dma_ctrl_mode", 2)
         self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width)
         self.cfg_ld_dma_header = self.input(
-            "cfg_ld_dma_header", self.header.cfg_dma_header_t, size=self._params.queue_depth)
+            "cfg_ld_dma_header", self.header.cfg_load_dma_header_t, size=self._params.queue_depth)
         self.cfg_data_network_g2f_mux = self.input("cfg_data_network_g2f_mux", self._params.cgra_per_glb)
 
         self.clk_en_dma2bank = self.output("clk_en_dma2bank", 1)
@@ -87,7 +87,7 @@ class GlbLoadDma(Generator):
         self.cycle_count = self.var("cycle_count", self._params.cycle_count_width)
         self.cycle_current_addr = self.var("cycle_current_addr", self._params.cycle_count_width)
         self.data_current_addr = self.var("data_current_addr", self._params.glb_addr_width + 1)
-        self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.loop_level))
+        self.loop_mux_sel = self.var("loop_mux_sel", clog2(self._params.load_dma_loop_level))
         self.repeat_cnt = self.var("repeat_cnt", clog2(self._params.queue_depth) + 1)
 
         if self._params.queue_depth != 1:
@@ -109,7 +109,7 @@ class GlbLoadDma(Generator):
         self.cgra2fifo_ready = self.var("cgra2fifo_ready", 1)
 
         # Current dma header
-        self.current_dma_header = self.var("current_dma_header", self.header.cfg_dma_header_t)
+        self.current_dma_header = self.var("current_dma_header", self.header.cfg_load_dma_header_t)
         if self._params.queue_depth == 1:
             self.wire(self.cfg_ld_dma_header, self.current_dma_header)
         else:
@@ -150,7 +150,7 @@ class GlbLoadDma(Generator):
         self.add_dma2bank_clk_en()
 
         # Loop iteration shared for cycle and data
-        self.loop_iter = GlbLoopIter(self._params)
+        self.loop_iter = GlbLoopIter(self._params, loop_level=self._params.load_dma_loop_level)
         self.add_child("loop_iter",
                        self.loop_iter,
                        clk=self.clk,
@@ -160,7 +160,7 @@ class GlbLoadDma(Generator):
                        mux_sel_out=self.loop_mux_sel,
                        restart=self.loop_done)
         self.wire(self.loop_iter.dim, self.current_dma_header[f"dim"])
-        for i in range(self._params.loop_level):
+        for i in range(self._params.load_dma_loop_level):
             self.wire(self.loop_iter.ranges[i], self.current_dma_header[f"range_{i}"])
 
         # Cycle stride
@@ -177,7 +177,7 @@ class GlbLoadDma(Generator):
                        finished=self.loop_done,
                        valid_output=self.cycle_valid)
 
-        self.cycle_stride_addr_gen = GlbAddrGen(self._params)
+        self.cycle_stride_addr_gen = GlbAddrGen(self._params, loop_level=self._params.load_dma_loop_level)
         self.cycle_stride_addr_gen.p_addr_width.value = self._params.cycle_count_width
         self.add_child("cycle_stride_addr_gen",
                        self.cycle_stride_addr_gen,
@@ -189,12 +189,12 @@ class GlbLoadDma(Generator):
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.cycle_current_addr)
         self.wire(self.cycle_stride_addr_gen.start_addr, self.current_dma_header[f"cycle_start_addr"])
-        for i in range(self._params.loop_level):
+        for i in range(self._params.load_dma_loop_level):
             self.wire(self.cycle_stride_addr_gen.strides[i],
                       self.current_dma_header[f"cycle_stride_{i}"])
 
         # Data stride
-        self.data_stride_addr_gen = GlbAddrGen(self._params)
+        self.data_stride_addr_gen = GlbAddrGen(self._params, loop_level=self._params.load_dma_loop_level)
         self.data_stride_addr_gen.p_addr_width.value = self._params.glb_addr_width + 1
         self.add_child("data_stride_addr_gen",
                        self.data_stride_addr_gen,
@@ -207,7 +207,7 @@ class GlbLoadDma(Generator):
                        addr_out=self.data_current_addr)
         self.wire(self.data_stride_addr_gen.start_addr, ext(self.current_dma_header[f"start_addr"],
                                                             self._params.glb_addr_width + 1))
-        for i in range(self._params.loop_level):
+        for i in range(self._params.load_dma_loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])
 
         # FIFO for ready/valid
@@ -235,7 +235,7 @@ class GlbLoadDma(Generator):
     @always_comb
     def almost_full_diff_logic(self):
         self.fifo_almost_full_diff = resize(const(self._params.tile2sram_rd_delay + 2, clog2(self._params.load_dma_fifo_depth))
-                                      + self.cfg_data_network_latency, clog2(self._params.load_dma_fifo_depth))
+                                            + self.cfg_data_network_latency, clog2(self._params.load_dma_fifo_depth))
 
     @ always_comb
     def iter_step_logic(self):
