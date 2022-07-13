@@ -42,4 +42,4 @@ set aon_height 24
 set aon_horiz_offset -80
 
 # Sets AON box vertical offset from center
-set aon_vert_offset 30
+set aon_vert_offset 15
