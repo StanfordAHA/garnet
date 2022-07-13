@@ -89,7 +89,7 @@ program glb_test (
     task automatic run_test(Test test);
         int err = 0;
         int i_addr = 0;
-        int i_extent[LOAD_DMA_LOOP_LEVEL];
+        int i_extent[LOOP_LEVEL];
         int latency;
         int data_cnt = 0;
         bit done = 0;
@@ -192,7 +192,7 @@ program glb_test (
                 kernels[i].data_arr = new[data_cnt];
                 kernels[i].data_arr_out = new[data_cnt];
                 i_addr = kernels[i].start_addr;
-                i_extent = '{LOAD_DMA_LOOP_LEVEL{0}};
+                i_extent = '{LOOP_LEVEL{0}};
                 done = 0;
                 data_cnt = 0;
                 // Note: Again, we cannot call function to write data to memory, we have to run task 
@@ -554,8 +554,8 @@ program glb_test (
 
     task automatic g2f_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
-                                     int extent[LOAD_DMA_LOOP_LEVEL], int cycle_stride[LOAD_DMA_LOOP_LEVEL],
-                                     int data_stride[LOAD_DMA_LOOP_LEVEL], bit [1:0] valid_mode);
+                                     int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
+                                     int data_stride[LOOP_LEVEL], bit [1:0] valid_mode);
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
                       ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
@@ -608,8 +608,8 @@ program glb_test (
 
     task automatic f2g_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
-                                     int extent[LOAD_DMA_LOOP_LEVEL], int cycle_stride[LOAD_DMA_LOOP_LEVEL],
-                                     int data_stride[LOAD_DMA_LOOP_LEVEL], bit [1:0] valid_mode);
+                                     int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
+                                     int data_stride[LOOP_LEVEL], bit [1:0] valid_mode);
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
                       ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
