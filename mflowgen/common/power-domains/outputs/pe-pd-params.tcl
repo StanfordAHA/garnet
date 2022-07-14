@@ -19,7 +19,8 @@ set vdd_m3_stripe_sparsity 3
 # 'stripes_per_tap' controls the space between AON taps
 # as a multiple of the M3 power stripe pitch.
 # Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
-set vdd_stripes_per_tap [ expr 12 / $vdd_m3_stripe_sparsity ]
+set stripes_per_tap 18
+set vdd_stripes_per_tap [ expr $stripes_per_tap / $vdd_m3_stripe_sparsity ]
 set stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
 
 
@@ -32,7 +33,8 @@ set stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
 
 # If set to 12 in Amber (TSMC) design, get five columns of switches.
 # If set to 18, get 3 cols symmetrically placed, center col at center chip.
-set vdd_stripes_per_switch [ expr 18 / $vdd_m3_stripe_sparsity ]
+set stripes_per_switch 18
+set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
 set stripes_per_switch [ expr $vdd_stripes_per_switch * $vdd_m3_stripe_sparsity ]
 
 # AON box floorplanning params
