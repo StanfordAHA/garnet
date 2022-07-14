@@ -1,3 +1,4 @@
+from typing_extensions import runtime
 import magma
 from gemstone.generator.from_magma import FromMagma
 from typing import List
@@ -45,6 +46,8 @@ class CoreCombinerCore(LakeCoreBase):
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
 
+        self.runtime_mode = None
+
         cache_key = (self.data_width,
                      self.config_data_width,
                      self.config_addr_width,
@@ -63,7 +66,7 @@ class CoreCombinerCore(LakeCoreBase):
                                    config_width=16,
                                    config_addr_width=8,
                                    config_data_width=32,
-                                   name=cc_core_name,
+                                   name=f"{cc_core_name}_inner",
                                    controllers=controllers_list)
 
             self.dut = self.CC.dut
@@ -97,13 +100,30 @@ class CoreCombinerCore(LakeCoreBase):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
-    def get_config_bitstream(self, config_tuple):
-        op = config_tuple
-        configs = []
-        config_pe = [("tile_en", 1)]
-        config_pe += self.dut.get_bitstream(op=op)
+    def set_runtime_mode(self, runtime_mode):
+        print(f"SETTING RUNTIME MODE: {runtime_mode}")
+        assert runtime_mode in self.get_modes_supported()
+        self.runtime_mode = runtime_mode
 
-        for name, v in config_pe:
+    def get_config_bitstream(self, config_tuple):
+
+        # print(self.runtime_mode)
+        # assert self.runtime_mode is not None
+        _, config_kwargs = config_tuple
+        assert 'mode' in config_kwargs
+
+        print(config_kwargs)
+
+        # config_dict = {}
+        # config_dict[self.runtime_mode] = config_kwargs
+
+        # op = config_tuple
+        configs = []
+        # config_pe = [("tile_en", 1)]
+        configs_cc = []
+        configs_cc += self.dut.get_bitstream(config_kwargs)
+
+        for name, v in configs_cc:
             configs = [self.get_config_data(name, v)] + configs
         return configs
 
@@ -112,6 +132,9 @@ class CoreCombinerCore(LakeCoreBase):
 
     def get_modes_supported(self):
         return self.CC.get_modes_supported()
+
+    def get_port_remap(self):
+        return self.CC.get_port_remap()
 
 
 if __name__ == "__main__":
