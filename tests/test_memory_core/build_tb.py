@@ -120,8 +120,6 @@ class SparseTBBuilder(m.Generator2):
             m.wire(self.interconnect_circuit['clk'], self.io.clk)
             m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
             m.wire(self.io.stall, self.interconnect_circuit['stall'][0])
-            # m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
-            # print(str(flush_h))
             m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
             m.wire(m.Bits[1](1)[0], self.interconnect_circuit[str(flush_valid_h)])
 
@@ -212,10 +210,6 @@ class SparseTBBuilder(m.Generator2):
         for child in children:
             for cp in self.fabric[child].ports:
                 actual_port = self.fabric[child].ports[cp]
-                # print(actual_port)
-                # print(actual_port.sources)
-                # print(actual_port.sinks)
-                # print(actual_port.width)
                 sourced_mask = [0 for i in range(actual_port.width)]
                 if str(actual_port.port_direction) == "PortDirection.In" and str(actual_port.port_type) == "PortType.Data":
                     # If no sources, wire to 0 unless it's a ready path, then wire each bit to 1
@@ -230,7 +224,6 @@ class SparseTBBuilder(m.Generator2):
                         # then we need to dissect them
                         try:
                             for p in actual_port.sources:
-                                # print(actual_port.port_type)
                                 for i in range(p.left.high + 1 - p.left.low):
                                     sourced_mask[i + p.left.low] = 1
                             for i in range(len(sourced_mask)):
@@ -248,7 +241,6 @@ class SparseTBBuilder(m.Generator2):
         '''
         children = self.fabric.child_generator()
         for child in children:
-            # print(child)
             self.fabric.wire(self._u_clk, self.fabric[child].ports['clk'])
             self.fabric.wire(self._u_rst_n, self.fabric[child].ports['rst_n'])
             self.fabric.wire(self._u_flush, self.fabric[child].ports['flush'])
@@ -297,7 +289,6 @@ class SparseTBBuilder(m.Generator2):
                 for conn_block, cl in addtl_conns.items():
                     conn_list = cl
                 for addtl_conn in conn_list:
-                    # print(addtl_conn)
                     # Now wire them up
                     conn_des, width = addtl_conn
 
@@ -324,7 +315,6 @@ class SparseTBBuilder(m.Generator2):
                         else:
                             conn_dst_inst = children[conn_dst]
                             try:
-                                # print(conn_dst_inst.ports)
                                 wire_use_dst = conn_dst_inst.ports[conn_dst_prt]
                             #     # wire_use_src = conn_src_inst.ports[conn_src_prt]
                             except AttributeError:
@@ -339,7 +329,6 @@ class SparseTBBuilder(m.Generator2):
         '''
         Go through each node and instantiate the required resources
         '''
-        # print(self.core_nodes)
 
         self.__cache_gens = {}
 
@@ -350,7 +339,6 @@ class SparseTBBuilder(m.Generator2):
             core_name = None
             core_inst = None
             new_name = node.get_attributes()['label']
-            # print(node.get_attributes())
             if hw_node_type == f"{HWNodeType.GLB}":
                 new_node_type = GLBNode
                 core_name = "glb"
@@ -418,7 +406,6 @@ class SparseTBBuilder(m.Generator2):
 
             assert new_node_type is not None
             assert core_name != ""
-            # print(node.get_attributes()['type'])
             if new_node_type == GLBNode:
                 conn_id = self.get_next_seq()
                 # Have to handle the GLB nodes slightly differently
@@ -431,15 +418,11 @@ class SparseTBBuilder(m.Generator2):
                     direction = "write"
                     num_blocks = 1
                     file_number = 0
-                    # data = self.nlb.register_core("io_16", name="data_in_")
-                    # ready = self.nlb.register_core("io_1", name="ready_out_")
-                    # valid = self.nlb.register_core("io_1", name="valid_in_")
                     data = self.fabric.input(f'data_in_{conn_id}', 17)
                     ready = self.fabric.output(f'data_in_{conn_id}_ready', 1)
                     valid = self.fabric.input(f'data_in_{conn_id}_valid', 1)
                     tx_size = 7
-                    if conn_id == 13:
-                        print("MEK2")
+
                     if node.get_attributes()['mode'].strip('"') == 1 or node.get_attributes()['mode'].strip('"') == '1':
                         file_number = 1
                         tx_size = 12
@@ -448,32 +431,20 @@ class SparseTBBuilder(m.Generator2):
                     # GLB read wants a data output, ready, valid
                     direction = "read"
                     glb_name = "CGRA_TO_GLB"
-                    # print(node.get_attributes())
-                    # print(node.get_attributes()['mode'].strip('"'))
-                    # data = self.nlb.register_core("io_16", name="data_out_")
-                    # ready = self.nlb.register_core("io_1", name="ready_in_")
-                    # valid = self.nlb.register_core("io_1", name="valid_out_")
                     data = self.fabric.output(f'data_out_{conn_id}', 17)
                     ready = self.fabric.input(f'data_out_{conn_id}_ready', 1)
                     valid = self.fabric.output(f'data_out_{conn_id}_valid', 1)
                     if 'vals' in node.get_attributes()['mode'].strip('"'):
-                        # print("NUM 1")
                         num_blocks = 1
                     else:
-                        # print("NUM 2")
                         num_blocks = 2
                     tx_size = 1
                 elif node.get_attributes()['type'].strip('"') == 'arrayvals':
                     # GLB write wants a data input, ready, valid
                     glb_name = "GLB_TO_CGRA"
-                    if conn_id == 13:
-                        print("MEK")
                     data = self.fabric.input(f'data_in_{conn_id}', 17)
                     ready = self.fabric.output(f'data_in_{conn_id}_ready', 1)
                     valid = self.fabric.input(f'data_in_{conn_id}_valid', 1)
-                    # data = self.nlb.register_core("io_16", name="data_in_")
-                    # ready = self.nlb.register_core("io_1", name="ready_out_")
-                    # valid = self.nlb.register_core("io_1", name="valid_in_")
                     direction = "write"
                     num_blocks = 1
                     tx_size = 7
@@ -527,9 +498,7 @@ class SparseTBBuilder(m.Generator2):
         in_list = []
 
         all_ports = self.interconnect_circuit.interface
-        # print(all_ports)
         for port in all_ports:
-            # print(port)
             if 'glb2io' in port and 'ready' not in port:
                 in_list.append(port)
             elif 'io2glb' in port and 'ready' in port:
@@ -541,8 +510,6 @@ class SparseTBBuilder(m.Generator2):
         '''
         Here we are going to wire all of the relevant interconnect inputs to 0
         '''
-        # print("HERE I AM WIRE")
-        # print(self.interconnect_ins)
         for ic_in in self.interconnect_ins:
             # Get width from name
             if 'ready' not in ic_in and 'valid' not in ic_in:
@@ -557,7 +524,6 @@ class SparseTBBuilder(m.Generator2):
         self._all_dones = []
 
         glb_nodes = [node for node in self.core_nodes.values() if type(node) == GLBNode]
-        # print(glb_nodes)
         if len(glb_nodes) < 3:
             print('STOPPING')
             exit()
@@ -587,21 +553,14 @@ class SparseTBBuilder(m.Generator2):
                     data_h = self.wrap_circ[glb_data.name]
                     ready_h = self.wrap_circ[glb_ready.name]
                     valid_h = self.wrap_circ[glb_valid.name]
-                    print(data_h)
-                    print(ready_h)
-                    print(valid_h)
                 else:
                     data_h = self.nlb.get_handle(glb_data, prefix="glb2io_17_")
                     suffix = str(data_h)[10:]
-                    # ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
-                    # valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
-                    # print(suffix)
                     ready_h = f"glb2io_17_{suffix}_ready"
                     valid_h = f"glb2io_17_{suffix}_valid"
 
                     # Get rid of these signals from leftover inputs...
                     self.interconnect_ins.remove(str(data_h))
-                    # print(str(valid_h))
                     self.interconnect_ins.remove(str(valid_h))
 
                     data_h = self.interconnect_circuit[str(data_h)]
@@ -659,9 +618,6 @@ class SparseTBBuilder(m.Generator2):
                 else:
                     data_h = self.nlb.get_handle(glb_data, prefix="io2glb_17_")
                     suffix = str(data_h)[10:]
-                    print(suffix)
-                    # ready_h = self.nlb.get_handle(glb_ready, prefix="glb2io_1_")
-                    # valid_h = self.nlb.get_handle(glb_valid, prefix="io2glb_1_")
                     ready_h = f"io2glb_17_{suffix}_ready"
                     valid_h = f"io2glb_17_{suffix}_valid"
 
@@ -733,7 +689,6 @@ class SparseTBBuilder(m.Generator2):
             new_node_type = None
             core_tag = None
             new_name = node.get_attributes()['label']
-            # print(node.get_attributes())
             if hw_node_type == f"{HWNodeType.GLB}":
                 new_node_type = GLBNode
                 core_tag = "glb"
@@ -786,7 +741,6 @@ class SparseTBBuilder(m.Generator2):
 
             assert new_node_type is not None
             assert core_tag != ""
-            # print(node.get_attributes()['type'])
             if new_node_type == GLBNode:
                 # Have to handle the GLB nodes slightly differently
                 # Instead of directly registering a core, we are going to register the io,
@@ -813,13 +767,9 @@ class SparseTBBuilder(m.Generator2):
                     # valid = self.nlb.register_core("io_1", name="valid_out_")
                     direction = "read"
                     glb_name = "CGRA_TO_GLB"
-                    # print(node.get_attributes())
-                    # print(node.get_attributes()['mode'].strip('"'))
                     if 'vals' in node.get_attributes()['mode'].strip('"'):
-                        # print("NUM 1")
                         num_blocks = 1
                     else:
-                        # print("NUM 2")
                         num_blocks = 2
                     tx_size = 1
                 elif node.get_attributes()['type'].strip('"') == 'arrayvals':
@@ -869,14 +819,6 @@ class SparseTBBuilder(m.Generator2):
             dst = edge.get_destination()
             src_name = src
             dst_name = dst
-            print("MEK")
-            print(edge)
-            print(src_name)
-            print(src)
-            print(dst_name)
-            print(dst)
-            print(self.core_nodes[src_name])
-            print(self.core_nodes[dst_name])
 
             addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
             if addtl_conns is not None:
@@ -888,26 +830,21 @@ class SparseTBBuilder(m.Generator2):
         '''
         for node in self.graph.get_nodes():
             node_attr = node.get_attributes()
-            print(node)
-            # print(node_attr)
             node_config_ret = self.core_nodes[node.get_name()].configure(node_attr)
             if node_config_ret is not None:
                 node_config_tuple, node_config_kwargs = node_config_ret
             # GLB tiles return none so that we don't try to config map them...
             if self.bespoke:
                 if node_attr['hwnode'] == 'HWNodeType.GLB':
-                    # print("SAW GLB...skipping")
                     continue
                 node_name = node.get_name()
                 # node_inst = self.fabric[self.core_gens[node_name].get_name()]
                 node_inst = self.core_gens[node_name]
-                # print(node_inst)
                 if node_attr['hwnode'] == 'HWNodeType.Memory':
                     node_cfg = node_inst.get_bitstream(node_config_kwargs)
                 else:
                     node_cfg = node_inst.get_bitstream(**node_config_kwargs)
                 # Now for the configurations, wire them directly
-                # print(node_cfg)
                 for cfg_port, cfg_val in node_cfg:
                     # Now we need the flattened wrapper/actually used instance
                     child_inst = self.fabric[self.core_nodes[node.get_name()].get_name()]
@@ -923,8 +860,6 @@ class SparseTBBuilder(m.Generator2):
 
     def display_names(self):
         if self.bespoke:
-            # print(self.core_nodes)
-            # print(self.name_maps)
             for key, val in self.name_maps.items():
                 print(f"{key} => {val}")
         else:
@@ -1268,28 +1203,6 @@ if __name__ == "__main__":
     numpy.random.seed(seed)
     random.seed(seed)
 
-    # # Generate two matrices...
-    # b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-    # c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-    # b_matrix.dump_outputs()
-    # c_matrix.dump_outputs()
-
-    # b_mat = b_matrix.get_matrix()
-    # c_mat = c_matrix.get_matrix()
-
-    # if 'identity' in args.sam_graph:
-    #     output_matrix = b_mat
-    # elif 'matmul' in args.sam_graph:
-    #     # First transpose c_mat
-    #     c_mat_trans = numpy.transpose(c_mat)
-    #     output_matrix = numpy.matmul(b_mat, c_mat_trans)
-    # elif 'elemmul' in args.sam_graph:
-    #     output_matrix = numpy.multiply(b_mat, c_mat)
-    # elif 'elemadd' in args.sam_graph:
-    #     output_matrix = numpy.add(b_mat, c_mat)
-    # else:
-    #     raise ValueError
-
     output_matrix = software_gold(sam_graph, matrix_tmp_dir, give_tensor)
     out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format='CSF', dump_dir=gold_dir, tensor=output_matrix)
     out_mat.dump_outputs()
@@ -1332,13 +1245,12 @@ if __name__ == "__main__":
         controllers.append(scan)
         controllers.append(isect)
 
-        altcore = [(ScannerCore, {'fifo_depth': fifo_depth}),
+        altcore = [(ScannerCore, {'fifo_depth': fifo_depth}), (CoreCombinerCore, {'controllers_list': controllers}),
                    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
                                                                                  'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
                                                                                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
                    (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}), (FakePECore, {'fifo_depth': fifo_depth}),
                    (RepeatCore, {'fifo_depth': fifo_depth}),
-                   #    (CoreCombinerCore, {'controllers_list': controllers})]
                    (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,

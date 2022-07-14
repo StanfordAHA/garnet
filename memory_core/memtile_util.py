@@ -436,7 +436,23 @@ class NetlistBuilder():
         # else:
         #     tag = self.core_map[core]
 
-        if core == "register":
+        cc_core_supported = None
+
+        for core_key, core_value in self._interconnect.tile_circuits.items():
+            # print(f"{core_key}, {core_value.name()}")
+            if "CoreCombiner" in core_value.name():
+                # print("Found core combiner...")
+                # Get supported components
+                cc_core = core_value.core
+                cc_core_supported = cc_core.get_modes_supported()
+                # print(f"Modes: {cc_core_supported}")
+
+        prioritize_combiner = True
+
+        # Choose the core combiner if the resource is in there...
+        if cc_core_supported is not None and core in cc_core_supported and prioritize_combiner:
+            tag = "C"
+        elif core == "register":
             tag = "r"
         elif core == "io_16":
             tag = "I"
@@ -581,7 +597,6 @@ class NetlistBuilder():
 
     def get_handle(self, core, prefix="glb2io_1_X"):
         self.get_placement()
-        print(self._placement)
         if core in self._placement:
             core_x, core_y = self._placement[core]
         else:
