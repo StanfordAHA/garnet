@@ -53,7 +53,7 @@ set aon_height 24
 
 # Sets AON box horizontal offset from center in # of unit stdcell widths.
 # We want to move this to the right of the SRAM macros for mem tile.
-set aon_horiz_offset 80
+set aon_horiz_offset -80
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 15
