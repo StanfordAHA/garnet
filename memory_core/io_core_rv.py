@@ -25,7 +25,6 @@ class IOCoreReadyValid(LakeCoreBase):
                  data_width=16,  # CGRA Params
                  config_data_width=32,
                  config_addr_width=8,
-                 #  tracks_supported=[1, 16, 17],
                  tracks_supported=[1, 17],
                  fifo_depth=2):
 

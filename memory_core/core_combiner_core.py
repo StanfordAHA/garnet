@@ -68,14 +68,18 @@ class CoreCombinerCore(LakeCoreBase):
 
             self.dut = self.CC.dut
 
+            print(self.dut)
+
+            print("CALLING VERILOG ON CORE COMBINER")
+
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
                                      optimize_if=False,
                                      check_flip_flop_always_ff=False)
-            LakeCoreBase._circuit_cache[cache_key] = (circ, self.dut)
+            LakeCoreBase._circuit_cache[cache_key] = (circ, self.dut, self.CC)
         else:
-            circ, self.dut = LakeCoreBase._circuit_cache[cache_key]
+            circ, self.dut, self.CC = LakeCoreBase._circuit_cache[cache_key]
 
         # Save as underlying circuit object
         self.underlying = FromMagma(circ)
@@ -104,7 +108,10 @@ class CoreCombinerCore(LakeCoreBase):
         return configs
 
     def pnr_info(self):
-        return PnRTag("A", self.DEFAULT_PRIORITY, 1)
+        return PnRTag("C", self.DEFAULT_PRIORITY, 1)
+
+    def get_modes_supported(self):
+        return self.CC.get_modes_supported()
 
 
 if __name__ == "__main__":
