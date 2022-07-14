@@ -18,7 +18,6 @@ set stripes_per_tap 18
 # Like the taps, power switches must line up with M3 VDD stripes.
 # 'stripes_per switch' controls space betwen power switches as a
 # multiple of the M3 power stripe pitch.
-# power stripe pitch.
 # 
 # sps12 (original default) yields 14 columns of switches and 4.5 hr runtime
 # sps26 yields six columns and finishes in 2.5 hr
