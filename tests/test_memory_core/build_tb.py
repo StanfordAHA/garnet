@@ -970,6 +970,12 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
+    elif 'mat_identity_dense.gv' in app_name:
+        # PASSES
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        output_matrix = b_mat
     elif 'mat_mattransmul.gv' in app_name:
         # WRONG GRAPH
         raise NotImplementedError
@@ -1255,7 +1261,9 @@ if __name__ == "__main__":
         controllers.append(isect)
 
         # altcore = [(ScannerCore, {'fifo_depth': fifo_depth}), (CoreCombinerCore, {'controllers_list': controllers}),
-        altcore = [(CoreCombinerCore, {'controllers_list': controllers}),
+        altcore = [(CoreCombinerCore, {'controllers_list': controllers,
+                                       'use_sim_sram': not physical_sram,
+                                       'tech_map': GF_Tech_Map(depth=512, width=32)}),
                    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
                                                                                  'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
                                                                                  'tech_map': GF_Tech_Map(depth=512, width=32)}),

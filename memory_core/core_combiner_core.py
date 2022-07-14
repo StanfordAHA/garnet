@@ -12,7 +12,7 @@ from gemstone.common.core import PnRTag
 from lake.top.core_combiner import CoreCombiner
 from lake.modules.intersect import Intersect
 from lake.modules.scanner import Scanner
-
+from lake.top.tech_maps import GF_Tech_Map
 import kratos as kts
 
 if __name__ == "__main__":
@@ -28,7 +28,9 @@ class CoreCombinerCore(LakeCoreBase):
                  config_data_width=32,
                  config_addr_width=8,
                  fifo_depth=8,
-                 controllers_list=None):
+                 controllers_list=None,
+                 use_sim_sram=True,
+                 tech_map=GF_Tech_Map(depth=512, width=32)):
 
         cc_core_name = "CoreCombiner"
 
@@ -45,6 +47,8 @@ class CoreCombinerCore(LakeCoreBase):
         self.data_width = data_width
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
+        self.use_sim_sram = use_sim_sram
+        self.tech_map = tech_map
 
         self.runtime_mode = None
 
@@ -67,7 +71,9 @@ class CoreCombinerCore(LakeCoreBase):
                                    config_addr_width=8,
                                    config_data_width=32,
                                    name=f"{cc_core_name}_inner",
-                                   controllers=controllers_list)
+                                   controllers=controllers_list,
+                                   use_sim_sram=self.use_sim_sram,
+                                   tech_map=self.tech_map)
 
             self.dut = self.CC.dut
 
