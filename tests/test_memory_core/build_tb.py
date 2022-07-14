@@ -1197,6 +1197,7 @@ if __name__ == "__main__":
     parser.add_argument('--ic_fork', action="store_true")
     parser.add_argument('--give_tensor', action="store_true")
     parser.add_argument('--physical_sram', action="store_true")
+    parser.add_argument('--just_verilog', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1209,6 +1210,7 @@ if __name__ == "__main__":
     give_tensor = args.give_tensor
     fifo_depth = args.fifo_depth
     physical_sram = args.physical_sram
+    just_verilog = args.just_verilog
 
     sam_graph = args.sam_graph
 
@@ -1281,10 +1283,11 @@ if __name__ == "__main__":
                                    altcore=altcore,
                                    ready_valid=True)
 
-        # circuit = interconnect.circuit()
-        # import magma
-        # magma.compile("tests", circuit)
-        # exit(0)
+        if just_verilog:
+            circuit = interconnect.circuit()
+            import magma
+            magma.compile("tests", circuit)
+            exit()
 
         nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir)
 
