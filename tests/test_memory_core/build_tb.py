@@ -115,7 +115,7 @@ class SparseTBBuilder(m.Generator2):
 
             flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_")
             flush_tile = str(flush_h)[9:]
-            flush_valid_h = f"glb2io_1_valid_{flush_tile}"
+            flush_valid_h = f"glb2io_1_{flush_tile}_valid"
 
             m.wire(self.interconnect_circuit['clk'], self.io.clk)
             m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
@@ -596,8 +596,8 @@ class SparseTBBuilder(m.Generator2):
                     # ready_h = self.nlb.get_handle(glb_ready, prefix="io2glb_1_")
                     # valid_h = self.nlb.get_handle(glb_valid, prefix="glb2io_1_")
                     # print(suffix)
-                    ready_h = f"glb2io_17_ready_{suffix}"
-                    valid_h = f"glb2io_17_valid_{suffix}"
+                    ready_h = f"glb2io_17_{suffix}_ready"
+                    valid_h = f"glb2io_17_{suffix}_valid"
 
                     # Get rid of these signals from leftover inputs...
                     self.interconnect_ins.remove(str(data_h))
@@ -662,12 +662,8 @@ class SparseTBBuilder(m.Generator2):
                     print(suffix)
                     # ready_h = self.nlb.get_handle(glb_ready, prefix="glb2io_1_")
                     # valid_h = self.nlb.get_handle(glb_valid, prefix="io2glb_1_")
-                    ready_h = f"io2glb_17_ready_{suffix}"
-                    valid_h = f"io2glb_17_valid_{suffix}"
-                    print(ready_h)
-
-                    print(self.interconnect_ins)
-                    # print(self.interconnect_circuit)
+                    ready_h = f"io2glb_17_{suffix}_ready"
+                    valid_h = f"io2glb_17_{suffix}_valid"
 
                     # Get rid of this signal from leftover inputs...
                     self.interconnect_ins.remove(str(ready_h))
@@ -1336,20 +1332,18 @@ if __name__ == "__main__":
         controllers.append(scan)
         controllers.append(isect)
 
-        # altcore = [(ScannerCore, {}), (IntersectCore, {}),
-        # altcore = [(ScannerCore, {}),
-        altcore = [(IOCoreReadyValid, {'fifo_depth': 2}), (ScannerCore, {'fifo_depth': fifo_depth}), (IOCoreReadyValid, {'fifo_depth': 2}),
+        altcore = [(ScannerCore, {'fifo_depth': fifo_depth}),
                    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
                                                                                  'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
                                                                                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
                    (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}), (FakePECore, {'fifo_depth': fifo_depth}),
                    (RepeatCore, {'fifo_depth': fifo_depth}),
-                   (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth}),
-                   (CoreCombinerCore, {'controllers_list': controllers})]
+                   #    (CoreCombinerCore, {'controllers_list': controllers})]
+                   (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    # io_sides=NetlistBuilder.io_sides(),
-                                   io_sides=IOSide.None_,
+                                   io_sides=IOSide.North,
                                    num_tracks=num_tracks,
                                    add_pd=False,
                                    # Soften the flush...?

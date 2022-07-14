@@ -156,20 +156,20 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     outputs = set()
     for core in cores.values():
         # Skip IO cores.
-        if core is None or isinstance(core, IOCoreValid):
+        if core is None or isinstance(core, IOCoreValid) or isinstance(core, IOCoreReadyValid):
             continue
         inputs |= {i.qualified_name() for i in core.inputs()}
         outputs |= {o.qualified_name() for o in core.outputs()}
 
     print(inputs)
-    inputs.remove("glb2io_1")
+    # inputs.remove("glb2io_1")
     # inputs.remove("glb2io_16")
-    inputs.remove("glb2io_17")
+    # inputs.remove("glb2io_17")
     # inputs.remove("glb2io_17_valid")
     # inputs.remove("io2glb_17_ready")
-    outputs.remove("io2glb_1")
+    # outputs.remove("io2glb_1")
     # outputs.remove("io2glb_16")
-    outputs.remove("io2glb_17")
+    # outputs.remove("io2glb_17")
     # outputs.remove("glb2io_17_ready")
     # outputs.remove("io2glb_17_valid")
 
@@ -211,8 +211,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     ics = {}
 
     track_list = list(range(num_tracks))
-    io_in = {"f2io_1": [0], "f2io_16": [0]}
-    io_out = {"io2f_1": track_list, "io2f_16": track_list}
+    io_in = {"f2io_1": [0], "f2io_17": [0]}
+    io_out = {"io2f_1": track_list, "io2f_17": track_list}
 
     for bit_width in bit_widths:
         if io_sides & IOSide.None_:

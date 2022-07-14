@@ -66,9 +66,6 @@ class CoreCombinerCore(LakeCoreBase):
                                    name=cc_core_name,
                                    controllers=controllers_list)
 
-            print(self.CC.dut)
-            print(self.CC.dut.get_mode_map())
-
             self.dut = self.CC.dut
 
             circ = kts.util.to_magma(self.dut,
