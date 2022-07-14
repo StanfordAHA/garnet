@@ -1286,7 +1286,7 @@ if __name__ == "__main__":
         if just_verilog:
             circuit = interconnect.circuit()
             import magma
-            magma.compile("tests", circuit)
+            magma.compile(f"{args.test_dump_dir}/SparseTBBuilder", circuit)
             exit()
 
         nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir)
