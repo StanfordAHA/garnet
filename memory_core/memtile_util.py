@@ -412,6 +412,9 @@ class NetlistBuilder():
         self._core_names = {}
         self._core_used = {}
         self._dest_counts = {}
+        self._core_remappings = {}
+        self._core_runtime_mode = {}
+        self._core_map = {}
 
     def register_core(self, core, flushable=False, config=None, name=""):
         ''' Register the core/primitive with the
@@ -438,6 +441,9 @@ class NetlistBuilder():
 
         cc_core_supported = None
 
+        if core == "scanner":
+            core = "read_scanner"
+
         for core_key, core_value in self._interconnect.tile_circuits.items():
             # print(f"{core_key}, {core_value.name()}")
             if "CoreCombiner" in core_value.name():
@@ -449,9 +455,17 @@ class NetlistBuilder():
 
         prioritize_combiner = True
 
+        core_remapping = None
+
+        print_diag = False
+
         # Choose the core combiner if the resource is in there...
         if cc_core_supported is not None and core in cc_core_supported and prioritize_combiner:
             tag = "C"
+            # tag = cc_core.pnr_info().get_tag_name()
+            core_remapping = cc_core.get_port_remap()[core]
+            print_diag = True
+            cc_core.set_runtime_mode(core)
         elif core == "register":
             tag = "r"
         elif core == "io_16":
@@ -486,12 +500,17 @@ class NetlistBuilder():
             tag = core.pnr_info().tag_name
 
         ret_str = f"{tag}{self._core_num}"
+        if print_diag:
+            print(f"Did this on: {ret_str}")
         if flushable:
             self._flushable.append(ret_str)
         self._cores.append(ret_str)
         self._core_num += 1
         self._core_names[ret_str] = name
         self._core_used[ret_str] = 0
+        if core_remapping is not None:
+            self._core_remappings[ret_str] = core_remapping
+            self._core_runtime_mode[ret_str] = core
         if config is not None:
             self._core_config[ret_str] = (config, 0)
         return ret_str
@@ -564,6 +583,21 @@ class NetlistBuilder():
                 raise RuntimeError
         if self._placement_up_to_date:
             return
+
+        # Do remapping here...
+        for conn_name, connection_list in self._netlist.items():
+            for i, connection_tuple in enumerate(connection_list):
+                mapped_core, signal_name = connection_tuple
+                if mapped_core in self._core_remappings:
+                    # print(f"Signal {signal_name} being remapped according to {self._core_remappings[mapped_core]}")
+                    if signal_name == "flush":
+                        continue
+                    assert signal_name in self._core_remappings[mapped_core]
+                    remapped_sig = self._core_remappings[mapped_core][signal_name]
+                    self._netlist[conn_name][i] = (mapped_core, remapped_sig)
+
+        print("Done remapping...")
+
         self._placement, self._routing, _ = pnr(self._interconnect, (self._netlist, self._bus), cwd=self._cwd, harden_flush=False)
         self._placement_up_to_date = True
 
@@ -606,6 +640,12 @@ class NetlistBuilder():
 
     def get_handle_str(self, base_sig):
         return self._circuit.interface[base_sig]
+
+    def get_core_runtimes(self):
+        return self._core_runtime_mode
+
+    def get_core_object(self, mapped_name):
+        return self._core_names
 
     def add_config(self, new_config):
         self._config_data += new_config

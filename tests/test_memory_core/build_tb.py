@@ -856,7 +856,16 @@ class SparseTBBuilder(m.Generator2):
                     # self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
                     # continue
                 print(f"Node name --- {self.core_nodes[node.get_name()].get_name()}")
-                self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
+                # Hack for now - identify core combiner nodes and pass them the kwargs
+                if "C" in self.core_nodes[node.get_name()].get_name():
+                    runtime_modes = self.nlb.get_core_runtimes()
+                    runtime_mode = runtime_modes[self.core_nodes[node.get_name()].get_name()]
+                    # Now need to set the runtime
+                    node_config_kwargs['mode'] = runtime_mode
+                    pass_config_kwargs_tuple = (1, node_config_kwargs)
+                    self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), pass_config_kwargs_tuple)
+                else:
+                    self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
 
     def display_names(self):
         if self.bespoke:
@@ -1245,11 +1254,12 @@ if __name__ == "__main__":
         controllers.append(scan)
         controllers.append(isect)
 
-        altcore = [(ScannerCore, {'fifo_depth': fifo_depth}), (CoreCombinerCore, {'controllers_list': controllers}),
+        # altcore = [(ScannerCore, {'fifo_depth': fifo_depth}), (CoreCombinerCore, {'controllers_list': controllers}),
+        altcore = [(CoreCombinerCore, {'controllers_list': controllers}),
                    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
                                                                                  'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
                                                                                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                   (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}), (FakePECore, {'fifo_depth': fifo_depth}),
+                   (FakePECore, {'fifo_depth': fifo_depth}),
                    (RepeatCore, {'fifo_depth': fifo_depth}),
                    (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
 
