@@ -50,3 +50,6 @@ source -echo -verbose ${common_cnst}
 
 set_case_analysis 0 MemCore_inst0/LakeTop_W_inst0/mode[0]
 set_case_analysis 1 MemCore_inst0/LakeTop_W_inst0/mode[1]
+
+puts "setup-session: SDF UNDO!"
+set_attribute avoid false [get_lib_cells */*SDF*]
