@@ -4,6 +4,7 @@
 # Author: Alex Carsello
 # Date: 3/7/21
 
+
 # VDD stripe sparsity params
 
 # Always-on domain is much smaller than the switching domain, so need
@@ -31,8 +32,8 @@ set stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
 # 'stripes_per switch' controls space betwen power switches as a
 # multiple of the M3 power stripe pitch.
 # 
-# sps12/vmss (original default) yields 14 columns of switches and 4.5 hr runtime
-# sps26/vmss yields six columns and finishes in 2.5 hr
+# sps12 (original default) yields 14 columns of switches and 4.5 hr runtime
+# sps26 yields six columns and finishes in 2.5 hr
 set stripes_per_switch 18
 
 # Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
