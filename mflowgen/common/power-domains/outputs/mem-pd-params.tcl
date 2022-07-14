@@ -18,8 +18,9 @@ set vdd_m3_stripe_sparsity 2
 # AON boundary taps must line up with M3 VDD stripes.
 # 'stripes_per_tap' controls the space between AON taps
 # as a multiple of the M3 power stripe pitch.
-# Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
 set stripes_per_tap 18
+
+# Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
 set vdd_stripes_per_tap [ expr $stripes_per_tap / $vdd_m3_stripe_sparsity ]
 set stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
 
@@ -29,11 +30,12 @@ set stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
 # Like the taps, power switches must line up with M3 VDD stripes.
 # 'stripes_per switch' controls space betwen power switches as a
 # multiple of the M3 power stripe pitch.
-# Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
-
+# 
 # sps12/vmss (original default) yields 14 columns of switches and 4.5 hr runtime
 # sps26/vmss yields six columns and finishes in 2.5 hr
 set stripes_per_switch 18
+
+# Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
 set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
 set stripes_per_switch [ expr $vdd_stripes_per_switch * $vdd_m3_stripe_sparsity ]
 
