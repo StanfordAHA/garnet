@@ -43,7 +43,7 @@ set stripes_per_switch [ expr $vdd_stripes_per_switch * $vdd_m3_stripe_sparsity 
 
 # AON box floorplanning params
 
-# Sets width of AON region as a multiple of the unit stdcell width
+# Sets width of AON region as a multiple of the unit stdcell width.
 set aon_width 160
 
 # Sets height of AON region as a multiple of the unit stdcell height.
@@ -51,9 +51,9 @@ set aon_width 160
 # AON region can start an end on an even-numbered row.
 set aon_height 24
 
-# Sets AON box horizontal offset from center
+# Sets AON box horizontal offset from center in # of unit stdcell widths.
 # We want to move this to the right of the SRAM macros for mem tile.
 set aon_horiz_offset -80
 
-# Sets AON box vertical offset from center
+# Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 15
