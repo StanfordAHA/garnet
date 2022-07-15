@@ -77,11 +77,24 @@ class GlobalBufferParams:
     cgra_axi_data_width: int = 32
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
+    load_dma_fifo_depth: int = 32
+    store_dma_fifo_depth: int = 4
 
     # cell parameters
     cg_cell_name: str = "CKLNQD1BWP16P90"
     sram_macro_name: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
     sram_macro_depth: int = 2048
+
+    # constant variables
+    st_dma_valid_mode_valid: int = 0
+    st_dma_valid_mode_ready_valid: int = 1
+    st_dma_valid_mode_ready_valid_compressed: int = 2
+    st_dma_valid_mode_static: int = 3
+
+    ld_dma_valid_mode_external_flush: int = 0
+    ld_dma_valid_mode_internal_flush: int = 1
+    ld_dma_valid_mode_valid: int = 2
+    ld_dma_valid_mode_ready_valid: int = 3
 
     # dependent field
     num_prr_width: int = field(init=False, default=num_prr_width)
@@ -101,7 +114,9 @@ class GlobalBufferParams:
 
     # dma address generator
     queue_depth: int = 1
-    loop_level: int = 8
+    load_dma_loop_level: int = 8
+    store_dma_loop_level: int = 6
+    loop_level: int = max(load_dma_loop_level, store_dma_loop_level)
 
     # dma latency
     chain_latency_overhead: int = 3

@@ -82,11 +82,11 @@ module top;
 
     // cgra to glb streaming word
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_f2g;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_valid_f2g;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_ctrl_f2g;
 
     // glb to cgra streaming word
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_g2f;
-    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_valid_g2f;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_ctrl_g2f;
     logic [NUM_GROUPS-1:0] strm_data_flush_g2f;
 
     // cgra configuration to cgra
@@ -106,10 +106,10 @@ module top;
     logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0] g2c_cfg_rd_addr;
     logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0] c2g_cfg_rd_data;
 
-    logic [NUM_PRR-1:0] g2c_io1;
-    logic [NUM_PRR-1:0][15:0] g2c_io16;
-    logic [NUM_PRR-1:0] c2g_io1;
-    logic [NUM_PRR-1:0][15:0] c2g_io16;
+    logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0] g2c_io1;
+    logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0][15:0] g2c_io16;
+    logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0] c2g_io1;
+    logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0][15:0] c2g_io16;
 
     // max cycle set
     initial begin
@@ -149,7 +149,7 @@ module top;
         .proc_rd_data             (proc_rd_data),
         .proc_rd_data_valid       (proc_rd_data_valid),
         // config ifc
-        .if_cfg_wr_en             (if_cfg_wr_en),
+        .if_cfg_wr_en (if_cfg_wr_en),
         .if_cfg_wr_clk_en         (if_cfg_wr_clk_en),
         .if_cfg_wr_addr           (if_cfg_wr_addr),
         .if_cfg_wr_data           (if_cfg_wr_data),
@@ -201,7 +201,7 @@ module top;
         .if_sram_cfg_rd_data_valid(if_sram_cfg_rd_data_valid),
 
         // cgra-glb
-        .strm_data_valid_f2g      (strm_data_valid_f2g),
+        .strm_ctrl_f2g            (strm_ctrl_f2g),
         .strm_data_f2g            (strm_data_f2g),
 
 `ifdef PWR
@@ -245,17 +245,15 @@ module top;
     // Note: Connect g2f to [0] column. Connect f2g to [1] column.
     always_comb begin
         for (int i = 0; i < NUM_PRR; i++) begin
-            g2c_io1[i] = strm_data_valid_g2f[i][0];
-            g2c_io16[i] = strm_data_g2f[i][0];
+            g2c_io1[i] = strm_ctrl_g2f[i];
+            g2c_io16[i] = strm_data_g2f[i];
         end
     end
 
     always @ (*) begin
         for (int i = 0; i < NUM_PRR; i++) begin
-            strm_data_valid_f2g[i][0] <= #4 0;
-            strm_data_valid_f2g[i][1] <= #4 c2g_io1[i];
-            strm_data_f2g[i][0] <= #4 0;
-            strm_data_f2g[i][1] <= #4 c2g_io16[i];
+            strm_ctrl_f2g[i] <= #4 c2g_io1[i];
+            strm_data_f2g[i] <= #4 c2g_io16[i];
         end
     end
 

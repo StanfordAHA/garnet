@@ -58,11 +58,11 @@ class GlobalBuffer(Generator):
 
         self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.strm_data_valid_f2g = self.input("strm_data_valid_f2g", 1, size=[
+        self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.strm_data_valid_g2f = self.output("strm_data_valid_g2f", 1, size=[
+        self.strm_ctrl_g2f = self.output("strm_ctrl_g2f", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.strm_data_flush_g2f = self.output("strm_data_flush_g2f", 1, size=self._params.num_groups, packed=True)
 
@@ -637,9 +637,9 @@ class GlobalBuffer(Generator):
                            cfg_pcfg_tile_connected_esto=self.cfg_pcfg_tile_connected[i + 1],
 
                            strm_data_f2g=self.strm_data_f2g[i],
-                           strm_data_valid_f2g=self.strm_data_valid_f2g[i],
+                           strm_ctrl_f2g=self.strm_ctrl_f2g[i],
                            strm_data_g2f=self.strm_data_g2f[i],
-                           strm_data_valid_g2f=self.strm_data_valid_g2f[i],
+                           strm_ctrl_g2f=self.strm_ctrl_g2f[i],
                            data_flush=self.data_flush[i],
 
                            cgra_cfg_g2f_cfg_wr_en=self.cgra_cfg_g2f_cfg_wr_en[i],
