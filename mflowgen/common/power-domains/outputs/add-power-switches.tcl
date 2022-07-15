@@ -74,4 +74,5 @@ if { $ps_to_left && $ps_to_right } {
   } else {
     puts "ERROR Found no power-switch taps to left of AON region"
   }
+  exit 13
 }
