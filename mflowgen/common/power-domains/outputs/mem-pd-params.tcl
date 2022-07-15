@@ -21,7 +21,7 @@ set stripes_per_tap 18
 # 
 # sps12 (original default) yields 14 columns of switches and 4.5 hr runtime
 # sps26 yields six columns and finishes in 2.5 hr
-set stripes_per_switch 26
+set stripes_per_switch 18
 
 # AON box floorplanning params
 
@@ -34,11 +34,7 @@ set aon_width 160
 set aon_height 24
 
 # Sets AON box horizontal offset from center in # of unit stdcell widths.
-# We want to move this to the right of the SRAM macros for mem tile.
-# ---
-# RESOLVEME - SR: I moved it back to the left b/c runtime was slightly faster.
-# Does this matter? I can move it back.
-# ---
+# Negative offset puts AON left of center, which seems to work slightly better for TSMC build.
 set aon_horiz_offset -80
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
