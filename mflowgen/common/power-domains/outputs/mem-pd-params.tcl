@@ -21,7 +21,7 @@ set stripes_per_tap 18
 # 
 # sps12 (original default) yields 14 columns of switches and 4.5 hr runtime
 # sps26 yields six columns and finishes in 2.5 hr
-set stripes_per_switch 26
+set stripes_per_switch 18
 
 # AON box floorplanning params
 
