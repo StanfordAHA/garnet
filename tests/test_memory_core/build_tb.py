@@ -925,6 +925,7 @@ def coalesce_files(in_dir, out_dir):
 def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
 
     output_matrix = None
+    output_format = None
 
     if 'mat_elemadd.gv' in app_name:
         # PASSES
@@ -942,6 +943,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
         output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     elif 'mat_elemadd3.gv' in app_name:
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -955,6 +957,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
 
         output_matrix = numpy.add(d_mat, numpy.add(b_mat, c_mat,
                                                    dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     elif 'mat_elemmul.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -964,18 +967,21 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
         output_matrix = numpy.multiply(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     elif 'mat_identity.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
+        output_format = "CSF"
     elif 'mat_identity_dense.gv' in app_name:
         # PASSES
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
+        output_format = "UNC"
     elif 'mat_mattransmul.gv' in app_name:
         # WRONG GRAPH
         raise NotImplementedError
@@ -996,6 +1002,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     elif 'mat_vecmul_ji.gv' in app_name:
         raise NotImplementedError
     elif 'matmul_ijk.gv' in app_name:
@@ -1019,6 +1026,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     elif 'matmul_ikj.gv' in app_name:
         raise NotImplementedError
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1042,6 +1050,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_matrix = numpy.transpose(output_matrix)
+        output_format = "CSF"
     elif 'matmul_jki.gv' in app_name:
         raise NotImplementedError
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1085,6 +1094,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         c_mat = c_matrix.get_matrix()
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     elif 'tensor3_elemmul.gv' in app_name:
         # NEED MAPPING
         b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1095,6 +1105,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         c_mat = c_matrix.get_matrix()
         # First transpose c_mat
         output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     elif 'tensor3_identity.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[10, 10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1102,6 +1113,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         b_mat = b_matrix.get_matrix()
         # First transpose c_mat
         output_matrix = b_mat
+        output_format = "CSF"
     elif 'tensor3_innerprod.gv' in app_name:
         b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1112,6 +1124,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         # First transpose c_mat
         output_matrix = numpy.zeros([1])
         output_matrix[0] = numpy.sum(numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16)
+        output_format = "CSF"
     elif 'tensor3_mttkrp.gv' in app_name:
         pass
     elif 'tensor3_ttm.gv' in app_name:
@@ -1123,6 +1136,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         c_mat = c_matrix.get_matrix()
         # First transpose c_mat
         output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     elif 'tensor3_ttv.gv' in app_name:
         pass
     elif 'vec_elemadd.gv' in app_name:
@@ -1135,6 +1149,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         c_mat = c_matrix.get_matrix()
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     elif 'vec_elemmul.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="b", shape=[50], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1145,12 +1160,14 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         c_mat = c_matrix.get_matrix()
         # First transpose c_mat
         output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     elif 'vec_identity.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="b", shape=[100], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
+        output_format = "CSF"
     elif 'vec_scalar_mul.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="b", shape=[1], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1160,10 +1177,11 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
         output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
     else:
         raise NotImplementedError
 
-    return output_matrix
+    return output_matrix, output_format
 
 
 if __name__ == "__main__":
@@ -1220,8 +1238,8 @@ if __name__ == "__main__":
     numpy.random.seed(seed)
     random.seed(seed)
 
-    output_matrix = software_gold(sam_graph, matrix_tmp_dir, give_tensor)
-    out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format='CSF', dump_dir=gold_dir, tensor=output_matrix)
+    output_matrix, output_format = software_gold(sam_graph, matrix_tmp_dir, give_tensor)
+    out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
     out_mat.dump_outputs()
 
     # Now coalesce them into combo files and put in final landing zone
