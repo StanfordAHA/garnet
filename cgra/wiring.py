@@ -107,11 +107,11 @@ def glb_interconnect_wiring(garnet):
             glb2io_1_port = f"glb2io_1_X{x:02X}_Y{0:02X}"
             garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_{i}_{j}"],
                         garnet.interconnect.ports[io2glb_16_port])
-            garnet.wire(garnet.global_buffer.ports[f"strm_data_valid_f2g_{i}_{j}"],
+            garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_f2g_{i}_{j}"],
                         garnet.interconnect.ports[io2glb_1_port])
             garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_16_port])
-            garnet.wire(garnet.global_buffer.ports[f"strm_data_valid_g2f_{i}_{j}"],
+            garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_1_port])
 
     # flush signal wiring
