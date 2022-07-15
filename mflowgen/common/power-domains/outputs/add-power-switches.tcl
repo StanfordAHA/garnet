@@ -1,6 +1,3 @@
-
-
-
 #------------------------------------------------------------------------
 # Add power switches for power aware flow
 # ------------------------------------------------------------------------
@@ -55,7 +52,7 @@ set AON_box [ lindex $AON_box 0 ]
 
 # Find x loc for left and right edges of AON box
 set AON_left_edge [lindex $AON_box 0]
-set AON_right_edge [lindex $AON_box 3]
+set AON_right_edge [lindex $AON_box 2]
 
 # Set right and left props
 set ps_to_right false
