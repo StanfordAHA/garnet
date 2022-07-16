@@ -53,6 +53,7 @@ import numpy
 import random
 from sam.sim.test.test import read_inputs
 from lake.top.tech_maps import GF_Tech_Map
+from lake.top.fiber_access import FiberAccess
 
 
 class SparseTBBuilder(m.Generator2):
@@ -1216,6 +1217,7 @@ if __name__ == "__main__":
     parser.add_argument('--give_tensor', action="store_true")
     parser.add_argument('--physical_sram', action="store_true")
     parser.add_argument('--just_verilog', action="store_true")
+    parser.add_argument('--clk_enable', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1229,6 +1231,7 @@ if __name__ == "__main__":
     fifo_depth = args.fifo_depth
     physical_sram = args.physical_sram
     just_verilog = args.just_verilog
+    clk_enable = args.clk_enable
 
     sam_graph = args.sam_graph
 
@@ -1237,27 +1240,6 @@ if __name__ == "__main__":
 
     numpy.random.seed(seed)
     random.seed(seed)
-
-    output_matrix, output_format = software_gold(sam_graph, matrix_tmp_dir, give_tensor)
-    out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
-    out_mat.dump_outputs()
-
-    # Now coalesce them into combo files and put in final landing zone
-    coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir)
-
-    # Clean up output dir...
-    # If it doesn't exist, make it
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
-    else:
-        # Otherwise clean it
-        for filename in os.listdir(output_dir):
-            ret = os.remove(output_dir + "/" + filename)
-
-    # Get SAM graph
-    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
-    mode_map = sdg.get_mode_map()
-    graph = sdg.get_graph()
 
     nlb = None
     interconnect = None
@@ -1277,10 +1259,15 @@ if __name__ == "__main__":
                           use_merger=True,
                           fifo_depth=8)
 
+        fiber_access = FiberAccess(data_width=16,
+                                   local_memory=not args.remote_mems,
+                                   tech_map=GF_Tech_Map(depth=512, width=32))
+
         controllers.append(scan)
         controllers.append(isect)
+        # controllers.append(fiber_access)
 
-        # altcore = [(ScannerCore, {'fifo_depth': fifo_depth}), (CoreCombinerCore, {'controllers_list': controllers}),
+        # altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': clk_enable}),
         altcore = [(CoreCombinerCore, {'controllers_list': controllers,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map': GF_Tech_Map(depth=512, width=32)}),
@@ -1309,11 +1296,35 @@ if __name__ == "__main__":
 
         nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir)
 
+    ##### Handling app level file stuff #####
+    output_matrix, output_format = software_gold(sam_graph, matrix_tmp_dir, give_tensor)
+    out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
+    out_mat.dump_outputs()
+
+    # Now coalesce them into combo files and put in final landing zone
+    coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir)
+
+    # Clean up output dir...
+    # If it doesn't exist, make it
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+    else:
+        # Otherwise clean it
+        for filename in os.listdir(output_dir):
+            ret = os.remove(output_dir + "/" + filename)
+
+    # Get SAM graph
+    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
+    mode_map = sdg.get_mode_map()
+    graph = sdg.get_graph()
+
+    ##### Create the actual testbench mapping based on the SAM graph #####
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
                           output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
 
     stb.display_names()
 
+    ##### Create the actual testbench #####
     tester = BasicTester(stb, stb.clk, stb.rst_n)
 
     tester.zero_inputs()
@@ -1389,10 +1400,9 @@ if __name__ == "__main__":
 
     stb.display_names()
 
-    # Now check it...
+    ##### Now check it... #####
     sim_mat = get_tensor_from_files(name='X', files_dir=output_dir, shape=output_matrix.shape, base=16, early_terminate='x')
     sim_mat_np = sim_mat.get_matrix()
-
     print(f"GOLD")
     print(output_matrix)
     print(f"SIM")
