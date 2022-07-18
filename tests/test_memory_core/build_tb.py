@@ -1252,26 +1252,27 @@ if __name__ == "__main__":
 
         controllers = []
 
-        scan = Scanner(data_width=16,
-                       fifo_depth=8)
+        # scan = Scanner(data_width=16,
+        #                fifo_depth=8)
 
-        isect = Intersect(data_width=16,
-                          use_merger=True,
-                          fifo_depth=8)
+        # isect = Intersect(data_width=16,
+        #                   use_merger=True,
+        #                   fifo_depth=8)
 
         fiber_access = FiberAccess(data_width=16,
                                    local_memory=not args.remote_mems,
                                    tech_map=GF_Tech_Map(depth=512, width=32))
 
-        controllers.append(scan)
-        controllers.append(isect)
-        # controllers.append(fiber_access)
+        # controllers.append(scan)
+        # controllers.append(isect)
+        controllers.append(fiber_access)
 
         # altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': clk_enable}),
         altcore = [(CoreCombinerCore, {'controllers_list': controllers,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                   (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
+                   (BuffetCore, {'local_mems': not args.remote_mems,
+                #    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
                                                                                  'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
                                                                                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
                    (FakePECore, {'fifo_depth': fifo_depth}),
