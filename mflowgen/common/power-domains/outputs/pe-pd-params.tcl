@@ -13,6 +13,14 @@
 set vdd_m3_stripe_sparsity 3
 
 
+# Allow SDF registers?
+
+# If sparsity > 1, should be able to use SDF registers; otherwise this
+# should be false because the M3 stripe density makes SDF routing too
+# difficult (there is a garnet issue about this).
+set adk_allow_sdf_regs false
+
+
 # Boundary AON TAP params
 
 # AON boundary taps must line up with M3 VDD stripes.
@@ -38,6 +46,7 @@ set stripes_per_switch 18
 # Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
 set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
 set stripes_per_switch [ expr $vdd_stripes_per_switch * $vdd_m3_stripe_sparsity ]
+
 
 # AON box floorplanning params
 

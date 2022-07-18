@@ -4,7 +4,6 @@
 # Author: Alex Carsello
 # Date: 3/7/21
 
-
 # VDD stripe sparsity params
 
 # Always-on domain is much smaller than the switching domain, so need
@@ -12,6 +11,14 @@
 # Sparsity parm controls VDD stripe sparsity for M3 power stripes;
 # sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
 set vdd_m3_stripe_sparsity 2
+
+
+# Allow SDF registers?
+
+# If sparsity > 1, should be able to use SDF registers; otherwise this
+# should be false because the M3 stripe density makes SDF routing too
+# difficult (there is a garnet issue about this).
+set adk_allow_sdf_regs false
 
 
 # Boundary AON TAP params
@@ -52,7 +59,7 @@ set aon_width 160
 set aon_height 24
 
 # Sets AON box horizontal offset from center in # of unit stdcell widths.
-# We want to move this to the right of the SRAM macros for mem tile.
+# Negative offset puts AON left of center, which seems to work slightly better for TSMC build.
 set aon_horiz_offset -80
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
