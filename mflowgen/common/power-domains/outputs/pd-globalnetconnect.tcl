@@ -15,4 +15,3 @@ globalNetConnect VDD    -type pgpin -pin VNW -inst *
 globalNetConnect VSS    -type pgpin -pin VPW -inst *
 globalNetConnect VDD    -type pgpin -pin VDDC -inst *
 
-
