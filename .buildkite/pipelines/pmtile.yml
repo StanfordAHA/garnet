@@ -1,0 +1,34 @@
+# Builds complete PE and Memtiles in parallel, from RTL through signoff.
+# Save builds in e.g. /build/pe4458 and /build/mem4458
+
+env:
+  PBUILD: /build/pe${BUILDKITE_BUILD_NUMBER}
+  MBUILD: /build/mem${BUILDKITE_BUILD_NUMBER}
+
+steps:
+
+##############################################################################
+# INDIVIDUAL TILE RUNS - PE tile only
+
+- label: 'psetup'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$PBUILD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/tile_array'
+
+- label: 'msetup'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$MBUILD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/tile_array'
+
+
+- wait: ~
+
+- label: 'PE'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$PBUILD --need_space 30G;
+     set -o pipefail; echo exit 13 | make Tile_PE |& tee make-pe.log'
+
+- label: 'MEM'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$MBUILD --need_space 30G;
+     set -o pipefail; echo exit 13 | make Tile_MemCore |& tee make-mem.log'

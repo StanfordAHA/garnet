@@ -171,7 +171,6 @@ def construct():
   order.append( 'copy_sdc.tcl' )
   synth.set_param( 'order', order )
 
-
   # Power aware setup
   if pwr_aware:
       synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
@@ -185,6 +184,7 @@ def construct():
       postroute_hold.extend_inputs(['conn-aon-cells-vdd.tcl'] )
       signoff.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v', 'sram_pwr.v'])
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
