@@ -63,6 +63,11 @@ set_input_delay -clock ${clock_name} 0 [get_ports reset]
 #=========================================================================
 # set_output_delay constraints for output ports
 set_output_delay -clock ${clock_name} 0.2 [all_outputs]
+# Higher output delay for output signals to cgra
+set_output_delay -clock ${clock_name} 0.8 [get_ports cgra_cfg_g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 0.8 [get_ports strm_data_flush_g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 0.8 [get_ports strm_data*g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 0.8 [get_ports cgra_stall* -filter "direction==out"]
 
 #=========================================================================
 # set_muticycle_path & set_false path
