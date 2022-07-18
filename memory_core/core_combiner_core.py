@@ -73,7 +73,8 @@ class CoreCombinerCore(LakeCoreBase):
                                    name=f"{cc_core_name}_inner",
                                    controllers=controllers_list,
                                    use_sim_sram=self.use_sim_sram,
-                                   tech_map=self.tech_map)
+                                   tech_map=self.tech_map,
+                                   do_config_lift=False)
 
             self.dut = self.CC.dut
 
@@ -141,6 +142,9 @@ class CoreCombinerCore(LakeCoreBase):
 
     def get_port_remap(self):
         return self.CC.get_port_remap()
+
+    def get_config_mapping(self):
+        return self.CC.get_config_mapping()
 
 
 if __name__ == "__main__":
