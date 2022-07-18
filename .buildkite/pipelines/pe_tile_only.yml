@@ -1,10 +1,8 @@
-# Run PE TILE in context of tile_array
-
-agents: { jobsize: "hours" }
+# Run PE TILE in context of tile_array. Save build in e.g. /build/pe4458
 
 env:
   GOLD: /build/pe${BUILDKITE_BUILD_NUMBER}
-  OVERRIDE_MFLOWGEN_BRANCH: silent_fail
+  # OVERRIDE_MFLOWGEN_BRANCH: silent_fail
 
 steps:
 
@@ -21,6 +19,6 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 30G;
      set -o pipefail;
-     make Tile_PE |& tee make-pe.log;
+     echo exit 13 | make Tile_PE |& tee make-pe.log;
      $$GARNET_HOME/.buildkite/pipelines/check_tile_width.sh Tile_PE --max 110
      '
