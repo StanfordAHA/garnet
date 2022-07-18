@@ -18,7 +18,7 @@ set vdd_m3_stripe_sparsity 3
 # If sparsity > 1, should be able to use SDF registers; otherwise this
 # should be false because the M3 stripe density makes SDF routing too
 # difficult (there is a garnet issue about this).
-set adk_allow_sdf_regs false
+set adk_allow_sdf_regs true
 
 
 # Boundary AON TAP params
