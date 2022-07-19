@@ -111,6 +111,3 @@ set_false_path_if_pins_exist $fp_add_path
 ########################################################################
 source inputs/scenarios.tcl
 ########################################################################
-
-# puts "setup-session: SDF UNDO!"
-# set_attribute avoid false [get_lib_cells */*SDF*]

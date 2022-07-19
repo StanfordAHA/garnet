@@ -172,8 +172,8 @@ def construct():
   # Power aware setup
   if pwr_aware:
 
-      # Need mem-pd-params (from "power-domains" step) for parm 'adk_allow_sdf_regs'
-      # pd-globalnetconnect, pe-pd-params come from 'power-domains' node
+      # Need mem-pd-params so adk.tcl can access parm 'adk_allow_sdf_regs'
+      # (mem-pd-params come from already-connected 'power-domains' node)
       synth.extend_inputs([
         'mem-pd-params.tcl',
         'designer-interface.tcl', 
@@ -429,7 +429,7 @@ def construct():
       order.append('check-clamp-logic-structure.tcl')
       init.update_params( { 'order': order } )
 
-      # synth node (because of parm 'adk_allow_sdf_regs')
+      # synth node (needs parm 'adk_allow_sdf_regs')
       order = synth.get_param('order')
       order.insert( 0, 'mem-pd-params.tcl' )        # add params file
       synth.update_params( { 'order': order } )
@@ -438,7 +438,7 @@ def construct():
       order = power.get_param('order')
       order.insert( 0, 'pd-globalnetconnect.tcl' ) # add new pd-globalnetconnect
       order.remove('globalnetconnect.tcl')         # remove old globalnetconnect
-      order.insert( 0, 'mem-pd-params.tcl' )        # add params file
+      order.insert( 0, 'mem-pd-params.tcl' )       # add params file
       power.update_params( { 'order': order } )
 
       # place node
