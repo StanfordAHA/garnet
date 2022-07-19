@@ -4,7 +4,12 @@ from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring,\
 from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
 from canal.interconnect import Interconnect
+from memory_core.buffet_core import BuffetCore
+from memory_core.fake_pe_core import FakePECore
 from memory_core.io_core_rv import IOCoreReadyValid
+from memory_core.repeat_core import RepeatCore
+from memory_core.repeat_signal_generator_core import RepeatSignalGeneratorCore
+from memory_core.write_scanner_core import WriteScannerCore
 from passes.power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import PE_fc as lassen_fc
 from io_core.io_core_magma import IOCoreValid, IOCoreDelay
@@ -22,6 +27,7 @@ from passes.interconnect_port_pass import wire_core_flush_pass
 from gemstone.common.util import compress_config_data
 from peak_gen.peak_wrapper import wrapped_peak_class
 from peak_gen.arch import read_arch
+from lake.top.tech_maps import GF_Tech_Map
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
@@ -66,6 +72,20 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     # bit_widths = [1, 16, 17]
     bit_widths = [1, 17]
     track_length = 1
+
+    fifo_depth = 8
+
+    altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': True}),
+        # altcore = [(CoreCombinerCore, {'controllers_list': controllers,
+        #                                'use_sim_sram': not physical_sram,
+        #                                'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                #    (BuffetCore, {'local_mems': True,
+                   (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': True,
+                                                                                 'physical_mem': not use_sim_sram, 'fifo_depth': fifo_depth,
+                                                                                 'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                   (FakePECore, {'fifo_depth': fifo_depth}),
+                   (RepeatCore, {'fifo_depth': fifo_depth}),
+                   (RepeatSignalGeneratorCore, {'passthru': False, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
 
     # compute the actual size
     width, height = get_actual_size(width, height, io_sides)

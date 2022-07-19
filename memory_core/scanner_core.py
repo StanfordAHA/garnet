@@ -56,7 +56,8 @@ class ScannerCore(LakeCoreBase):
             # in the following steps.
             self.dut = Scanner(data_width=data_width,
                                fifo_depth=fifo_depth,
-                               add_clk_enable=self.add_clk_enable)
+                               add_clk_enable=self.add_clk_enable,
+                               defer_fifos=False)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,

@@ -1273,12 +1273,12 @@ if __name__ == "__main__":
         # controllers.append(buffet)
         controllers.append(strg_ub)
 
-        # altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': clk_enable}),
-        altcore = [(CoreCombinerCore, {'controllers_list': controllers,
-                                       'use_sim_sram': not physical_sram,
-                                       'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                   (BuffetCore, {'local_mems': True,
-                #    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
+        altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': clk_enable}),
+        # altcore = [(CoreCombinerCore, {'controllers_list': controllers,
+        #                                'use_sim_sram': not physical_sram,
+        #                                'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                #    (BuffetCore, {'local_mems': True,
+                   (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
                                                                                  'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
                                                                                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
                    (FakePECore, {'fifo_depth': fifo_depth}),
