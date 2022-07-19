@@ -27,7 +27,7 @@ class FakePECore(LakeCoreBase):
                  config_addr_width=8,
                  fifo_depth=8):
 
-        pe_name = "PE"
+        pe_name = "PE_fake"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
