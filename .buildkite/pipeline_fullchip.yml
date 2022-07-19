@@ -195,4 +195,8 @@ steps:
 
 # Final summary
 - label: 'summary'
-  command: 'mflowgen/bin/buildcheck.sh $$GOLD --show-all-errors'
+  commands:
+  - 'mflowgen/bin/buildcheck.sh $$GOLD --show-all-errors;
+     echo ""; echo "+++ SIZE HISTORY"; echo "";
+     test -f /build/size-history && cat /build/size-history;
+    '

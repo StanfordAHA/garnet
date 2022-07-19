@@ -14,9 +14,15 @@
 ##############################################################################
 # Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
-  TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
-  SETUP: 'source mflowgen/bin/setup-buildkite.sh'
+  SETUP: source mflowgen/bin/setup-buildkite.sh
+
+  # Env var used by test_module.sh :(
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
+
+  # For debugging, use $BUILD flag to build in indicated local dir
+  TEST: echo exit 13 | mflowgen/test/test_module.sh
+# TEST: echo exit 13 | mflowgen/test/test_module.sh --build_dir /build/pmg${BUILDKITE_BUILD_NUMBER}
+
 
 steps:
 
@@ -39,12 +45,13 @@ steps:
 - label: 'ptile init 20m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
-  - .buildkite/pipelines/check_pe_area.sh
+  - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 110
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 
 - label: 'mtile init 25m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
+  - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
 
 - label: 'gtile init 20m'

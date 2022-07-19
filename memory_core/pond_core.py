@@ -32,7 +32,8 @@ class PondCore(LakeCoreBase):
                  cycle_count_width=16,
                  add_clk_enable=True,
                  add_flush=True,
-                 gate_flush=True):
+                 gate_flush=True,
+                 ready_valid=False):
 
         lake_name = "Pond_pond"
 
@@ -40,6 +41,7 @@ class PondCore(LakeCoreBase):
                          config_addr_width=config_addr_width,
                          data_width=data_width,
                          gate_flush=gate_flush,
+                         ready_valid=ready_valid,
                          name="PondCore")
 
         # Capture everything to the tile object

@@ -7,7 +7,7 @@ from canal.interconnect import Interconnect
 from memory_core.io_core_rv import IOCoreReadyValid
 from passes.power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import PE_fc as lassen_fc
-from io_core.io_core_magma import IOCoreValid, IOCore
+from io_core.io_core_magma import IOCoreValid, IOCoreDelay
 from memory_core.memory_core_magma import MemCore
 from memory_core.pond_core import PondCore
 from peak_core.peak_core import PeakCore
@@ -111,7 +111,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
                 else:
-                    core = IOCore()
+                    core = IOCoreDelay(ready_valid=ready_valid)
             else:
                 # now override this...to just use the altcore list to not waste space
                 if altcore is not None:

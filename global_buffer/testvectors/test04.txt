@@ -2,12 +2,14 @@
 2
 00
 G2F 6 12 0 0
+VALID
 1
 4096
 1
 1
 testvectors/4096_v0.dat
 F2G 6 13 0 130
+VALID
 2
 62 62
 1 64

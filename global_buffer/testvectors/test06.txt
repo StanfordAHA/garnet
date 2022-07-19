@@ -8,12 +8,14 @@ WR 0 0 0 0
 1
 testvectors/4096_v0.dat
 F2G 0 1 2 2
+VALID
 2
 32 32
 1 33
 1 32
 testvectors/1024_v0.dat
 G2F 1 2 0 0
+VALID
 1
 1024
 1

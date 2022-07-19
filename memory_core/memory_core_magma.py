@@ -86,6 +86,7 @@ class MemCore(LakeCoreBase):
                  gate_flush=True,
                  override_name=None,
                  gen_addr=True,
+                 ready_valid=False,
                  tech_map=TSMC_Tech_Map(depth=512, width=32)):
 
         lake_name = "LakeTop"
@@ -94,6 +95,7 @@ class MemCore(LakeCoreBase):
                          config_addr_width=config_addr_width,
                          data_width=data_width,
                          gate_flush=gate_flush,
+                         ready_valid=ready_valid,
                          name="MemCore")
 
         # Capture everything to the tile object
