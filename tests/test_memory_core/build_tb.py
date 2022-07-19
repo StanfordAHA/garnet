@@ -9,6 +9,7 @@ from memory_core.fake_pe_core import FakePECore
 from memory_core.intersect_core import IntersectCore
 from memory_core.io_core_rv import IOCoreReadyValid
 from memory_core.lookup_core import LookupCore
+from memory_core.onyx_pe_core import OnyxPECore
 from memory_core.repeat_core import RepeatCore
 from memory_core.repeat_signal_generator_core import RepeatSignalGeneratorCore
 from memory_core.memtile_util import NetlistBuilder
@@ -55,6 +56,7 @@ import random
 from sam.sim.test.test import read_inputs
 from lake.top.tech_maps import GF_Tech_Map
 from lake.top.fiber_access import FiberAccess
+from lake.modules.onyx_pe import OnyxPE
 
 
 class SparseTBBuilder(m.Generator2):
@@ -1267,11 +1269,14 @@ if __name__ == "__main__":
         strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
 
         buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False)
+
+        onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth)
         # controllers.append(scan)
         # controllers.append(isect)
         controllers.append(fiber_access)
         # controllers.append(buffet)
-        controllers.append(strg_ub)
+        # controllers.append(strg_ub)
+        # controllers.append(onyxpe)
 
         # altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': clk_enable}),
         altcore = [(CoreCombinerCore, {'controllers_list': controllers,
@@ -1282,6 +1287,7 @@ if __name__ == "__main__":
                                                                                  'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
                                                                                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
                    (FakePECore, {'fifo_depth': fifo_depth}),
+                   (OnyxPECore, {'fifo_depth': fifo_depth}),
                    (RepeatCore, {'fifo_depth': fifo_depth}),
                    (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
 
