@@ -224,7 +224,7 @@ program glb_test (
                 g2f_dma_configure(kernels[i].tile_id, 1, kernels[i].start_addr,
                                   kernels[i].cycle_start_addr, kernels[i].dim,
                                   kernels[i].new_extent, kernels[i].new_cycle_stride,
-                                  kernels[i].new_data_stride);
+                                  kernels[i].new_data_stride, kernels[i].ld_valid_type_);
             end else if (kernels[i].type_ == F2G) begin
                 data_cnt = 1;
                 for (int j = 0; j < kernels[i].dim; j++) begin
@@ -237,7 +237,7 @@ program glb_test (
                 kernels[i].data64_arr_out = new[kernels[i].data64_arr.size()];
 
                 // Store the data to PRR queue.
-                write_prr(kernels[i].tile_id, kernels[i].data_arr);
+                write_prr(kernels[i].tile_id, kernels[i].data_arr, kernels[i].st_valid_type_, kernels[i].first_block_size, kernels[i].second_block_size);
                 // Configure PRR controller to follow cycle stride/extent pattern.
                 void'($root.top.cgra.prr2glb_configure(
                     kernels[i].tile_id, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride
@@ -246,7 +246,7 @@ program glb_test (
                 f2g_dma_configure(kernels[i].tile_id, 1, kernels[i].start_addr,
                                   kernels[i].cycle_start_addr, kernels[i].dim,
                                   kernels[i].new_extent, kernels[i].new_cycle_stride,
-                                  kernels[i].new_data_stride);
+                                  kernels[i].new_data_stride, kernels[i].st_valid_type_);
             end else if (kernels[i].type_ == SRAM) begin
                 kernels[i].data_arr = new[kernels[i].extent[0]];
                 kernels[i].data_arr_out = new[kernels[i].extent[0]];
@@ -276,9 +276,11 @@ program glb_test (
                         end else if (kernels[j].type_ == RD) begin
                             proc_read_burst(kernels[j].start_addr, kernels[j].data64_arr_out);
                         end else if (kernels[j].type_ == G2F) begin
-                            g2f_run(kernels[j].tile_id, kernels[j].total_cycle);
+                            // TODO: For now, just set really large number for total cycle.
+                            // For ready/valid mode, we cannot expect how many cycles it takes.
+                            g2f_run(kernels[j].tile_id, kernels[j].total_cycle * 10);
                         end else if (kernels[j].type_ == F2G) begin
-                            f2g_run(kernels[j].tile_id, kernels[j].total_cycle);
+                            f2g_run(kernels[j].tile_id, kernels[j].total_cycle * 10);
                         end else if (kernels[j].type_ == PCFG) begin
                             pcfg_run(kernels[j].tile_id, kernels[j].check_tile_id, kernels[j].total_cycle,
                                      kernels[j].data64_arr_out);
@@ -293,6 +295,7 @@ program glb_test (
         join_none
         wait fork;
         // end
+        repeat (10) @(posedge clk);
         test_toggle = 0;
 
         repeat (50) @(posedge clk);
@@ -340,7 +343,7 @@ program glb_test (
         string test_name;
         int max_num_test;
         initialize();
-        if (!($value$plusargs("MAX_NUM_TEST=%d", max_num_test))) max_num_test = 10;
+        if (!($value$plusargs("MAX_NUM_TEST=%d", max_num_test))) max_num_test = 20;
         for (int i = 1; i <= max_num_test; i++) begin
             $sformat(test_name, "test%02d", i);
             if (($test$plusargs(test_name))) begin
@@ -552,15 +555,16 @@ program glb_test (
     task automatic g2f_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
                                      int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
-                                     int data_stride[LOOP_LEVEL]);
+                                     int data_stride[LOOP_LEVEL], bit [1:0] valid_mode);
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
                       ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
-                    | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+                    | (valid_mode << `GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
         glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_CTRL_R,
                      ((2'b01 << `GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_LD_DMA_CTRL_MODE_F_LSB)
-                    | (1 << `GLB_LD_DMA_CTRL_USE_VALID_F_LSB)));
+                    | (valid_mode << `GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
+        void'($root.top.cgra.set_glb2prr_valid_mode(tile_id, valid_mode));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_LD_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_LD_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
@@ -605,15 +609,16 @@ program glb_test (
     task automatic f2g_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
                                      int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
-                                     int data_stride[LOOP_LEVEL]);
+                                     int data_stride[LOOP_LEVEL], bit [1:0] valid_mode);
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
                       ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
-                    | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
+                    | (valid_mode << `GLB_ST_DMA_CTRL_VALID_MODE_F_LSB)));
         glb_cfg_read((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
                      ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
-                    | (1 << `GLB_ST_DMA_CTRL_USE_VALID_F_LSB)));
+                    | (valid_mode << `GLB_ST_DMA_CTRL_VALID_MODE_F_LSB)));
+        void'($root.top.cgra.set_prr2glb_valid_mode(tile_id, valid_mode));
         glb_cfg_write(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_START_ADDR_R,
             (start_addr << `GLB_ST_DMA_HEADER_0_START_ADDR_START_ADDR_F_LSB));
@@ -977,14 +982,21 @@ program glb_test (
     endfunction
 
     function automatic void write_prr(input int prr_id,
-                                      ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr[]);
+                                      ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr[], input bit[1:0] valid_mode,
+                                      int first_block_size=0, int second_block_size=0);
         foreach (cgra_data_arr[i]) begin
             $root.top.cgra.prr2glb_q[prr_id][i] = cgra_data_arr[i];
+        end
+        if (valid_mode == ST_DMA_VALID_MODE_READY_VALID) begin
+            $root.top.cgra.prr2glb_q[prr_id].push_front(cgra_data_arr.size());
+        end else if (valid_mode == ST_DMA_VALID_MODE_READY_VALID_COMPRESSED) begin
+            $root.top.cgra.prr2glb_q[prr_id].insert(first_block_size, second_block_size);
+            $root.top.cgra.prr2glb_q[prr_id].push_front(first_block_size);
         end
     endfunction
 
     function automatic bit [NUM_GLB_TILES-1:0] update_tile_mask(
-        int tile_id, [NUM_GLB_TILES-1:0] tile_id_mask);
+        int tile_id, bit [NUM_GLB_TILES-1:0] tile_id_mask);
         bit [NUM_GLB_TILES-1:0] new_tile_id_mask;
         new_tile_id_mask = tile_id_mask | (1 << tile_id);
         return new_tile_id_mask;

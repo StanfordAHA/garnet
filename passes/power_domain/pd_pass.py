@@ -1,6 +1,6 @@
 from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper, AOIMuxType
 from gemstone.common.transform import replace, Generator, FromMagma
-from io_core.io_core_magma import IOCoreValid
+from io_core.io_core_magma import IOCoreBase
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import Configurable, ConfigurationType
 from canal.circuit import flatten_mux
@@ -49,9 +49,11 @@ def add_power_domain(interconnect: Interconnect):
         # cb is const aoi
         for _, cb in tile.cbs.items():
             old_mux = cb.mux
+            mux_type = AOIMuxType.ConstReadyValid if \
+                interconnect.ready_valid else AOIMuxType.Const
             new_mux = AOIMuxWrapper(old_mux.height, cb.node.width,
-                                    AOIMuxType.Const, cb.instance_name)
-            new_mux = flatten_mux(new_mux)
+                                    mux_type, cb.instance_name)
+            new_mux = flatten_mux(new_mux, ready_valid=interconnect.ready_valid)
             # replace it!
             replace(cb, old_mux, new_mux)
 
@@ -96,6 +98,9 @@ def add_aon_read_config_data(interconnect: Interconnect):
     # it should be in the children
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
+        if isinstance(tile.core, IOCoreBase):
+            # io core is always on
+            continue
         children = tile.children()
         for child in children:
             if isinstance(child, FromMagma) and \

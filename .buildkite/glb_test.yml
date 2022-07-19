@@ -20,6 +20,7 @@ steps:
   - aha garnet -v --width 8 --height 4 --use_sim_sram
   - echo "--- Generating Apps"
   - aha halide tests/conv_1_2
+  - export IO_DELAY=1
   - aha pipeline tests/conv_1_2 --width 4 --height 4 --no-pd
   - aha halide tests/conv_2_1
   - aha pipeline tests/conv_2_1 --width 4 --height 4 --no-pd
