@@ -45,6 +45,7 @@ from lake.modules.pe import PE
 from lake.modules.intersect import Intersect
 from lake.modules.reg_cr import Reg
 from lake.modules.counter import Counter
+from lake.modules.strg_ub_vec import StrgUBVec
 import os
 from canal.util import IOSide
 from io_core.io_core_magma import IOCoreValid, IOCore
@@ -1260,18 +1261,23 @@ if __name__ == "__main__":
         #                   fifo_depth=8)
 
         fiber_access = FiberAccess(data_width=16,
-                                   local_memory=not args.remote_mems,
+                                   local_memory=False,
                                    tech_map=GF_Tech_Map(depth=512, width=32))
 
+        strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
+
+        buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False)
         # controllers.append(scan)
         # controllers.append(isect)
         controllers.append(fiber_access)
+        # controllers.append(buffet)
+        controllers.append(strg_ub)
 
         # altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': clk_enable}),
         altcore = [(CoreCombinerCore, {'controllers_list': controllers,
                                        'use_sim_sram': not physical_sram,
                                        'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                   (BuffetCore, {'local_mems': not args.remote_mems,
+                   (BuffetCore, {'local_mems': True,
                 #    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
                                                                                  'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
                                                                                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
@@ -1315,13 +1321,15 @@ if __name__ == "__main__":
             ret = os.remove(output_dir + "/" + filename)
 
     # Get SAM graph
-    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
+    # sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
+    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=True, use_fork=use_fork)
     mode_map = sdg.get_mode_map()
     graph = sdg.get_graph()
 
     ##### Create the actual testbench mapping based on the SAM graph #####
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
-                          output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
+                        #   output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
+                          output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()))
 
     stb.display_names()
 
