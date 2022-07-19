@@ -4,6 +4,7 @@
 # Author: Alex Carsello
 # Date: 3/7/21
 
+<<<<<<< HEAD
 # VDD stripe sparsity params
 
 # Always-on domain is much smaller than the switching domain, so need
@@ -20,6 +21,8 @@ set vdd_m3_stripe_sparsity 2
 # difficult (there is a garnet issue about this).
 set adk_allow_sdf_regs true
 
+=======
+>>>>>>> master
 
 # Boundary AON TAP params
 
@@ -28,10 +31,13 @@ set adk_allow_sdf_regs true
 # as a multiple of the M3 power stripe pitch.
 set stripes_per_tap 18
 
+<<<<<<< HEAD
 # Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
 set vdd_stripes_per_tap [ expr $stripes_per_tap / $vdd_m3_stripe_sparsity ]
 set stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
 
+=======
+>>>>>>> master
 
 # Power switch params
 
@@ -43,11 +49,14 @@ set stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
 # sps26 yields six columns and finishes in 2.5 hr
 set stripes_per_switch 18
 
+<<<<<<< HEAD
 # Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
 set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
 set stripes_per_switch [ expr $vdd_stripes_per_switch * $vdd_m3_stripe_sparsity ]
 
 
+=======
+>>>>>>> master
 # AON box floorplanning params
 
 # Sets width of AON region as a multiple of the unit stdcell width.
