@@ -8,6 +8,7 @@ WR 2 4 0 0
 1
 testvectors/4096_v0.dat
 G2F 2 5 0 0
+VALID
 1
 1024
 1
@@ -20,6 +21,7 @@ RD 3 6 0 0
 1
 testvectors/4096_v1.dat
 F2G 3 7 0 0
+VALID
 1
 1024
 1
