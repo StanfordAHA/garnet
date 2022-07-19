@@ -26,19 +26,22 @@ class ScannerCore(LakeCoreBase):
                  config_data_width=32,
                  config_addr_width=8,
                  fifo_depth=8,
-                 add_clk_enable=False):
+                 add_clk_enable=False,
+                 defer_fifos=False):
 
         scan_name = "Scanner"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
-                         name="ScannerCore")
+                         name="ScannerCore",
+                         ready_valid=True)
 
         # Capture everything to the tile object
         self.data_width = data_width
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
         self.add_clk_enable = add_clk_enable
+        self.defer_fifos = defer_fifos
 
         name_base = "ScannerCore"
         if self.add_clk_enable:
@@ -56,7 +59,8 @@ class ScannerCore(LakeCoreBase):
             # in the following steps.
             self.dut = Scanner(data_width=data_width,
                                fifo_depth=fifo_depth,
-                               add_clk_enable=self.add_clk_enable)
+                               add_clk_enable=self.add_clk_enable,
+                               defer_fifos=self.defer_fifos)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,

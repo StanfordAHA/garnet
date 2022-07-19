@@ -354,6 +354,7 @@ class LakeCoreBase(ConfigurableCore):
 
         # ready valid interface
         if self.__ready_valid:
+            port_names = self.ports.keys()
             self.__combinational_ports.add("flush")
             for p in self.__inputs:
                 name = p.qualified_name()
@@ -361,20 +362,25 @@ class LakeCoreBase(ConfigurableCore):
                     continue
                 ready_name = name + "_ready"
                 valid_name = name + "_valid"
+                # Only add dummy if they don't already exist
+                if valid_name in port_names and ready_name in port_names:
+                    continue
                 p = self.add_port(ready_name, magma.BitOut)
                 self.add_port(valid_name, magma.BitIn)
                 # valid is floating
-                self.wire(p, Const(1))
+                self.wire(p, magma.Const(1))
             for p in self.__outputs:
                 name = p.qualified_name()
                 if name in self.__combinational_ports:
                     continue
                 ready_name = name + "_ready"
                 valid_name = name + "_valid"
+                if valid_name in port_names and ready_name in port_names:
+                    continue
                 self.add_port(ready_name, magma.BitIn)
                 p = self.add_port(valid_name, magma.BitOut)
                 # ready is floating
-                self.wire(p, Const(1))
+                self.wire(p, magma.Const(1))
 
     def get_config_bitstream(self, instr):
         return
