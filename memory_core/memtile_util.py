@@ -307,7 +307,10 @@ class LakeCoreBase(ConfigurableCore):
                           self.underlying.ports[config_reg_name][0])
             elif width > 32:
                 # Need to chop it down to size
-                num_regs = (width // 32) + 1
+                num_regs_remainder = width % 32 != 0
+                num_regs = (width // 32)
+                if num_regs_remainder:
+                    num_regs += 1
                 total_width = width
                 running_base = 0
                 for idx_ in range(num_regs):
