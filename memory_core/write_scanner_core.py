@@ -25,18 +25,21 @@ class WriteScannerCore(LakeCoreBase):
                  data_width=16,  # CGRA Params
                  config_data_width=32,
                  config_addr_width=8,
-                 fifo_depth=8):
+                 fifo_depth=8,
+                 defer_fifos=False):
 
         scan_name = "WriteScanner"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
-                         name="WriteScannerCore")
+                         name="WriteScannerCore",
+                         ready_valid=True)
 
         # Capture everything to the tile object
         self.data_width = data_width
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
+        self.defer_fifos = defer_fifos
 
         cache_key = (self.data_width,
                      self.config_data_width,
@@ -49,7 +52,8 @@ class WriteScannerCore(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.dut = WriteScanner(data_width=data_width,
-                                    fifo_depth=fifo_depth)
+                                    fifo_depth=fifo_depth,
+                                    defer_fifos=self.defer_fifos)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,

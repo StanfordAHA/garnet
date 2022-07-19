@@ -32,7 +32,8 @@ class IOCoreReadyValid(LakeCoreBase):
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
-                         name="IOCoreReadyValid")
+                         name="IOCoreReadyValid",
+                         ready_valid=True)
 
         # Capture everything to the tile object
         self.data_width = data_width
