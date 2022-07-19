@@ -130,8 +130,7 @@ class IOCore(IOCoreBase):
         self.wire(f2io_16_reg.ports.O, self.ports.io2glb_16)
         self.wire(f2io_1_reg.ports.O, self.ports.io2glb_1)
 
-    def finalize(self):
-        pass
+
 
 
 class IOCoreValid(ConfigurableCore, IOCoreBase):
