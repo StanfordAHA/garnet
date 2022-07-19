@@ -1,4 +1,5 @@
-agents: { queue: "papers" }
+# Use "edit steps" in pipeline web UI to specify agents.
+# agents: { queue: "papers" }
 
 env:
   GOLD: /build/gold.${BUILDKITE_BUILD_NUMBER}/full_chip
