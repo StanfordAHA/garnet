@@ -6,6 +6,7 @@ from canal.interconnect import Interconnect
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.core import ConfigurableCore, CoreFeature, PnRTag
 from gemstone.common.mux_wrapper import MuxWrapper
+from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from typing import List
 # from memory_core.intersect_core import IntersectCore
@@ -368,7 +369,7 @@ class LakeCoreBase(ConfigurableCore):
                 p = self.add_port(ready_name, magma.BitOut)
                 self.add_port(valid_name, magma.BitIn)
                 # valid is floating
-                self.wire(p, magma.Const(1))
+                self.wire(p, Const(1))
             for p in self.__outputs:
                 name = p.qualified_name()
                 if name in self.__combinational_ports:
@@ -380,7 +381,7 @@ class LakeCoreBase(ConfigurableCore):
                 self.add_port(ready_name, magma.BitIn)
                 p = self.add_port(valid_name, magma.BitOut)
                 # ready is floating
-                self.wire(p, magma.Const(1))
+                self.wire(p, Const(1))
 
     def get_config_bitstream(self, instr):
         return
