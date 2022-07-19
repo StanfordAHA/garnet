@@ -306,14 +306,9 @@ class LakeCoreBase(ConfigurableCore):
                 self.wire(main_feature.registers[config_reg_name].ports.O[0],
                           self.underlying.ports[config_reg_name][0])
             elif width > 32:
-                print("WIDE BOY")
-                print(config_reg_name)
-                # for p_ in self.underlying.ports:
-                    # print(p_.qualified_name())
-                # print(self.underlying.ports)
                 # Need to chop it down to size
-                num_regs = (cfg_info.port_width // 32) + 1
-                total_width = cfg_info.port_width
+                num_regs = (width // 32) + 1
+                total_width = width
                 running_base = 0
                 for idx_ in range(num_regs):
                     if total_width > 32:
@@ -322,7 +317,7 @@ class LakeCoreBase(ConfigurableCore):
                         use_width = total_width
                     main_feature.add_config(f"{config_reg_name}_{idx_}", use_width)
                     self.wire(main_feature.registers[f"{config_reg_name}_{idx_}"].ports.O,
-                            self.underlying.ports[config_reg_name][running_base:running_base + use_width])
+                              self.underlying.ports[config_reg_name][running_base:running_base + use_width])
                     total_width -= use_width
                     running_base += use_width
             else:
