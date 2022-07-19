@@ -111,7 +111,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
                 else:
-                    core = IOCoreDelay()
+                    core = IOCoreDelay(ready_valid=ready_valid)
             else:
                 # now override this...to just use the altcore list to not waste space
                 if altcore is not None:

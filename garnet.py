@@ -225,7 +225,7 @@ class Garnet(Generator):
                       self.ports.read_config_data)
 
             if harden_flush:
-                self.add_ports(flush=magma.In(magma.Bits[1]))
+                self.add_ports(flush=magma.In(magma.Bits[self.width // 4]))
                 self.wire(self.ports.flush, self.interconnect.ports.flush)
 
     def map(self, halide_src):
