@@ -171,7 +171,17 @@ def construct():
 
   # Power aware setup
   if pwr_aware:
-      synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
+
+      # Need mem-pd-params (from "power-domains" step) for parm 'adk_allow_sdf_regs'
+      # pd-globalnetconnect, pe-pd-params come from 'power-domains' node
+      synth.extend_inputs([
+        'mem-pd-params.tcl',
+        'designer-interface.tcl', 
+        'upf_Tile_MemCore.tcl', 
+        'mem-constraints.tcl', 
+        'mem-constraints-2.tcl', 
+        'dc-dont-use-constraints.tcl'])
+
       init.extend_inputs(['check-clamp-logic-structure.tcl', 'upf_Tile_MemCore.tcl', 'mem-load-upf.tcl', 'dont-touch-constraints.tcl', 'mem-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['check-clamp-logic-structure.tcl', 'place-dont-use-constraints.tcl', 'add-aon-tie-cells.tcl'])
 
@@ -418,6 +428,11 @@ def construct():
       order.remove('add-endcaps-welltaps.tcl')
       order.append('check-clamp-logic-structure.tcl')
       init.update_params( { 'order': order } )
+
+      # synth node (because of parm 'adk_allow_sdf_regs')
+      order = synth.get_param('order')
+      order.insert( 0, 'mem-pd-params.tcl' )        # add params file
+      synth.update_params( { 'order': order } )
 
       # power node
       order = power.get_param('order')
