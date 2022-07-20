@@ -868,6 +868,8 @@ class SparseTBBuilder(m.Generator2):
                     node_config_kwargs['mode'] = runtime_mode
                     pass_config_kwargs_tuple = (1, node_config_kwargs)
                     self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), pass_config_kwargs_tuple)
+                elif "s" in self.core_nodes[node.get_name()].get_name():
+                    self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), (1, node_config_kwargs))
                 else:
                     self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
 
@@ -1278,17 +1280,18 @@ if __name__ == "__main__":
         # controllers.append(strg_ub)
         # controllers.append(onyxpe)
 
-        # altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': clk_enable}),
-        altcore = [(CoreCombinerCore, {'controllers_list': controllers,
-                                       'use_sim_sram': not physical_sram,
-                                       'tech_map': GF_Tech_Map(depth=512, width=32)}),
+        altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': clk_enable}),
+        # altcore = [(CoreCombinerCore, {'controllers_list': controllers,
+        #                                'use_sim_sram': not physical_sram,
+        #                                'tech_map': GF_Tech_Map(depth=512, width=32)}),
                    (BuffetCore, {'local_mems': True,
                 #    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
                                                                                  'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
                                                                                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                   (FakePECore, {'fifo_depth': fifo_depth}),
-                   (OnyxPECore, {'fifo_depth': fifo_depth}),
+                #    (FakePECore, {'fifo_depth': fifo_depth}),
+                   (OnyxPECore, {'fifo_depth': fifo_depth}), (WriteScannerCore, {'fifo_depth': fifo_depth}),
                    (RepeatCore, {'fifo_depth': fifo_depth}),
+                   (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}),
                    (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
@@ -1410,7 +1413,16 @@ if __name__ == "__main__":
     # tester.wait_until_high(tester.circuit.done, timeout=2000)
 
     from conftest import run_tb_fn
-    run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd=test_dump_dir)
+
+    # Create PE verilog for inclusion...
+    from lassen.sim import PE_fc
+    import magma as m
+    from peak import family
+
+    # PE = PE_fc(family.MagmaFamily())
+    # m.compile(f"{args.test_dump_dir}/PE", PE, output="coreir-verilog")
+
+    run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd=test_dump_dir, include_PE=True)
     # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
 
     stb.display_names()

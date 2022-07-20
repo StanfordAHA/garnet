@@ -77,15 +77,16 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     fifo_depth = 8
 
     if scgra is True:
-        altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': True, 'defer_fifos': False}),
-                   (WriteScannerCore, {'fifo_depth': fifo_depth, 'defer_fifos': False}),
-                   (BuffetCore, {'local_mems': True,
-                                 'physical_mem': False,
-                                 'fifo_depth': fifo_depth,
-                                 'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                   (FakePECore, {'fifo_depth': fifo_depth}),
-                   (RepeatCore, {'fifo_depth': fifo_depth}),
-                   (RepeatSignalGeneratorCore, {'passthru': False, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
+        altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': True, 'defer_fifos': False})]
+        # altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': True, 'defer_fifos': False}),
+        #            (WriteScannerCore, {'fifo_depth': fifo_depth, 'defer_fifos': False}),
+        #            (BuffetCore, {'local_mems': True,
+        #                          'physical_mem': False,
+        #                          'fifo_depth': fifo_depth,
+        #                          'tech_map': GF_Tech_Map(depth=512, width=32)}),
+        #            (FakePECore, {'fifo_depth': fifo_depth}),
+        #            (RepeatCore, {'fifo_depth': fifo_depth}),
+        #            (RepeatSignalGeneratorCore, {'passthru': False, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
 
     # compute the actual size
     width, height = get_actual_size(width, height, io_sides)

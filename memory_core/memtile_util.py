@@ -512,6 +512,8 @@ class NetlistBuilder():
 
         print_diag = False
 
+        print(core)
+
         # Choose the core combiner if the resource is in there...
         if cc_core_supported is not None and core in cc_core_supported and prioritize_combiner:
             tag = "C"
@@ -529,7 +531,7 @@ class NetlistBuilder():
             tag = "p"
         elif core == "fake_pe":
             tag = "f"
-        elif core == "scanner":
+        elif core == "read_scanner":
             tag = "s"
         elif core == "intersect":
             tag = "j"
@@ -545,6 +547,8 @@ class NetlistBuilder():
             tag = "B"
         elif core == "glb":
             tag = "G"
+        elif core == "alu":
+            tag = "f"
         elif core == "repeat":
             tag = "Q"
         elif core == "repeat_signal_generator":

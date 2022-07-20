@@ -32,7 +32,8 @@ class IntersectCore(LakeCoreBase):
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
-                         name="IntersectCore")
+                         name="IntersectCore",
+                         ready_valid=True)
 
         # Capture everything to the tile object
         self.data_width = data_width
@@ -53,7 +54,10 @@ class IntersectCore(LakeCoreBase):
             # in the following steps.
             self.dut = Intersect(data_width=self.data_width,
                                  use_merger=self.use_merger,
-                                 fifo_depth=fifo_depth)
+                                 fifo_depth=fifo_depth,
+                                 defer_fifos=False,
+                                 add_flush=True,
+                                 add_clk_enable=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
