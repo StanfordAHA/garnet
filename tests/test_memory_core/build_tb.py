@@ -57,6 +57,8 @@ from sam.sim.test.test import read_inputs
 from lake.top.tech_maps import GF_Tech_Map
 from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
+from lassen.sim import PE_fc
+from peak import family
 
 
 class SparseTBBuilder(m.Generator2):
@@ -1223,6 +1225,7 @@ if __name__ == "__main__":
     parser.add_argument('--physical_sram', action="store_true")
     parser.add_argument('--just_verilog', action="store_true")
     parser.add_argument('--clk_enable', action="store_true")
+    parser.add_argument('--gen_pe', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1237,11 +1240,20 @@ if __name__ == "__main__":
     physical_sram = args.physical_sram
     just_verilog = args.just_verilog
     clk_enable = args.clk_enable
+    gen_pe = args.gen_pe
 
     sam_graph = args.sam_graph
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
+
+    pe_prefix = "PEGEN_"
+
+    # Create PE verilog for inclusion...
+    if gen_pe is True:
+        PE = PE_fc(family.MagmaFamily())
+        m.compile(f"{args.test_dump_dir}/PE", PE, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
+        exit()
 
     numpy.random.seed(seed)
     random.seed(seed)
@@ -1257,28 +1269,30 @@ if __name__ == "__main__":
 
         controllers = []
 
-        scan = Scanner(data_width=16,
-                       fifo_depth=8,
-                       defer_fifos=True)
-        wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
-                             defer_fifos=True)
+        # scan = Scanner(data_width=16,
+        #                fifo_depth=8,
+        #                defer_fifos=True)
+        # wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
+        #                      defer_fifos=True)
         strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
-        # fiber_access = FiberAccess(data_width=16,
-        #                            local_memory=False,
-        #                            tech_map=GF_Tech_Map(depth=512, width=32))
-        buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
-                            tech_map=GF_Tech_Map(depth=512, width=32),
-                            defer_fifos=True)
-        controllers.append(scan)
-        controllers.append(wscan)
-        controllers.append(buffet)
-        controllers.append(strg_ub)
+        fiber_access = FiberAccess(data_width=16,
+                                   local_memory=False,
+                                   tech_map=GF_Tech_Map(depth=512, width=32),
+                                   defer_fifos=True)
+        # buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
+        #                     tech_map=GF_Tech_Map(depth=512, width=32),
+        #                     defer_fifos=True)
+        # controllers.append(scan)
+        # controllers.append(wscan)
+        # controllers.append(buffet)
+        # controllers.append(strg_ub)
+        controllers.append(fiber_access)
 
         isect = Intersect(data_width=16,
                           use_merger=True,
                           fifo_depth=8,
                           defer_fifos=True)
-        # onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True)
+        # onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True, ext_pe_prefix=pe_prefix)
         repeat = Repeat(data_width=16,
                         fifo_depth=8,
                         defer_fifos=True)
@@ -1302,22 +1316,23 @@ if __name__ == "__main__":
         controllers_2.append(pe)
 
         if len(controllers_2) > 0:
+            print("DOING THIS")
             altcore = [(CoreCombinerCore, {'controllers_list': controllers,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                       (CoreCombinerCore, {'controllers_list': controllers_2,
-                                           'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32)})]
+                    #    (CoreCombinerCore, {'controllers_list': controllers_2,
+                    #                        'use_sim_sram': not physical_sram,
+                    #                        'tech_map': GF_Tech_Map(depth=512, width=32)})]
 
         else:
+            #    (FakePECore, {'fifo_depth': fifo_depth}),
             altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
                                       'add_clk_enable': clk_enable}),
                        (BuffetCore, {'local_mems': True,
                                      'physical_mem': physical_sram,
                                      'fifo_depth': fifo_depth,
                                      'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                       (FakePECore, {'fifo_depth': fifo_depth}),
-                       # (OnyxPECore, {'fifo_depth': fifo_depth}),
+                       (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
                        (WriteScannerCore, {'fifo_depth': fifo_depth}),
                        (RepeatCore, {'fifo_depth': fifo_depth}),
                        (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}),
@@ -1338,7 +1353,7 @@ if __name__ == "__main__":
         if just_verilog:
             circuit = interconnect.circuit()
             import magma
-            magma.compile(f"{args.test_dump_dir}/SparseTBBuilder", circuit)
+            magma.compile(f"{args.test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
             exit()
 
         nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir)
@@ -1444,16 +1459,6 @@ if __name__ == "__main__":
     # tester.wait_until_high(tester.circuit.done, timeout=2000)
 
     from conftest import run_tb_fn
-
-    # Create PE verilog for inclusion...
-    from lassen.sim import PE_fc
-    import magma as m
-    from peak import family
-
-    # PE = PE_fc(family.MagmaFamily())
-    # m.compile(f"{args.test_dump_dir}/PE", PE, output="coreir-verilog")
-    # exit()
-
     run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd=test_dump_dir, include_PE=True)
     # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
 
