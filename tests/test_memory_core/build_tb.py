@@ -1257,42 +1257,73 @@ if __name__ == "__main__":
 
         controllers = []
 
-        # scan = Scanner(data_width=16,
-        #                fifo_depth=8)
-
-        # isect = Intersect(data_width=16,
-        #                   use_merger=True,
-        #                   fifo_depth=8)
-
-        fiber_access = FiberAccess(data_width=16,
-                                   local_memory=False,
-                                   tech_map=GF_Tech_Map(depth=512, width=32))
-
+        scan = Scanner(data_width=16,
+                       fifo_depth=8,
+                       defer_fifos=True)
+        wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
+                             defer_fifos=True)
         strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
+        # fiber_access = FiberAccess(data_width=16,
+        #                            local_memory=False,
+        #                            tech_map=GF_Tech_Map(depth=512, width=32))
+        buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
+                            tech_map=GF_Tech_Map(depth=512, width=32),
+                            defer_fifos=True)
+        controllers.append(scan)
+        controllers.append(wscan)
+        controllers.append(buffet)
+        controllers.append(strg_ub)
 
-        buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False)
+        isect = Intersect(data_width=16,
+                          use_merger=True,
+                          fifo_depth=8,
+                          defer_fifos=True)
+        # onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True)
+        repeat = Repeat(data_width=16,
+                        fifo_depth=8,
+                        defer_fifos=True)
+        rsg = RepeatSignalGenerator(data_width=16,
+                                    passthru=False,
+                                    fifo_depth=fifo_depth,
+                                    defer_fifos=True)
+        regcr = Reg(data_width=16,
+                    fifo_depth=fifo_depth,
+                    defer_fifos=True)
+        pe = PE(data_width=16,
+                fifo_depth=fifo_depth,
+                defer_fifos=True)
 
-        onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth)
-        # controllers.append(scan)
-        # controllers.append(isect)
-        controllers.append(fiber_access)
-        # controllers.append(buffet)
-        # controllers.append(strg_ub)
-        # controllers.append(onyxpe)
+        controllers_2 = []
 
-        altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': clk_enable}),
-        # altcore = [(CoreCombinerCore, {'controllers_list': controllers,
-        #                                'use_sim_sram': not physical_sram,
-        #                                'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                   (BuffetCore, {'local_mems': True,
-                #    (WriteScannerCore, {'fifo_depth': fifo_depth}), (BuffetCore, {'local_mems': not args.remote_mems,
-                                                                                 'physical_mem': physical_sram, 'fifo_depth': fifo_depth,
-                                                                                 'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                #    (FakePECore, {'fifo_depth': fifo_depth}),
-                   (OnyxPECore, {'fifo_depth': fifo_depth}), (WriteScannerCore, {'fifo_depth': fifo_depth}),
-                   (RepeatCore, {'fifo_depth': fifo_depth}),
-                   (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}),
-                   (RepeatSignalGeneratorCore, {'passthru': not use_fork, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
+        controllers_2.append(isect)
+        controllers_2.append(repeat)
+        controllers_2.append(rsg)
+        controllers_2.append(regcr)
+        controllers_2.append(pe)
+
+        if len(controllers_2) > 0:
+            altcore = [(CoreCombinerCore, {'controllers_list': controllers,
+                                           'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                       (CoreCombinerCore, {'controllers_list': controllers_2,
+                                           'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32)})]
+
+        else:
+            altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
+                                      'add_clk_enable': clk_enable}),
+                       (BuffetCore, {'local_mems': True,
+                                     'physical_mem': physical_sram,
+                                     'fifo_depth': fifo_depth,
+                                     'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                       (FakePECore, {'fifo_depth': fifo_depth}),
+                       # (OnyxPECore, {'fifo_depth': fifo_depth}),
+                       (WriteScannerCore, {'fifo_depth': fifo_depth}),
+                       (RepeatCore, {'fifo_depth': fifo_depth}),
+                       (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}),
+                       (RepeatSignalGeneratorCore, {'passthru': not use_fork,
+                                                    'fifo_depth': fifo_depth}),
+                       (RegCore, {'fifo_depth': fifo_depth})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    # io_sides=NetlistBuilder.io_sides(),
@@ -1337,7 +1368,7 @@ if __name__ == "__main__":
 
     ##### Create the actual testbench mapping based on the SAM graph #####
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
-                        #   output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
+                          # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
                           output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()))
 
     stb.display_names()
@@ -1421,6 +1452,7 @@ if __name__ == "__main__":
 
     # PE = PE_fc(family.MagmaFamily())
     # m.compile(f"{args.test_dump_dir}/PE", PE, output="coreir-verilog")
+    # exit()
 
     run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd=test_dump_dir, include_PE=True)
     # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")

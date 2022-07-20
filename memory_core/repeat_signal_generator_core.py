@@ -53,7 +53,8 @@ class RepeatSignalGeneratorCore(LakeCoreBase):
             # in the following steps.
             self.dut = RepeatSignalGenerator(data_width=data_width,
                                              passthru=self.passthru,
-                                             fifo_depth=fifo_depth)
+                                             fifo_depth=fifo_depth,
+                                             defer_fifos=False)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
