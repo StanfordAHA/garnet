@@ -25,7 +25,8 @@ class OnyxPECore(LakeCoreBase):
                  data_width=16,  # CGRA Params
                  config_data_width=32,
                  config_addr_width=8,
-                 fifo_depth=8):
+                 fifo_depth=8,
+                 ext_pe_prefix="PG_"):
 
         pe_name = "onyxPEInst"
         super().__init__(config_data_width=config_data_width,
@@ -42,7 +43,8 @@ class OnyxPECore(LakeCoreBase):
         cache_key = (self.data_width,
                      self.config_data_width,
                      self.config_addr_width,
-                     "OnyxPECore")
+                     "OnyxPECore",
+                     ext_pe_prefix)
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
@@ -51,7 +53,8 @@ class OnyxPECore(LakeCoreBase):
             # in the following steps.
             self.dut = OnyxPE(data_width=data_width,
                               fifo_depth=fifo_depth,
-                              defer_fifos=False)
+                              defer_fifos=False,
+                              ext_pe_prefix=ext_pe_prefix)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
