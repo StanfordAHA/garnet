@@ -1251,9 +1251,12 @@ if __name__ == "__main__":
 
     # Create PE verilog for inclusion...
     if gen_pe is True:
-        PE = PE_fc(family.MagmaFamily())
-        m.compile(f"{args.test_dump_dir}/PE", PE, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
-        exit()
+        pe_child = PE_fc(family.MagmaFamily())
+        m.compile(f"{args.test_dump_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
+        m.clear_cachedFunctions()
+        m.frontend.coreir_.ResetCoreIR()
+        m.generator.reset_generator_cache()
+        m.logging.flush_all()  # flush all staged logs
 
     numpy.random.seed(seed)
     random.seed(seed)
@@ -1309,11 +1312,11 @@ if __name__ == "__main__":
 
         controllers_2 = []
 
-        controllers_2.append(isect)
-        controllers_2.append(repeat)
-        controllers_2.append(rsg)
-        controllers_2.append(regcr)
-        controllers_2.append(pe)
+        # controllers_2.append(isect)
+        # controllers_2.append(repeat)
+        # controllers_2.append(rsg)
+        # controllers_2.append(regcr)
+        # controllers_2.append(pe)
 
         if len(controllers_2) > 0:
             print("DOING THIS")
