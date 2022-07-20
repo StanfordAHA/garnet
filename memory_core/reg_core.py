@@ -50,7 +50,8 @@ class RegCore(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.dut = Reg(data_width=data_width,
-                           fifo_depth=fifo_depth)
+                           fifo_depth=fifo_depth,
+                           defer_fifos=False)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,

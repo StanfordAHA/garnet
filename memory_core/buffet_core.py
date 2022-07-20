@@ -62,7 +62,8 @@ class BuffetCore(LakeCoreBase):
                                   local_memory=self.local_mems,
                                   physical_mem=physical_mem,
                                   fifo_depth=fifo_depth,
-                                  tech_map=self.tech_map)
+                                  tech_map=self.tech_map,
+                                  defer_fifos=False)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
