@@ -56,7 +56,7 @@ def fp_files(use_dw=True):
     return result_filenames
 
 
-def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
+def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
     use_verilator = False
     use_dw = False
     root_dir = os.path.dirname(__file__)
@@ -76,6 +76,9 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
         for glb_module in glob.glob(os.path.join(root_dir, "tests/test_memory_core/*.sv")):
             shutil.copy(glb_module, tempdir)
             rtl_lib.append(os.path.basename(glb_module))
+        if include_PE:
+            # rtl_lib.append(os.path.join(cwd,"PE.v"))
+            rtl_lib.append("PE.v")
 
         if use_dw:
             coreir_lib_name = "float_DW"

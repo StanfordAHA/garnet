@@ -60,7 +60,8 @@ class ScannerCore(LakeCoreBase):
             self.dut = Scanner(data_width=data_width,
                                fifo_depth=fifo_depth,
                                add_clk_enable=self.add_clk_enable,
-                               defer_fifos=self.defer_fifos)
+                               defer_fifos=self.defer_fifos,
+                               add_flush=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -87,23 +88,29 @@ class ScannerCore(LakeCoreBase):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
-    def get_config_bitstream(self, config_tuple):
-        inner_offset, max_outer_dim, strides, ranges, is_root, \
-            do_repeat, repeat_outer, repeat_factor, stop_lvl, \
-            block_mode, lookup = config_tuple
+    # def get_config_bitstream(self, config_tuple):
+    def get_config_bitstream(self, config_tuple_):
+        print(config_tuple_)
+        _, config_kwargs = config_tuple_
+        print(config_kwargs)
+        # inner_offset, max_outer_dim, strides, ranges, is_root, \
+        #     do_repeat, repeat_outer, repeat_factor, stop_lvl, \
+        #     block_mode, lookup = config_tuple
+
         configs = []
         config_scanner = [("tile_en", 1)]
-        config_scanner += self.dut.get_bitstream(inner_offset=inner_offset,
-                                                 max_out=max_outer_dim,
-                                                 ranges=ranges,
-                                                 strides=strides,
-                                                 root=is_root,
-                                                 do_repeat=do_repeat,
-                                                 repeat_outer=repeat_outer,
-                                                 repeat_factor=repeat_factor,
-                                                 stop_lvl=stop_lvl,
-                                                 block_mode=block_mode,
-                                                 lookup=lookup)
+        config_scanner += self.dut.get_bitstream(config_kwargs)
+        # config_scanner += self.dut.get_bitstream(inner_offset=inner_offset,
+        #                                          max_out=max_outer_dim,
+        #                                          ranges=ranges,
+        #                                          strides=strides,
+        #                                          root=is_root,
+        #                                          do_repeat=do_repeat,
+        #                                          repeat_outer=repeat_outer,
+        #                                          repeat_factor=repeat_factor,
+        #                                          stop_lvl=stop_lvl,
+        #                                          block_mode=block_mode,
+        #                                          lookup=lookup)
         for name, v in config_scanner:
             configs = [self.get_config_data(name, v)] + configs
         return configs
