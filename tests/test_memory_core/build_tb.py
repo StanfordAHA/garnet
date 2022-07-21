@@ -1251,6 +1251,7 @@ if __name__ == "__main__":
     parser.add_argument('--clk_enable', action="store_true")
     parser.add_argument('--gen_pe', action="store_true")
     parser.add_argument('--add_pond', action="store_true")
+    parser.add_argument('--combined', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1267,7 +1268,7 @@ if __name__ == "__main__":
     clk_enable = args.clk_enable
     gen_pe = args.gen_pe
     add_pond = args.add_pond
-
+    combined = args.combined
     sam_graph = args.sam_graph
 
     # Make sure to force DISABLE_GP for much quicker runs
@@ -1366,7 +1367,7 @@ if __name__ == "__main__":
         # controllers_2.append(regcr)
         # controllers_2.append(pe)
 
-        if len(controllers_2) > 0:
+        if combined is True:
             altcore = [(CoreCombinerCore, {'controllers_list': controllers,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32)}),
@@ -1376,18 +1377,17 @@ if __name__ == "__main__":
             real_pe = True
 
         else:
-
             altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
                                       'add_clk_enable': clk_enable}),
-                    #    (BuffetCore, {'local_mems': True,
-                    #                  'physical_mem': physical_sram,
-                    #                  'fifo_depth': fifo_depth,
-                    #                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                       (BuffetCore, {'local_mems': True,
+                                     'physical_mem': physical_sram,
+                                     'fifo_depth': fifo_depth,
+                                     'tech_map': GF_Tech_Map(depth=512, width=32)}),
                        (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
-                    #    (WriteScannerCore, {'fifo_depth': fifo_depth}),
-                    #    (RepeatCore, {'fifo_depth': fifo_depth}),
-                    #    (IntersectCore, {'fifo_depth': fifo_depth}),
-                    #    (CrdDropCore, {'fifo_depth': fifo_depth}),
+                       (WriteScannerCore, {'fifo_depth': fifo_depth}),
+                       (RepeatCore, {'fifo_depth': fifo_depth}),
+                       (IntersectCore, {'fifo_depth': fifo_depth}),
+                       (CrdDropCore, {'fifo_depth': fifo_depth}),
                        (RepeatSignalGeneratorCore, {'passthru': not use_fork,
                                                     'fifo_depth': fifo_depth}),
                        (RegCore, {'fifo_depth': fifo_depth})]
@@ -1395,7 +1395,6 @@ if __name__ == "__main__":
             real_pe = True
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
-                                   # io_sides=NetlistBuilder.io_sides(),
                                    io_sides=IOSide.North,
                                    num_tracks=num_tracks,
                                    add_pd=False,
