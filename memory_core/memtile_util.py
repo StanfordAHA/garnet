@@ -292,15 +292,15 @@ class LakeCoreBase(ConfigurableCore):
             if cfg_info.expl_arr:
                 if cfg_info.port_size[0] > 1:
                     for i in range(cfg_info.port_size[0]):
-                        configurations.append((f"{cfg_info.port_name}_{i}", cfg_info.port_width))
+                        configurations.append((f"{cfg_info.port_name}_{i}", cfg_info.port_width, cfg_info.read_only))
                 else:
-                    configurations.append((cfg_info.port_name, cfg_info.port_width))
+                    configurations.append((cfg_info.port_name, cfg_info.port_width, cfg_info.read_only))
             else:
-                configurations.append((cfg_info.port_name, cfg_info.port_width))
+                configurations.append((cfg_info.port_name, cfg_info.port_width, cfg_info.read_only))
 
         # Do all the stuff for the main config
         main_feature = self.__features[0]
-        for config_reg_name, width in configurations:
+        for config_reg_name, width, read_only_ in configurations:
             if width == 1:
                 main_feature.add_config(config_reg_name, width)
                 self.wire(main_feature.registers[config_reg_name].ports.O[0],
