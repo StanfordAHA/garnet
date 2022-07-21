@@ -54,7 +54,8 @@ class OnyxPECore(LakeCoreBase):
             self.dut = OnyxPE(data_width=data_width,
                               fifo_depth=fifo_depth,
                               defer_fifos=False,
-                              ext_pe_prefix=ext_pe_prefix)
+                              ext_pe_prefix=ext_pe_prefix,
+                              do_config_lift=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
