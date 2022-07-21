@@ -1342,7 +1342,8 @@ if __name__ == "__main__":
                            defer_fifos=True)
         onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
                         ext_pe_prefix=pe_prefix,
-                        pe_ro=True)
+                        pe_ro=True,
+                        do_config_lift=False)
         repeat = Repeat(data_width=16,
                         fifo_depth=8,
                         defer_fifos=True)
@@ -1353,9 +1354,6 @@ if __name__ == "__main__":
         regcr = Reg(data_width=16,
                     fifo_depth=fifo_depth,
                     defer_fifos=True)
-        pe = PE(data_width=16,
-                fifo_depth=fifo_depth,
-                defer_fifos=True)
 
         controllers_2 = []
 
@@ -1365,7 +1363,6 @@ if __name__ == "__main__":
         controllers_2.append(repeat)
         controllers_2.append(rsg)
         controllers_2.append(regcr)
-        controllers_2.append(pe)
 
         if combined is True:
             altcore = [(CoreCombinerCore, {'controllers_list': controllers,
