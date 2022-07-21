@@ -199,9 +199,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     # outputs.remove("io2glb_17_valid")
 
     if add_pond:
-        print("Adding inputs")
         for core in additional_core.values():
-            print(f"core: {core}")
             if isinstance(core, list):
                 print("IS LIST")
                 for actual_core in core:
