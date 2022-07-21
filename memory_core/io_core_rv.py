@@ -54,7 +54,7 @@ class IOCoreReadyValid(LakeCoreBase):
             self.dut = IOCore(data_width=data_width,
                               tracks_supported=self.tracks_supported,
                               fifo_depth=fifo_depth,
-                              use_17_to_16_hack=True)
+                              use_17_to_16_hack=False)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
