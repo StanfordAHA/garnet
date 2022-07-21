@@ -535,6 +535,8 @@ class NetlistBuilder():
             tag = "s"
         elif core == "intersect":
             tag = "j"
+        elif core == "crddrop":
+            tag = "c"
         elif core == "memtile":
             tag = "m"
         elif core == "regcore":

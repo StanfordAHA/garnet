@@ -5,6 +5,7 @@ from pydot import Graph
 from cgra.util import create_cgra
 from memory_core.buffet_core import BuffetCore
 from memory_core.core_combiner_core import CoreCombinerCore
+from memory_core.crddrop_core import CrdDropCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.intersect_core import IntersectCore
 from memory_core.io_core_rv import IOCoreReadyValid
@@ -63,7 +64,7 @@ from peak import family
 
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
-                 input_dir=None, output_dir=None, local_mems=True, mode_map=None) -> None:
+                 input_dir=None, output_dir=None, local_mems=True, mode_map=None, real_pe=False) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -86,6 +87,7 @@ class SparseTBBuilder(m.Generator2):
         self.output_dir = output_dir
         self.input_dir = input_dir
         self.local_mems = local_mems
+        self.real_pe = real_pe
 
         self._ctr = 0
 
@@ -724,7 +726,8 @@ class SparseTBBuilder(m.Generator2):
                 core_tag = "lookup"
             elif hw_node_type == f"{HWNodeType.Merge}" or hw_node_type == HWNodeType.Merge:
                 new_node_type = MergeNode
-                core_tag = "intersect"
+                # core_tag = "intersect"
+                core_tag = "crddrop"
                 outer = node.get_attributes()['outer'].strip('"')
                 inner = node.get_attributes()['inner'].strip('"')
                 kwargs = {
@@ -827,6 +830,24 @@ class SparseTBBuilder(m.Generator2):
             dst_name = dst
 
             addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
+            # Remap the pe connections
+            if self.real_pe:
+                real_pe_tag = 'f'
+                real_pe_remap = {
+                    'data_out': 'res',
+                    'data_in_0': 'data0',
+                    'data_in_1': 'data1'
+                }
+
+                for conn_block_name, sig_struct in addtl_conns.items():
+                    for i, complex_sig in enumerate(sig_struct):
+                        sig_list, width = complex_sig
+                        for idx, sig_tuple in enumerate(sig_list):
+                            prim_name, prim_sig = sig_tuple
+                            if prim_name[0] == real_pe_tag:
+                                print("Remapping f...")
+                                sig_list[idx] = (prim_name, real_pe_remap[prim_sig])
+
             if addtl_conns is not None:
                 self.nlb.add_connections(addtl_conns, defer_placement=True)
 
@@ -1248,6 +1269,7 @@ if __name__ == "__main__":
     os.environ['DISABLE_GP'] = '1'
 
     pe_prefix = "PEGEN_"
+    real_pe = False
 
     # Create PE verilog for inclusion...
     if gen_pe is True:
@@ -1328,22 +1350,25 @@ if __name__ == "__main__":
                     #                        'tech_map': GF_Tech_Map(depth=512, width=32)})]
 
         else:
-            altcore = [(OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix})]
+            # altcore = [(OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix})]
 
             #    (FakePECore, {'fifo_depth': fifo_depth}),
-            # altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
-            #                           'add_clk_enable': clk_enable}),
-            #            (BuffetCore, {'local_mems': True,
-            #                          'physical_mem': physical_sram,
-            #                          'fifo_depth': fifo_depth,
-            #                          'tech_map': GF_Tech_Map(depth=512, width=32)}),
-            #            (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
-            #            (WriteScannerCore, {'fifo_depth': fifo_depth}),
-            #            (RepeatCore, {'fifo_depth': fifo_depth}),
-            #            (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}),
-            #            (RepeatSignalGeneratorCore, {'passthru': not use_fork,
-            #                                         'fifo_depth': fifo_depth}),
-            #            (RegCore, {'fifo_depth': fifo_depth})]
+            altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
+                                      'add_clk_enable': clk_enable}),
+                       (BuffetCore, {'local_mems': True,
+                                     'physical_mem': physical_sram,
+                                     'fifo_depth': fifo_depth,
+                                     'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                       (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
+                       (WriteScannerCore, {'fifo_depth': fifo_depth}),
+                       (RepeatCore, {'fifo_depth': fifo_depth}),
+                       (IntersectCore, {'fifo_depth': fifo_depth}),
+                       (CrdDropCore, {'fifo_depth': fifo_depth}),
+                       (RepeatSignalGeneratorCore, {'passthru': not use_fork,
+                                                    'fifo_depth': fifo_depth}),
+                       (RegCore, {'fifo_depth': fifo_depth})]
+
+            real_pe = True
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    # io_sides=NetlistBuilder.io_sides(),
@@ -1389,7 +1414,8 @@ if __name__ == "__main__":
     ##### Create the actual testbench mapping based on the SAM graph #####
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
                           # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
-                          output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()))
+                          output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
+                          real_pe=real_pe)
 
     stb.display_names()
 
