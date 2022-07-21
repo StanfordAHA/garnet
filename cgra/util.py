@@ -145,7 +145,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                         core = core_type(**core_kwargs)
                         # Try adding pond?
                         if add_pond and altcore[altcore_ind][0] == OnyxPECore:
-                            print("Adding POND")
                             additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
                 else:
                     if tile_layout_option == 0:
