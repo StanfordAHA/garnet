@@ -414,6 +414,8 @@ class LakeCoreBase(ConfigurableCore):
                 # ready is floating
                 self.wire(p, Const(1))
 
+        # print(self.__inputs)
+
     def get_config_bitstream(self, instr):
         return
 
