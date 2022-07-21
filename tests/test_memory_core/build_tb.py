@@ -49,6 +49,8 @@ from lake.modules.reg_cr import Reg
 from lake.modules.counter import Counter
 from lake.modules.strg_ub_vec import StrgUBVec
 from lake.modules.crddrop import CrdDrop
+from lake.modules.strg_RAM import StrgRAM
+from lake.modules.stencil_valid import StencilValid
 import os
 from canal.util import IOSide
 from io_core.io_core_magma import IOCoreValid, IOCore
@@ -1308,11 +1310,25 @@ if __name__ == "__main__":
         buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
                             tech_map=GF_Tech_Map(depth=512, width=32),
                             defer_fifos=True)
+        strg_ram = StrgRAM(data_width=16,
+                           banks=1,
+                           memory_width=64,
+                           memory_depth=512,
+                           rw_same_cycle=False,
+                           read_delay=1,
+                           addr_width=16,
+                           prioritize_write=True,
+                           comply_with_17=True)
+
+        stencil_valid = StencilValid()
+
         # controllers.append(scan)
         # controllers.append(wscan)
         # controllers.append(buffet)
         controllers.append(strg_ub)
         controllers.append(fiber_access)
+        controllers.append(strg_ram)
+        controllers.append(stencil_valid)
 
         isect = Intersect(data_width=16,
                           use_merger=False,
@@ -1339,11 +1355,11 @@ if __name__ == "__main__":
         controllers_2 = []
 
         controllers_2.append(isect)
+        controllers_2.append(crd_drop)
+        controllers_2.append(onyxpe)
         controllers_2.append(repeat)
         controllers_2.append(rsg)
         controllers_2.append(regcr)
-        controllers_2.append(crd_drop)
-        controllers_2.append(onyxpe)
         # controllers_2.append(pe)
 
         if len(controllers_2) > 0:
