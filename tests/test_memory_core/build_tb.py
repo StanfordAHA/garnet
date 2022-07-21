@@ -1337,7 +1337,9 @@ if __name__ == "__main__":
         crd_drop = CrdDrop(data_width=16, fifo_depth=fifo_depth,
                            lift_config=True,
                            defer_fifos=True)
-        onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True, ext_pe_prefix=pe_prefix)
+        onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
+                        ext_pe_prefix=pe_prefix,
+                        pe_ro=True)
         repeat = Repeat(data_width=16,
                         fifo_depth=8,
                         defer_fifos=True)
@@ -1354,12 +1356,12 @@ if __name__ == "__main__":
 
         controllers_2 = []
 
-        controllers_2.append(isect)
-        controllers_2.append(crd_drop)
-        controllers_2.append(onyxpe)
-        controllers_2.append(repeat)
-        controllers_2.append(rsg)
-        controllers_2.append(regcr)
+        # controllers_2.append(isect)
+        # controllers_2.append(crd_drop)
+        # controllers_2.append(onyxpe)
+        # controllers_2.append(repeat)
+        # controllers_2.append(rsg)
+        # controllers_2.append(regcr)
         # controllers_2.append(pe)
 
         if len(controllers_2) > 0:
@@ -1375,15 +1377,15 @@ if __name__ == "__main__":
 
             altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
                                       'add_clk_enable': clk_enable}),
-                       (BuffetCore, {'local_mems': True,
-                                     'physical_mem': physical_sram,
-                                     'fifo_depth': fifo_depth,
-                                     'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                    #    (BuffetCore, {'local_mems': True,
+                    #                  'physical_mem': physical_sram,
+                    #                  'fifo_depth': fifo_depth,
+                    #                  'tech_map': GF_Tech_Map(depth=512, width=32)}),
                        (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
-                       (WriteScannerCore, {'fifo_depth': fifo_depth}),
-                       (RepeatCore, {'fifo_depth': fifo_depth}),
-                       (IntersectCore, {'fifo_depth': fifo_depth}),
-                       (CrdDropCore, {'fifo_depth': fifo_depth}),
+                    #    (WriteScannerCore, {'fifo_depth': fifo_depth}),
+                    #    (RepeatCore, {'fifo_depth': fifo_depth}),
+                    #    (IntersectCore, {'fifo_depth': fifo_depth}),
+                    #    (CrdDropCore, {'fifo_depth': fifo_depth}),
                        (RepeatSignalGeneratorCore, {'passthru': not use_fork,
                                                     'fifo_depth': fifo_depth}),
                        (RegCore, {'fifo_depth': fifo_depth})]
@@ -1398,7 +1400,8 @@ if __name__ == "__main__":
                                    # Soften the flush...?
                                    harden_flush=False,
                                    altcore=altcore,
-                                   ready_valid=True)
+                                   ready_valid=True,
+                                   add_pond=True)
 
         if just_verilog:
             circuit = interconnect.circuit()
