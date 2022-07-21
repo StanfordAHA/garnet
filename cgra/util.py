@@ -28,6 +28,7 @@ from gemstone.common.util import compress_config_data
 from peak_gen.peak_wrapper import wrapped_peak_class
 from peak_gen.arch import read_arch
 from lake.top.tech_maps import GF_Tech_Map
+from memory_core.onyx_pe_core import OnyxPECore
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
@@ -142,6 +143,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     else:
                         core_type, core_kwargs = altcore[altcore_ind]
                         core = core_type(**core_kwargs)
+                        # Try adding pond?
+                        if add_pond and altcore[altcore_ind][0] == OnyxPECore:
+                            print("Adding POND")
+                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
                 else:
                     if tile_layout_option == 0:
                         use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio

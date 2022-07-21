@@ -33,7 +33,7 @@ class PondCore(LakeCoreBase):
                  add_clk_enable=True,
                  add_flush=True,
                  gate_flush=True,
-                 ready_valid=False):
+                 ready_valid=True):
 
         lake_name = "Pond_pond"
 

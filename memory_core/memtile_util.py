@@ -302,9 +302,13 @@ class LakeCoreBase(ConfigurableCore):
         main_feature = self.__features[0]
         for config_reg_name, width, read_only_ in configurations:
             if width == 1:
-                main_feature.add_config(config_reg_name, width)
-                self.wire(main_feature.registers[config_reg_name].ports.O[0],
-                          self.underlying.ports[config_reg_name][0])
+                main_feature.add_config(config_reg_name, width, pass_through=read_only_)
+                if read_only_:
+                    self.wire(main_feature.registers[config_reg_name].ports.I[0],
+                              self.underlying.ports[config_reg_name][0])
+                else:
+                    self.wire(main_feature.registers[config_reg_name].ports.O[0],
+                              self.underlying.ports[config_reg_name][0])
             elif width > 32:
                 # Need to chop it down to size
                 num_regs_remainder = width % 32 != 0
@@ -318,15 +322,23 @@ class LakeCoreBase(ConfigurableCore):
                         use_width = 32
                     else:
                         use_width = total_width
-                    main_feature.add_config(f"{config_reg_name}_{idx_}", use_width)
-                    self.wire(main_feature.registers[f"{config_reg_name}_{idx_}"].ports.O,
-                              self.underlying.ports[config_reg_name][running_base:running_base + use_width])
+                    main_feature.add_config(f"{config_reg_name}_{idx_}", use_width, pass_through=read_only_)
+                    if read_only_:
+                        self.wire(main_feature.registers[f"{config_reg_name}_{idx_}"].ports.I,
+                                  self.underlying.ports[config_reg_name][running_base:running_base + use_width])
+                    else:
+                        self.wire(main_feature.registers[f"{config_reg_name}_{idx_}"].ports.O,
+                                  self.underlying.ports[config_reg_name][running_base:running_base + use_width])
                     total_width -= use_width
                     running_base += use_width
             else:
-                main_feature.add_config(config_reg_name, width)
-                self.wire(main_feature.registers[config_reg_name].ports.O,
-                          self.underlying.ports[config_reg_name])
+                main_feature.add_config(config_reg_name, width, pass_through=read_only_)
+                if read_only_:
+                    self.wire(main_feature.registers[config_reg_name].ports.I,
+                              self.underlying.ports[config_reg_name])
+                else:
+                    self.wire(main_feature.registers[config_reg_name].ports.O,
+                              self.underlying.ports[config_reg_name])
 
         # SRAM
         # These should also account for num features
