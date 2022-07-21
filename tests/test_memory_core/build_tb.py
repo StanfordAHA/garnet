@@ -1250,6 +1250,7 @@ if __name__ == "__main__":
     parser.add_argument('--just_verilog', action="store_true")
     parser.add_argument('--clk_enable', action="store_true")
     parser.add_argument('--gen_pe', action="store_true")
+    parser.add_argument('--add_pond', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1265,6 +1266,7 @@ if __name__ == "__main__":
     just_verilog = args.just_verilog
     clk_enable = args.clk_enable
     gen_pe = args.gen_pe
+    add_pond = args.add_pond
 
     sam_graph = args.sam_graph
 
@@ -1401,7 +1403,7 @@ if __name__ == "__main__":
                                    harden_flush=False,
                                    altcore=altcore,
                                    ready_valid=True,
-                                   add_pond=True)
+                                   add_pond=add_pond)
 
         if just_verilog:
             circuit = interconnect.circuit()
