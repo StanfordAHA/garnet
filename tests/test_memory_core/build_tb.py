@@ -1359,13 +1359,13 @@ if __name__ == "__main__":
 
         controllers_2 = []
 
-        # controllers_2.append(isect)
-        # controllers_2.append(crd_drop)
-        # controllers_2.append(onyxpe)
-        # controllers_2.append(repeat)
-        # controllers_2.append(rsg)
-        # controllers_2.append(regcr)
-        # controllers_2.append(pe)
+        controllers_2.append(isect)
+        controllers_2.append(crd_drop)
+        controllers_2.append(onyxpe)
+        controllers_2.append(repeat)
+        controllers_2.append(rsg)
+        controllers_2.append(regcr)
+        controllers_2.append(pe)
 
         if combined is True:
             altcore = [(CoreCombinerCore, {'controllers_list': controllers,
