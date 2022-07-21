@@ -48,6 +48,7 @@ from lake.modules.intersect import Intersect
 from lake.modules.reg_cr import Reg
 from lake.modules.counter import Counter
 from lake.modules.strg_ub_vec import StrgUBVec
+from lake.modules.crddrop import CrdDrop
 import os
 from canal.util import IOSide
 from io_core.io_core_magma import IOCoreValid, IOCore
@@ -1294,30 +1295,33 @@ if __name__ == "__main__":
 
         controllers = []
 
-        # scan = Scanner(data_width=16,
-        #                fifo_depth=8,
-        #                defer_fifos=True)
-        # wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
-        #                      defer_fifos=True)
+        scan = Scanner(data_width=16,
+                       fifo_depth=8,
+                       defer_fifos=True)
+        wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
+                             defer_fifos=True)
         strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
         fiber_access = FiberAccess(data_width=16,
                                    local_memory=False,
                                    tech_map=GF_Tech_Map(depth=512, width=32),
                                    defer_fifos=True)
-        # buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
-        #                     tech_map=GF_Tech_Map(depth=512, width=32),
-        #                     defer_fifos=True)
+        buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
+                            tech_map=GF_Tech_Map(depth=512, width=32),
+                            defer_fifos=True)
         # controllers.append(scan)
         # controllers.append(wscan)
         # controllers.append(buffet)
-        # controllers.append(strg_ub)
+        controllers.append(strg_ub)
         controllers.append(fiber_access)
 
         isect = Intersect(data_width=16,
-                          use_merger=True,
+                          use_merger=False,
                           fifo_depth=8,
                           defer_fifos=True)
-        # onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True, ext_pe_prefix=pe_prefix)
+        crd_drop = CrdDrop(data_width=16, fifo_depth=fifo_depth,
+                           lift_config=True,
+                           defer_fifos=True)
+        onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True, ext_pe_prefix=pe_prefix)
         repeat = Repeat(data_width=16,
                         fifo_depth=8,
                         defer_fifos=True)
@@ -1334,25 +1338,25 @@ if __name__ == "__main__":
 
         controllers_2 = []
 
-        # controllers_2.append(isect)
-        # controllers_2.append(repeat)
-        # controllers_2.append(rsg)
-        # controllers_2.append(regcr)
+        controllers_2.append(isect)
+        controllers_2.append(repeat)
+        controllers_2.append(rsg)
+        controllers_2.append(regcr)
+        controllers_2.append(crd_drop)
+        controllers_2.append(onyxpe)
         # controllers_2.append(pe)
 
         if len(controllers_2) > 0:
-            print("DOING THIS")
             altcore = [(CoreCombinerCore, {'controllers_list': controllers,
                                            'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                       (CoreCombinerCore, {'controllers_list': controllers_2,
+                                           'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32)})]
-                    #    (CoreCombinerCore, {'controllers_list': controllers_2,
-                    #                        'use_sim_sram': not physical_sram,
-                    #                        'tech_map': GF_Tech_Map(depth=512, width=32)})]
+            real_pe = True
 
         else:
-            # altcore = [(OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix})]
 
-            #    (FakePECore, {'fifo_depth': fifo_depth}),
             altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
                                       'add_clk_enable': clk_enable}),
                        (BuffetCore, {'local_mems': True,
