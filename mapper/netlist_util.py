@@ -19,7 +19,7 @@ from metamapper.common_passes import AddID, print_dag
 from DagVisitor import Visitor, Transformer
 from peak.mapper.utils import Unbound
 from lassen.sim import PE_fc as lassen_fc
-
+from operator import itemgetter, attrgetter
 
 class CreateBuses(Visitor):
     def __init__(self, inst_info):
@@ -194,10 +194,25 @@ class CreateIDs(Visitor):
 
     def doit(self, dag: IODag):
         self.i = 0
-        self.node_to_id = {}
+        self.nodes = []
         self.run(dag)
+
+        self.node_to_id = {}
+
+        for i,node in enumerate(self.nodes):
+            if node.node_name == "Input" or node.node_name == "Output":
+                if "io16" in node.iname:
+                    self.node_to_id[node.iname] = f"I{i}"
+                else:
+                    self.node_to_id[node.iname] = f"i{i}"
+            elif node.node_name == "Register":
+                self.node_to_id[node.iname] = f"r{i}"
+            else:
+                self.node_to_id[node.iname] = f"{self.inst_info[node.node_name]}{i}"
+
         for src, sink in zip(dag.non_input_sources, dag.non_output_sinks):
             self.node_to_id[src.iname] = self.node_to_id[sink.iname]
+
         return self.node_to_id
 
     def visit_Source(self, node):
@@ -206,31 +221,13 @@ class CreateIDs(Visitor):
     def visit_Output(self, node: Output):
         Visitor.generic_visit(self, node)
         child = list(node.children())[0]
-
-        if "io16" in node.iname:
-            is_bit = False
-        else:
-            is_bit = True
-
-        if is_bit:
-            id = f"i{self.i}"
-        else:
-            id = f"I{self.i}"
-        self.i += 1
-        self.node_to_id[node.iname] = id
+        self.nodes.insert(0, node)
 
     def visit_Select(self, node):
         Visitor.generic_visit(self, node)
         child = list(node.children())[0]
         if isinstance(child, Input):
-            if node.type == Bit:
-                id = f"i{self.i}"
-            elif node.type == BitVector[16]:
-                id = f"I{self.i}"
-            else:
-                raise NotImplementedError(f"{node}, {node.type}")
-            self.i += 1
-            self.node_to_id[child.iname] = id
+            self.nodes.insert(0, child)
 
     def visit_Combine(self, node):
         Visitor.generic_visit(self, node)
@@ -243,22 +240,13 @@ class CreateIDs(Visitor):
 
     def visit_RegisterSink(self, node):
         Visitor.generic_visit(self, node)
-        if node.type == Bit:
-            id = f"r{self.i}"
-        elif node.type == BitVector[16]:
-            id = f"r{self.i}"
-        else:
-            raise NotImplementedError(f"{node}, {node.type}")
-        self.node_to_id[node.iname] = id
-        self.i += 1
+        self.nodes.append(node)
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if node.node_name not in self.inst_info:
             raise ValueError(f"Need info for {node.node_name}")
-        id = f"{self.inst_info[node.node_name]}{self.i}"
-        self.node_to_id[node.iname] = id
-        self.i += 1
+        self.nodes.insert(0, node)
 
 
 def p(msg, adt):
