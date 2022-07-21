@@ -1328,20 +1328,22 @@ if __name__ == "__main__":
                     #                        'tech_map': GF_Tech_Map(depth=512, width=32)})]
 
         else:
+            altcore = [(OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix})]
+
             #    (FakePECore, {'fifo_depth': fifo_depth}),
-            altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
-                                      'add_clk_enable': clk_enable}),
-                       (BuffetCore, {'local_mems': True,
-                                     'physical_mem': physical_sram,
-                                     'fifo_depth': fifo_depth,
-                                     'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                       (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
-                       (WriteScannerCore, {'fifo_depth': fifo_depth}),
-                       (RepeatCore, {'fifo_depth': fifo_depth}),
-                       (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}),
-                       (RepeatSignalGeneratorCore, {'passthru': not use_fork,
-                                                    'fifo_depth': fifo_depth}),
-                       (RegCore, {'fifo_depth': fifo_depth})]
+            # altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
+            #                           'add_clk_enable': clk_enable}),
+            #            (BuffetCore, {'local_mems': True,
+            #                          'physical_mem': physical_sram,
+            #                          'fifo_depth': fifo_depth,
+            #                          'tech_map': GF_Tech_Map(depth=512, width=32)}),
+            #            (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
+            #            (WriteScannerCore, {'fifo_depth': fifo_depth}),
+            #            (RepeatCore, {'fifo_depth': fifo_depth}),
+            #            (IntersectCore, {'use_merger': True, 'fifo_depth': fifo_depth}),
+            #            (RepeatSignalGeneratorCore, {'passthru': not use_fork,
+            #                                         'fifo_depth': fifo_depth}),
+            #            (RegCore, {'fifo_depth': fifo_depth})]
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
                                    # io_sides=NetlistBuilder.io_sides(),
