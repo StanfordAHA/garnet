@@ -1,5 +1,6 @@
 from gemstone.generator.const import Const
 
+
 def glb_glc_wiring(garnet):
     """ global controller <-> global buffer ports connection """
 
