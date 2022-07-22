@@ -31,7 +31,8 @@ class CoreCombinerCore(LakeCoreBase):
                  controllers_list=None,
                  use_sim_sram=True,
                  tech_map=GF_Tech_Map(depth=512, width=32),
-                 pnr_tag="C"):
+                 pnr_tag="C",
+                 name=None):
 
         self.pnr_tag = pnr_tag
 
@@ -40,6 +41,9 @@ class CoreCombinerCore(LakeCoreBase):
         assert controllers_list is not None and len(controllers_list) > 0
         for controller in controllers_list:
             cc_core_name += f"_{str(controller)}"
+
+        if name is not None:
+            cc_core_name = name
 
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
