@@ -6,7 +6,7 @@ import magma
 
 
 
-def config_port_pass(interconnect: Interconnect):
+def config_port_pass(interconnect: Interconnect, pipeline=False):
     # x coordinate of garnet
     x_min = interconnect.x_min
     x_max = interconnect.x_max
@@ -31,8 +31,12 @@ def config_port_pass(interconnect: Interconnect):
         # skip tiles with no config
         column = [entry for entry in column if "config" in entry.ports]
         # wire configuration ports to first tile in column
-        interconnect.wire(interconnect.ports.config[x_coor],
-                          column[0].ports.config)
+        in_port = interconnect.ports.config[x_coor]
+        out_port = column[0].ports.config
+        if pipeline==True:
+            pipeline_wire(interconnect, in_port, out_port)
+        else:
+            interconnect.wire(in_port, out_port)
 
 
 def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, col_offset=1, pipeline=False):
