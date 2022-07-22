@@ -1367,10 +1367,12 @@ if __name__ == "__main__":
         if combined is True:
             altcore = [(CoreCombinerCore, {'controllers_list': controllers,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'pnr_tag': "C"}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32)})]
+                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'pnr_tag': "Q"})]
             real_pe = True
 
         else:

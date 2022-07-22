@@ -30,7 +30,10 @@ class CoreCombinerCore(LakeCoreBase):
                  fifo_depth=8,
                  controllers_list=None,
                  use_sim_sram=True,
-                 tech_map=GF_Tech_Map(depth=512, width=32)):
+                 tech_map=GF_Tech_Map(depth=512, width=32),
+                 pnr_tag="C"):
+
+        self.pnr_tag = pnr_tag
 
         cc_core_name = "CoreCombiner"
 
@@ -135,7 +138,8 @@ class CoreCombinerCore(LakeCoreBase):
         return configs
 
     def pnr_info(self):
-        return PnRTag("C", self.DEFAULT_PRIORITY, 1)
+        # return PnRTag("C", self.DEFAULT_PRIORITY, 1)
+        return PnRTag(self.pnr_tag, self.DEFAULT_PRIORITY, 1)
 
     def get_modes_supported(self):
         return self.CC.get_modes_supported()
