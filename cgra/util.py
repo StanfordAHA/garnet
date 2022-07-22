@@ -29,6 +29,7 @@ from peak_gen.peak_wrapper import wrapped_peak_class
 from peak_gen.arch import read_arch
 from lake.top.tech_maps import GF_Tech_Map
 from memory_core.onyx_pe_core import OnyxPECore
+from memory_core.core_combiner_core import CoreCombinerCore
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
@@ -105,6 +106,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     altcore_ind = 0
     altcorelen = len(altcore) if altcore is not None else 0
     altcore_used = False
+
+    intercore_mapping = None
+
     for x in range(width):
         # Only update the altcore if it had been used actually.
         if altcore_used:
@@ -143,8 +147,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     else:
                         core_type, core_kwargs = altcore[altcore_ind]
                         core = core_type(**core_kwargs)
+                        if add_pond and core_type == CoreCombinerCore and "alu" in core.get_modes_supported():
+                            intercore_mapping = core.get_port_remap()['alu']
+                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
                         # Try adding pond?
-                        if add_pond and altcore[altcore_ind][0] == OnyxPECore:
+                        elif add_pond and altcore[altcore_ind][0] == OnyxPECore:
                             additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
                 else:
                     if tile_layout_option == 0:
@@ -169,9 +176,17 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     # pond may have inter-core connection
     if add_pond:
-        inter_core_connection = {"data_out_pond": ["data0", "data1"],
-                                 "valid_out_pond": ["bit0"],
-                                 "alu_res": ["data_in_pond"]}
+        # remap
+        if intercore_mapping is not None:
+            inter_core_connection = {
+                "data_out_pond": [intercore_mapping["data0"], intercore_mapping["data1"]],
+                "valid_out_pond": [intercore_mapping["bit0"]],
+                intercore_mapping["res"]: ["data_in_pond"]
+            }
+        else:
+            inter_core_connection = {"data_out_pond": ["data0", "data1"],
+                                     "valid_out_pond": ["bit0"],
+                                     "res": ["data_in_pond"]}
         # inter_core_connection = {}
     else:
         inter_core_connection = {}
