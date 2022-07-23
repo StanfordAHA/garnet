@@ -32,9 +32,11 @@ class CoreCombinerCore(LakeCoreBase):
                  use_sim_sram=True,
                  tech_map=GF_Tech_Map(depth=512, width=32),
                  pnr_tag="C",
-                 name=None):
+                 name=None,
+                 input_prefix=""):
 
         self.pnr_tag = pnr_tag
+        self.input_prefix = input_prefix
 
         cc_core_name = "CoreCombiner"
 
@@ -81,7 +83,8 @@ class CoreCombinerCore(LakeCoreBase):
                                    controllers=controllers_list,
                                    use_sim_sram=self.use_sim_sram,
                                    tech_map=self.tech_map,
-                                   do_config_lift=False)
+                                   do_config_lift=False,
+                                   io_prefix=self.input_prefix)
 
             self.dut = self.CC.dut
 

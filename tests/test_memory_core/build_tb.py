@@ -1045,8 +1045,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
             b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x')
             c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
         else:
-            b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-            c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            b_matrix = MatrixGenerator(name="B", shape=[20, 20], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            # b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            c_matrix = MatrixGenerator(name="C", shape=[20, 20], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            # c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
             b_matrix.dump_outputs()
             c_matrix.dump_outputs()
         # b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1168,6 +1170,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         c_mat = c_matrix.get_matrix()
         # First transpose c_mat
         output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        print(output_matrix)
         output_format = "CSF"
     elif 'tensor3_ttv.gv' in app_name:
         pass
@@ -1293,9 +1296,9 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 11
+        chip_width = 16
         # chip_height = 32
-        chip_height = 12
+        chip_height = 10
         num_tracks = 5
 
         controllers = []
@@ -1369,12 +1372,14 @@ if __name__ == "__main__":
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
                                            'pnr_tag': "C",
-                                           'name': "MemCore"}),
+                                           'name': "MemCore",
+                                           'input_prefix': "MEM_"}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
                                            'pnr_tag': "Q",
-                                           'name': "PECore"})]
+                                           'name': "PECore",
+                                           'input_prefix': "PE_"})]
             real_pe = True
 
         else:
