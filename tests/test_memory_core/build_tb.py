@@ -112,7 +112,8 @@ class SparseTBBuilder(m.Generator2):
             flush_in = self.nlb.register_core("io_1", name="flush_in")
             self.nlb.add_connections(connections=self.nlb.emit_flush_connection(flush_in))
             self.nlb.get_route_config()
-
+            # configure flush
+            self.nlb.configure_tile(flush_in, (1, 0))
             self.configure_cores()
 
             # self.config = self.io.config
