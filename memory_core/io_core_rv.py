@@ -82,14 +82,13 @@ class IOCoreReadyValid(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
+        dense_bypass = 0
         configs = []
-        return []
-        print("Configuring io core...")
-        config_lower = [("tile_en", 1)]
-        config_lower += self.dut.get_bitstream()
-        for name, v in config_lower:
+        sub_dict = {'dense_bypass': dense_bypass}
+        tile_config = self.dut.get_bitstream(sub_dict)
+        for name, v in tile_config:
             configs = [self.get_config_data(name, v)] + configs
-        # return configs
+        return configs
 
     def pnr_info(self):
         return [PnRTag("I", 2, self.DEFAULT_PRIORITY),
