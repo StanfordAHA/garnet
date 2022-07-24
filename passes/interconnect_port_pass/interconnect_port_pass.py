@@ -35,20 +35,8 @@ def config_port_pass(interconnect: Interconnect, pipeline=False):
         out_port = column[0].ports.config
         if pipeline==True:
             pipeline_wire(interconnect,
-                          in_port.config_addr,
-                          out_port.config_addr,
-                          clk=interconnect.ports.clk)
-            pipeline_wire(interconnect,
-                          in_port.config_data,
-                          out_port.config_data,
-                          clk=interconnect.ports.clk)
-            pipeline_wire(interconnect,
-                          in_port.read,
-                          out_port.read,
-                          clk=interconnect.ports.clk)
-            pipeline_wire(interconnect,
-                          in_port.write,
-                          out_port.write,
+                          in_port,
+                          out_port,
                           clk=interconnect.ports.clk)
         else:
             interconnect.wire(in_port, out_port)
