@@ -34,10 +34,22 @@ def config_port_pass(interconnect: Interconnect, pipeline=False):
         in_port = interconnect.ports.config[x_coor]
         out_port = column[0].ports.config
         if pipeline==True:
-            pipeline_wire(interconnect, in_port.config_addr, out_port.config_addr)
-            pipeline_wire(interconnect, in_port.config_data, out_port.config_data)
-            pipeline_wire(interconnect, in_port.read, out_port.read)
-            pipeline_wire(interconnect, in_port.write, out_port.write)
+            pipeline_wire(interconnect,
+                          in_port.config_addr,
+                          out_port.config_addr,
+                          clk=interconnect.ports.clk)
+            pipeline_wire(interconnect,
+                          in_port.config_data,
+                          out_port.config_data,
+                          clk=interconnect.ports.clk)
+            pipeline_wire(interconnect,
+                          in_port.read,
+                          out_port.read,
+                          clk=interconnect.ports.clk)
+            pipeline_wire(interconnect,
+                          in_port.write,
+                          out_port.write,
+                          clk=interconnect.ports.clk)
         else:
             interconnect.wire(in_port, out_port)
 
@@ -67,7 +79,10 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
                   * port_width:((i // col_offset) + 1) * port_width]
         out_port = column[0].ports[port_name]
         if pipeline==True:
-            pipeline_wire(interconnect, in_port, out_port)
+            pipeline_wire(interconnect,
+                          in_port,
+                          out_port,
+                          clk=interconnect.ports.clk)
         else:
             interconnect.wire(in_port, out_port)
 
