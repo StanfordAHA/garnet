@@ -22,8 +22,10 @@ class GlbStoreDma(Generator):
 
         self.data_f2g = self.input("data_f2g", width=self._params.cgra_data_width,
                                    size=self._params.cgra_per_glb, packed=True)
-        self.data_valid_f2g = self.input("data_valid_f2g", 1, size=self._params.cgra_per_glb, packed=True)
-        self.data_ready_g2f = self.output("data_ready_g2f", 1, size=self._params.cgra_per_glb, packed=True)
+        self.data_f2g_vld = self.input("data_f2g_vld", 1, size=self._params.cgra_per_glb, packed=True)
+        self.data_f2g_rdy = self.output("data_f2g_rdy", 1, size=self._params.cgra_per_glb, packed=True)
+
+        self.ctrl_f2g = self.input("ctrl_f2g", 1, size=self._params.cgra_per_glb, packed=True)
 
         self.wr_packet_dma2bank = self.output("wr_packet_dma2bank", self.header.wr_packet_t)
         self.wr_packet_dma2ring = self.output("wr_packet_dma2ring", self.header.wr_packet_t)
@@ -52,7 +54,8 @@ class GlbStoreDma(Generator):
         self.wr_packet_dma2ring_w = self.var("wr_packet_dma2ring_w", self.header.wr_packet_t)
         self.data_f2g_r = self.var("data_f2g_r", width=self._params.cgra_data_width,
                                    size=self._params.cgra_per_glb, packed=True)
-        self.data_valid_f2g_r = self.var("data_valid_f2g_r", 1, size=self._params.cgra_per_glb, packed=True)
+        self.data_f2g_vld_r = self.var("data_f2g_vld_r", 1, size=self._params.cgra_per_glb, packed=True)
+        self.ctrl_f2g_r = self.var("ctrl_f2g_r", 1, size=self._params.cgra_per_glb, packed=True)
         self.strm_data = self.var("strm_data", width=self._params.cgra_data_width)
         self.strm_data_valid = self.var("strm_data_valid", width=1)
         self.st_dma_done_pulse = self.var("st_dma_done_pulse", 1)
@@ -403,11 +406,13 @@ class GlbStoreDma(Generator):
     def data_f2g_ff(self):
         if self.reset:
             self.data_f2g_r = 0
-            self.data_valid_f2g_r = 0
+            self.data_f2g_vld_r = 0
+            self.ctrl_f2g_r = 0
         else:
             for i in range(self._params.cgra_per_glb):
                 self.data_f2g_r[i] = self.data_f2g[i]
-                self.data_valid_f2g_r[i] = self.data_valid_f2g[i]
+                self.data_f2g_vld_r[i] = self.data_f2g_vld[i]
+                self.ctrl_f2g_r[i] = self.ctrl_f2g[i]
 
     @always_comb
     def data_ready_g2f_comb(self):
@@ -423,12 +428,15 @@ class GlbStoreDma(Generator):
         for i in range(self._params.cgra_per_glb):
             if self.cfg_data_network_f2g_mux[i] == 1:
                 self.strm_data = self.data_f2g_r[i]
-                self.strm_data_valid = self.data_valid_f2g_r[i]
-                self.data_ready_g2f[i] = self.data_ready_g2f_w
+                self.data_f2g_rdy[i] = self.data_ready_g2f_w
+                if self.rv_mode_on:
+                    self.strm_data_valid = self.data_f2g_vld_r[i]
+                else:
+                    self.strm_data_valid = self.ctrl_f2g_r[i]
             else:
                 self.strm_data = self.strm_data
                 self.strm_data_valid = self.strm_data_valid
-                self.data_ready_g2f[i] = 0
+                self.data_f2g_rdy[i] = 0
 
     @always_comb
     def cycle_valid_comb(self):

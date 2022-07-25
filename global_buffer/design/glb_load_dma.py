@@ -22,8 +22,11 @@ class GlbLoadDma(Generator):
 
         self.data_g2f = self.output("data_g2f", width=self._params.cgra_data_width,
                                     size=self._params.cgra_per_glb, packed=True)
-        self.data_valid_g2f = self.output("data_valid_g2f", 1, size=self._params.cgra_per_glb, packed=True)
-        self.data_ready_f2g = self.input("data_ready_f2g", 1, size=self._params.cgra_per_glb, packed=True)
+        self.data_g2f_vld = self.output("data_g2f_vld", 1, size=self._params.cgra_per_glb, packed=True)
+        self.data_g2f_rdy = self.input("data_g2f_rdy", 1, size=self._params.cgra_per_glb, packed=True)
+
+        self.ctrl_g2f = self.output("ctrl_g2f", 1, size=self._params.cgra_per_glb, packed=True)
+
         self.data_flush = self.output("data_flush", 1)
 
         self.rdrq_packet_dma2bank = self.output("rdrq_packet_dma2bank", self.header.rdrq_packet_t)
@@ -52,7 +55,9 @@ class GlbLoadDma(Generator):
         self.rdrs_packet = self.var("rdrs_packet", self.header.rdrs_packet_t)
         self.data_g2f_w = self.var("data_g2f_w", width=self._params.cgra_data_width,
                                    size=self._params.cgra_per_glb, packed=True)
-        self.data_valid_g2f_w = self.var("data_valid_g2f_w", 1, size=self._params.cgra_per_glb, packed=True)
+        self.data_g2f_vld_w = self.var("data_g2f_vld_w", 1, size=self._params.cgra_per_glb, packed=True)
+        self.ctrl_g2f_w = self.var("ctrl_g2f_w", 1, size=self._params.cgra_per_glb, packed=True)
+
         self.ld_dma_done_pulse = self.var("ld_dma_done_pulse", 1)
         self.ld_dma_done_pulse_latch = self.var("ld_dma_done_pulse_latch", 1)
         self.ld_dma_done_pulse_anded = self.var("ld_dma_done_pulse_anded", 1)
@@ -354,12 +359,18 @@ class GlbLoadDma(Generator):
         self.cgra2fifo_ready = 0
         for i in range(self._params.cgra_per_glb):
             if self.cfg_data_network_g2f_mux[i] == 1:
+                self.cgra2fifo_ready = self.data_g2f_rdy[i]
                 self.data_g2f_w[i] = self.strm_data_mode_muxed
-                self.data_valid_g2f_w[i] = self.strm_data_valid_mode_muxed
-                self.cgra2fifo_ready = self.data_ready_f2g[i]
+                if self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_ready_valid:
+                    self.data_g2f_vld_w[i] = self.strm_data_valid_mode_muxed
+                    self.ctrl_g2f_w[i] = 0
+                else:
+                    self.data_g2f_vld_w[i] = 0
+                    self.ctrl_g2f_w[i] = self.strm_data_valid_mode_muxed
             else:
                 self.data_g2f_w[i] = 0
-                self.data_valid_g2f_w[i] = 0
+                self.data_g2f_vld_w[i] = 0
+                self.ctrl_g2f_w[i] = 0
                 self.cgra2fifo_ready = self.cgra2fifo_ready
 
     # @always_ff((posedge, "clk"), (posedge, "reset"))
@@ -374,13 +385,14 @@ class GlbLoadDma(Generator):
     #             self.data_g2f[i] = self.data_g2f_w[i]
     #             self.data_valid_g2f[i] = self.data_valid_g2f_w[i]
 
-    # FIXME: For now, remove pipeline register
+    # NOTE: For now, remove pipeline register
     @ always_comb
     def data_g2f_output(self):
         self.data_flush = self.data_flush_w
         for i in range(self._params.cgra_per_glb):
             self.data_g2f[i] = self.data_g2f_w[i]
-            self.data_valid_g2f[i] = self.data_valid_g2f_w[i]
+            self.data_g2f_vld[i] = self.data_g2f_vld_w[i]
+            self.ctrl_g2f[i] = self.ctrl_g2f_w[i]
 
     @ always_comb
     def ld_dma_done_pulse_logic(self):
