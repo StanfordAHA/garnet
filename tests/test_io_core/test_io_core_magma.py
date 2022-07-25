@@ -1,27 +1,27 @@
 import pytest
 from gemstone.common.testers import BasicTester
 from gemstone.common.util import compress_config_data
-from io_core.io_core_magma import IOCoreValid, IOCore, IOCoreDelay
+from io_core.io_core_magma import IOCoreValid, IOCore
 from fault.tester import Tester
 from fault.random import random_bv
 
 
-@pytest.mark.parametrize("core_type", [IOCore, IOCoreDelay])
+@pytest.mark.parametrize("core_type", [IOCore])
 def test_regression(run_tb, core_type):
     io_core = core_type()
     io_core.finalize()
     io_core_circuit = io_core.circuit()
-    if core_type is IOCoreDelay:
-        tester = BasicTester(io_core_circuit, io_core_circuit.clk, io_core_circuit.reset)
-        tester.zero_inputs()
-        tester.reset()
-    else:
-        tester = Tester(io_core_circuit)
+    
+    tester = BasicTester(io_core_circuit, io_core_circuit.clk, io_core_circuit.reset)
+    tester.zero_inputs()
+    tester.reset()
+
 
     for _glb2io_16, _f2io_16 in \
             [(random_bv(16), random_bv(16)) for _ in range(100)]:
         tester.poke(io_core_circuit.glb2io_16, _glb2io_16)
         tester.poke(io_core_circuit.f2io_16, _f2io_16)
+        tester.step(2)
         tester.eval()
         tester.expect(io_core_circuit.io2glb_16, _f2io_16)
         tester.expect(io_core_circuit.io2f_16, _glb2io_16)
@@ -30,6 +30,7 @@ def test_regression(run_tb, core_type):
             [(random_bv(1), random_bv(1)) for _ in range(100)]:
         tester.poke(io_core_circuit.glb2io_1, _glb2io_1)
         tester.poke(io_core_circuit.f2io_1, _f2io_1)
+        tester.step(2)
         tester.eval()
         tester.expect(io_core_circuit.io2glb_1, _f2io_1)
         tester.expect(io_core_circuit.io2f_1, _glb2io_1)
@@ -38,30 +39,14 @@ def test_regression(run_tb, core_type):
 
 
 def test_delay_io(run_tb):
-    io_core = IOCoreDelay()
+    io_core = IOCore()
     io_core.finalize()
 
     io_core_circuit = io_core.circuit()
     tester = BasicTester(io_core_circuit, io_core_circuit.clk, io_core_circuit.reset)
 
-    # configure everything to delay mode
-    instr = {}
-    for width in [1, 16]:
-        for prefix in ["glb2io", "io2glb"]:
-            reg_name = f"{prefix}_{width}_delay_en"
-            instr[reg_name] = 1
-
-    config_data = io_core.get_config_bitstream(instr)
-    config_data = compress_config_data(config_data)
-
     tester.zero_inputs()
     tester.reset()
-
-    for addr, data in config_data:
-        tester.configure(addr, data)
-        tester.config_read(addr)
-        tester.eval()
-        tester.expect(io_core_circuit.read_config_data, data)
 
     for width in [1, 16]:
         vectors = [(random_bv(width), (random_bv(width))) for _ in range(10)]
