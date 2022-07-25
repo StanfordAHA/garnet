@@ -60,7 +60,7 @@ set_false_path -through [get_cells -hier *config_reg_*] -through [get_pins $sb_r
 set_false_path -through [get_cells -hier *config_reg_*] -to [get_ports SB* -filter direction==out]
 
 # Paths from config input ports to PE registers
-set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
+set pe_path PE_inst0/PE_inner_W_inst0/PE_inner
 set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pe_path/* ]]
 
 # Paths from config input ports to the register file in Pond 
