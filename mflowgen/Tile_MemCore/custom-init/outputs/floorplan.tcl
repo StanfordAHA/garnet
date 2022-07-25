@@ -81,7 +81,7 @@ set sram_spacing_x_odd 0
 # reasonable number of pitches
 # Spread out further for power domains
 if $::env(PWR_AWARE) {
-  set sram_spacing_x_even [expr 300 * $horiz_pitch]
+  set sram_spacing_x_even [expr 350 * $horiz_pitch]
 } else {
   set sram_spacing_x_even [expr 200 * $horiz_pitch]
 }
