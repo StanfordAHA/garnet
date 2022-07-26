@@ -11,8 +11,8 @@ testvectors/4096_v0.dat
 F2G 0 1 2 2
 RV
 5
-2
-1000 62
-1 64
-1 62
+1
+3849
+1
+1
 testvectors/3844_v0_b5.dat
