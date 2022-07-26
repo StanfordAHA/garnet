@@ -63,7 +63,7 @@ class LakeCoreBase(ConfigurableCore):
                  config_data_width=32,
                  config_addr_width=8,
                  data_width=16,
-                 gate_flush=True,
+                 gate_flush=False,
                  ready_valid=False,
                  name="LakeBase_inst"):
 
