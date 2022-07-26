@@ -88,13 +88,14 @@ class GlobalBufferParams:
     # constant variables
     st_dma_valid_mode_valid: int = 0
     st_dma_valid_mode_ready_valid: int = 1
-    st_dma_valid_mode_ready_valid_compressed: int = 2
-    st_dma_valid_mode_static: int = 3
+    st_dma_valid_mode_static: int = 2
 
-    ld_dma_valid_mode_external_flush: int = 0
-    ld_dma_valid_mode_internal_flush: int = 1
-    ld_dma_valid_mode_valid: int = 2
-    ld_dma_valid_mode_ready_valid: int = 3
+    ld_dma_valid_mode_static: int = 0
+    ld_dma_valid_mode_valid: int = 1
+    ld_dma_valid_mode_ready_valid: int = 2
+
+    ld_dma_flush_mode_external: int = 0
+    ld_dma_flush_mode_internal: int = 1
 
     # dependent field
     num_prr_width: int = field(init=False, default=num_prr_width)

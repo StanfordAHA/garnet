@@ -13,8 +13,8 @@
 import global_buffer_param::*;
 
 module top;
-    timeunit `TIMEUNIT;
-    timeprecision `TIMEPRECISION;
+    // timeunit `TIMEUNIT;
+    // timeprecision `TIMEPRECISION;
 
 `ifdef PWR
     supply1 VDD;
@@ -82,10 +82,14 @@ module top;
 
     // cgra to glb streaming word
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_f2g;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_f2g_rdy;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_f2g_vld;
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_ctrl_f2g;
 
     // glb to cgra streaming word
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0][CGRA_DATA_WIDTH-1:0] strm_data_g2f;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_g2f_vld;
+    logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_data_g2f_rdy;
     logic [NUM_GLB_TILES-1:0][CGRA_PER_GLB-1:0] strm_ctrl_g2f;
     logic [NUM_GROUPS-1:0] strm_data_flush_g2f;
 
@@ -108,13 +112,17 @@ module top;
 
     logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0] g2c_io1;
     logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0][15:0] g2c_io16;
+    logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0] g2c_io16_vld;
+    logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0] g2c_io16_rdy;
     logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0] c2g_io1;
     logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0][15:0] c2g_io16;
+    logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0] c2g_io16_vld;
+    logic [NUM_PRR-1:0][CGRA_PER_GLB-1:0] c2g_io16_rdy;
 
     // max cycle set
     initial begin
         repeat (10000000) @(posedge clk);
-        $display("\n%0t\tERROR: The 10000000 cycles marker has passed!", $time);
+        // $display("\n%0t\tERROR: The 10000000 cycles marker has passed!", $time);
         $finish(2);
     end
 
@@ -131,9 +139,9 @@ module top;
         dut_clk = 0;
         assert_reset();
     end
-    
+
     always #(`CLK_PERIOD / 2.0) clk = !clk;
-    always @ (*) dut_clk <= #(`CLK_PERIOD + `CLK_SRC_LATENCY) clk;
+    always @(*) dut_clk <= #(`CLK_PERIOD + `CLK_SRC_LATENCY) clk;
 
     // instantiate test
     glb_test test (
@@ -149,7 +157,7 @@ module top;
         .proc_rd_data             (proc_rd_data),
         .proc_rd_data_valid       (proc_rd_data_valid),
         // config ifc
-        .if_cfg_wr_en (if_cfg_wr_en),
+        .if_cfg_wr_en             (if_cfg_wr_en),
         .if_cfg_wr_clk_en         (if_cfg_wr_clk_en),
         .if_cfg_wr_addr           (if_cfg_wr_addr),
         .if_cfg_wr_data           (if_cfg_wr_data),
@@ -201,31 +209,41 @@ module top;
         .if_sram_cfg_rd_data_valid(if_sram_cfg_rd_data_valid),
 
         // cgra-glb
-        .strm_ctrl_f2g            (strm_ctrl_f2g),
-        .strm_data_f2g            (strm_data_f2g),
+        .strm_ctrl_f2g    (strm_ctrl_f2g),
+        .strm_data_f2g    (strm_data_f2g),
+        .strm_data_f2g_vld(strm_data_f2g_vld),
+        .strm_data_f2g_rdy(strm_data_f2g_rdy),
+        .strm_ctrl_g2f    (strm_ctrl_g2f),
+        .strm_data_g2f    (strm_data_g2f),
+        .strm_data_g2f_vld(strm_data_g2f_vld),
+        .strm_data_g2f_rdy(strm_data_g2f_rdy),
 
 `ifdef PWR
-        .VDD                      (VDD),
-        .VSS                      (VSS),
+        .VDD(VDD),
+        .VSS(VSS),
 `endif
         .*
     );
 
     cgra cgra (
         // stall
-        .stall      ( {NUM_PRR{1'b0}} ),
+        .stall        ({NUM_PRR{1'b0}}),
         // configuration
-        .cfg_wr_en  (g2c_cfg_wr_en),
-        .cfg_wr_addr(g2c_cfg_wr_addr),
-        .cfg_wr_data(g2c_cfg_wr_data),
-        .cfg_rd_en  (g2c_cfg_rd_en),
-        .cfg_rd_addr(g2c_cfg_rd_addr),
-        .cfg_rd_data(c2g_cfg_rd_data),
+        .cfg_wr_en    (g2c_cfg_wr_en),
+        .cfg_wr_addr  (g2c_cfg_wr_addr),
+        .cfg_wr_data  (g2c_cfg_wr_data),
+        .cfg_rd_en    (g2c_cfg_rd_en),
+        .cfg_rd_addr  (g2c_cfg_rd_addr),
+        .cfg_rd_data  (c2g_cfg_rd_data),
         // data
-        .io1_g2io   (g2c_io1),
-        .io16_g2io  (g2c_io16),
-        .io1_io2g   (c2g_io1),
-        .io16_io2g  (c2g_io16),
+        .io1_g2io     (g2c_io1),
+        .io16_g2io    (g2c_io16),
+        .io16_g2io_vld(g2c_io16_vld),
+        .io16_g2io_rdy(g2c_io16_rdy),
+        .io1_io2g     (c2g_io1),
+        .io16_io2g    (c2g_io16),
+        .io16_io2g_vld(c2g_io16_vld),
+        .io16_io2g_rdy(c2g_io16_rdy),
         .*
     );
 
@@ -247,13 +265,17 @@ module top;
         for (int i = 0; i < NUM_PRR; i++) begin
             g2c_io1[i] = strm_ctrl_g2f[i];
             g2c_io16[i] = strm_data_g2f[i];
+            g2c_io16_vld[i] = strm_data_g2f_vld[i];
+            strm_data_g2f_rdy[i] = g2c_io16_rdy[i];
         end
     end
 
-    always @ (*) begin
+    always @(*) begin
         for (int i = 0; i < NUM_PRR; i++) begin
             strm_ctrl_f2g[i] <= #4 c2g_io1[i];
             strm_data_f2g[i] <= #4 c2g_io16[i];
+            strm_data_f2g_vld[i] <= #4 c2g_io16_vld[i];
+            c2g_io16_rdy[i] <= #4 strm_data_f2g_rdy[i];
         end
     end
 

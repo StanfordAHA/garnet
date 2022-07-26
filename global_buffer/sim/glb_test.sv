@@ -237,7 +237,7 @@ program glb_test (
                 kernels[i].data64_arr_out = new[kernels[i].data64_arr.size()];
 
                 // Store the data to PRR queue.
-                write_prr(kernels[i].tile_id, kernels[i].data_arr, kernels[i].st_valid_type_, kernels[i].first_block_size, kernels[i].second_block_size);
+                write_prr(kernels[i].tile_id, kernels[i].data_arr, kernels[i].st_valid_type_);
                 // Configure PRR controller to follow cycle stride/extent pattern.
                 void'($root.top.cgra.prr2glb_configure(
                     kernels[i].tile_id, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride
@@ -347,7 +347,9 @@ program glb_test (
         for (int i = 1; i <= max_num_test; i++) begin
             $sformat(test_name, "test%02d", i);
             if (($test$plusargs(test_name))) begin
-                $display("\n************** Test Start *****************");
+                $display("\n*******************************************");
+                $display("************** Test Start *****************");
+                $display("*******************************************");
                 $sformat(test_filename, "./testvectors/%s.txt", test_name);
                 test = new(test_filename);
                 init_test();
@@ -982,16 +984,9 @@ program glb_test (
     endfunction
 
     function automatic void write_prr(input int prr_id,
-                                      ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr[], input bit[1:0] valid_mode,
-                                      int first_block_size=0, int second_block_size=0);
+                                      ref [CGRA_DATA_WIDTH-1:0] cgra_data_arr[], input bit[1:0] valid_mode);
         foreach (cgra_data_arr[i]) begin
             $root.top.cgra.prr2glb_q[prr_id][i] = cgra_data_arr[i];
-        end
-        if (valid_mode == ST_DMA_VALID_MODE_READY_VALID) begin
-            $root.top.cgra.prr2glb_q[prr_id].push_front(cgra_data_arr.size());
-        end else if (valid_mode == ST_DMA_VALID_MODE_READY_VALID_COMPRESSED) begin
-            $root.top.cgra.prr2glb_q[prr_id].insert(first_block_size, second_block_size);
-            $root.top.cgra.prr2glb_q[prr_id].push_front(first_block_size);
         end
     endfunction
 
