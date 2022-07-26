@@ -1,17 +1,22 @@
 module cgra (
-    input  logic                                              clk,
-    input  logic                                              reset,
-    input  logic [NUM_PRR-1:0]                                stall,
-    input  logic [NUM_PRR-1:0]                                cfg_wr_en,
-    input  logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0]       cfg_wr_addr,
-    input  logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0]       cfg_wr_data,
-    input  logic [NUM_PRR-1:0]                                cfg_rd_en,
-    input  logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0]       cfg_rd_addr,
-    output logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0]       cfg_rd_data,
-    input  logic [NUM_PRR-1:0][       CGRA_PER_GLB-1:0]       io1_g2io,
-    input  logic [NUM_PRR-1:0][       CGRA_PER_GLB-1:0][15:0] io16_g2io,
-    output logic [NUM_PRR-1:0][       CGRA_PER_GLB-1:0]       io1_io2g,
-    output logic [NUM_PRR-1:0][       CGRA_PER_GLB-1:0][15:0] io16_io2g
+    input  logic                                                 clk,
+    input  logic                                                 reset,
+    input  logic [   NUM_PRR-1:0]                                stall,
+    input  logic [   NUM_PRR-1:0]                                cfg_wr_en,
+    input  logic [   NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0]       cfg_wr_addr,
+    input  logic [   NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0]       cfg_wr_data,
+    input  logic [   NUM_PRR-1:0]                                cfg_rd_en,
+    input  logic [   NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0]       cfg_rd_addr,
+    output logic [   NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0]       cfg_rd_data,
+    input  logic [   NUM_PRR-1:0][       CGRA_PER_GLB-1:0]       io1_g2io,
+    input  logic [   NUM_PRR-1:0][       CGRA_PER_GLB-1:0][15:0] io16_g2io,
+    input  logic [   NUM_PRR-1:0][       CGRA_PER_GLB-1:0]       io16_g2io_vld,
+    output logic [   NUM_PRR-1:0][       CGRA_PER_GLB-1:0]       io16_g2io_rdy,
+    output logic [   NUM_PRR-1:0][       CGRA_PER_GLB-1:0]       io1_io2g,
+    output logic [   NUM_PRR-1:0][       CGRA_PER_GLB-1:0][15:0] io16_io2g,
+    output logic [   NUM_PRR-1:0][       CGRA_PER_GLB-1:0]       io16_io2g_vld,
+    input  logic [   NUM_PRR-1:0][       CGRA_PER_GLB-1:0]       io16_io2g_rdy,
+    input  logic [NUM_GROUPS-1:0]                                strm_data_flush_g2f
 );
     localparam int PRR_CFG_REG_DEPTH = 16;
 

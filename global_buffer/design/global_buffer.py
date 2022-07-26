@@ -67,9 +67,9 @@ class GlobalBuffer(Generator):
 
         self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.strm_data_g2f_vld = self.output("strm_ctrl_g2f_vld", 1, size=[
+        self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.strm_data_g2f_rdy = self.input("strm_ctrl_g2f_rdy", 1, size=[
+        self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.strm_ctrl_g2f = self.output("strm_ctrl_g2f", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
