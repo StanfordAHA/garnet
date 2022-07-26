@@ -23,25 +23,26 @@ class GlbHeader():
         self.cfg_load_dma_ctrl_t = PackedStruct("load_dma_ctrl_t",
                                                 [("mode", 2),
                                                  ("valid_mode", 2),
+                                                 ("flush_mode", 1),
                                                     ("data_mux", 2),
                                                     ("num_repeat", clog2(self._params.queue_depth) + 1)])
 
         load_dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
-                                  ("cycle_start_addr", self._params.cycle_count_width)]
+                                       ("cycle_start_addr", self._params.cycle_count_width)]
         load_dma_header_struct_list += [("dim", 1 + clog2(self._params.load_dma_loop_level))]
         for i in range(self._params.load_dma_loop_level):
             load_dma_header_struct_list += [(f"range_{i}", self._params.axi_data_width),
-                                       (f"stride_{i}", self._params.glb_addr_width + 1),
-                                       (f"cycle_stride_{i}", self._params.cycle_count_width)]
+                                            (f"stride_{i}", self._params.glb_addr_width + 1),
+                                            (f"cycle_stride_{i}", self._params.cycle_count_width)]
         self.cfg_load_dma_header_t = PackedStruct("load_dma_header_t", load_dma_header_struct_list)
 
         store_dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
-                                  ("cycle_start_addr", self._params.cycle_count_width)]
+                                        ("cycle_start_addr", self._params.cycle_count_width)]
         store_dma_header_struct_list += [("dim", 1 + clog2(self._params.store_dma_loop_level))]
         for i in range(self._params.store_dma_loop_level):
             store_dma_header_struct_list += [(f"range_{i}", self._params.axi_data_width),
-                                       (f"stride_{i}", self._params.glb_addr_width + 1),
-                                       (f"cycle_stride_{i}", self._params.cycle_count_width)]
+                                             (f"stride_{i}", self._params.glb_addr_width + 1),
+                                             (f"cycle_stride_{i}", self._params.cycle_count_width)]
         self.cfg_store_dma_header_t = PackedStruct("store_dma_header_t", store_dma_header_struct_list)
 
         # pcfg dma header
