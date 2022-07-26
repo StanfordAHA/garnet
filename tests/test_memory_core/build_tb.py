@@ -63,6 +63,7 @@ from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
 from lassen.sim import PE_fc
 from peak import family
+from lake.modules.scanner_pipe import ScannerPipe
 
 
 class SparseTBBuilder(m.Generator2):
@@ -1003,7 +1004,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         output_format = "CSF"
     elif 'mat_identity.gv' in app_name:
         # PASSES
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # b_matrix = MatrixGenerator(name="B", shape=[20, 20], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix = MatrixGenerator(name="B", shape=[40, 40], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # b_matrix = MatrixGenerator(name="B", shape=[4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
@@ -1256,6 +1260,7 @@ if __name__ == "__main__":
     parser.add_argument('--gen_pe', action="store_true")
     parser.add_argument('--add_pond', action="store_true")
     parser.add_argument('--combined', action="store_true")
+    parser.add_argument('--pipeline_scanner', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1274,6 +1279,7 @@ if __name__ == "__main__":
     add_pond = args.add_pond
     combined = args.combined
     sam_graph = args.sam_graph
+    pipeline_scanner = args.pipeline_scanner
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
@@ -1304,9 +1310,17 @@ if __name__ == "__main__":
 
         controllers = []
 
-        scan = Scanner(data_width=16,
-                       fifo_depth=8,
-                       defer_fifos=True)
+        if pipeline_scanner:
+            scan = ScannerPipe(data_width=16,
+                               fifo_depth=fifo_depth,
+                               add_clk_enable=True,
+                               defer_fifos=False,
+                               add_flush=True)
+        else:
+            scan = Scanner(data_width=16,
+                           fifo_depth=fifo_depth,
+                           defer_fifos=True)
+
         wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
                              defer_fifos=True)
         strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
@@ -1379,13 +1393,14 @@ if __name__ == "__main__":
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
                                            'pnr_tag': "Q",
-                                           'name': "PECore",
+                                           'name': "PE",
                                            'input_prefix': "PE_"})]
             real_pe = True
 
         else:
             altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
-                                      'add_clk_enable': clk_enable}),
+                                      'add_clk_enable': clk_enable,
+                                      'pipelined': pipeline_scanner}),
                        (BuffetCore, {'local_mems': True,
                                      'physical_mem': physical_sram,
                                      'fifo_depth': fifo_depth,

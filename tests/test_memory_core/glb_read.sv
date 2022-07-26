@@ -36,10 +36,10 @@ initial begin
     @(posedge clk);
     @(posedge clk);
 
-    // Wait...
-    repeat (500) begin
-        @(posedge clk);
-    end
+    // // Wait...
+    // repeat (500) begin
+    //     @(posedge clk);
+    // end
 
     // Do first transfer...
     while(1) begin
