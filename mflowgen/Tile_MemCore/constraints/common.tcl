@@ -156,9 +156,9 @@ set_false_path -to [get_ports lo]
 set_false_path -from [get_ports tile_id]
 
 # Preserve the RMUXes so that we can easily constrain them later
-set rmux_cells [get_cells -hier RMUX_T*sel_inst0]
-set_dont_touch $rmux_cells true
-set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true
+#set rmux_cells [get_cells -hier RMUX_T*sel_inst0]
+#set_dont_touch $rmux_cells true
+#set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true
 
 # False paths from config input ports to SB output ports
 set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
