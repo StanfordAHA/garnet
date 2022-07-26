@@ -9,6 +9,7 @@ class GlbAddrGen(Generator):
         super().__init__(f"glb_addr_gen")
         self._params = _params
         self.p_addr_width = self.param("addr_width", width=32, value=32)
+        self.p_loop_level = self.param("loop_level", width=32, value=self._params.loop_level)
         self.loop_level = loop_level
 
         self.clk = self.clock("clk")
@@ -16,7 +17,7 @@ class GlbAddrGen(Generator):
         self.reset = self.reset("reset")
         self.restart = self.input("restart", 1)
         self.strides = self.input("strides", self.p_addr_width,
-                                  size=self.loop_level,
+                                  size=self.p_loop_level,
                                   packed=True, explicit_array=True)
         self.start_addr = self.input("start_addr", self.p_addr_width)
         self.step = self.input("step", 1)

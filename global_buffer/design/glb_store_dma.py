@@ -209,6 +209,7 @@ class GlbStoreDma(Generator):
 
         self.cycle_stride_addr_gen = GlbAddrGen(self._params, loop_level=self._params.store_dma_loop_level)
         self.cycle_stride_addr_gen.p_addr_width.value = self._params.cycle_count_width
+        self.cycle_stride_addr_gen.p_loop_level.value = self._params.store_dma_loop_level
         self.add_child("cycle_stride_addr_gen",
                        self.cycle_stride_addr_gen,
                        clk=self.clk,
@@ -226,6 +227,7 @@ class GlbStoreDma(Generator):
         # Data stride
         self.data_stride_addr_gen = GlbAddrGen(self._params, loop_level=self._params.store_dma_loop_level)
         self.data_stride_addr_gen.p_addr_width.value = self._params.glb_addr_width + 1
+        self.data_stride_addr_gen.p_loop_level.value = self._params.store_dma_loop_level
         self.add_child("data_stride_addr_gen",
                        self.data_stride_addr_gen,
                        clk=self.clk,
