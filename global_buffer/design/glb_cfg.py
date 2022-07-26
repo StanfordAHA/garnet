@@ -51,9 +51,9 @@ class GlbCfg(Generator):
         # pcfg broadcast
         self.cfg_pcfg_broadcast_mux = self.output("cfg_pcfg_broadcast_mux", self.header.cfg_pcfg_broadcast_mux_t)
 
-        # rdy/valid block size read-only register
-        self.cfg_st_dma_first_block_size = self.input("cfg_st_dma_first_block_size", self._params.cgra_data_width)
-        self.cfg_st_dma_second_block_size = self.input("cfg_st_dma_second_block_size", self._params.cgra_data_width)
+        # rdy/vld number of blocks
+        # self.cfg_ld_dma_num_blocks = self.output("cfg_ld_dma_num_blocks", self._params.axi_data_width)
+        self.cfg_st_dma_num_blocks = self.output("cfg_st_dma_num_blocks", self._params.axi_data_width)
 
         self.glb_pio_wrapper = self.get_glb_pio_wrapper()
         self.add_child("glb_pio", self.glb_pio_wrapper)
@@ -118,6 +118,7 @@ class GlbCfg(Generator):
         self.wire(self.cfg_st_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_mode_r"])
         self.wire(self.cfg_st_dma_ctrl['valid_mode'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_valid_mode_r"])
         self.wire(self.cfg_st_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_num_repeat_r"])
+        self.wire(self.cfg_st_dma_num_blocks, self.glb_pio_wrapper.ports[f"l2h_st_dma_num_blocks_value_r"])
 
         for i in range(self._params.queue_depth):
             if self._params.queue_depth == 1:
@@ -142,7 +143,9 @@ class GlbCfg(Generator):
                   self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_data_mux_r"])
         self.wire(self.cfg_ld_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_mode_r"])
         self.wire(self.cfg_ld_dma_ctrl['valid_mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_valid_mode_r"])
+        self.wire(self.cfg_ld_dma_ctrl['flush_mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_flush_mode_r"])
         self.wire(self.cfg_ld_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_num_repeat_r"])
+        # self.wire(self.cfg_ld_dma_num_blocks, self.glb_pio_wrapper.ports[f"l2h_ld_dma_num_blocks_value_r"])
 
         for i in range(self._params.queue_depth):
             if self._params.queue_depth == 1:
@@ -177,8 +180,6 @@ class GlbCfg(Generator):
         self.wire(self.cfg_pcfg_broadcast_mux['west'], self.glb_pio_wrapper.ports[f"l2h_pcfg_broadcast_mux_west_r"])
         self.wire(self.cfg_pcfg_broadcast_mux['east'], self.glb_pio_wrapper.ports[f"l2h_pcfg_broadcast_mux_east_r"])
         self.wire(self.cfg_pcfg_broadcast_mux['south'], self.glb_pio_wrapper.ports[f"l2h_pcfg_broadcast_mux_south_r"])
-        self.wire(self.cfg_st_dma_first_block_size, self.glb_pio_wrapper.ports[f"h2l_st_dma_block_size_first_block_size_w"])
-        self.wire(self.cfg_st_dma_second_block_size, self.glb_pio_wrapper.ports[f"h2l_st_dma_block_size_second_block_size_w"])
 
     def wire_ctrl_signals(self):
         self.wire(self.gclk, self.glb_cfg_ctrl.gclk)
