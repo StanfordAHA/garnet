@@ -107,7 +107,7 @@ class GlbStoreDma(Generator):
         self.fifo2cgra_ready = self.var("fifo2cgra_ready", 1)
         self.rv_is_metadata = self.var("rv_is_metadata", 1)
         self.rv_num_data_cnt = self.var("rv_num_data_cnt", self._params.cgra_data_width)
-        self.rv_num_blocks_cnt = self.var("rv_num_blocks", self._params.axi_data_width)
+        self.rv_num_blocks_cnt = self.var("rv_num_blocks_cnt", self._params.axi_data_width)
 
         if self._params.queue_depth != 1:
             self.queue_sel_r = self.var("queue_sel_r", max(1, clog2(self.repeat_cnt.width)))
@@ -264,7 +264,7 @@ class GlbStoreDma(Generator):
         elif self.rv_mode_on:
             if self.st_dma_start_pulse_r:
                 self.rv_num_blocks_cnt = self.cfg_st_dma_num_blocks
-            elif self.block_done & self.rv_num_blocks_cnt > 0:
+            elif self.block_done & (self.rv_num_blocks_cnt > 0):
                 self.rv_num_blocks_cnt = self.rv_num_blocks_cnt - 1
 
     @always_comb

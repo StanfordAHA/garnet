@@ -246,7 +246,8 @@ program glb_test (
                 f2g_dma_configure(kernels[i].tile_id, 1, kernels[i].start_addr,
                                   kernels[i].cycle_start_addr, kernels[i].dim,
                                   kernels[i].new_extent, kernels[i].new_cycle_stride,
-                                  kernels[i].new_data_stride, kernels[i].st_valid_type_);
+                                  kernels[i].new_data_stride, kernels[i].st_valid_type_,
+                                  kernels[i].num_blocks);
             end else if (kernels[i].type_ == SRAM) begin
                 kernels[i].data_arr = new[kernels[i].extent[0]];
                 kernels[i].data_arr_out = new[kernels[i].extent[0]];
@@ -318,7 +319,10 @@ program glb_test (
             end else if (kernels[i].type_ == F2G) begin
                 proc_read_burst(kernels[i].start_addr, kernels[i].data64_arr_out);
                 $display("F2G Comparison");
-                err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
+                // err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
+                kernels[i].data_arr_out = convert_64b_to_16b(kernels[i].data64_arr_out);
+                kernels[i].data_arr_out = new[kernels[i].data_arr.size()](kernels[i].data_arr_out);
+                err += compare_16b_arr(kernels[i].data_arr, kernels[i].data_arr_out);
             end else if (kernels[i].type_ == PCFG) begin
                 $display("PCFG Comparison");
                 err += compare_64b_arr(kernels[i].data64_arr, kernels[i].data64_arr_out);
@@ -611,7 +615,7 @@ program glb_test (
     task automatic f2g_dma_configure(input int tile_id, bit on, [AXI_DATA_WIDTH-1:0] start_addr,
                                      [AXI_DATA_WIDTH-1:0] cycle_start_addr, int dim,
                                      int extent[LOOP_LEVEL], int cycle_stride[LOOP_LEVEL],
-                                     int data_stride[LOOP_LEVEL], bit [1:0] valid_mode);
+                                     int data_stride[LOOP_LEVEL], bit [1:0] valid_mode, bit [AXI_DATA_WIDTH-1:0] num_blocks);
         glb_cfg_write((tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_CTRL_R,
                       ((2'b10 << `GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)
                     | (on << `GLB_ST_DMA_CTRL_MODE_F_LSB)
@@ -641,6 +645,12 @@ program glb_test (
         glb_cfg_read(
             (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_HEADER_0_DIM_R,
             (dim << `GLB_ST_DMA_HEADER_0_DIM_DIM_F_LSB));
+        glb_cfg_write(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_NUM_BLOCKS_R,
+            (num_blocks << `GLB_ST_DMA_NUM_BLOCKS_VALUE_F_LSB));
+        glb_cfg_read(
+            (tile_id << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + `GLB_ST_DMA_NUM_BLOCKS_R,
+            (num_blocks << `GLB_ST_DMA_NUM_BLOCKS_VALUE_F_LSB));
         // NOTE: Each stride/range address difference is 'hc
         for (int i = 0; i < dim; i++) begin
             glb_cfg_write(
@@ -1081,16 +1091,18 @@ program glb_test (
         for (int i = 0; i < num_data_in; i = i + 4) begin
             if (i == (num_data_in - 1)) begin
                 if (num_data_in % 4 == 1) begin
-                    data_out[i/4] = {{48{1'b1}}, data_in[i]};
+                    data_out[i/4] = {{48{1'b0}}, data_in[i]};
                 end else if (num_data_in % 4 == 2) begin
-                    data_out[i/4] = {{32{1'b1}}, data_in[i+1], data_in[i]};
+                    data_out[i/4] = {{32{1'b0}}, data_in[i+1], data_in[i]};
                 end else if (num_data_in % 4 == 3) begin
-                    data_out[i/4] = {{16{1'b1}}, data_in[i+2], data_in[i+1], data_in[i]};
+                    data_out[i/4] = {{16{1'b0}}, data_in[i+2], data_in[i+1], data_in[i]};
                 end else begin
                     data_out[i/4] = {data_in[i+3], data_in[i+2], data_in[i+1], data_in[i]};
                 end
             end
-            data_out[i/4] = {data_in[i+3], data_in[i+2], data_in[i+1], data_in[i]};
+            else begin
+                data_out[i/4] = {data_in[i+3], data_in[i+2], data_in[i+1], data_in[i]};
+            end
         end
         return data_out;
     endfunction
