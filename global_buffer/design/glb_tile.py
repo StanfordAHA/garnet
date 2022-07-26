@@ -190,13 +190,14 @@ class GlbTile(Generator):
         self.cfg_st_dma_ctrl = self.var("cfg_st_dma_ctrl", self.header.cfg_store_dma_ctrl_t)
         self.cfg_st_dma_header = self.var("cfg_st_dma_header", self.header.cfg_store_dma_header_t,
                                           size=self._params.queue_depth)
-        self.cfg_st_dma_first_block_size = self.var("cfg_st_dma_first_block_size", self._params.cgra_data_width)
-        self.cfg_st_dma_second_block_size = self.var("cfg_st_dma_second_block_size", self._params.cgra_data_width)
+        self.cfg_st_dma_num_blocks = self.var("cfg_st_dma_num_blocks", self._params.axi_data_width)
 
         # ld dma
         self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_load_dma_ctrl_t)
         self.cfg_ld_dma_header = self.var("cfg_ld_dma_header", self.header.cfg_load_dma_header_t,
                                           size=self._params.queue_depth)
+        # self.cfg_ld_dma_num_blocks = self.var("cfg_ld_dma_num_blocks", self._params.axi_data_width)
+
         # pcfg dma
         self.cfg_pcfg_dma_ctrl = self.var("cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
         self.cfg_pcfg_dma_header = self.var("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
@@ -322,8 +323,8 @@ class GlbTile(Generator):
         self.wire(self.cfg_pcfg_dma_ctrl, self.glb_cfg.cfg_pcfg_dma_ctrl)
         self.wire(self.cfg_pcfg_dma_header, self.glb_cfg.cfg_pcfg_dma_header)
         self.wire(self.cfg_pcfg_broadcast_mux, self.glb_cfg.cfg_pcfg_broadcast_mux)
-        self.wire(self.cfg_st_dma_first_block_size, self.glb_cfg.cfg_st_dma_first_block_size)
-        self.wire(self.cfg_st_dma_second_block_size, self.glb_cfg.cfg_st_dma_second_block_size)
+        # self.wire(self.cfg_ld_dma_num_blocks, self.glb_cfg.cfg_ld_dma_num_blocks)
+        self.wire(self.cfg_st_dma_num_blocks, self.glb_cfg.cfg_st_dma_num_blocks)
 
         self.glb_pcfg_broadcast = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_broadcast",
@@ -356,8 +357,7 @@ class GlbTile(Generator):
                        st_dma_start_pulse=self.strm_f2g_start_pulse,
                        st_dma_done_interrupt=self.strm_f2g_interrupt_pulse,
                        cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'],
-                       cfg_st_dma_first_block_size=self.cfg_st_dma_first_block_size,
-                       cfg_st_dma_second_block_size=self.cfg_st_dma_second_block_size)
+                       cfg_st_dma_num_blocks=self.cfg_st_dma_num_blocks)
 
         self.add_child("glb_load_dma",
                        GlbLoadDma(_params=self._params),
@@ -379,6 +379,7 @@ class GlbTile(Generator):
                        cfg_tile_connected_next=self.cfg_tile_connected_next,
                        cfg_ld_dma_num_repeat=self.cfg_ld_dma_ctrl['num_repeat'],
                        cfg_ld_dma_ctrl_valid_mode=self.cfg_ld_dma_ctrl['valid_mode'],
+                       cfg_ld_dma_ctrl_flush_mode=self.cfg_ld_dma_ctrl['flush_mode'],
                        cfg_ld_dma_ctrl_mode=self.cfg_ld_dma_ctrl['mode'],
                        cfg_data_network_latency=self.glb_cfg.cfg_data_network['latency'],
                        cfg_ld_dma_header=self.cfg_ld_dma_header,

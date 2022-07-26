@@ -38,6 +38,7 @@ class GlbLoadDma(Generator):
         self.cfg_tile_connected_next = self.input("cfg_tile_connected_next", 1)
         self.cfg_ld_dma_num_repeat = self.input("cfg_ld_dma_num_repeat", clog2(self._params.queue_depth) + 1)
         self.cfg_ld_dma_ctrl_valid_mode = self.input("cfg_ld_dma_ctrl_valid_mode", 2)
+        self.cfg_ld_dma_ctrl_flush_mode = self.input("cfg_ld_dma_ctrl_flush_mode", 1)
         self.cfg_ld_dma_ctrl_mode = self.input("cfg_ld_dma_ctrl_mode", 2)
         self.cfg_data_network_latency = self.input("cfg_data_network_latency", self._params.latency_width)
         self.cfg_ld_dma_header = self.input(
@@ -66,7 +67,7 @@ class GlbLoadDma(Generator):
         self.strm_data = self.var("strm_data", self._params.cgra_data_width)
         self.strm_data_mode_muxed = self.var("strm_data_mode_muxed", self._params.cgra_data_width)
         self.strm_data_valid = self.var("strm_data_valid", 1)
-        self.strm_data_valid_mode_muxed = self.var("strm_data_valid_mode_muxed", 1)
+        self.strm_data_flush_mode_muxed = self.var("strm_data_flush_mode_muxed", 1)
         self.strm_data_sel_w = self.var(
             "strm_data_sel_w", self._params.bank_byte_offset - self._params.cgra_byte_offset)
         self.strm_data_sel = self.var("strm_data_sel", self._params.bank_byte_offset - self._params.cgra_byte_offset)
@@ -135,6 +136,7 @@ class GlbLoadDma(Generator):
         self.add_always(self.ld_dma_start_pulse_logic)
         self.add_always(self.ld_dma_start_pulse_ff)
         self.add_always(self.strm_data_mux)
+        self.add_always(self.strm_data_flush_mux)
         self.add_always(self.data_g2f_logic)
         self.add_always(self.data_g2f_output)
         self.add_always(self.ld_dma_done_pulse_logic)
@@ -333,26 +335,26 @@ class GlbLoadDma(Generator):
 
     @ always_comb
     def strm_data_mux(self):
-        if self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_valid:
+        if self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_static:
             self.strm_data_mode_muxed = self.strm_data
-            self.strm_data_valid_mode_muxed = self.strm_data_valid
-            self.data_flush_w = 0
+        elif self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_valid:
+            self.strm_data_mode_muxed = self.strm_data
         elif self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_ready_valid:
             self.strm_data_mode_muxed = self.data_fifo2cgra
-            self.strm_data_valid_mode_muxed = ~self.fifo_empty
-            self.data_flush_w = 0
-        elif self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_internal_flush:
-            self.strm_data_mode_muxed = self.strm_data
-            self.strm_data_valid_mode_muxed = self.strm_data_start_pulse
-            self.data_flush_w = 0
-        elif self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_external_flush:
-            self.strm_data_mode_muxed = self.strm_data
-            self.strm_data_valid_mode_muxed = 0
-            self.data_flush_w = self.strm_data_start_pulse
         else:
             self.strm_data_mode_muxed = 0
-            self.strm_data_valid_mode_muxed = 0
+
+    @ always_comb
+    def strm_data_flush_mux(self):
+        if self.cfg_ld_dma_ctrl_flush_mode == self._params.ld_dma_flush_mode_external:
+            self.data_flush_w = self.strm_data_start_pulse
+            self.strm_data_flush_mode_muxed = 0
+        else:
             self.data_flush_w = 0
+            if self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_valid:
+                self.strm_data_flush_mode_muxed = self.strm_data_valid
+            else:
+                self.strm_data_flush_mode_muxed = self.strm_data_start_pulse
 
     @ always_comb
     def data_g2f_logic(self):
@@ -362,11 +364,11 @@ class GlbLoadDma(Generator):
                 self.cgra2fifo_ready = self.data_g2f_rdy[i]
                 self.data_g2f_w[i] = self.strm_data_mode_muxed
                 if self.cfg_ld_dma_ctrl_valid_mode == self._params.ld_dma_valid_mode_ready_valid:
-                    self.data_g2f_vld_w[i] = self.strm_data_valid_mode_muxed
+                    self.data_g2f_vld_w[i] = ~self.fifo_empty
                     self.ctrl_g2f_w[i] = 0
                 else:
                     self.data_g2f_vld_w[i] = 0
-                    self.ctrl_g2f_w[i] = self.strm_data_valid_mode_muxed
+                    self.ctrl_g2f_w[i] = self.strm_data_flush_mode_muxed
             else:
                 self.data_g2f_w[i] = 0
                 self.data_g2f_vld_w[i] = 0

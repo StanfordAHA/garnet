@@ -39,8 +39,7 @@ class GlbStoreDma(Generator):
         self.cfg_st_dma_header = self.input("cfg_st_dma_header", self.header.cfg_store_dma_header_t,
                                             size=self._params.queue_depth, explicit_array=True)
         self.cfg_data_network_f2g_mux = self.input("cfg_data_network_f2g_mux", self._params.cgra_per_glb)
-        self.cfg_st_dma_first_block_size = self.output("cfg_st_dma_first_block_size", self._params.cgra_data_width)
-        self.cfg_st_dma_second_block_size = self.output("cfg_st_dma_second_block_size", self._params.cgra_data_width)
+        self.cfg_st_dma_num_blocks = self.input("cfg_st_dma_num_blocks", self._params.axi_data_width)
 
         self.st_dma_start_pulse = self.input("st_dma_start_pulse", 1)
         self.st_dma_done_interrupt = self.output("st_dma_done_interrupt", 1)
@@ -108,6 +107,7 @@ class GlbStoreDma(Generator):
         self.fifo2cgra_ready = self.var("fifo2cgra_ready", 1)
         self.rv_is_metadata = self.var("rv_is_metadata", 1)
         self.rv_num_data_cnt = self.var("rv_num_data_cnt", self._params.cgra_data_width)
+        self.rv_num_blocks_cnt = self.var("rv_num_blocks", self._params.axi_data_width)
 
         if self._params.queue_depth != 1:
             self.queue_sel_r = self.var("queue_sel_r", max(1, clog2(self.repeat_cnt.width)))
@@ -147,15 +147,14 @@ class GlbStoreDma(Generator):
         self.add_always(self.interrupt_ff)
         self.add_always(self.block_done_logic)
         self.add_always(self.loop_done_muxed_logic)
-        self.add_always(self.rv_is_last_block_ff)
-        self.add_always(self.rv_block_size_ff)
+        self.add_always(self.rv_num_blocks_cnt_ff)
+        self.add_always(self.rv_is_last_block_comb)
         self.add_always(self.rv_metadata_ff)
         self.add_always(self.rv_num_data_cnt_ff)
         self.add_always(self.data_ready_g2f_comb)
 
         # ready/valid control
-        self.wire(self.rv_mode_on, (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid)
-                  | (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid_compressed))
+        self.wire(self.rv_mode_on, (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid))
 
         # FIFO for ready/valid
         self.data_g2f_fifo = FIFO(self._params.cgra_data_width, self._params.store_dma_fifo_depth)
@@ -252,39 +251,23 @@ class GlbStoreDma(Generator):
     @always_comb
     def loop_done_muxed_logic(self):
         if self.rv_mode_on:
-            if (self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid):
-                self.loop_done_muxed = self.block_done
-            else:
-                self.loop_done_muxed = self.block_done & self.is_last_block
+            self.loop_done_muxed = self.block_done & self.is_last_block
         else:
             self.loop_done_muxed = self.loop_done
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
-    def rv_is_last_block_ff(self):
+    def rv_num_blocks_cnt_ff(self):
         if self.reset:
-            self.is_last_block = 0
-        elif self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid_compressed:
-            if self.st_dma_start_pulse_r:
-                self.is_last_block = 0
-            elif self.block_done & ~self.is_last_block:
-                self.is_last_block = 1
-            elif self.loop_done_muxed:
-                self.is_last_block = 0
-
-    @always_ff((posedge, "clk"), (posedge, "reset"))
-    def rv_block_size_ff(self):
-        if self.reset:
-            self.cfg_st_dma_first_block_size = 0
-            self.cfg_st_dma_second_block_size = 0
+            self.rv_num_blocks_cnt = 0
         elif self.rv_mode_on:
             if self.st_dma_start_pulse_r:
-                self.cfg_st_dma_first_block_size = 0
-                self.cfg_st_dma_second_block_size = 0
-            elif self.strm_run & self.rv_is_metadata & self.fifo_pop_ready:
-                if self.is_last_block:
-                    self.cfg_st_dma_second_block_size = self.data_fifo2dma
-                else:
-                    self.cfg_st_dma_first_block_size = self.data_fifo2dma
+                self.rv_num_blocks_cnt = self.cfg_st_dma_num_blocks
+            elif self.block_done & self.rv_num_blocks_cnt > 0:
+                self.rv_num_blocks_cnt = self.rv_num_blocks_cnt - 1
+
+    @always_comb
+    def rv_is_last_block_comb(self):
+        self.is_last_block = self.rv_num_blocks_cnt == 1
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def rv_metadata_ff(self):
@@ -293,7 +276,7 @@ class GlbStoreDma(Generator):
         elif self.rv_mode_on:
             if self.st_dma_start_pulse_r:
                 self.rv_is_metadata = 1
-            elif ((self.cfg_st_dma_ctrl_valid_mode == self._params.st_dma_valid_mode_ready_valid_compressed) & self.block_done & ~self.is_last_block):
+            elif (self.rv_mode_on & self.block_done & ~self.is_last_block):
                 self.rv_is_metadata = 1
             elif self.rv_is_metadata & self.fifo_pop_ready:
                 self.rv_is_metadata = 0
@@ -443,7 +426,7 @@ class GlbStoreDma(Generator):
         if self.cycle_counter_en:
             self.iter_step_valid = self.cycle_valid
         elif self.rv_mode_on:
-            self.iter_step_valid = self.strm_run & self.fifo_pop_ready & ~self.rv_is_metadata
+            self.iter_step_valid = self.strm_run & self.fifo_pop_ready
         else:
             self.iter_step_valid = self.strm_data_valid
 
