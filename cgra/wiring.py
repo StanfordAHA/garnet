@@ -102,15 +102,29 @@ def glb_interconnect_wiring(garnet):
         for j in range(col_per_glb):
             x = i * col_per_glb + j
             io2glb_16_port = f"io2glb_16_X{x:02X}_Y{0:02X}"
+            # FIXME
+            # io2glb_16_vld_port = f"io2glb_16_X{x:02X}_Y{0:02X}"
+            # io2glb_16_rdy_port = f"io2glb_16_X{x:02X}_Y{0:02X}"
             io2glb_1_port = f"io2glb_1_X{x:02X}_Y{0:02X}"
             glb2io_16_port = f"glb2io_16_X{x:02X}_Y{0:02X}"
+            # glb2io_16_vld_port = f"glb2io_16_X{x:02X}_Y{0:02X}"
+            # glb2io_16_rdy_port = f"glb2io_16_X{x:02X}_Y{0:02X}"
             glb2io_1_port = f"glb2io_1_X{x:02X}_Y{0:02X}"
             garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_{i}_{j}"],
                         garnet.interconnect.ports[io2glb_16_port])
+            # garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_vld_{i}_{j}"],
+            #             garnet.interconnect.ports[io2glb_16_vld_port])
+            # garnet.wire(garnet.global_buffer.ports[f"strm_data_f2g_rdy_{i}_{j}"],
+            #             garnet.interconnect.ports[io2glb_16_rdy_port])
             garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_f2g_{i}_{j}"],
                         garnet.interconnect.ports[io2glb_1_port])
+
             garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_16_port])
+            # garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_vld_{i}_{j}"],
+            #             garnet.interconnect.ports[glb2io_16_vld_port])
+            # garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_rdy_{i}_{j}"],
+            #             garnet.interconnect.ports[glb2io_16_rdy_port])
             garnet.wire(garnet.global_buffer.ports[f"strm_ctrl_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_1_port])
 
