@@ -1,16 +1,13 @@
-import magma
 from gemstone.generator.from_magma import FromMagma
 from typing import List
-from canal.interconnect import Interconnect
 from lake.top.extract_tile_info import *
 import kratos as kts
 from gemstone.generator.from_magma import FromMagma
 from typing import List
-from lake.top.pond import Pond
 from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
 from lake.modules.scanner import *
-
+from lake.modules.scanner_pipe import ScannerPipe
 import kratos as kts
 
 if __name__ == "__main__":
@@ -27,7 +24,8 @@ class ScannerCore(LakeCoreBase):
                  config_addr_width=8,
                  fifo_depth=8,
                  add_clk_enable=False,
-                 defer_fifos=False):
+                 defer_fifos=False,
+                 pipelined=False):
 
         scan_name = "Scanner"
         super().__init__(config_data_width=config_data_width,
@@ -50,18 +48,28 @@ class ScannerCore(LakeCoreBase):
         cache_key = (self.data_width,
                      self.config_data_width,
                      self.config_addr_width,
-                     name_base)
+                     name_base,
+                     pipelined)
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            self.dut = Scanner(data_width=data_width,
-                               fifo_depth=fifo_depth,
-                               add_clk_enable=self.add_clk_enable,
-                               defer_fifos=self.defer_fifos,
-                               add_flush=True)
+            if pipelined is True:
+                print("SCANNER PIPE")
+                self.dut = ScannerPipe(data_width=data_width,
+                                       fifo_depth=fifo_depth,
+                                       add_clk_enable=True,
+                                       defer_fifos=False,
+                                       add_flush=True)
+            else:
+                print("SCANNER NO PIPE")
+                self.dut = Scanner(data_width=data_width,
+                                   fifo_depth=fifo_depth,
+                                   add_clk_enable=self.add_clk_enable,
+                                   defer_fifos=False,
+                                   add_flush=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
