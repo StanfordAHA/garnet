@@ -11,11 +11,10 @@ def test_regression(run_tb, core_type):
     io_core = core_type()
     io_core.finalize()
     io_core_circuit = io_core.circuit()
-    
+
     tester = BasicTester(io_core_circuit, io_core_circuit.clk, io_core_circuit.reset)
     tester.zero_inputs()
     tester.reset()
-
 
     for _glb2io_16, _f2io_16 in \
             [(random_bv(16), random_bv(16)) for _ in range(100)]:
