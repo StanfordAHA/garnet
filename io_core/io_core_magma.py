@@ -170,6 +170,6 @@ class IOCoreValid(ConfigurableCore, IOCoreBase):
         raise NotImplementedError()  # pragma: nocover
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":   # pragma: nocover
     core = IOCoreValid(8, 32)
     magma.compile("io", core.circuit(), inline=False)
