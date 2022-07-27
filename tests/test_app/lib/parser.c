@@ -456,12 +456,12 @@ void *parse_metadata(char *filename)
     info->num_outputs = cnt;
 
     // parse interleaved_input field
-    json_t const *input_data_list_json = json_getProperty(testing_json, "interleaved_input");
-    if (!input_data_list_json || JSON_ARRAY != json_getType(input_data_list_json))
-    {
-        puts("Error, the interleaved_input property is not found.");
-        exit(1);
-    }
+    // json_t const *input_data_list_json = json_getProperty(testing_json, "interleaved_input");
+    // if (!input_data_list_json || JSON_ARRAY != json_getType(input_data_list_json))
+    // {
+    //     puts("Error, the interleaved_input property is not found.");
+    //     exit(1);
+    // }
 
     // Parse file byte size by reading pgm image file
     // TODO: Make this as a function

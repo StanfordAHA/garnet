@@ -1,0 +1,221 @@
+{
+  "IOs": {
+    "inputs": [
+      {
+        "bitwidth": 16,
+        "datafile": "tensor_b_mode_0.raw",
+        "name": "tensor_b_mode_0",
+        "shape": [
+          43
+        ],
+        "io_tiles": [
+          {
+            "name": "tensor_b_mode_0",
+            "addr": {
+              "cycle_starting_addr": [
+                0
+              ],
+              "cycle_stride": [
+                1
+              ],
+              "dimensionality": 1,
+              "extent": [
+                43
+              ],
+              "read_data_starting_addr": [
+                0
+              ],
+              "read_data_stride": [
+                1
+              ],
+              "new_addr_stride": [
+                1
+              ],
+              "new_addr_extent": [
+                43
+              ],
+              "new_sched_stride": [
+                1
+              ],
+              "new_sched_extent": [
+                43
+              ]
+            },
+            "x_pos": 0,
+            "y_pos": 0
+          }
+        ]
+      },
+      {
+        "bitwidth": 16,
+        "datafile": "tensor_b_mode_vals.raw",
+        "name": "tensor_b_mode_vals",
+        "shape": [
+            40
+        ],
+        "io_tiles": [
+          {
+            "name": "tensor_b_mode_vals",
+            "addr": {
+              "cycle_starting_addr": [
+                0
+              ],
+              "cycle_stride": [
+                1
+              ],
+              "dimensionality": 1,
+              "extent": [
+                40
+              ],
+              "read_data_starting_addr": [
+                0
+              ],
+              "read_data_stride": [
+                1
+              ],
+              "new_addr_stride": [
+                1
+              ],
+              "new_addr_extent": [
+                40
+              ],
+              "new_sched_stride": [
+                1
+              ],
+              "new_sched_extent": [
+                40
+              ]
+            },
+            "x_pos": 3,
+            "y_pos": 0
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "bitwidth": 16,
+        "datafile": "tensor_X_mode_0_crd.raw",
+        "name": "tensor_X_mode_0_crd",
+        "shape": [
+          16,
+          14,
+          14
+        ],
+        "io_tiles": [
+          {
+            "name": "tensor_X_mode_0_crd",
+            "addr": {
+              "cycle_starting_addr": [
+                16416
+              ],
+              "cycle_stride": [
+                1,
+                8,
+                14400
+              ],
+              "dimensionality": 3,
+              "extent": [
+                8,
+                196,
+                2
+              ],
+              "write_data_starting_addr": [
+                0
+              ],
+              "write_data_stride": [
+                1,
+                8,
+                1568
+              ],
+              "new_addr_stride": [
+                1
+              ],
+              "new_addr_extent": [
+                3136
+              ],
+              "new_sched_stride": [
+                1,
+                14400
+              ],
+              "new_sched_extent": [
+                1568,
+                2
+              ]
+            },
+            "x_pos": 1,
+            "y_pos": 0,
+            "valid_name": "hw_output_stencil"
+          }
+        ]
+      },
+      {
+        "bitwidth": 16,
+        "datafile": "tensor_X_mode_vals.raw",
+        "name": "tensor_X_mode_vals",
+        "shape": [
+          16,
+          14,
+          14
+        ],
+        "io_tiles": [
+          {
+            "name": "tensor_X_mode_vals",
+            "addr": {
+              "cycle_starting_addr": [
+                16416
+              ],
+              "cycle_stride": [
+                1,
+                8,
+                14400
+              ],
+              "dimensionality": 3,
+              "extent": [
+                8,
+                196,
+                2
+              ],
+              "write_data_starting_addr": [
+                0
+              ],
+              "write_data_stride": [
+                1,
+                8,
+                1568
+              ],
+              "new_addr_stride": [
+                1
+              ],
+              "new_addr_extent": [
+                3136
+              ],
+              "new_sched_stride": [
+                1,
+                14400
+              ],
+              "new_sched_extent": [
+                1568,
+                2
+              ]
+            },
+            "x_pos": 1,
+            "y_pos": 0,
+            "valid_name": "hw_output_stencil"
+          }
+        ]
+      }
+    ]
+  },
+  "testing": {
+    "interleaved_input": [
+      "input.pgm"
+    ],
+    "interleaved_output": [
+      "gold.pgm"
+    ],
+    "bitstream": "bitstream.bs",
+    "coreir": "design_top.json",
+    "placement": "design.place"
+  }
+}
