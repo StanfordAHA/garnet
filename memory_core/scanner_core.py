@@ -57,14 +57,12 @@ class ScannerCore(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             if pipelined is True:
-                print("SCANNER PIPE")
                 self.dut = ScannerPipe(data_width=data_width,
                                        fifo_depth=fifo_depth,
                                        add_clk_enable=True,
                                        defer_fifos=False,
                                        add_flush=True)
             else:
-                print("SCANNER NO PIPE")
                 self.dut = Scanner(data_width=data_width,
                                    fifo_depth=fifo_depth,
                                    add_clk_enable=self.add_clk_enable,

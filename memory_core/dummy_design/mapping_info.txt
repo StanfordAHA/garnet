@@ -1,0 +1,16 @@
+s0      ===>    "FiberLookup i: b0\ncompressed"_rd_scan         ===>    X09_Y03
+w1      ===>    "FiberLookup i: b0\ncompressed"_wr_scan         ===>    X0C_Y03
+B2      ===>    "FiberLookup i: b0\ncompressed"_buffet          ===>    X0A_Y03
+I3      ===>    data_in_                ===>    X00_Y00
+s4      ===>    "FiberWrite i: x0\ncompressed"_rd_scan          ===>    X09_Y04
+w5      ===>    "FiberWrite i: x0\ncompressed"_wr_scan          ===>    X0C_Y04
+B6      ===>    "FiberWrite i: x0\ncompressed"_buffet           ===>    X0A_Y04
+I7      ===>    data_out_               ===>    X01_Y00
+s8      ===>    "FiberWrite Vals: x"_rd_scan            ===>    X09_Y01
+w9      ===>    "FiberWrite Vals: x"_wr_scan            ===>    X03_Y01
+B10     ===>    "FiberWrite Vals: x"_buffet             ===>    X0A_Y01
+I11     ===>    data_out_               ===>    X02_Y00
+s12     ===>    "Array Vals: b"_rd_scan         ===>    X00_Y02
+w13     ===>    "Array Vals: b"_wr_scan         ===>    X03_Y02
+B14     ===>    "Array Vals: b"_buffet          ===>    X0A_Y02
+I15     ===>    data_in_                ===>    X03_Y00

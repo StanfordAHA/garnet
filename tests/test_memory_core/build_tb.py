@@ -69,7 +69,7 @@ from lake.modules.scanner_pipe import ScannerPipe
 
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
-                 input_dir=None, output_dir=None, local_mems=True, mode_map=None, real_pe=False) -> None:
+                 input_dir=None, output_dir=None, local_mems=True, mode_map=None, real_pe=False, harden_flush=False) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -93,6 +93,7 @@ class SparseTBBuilder(m.Generator2):
         self.input_dir = input_dir
         self.local_mems = local_mems
         self.real_pe = real_pe
+        self.harden_flush = harden_flush
 
         self._ctr = 0
 
@@ -111,11 +112,13 @@ class SparseTBBuilder(m.Generator2):
             self.register_cores()
             self.connect_cores()
             # Add flush connection
-            flush_in = self.nlb.register_core("io_1", name="flush_in")
-            self.nlb.add_connections(connections=self.nlb.emit_flush_connection(flush_in))
+            if not self.harden_flush:
+                flush_in = self.nlb.register_core("io_1", name="flush_in")
+                self.nlb.add_connections(connections=self.nlb.emit_flush_connection(flush_in))
             self.nlb.get_route_config()
-            # configure flush
-            self.nlb.configure_tile(flush_in, (1, 0))
+            if not self.harden_flush:
+                # configure flush
+                self.nlb.configure_tile(flush_in, (1, 0))
             self.configure_cores()
 
             # self.config = self.io.config
@@ -127,23 +130,27 @@ class SparseTBBuilder(m.Generator2):
             self.interconnect_circuit = self.nlb.get_circuit()
             self.interconnect_circuit = self.interconnect_circuit()
 
-            flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_")
-            flush_tile = str(flush_h)[9:]
-            flush_valid_h = f"glb2io_1_{flush_tile}_valid"
+            # Get the initial list of inputs to interconnect and cross them off
+            self.interconnect_ins = self.get_interconnect_ins()
 
             m.wire(self.interconnect_circuit['clk'], self.io.clk)
             m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
             m.wire(self.io.stall, self.interconnect_circuit['stall'][0])
-            m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
-            m.wire(m.Bits[1](1)[0], self.interconnect_circuit[str(flush_valid_h)])
-
             m.wire(self.interconnect_circuit.config, self.io.config)
 
-            # Get the initial list of inputs to interconnect and cross them off
-            self.interconnect_ins = self.get_interconnect_ins()
-            # Make sure to remove the flush port or it will get grounded.
-            self.interconnect_ins.remove(str(flush_h))
-            self.interconnect_ins.remove(str(flush_valid_h))
+            if self.harden_flush:
+                m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
+            else:
+                flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_")
+                flush_tile = str(flush_h)[9:]
+                flush_valid_h = f"glb2io_1_{flush_tile}_valid"
+
+                m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
+                m.wire(m.Bits[1](1)[0], self.interconnect_circuit[str(flush_valid_h)])
+
+                # Make sure to remove the flush port or it will get grounded.
+                self.interconnect_ins.remove(str(flush_h))
+                self.interconnect_ins.remove(str(flush_valid_h))
 
             # Now add the counter
             ctr = Counter(name="cycle_counter", bitwidth=64, pos_reset=True)
@@ -827,7 +834,6 @@ class SparseTBBuilder(m.Generator2):
         '''
         Iterate through the edges of the graph and connect each core up
         '''
-        # self.display_names()
         edges = self.graph.get_edges()
         for edge in edges:
             src = edge.get_source()
@@ -1263,6 +1269,7 @@ if __name__ == "__main__":
     parser.add_argument('--combined', action="store_true")
     parser.add_argument('--pipeline_scanner', action="store_true")
     parser.add_argument('--dump_bitstream', action="store_true")
+    parser.add_argument('--no_harden_flush', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1283,6 +1290,7 @@ if __name__ == "__main__":
     sam_graph = args.sam_graph
     pipeline_scanner = args.pipeline_scanner
     dump_bitstream = args.dump_bitstream
+    harden_flush = not args.no_harden_flush
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
@@ -1448,7 +1456,7 @@ if __name__ == "__main__":
                                    num_tracks=num_tracks,
                                    add_pd=False,
                                    # Soften the flush...?
-                                   harden_flush=False,
+                                   harden_flush=harden_flush,
                                    altcore=altcore,
                                    ready_valid=True,
                                    add_pond=add_pond)
@@ -1488,7 +1496,7 @@ if __name__ == "__main__":
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
                           # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
                           output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
-                          real_pe=real_pe)
+                          real_pe=real_pe, harden_flush=harden_flush)
 
     if dump_bitstream:
         nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
