@@ -11,6 +11,7 @@
         "io_tiles": [
           {
             "name": "tensor_b_mode_0",
+            "mode": "RV",
             "addr": {
               "cycle_starting_addr": [
                 0
@@ -44,6 +45,7 @@
         "io_tiles": [
           {
             "name": "tensor_b_mode_vals",
+            "mode": "RV",
             "addr": {
               "cycle_starting_addr": [
                 0
@@ -73,13 +75,14 @@
         "bitwidth": 16,
         "datafile": "tensor_X_mode_0.raw",
         "name": "tensor_X_mode_0",
-        "num_blocks": 2,
         "shape": [
           43
         ],
         "io_tiles": [
           {
             "name": "tensor_X_mode_0",
+            "mode": "RV",
+            "num_blocks": 2,
             "addr": {
               "cycle_starting_addr": [
                 0
@@ -107,13 +110,14 @@
         "bitwidth": 16,
         "datafile": "tensor_X_mode_vals.raw",
         "name": "tensor_X_mode_vals",
-        "num_blocks": 1,
         "shape": [
           40,
         ],
         "io_tiles": [
           {
             "name": "tensor_X_mode_vals",
+            "mode": "RV",
+            "num_blocks": 1,
             "addr": {
               "cycle_starting_addr": [
                 0
