@@ -6,7 +6,7 @@
         "datafile": "tensor_b_mode_0.raw",
         "name": "tensor_b_mode_0",
         "shape": [
-          43
+          44
         ],
         "io_tiles": [
           {
@@ -20,25 +20,13 @@
               ],
               "dimensionality": 1,
               "extent": [
-                43
+                44
               ],
               "read_data_starting_addr": [
                 0
               ],
               "read_data_stride": [
                 1
-              ],
-              "new_addr_stride": [
-                1
-              ],
-              "new_addr_extent": [
-                43
-              ],
-              "new_sched_stride": [
-                1
-              ],
-              "new_sched_extent": [
-                43
               ]
             },
             "x_pos": 0,
@@ -51,7 +39,7 @@
         "datafile": "tensor_b_mode_vals.raw",
         "name": "tensor_b_mode_vals",
         "shape": [
-            40
+            41
         ],
         "io_tiles": [
           {
@@ -65,25 +53,13 @@
               ],
               "dimensionality": 1,
               "extent": [
-                40
+                41
               ],
               "read_data_starting_addr": [
                 0
               ],
               "read_data_stride": [
                 1
-              ],
-              "new_addr_stride": [
-                1
-              ],
-              "new_addr_extent": [
-                40
-              ],
-              "new_sched_stride": [
-                1
-              ],
-              "new_sched_extent": [
-                40
               ]
             },
             "x_pos": 3,
@@ -95,57 +71,35 @@
     "outputs": [
       {
         "bitwidth": 16,
-        "datafile": "tensor_X_mode_0_crd.raw",
-        "name": "tensor_X_mode_0_crd",
+        "datafile": "tensor_X_mode_0.raw",
+        "name": "tensor_X_mode_0",
+        "num_blocks": 2,
         "shape": [
-          16,
-          14,
-          14
+          43
         ],
         "io_tiles": [
           {
-            "name": "tensor_X_mode_0_crd",
+            "name": "tensor_X_mode_0",
             "addr": {
               "cycle_starting_addr": [
-                16416
+                0
               ],
               "cycle_stride": [
-                1,
-                8,
-                14400
+                1
               ],
-              "dimensionality": 3,
+              "dimensionality": 1,
               "extent": [
-                8,
-                196,
-                2
+                43
               ],
               "write_data_starting_addr": [
                 0
               ],
               "write_data_stride": [
-                1,
-                8,
-                1568
-              ],
-              "new_addr_stride": [
                 1
-              ],
-              "new_addr_extent": [
-                3136
-              ],
-              "new_sched_stride": [
-                1,
-                14400
-              ],
-              "new_sched_extent": [
-                1568,
-                2
               ]
             },
             "x_pos": 1,
-            "y_pos": 0,
-            "valid_name": "hw_output_stencil"
+            "y_pos": 0
           }
         ]
       },
@@ -153,55 +107,33 @@
         "bitwidth": 16,
         "datafile": "tensor_X_mode_vals.raw",
         "name": "tensor_X_mode_vals",
+        "num_blocks": 1,
         "shape": [
-          16,
-          14,
-          14
+          40,
         ],
         "io_tiles": [
           {
             "name": "tensor_X_mode_vals",
             "addr": {
               "cycle_starting_addr": [
-                16416
+                0
               ],
               "cycle_stride": [
-                1,
-                8,
-                14400
+                1
               ],
-              "dimensionality": 3,
+              "dimensionality": 1,
               "extent": [
-                8,
-                196,
-                2
+                40
               ],
               "write_data_starting_addr": [
                 0
               ],
               "write_data_stride": [
-                1,
-                8,
-                1568
-              ],
-              "new_addr_stride": [
                 1
-              ],
-              "new_addr_extent": [
-                3136
-              ],
-              "new_sched_stride": [
-                1,
-                14400
-              ],
-              "new_sched_extent": [
-                1568,
-                2
               ]
             },
-            "x_pos": 1,
-            "y_pos": 0,
-            "valid_name": "hw_output_stencil"
+            "x_pos": 2,
+            "y_pos": 0
           }
         ]
       }
