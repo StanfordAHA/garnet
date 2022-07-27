@@ -57,6 +57,7 @@ void update_bs_configuration(struct BitstreamInfo *bs_info) {
 int glb_map(void *kernel_) {
     struct KernelInfo *kernel = kernel_;
     int num_groups = kernel->num_groups;
+    printf("number of groups: %d\n", num_groups);
 
     // This is just greedy algorithm to schedule applications
     // TODO: Need a better way to schedule kernels
@@ -176,6 +177,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
     int extent[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
     int cycle_stride[LOOP_LEVEL];
+    int mux_sel;
+    int mode;
 
     // Convert extent/stride hardware-friendly
     for (int i = 0; i < loop_dim; i++) {
@@ -189,18 +192,20 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
         data_stride[i] = data_stride[i] << CGRA_BYTE_OFFSET;
     }
 
+    if (io_tile_info->pos.x % 2 == 0)
+        mux_sel = 0b01;
+    else
+        mux_sel = 0b10;
+
     if (io_tile_info->io == Input) {
-        if (strcmp(io_tile_info->mode, "RV") == 0) {
-            add_config(config_info,
-                       (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
-                       ((0b01 << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) |
-                        (LD_DMA_VALID_MODE_READY_VALID << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
-        } else {
-            add_config(config_info,
-                       (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
-                       ((0b01 << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) |
-                        (LD_DMA_VALID_MODE_STATIC << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)));
-        }
+        if (strcmp(io_tile_info->mode, "RV") == 0)
+            mode = LD_DMA_VALID_MODE_READY_VALID;
+        else
+            mode = LD_DMA_VALID_MODE_STATIC;
+        add_config(config_info,
+                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
+                   ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
+                    (mux_sel << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)));
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_DIM_R,
                    loop_dim);
@@ -242,21 +247,17 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
                    cycle_stride[i], data_stride[i]);
         }
     } else {
-        if (strcmp(io_tile_info->mode, "RV") == 0) {
-            add_config(config_info,
-                       (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R,
-                       ((0b10 << GLB_ST_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) |
-                        (ST_DMA_VALID_MODE_READY_VALID << GLB_ST_DMA_CTRL_VALID_MODE_F_LSB)));
-            add_config(
-                config_info,
-                (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_NUM_BLOCKS_R,
-                (io_tile_info->num_blocks << GLB_ST_DMA_NUM_BLOCKS_VALUE_F_LSB));
-        } else {
-            add_config(config_info,
-                       (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R,
-                       ((0b10 << GLB_ST_DMA_CTRL_DATA_MUX_F_LSB) | (0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) |
-                        (ST_DMA_VALID_MODE_VALID << GLB_ST_DMA_CTRL_VALID_MODE_F_LSB)));
-        }
+        if (strcmp(io_tile_info->mode, "RV") == 0)
+            mode = ST_DMA_VALID_MODE_READY_VALID;
+        else
+            mode = ST_DMA_VALID_MODE_VALID;
+        add_config(config_info,
+                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_CTRL_R,
+                   ((0b01 << GLB_ST_DMA_CTRL_MODE_F_LSB) | (mode << GLB_ST_DMA_CTRL_VALID_MODE_F_LSB) |
+                    (mux_sel << GLB_ST_DMA_CTRL_DATA_MUX_F_LSB)));
+        add_config(config_info,
+                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_NUM_BLOCKS_R,
+                   (io_tile_info->num_blocks << GLB_ST_DMA_NUM_BLOCKS_VALUE_F_LSB));
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_ST_DMA_HEADER_0_DIM_R,
                    loop_dim);
