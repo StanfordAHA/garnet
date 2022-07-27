@@ -1,8 +1,10 @@
 from io_core.io_core_magma import IOCoreBase
+from memory_core.core_combiner_core import CoreCombinerCore
 from memory_core.memory_core_magma import MemCore
 from canal.interconnect import Interconnect
 import magma
 from gemstone.common.transform import pass_signal_through
+from memory_core.io_core_rv import IOCoreReadyValid
 
 # This pass modifies the mesochronous "river routed" clock network
 # that Canal creates by default to make it more feasible to meet
@@ -45,9 +47,10 @@ def clk_physical(interconnect: Interconnect, tile_layout_option):
         tile = interconnect.tile_circuits[(x, y)]
         tile_core = tile.core
         # We only want to do this on PE and memory tiles
-        if tile_core is None or isinstance(tile_core, IOCoreBase):
+        if tile_core is None or isinstance(tile_core, IOCoreBase) or isinstance(tile_core, IOCoreReadyValid):
             continue
-        elif isinstance(tile_core, MemCore) and tile_layout_option==0:
+        elif (isinstance(tile_core, MemCore) or (isinstance(tile_core, CoreCombinerCore) and "UB" in tile_core.get_modes_supported())) and tile_layout_option==0:
+            print(f"is core combiner {isinstance(tile_core, CoreCombinerCore)}")
             if (x, y+1) in interconnect.tile_circuits:
                 tile_below = interconnect.tile_circuits[(x, y+1)]
                 if isinstance(tile_below.core, MemCore):

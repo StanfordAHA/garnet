@@ -63,7 +63,7 @@ class LakeCoreBase(ConfigurableCore):
                  config_data_width=32,
                  config_addr_width=8,
                  data_width=16,
-                 gate_flush=False,
+                 gate_flush=True,
                  ready_valid=False,
                  name="LakeBase_inst"):
 
@@ -696,6 +696,13 @@ class NetlistBuilder():
             print("Config not finalized...finalizing")
             self.finalize_config()
             return self._config_data
+
+    def write_out_bitstream(self, filename):
+        bitstream = self._config_data
+        with open(filename, "w+") as f:
+            bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
+                in bitstream]
+            f.write("\n".join(bs))
 
     def get_placement(self):
         if self._placement_up_to_date is False:
