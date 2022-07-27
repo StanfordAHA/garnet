@@ -171,5 +171,5 @@ class IOCoreValid(ConfigurableCore, IOCoreBase):
 
 
 if __name__ == "__main__":   # pragma: nocover
-    core = IOCoreValid(8, 32)
-    magma.compile("io", core.circuit(), inline=False)
+    core = IOCoreValid(8, 32)   # pragma: nocover
+    magma.compile("io", core.circuit(), inline=False)   # pragma: nocover
