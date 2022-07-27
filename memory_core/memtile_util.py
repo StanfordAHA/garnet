@@ -635,7 +635,9 @@ class NetlistBuilder():
 
     def display_names(self):
         for key, val in self._core_names.items():
-            print(f"{key}\t===>\t{val}")
+            tile = self._placement[key]
+            tile_x, tile_y = tile
+            print(f"{key}\t===>\t{val}\t\t===>\tX{tile_x:02X}_Y{tile_y:02X}")
 
     def get_netlist(self):
         return self._netlist
@@ -701,7 +703,7 @@ class NetlistBuilder():
         bitstream = self._config_data
         with open(filename, "w+") as f:
             bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
-                in bitstream]
+                  in bitstream]
             f.write("\n".join(bs))
 
     def get_placement(self):
