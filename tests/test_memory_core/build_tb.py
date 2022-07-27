@@ -2,6 +2,7 @@ import argparse
 from gemstone.common.testers import BasicTester
 from gemstone.common.configurable import ConfigurationType
 from pydot import Graph
+from yaml import dump
 from cgra.util import create_cgra
 from memory_core.buffet_core import BuffetCore
 from memory_core.core_combiner_core import CoreCombinerCore
@@ -1261,6 +1262,7 @@ if __name__ == "__main__":
     parser.add_argument('--add_pond', action="store_true")
     parser.add_argument('--combined', action="store_true")
     parser.add_argument('--pipeline_scanner', action="store_true")
+    parser.add_argument('--dump_bitstream', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1280,6 +1282,7 @@ if __name__ == "__main__":
     combined = args.combined
     sam_graph = args.sam_graph
     pipeline_scanner = args.pipeline_scanner
+    dump_bitstream = args.dump_bitstream
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
@@ -1383,18 +1386,42 @@ if __name__ == "__main__":
         controllers_2.append(regcr)
 
         if combined is True:
-            altcore = [(CoreCombinerCore, {'controllers_list': controllers,
+            altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "C",
-                                           'name': "MemCore",
-                                           'input_prefix': "MEM_"}),
+                                           'pnr_tag': "Q",
+                                           'name': "PE",
+                                           'input_prefix': "PE_"}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
                                            'pnr_tag': "Q",
                                            'name': "PE",
-                                           'input_prefix': "PE_"})]
+                                           'input_prefix': "PE_"}),
+                       (CoreCombinerCore, {'controllers_list': controllers_2,
+                                           'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'pnr_tag': "Q",
+                                           'name': "PE",
+                                           'input_prefix': "PE_"}),
+                       (CoreCombinerCore, {'controllers_list': controllers,
+                                           'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'pnr_tag': "C",
+                                           'name': "MemCore",
+                                           'input_prefix': "MEM_"})]
+            # altcore = [(CoreCombinerCore, {'controllers_list': controllers,
+            #                                'use_sim_sram': not physical_sram,
+            #                                'tech_map': GF_Tech_Map(depth=512, width=32),
+            #                                'pnr_tag': "C",
+            #                                'name': "MemCore",
+            #                                'input_prefix': "MEM_"}),
+            #            (CoreCombinerCore, {'controllers_list': controllers_2,
+            #                                'use_sim_sram': not physical_sram,
+            #                                'tech_map': GF_Tech_Map(depth=512, width=32),
+            #                                'pnr_tag': "Q",
+            #                                'name': "PE",
+            #                                'input_prefix': "PE_"})]
             real_pe = True
 
         else:
@@ -1462,6 +1489,9 @@ if __name__ == "__main__":
                           # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
                           output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
                           real_pe=real_pe)
+
+    if dump_bitstream:
+        nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
 
     stb.display_names()
 

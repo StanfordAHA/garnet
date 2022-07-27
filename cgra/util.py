@@ -309,6 +309,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         add_aon_read_config_data(interconnect)
 
     if pass_through_clk:
+        print("PERFORMING CLOCK PASS")
         clk_physical(interconnect, tile_layout_option)
 
     pipeline_global_signals(interconnect, pipeline_config_interval)
