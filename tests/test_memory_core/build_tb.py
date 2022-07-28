@@ -1316,7 +1316,7 @@ if __name__ == "__main__":
         # chip_width = 20
         chip_width = 16
         # chip_height = 32
-        chip_height = 10
+        chip_height = 16
         num_tracks = 5
 
         controllers = []
@@ -1467,7 +1467,7 @@ if __name__ == "__main__":
             magma.compile(f"{args.test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
             exit()
 
-        nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir)
+        nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir, harden_flush=harden_flush)
 
     ##### Handling app level file stuff #####
     output_matrix, output_format = software_gold(sam_graph, matrix_tmp_dir, give_tensor)

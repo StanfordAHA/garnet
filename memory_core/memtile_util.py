@@ -457,7 +457,7 @@ class CoreMappingUndefinedException(Exception):
 
 class NetlistBuilder():
 
-    def __init__(self, interconnect: Interconnect = None, cwd=None) -> None:
+    def __init__(self, interconnect: Interconnect = None, cwd=None, harden_flush=False) -> None:
         # self._registered_cores = {}
         self._netlist = {}
         self._bus = {}
@@ -482,6 +482,7 @@ class NetlistBuilder():
         self._core_remappings = {}
         self._core_runtime_mode = {}
         self._core_map = {}
+        self.harden_flush = harden_flush
 
     def register_core(self, core, flushable=False, config=None, name=""):
         ''' Register the core/primitive with the
@@ -673,7 +674,7 @@ class NetlistBuilder():
 
         print("Done remapping...")
 
-        self._placement, self._routing, _ = pnr(self._interconnect, (self._netlist, self._bus), cwd=self._cwd, harden_flush=False)
+        self._placement, self._routing, _ = pnr(self._interconnect, (self._netlist, self._bus), cwd=self._cwd, harden_flush=self.harden_flush)
         self._placement_up_to_date = True
 
     def get_route_config(self):
