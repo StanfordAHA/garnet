@@ -449,6 +449,7 @@ class GlbLoadDma(Generator):
 
     def add_dma2bank_clk_en(self):
         self.clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
+        self.clk_en_gen.p_cnt.value = self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin
         self.dma2bank_clk_en = self.var("dma2bank_clk_en", 1)
         self.add_child("dma2bank_clk_en_gen",
                        self.clk_en_gen,
