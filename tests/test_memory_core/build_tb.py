@@ -1316,7 +1316,7 @@ if __name__ == "__main__":
         # chip_width = 20
         chip_width = 16
         # chip_height = 32
-        chip_height = 16
+        chip_height = 10
         num_tracks = 5
 
         controllers = []
