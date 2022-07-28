@@ -132,7 +132,7 @@ def glb_interconnect_wiring(garnet):
 
             garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_{i}_{j}"],
                         garnet.interconnect.ports[glb2io_16_port][0:16])
-            garnet.wire(Const(1),
+            garnet.wire(Const(0),
                         garnet.interconnect.ports[glb2io_16_port][16])
             garnet.wire(garnet.global_buffer.ports[f"strm_data_g2f_vld_{i}_{j}"][0],
                         garnet.interconnect.ports[glb2io_16_vld_port])
