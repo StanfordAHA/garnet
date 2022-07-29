@@ -5,6 +5,7 @@ from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
 from canal.interconnect import Interconnect
 from memory_core.buffet_core import BuffetCore
+from memory_core.crddrop_core import CrdDropCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.io_core_rv import IOCoreReadyValid
 from memory_core.repeat_core import RepeatCore
@@ -79,16 +80,29 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     fifo_depth = 8
 
     if scgra is True:
-        altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': True, 'defer_fifos': False})]
-        # altcore = [(ScannerCore, {'fifo_depth': fifo_depth, 'add_clk_enable': True, 'defer_fifos': False}),
-        #            (WriteScannerCore, {'fifo_depth': fifo_depth, 'defer_fifos': False}),
-        #            (BuffetCore, {'local_mems': True,
-        #                          'physical_mem': False,
-        #                          'fifo_depth': fifo_depth,
-        #                          'tech_map': GF_Tech_Map(depth=512, width=32)}),
-        #            (FakePECore, {'fifo_depth': fifo_depth}),
-        #            (RepeatCore, {'fifo_depth': fifo_depth}),
-        #            (RepeatSignalGeneratorCore, {'passthru': False, 'fifo_depth': fifo_depth}), (RegCore, {'fifo_depth': fifo_depth})]
+
+        pe_prefix = "PEGEN_"
+        clk_enable = True
+        pipeline_scanner = False
+        physical_sram = not use_sim_sram
+
+        altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
+                                  'add_clk_enable': clk_enable,
+                                  'pipelined': pipeline_scanner}),
+                   (BuffetCore, {'local_mems': True,
+                                 'physical_mem': physical_sram,
+                                 'fifo_depth': fifo_depth,
+                                 'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                   (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
+                   (WriteScannerCore, {'fifo_depth': fifo_depth}),
+                   (RepeatCore, {'fifo_depth': fifo_depth}),
+                   (IntersectCore, {'fifo_depth': fifo_depth}),
+                   (CrdDropCore, {'fifo_depth': fifo_depth}),
+                   (RepeatSignalGeneratorCore, {'passthru': False,
+                                                'fifo_depth': fifo_depth}),
+                   (RegCore, {'fifo_depth': fifo_depth})]
+
+        real_pe = True
 
     # compute the actual size
     width, height = get_actual_size(width, height, io_sides)

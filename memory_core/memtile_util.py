@@ -457,7 +457,7 @@ class CoreMappingUndefinedException(Exception):
 
 class NetlistBuilder():
 
-    def __init__(self, interconnect: Interconnect = None, cwd=None) -> None:
+    def __init__(self, interconnect: Interconnect = None, cwd=None, harden_flush=False) -> None:
         # self._registered_cores = {}
         self._netlist = {}
         self._bus = {}
@@ -482,6 +482,7 @@ class NetlistBuilder():
         self._core_remappings = {}
         self._core_runtime_mode = {}
         self._core_map = {}
+        self.harden_flush = harden_flush
 
     def register_core(self, core, flushable=False, config=None, name=""):
         ''' Register the core/primitive with the
@@ -637,7 +638,9 @@ class NetlistBuilder():
 
     def display_names(self):
         for key, val in self._core_names.items():
-            print(f"{key}\t===>\t{val}")
+            tile = self._placement[key]
+            tile_x, tile_y = tile
+            print(f"{key}\t===>\t{val}\t\t===>\tX{tile_x:02X}_Y{tile_y:02X}")
 
     def get_netlist(self):
         return self._netlist
@@ -673,7 +676,7 @@ class NetlistBuilder():
 
         print("Done remapping...")
 
-        self._placement, self._routing, _ = pnr(self._interconnect, (self._netlist, self._bus), cwd=self._cwd, harden_flush=False)
+        self._placement, self._routing, _ = pnr(self._interconnect, (self._netlist, self._bus), cwd=self._cwd, harden_flush=self.harden_flush)
         self._placement_up_to_date = True
 
     def get_route_config(self):
@@ -698,6 +701,13 @@ class NetlistBuilder():
             print("Config not finalized...finalizing")
             self.finalize_config()
             return self._config_data
+
+    def write_out_bitstream(self, filename):
+        bitstream = self._config_data
+        with open(filename, "w+") as f:
+            bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
+                  in bitstream]
+            f.write("\n".join(bs))
 
     def get_placement(self):
         if self._placement_up_to_date is False:

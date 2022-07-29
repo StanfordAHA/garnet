@@ -10,13 +10,11 @@ typedef enum int {
 typedef enum int {
     ST_MODE_VALID = ST_DMA_VALID_MODE_VALID,
     ST_MODE_RV = ST_DMA_VALID_MODE_READY_VALID,
-    ST_MODE_RVC = ST_DMA_VALID_MODE_READY_VALID_COMPRESSED,
     ST_MODE_STATIC = ST_DMA_VALID_MODE_STATIC
 } st_valid_type;
 
 typedef enum int {
-    LD_MODE_EF = LD_DMA_VALID_MODE_EXTERNAL_FLUSH,
-    LD_MODE_IF = LD_DMA_VALID_MODE_INTERNAL_FLUSH,
+    LD_MODE_STATIC = LD_DMA_VALID_MODE_STATIC,
     LD_MODE_VALID = LD_DMA_VALID_MODE_VALID,
     LD_MODE_RV = LD_DMA_VALID_MODE_READY_VALID
 } ld_valid_type;
@@ -29,8 +27,7 @@ class Kernel;
     stream_type type_;
     st_valid_type st_valid_type_;
     ld_valid_type ld_valid_type_;
-    int first_block_size;
-    int second_block_size;
+    int num_blocks;
     int block_size_q[$];
     int tile_id;
     int bank_id;
@@ -72,7 +69,7 @@ endclass
 function Test::new(string filename);
     int fd = $fopen(filename, "r");
     string type_, st_valid_type_, ld_valid_type_, data_filename;
-    int first_block_size;
+    int num_blocks;
     int tile_id, bank_id, dim;
     int tmp_start_addr, tmp_cycle_start_addr;
     string cycle_stride_s, extent_s, data_stride_s, tmp_s;
@@ -104,8 +101,7 @@ function Test::new(string filename);
         else $error("This type [%s] is not supported", type_);
         if (type_ == "G2F") begin
             void'($fscanf(fd, " %s", ld_valid_type_));
-            if (ld_valid_type_ == "EF") kernels[i].ld_valid_type_ = LD_MODE_EF;
-            else if (ld_valid_type_ == "IF") kernels[i].ld_valid_type_ = LD_MODE_IF;
+            if (ld_valid_type_ == "STATIC") kernels[i].ld_valid_type_ = LD_MODE_STATIC;
             else if (ld_valid_type_ == "VALID") kernels[i].ld_valid_type_ = LD_MODE_VALID;
             else if (ld_valid_type_ == "RV") kernels[i].ld_valid_type_ = LD_MODE_RV;
             else $error("This type [%s] is not supported", ld_valid_type_);
@@ -113,12 +109,11 @@ function Test::new(string filename);
             void'($fscanf(fd, " %s", st_valid_type_));
             if (st_valid_type_ == "VALID") kernels[i].st_valid_type_ = ST_MODE_VALID;
             else if (st_valid_type_ == "RV") kernels[i].st_valid_type_ = ST_MODE_RV;
-            else if (st_valid_type_ == "RVC") kernels[i].st_valid_type_ = ST_MODE_RVC;
             else if (st_valid_type_ == "STATIC") kernels[i].st_valid_type_ = ST_MODE_STATIC;
             else $error("This type [%s] is not supported", st_valid_type_);
-            if (kernels[i].st_valid_type_ == ST_MODE_RVC) begin
-                void'($fscanf(fd, " %d", first_block_size));
-                kernels[i].first_block_size = first_block_size;
+            if (kernels[i].st_valid_type_ == ST_MODE_RV) begin
+                void'($fscanf(fd, " %d", num_blocks));
+                kernels[i].num_blocks = num_blocks;
             end
         end
         void'($fscanf(fd, " %d", dim));
@@ -136,13 +131,6 @@ function Test::new(string filename);
         end
         for (int j = 0; j < dim; j++) begin
             void'($fscanf(fd, " %d", kernels[i].data_stride[j]));
-        end
-        if (kernels[i].st_valid_type_ == ST_MODE_RVC) begin
-            data_cnt = 1;
-            for (int j = 0; j < kernels[i].dim; j++) begin
-                data_cnt += (kernels[i].extent[j] - 1) * kernels[i].data_stride[j];
-            end
-            kernels[i].second_block_size = data_cnt - kernels[i].first_block_size;
         end
         void'($fscanf(fd, " %s", data_filename));
         kernels[i].filename = data_filename;
@@ -225,9 +213,8 @@ function Test::new(string filename);
             $display("Kernel %0d: Valid Mode: %s", i, kernels[i].ld_valid_type_.name());
         end else if (kernels[i].type_ == F2G) begin
             $display("Kernel %0d: Valid Mode: %s", i, kernels[i].st_valid_type_.name());
-            if (kernels[i].st_valid_type_ == ST_MODE_RVC) begin
-                $display("First Block size: %0d", kernels[i].first_block_size);
-                $display("Second Block size: %0d", kernels[i].second_block_size);
+            if (kernels[i].st_valid_type_ == ST_MODE_RV) begin
+                $display("Number of Blocks: %0d", kernels[i].num_blocks);
             end
         end
         for (int j = 0; j < kernels[i].dim; j++) begin

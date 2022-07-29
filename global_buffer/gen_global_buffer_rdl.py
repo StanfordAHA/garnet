@@ -192,12 +192,10 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     st_dma_ctrl_r.add_child(st_dma_num_repeat_f)
     addr_map.add_child(st_dma_ctrl_r)
 
-    st_dma_block_size_r = Reg("st_dma_block_size")
-    st_dma_first_block_size_f = Field("first_block_size", params.cgra_data_width, ["hw = w", "sw = r"])
-    st_dma_block_size_r.add_child(st_dma_first_block_size_f)
-    st_dma_second_block_size_f = Field("second_block_size", params.cgra_data_width, ["hw = w", "sw = r"])
-    st_dma_block_size_r.add_child(st_dma_second_block_size_f)
-    addr_map.add_child(st_dma_block_size_r)
+    st_dma_num_blocks_r = Reg("st_dma_num_blocks")
+    st_dma_num_blocks_f = Field("value", params.axi_data_width)
+    st_dma_num_blocks_r.add_child(st_dma_num_blocks_f)
+    addr_map.add_child(st_dma_num_blocks_r)
 
     # Store DMA Header
     if params.queue_depth == 1:
@@ -246,11 +244,18 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     ld_dma_ctrl_r.add_child(ld_dma_mode_f)
     ld_dma_valid_mode_f = Field("valid_mode", 2)
     ld_dma_ctrl_r.add_child(ld_dma_valid_mode_f)
+    ld_dma_flush_mode_f = Field("flush_mode", 1)
+    ld_dma_ctrl_r.add_child(ld_dma_flush_mode_f)
     ld_dma_data_mux_f = Field("data_mux", 2)
     ld_dma_ctrl_r.add_child(ld_dma_data_mux_f)
     ld_dma_num_repeat_f = Field("num_repeat", clog2(params.queue_depth) + 1)
     ld_dma_ctrl_r.add_child(ld_dma_num_repeat_f)
     addr_map.add_child(ld_dma_ctrl_r)
+
+    # ld_dma_num_blocks_r = Reg("ld_dma_num_blocks")
+    # ld_dma_num_blocks_f = Field("value", params.axi_data_width)
+    # ld_dma_num_blocks_r.add_child(ld_dma_num_blocks_f)
+    # addr_map.add_child(ld_dma_num_blocks_r)
 
     # Load DMA Header
     if params.queue_depth == 1:

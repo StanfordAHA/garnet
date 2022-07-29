@@ -2,6 +2,7 @@ import argparse
 from gemstone.common.testers import BasicTester
 from gemstone.common.configurable import ConfigurationType
 from pydot import Graph
+from yaml import dump
 from cgra.util import create_cgra
 from memory_core.buffet_core import BuffetCore
 from memory_core.core_combiner_core import CoreCombinerCore
@@ -66,11 +67,12 @@ from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
 from lassen.sim import PE_fc
 from peak import family
+from lake.modules.scanner_pipe import ScannerPipe
 
 
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
-                 input_dir=None, output_dir=None, local_mems=True, mode_map=None, real_pe=False) -> None:
+                 input_dir=None, output_dir=None, local_mems=True, mode_map=None, real_pe=False, harden_flush=False) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -94,6 +96,7 @@ class SparseTBBuilder(m.Generator2):
         self.input_dir = input_dir
         self.local_mems = local_mems
         self.real_pe = real_pe
+        self.harden_flush = harden_flush
 
         self._ctr = 0
 
@@ -112,11 +115,13 @@ class SparseTBBuilder(m.Generator2):
             self.register_cores()
             self.connect_cores()
             # Add flush connection
-            flush_in = self.nlb.register_core("io_1", name="flush_in")
-            self.nlb.add_connections(connections=self.nlb.emit_flush_connection(flush_in))
+            if not self.harden_flush:
+                flush_in = self.nlb.register_core("io_1", name="flush_in")
+                self.nlb.add_connections(connections=self.nlb.emit_flush_connection(flush_in))
             self.nlb.get_route_config()
-            # configure flush
-            self.nlb.configure_tile(flush_in, (1, 0))
+            if not self.harden_flush:
+                # configure flush
+                self.nlb.configure_tile(flush_in, (1, 0))
             self.configure_cores()
 
             # self.config = self.io.config
@@ -128,23 +133,27 @@ class SparseTBBuilder(m.Generator2):
             self.interconnect_circuit = self.nlb.get_circuit()
             self.interconnect_circuit = self.interconnect_circuit()
 
-            flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_")
-            flush_tile = str(flush_h)[9:]
-            flush_valid_h = f"glb2io_1_{flush_tile}_valid"
+            # Get the initial list of inputs to interconnect and cross them off
+            self.interconnect_ins = self.get_interconnect_ins()
 
             m.wire(self.interconnect_circuit['clk'], self.io.clk)
             m.wire(self.io.rst_n, self.interconnect_circuit['reset'])
             m.wire(self.io.stall, self.interconnect_circuit['stall'][0])
-            m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
-            m.wire(m.Bits[1](1)[0], self.interconnect_circuit[str(flush_valid_h)])
-
             m.wire(self.interconnect_circuit.config, self.io.config)
 
-            # Get the initial list of inputs to interconnect and cross them off
-            self.interconnect_ins = self.get_interconnect_ins()
-            # Make sure to remove the flush port or it will get grounded.
-            self.interconnect_ins.remove(str(flush_h))
-            self.interconnect_ins.remove(str(flush_valid_h))
+            if self.harden_flush:
+                m.wire(self.io.flush, self.interconnect_circuit['flush'][0])
+            else:
+                flush_h = self.nlb.get_handle(flush_in, prefix="glb2io_1_")
+                flush_tile = str(flush_h)[9:]
+                flush_valid_h = f"glb2io_1_{flush_tile}_valid"
+
+                m.wire(self.io.flush, self.interconnect_circuit[str(flush_h)][0])
+                m.wire(m.Bits[1](1)[0], self.interconnect_circuit[str(flush_valid_h)])
+
+                # Make sure to remove the flush port or it will get grounded.
+                self.interconnect_ins.remove(str(flush_h))
+                self.interconnect_ins.remove(str(flush_valid_h))
 
             # Now add the counter
             ctr = Counter(name="cycle_counter", bitwidth=64, pos_reset=True)
@@ -853,7 +862,6 @@ class SparseTBBuilder(m.Generator2):
         '''
         Iterate through the edges of the graph and connect each core up
         '''
-        # self.display_names()
         edges = self.graph.get_edges()
         for edge in edges:
             src = edge.get_source()
@@ -1031,7 +1039,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         output_format = "CSF"
     elif 'mat_identity.gv' in app_name:
         # PASSES
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # b_matrix = MatrixGenerator(name="B", shape=[20, 20], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix = MatrixGenerator(name="B", shape=[40, 40], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # b_matrix = MatrixGenerator(name="B", shape=[4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
@@ -1290,6 +1301,9 @@ if __name__ == "__main__":
     parser.add_argument('--gen_pe', action="store_true")
     parser.add_argument('--add_pond', action="store_true")
     parser.add_argument('--combined', action="store_true")
+    parser.add_argument('--pipeline_scanner', action="store_true")
+    parser.add_argument('--dump_bitstream', action="store_true")
+    parser.add_argument('--no_harden_flush', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1308,6 +1322,9 @@ if __name__ == "__main__":
     add_pond = args.add_pond
     combined = args.combined
     sam_graph = args.sam_graph
+    pipeline_scanner = args.pipeline_scanner
+    dump_bitstream = args.dump_bitstream
+    harden_flush = not args.no_harden_flush
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
@@ -1338,9 +1355,17 @@ if __name__ == "__main__":
 
         controllers = []
 
-        scan = Scanner(data_width=16,
-                       fifo_depth=8,
-                       defer_fifos=True)
+        if pipeline_scanner:
+            scan = ScannerPipe(data_width=16,
+                               fifo_depth=fifo_depth,
+                               add_clk_enable=True,
+                               defer_fifos=False,
+                               add_flush=True)
+        else:
+            scan = Scanner(data_width=16,
+                           fifo_depth=fifo_depth,
+                           defer_fifos=True)
+
         wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
                              defer_fifos=True)
         strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
@@ -1407,23 +1432,48 @@ if __name__ == "__main__":
         controllers_2.append(regcr)
 
         if combined is True:
-            altcore = [(CoreCombinerCore, {'controllers_list': controllers,
+            altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "C",
-                                           'name': "MemCore",
-                                           'input_prefix': "MEM_"}),
+                                           'pnr_tag': "Q",
+                                           'name': "PE",
+                                           'input_prefix': "PE_"}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
                                            'pnr_tag': "Q",
-                                           'name': "PECore",
-                                           'input_prefix': "PE_"})]
+                                           'name': "PE",
+                                           'input_prefix': "PE_"}),
+                       (CoreCombinerCore, {'controllers_list': controllers_2,
+                                           'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'pnr_tag': "Q",
+                                           'name': "PE",
+                                           'input_prefix': "PE_"}),
+                       (CoreCombinerCore, {'controllers_list': controllers,
+                                           'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'pnr_tag': "C",
+                                           'name': "MemCore",
+                                           'input_prefix': "MEM_"})]
+            # altcore = [(CoreCombinerCore, {'controllers_list': controllers,
+            #                                'use_sim_sram': not physical_sram,
+            #                                'tech_map': GF_Tech_Map(depth=512, width=32),
+            #                                'pnr_tag': "C",
+            #                                'name': "MemCore",
+            #                                'input_prefix': "MEM_"}),
+            #            (CoreCombinerCore, {'controllers_list': controllers_2,
+            #                                'use_sim_sram': not physical_sram,
+            #                                'tech_map': GF_Tech_Map(depth=512, width=32),
+            #                                'pnr_tag': "Q",
+            #                                'name': "PE",
+            #                                'input_prefix': "PE_"})]
             real_pe = True
 
         else:
             altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
-                                      'add_clk_enable': clk_enable}),
+                                      'add_clk_enable': clk_enable,
+                                      'pipelined': pipeline_scanner}),
                        (BuffetCore, {'local_mems': True,
                                      'physical_mem': physical_sram,
                                      'fifo_depth': fifo_depth,
@@ -1445,7 +1495,7 @@ if __name__ == "__main__":
                                    num_tracks=num_tracks,
                                    add_pd=False,
                                    # Soften the flush...?
-                                   harden_flush=False,
+                                   harden_flush=harden_flush,
                                    altcore=altcore,
                                    ready_valid=True,
                                    add_pond=add_pond)
@@ -1456,7 +1506,7 @@ if __name__ == "__main__":
             magma.compile(f"{args.test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
             exit()
 
-        nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir)
+        nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir, harden_flush=harden_flush)
 
     ##### Handling app level file stuff #####
     output_matrix, output_format = software_gold(sam_graph, matrix_tmp_dir, give_tensor)
@@ -1485,7 +1535,10 @@ if __name__ == "__main__":
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
                           # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
                           output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
-                          real_pe=real_pe)
+                          real_pe=real_pe, harden_flush=harden_flush)
+
+    if dump_bitstream:
+        nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
 
     stb.display_names()
 
