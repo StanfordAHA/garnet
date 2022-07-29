@@ -1,5 +1,6 @@
 #ifndef GLB_MAP_LIBRARY_H
 #define GLB_MAP_LIBRARY_H
+#include "parser.h"
 
 int glb_map(void *kernel);
 int initialize_monitor(int num_cols);

@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge
+from kratos import Generator, always_ff, always_comb, posedge, clog2
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_header import GlbHeader
 from global_buffer.design.glb_clk_en_gen import GlbClkEnGen
@@ -212,6 +212,7 @@ class GlbRingSwitch(Generator):
     def add_ring2bank_clk_en(self):
         if self.wr_channel:
             self.wr_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin)
+            self.wr_clk_en_gen.p_cnt.value = self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin
             self.ring2bank_wr_clk_en = self.var("ring2bank_wr_clk_en", 1)
             self.add_child("ring2bank_wr_clk_en_gen",
                            self.wr_clk_en_gen,
@@ -222,6 +223,7 @@ class GlbRingSwitch(Generator):
                            )
         if self.rd_channel:
             self.rd_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
+            self.rd_clk_en_gen.p_cnt.value = self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin
             self.ring2bank_rd_clk_en = self.var("ring2bank_rd_clk_en", 1)
             self.add_child("ring2bank_rd_clk_en_gen",
                            self.rd_clk_en_gen,
