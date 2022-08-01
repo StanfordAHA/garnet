@@ -731,6 +731,13 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.Intersect}" or hw_node_type == HWNodeType.Intersect:
                 new_node_type = IntersectNode
                 core_tag = "intersect"
+                edges_to_isect = [edge for edge in self.graph.get_edges() if edge.get_destination() == node.get_name()]
+                edges_to_isect_crd = [edge for edge in edges_to_isect if edge.get_attributes()['type'].strip('"') == "crd"]
+                conn_to_tensor = {}
+                for idx_, edge in enumerate(edges_to_isect_crd):
+                    conn_to_tensor[idx_] = edge.get_attributes()['comment'].strip('"').split('-')[1]
+                kwargs = {'conn_to_tensor': conn_to_tensor}
+
             elif hw_node_type == f"{HWNodeType.Reduce}":
                 new_node_type = ReduceNode
                 core_tag = "regcore"
@@ -1033,8 +1040,20 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         # WRONG GRAPH
         raise NotImplementedError
     elif 'mat_sddmm.gv' in app_name:
-        # NEED DENSE
-        raise NotImplementedError
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        d_matrix = MatrixGenerator(name="D", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        d_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        d_mat = d_matrix.get_matrix()
+        # First transpose c_mat
+        tmp = numpy.matmul(c_mat, d_mat)
+        output_matrix = numpy.multiply(b_mat, tmp, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        # raise NotImplementedError
     elif 'mat_vecmul_ij.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1058,15 +1077,9 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
             c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
         else:
             b_matrix = MatrixGenerator(name="B", shape=[20, 20], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-            # b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
             c_matrix = MatrixGenerator(name="C", shape=[20, 20], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-            # c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
             b_matrix.dump_outputs()
             c_matrix.dump_outputs()
-        # b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        # c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        # b_matrix.dump_outputs()
-        # c_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
         # First transpose c_mat
