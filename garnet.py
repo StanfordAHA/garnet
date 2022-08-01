@@ -353,7 +353,7 @@ class Garnet(Generator):
                                             tile_info,
                                             load_only,
                                             self.harden_flush,
-                                            self.height//self.pipeline_config_interval,
+                                            1 + self.height//self.pipeline_config_interval,
                                             pipeline_input_broadcasts,
                                             input_broadcast_branch_factor,
                                             input_broadcast_max_leaves)
