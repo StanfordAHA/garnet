@@ -351,14 +351,14 @@ class Garnet(Generator):
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
         netlist_info = create_netlist_info(app_dir,
-                                            dag,
-                                            tile_info,
-                                            load_only,
-                                            self.harden_flush,
-                                            self.height//self.pipeline_config_interval,
-                                            pipeline_input_broadcasts,
-                                            input_broadcast_branch_factor,
-                                            input_broadcast_max_leaves)
+                                           dag,
+                                           tile_info,
+                                           load_only,
+                                           self.harden_flush,
+                                           self.height // self.pipeline_config_interval,
+                                           pipeline_input_broadcasts,
+                                           input_broadcast_branch_factor,
+                                           input_broadcast_max_leaves)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
@@ -565,7 +565,8 @@ def main():
             netlist, bus = garnet.place_and_route(
                 args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact,
                 load_only=args.generate_bitstream_only, pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
-                input_broadcast_branch_factor=args.input_broadcast_branch_factor, input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+                input_broadcast_branch_factor=args.input_broadcast_branch_factor,
+                input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
         if args.pipeline_pnr:
             return

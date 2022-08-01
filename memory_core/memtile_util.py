@@ -674,7 +674,10 @@ class NetlistBuilder():
 
         print("Done remapping...")
 
-        self._placement, self._routing, _ = pnr(self._interconnect, (self._netlist, self._bus), cwd=self._cwd, harden_flush=self.harden_flush)
+        self._placement, self._routing, _ = pnr(self._interconnect,
+                                                (self._netlist, self._bus),
+                                                cwd=self._cwd,
+                                                harden_flush=self.harden_flush)
         self._placement_up_to_date = True
 
     def get_route_config(self):
