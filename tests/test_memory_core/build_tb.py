@@ -7,6 +7,7 @@ from cgra.util import create_cgra
 from memory_core.buffet_core import BuffetCore
 from memory_core.core_combiner_core import CoreCombinerCore
 from memory_core.crddrop_core import CrdDropCore
+from memory_core.crdhold_core import CrdHoldCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.intersect_core import IntersectCore
 from memory_core.io_core_rv import IOCoreReadyValid
@@ -31,6 +32,7 @@ from sam.onyx.hw_nodes.intersect_node import IntersectNode
 from sam.onyx.hw_nodes.reduce_node import ReduceNode
 from sam.onyx.hw_nodes.lookup_node import LookupNode
 from sam.onyx.hw_nodes.merge_node import MergeNode
+from sam.onyx.hw_nodes.crdhold_node import CrdHoldNode
 from sam.onyx.hw_nodes.repeat_node import RepeatNode
 from sam.onyx.hw_nodes.repsiggen_node import RepSigGenNode
 import magma as m
@@ -50,6 +52,7 @@ from lake.modules.reg_cr import Reg
 from lake.modules.counter import Counter
 from lake.modules.strg_ub_vec import StrgUBVec
 from lake.modules.crddrop import CrdDrop
+from lake.modules.crdhold import CrdHold
 from lake.modules.strg_RAM import StrgRAM
 from lake.modules.stencil_valid import StencilValid
 import os
@@ -408,6 +411,15 @@ class SparseTBBuilder(m.Generator2):
                     "inner": inner
                 }
                 core_inst = Intersect(use_merger=True)
+            elif hw_node_type == f"{HWNodeType.CrdHold}" or hw_node_type == HWNodeType.CrdHold:
+                new_node_type = CrdHold
+                core_name = "crdhold"
+                outer = node.get_attributes()['outer'].strip('"')
+                inner = node.get_attributes()['inner'].strip('"')
+                kwargs = {
+                    "outer": outer,
+                    "inner": inner
+                }
             elif hw_node_type == f"{HWNodeType.Repeat}" or hw_node_type == HWNodeType.Repeat:
                 new_node_type = RepeatNode
                 core_name = "repeat"
@@ -455,7 +467,7 @@ class SparseTBBuilder(m.Generator2):
                     data = self.fabric.output(f'data_out_{conn_id}', 17)
                     ready = self.fabric.input(f'data_out_{conn_id}_ready', 1)
                     valid = self.fabric.output(f'data_out_{conn_id}_valid', 1)
-                    if 'vals' in node.get_attributes()['mode'].strip('"'):
+                    if 'vals' in node.get_attributes()['mode'].strip('"') or 'vals' in node.get_attributes()['format'].strip('"'):
                         num_blocks = 1
                     else:
                         num_blocks = 2
@@ -682,6 +694,9 @@ class SparseTBBuilder(m.Generator2):
                 if str(glb_mode) == "vals":
                     f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
                     f2 = f1
+                elif node.get_format() == 'vals':
+                    f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
+                    f2 = f1
                 else:
                     f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_seg\""
                     f2 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
@@ -754,6 +769,16 @@ class SparseTBBuilder(m.Generator2):
                     "outer": outer,
                     "inner": inner
                 }
+            elif hw_node_type == f"{HWNodeType.CrdHold}" or hw_node_type == HWNodeType.CrdHold:
+                new_node_type = CrdHoldNode
+                # core_tag = "intersect"
+                core_tag = "crdhold"
+                outer = node.get_attributes()['outer'].strip('"')
+                inner = node.get_attributes()['inner'].strip('"')
+                kwargs = {
+                    "outer": outer,
+                    "inner": inner
+                }
             elif hw_node_type == f"{HWNodeType.Repeat}" or hw_node_type == HWNodeType.Repeat:
                 new_node_type = RepeatNode
                 core_tag = "repeat"
@@ -796,7 +821,7 @@ class SparseTBBuilder(m.Generator2):
                     # valid = self.nlb.register_core("io_1", name="valid_out_")
                     direction = "read"
                     glb_name = "CGRA_TO_GLB"
-                    if 'vals' in node.get_attributes()['mode'].strip('"'):
+                    if 'vals' in node.get_attributes()['mode'].strip('"') or 'vals' in node.get_attributes()['format'].strip('"'):
                         num_blocks = 1
                     else:
                         num_blocks = 2
@@ -821,6 +846,8 @@ class SparseTBBuilder(m.Generator2):
                 else:
                     glb_mode = node.get_attributes()['mode'].strip('"')
 
+                glb_format = node.get_attributes()['format'].strip('"') if 'format' in node.get_attributes().keys() else None
+
                 self.core_nodes[node.get_name()] = GLBNode(name=data,
                                                            data=data,
                                                            valid=None,
@@ -832,7 +859,8 @@ class SparseTBBuilder(m.Generator2):
                                                            file_number=file_number,
                                                            tx_size=tx_size,
                                                            tensor=glb_tensor,
-                                                           mode=glb_mode)
+                                                           mode=glb_mode,
+                                                           format=glb_format)
             else:
                 reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
                 self.core_nodes[node.get_name()] = new_node_type(name=reg_ret, **kwargs)
@@ -1238,6 +1266,12 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         c_mat = c_matrix.get_matrix()
         output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+    elif 'mat_identity_crdhold' in app_name:
+        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        output_matrix = b_mat
+        output_format = "COO"
     else:
         raise NotImplementedError
 
@@ -1382,6 +1416,9 @@ if __name__ == "__main__":
         crd_drop = CrdDrop(data_width=16, fifo_depth=fifo_depth,
                            lift_config=True,
                            defer_fifos=True)
+        crd_hold = CrdHold(data_width=16, fifo_depth=fifo_depth,
+                           lift_config=True,
+                           defer_fifos=True)
         onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
                         ext_pe_prefix=pe_prefix,
                         pe_ro=True,
@@ -1401,6 +1438,7 @@ if __name__ == "__main__":
 
         controllers_2.append(isect)
         controllers_2.append(crd_drop)
+        controllers_2.append(crd_hold)
         controllers_2.append(onyxpe)
         controllers_2.append(repeat)
         controllers_2.append(rsg)
@@ -1458,6 +1496,7 @@ if __name__ == "__main__":
                        (RepeatCore, {'fifo_depth': fifo_depth}),
                        (IntersectCore, {'fifo_depth': fifo_depth}),
                        (CrdDropCore, {'fifo_depth': fifo_depth}),
+                       (CrdHoldCore, {'fifo_depth': fifo_depth}),
                        (RepeatSignalGeneratorCore, {'passthru': not use_fork,
                                                     'fifo_depth': fifo_depth}),
                        (RegCore, {'fifo_depth': fifo_depth})]
@@ -1593,7 +1632,7 @@ if __name__ == "__main__":
     stb.display_names()
 
     ##### Now check it... #####
-    sim_mat = get_tensor_from_files(name='X', files_dir=output_dir, shape=output_matrix.shape, base=16, early_terminate='x')
+    sim_mat = get_tensor_from_files(name='X', files_dir=output_dir, format=output_format, shape=output_matrix.shape, base=16, early_terminate='x')
     sim_mat_np = sim_mat.get_matrix()
     print(f"GOLD")
     print(output_matrix)
