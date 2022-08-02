@@ -1422,7 +1422,7 @@ if __name__ == "__main__":
         onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
                         ext_pe_prefix=pe_prefix,
                         pe_ro=True,
-                        do_config_lift=False)
+                        do_config_lift=True)
         repeat = Repeat(data_width=16,
                         fifo_depth=8,
                         defer_fifos=True)
@@ -1632,10 +1632,11 @@ if __name__ == "__main__":
     stb.display_names()
 
     ##### Now check it... #####
-    sim_mat = get_tensor_from_files(name='X', files_dir=output_dir, format=output_format, shape=output_matrix.shape, base=16, early_terminate='x')
-    sim_mat_np = sim_mat.get_matrix()
     print(f"GOLD")
     print(output_matrix)
+
+    sim_mat = get_tensor_from_files(name='X', files_dir=output_dir, format=output_format, shape=output_matrix.shape, base=16, early_terminate='x')
+    sim_mat_np = sim_mat.get_matrix()
     print(f"SIM")
     print(sim_mat_np)
 
