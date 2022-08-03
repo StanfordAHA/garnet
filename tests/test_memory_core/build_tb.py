@@ -1,4 +1,5 @@
 import argparse
+import sys
 from gemstone.common.testers import BasicTester
 from gemstone.common.configurable import ConfigurationType
 from pydot import Graph
@@ -905,6 +906,7 @@ class SparseTBBuilder(m.Generator2):
         for node in self.graph.get_nodes():
             node_attr = node.get_attributes()
             node_config_ret = self.core_nodes[node.get_name()].configure(node_attr)
+            print(node_config_ret)
             if node_config_ret is not None:
                 node_config_tuple, node_config_kwargs = node_config_ret
             # GLB tiles return none so that we don't try to config map them...
@@ -941,6 +943,7 @@ class SparseTBBuilder(m.Generator2):
                 elif "s" in self.core_nodes[node.get_name()].get_name():
                     self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), (1, node_config_kwargs))
                 else:
+                    print(node.get_name(), self.core_nodes[node.get_name()].get_name())
                     self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
 
     def display_names(self):
@@ -998,10 +1001,16 @@ def coalesce_files(in_dir, out_dir):
         write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'], out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
 
 
-def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
+def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None):
 
     output_matrix = None
     output_format = None
+
+    input_tensors = dict()
+
+    b_mat = None
+    c_mat = None
+    d_mat = None
 
     if 'mat_elemadd.gv' in app_name:
         # PASSES
@@ -1018,9 +1027,11 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
 
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
+
         output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
     elif 'mat_elemadd3.gv' in app_name:
+        # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         d_matrix = MatrixGenerator(name="D", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1029,7 +1040,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         d_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
-        d_mat = c_matrix.get_matrix()
+        d_mat = d_matrix.get_matrix()
 
         output_matrix = numpy.add(d_mat, numpy.add(b_mat, c_mat,
                                                    dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16, casting='unsafe')
@@ -1223,7 +1234,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
         c_mat = c_matrix.get_matrix()
         # First transpose c_mat
         output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
-        print(output_matrix)
         output_format = "CSF"
     elif 'tensor3_ttv.gv' in app_name:
         pass
@@ -1275,6 +1285,22 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False):
     else:
         raise NotImplementedError
 
+    if print_inputs is not None:
+        if b_mat is not None:
+            input_tensors["B"] = b_mat
+        if c_mat is not None:
+            input_tensors["C"] = c_mat
+        if d_mat is not None:
+            input_tensors["D"] = d_mat
+
+        original_stdout = sys.stdout
+        with open(print_inputs, 'w+') as inf:
+            sys.stdout = inf
+            for name, vals in input_tensors.items():
+                print(f"{name}")
+                print(vals)
+            sys.stdout = original_stdout
+
     return output_matrix, output_format
 
 
@@ -1299,6 +1325,9 @@ if __name__ == "__main__":
     parser.add_argument('--gold_dir',
                         type=str,
                         default="/Users/maxwellstrange/Documents/SPARSE/garnet/gold_out")
+    parser.add_argument('--print_inputs',
+                        type=str,
+                        default=None)
     parser.add_argument('--fifo_depth',
                         type=int,
                         default=8)
@@ -1338,6 +1367,7 @@ if __name__ == "__main__":
     pipeline_scanner = args.pipeline_scanner
     dump_bitstream = args.dump_bitstream
     harden_flush = not args.no_harden_flush
+    print_inputs = args.print_inputs
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
@@ -1522,7 +1552,7 @@ if __name__ == "__main__":
         nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir, harden_flush=harden_flush)
 
     ##### Handling app level file stuff #####
-    output_matrix, output_format = software_gold(sam_graph, matrix_tmp_dir, give_tensor)
+    output_matrix, output_format = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
     out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
     out_mat.dump_outputs()
 
@@ -1635,7 +1665,8 @@ if __name__ == "__main__":
     print(f"GOLD")
     print(output_matrix)
 
-    sim_mat = get_tensor_from_files(name='X', files_dir=output_dir, format=output_format, shape=output_matrix.shape, base=16, early_terminate='x')
+    sim_mat = get_tensor_from_files(name='X', files_dir=output_dir,
+                                    format=output_format, shape=output_matrix.shape, base=16, early_terminate='x')
     sim_mat_np = sim_mat.get_matrix()
     print(f"SIM")
     print(sim_mat_np)
