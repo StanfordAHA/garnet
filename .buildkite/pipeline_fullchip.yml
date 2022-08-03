@@ -172,6 +172,7 @@ steps:
 - label: 'lvs'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 61G;
+     echo "--- PREVENT SVDB"; $$GARNET_HOME/.buildkite/bin/no-svdb.sh;
      echo "--- MAKE MENTOR-CALIBRE-LVS"; set -o pipefail;
      make mentor-calibre-lvs |& tee make-lvs.log'
   - 'echo "--- DELETE SVDB"; set -x;
