@@ -50,6 +50,8 @@ class Garnet(Generator):
                  num_tracks: int = 5,
                  tile_layout_option: int = 0,
                  add_pond: bool = True,
+                 pond_area_opt: bool = False,
+                 pond_area_opt_share: bool = False,
                  use_io_valid: bool = False,
                  harden_flush: bool = True,
                  pipeline_config_interval: int = 8,
@@ -125,6 +127,8 @@ class Garnet(Generator):
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
                                    add_pond=add_pond,
+                                   pond_area_opt=pond_area_opt,
+                                   pond_area_opt_share=pond_area_opt_share,
                                    use_io_valid=use_io_valid,
                                    harden_flush=harden_flush,
                                    use_sim_sram=use_sim_sram,
@@ -494,6 +498,8 @@ def main():
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
+    parser.add_argument("--pond-area-opt", action="store_true", dest="pond_area_opt")
+    parser.add_argument("--pond-area-opt-share", action="store_true", dest="pond_area_opt_share")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -525,6 +531,8 @@ def main():
                     tile_layout_option=args.tile_layout_option,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
+                    pond_area_opt=args.pond_area_opt,
+                    pond_area_opt_share=args.pond_area_opt_share,
                     harden_flush=not args.no_harden_flush,
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
