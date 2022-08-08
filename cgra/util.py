@@ -6,7 +6,7 @@ from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
 from canal.interconnect import Interconnect
 from passes.power_domain.pd_pass import add_power_domain, add_aon_read_config_data
 from lassen.sim import PE_fc as lassen_fc
-from io_core.io_core_magma import IOCoreValid, IOCoreDelay
+from io_core.io_core_magma import IOCoreValid, IOCore
 from memory_core.memory_core_magma import MemCore
 from memory_core.pond_core import PondCore
 from peak_core.peak_core import PeakCore
@@ -93,7 +93,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
                 else:
-                    core = IOCoreDelay()
+                    core = IOCore()
             else:
                 if tile_layout_option == 0:
                     use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
