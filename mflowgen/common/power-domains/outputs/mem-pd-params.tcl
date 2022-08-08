@@ -29,8 +29,20 @@ set adk_allow_sdf_regs true
 set stripes_per_tap 18
 
 # Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
+# This integer-div followed by integer-mul corrects that situation.
+# Example:
+#   WARNING 1/3 you wanted one VDD tap for every 9 stripe-groups
+#   WARNING 2/3 but only one group out of every 2 has a VDD stripe
+#   WARNING 3/3 correcting 'stripes_per_tap' parm from 9 to 8
+# 
 set vdd_stripes_per_tap [ expr $stripes_per_tap / $vdd_m3_stripe_sparsity ]
-set stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
+set corrected_stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
+if { $stripes_per_tap != $corrected_stripes_per_tap } {
+    puts "WARNING 1/3 you wanted one VDD tap for every $stripes_per_tap stripe-groups"
+    puts "WARNING 2/3 but only one group out of every $vdd_m3_stripe_sparsity has a VDD stripe"
+    puts "WARNING 3/3 correcting 'stripes_per_tap' parm from $stripes_per_tap to $corrected_stripes_per_tap"
+    set stripes_per_tap $corrected_stripes_per_tap
+}
 
 
 # Power switch params
