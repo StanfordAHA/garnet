@@ -136,21 +136,11 @@ class CreateInstrs(Visitor):
         return self.node_to_instr
 
     def visit_Input(self, node):
-        instr = {}
-        for width in [1, 16]:
-            for prefix in ["glb2io", "io2glb"]:
-                reg_name = f"{prefix}_{width}_delay_en"
-                instr[reg_name] = 1
-        self.node_to_instr[node.iname] = instr
+        self.node_to_instr[node.iname] = 1
 
     def visit_Output(self, node):
         Visitor.generic_visit(self, node)
-        instr = {}
-        for width in [1, 16]:
-            for prefix in ["glb2io", "io2glb"]:
-                reg_name = f"{prefix}_{width}_delay_en"
-                instr[reg_name] = 1
-        self.node_to_instr[node.iname] = instr
+        self.node_to_instr[node.iname] = 2
 
     def visit_Source(self, node):
         pass
@@ -823,7 +813,7 @@ def create_netlist_info(
     info["instance_to_instrs"] = {
         node: nodes_to_instrs[node]
         for node, id in nodes_to_ids.items()
-        if ("p" in id or "m" in id or "I" in id or "i" in id)
+        if ("p" in id or "m" in id)
     }
     for node, md in node_to_metadata.items():
         info["instance_to_instrs"][node] = md
