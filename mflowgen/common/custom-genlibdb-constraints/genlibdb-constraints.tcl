@@ -14,6 +14,8 @@
 # in the synthesis constraints so we can more easily
 # do set_case_analysis on them here
 set rmuxes [get_cells -hier *RMUX_*_sel_inst0]
-set rmux_outputs [get_pins -of_objects $rmuxes -filter "direction==out"]
-set_case_analysis 1 $rmux_outputs
+if { "$rmux_cells" != "" } {
+    set rmux_outputs [get_pins -of_objects $rmuxes -filter "direction==out"]
+    set_case_analysis 1 $rmux_outputs
+}
 

@@ -181,5 +181,7 @@ set_false_path -through [get_cells -hier *config_reg_*] -to [get_ports read_conf
 
 # Preserve the RMUXes so that we can easily constrain them later
 set rmux_cells [get_cells -hier RMUX_T*sel_inst0]
-set_dont_touch $rmux_cells true
-set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true
+if { "$rmux_cells" != "" } {
+    set_dont_touch $rmux_cells true
+    set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true
+}
