@@ -1418,7 +1418,8 @@ if __name__ == "__main__":
                                    defer_fifos=True)
         buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
                             tech_map=GF_Tech_Map(depth=512, width=32),
-                            defer_fifos=True)
+                            defer_fifos=True,
+                            optimize_wide=True)
         strg_ram = StrgRAM(data_width=16,
                            banks=1,
                            memory_width=64,

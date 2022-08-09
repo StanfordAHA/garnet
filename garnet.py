@@ -56,7 +56,8 @@ class Garnet(Generator):
                  glb_params: GlobalBufferParams = GlobalBufferParams(),
                  pe_fc=lassen_fc,
                  ready_valid: bool = False,
-                 scgra: bool = False):
+                 scgra: bool = False,
+                 scgra_combined: bool = True):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -136,7 +137,8 @@ class Garnet(Generator):
                                    standalone=standalone,
                                    pe_fc=pe_fc,
                                    ready_valid=ready_valid,
-                                   scgra=scgra)
+                                   scgra=scgra,
+                                   scgra_combined=scgra_combined)
 
         self.interconnect = interconnect
 
@@ -497,6 +499,7 @@ def main():
     parser.add_argument('--tile-layout-option', type=int, default=0)
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
     parser.add_argument("--sparse-cgra", action="store_true")
+    parser.add_argument("--sparse-cgra-combined", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -535,7 +538,8 @@ def main():
                     standalone=args.standalone,
                     pe_fc=pe_fc,
                     ready_valid=args.ready_valid,
-                    scgra=args.sparse_cgra)
+                    scgra=args.sparse_cgra,
+                    scgra_combined=args.sparse_cgra_combined)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
