@@ -32,6 +32,7 @@ class PondCore(LakeCoreBase):
                  cycle_count_width=16,
                  pond_area_opt=False,
                  pond_area_opt_share=False,
+                 pond_area_opt_dual_config=False,
                  add_clk_enable=True,
                  add_flush=True,
                  gate_flush=True):
@@ -53,6 +54,7 @@ class PondCore(LakeCoreBase):
         self.config_addr_width = config_addr_width
         self.pond_area_opt = pond_area_opt
         self.pond_area_opt_share = pond_area_opt_share
+        self.pond_area_opt_dual_config = pond_area_opt_dual_config
         self.add_clk_enable = add_clk_enable
         self.add_flush = add_flush
         self.cycle_count_width = cycle_count_width
@@ -85,6 +87,7 @@ class PondCore(LakeCoreBase):
                               config_addr_width=self.config_addr_width,
                               area_opt=self.pond_area_opt,
                               pond_area_opt_share=self.pond_area_opt_share,
+                              pond_area_opt_dual_config=self.pond_area_opt_dual_config,
                               fifo_mode=True,
                               add_clk_enable=self.add_clk_enable,
                               add_flush=self.add_flush,
