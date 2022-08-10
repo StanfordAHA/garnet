@@ -1,6 +1,7 @@
 import pytest
 import magma
 from gemstone.generator import clear_generator_cache
+import gemstone
 import tempfile
 import shutil
 import os
@@ -70,7 +71,8 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
         for filename in fp_files(use_dw):
             shutil.copy(filename, tempdir)
             rtl_lib.append(os.path.basename(filename))
-        for aoi_mux in glob.glob(os.path.join(root_dir, "tests/*.sv")):
+        gemstone_dir = os.path.dirname(os.path.dirname(gemstone.__file__))
+        for aoi_mux in glob.glob(os.path.join(gemstone_dir, "tests", "common", "rtl", "*.sv")):
             shutil.copy(aoi_mux, tempdir)
             rtl_lib.append(os.path.basename(aoi_mux))
 
