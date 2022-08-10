@@ -67,18 +67,19 @@ def construct():
 
   # Custom steps
 
-  rtl            = Step( this_dir + '/../common/rtl'                       )
-  Tile_MemCore   = Step( this_dir + '/Tile_MemCore'                        )
-  Tile_PE        = Step( this_dir + '/Tile_PE'                             )
-  constraints    = Step( this_dir + '/constraints'                         )
-  dc_postcompile = Step( this_dir + '/custom-dc-postcompile'               )
-  custom_init    = Step( this_dir + '/custom-init'                         )
-  custom_power   = Step( this_dir + '/../common/custom-power-hierarchical' )
-  custom_cts     = Step( this_dir + '/custom-cts-overrides'                )
-  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
-  gls_args       = Step( this_dir + '/gls_args'                            )
-  testbench      = Step( this_dir + '/testbench'                           )
-  lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
+  rtl            = Step( this_dir + '/../common/rtl'                          )
+  Tile_MemCore   = Step( this_dir + '/Tile_MemCore'                           )
+  Tile_PE        = Step( this_dir + '/Tile_PE'                                )
+  constraints    = Step( this_dir + '/constraints'                            )
+  dc_postcompile = Step( this_dir + '/custom-dc-postcompile'                  )
+  custom_init    = Step( this_dir + '/custom-init'                            )
+  custom_power   = Step( this_dir + '/../common/custom-power-hierarchical'    )
+  custom_cts     = Step( this_dir + '/custom-cts-overrides'                   )
+  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                       )
+  gls_args       = Step( this_dir + '/gls_args'                               )
+  testbench      = Step( this_dir + '/testbench'                              )
+  lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
+  drc_pm         = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
 
 
   # Default steps
@@ -226,6 +227,7 @@ def construct():
   g.add_step( pt_genlibdb    )
   g.add_step( lib2db         )
   g.add_step( drc            )
+  g.add_step( drc_pm         )
   g.add_step( custom_lvs     )
   g.add_step( lvs            )
   g.add_step( debugcalibre   )
@@ -256,6 +258,7 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
+  g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      lvs            )
 
   if use_e2e:
@@ -297,6 +300,7 @@ def construct():
       g.connect_by_name( Tile_MemCore,      pt_genlibdb    )
       g.connect_by_name( Tile_MemCore,      genlib         )
       g.connect_by_name( Tile_MemCore,      drc            )
+      g.connect_by_name( Tile_MemCore,      drc_pm         )
       g.connect_by_name( Tile_MemCore,      lvs            )
       # These rules LVS BOX the SRAM macro, so they should
       # only be used if memory tile is present
@@ -323,6 +327,7 @@ def construct():
   g.connect_by_name( Tile_PE,      pt_genlibdb    )
   g.connect_by_name( Tile_PE,      genlib         )
   g.connect_by_name( Tile_PE,      drc            )
+  g.connect_by_name( Tile_PE,      drc_pm         )
   g.connect_by_name( Tile_PE,      lvs            )
 
   #g.connect_by_name( rtl,            dc        )
@@ -371,8 +376,10 @@ def construct():
   g.connect_by_name( postroute,    postroute_hold )
   g.connect_by_name( postroute_hold, signoff      )
   g.connect_by_name( signoff,      drc            )
+  g.connect_by_name( signoff,      drc_pm         )
   g.connect_by_name( signoff,      lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( adk,          pt_signoff   )
@@ -390,6 +397,7 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
+  g.connect_by_name( drc_pm,   debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
