@@ -51,6 +51,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 add_pond: bool = False,
                 pond_area_opt: bool = False,
                 pond_area_opt_share: bool = False,
+                pond_area_opt_dual_config: bool = False,
                 harden_flush: bool = True,
                 use_io_valid: bool = True,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
@@ -109,7 +110,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     if add_pond:
                         additional_core[(x, y)] = PondCore(gate_flush=not harden_flush,
                                                            pond_area_opt=pond_area_opt,
-                                                           pond_area_opt_share=pond_area_opt_share)
+                                                           pond_area_opt_share=pond_area_opt_share,
+                                                           pond_area_opt_dual_config=pond_area_opt_dual_config)
             cores[(x, y)] = core
 
     def create_core(xx: int, yy: int):
