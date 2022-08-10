@@ -128,19 +128,20 @@ def construct():
 
   # Custom steps
 
-  rtl            = Step( this_dir + '/../common/rtl'                       )
-  soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                )
-  gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
-  constraints    = Step( this_dir + '/constraints'                         )
-  read_design    = Step( this_dir + '/../common/fc-custom-read-design'     )
-  custom_init    = Step( this_dir + '/custom-init'                         )
-  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
-  custom_power   = Step( this_dir + '/../common/custom-power-chip'         )
-  init_fc        = Step( this_dir + '/../common/init-fullchip'             )
-  io_file        = Step( this_dir + '/io_file'                             )
-  pre_route      = Step( this_dir + '/pre-route'                           )
-  sealring       = Step( this_dir + '/sealring'                            )
-  netlist_fixing = Step( this_dir + '/../common/fc-netlist-fixing'         )
+  rtl            = Step( this_dir + '/../common/rtl'                          )
+  soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                   )
+  gen_sram       = Step( this_dir + '/../common/gen_sram_macro'               )
+  constraints    = Step( this_dir + '/constraints'                            )
+  read_design    = Step( this_dir + '/../common/fc-custom-read-design'        )
+  custom_init    = Step( this_dir + '/custom-init'                            )
+  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                       )
+  custom_power   = Step( this_dir + '/../common/custom-power-chip'            )
+  init_fc        = Step( this_dir + '/../common/init-fullchip'                )
+  io_file        = Step( this_dir + '/io_file'                                )
+  pre_route      = Step( this_dir + '/pre-route'                              )
+  sealring       = Step( this_dir + '/sealring'                               )
+  netlist_fixing = Step( this_dir + '/../common/fc-netlist-fixing'            )
+  drc_pm         = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
 
   # Block-level designs
 
@@ -304,6 +305,7 @@ def construct():
   g.add_step( fill              )
   g.add_step( merge_fill        )
   g.add_step( drc               )
+  g.add_step( drc_pm            )
   g.add_step( antenna_drc       )
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
@@ -340,6 +342,7 @@ def construct():
   g.connect_by_name( adk,      fill           )
   g.connect_by_name( adk,      merge_fill     )
   g.connect_by_name( adk,      drc            )
+  g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      antenna_drc    )
   g.connect_by_name( adk,      lvs            )
 
@@ -447,6 +450,7 @@ def construct():
   if adk_name == 'gf12-adk':
       # Connect fill directly to DRC steps
       g.connect( fill.o('fill.gds'), drc.i('design_merged.gds') )
+      g.connect( fill.o('fill.gds'), drc_pm.i('design_merged.gds') )
       g.connect( fill.o('fill.gds'), antenna_drc.i('design_merged.gds') )
   else:
       # Merge fill
@@ -455,6 +459,7 @@ def construct():
 
       # Run DRC on merged and filled gds
       g.connect_by_name( merge_fill, drc )
+      g.connect_by_name( merge_fill, drc_pm )
       g.connect_by_name( merge_fill, antenna_drc )
    
   g.connect_by_name( adk,          pt_signoff   )
@@ -464,6 +469,7 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
+  g.connect_by_name( drc_pm,   debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
