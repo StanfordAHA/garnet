@@ -636,11 +636,16 @@ class NetlistBuilder():
         assert prim_name in self._core_names.keys(), f"{prim_name} not a valid primitive in this netlist"
         return self._core_names[prim_name]
 
-    def display_names(self):
+    def display_names(self, print_v=True):
+        to_print = ""
         for key, val in self._core_names.items():
             tile = self._placement[key]
             tile_x, tile_y = tile
-            print(f"{key}\t===>\t{val}\t\t===>\tX{tile_x:02X}_Y{tile_y:02X}")
+            curr_str = f"{key}\t===>\t{val}\t\t===>\tX{tile_x:02X}_Y{tile_y:02X}"
+            if print_v:
+                print(curr_str)
+            to_print += f"{curr_str}\n"
+        return to_print
 
     def get_netlist(self):
         return self._netlist
