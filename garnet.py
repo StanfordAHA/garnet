@@ -55,7 +55,9 @@ class Garnet(Generator):
                  pipeline_config_interval: int = 8,
                  glb_params: GlobalBufferParams = GlobalBufferParams(),
                  pe_fc=lassen_fc,
-                 ready_valid: bool = False):
+                 ready_valid: bool = False,
+                 scgra: bool = False,
+                 scgra_combined: bool = True):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -134,7 +136,9 @@ class Garnet(Generator):
                                    tile_layout_option=tile_layout_option,
                                    standalone=standalone,
                                    pe_fc=pe_fc,
-                                   ready_valid=ready_valid)
+                                   ready_valid=ready_valid,
+                                   scgra=scgra,
+                                   scgra_combined=scgra_combined)
 
         self.interconnect = interconnect
 
@@ -225,7 +229,7 @@ class Garnet(Generator):
                       self.ports.read_config_data)
 
             if harden_flush:
-                self.add_ports(flush=magma.In(magma.Bits[1]))
+                self.add_ports(flush=magma.In(magma.Bits[self.width // 4]))
                 self.wire(self.ports.flush, self.interconnect.ports.flush)
 
     def map(self, halide_src):
@@ -349,14 +353,14 @@ class Garnet(Generator):
         tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
         netlist_info = create_netlist_info(app_dir,
-                                            dag,
-                                            tile_info,
-                                            load_only,
-                                            self.harden_flush,
-                                            self.height//self.pipeline_config_interval,
-                                            pipeline_input_broadcasts,
-                                            input_broadcast_branch_factor,
-                                            input_broadcast_max_leaves)
+                                           dag,
+                                           tile_info,
+                                           load_only,
+                                           self.harden_flush,
+                                           self.height // self.pipeline_config_interval,
+                                           pipeline_input_broadcasts,
+                                           input_broadcast_branch_factor,
+                                           input_broadcast_max_leaves)
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
@@ -494,6 +498,8 @@ def main():
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
+    parser.add_argument("--sparse-cgra", action="store_true")
+    parser.add_argument("--sparse-cgra-combined", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -531,7 +537,9 @@ def main():
                     use_sim_sram=args.use_sim_sram,
                     standalone=args.standalone,
                     pe_fc=pe_fc,
-                    ready_valid=args.ready_valid)
+                    ready_valid=args.ready_valid,
+                    scgra=args.sparse_cgra,
+                    scgra_combined=args.sparse_cgra_combined)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
@@ -561,7 +569,8 @@ def main():
             netlist, bus = garnet.place_and_route(
                 args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact,
                 load_only=args.generate_bitstream_only, pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
-                input_broadcast_branch_factor=args.input_broadcast_branch_factor, input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+                input_broadcast_branch_factor=args.input_broadcast_branch_factor,
+                input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
         if args.pipeline_pnr:
             return

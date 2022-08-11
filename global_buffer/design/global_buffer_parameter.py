@@ -77,6 +77,8 @@ class GlobalBufferParams:
     cgra_axi_data_width: int = 32
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
+    load_dma_fifo_depth: int = 32
+    store_dma_fifo_depth: int = 4
 
     # cell parameters
     process: str = "GF"
@@ -88,6 +90,18 @@ class GlobalBufferParams:
     sram_macro_word_size: int = 64
     sram_macro_mux_size: int = 8
     sram_macro_num_subarrays: int = 2
+
+    # constant variables
+    st_dma_valid_mode_valid: int = 0
+    st_dma_valid_mode_ready_valid: int = 1
+    st_dma_valid_mode_static: int = 2
+
+    ld_dma_valid_mode_static: int = 0
+    ld_dma_valid_mode_valid: int = 1
+    ld_dma_valid_mode_ready_valid: int = 2
+
+    ld_dma_flush_mode_external: int = 0
+    ld_dma_flush_mode_internal: int = 1
 
     # dependent field
     num_prr_width: int = field(init=False, default=num_prr_width)
@@ -107,7 +121,9 @@ class GlobalBufferParams:
 
     # dma address generator
     queue_depth: int = 1
-    loop_level: int = 8
+    load_dma_loop_level: int = 8
+    store_dma_loop_level: int = 6
+    loop_level: int = max(load_dma_loop_level, store_dma_loop_level)
 
     # dma latency
     chain_latency_overhead: int = 3

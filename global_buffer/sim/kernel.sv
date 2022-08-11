@@ -7,12 +7,28 @@ typedef enum int {
     SRAM = 5
 } stream_type;
 
+typedef enum int {
+    ST_MODE_VALID = ST_DMA_VALID_MODE_VALID,
+    ST_MODE_RV = ST_DMA_VALID_MODE_READY_VALID,
+    ST_MODE_STATIC = ST_DMA_VALID_MODE_STATIC
+} st_valid_type;
+
+typedef enum int {
+    LD_MODE_STATIC = LD_DMA_VALID_MODE_STATIC,
+    LD_MODE_VALID = LD_DMA_VALID_MODE_VALID,
+    LD_MODE_RV = LD_DMA_VALID_MODE_READY_VALID
+} ld_valid_type;
+
 typedef logic [CGRA_DATA_WIDTH-1:0] data16[];
 typedef logic [BANK_DATA_WIDTH-1:0] data64[];
 
 class Kernel;
     static int cnt = 0;
     stream_type type_;
+    st_valid_type st_valid_type_;
+    ld_valid_type ld_valid_type_;
+    int num_blocks;
+    int block_size_q[$];
     int tile_id;
     int bank_id;
     int start_addr;
@@ -52,13 +68,15 @@ endclass
 
 function Test::new(string filename);
     int fd = $fopen(filename, "r");
-    string type_, data_filename;
+    string type_, st_valid_type_, ld_valid_type_, data_filename;
+    int num_blocks;
     int tile_id, bank_id, dim;
     int tmp_start_addr, tmp_cycle_start_addr;
     string cycle_stride_s, extent_s, data_stride_s, tmp_s;
     string new_cycle_stride_s, new_extent_s, new_data_stride_s, new_tmp_s;
     string line;
     int start_tile, end_tile, tmp_tile;
+    int data_cnt;
 
     $display("\n---- Test Initialization ----");
     if (fd) $display("Test file open %s", filename);
@@ -81,6 +99,23 @@ function Test::new(string filename);
         else if (type_ == "PCFG") kernels[i].type_ = PCFG;
         else if (type_ == "SRAM") kernels[i].type_ = SRAM;
         else $error("This type [%s] is not supported", type_);
+        if (type_ == "G2F") begin
+            void'($fscanf(fd, " %s", ld_valid_type_));
+            if (ld_valid_type_ == "STATIC") kernels[i].ld_valid_type_ = LD_MODE_STATIC;
+            else if (ld_valid_type_ == "VALID") kernels[i].ld_valid_type_ = LD_MODE_VALID;
+            else if (ld_valid_type_ == "RV") kernels[i].ld_valid_type_ = LD_MODE_RV;
+            else $error("This type [%s] is not supported", ld_valid_type_);
+        end else if (type_ == "F2G") begin
+            void'($fscanf(fd, " %s", st_valid_type_));
+            if (st_valid_type_ == "VALID") kernels[i].st_valid_type_ = ST_MODE_VALID;
+            else if (st_valid_type_ == "RV") kernels[i].st_valid_type_ = ST_MODE_RV;
+            else if (st_valid_type_ == "STATIC") kernels[i].st_valid_type_ = ST_MODE_STATIC;
+            else $error("This type [%s] is not supported", st_valid_type_);
+            if (kernels[i].st_valid_type_ == ST_MODE_RV) begin
+                void'($fscanf(fd, " %d", num_blocks));
+                kernels[i].num_blocks = num_blocks;
+            end
+        end
         void'($fscanf(fd, " %d", dim));
         kernels[i].tile_id = tile_id;
         kernels[i].bank_id = bank_id;
@@ -174,6 +209,14 @@ function Test::new(string filename);
             "Kernel %0d: Type: %s, Tile_ID: %0d, Bank_ID: %0d, Start_addr: %0d, Cycle_start_addr: %0d",
             i, kernels[i].type_.name(), kernels[i].tile_id, kernels[i].bank_id,
             kernels[i].start_addr, kernels[i].cycle_start_addr);
+        if (kernels[i].type_ == G2F) begin
+            $display("Kernel %0d: Valid Mode: %s", i, kernels[i].ld_valid_type_.name());
+        end else if (kernels[i].type_ == F2G) begin
+            $display("Kernel %0d: Valid Mode: %s", i, kernels[i].st_valid_type_.name());
+            if (kernels[i].st_valid_type_ == ST_MODE_RV) begin
+                $display("Number of Blocks: %0d", kernels[i].num_blocks);
+            end
+        end
         for (int j = 0; j < kernels[i].dim; j++) begin
             tmp_s.itoa(kernels[i].extent[j]);
             new_tmp_s.itoa(kernels[i].new_extent[j]);

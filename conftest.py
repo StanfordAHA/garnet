@@ -56,8 +56,8 @@ def fp_files(use_dw=True):
     return result_filenames
 
 
-def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
-    use_verilator = not cad_available()
+def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
+    use_verilator = False
     use_dw = False
     root_dir = os.path.dirname(__file__)
     with tempfile.TemporaryDirectory() as tempdir:
@@ -73,6 +73,12 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
         for aoi_mux in glob.glob(os.path.join(root_dir, "tests/*.sv")):
             shutil.copy(aoi_mux, tempdir)
             rtl_lib.append(os.path.basename(aoi_mux))
+        for glb_module in glob.glob(os.path.join(root_dir, "tests/test_memory_core/*.sv")):
+            shutil.copy(glb_module, tempdir)
+            rtl_lib.append(os.path.basename(glb_module))
+        if include_PE:
+            # rtl_lib.append(os.path.join(cwd,"PE.v"))
+            rtl_lib.append("PE.v")
 
         if use_dw:
             coreir_lib_name = "float_DW"
@@ -84,7 +90,10 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
                                          "inline": False},
                           "include_verilog_libraries": rtl_lib,
                           "directory": tempdir,
-                          "flags": ["-Wno-fatal"]}
+                          "flags": ["-Wno-fatal"],
+                          "disp_type": "realtime",
+                          "num_cycles": 100000 * 10
+        }
         if not use_verilator:
             target = "system-verilog"
             runtime_kwargs["simulator"] = "xcelium"
@@ -100,7 +109,9 @@ def run_tb_fn(tester, cwd=None, trace=False, **magma_args):
 
         tester.compile_and_run(target=target,
                                tmp_dir=False,
+                               skip_compile=False,
                                **runtime_kwargs)
+
 
 
 @pytest.fixture

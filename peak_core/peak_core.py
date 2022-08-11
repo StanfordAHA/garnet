@@ -127,7 +127,7 @@ class PassThroughReg(Generator):
 
 
 class PeakCore(ConfigurableCore):
-    def __init__(self, peak_generator):
+    def __init__(self, peak_generator, ready_valid: bool = False):
         super().__init__(8, 32)
         self.ignored_ports = {"clk_en", "reset", "config_addr", "config_data",
                               "config_en", "read_config_data"}
@@ -151,6 +151,20 @@ class PeakCore(ConfigurableCore):
                     my_port = my_port[0]
                 magma_name = name if dir_ is magma.In else f"O{i}"
                 self.wire(my_port, self.peak_circuit.ports[magma_name])
+                if ready_valid:
+                    # PE doesn't have ready-valid interface, we're faking it here
+                    ready_name = name + "_ready"
+                    valid_name = name + "_valid"
+                    if dir_ is magma.In:
+                        p = self.add_port(ready_name, magma.BitOut)
+                        self.add_port(valid_name, magma.BitIn)
+                        # valid is floating
+                        self.wire(p, Const(1))
+                    else:
+                        self.add_port(ready_name, magma.BitIn)
+                        p = self.add_port(valid_name, magma.BitOut)
+                        # ready is floating
+                        self.wire(p, Const(1))
 
         self.add_ports(
             config=magma.In(ConfigurationType(8, 32)),

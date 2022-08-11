@@ -1,11 +1,11 @@
 #ifndef VIRTUALIZE_META_LIBRARY_H
 #define VIRTUALIZE_META_LIBRARY_H
 
-#include "tiny-json.h"
 #include "global_buffer_param.h"
+#include "tiny-json.h"
 
 #define MAX_NUM_IO 16
-#define MAX_NUM_IO_TILES 16 
+#define MAX_NUM_IO_TILES 16
 #define BUFFER_SIZE 1024
 #define MAX_NUM_KERNEL 16
 #define MAX_JSON_FIELDS 2048
@@ -15,19 +15,16 @@
 #define GET_KERNEL_INFO(info) struct KernelInfo *kernel_info = (struct KernelInfo *)info
 #define GET_CONFIG_INFO(info) struct ConfigInfo *config_info = (struct ConfigInfo *)info
 
-struct Configuration
-{
+struct Configuration {
     int addr;
     int data;
 };
 
-struct ConfigInfo
-{
+struct ConfigInfo {
     int num_config;
     struct Configuration config[MAX_CONFIG];
 };
-struct BitstreamInfo
-{
+struct BitstreamInfo {
     int tile;
     int size;
     int start_addr;
@@ -35,34 +32,29 @@ struct BitstreamInfo
     struct ConfigInfo config;
 };
 
-struct Position
-{
+struct Position {
     int x;
     int y;
 };
 
-enum IO
-{
-    Input = 0,
-    Output = 1
-};
+enum IO { Input = 0, Output = 1 };
 
-struct IOTileInfo
-{
+struct IOTileInfo {
     enum IO io;
     int tile;
     int start_addr;
     int cycle_start_addr;
 
     struct Position pos;
+    int num_blocks;
+    char mode[BUFFER_SIZE];
     int loop_dim;
     int cycle_stride[LOOP_LEVEL];
     int data_stride[LOOP_LEVEL];
     int extent[LOOP_LEVEL];
 };
 
-struct IOInfo
-{
+struct IOInfo {
     enum IO io;
     int num_io_tiles;
     char filename[BUFFER_SIZE];
@@ -70,8 +62,7 @@ struct IOInfo
     struct IOTileInfo io_tiles[MAX_NUM_IO_TILES];
 };
 
-struct KernelInfo
-{
+struct KernelInfo {
     int num_inputs;
     int num_outputs;
 
@@ -130,4 +121,4 @@ int get_bs_size(void *info);
 int get_bs_tile(void *info);
 char *get_prefix(const char *s, char t);
 
-#endif // VIRTUALIZE_META_LIBRARY_H
+#endif  // VIRTUALIZE_META_LIBRARY_H

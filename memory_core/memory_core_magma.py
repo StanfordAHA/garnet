@@ -87,6 +87,7 @@ class MemCore(LakeCoreBase):
                  override_name=None,
                  gen_addr=True,
                  tech_map=GF_Tech_Map(depth=512, width=32)):
+                 ready_valid=False,
 
         lake_name = "LakeTop"
 
@@ -94,6 +95,7 @@ class MemCore(LakeCoreBase):
                          config_addr_width=config_addr_width,
                          data_width=data_width,
                          gate_flush=gate_flush,
+                         ready_valid=ready_valid,
                          name="MemCore")
 
         # Capture everything to the tile object
@@ -167,7 +169,7 @@ class MemCore(LakeCoreBase):
             print(self.LT.dut)
             print(self.LT.dut.get_mode_map())
 
-            # Nonsensical but LakeTop now has its ow n internal dut
+            # Nonsensical but LakeTop now has its own internal dut
             self.dut = self.LT.dut
 
             circ = kts.util.to_magma(self.dut,
@@ -195,6 +197,24 @@ class MemCore(LakeCoreBase):
                 write_line = f"{reg}\n"
                 cfg_dump.write(write_line)
 
+    def get_SRAM_bistream(self, dataZ):
+        configs = []
+        config_mem = [("tile_en", 1),
+                      ("mode", 2),
+                      ("wen_in_0_reg_sel", 1),
+                      ("wen_in_1_reg_sel", 1)]
+        for name, v in config_mem:
+            configs = [self.get_config_data(name, v)] + configs
+        # this is SRAM content
+        for addr, data in enumerate(dataZ):
+            if (not isinstance(data, int)) and len(data) == 2:
+                addr, data = data
+            feat_addr = addr // 256 + 1
+            addr = (addr % 256) >> 2
+            configs.append((addr, feat_addr, data))
+        print(configs)
+        return configs
+
     def get_config_bitstream(self, instr):
         configs = []
         config_runtime = []
@@ -212,6 +232,13 @@ class MemCore(LakeCoreBase):
             "fifo": MemoryMode.FIFO,
         }
 
+        mode_num_map = {
+            0: MemoryMode.UNIFIED_BUFFER,
+            1: MemoryMode.SRAM,
+            2: MemoryMode.ROM,
+            3: MemoryMode.FIFO,
+            4: MemoryMode.WOM
+        }
         if 'mode' in instr and instr['mode'] == 'lake':
             instr['mode'] = 'UB'
             if 'stencil_valid' in instr['config']:
@@ -260,6 +287,9 @@ class MemCore(LakeCoreBase):
         else:
             mode = mode_map[instr['mode']]
 
+        if type(mode) is int:
+            mode = mode_num_map[mode]
+
         if mode == MemoryMode.UNIFIED_BUFFER:
             config_runtime = self.dut.get_static_bitstream_json(top_config)
         elif mode == MemoryMode.ROM:
@@ -282,6 +312,13 @@ class MemCore(LakeCoreBase):
                               ("mode", 1),
                               ("wen_in_1_reg_sel", 1),
                               ("strg_fifo_fifo_depth", fifo_depth)]
+        elif mode == MemoryMode.WOM:
+            # Rom mode is simply SRAM mode with the writes disabled
+            print("Using WOM")
+            config_runtime = [("tile_en", 1),
+                              ("mode", 2),
+                              ("ren_in_0_reg_sel", 1),
+                              ("wen_in_1_reg_sel", 1)]
 
         # Add the runtime configuration to the final config
         for name, v in config_runtime:
@@ -293,7 +330,6 @@ class MemCore(LakeCoreBase):
         return configs
 
     def get_static_bitstream(self, config_path, in_file_name, out_file_name):
-
         # Don't do the rest anymore...
         return self.dut.get_static_bitstream(config_path=config_path,
                                              in_file_name=in_file_name,
