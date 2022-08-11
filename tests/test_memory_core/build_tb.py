@@ -953,6 +953,15 @@ class SparseTBBuilder(m.Generator2):
         else:
             self.nlb.display_names()
 
+    def dump_display_names(self, output_file):
+        with open(output_file, "w+") as outfile_handle:
+            if self.bespoke:
+                for key, val in self.name_maps.items():
+                    outfile_handle.write(f"{key} => {val}")
+            else:
+                to_print = self.nlb.display_names(print_v=False)
+                outfile_handle.writelines(to_print)
+
 
 def write_glb_file(file_list, out_dir, out_name):
 
@@ -1057,9 +1066,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
     elif 'mat_identity.gv' in app_name:
         # PASSES
-        # b_matrix = MatrixGenerator(name="B", shape=[20, 20], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # b_matrix = MatrixGenerator(name="B", shape=[35, 35], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix = MatrixGenerator(name="B", shape=[40, 40], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        # b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # b_matrix = MatrixGenerator(name="B", shape=[8, 8], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # b_matrix = MatrixGenerator(name="B", shape=[15, 15], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         # b_matrix = MatrixGenerator(name="B", shape=[4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
@@ -1391,7 +1401,7 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 16
+        chip_width = 10
         # chip_height = 32
         chip_height = 10
         num_tracks = 5
@@ -1547,10 +1557,10 @@ if __name__ == "__main__":
         if just_verilog:
             circuit = interconnect.circuit()
             import magma
-            magma.compile(f"{args.test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
+            magma.compile(f"{test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
             exit()
 
-        nlb = NetlistBuilder(interconnect=interconnect, cwd=args.test_dump_dir, harden_flush=harden_flush)
+        nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir, harden_flush=harden_flush)
 
     ##### Handling app level file stuff #####
     output_matrix, output_format = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
@@ -1585,6 +1595,7 @@ if __name__ == "__main__":
         nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
 
     stb.display_names()
+    stb.dump_display_names(f"{test_dump_dir}/design.mapped")
 
     ##### Create the actual testbench #####
     tester = BasicTester(stb, stb.clk, stb.rst_n)
@@ -1648,7 +1659,8 @@ if __name__ == "__main__":
     #     tester.step(2)
     tester.poke(stb.io.flush, 0)
     tester.eval()
-    for i in range(100000):
+    # for i in range(100000):
+    for i in range(40000):
         tester.step(2)
         tester_if = tester._if(tester.circuit.done)
         tester_if.print("Test is done...\n")
