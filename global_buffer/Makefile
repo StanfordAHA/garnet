@@ -36,8 +36,8 @@ GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
 # runtime
-RUN_ARGS ?= +test01 +test02 +test03 +test04 +test05 +test06 +test07 +test08 +test09 +test10 +test11
-RUN_ARGS += +MAX_NUM_TEST=11
+RUN_ARGS ?= +test01 +test02 +test03 +test04 +test05 +test06 +test07 +test08 +test09 +test10 +test11 +test12
+RUN_ARGS += +MAX_NUM_TEST=12
 RUN_ARGS += +DEBUG
 RUN_LOG ?= run.log
 
@@ -51,14 +51,15 @@ TB_FILES ?= -F sim/tb_global_buffer.f
 # Commands
 # -------------------------------------------------------------------
 GENERATE_TV = \
-    python testvectors/gen_glb_test.py --data testvectors/64_v0.dat --num 64 --seed 0; \
-    python testvectors/gen_glb_test.py --data testvectors/512_v0.dat --num 512 --seed 0; \
-    python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num 512 --seed 1; \
-    python testvectors/gen_glb_test.py --data testvectors/4096_v0.dat --num 4096 --seed 0; \
-    python testvectors/gen_glb_test.py --data testvectors/4096_v1.dat --num 4096 --seed 1; \
-    python testvectors/gen_glb_test.py --data testvectors/1024_v0.dat --num 1024 --seed 0; \
-    python testvectors/gen_glb_test.py --data testvectors/1024_v1.dat --num 1024 --seed 1; \
-    python testvectors/gen_glb_test.py --data testvectors/3844_v0.dat --num 3844 --seed 0;
+    python testvectors/gen_glb_test.py --data testvectors/64_v0.dat --num_data 64 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/512_v0.dat --num_data 512 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num_data 512 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/4096_v0.dat --num_data 4096 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/4096_v1.dat --num_data 4096 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/1024_v0.dat --num_data 1024 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/1024_v1.dat --num_data 1024 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/3844_v0.dat --num_data 3844 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/3844_v0_b5.dat --num_data 3844 --seed 0 --num_blocks 5;
 
 XRUN = xrun \
 	   -64bit \
@@ -117,7 +118,7 @@ rtl:
 # -------------------------------------------------------------------
 # Compile & Run
 # -------------------------------------------------------------------
-COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=$(CLK_SRC_LATENCY_TIMEUNIT) 
+COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=0ps 
 COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=$(CLK_SRC_LATENCY_TIMEUNIT) 
 ifeq ($(TOOL), XCELIUM)
     COMPILE = $(XRUN)

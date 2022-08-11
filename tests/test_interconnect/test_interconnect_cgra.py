@@ -278,51 +278,64 @@ def test_interconnect_fifo(run_tb, io_sides, depth):
 
     fifo = deque()
     valid_check = 0
-    most_recent_read = 0
     for i in range(2048):
 
         len_fifo = len(fifo)
+        write_val = random.randint(0, 60000)
+        passthru = False
 
         # Pick random from (READ, WRITE, READ_AND_WRITE)
         move = random.randint(0, 3)
         if move == 0:
             # read
             tester.poke(circuit.interface[ren], 1)
-            if(len(fifo) > 0):
-                most_recent_read = fifo.pop()
-                # tester.expect(circuit.interface[dst], most_recent_read)
-                valid_check = 1
-            else:
-                valid_check = 0
+            valid_check = len_fifo > 0
         elif move == 1:
             # write
-            write_val = random.randint(0, 60000)
             tester.poke(circuit.interface[wen], 1)
             tester.poke(circuit.interface[src], write_val)
-            if(len(fifo) < depth):
-                fifo.appendleft(write_val)
-            valid_check = 0
+            valid_check = len_fifo > 0
         elif move == 2:
             # r and w
-            write_val = random.randint(0, 60000)
             tester.poke(circuit.interface[wen], 1)
             tester.poke(circuit.interface[ren], 1)
             tester.poke(circuit.interface[src], write_val)
-            fifo.appendleft(write_val)
-            most_recent_read = fifo.pop()
+            # We support a passthru mode, so we need to handle that case
+            if len_fifo == 0:
+                fifo.appendleft(write_val)
+                passthru = True
             valid_check = 1
         else:
             # If not doing anything, valid will be low, and we expect
             # to see the same output as before
-            valid_check = 0
+            valid_check = len_fifo > 0
+
+        top_val = 0
+        if len(fifo) > 0:
+            top_val = fifo[len(fifo) - 1]
+
         tester.eval()
 
         tester.expect(circuit.interface[empty], len_fifo == 0)
         tester.expect(circuit.interface[full], len_fifo == depth)
         tester.expect(circuit.interface[valid], valid_check)
         if valid_check:
-            tester.expect(circuit.interface[dst], most_recent_read)
+            tester.expect(circuit.interface[dst], top_val)
         tester.step(2)
+
+        if move == 0:
+            # read
+            if(len(fifo) > 0):
+                fifo.pop()
+        elif move == 1:
+            # write
+            if(len(fifo) < depth):
+                fifo.appendleft(write_val)
+        elif move == 2:
+            # r and w
+            if passthru is False:
+                fifo.appendleft(write_val)
+            fifo.pop()
 
         tester.poke(circuit.interface[wen], 0)
         tester.poke(circuit.interface[ren], 0)
