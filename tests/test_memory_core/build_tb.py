@@ -1576,9 +1576,9 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 10
+        chip_width = 16
         # chip_height = 32
-        chip_height = 10
+        chip_height = 16
         num_tracks = 5
 
         controllers = []
