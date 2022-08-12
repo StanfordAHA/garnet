@@ -6,6 +6,7 @@ from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
 from canal.interconnect import Interconnect
 from memory_core.buffet_core import BuffetCore
 from memory_core.crddrop_core import CrdDropCore
+from memory_core.crdhold_core import CrdHoldCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.io_core_rv import IOCoreReadyValid
 from memory_core.repeat_core import RepeatCore
@@ -129,6 +130,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                        (RepeatCore, {'fifo_depth': fifo_depth}),
                        (IntersectCore, {'fifo_depth': fifo_depth}),
                        (CrdDropCore, {'fifo_depth': fifo_depth}),
+                       (CrdHoldCore, {'fifo_depth': fifo_depth}),
                        (RepeatSignalGeneratorCore, {'passthru': False,
                                                     'fifo_depth': fifo_depth}),
                        (RegCore, {'fifo_depth': fifo_depth})]
