@@ -811,6 +811,10 @@ class NetlistBuilder():
                 self._tester.config_read(addr)
             self._tester.eval()
 
+    def get_core_placement(self, core):
+        assert core in self._placement
+        return self._placement[core]
+
     @staticmethod
     def io_sides():
         return IOSide.North | IOSide.East | IOSide.South | IOSide.West
