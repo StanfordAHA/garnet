@@ -20,6 +20,10 @@ Usage: $0 [ -slrtgeah ] <build_dir>
   -e,--err     do_err
   -R, --retry  do_qcheck
   -q, --qrc    do_qcheck
+  -t --timing  check timing (frequency and slack)
+     --freq    check timing (frequency and slack)
+     --slack   check timing (frequency and slack)
+
 
 
 EOF
@@ -34,7 +38,7 @@ DBG=
 # Process command-line args
 build_dirs=()
 opstring=''
-ALL="sLrleRq"
+ALL="sLrleRqt"
 show_all_errs=false
 
 while [ $# -gt 0 ] ; do
@@ -51,6 +55,10 @@ while [ $# -gt 0 ] ; do
         --retr*) opstring="${opstring}R" ;; # retry or retries e.g.
         --qrc*)  opstring="${opstring}q" ;; # qrc check
         --QRC*)  opstring="${opstring}q" ;; # qrc check
+
+        --tim*)  opstring="${opstring}t" ;; # timing check, freq and slack
+        --freq)  opstring="${opstring}t" ;; # timing check, freq and slack
+        --slack) opstring="${opstring}t" ;; # timing check, freq and slack
 
         --all)   opstring="${opstring}${ALL}";  ;;
          -a)     opstring="${opstring}${ALL}";  ;;
@@ -107,6 +115,7 @@ done
 [ "${options[e]}" ] && do_err=true
 [ "${options[R]}" ] && do_qcheck=true
 [ "${options[q]}" ] && do_qcheck=true
+[ "${options[t]}" ] && do_timing=true
 
 if [ "$DBG" ]; then
     test "$do_sizes"    == true && echo DO_SIZES
@@ -115,6 +124,7 @@ if [ "$DBG" ]; then
     test "$do_logs"     == true && echo DO_LOGS
     test "$do_err"      == true && echo DO_ERR
     test "$do_qcheck"   == true && echo DO_QCHECK
+    test "$do_timing"   == true && echo DO_TIMING
     # exit
 fi
 
@@ -295,6 +305,38 @@ if [ "$do_logs" ]; then
     # tail $log | cut -b 1-80
     # echo '--------------------------------------------------------------------------------'
 fi
+
+########################################################################
+# Timing information (clock period / frequency and slack) via freq-slack.sh e.g.
+# Module                 Target Frequency     Slack
+# -------------------------------------------------
+# GarnetSOC            1000 MHz    1.00 ns   -3.670
+# 
+# global_controller    1000 MHz    1.00 ns   -0.004
+# global_buffer         900 MHz    1.11 ns   -3.136
+# glb_tile              900 MHz    1.11 ns   -0.162
+# 
+# tile_array            909 MHz    1.10 ns   -0.046
+# Tile_MemCore          909 MHz    1.10 ns   -0.034
+# Tile_PE               909 MHz    1.10 ns   -0.233
+# -------------------------------------------------
+#   * Clock speed from *-signoff/results/*.pt.sdc
+#   * Slack from */reports/postroute_all.tarpt
+if [ "$do_timing" ]; then
+    echo ''; echo "+++ TIMING"
+
+    function where_this_script_lives {
+        scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
+        scriptdir=${0%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
+        if test "$scriptdir" == "$scriptpath"; then scriptdir="."; fi
+        # scriptdir=`cd $scriptdir; pwd`
+        (cd $scriptdir; pwd)
+    }
+    script_home=`where_this_script_lives`
+    $script_home/freq-slack.sh .
+fi
+
+
 
 ########################################################################
 # Check to see if we had to restart/retry anywhere b/c of QRC failures
