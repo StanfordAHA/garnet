@@ -26,7 +26,7 @@ class MemoryCoreTester(BasicTester):
     def configure(self, addr, data, feature=0):
         self.poke(self.clock, 0)
         self.poke(self.reset_port, 0)
-        if (feature == 0):
+        if feature == 0:
             exec(f"self.poke(self._circuit.config.config_addr, addr)")
             exec(f"self.poke(self._circuit.config.config_data, data)")
             exec(f"self.poke(self._circuit.config.write, 1)")
