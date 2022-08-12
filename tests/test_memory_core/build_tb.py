@@ -1,18 +1,16 @@
 import argparse
+import json
 import sys
 from gemstone.common.testers import BasicTester
 from gemstone.common.configurable import ConfigurationType
 from pydot import Graph
-from yaml import dump
+import shutil
 from cgra.util import create_cgra
 from memory_core.buffet_core import BuffetCore
 from memory_core.core_combiner_core import CoreCombinerCore
 from memory_core.crddrop_core import CrdDropCore
 from memory_core.crdhold_core import CrdHoldCore
-from memory_core.fake_pe_core import FakePECore
 from memory_core.intersect_core import IntersectCore
-from memory_core.io_core_rv import IOCoreReadyValid
-from memory_core.lookup_core import LookupCore
 from memory_core.onyx_pe_core import OnyxPECore
 from memory_core.repeat_core import RepeatCore
 from memory_core.repeat_signal_generator_core import RepeatSignalGeneratorCore
@@ -23,7 +21,6 @@ from memory_core.write_scanner_core import WriteScannerCore
 from sam.onyx.parse_dot import *
 from sam.onyx.hw_nodes.hw_node import *
 from sam.onyx.hw_nodes.memory_node import MemoryNode
-from sam.onyx.hw_nodes.broadcast_node import BroadcastNode
 from sam.onyx.hw_nodes.compute_node import ComputeNode
 from sam.onyx.hw_nodes.glb_node import GLBNode
 from sam.onyx.hw_nodes.buffet_node import BuffetNode
@@ -39,8 +36,6 @@ from sam.onyx.hw_nodes.repsiggen_node import RepSigGenNode
 import magma as m
 import kratos
 import _kratos
-from lake.modules.glb_write import GLBWrite
-from lake.modules.glb_read import GLBRead
 from lake.modules.buffet_like import BuffetLike
 from lake.top.lake_top import LakeTop
 from lake.modules.repeat import Repeat
@@ -58,7 +53,6 @@ from lake.modules.strg_RAM import StrgRAM
 from lake.modules.stencil_valid import StencilValid
 import os
 from canal.util import IOSide
-from io_core.io_core_magma import IOCoreValid, IOCore
 from sam.onyx.generate_matrices import MatrixGenerator, get_tensor_from_files
 import numpy
 import random
@@ -99,6 +93,7 @@ class SparseTBBuilder(m.Generator2):
         self.real_pe = real_pe
         self.harden_flush = harden_flush
 
+        self.glb_to_io_mapping = {}
         self._ctr = 0
 
         if bespoke is False:
@@ -797,6 +792,11 @@ class SparseTBBuilder(m.Generator2):
             assert new_node_type is not None
             assert core_tag != ""
             if new_node_type == GLBNode:
+                glb_tensor_ = node.get_attributes()['tensor'].strip('"')
+                if 'arrayvals' in node.get_attributes()['type'].strip('"'):
+                    glb_mode_ = 'vals'
+                else:
+                    glb_mode_ = node.get_attributes()['mode'].strip('"')
                 # Have to handle the GLB nodes slightly differently
                 # Instead of directly registering a core, we are going to register the io,
                 # connect them to the appropriate block, then instantiate and wire a
@@ -804,7 +804,7 @@ class SparseTBBuilder(m.Generator2):
                 if node.get_attributes()['type'].strip('"') == 'fiberlookup':
                     # GLB write wants a data input, ready, valid
                     glb_name = "GLB_TO_CGRA"
-                    data = self.nlb.register_core("io_16", name="data_in_")
+                    data = self.nlb.register_core("io_16", name=f"data_in_{glb_tensor_}_{glb_mode_}")
                     # ready = self.nlb.register_core("io_1", name="ready_out_")
                     # valid = self.nlb.register_core("io_1", name="valid_in_")
                     direction = "write"
@@ -817,7 +817,7 @@ class SparseTBBuilder(m.Generator2):
                     # glb_writer = m.define_from_verilog_file()
                 elif node.get_attributes()['type'].strip('"') == 'fiberwrite':
                     # GLB read wants a data output, ready, valid
-                    data = self.nlb.register_core("io_16", name="data_out_")
+                    data = self.nlb.register_core("io_16", name=f"data_out_{glb_tensor_}_{glb_mode_}")
                     # ready = self.nlb.register_core("io_1", name="ready_in_")
                     # valid = self.nlb.register_core("io_1", name="valid_out_")
                     direction = "read"
@@ -830,7 +830,7 @@ class SparseTBBuilder(m.Generator2):
                 elif node.get_attributes()['type'].strip('"') == 'arrayvals':
                     # GLB write wants a data input, ready, valid
                     glb_name = "GLB_TO_CGRA"
-                    data = self.nlb.register_core("io_16", name="data_in_")
+                    data = self.nlb.register_core("io_16", name=f"data_in_{glb_tensor_}_{glb_mode_}")
                     # ready = self.nlb.register_core("io_1", name="ready_out_")
                     # valid = self.nlb.register_core("io_1", name="valid_in_")
                     direction = "write"
@@ -862,9 +862,15 @@ class SparseTBBuilder(m.Generator2):
                                                            tensor=glb_tensor,
                                                            mode=glb_mode,
                                                            format=glb_format)
+
+                self.glb_to_io_mapping[data] = (glb_tensor, glb_mode, direction, num_blocks)
+
             else:
                 reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
                 self.core_nodes[node.get_name()] = new_node_type(name=reg_ret, **kwargs)
+
+    def get_glb_mapping(self):
+        return self.glb_to_io_mapping
 
     def connect_cores(self):
         '''
@@ -962,6 +968,142 @@ class SparseTBBuilder(m.Generator2):
                 to_print = self.nlb.display_names(print_v=False)
                 outfile_handle.writelines(to_print)
 
+    def get_core_placement(self, core):
+        return self.nlb.get_core_placement(core)
+
+
+def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, design_place=None, glb_info=None):
+
+    assert glb_dir is not None
+    assert bitstream is not None
+    assert matrices_in is not None
+    assert design_place is not None
+    assert glb_info is not None
+
+    # Call this when ready for it
+    if not os.path.exists(glb_dir):
+        os.mkdir(glb_dir)
+    if not os.path.exists(f"{glb_dir}/bin"):
+        os.mkdir(f"{glb_dir}/bin")
+
+    input_glb_tiles = [glb_tile for glb_tile in glb_info if glb_tile[3] == 'write']
+    output_glb_tiles = [glb_tile for glb_tile in glb_info if glb_tile[3] == 'read']
+
+    print(input_glb_tiles)
+    print(output_glb_tiles)
+
+    # input_glb_tiles_ = []
+    # output_glb_tiles_ = []
+
+    # Loop through the input matrices and create raw versions
+    # for filename in os.listdir(matrices_in):
+    for idx_, input_glb_tile in enumerate(input_glb_tiles):
+        (core, core_placement, tensor_desc_str, direction, num_blocks) = input_glb_tile
+        assert os.path.exists(f"{matrices_in}/{tensor_desc_str}")
+        # ret = os.remove(matrices_in + "/" + filename)
+        os.system(f"xxd -r -p {matrices_in}/{tensor_desc_str} > {glb_dir}/bin/{tensor_desc_str}.raw")
+        with open(f"{matrices_in}/{tensor_desc_str}") as tmp_fp:
+            num_lines = len(tmp_fp.readlines())
+        # num_lines = os.system(f"wc -l {matrices_in}/{filename}")
+        # print(filename)
+        # print("NUM LINES")
+        # print(f"{num_lines}")
+        input_glb_tiles[idx_] = (core, core_placement, tensor_desc_str, num_lines, num_blocks)
+
+    shutil.copyfile(bitstream, f"{glb_dir}/bin/bitstream.bs")
+    shutil.copyfile(design_place, f"{glb_dir}/bin/design.place")
+
+    design_meta_json = {}
+    design_meta_json["testing"] = {
+        "interleaved_input": [
+            "input.pgm"
+        ],
+        "interleaved_output": [
+            "gold.pgm"
+        ],
+        "bitstream": "bitstream.bs",
+        "coreir": "design_top.json",
+        "placement": "design.place"
+    }
+    design_meta_json["IOs"] = {
+        "inputs": [],
+        "outputs": []
+    }
+
+    tmp_json = None
+    for input_glb_tile in input_glb_tiles:
+        (core, core_placement, tensor_desc_str, num_lines, num_blocks) = input_glb_tile
+        tmp_json = {
+            "bitwidth": 16,
+            "datafile": f"{tensor_desc_str}.raw",
+            "name": tensor_desc_str,
+            "shape": [num_lines],
+            "io_tiles": [
+                {
+                    "name": tensor_desc_str,
+                    "mode": "RV",
+                    "addr": {
+                        "cycle_starting_addr": [0],
+                        "cycle_stride": [1],
+                        "dimensionality": 1,
+                        "extent": [num_lines],
+                        "read_data_starting_addr": [0],
+                        "read_data_stride": [1]
+                    },
+                    "x_pos": core_placement[0],
+                    "y_pos": core_placement[1]
+                }
+            ]
+        }
+        # print("MEK")
+        # print(design_meta_json["IOs"]["inputs"])
+        design_meta_json["IOs"]["inputs"].append(tmp_json)
+        # print(design_meta_json["IOs"]["inputs"])
+
+    for idx_, output_glb_tile in enumerate(output_glb_tiles):
+        (core, core_placement, tensor_desc_str, direction, num_blocks) = output_glb_tile
+        assert os.path.exists(f"{glb_dir}/{tensor_desc_str}")
+        # ret = os.remove(matrices_in + "/" + filename)
+        os.system(f"xxd -r -p {glb_dir}/{tensor_desc_str} > {glb_dir}/bin/{tensor_desc_str}.raw")
+        with open(f"{glb_dir}/{tensor_desc_str}") as tmp_fp:
+            num_lines = len(tmp_fp.readlines())
+        # num_lines = os.system(f"wc -l {matrices_in}/{filename}")
+        # print(filename)
+        # print("NUM LINES")
+        # print(f"{num_lines}")
+        output_glb_tiles[idx_] = (core, core_placement, tensor_desc_str, num_lines, num_blocks)
+
+    tmp_json = None
+    for output_glb_tile in output_glb_tiles:
+        (core, core_placement, tensor_desc_str, num_lines, num_blocks) = output_glb_tile
+        tmp_json = {
+            "bitwidth": 16,
+            "datafile": f"{tensor_desc_str}.raw",
+            "name": tensor_desc_str,
+            "shape": [num_lines],
+            "io_tiles": [
+                {
+                    "name": tensor_desc_str,
+                    "mode": "RV",
+                    "num_blocks": num_blocks,
+                    "addr": {
+                        "cycle_starting_addr": [0],
+                        "cycle_stride": [1],
+                        "dimensionality": 1,
+                        "extent": [num_lines],
+                        "write_data_starting_addr": [0],
+                        "write_data_stride": [1]
+                    },
+                    "x_pos": core_placement[0],
+                    "y_pos": core_placement[1]
+                }
+            ]
+        }
+        design_meta_json["IOs"]["outputs"].append(tmp_json)
+
+    with open(f"{glb_dir}/bin/design_meta.json", "w+") as metafile:
+        json.dump(design_meta_json, metafile)
+
 
 def write_glb_file(file_list, out_dir, out_name):
 
@@ -971,12 +1113,12 @@ def write_glb_file(file_list, out_dir, out_name):
         with open(f, 'r') as curr_file:
             all_lines = curr_file.readlines()
             # Get rid of 0x for readmemh compatibility
-            hexified = str(hex(len(all_lines)))[2:]
-            output_lines.append(f"{hexified}\n")
+            # hexified = str(hex(len(all_lines)))[2:]
+            output_lines.append(f"{len(all_lines):04X}\n")
             for l in all_lines:
                 # Get rid of 0x for readmemh compatibility
-                hexified = str(hex(int(l)))[2:]
-                output_lines.append(f"{hexified}\n")
+                # hexified = str(hex(int(l)))[2:]
+                output_lines.append(f"{int(l):04X}\n")
     out_path = f"{out_dir}/{out_name}"
     with open(out_path, "w+") as curr_file:
         curr_file.writelines(output_lines)
@@ -1021,6 +1163,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     c_mat = None
     d_mat = None
 
+    output_name = None
+
     if 'mat_elemadd.gv' in app_name:
         # PASSES
         if give_tensor:
@@ -1039,6 +1183,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "X"
     elif 'mat_elemadd3.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1054,6 +1199,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.add(d_mat, numpy.add(b_mat, c_mat,
                                                    dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "X"
     elif 'mat_elemmul.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1064,6 +1210,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         c_mat = c_matrix.get_matrix()
         output_matrix = numpy.multiply(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "X"
     elif 'mat_identity.gv' in app_name:
         # PASSES
         # b_matrix = MatrixGenerator(name="B", shape=[35, 35], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1075,6 +1222,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
         output_format = "CSF"
+        output_name = "X"
     elif 'mat_identity_dense.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
@@ -1082,6 +1230,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
         output_format = "UNC"
+        output_name = "X"
     elif 'mat_mattransmul.gv' in app_name:
         # WRONG GRAPH
         raise NotImplementedError
@@ -1102,6 +1251,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         tmp = numpy.matmul(c_mat, d_mat)
         output_matrix = numpy.multiply(b_mat, tmp, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "X"
         # raise NotImplementedError
     elif 'mat_vecmul_ij.gv' in app_name:
         # PASSES
@@ -1115,6 +1265,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "x"
     elif 'mat_vecmul_ji.gv' in app_name:
         raise NotImplementedError
     elif 'matmul_ijk.gv' in app_name:
@@ -1135,6 +1286,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "X"
     elif 'matmul_ikj.gv' in app_name:
         raise NotImplementedError
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1146,6 +1298,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans)
+        output_name = "X"
     elif 'matmul_jik.gv' in app_name:
         # PASSED
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1159,6 +1312,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_matrix = numpy.transpose(output_matrix)
         output_format = "CSF"
+        output_name = "X"
     elif 'matmul_jki.gv' in app_name:
         raise NotImplementedError
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1170,6 +1324,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans)
+        output_name = "X"
     elif 'matmul_kij.gv' in app_name:
         raise NotImplementedError
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1181,6 +1336,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans)
+        output_name = "X"
     elif 'matmul_kji.gv' in app_name:
         raise NotImplementedError
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1192,6 +1348,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans)
+        output_name = "X"
     elif 'tensor3_elemadd.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1203,6 +1360,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "X"
     elif 'tensor3_elemmul.gv' in app_name:
         # NEED MAPPING
         b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1214,6 +1372,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "X"
     elif 'tensor3_identity.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="B", shape=[10, 10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1222,6 +1381,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         output_matrix = b_mat
         output_format = "CSF"
+        output_name = "X"
     elif 'tensor3_innerprod.gv' in app_name:
         b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1233,8 +1393,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.zeros([1])
         output_matrix[0] = numpy.sum(numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16)
         output_format = "CSF"
+        output_name = "x"
     elif 'tensor3_mttkrp.gv' in app_name:
-        pass
+        raise NotImplementedError
+        output_name = "X"
     elif 'tensor3_ttm.gv' in app_name:
         b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1245,12 +1407,15 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "X"
     elif 'tensor3_ttv.gv' in app_name:
-        pass
+        raise NotImplementedError
+        output_name = "X"
     elif 'vec_elemadd.gv' in app_name:
         # PASSES
-        b_matrix = MatrixGenerator(name="b", shape=[50], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="c", shape=[50], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        shape_ = 50
+        b_matrix = MatrixGenerator(name="b", shape=[shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="c", shape=[shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
@@ -1258,6 +1423,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "x"
     elif 'vec_elemmul.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="b", shape=[50], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1269,6 +1435,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "x"
     elif 'vec_identity.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="b", shape=[100], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1276,6 +1443,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
         output_format = "CSF"
+        output_name = "x"
     elif 'vec_scalar_mul.gv' in app_name:
         # PASSES
         b_matrix = MatrixGenerator(name="b", shape=[1], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1286,6 +1454,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         c_mat = c_matrix.get_matrix()
         output_matrix = numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
+        output_name = "x"
     elif 'mat_identity_crdhold' in app_name:
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1311,7 +1480,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                 print(vals)
             sys.stdout = original_stdout
 
-    return output_matrix, output_format
+    return output_matrix, output_format, output_name
 
 
 if __name__ == "__main__":
@@ -1356,6 +1525,10 @@ if __name__ == "__main__":
     parser.add_argument('--pipeline_scanner', action="store_true")
     parser.add_argument('--dump_bitstream', action="store_true")
     parser.add_argument('--no_harden_flush', action="store_true")
+    parser.add_argument('--dump_glb', action="store_true")
+    parser.add_argument('--glb_dir',
+                        type=str,
+                        default="/home/max/Documents/SPARSE/garnet/GLB_DIR")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1378,6 +1551,8 @@ if __name__ == "__main__":
     dump_bitstream = args.dump_bitstream
     harden_flush = not args.no_harden_flush
     print_inputs = args.print_inputs
+    dump_glb = args.dump_glb
+    glb_dir = args.glb_dir
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
@@ -1401,9 +1576,9 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 10
+        chip_width = 16
         # chip_height = 32
-        chip_height = 10
+        chip_height = 16
         num_tracks = 5
 
         controllers = []
@@ -1563,11 +1738,25 @@ if __name__ == "__main__":
         nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir, harden_flush=harden_flush)
 
     ##### Handling app level file stuff #####
-    output_matrix, output_format = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
-    out_mat = MatrixGenerator(name='X', shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
+    output_matrix, output_format, output_name = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
+    out_mat = MatrixGenerator(name=output_name, shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
     out_mat.dump_outputs()
+    if dump_glb:
+
+        # Make sure glb path exists
+        if not os.path.isdir(glb_dir):
+            os.mkdir(glb_dir)
+
+        out_mat.dump_outputs(glb_override=True, glb_dump_dir=glb_dir)
 
     # Now coalesce them into combo files and put in final landing zone
+    # First clear the out dir
+    if not os.path.isdir(input_dir):
+        os.mkdir(input_dir)
+    else:
+        # Otherwise clean it
+        for filename in os.listdir(input_dir):
+            ret = os.remove(input_dir + "/" + filename)
     coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir)
 
     # Clean up output dir...
@@ -1593,6 +1782,26 @@ if __name__ == "__main__":
 
     if dump_bitstream:
         nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
+
+    if dump_glb:
+
+        glb_info_ = []
+        glb_map = stb.get_glb_mapping()
+        print(glb_map)
+        for core, desc_ in glb_map.items():
+            tensor_, mode_, direction_, num_blocks_ = desc_
+            print(core)
+            core_placement = stb.get_core_placement(core)
+            print(core_placement)
+            tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
+            print(tensor_desc_str)
+            glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_))
+
+        prepare_glb_collateral(glb_dir=glb_dir,
+                               bitstream=f"{test_dump_dir}/bitstream.bs",
+                               matrices_in=input_dir,
+                               design_place=f"{test_dump_dir}/design.place",
+                               glb_info=glb_info_)
 
     stb.display_names()
     stb.dump_display_names(f"{test_dump_dir}/design.mapped")
