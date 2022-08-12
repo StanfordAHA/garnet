@@ -547,6 +547,19 @@ def main():
                       coreir_libs={"float_CW"},
                       passes=["rungenerators", "inline_single_instances", "clock_gate"],
                       inline=False)
+        if args.sparse_cgra:
+            # Cat the PE together...
+            # files_cat = ['garnet.v', 'garnet_PE.v']
+            lines_garnet = None
+            lines_pe = None
+            with open('garnet.v', 'r') as gfd:
+                lines_garnet = gfd.readlines()
+            with open('garnet_PE.v', 'r') as gfd:
+                lines_pe = gfd.readlines()
+            with open('garnet.v', 'w+') as gfd:
+                gfd.writelines(lines_garnet)
+                gfd.writelines(lines_pe)
+
         garnet.create_stub()
         if not args.interconnect_only:
             garnet_home = os.getenv('GARNET_HOME')

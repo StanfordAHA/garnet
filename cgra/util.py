@@ -45,6 +45,9 @@ from lake.modules.stencil_valid import StencilValid
 from lake.modules.buffet_like import BuffetLike
 from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
+from lassen.sim import PE_fc
+import magma as m
+from peak import family
 
 
 def get_actual_size(width: int, height: int, io_sides: IOSide):
@@ -99,25 +102,36 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         clk_enable = True
         physical_sram = not use_sim_sram
 
+        pe_child = PE_fc(family.MagmaFamily())
+        m.compile(f"garnet_PE",
+                  pe_child,
+                  output="coreir-verilog",
+                  coreir_libs={"float_CW"},
+                  verilog_prefix=pe_prefix)
+        m.clear_cachedFunctions()
+        m.frontend.coreir_.ResetCoreIR()
+        m.generator.reset_generator_cache()
+        m.logging.flush_all()  # flush all staged logs
+
         if not scgra_combined:
 
             pipeline_scanner = False
 
             altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
-                                    'add_clk_enable': clk_enable,
-                                    'pipelined': pipeline_scanner}),
-                    (BuffetCore, {'local_mems': True,
-                                    'physical_mem': physical_sram,
-                                    'fifo_depth': fifo_depth,
-                                    'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                    (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
-                    (WriteScannerCore, {'fifo_depth': fifo_depth}),
-                    (RepeatCore, {'fifo_depth': fifo_depth}),
-                    (IntersectCore, {'fifo_depth': fifo_depth}),
-                    (CrdDropCore, {'fifo_depth': fifo_depth}),
-                    (RepeatSignalGeneratorCore, {'passthru': False,
+                                      'add_clk_enable': clk_enable,
+                                      'pipelined': pipeline_scanner}),
+                       (BuffetCore, {'local_mems': True,
+                                     'physical_mem': physical_sram,
+                                     'fifo_depth': fifo_depth,
+                                     'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                       (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
+                       (WriteScannerCore, {'fifo_depth': fifo_depth}),
+                       (RepeatCore, {'fifo_depth': fifo_depth}),
+                       (IntersectCore, {'fifo_depth': fifo_depth}),
+                       (CrdDropCore, {'fifo_depth': fifo_depth}),
+                       (RepeatSignalGeneratorCore, {'passthru': False,
                                                     'fifo_depth': fifo_depth}),
-                    (RegCore, {'fifo_depth': fifo_depth})]
+                       (RegCore, {'fifo_depth': fifo_depth})]
 
         else:
 
@@ -125,19 +139,19 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
             fiber_access = FiberAccess(data_width=16,
-                                    local_memory=False,
-                                    tech_map=GF_Tech_Map(depth=512, width=32),
-                                    defer_fifos=True)
+                                       local_memory=False,
+                                       tech_map=GF_Tech_Map(depth=512, width=32),
+                                       defer_fifos=True)
 
             strg_ram = StrgRAM(data_width=16,
-                            banks=1,
-                            memory_width=64,
-                            memory_depth=512,
-                            rw_same_cycle=False,
-                            read_delay=1,
-                            addr_width=16,
-                            prioritize_write=True,
-                            comply_with_17=True)
+                               banks=1,
+                               memory_width=64,
+                               memory_depth=512,
+                               rw_same_cycle=False,
+                               read_delay=1,
+                               addr_width=16,
+                               prioritize_write=True,
+                               comply_with_17=True)
 
             stencil_valid = StencilValid()
 
@@ -147,15 +161,15 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             controllers.append(stencil_valid)
 
             isect = Intersect(data_width=16,
-                            use_merger=False,
-                            fifo_depth=8,
-                            defer_fifos=True)
+                              use_merger=False,
+                              fifo_depth=8,
+                              defer_fifos=True)
             crd_drop = CrdDrop(data_width=16, fifo_depth=fifo_depth,
-                            lift_config=True,
-                            defer_fifos=True)
+                               lift_config=True,
+                               defer_fifos=True)
             crd_hold = CrdHold(data_width=16, fifo_depth=fifo_depth,
-                            lift_config=True,
-                            defer_fifos=True)
+                               lift_config=True,
+                               defer_fifos=True)
             onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
                             ext_pe_prefix=pe_prefix,
                             pe_ro=True,
@@ -182,29 +196,29 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             controllers_2.append(regcr)
 
             altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
-                                            'use_sim_sram': not physical_sram,
-                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                            'pnr_tag': "Q",
-                                            'name': "PE",
-                                            'input_prefix': "PE_"}),
-                        (CoreCombinerCore, {'controllers_list': controllers_2,
-                                            'use_sim_sram': not physical_sram,
-                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                            'pnr_tag': "Q",
-                                            'name': "PE",
-                                            'input_prefix': "PE_"}),
-                        (CoreCombinerCore, {'controllers_list': controllers_2,
-                                            'use_sim_sram': not physical_sram,
-                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                            'pnr_tag': "Q",
-                                            'name': "PE",
-                                            'input_prefix': "PE_"}),
-                        (CoreCombinerCore, {'controllers_list': controllers,
-                                            'use_sim_sram': not physical_sram,
-                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                            'pnr_tag': "C",
-                                            'name': "MemCore",
-                                            'input_prefix': "MEM_"})]
+                                           'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'pnr_tag': "Q",
+                                           'name': "PE",
+                                           'input_prefix': "PE_"}),
+                       (CoreCombinerCore, {'controllers_list': controllers_2,
+                                           'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'pnr_tag': "Q",
+                                           'name': "PE",
+                                           'input_prefix': "PE_"}),
+                       (CoreCombinerCore, {'controllers_list': controllers_2,
+                                           'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'pnr_tag': "Q",
+                                           'name': "PE",
+                                           'input_prefix': "PE_"}),
+                       (CoreCombinerCore, {'controllers_list': controllers,
+                                           'use_sim_sram': not physical_sram,
+                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'pnr_tag': "C",
+                                           'name': "MemCore",
+                                           'input_prefix': "MEM_"})]
 
         real_pe = True
 
