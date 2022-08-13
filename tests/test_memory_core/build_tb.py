@@ -230,6 +230,9 @@ class SparseTBBuilder(m.Generator2):
     def set_mode_map(self, mode_map):
         self.mode_map = mode_map
 
+    def get_mode_map(self):
+        return self.mode_map
+
     def zero_alt_inputs(self):
         '''
         Go through each child instance and zero their untouched inputs
@@ -1802,9 +1805,12 @@ if __name__ == "__main__":
 
         glb_info_ = []
         glb_map = stb.get_glb_mapping()
-        print(glb_map)
+        mode_map = stb.get_mode_map()
         for core, desc_ in glb_map.items():
             tensor_, mode_, direction_, num_blocks_ = desc_
+            # remap the mode...
+            if mode_ != 'vals':
+                mode_ = mode_map[tensor_][int(mode_)][0]
             print(core)
             core_placement = stb.get_core_placement(core)
             print(core_placement)
