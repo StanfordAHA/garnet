@@ -656,7 +656,9 @@ class NetlistBuilder():
     def get_full_info(self):
         return (self.get_netlist(), self.get_bus())
 
-    def generate_placement(self):
+    def generate_placement(self, fixed_io=None):
+        if fixed_io is not None:
+            self._placement_up_to_date = False
         # Check for multiple drivers...
         for (core, io_name), num_drivers in self._dest_counts.items():
             # print(f"Core: {core}/{self._core_names[core]}: Pin: {io_name}, Num_Drivers: {num_drivers}")
@@ -684,7 +686,8 @@ class NetlistBuilder():
         self._placement, self._routing, _ = pnr(self._interconnect,
                                                 (self._netlist, self._bus),
                                                 cwd=self._cwd,
-                                                harden_flush=self.harden_flush)
+                                                harden_flush=self.harden_flush,
+                                                fixed_pos=fixed_io)
         self._placement_up_to_date = True
 
     def get_route_config(self):

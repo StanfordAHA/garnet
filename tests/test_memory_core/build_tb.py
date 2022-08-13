@@ -93,7 +93,11 @@ class SparseTBBuilder(m.Generator2):
         self.real_pe = real_pe
         self.harden_flush = harden_flush
 
+        self.input_ctr = 0
+        self.output_ctr = 1
+
         self.glb_to_io_mapping = {}
+        self.glb_cores = {}
         self._ctr = 0
 
         if bespoke is False:
@@ -110,6 +114,10 @@ class SparseTBBuilder(m.Generator2):
             # CGRA Path
             self.register_cores()
             self.connect_cores()
+
+            # Now replace the io
+            self.nlb.generate_placement(fixed_io=self.glb_cores)
+
             # Add flush connection
             if not self.harden_flush:
                 flush_in = self.nlb.register_core("io_1", name="flush_in")
@@ -864,6 +872,13 @@ class SparseTBBuilder(m.Generator2):
                                                            format=glb_format)
 
                 self.glb_to_io_mapping[data] = (glb_tensor, glb_mode, direction, num_blocks)
+
+                if direction == "write":
+                    self.glb_cores[data] = (self.input_ctr, 0)
+                    self.input_ctr += 2
+                else:
+                    self.glb_cores[data] = (self.output_ctr, 0)
+                    self.output_ctr += 2
 
             else:
                 reg_ret = self.nlb.register_core(core_tag, flushable=True, name=new_name)
