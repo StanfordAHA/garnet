@@ -1644,11 +1644,11 @@ if __name__ == "__main__":
 
         stencil_valid = StencilValid()
 
-        # controllers.append(scan)
-        # controllers.append(wscan)
-        # controllers.append(buffet)
+        controllers.append(scan)
+        controllers.append(wscan)
+        controllers.append(buffet)
         controllers.append(strg_ub)
-        controllers.append(fiber_access)
+        # controllers.append(fiber_access)
         controllers.append(strg_ram)
         controllers.append(stencil_valid)
 
@@ -1691,25 +1691,25 @@ if __name__ == "__main__":
             altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "Q",
+                                           'pnr_tag': "p",
                                            'name': "PE",
                                            'input_prefix': "PE_"}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "Q",
+                                           'pnr_tag': "p",
                                            'name': "PE",
                                            'input_prefix': "PE_"}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "Q",
+                                           'pnr_tag': "p",
                                            'name': "PE",
                                            'input_prefix': "PE_"}),
                        (CoreCombinerCore, {'controllers_list': controllers,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "C",
+                                           'pnr_tag': "m",
                                            'name': "MemCore",
                                            'input_prefix': "MEM_"})]
             # altcore = [(CoreCombinerCore, {'controllers_list': controllers,
