@@ -103,6 +103,9 @@ class BuffetCore(LakeCoreBase):
     def pnr_info(self):
         return PnRTag("B", self.DEFAULT_PRIORITY, 1)
 
+    def get_modes_supported(self):
+        return ['buffet']
+
 
 if __name__ == "__main__":
     bc = BuffetCore()

@@ -95,6 +95,9 @@ class CrdDropCore(LakeCoreBase):
     def pnr_info(self):
         return PnRTag("c", self.DEFAULT_PRIORITY, 1)
 
+    def get_modes_supported(self):
+        return ['crddrop']
+
 
 if __name__ == "__main__":
     ic = CrdDropCore()

@@ -100,6 +100,9 @@ class OnyxPECore(LakeCoreBase):
     def pnr_info(self):
         return PnRTag("f", self.DEFAULT_PRIORITY, 1)
 
+    def get_modes_supported(self):
+        return ['fake_pe']
+
 
 if __name__ == "__main__":
     sc = OnyxPECore()

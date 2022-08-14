@@ -957,7 +957,7 @@ class SparseTBBuilder(m.Generator2):
                     # continue
                 print(f"Node name --- {self.core_nodes[node.get_name()].get_name()}")
                 # Hack for now - identify core combiner nodes and pass them the kwargs
-                if "C" in self.core_nodes[node.get_name()].get_name():
+                if "m" in self.core_nodes[node.get_name()].get_name() or "p" in self.core_nodes[node.get_name()].get_name():
                     runtime_modes = self.nlb.get_core_runtimes()
                     runtime_mode = runtime_modes[self.core_nodes[node.get_name()].get_name()]
                     # Now need to set the runtime
@@ -1619,7 +1619,8 @@ if __name__ == "__main__":
         else:
             scan = Scanner(data_width=16,
                            fifo_depth=fifo_depth,
-                           defer_fifos=True)
+                           defer_fifos=True,
+                           add_flush=True)
 
         wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
                              defer_fifos=True)
@@ -1631,7 +1632,7 @@ if __name__ == "__main__":
         buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
                             tech_map=GF_Tech_Map(depth=512, width=32),
                             defer_fifos=True,
-                            optimize_wide=True)
+                            optimize_wide=False)
         strg_ram = StrgRAM(data_width=16,
                            banks=1,
                            memory_width=64,
@@ -1655,7 +1656,8 @@ if __name__ == "__main__":
         isect = Intersect(data_width=16,
                           use_merger=False,
                           fifo_depth=8,
-                          defer_fifos=True)
+                          defer_fifos=True,
+                          add_flush=True)
         crd_drop = CrdDrop(data_width=16, fifo_depth=fifo_depth,
                            lift_config=True,
                            defer_fifos=True)
@@ -1665,7 +1667,7 @@ if __name__ == "__main__":
         onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
                         ext_pe_prefix=pe_prefix,
                         pe_ro=True,
-                        do_config_lift=True)
+                        do_config_lift=False)
         repeat = Repeat(data_width=16,
                         fifo_depth=8,
                         defer_fifos=True)

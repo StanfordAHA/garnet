@@ -94,6 +94,9 @@ class RepeatSignalGeneratorCore(LakeCoreBase):
     def pnr_info(self):
         return PnRTag("q", self.DEFAULT_PRIORITY, 1)
 
+    def get_modes_supported(self):
+        return ['repeat_signal_generator']
+
 
 if __name__ == "__main__":
     rsg_core = RepeatSignalGeneratorCore()

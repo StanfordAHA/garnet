@@ -95,6 +95,9 @@ class CrdHoldCore(LakeCoreBase):
     def pnr_info(self):
         return PnRTag("h", self.DEFAULT_PRIORITY, 1)
 
+    def get_modes_supported(self):
+        return ['crdhold']
+
 
 if __name__ == "__main__":
     ic = CrdHoldCore()
