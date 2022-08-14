@@ -104,6 +104,9 @@ class WriteScannerCore(LakeCoreBase):
     def pnr_info(self):
         return PnRTag("w", self.DEFAULT_PRIORITY, 1)
 
+    def get_modes_supported(self):
+        return ['write_scanner']
+
 
 if __name__ == "__main__":
     sc = WriteScannerCore()

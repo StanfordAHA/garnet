@@ -80,6 +80,12 @@ class LakeCoreBase(ConfigurableCore):
         super().__init__(config_addr_width=config_addr_width,
                          config_data_width=config_data_width)
 
+    def get_modes_supported(self):
+        '''
+        Allows a mapper to understand which primitives exist in this core...
+        '''
+        pass
+
     def wrap_lake_core(self):
         # Typedefs for ease
         if self.data_width:
@@ -483,6 +489,10 @@ class NetlistBuilder():
         self._core_runtime_mode = {}
         self._core_map = {}
         self.harden_flush = harden_flush
+        self.remapping_built = False
+        self.tag_to_core = {}
+        self.core_to_tag = {}
+        self.tag_to_port_remap = {}
 
     def register_core(self, core, flushable=False, config=None, name=""):
         ''' Register the core/primitive with the
@@ -512,30 +522,50 @@ class NetlistBuilder():
         if core == "scanner":
             core = "read_scanner"
 
-        for core_key, core_value in self._interconnect.tile_circuits.items():
-            # print(f"{core_key}, {core_value.name()}")
-            if "CoreCombiner" in core_value.name():
-                # print("Found core combiner...")
-                # Get supported components
+        if not self.remapping_built:
+            for core_key, core_value in self._interconnect.tile_circuits.items():
+                print(f"{core_key}, {core_value.name()}")
+                print(core_value)
                 cc_core = core_value.core
-                cc_core_supported = cc_core.get_modes_supported()
-                # print(f"Modes: {cc_core_supported}")
+                # get pnr tag
+                pnr_tag = cc_core.pnr_info()
+                # This will effectively skip the io core...
+                if isinstance(pnr_tag, list):
+                    continue
+                pnr_tag = pnr_tag.tag_name
+                if pnr_tag not in self.tag_to_core:
+                    supported_modes = cc_core.get_modes_supported()
+                    self.tag_to_core[pnr_tag] = supported_modes
+                    self.tag_to_port_remap[pnr_tag] = cc_core.get_port_remap()
+                    for mode_ in supported_modes:
+                        self.core_to_tag[mode_] = pnr_tag
 
+                # if "CoreCombiner" in core_value.name():
+
+                    # print("Found core combiner...")
+                    # Get supported components
+                    # cc_core_supported = cc_core.get_modes_supported()
+                    # print(f"Modes: {cc_core_supported}")
+            self.remapping_built = True
+
+        print(self.tag_to_core)
+        print(self.core_to_tag)
+        # exit()
         prioritize_combiner = True
 
         core_remapping = None
-
         print_diag = False
 
         print(core)
 
         # Choose the core combiner if the resource is in there...
-        if cc_core_supported is not None and core in cc_core_supported and prioritize_combiner:
-            tag = "C"
+        # if cc_core_supported is not None and core in cc_core_supported and prioritize_combiner:
+        if core in self.core_to_tag and prioritize_combiner:
+            tag = self.core_to_tag[core]
             # tag = cc_core.pnr_info().get_tag_name()
-            core_remapping = cc_core.get_port_remap()[core]
+            core_remapping = self.tag_to_port_remap[tag][core]
             print_diag = True
-            cc_core.set_runtime_mode(core)
+            # cc_core.set_runtime_mode(core)
         elif core == "register":
             tag = "r"
         elif core == "io_16":
@@ -674,9 +704,11 @@ class NetlistBuilder():
             for i, connection_tuple in enumerate(connection_list):
                 mapped_core, signal_name = connection_tuple
                 if mapped_core in self._core_remappings:
-                    # print(f"Signal {signal_name} being remapped according to {self._core_remappings[mapped_core]}")
+                    print(f"Signal {signal_name} being remapped according to {self._core_remappings[mapped_core]}")
                     if signal_name == "flush":
                         continue
+                    print(signal_name)
+                    print(self._core_remappings[mapped_core])
                     assert signal_name in self._core_remappings[mapped_core]
                     remapped_sig = self._core_remappings[mapped_core][signal_name]
                     self._netlist[conn_name][i] = (mapped_core, remapped_sig)

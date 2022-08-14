@@ -124,6 +124,9 @@ class ScannerCore(LakeCoreBase):
     def pnr_info(self):
         return PnRTag("s", self.DEFAULT_PRIORITY, 1)
 
+    def get_modes_supported(self):
+        return ['read_scanner']
+
 
 if __name__ == "__main__":
     sc = ScannerCore()

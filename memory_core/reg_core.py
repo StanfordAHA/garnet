@@ -90,6 +90,9 @@ class RegCore(LakeCoreBase):
     def pnr_info(self):
         return PnRTag("R", self.DEFAULT_PRIORITY, 1)
 
+    def get_modes_supported(self):
+        return ['regcore']
+
 
 if __name__ == "__main__":
     rc = RegCore()

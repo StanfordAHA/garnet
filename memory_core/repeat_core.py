@@ -90,6 +90,9 @@ class RepeatCore(LakeCoreBase):
     def pnr_info(self):
         return PnRTag("Q", self.DEFAULT_PRIORITY, 1)
 
+    def get_modes_supported(self):
+        return ['repeat']
+
 
 if __name__ == "__main__":
     repeat_core = RepeatCore()
