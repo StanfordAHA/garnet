@@ -463,7 +463,9 @@ class CoreMappingUndefinedException(Exception):
 
 class NetlistBuilder():
 
-    def __init__(self, interconnect: Interconnect = None, cwd=None, harden_flush=False) -> None:
+    def __init__(self, interconnect: Interconnect = None, cwd=None,
+                 harden_flush=False,
+                 combined=False) -> None:
         # self._registered_cores = {}
         self._netlist = {}
         self._bus = {}
@@ -493,6 +495,7 @@ class NetlistBuilder():
         self.tag_to_core = {}
         self.core_to_tag = {}
         self.tag_to_port_remap = {}
+        self.combined = combined
 
     def register_core(self, core, flushable=False, config=None, name=""):
         ''' Register the core/primitive with the
@@ -525,6 +528,9 @@ class NetlistBuilder():
         if not self.remapping_built:
             for core_key, core_value in self._interconnect.tile_circuits.items():
                 print(f"{core_key}, {core_value.name()}")
+                # if "CoreCombiner" not in core_value.name():
+                if not self.combined:
+                    continue
                 print(core_value)
                 cc_core = core_value.core
                 # get pnr tag

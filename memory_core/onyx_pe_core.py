@@ -55,7 +55,8 @@ class OnyxPECore(LakeCoreBase):
                               fifo_depth=fifo_depth,
                               defer_fifos=False,
                               ext_pe_prefix=ext_pe_prefix,
-                              do_config_lift=True)
+                              do_config_lift=True,
+                              add_flush=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -88,10 +89,12 @@ class OnyxPECore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        op = config_tuple
+        # op = config_tuple
+        _, config_kwargs = config_tuple
         configs = []
         config_pe = [("tile_en", 1)]
-        config_pe += self.dut.get_bitstream(op=op)
+        # config_pe += self.dut.get_bitstream(op=op)
+        config_pe += self.dut.get_bitstream(config_kwargs=config_kwargs)
 
         for name, v in config_pe:
             configs = [self.get_config_data(name, v)] + configs
