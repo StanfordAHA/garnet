@@ -67,7 +67,8 @@ from lake.modules.scanner_pipe import ScannerPipe
 
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
-                 input_dir=None, output_dir=None, local_mems=True, mode_map=None, real_pe=False, harden_flush=False) -> None:
+                 input_dir=None, output_dir=None, local_mems=True,
+                 mode_map=None, real_pe=False, harden_flush=False, combined=False) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -92,6 +93,7 @@ class SparseTBBuilder(m.Generator2):
         self.local_mems = local_mems
         self.real_pe = real_pe
         self.harden_flush = harden_flush
+        self.combined = combined
 
         self.input_ctr = 0
         self.output_ctr = 1
@@ -964,11 +966,13 @@ class SparseTBBuilder(m.Generator2):
                     node_config_kwargs['mode'] = runtime_mode
                     pass_config_kwargs_tuple = (1, node_config_kwargs)
                     self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), pass_config_kwargs_tuple)
-                elif "s" in self.core_nodes[node.get_name()].get_name():
-                    self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), (1, node_config_kwargs))
+                # elif "s" in self.core_nodes[node.get_name()].get_name():
                 else:
                     print(node.get_name(), self.core_nodes[node.get_name()].get_name())
-                    self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
+                    self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), (1, node_config_kwargs))
+                # else:
+                    # print(node.get_name(), self.core_nodes[node.get_name()].get_name())
+                    # self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
 
     def display_names(self):
         if self.bespoke:
@@ -1235,11 +1239,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'mat_identity.gv' in app_name:
         # PASSES
         # to glb
-        # b_matrix = MatrixGenerator(name="B", shape=[35, 35], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        b_matrix = MatrixGenerator(name="B", shape=[40, 40], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        # b_matrix = MatrixGenerator(name="B", shape=[8, 8], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        # b_matrix = MatrixGenerator(name="B", shape=[15, 15], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        # b_matrix = MatrixGenerator(name="B", shape=[4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        shape_ = 40
+        b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
@@ -1603,7 +1604,7 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 24
+        chip_width = 12
         # chip_height = 32
         chip_height = 16
         num_tracks = 5
@@ -1615,15 +1616,16 @@ if __name__ == "__main__":
                                fifo_depth=fifo_depth,
                                add_clk_enable=True,
                                defer_fifos=False,
-                               add_flush=True)
+                               add_flush=False)
         else:
             scan = Scanner(data_width=16,
                            fifo_depth=fifo_depth,
                            defer_fifos=True,
-                           add_flush=True)
+                           add_flush=False)
 
         wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
-                             defer_fifos=True)
+                             defer_fifos=True,
+                             add_flush=False)
         strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
         fiber_access = FiberAccess(data_width=16,
                                    local_memory=False,
@@ -1632,7 +1634,8 @@ if __name__ == "__main__":
         buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
                             tech_map=GF_Tech_Map(depth=512, width=32),
                             defer_fifos=True,
-                            optimize_wide=False)
+                            optimize_wide=True,
+                            add_flush=False)
         strg_ram = StrgRAM(data_width=16,
                            banks=1,
                            memory_width=64,
@@ -1657,27 +1660,33 @@ if __name__ == "__main__":
                           use_merger=False,
                           fifo_depth=8,
                           defer_fifos=True,
-                          add_flush=True)
+                          add_flush=False)
         crd_drop = CrdDrop(data_width=16, fifo_depth=fifo_depth,
                            lift_config=True,
-                           defer_fifos=True)
+                           defer_fifos=True,
+                           add_flush=False)
         crd_hold = CrdHold(data_width=16, fifo_depth=fifo_depth,
                            lift_config=True,
-                           defer_fifos=True)
+                           defer_fifos=True,
+                           add_flush=False)
         onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
                         ext_pe_prefix=pe_prefix,
                         pe_ro=True,
-                        do_config_lift=False)
+                        do_config_lift=False,
+                        add_flush=False)
         repeat = Repeat(data_width=16,
                         fifo_depth=8,
-                        defer_fifos=True)
+                        defer_fifos=True,
+                        add_flush=False)
         rsg = RepeatSignalGenerator(data_width=16,
                                     passthru=False,
                                     fifo_depth=fifo_depth,
-                                    defer_fifos=True)
+                                    defer_fifos=True,
+                                    add_flush=False)
         regcr = Reg(data_width=16,
                     fifo_depth=fifo_depth,
-                    defer_fifos=True)
+                    defer_fifos=True,
+                    add_flush=False)
 
         controllers_2 = []
 
@@ -1764,7 +1773,8 @@ if __name__ == "__main__":
             magma.compile(f"{test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
             exit()
 
-        nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir, harden_flush=harden_flush)
+        nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir,
+                             harden_flush=harden_flush, combined=combined)
 
     ##### Handling app level file stuff #####
     output_matrix, output_format, output_name = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
@@ -1807,7 +1817,7 @@ if __name__ == "__main__":
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
                           # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
                           output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
-                          real_pe=real_pe, harden_flush=harden_flush)
+                          real_pe=real_pe, harden_flush=harden_flush, combined=combined)
 
     if dump_bitstream:
         nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")

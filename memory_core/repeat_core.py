@@ -50,7 +50,8 @@ class RepeatCore(LakeCoreBase):
             # in the following steps.
             self.dut = Repeat(data_width=data_width,
                               fifo_depth=fifo_depth,
-                              defer_fifos=False)
+                              defer_fifos=False,
+                              add_flush=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -78,10 +79,12 @@ class RepeatCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        stop_lvl, root = config_tuple
+        # stop_lvl, root = config_tuple
+        _, config_kwargs = config_tuple
         configs = []
         config_lu = [("tile_en", 1)]
-        config_lu += self.dut.get_bitstream(stop_lvl=stop_lvl, root=root)
+        # config_lu += self.dut.get_bitstream(stop_lvl=stop_lvl, root=root)
+        config_lu += self.dut.get_bitstream(config_kwargs=config_kwargs)
 
         for name, v in config_lu:
             configs = [self.get_config_data(name, v)] + configs

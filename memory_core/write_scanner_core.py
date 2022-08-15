@@ -53,7 +53,8 @@ class WriteScannerCore(LakeCoreBase):
             # in the following steps.
             self.dut = WriteScanner(data_width=data_width,
                                     fifo_depth=fifo_depth,
-                                    defer_fifos=self.defer_fifos)
+                                    defer_fifos=self.defer_fifos,
+                                    add_flush=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -82,15 +83,18 @@ class WriteScannerCore(LakeCoreBase):
 
     def get_config_bitstream(self, config_tuple):
         # inner_offset, compressed, lowest_level, stop_lvl, block_mode = config_tuple
-        compressed, lowest_level, stop_lvl, block_mode = config_tuple
+        # compressed, lowest_level, stop_lvl, block_mode = config_tuple
+        _, config_kwargs = config_tuple
+        lowest_level = config_kwargs['lowest_level']
         configs = []
         config_scanner = [("tile_en", 1),
                           ("addr_in_valid_reg_sel", 1 - lowest_level)]
         # config_scanner += self.dut.get_bitstream(inner_offset=inner_offset,
-        config_scanner += self.dut.get_bitstream(compressed=compressed,
-                                                 lowest_level=lowest_level,
-                                                 stop_lvl=stop_lvl,
-                                                 block_mode=block_mode)
+        # config_scanner += self.dut.get_bitstream(compressed=compressed,
+        #                                          lowest_level=lowest_level,
+        #                                          stop_lvl=stop_lvl,
+        #                                          block_mode=block_mode)
+        config_scanner += self.dut.get_bitstream(config_kwargs)
 
         # Need to hardcode some wires to 0...
         # If we are not at the lowest level, then the write scanner only

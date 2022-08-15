@@ -35,6 +35,7 @@ from memory_core.core_combiner_core import CoreCombinerCore
 from lake.modules.repeat import Repeat
 from lake.modules.repeat_signal_generator import RepeatSignalGenerator
 from lake.modules.scanner import Scanner
+from lake.modules.scanner_pipe import ScannerPipe
 from lake.modules.write_scanner import WriteScanner
 from lake.modules.intersect import Intersect
 from lake.modules.reg_cr import Reg
@@ -114,9 +115,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         m.generator.reset_generator_cache()
         m.logging.flush_all()  # flush all staged logs
 
-        if not scgra_combined:
+        pipeline_scanner = False
 
-            pipeline_scanner = False
+        if not scgra_combined:
 
             altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
                                       'add_clk_enable': clk_enable,
@@ -139,12 +140,33 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             controllers = []
 
-            strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
+            if pipeline_scanner:
+                scan = ScannerPipe(data_width=16,
+                                   fifo_depth=fifo_depth,
+                                   add_clk_enable=True,
+                                   defer_fifos=False,
+                                   add_flush=False)
+            else:
+                scan = Scanner(data_width=16,
+                               fifo_depth=fifo_depth,
+                               defer_fifos=True,
+                               add_flush=False)
+
+            wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
+                                 defer_fifos=True,
+                                 add_flush=False)
+            strg_ub = StrgUBVec(data_width=16,
+                                mem_width=64,
+                                mem_depth=512)
             fiber_access = FiberAccess(data_width=16,
                                        local_memory=False,
                                        tech_map=GF_Tech_Map(depth=512, width=32),
                                        defer_fifos=True)
-
+            buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
+                                tech_map=GF_Tech_Map(depth=512, width=32),
+                                defer_fifos=True,
+                                optimize_wide=True,
+                                add_flush=False)
             strg_ram = StrgRAM(data_width=16,
                                banks=1,
                                memory_width=64,
@@ -157,35 +179,45 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             stencil_valid = StencilValid()
 
+            controllers.append(scan)
+            controllers.append(wscan)
+            controllers.append(buffet)
             controllers.append(strg_ub)
-            controllers.append(fiber_access)
+            # controllers.append(fiber_access)
             controllers.append(strg_ram)
             controllers.append(stencil_valid)
 
             isect = Intersect(data_width=16,
                               use_merger=False,
                               fifo_depth=8,
-                              defer_fifos=True)
+                              defer_fifos=True,
+                              add_flush=False)
             crd_drop = CrdDrop(data_width=16, fifo_depth=fifo_depth,
                                lift_config=True,
-                               defer_fifos=True)
+                               defer_fifos=True,
+                               add_flush=False)
             crd_hold = CrdHold(data_width=16, fifo_depth=fifo_depth,
                                lift_config=True,
-                               defer_fifos=True)
+                               defer_fifos=True,
+                               add_flush=False)
             onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
                             ext_pe_prefix=pe_prefix,
                             pe_ro=True,
-                            do_config_lift=False)
+                            do_config_lift=False,
+                            add_flush=False)
             repeat = Repeat(data_width=16,
                             fifo_depth=8,
-                            defer_fifos=True)
+                            defer_fifos=True,
+                            add_flush=False)
             rsg = RepeatSignalGenerator(data_width=16,
                                         passthru=False,
                                         fifo_depth=fifo_depth,
-                                        defer_fifos=True)
+                                        defer_fifos=True,
+                                        add_flush=False)
             regcr = Reg(data_width=16,
                         fifo_depth=fifo_depth,
-                        defer_fifos=True)
+                        defer_fifos=True,
+                        add_flush=False)
 
             controllers_2 = []
 

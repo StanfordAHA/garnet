@@ -64,7 +64,8 @@ class BuffetCore(LakeCoreBase):
                                   fifo_depth=fifo_depth,
                                   tech_map=self.tech_map,
                                   defer_fifos=False,
-                                  optimize_wide=True)
+                                  optimize_wide=True,
+                                  add_flush=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -92,10 +93,12 @@ class BuffetCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        capacity_0, capacity_1 = config_tuple
+        # capacity_0, capacity_1 = config_tuple
+        _, config_kwargs = config_tuple
         configs = []
         config_scanner = [("tile_en", 1)]
-        config_scanner += self.dut.get_bitstream(capacity_0, capacity_1)
+        # config_scanner += self.dut.get_bitstream(capacity_0, capacity_1)
+        config_scanner += self.dut.get_bitstream(config_kwargs=config_kwargs)
         for name, v in config_scanner:
             configs = [self.get_config_data(name, v)] + configs
         return configs
