@@ -88,7 +88,7 @@ class PondCore(LakeCoreBase):
                               area_opt=self.pond_area_opt,
                               pond_area_opt_share=self.pond_area_opt_share,
                               pond_area_opt_dual_config=self.pond_area_opt_dual_config,
-                              fifo_mode=True,
+                              fifo_mode=False,
                               add_clk_enable=self.add_clk_enable,
                               add_flush=self.add_flush,
                               stencil_valid=False,
