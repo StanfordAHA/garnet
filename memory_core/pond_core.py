@@ -6,7 +6,6 @@ from lake.top.extract_tile_info import *
 import kratos as kts
 from gemstone.generator.from_magma import FromMagma
 from typing import List
-from lake.top.pond import Pond
 from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
 
@@ -147,7 +146,7 @@ class PondCore(LakeCoreBase):
             use_json = True
             if use_json:
                 top_controller_node = instr["config"]
-                config_mem = self.dut.get_static_bitstream_json(top_controller_node)
+                config_mem = self.dut.get_bitstream(top_controller_node)
         for name, v in config_mem:
             if name in self.registers.keys():
                 configs += [self.get_config_data(name, v)]
