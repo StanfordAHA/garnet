@@ -745,7 +745,7 @@ class SparseTBBuilder(m.Generator2):
                 core_tag = "memtile"
             elif hw_node_type == f"{HWNodeType.ReadScanner}":
                 new_node_type = ReadScannerNode
-                core_tag = "scanner"
+                core_tag = "read_scanner"
                 tensor = node.get_attributes()['tensor'].strip('"')
                 kwargs = {'tensor': tensor}
             elif hw_node_type == f"{HWNodeType.WriteScanner}":
@@ -764,7 +764,7 @@ class SparseTBBuilder(m.Generator2):
 
             elif hw_node_type == f"{HWNodeType.Reduce}":
                 new_node_type = ReduceNode
-                core_tag = "regcore"
+                core_tag = "reduce"
             elif hw_node_type == f"{HWNodeType.Lookup}":
                 new_node_type = LookupNode
                 core_tag = "lookup"
@@ -793,12 +793,14 @@ class SparseTBBuilder(m.Generator2):
                 core_tag = "repeat"
             elif hw_node_type == f"{HWNodeType.Compute}" or hw_node_type == HWNodeType.Compute:
                 new_node_type = ComputeNode
-                core_tag = "fake_pe"
+                # core_tag = "fake_pe"
+                core_tag = "alu"
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
             elif hw_node_type == f"{HWNodeType.RepSigGen}" or hw_node_type == HWNodeType.RepSigGen:
                 new_node_type = RepSigGenNode
-                core_tag = "repeat_signal_generator"
+                # core_tag = "repeat_signal_generator"
+                core_tag = "rsg"
             else:
                 raise NotImplementedError(f"{hw_node_type} not supported....")
 
@@ -903,27 +905,32 @@ class SparseTBBuilder(m.Generator2):
             src_name = src
             dst_name = dst
 
+            # print(src)
+            # print(dst)
+
             addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
             # Remap the pe connections
-            if self.real_pe:
-                real_pe_tag = 'f'
-                real_pe_remap = {
-                    'data_out': 'res',
-                    'data_in_0': 'data0',
-                    'data_in_1': 'data1'
-                }
+            # if self.real_pe:
+            #     real_pe_tag = 'f'
+            #     real_pe_remap = {
+            #         'data_out': 'res',
+            #         'data_in_0': 'data0',
+            #         'data_in_1': 'data1'
+            #     }
 
-                for conn_block_name, sig_struct in addtl_conns.items():
-                    for i, complex_sig in enumerate(sig_struct):
-                        sig_list, width = complex_sig
-                        for idx, sig_tuple in enumerate(sig_list):
-                            prim_name, prim_sig = sig_tuple
-                            if prim_name[0] == real_pe_tag:
-                                print("Remapping f...")
-                                sig_list[idx] = (prim_name, real_pe_remap[prim_sig])
+            #     for conn_block_name, sig_struct in addtl_conns.items():
+            #         for i, complex_sig in enumerate(sig_struct):
+            #             sig_list, width = complex_sig
+            #             for idx, sig_tuple in enumerate(sig_list):
+            #                 prim_name, prim_sig = sig_tuple
+            #                 if prim_name[0] == real_pe_tag:
+            #                     print("Remapping f...")
+            #                     sig_list[idx] = (prim_name, real_pe_remap[prim_sig])
 
             if addtl_conns is not None:
                 self.nlb.add_connections(addtl_conns, defer_placement=True)
+
+        # exit()
 
     def configure_cores(self):
         '''
