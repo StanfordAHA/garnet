@@ -1309,8 +1309,9 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
             b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x')
             c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
         else:
-            b_matrix = MatrixGenerator(name="B", shape=[20, 20], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-            c_matrix = MatrixGenerator(name="C", shape=[20, 20], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            gold_shape_ = 20
+            b_matrix = MatrixGenerator(name="B", shape=[gold_shape_, gold_shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            c_matrix = MatrixGenerator(name="C", shape=[gold_shape_, gold_shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
             b_matrix.dump_outputs()
             c_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()

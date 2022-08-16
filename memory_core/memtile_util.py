@@ -531,7 +531,7 @@ class NetlistBuilder():
                 # if "CoreCombiner" not in core_value.name():
                 if not self.combined:
                     continue
-                print(core_value)
+                # print(core_value)
                 cc_core = core_value.core
                 # get pnr tag
                 pnr_tag = cc_core.pnr_info()
@@ -554,15 +554,15 @@ class NetlistBuilder():
                     # print(f"Modes: {cc_core_supported}")
             self.remapping_built = True
 
-        print(self.tag_to_core)
-        print(self.core_to_tag)
+        # print(self.tag_to_core)
+        # print(self.core_to_tag)
         # exit()
         prioritize_combiner = True
 
         core_remapping = None
         print_diag = False
 
-        print(core)
+        # print(core)
 
         # Choose the core combiner if the resource is in there...
         # if cc_core_supported is not None and core in cc_core_supported and prioritize_combiner:
