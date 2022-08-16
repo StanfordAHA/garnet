@@ -3,7 +3,7 @@ from kratos import Generator, always_ff, posedge, clog2
 
 class GlbClkEnGen(Generator):
     def __init__(self, cnt: int):
-        super().__init__("glb_clk_en_gen")
+        super().__init__(f"glb_clk_en_gen_{cnt}")
         self.cnt = cnt
 
         self.clk = self.clock("clk")
