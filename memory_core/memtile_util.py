@@ -580,8 +580,9 @@ class NetlistBuilder():
             tag = "i"
         elif core == "pe":
             tag = "p"
-        elif core == "fake_pe":
-            tag = "f"
+        # elif core == "fake_pe":
+        # elif core == "alu":
+            # tag = "f"
         elif core == "read_scanner":
             tag = "s"
         elif core == "intersect":
@@ -592,7 +593,8 @@ class NetlistBuilder():
             tag = "h"
         elif core == "memtile":
             tag = "m"
-        elif core == "regcore":
+        # elif core == "regcore":
+        elif core == "reduce":
             tag = "R"
         elif core == "lookup":
             tag = "L"
@@ -606,7 +608,8 @@ class NetlistBuilder():
             tag = "f"
         elif core == "repeat":
             tag = "Q"
-        elif core == "repeat_signal_generator":
+        # elif core == "repeat_signal_generator":
+        elif core == "rsg":
             tag = "q"
         else:
             tag = core.pnr_info().tag_name
@@ -710,11 +713,11 @@ class NetlistBuilder():
             for i, connection_tuple in enumerate(connection_list):
                 mapped_core, signal_name = connection_tuple
                 if mapped_core in self._core_remappings:
-                    print(f"Signal {signal_name} being remapped according to {self._core_remappings[mapped_core]}")
+                    # print(f"Signal {signal_name} being remapped according to {self._core_remappings[mapped_core]}")
                     if signal_name == "flush":
                         continue
-                    print(signal_name)
-                    print(self._core_remappings[mapped_core])
+                    # print(signal_name)
+                    # print(self._core_remappings[mapped_core])
                     assert signal_name in self._core_remappings[mapped_core]
                     remapped_sig = self._core_remappings[mapped_core][signal_name]
                     self._netlist[conn_name][i] = (mapped_core, remapped_sig)
