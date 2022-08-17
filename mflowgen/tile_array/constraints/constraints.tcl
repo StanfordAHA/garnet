@@ -77,7 +77,7 @@ set ext_port_nets [get_nets -of_objects [get_ports]]
 set_dont_touch $ext_port_nets false
 
 # This can catch nets connected to IO tiles, which should be touched
-set io_tile_nets [get_nets -of_objects [get_cells -filter {ref_name =~ Tile_io*}]]
+set io_tile_nets [get_nets -of_objects [get_cells -filter {ref_name =~ Tile_IO*}]]
 set_dont_touch $io_tile_nets false
 
 # Relax read_config_data timing path
