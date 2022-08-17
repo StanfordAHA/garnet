@@ -24,7 +24,7 @@ set core_margin_l [expr 5 * $horiz_pitch]
 set tile_margin_t [expr 100 * $vert_pitch]
 set tile_margin_b [expr 100 * $vert_pitch]
 set tile_margin_l [expr 360 * $horiz_pitch]
-set tile_margin_r [expr 50 * $horiz_pitch]
+set tile_margin_r [expr 150 * $horiz_pitch]
 
 set tiles [get_cells *glb_tile*]
 set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
