@@ -25,7 +25,7 @@ set core_density_target $::env(core_density_target); # Placement density of 70% 
 # Maintain even row height
 # gf12 wants core_height 180, tsmc16 wants 150.
 # Eventually this will be programmatical based on row_height or maybe a parameter
-set core_height 180; # For gf12, specifically
+set core_height 186; # For gf12, specifically
 if { $adk == "tsmc16" } { set core_height 150 }
 
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
