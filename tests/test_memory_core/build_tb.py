@@ -1197,6 +1197,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     if 'mat_elemadd.gv' in app_name:
         # PASSES
         # to glb
+        # combined
         if give_tensor:
             bshape = read_inputs(os.path.join(matrix_tmp_dir, "Bshape"))
             cshape = read_inputs(os.path.join(matrix_tmp_dir, "Cshape"))
@@ -1217,6 +1218,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'mat_elemadd3.gv' in app_name:
         # PASSES
         # to glb
+        # combined
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         d_matrix = MatrixGenerator(name="D", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1234,6 +1236,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'mat_elemmul.gv' in app_name:
         # PASSES
         # to glb
+        # combined
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1246,6 +1249,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'mat_identity.gv' in app_name:
         # PASSES
         # to glb
+        # combined
         shape_ = 40
         b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1287,6 +1291,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'mat_vecmul_ij.gv' in app_name:
         # PASSES
         # to glb
+        # combined
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="c", shape=[10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1303,6 +1308,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'matmul_ijk.gv' in app_name:
         # PASSES
         # to glb
+        # combined
         if give_tensor:
             bshape = read_inputs(os.path.join(matrix_tmp_dir, "Bshape"))
             cshape = read_inputs(os.path.join(matrix_tmp_dir, "Cshape"))
@@ -1336,6 +1342,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'matmul_jik.gv' in app_name:
         # PASSED
         # to glb
+        # combined
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1387,6 +1394,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'tensor3_elemadd.gv' in app_name:
         # PASSES
         # to glb
+        # combined
         b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1411,6 +1419,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     elif 'tensor3_identity.gv' in app_name:
         # PASSES
+        # separate
+        # combined
         b_matrix = MatrixGenerator(name="B", shape=[10, 10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
@@ -1419,15 +1429,18 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "X"
     elif 'tensor3_innerprod.gv' in app_name:
+        # PASSES
+        # separate
+        # combined
         b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
-        # First transpose c_mat
         output_matrix = numpy.zeros([1])
         output_matrix[0] = numpy.sum(numpy.multiply(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe'), dtype=numpy.uint16)
+        output_matrix = output_matrix.astype(numpy.uint16)
         output_format = "CSF"
         output_name = "x"
     elif 'tensor3_mttkrp.gv' in app_name:
@@ -1449,6 +1462,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     elif 'vec_elemadd.gv' in app_name:
         # PASSES
+        # separate
+        # combined
         shape_ = 50
         b_matrix = MatrixGenerator(name="b", shape=[shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="c", shape=[shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -1462,6 +1477,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "x"
     elif 'vec_elemmul.gv' in app_name:
         # PASSES
+        # separate
+        # combined
         b_matrix = MatrixGenerator(name="b", shape=[50], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="c", shape=[50], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1474,6 +1491,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "x"
     elif 'vec_identity.gv' in app_name:
         # PASSES
+        # separate
+        # combined
         b_matrix = MatrixGenerator(name="b", shape=[100], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
@@ -1482,6 +1501,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "x"
     elif 'vec_scalar_mul.gv' in app_name:
         # PASSES
+        # separate
+        # combined
         b_matrix = MatrixGenerator(name="b", shape=[1], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="c", shape=[10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1547,6 +1568,8 @@ if __name__ == "__main__":
                         type=int,
                         default=8)
     parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--height', type=int, default=16)
+    parser.add_argument('--width', type=int, default=16)
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
     parser.add_argument('--remote_mems', action="store_true")
@@ -1589,6 +1612,8 @@ if __name__ == "__main__":
     print_inputs = args.print_inputs
     dump_glb = args.dump_glb
     glb_dir = args.glb_dir
+    chip_h = args.height
+    chip_w = args.width
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
@@ -1612,7 +1637,7 @@ if __name__ == "__main__":
     interconnect = None
     if bespoke is False:
         # chip_width = 20
-        chip_width = 12
+        chip_width = 20
         # chip_height = 32
         chip_height = 16
         num_tracks = 5
