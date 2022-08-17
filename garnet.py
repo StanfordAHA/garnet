@@ -389,12 +389,12 @@ class Garnet(Generator):
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
-                           compact=False):
+                           compact=False, use_fifo=False):
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
         bitstream = []
-        bitstream += self.interconnect.get_route_bitstream(routing)
+        bitstream += self.interconnect.get_route_bitstream(routing, use_fifo=use_fifo)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instance_to_instr)
         skip_addr = self.interconnect.get_skip_addr()
@@ -500,6 +500,7 @@ def main():
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
     parser.add_argument("--sparse-cgra", action="store_true")
     parser.add_argument("--sparse-cgra-combined", action="store_true")
+    parser.add_argument("--use-fifo", action="store_true", dest="use_fifo")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -590,7 +591,8 @@ def main():
 
         bitstream, (inputs, outputs, reset, valid,
                     en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,
-                                                           netlist, bus, compact=args.compact)
+                                                           netlist, bus, compact=args.compact,
+                                                           use_fifo=args.use_fifo)
 
         # write out the config file
         if len(inputs) > 1:
