@@ -143,13 +143,15 @@ class PondCore(LakeCoreBase):
         else:
             # need to download the csv and get configuration files
             config_mem = []
-            use_json = True
+            use_json = False
             if use_json:
                 top_controller_node = instr["config"]
+                config_mem = self.dut.get_static_bitstream_json(top_controller_node)
+            else:
+                top_controller_node = instr
                 config_mem = self.dut.get_bitstream(top_controller_node)
         for name, v in config_mem:
-            if name in self.registers.keys():
-                configs += [self.get_config_data(name, v)]
+            configs += [self.get_config_data(name, v)]
         # gate config signals
         conf_names = []
         for conf_name in conf_names:
