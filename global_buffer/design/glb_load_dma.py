@@ -232,6 +232,7 @@ class GlbLoadDma(Generator):
                        data_out=self.data_fifo2cgra,
                        push=self.fifo_push,
                        pop=self.fifo_pop,
+                       full=self.fifo_full,
                        empty=self.fifo_empty,
                        almost_full=self.fifo_almost_full,
                        almost_full_diff=self.fifo_almost_full_diff,
