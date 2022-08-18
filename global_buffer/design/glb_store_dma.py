@@ -168,6 +168,7 @@ class GlbStoreDma(Generator):
                        data_out=self.data_fifo2dma,
                        push=self.fifo_push,
                        pop=self.fifo_pop,
+                       full=self.fifo_full,
                        empty=self.fifo_empty,
                        almost_full=self.fifo_almost_full,
                        almost_full_diff=const(2, clog2(self._params.store_dma_fifo_depth)),
