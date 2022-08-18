@@ -1407,8 +1407,9 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     elif 'tensor3_elemmul.gv' in app_name:
         # NEED MAPPING
-        b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        shape_ = 4
+        b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
@@ -1648,7 +1649,7 @@ if __name__ == "__main__":
             scan = ScannerPipe(data_width=16,
                                fifo_depth=fifo_depth,
                                add_clk_enable=True,
-                               defer_fifos=False,
+                               defer_fifos=True,
                                add_flush=False)
         else:
             scan = Scanner(data_width=16,

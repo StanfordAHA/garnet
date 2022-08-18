@@ -144,7 +144,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 scan = ScannerPipe(data_width=16,
                                    fifo_depth=fifo_depth,
                                    add_clk_enable=True,
-                                   defer_fifos=False,
+                                   defer_fifos=True,
                                    add_flush=False)
             else:
                 scan = Scanner(data_width=16,
