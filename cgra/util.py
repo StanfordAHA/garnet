@@ -115,7 +115,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         m.generator.reset_generator_cache()
         m.logging.flush_all()  # flush all staged logs
 
-        pipeline_scanner = False
+        pipeline_scanner = True
 
         if not scgra_combined:
 
