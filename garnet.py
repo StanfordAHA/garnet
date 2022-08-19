@@ -510,9 +510,9 @@ def main():
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
-    parser.add_argument("--pond-area-opt", action="store_true", dest="pond_area_opt")
-    parser.add_argument("--pond-area-opt-share", action="store_true", dest="pond_area_opt_share")
-    parser.add_argument("--pond-area-opt-dual-config", action="store_true", dest="pond_area_opt_dual_config")
+    parser.add_argument("--no-pond-area-opt", action="store_true")
+    parser.add_argument("--pond-area-opt-share", action="store_true")
+    parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -544,9 +544,9 @@ def main():
                     tile_layout_option=args.tile_layout_option,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
-                    pond_area_opt=args.pond_area_opt,
+                    pond_area_opt=not args.no_pond_area_opt,
                     pond_area_opt_share=args.pond_area_opt_share,
-                    pond_area_opt_dual_config=args.pond_area_opt_dual_config,
+                    pond_area_opt_dual_config=not args.no_pond_area_opt_dual_config,
                     harden_flush=not args.no_harden_flush,
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
