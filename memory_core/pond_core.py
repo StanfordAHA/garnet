@@ -29,9 +29,9 @@ class PondCore(LakeCoreBase):
                  config_data_width=32,
                  config_addr_width=8,
                  cycle_count_width=16,
-                 pond_area_opt=False,
+                 pond_area_opt=True,
                  pond_area_opt_share=False,
-                 pond_area_opt_dual_config=False,
+                 pond_area_opt_dual_config=True,
                  add_clk_enable=True,
                  add_flush=True,
                  gate_flush=True):
