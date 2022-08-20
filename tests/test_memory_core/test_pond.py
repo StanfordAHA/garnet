@@ -117,9 +117,9 @@ def test_pond_rd_wr(run_tb):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "data_in_pond")],
+        "e0": [("I0", "io2f_16"), ("p0", "input_width_16_num_2")],
         "e1": [("I1", "io2f_16"), ("p0", "data1")],
-        "e2": [("p0", "data_out_pond"), ("I2", "f2io_16")]
+        "e2": [("p0", "output_width_16_num_0"), ("I2", "f2io_16")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 16}
 
@@ -188,10 +188,10 @@ def test_pond_pe(run_tb):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "data_in_pond")],
+        "e0": [("I0", "io2f_16"), ("p0", "input_width_16_num_2")],
         "e1": [("I1", "io2f_16"), ("p0", "data1")],
         "e2": [("p0", "res"), ("I2", "f2io_16")],
-        "e3": [("p0", "data_out_pond"), ("p0", "data0")]
+        "e3": [("p0", "output_width_16_num_0"), ("p0", "data0")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 16}
 
@@ -268,9 +268,9 @@ def test_pond_pe_acc(run_tb):
 
     netlist = {
         "e0": [("I0", "io2f_16"), ("p0", "data0")],
-        "e1": [("p0", "data_out_pond"), ("p0", "data1")],
-        "e2": [("p0", "res"), ("p0", "data_in_pond")],
-        "e3": [("p0", "data_out_pond"), ("I1", "f2io_16")]
+        "e1": [("p0", "output_width_16_num_0"), ("p0", "data1")],
+        "e2": [("p0", "res"), ("p0", "input_width_16_num_2")],
+        "e3": [("p0", "output_width_16_num_0"), ("I1", "f2io_16")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 16}
 
