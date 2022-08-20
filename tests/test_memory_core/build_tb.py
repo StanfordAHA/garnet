@@ -1464,8 +1464,24 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         raise NotImplementedError
         output_name = "X"
     elif 'tensor3_ttm.gv' in app_name:
-        b_matrix = MatrixGenerator(name="B", shape=[4, 4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[4, 4], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        shape_ = 4
+        b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        print(b_matrix)
+        print(c_matrix)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        c_mat_trans = numpy.transpose(c_mat)
+        # First transpose c_mat
+        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "X"
+    elif 'tensor3_ttv.gv' in app_name:
+        shape_ = 10
+        b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="c", shape=[shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
@@ -1473,9 +1489,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
-        output_name = "X"
-    elif 'tensor3_ttv.gv' in app_name:
-        raise NotImplementedError
         output_name = "X"
     elif 'vec_elemadd.gv' in app_name:
         # PASSES
