@@ -8,6 +8,7 @@ from _kratos import create_wrapper_flatten
 import lassen.asm as asm
 
 
+@pytest.fixture()
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
@@ -110,7 +111,7 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
 def test_pond_rd_wr(run_tb):
 
     chip_size = 2
-    interconnect = create_cgra(chip_size, chip_size, io_sides(),
+    interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
                                add_pd=True,
                                add_pond=True,
@@ -181,7 +182,7 @@ def test_pond_rd_wr(run_tb):
 def test_pond_pe(run_tb):
 
     chip_size = 2
-    interconnect = create_cgra(chip_size, chip_size, io_sides(),
+    interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
                                add_pd=True,
                                add_pond=True,
@@ -260,7 +261,7 @@ def test_pond_pe(run_tb):
 def test_pond_pe_acc(run_tb):
 
     chip_size = 2
-    interconnect = create_cgra(chip_size, chip_size, io_sides(),
+    interconnect = create_cgra(chip_size, chip_size, io_sides,
                                num_tracks=3,
                                add_pd=True,
                                add_pond=True,
