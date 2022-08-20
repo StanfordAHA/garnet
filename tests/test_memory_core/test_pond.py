@@ -1,5 +1,6 @@
 from lake.utils.util import transform_strides_and_ranges, trim_config
 import random
+import pytest
 from gemstone.common.testers import BasicTester
 from cgra.util import create_cgra, compress_config_data
 from canal.util import IOSide
