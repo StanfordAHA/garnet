@@ -26,83 +26,83 @@ def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, conf
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_iter_0_dimensionality", ctrl_rd[2])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_regfile2out_0_for_loop_dimensionality", ctrl_rd[2])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_addr_0_starting_addr", ctrl_rd[3])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_regfile2out_0_addr_gen_starting_addr", ctrl_rd[3])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_addr_0_strides_0", tform_strides_rd[0])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_regfile2out_0_addr_gen_strides_0", tform_strides_rd[0])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_addr_0_strides_1", tform_strides_rd[1])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_regfile2out_0_addr_gen_strides_1", tform_strides_rd[1])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_iter_0_ranges_0", tform_ranges_rd[0])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_regfile2out_0_for_loop_ranges_0", tform_ranges_rd[0])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_iter_0_ranges_1", tform_ranges_rd[1])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_regfile2out_0_for_loop_ranges_1", tform_ranges_rd[1])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_starting_addr", ctrl_rd[4])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_regfile2out_0_sched_gen_sched_addr_gen_starting_addr", ctrl_rd[4])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_strides_0", tform_strides_rd_sched[0])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_regfile2out_0_sched_gen_sched_addr_gen_strides_0", tform_strides_rd_sched[0])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_strides_1", tform_strides_rd_sched[1])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_regfile2out_0_sched_gen_sched_addr_gen_strides_1", tform_strides_rd_sched[1])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_write_iter_0_dimensionality", ctrl_wr[2])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_in2regfile_0_for_loop_dimensionality", ctrl_wr[2])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_write_addr_0_starting_addr", ctrl_wr[3])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_in2regfile_0_addr_gen_starting_addr", ctrl_wr[3])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_write_addr_0_strides_0", tform_strides_wr[0])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_in2regfile_0_addr_gen_strides_0", tform_strides_wr[0])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_write_addr_0_strides_1", tform_strides_wr[1])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_in2regfile_0_addr_gen_strides_1", tform_strides_wr[1])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_write_iter_0_ranges_0", tform_ranges_wr[0])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_in2regfile_0_for_loop_ranges_0", tform_ranges_wr[0])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_write_iter_0_ranges_1", tform_ranges_wr[1])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_in2regfile_0_for_loop_ranges_1", tform_ranges_wr[1])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_write_sched_0_sched_addr_gen_starting_addr", ctrl_wr[4])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_in2regfile_0_sched_gen_sched_addr_gen_starting_addr", ctrl_wr[4])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_write_sched_0_sched_addr_gen_strides_0", tform_strides_wr_sched[0])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_in2regfile_0_sched_gen_sched_addr_gen_strides_0", tform_strides_wr_sched[0])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_write_sched_0_sched_addr_gen_strides_1", tform_strides_wr_sched[1])
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_in2regfile_0_sched_gen_sched_addr_gen_strides_1", tform_strides_wr_sched[1])
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_write_sched_0_enable", 1)
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_in2regfile_0_sched_gen_enable", 1)
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
-    name_out, val_out = trim_config(flattened, "rf_read_sched_0_enable", 1)
+    name_out, val_out = trim_config(flattened, "mem_ctrl_strg_ub_thin_flat_strg_ub_thin_inst_regfile2out_0_sched_gen_enable", 1)
     idx, value = pondcore.get_config_data(name_out, val_out)
     config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
