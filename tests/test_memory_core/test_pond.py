@@ -1,6 +1,5 @@
 from lake.utils.util import transform_strides_and_ranges, trim_config
 import random
-import pytest
 from gemstone.common.testers import BasicTester
 from cgra.util import create_cgra, compress_config_data
 from canal.util import IOSide
@@ -9,7 +8,6 @@ from _kratos import create_wrapper_flatten
 import lassen.asm as asm
 
 
-@pytest.fixture()
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
