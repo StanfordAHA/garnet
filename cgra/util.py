@@ -298,7 +298,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     or y in range(y_min) \
                     or y in range(y_max + 1, height):
                 if ready_valid:
-                    core = IOCoreReadyValid()
+                    core = IOCoreReadyValid(allow_bypass=False)
                 elif use_io_valid:
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
