@@ -222,10 +222,10 @@ def test_pond_pe_acc(run_tb):
                    "config": {"in2regfile_0": {"cycle_starting_addr": [0],
                                                "cycle_stride": [1, 0],
                                                "dimensionality": 2,
-                                               "extent": [16, 1],
+                                               "extent": [18, 1],
                                                "write_data_starting_addr": [8],
                                                "write_data_stride": [0, 0]},
-                              "regfile2out_0": {"cycle_starting_addr": [0],
+                              "regfile2out_0": {"cycle_starting_addr": [2],
                                                 "cycle_stride": [1, 0],
                                                 "dimensionality": 2,
                                                 "extent": [16, 1],
@@ -264,6 +264,12 @@ def test_pond_pe_acc(run_tb):
     random.seed(0)
 
     total = 0
+    # the 2 extra cycle is because refgile2out_0 cycle_starting_addr is at 2
+    # cannot be 0 because need to initialize the regfile with 0
+    for i in range(2):
+        tester.step(2)
+        tester.eval()
+
     for i in range(16):
         tester.poke(circuit.interface[src_name0], i + 1)
         total = total + i
