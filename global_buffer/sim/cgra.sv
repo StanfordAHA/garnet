@@ -19,6 +19,8 @@ module cgra (
     input  logic [NUM_GROUPS-1:0]                                strm_data_flush_g2f
 );
     localparam int PRR_CFG_REG_DEPTH = 16;
+    localparam int FIFO_SIZE = 4;
+    localparam int ALMOST_DIFF = 1;
 
     // ---------------------------------------
     // Configuration
@@ -73,6 +75,7 @@ module cgra (
     bit [NUM_PRR-1:0] prr2glb_valid;
 
     bit [15:0] glb2prr_q[int][$];
+    bit [15:0] glb2prr_fifo[int][$];
     bit [15:0] prr2glb_q[int][$];
     bit [99:0] prr2glb_valid_cnt_q[int][$];
 
@@ -95,8 +98,8 @@ module cgra (
                     if (is_glb2prr_on[i] == 1) begin
                         if (glb2prr_valid_mode[i] == LD_DMA_VALID_MODE_READY_VALID) begin
                             // ready/valid mode
-                            if (io16_g2io_rdy[i][0] == 1 && io16_g2io_vld[i][0] == 1) begin
-                                glb2prr_q[i].push_back(io16_g2io[i][0]);
+                            if (glb2prr_fifo[i].size() > 0) begin
+                                glb2prr_q[i].push_back(glb2prr_fifo[i].pop_front());
                             end
                         end else if (glb2prr_valid_mode[i] == LD_DMA_VALID_MODE_VALID) begin
                             // valid mode
@@ -113,21 +116,46 @@ module cgra (
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             for (int i = 0; i < NUM_PRR; i++) begin
-                io16_g2io_rdy[i][0]  <= 0;
-                io16_g2io_rdy[i][1]  <= 0;
-                io1_io2g[i][0]  <= 0;
+                glb2prr_fifo[i] = {};
+            end
+        end else begin
+            for (int i = 0; i < NUM_PRR; i++) begin
+                if (flush) begin
+                    glb2prr_fifo[i] = {};
+                end else if (!stall[i]) begin
+                    if (is_glb2prr_on[i] == 1) begin
+                        if (glb2prr_valid_mode[i] == LD_DMA_VALID_MODE_READY_VALID) begin
+                            if (io16_g2io_vld[i][0] == 1 && glb2prr_fifo[i].size() < FIFO_SIZE) begin
+                                glb2prr_fifo[i].push_back(io16_g2io[i][0]);
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            for (int i = 0; i < NUM_PRR; i++) begin
+                io16_g2io_rdy[i][0] <= 0;
+                io16_g2io_rdy[i][1] <= 0;
+                io1_io2g[i][0] <= 0;
             end
         end
         for (int i = 0; i < NUM_PRR; i++) begin
             if (is_glb2prr_on[i] == 1) begin
                 if (glb2prr_valid_mode[i] == LD_DMA_VALID_MODE_READY_VALID) begin
-                    // randomly generate ready signal
-                    io16_g2io_rdy[i][0]  <= $urandom_range(1);
+                    if (glb2prr_fifo[i].size() < FIFO_SIZE - ALMOST_DIFF) begin
+                        io16_g2io_rdy[i][0] <= 1;
+                    end else begin
+                        io16_g2io_rdy[i][0] <= 0;
+                    end
                 end else begin
-                    io16_g2io_rdy[i][0]  <= 0;
+                    io16_g2io_rdy[i][0] <= 0;
                 end
             end else begin
-                io16_g2io_rdy[i][0]  <= 0;
+                io16_g2io_rdy[i][0] <= 0;
             end
         end
     end
@@ -137,9 +165,9 @@ module cgra (
         if (reset) begin
             for (int i = 0; i < NUM_PRR; i++) begin
                 prr2glb_q[i] = {};
-                io1_io2g[i][1]  <= 0;
+                io1_io2g[i][1] <= 0;
                 io16_io2g[i][1] <= 0;
-                io16_io2g_vld[i][1]  <= 0;
+                io16_io2g_vld[i][1] <= 0;
             end
         end else begin
             for (int i = 0; i < NUM_PRR; i++) begin
@@ -149,7 +177,7 @@ module cgra (
                     // FIXME: Mode value is hard-coded for now.
                     if (is_prr2glb_on[i] == 1) begin
                         if (prr2glb_valid_mode[i] == ST_DMA_VALID_MODE_VALID | prr2glb_valid_mode[i] == ST_DMA_VALID_MODE_STATIC) begin
-                            io16_io2g_vld[i][1]  <= 0;
+                            io16_io2g_vld[i][1] <= 0;
                             if (prr2glb_valid[i] == 1 && (prr2glb_q[i].size() > 0)) begin
                                 io1_io2g[i][1]  <= 1;
                                 io16_io2g[i][1] <= prr2glb_q[i].pop_front();
@@ -158,19 +186,19 @@ module cgra (
                                 io16_io2g[i][1] <= 0;
                             end
                         end else begin
-                            io1_io2g[i][1]  <= 0;
+                            io1_io2g[i][1] <= 0;
                             if (prr2glb_q[i].size() > 0) begin
                                 if (io16_io2g_vld[i][1] == 1 && io16_io2g_rdy[i][1] == 1) begin
                                     if ($urandom_range(1) == 1) begin
                                         io16_io2g[i][1] <= prr2glb_q[i].pop_front();
-                                        io16_io2g_vld[i][1]  <= 1;
+                                        io16_io2g_vld[i][1] <= 1;
                                     end else begin
-                                        io16_io2g_vld[i][1]  <= 0;
+                                        io16_io2g_vld[i][1] <= 0;
                                     end
                                 end else if (io16_io2g_vld[i][1] == 0) begin
                                     if ($urandom_range(1) == 1) begin
                                         io16_io2g[i][1] <= prr2glb_q[i].pop_front();
-                                        io16_io2g_vld[i][1]  <= 1;
+                                        io16_io2g_vld[i][1] <= 1;
                                     end else begin
                                         io16_io2g_vld[i][1] <= 0;
                                     end
@@ -183,7 +211,7 @@ module cgra (
                     end else begin
                         io16_io2g[i][1] <= 0;
                         io16_io2g_vld[i][1] <= 0;
-                        io1_io2g[i][1]  <= 0;
+                        io1_io2g[i][1] <= 0;
                     end
                 end
             end
