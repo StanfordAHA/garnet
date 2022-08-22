@@ -232,6 +232,7 @@ class GlbLoadDma(Generator):
                        data_out=self.data_fifo2cgra,
                        push=self.fifo_push,
                        pop=self.fifo_pop,
+                       full=self.fifo_full,
                        empty=self.fifo_empty,
                        almost_full=self.fifo_almost_full,
                        almost_full_diff=self.fifo_almost_full_diff,
@@ -244,7 +245,8 @@ class GlbLoadDma(Generator):
 
     @always_comb
     def almost_full_diff_logic(self):
-        self.fifo_almost_full_diff = resize(const(self._params.tile2sram_rd_delay + 2, clog2(self._params.load_dma_fifo_depth))
+        self.fifo_almost_full_diff = resize(const(self._params.tile2sram_rd_delay + 2,
+                                                  clog2(self._params.load_dma_fifo_depth))
                                             + self.cfg_data_network_latency, clog2(self._params.load_dma_fifo_depth))
 
     @ always_comb
@@ -362,7 +364,6 @@ class GlbLoadDma(Generator):
             else:
                 self.strm_ctrl_muxed = self.strm_data_start_pulse
 
-
     @ always_comb
     def data_g2f_logic(self):
         self.cgra2fifo_ready = 0
@@ -382,26 +383,20 @@ class GlbLoadDma(Generator):
                 self.ctrl_g2f_w[i] = 0
                 self.cgra2fifo_ready = self.cgra2fifo_ready
 
-    # @always_ff((posedge, "clk"), (posedge, "reset"))
-    # def data_g2f_ff(self):
-    #     if self.reset:
-    #         self.data_g2f = 0
-    #         self.data_valid_g2f = 0
-    #         self.data_flush = 0
-    #     else:
-    #         self.data_flush = self.data_flush_w
-    #         for i in range(self._params.cgra_per_glb):
-    #             self.data_g2f[i] = self.data_g2f_w[i]
-    #             self.data_valid_g2f[i] = self.data_valid_g2f_w[i]
-
-    # NOTE: For now, remove pipeline register
-    @ always_comb
+    @always_ff((posedge, "clk"), (posedge, "reset"))
     def data_g2f_output(self):
-        self.data_flush = self.data_flush_w
-        for i in range(self._params.cgra_per_glb):
-            self.data_g2f[i] = self.data_g2f_w[i]
-            self.data_g2f_vld[i] = self.data_g2f_vld_w[i]
-            self.ctrl_g2f[i] = self.ctrl_g2f_w[i]
+        if self.reset:
+            self.data_flush = 0
+            for i in range(self._params.cgra_per_glb):
+                self.data_g2f[i] = 0
+                self.data_g2f_vld[i] = 0
+                self.ctrl_g2f[i] = self.ctrl_g2f_w[i]
+        else:
+            self.data_flush = self.data_flush_w
+            for i in range(self._params.cgra_per_glb):
+                self.data_g2f[i] = self.data_g2f_w[i]
+                self.data_g2f_vld[i] = self.data_g2f_vld_w[i]
+                self.ctrl_g2f[i] = self.ctrl_g2f_w[i]
 
     @ always_comb
     def ld_dma_done_pulse_logic(self):
