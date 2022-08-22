@@ -26,7 +26,7 @@ class IOCoreReadyValid(LakeCoreBase):
                  config_data_width=32,
                  config_addr_width=8,
                  tracks_supported=[1, 17],
-                 fifo_depth=4,
+                 fifo_depth=2,
                  allow_bypass=False):
 
         buffet_name = "IOCoreReadyValid"
