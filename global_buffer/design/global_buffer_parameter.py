@@ -92,7 +92,6 @@ class GlobalBufferParams:
 
     # These will go away
     sram_macro_name: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
-    cg_cell_name: str = "CKLNQD1BWP16P90"
 
     # Not used in TSMC path (yet)
     sram_macro_word_size: int = 64
