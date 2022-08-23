@@ -68,7 +68,8 @@ from lake.modules.scanner_pipe import ScannerPipe
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
                  input_dir=None, output_dir=None, local_mems=True,
-                 mode_map=None, real_pe=False, harden_flush=False, combined=False) -> None:
+                 mode_map=None, real_pe=False, harden_flush=False, combined=False,
+                 input_sizes=None) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -83,6 +84,11 @@ class SparseTBBuilder(m.Generator2):
             for k_, v_ in v:
                 sub_dict[k_] = v_
             self.mode_map[k] = sub_dict
+        self.input_sizes_ = input_sizes
+        self.input_sizes = {}
+        # Redictionary the tuples
+        for k, v in self.input_sizes_:
+            self.input_sizes[k] = v
         self.core_nodes = {}
         self.glb_dones = []
         self.bespoke = bespoke
@@ -638,8 +644,12 @@ class SparseTBBuilder(m.Generator2):
 
                 file_full = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode}"
                 # Get tx size now
-                with open(file_full, "r") as ff:
-                    glb_tx_size = len(ff.readlines())
+                print(node.get_format())
+                if not node.get_format() == "dense":
+                    with open(file_full, "r") as ff:
+                        glb_tx_size = len(ff.readlines())
+                else:
+                    glb_tx_size = 0
 
                 file_full = f"\"{file_full}\""
                 test_glb = _Definition(TX_SIZE=glb_tx_size, FILE_NAME=file_full, ID_no=self.get_next_seq())()
@@ -746,8 +756,32 @@ class SparseTBBuilder(m.Generator2):
             elif hw_node_type == f"{HWNodeType.ReadScanner}":
                 new_node_type = ReadScannerNode
                 core_tag = "read_scanner"
+                type = node.get_attributes()['type'].strip('"')
                 tensor = node.get_attributes()['tensor'].strip('"')
-                kwargs = {'tensor': tensor}
+
+                # Mode and dim size would only be set by fiberlookup,
+                # as a vals lookup is a different type, and otherwise
+                # it is the complementary rs to a ws
+                if type == 'fiberlookup':
+                    mode = node.get_attributes()['mode'].strip('"')
+                    # May not need to use/have dim size info for a certain tensor
+                    if tensor in self.input_sizes:
+                        dim_size = self.input_sizes[tensor][int(mode)]
+                    else:
+                        dim_size = None
+                    index = node.get_attributes()['index'].strip('"')
+                    format = node.get_attributes()['format'].strip('"')
+                else:
+                    mode = None
+                    dim_size = None
+                    index = None
+                    format = None
+
+                kwargs = {'tensor': tensor,
+                          'mode': mode,
+                          'dim_size': dim_size,
+                          'index': index,
+                          'format': format}
             elif hw_node_type == f"{HWNodeType.WriteScanner}":
                 new_node_type = WriteScannerNode
                 core_tag = "write_scanner"
@@ -1193,6 +1227,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     d_mat = None
 
     output_name = None
+    input_dims = {}
 
     if 'mat_elemadd.gv' in app_name:
         # PASSES
@@ -1278,17 +1313,23 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # WRONG GRAPH
         raise NotImplementedError
     elif 'mat_sddmm.gv' in app_name:
-        b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        d_matrix = MatrixGenerator(name="D", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        shape_ = 4
+        b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
+        d_matrix = MatrixGenerator(name="D", shape=[shape_, shape_], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         d_matrix.dump_outputs()
+        input_dims[b_matrix.get_name()] = tuple(b_matrix.get_shape())
+        input_dims[c_matrix.get_name()] = tuple(c_matrix.get_shape())
+        input_dims[d_matrix.get_name()] = tuple(d_matrix.get_shape())
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
         d_mat = d_matrix.get_matrix()
+        d_mat_trans = numpy.transpose(d_mat)
+        # exit()
         # First transpose c_mat
-        tmp = numpy.matmul(c_mat, d_mat)
+        tmp = numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_matrix = numpy.multiply(b_mat, tmp, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "X"
@@ -1461,7 +1502,26 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "x"
     elif 'tensor3_mttkrp.gv' in app_name:
-        raise NotImplementedError
+        shape_ = 4
+        b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_, shape_],
+                                   sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=4)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=4)
+        d_matrix = MatrixGenerator(name="D", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=4)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        d_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        d_mat = d_matrix.get_matrix()
+        c_mat_trans = numpy.transpose(c_mat)
+        d_mat_trans = numpy.transpose(d_mat)
+        print(repr(b_mat))
+        print(repr(c_mat_trans))
+        print(repr(d_mat_trans))
+        output_matrix = numpy.einsum("ikl,lj,kj->ij", b_mat, d_mat_trans, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        # output_matrix = numpy.einsum("ikl,jl,jk->ij", b_mat, d_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+
+        output_format = "CSF"
         output_name = "X"
     elif 'tensor3_ttm.gv' in app_name:
         shape_ = 4
@@ -1571,7 +1631,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                 print(vals)
             sys.stdout = original_stdout
 
-    return output_matrix, output_format, output_name
+    return output_matrix, output_format, output_name, input_dims
 
 
 if __name__ == "__main__":
@@ -1844,7 +1904,7 @@ if __name__ == "__main__":
                              harden_flush=harden_flush, combined=combined)
 
     ##### Handling app level file stuff #####
-    output_matrix, output_format, output_name = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
+    output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
     out_mat = MatrixGenerator(name=output_name, shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
     out_mat.dump_outputs()
     if dump_glb:
@@ -1878,13 +1938,17 @@ if __name__ == "__main__":
     # sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
     sdg = SAMDotGraph(filename=args.sam_graph, local_mems=True, use_fork=use_fork)
     mode_map = sdg.get_mode_map()
+    print(f"MODE MAP: {mode_map}")
+    # exit()
     graph = sdg.get_graph()
 
+    print(input_dims)
     ##### Create the actual testbench mapping based on the SAM graph #####
     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
                           # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
                           output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
-                          real_pe=real_pe, harden_flush=harden_flush, combined=combined)
+                          real_pe=real_pe, harden_flush=harden_flush, combined=combined,
+                          input_sizes=tuple(input_dims.items()))
 
     if dump_bitstream:
         nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
@@ -1978,7 +2042,7 @@ if __name__ == "__main__":
     tester.poke(stb.io.flush, 0)
     tester.eval()
     # for i in range(100000):
-    for i in range(40000):
+    for i in range(10000):
         tester.step(2)
         tester_if = tester._if(tester.circuit.done)
         tester_if.print("Test is done...\n")
