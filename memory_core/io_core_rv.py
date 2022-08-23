@@ -86,10 +86,23 @@ class IOCoreReadyValid(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
+        # I believe there's always a delay of 2
         dense_bypass = 0
         configs = []
+        # add valid high reg sel
+        configs_pre = [('glb2io_17_valid_reg_sel', 1),
+                   ('glb2io_17_valid_reg_value', 1),
+                   ('glb2io_1_valid_reg_sel', 1),
+                   ('glb2io_1_valid_reg_value', 1),
+                   ('io2glb_17_ready_reg_sel', 1),
+                   ('io2glb_17_ready_reg_value', 1),
+                   ('io2glb_1_ready_reg_sel', 1),
+                   ('io2glb_1_ready_reg_value', 1),
+                   ]
         sub_dict = {'dense_bypass': dense_bypass}
         tile_config = self.dut.get_bitstream(sub_dict)
+        for name, v in configs_pre:
+            configs = [self.get_config_data(name, v)] + configs
         for name, v in tile_config:
             configs = [self.get_config_data(name, v)] + configs
         return configs

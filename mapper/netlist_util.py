@@ -43,7 +43,7 @@ class CreateBuses(Visitor):
             return bid
         elif adt == BitVector[16]:
             bid = f"e{self.i}"
-            self.bid_to_width[bid] = 16
+            self.bid_to_width[bid] = 17
             self.i += 1
             return bid
         elif issubclass(adt, BitVector):
@@ -120,7 +120,7 @@ class CreateBuses(Visitor):
         if node.child.type == Bit:
             port = "f2io_1"
         else:
-            port = "f2io_16"
+            port = "f2io_17"
         self.netlist[child_bid].append((node, port))
 
 
@@ -299,7 +299,7 @@ def flatten_adt(adt, path=()):
 
 
 class IO_Input_t(Product):
-    io2f_16 = BitVector[16]
+    io2f_17 = BitVector[16]
     io2f_1 = Bit
 
 
@@ -321,7 +321,7 @@ class FlattenIO(Visitor):
         self.node_map = {}
         self.opath_to_type = flatten_adt(output_t)
 
-        isel = lambda t: "io2f_1" if t == Bit else "io2f_16"
+        isel = lambda t: "io2f_1" if t == Bit else "io2f_17"
         real_inputs = [
             Input(type=IO_Input_t, iname="_".join(str(field) for field in path))
             for path in ipath_to_type
@@ -647,7 +647,7 @@ class FixInputsOutputAndPipeline(Visitor):
             io_child = new_children[0]
 
             if "io16in" in io_child.iname:
-                new_node = new_children[0].select("io2f_16")
+                new_node = new_children[0].select("io2f_17")
                 if self.pipeline_inputs:
                     self.create_register_tree(
                         io_child,
@@ -792,7 +792,7 @@ def create_netlist_info(
     def tile_to_char(t):
         if t.split(".")[1] == "PE":
             return "p"
-        elif t.split(".")[1] == "MEM":
+        elif t.split(".")[1] == "Mem":
             return "m"
         elif t.split(".")[1] == "Pond":
             return "M"
