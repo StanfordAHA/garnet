@@ -79,9 +79,27 @@ class GlobalBufferParams:
     cgra_cfg_data_width: int = 32
 
     # cell parameters
-    cg_cell_name: str = "CKLNQD1BWP16P90"
-    sram_macro_name: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
+    process: str = "TSMC"
+
+    # Not used in TSMC path (yet)
+    tsmc_icg_name: str = "CKLNQD1BWP16P90"
+    gf_icg_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
+    tsmc_sram_macro_prefix: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
+    gf_sram_macro_prefix: str = "IN12LP_S1DB_"
+
+    # Currently different for TSMC vs. GF
     sram_macro_depth: int = 2048
+
+    # These will go away
+    sram_macro_name: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
+    cg_cell_name: str = "CKLNQD1BWP16P90"
+
+    # Not used in TSMC path (yet)
+    sram_macro_word_size: int = 64
+    sram_macro_mux_size: int = 8
+    sram_macro_num_subarrays: int = 2
+
+
 
     # dependent field
     num_prr_width: int = field(init=False, default=num_prr_width)
