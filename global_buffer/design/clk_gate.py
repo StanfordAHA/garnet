@@ -24,6 +24,6 @@ class ClkGate(Generator):
         self.add_child(f"CG_CELL",
                        CG(icg_name),
                        E=self.enable,
-                       CP=self.clk,
+                       CLK=self.clk,
                        TE=const(0, 1),
-                       Q=self.gclk)
+                       Z=self.gclk)
