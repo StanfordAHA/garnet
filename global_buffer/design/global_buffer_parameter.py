@@ -80,25 +80,18 @@ class GlobalBufferParams:
 
     # cell parameters
     process: str = "TSMC"
-
-    # Not used in TSMC path (yet)
     tsmc_icg_name: str = "CKLNQD1BWP16P90"
     gf_icg_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
     tsmc_sram_macro_prefix: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
     gf_sram_macro_prefix: str = "IN12LP_S1DB_"
 
-    # Currently different for TSMC vs. GF
+    # Currently 2K for TSMC, 4K for GF
     sram_macro_depth: int = 2048
 
-    # These will go away
-    sram_macro_name: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
-
-    # Not used in TSMC path (yet)
+    # Same for TSMC, GF
     sram_macro_word_size: int = 64
     sram_macro_mux_size: int = 8
     sram_macro_num_subarrays: int = 2
-
-
 
     # dependent field
     num_prr_width: int = field(init=False, default=num_prr_width)
@@ -145,6 +138,9 @@ class GlobalBufferParams:
                                   + glb_bank2sw_pipeline_depth + sram_gen_output_pipeline_depth
                                   + sram_macro_read_latency
                                   )
+    # Not used by TSMC (yet)
+    flush_crossbar_pipeline_depth: int = 1
+
     rd_clk_en_margin: int = 3
     wr_clk_en_margin: int = 3
     proc_clk_en_margin: int = 4
