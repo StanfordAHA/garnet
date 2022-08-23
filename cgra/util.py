@@ -115,7 +115,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         m.generator.reset_generator_cache()
         m.logging.flush_all()  # flush all staged logs
 
-        pipeline_scanner = False
+        pipeline_scanner = True
 
         if not scgra_combined:
 
@@ -144,7 +144,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 scan = ScannerPipe(data_width=16,
                                    fifo_depth=fifo_depth,
                                    add_clk_enable=True,
-                                   defer_fifos=False,
+                                   defer_fifos=True,
                                    add_flush=False)
             else:
                 scan = Scanner(data_width=16,
@@ -298,7 +298,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     or y in range(y_min) \
                     or y in range(y_max + 1, height):
                 if ready_valid:
-                    core = IOCoreReadyValid()
+                    core = IOCoreReadyValid(allow_bypass=False)
                 elif use_io_valid:
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
