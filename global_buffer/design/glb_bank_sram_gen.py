@@ -130,8 +130,8 @@ class GlbBankSramGen(Generator):
         for i in range(self.num_sram_macros):
             if self._params.process == "TSMC":
                 self.add_child(f"sram_array_{i}",
-                                SRAM(self._params.sram_macro_name),
-
+                               SRAM(self._params.process, self._params.tsmc_sram_macro_prefix,
+                                    self.sram_macro_width, self.sram_macro_depth),
                                CLK=self.CLK,
                                A=self.a_sram_d,
                                BWEB=self.BWEB_d,
