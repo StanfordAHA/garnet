@@ -13,17 +13,31 @@ class ClkGate(Generator):
 
         self.add_clk_gate_cell()
 
+    # TSMC cell 'CKLNQD1BWP16P90' has ports CP, Q
+    # GF cell 'SC7P5T_CKGPRELATNX1_SSC14R' has ports CLK, Z
+
+
     def add_clk_gate_cell(self):
+
         if self._params.process == "TSMC":
-            icg_name = self._params.tsmc_icg_name
+            self.add_child(f"CG_CELL",
+                       CG(self._params.tsmc_icg_name),
+                       E=self.enable,
+                       CP=self.clk,
+                       TE=const(0, 1),
+                       Q=self.gclk)
+
+
         elif self._params.process == "GF":
             icg_name = self._params.gf_icg_name
-        else:
-            raise Exception("process should be either 'TSMC' or 'GF'")
-
-        self.add_child(f"CG_CELL",
+            self.add_child(f"CG_CELL",
                        CG(icg_name),
                        E=self.enable,
                        CLK=self.clk,
                        TE=const(0, 1),
                        Z=self.gclk)
+
+
+        else:
+            raise Exception("process should be either 'TSMC' or 'GF'")
+
