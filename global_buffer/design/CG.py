@@ -9,8 +9,8 @@ class CG(Generator):
 
     def __init__(self, _params: GlobalBufferParams):
 
-      if self._params.process == "TSMC":
-        super().__init__(_self._params.tsmc_icg_name)
+      if _params.process == "TSMC":
+        super().__init__(_params.tsmc_icg_name)
         self.E = self.input("E", 1)
         self.CLK = self.clock("CP")
         self.TE = self.input("TE", 1)
@@ -20,8 +20,8 @@ class CG(Generator):
         self.add_always(self.clk_en_latch)
         self.wire(self.Q, (self.CLK & self.enable_latch))
 
-      elif self._params.process == "GF":
-        super().__init__(_self._params.gf_icg_name)
+      elif _params.process == "GF":
+        super().__init__(_params.gf_icg_name)
         self.E = self.input("E", 1)
         self.CLK = self.clock("CLK")
         self.TE = self.input("TE", 1)
