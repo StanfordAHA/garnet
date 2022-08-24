@@ -21,7 +21,7 @@ class ClkGate(Generator):
 
         if self._params.process == "TSMC":
             self.add_child(f"CG_CELL",
-                       CG(self._params.tsmc_icg_name),
+                       CG(self._params),
                        E=self.enable,
                        CP=self.clk,
                        TE=const(0, 1),
@@ -31,12 +31,11 @@ class ClkGate(Generator):
         elif self._params.process == "GF":
             icg_name = self._params.gf_icg_name
             self.add_child(f"CG_CELL",
-                       CG(icg_name),
+                       CG(self._params),
                        E=self.enable,
                        CLK=self.clk,
                        TE=const(0, 1),
                        Z=self.gclk)
-
 
         else:
             raise Exception("process should be either 'TSMC' or 'GF'")
