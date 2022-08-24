@@ -1331,7 +1331,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "x"
         # raise NotImplementedError
     elif 'mat_sddmm.gv' in app_name:
-        shape_ = 10
+        shape_ = 4
         b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
         d_matrix = MatrixGenerator(name="D", shape=[shape_, shape_], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
