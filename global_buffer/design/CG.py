@@ -7,7 +7,7 @@ class CG(Generator):
     # TSMC cell 'CKLNQD1BWP16P90' has ports CP, Q
     # GF cell 'SC7P5T_CKGPRELATNX1_SSC14R' has ports CLK, Z
 
-    def __init__(self, name: str, _params: GlobalBufferParams):):
+    def __init__(self, name: str, _params: GlobalBufferParams):
 
       if self._params.process == "TSMC":
 
