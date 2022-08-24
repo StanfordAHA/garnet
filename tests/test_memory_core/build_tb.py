@@ -1010,6 +1010,8 @@ class SparseTBBuilder(m.Generator2):
                 # elif "s" in self.core_nodes[node.get_name()].get_name():
                 else:
                     print(node.get_name(), self.core_nodes[node.get_name()].get_name())
+                    if "glb" in node.get_name():
+                        node_config_kwargs['sparse_mode'] = 1
                     self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), (1, node_config_kwargs))
                 # else:
                     # print(node.get_name(), self.core_nodes[node.get_name()].get_name())
@@ -1312,21 +1314,24 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         b_matrix = MatrixGenerator(name="b", shape=[1], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
     elif 'mat_residual.gv' in app_name:
         # WRONG GRAPH
-        b_matrix = MatrixGenerator(name="b", shape=[10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        C_matrix = MatrixGenerator(name="C", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        d_matrix = MatrixGenerator(name="d", shape=[10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        shape_ = 10
+        b_matrix = MatrixGenerator(name="b", shape=[shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        C_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        d_matrix = MatrixGenerator(name="d", shape=[shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         C_matrix.dump_outputs()
         d_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         C_mat = C_matrix.get_matrix()
         d_mat = d_matrix.get_matrix()
-        output_matrix = b_mat - numpy.matmul(C_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+        output_matrix = numpy.subtract(b_mat,
+                                       numpy.matmul(C_mat, d_mat, dtype=numpy.uint16, casting='unsafe'),
+                                       dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "x"
         # raise NotImplementedError
     elif 'mat_sddmm.gv' in app_name:
-        shape_ = 4
+        shape_ = 10
         b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
         d_matrix = MatrixGenerator(name="D", shape=[shape_, shape_], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
@@ -1515,11 +1520,11 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "x"
     elif 'tensor3_mttkrp.gv' in app_name:
-        shape_ = 4
+        shape_ = 10
         b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_, shape_],
-                                   sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=4)
-        c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=4)
-        d_matrix = MatrixGenerator(name="D", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=4)
+                                   sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        d_matrix = MatrixGenerator(name="D", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         d_matrix.dump_outputs()
@@ -2055,7 +2060,7 @@ if __name__ == "__main__":
     tester.poke(stb.io.flush, 0)
     tester.eval()
     # for i in range(100000):
-    for i in range(10000):
+    for i in range(50000):
         tester.step(2)
         tester_if = tester._if(tester.circuit.done)
         tester_if.print("Test is done...\n")

@@ -1,12 +1,9 @@
 import magma
 from gemstone.generator.from_magma import FromMagma
-from typing import List
-from canal.interconnect import Interconnect
 from lake.top.extract_tile_info import *
 import kratos as kts
 from gemstone.generator.from_magma import FromMagma
 from typing import List
-from lake.top.pond import Pond
 from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
 from lake.modules.io_core import *
@@ -87,18 +84,24 @@ class IOCoreReadyValid(LakeCoreBase):
 
     def get_config_bitstream(self, config_tuple):
         # I believe there's always a delay of 2
+        _, config_kwargs = config_tuple
+        if 'sparse_mode' in config_kwargs:
+            configs_pre = []
+        else:
+            configs_pre = [
+                ('glb2io_17_valid_reg_sel', 1),
+                ('glb2io_17_valid_reg_value', 1),
+                ('glb2io_1_valid_reg_sel', 1),
+                ('glb2io_1_valid_reg_value', 1),
+                ('io2glb_17_ready_reg_sel', 1),
+                ('io2glb_17_ready_reg_value', 1),
+                ('io2glb_1_ready_reg_sel', 1),
+                ('io2glb_1_ready_reg_value', 1),
+            ]
         dense_bypass = 0
         configs = []
         # add valid high reg sel
-        configs_pre = [('glb2io_17_valid_reg_sel', 1),
-                   ('glb2io_17_valid_reg_value', 1),
-                   ('glb2io_1_valid_reg_sel', 1),
-                   ('glb2io_1_valid_reg_value', 1),
-                   ('io2glb_17_ready_reg_sel', 1),
-                   ('io2glb_17_ready_reg_value', 1),
-                   ('io2glb_1_ready_reg_sel', 1),
-                   ('io2glb_1_ready_reg_value', 1),
-                   ]
+
         sub_dict = {'dense_bypass': dense_bypass}
         tile_config = self.dut.get_bitstream(sub_dict)
         for name, v in configs_pre:
