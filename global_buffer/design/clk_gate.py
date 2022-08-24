@@ -29,7 +29,6 @@ class ClkGate(Generator):
 
 
         elif self._params.process == "GF":
-            icg_name = self._params.gf_icg_name
             self.add_child(f"CG_CELL",
                        CG(self._params),
                        E=self.enable,
