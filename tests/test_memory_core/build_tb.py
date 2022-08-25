@@ -1310,8 +1310,33 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     elif 'mat_mattransmul.gv' in app_name:
         # WRONG GRAPH
-        raise NotImplementedError
-        b_matrix = MatrixGenerator(name="b", shape=[1], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        shape_ = 10
+        b_matrix = MatrixGenerator(name="b", shape=[1], sparsity=0, format='CSF', dump_dir=matrix_tmp_dir)
+        C_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        d_matrix = MatrixGenerator(name="d", shape=[shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        e_matrix = MatrixGenerator(name="e", shape=[1], sparsity=0, format='CSF', dump_dir=matrix_tmp_dir)
+        f_matrix = MatrixGenerator(name="f", shape=[shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        C_matrix.dump_outputs()
+        d_matrix.dump_outputs()
+        e_matrix.dump_outputs()
+        f_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        C_mat = C_matrix.get_matrix()
+        d_mat = d_matrix.get_matrix()
+        e_mat = e_matrix.get_matrix()
+        f_mat = f_matrix.get_matrix()
+        output_matrix = numpy.add(numpy.multiply(e_mat, f_mat, dtype=numpy.uint16, casting='unsafe'),
+                                       numpy.multiply(b_mat,
+                                           numpy.matmul(C_mat, d_mat,
+                                               dtype=numpy.uint16,
+                                               casting='unsafe'),
+                                           dtype=numpy.uint16,
+                                           casting='unsafe'),
+                                       dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "x"
+
     elif 'mat_residual.gv' in app_name:
         # WRONG GRAPH
         shape_ = 10
