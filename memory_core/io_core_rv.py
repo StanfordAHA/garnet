@@ -24,7 +24,8 @@ class IOCoreReadyValid(LakeCoreBase):
                  config_addr_width=8,
                  tracks_supported=[1, 17],
                  fifo_depth=2,
-                 allow_bypass=False):
+                 allow_bypass=False,
+                 use_almost_full=True):
 
         buffet_name = "IOCoreReadyValid"
         super().__init__(config_data_width=config_data_width,
@@ -39,11 +40,13 @@ class IOCoreReadyValid(LakeCoreBase):
         self.config_addr_width = config_addr_width
         self.tracks_supported = tracks_supported
         self.allow_bypass = allow_bypass
+        self.use_almost_full = use_almost_full
 
         cache_key = (self.data_width,
                      self.config_data_width,
                      self.config_addr_width,
                      self.allow_bypass,
+                     self.use_almost_full,
                      "IOCoreReadyValid")
 
         # Check for circuit caching
@@ -55,7 +58,8 @@ class IOCoreReadyValid(LakeCoreBase):
                               tracks_supported=self.tracks_supported,
                               fifo_depth=fifo_depth,
                               use_17_to_16_hack=False,
-                              allow_bypass=self.allow_bypass)
+                              allow_bypass=self.allow_bypass,
+                              use_almost_full=self.use_almost_full)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
