@@ -274,9 +274,13 @@ class Garnet(Generator):
 
         for blk_id in inputs:
             x, y = placement[blk_id]
-            bit_width = 16 if blk_id[0] == "I" else 1
+            bit_width = 17 if blk_id[0] == "I" else 1
+            #bit_width = 16 if blk_id[0] == "I" else 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
+            print("WEIRD NAME ASSERTION")
+            print(name)
+            print(self.interconnect.interface())
             assert name in self.interconnect.interface()
             blk_name = id_to_name[blk_id]
             if "reset" in blk_name:
@@ -285,7 +289,8 @@ class Garnet(Generator):
                 en_port_name.append(name)
         for blk_id in outputs:
             x, y = placement[blk_id]
-            bit_width = 16 if blk_id[0] == "I" else 1
+            #bit_width = 16 if blk_id[0] == "I" else 1
+            bit_width = 17 if blk_id[0] == "I" else 1
             name = f"io2glb_{bit_width}_X{x:02X}_Y{y:02X}"
             output_interface.append(name)
             assert name in self.interconnect.interface()
@@ -311,9 +316,10 @@ class Garnet(Generator):
 
         app_file = app
         c = CoreIRContext(reset=True)
+        cutil.load_libs(["cgralib"])
         cmod = cutil.load_from_json(app_file)
         c = CoreIRContext()
-        cutil.load_libs(["commonlib", "float"])
+        cutil.load_libs(["cgralib", "commonlib", "float"])
         c.run_passes(["flatten"])
 
         MEM_fc = gen_MEM_fc()
@@ -325,11 +331,11 @@ class Garnet(Generator):
             pe_header,
             {"global.PE": self.pe_fc},
         )
-        putil.load_and_link_peak(
-            nodes,
-            mem_header,
-            {"global.MEM": (MEM_fc, True)},
-        )
+        #putil.load_and_link_peak(
+        #    nodes,
+        #    mem_header,
+        #    {"global.MEM": (MEM_fc, True)},
+        #)
 
         putil.load_and_link_peak(
             nodes,
@@ -350,17 +356,72 @@ class Garnet(Generator):
         )
 
         dag = cutil.coreir_to_dag(nodes, cmod)
-        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
+        tile_info = {"global.PE": self.pe_fc, "cgralib.Mem": nodes.peak_nodes["cgralib.Mem"],
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
         netlist_info = create_netlist_info(app_dir,
-                                            dag,
-                                            tile_info,
-                                            load_only,
-                                            self.harden_flush,
-                                            1 + self.height//self.pipeline_config_interval,
-                                            pipeline_input_broadcasts,
-                                            input_broadcast_branch_factor,
-                                            input_broadcast_max_leaves)
+                                           dag,
+                                           tile_info,
+                                           load_only,
+                                           self.harden_flush,
+                                           self.height // self.pipeline_config_interval,
+                                           pipeline_input_broadcasts,
+                                           input_broadcast_branch_factor,
+                                           input_broadcast_max_leaves)
+        print("NETLIST INFO")
+        print(netlist_info)
+
+        mem_remap = None
+        pe_remap = None
+        
+        for core_key, core_value in self.interconnect.tile_circuits.items():
+            actual_core = core_value.core
+            pnr_tag = actual_core.pnr_info()
+            if isinstance(pnr_tag, list):
+                continue
+            pnr_tag = pnr_tag.tag_name
+            if pnr_tag == "m" and mem_remap is None:
+                mem_remap = actual_core.get_port_remap()
+                print("MEM PORT REMAP!")
+                print(mem_remap)
+            elif pnr_tag == "p" and pe_remap is None:
+                pe_remap = actual_core.get_port_remap()
+            elif mem_remap is not None and pe_remap is not None:
+                break
+
+        print(mem_remap)
+        print(pe_remap)
+
+        # Remap here...
+        print("Actual netlist...")
+        print(netlist_info['netlist'])
+        for netlist_id, connections_list in netlist_info['netlist'].items():
+            for idx, connection in enumerate(connections_list):
+                tag_, pin_ = connection
+                if tag_[0] == 'm':
+                    # get mode...
+                    metadata = netlist_info['id_to_metadata'][tag_]
+                    print("metadata...")
+                    print(metadata)
+                    mode = "UB"
+                    if 'stencil_valid' in metadata:
+                        mode = 'stencil_valid'
+                    print("SHOWING REMAP")
+                    print(f"MODE {mode}")
+                    print(mem_remap[mode])
+                    print(f"remapping pin {pin_} to {mem_remap[mode][pin_]}")
+                    pin_remap = mem_remap[mode][pin_]
+                    connections_list[idx] = (tag_, pin_remap)
+                elif tag_[0] == 'p':
+                    pin_remap = pe_remap['alu'][pin_]
+                    connections_list[idx] = (tag_, pin_remap)
+            netlist_info['netlist'][netlist_id] = connections_list
+                    # Remap the memtile or pondtile pins
+                    #core = self.interconnect.placement[tag_]
+                    #print(core)
+                    #if tag_[0] == 'm
+
+        print(netlist_info['netlist'])
+
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])

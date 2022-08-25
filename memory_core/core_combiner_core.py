@@ -1,8 +1,5 @@
-from typing_extensions import runtime
-import magma
 from gemstone.generator.from_magma import FromMagma
 from typing import List
-from canal.interconnect import Interconnect
 from lake.top.extract_tile_info import *
 import kratos as kts
 from gemstone.generator.from_magma import FromMagma
@@ -126,7 +123,72 @@ class CoreCombinerCore(LakeCoreBase):
 
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
-        _, config_kwargs = config_tuple
+        configs = []
+
+        # Basically this means we are doing a dense app
+        if isinstance(config_tuple, dict):
+            instr = config_tuple
+            # Check if mem or PE
+            if self.pnr_tag == 'm':
+                if 'mode' in instr and instr['mode'] == 'lake':
+                    instr['mode'] = 'UB'
+                    if 'stencil_valid' in instr:
+                        instr['mode'] = 'stencil_valid'
+                elif 'mode' in instr and instr['mode'] == 'sram':
+                    instr['mode'] = 'ROM'
+                    config_extra_rom = [(f"{self.get_port_remap()['ROM']['wen']}_reg_sel", 1)]
+                    for name, v in config_extra_rom:
+                        configs = [self.get_config_data(name, v)] + configs
+                elif 'mode' not in instr and 'stencil_valid' in instr:
+                    instr['mode'] = 'stencil_valid'
+                else:
+                    # Default to UB mode since we get varying consistency in controller indication
+                    instr['mode'] = 'UB'
+
+                config_pre = self.dut.get_bitstream(instr)
+                # Add the runtime configuration to the final config
+                for name, v in config_pre:
+                    configs = [self.get_config_data(name, v)] + configs
+                # Add in preloaded memory
+                if "init" in instr:
+                    # this is SRAM content
+                    content = instr['init']
+                    for addr, data in enumerate(content):
+                        if (not isinstance(data, int)) and len(data) == 2:
+                            addr, data = data
+                        addr = addr >> 2
+                        feat_addr = addr // 256 + 1
+                        addr = (addr % 256)
+                        configs.append((addr, feat_addr, data))
+                print(configs)
+                return configs
+            elif self.pnr_tag == 'p':
+                instr['mode'] = 'alu'
+                config_pre = self.dut.get_bitstream(instr)
+                for name, v in config_pre:
+                    configs = [self.get_config_data(name, v)] + configs
+                print(configs)
+                return configs
+        elif not isinstance(config_tuple, tuple):
+            # It's a PE then...
+            config_kwargs = {
+                'mode': 'alu',
+                'use_dense': True,
+                'op': int(config_tuple)
+            }
+            instr = config_kwargs
+            config_pre = self.dut.get_bitstream(instr)
+            for name, v in config_pre:
+                configs = [self.get_config_data(name, v)] + configs
+            config_dense_bypass = [(f"{self.get_port_remap()['alu']['data0']}_dense", 1),
+                                   (f"{self.get_port_remap()['alu']['data1']}_dense", 1),
+                                   (f"{self.get_port_remap()['alu']['res']}_dense", 1)]
+            for name, v in config_dense_bypass:
+                configs = [self.get_config_data(name, v)] + configs
+            print(configs)
+            return configs
+        else:
+            _, config_kwargs = config_tuple
         assert 'mode' in config_kwargs
 
         print(config_kwargs)
@@ -135,7 +197,6 @@ class CoreCombinerCore(LakeCoreBase):
         # config_dict[self.runtime_mode] = config_kwargs
 
         # op = config_tuple
-        configs = []
         # config_pe = [("tile_en", 1)]
         configs_cc = []
         configs_cc += self.dut.get_bitstream(config_kwargs)

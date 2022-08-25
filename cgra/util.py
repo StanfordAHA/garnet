@@ -6,6 +6,7 @@ from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
 from canal.interconnect import Interconnect
 from memory_core.buffet_core import BuffetCore
 from memory_core.crddrop_core import CrdDropCore
+from memory_core.crdhold_core import CrdHoldCore
 from memory_core.fake_pe_core import FakePECore
 from memory_core.io_core_rv import IOCoreReadyValid
 from memory_core.repeat_core import RepeatCore
@@ -34,6 +35,7 @@ from memory_core.core_combiner_core import CoreCombinerCore
 from lake.modules.repeat import Repeat
 from lake.modules.repeat_signal_generator import RepeatSignalGenerator
 from lake.modules.scanner import Scanner
+from lake.modules.scanner_pipe import ScannerPipe
 from lake.modules.write_scanner import WriteScanner
 from lake.modules.intersect import Intersect
 from lake.modules.reg_cr import Reg
@@ -113,9 +115,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         m.generator.reset_generator_cache()
         m.logging.flush_all()  # flush all staged logs
 
-        if not scgra_combined:
+        pipeline_scanner = True
 
-            pipeline_scanner = False
+        if not scgra_combined:
 
             altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
                                       'add_clk_enable': clk_enable,
@@ -129,6 +131,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                        (RepeatCore, {'fifo_depth': fifo_depth}),
                        (IntersectCore, {'fifo_depth': fifo_depth}),
                        (CrdDropCore, {'fifo_depth': fifo_depth}),
+                       (CrdHoldCore, {'fifo_depth': fifo_depth}),
                        (RepeatSignalGeneratorCore, {'passthru': False,
                                                     'fifo_depth': fifo_depth}),
                        (RegCore, {'fifo_depth': fifo_depth})]
@@ -137,12 +140,33 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             controllers = []
 
-            strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
+            if pipeline_scanner:
+                scan = ScannerPipe(data_width=16,
+                                   fifo_depth=fifo_depth,
+                                   add_clk_enable=True,
+                                   defer_fifos=True,
+                                   add_flush=False)
+            else:
+                scan = Scanner(data_width=16,
+                               fifo_depth=fifo_depth,
+                               defer_fifos=True,
+                               add_flush=False)
+
+            wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
+                                 defer_fifos=True,
+                                 add_flush=False)
+            strg_ub = StrgUBVec(data_width=16,
+                                mem_width=64,
+                                mem_depth=512)
             fiber_access = FiberAccess(data_width=16,
                                        local_memory=False,
                                        tech_map=GF_Tech_Map(depth=512, width=32),
                                        defer_fifos=True)
-
+            buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
+                                tech_map=GF_Tech_Map(depth=512, width=32),
+                                defer_fifos=True,
+                                optimize_wide=True,
+                                add_flush=False)
             strg_ram = StrgRAM(data_width=16,
                                banks=1,
                                memory_width=64,
@@ -155,35 +179,45 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             stencil_valid = StencilValid()
 
+            controllers.append(scan)
+            controllers.append(wscan)
+            controllers.append(buffet)
             controllers.append(strg_ub)
-            controllers.append(fiber_access)
+            # controllers.append(fiber_access)
             controllers.append(strg_ram)
             controllers.append(stencil_valid)
 
             isect = Intersect(data_width=16,
                               use_merger=False,
                               fifo_depth=8,
-                              defer_fifos=True)
+                              defer_fifos=True,
+                              add_flush=False)
             crd_drop = CrdDrop(data_width=16, fifo_depth=fifo_depth,
                                lift_config=True,
-                               defer_fifos=True)
+                               defer_fifos=True,
+                               add_flush=False)
             crd_hold = CrdHold(data_width=16, fifo_depth=fifo_depth,
                                lift_config=True,
-                               defer_fifos=True)
+                               defer_fifos=True,
+                               add_flush=False)
             onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
                             ext_pe_prefix=pe_prefix,
                             pe_ro=True,
-                            do_config_lift=False)
+                            do_config_lift=False,
+                            add_flush=False)
             repeat = Repeat(data_width=16,
                             fifo_depth=8,
-                            defer_fifos=True)
+                            defer_fifos=True,
+                            add_flush=False)
             rsg = RepeatSignalGenerator(data_width=16,
                                         passthru=False,
                                         fifo_depth=fifo_depth,
-                                        defer_fifos=True)
+                                        defer_fifos=True,
+                                        add_flush=False)
             regcr = Reg(data_width=16,
                         fifo_depth=fifo_depth,
-                        defer_fifos=True)
+                        defer_fifos=True,
+                        add_flush=False)
 
             controllers_2 = []
 
@@ -198,25 +232,25 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "Q",
+                                           'pnr_tag': "p",
                                            'name': "PE",
                                            'input_prefix': "PE_"}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "Q",
+                                           'pnr_tag': "p",
                                            'name': "PE",
                                            'input_prefix': "PE_"}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "Q",
+                                           'pnr_tag': "p",
                                            'name': "PE",
                                            'input_prefix': "PE_"}),
                        (CoreCombinerCore, {'controllers_list': controllers,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "C",
+                                           'pnr_tag': "m",
                                            'name': "MemCore",
                                            'input_prefix': "MEM_"})]
 
@@ -264,7 +298,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     or y in range(y_min) \
                     or y in range(y_max + 1, height):
                 if ready_valid:
-                    core = IOCoreReadyValid()
+                    core = IOCoreReadyValid(allow_bypass=False)
                 elif use_io_valid:
                     core = IOCoreValid(config_addr_width=reg_addr_width,
                                        config_data_width=config_data_width)
@@ -275,16 +309,16 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 if altcore is not None:
                     altcore_used = True
                     if altcore[altcore_ind] == PeakCore:
-                        core = PeakCore(pe_fc)
+                        core = PeakCore(pe_fc, ready_valid=ready_valid)
                     else:
                         core_type, core_kwargs = altcore[altcore_ind]
                         core = core_type(**core_kwargs)
                         if add_pond and core_type == CoreCombinerCore and "alu" in core.get_modes_supported():
                             intercore_mapping = core.get_port_remap()['alu']
-                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
+                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
                         # Try adding pond?
                         elif add_pond and altcore[altcore_ind][0] == OnyxPECore:
-                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
+                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
                 else:
                     if tile_layout_option == 0:
                         use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
@@ -292,11 +326,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                         use_mem_core = (y - y_min) % tile_max >= mem_tile_ratio
 
                     if use_mem_core:
-                        core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush)
+                        core = MemCore(use_sim_sram=use_sim_sram, gate_flush=not harden_flush, ready_valid=ready_valid)
                     else:
-                        core = PeakCore(pe_fc)
+                        core = PeakCore(pe_fc, ready_valid=ready_valid)
                         if add_pond:
-                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush)
+                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
 
             cores[(x, y)] = core
 

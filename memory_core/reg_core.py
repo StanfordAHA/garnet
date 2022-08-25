@@ -51,7 +51,8 @@ class RegCore(LakeCoreBase):
             # in the following steps.
             self.dut = Reg(data_width=data_width,
                            fifo_depth=fifo_depth,
-                           defer_fifos=False)
+                           defer_fifos=False,
+                           add_flush=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
@@ -79,16 +80,21 @@ class RegCore(LakeCoreBase):
                 cfg_dump.write(write_line)
 
     def get_config_bitstream(self, config_tuple):
-        stop_lvl = config_tuple
+        # stop_lvl = config_tuple
+        _, config_kwargs = config_tuple
         configs = []
         config_reg = []
-        config_reg += self.dut.get_bitstream(stop_lvl=stop_lvl)
+        # config_reg += self.dut.get_bitstream(stop_lvl=stop_lvl)
+        config_reg += self.dut.get_bitstream(config_kwargs=config_kwargs)
         for name, v in config_reg:
             configs = [self.get_config_data(name, v)] + configs
         return configs
 
     def pnr_info(self):
         return PnRTag("R", self.DEFAULT_PRIORITY, 1)
+
+    def get_modes_supported(self):
+        return ['regcore']
 
 
 if __name__ == "__main__":
