@@ -86,16 +86,22 @@ class IntersectCore(LakeCoreBase):
 
     def get_config_bitstream(self, config_tuple):
         configs = []
-        cmrg_enable, cmrg_stop_lvl, op = config_tuple
-        config_isect = self.dut.get_bitstream(cmrg_enable=cmrg_enable,
-                                              cmrg_stop_lvl=cmrg_stop_lvl,
-                                              op=op)
+        # cmrg_enable, cmrg_stop_lvl, op = config_tuple
+        _, config_kwargs = config_tuple
+        # config_isect = self.dut.get_bitstream(cmrg_enable=cmrg_enable,
+        #                                       cmrg_stop_lvl=cmrg_stop_lvl,
+        #                                       op=op)
+        config_isect = self.dut.get_bitstream(config_kwargs=config_kwargs)
+
         for name, v in config_isect:
             configs = [self.get_config_data(name, v)] + configs
         return configs
 
     def pnr_info(self):
         return PnRTag("j", self.DEFAULT_PRIORITY, 1)
+
+    def get_modes_supported(self):
+        return ['intersect']
 
 
 if __name__ == "__main__":
