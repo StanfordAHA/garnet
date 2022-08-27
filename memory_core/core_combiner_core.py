@@ -1,8 +1,5 @@
-from typing_extensions import runtime
-import magma
 from gemstone.generator.from_magma import FromMagma
 from typing import List
-from canal.interconnect import Interconnect
 from lake.top.extract_tile_info import *
 import kratos as kts
 from gemstone.generator.from_magma import FromMagma
@@ -90,8 +87,6 @@ class CoreCombinerCore(LakeCoreBase):
 
             print(self.dut)
 
-            print("CALLING VERILOG ON CORE COMBINER")
-
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
@@ -139,7 +134,6 @@ class CoreCombinerCore(LakeCoreBase):
                         instr['mode'] = 'stencil_valid'
                 elif 'mode' in instr and instr['mode'] == 'sram':
                     instr['mode'] = 'ROM'
-                    #config_extra_rom = [("input_width_1_num_1_reg_sel", 1)]
                     config_extra_rom = [(f"{self.get_port_remap()['ROM']['wen']}_reg_sel", 1)]
                     for name, v in config_extra_rom:
                         configs = [self.get_config_data(name, v)] + configs
@@ -174,13 +168,12 @@ class CoreCombinerCore(LakeCoreBase):
                 print(configs)
                 return configs
         elif not isinstance(config_tuple, tuple):
-        #elif isinstance(config_tuple, int) or isinstance(config_tuple, str):
             # It's a PE then...
             config_kwargs = {
-                    'mode': 'alu',
-                    'use_dense': True,
-                    'op': int(config_tuple)
-                    }
+                'mode': 'alu',
+                'use_dense': True,
+                'op': int(config_tuple)
+            }
             instr = config_kwargs
             config_pre = self.dut.get_bitstream(instr)
             for name, v in config_pre:
