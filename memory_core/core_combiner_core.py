@@ -87,8 +87,6 @@ class CoreCombinerCore(LakeCoreBase):
 
             print(self.dut)
 
-            print("CALLING VERILOG ON CORE COMBINER")
-
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,

@@ -50,7 +50,6 @@ def clk_physical(interconnect: Interconnect, tile_layout_option):
         if tile_core is None or isinstance(tile_core, IOCoreBase) or isinstance(tile_core, IOCoreReadyValid):
             continue
         elif (isinstance(tile_core, MemCore) or (isinstance(tile_core, CoreCombinerCore) and "UB" in tile_core.get_modes_supported())) and tile_layout_option==0:
-            print(f"is core combiner {isinstance(tile_core, CoreCombinerCore)}")
             if (x, y+1) in interconnect.tile_circuits:
                 tile_below = interconnect.tile_circuits[(x, y+1)]
                 if isinstance(tile_below.core, MemCore):
