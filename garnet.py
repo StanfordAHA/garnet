@@ -50,6 +50,9 @@ class Garnet(Generator):
                  num_tracks: int = 5,
                  tile_layout_option: int = 0,
                  add_pond: bool = True,
+                 pond_area_opt: bool = False,
+                 pond_area_opt_share: bool = False,
+                 pond_area_opt_dual_config: bool = False,
                  use_io_valid: bool = False,
                  harden_flush: bool = True,
                  pipeline_config_interval: int = 8,
@@ -125,6 +128,9 @@ class Garnet(Generator):
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
                                    add_pond=add_pond,
+                                   pond_area_opt=pond_area_opt,
+                                   pond_area_opt_share=pond_area_opt_share,
+                                   pond_area_opt_dual_config=pond_area_opt_dual_config,
                                    use_io_valid=use_io_valid,
                                    harden_flush=harden_flush,
                                    use_sim_sram=use_sim_sram,
@@ -357,6 +363,16 @@ class Garnet(Generator):
                                             pipeline_input_broadcasts,
                                             input_broadcast_branch_factor,
                                             input_broadcast_max_leaves)
+
+        # temporally remapping of port names for the new Pond
+        for name, mapping in netlist_info["netlist"].items():
+            for i in range(len(mapping)):
+                (inst_name, port_name) = mapping[i]
+                if "data_in_pond" in port_name:
+                    mapping[i] = (inst_name, "input_width_16_num_2")
+                if "data_out_pond" in port_name:
+                    mapping[i] = (inst_name, "output_width_16_num_0")
+
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
@@ -494,6 +510,9 @@ def main():
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
+    parser.add_argument("--no-pond-area-opt", action="store_true")
+    parser.add_argument("--pond-area-opt-share", action="store_true")
+    parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -525,6 +544,9 @@ def main():
                     tile_layout_option=args.tile_layout_option,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
+                    pond_area_opt=not args.no_pond_area_opt,
+                    pond_area_opt_share=args.pond_area_opt_share,
+                    pond_area_opt_dual_config=not args.no_pond_area_opt_dual_config,
                     harden_flush=not args.no_harden_flush,
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
