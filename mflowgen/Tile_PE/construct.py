@@ -155,9 +155,23 @@ def construct():
 
   # Power aware setup
   if pwr_aware:
-      synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
-      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pd-pe-floorplan.tcl', 'pe-add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'pe-power-switches-setup.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
-      power.extend_inputs(['pd-globalnetconnect.tcl'] )
+
+      # Need pe-pd-params so adk.tcl can access parm 'adk_allow_sdf_regs'
+      # (pe-pd-params come from already-connected 'power-domains' node)
+      synth.extend_inputs([
+        'pe-pd-params.tcl',
+        'designer-interface.tcl', 
+        'upf_Tile_PE.tcl', 
+        'pe-constraints.tcl', 
+        'pe-constraints-2.tcl', 
+        'dc-dont-use-constraints.tcl'])
+
+      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pe-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
+
+      # Need pe-pd-params for parm 'vdd_m3_stripe_sparsity'
+      # pd-globalnetconnect, pe-pd-params come from 'power-domains' node
+      power.extend_inputs(['pd-globalnetconnect.tcl', 'pe-pd-params.tcl'] )
+
       place.extend_inputs(['place-dont-use-constraints.tcl', 'check-clamp-logic-structure.tcl', 'add-aon-tie-cells.tcl'])
       cts.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'])
       postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
@@ -376,19 +390,25 @@ def construct():
       order = init.get_param('order')
       read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
       order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
-      order.insert( read_idx + 2, 'pd-pe-floorplan.tcl' ) # add here
-      order.insert( read_idx + 3, 'pe-add-endcaps-welltaps-setup.tcl' ) # add here
-      order.insert( read_idx + 4, 'pd-add-endcaps-welltaps.tcl' ) # add here
-      order.insert( read_idx + 5, 'pe-power-switches-setup.tcl') # add here
+      order.insert( read_idx + 2, 'pe-pd-params.tcl' ) # add here
+      order.insert( read_idx + 3, 'pd-aon-floorplan.tcl' ) # add here
+      order.insert( read_idx + 4, 'add-endcaps-welltaps-setup.tcl' ) # add here
+      order.insert( read_idx + 5, 'pd-add-endcaps-welltaps.tcl' ) # add here
       order.insert( read_idx + 6, 'add-power-switches.tcl' ) # add here
       order.remove('add-endcaps-welltaps.tcl')
       order.append('check-clamp-logic-structure.tcl')
       init.update_params( { 'order': order } )
 
+      # synth node (needs parm 'adk_allow_sdf_regs')
+      order = synth.get_param('order')
+      order.insert( 0, 'pe-pd-params.tcl' )        # add params file
+      synth.update_params( { 'order': order } )
+
       # power node
       order = power.get_param('order')
-      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
-      order.remove('globalnetconnect.tcl')
+      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add new 'pd-globalnetconnect'
+      order.remove('globalnetconnect.tcl')         # remove old 'globalnetconnect'
+      order.insert( 0, 'pe-pd-params.tcl' )        # add params file
       power.update_params( { 'order': order } )
 
       # place node

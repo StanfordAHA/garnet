@@ -5,6 +5,10 @@ from gemstone.common.transform import pipeline_wire
 import magma
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 43b085fc4c6c361b64eb1422123f58fe02da2f32
 def config_port_pass(interconnect: Interconnect, pipeline=False):
     # x coordinate of garnet
     x_min = interconnect.x_min
@@ -55,7 +59,7 @@ def stall_port_pass(interconnect: Interconnect, port_name: str, port_width=1, co
     interconnect.remove_port(port_name)
     interconnect.add_port(port_name,
                           magma.In(magma.Bits[num_ports * port_width]))
-
+    
     # looping through columns and wire port every col_offset
     for i, x_coor in enumerate(range(x_min, x_min + width)):
         column = interconnect.get_column(x_coor)

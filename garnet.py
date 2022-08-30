@@ -1,6 +1,6 @@
 import argparse
 import magma
-from canal.util import IOSide
+from canal.util import IOSide, SwitchBoxType
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
 from gemstone.generator.generator import Generator, set_debug_mode
@@ -50,6 +50,9 @@ class Garnet(Generator):
                  num_tracks: int = 5,
                  tile_layout_option: int = 0,
                  add_pond: bool = True,
+                 pond_area_opt: bool = False,
+                 pond_area_opt_share: bool = False,
+                 pond_area_opt_dual_config: bool = False,
                  use_io_valid: bool = False,
                  harden_flush: bool = True,
                  pipeline_config_interval: int = 8,
@@ -57,7 +60,10 @@ class Garnet(Generator):
                  pe_fc=lassen_fc,
                  ready_valid: bool = False,
                  scgra: bool = False,
-                 scgra_combined: bool = True):
+                 scgra_combined: bool = True,
+                 sb_option: str = "Imran",
+                 pipeline_regs_density: list = None,
+                 port_conn_option: list = None):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -120,6 +126,12 @@ class Garnet(Generator):
         else:
             wiring = GlobalSignalWiring.Meso
 
+        sb_type_dict = {
+            "Imran": SwitchBoxType.Imran,
+            "Disjoint": SwitchBoxType.Disjoint,
+            "Wilton": SwitchBoxType.Wilton
+        }
+
         interconnect = create_cgra(width, height, io_side,
                                    reg_addr_width=config_addr_reg_width,
                                    config_data_width=config_data_width,
@@ -127,6 +139,9 @@ class Garnet(Generator):
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
                                    add_pond=add_pond,
+                                   pond_area_opt=pond_area_opt,
+                                   pond_area_opt_share=pond_area_opt_share,
+                                   pond_area_opt_dual_config=pond_area_opt_dual_config,
                                    use_io_valid=use_io_valid,
                                    harden_flush=harden_flush,
                                    use_sim_sram=use_sim_sram,
@@ -138,7 +153,10 @@ class Garnet(Generator):
                                    pe_fc=pe_fc,
                                    ready_valid=ready_valid,
                                    scgra=scgra,
-                                   scgra_combined=scgra_combined)
+                                   scgra_combined=scgra_combined,
+                                   switchbox_type=sb_type_dict.get(sb_option, "Invalid Switchbox Type"),
+                                   pipeline_regs_density=pipeline_regs_density,
+                                   port_conn_option=port_conn_option)
 
         self.interconnect = interconnect
 
@@ -367,6 +385,7 @@ class Garnet(Generator):
                                            pipeline_input_broadcasts,
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves)
+
         print("NETLIST INFO")
         print(netlist_info)
 
@@ -433,12 +452,22 @@ class Garnet(Generator):
 
         print(netlist_info['netlist'])
 
+        # temporally remapping of port names for the new Pond
+        for name, mapping in netlist_info["netlist"].items():
+            for i in range(len(mapping)):
+                (inst_name, port_name) = mapping[i]
+                if "data_in_pond" in port_name:
+                    mapping[i] = (inst_name, "input_width_16_num_2")
+                if "data_out_pond" in port_name:
+                    mapping[i] = (inst_name, "output_width_16_num_0")
+
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
 
     def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False,
-                        pipeline_input_broadcasts=False, input_broadcast_branch_factor=4, input_broadcast_max_leaves=16):
+                        pipeline_input_broadcasts=False, input_broadcast_branch_factor=4,
+                        input_broadcast_max_leaves=16):
         id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src,
                                                                         load_only,
                                                                         pipeline_input_broadcasts,
@@ -572,6 +601,12 @@ def main():
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
     parser.add_argument("--sparse-cgra", action="store_true")
     parser.add_argument("--sparse-cgra-combined", action="store_true")
+    parser.add_argument("--no-pond-area-opt", action="store_true")
+    parser.add_argument("--pond-area-opt-share", action="store_true")
+    parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
+    parser.add_argument("--sb-option", type=str, default="Imran")
+    parser.add_argument("--pipeline-regs-density", nargs="+", type=int, default=None)
+    parser.add_argument("--port-conn-option", nargs="+", type=int, default=None)
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -603,6 +638,9 @@ def main():
                     tile_layout_option=args.tile_layout_option,
                     pipeline_config_interval=args.pipeline_config_interval,
                     add_pond=not args.no_pond,
+                    pond_area_opt=not args.no_pond_area_opt,
+                    pond_area_opt_share=args.pond_area_opt_share,
+                    pond_area_opt_dual_config=not args.no_pond_area_opt_dual_config,
                     harden_flush=not args.no_harden_flush,
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
@@ -611,7 +649,10 @@ def main():
                     pe_fc=pe_fc,
                     ready_valid=args.ready_valid,
                     scgra=args.sparse_cgra,
-                    scgra_combined=args.sparse_cgra_combined)
+                    scgra_combined=args.sparse_cgra_combined,
+                    sb_option=args.sb_option,
+                    pipeline_regs_density=args.pipeline_regs_density,
+                    port_conn_option=args.port_conn_option)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
@@ -653,7 +694,8 @@ def main():
         placement, routing, id_to_name, instance_to_instr, \
             netlist, bus = garnet.place_and_route(
                 args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact,
-                load_only=args.generate_bitstream_only, pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
+                load_only=args.generate_bitstream_only,
+                pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
                 input_broadcast_branch_factor=args.input_broadcast_branch_factor,
                 input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
