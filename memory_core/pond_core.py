@@ -93,7 +93,8 @@ class PondCore(LakeCoreBase):
                               add_clk_enable=self.add_clk_enable,
                               add_flush=self.add_flush,
                               stencil_valid=False,
-                              name="PondTop")
+                              name="PondTop",
+                              comply_with_17=True)
 
             # Nonsensical but LakeTop now has its ow n internal dut
             self.dut = self.LT.dut
