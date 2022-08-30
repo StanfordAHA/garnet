@@ -12,7 +12,7 @@
 
 # Need to set interactive constraint mode when using
 # Innovus to generate .lib files
-set_interactive_constraint_modes [all_constraint_modes]
+#set_interactive_constraint_modes [all_constraint_modes]
 
 # These RMUX instances have been marked dont_touch
 # in the synthesis constraints so we can more easily
@@ -20,4 +20,19 @@ set_interactive_constraint_modes [all_constraint_modes]
 set rmuxes [get_cells -hier *RMUX_*_sel_value]
 set rmux_outputs [get_pins -of_objects $rmuxes -filter "direction==out"]
 set_case_analysis 1 $rmux_outputs
+
+# set Fifo enable low
+set fifo_regs [get_cells -hier *REG*fifo_value]
+set fifo_reg_outputs [get_pins -of_objects $fifo_regs -filter "direction==out"]
+set_case_analysis 0 $fifo_reg_outputs
+
+# set Fifo start high
+set fifo_regs [get_cells -hier *REG*start_value]
+set fifo_reg_outputs [get_pins -of_objects $fifo_regs -filter "direction==out"]
+set_case_analysis 1 $fifo_reg_outputs
+
+# set Fifo value high
+set fifo_regs [get_cells -hier *REG*end_value]
+set fifo_reg_outputs [get_pins -of_objects $fifo_regs -filter "direction==out"]
+set_case_analysis 1 $fifo_reg_outputs
 
