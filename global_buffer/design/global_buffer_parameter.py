@@ -122,7 +122,7 @@ class GlobalBufferParams:
     # dma address generator
     queue_depth: int = 1
     load_dma_loop_level: int = 8
-    store_dma_loop_level: int = 6
+    store_dma_loop_level: int = 7
     loop_level: int = max(load_dma_loop_level, store_dma_loop_level)
 
     # dma latency
