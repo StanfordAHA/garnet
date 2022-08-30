@@ -85,6 +85,7 @@ else
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # docker exec $container_name /bin/bash -c "cd /aha/lake/ && git checkout master && git pull"
+        docker exec $container_name /bin/bash -c "cd /aha/gemstone/ && git fetch origin && git checkout gf-mux && git pull"
         # Clone local garnet repo to prevent copying untracked files
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
