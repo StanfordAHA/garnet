@@ -44,7 +44,8 @@ set_input_delay -clock ${clock_name} [expr ${clock_period} * 0.2] [all_inputs]
 
 set_output_delay -clock ${clock_name} 0 [all_outputs]
 
-set_output_delay -clock ${clock_name} [expr 0.7 * ${clock_period}] [get_ports io2glb*]
+set_output_delay -clock ${clock_name} [expr 0.7 * ${clock_period}] [get_ports io2glb* -filter direction==out]
+set_output_delay -clock ${clock_name} [expr 0.7 * ${clock_period}] [get_ports glb2io* -filter direction==out]
 
 # Make all signals limit their fanout
 
