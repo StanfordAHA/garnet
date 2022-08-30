@@ -405,6 +405,17 @@ class Garnet(Generator):
                     mode = "UB"
                     if 'stencil_valid' in metadata:
                         mode = 'stencil_valid'
+                    elif 'mode' in metadata and metadata['mode'] == 'sram':
+                        mode = 'ROM'
+                        # Actually use wr addr for rom mode...
+                        hack_remap = {
+                            'addr_in_0': 'wr_addr_in',
+                            #'addr_in_0': 'rd_addr_in',
+                            'ren_in_0': 'ren',
+                            'data_out_0': 'data_out'
+                                }
+                        assert pin_ in hack_remap
+                        pin_ = hack_remap[pin_]
                     print("SHOWING REMAP")
                     print(f"MODE {mode}")
                     print(mem_remap[mode])
