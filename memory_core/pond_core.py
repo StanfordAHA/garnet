@@ -29,9 +29,9 @@ class PondCore(LakeCoreBase):
                  config_data_width=32,
                  config_addr_width=8,
                  cycle_count_width=16,
-                 pond_area_opt=False,
+                 pond_area_opt=True,
                  pond_area_opt_share=False,
-                 pond_area_opt_dual_config=False,
+                 pond_area_opt_dual_config=True,
                  add_clk_enable=True,
                  add_flush=True,
                  gate_flush=True):
@@ -143,13 +143,8 @@ class PondCore(LakeCoreBase):
         else:
             # need to download the csv and get configuration files
             config_mem = []
-            use_json = False
-            if use_json:
-                top_controller_node = instr["config"]
-                config_mem = self.dut.get_static_bitstream_json(top_controller_node)
-            else:
-                top_controller_node = instr
-                config_mem = self.dut.get_bitstream(top_controller_node)
+            top_controller_node = instr
+            config_mem = self.dut.get_bitstream(top_controller_node)
         for name, v in config_mem:
             configs += [self.get_config_data(name, v)]
         # gate config signals

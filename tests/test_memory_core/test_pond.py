@@ -12,101 +12,6 @@ def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
 
-def generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data):
-    flattened = create_wrapper_flatten(pondcore.dut.internal_generator.clone(),
-                                       pondcore.dut.name)
-
-    (tform_ranges_rd, tform_strides_rd) = transform_strides_and_ranges(ctrl_rd[0], ctrl_rd[1], ctrl_rd[2])
-    (tform_ranges_wr, tform_strides_wr) = transform_strides_and_ranges(ctrl_wr[0], ctrl_wr[1], ctrl_wr[2])
-
-    (tform_ranges_rd_sched, tform_strides_rd_sched) = transform_strides_and_ranges(ctrl_rd[0], ctrl_rd[5], ctrl_rd[2])
-    (tform_ranges_wr_sched, tform_strides_wr_sched) = transform_strides_and_ranges(ctrl_wr[0], ctrl_wr[5], ctrl_wr[2])
-
-    name_out, val_out = trim_config(flattened, "tile_en", 1)
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_read_iter_0_dimensionality", ctrl_rd[2])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_read_addr_0_starting_addr", ctrl_rd[3])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_read_addr_0_strides_0", tform_strides_rd[0])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_read_addr_0_strides_1", tform_strides_rd[1])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_read_iter_0_ranges_0", tform_ranges_rd[0])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_read_iter_0_ranges_1", tform_ranges_rd[1])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_starting_addr", ctrl_rd[4])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_strides_0", tform_strides_rd_sched[0])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_read_sched_0_sched_addr_gen_strides_1", tform_strides_rd_sched[1])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_write_iter_0_dimensionality", ctrl_wr[2])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_write_addr_0_starting_addr", ctrl_wr[3])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_write_addr_0_strides_0", tform_strides_wr[0])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_write_addr_0_strides_1", tform_strides_wr[1])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_write_iter_0_ranges_0", tform_ranges_wr[0])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_write_iter_0_ranges_1", tform_ranges_wr[1])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_write_sched_0_sched_addr_gen_starting_addr", ctrl_wr[4])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_write_sched_0_sched_addr_gen_strides_0", tform_strides_wr_sched[0])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_write_sched_0_sched_addr_gen_strides_1", tform_strides_wr_sched[1])
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_write_sched_0_enable", 1)
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-    name_out, val_out = trim_config(flattened, "rf_read_sched_0_enable", 1)
-    idx, value = pondcore.get_config_data(name_out, val_out)
-    config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
-
-
 def test_pond_rd_wr(run_tb):
 
     chip_size = 2
@@ -132,11 +37,24 @@ def test_pond_rd_wr(run_tb):
 
     pondcore = petile.additional_cores[0]
 
-    # Ranges, Strides, Dimensionality, Starting Addr, Starting Addr - Schedule
-    ctrl_rd = [[16, 1], [1, 1], 2, 0, 16, [1, 1]]
-    ctrl_wr = [[16, 1], [1, 1], 2, 0, 0, [1, 1]]
+    pond_config = {"mode": "pond",
+                   "config": {"in2regfile_0": {"cycle_starting_addr": [0],
+                                               "cycle_stride": [1, 1],
+                                               "dimensionality": 2,
+                                               "extent": [16, 1],
+                                               "write_data_starting_addr": [0],
+                                               "write_data_stride": [1, 1]},
+                              "regfile2out_0": {"cycle_starting_addr": [16],
+                                                "cycle_stride": [1, 1],
+                                                "dimensionality": 2,
+                                                "extent": [16, 1],
+                                                "read_data_starting_addr": [0],
+                                                "read_data_stride": [1, 1]}}}
 
-    generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data)
+    pond_config = pondcore.dut.get_bitstream(config_json=pond_config)
+    for name, v in pond_config:
+        idx, value = pondcore.get_config_data(name, v)
+        config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
     config_data = compress_config_data(config_data)
 
@@ -208,11 +126,24 @@ def test_pond_pe(run_tb):
     for addr, data in add_bs:
         config_data.append((interconnect.get_config_addr(addr, 0, pe_x, pe_y), data))
 
-    # Ranges, Strides, Dimensionality, Starting Addr, Starting Addr - Schedule
-    ctrl_rd = [[16, 1], [1, 1], 2, 0, 16, [1, 1]]
-    ctrl_wr = [[16, 1], [1, 1], 2, 0, 0, [1, 1]]
+    pond_config = {"mode": "pond",
+                   "config": {"in2regfile_0": {"cycle_starting_addr": [0],
+                                               "cycle_stride": [1, 1],
+                                               "dimensionality": 2,
+                                               "extent": [16, 1],
+                                               "write_data_starting_addr": [0],
+                                               "write_data_stride": [1, 1]},
+                              "regfile2out_0": {"cycle_starting_addr": [16],
+                                                "cycle_stride": [1, 1],
+                                                "dimensionality": 2,
+                                                "extent": [16, 1],
+                                                "read_data_starting_addr": [0],
+                                                "read_data_stride": [1, 1]}}}
 
-    generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data)
+    pond_config = pondcore.dut.get_bitstream(config_json=pond_config)
+    for name, v in pond_config:
+        idx, value = pondcore.get_config_data(name, v)
+        config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
     config_data = compress_config_data(config_data)
 
@@ -287,11 +218,24 @@ def test_pond_pe_acc(run_tb):
     for addr, data in add_bs:
         config_data.append((interconnect.get_config_addr(addr, 0, pe_x, pe_y), data))
 
-    # Ranges, Strides, Dimensionality, Starting Addr, Starting Addr - Schedule
-    ctrl_rd = [[16, 1], [0, 0], 2, 8, 0, [1, 0]]
-    ctrl_wr = [[16, 1], [0, 0], 2, 8, 0, [1, 0]]
+    pond_config = {"mode": "pond",
+                   "config": {"in2regfile_0": {"cycle_starting_addr": [0],
+                                               "cycle_stride": [1, 0],
+                                               "dimensionality": 2,
+                                               "extent": [18, 1],
+                                               "write_data_starting_addr": [8],
+                                               "write_data_stride": [0, 0]},
+                              "regfile2out_0": {"cycle_starting_addr": [2],
+                                                "cycle_stride": [1, 0],
+                                                "dimensionality": 2,
+                                                "extent": [16, 1],
+                                                "read_data_starting_addr": [8],
+                                                "read_data_stride": [0, 0]}}}
 
-    generate_pond_api(interconnect, pondcore, ctrl_rd, ctrl_wr, pe_x, pe_y, config_data)
+    pond_config = pondcore.dut.get_bitstream(config_json=pond_config)
+    for name, v in pond_config:
+        idx, value = pondcore.get_config_data(name, v)
+        config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
     config_data = compress_config_data(config_data)
 
@@ -320,6 +264,12 @@ def test_pond_pe_acc(run_tb):
     random.seed(0)
 
     total = 0
+    # the 2 extra cycle is because refgile2out_0 cycle_starting_addr is at 2
+    # cannot be 0 because need to initialize the regfile with 0
+    for i in range(2):
+        tester.step(2)
+        tester.eval()
+
     for i in range(16):
         tester.poke(circuit.interface[src_name0], i + 1)
         total = total + i

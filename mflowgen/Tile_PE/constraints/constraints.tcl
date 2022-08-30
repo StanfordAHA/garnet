@@ -62,7 +62,10 @@ set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
 set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pe_path/* ]]
 
 # Paths from config input ports to the register file in Pond 
-set pond_path PondCore_inst0/pond_W_inst0/pond/rf/data_array_reg*
+set pond_path PondCore_inst0/PondTop_W_inst0/PondTop/memory_0/data_array_reg*
+
+# Prevent buffers in paths from SB input ports
+set_dont_touch [get_nets -of_objects [get_ports *SB* -filter "direction==in"]]
 
 # set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]]
 # Set multicycle path from config ports to the register file passing through the ALU
