@@ -89,8 +89,9 @@ else
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # docker exec $container_name /bin/bash -c "cd /aha/lake/ && git checkout master && git pull"
         docker exec $container_name /bin/bash -c "cd /aha/lake/ && git fetch origin && git checkout sparse_strawman && git pull"
+        docker exec $container_name /bin/bash -c "cd /aha/canal/ && git fetch origin && git checkout split_fifo && git pull"
         docker exec $container_name /bin/bash -c "cd /aha/gemstone/ && git fetch origin && git checkout gf-mux && git pull"
-        docker exec $container_name /bin/bash -c "cd /aha/kratos/ && git checkout master && git pull"
+        docker exec $container_name /bin/bash -c "cd /aha/kratos/ && git checkout master && git pull && DEBUG=1 pip install -e ."
         # Clone local garnet repo to prevent copying untracked files
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
