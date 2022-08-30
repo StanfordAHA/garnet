@@ -238,6 +238,14 @@ else
 fi
 echo ''
 
+# If no logs, script hangs forever maybe, because then logs=""
+# and "grep $log" waits for stdin at "other errors?" below
+if ! test -d *-cadence-innovus-postroute_hold/qrc*.log; then
+    echo "ERROR Cannot find QRC logs something must have failed"
+    echo "ERROR maybe a lost license like in build 420"
+    exit 13
+fi
+
 # QRC errors?
 logs=$(ls *-cadence-innovus-postroute_hold/qrc*.log)
 for log in $logs; do

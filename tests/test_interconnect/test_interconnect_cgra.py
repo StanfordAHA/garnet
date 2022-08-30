@@ -289,12 +289,20 @@ def test_interconnect_fifo(run_tb, io_sides, depth):
         if move == 0:
             # read
             tester.poke(circuit.interface[ren], 1)
-            valid_check = len_fifo > 0
+            if (len(fifo) > 0):
+                most_recent_read = fifo.pop()
+                # tester.expect(circuit.interface[dst], most_recent_read)
+                valid_check = 1
+            else:
+                valid_check = 0
         elif move == 1:
             # write
             tester.poke(circuit.interface[wen], 1)
             tester.poke(circuit.interface[src], write_val)
-            valid_check = len_fifo > 0
+
+            if (len(fifo) < depth):
+                fifo.appendleft(write_val)
+            valid_check = 0
         elif move == 2:
             # r and w
             tester.poke(circuit.interface[wen], 1)

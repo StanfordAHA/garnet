@@ -156,7 +156,7 @@ set_false_path -to [get_ports lo]
 set_false_path -from [get_ports tile_id]
 
 # Preserve the RMUXes so that we can easily constrain them later
-set rmux_cells [get_cells -hier RMUX_T*sel_inst0]
+set rmux_cells [get_cells -hier -regexp .*RMUX_.*_sel_(inst0|value)]
 set_dont_touch $rmux_cells true
 set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true
 
