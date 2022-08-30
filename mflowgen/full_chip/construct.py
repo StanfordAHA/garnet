@@ -45,7 +45,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = get_sys_adk()
-  adk_view = 'view-standard'
+  adk_view = 'multivt'
 
   if which("calibre") is not None:
       drc_rule_deck = 'calibre-drc-chip.rule'

@@ -32,10 +32,9 @@ addPowerSwitch -column -powerDomain TOP \
      -noFixedStdCellOverlap  \
      -globalSwitchCellName $switch_name
 
-#------------------------------------------------------------------------
-# Check to make sure there well taps exist between AON region and
-# right/left chip boundaries.
-#------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+# Check that well taps exist between AON region and right/left chip boundaries
+#-----------------------------------------------------------------------------
 
 if {[info exists ADK_AON_TAP_CELL] && [expr {$ADK_AON_TAP_CELL ne ""}]} {
     set tap_cell $ADK_AON_TAP_CELL
@@ -71,5 +70,7 @@ if { $ps_to_left && $ps_to_right } {
   } else {
     puts "ERROR Found no power-switch taps to left of AON region"
   }
+  puts "Save design for later debugging..."
+  saveDesign checkpoints/design.checkpoint/save.enc -user_path
   exit 13
 }

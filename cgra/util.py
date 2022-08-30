@@ -81,6 +81,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 pipeline_config_interval: int = 8,
                 standalone: bool = False,
                 add_pond: bool = False,
+                pond_area_opt: bool = True,
+                pond_area_opt_share: bool = False,
+                pond_area_opt_dual_config: bool = True,
                 harden_flush: bool = True,
                 use_io_valid: bool = True,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
@@ -330,7 +333,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     else:
                         core = PeakCore(pe_fc, ready_valid=ready_valid)
                         if add_pond:
-                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
+                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush,
+                                                               ready_valid=ready_valid,
+                                                               pond_area_opt=pond_area_opt,
+                                                               pond_area_opt_share=pond_area_opt_share,
+                                                               pond_area_opt_dual_config=pond_area_opt_dual_config)
 
             cores[(x, y)] = core
 

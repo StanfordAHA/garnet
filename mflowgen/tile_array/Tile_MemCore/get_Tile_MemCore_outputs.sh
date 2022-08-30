@@ -28,6 +28,6 @@ cp -L *cadence-innovus-signoff/outputs/design.pt.sdc outputs/Tile_MemCore.pt.sdc
 cp -L *cadence-innovus-signoff/outputs/design.spef.gz outputs/Tile_MemCore.spef.gz
 cp -L *gen_sram_macro/outputs/sram.spi outputs/sram.spi
 cp -L *gen_sram_macro/outputs/sram.v outputs/sram.v
-cp -L *gen_sram_macro/outputs/sram-pwr.v outputs/sram-pwr.v
+cp -L *gen_sram_macro/outputs/sram_pwr.v outputs/sram_pwr.v
 cp -L *gen_sram_macro/outputs/sram_tt.db outputs/sram_tt.db
 

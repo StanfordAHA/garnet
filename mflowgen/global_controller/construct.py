@@ -22,7 +22,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = get_sys_adk()
-  adk_view = 'view-standard'
+  adk_view = 'multivt'
 
   parameters = {
     'construct_path'    : __file__,
@@ -64,6 +64,7 @@ def construct():
   lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
   lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
   drc_pm               = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm')
+  drc_mas              = Step( this_dir + '/../common/gf-mentor-calibre-drc-mas'   )
 
   # Default steps
 
@@ -120,6 +121,7 @@ def construct():
   g.add_step( lib2db                   )
   g.add_step( drc                      )
   g.add_step( drc_pm                   )
+  g.add_step( drc_mas                   )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
 
@@ -142,6 +144,7 @@ def construct():
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      drc_pm       )
+  g.connect_by_name( adk,      drc_mas      )
   g.connect_by_name( adk,      lvs          )
 
   g.connect_by_name( rtl,         synth     )
@@ -177,9 +180,11 @@ def construct():
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      drc_pm       )
+  g.connect_by_name( signoff,      drc_mas       )
   g.connect_by_name( signoff,      lvs          )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), drc_mas.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,      genlib   )
