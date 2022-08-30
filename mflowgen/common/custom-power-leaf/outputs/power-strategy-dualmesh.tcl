@@ -99,17 +99,43 @@ set stripeLlx [dbGet top.fPlan.coreBox_llx]
 set stripeLly [expr [dbGet top.fPlan.coreBox_lly] - [dbGet [dbGetLayerByZ 1].pitchY]]
 set stripeUrx [dbGet top.fPlan.coreBox_urx]
 set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + [dbGet [dbGetLayerByZ 1].pitchY]]
+
 if $::env(PWR_AWARE) {
   setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry] -ignore_nondefault_domains true -skip_via_on_pin {}
+
+  # M3 stripes: VDD_SW and VSS (GND)
+
+  addStripe -nets {VDD_SW VSS} -layer 3 -direction vertical \
+    -width $M3_str_width                        \
+    -spacing $M3_str_intraset_spacing           \
+    -set_to_set_distance $M3_str_interset_pitch \
+    -start_offset $M3_str_offset
+
+  # M3 stripes: VDD
+
+  # E.g. sparsity 2 means half as many VDD stripes, 3 means one third etc.
+  set VDD_SPARSITY $vdd_m3_stripe_sparsity
+  echo "Using VDD_SPARSITY=$VDD_SPARSITY"
+
+  set stripe_to_stripe_pitch [expr ($M3_str_intraset_spacing + $M3_str_width)]
+  set M3_VDD_begin  [expr $M3_str_offset + 2 *  $stripe_to_stripe_pitch ]
+  set VDD_spacing [expr $VDD_SPARSITY * $M3_str_interset_pitch]
+
+  addStripe -nets {VDD} -layer 3 -direction vertical \
+    -width $M3_str_width              \
+    -set_to_set_distance $VDD_spacing \
+    -start_offset $M3_VDD_begin
+
 } else {
   setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry]
+
+  addStripe -nets $power_nets -layer 3 -direction vertical \
+    -width $M3_str_width                        \
+    -spacing $M3_str_intraset_spacing           \
+    -set_to_set_distance $M3_str_interset_pitch \
+    -start_offset $M3_str_offset
 }
 
-addStripe -nets $power_nets -layer 3 -direction vertical \
-    -width $M3_str_width                                \
-    -spacing $M3_str_intraset_spacing                   \
-    -set_to_set_distance $M3_str_interset_pitch         \
-    -start_offset $M3_str_offset
 
 #-------------------------------------------------------------------------
 # M5 straps over memory

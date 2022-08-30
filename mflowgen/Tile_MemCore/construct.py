@@ -174,10 +174,24 @@ def construct():
 
   # Power aware setup
   if pwr_aware:
-      synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
+
+      # Need mem-pd-params so adk.tcl can access parm 'adk_allow_sdf_regs'
+      # (mem-pd-params come from already-connected 'power-domains' node)
+      synth.extend_inputs([
+        'mem-pd-params.tcl',
+        'designer-interface.tcl', 
+        'upf_Tile_MemCore.tcl', 
+        'mem-constraints.tcl', 
+        'mem-constraints-2.tcl', 
+        'dc-dont-use-constraints.tcl'])
+
       init.extend_inputs(['check-clamp-logic-structure.tcl', 'upf_Tile_MemCore.tcl', 'mem-load-upf.tcl', 'dont-touch-constraints.tcl', 'mem-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['check-clamp-logic-structure.tcl', 'place-dont-use-constraints.tcl', 'add-aon-tie-cells.tcl'])
-      power.extend_inputs(['pd-globalnetconnect.tcl'] )
+
+      # Need mem-pd-params for parm 'vdd_m3_stripe_sparsity'
+      # pd-globalnetconnect, mem-pd-params come from 'power-domains' node
+      power.extend_inputs(['pd-globalnetconnect.tcl', 'mem-pd-params.tcl'] )
+
       cts.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl'])
       postcts_hold.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl'] )
       route.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl'] )
@@ -427,10 +441,16 @@ def construct():
       order.append('check-clamp-logic-structure.tcl')
       init.update_params( { 'order': order } )
 
+      # synth node (needs parm 'adk_allow_sdf_regs')
+      order = synth.get_param('order')
+      order.insert( 0, 'mem-pd-params.tcl' )        # add params file
+      synth.update_params( { 'order': order } )
+
       # power node
       order = power.get_param('order')
-      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
-      order.remove('globalnetconnect.tcl')
+      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add new pd-globalnetconnect
+      order.remove('globalnetconnect.tcl')         # remove old globalnetconnect
+      order.insert( 0, 'mem-pd-params.tcl' )       # add params file
       power.update_params( { 'order': order } )
 
       # place node
