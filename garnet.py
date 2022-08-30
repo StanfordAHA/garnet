@@ -147,9 +147,9 @@ class Garnet(Generator):
         # make multiple flush ports
         if harden_flush:
             stall_port_pass(self.interconnect, port_name="flush", port_width=1,
-                            col_offset=glb_params.num_cols_per_group)
+                            col_offset=glb_params.num_cols_per_group, pipeline=True)
         # make multiple configuration ports
-        config_port_pass(self.interconnect)
+        config_port_pass(self.interconnect, pipeline=True)
 
         if not interconnect_only:
             self.add_ports(
@@ -363,7 +363,7 @@ class Garnet(Generator):
                                            tile_info,
                                            load_only,
                                            self.harden_flush,
-                                           self.height // self.pipeline_config_interval,
+                                           1 + self.height // self.pipeline_config_interval,
                                            pipeline_input_broadcasts,
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves)
