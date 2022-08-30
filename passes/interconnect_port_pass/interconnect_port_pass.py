@@ -5,10 +5,6 @@ from gemstone.common.transform import pipeline_wire
 import magma
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 43b085fc4c6c361b64eb1422123f58fe02da2f32
 def config_port_pass(interconnect: Interconnect, pipeline=False):
     # x coordinate of garnet
     x_min = interconnect.x_min
