@@ -164,7 +164,7 @@ if $::env(PWR_AWARE) {
     # source inputs/pe-constraints-2.tcl
     set_dont_touch [get_cells -hierarchical *u_mux_logic*]
     # Prevent buffers in paths from SB input ports
-    set_dont_touch_network [get_ports *SB* -filter "direction==in"]
+    set_dont_touch_network [get_ports *SB* -filter "direction==in"] -no_propagate
 } 
 
 # False paths
