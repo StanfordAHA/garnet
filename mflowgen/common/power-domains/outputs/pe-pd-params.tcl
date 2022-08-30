@@ -4,6 +4,23 @@
 # Author: Alex Carsello
 # Date: 3/7/21
 
+# VDD stripe sparsity params
+
+# Always-on domain is much smaller than the switching domain, so need
+# fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
+# Sparsity parm controls VDD stripe sparsity for M3 power stripes;
+# sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
+set vdd_m3_stripe_sparsity 3
+
+
+# Allow SDF registers?
+
+# If sparsity > 1, should be able to use SDF registers; otherwise this
+# should be false because the M3 stripe density makes SDF routing too
+# difficult (there is a garnet issue about this).
+set adk_allow_sdf_regs true
+
+
 # Boundary AON TAP params
 
 # AON boundary taps must line up with M3 VDD stripes.
@@ -11,6 +28,21 @@
 # as a multiple of the M3 power stripe pitch.
 set stripes_per_tap 18
 
+# Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
+# This integer-div followed by integer-mul corrects that situation.
+# Example:
+#   WARNING 1/3 you wanted one VDD tap for every 9 stripe-groups
+#   WARNING 2/3 but only one group out of every 2 has a VDD stripe
+#   WARNING 3/3 correcting 'stripes_per_tap' parm from 9 to 8
+# 
+set vdd_stripes_per_tap [ expr $stripes_per_tap / $vdd_m3_stripe_sparsity ]
+set corrected_stripes_per_tap [ expr $vdd_stripes_per_tap * $vdd_m3_stripe_sparsity ]
+if { $stripes_per_tap != $corrected_stripes_per_tap } {
+    puts "WARNING 1/3 you wanted one VDD tap for every $stripes_per_tap stripe-groups"
+    puts "WARNING 2/3 but only one group out of every $vdd_m3_stripe_sparsity has a VDD stripe"
+    puts "WARNING 3/3 correcting 'stripes_per_tap' parm from $stripes_per_tap to $corrected_stripes_per_tap"
+    set stripes_per_tap $corrected_stripes_per_tap
+}
 
 # Power switch params
 
@@ -21,6 +53,11 @@ set stripes_per_tap 18
 # If set to 12 in Amber (TSMC) design, get five columns of switches.
 # If set to 18, get 3 cols symmetrically placed, center col at center chip.
 set stripes_per_switch 18
+
+# Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
+set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
+set stripes_per_switch [ expr $vdd_stripes_per_switch * $vdd_m3_stripe_sparsity ]
+
 
 # AON box floorplanning params
 
