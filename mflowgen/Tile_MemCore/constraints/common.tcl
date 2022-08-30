@@ -137,9 +137,9 @@ set_input_transition ${max_trans_passthru} $pt_read_data_inputs
 # Constrain SB to ~100 ps
 set sb_delay 0.3
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
-set_max_delay -from [get_ports SB*_IN_* -filter direction==in] -to [get_ports SB*_OUT_* -filter direction==out] [expr ${sb_delay} + ${i_delay} + ${o_delay}]
+set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] [expr ${sb_delay} + ${i_delay} + ${o_delay}]
 # Then override the rest of the paths to be full clock period
-set_max_delay -from [get_ports SB*_IN_* -filter direction==in] -to [get_ports SB*_OUT_* -filter direction==out] -through [get_pins [list CB*/* DECODE*/* MemCore_inst0*/* FEATURE*/*]] ${clock_period}
+set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] -through [get_pins [list CB*/* DECODE*/* MemCore_inst0*/* FEATURE*/*]] ${clock_period}
 
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
