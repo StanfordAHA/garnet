@@ -6,7 +6,7 @@ class GlbLoopIter(Generator):
     ''' Generate loop iteration '''
 
     def __init__(self, _params: GlobalBufferParams, loop_level: int):
-        super().__init__(f"glb_loop_iter")
+        super().__init__(f"glb_loop_iter_{loop_level}")
         self._params = _params
         self.loop_level = loop_level
 

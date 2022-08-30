@@ -180,6 +180,6 @@ set_false_path -through [get_cells -hier *config_reg_*] -to [get_ports read_conf
 #                   -tech2itf_map $tluplus_map
 
 # Preserve the RMUXes so that we can easily constrain them later
-set rmux_cells [get_cells -hier RMUX_T*sel_inst0]
+set rmux_cells [get_cells -hier -regexp .*RMUX_.*_sel_(inst0|value)]
 set_dont_touch $rmux_cells true
 set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true

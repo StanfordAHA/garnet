@@ -82,7 +82,7 @@ def pipeline_global_signals(interconnect: Interconnect, interval):
 
                 # if it has flush
                 if has_flush:
-                    interconnect.remove_wire(tile.ports.flush, tile_below.ports.flush)
+                    interconnect.remove_wire(tile.ports.flush_out, tile_below.ports.flush)
                     interconnect.wire(tile.ports.flush_out, pipe_stage.ports.flush)
                     interconnect.wire(pipe_stage.ports.flush_out, tile_below.ports.flush)
             
