@@ -44,11 +44,14 @@ set_clock_groups -asynchronous -group {dp_jtag_clk} -group {dap_clk sys_clk cpu_
 set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk global_controller_clk}
 
 # ------------------------------------------------------------------------------
-# Trace Clock
+# Trace Clock and CPU Clock
 # ------------------------------------------------------------------------------
 
-set_multicycle_path -setup -start -from [get_clocks cpu_clk] -to [get_clocks trace_clk] 2
+set_multicycle_path -setup -start -from [get_clocks cpu_clk] -to [get_clocks trace_clkin] 2
 set_multicycle_path -hold -start -from [get_clocks cpu_clk] -to [get_clocks trace_clk] 1
+
+set_multicycle_path -setup -end -from [get_clocks trace_clkin] -to [get_clocks cpu_clk] 2
+set_multicycle_path -hold -end -from [get_clocks trace_clkin] -to [get_clocks cpu_clk] 1
 
 # ------------------------------------------------------------------------------
 # Clock Controller - Clock Select
