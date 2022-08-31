@@ -6,8 +6,8 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
 class GlbBankSramGen(Generator):
-    def __init__(self, addr_width, sram_macro_width, sram_macro_depth, _params: GlobalBufferParams):
-        super().__init__(f"glb_bank_sram_gen_{addr_width}_{sram_macro_width}_{sram_macro_depth}")
+    def __init__(self, addr_width, _params: GlobalBufferParams):
+        super().__init__(f"glb_bank_sram_gen_{addr_width}")
         self._params = _params
         self.addr_width = addr_width
         self.sram_macro_width = self._params.sram_macro_word_size

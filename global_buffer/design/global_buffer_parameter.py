@@ -77,8 +77,9 @@ class GlobalBufferParams:
     cgra_axi_data_width: int = 32
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
-    load_dma_fifo_depth: int = 32
+    load_dma_fifo_depth: int = 16
     store_dma_fifo_depth: int = 4
+    max_num_chain: int = 8
 
     # cell parameters
     process: str = "GF"
