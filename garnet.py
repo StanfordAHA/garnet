@@ -457,9 +457,9 @@ class Garnet(Generator):
             for i in range(len(mapping)):
                 (inst_name, port_name) = mapping[i]
                 if "data_in_pond" in port_name:
-                    mapping[i] = (inst_name, "input_width_16_num_2")
+                    mapping[i] = (inst_name, "PondTop_input_width_17_num_2")
                 if "data_out_pond" in port_name:
-                    mapping[i] = (inst_name, "output_width_16_num_0")
+                    mapping[i] = (inst_name, "PondTop_output_width_17_num_0")
 
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
