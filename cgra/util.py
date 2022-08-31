@@ -43,7 +43,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 use_sim_sram: bool = True,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
-                tile_layout_option: int = 0, # 0: column-based, 1: row-based
+                tile_layout_option: int = 0,  # 0: column-based, 1: row-based
                 global_signal_wiring: GlobalSignalWiring =
                 GlobalSignalWiring.Meso,
                 pipeline_config_interval: int = 8,
@@ -55,6 +55,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 harden_flush: bool = True,
                 use_io_valid: bool = True,
                 switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
+                pipeline_regs_density: list = None,
+                port_conn_option: list = None,
                 port_conn_override: Dict[str,
                                          List[Tuple[SwitchBoxSide,
                                                     SwitchBoxIO]]] = None,
@@ -150,19 +152,44 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     # This is slightly different from the original CGRA. Here we connect
     # input to every SB_IN and output to every SB_OUT.
-    port_conns = {}
-    in_conn = [(side, SwitchBoxIO.SB_IN) for side in SwitchBoxSide]
-    out_conn = [(side, SwitchBoxIO.SB_OUT) for side in SwitchBoxSide]
-    port_conns.update({input_: in_conn for input_ in inputs})
-    port_conns.update({output: out_conn for output in outputs})
+    if port_conn_option is None:
+        port_conns = {}
+        in_conn = [(side, SwitchBoxIO.SB_IN) for side in SwitchBoxSide]
+        out_conn = [(side, SwitchBoxIO.SB_OUT) for side in SwitchBoxSide]
+        port_conns.update({input_: in_conn for input_ in inputs})
+        port_conns.update({output: out_conn for output in outputs})
+    else:
+        port_conns = {}
+        sb_side_dict = {
+            1: [SwitchBoxSide.NORTH],
+            2: [SwitchBoxSide.NORTH, SwitchBoxSide.SOUTH],
+            3: [SwitchBoxSide.NORTH, SwitchBoxSide.SOUTH, SwitchBoxSide.EAST],
+            4: SwitchBoxSide
+        }
+        [in_option, out_option] = port_conn_option
+        in_conn = [(side, SwitchBoxIO.SB_IN) for side in sb_side_dict.get(in_option)]
+        out_conn = [(side, SwitchBoxIO.SB_OUT) for side in sb_side_dict.get(out_option)]
+        port_conns.update({input_: in_conn for input_ in inputs})
+        port_conns.update({output: out_conn for output in outputs})
 
     if port_conn_override is not None:
         port_conns.update(port_conn_override)
 
     pipeline_regs = []
-    for track in range(num_tracks):
-        for side in SwitchBoxSide:
-            pipeline_regs.append((track, side))
+    if pipeline_regs_density is None:
+        for track in range(num_tracks):
+            for side in SwitchBoxSide:
+                pipeline_regs.append((track, side))
+    else:
+        [regs_north, regs_south, regs_east, regs_west] = pipeline_regs_density
+        for track in range(regs_north):
+            pipeline_regs.append((track, SwitchBoxSide.NORTH))
+        for track in range(regs_south):
+            pipeline_regs.append((track, SwitchBoxSide.SOUTH))
+        for track in range(regs_east):
+            pipeline_regs.append((track, SwitchBoxSide.EAST))
+        for track in range(regs_west):
+            pipeline_regs.append((track, SwitchBoxSide.WEST))
     # if reg mode is off, reset to empty
     if not add_reg:
         pipeline_regs = []
@@ -216,7 +243,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     if pass_through_clk:
         clk_physical(interconnect, tile_layout_option)
-    
+
     pipeline_global_signals(interconnect, pipeline_config_interval)
 
     return interconnect
