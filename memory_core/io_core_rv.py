@@ -88,7 +88,11 @@ class IOCoreReadyValid(LakeCoreBase):
 
     def get_config_bitstream(self, config_tuple):
         # I believe there's always a delay of 2
-        config_kwargs = config_tuple
+        if isinstance(config_tuple, tuple):
+            _, config_kwargs = config_tuple
+        else:
+            config_kwargs = config_tuple
+
         if 'sparse_mode' in config_kwargs:
             configs_pre = []
         else:
