@@ -1,4 +1,4 @@
-from kratos import *
+from kratos import clog2, Generator, always_comb, always_ff, posedge, resize, const
 
 
 class FIFO(Generator):
@@ -43,12 +43,12 @@ class FIFO(Generator):
         self.wire(self._read, self._pop & ~self._empty)
 
         self.wire(self._write, self._push & ~self._full)
-        self.add_code(self.almost_full_empty_logic)
-        self.add_code(self.set_num_items)
-        self.add_code(self.reg_array_ff)
-        self.add_code(self.wr_ptr_ff)
-        self.add_code(self.rd_ptr_ff)
-        self.add_code(self.data_out_ff)
+        self.add_always(self.almost_full_empty_logic)
+        self.add_always(self.set_num_items)
+        self.add_always(self.reg_array_ff)
+        self.add_always(self.wr_ptr_ff)
+        self.add_always(self.rd_ptr_ff)
+        self.add_always(self.data_out_ff)
 
     @always_comb
     def almost_full_empty_logic(self):
@@ -59,29 +59,35 @@ class FIFO(Generator):
     def rd_ptr_ff(self):
         if self.reset:
             self._rd_ptr = 0
-        elif self.flush:
-            self._rd_ptr = 0
-        elif self._read:
-            self._rd_ptr = self._rd_ptr + 1
+        elif self.clk_en:
+            if self.flush:
+                self._rd_ptr = 0
+            elif self._read:
+                if self._rd_ptr == (self.depth - 1):
+                    self._rd_ptr = 0
+                else:
+                    self._rd_ptr = self._rd_ptr + 1
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def wr_ptr_ff(self):
         if self.reset:
             self._wr_ptr = 0
-        elif self.flush:
-            self._wr_ptr = 0
-        elif self._write:
-            if self._wr_ptr == (self.depth - 1):
+        elif self.clk_en:
+            if self.flush:
                 self._wr_ptr = 0
-            else:
-                self._wr_ptr = self._wr_ptr + 1
+            elif self._write:
+                if self._wr_ptr == (self.depth - 1):
+                    self._wr_ptr = 0
+                else:
+                    self._wr_ptr = self._wr_ptr + 1
 
     @always_ff((posedge, "clk"), (posedge, "reset"))
     def reg_array_ff(self):
         if self.reset:
             self._reg_array = 0
-        elif self._write:
-            self._reg_array[self._wr_ptr] = self._data_in
+        elif self.clk_en:
+            if self._write:
+                self._reg_array[self._wr_ptr] = self._data_in
 
     @always_comb
     def data_out_ff(self):
@@ -91,11 +97,12 @@ class FIFO(Generator):
     def set_num_items(self):
         if self.reset:
             self._num_items = 0
-        elif self.flush:
-            self._num_items = 0
-        elif self._write & ~self._read:
-            self._num_items = self._num_items + 1
-        elif ~self._write & self._read:
-            self._num_items = self._num_items - 1
-        else:
-            self._num_items = self._num_items
+        elif self.clk_en:
+            if self.flush:
+                self._num_items = 0
+            elif self._write & ~self._read:
+                self._num_items = self._num_items + 1
+            elif ~self._write & self._read:
+                self._num_items = self._num_items - 1
+            else:
+                self._num_items = self._num_items
