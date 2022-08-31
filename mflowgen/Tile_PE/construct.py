@@ -85,19 +85,20 @@ def construct():
 
   # Custom steps
 
-  rtl                  = Step( this_dir + '/../common/rtl'                         )
-  constraints          = Step( this_dir + '/constraints'                           )
-  custom_init          = Step( this_dir + '/custom-init'                           )
-  custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                  )
-  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
-  short_fix            = Step( this_dir + '/../common/custom-short-fix'  )
-  genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
-  custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'        )
-  custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                     )
-  testbench            = Step( this_dir + '/../common/testbench'                   )
-  application          = Step( this_dir + '/../common/application'                 )
-  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
+  rtl                  = Step( this_dir + '/../common/rtl'                          )
+  constraints          = Step( this_dir + '/constraints'                            )
+  custom_init          = Step( this_dir + '/custom-init'                            )
+  custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
+  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
+  custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
+  short_fix            = Step( this_dir + '/../common/custom-short-fix'             )
+  genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
+  custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'         )
+  custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                      )
+  testbench            = Step( this_dir + '/../common/testbench'                    )
+  application          = Step( this_dir + '/../common/application'                  )
+  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
+  drc_pm               = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
   if synth_power:
     post_synth_power     = Step( this_dir + '/../common/tile-post-synth-power'     )
   post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'         )
@@ -159,9 +160,23 @@ def construct():
 
   # Power aware setup
   if pwr_aware:
-      synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
+
+      # Need pe-pd-params so adk.tcl can access parm 'adk_allow_sdf_regs'
+      # (pe-pd-params come from already-connected 'power-domains' node)
+      synth.extend_inputs([
+        'pe-pd-params.tcl',
+        'designer-interface.tcl', 
+        'upf_Tile_PE.tcl', 
+        'pe-constraints.tcl', 
+        'pe-constraints-2.tcl', 
+        'dc-dont-use-constraints.tcl'])
+
       init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pe-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
-      power.extend_inputs(['pd-globalnetconnect.tcl'] )
+
+      # Need pe-pd-params for parm 'vdd_m3_stripe_sparsity'
+      # pd-globalnetconnect, pe-pd-params come from 'power-domains' node
+      power.extend_inputs(['pd-globalnetconnect.tcl', 'pe-pd-params.tcl'] )
+
       place.extend_inputs(['place-dont-use-constraints.tcl', 'check-clamp-logic-structure.tcl', 'add-aon-tie-cells.tcl'])
       cts.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'])
       postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
@@ -202,6 +217,7 @@ def construct():
   g.add_step( genlibdb                 )
   g.add_step( lib2db                   )
   g.add_step( drc                      )
+  g.add_step( drc_pm                   )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
 
@@ -235,6 +251,7 @@ def construct():
   g.connect_by_name( adk,      postroute    )
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      drc          )
+  g.connect_by_name( adk,      drc_pm       )
   g.connect_by_name( adk,      lvs          )
 
   g.connect_by_name( rtl,         synth          )
@@ -279,8 +296,10 @@ def construct():
   g.connect_by_name( postroute,    signoff      )
 
   g.connect_by_name( signoff,      drc          )
+  g.connect_by_name( signoff,      drc_pm       )
   g.connect_by_name( signoff,      lvs          )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,              genlibdb )
@@ -306,6 +325,7 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
+  g.connect_by_name( drc_pm,   debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
@@ -390,10 +410,16 @@ def construct():
       order.append('check-clamp-logic-structure.tcl')
       init.update_params( { 'order': order } )
 
+      # synth node (needs parm 'adk_allow_sdf_regs')
+      order = synth.get_param('order')
+      order.insert( 0, 'pe-pd-params.tcl' )        # add params file
+      synth.update_params( { 'order': order } )
+
       # power node
       order = power.get_param('order')
-      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
-      order.remove('globalnetconnect.tcl')
+      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add new 'pd-globalnetconnect'
+      order.remove('globalnetconnect.tcl')         # remove old 'globalnetconnect'
+      order.insert( 0, 'pe-pd-params.tcl' )        # add params file
       power.update_params( { 'order': order } )
 
       # place node

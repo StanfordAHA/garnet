@@ -22,7 +22,7 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = get_sys_adk()
-  adk_view = 'view-standard'
+  adk_view = 'multivt'
 
   parameters = {
     'construct_path' : __file__,
@@ -65,14 +65,15 @@ def construct():
   # Custom steps
 
   rtl          = Step( this_dir + '/../common/rtl'                          )
-  constraints  = Step( this_dir + '/constraints'                  )
-  gen_sram     = Step( this_dir + '/../common/gen_sram_macro'     )
-  custom_init  = Step( this_dir + '/custom-init'                  )
-  custom_power = Step( this_dir + '/../common/custom-power-leaf'  )
-  short_fix    = Step( this_dir + '/../common/custom-short-fix'   )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'             )
-  genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'    )
-  lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
+  constraints  = Step( this_dir + '/constraints'                            )
+  gen_sram     = Step( this_dir + '/../common/gen_sram_macro'               )
+  custom_init  = Step( this_dir + '/custom-init'                            )
+  custom_power = Step( this_dir + '/../common/custom-power-leaf'            )
+  short_fix    = Step( this_dir + '/../common/custom-short-fix'             )
+  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                       )
+  genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'       )
+  lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
+  drc_pm       = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
 
 
   # Default steps
@@ -164,8 +165,9 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
-  g.add_step( lib2db       )
+  g.add_step( lib2db         )
   g.add_step( drc            )
+  g.add_step( drc_pm         )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
   g.add_step( debugcalibre   )
@@ -189,6 +191,7 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
+  g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      lvs            )
   g.connect_by_name( adk,      genlib         )
 
@@ -206,6 +209,7 @@ def construct():
   g.connect_by_name( gen_sram,      genlib         )
   g.connect_by_name( gen_sram,      pt_signoff     )
   g.connect_by_name( gen_sram,      drc            )
+  g.connect_by_name( gen_sram,      drc_pm         )
   g.connect_by_name( gen_sram,      lvs            )
 
   g.connect_by_name( rtl,         synth        )
@@ -243,8 +247,10 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        drc            )
+  g.connect_by_name( signoff,        drc_pm         )
   g.connect_by_name( signoff,        lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff, genlib )
@@ -259,6 +265,7 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
+  g.connect_by_name( drc_pm,   debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 

@@ -79,18 +79,19 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  rtl                  = Step( this_dir + '/../common/rtl'                         )
-  genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
-  constraints          = Step( this_dir + '/constraints'                           )
-  gen_sram             = Step( this_dir + '/../common/gen_sram_macro'              )
-  custom_init          = Step( this_dir + '/custom-init'                           )
-  custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                  )
-  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
-  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                      )
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
-  testbench            = Step( this_dir + '/../common/testbench'                   )
-  application          = Step( this_dir + '/../common/application'                 )
-  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
+  rtl                  = Step( this_dir + '/../common/rtl'                          )
+  genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
+  constraints          = Step( this_dir + '/constraints'                            )
+  gen_sram             = Step( this_dir + '/../common/gen_sram_macro'               )
+  custom_init          = Step( this_dir + '/custom-init'                            )
+  custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
+  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
+  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                       )
+  custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
+  testbench            = Step( this_dir + '/../common/testbench'                    )
+  application          = Step( this_dir + '/../common/application'                  )
+  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
+  drc_pm               = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
   if synth_power:
     post_synth_power     = Step( this_dir + '/../common/tile-post-synth-power'     )
   post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'         )
@@ -173,10 +174,24 @@ def construct():
 
   # Power aware setup
   if pwr_aware:
-      synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_MemCore.tcl', 'mem-constraints.tcl', 'mem-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
+
+      # Need mem-pd-params so adk.tcl can access parm 'adk_allow_sdf_regs'
+      # (mem-pd-params come from already-connected 'power-domains' node)
+      synth.extend_inputs([
+        'mem-pd-params.tcl',
+        'designer-interface.tcl', 
+        'upf_Tile_MemCore.tcl', 
+        'mem-constraints.tcl', 
+        'mem-constraints-2.tcl', 
+        'dc-dont-use-constraints.tcl'])
+
       init.extend_inputs(['check-clamp-logic-structure.tcl', 'upf_Tile_MemCore.tcl', 'mem-load-upf.tcl', 'dont-touch-constraints.tcl', 'mem-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl'])
       place.extend_inputs(['check-clamp-logic-structure.tcl', 'place-dont-use-constraints.tcl', 'add-aon-tie-cells.tcl'])
-      power.extend_inputs(['pd-globalnetconnect.tcl'] )
+
+      # Need mem-pd-params for parm 'vdd_m3_stripe_sparsity'
+      # pd-globalnetconnect, mem-pd-params come from 'power-domains' node
+      power.extend_inputs(['pd-globalnetconnect.tcl', 'mem-pd-params.tcl'] )
+
       cts.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl'])
       postcts_hold.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl'] )
       route.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl'] )
@@ -213,6 +228,7 @@ def construct():
   g.add_step( genlibdb             )
   g.add_step( lib2db               )
   g.add_step( drc                  )
+  g.add_step( drc_pm               )
   g.add_step( lvs                  )
   g.add_step( custom_lvs           )
   g.add_step( debugcalibre         )
@@ -247,6 +263,7 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
+  g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      lvs            )
 
   g.connect_by_name( gen_sram,      synth          )
@@ -263,6 +280,7 @@ def construct():
   g.connect_by_name( gen_sram,      genlibdb       )
   g.connect_by_name( gen_sram,      pt_signoff     )
   g.connect_by_name( gen_sram,      drc            )
+  g.connect_by_name( gen_sram,      drc_pm         )
   g.connect_by_name( gen_sram,      lvs            )
 
   g.connect_by_name( rtl,         synth     )
@@ -302,8 +320,10 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        drc            )
+  g.connect_by_name( signoff,        drc_pm         )
   g.connect_by_name( signoff,        lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,              genlibdb )
@@ -332,6 +352,7 @@ def construct():
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
+  g.connect_by_name( drc_pm,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
   # Pwr aware steps:
@@ -420,10 +441,16 @@ def construct():
       order.append('check-clamp-logic-structure.tcl')
       init.update_params( { 'order': order } )
 
+      # synth node (needs parm 'adk_allow_sdf_regs')
+      order = synth.get_param('order')
+      order.insert( 0, 'mem-pd-params.tcl' )        # add params file
+      synth.update_params( { 'order': order } )
+
       # power node
       order = power.get_param('order')
-      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
-      order.remove('globalnetconnect.tcl')
+      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add new pd-globalnetconnect
+      order.remove('globalnetconnect.tcl')         # remove old globalnetconnect
+      order.insert( 0, 'mem-pd-params.tcl' )       # add params file
       power.update_params( { 'order': order } )
 
       # place node
