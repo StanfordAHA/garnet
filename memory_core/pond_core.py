@@ -99,6 +99,7 @@ class PondCore(LakeCoreBase):
                                   config_width=self.data_width,
                                   config_data_width=self.config_data_width,
                                   config_addr_width=self.config_addr_width,
+                                  reduced_id_config_width=16,
                                   area_opt=self.pond_area_opt,
                                   pond_area_opt_share=self.pond_area_opt_share,
                                   pond_area_opt_dual_config=self.pond_area_opt_dual_config,
