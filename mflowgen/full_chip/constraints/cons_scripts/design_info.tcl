@@ -9,10 +9,16 @@
 #------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
-# Define Port Names (GCD)
+# Define Port Names (XGCD)
 # ------------------------------------------------------------------------------
 
-set port_names(gcd_jtag_clk)               ""
+set port_names(xgcd_ext_clk)                "pad_XGCD_EXT_CLK"
+set port_names(xgcd_clk_select)             "pad_XGCD_CLK_SELECT"
+set port_names(xgcd_div8_clk)               "pad_XGCD_DIV8_CLK"
+set port_names(xgcd0_start)                 "pad_XGCD0_START"
+set port_names(xgcd1_start)                 "pad_XGCD1_START"
+set port_names(xgcd0_done)                  "pad_XGCD0_DONE"
+set port_names(xgcd1_done)                  "pad_XGCD1_DONE"
 
 # ------------------------------------------------------------------------------
 # Define Port Names (TLX Forward Channel)
@@ -21,12 +27,10 @@ set port_names(gcd_jtag_clk)               ""
 set port_names(tlx_fwd_clk)                 "pad_TLX_FWD_CLK"
 
 set port_names(tlx_fwd_payload_valid)       "pad_TLX_FWD_PAYLOAD_TVALID"
-set port_names(tlx_fwd_payload_ready)       "pad_TLX_FWD_PAYLOAD_TREADY"
 set port_names(tlx_fwd_payload_data_hi)     "pad_TLX_FWD_PAYLOAD_TDATA_HI"
 set port_names(tlx_fwd_payload_data_lo)     "pad_TLX_FWD_PAYLOAD_TDATA_LO"
 
 set port_names(tlx_fwd_flow_valid)          "pad_TLX_FWD_FLOW_TVALID"
-set port_names(tlx_fwd_flow_ready)          "pad_TLX_FWD_FLOW_TREADY"
 set port_names(tlx_fwd_flow_data)           "pad_TLX_FWD_FLOW_TDATA"
 
 # ------------------------------------------------------------------------------
@@ -36,12 +40,10 @@ set port_names(tlx_fwd_flow_data)           "pad_TLX_FWD_FLOW_TDATA"
 set port_names(tlx_rev_clk)                 "pad_TLX_REV_CLK"
 
 set port_names(tlx_rev_payload_valid)       "pad_TLX_REV_PAYLOAD_TVALID"
-set port_names(tlx_rev_payload_ready)       "pad_TLX_REV_PAYLOAD_TREADY"
 set port_names(tlx_rev_payload_data_hi)     "pad_TLX_REV_PAYLOAD_TDATA_HI"
 set port_names(tlx_rev_payload_data_lo)     "pad_TLX_REV_PAYLOAD_TDATA_LO"
 
 set port_names(tlx_rev_flow_valid)          "pad_TLX_REV_FLOW_TVALID"
-set port_names(tlx_rev_flow_ready)          "pad_TLX_REV_FLOW_TREADY"
 set port_names(tlx_rev_flow_data)           "pad_TLX_REV_FLOW_TDATA"
 
 # ------------------------------------------------------------------------------
@@ -71,9 +73,8 @@ set port_names(cgra_jtag_reset_n)           "pad_CGRA_JTAG_TRSTn"
 # Define Port Names (Trace Port)
 # ------------------------------------------------------------------------------
 
-set port_names(trace_data)                  "pad_TPIU_TRACE_DATA"
 set port_names(trace_swo)                   "pad_TPIU_TRACE_SWO"
-set port_names(trace_clk)                   "pad_TPIU_TRACE_CLK"
+set port_names(trace_clkin)                 "pad_TPIU_TRACECLKIN"
 
 # ------------------------------------------------------------------------------
 # Define Port Names (UART)
@@ -93,8 +94,9 @@ set port_names(loop_back)                   "pad_LOOP_BACK"
 set port_names(loop_back_select)            "pad_LOOP_BACK_SELECT"
 
 # ------------------------------------------------------------------------------
-# Master Clock and Power-on Reset
+# Master Clock and Resets
 # ------------------------------------------------------------------------------
 
 set port_names(master_clk)                  "pad_MASTER_CLK"
 set port_names(poreset_n)                   "pad_PORESETn"
+set port_names(sysreset_n)                  "pad_SYSRESETn"
