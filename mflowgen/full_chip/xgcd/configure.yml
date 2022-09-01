@@ -1,0 +1,9 @@
+name: xgcd
+
+outputs:
+  - xgcd_tt.lib
+  - xgcd_tt.db
+  - xgcd.lef
+  - xgcd.gds
+  - xgcd.spi
+
