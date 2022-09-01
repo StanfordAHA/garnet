@@ -258,24 +258,24 @@ foreach_in_collection sram $srams {
 
 # Skip routing on all analog nets
 
-set_db [get_db nets ext_clk_async_p] .skip_routing true
-set_db [get_db nets ext_clk_async_n] .skip_routing true
-set_db [get_db nets ext_clkn] .skip_routing true
-set_db [get_db nets ext_clkp] .skip_routing true
-set_db [get_db nets ext_Vcm] .skip_routing true
-set_db [get_db nets ext_Vcal] .skip_routing true
-set_db [get_db nets ext_mdll_clk_refp] .skip_routing true
-set_db [get_db nets ext_mdll_clk_refn] .skip_routing true
-set_db [get_db nets ext_mdll_clk_monp] .skip_routing true
-set_db [get_db nets ext_mdll_clk_monn] .skip_routing true
-set_db [get_db nets ext_rx_inp] .skip_routing true
-set_db [get_db nets ext_rx_inn] .skip_routing true
-set_db [get_db nets ext_rx_inp_test] .skip_routing true
-set_db [get_db nets ext_rx_inn_test] .skip_routing true
-set_db [get_db nets clk_out_p] .skip_routing true
-set_db [get_db nets clk_out_n] .skip_routing true
-set_db [get_db nets clk_trig_p] .skip_routing true
-set_db [get_db nets clk_trig_n] .skip_routing true
+#set_db [get_db nets ext_clk_async_p] .skip_routing true
+#set_db [get_db nets ext_clk_async_n] .skip_routing true
+#set_db [get_db nets ext_clkn] .skip_routing true
+#set_db [get_db nets ext_clkp] .skip_routing true
+#set_db [get_db nets ext_Vcm] .skip_routing true
+#set_db [get_db nets ext_Vcal] .skip_routing true
+#set_db [get_db nets ext_mdll_clk_refp] .skip_routing true
+#set_db [get_db nets ext_mdll_clk_refn] .skip_routing true
+#set_db [get_db nets ext_mdll_clk_monp] .skip_routing true
+#set_db [get_db nets ext_mdll_clk_monn] .skip_routing true
+#set_db [get_db nets ext_rx_inp] .skip_routing true
+#set_db [get_db nets ext_rx_inn] .skip_routing true
+#set_db [get_db nets ext_rx_inp_test] .skip_routing true
+#set_db [get_db nets ext_rx_inn_test] .skip_routing true
+#set_db [get_db nets clk_out_p] .skip_routing true
+#set_db [get_db nets clk_out_n] .skip_routing true
+#set_db [get_db nets clk_trig_p] .skip_routing true
+#set_db [get_db nets clk_trig_n] .skip_routing true
 
 # Unplace any standard cells that got placed during init. Not sure why they're
 # being placed, but they make power stripe generation take forever.
