@@ -68,7 +68,6 @@ source inputs/rtl-scripts/nic400_design_files.tcl
 set soc_design_files [concat \
   $soc_cm3_files \
   $soc_cmdk_files \
-  $soc_sram_if_files \
   $soc_integration_files \
   $soc_dma_files \
   $soc_tlx_files \
@@ -78,7 +77,6 @@ set soc_design_files [concat \
 set soc_design_files [concat \
   $soc_cm3_files \
   $soc_cmdk_files \
-  $soc_sram_if_files \
   $soc_integration_files \
   $soc_dma_files \
   $soc_tlx_files \
