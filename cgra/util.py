@@ -48,6 +48,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 GlobalSignalWiring.Meso,
                 pipeline_config_interval: int = 8,
                 standalone: bool = False,
+                amber_pond: bool = False,
                 add_pond: bool = False,
                 pond_area_opt: bool = True,
                 pond_area_opt_share: bool = False,
@@ -111,6 +112,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     core = PeakCore(pe_fc)
                     if add_pond:
                         additional_core[(x, y)] = PondCore(gate_flush=not harden_flush,
+                                                           amber_pond=amber_pond,
                                                            pond_area_opt=pond_area_opt,
                                                            pond_area_opt_share=pond_area_opt_share,
                                                            pond_area_opt_dual_config=pond_area_opt_dual_config)
