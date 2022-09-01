@@ -64,19 +64,19 @@ def add_power_domain(interconnect: Interconnect):
             for switchbox in tile.sbs.values():
                 sbs = switchbox.switchbox.get_all_sbs()
                 for sb in sbs:
-                    if sb.io != SwitchBoxIO.SB_IN:
+                    if sb.io != SwitchBoxIO.SB_OUT:
                         continue
                     # get ready name
                     name = create_name(str(sb))
                     ready_name = name + "_ready"
-                    tile.remove_wire(tile.ports[ready_name], switchbox.ports[ready_name])
+                    tile.remove_wire(tile.ports[ready_name], switchbox.ports[ready_name + "_in"])
                     # use an AND gate
                     and_gate = FromMagma(mantle.DefineAnd(2, 1))
                     and_gate.instance_name = ready_name + "_and"
                     enable_name = name + "_enable"
-                    tile.wire(and_gate.ports.I[0], tile.ports[ready_name])
-                    tile.wire(and_gate.ports.I[1], tile.ports[enable_name])
-                    tile.wire(and_gate.ports.O, switchbox.ports[ready_name])
+                    tile.wire(and_gate.ports.I0[0], tile.ports[ready_name])
+                    tile.wire(and_gate.ports.I1[0], switchbox.ports[enable_name])
+                    tile.wire(and_gate.ports.O[0], switchbox.ports[ready_name + "_in"])
 
 
 class PowerDomainOR(Generator):
