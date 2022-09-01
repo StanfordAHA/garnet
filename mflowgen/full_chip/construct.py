@@ -149,6 +149,7 @@ def construct():
   glb_top           = Step( this_dir + '/glb_top'           )
   global_controller = Step( this_dir + '/global_controller' )
   dragonphy         = Step( this_dir + '/dragonphy'         )
+  xgcd              = Step( this_dir + '/xgcd'         )
 
   # CGRA simulation
 
@@ -214,10 +215,12 @@ def construct():
   synth.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
   synth.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+  synth.extend_inputs( ['xgcd_tt.lib', 'xgcd.lef'] )
   pt_signoff.extend_inputs( ['tile_array_tt.db'] )
   pt_signoff.extend_inputs( ['glb_top_tt.db'] )
   pt_signoff.extend_inputs( ['global_controller_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
+  pt_signoff.extend_inputs( ['xgcd_tt.db'] )
 
   route.extend_inputs( ['pre-route.tcl'] )
   signoff.extend_inputs( sealring.all_outputs() )
@@ -233,6 +236,7 @@ def construct():
     step.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
     step.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+    step.extend_inputs( ['xgcd_tt.lib', 'xgcd.lef'] )
 
   # Need all block gds's to merge into the final layout
   gdsmerge_nodes = [signoff, power]
@@ -241,6 +245,7 @@ def construct():
       node.extend_inputs( ['glb_top.gds'] )
       node.extend_inputs( ['global_controller.gds'] )
       node.extend_inputs( ['sram.gds'] )
+      node.extend_inputs( ['xgcd.gds'] )
 
   # Need extracted spice files for both tile types to do LVS
 
@@ -250,6 +255,7 @@ def construct():
   lvs.extend_inputs( ['glb_top.sram.spi'] )
   lvs.extend_inputs( ['global_controller.lvs.v'] )
   lvs.extend_inputs( ['sram.spi'] )
+  lvs.extend_inputs( ['xgcd.spi'] )
   lvs.extend_inputs( ['adk_lvs2'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
@@ -280,6 +286,7 @@ def construct():
   g.add_step( glb_top           )
   g.add_step( global_controller )
   g.add_step( dragonphy         )
+  g.add_step( xgcd              )
   g.add_step( constraints       )
   g.add_step( read_design       )
   g.add_step( synth             )
@@ -360,7 +367,7 @@ def construct():
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
   if parameters['soc_only'] == False:
-      blocks = [tile_array, glb_top, global_controller, dragonphy]
+      blocks = [tile_array, glb_top, global_controller, dragonphy, xgcd]
       for block in blocks:
           g.connect_by_name( block, synth          )
           g.connect_by_name( block, iflow          )
