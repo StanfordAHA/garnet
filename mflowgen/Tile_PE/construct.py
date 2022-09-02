@@ -165,7 +165,7 @@ def construct():
         'pe-constraints.tcl', 
         'pe-constraints-2.tcl', 
         'dc-dont-use-constraints.tcl',
-        'check-pdcr-addresses.sh',
+        'check-pdcr-address.sh',
       ])
 
       init.extend_inputs([
@@ -178,7 +178,7 @@ def construct():
         'pd-add-endcaps-welltaps.tcl', 
         'add-power-switches.tcl', 
         'check-clamp-logic-structure.tcl',
-        'check-pdcr-addresses.sh',
+        'check-pdcr-address.sh',
       ])
 
       # Need pe-pd-params for parm 'vdd_m3_stripe_sparsity'
