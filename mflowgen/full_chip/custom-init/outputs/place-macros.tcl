@@ -199,6 +199,7 @@ set y_loc $sram_start_y
 set x_loc $sram_start_x
 set col 0
 set row 0
+set max_urx 0
 foreach_in_collection sram $srams {
   set sram_name [get_property $sram full_name]
   if {[expr $col % 2] == 1} {
@@ -214,6 +215,9 @@ foreach_in_collection sram $srams {
   set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
   set tb_margin $vert_pitch
   set lr_margin [expr $horiz_pitch * 3]
+  if {$urx > $max_urx} {
+    set max_urx $urx
+  }
   addHaloToBlock $lr_margin $tb_margin $lr_margin $tb_margin $sram_name -snapToSite
   createRouteBlk \
     -inst $sram_name \
@@ -230,7 +234,7 @@ foreach_in_collection sram $srams {
     } else {
       set sram_spacing_x $sram_spacing_x_odd
     }
-    set x_loc [expr $x_loc + $sram_width + $sram_spacing_x]
+    set x_loc [expr $max_urx + $sram_spacing_x]
     set y_loc $sram_start_y
     set col [expr $col + 1]
   }
