@@ -124,6 +124,13 @@ def construct():
     'partial_write'     : True,
   }
 
+  guardring_params = {
+    # Merging guardring into GDS
+    'child_gds' : 'inputs/adk/guardring.gds',
+    'coord_x'   : '-49.98u',
+    'coord_y'   : '-49.92u'
+  }
+
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
@@ -190,6 +197,7 @@ def construct():
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
+      merge_gdr      = Step( 'mentor-calibre-gdsmerge-child', default=True )
       # GF has a different way of running fill
       if adk_name == 'gf12-adk':
           fill           = Step (this_dir + '/../common/mentor-calibre-fill-gf' )
@@ -330,6 +338,7 @@ def construct():
   g.add_step( prefill_drc       )
   g.add_step( fill              )
   g.add_step( merge_fill        )
+  g.add_step( merge_gdr         )
   g.add_step( drc               )
   g.add_step( drc_pm            )
   g.add_step( antenna_drc       )
@@ -368,6 +377,7 @@ def construct():
   g.connect_by_name( adk,      prefill_drc    )
   g.connect_by_name( adk,      fill           )
   g.connect_by_name( adk,      merge_fill     )
+  g.connect_by_name( adk,      merge_gdr      )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      antenna_drc    )
@@ -462,12 +472,16 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        lvs            )
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
+  # Merge guardring gds into design
+  g.connect(signoff.o('design-merged.gds'), merge_gdr.i('design.gds'))
+
+  # Send gds with sealring to drc, fill, and lvs
+  g.connect_by_name( merge_gdr, lvs )
   # Run pre-fill DRC after signoff
-  g.connect(signoff.o('design-merged.gds'), prefill_drc.i('design_merged.gds'))
+  g.connect_by_name( merge_gdr, prefill_drc )
 
   # Run Fill on merged GDS
-  g.connect( signoff.o('design-merged.gds'), fill.i('design.gds') )
+  g.connect( merge_gdr.o('design_merged.gds'), fill.i('design.gds') )
 
   # For GF, Fill is already merged during fill step
   if adk_name == 'gf12-adk':
@@ -575,7 +589,11 @@ def construct():
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
 
+
   merge_fill.update_params( {'design_top_cell': parameters['design_name'], 'child_top_cell': f"{parameters['design_name']}_F16a"} )
+  
+  # need to give coordinates for guardring
+  merge_gdr.update_params( guardring_params )
 
   # Antenna DRC node needs to use antenna rule deck
   antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'],
