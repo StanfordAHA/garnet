@@ -164,9 +164,22 @@ def construct():
         'upf_Tile_PE.tcl', 
         'pe-constraints.tcl', 
         'pe-constraints-2.tcl', 
-        'dc-dont-use-constraints.tcl'])
+        'dc-dont-use-constraints.tcl',
+        'check-pdcr-addresses.sh',
+      ])
 
-      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pe-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
+      init.extend_inputs([
+        'upf_Tile_PE.tcl', 
+        'pe-load-upf.tcl', 
+        'dont-touch-constraints.tcl', 
+        'pe-pd-params.tcl', 
+        'pd-aon-floorplan.tcl', 
+        'add-endcaps-welltaps-setup.tcl', 
+        'pd-add-endcaps-welltaps.tcl', 
+        'add-power-switches.tcl', 
+        'check-clamp-logic-structure.tcl',
+        'check-pdcr-addresses.sh',
+      ])
 
       # Need pe-pd-params for parm 'vdd_m3_stripe_sparsity'
       # pd-globalnetconnect, pe-pd-params come from 'power-domains' node
@@ -183,8 +196,8 @@ def construct():
       # Early-out for synth, init if feature address is wrong for PowerDomainConfigReg
       # This will be first command executed by mflowgen-run in each step
 
-      synth.pre_extend_commands( ['check-pdcr-address.sh inputs/design.v'] )
-      init.pre_extend_commands(  ['check-pdcr-address.sh inputs/design.v'] )
+      synth.pre_extend_commands( ['inputs/check-pdcr-address.sh inputs/design.v'] )
+      init.pre_extend_commands(  ['inputs/check-pdcr-address.sh inputs/design.v'] )
 
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
