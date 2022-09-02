@@ -253,6 +253,45 @@ set xgcd_x_loc [snap_to_grid 2600 $pmesh_top_pitch]
 placeinstance $xgcd_name $xgcd_x_loc $xgcd_y_loc -fixed
 addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $xgcd_name -snapToSite
 
+# Prevent power vias from blocking pins on XGCD (pins on TOP and left edges)
+set xgcd_ury [expr $xgcd_y_loc + $xgcd_height]
+set xgcd_urx [expr $xgcd_x_loc + $xgcd_width]
+set thickness [expr 10 * $vert_pitch]
+# top edge
+createRouteBlk \
+  -name xgcd_top_pg_via_blk \
+  -cutLayer {4 5 6 7 8 9 10 11 12} \
+  -pgnetonly \
+  -box $xgcd_x_loc $xgcd_ury $xgcd_urx [expr $xgcd_ury + $thickness]
+
+#left edge
+createRouteBlk \
+  -name xgcd_left_pg_via_blk \
+  -cutLayer {4 5 6 7 8 9 10 11 12} \
+  -pgnetonly \
+  -box [expr $xgcd_x_loc - $thickness] $xgcd_y_loc $xgcd_x_loc $xgcd_ury
+
+# Prevent vias to PMESH_BOT_LAYER stripes over XGCD
+createRouteBlk \
+  -name xgcd_pmesh_bot_via \
+  -layer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
+  -pgnetonly \
+  -box $xgcd_x_loc $xgcd_y_loc $xgcd_urx $xgcd_ury
+
+# Prevent PMESH_BOT_LAYER stripes over XGCD
+createRouteBlk \
+  -name xgcd_pmesh_bot \
+  -layer $ADK_POWER_MESH_BOT_LAYER \
+  -pgnetonly \
+  -box [expr $xgcd_x_loc + (8*$horiz_pitch)] $xgcd_y_loc [expr $xgcd_urx - (8*$horiz_pitch)] $xgcd_ury
+
+# Prevent PMESH_TOP_LAYER stripes over XGCD
+createRouteBlk \
+  -name xgcd_pmesh_bot \
+  -layer $ADK_POWER_MESH_TOP_LAYER \
+  -pgnetonly \
+  -box $xgcd_x_loc [expr $xgcd_y_loc + (2*$vert_pitch)] $xgcd_urx [expr $xgcd_ury - (2*$vert_pitch)]
+
 
 # Place analog block
 # placeInstance iphy 1352.685 4098.000 -fixed ; # dragonphy
