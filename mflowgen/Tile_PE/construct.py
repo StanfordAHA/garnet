@@ -183,8 +183,8 @@ def construct():
       # Early-out for synth, init if feature address is wrong for PowerDomainConfigReg
       # This will be first command executed by mflowgen-run in each step
 
-      synth.pre_extend_commands('check-pdcr-address.sh inputs/design.v')
-      init.pre_extend_commands( 'check-pdcr-address.sh inputs/design.v')
+      synth.pre_extend_commands( ['check-pdcr-address.sh inputs/design.v'] )
+      init.pre_extend_commands(  ['check-pdcr-address.sh inputs/design.v'] )
 
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
