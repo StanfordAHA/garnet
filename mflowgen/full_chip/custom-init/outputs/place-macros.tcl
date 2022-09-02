@@ -236,6 +236,20 @@ foreach_in_collection sram $srams {
   }
 }
 
+# Place XGCD block
+# XGCD placement prep
+set xgcd [get_cells -hier -filter {ref_lib_cell_name==XGCDWrapperTop}]
+set xgcd_name [get_property $xgcd hierarchical_name]
+set xgcd_width [dbGet [dbGet -p top.insts.name $xgcd_name -i 0].cell.size_x]
+set xgcd_height [dbGet [dbGet -p top.insts.name $xgcd_name -i 0].cell.size_y]
+
+set xgcd_y_loc [snap_to_grid 3600 $pmesh_bot_pitch]
+set xgcd_x_loc [snap_to_grid 2600 $pmesh_top_pitch]
+
+placeinstance $xgcd_name $xgcd_x_loc $xgcd_y_loc -fixed
+addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $xgcd_name -snapToSite
+
+
 # Place analog block
 # placeInstance iphy 1352.685 4098.000 -fixed ; # dragonphy
   #placeInstance iphy 1703.075 4098.000 -fixed ; # dragonphy2 11/2020
