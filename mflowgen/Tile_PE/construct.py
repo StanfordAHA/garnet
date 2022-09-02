@@ -153,12 +153,6 @@ def construct():
   order.append( 'copy_sdc.tcl' )
   synth.set_param( 'order', order )
 
-  # Early-out if feature address is wrong for PowerDomainConfigReg
-  # This will be first command executed by mflowgen-run
-  commands = synth.get_param( 'commands' )
-  commands.insert(0, 'check-pdcr-address.sh inputs/design.v' )
-  synth.set_param( 'commands', commands )
-
   # Power aware setup
   if pwr_aware:
 
@@ -186,6 +180,18 @@ def construct():
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
   
+      # Early-out if feature address is wrong for PowerDomainConfigReg
+      # This will be first command executed by mflowgen-run in synth, init steps
+
+      commands = synth.get_param( 'commands' )
+      commands.insert(0, 'check-pdcr-address.sh inputs/design.v' )
+      synth.set_param( 'commands', commands )
+
+      commands = init.get_param( 'commands' )
+      commands.insert(0, 'check-pdcr-address.sh inputs/design.v' )
+      init.set_param( 'commands', commands )
+
+
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
 
