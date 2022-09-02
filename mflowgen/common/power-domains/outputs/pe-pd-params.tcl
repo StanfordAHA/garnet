@@ -74,3 +74,22 @@ set aon_horiz_offset 0
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 30
+
+########################################################################
+# Note that DECODE_FEATURE and FEATURE_AND modules (at least) are
+# auto-assigned names that may change at the whim of the generated.
+# So the designer has to track that and updated this parm by hand :(
+# See garnet issue 922 and ~steveri/0notes/vto/pwr-aware-gls.txt
+
+# Used by upf_Tile_PE.tcl and pwr-aware-gls step (testbench tb_Tile_PE.v)
+set pe_power_domain_config_reg_addr 13
+set aon_elements "
+  PowerDomainOR
+  DECODE_FEATURE_$pe_power_domain_config_reg_addr
+  coreir_eq_16_inst0 and_inst1
+  FEATURE_AND_$pe_power_domain_config_reg_addr
+  PowerDomainConfigReg_inst0
+  const_511_9
+  const_0_8
+"
+

@@ -153,6 +153,12 @@ def construct():
   order.append( 'copy_sdc.tcl' )
   synth.set_param( 'order', order )
 
+  # Early-out if feature address is wrong for PowerDomainConfigReg
+  # This will be first command executed by mflowgen-run
+  commands = synth.get_param( 'commands' )
+  commands.insert(0, 'check-pdcr-address.sh inputs/design.v' )
+  synth.set_param( 'commands', commands )
+
   # Power aware setup
   if pwr_aware:
 
