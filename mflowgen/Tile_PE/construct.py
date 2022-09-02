@@ -180,17 +180,11 @@ def construct():
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
   
-      # Early-out if feature address is wrong for PowerDomainConfigReg
-      # This will be first command executed by mflowgen-run in synth, init steps
+      # Early-out for synth, init if feature address is wrong for PowerDomainConfigReg
+      # This will be first command executed by mflowgen-run in each step
 
-      commands = synth.get_param( 'commands' )
-      commands.insert(0, 'check-pdcr-address.sh inputs/design.v' )
-      synth.set_param( 'commands', commands )
-
-      commands = init.get_param( 'commands' )
-      commands.insert(0, 'check-pdcr-address.sh inputs/design.v' )
-      init.set_param( 'commands', commands )
-
+      synth.pre_extend_commands('check-pdcr-address.sh inputs/design.v')
+      init.pre_extend_commands( 'check-pdcr-address.sh inputs/design.v')
 
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
