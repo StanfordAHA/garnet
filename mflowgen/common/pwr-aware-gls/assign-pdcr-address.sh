@@ -38,4 +38,6 @@ addr=`echo $vn | awk '{printf("%04X0000", $0)}'`
 set -x
 mv tb_Tile_PE.v tb_Tile_PE.v.orig
 sed "s/___PDCONFIG_ADDR___/$addr/g" tb_Tile_PE.v.orig > tb_Tile_PE.v
-diff tb_Tile_PE.v.orig tb_Tile_PE.v
+
+# Don't want this to err out, just want to show the diffs
+diff tb_Tile_PE.v.orig tb_Tile_PE.v || echo okay
