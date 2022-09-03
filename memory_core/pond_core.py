@@ -158,6 +158,9 @@ class PondCore(LakeCoreBase):
         print(configs)
         return configs
 
+    def get_port_remap(self):
+        return self.LT.get_port_remap()
+
     def pnr_info(self):
         return PnRTag("M", self.DEFAULT_PRIORITY, 1)
 
