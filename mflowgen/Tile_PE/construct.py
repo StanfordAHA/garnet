@@ -407,8 +407,8 @@ def construct():
       # init node
       order = init.get_param('order')
       read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
-      order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
-      order.insert( read_idx + 2, 'pe-pd-params.tcl' ) # add here
+      order.insert( read_idx + 1, 'pe-pd-params.tcl' )     # add here
+      order.insert( read_idx + 2, 'pe-load-upf.tcl' )      # add here
       order.insert( read_idx + 3, 'pd-aon-floorplan.tcl' ) # add here
       order.insert( read_idx + 4, 'add-endcaps-welltaps-setup.tcl' ) # add here
       order.insert( read_idx + 5, 'pd-add-endcaps-welltaps.tcl' ) # add here
