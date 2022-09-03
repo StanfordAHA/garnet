@@ -74,3 +74,27 @@ if { $ps_to_left && $ps_to_right } {
   saveDesign checkpoints/design.checkpoint/save.enc -user_path
   exit 13
 }
+
+#-----------------------------------------------------------------------------
+# Check that well taps (i.e. well-tap power-switch combos) exist between SRAMs
+#-----------------------------------------------------------------------------
+
+puts "\nChecking to see that well taps exist in space between SRAMs\n"
+
+# FIXME Why don't we need this check?? Doesn't it run for PW aas well??
+# # Check that we are in the mem tile
+# if 'dbget top.name' != 'Tile_MemCore' then no check needed
+
+# Find the srams
+foreach_in_collection s $sram_collection {
+    selectInst $s
+    set srams [dbget selected]
+}
+foreach n [dbget $srams.name] { puts "Found sram $n" }
+
+# Verify that there are exactly two srams
+set n_srams [ llength $srams.box ]
+if { $n_srams != 2 } {
+   puts "WARNING found $n_srams SRAMs, should have been two"
+   puts "WARNING correctness check is sus"
+}
