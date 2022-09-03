@@ -98,3 +98,44 @@ if { $n_srams != 2 } {
    puts "WARNING found $n_srams SRAMs, should have been two"
    puts "WARNING correctness check is sus"
 }
+
+# Make a sorted list of sram x-coordinate edges
+set xlist "[ dbget $srams.box_llx ] [ dbget $srams.box_urx ]"
+set sorted_exes [ lsort -real $xlist ]
+# 61.02 102.155 129.155 170.29
+
+# Find left and right edges of the gap between SRAMs
+set left_edge_of_gap  [ lindex $sorted_exes 1 ]
+set right_edge_of_gap [ lindex $sorted_exes 2 ]
+if { $left_edge_of_gap == $right_edge_of_gap } {
+   puts "tiles are abutted, no check needed"
+}
+
+# See if well taps (power switches) exist between the gaps
+# And yes we need to check both edges of power switch!!
+
+set ps_width [ dbget [ dbget -p2 top.insts.cell.name $tap_cell ].box_sizex ]
+set ps_width [ lindex $ps_width 0 ]
+
+set found_valid_ps false
+foreach llx $ps_llx_list {
+  set urx [ expr $llx + $ps_width ]
+  set cond1 false; set cond2 false
+  if { $llx > $left_edge_of_gap  } { set cond1 true }
+  if { $urx < $right_edge_of_gap } { set cond2 true }
+  if { $cond1 && $cond2 } {
+    puts "Found valid power-switch column at llx=$llx"
+    set found_valid_ps true
+    break
+  }  
+}
+
+if { $found_valid_ps } {
+  puts "Oll Korrect -- found well taps in between the two SRAMs"
+} else {
+  puts "ERROR Cannot find power-switches between the SRAMS, thus no well taps there"
+  puts "Saving design for later debugging..."
+  saveDesign checkpoints/design.checkpoint/save.enc -user_path
+  exit 13
+}
+
