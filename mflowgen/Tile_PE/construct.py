@@ -168,6 +168,7 @@ def construct():
         'check-pdcr-address.sh',
       ])
 
+      # 09/2022 added check-pdcr-address.sh
       init.extend_inputs([
         'upf_Tile_PE.tcl', 
         'pe-load-upf.tcl', 
@@ -405,6 +406,7 @@ def construct():
   # Pwr aware steps:
   if pwr_aware:
       # init node
+      # 09/2022 reordered to load params (pe-pd-params) before using params (pe-load-upf)
       order = init.get_param('order')
       read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
       order.insert( read_idx + 1, 'pe-pd-params.tcl' )     # add here

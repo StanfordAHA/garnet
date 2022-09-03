@@ -173,7 +173,7 @@ module tb_Tile_PE();
       #1 $display("==== TEST2: DISABLE TILE  ======");
       #1 $display("===================================");   
       #1 $display("------------PS REGISTER DISABLE:--------------");
-      // Hacky script 'check-pdcr-address.sh' is responsible for updating address below
+      // Hacky script 'assign-pdcr-address.sh' must insert address below
       #1 config_config_addr = 32'h___PDCONFIG_ADDR___;
       #1 config_config_data = 32'h00000001;
     
@@ -247,7 +247,7 @@ module tb_Tile_PE();
       #1 $display("===================================");
       #1 $display("------------PS REGISTER DISABLE:--------------");
        #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.config_config_addr);
-      // Hacky script 'check-pdcr-address.sh' is responsible for updating address below
+      // Hacky script 'assign-pdcr-address.sh' must insert address below
       #1 config_config_addr = 32'h___PDCONFIG_ADDR___;
       #1 config_config_data = 32'h0;
        #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.config_config_addr);
@@ -284,7 +284,7 @@ module tb_Tile_PE();
       #1 $display("-----DISABLE TILE and CHECK IF GLOBAL SIGNALS STILL ON--------");
       #1 $display("tile_id after shutdown = %h", tile_id);
       #1 $display("lo after shutdown = %h", lo);  
-      // Hacky script 'check-pdcr-address.sh' is responsible for updating address below
+      // Hacky script 'assign-pdcr-address.sh' must insert address below
       #1 config_config_addr = 32'h___PDCONFIG_ADDR___;
       #1 config_config_data = 32'h00000001;
       #1 config_write = 1;
@@ -366,7 +366,7 @@ module tb_Tile_PE();
       #1 $display("===================================");
 
       #1 config_write = 1;
-      // Hacky script 'check-pdcr-address.sh' is responsible for updating address below
+      // Hacky script 'assign-pdcr-address.sh' must insert address below
       #1 config_config_addr = 32'h___PDCONFIG_ADDR___;
       #1 config_config_data = 32'h0;
       #1 config_read = 0;
@@ -391,7 +391,7 @@ module tb_Tile_PE();
       #1 $display("\n===================================");
       #1 $display("==== TEST 8 - AOI-CONST-MUX OUT CHECKS  ======");
       #1 $display("==================================="); 
-      // Hacky script 'check-pdcr-address.sh' is responsible for updating address below
+      // Hacky script 'assign-pdcr-address.sh' must insert address below
       #1 config_config_addr = 32'h___PDCONFIG_ADDR___;
       #1 config_config_data = 32'h0;
       #1 config_write = 1;

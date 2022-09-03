@@ -10,8 +10,6 @@ create_power_domain TOP -include_scope
 # aon_elements should be defined in 'pe-pd-params.tcl'
 create_power_domain AON -elements $aon_elements
 
-
-
 ### Toplevel Connections ######
 ## VDD 
 create_supply_port VDD
