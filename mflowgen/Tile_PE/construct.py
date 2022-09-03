@@ -193,11 +193,11 @@ def construct():
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
   
-      # Early-out for synth, init if feature address is wrong for PowerDomainConfigReg
-      # This will be first command executed by mflowgen-run in each step
+      # Fix and repair PowerDomainConfigReg whenever magma decides to renumber it :(
 
-      synth.pre_extend_commands( ['inputs/check-pdcr-address.sh inputs/design.v'] )
-      init.pre_extend_commands(  ['inputs/check-pdcr-address.sh inputs/design.v'] )
+      synth.pre_extend_commands(         ['inputs/check-pdcr-address.sh'] )
+      init.pre_extend_commands(          ['inputs/check-pdcr-address.sh'] )
+      pwr_aware_gls.pre_extend_commands( ['inputs/check-pdcr-address.sh'] )
 
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
