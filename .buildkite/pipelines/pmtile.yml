@@ -15,10 +15,10 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$PBUILD;
      mflowgen run --design $$GARNET_HOME/mflowgen/tile_array'
 
-# - label: 'msetup'
-#   commands:
-#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$MBUILD;
-#      mflowgen run --design $$GARNET_HOME/mflowgen/tile_array'
+- label: 'msetup'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$MBUILD;
+     mflowgen run --design $$GARNET_HOME/mflowgen/tile_array'
 
 
 - wait: ~
@@ -28,7 +28,7 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$PBUILD --need_space 30G;
      set -o pipefail; echo exit 13 | make Tile_PE |& tee make-pe.log'
 
-# - label: 'MEM'
-#   commands:
-#   - 'source mflowgen/bin/setup-buildkite.sh --dir $$MBUILD --need_space 30G;
-#      set -o pipefail; echo exit 13 | make Tile_MemCore |& tee make-mem.log'
+- label: 'MEM'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$MBUILD --need_space 30G;
+     set -o pipefail; echo exit 13 | make Tile_MemCore |& tee make-mem.log'
