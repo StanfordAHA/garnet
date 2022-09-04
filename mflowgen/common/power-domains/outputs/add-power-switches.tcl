@@ -36,6 +36,9 @@ addPowerSwitch -column -powerDomain TOP \
 # Check that well taps exist between AON region and right/left chip boundaries
 #-----------------------------------------------------------------------------
 
+puts "--- Check well taps"
+
+
 if {[info exists ADK_AON_TAP_CELL] && [expr {$ADK_AON_TAP_CELL ne ""}]} {
     set tap_cell $ADK_AON_TAP_CELL
 } else {
