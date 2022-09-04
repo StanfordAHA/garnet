@@ -26,7 +26,8 @@ set adk_allow_sdf_regs true
 # AON boundary taps must line up with M3 VDD stripes.
 # 'stripes_per_tap' controls the space between AON taps
 # as a multiple of the M3 power stripe pitch.
-set stripes_per_tap 18
+# set stripes_per_tap 18 # This is why build 427 failed
+set stripes_per_tap 20
 
 # Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
 # This integer-div followed by integer-mul corrects that situation.
