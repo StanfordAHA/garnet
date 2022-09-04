@@ -10,7 +10,7 @@
 # fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
 # Sparsity parm controls VDD stripe sparsity for M3 power stripes;
 # sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
-set vdd_m3_stripe_sparsity 2
+set vdd_m3_stripe_sparsity 1
 
 
 # Allow SDF registers?
