@@ -76,6 +76,8 @@ set aon_height 24
 # Negative offset puts AON left of center, which breaks GF flow
 # set aon_horiz_offset -80
 # set aon_horiz_offset 0 # This failed, not sure why
+# If stripes_per_tap is 22, aon_horiz_offset should be 84; 80 creates a dead zone see issue ???
+# FIXME aon placement should maybe be algorithmic based on distance from power switches etc.
 set aon_horiz_offset 84
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
