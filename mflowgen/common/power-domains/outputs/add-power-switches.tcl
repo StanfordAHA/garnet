@@ -27,7 +27,6 @@ addPowerSwitch -column -powerDomain TOP \
      -leftOffset $pwr_switch_edge_offset\
      -horizontalPitch $horiz_switch_pitch   \
      -checkerBoard   \
-     -snapToNearest \
      -loopBackAtEnd  \
      -enableNetOut PSenableNetOut\
      -noFixedStdCellOverlap  \

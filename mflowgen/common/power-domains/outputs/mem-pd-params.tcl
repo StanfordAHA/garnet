@@ -27,7 +27,7 @@ set adk_allow_sdf_regs true
 # 'stripes_per_tap' controls the space between AON taps
 # as a multiple of the M3 power stripe pitch.
 # set stripes_per_tap 18
-set stripes_per_tap 20; # Changed to match stripes_per_switch, below
+set stripes_per_tap 22; # Changed to match stripes_per_switch, below
 
 # Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
 # This integer-div followed by integer-mul corrects that situation.
@@ -55,7 +55,7 @@ if { $stripes_per_tap != $corrected_stripes_per_tap } {
 # sps12 (original default) yields 14 columns of switches and 4.5 hr runtime
 # sps26 yields six columns and finishes in 2.5 hr
 # set stripes_per_tap 18 # This is why build 425 failed
-set stripes_per_switch 20
+set stripes_per_switch 22
 
 # Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
 set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
@@ -76,7 +76,7 @@ set aon_height 24
 # Negative offset puts AON left of center, which breaks GF flow
 # set aon_horiz_offset -80
 # set aon_horiz_offset 0 # This failed, not sure why
-set aon_horiz_offset 80
+set aon_horiz_offset 84
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 15
