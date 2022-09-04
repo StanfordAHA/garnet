@@ -86,6 +86,7 @@ puts "\nChecking to see that well taps exist in space between SRAMs\n"
 # if 'dbget top.name' != 'Tile_MemCore' then no check needed
 
 # Find the srams
+set sram_collection [get_cells -quiet -hier -filter {is_memory_cell==true}]
 foreach_in_collection s $sram_collection {
     selectInst $s
     set srams [dbget selected]
@@ -107,35 +108,43 @@ set sorted_exes [ lsort -real $xlist ]
 # Find left and right edges of the gap between SRAMs
 set left_edge_of_gap  [ lindex $sorted_exes 1 ]
 set right_edge_of_gap [ lindex $sorted_exes 2 ]
+
+# No check if no gap
 if { $left_edge_of_gap == $right_edge_of_gap } {
    puts "tiles are abutted, no check needed"
-}
 
-# See if well taps (power switches) exist between the gaps
-# And yes we need to check both edges of power switch!!
-
-set ps_width [ dbget [ dbget -p2 top.insts.cell.name $tap_cell ].box_sizex ]
-set ps_width [ lindex $ps_width 0 ]
-
-set found_valid_ps false
-foreach llx $ps_llx_list {
-  set urx [ expr $llx + $ps_width ]
-  set cond1 false; set cond2 false
-  if { $llx > $left_edge_of_gap  } { set cond1 true }
-  if { $urx < $right_edge_of_gap } { set cond2 true }
-  if { $cond1 && $cond2 } {
-    puts "Found valid power-switch column at llx=$llx"
-    set found_valid_ps true
-    break
-  }  
-}
-
-if { $found_valid_ps } {
-  puts "Oll Korrect -- found well taps in between the two SRAMs"
 } else {
-  puts "ERROR Cannot find power-switches between the SRAMS, thus no well taps there"
-  puts "Saving design for later debugging..."
-  saveDesign checkpoints/design.checkpoint/save.enc -user_path
-  exit 13
-}
 
+  # See if well taps (power switches) exist between the gaps
+  # And yes we need to check both edges of power switch!!
+
+  # Make a list of llx for each power switch (again) (why not)
+  set ps_llx_list [ dbget [ dbget -p2 top.insts.cell.name $tap_cell ].box_llx ]
+
+  # Find width of power switch; must be fully in the gap!
+  set ps_width [ dbget [ dbget -p2 top.insts.cell.name $tap_cell ].box_sizex ]
+  set ps_width [ lindex $ps_width 0 ]
+
+  # Verify that at least one welltap column exists fully in the gap
+  set found_valid_ps false
+  foreach llx $ps_llx_list {
+    set urx [ expr $llx + $ps_width ]
+    set cond1 false; set cond2 false
+    if { $llx > $left_edge_of_gap  } { set cond1 true }
+    if { $urx < $right_edge_of_gap } { set cond2 true }
+    if { $cond1 && $cond2 } {
+      puts "Found valid power-switch column at llx=$llx"
+      set found_valid_ps true
+      break
+    }  
+  }
+
+  if { $found_valid_ps } {
+    puts "Oll Korrect -- found well taps in between the two SRAMs"
+  } else {
+    puts "ERROR Cannot find power-switches between the SRAMS, thus no well taps there"
+    puts "Saving design for later debugging..."
+    saveDesign checkpoints/design.checkpoint/save.enc -user_path
+    exit 13
+  }
+}
