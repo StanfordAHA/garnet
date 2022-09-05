@@ -22,7 +22,7 @@ def test_pond_rd_wr(run_tb):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "input_width_16_num_2")],
+        "e0": [("I0", "io2f_16"), ("p0", "input_width_16_num_0")],
         "e1": [("I1", "io2f_16"), ("p0", "data1")],
         "e2": [("p0", "output_width_16_num_0"), ("I2", "f2io_16")]
     }
@@ -76,6 +76,11 @@ def test_pond_rd_wr(run_tb):
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
 
+    tester.circuit.flush = 1
+    tester.eval()
+    tester.step(2)
+    tester.circuit.flush = 0
+
     src_x0, src_y0 = placement["I0"]
     src_x1, src_y1 = placement["I1"]
     src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
@@ -106,7 +111,7 @@ def test_pond_pe(run_tb):
                                mem_ratio=(1, 2))
 
     netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "input_width_16_num_2")],
+        "e0": [("I0", "io2f_16"), ("p0", "input_width_16_num_0")],
         "e1": [("I1", "io2f_16"), ("p0", "data1")],
         "e2": [("p0", "res"), ("I2", "f2io_16")],
         "e3": [("p0", "output_width_16_num_0"), ("p0", "data0")]
@@ -165,6 +170,11 @@ def test_pond_pe(run_tb):
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
 
+    tester.circuit.flush = 1
+    tester.eval()
+    tester.step(2)
+    tester.circuit.flush = 0
+
     src_x0, src_y0 = placement["I0"]
     src_x1, src_y1 = placement["I1"]
     src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
@@ -200,7 +210,7 @@ def test_pond_pe_acc(run_tb):
     netlist = {
         "e0": [("I0", "io2f_16"), ("p0", "data0")],
         "e1": [("p0", "output_width_16_num_0"), ("p0", "data1")],
-        "e2": [("p0", "res"), ("p0", "input_width_16_num_2")],
+        "e2": [("p0", "res"), ("p0", "input_width_16_num_0")],
         "e3": [("p0", "output_width_16_num_0"), ("I1", "f2io_16")]
     }
     bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 16}
@@ -256,6 +266,11 @@ def test_pond_pe_acc(run_tb):
     tester.done_config()
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
+
+    tester.circuit.flush = 1
+    tester.eval()
+    tester.step(2)
+    tester.circuit.flush = 0
 
     src_x0, src_y0 = placement["I0"]
     src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
