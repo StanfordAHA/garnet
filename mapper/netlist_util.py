@@ -15,7 +15,7 @@ from metamapper.node import (
     Sink,
     Common,
 )
-from metamapper.common_passes import AddID, print_dag
+from metamapper.common_passes import AddID, print_dag, gen_dag_img
 from DagVisitor import Visitor, Transformer
 from peak.mapper.utils import Unbound
 from lassen.sim import PE_fc as lassen_fc
@@ -196,8 +196,6 @@ class CreateIDs(Visitor):
         self.i = 0
         self.node_to_id = {}
         self.run(dag)
-        for src, sink in zip(dag.non_input_sources, dag.non_output_sinks):
-            self.node_to_id[src.iname] = self.node_to_id[sink.iname]
         return self.node_to_id
 
     def visit_Source(self, node):
@@ -208,14 +206,9 @@ class CreateIDs(Visitor):
         child = list(node.children())[0]
 
         if "io16" in node.iname:
-            is_bit = False
-        else:
-            is_bit = True
-
-        if is_bit:
-            id = f"i{self.i}"
-        else:
             id = f"I{self.i}"
+        else:
+            id = f"i{self.i}"
         self.i += 1
         self.node_to_id[node.iname] = id
 
@@ -469,10 +462,12 @@ class PondFlushes(Transformer):
 class PipelineBroadcastHelper(Visitor):
     def __init__(self):
         self.sinks = {}
-        pass
 
     def doit(self, dag: Dag):
         self.run(dag)
+        for sink in dag.sinks:
+            if hasattr(sink, "source"):
+                self.sinks[sink] = [sink.source]
         return self.sinks
 
     def generic_visit(self, node: DagNode):
@@ -715,6 +710,79 @@ class FixInputsOutputAndPipeline(Visitor):
                     self.node_map[node] = new_node
 
 
+class PackRegsIntoPonds(Visitor):
+    def __init__(
+        self,
+        sinks
+    ):
+        self.sinks = sinks
+
+    def doit(self, dag: Dag):
+        self.skip_reg_nodes = []
+        self.pe_to_pond_conns = {}
+        self.node_map = {}
+        self.inputs = []
+        self.outputs = []
+        self.dag_sources = []
+        self.dag_sinks = []
+        self.run(dag)
+        for source in dag.sources:
+            if hasattr(source, "sink"):
+                self.dag_sources.append(source)
+                self.dag_sinks.append(source.sink)
+        real_sources = [self.node_map[s] for s in self.dag_sources if s in self.node_map]
+        real_sinks = [self.node_map[s] for s in self.dag_sinks if s in self.node_map]
+        return IODag(
+            inputs=self.inputs,
+            outputs=self.outputs,
+            sources=real_sources,
+            sinks=real_sinks,
+        )
+
+    def find_pe(self, node, num_regs):
+        if node.node_name == "global.PE":
+            return node, num_regs
+
+        assert node in self.sinks
+        assert len(self.sinks[node]) == 1
+        new_node = self.sinks[node][0]
+        if new_node.node_name == "Register":
+            self.skip_reg_nodes.append(new_node)
+            if not isinstance(node, Sink):
+                num_regs += 1
+        return self.find_pe(new_node, num_regs)
+
+
+    def generic_visit(self, node: DagNode):
+        Visitor.generic_visit(self, node)
+        if node in self.skip_reg_nodes:
+            return
+
+        if node.node_name == "Select" and node.child.node_name == "global.Pond" and not isinstance(node.child, Sink):
+            pe_node, num_regs = self.find_pe(node.child, 0)
+            self.pe_to_pond_conns[pe_node] = node
+
+        if node in self.pe_to_pond_conns:
+            new_children = []
+            for child in node.children():
+                if child in self.node_map:
+                    new_children.append(self.node_map[child])
+                else:
+                    new_children.append(self.pe_to_pond_conns[node])
+            new_node = node.copy()
+            if node not in self.node_map:
+                new_node.set_children(*new_children)
+                self.node_map[node] = new_node
+        else:
+            new_children = [self.node_map[child] for child in node.children()]
+            new_node = node.copy()
+            new_node.set_children(*new_children)
+            self.node_map[node] = new_node
+            if node.node_name == "Output":
+                self.outputs.append(new_node)
+            if node.node_name == "Input":
+                self.inputs.append(new_node)
+
 class CountTiles(Visitor):
     def __init__(self):
         pass
@@ -779,6 +847,11 @@ def create_netlist_info(
         input_broadcast_branch_factor,
     ).doit(dag)
 
+    gen_dag_img(fdag, "fdag")
+    sinks = PipelineBroadcastHelper().doit(fdag)
+    pdag = PackRegsIntoPonds(sinks).doit(fdag)
+    gen_dag_img(pdag, "pdag")
+
     def tile_to_char(t):
         if t.split(".")[1] == "PE":
             return "p"
@@ -792,7 +865,7 @@ def create_netlist_info(
             return "i"
 
     node_info = {t: tile_to_char(t) for t in tile_info}
-    nodes_to_ids = CreateIDs(node_info).doit(fdag)
+    nodes_to_ids = CreateIDs(node_info).doit(pdag)
 
     if load_only:
         name_to_id = {name: id_ for id_, name in id_to_name.items()}
@@ -800,12 +873,12 @@ def create_netlist_info(
     info = {}
     info["id_to_name"] = {id: node for node, id in nodes_to_ids.items()}
 
-    node_to_metadata = CreateMetaData().doit(fdag)
+    node_to_metadata = CreateMetaData().doit(pdag)
     info["id_to_metadata"] = {
         nodes_to_ids[node]: md for node, md in node_to_metadata.items()
     }
 
-    nodes_to_instrs = CreateInstrs(node_info).doit(fdag)
+    nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
     info["id_to_instrs"] = {
         id: nodes_to_instrs[node] for node, id in nodes_to_ids.items()
     }
@@ -819,15 +892,15 @@ def create_netlist_info(
         info["instance_to_instrs"][node] = md
 
     node_info = {t: fc.Py.input_t for t, fc in tile_info.items()}
-    bus_info, netlist = CreateBuses(node_info).doit(fdag)
+    bus_info, netlist = CreateBuses(node_info).doit(pdag)
     info["buses"] = bus_info
     info["netlist"] = {}
     for bid, ports in netlist.items():
         info["netlist"][bid] = [
-            (nodes_to_ids[node.iname], field.replace("pond_0", "pond"))
+            (nodes_to_ids[node.iname], field)
             for node, field in ports
         ]
 
-    CountTiles().doit(fdag)
+    CountTiles().doit(pdag)
 
     return info

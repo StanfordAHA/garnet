@@ -169,6 +169,10 @@ class Garnet(Generator):
         # make multiple configuration ports
         config_port_pass(self.interconnect, pipeline=True)
 
+        self.inter_core_connections = {}
+        for bw, interconnect in self.interconnect._Interconnect__graphs.items():
+            self.inter_core_connections[bw] = interconnect.inter_core_connection
+
         if not interconnect_only:
             self.add_ports(
                 jtag=JTAGType,
@@ -318,6 +322,28 @@ class Garnet(Generator):
         return input_interface, output_interface,\
             (reset_port_name, valid_port_name, en_port_name)
 
+    def pack_ponds(self, netlist_info):
+        packed_ponds = {}
+
+        for edge_id in list(netlist_info['netlist']):
+            conns = netlist_info['netlist'][edge_id]
+            bw = netlist_info["buses"][edge_id]
+            inter_core_conns = self.inter_core_connections[bw]
+            (source, source_port) = conns[0]
+            for (sink, sink_port) in conns[1:]:
+                if source_port in inter_core_conns:
+                    if sink_port in inter_core_conns[source_port]:
+                        packed_ponds[source] = sink
+                        del netlist_info['netlist'][edge_id]
+                        del netlist_info['buses'][edge_id]
+
+        for edge_id, conns in netlist_info['netlist'].items():
+            for conn in conns:
+                if conn[0] in packed_ponds:
+                    conn[0] = packed_ponds[conn[0]]
+
+        breakpoint()
+
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves):
         app_dir = os.path.dirname(app)
@@ -386,8 +412,8 @@ class Garnet(Generator):
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves)
 
-        print("NETLIST INFO")
-        print(netlist_info)
+        # print("NETLIST INFO")
+        # print(netlist_info)
 
         mem_remap = None
         pe_remap = None
@@ -400,27 +426,27 @@ class Garnet(Generator):
             pnr_tag = pnr_tag.tag_name
             if pnr_tag == "m" and mem_remap is None:
                 mem_remap = actual_core.get_port_remap()
-                print("MEM PORT REMAP!")
-                print(mem_remap)
+                # print("MEM PORT REMAP!")
+                # print(mem_remap)
             elif pnr_tag == "p" and pe_remap is None:
                 pe_remap = actual_core.get_port_remap()
             elif mem_remap is not None and pe_remap is not None:
                 break
 
-        print(mem_remap)
-        print(pe_remap)
+        # print(mem_remap)
+        # print(pe_remap)
 
         # Remap here...
-        print("Actual netlist...")
-        print(netlist_info['netlist'])
+        # print("Actual netlist...")
+        # print(netlist_info['netlist'])
         for netlist_id, connections_list in netlist_info['netlist'].items():
             for idx, connection in enumerate(connections_list):
                 tag_, pin_ = connection
                 if tag_[0] == 'm':
                     # get mode...
                     metadata = netlist_info['id_to_metadata'][tag_]
-                    print("metadata...")
-                    print(metadata)
+                    # print("metadata...")
+                    # print(metadata)
                     mode = "UB"
                     if 'stencil_valid' in metadata:
                         mode = 'stencil_valid'
@@ -435,10 +461,10 @@ class Garnet(Generator):
                                 }
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
-                    print("SHOWING REMAP")
-                    print(f"MODE {mode}")
-                    print(mem_remap[mode])
-                    print(f"remapping pin {pin_} to {mem_remap[mode][pin_]}")
+                    # print("SHOWING REMAP")
+                    # print(f"MODE {mode}")
+                    # print(mem_remap[mode])
+                    # print(f"remapping pin {pin_} to {mem_remap[mode][pin_]}")
                     pin_remap = mem_remap[mode][pin_]
                     connections_list[idx] = (tag_, pin_remap)
                 elif tag_[0] == 'p':
@@ -450,7 +476,7 @@ class Garnet(Generator):
                     #print(core)
                     #if tag_[0] == 'm
 
-        print(netlist_info['netlist'])
+        # print(netlist_info['netlist'])
 
         # temporally remapping of port names for the new Pond
         for name, mapping in netlist_info["netlist"].items():
@@ -461,7 +487,10 @@ class Garnet(Generator):
                 if "data_out_pond" in port_name:
                     mapping[i] = (inst_name, "PondTop_output_width_17_num_0")
 
+        netlist_info = self.pack_ponds(netlist_info)
+        
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
+
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
 
@@ -478,6 +507,7 @@ class Garnet(Generator):
             fixed_io = None
         else:
             fixed_io = place_io_blk(id_to_name)
+
         placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
                                                          load_only=load_only,
                                                          cwd=app_dir,
