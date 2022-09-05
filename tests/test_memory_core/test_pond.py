@@ -12,23 +12,29 @@ def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
 
-def test_pond_rd_wr(run_tb):
+def test_pond_rd_wr(run_tb, get_mapping):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
                                num_tracks=3,
                                add_pd=True,
                                add_pond=True,
+                               ready_valid=True,
+                               scgra=True,
+                               scgra_combined=True,
                                mem_ratio=(1, 2))
 
-    netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "input_width_16_num_2")],
-        "e1": [("I1", "io2f_16"), ("p0", "data1")],
-        "e2": [("p0", "output_width_16_num_0"), ("I2", "f2io_16")]
-    }
-    bus = {"e0": 16, "e1": 16, "e2": 16}
+    pe_map, mem_map = get_mapping(interconnect)
+    pe_map = pe_map["alu"]
 
-    placement, routing, _ = pnr(interconnect, (netlist, bus))
+    netlist = {
+        "e0": [("I0", "io2f_17"), ("p0", "PondTop_input_width_17_num_2")],
+        "e1": [("I1", "io2f_17"), ("p0", pe_map["data1"])],
+        "e2": [("p0", "PondTop_output_width_17_num_0"), ("I2", "f2io_17")]
+    }
+    bus = {"e0": 17, "e1": 17, "e2": 17}
+
+    placement, routing, _ = pnr(interconnect, (netlist, bus), cwd="/aha/garnet")
     config_data = interconnect.get_route_bitstream(routing)
 
     pe_x, pe_y = placement["p0"]
@@ -38,13 +44,13 @@ def test_pond_rd_wr(run_tb):
     pondcore = petile.additional_cores[0]
 
     pond_config = {"mode": "pond",
-                   "config": {"in2regfile_0": {"cycle_starting_addr": [0],
+                   "config": {"in2regfile_0": {"cycle_starting_addr": [1],
                                                "cycle_stride": [1, 1],
                                                "dimensionality": 2,
                                                "extent": [16, 1],
                                                "write_data_starting_addr": [0],
                                                "write_data_stride": [1, 1]},
-                              "regfile2out_0": {"cycle_starting_addr": [16],
+                              "regfile2out_0": {"cycle_starting_addr": [17],
                                                 "cycle_stride": [1, 1],
                                                 "dimensionality": 2,
                                                 "extent": [16, 1],
@@ -55,6 +61,18 @@ def test_pond_rd_wr(run_tb):
     for name, v in pond_config:
         idx, value = pondcore.get_config_data(name, v)
         config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
+
+    src0 = placement["I0"]
+    src1 = placement["I1"]
+    dst = placement["I2"]
+
+    # Configure IO tiles
+    instr = {}
+    for place in [src0, src1, dst]:
+        iotile = interconnect.tile_circuits[place]
+        value = iotile.core.get_config_bitstream(instr)
+        for addr, data in value:
+            config_data.append((interconnect.get_config_addr(addr, 0, place[0], place[1]), data))
 
     config_data = compress_config_data(config_data)
 
@@ -75,28 +93,26 @@ def test_pond_rd_wr(run_tb):
     tester.done_config()
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
-
-    src_x0, src_y0 = placement["I0"]
-    src_x1, src_y1 = placement["I1"]
-    src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
-    src_name1 = f"glb2io_16_X{src_x1:02X}_Y{src_y1:02X}"
-    dst_x, dst_y = placement["I2"]
-    dst_name = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    
+    src_name0 = f"glb2io_17_X{src0[0]:02X}_Y{src0[1]:02X}"
+    src_name1 = f"glb2io_17_X{src1[0]:02X}_Y{src1[1]:02X}"
+    dst_name = f"io2glb_17_X{dst[0]:02X}_Y{dst[1]:02X}"
     random.seed(0)
 
-    for i in range(32):
+
+    for i in range(34):
         tester.poke(circuit.interface[src_name0], i)
         tester.poke(circuit.interface[src_name1], i + 1)
         tester.eval()
-        if i >= 16:
-            tester.expect(circuit.interface[dst_name], i - 16)
+        # 1 cycle delay from pond output to glb
+        if i >= 18:
+            tester.expect(circuit.interface[dst_name], i - 18)
         tester.step(2)
-        tester.eval()
 
     run_tb(tester)
 
 
-def test_pond_pe(run_tb):
+def test_pond_pe(run_tb, get_mapping):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
@@ -105,13 +121,19 @@ def test_pond_pe(run_tb):
                                add_pond=True,
                                mem_ratio=(1, 2))
 
+
+    pe_map, mem_map = get_mapping(interconnect)
+    pe_map = pe_map["alu"]
+    
     netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "input_width_16_num_2")],
-        "e1": [("I1", "io2f_16"), ("p0", "data1")],
-        "e2": [("p0", "res"), ("I2", "f2io_16")],
-        "e3": [("p0", "output_width_16_num_0"), ("p0", "data0")]
+        "e0": [("I0", "io2f_17"), ("p0", pe_map["data2"])],
+        "e1": [("I1", "io2f_17"), ("p0", pe_map["data1"])],
+        "e2": [("p0", pe_map["res"]), ("I2", "f2io_17")],
+        #"e3": [("p0", "output_width_17_num_0"), ("p0", pe_map["data0"])]
+        # res is incorrect, should it be a pond port?
+        "e3": [("p0", pe_map["res"]), ("p0", pe_map["data0"])]
     }
-    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 16}
+    bus = {"e0": 17, "e1": 17, "e2": 17, "e3": 17}
 
     placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -145,6 +167,19 @@ def test_pond_pe(run_tb):
         idx, value = pondcore.get_config_data(name, v)
         config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
+
+    src0 = placement["I0"]
+    src1 = placement["I1"]
+    dst = placement["I2"]
+
+    # Configure IO tiles
+    instr = {}
+    for place in [src0, src1, dst]:
+        iotile = interconnect.tile_circuits[place]
+        value = iotile.core.get_config_bitstream(instr)
+        for addr, data in value:
+            config_data.append((interconnect.get_config_addr(addr, 0, place[0], place[1]), data))
+
     config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
@@ -165,12 +200,9 @@ def test_pond_pe(run_tb):
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
 
-    src_x0, src_y0 = placement["I0"]
-    src_x1, src_y1 = placement["I1"]
-    src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
-    src_name1 = f"glb2io_16_X{src_x1:02X}_Y{src_y1:02X}"
-    dst_x, dst_y = placement["I2"]
-    dst_name = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    src_name0 = f"glb2io_17_X{src0[0]:02X}_Y{src0[1]:02X}"
+    src_name1 = f"glb2io_17_X{src1[0]:02X}_Y{src1[1]:02X}"
+    dst_name = f"io2glb_17_X{dst[0]:02X}_Y{dst[1]:02X}"
     random.seed(0)
 
     for i in range(32):
@@ -185,10 +217,10 @@ def test_pond_pe(run_tb):
         tester.step(2)
         tester.eval()
 
-    run_tb(tester)
+    run_tb(tester, include_PE=True, trace=True, cwd="/aha/garnet")
 
 
-def test_pond_pe_acc(run_tb):
+def test_pond_pe_acc(run_tb, get_mapping):
 
     chip_size = 2
     interconnect = create_cgra(chip_size, chip_size, io_sides(),
@@ -197,13 +229,17 @@ def test_pond_pe_acc(run_tb):
                                add_pond=True,
                                mem_ratio=(1, 2))
 
+    pe_map, mem_map = get_mapping(interconnect)
+    pe_map = pe_map["alu"]
+
     netlist = {
-        "e0": [("I0", "io2f_16"), ("p0", "data0")],
-        "e1": [("p0", "output_width_16_num_0"), ("p0", "data1")],
-        "e2": [("p0", "res"), ("p0", "input_width_16_num_2")],
-        "e3": [("p0", "output_width_16_num_0"), ("I1", "f2io_16")]
+        # definitely incorrect mapping
+        "e0": [("I0", "io2f_17"), ("p0", pe_map["data0"])],
+        "e1": [("p0", pe_map["res"]), ("p0", pe_map["data1"])],
+        "e2": [("p0", pe_map["res"]), ("p0", pe_map["data2"])],
+        "e3": [("p0", pe_map["res"]), ("I1", "f2io_17")]
     }
-    bus = {"e0": 16, "e1": 16, "e2": 16, "e3": 16}
+    bus = {"e0": 17, "e1": 17, "e2": 17, "e3": 17}
 
     placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
@@ -237,6 +273,18 @@ def test_pond_pe_acc(run_tb):
         idx, value = pondcore.get_config_data(name, v)
         config_data.append((interconnect.get_config_addr(idx, 1, pe_x, pe_y), value))
 
+
+    src0 = placement["I0"]
+    dst = placement["I2"]
+
+    # Configure IO tiles
+    instr = {}
+    for place in [src0, dst]:
+        iotile = interconnect.tile_circuits[place]
+        value = iotile.core.get_config_bitstream(instr)
+        for addr, data in value:
+            config_data.append((interconnect.get_config_addr(addr, 0, place[0], place[1]), data))
+
     config_data = compress_config_data(config_data)
 
     circuit = interconnect.circuit()
@@ -257,10 +305,9 @@ def test_pond_pe_acc(run_tb):
     tester.poke(circuit.interface["stall"], 0)
     tester.eval()
 
-    src_x0, src_y0 = placement["I0"]
-    src_name0 = f"glb2io_16_X{src_x0:02X}_Y{src_y0:02X}"
-    dst_x, dst_y = placement["I1"]
-    dst_name = f"io2glb_16_X{dst_x:02X}_Y{dst_y:02X}"
+    src_name0 = f"glb2io_17_X{src0[0]:02X}_Y{src0[1]:02X}"
+    src_name1 = f"glb2io_17_X{src1[0]:02X}_Y{src1[1]:02X}"
+    dst_name = f"io2glb_17_X{dst[0]:02X}_Y{dst[1]:02X}"
     random.seed(0)
 
     total = 0
@@ -278,7 +325,7 @@ def test_pond_pe_acc(run_tb):
         tester.step(2)
         tester.eval()
 
-    run_tb(tester)
+    run_tb(tester, include_PE=True)
 
 
 def test_pond_config(run_tb):
@@ -314,4 +361,4 @@ def test_pond_config(run_tb):
         tester.config_read(addr)
         tester.expect(circuit.read_config_data, data)
 
-    run_tb(tester)
+    run_tb(tester, include_PE=True)
