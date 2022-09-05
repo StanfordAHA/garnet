@@ -1406,8 +1406,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "x"
     elif 'mat_vecmul_ji.gv' in app_name:
-        shape_1 = 3
-        shape_2 = 11
+        shape_1 = 16
+        shape_2 = 16
         b_matrix = MatrixGenerator(name="B", shape=[shape_2, shape_1], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="c", shape=[shape_2], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
@@ -1694,7 +1694,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'vec_spacc_simple.gv' in app_name:
         # TODO
         shape_1 = 16
-        shape_2 = 16
+        shape_2 = 10
         b_matrix = MatrixGenerator(name="B", shape=[shape_1, shape_2], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
@@ -1774,6 +1774,7 @@ if __name__ == "__main__":
     parser.add_argument('--glb_dir',
                         type=str,
                         default="/home/max/Documents/SPARSE/garnet/GLB_DIR")
+    parser.add_argument('--just_glb', action="store_true")
     args = parser.parse_args()
     bespoke = args.bespoke
     output_dir = args.output_dir
@@ -1800,6 +1801,7 @@ if __name__ == "__main__":
     glb_dir = args.glb_dir
     chip_h = args.height
     chip_w = args.width
+    just_glb = args.just_glb
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
@@ -2073,6 +2075,10 @@ if __name__ == "__main__":
 
     stb.display_names()
     stb.dump_display_names(f"{test_dump_dir}/design.mapped")
+
+    if just_glb:
+        print("Only generating glb collateral and leaving...")
+        exit()
 
     ##### Create the actual testbench #####
     tester = BasicTester(stb, stb.clk, stb.rst_n)
