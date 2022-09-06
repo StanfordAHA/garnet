@@ -720,6 +720,7 @@ class PackRegsIntoPonds(Visitor):
     def doit(self, dag: Dag):
         self.skip_reg_nodes = []
         self.pe_to_pond_conns = {}
+        self.pond_reg_skipped = {}
         self.node_map = {}
         self.inputs = []
         self.outputs = []
@@ -737,7 +738,7 @@ class PackRegsIntoPonds(Visitor):
             outputs=self.outputs,
             sources=real_sources,
             sinks=real_sinks,
-        )
+        ), self.pond_reg_skipped
 
     def find_pe(self, node, num_regs):
         if node.node_name == "global.PE":
@@ -761,6 +762,7 @@ class PackRegsIntoPonds(Visitor):
         if node.node_name == "Select" and node.child.node_name == "global.Pond" and not isinstance(node.child, Sink):
             pe_node, num_regs = self.find_pe(node.child, 0)
             self.pe_to_pond_conns[pe_node] = node
+            self.pond_reg_skipped[node.child.iname] = num_regs
 
         if node in self.pe_to_pond_conns:
             new_children = []
@@ -849,7 +851,7 @@ def create_netlist_info(
 
     gen_dag_img(fdag, "fdag")
     sinks = PipelineBroadcastHelper().doit(fdag)
-    pdag = PackRegsIntoPonds(sinks).doit(fdag)
+    pdag, pond_reg_skipped = PackRegsIntoPonds(sinks).doit(fdag)
     gen_dag_img(pdag, "pdag")
 
     def tile_to_char(t):
@@ -874,9 +876,11 @@ def create_netlist_info(
     info["id_to_name"] = {id: node for node, id in nodes_to_ids.items()}
 
     node_to_metadata = CreateMetaData().doit(pdag)
-    info["id_to_metadata"] = {
-        nodes_to_ids[node]: md for node, md in node_to_metadata.items()
-    }
+    info["id_to_metadata"] = {}
+    for node, md in node_to_metadata.items():
+        info["id_to_metadata"][nodes_to_ids[node]] = md 
+        if node in pond_reg_skipped:
+            info["id_to_metadata"][nodes_to_ids[node]]['config']['regfile2out_0']['cycle_starting_addr'][0] -= pond_reg_skipped[node]
 
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
     info["id_to_instrs"] = {
