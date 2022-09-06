@@ -30,6 +30,13 @@ class PowerDomainConfigReg(Configurable):
         return [0, int(turn_off)]
 
 
+__AND_GATE = magma.DefineFromVerilog("""
+module and_cell(input A, input B, output Z);
+SC7P5T_AN2X0P5_SSC14R inst(.A(A), .B(B), .Z(Z));
+endmodule
+""")[0]
+
+
 def add_power_domain(interconnect: Interconnect):
     # add features first
     for (x, y) in interconnect.tile_circuits:
@@ -71,12 +78,12 @@ def add_power_domain(interconnect: Interconnect):
                     ready_name = name + "_ready"
                     tile.remove_wire(tile.ports[ready_name], switchbox.ports[ready_name + "_in"])
                     # use an AND gate
-                    and_gate = FromMagma(mantle.DefineAnd(2, 1))
+                    and_gate = FromMagma(__AND_GATE)
                     and_gate.instance_name = ready_name + "_and"
                     enable_name = name + "_enable"
-                    tile.wire(and_gate.ports.I0[0], tile.ports[ready_name])
-                    tile.wire(and_gate.ports.I1[0], switchbox.ports[enable_name])
-                    tile.wire(and_gate.ports.O[0], switchbox.ports[ready_name + "_in"])
+                    tile.wire(and_gate.ports.A, tile.ports[ready_name])
+                    tile.wire(and_gate.ports.B, switchbox.ports[enable_name])
+                    tile.wire(and_gate.ports.Z, switchbox.ports[ready_name + "_in"])
 
 
 class PowerDomainOR(Generator):
