@@ -80,7 +80,7 @@ set port_names(cgra_jtag_reset_n)           "pad_CGRA_JTAG_TRSTn"
 
 set port_names(trace_data)                  "pad_TPIU_TRACE_DATA"
 set port_names(trace_swo)                   "pad_TPIU_TRACE_SWO"
-set port_names(trace_clk)                   "pad_TPIU_TRACE_CLK"
+set port_names(trace_clk)                   "pad_TPIU_TRACECLKIN"
 
 # ------------------------------------------------------------------------------
 # Define Port Names (UART)
