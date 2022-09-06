@@ -59,11 +59,11 @@ set_multicycle_path -setup 0 -from [get_clocks tlx_fwd_gclk] -to [get_clocks tlx
 set_multicycle_path -hold -1 -from [get_clocks tlx_fwd_gclk] -to [get_clocks tlx_fwd_strobe]
 
 # Input constraints
-set_input_delay -max [expr ${master_clk_period} * 2] -clock [get_clocks tlx_fwd_gclk] [get_ports $tlx_fwd_inputs]
-set_input_delay -min 0.0 -clock [get_clocks tlx_fwd_gclk] [get_ports $tlx_fwd_inputs]
-
-set_multicycle_path -setup -end -from [get_ports $tlx_fwd_inputs] 5
-set_multicycle_path -hold -end -from [get_ports $tlx_fwd_inputs] 4
+# set_input_delay -max [expr ${master_clk_period} * 2] -clock [get_clocks tlx_fwd_gclk] [get_ports $tlx_fwd_inputs]
+# set_input_delay -min 0.0 -clock [get_clocks tlx_fwd_gclk] [get_ports $tlx_fwd_inputs]
+# 
+# set_multicycle_path -setup -end -from [get_ports $tlx_fwd_inputs] 5
+# set_multicycle_path -hold -end -from [get_ports $tlx_fwd_inputs] 4
 
 # ------------------------------------------------------------------------------
 # TLX Reverse Channel
