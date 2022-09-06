@@ -55,7 +55,8 @@ proc gen_bumps { bumpCell } {
     set core_fp_height 4900
     set io_root IOPAD
     set nb 26
-    set bp 173.470; # 170 / 98%
+    #set bp 173.470; # 170 / 98%
+    set bp 170; # bump pitch with no shrink
     set bump_array_width [expr ($nb - 1) * $bp]
     set bofsW [expr ($core_fp_width - $bump_array_width) / 2.0]
     set bofsS [expr ($core_fp_height - $bump_array_width) / 2.0]
