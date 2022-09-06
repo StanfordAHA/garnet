@@ -266,6 +266,14 @@ class Garnet(Generator):
             instr = instrs[instance]
             result += self.interconnect.configure_placement(x, y, instr,
                                                             node[0])
+            if node in self.pes_with_packed_ponds:
+                node = self.pes_with_packed_ponds[node]
+                instance = id_to_name[node]
+                if instance not in instrs:
+                    continue
+                instr = instrs[instance]
+                result += self.interconnect.configure_placement(x, y, instr,
+                                                                node[0])
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -334,15 +342,19 @@ class Garnet(Generator):
                 if source_port in inter_core_conns:
                     if sink_port in inter_core_conns[source_port]:
                         packed_ponds[source] = sink
-                        del netlist_info['netlist'][edge_id]
-                        del netlist_info['buses'][edge_id]
+                        # del netlist_info['netlist'][edge_id]
+                        # del netlist_info['buses'][edge_id]
 
         for edge_id, conns in netlist_info['netlist'].items():
+            new_conns = []
             for conn in conns:
                 if conn[0] in packed_ponds:
-                    conn[0] = packed_ponds[conn[0]]
+                    new_conns.append((packed_ponds[conn[0]], conn[1]))
+                else:
+                    new_conns.append(conn)
+            netlist_info['netlist'][edge_id] = new_conns
 
-        breakpoint()
+        self.pes_with_packed_ponds = {pe:pond for pond,pe in packed_ponds.items()}
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves):
@@ -487,7 +499,7 @@ class Garnet(Generator):
                 if "data_out_pond" in port_name:
                     mapping[i] = (inst_name, "PondTop_output_width_17_num_0")
 
-        netlist_info = self.pack_ponds(netlist_info)
+        self.pack_ponds(netlist_info)
         
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
 
