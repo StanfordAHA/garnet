@@ -94,8 +94,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                                     SwitchBoxIO]]] = None,
                 altcore=None,
                 pe_fc=lassen_fc,
-                ready_valid: bool = False,
-                scgra: bool = False,
+                ready_valid: bool = True,
+                scgra: bool = True,
                 scgra_combined: bool = True):
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
