@@ -89,10 +89,11 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
     use_verilator = False
     use_dw = False
     root_dir = os.path.dirname(__file__)
+    cwd="/aha/garnet"
     with tempfile.TemporaryDirectory() as tempdir:
         if cwd is not None:
             tempdir = cwd
-        print("cwd")
+        print("tb cwd")
         print(cwd)
         print(tempdir)
         rtl_lib = []

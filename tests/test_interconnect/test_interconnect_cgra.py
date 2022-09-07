@@ -113,7 +113,7 @@ def test_interconnect_point_wise(batch_size: int, run_tb, io_sides, get_mapping)
     run_tb(tester, include_PE=True)
 
 
-def test_interconnect_sram(run_tb, io_sides):
+def test_interconnect_sram(run_tb, io_sides, get_mapping):
 
     # NEW: PASSES
 
@@ -126,23 +126,22 @@ def test_interconnect_sram(run_tb, io_sides):
                                add_pd=True,
                                mem_ratio=(1, 2))
 
+    pe_map, mem_map = get_mapping(interconnect)
+    pe_map = pe_map["alu"]
+
     # In this case, we use the write address for both addresses
-    addr_in_0 = ONYX_PORT_REMAP['RAM']['wr_addr_in_0']
-    data_out_0 = ONYX_PORT_REMAP['RAM']['data_out_0']
-    ren_in_0 = ONYX_PORT_REMAP['RAM']['ren_in_0']
-
-
+    # in ROM mode, only the wr_addr_in is used
     netlist = {
-        "e0": [("I0", "io2f_17"), ("m0", addr_in_0)],
-        "e1": [("m0", data_out_0), ("I1", "f2io_17")],
-        "e2": [("i3", "io2f_1"), ("m0", ren_in_0)]
+        "e0": [("I0", "io2f_17"), ("m0", mem_map["ROM"]["wr_addr_in"])],
+        "e1": [("m0", mem_map["ROM"]["data_out"]), ("I1", "f2io_17")],
+        "e2": [("i3", "io2f_1"), ("m0", mem_map["ROM"]["ren"])]
     }
     bus = {"e0": 17, "e1": 17, "e2": 1}
 
     placement, routing, _ = pnr(interconnect, (netlist, bus))
     config_data = interconnect.get_route_bitstream(routing)
 
-    mode = 2  # Mode.SRAM
+    mode = 4  # Mode.SRAM
     tile_en = 1
     configs_mem = [("mode", mode, 0),
                    ("tile_en", tile_en, 0)]
@@ -223,16 +222,19 @@ def test_interconnect_sram(run_tb, io_sides):
     tester.poke(circuit.interface[ren], 1)
     tester.eval()
 
-    for i in range(2048):
+    for i in range(2050):
         tester.poke(circuit.interface[src], i)
         tester.eval()
         tester.step(2)
         tester.eval()
-        tester.expect(circuit.interface[dst], i)
+        if i >= 2:
+            tester.expect(circuit.interface[dst], i - 2)
 
     run_tb(tester, include_PE=True)
 
 
+@pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.parametrize("depth", [10, 1024])
 def test_interconnect_fifo(run_tb, io_sides, depth):
 
