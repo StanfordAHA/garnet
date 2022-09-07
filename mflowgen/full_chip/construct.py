@@ -82,9 +82,9 @@ def construct():
     # Include sealring?
     'include_sealring'  : False,
     # SRAM macros
-    'num_words'         : 2048,
+    'num_words'         : 4096,
     'word_size'         : 64,
-    'mux_size'          : 16,
+    'mux_size'          : 8,
     'num_subarrays'     : 2,
     'partial_write'     : True,
     # Low Effort flow
@@ -113,6 +113,22 @@ def construct():
     'antenna_drc_env_setup' : 'drcenv-chip-ant.sh',
     # Testbench
     'cgra_apps' : ["tests/conv_1_2", "tests/conv_2_1"]
+  }
+
+  sram_2_params = {
+    # SRAM macros
+    'num_words'         : 32768,
+    'word_size'         : 32,
+    'mux_size'          : 16,
+    'num_subarrays'     : 8,
+    'partial_write'     : True,
+  }
+
+  guardring_params = {
+    # Merging guardring into GDS
+    'child_gds' : 'inputs/adk/guardring.gds',
+    'coord_x'   : '-49.98u',
+    'coord_y'   : '-49.92u'
   }
 
   #-----------------------------------------------------------------------
@@ -181,6 +197,7 @@ def construct():
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
+      merge_gdr      = Step( 'mentor-calibre-gdsmerge-child', default=True )
       # GF has a different way of running fill
       if adk_name == 'gf12-adk':
           fill           = Step (this_dir + '/../common/mentor-calibre-fill-gf' )
@@ -197,6 +214,10 @@ def construct():
   merge_fill.set_name('gdsmerge-fill')
 
   # Send in the clones
+  # Second sram_node because soc has 2 types of srams
+  gen_sram_2 = gen_sram.clone()
+  gen_sram_2.set_name( 'gen_sram_macro_2' )
+
   # 'power' step now gets its own design-rule check
   power_drc = drc.clone()
   power_drc.set_name( 'power-drc' )
@@ -215,11 +236,13 @@ def construct():
   synth.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
   synth.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+  synth.extend_inputs( ['sram_2_tt.lib', 'sram_2.lef'] )
   synth.extend_inputs( ['xgcd_tt.lib', 'xgcd.lef'] )
   pt_signoff.extend_inputs( ['tile_array_tt.db'] )
   pt_signoff.extend_inputs( ['glb_top_tt.db'] )
   pt_signoff.extend_inputs( ['global_controller_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
+  pt_signoff.extend_inputs( ['sram_2_tt.db'] )
   pt_signoff.extend_inputs( ['xgcd_tt.db'] )
 
   route.extend_inputs( ['pre-route.tcl'] )
@@ -236,6 +259,7 @@ def construct():
     step.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
     step.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+    step.extend_inputs( ['sram_2_tt.lib', 'sram_2.lef'] )
     step.extend_inputs( ['xgcd_tt.lib', 'xgcd.lef'] )
 
   # Need all block gds's to merge into the final layout
@@ -245,6 +269,7 @@ def construct():
       node.extend_inputs( ['glb_top.gds'] )
       node.extend_inputs( ['global_controller.gds'] )
       node.extend_inputs( ['sram.gds'] )
+      node.extend_inputs( ['sram_2.gds'] )
       node.extend_inputs( ['xgcd.gds'] )
 
   # Need extracted spice files for both tile types to do LVS
@@ -255,6 +280,7 @@ def construct():
   lvs.extend_inputs( ['glb_top.sram.spi'] )
   lvs.extend_inputs( ['global_controller.lvs.v'] )
   lvs.extend_inputs( ['sram.spi'] )
+  lvs.extend_inputs( ['sram_2.spi'] )
   lvs.extend_inputs( ['xgcd.spi'] )
   lvs.extend_inputs( ['adk_lvs2'] )
 
@@ -282,6 +308,7 @@ def construct():
   g.add_step( rtl               )
   g.add_step( soc_rtl           )
   g.add_step( gen_sram          )
+  g.add_step( gen_sram_2        )
   g.add_step( tile_array        )
   g.add_step( glb_top           )
   g.add_step( global_controller )
@@ -311,6 +338,7 @@ def construct():
   g.add_step( prefill_drc       )
   g.add_step( fill              )
   g.add_step( merge_fill        )
+  g.add_step( merge_gdr         )
   g.add_step( drc               )
   g.add_step( drc_pm            )
   g.add_step( antenna_drc       )
@@ -334,6 +362,7 @@ def construct():
   # Connect by name
 
   g.connect_by_name( adk,      gen_sram       )
+  g.connect_by_name( adk,      gen_sram_2     )
   g.connect_by_name( adk,      synth          )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
@@ -348,6 +377,7 @@ def construct():
   g.connect_by_name( adk,      prefill_drc    )
   g.connect_by_name( adk,      fill           )
   g.connect_by_name( adk,      merge_fill     )
+  g.connect_by_name( adk,      merge_gdr      )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      antenna_drc    )
@@ -417,21 +447,17 @@ def construct():
   g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
 
-  # SRAM macro
-  g.connect_by_name( gen_sram, synth          )
-  g.connect_by_name( gen_sram, iflow          )
-  g.connect_by_name( gen_sram, init           )
-  g.connect_by_name( gen_sram, power          )
-  g.connect_by_name( gen_sram, place          )
-  g.connect_by_name( gen_sram, cts            )
-  g.connect_by_name( gen_sram, postcts_hold   )
-  g.connect_by_name( gen_sram, route          )
-  g.connect_by_name( gen_sram, postroute      )
-  g.connect_by_name( gen_sram, postroute_hold )
-  g.connect_by_name( gen_sram, signoff        )
-  g.connect_by_name( gen_sram, pt_signoff     )
-  g.connect_by_name( gen_sram, drc            )
-  g.connect_by_name( gen_sram, lvs            )
+  # Connect both gen_sram_macro nodes to all downstream nodes that
+  # need them
+  sram_nodes = [synth, iflow, init, power, place, cts, postcts_hold,
+                route, postroute, postroute_hold, signoff, pt_signoff,
+                drc, lvs]
+  for node in sram_nodes:
+      g.connect_by_name( gen_sram, node )
+      for sram_output in gen_sram_2.all_outputs():
+          node_input = sram_output.replace('sram', 'sram_2')
+          if node_input in node.all_inputs():
+              g.connect(gen_sram_2.o(sram_output), node.i(node_input))
 
   # Full chip floorplan stuff
   g.connect_by_name( io_file, init_fc )
@@ -446,12 +472,16 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        lvs            )
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
+  # Merge guardring gds into design
+  g.connect(signoff.o('design-merged.gds'), merge_gdr.i('design.gds'))
+
+  # Send gds with sealring to drc, fill, and lvs
+  g.connect_by_name( merge_gdr, lvs )
   # Run pre-fill DRC after signoff
-  g.connect(signoff.o('design-merged.gds'), prefill_drc.i('design_merged.gds'))
+  g.connect_by_name( merge_gdr, prefill_drc )
 
   # Run Fill on merged GDS
-  g.connect( signoff.o('design-merged.gds'), fill.i('design.gds') )
+  g.connect( merge_gdr.o('design_merged.gds'), fill.i('design.gds') )
 
   # For GF, Fill is already merged during fill step
   if adk_name == 'gf12-adk':
@@ -494,6 +524,10 @@ def construct():
   parameters = sr_override_parms( parameters )
   print(f'parameters["hold_target_slack"]={parameters["hold_target_slack"]}')
   g.update_params( parameters )
+
+  # Provide different parameter set to second sram node, so it can actually 
+  # generate a different sram
+  gen_sram_2.update_params( sram_2_params )
 
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
@@ -555,7 +589,11 @@ def construct():
   order.insert( index, 'netlist-fixing.tcl' )
   signoff.update_params( { 'order': order } )
 
+
   merge_fill.update_params( {'design_top_cell': parameters['design_name'], 'child_top_cell': f"{parameters['design_name']}_F16a"} )
+  
+  # need to give coordinates for guardring
+  merge_gdr.update_params( guardring_params )
 
   # Antenna DRC node needs to use antenna rule deck
   antenna_drc.update_params( { 'drc_rule_deck': parameters['antenna_drc_rule_deck'],
