@@ -89,13 +89,9 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
     use_verilator = False
     use_dw = False
     root_dir = os.path.dirname(__file__)
-    cwd="/aha/garnet"
     with tempfile.TemporaryDirectory() as tempdir:
         if cwd is not None:
             tempdir = cwd
-        print("tb cwd")
-        print(cwd)
-        print(tempdir)
         rtl_lib = []
         for genesis_verilog in glob.glob(os.path.join(root_dir, "genesis_verif/*.*")):
             shutil.copy(genesis_verilog, tempdir)
@@ -123,7 +119,7 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
             m.generator.reset_generator_cache()
             m.logging.flush_all()  # flush all staged logs
 
-            rtl_lib.append("/aha/garnet/garnet_PE.v")
+            rtl_lib.append(os.path.join(root_dir, "garnet_PE.v"))
 
         if use_dw:
             coreir_lib_name = "float_DW"
