@@ -66,7 +66,7 @@ for {set j 0} {$j < $cols_per_tile} {incr j} {
     lappend bottom_col($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_wr_en[$j]"]]
     lappend bottom_col($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_rd_en[$j]"]]
     if {$j == 0} {
-        lappend bottom_col($j) [get_object_name [get_ports "data_flush[$j]"]]
+        lappend bottom_col($j) [get_object_name [get_ports "data_flush"]]
     }
 }
 
