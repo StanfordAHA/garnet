@@ -47,21 +47,21 @@ set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk global_c
 # Trace Clock and CPU Clock
 # ------------------------------------------------------------------------------
 
-set_max_delay -datapath_only [expr $soc_master_clk_period * $soc_clk_div_factor] \
+set_max_delay [expr $soc_master_clk_period * $soc_clk_div_factor] \
     -from [get_clocks cpu_clk] -to [get_clocks trace_clkin]
 
-set_max_delay -datapath_only [expr $soc_master_clk_period * $soc_clk_div_factor] \
+set_max_delay [expr $soc_master_clk_period * $soc_clk_div_factor] \
     -from [get_clocks trace_clkin] -to [get_clocks cpu_clk]
 
 # ------------------------------------------------------------------------------
 # XGCD and NIC Clock
 # ------------------------------------------------------------------------------
 
-set_max_delay -datapath_only [expr $xgcd_design_clk_period * 8] \
+set_max_delay [expr $xgcd_design_clk_period * 8] \
     -from [get_clocks xgcd_div8_clk] \
     -to [get_clocks nic_clk]
 
-set_max_delay -datapath_only [expr $xgcd_design_clk_period * 8] \
+set_max_delay [expr $xgcd_design_clk_period * 8] \
     -from [get_clocks nic_clk] \
     -to [get_clocks xgcd_div8_clk]
 
