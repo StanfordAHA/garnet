@@ -31,7 +31,7 @@ def test_pond_rd_wr(run_tb, get_mapping):
     pe_map = pe_map["alu"]
 
     netlist = {
-        "e0": [("I0", "io2f_17"), ("p0", "PondTop_input_width_17_num_2")],
+        "e0": [("I0", "io2f_17"), ("p0", "PondTop_input_width_17_num_0")],
         "e1": [("I1", "io2f_17"), ("p0", pe_map["data1"])],
         "e2": [("p0", "PondTop_output_width_17_num_0"), ("I2", "f2io_17")]
     }
@@ -100,6 +100,12 @@ def test_pond_rd_wr(run_tb, get_mapping):
     src_name0 = f"glb2io_17_X{src0[0]:02X}_Y{src0[1]:02X}"
     src_name1 = f"glb2io_17_X{src1[0]:02X}_Y{src1[1]:02X}"
     dst_name = f"io2glb_17_X{dst[0]:02X}_Y{dst[1]:02X}"
+
+    tester.circuit.flush = 1
+    tester.eval()
+    tester.step(2)
+    tester.circuit.flush = 0
+
     random.seed(0)
 
     for i in range(34):
@@ -127,7 +133,7 @@ def test_pond_pe(run_tb, get_mapping):
     pe_map = pe_map["alu"]
 
     netlist = {
-        "e0": [("I0", "io2f_17"), ("p0", "PondTop_input_width_17_num_2")],
+        "e0": [("I0", "io2f_17"), ("p0", "PondTop_input_width_17_num_0")],
         "e1": [("I1", "io2f_17"), ("p0", pe_map["data1"])],
         "e2": [("p0", pe_map["res"]), ("I2", "f2io_17")],
         "e3": [("p0", "PondTop_output_width_17_num_0"), ("p0", pe_map["data0"])]
@@ -204,6 +210,12 @@ def test_pond_pe(run_tb, get_mapping):
     src_name0 = f"glb2io_17_X{src0[0]:02X}_Y{src0[1]:02X}"
     src_name1 = f"glb2io_17_X{src1[0]:02X}_Y{src1[1]:02X}"
     dst_name = f"io2glb_17_X{dst[0]:02X}_Y{dst[1]:02X}"
+
+    tester.circuit.flush = 1
+    tester.eval()
+    tester.step(2)
+    tester.circuit.flush = 0
+
     random.seed(0)
 
     results = []
@@ -236,10 +248,9 @@ def test_pond_pe_acc(run_tb, get_mapping):
     pe_map = pe_map["alu"]
 
     netlist = {
-        # definitely incorrect mapping
         "e0": [("I0", "io2f_17"), ("p0", pe_map["data0"])],
         "e1": [("p0", "PondTop_output_width_17_num_0"), ("p0", pe_map["data1"])],
-        "e2": [("p0", pe_map["res"]), ("p0", "PondTop_input_width_17_num_2")],
+        "e2": [("p0", pe_map["res"]), ("p0", "PondTop_input_width_17_num_0")],
         "e3": [("p0", "PondTop_output_width_17_num_0"), ("I1", "f2io_17")]
     }
     bus = {"e0": 17, "e1": 17, "e2": 17, "e3": 17}
@@ -312,6 +323,12 @@ def test_pond_pe_acc(run_tb, get_mapping):
 
     src_name0 = f"glb2io_17_X{src0[0]:02X}_Y{src0[1]:02X}"
     dst_name = f"io2glb_17_X{dst[0]:02X}_Y{dst[1]:02X}"
+
+    tester.circuit.flush = 1
+    tester.eval()
+    tester.step(2)
+    tester.circuit.flush = 0
+
     random.seed(0)
 
     total = 0
