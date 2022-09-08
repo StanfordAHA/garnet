@@ -31,7 +31,6 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_pio.sv \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_decode.sv \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_logic.sv \
-				$(gemstone_dir)/tests/common/rtl/AN_CELL.sv -v $(gemstone_dir)/tests/common/rtl/AO_CELL.sv \
 				$(garnet_dir)/genesis_verif/*.sv
 
 TB_FILES += -F tb/tb_cgra.f
