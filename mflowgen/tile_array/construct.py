@@ -24,6 +24,13 @@ def construct():
   adk_name = get_sys_adk()
   adk_view = 'multivt'
 
+  if adk_name == 'tsmc16':
+      read_hdl_defines = 'TSMC16'
+  elif adk_name == 'gf12-adk':
+      read_hdl_defines = 'GF12'
+  else
+      read_hdl_defines = ''
+
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
@@ -33,6 +40,7 @@ def construct():
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : True,
+    'read_hdl_defines'  : read_hdl_defines,
     # RTL Generation
     'array_width'       : 32,
     'array_height'      : 16,
