@@ -121,6 +121,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         m.logging.flush_all()  # flush all staged logs
 
         pipeline_scanner = True
+        use_fiber_access = True
 
         if not scgra_combined:
 
@@ -166,7 +167,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             fiber_access = FiberAccess(data_width=16,
                                        local_memory=False,
                                        tech_map=GF_Tech_Map(depth=512, width=32),
-                                       defer_fifos=True)
+                                       defer_fifos=True,
+                                       add_flush=False,
+                                       use_pipelined_scanner=pipeline_scanner)
             buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
                                 tech_map=GF_Tech_Map(depth=512, width=32),
                                 defer_fifos=True,
@@ -184,11 +187,15 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             stencil_valid = StencilValid()
 
-            controllers.append(scan)
-            controllers.append(wscan)
-            controllers.append(buffet)
+
+            if use_fiber_access:
+                controllers.append(fiber_access)
+            else:
+                controllers.append(scan)
+                controllers.append(wscan)
+                controllers.append(buffet)
+
             controllers.append(strg_ub)
-            # controllers.append(fiber_access)
             controllers.append(strg_ram)
             controllers.append(stencil_valid)
 
