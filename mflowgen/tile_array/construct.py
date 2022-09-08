@@ -28,7 +28,7 @@ def construct():
       read_hdl_defines = 'TSMC16'
   elif adk_name == 'gf12-adk':
       read_hdl_defines = 'GF12'
-  else
+  else:
       read_hdl_defines = ''
 
   parameters = {
