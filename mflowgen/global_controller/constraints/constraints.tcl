@@ -73,3 +73,6 @@ set_max_transition [expr 0.05*${clock_period}] $design_name
 
 set_false_path -hold -from [ get_ports clk_in ] -to [ get_ports clk_out ]
 
+set_output_delay -clock ${clock_name} [expr $clock_period * 0.8] [get_ports reset_out]
+set_input_delay -clock ${clock_name} [expr $clock_period * 0.8] [get_ports glb_cfg_rd_data*]
+set_input_delay -clock ${clock_name} [expr $clock_period * 0.8] [get_ports cgra_stall]
