@@ -38,7 +38,7 @@ def sequence():
     core = PeakCore(PE_fc)
     instr_type = strip_modifiers(PE_fc.Py.input_t.field_dict['inst'])
     asm_ = Assembler(instr_type)
-    
+
     core.finalize()
     sequence = []
     for _ in range(5):
@@ -104,6 +104,7 @@ def test_peak_core_sequence(sequence, run_tb):
 
     run_tb(tester)
 
+
 @pytest.mark.skip
 @pytest.mark.parametrize('seed', [0, 1])
 def test_peak_tile_sequence(sequence, seed, run_tb, get_mapping):
@@ -126,9 +127,9 @@ def test_peak_tile_sequence(sequence, seed, run_tb, get_mapping):
                                            ports=[pe_map["data0"], pe_map["data1"], pe_map["res"]],
                                            seed=seed)
     route_config = interconnect.get_route_bitstream(routing)
-    
+
     x, y = 0, 0
-    pe = interconnect.tile_circuits[x,y].core
+    pe = interconnect.tile_circuits[x, y].core
     reg_addr, value = pe.get_config_data("tile_en", 1)
 
     pe_feat = pe.features().index(pe)
@@ -151,7 +152,6 @@ def test_peak_tile_sequence(sequence, seed, run_tb, get_mapping):
             setattr(self.tester.circuit, input_a, a)
             setattr(self.tester.circuit, input_b, b)
 
-
     class TileMonitor(Monitor):
         def observe(self, config_data, a, b, output):
             getattr(self.tester.circuit, output_port).expect(output)
@@ -159,7 +159,7 @@ def test_peak_tile_sequence(sequence, seed, run_tb, get_mapping):
     tester = BasicSequenceTester(circuit, TileDriver(), TileMonitor(),
                                  sequence, circuit.clk, circuit.reset)
     tester.reset()
-    tester.poke(circuit.interface["stall"], 0) 
+    tester.poke(circuit.interface["stall"], 0)
     for addr, data in route_config:
         tester.configure(addr, data)
 

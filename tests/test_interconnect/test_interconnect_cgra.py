@@ -42,7 +42,7 @@ def test_interconnect_point_wise(batch_size: int, run_tb, io_sides, get_mapping)
                                num_tracks=3,
                                add_pd=True,
                                mem_ratio=(1, 2))
-    
+
     pe_map, mem_map = get_mapping(interconnect)
     pe_map = pe_map["alu"]
 
@@ -162,7 +162,6 @@ def test_interconnect_sram(run_tb, io_sides, get_mapping):
         value = iotile.core.get_config_bitstream(instr)
         for addr, data in value:
             config_data.append((interconnect.get_config_addr(addr, 0, place[0], place[1]), data))
-
 
     config_data = compress_config_data(config_data)
 
@@ -290,12 +289,11 @@ def test_interconnect_fifo(run_tb, io_sides, depth):
 
     # default io configuration
     instr = {}
-    for place in [src_coord, dst_coord, wen_coord, valid_coord, ren_coord,full_coord, empty_coord]:
+    for place in [src_coord, dst_coord, wen_coord, valid_coord, ren_coord, full_coord, empty_coord]:
         iotile = interconnect.tile_circuits[place]
         value = iotile.core.get_config_bitstream(instr)
         for addr, data in value:
             config_data.append((interconnect.get_config_addr(addr, 0, place[0], place[1]), data))
-
 
     config_data = compress_config_data(config_data)
 
@@ -380,11 +378,11 @@ def test_interconnect_fifo(run_tb, io_sides, depth):
 
         if move == 0:
             # read
-            if(len(fifo) > 0):
+            if (len(fifo) > 0):
                 fifo.pop()
         elif move == 1:
             # write
-            if(len(fifo) < depth):
+            if (len(fifo) < depth):
                 fifo.appendleft(write_val)
         elif move == 2:
             # r and w
