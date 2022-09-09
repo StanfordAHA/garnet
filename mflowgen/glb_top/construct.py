@@ -371,7 +371,7 @@ def construct():
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
 
   # useful_skew
-  cts.update_params( { 'useful_skew': False }, allow_new=True )
+  # cts.update_params( { 'useful_skew': False }, allow_new=True )
 
   return g
 
