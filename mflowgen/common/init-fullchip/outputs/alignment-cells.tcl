@@ -42,7 +42,7 @@ proc create_and_place_cell {pos_x pos_y cellname instname} {
   create_inst -cell $cellname -inst $instname \
       -location "$pos_x $pos_y" -orient R0 -physical -status fixed
   # Arbitrary halo margin
-  set halo_margin 10
+  set halo_margin 5
   create_place_halo -insts $instname \
     -halo_deltas $halo_margin $halo_margin $halo_margin $halo_margin -snap_to_site
 }
@@ -62,4 +62,13 @@ proc create_cell_grid {ori_x ori_y x_sep y_sep numrows numcols cellname instname
 set alignment_cellname "CDMMTYPE2_32422"
 set alignment_instname_base "core_alignment_grid"
 #create_cell_grid 300 300 1500 1500 3 3 $alignment_cellname $alignment_instname_base
+
+# Place alignment cells
+create_and_place_cell 900 4000 $alignment_cellname "cdmm1"
+create_and_place_cell 2400 3600 $alignment_cellname "cdmm2"
+create_and_place_cell 4400 3530 $alignment_cellname "cdmm3"
+create_and_place_cell 250 2000 $alignment_cellname "cdmm4"
+create_and_place_cell 4655 2000 $alignment_cellname "cdmm5"
+create_and_place_cell 2250 250 $alignment_cellname "cdmm6"
+create_and_place_cell 4250 250 $alignment_cellname "cdmm7"
 
