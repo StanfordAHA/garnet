@@ -3892,6 +3892,7 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     # Get the primitive mapping so it's easy to read the design.place
     nlb.display_names()
 
+
 @pytest.mark.skip
 def test_GLB_to_WS(run_tb):
     trace = True
