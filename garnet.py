@@ -3,6 +3,7 @@ import magma
 from canal.util import IOSide, SwitchBoxType
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
+from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
 from gemstone.generator.generator import Generator, set_debug_mode
 from global_buffer.io_placement import place_io_blk
 from global_buffer.design.global_buffer import GlobalBufferMagma
@@ -666,6 +667,13 @@ def main():
                       coreir_libs={"float_CW"},
                       passes=["rungenerators", "inline_single_instances", "clock_gate"],
                       inline=False)
+
+        # copy in cell definitions
+        files = AOIMuxWrapper.get_sv_files()
+        with open("garnet.v", "a") as garnet_v:
+            for filename in files:
+                with open(filename) as f:
+                    garnet_v.write(f.read())
         if args.sparse_cgra:
             # Cat the PE together...
             # files_cat = ['garnet.v', 'garnet_PE.v']
