@@ -1,7 +1,10 @@
 import glob
 import os
 import shutil
-import lassen.asm
+import lassen.asm as asm
+from hwtypes.modifiers import strip_modifiers
+from lassen.sim import PE_fc as lassen_fc
+from peak.assembler import Assembler
 
 
 def dw_files():
@@ -37,8 +40,11 @@ def basic_sequence(interconnect):
 
     # Configure Tile(1, 1).PE to be umult0.
     pe_tile = interconnect.tile_circuits[(1, 1)]
-    mul_conifg_data = pe_tile.core.get_config_bitstream(lassen.asm.umult0())
-    for addr, data in mul_conifg_data:
+    instr_type = strip_modifiers(lassen_fc.Py.input_t.field_dict['inst'])
+    asm_ = Assembler(instr_type)
+    pe_bs = asm_.assemble(asm.umult0())
+    mult_bs = pe_tile.core.get_config_bitstream(pe_bs)
+    for addr, data in mult_bs:
         full_addr = interconnect.get_config_addr(addr, 0, 1, 1)
         sequence.append((full_addr, data))
 
