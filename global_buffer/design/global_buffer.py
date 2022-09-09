@@ -23,6 +23,8 @@ class GlobalBuffer(Generator):
         self.flush_crossbar_sel = self.input("flush_crossbar_sel", clog2(
             self._params.num_glb_tiles) * self._params.num_groups)
         self.reset = self.reset("reset")
+        self.cgra_stall_in = self.input("cgra_stall_in", self._params.num_cgra_cols)
+        self.cgra_stall = self.output("cgra_stall", self._params.num_cgra_cols)
 
         self.proc_wr_en = self.input("proc_wr_en", 1)
         self.proc_wr_strb = self.input("proc_wr_strb", self._params.bank_strb_width)
@@ -237,6 +239,9 @@ class GlobalBuffer(Generator):
                 if_cfg_tile2tile, f"if_cfg_tile2tile_{i}"))
             self.if_sram_cfg_list.append(self.interface(
                 if_sram_cfg_tile2tile, f"if_sram_cfg_tile2tile_{i}"))
+
+        # Passthrough cgar_stall signals
+        self.wire(self.cgra_stall_in, self.cgra_stall)
 
         # GLS pipeline
         self.strm_g2f_start_pulse_d = self.var("strm_g2f_start_pulse_d", self._params.num_glb_tiles)
