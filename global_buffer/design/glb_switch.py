@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, concat, const
+from kratos import Generator, always_ff, always_comb, posedge, concat, const, clog2
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
 from global_buffer.design.glb_header import GlbHeader
@@ -157,6 +157,7 @@ class GlbSwitch(Generator):
 
     def add_sw2bank_clk_en(self):
         self.wr_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin)
+        self.wr_clk_en_gen.p_cnt.value = self._params.tile2sram_wr_delay + self._params.wr_clk_en_margin
         self.sw2bank_wr_clk_en = self.var("sw2bank_wr_clk_en", 1)
         self.add_child("sw2bank_wr_clk_en_gen",
                        self.wr_clk_en_gen,
@@ -166,6 +167,7 @@ class GlbSwitch(Generator):
                        clk_en=self.sw2bank_wr_clk_en
                        )
         self.rd_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin)
+        self.rd_clk_en_gen.p_cnt.value = self._params.tile2sram_rd_delay + self._params.rd_clk_en_margin
         self.sw2bank_rd_clk_en = self.var("sw2bank_rd_clk_en", 1)
         self.add_child("sw2bank_rd_clk_en_gen",
                        self.rd_clk_en_gen,

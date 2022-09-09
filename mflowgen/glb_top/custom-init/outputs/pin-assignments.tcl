@@ -47,11 +47,11 @@ set all [sort_collection [get_ports] hierarchical_name]
 # per cgra tile ports
 for {set j 0} {$j < $array_width} {incr j} {
     for {set k 0} {$k < $cgra_data_width} {incr k} {
-        lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g[[expr {$j*$cgra_data_width+$k}]]"]]
-        lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f[[expr {$j*$cgra_data_width+$k}]]"]]
+        lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g*[[expr {$j*$cgra_data_width+$k}]]"]]
+        lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f*[[expr {$j*$cgra_data_width+$k}]]"]]
     }
-    lappend tile_ports($j) [get_object_name [get_ports "strm_data_valid_f2g[$j]"]]
-    lappend tile_ports($j) [get_object_name [get_ports "strm_data_valid_g2f[$j]"]]
+    lappend tile_ports($j) [get_object_name [get_ports "strm_ctrl_f2g*[$j]"]]
+    lappend tile_ports($j) [get_object_name [get_ports "strm_ctrl_g2f*[$j]"]]
     for {set k 0} {$k < $cgra_cfg_addr_width} {incr k} {
         lappend tile_ports($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_addr[[expr {$j*$cgra_cfg_addr_width+$k}]]"]]
     }

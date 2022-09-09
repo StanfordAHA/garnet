@@ -5,7 +5,7 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 class GlbBankSramStub(Generator):
     def __init__(self, addr_width, data_width, _params: GlobalBufferParams):
-        super().__init__("glb_bank_sram_stub")
+        super().__init__(f"glb_bank_sram_stub_{addr_width}_{data_width}")
         self._params = _params
         self.addr_width = addr_width
         self.data_width = data_width

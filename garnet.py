@@ -50,6 +50,7 @@ class Garnet(Generator):
                  mem_ratio: int = 4,
                  num_tracks: int = 5,
                  tile_layout_option: int = 0,
+                 amber_pond: bool = False,
                  add_pond: bool = True,
                  pond_area_opt: bool = False,
                  pond_area_opt_share: bool = False,
@@ -60,6 +61,8 @@ class Garnet(Generator):
                  glb_params: GlobalBufferParams = GlobalBufferParams(),
                  pe_fc=lassen_fc,
                  ready_valid: bool = False,
+                 scgra: bool = False,
+                 scgra_combined: bool = True,
                  sb_option: str = "Imran",
                  pipeline_regs_density: list = None,
                  port_conn_option: list = None):
@@ -78,6 +81,7 @@ class Garnet(Generator):
         self.config_data_width = config_data_width
         axi_addr_width = self.glb_params.cgra_axi_addr_width
         axi_data_width = self.glb_params.axi_data_width
+        self.amber_pond = amber_pond
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
 
@@ -137,6 +141,7 @@ class Garnet(Generator):
                                    tile_id_width=tile_id_width,
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
+                                   amber_pond=amber_pond,
                                    add_pond=add_pond,
                                    pond_area_opt=pond_area_opt,
                                    pond_area_opt_share=pond_area_opt_share,
@@ -151,6 +156,8 @@ class Garnet(Generator):
                                    standalone=standalone,
                                    pe_fc=pe_fc,
                                    ready_valid=ready_valid,
+                                   scgra=scgra,
+                                   scgra_combined=scgra_combined,
                                    switchbox_type=sb_type_dict.get(sb_option, "Invalid Switchbox Type"),
                                    pipeline_regs_density=pipeline_regs_density,
                                    port_conn_option=port_conn_option)
@@ -244,7 +251,7 @@ class Garnet(Generator):
                       self.ports.read_config_data)
 
             if harden_flush:
-                self.add_ports(flush=magma.In(magma.Bits[1]))
+                self.add_ports(flush=magma.In(magma.Bits[self.width // 4]))
                 self.wire(self.ports.flush, self.interconnect.ports.flush)
 
     def map(self, halide_src):
@@ -289,9 +296,13 @@ class Garnet(Generator):
 
         for blk_id in inputs:
             x, y = placement[blk_id]
-            bit_width = 16 if blk_id[0] == "I" else 1
+            bit_width = 17 if blk_id[0] == "I" else 1
+            #bit_width = 16 if blk_id[0] == "I" else 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
+            print("WEIRD NAME ASSERTION")
+            print(name)
+            print(self.interconnect.interface())
             assert name in self.interconnect.interface()
             blk_name = id_to_name[blk_id]
             if "reset" in blk_name:
@@ -300,7 +311,8 @@ class Garnet(Generator):
                 en_port_name.append(name)
         for blk_id in outputs:
             x, y = placement[blk_id]
-            bit_width = 16 if blk_id[0] == "I" else 1
+            #bit_width = 16 if blk_id[0] == "I" else 1
+            bit_width = 17 if blk_id[0] == "I" else 1
             name = f"io2glb_{bit_width}_X{x:02X}_Y{y:02X}"
             output_interface.append(name)
             assert name in self.interconnect.interface()
@@ -326,9 +338,10 @@ class Garnet(Generator):
 
         app_file = app
         c = CoreIRContext(reset=True)
+        cutil.load_libs(["cgralib"])
         cmod = cutil.load_from_json(app_file)
         c = CoreIRContext()
-        cutil.load_libs(["commonlib", "float"])
+        cutil.load_libs(["cgralib", "commonlib", "float"])
         c.run_passes(["flatten"])
 
         MEM_fc = gen_MEM_fc()
@@ -340,11 +353,11 @@ class Garnet(Generator):
             pe_header,
             {"global.PE": self.pe_fc},
         )
-        putil.load_and_link_peak(
-            nodes,
-            mem_header,
-            {"global.MEM": (MEM_fc, True)},
-        )
+        #putil.load_and_link_peak(
+        #    nodes,
+        #    mem_header,
+        #    {"global.MEM": (MEM_fc, True)},
+        #)
 
         putil.load_and_link_peak(
             nodes,
@@ -365,7 +378,7 @@ class Garnet(Generator):
         )
 
         dag = cutil.coreir_to_dag(nodes, cmod)
-        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
+        tile_info = {"global.PE": self.pe_fc, "cgralib.Mem": nodes.peak_nodes["cgralib.Mem"],
                      "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
         netlist_info = create_netlist_info(app_dir,
                                            dag,
@@ -377,14 +390,81 @@ class Garnet(Generator):
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves)
 
-        # temporally remapping of port names for the new Pond
-        for name, mapping in netlist_info["netlist"].items():
-            for i in range(len(mapping)):
-                (inst_name, port_name) = mapping[i]
-                if "data_in_pond" in port_name:
-                    mapping[i] = (inst_name, "input_width_16_num_2")
-                if "data_out_pond" in port_name:
-                    mapping[i] = (inst_name, "output_width_16_num_0")
+        print("NETLIST INFO")
+        print(netlist_info)
+
+        mem_remap = None
+        pe_remap = None
+        
+        for core_key, core_value in self.interconnect.tile_circuits.items():
+            actual_core = core_value.core
+            pnr_tag = actual_core.pnr_info()
+            if isinstance(pnr_tag, list):
+                continue
+            pnr_tag = pnr_tag.tag_name
+            if pnr_tag == "m" and mem_remap is None:
+                mem_remap = actual_core.get_port_remap()
+                print("MEM PORT REMAP!")
+                print(mem_remap)
+            elif pnr_tag == "p" and pe_remap is None:
+                pe_remap = actual_core.get_port_remap()
+            elif mem_remap is not None and pe_remap is not None:
+                break
+
+        print(mem_remap)
+        print(pe_remap)
+
+        # Remap here...
+        print("Actual netlist...")
+        print(netlist_info['netlist'])
+        for netlist_id, connections_list in netlist_info['netlist'].items():
+            for idx, connection in enumerate(connections_list):
+                tag_, pin_ = connection
+                if tag_[0] == 'm':
+                    # get mode...
+                    metadata = netlist_info['id_to_metadata'][tag_]
+                    print("metadata...")
+                    print(metadata)
+                    mode = "UB"
+                    if 'stencil_valid' in metadata:
+                        mode = 'stencil_valid'
+                    elif 'mode' in metadata and metadata['mode'] == 'sram':
+                        mode = 'ROM'
+                        # Actually use wr addr for rom mode...
+                        hack_remap = {
+                            'addr_in_0': 'wr_addr_in',
+                            #'addr_in_0': 'rd_addr_in',
+                            'ren_in_0': 'ren',
+                            'data_out_0': 'data_out'
+                                }
+                        assert pin_ in hack_remap
+                        pin_ = hack_remap[pin_]
+                    print("SHOWING REMAP")
+                    print(f"MODE {mode}")
+                    print(mem_remap[mode])
+                    print(f"remapping pin {pin_} to {mem_remap[mode][pin_]}")
+                    pin_remap = mem_remap[mode][pin_]
+                    connections_list[idx] = (tag_, pin_remap)
+                elif tag_[0] == 'p':
+                    pin_remap = pe_remap['alu'][pin_]
+                    connections_list[idx] = (tag_, pin_remap)
+            netlist_info['netlist'][netlist_id] = connections_list
+                    # Remap the memtile or pondtile pins
+                    #core = self.interconnect.placement[tag_]
+                    #print(core)
+                    #if tag_[0] == 'm
+
+        print(netlist_info['netlist'])
+
+        if not self.amber_pond:
+            # temporally remapping of port names for the new Pond
+            for name, mapping in netlist_info["netlist"].items():
+                for i in range(len(mapping)):
+                    (inst_name, port_name) = mapping[i]
+                    if "data_in_pond" in port_name:
+                        mapping[i] = (inst_name, "PondTop_input_width_17_num_0")
+                    if "data_out_pond" in port_name:
+                        mapping[i] = (inst_name, "PondTop_output_width_17_num_0")
 
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
@@ -503,6 +583,7 @@ def main():
                         dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
+    parser.add_argument("--amber-pond", action="store_true")
     parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--compact", action="store_true")
@@ -524,6 +605,8 @@ def main():
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
+    parser.add_argument("--sparse-cgra", action="store_true")
+    parser.add_argument("--sparse-cgra-combined", action="store_true")
     parser.add_argument("--no-pond-area-opt", action="store_true")
     parser.add_argument("--pond-area-opt-share", action="store_true")
     parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
@@ -560,6 +643,7 @@ def main():
                     num_tracks=args.num_tracks,
                     tile_layout_option=args.tile_layout_option,
                     pipeline_config_interval=args.pipeline_config_interval,
+                    amber_pond=args.amber_pond,
                     add_pond=not args.no_pond,
                     pond_area_opt=not args.no_pond_area_opt,
                     pond_area_opt_share=args.pond_area_opt_share,
@@ -571,6 +655,8 @@ def main():
                     standalone=args.standalone,
                     pe_fc=pe_fc,
                     ready_valid=args.ready_valid,
+                    scgra=args.sparse_cgra,
+                    scgra_combined=args.sparse_cgra_combined,
                     sb_option=args.sb_option,
                     pipeline_regs_density=args.pipeline_regs_density,
                     port_conn_option=args.port_conn_option)
@@ -581,12 +667,26 @@ def main():
                       coreir_libs={"float_CW"},
                       passes=["rungenerators", "inline_single_instances", "clock_gate"],
                       inline=False)
+
         # copy in cell definitions
         files = AOIMuxWrapper.get_sv_files()
         with open("garnet.v", "a") as garnet_v:
             for filename in files:
                 with open(filename) as f:
                     garnet_v.write(f.read())
+        if args.sparse_cgra:
+            # Cat the PE together...
+            # files_cat = ['garnet.v', 'garnet_PE.v']
+            lines_garnet = None
+            lines_pe = None
+            with open('garnet.v', 'r') as gfd:
+                lines_garnet = gfd.readlines()
+            with open('garnet_PE.v', 'r') as gfd:
+                lines_pe = gfd.readlines()
+            with open('garnet.v', 'w+') as gfd:
+                gfd.writelines(lines_garnet)
+                gfd.writelines(lines_pe)
+
         garnet.create_stub()
         if not args.interconnect_only:
             garnet_home = os.getenv('GARNET_HOME')

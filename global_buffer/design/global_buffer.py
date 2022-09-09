@@ -58,11 +58,20 @@ class GlobalBuffer(Generator):
 
         self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.strm_data_valid_f2g = self.input("strm_data_valid_f2g", 1, size=[
+        self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=[
+            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=[
+            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+
         self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
-        self.strm_data_valid_g2f = self.output("strm_data_valid_g2f", 1, size=[
+        self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=[
+            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=[
+            self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
+        self.strm_ctrl_g2f = self.output("strm_ctrl_g2f", 1, size=[
             self._params.num_glb_tiles, self._params.cgra_per_glb], packed=True)
         self.strm_data_flush_g2f = self.output("strm_data_flush_g2f", 1, size=self._params.num_groups, packed=True)
 
@@ -336,6 +345,7 @@ class GlobalBuffer(Generator):
 
     def add_proc_clk_en(self):
         self.wr_clk_en_gen = GlbClkEnGen(cnt=self._params.tile2sram_wr_delay + self._params.proc_clk_en_margin)
+        self.wr_clk_en_gen.p_cnt.value = self._params.tile2sram_wr_delay + self._params.proc_clk_en_margin
         self.proc_wr_clk_en = self.var("proc_wr_clk_en", 1)
         self.add_child("proc_wr_clk_en_gen",
                        self.wr_clk_en_gen,
@@ -347,6 +357,8 @@ class GlobalBuffer(Generator):
         self.wire(self.if_proc_list[0].wr_clk_en, self.proc_wr_clk_en)
         self.rd_clk_en_gen = GlbClkEnGen(cnt=2 * self._params.num_glb_tiles
                                          + self._params.tile2sram_rd_delay + self._params.proc_clk_en_margin)
+        self.rd_clk_en_gen.p_cnt.value = 2 * self._params.num_glb_tiles + \
+            self._params.tile2sram_rd_delay + self._params.proc_clk_en_margin
         self.proc_rd_clk_en = self.var("proc_rd_clk_en", 1)
         self.add_child("proc_rd_clk_en_gen",
                        self.rd_clk_en_gen,
@@ -637,9 +649,13 @@ class GlobalBuffer(Generator):
                            cfg_pcfg_tile_connected_esto=self.cfg_pcfg_tile_connected[i + 1],
 
                            strm_data_f2g=self.strm_data_f2g[i],
-                           strm_data_valid_f2g=self.strm_data_valid_f2g[i],
+                           strm_data_f2g_vld=self.strm_data_f2g_vld[i],
+                           strm_data_f2g_rdy=self.strm_data_f2g_rdy[i],
+                           strm_ctrl_f2g=self.strm_ctrl_f2g[i],
                            strm_data_g2f=self.strm_data_g2f[i],
-                           strm_data_valid_g2f=self.strm_data_valid_g2f[i],
+                           strm_data_g2f_vld=self.strm_data_g2f_vld[i],
+                           strm_data_g2f_rdy=self.strm_data_g2f_rdy[i],
+                           strm_ctrl_g2f=self.strm_ctrl_g2f[i],
                            data_flush=self.data_flush[i],
 
                            cgra_cfg_g2f_cfg_wr_en=self.cgra_cfg_g2f_cfg_wr_en[i],

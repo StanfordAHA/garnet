@@ -5,21 +5,23 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 class GlbAddrGen(Generator):
     ''' Generate addresses '''
 
-    def __init__(self, _params: GlobalBufferParams):
-        super().__init__(f"glb_addr_gen")
+    def __init__(self, _params: GlobalBufferParams, loop_level: int):
+        super().__init__(f"glb_addr_gen_{loop_level}")
         self._params = _params
         self.p_addr_width = self.param("addr_width", width=32, value=32)
+        self.p_loop_level = self.param("loop_level", width=32, value=self._params.loop_level)
+        self.loop_level = loop_level
 
         self.clk = self.clock("clk")
         self.clk_en = self.clock_en("clk_en")
         self.reset = self.reset("reset")
         self.restart = self.input("restart", 1)
         self.strides = self.input("strides", self.p_addr_width,
-                                  size=self._params.loop_level,
+                                  size=self.p_loop_level,
                                   packed=True, explicit_array=True)
         self.start_addr = self.input("start_addr", self.p_addr_width)
         self.step = self.input("step", 1)
-        self.mux_sel = self.input("mux_sel", max(clog2(self._params.loop_level), 1))
+        self.mux_sel = self.input("mux_sel", max(clog2(self.loop_level), 1))
         self.addr_out = self.output("addr_out", self.p_addr_width)
 
         # local variables
