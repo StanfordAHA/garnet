@@ -2,12 +2,14 @@
 2
 00
 G2F 15 31 0 0
+VALID
 1
 512
 1
 1
 testvectors/512_v0.dat
 F2G 0 1 0 0
+VALID
 1
 512
 1

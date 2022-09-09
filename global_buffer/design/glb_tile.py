@@ -146,11 +146,18 @@ class GlbTile(Generator):
 
         self.strm_data_f2g = self.input("strm_data_f2g", self._params.cgra_data_width,
                                         size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_valid_f2g = self.input("strm_data_valid_f2g", 1, size=self._params.cgra_per_glb, packed=True)
+        self.strm_data_f2g_vld = self.input("strm_data_f2g_vld", 1, size=self._params.cgra_per_glb, packed=True)
+        self.strm_data_f2g_rdy = self.output("strm_data_f2g_rdy", 1, size=self._params.cgra_per_glb, packed=True)
+
+        self.strm_ctrl_f2g = self.input("strm_ctrl_f2g", 1, size=self._params.cgra_per_glb, packed=True)
+
         self.strm_data_g2f = self.output("strm_data_g2f", self._params.cgra_data_width,
                                          size=self._params.cgra_per_glb, packed=True)
-        self.strm_data_valid_g2f = self.output(
-            "strm_data_valid_g2f", 1, size=self._params.cgra_per_glb, packed=True)
+        self.strm_data_g2f_vld = self.output("strm_data_g2f_vld", 1, size=self._params.cgra_per_glb, packed=True)
+        self.strm_data_g2f_rdy = self.input("strm_data_g2f_rdy", 1, size=self._params.cgra_per_glb, packed=True)
+
+        self.strm_ctrl_g2f = self.output("strm_ctrl_g2f", 1, size=self._params.cgra_per_glb, packed=True)
+
         self.data_flush = self.output("data_flush", 1)
 
         self.cgra_cfg_g2f_cfg_wr_en = self.output(
@@ -181,12 +188,16 @@ class GlbTile(Generator):
 
         # st dma
         self.cfg_st_dma_ctrl = self.var("cfg_st_dma_ctrl", self.header.cfg_store_dma_ctrl_t)
-        self.cfg_st_dma_header = self.var("cfg_st_dma_header", self.header.cfg_dma_header_t,
+        self.cfg_st_dma_header = self.var("cfg_st_dma_header", self.header.cfg_store_dma_header_t,
                                           size=self._params.queue_depth)
+        self.cfg_st_dma_num_blocks = self.var("cfg_st_dma_num_blocks", self._params.axi_data_width)
+
         # ld dma
         self.cfg_ld_dma_ctrl = self.var("cfg_ld_dma_ctrl", self.header.cfg_load_dma_ctrl_t)
-        self.cfg_ld_dma_header = self.var("cfg_ld_dma_header", self.header.cfg_dma_header_t,
+        self.cfg_ld_dma_header = self.var("cfg_ld_dma_header", self.header.cfg_load_dma_header_t,
                                           size=self._params.queue_depth)
+        # self.cfg_ld_dma_num_blocks = self.var("cfg_ld_dma_num_blocks", self._params.axi_data_width)
+
         # pcfg dma
         self.cfg_pcfg_dma_ctrl = self.var("cfg_pcfg_dma_ctrl", self.header.cfg_pcfg_dma_ctrl_t)
         self.cfg_pcfg_dma_header = self.var("cfg_pcfg_dma_header", self.header.cfg_pcfg_dma_header_t)
@@ -312,6 +323,8 @@ class GlbTile(Generator):
         self.wire(self.cfg_pcfg_dma_ctrl, self.glb_cfg.cfg_pcfg_dma_ctrl)
         self.wire(self.cfg_pcfg_dma_header, self.glb_cfg.cfg_pcfg_dma_header)
         self.wire(self.cfg_pcfg_broadcast_mux, self.glb_cfg.cfg_pcfg_broadcast_mux)
+        # self.wire(self.cfg_ld_dma_num_blocks, self.glb_cfg.cfg_ld_dma_num_blocks)
+        self.wire(self.cfg_st_dma_num_blocks, self.glb_cfg.cfg_st_dma_num_blocks)
 
         self.glb_pcfg_broadcast = GlbPcfgBroadcast(_params=self._params)
         self.add_child("glb_pcfg_broadcast",
@@ -327,20 +340,24 @@ class GlbTile(Generator):
                        reset=self.reset,
                        clk_en_dma2bank=self.clk_en_stdma2bank,
                        data_f2g=self.strm_data_f2g,
-                       data_valid_f2g=self.strm_data_valid_f2g,
+                       data_f2g_vld=self.strm_data_f2g_vld,
+                       data_f2g_rdy=self.strm_data_f2g_rdy,
+                       ctrl_f2g=self.strm_ctrl_f2g,
+
                        wr_packet_dma2bank=self.wr_packet_dma2bank,
                        wr_packet_dma2ring=self.wr_packet_dma2ring,
                        # TODO: How to make this automatic
                        cfg_tile_connected_prev=self.cfg_tile_connected_prev,
                        cfg_tile_connected_next=self.cfg_tile_connected_next,
                        cfg_st_dma_num_repeat=self.cfg_st_dma_ctrl['num_repeat'],
-                       cfg_st_dma_ctrl_use_valid=self.cfg_st_dma_ctrl['use_valid'],
+                       cfg_st_dma_ctrl_valid_mode=self.cfg_st_dma_ctrl['valid_mode'],
                        cfg_st_dma_ctrl_mode=self.cfg_st_dma_ctrl['mode'],
                        cfg_data_network_latency=self.glb_cfg.cfg_data_network['latency'],
                        cfg_st_dma_header=self.cfg_st_dma_header,
                        st_dma_start_pulse=self.strm_f2g_start_pulse,
                        st_dma_done_interrupt=self.strm_f2g_interrupt_pulse,
-                       cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'])
+                       cfg_data_network_f2g_mux=self.cfg_st_dma_ctrl['data_mux'],
+                       cfg_st_dma_num_blocks=self.cfg_st_dma_num_blocks)
 
         self.add_child("glb_load_dma",
                        GlbLoadDma(_params=self._params),
@@ -349,7 +366,9 @@ class GlbTile(Generator):
                        clk_en_dma2bank=self.clk_en_lddma2bank,
                        glb_tile_id=self.glb_tile_id,
                        data_g2f=self.strm_data_g2f,
-                       data_valid_g2f=self.strm_data_valid_g2f,
+                       data_g2f_rdy=self.strm_data_g2f_rdy,
+                       data_g2f_vld=self.strm_data_g2f_vld,
+                       ctrl_g2f=self.strm_ctrl_g2f,
                        data_flush=self.data_flush,
                        rdrq_packet_dma2bank=self.rdrq_packet_dma2bank,
                        rdrq_packet_dma2ring=self.rdrq_packet_dma2ring,
@@ -359,8 +378,8 @@ class GlbTile(Generator):
                        cfg_tile_connected_prev=self.cfg_tile_connected_prev,
                        cfg_tile_connected_next=self.cfg_tile_connected_next,
                        cfg_ld_dma_num_repeat=self.cfg_ld_dma_ctrl['num_repeat'],
-                       cfg_ld_dma_ctrl_use_valid=self.cfg_ld_dma_ctrl['use_valid'],
-                       cfg_ld_dma_ctrl_use_flush=self.cfg_ld_dma_ctrl['use_flush'],
+                       cfg_ld_dma_ctrl_valid_mode=self.cfg_ld_dma_ctrl['valid_mode'],
+                       cfg_ld_dma_ctrl_flush_mode=self.cfg_ld_dma_ctrl['flush_mode'],
                        cfg_ld_dma_ctrl_mode=self.cfg_ld_dma_ctrl['mode'],
                        cfg_data_network_latency=self.glb_cfg.cfg_data_network['latency'],
                        cfg_ld_dma_header=self.cfg_ld_dma_header,

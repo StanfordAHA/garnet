@@ -63,6 +63,13 @@ class GlobalBufferParams:
     def num_groups(self):
         return self.num_cgra_cols // self.num_cols_per_group
 
+    @property
+    def sram_macro_depth(self):
+        if self.process == "TSMC":
+            return 2048
+        else:
+            return 4096
+
     # architecture parameters
     num_prr: int = 16
     num_cgra_cols: int = 32
@@ -77,16 +84,28 @@ class GlobalBufferParams:
     cgra_axi_data_width: int = 32
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
+    load_dma_fifo_depth: int = 16
+    store_dma_fifo_depth: int = 4
+    max_num_chain: int = 8
 
     # cell parameters
-    process: str = "TSMC"
+    process: str = "GF"
     tsmc_icg_name: str = "CKLNQD1BWP16P90"
     gf_icg_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
     tsmc_sram_macro_prefix: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
     gf_sram_macro_prefix: str = "IN12LP_S1DB_"
 
-    # Currently 2K for TSMC, 4K for GF
-    sram_macro_depth: int = 2048
+    # constant variables
+    st_dma_valid_mode_valid: int = 0
+    st_dma_valid_mode_ready_valid: int = 1
+    st_dma_valid_mode_static: int = 2
+
+    ld_dma_valid_mode_static: int = 0
+    ld_dma_valid_mode_valid: int = 1
+    ld_dma_valid_mode_ready_valid: int = 2
+
+    ld_dma_flush_mode_external: int = 0
+    ld_dma_flush_mode_internal: int = 1
 
     # Same for TSMC, GF
     sram_macro_word_size: int = 64
@@ -111,7 +130,9 @@ class GlobalBufferParams:
 
     # dma address generator
     queue_depth: int = 1
-    loop_level: int = 8
+    load_dma_loop_level: int = 8
+    store_dma_loop_level: int = 7
+    loop_level: int = max(load_dma_loop_level, store_dma_loop_level)
 
     # dma latency
     chain_latency_overhead: int = 3

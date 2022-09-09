@@ -6,3 +6,4 @@ class MemoryMode(Enum):
     ROM = 1
     SRAM = 2
     FIFO = 3
+    WOM = 4
