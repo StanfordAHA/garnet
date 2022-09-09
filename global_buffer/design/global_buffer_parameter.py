@@ -89,7 +89,7 @@ class GlobalBufferParams:
     max_num_chain: int = 8
 
     # cell parameters
-    process: str = "TSMC"
+    process: str = "GF"
     tsmc_icg_name: str = "CKLNQD1BWP16P90"
     gf_icg_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
     tsmc_sram_macro_prefix: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
