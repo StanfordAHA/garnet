@@ -173,7 +173,7 @@ class LakeCoreBase(ConfigurableCore):
                                           io_info.port_name,
                                           io_info.full_bus))
 
-        assert(len(self.__outputs) > 0)
+        assert (len(self.__outputs) > 0)
 
         # We call clk_en stall at this level for legacy reasons????
         self.add_ports(
@@ -250,7 +250,7 @@ class LakeCoreBase(ConfigurableCore):
 
         # Wire the config
         for idx, core_feature in enumerate(self.__features):
-            if(idx > 0):
+            if (idx > 0):
                 self.add_port(f"config_{idx}",
                               magma.In(ConfigurationType(self.config_addr_width, self.config_data_width)))
                 # port aliasing
@@ -279,7 +279,7 @@ class LakeCoreBase(ConfigurableCore):
 
         # read data out
         for idx, core_feature in enumerate(self.__features):
-            if(idx > 0):
+            if (idx > 0):
                 # self.add_port(f"read_config_data_{idx}",
                 self.add_port(f"read_config_data_{idx}",
                               magma.Out(magma.Bits[self.config_data_width]))

@@ -6,6 +6,7 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
 garnet_dir := $(mkfile_dir)/../..
+gemstone_dir := $(realpath $(garnet_dir))/../gemstone
 netlist_dir := $(mkfile_dir)/netlist
 glc_dir := $(garnet_dir)/global_controller
 APP_ARGS ?= +APP0=app0
@@ -30,7 +31,6 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_pio.sv \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_decode.sv \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_logic.sv \
-				-v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
 				$(garnet_dir)/genesis_verif/*.sv
 
 TB_FILES += -F tb/tb_cgra.f
