@@ -32,6 +32,8 @@ module top;
     logic [NUM_GROUPS-1:0][$clog2(NUM_GLB_TILES)-1:0] flush_crossbar_sel;
     logic reset;
     logic cgra_soft_reset;
+    logic [NUM_CGRA_COLS-1:0] cgra_stall_in;
+    logic [NUM_CGRA_COLS-1:0] cgra_stall;
 
     // cgra configuration from global controller
     logic cgra_cfg_jtag_gc2glb_wr_en;
@@ -135,6 +137,7 @@ module top;
     endtask
 
     initial begin
+        cgra_stall_in = 0;
         clk = 0;
         dut_clk = 0;
         assert_reset();

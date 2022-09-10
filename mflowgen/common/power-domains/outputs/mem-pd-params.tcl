@@ -71,10 +71,8 @@ set aon_width 160
 set aon_height 24
 
 # Sets AON box horizontal offset from center in # of unit stdcell widths.
-# Negative offset puts AON left of center, which breaks GF flow
-# set aon_horiz_offset -80
-# set aon_horiz_offset 0 # This failed, not sure why
-set aon_horiz_offset 80
+# Negative offset puts AON left of center, which seems to work slightly better for TSMC build.
+set aon_horiz_offset 0
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 15

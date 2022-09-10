@@ -44,8 +44,7 @@ RUN_LOG ?= run.log
 # design files
 HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
-#FIXME: pm cells should be removed!
-NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-pm.v
+NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-prim.v
 TB_FILES ?= -F sim/tb_global_buffer.f 
 
 # -------------------------------------------------------------------

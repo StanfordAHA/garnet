@@ -46,11 +46,17 @@ set cgra_cfg_data_width 32
 
 for {set j 0} {$j < $cols_per_tile} {incr j} {
     for {set k 0} {$k < $cgra_data_width} {incr k} {
-        lappend bottom_col($j) [get_object_name [get_ports "strm_data_f2g*[[expr {$j*$cgra_data_width+$k}]]"]]
-        lappend bottom_col($j) [get_object_name [get_ports "strm_data_g2f*[[expr {$j*$cgra_data_width+$k}]]"]]
+        lappend bottom_col($j) [get_object_name [get_ports "strm_data_f2g[[expr {$j*$cgra_data_width+$k}]]"]]
+        lappend bottom_col($j) [get_object_name [get_ports "strm_data_g2f[[expr {$j*$cgra_data_width+$k}]]"]]
     }
-    lappend bottom_col($j) [get_object_name [get_ports "strm_ctrl_f2g*[$j]"]]
-    lappend bottom_col($j) [get_object_name [get_ports "strm_ctrl_g2f*[$j]"]]
+    lappend bottom_col($j) [get_object_name [get_ports "strm_data_f2g_vld[$j]"]]
+    lappend bottom_col($j) [get_object_name [get_ports "strm_data_f2g_rdy[$j]"]]
+
+    lappend bottom_col($j) [get_object_name [get_ports "strm_data_g2f_vld[$j]"]]
+    lappend bottom_col($j) [get_object_name [get_ports "strm_data_g2f_rdy[$j]"]]
+
+    lappend bottom_col($j) [get_object_name [get_ports "strm_ctrl_f2g[$j]"]]
+    lappend bottom_col($j) [get_object_name [get_ports "strm_ctrl_g2f[$j]"]]
     for {set k 0} {$k < $cgra_cfg_addr_width} {incr k} {
         lappend bottom_col($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_addr[[expr {$j*$cgra_cfg_addr_width+$k}]]"]]
     }
@@ -80,7 +86,7 @@ for {set i 0} {$i < $cols_per_tile} {incr i} {
 
 # top is a list that holds object name that is not in bottom_cols, left, or right
 foreach a [get_object_name $all] {
-    if {($a ni $cache)} {
+    if {($a ni $cache) && ($a ne "clk")} {
         lappend top $a
     }
 }
@@ -91,12 +97,15 @@ for {set j 0} {$j < $cols_per_tile} {incr j} {
 }
 set top [lsort -command port_compare $top]
 
-# control pins assignment 
-editPin -pin $top -side TOP -spreadType CENTER -layer M5
-
 # assignment
 set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
+
+# clk pin
+editPin -pin "clk" -side TOP -spreadType CENTER -layer M5
+
+# control pins assignment 
+editPin -pin $top -side TOP -spreadType RANGE -start [list 10 $height] -end [list [expr {$width - 10}] $height] -layer M5
 
 editPin -pin $left -start { 0 5 } -end [list 0 [expr {$height - 5}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer M6
 editPin -pin $right -start [list $width  5] -end [list $width [expr {$height - 5}]] -side RIGHT -spreadType RANGE -spreadDirection counterclockwise -layer M6

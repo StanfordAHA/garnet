@@ -15,6 +15,7 @@ class GlbLoadDma(Generator):
         self._params = _params
         self.header = GlbHeader(self._params)
         assert self._params.bank_data_width == self._params.cgra_data_width * 4
+        assert self._params.tile2sram_rd_delay >= self._params.flush_crossbar_pipeline_depth
 
         self.clk = self.clock("clk")
         self.reset = self.reset("reset")
@@ -420,7 +421,6 @@ class GlbLoadDma(Generator):
                 self.strm_ctrl_muxed = self.strm_data_valid
             else:
                 self.strm_ctrl_muxed = self.strm_data_start_pulse
-
 
     @ always_comb
     def ctrl_mux(self):

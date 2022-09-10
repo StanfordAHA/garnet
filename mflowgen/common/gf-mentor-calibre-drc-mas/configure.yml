@@ -1,0 +1,55 @@
+#=========================================================================
+# Constraints
+#=========================================================================
+# Author : Alex Carsello
+# Date   : Nov 1, 2019
+#
+
+name: gf-mentor-calibre-drc-mas
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - design_merged.gds
+  - adk
+
+outputs:
+  - drc.summary
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - /bin/csh inputs/adk/run-drc-mas.csh
+  - mkdir -p outputs && cd outputs
+  - ln -sf ../rdb_out/MAS_SUMMARY_out.txt drc.summary
+#  - ln -sf ../rdb/drc-pm-results/drc-pm-results_PM_ALL.rdb drc.results
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+
+#-------------------------------------------------------------------------
+# Debug
+#-------------------------------------------------------------------------
+
+debug:
+  - calibredrv -m inputs/design_merged.gds \
+               -l inputs/adk/calibre.layerprops \
+               -rve -drc outputs/drc.results
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+preconditions:
+
+  - assert Tool( 'calibre' )
+  - assert File( 'inputs/adk' )
+  - assert File( 'inputs/design_merged.gds' )

@@ -16,6 +16,6 @@
 #**WARN: (IMPSP-270):    Cannot find a legal location for MASTER CELL 'XOR4D0BWP16P90'.
 # Set don't use on these cells upfront in P&R as well as in synthesis
 
-set_dont_use [get_lib_cells {*/*XNR4D0BWP16P90* */*MUX2D1BWP16P90* */*XOR4D0BWP16P90* */*MUX2D0P75BWP16P90* */*CKLNQOPTBBD1BWP16P90* */*CKMUX2D4BWP16P90* */*CKMUX2D1BWP16P90* }]
+#set_dont_use [get_lib_cells {*/*XNR4D0BWP16P90* */*MUX2D1BWP16P90* */*XOR4D0BWP16P90* */*MUX2D0P75BWP16P90* */*CKLNQOPTBBD1BWP16P90* */*CKMUX2D4BWP16P90* */*CKMUX2D1BWP16P90* }]
 
 
