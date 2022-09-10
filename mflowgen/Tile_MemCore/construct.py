@@ -35,6 +35,13 @@ def construct():
   if synth_power:
       pwr_aware = False
 
+  if adk_name == 'tsmc16':
+      read_hdl_defines = 'TSMC16'
+  elif adk_name == 'gf12-adk':
+      read_hdl_defines = 'GF12'
+  else:
+      read_hdl_defines = ''
+
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
@@ -44,6 +51,7 @@ def construct():
     # Synthesis
     'flatten_effort'      : 3,
     'topographical'       : True,
+    'read_hdl_defines'    : read_hdl_defines,
     # SRAM macros
     'num_words'           : 512,
     'word_size'           : 32,

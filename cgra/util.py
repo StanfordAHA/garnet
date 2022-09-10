@@ -80,6 +80,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 GlobalSignalWiring.Meso,
                 pipeline_config_interval: int = 8,
                 standalone: bool = False,
+                amber_pond: bool = False,
                 add_pond: bool = False,
                 pond_area_opt: bool = True,
                 pond_area_opt_share: bool = False,
@@ -94,8 +95,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                                     SwitchBoxIO]]] = None,
                 altcore=None,
                 pe_fc=lassen_fc,
-                ready_valid: bool = False,
-                scgra: bool = False,
+                ready_valid: bool = True,
+                scgra: bool = True,
                 scgra_combined: bool = True):
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
@@ -121,6 +122,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         m.logging.flush_all()  # flush all staged logs
 
         pipeline_scanner = True
+        use_fiber_access = True
 
         if not scgra_combined:
 
@@ -166,7 +168,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             fiber_access = FiberAccess(data_width=16,
                                        local_memory=False,
                                        tech_map=GF_Tech_Map(depth=512, width=32),
-                                       defer_fifos=True)
+                                       defer_fifos=True,
+                                       add_flush=False,
+                                       use_pipelined_scanner=pipeline_scanner)
             buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
                                 tech_map=GF_Tech_Map(depth=512, width=32),
                                 defer_fifos=True,
@@ -184,11 +188,15 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             stencil_valid = StencilValid()
 
-            controllers.append(scan)
-            controllers.append(wscan)
-            controllers.append(buffet)
+
+            if use_fiber_access:
+                controllers.append(fiber_access)
+            else:
+                controllers.append(scan)
+                controllers.append(wscan)
+                controllers.append(buffet)
+
             controllers.append(strg_ub)
-            # controllers.append(fiber_access)
             controllers.append(strg_ram)
             controllers.append(stencil_valid)
 
@@ -335,11 +343,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     else:
                         core = PeakCore(pe_fc, ready_valid=ready_valid)
                         if add_pond:
-                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid,
-                                                               pond_area_opt=pond_area_opt,
-                                                               pond_area_opt_share=pond_area_opt_share,
-                                                               pond_area_opt_dual_config=pond_area_opt_dual_config)
-
+                            additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
 
             cores[(x, y)] = core
 

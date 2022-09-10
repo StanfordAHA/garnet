@@ -3,6 +3,7 @@ import magma
 from canal.util import IOSide, SwitchBoxType
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
+from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
 from gemstone.generator.generator import Generator, set_debug_mode
 from global_buffer.io_placement import place_io_blk
 from global_buffer.design.global_buffer import GlobalBufferMagma
@@ -49,6 +50,7 @@ class Garnet(Generator):
                  mem_ratio: int = 4,
                  num_tracks: int = 5,
                  tile_layout_option: int = 0,
+                 amber_pond: bool = False,
                  add_pond: bool = True,
                  pond_area_opt: bool = False,
                  pond_area_opt_share: bool = False,
@@ -79,6 +81,7 @@ class Garnet(Generator):
         self.config_data_width = config_data_width
         axi_addr_width = self.glb_params.cgra_axi_addr_width
         axi_data_width = self.glb_params.axi_data_width
+        self.amber_pond = amber_pond
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
 
@@ -138,6 +141,7 @@ class Garnet(Generator):
                                    tile_id_width=tile_id_width,
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
+                                   amber_pond=amber_pond,
                                    add_pond=add_pond,
                                    pond_area_opt=pond_area_opt,
                                    pond_area_opt_share=pond_area_opt_share,
@@ -452,14 +456,15 @@ class Garnet(Generator):
 
         print(netlist_info['netlist'])
 
-        # temporally remapping of port names for the new Pond
-        for name, mapping in netlist_info["netlist"].items():
-            for i in range(len(mapping)):
-                (inst_name, port_name) = mapping[i]
-                if "data_in_pond" in port_name:
-                    mapping[i] = (inst_name, "input_width_16_num_2")
-                if "data_out_pond" in port_name:
-                    mapping[i] = (inst_name, "output_width_16_num_0")
+        if not self.amber_pond:
+            # temporally remapping of port names for the new Pond
+            for name, mapping in netlist_info["netlist"].items():
+                for i in range(len(mapping)):
+                    (inst_name, port_name) = mapping[i]
+                    if "data_in_pond" in port_name:
+                        mapping[i] = (inst_name, "PondTop_input_width_17_num_0")
+                    if "data_out_pond" in port_name:
+                        mapping[i] = (inst_name, "PondTop_output_width_17_num_0")
 
         print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
@@ -578,6 +583,7 @@ def main():
                         dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
+    parser.add_argument("--amber-pond", action="store_true")
     parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--compact", action="store_true")
@@ -637,6 +643,7 @@ def main():
                     num_tracks=args.num_tracks,
                     tile_layout_option=args.tile_layout_option,
                     pipeline_config_interval=args.pipeline_config_interval,
+                    amber_pond=args.amber_pond,
                     add_pond=not args.no_pond,
                     pond_area_opt=not args.no_pond_area_opt,
                     pond_area_opt_share=args.pond_area_opt_share,
@@ -660,6 +667,13 @@ def main():
                       coreir_libs={"float_CW"},
                       passes=["rungenerators", "inline_single_instances", "clock_gate"],
                       inline=False)
+
+        # copy in cell definitions
+        files = AOIMuxWrapper.get_sv_files()
+        with open("garnet.v", "a") as garnet_v:
+            for filename in files:
+                with open(filename) as f:
+                    garnet_v.write(f.read())
         if args.sparse_cgra:
             # Cat the PE together...
             # files_cat = ['garnet.v', 'garnet_PE.v']

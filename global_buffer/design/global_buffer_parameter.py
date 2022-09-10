@@ -63,6 +63,13 @@ class GlobalBufferParams:
     def num_groups(self):
         return self.num_cgra_cols // self.num_cols_per_group
 
+    @property
+    def sram_macro_depth(self):
+        if self.process == "TSMC":
+            return 2048
+        else:
+            return 4096
+
     # architecture parameters
     num_prr: int = 16
     num_cgra_cols: int = 32
@@ -87,10 +94,6 @@ class GlobalBufferParams:
     gf_icg_name: str = "SC7P5T_CKGPRELATNX1_SSC14R"
     tsmc_sram_macro_prefix: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
     gf_sram_macro_prefix: str = "IN12LP_S1DB_"
-    sram_macro_depth: int = 4096
-    sram_macro_word_size: int = 64
-    sram_macro_mux_size: int = 8
-    sram_macro_num_subarrays: int = 2
 
     # constant variables
     st_dma_valid_mode_valid: int = 0
@@ -103,6 +106,11 @@ class GlobalBufferParams:
 
     ld_dma_flush_mode_external: int = 0
     ld_dma_flush_mode_internal: int = 1
+
+    # Same for TSMC, GF
+    sram_macro_word_size: int = 64
+    sram_macro_mux_size: int = 8
+    sram_macro_num_subarrays: int = 2
 
     # dependent field
     num_prr_width: int = field(init=False, default=num_prr_width)
@@ -151,6 +159,7 @@ class GlobalBufferParams:
                                   + glb_bank2sw_pipeline_depth + sram_gen_output_pipeline_depth
                                   + sram_macro_read_latency
                                   )
+
     flush_crossbar_pipeline_depth: int = 1
     rd_clk_en_margin: int = 3
     wr_clk_en_margin: int = 3

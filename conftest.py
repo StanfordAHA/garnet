@@ -1,10 +1,14 @@
 import pytest
 import magma
 from gemstone.generator import clear_generator_cache
+import gemstone
 import tempfile
 import shutil
 import os
 import glob
+from lassen.sim import PE_fc
+import magma as m
+from peak import family
 
 collect_ignore = [
     # TODO(rsetaluri): Remove this once it is moved to canal!
@@ -56,6 +60,32 @@ def fp_files(use_dw=True):
     return result_filenames
 
 
+def get_mapping_fn(interconnect):
+
+    mem_remap = None
+    pe_remap = None
+
+    for core_key, core_value in interconnect.tile_circuits.items():
+        actual_core = core_value.core
+        pnr_tag = actual_core.pnr_info()
+        if isinstance(pnr_tag, list):
+            continue
+        pnr_tag = pnr_tag.tag_name
+        print(pnr_tag)
+        if pnr_tag == "m" and mem_remap is None:
+            mem_remap = actual_core.get_port_remap()
+        elif pnr_tag == "p" and pe_remap is None:
+            pe_remap = actual_core.get_port_remap()
+        elif mem_remap is not None and pe_remap is not None:
+            break
+    
+    return pe_remap, mem_remap
+
+@pytest.fixture
+def get_mapping():
+    return get_mapping_fn
+
+
 def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
     use_verilator = False
     use_dw = False
@@ -70,7 +100,8 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
         for filename in fp_files(use_dw):
             shutil.copy(filename, tempdir)
             rtl_lib.append(os.path.basename(filename))
-        for aoi_mux in glob.glob(os.path.join(root_dir, "tests/*.sv")):
+        gemstone_dir = os.path.dirname(os.path.dirname(gemstone.__file__))
+        for aoi_mux in glob.glob(os.path.join(gemstone_dir, "tests", "common", "rtl", "*.sv")):
             shutil.copy(aoi_mux, tempdir)
             rtl_lib.append(os.path.basename(aoi_mux))
         for glb_module in glob.glob(os.path.join(root_dir, "tests/test_memory_core/*.sv")):
@@ -78,7 +109,19 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
             rtl_lib.append(os.path.basename(glb_module))
         if include_PE:
             # rtl_lib.append(os.path.join(cwd,"PE.v"))
-            rtl_lib.append("PE.v")
+            pe_prefix = "PEGEN_"
+            pe_child = PE_fc(family.MagmaFamily())
+            m.compile(f"garnet_PE",
+                      pe_child,
+                      output="coreir-verilog",
+                      coreir_libs={"float_CW"},
+                      verilog_prefix=pe_prefix)
+            m.clear_cachedFunctions()
+            m.frontend.coreir_.ResetCoreIR()
+            m.generator.reset_generator_cache()
+            m.logging.flush_all()  # flush all staged logs
+
+            rtl_lib.append(os.path.join(root_dir, "garnet_PE.v"))
 
         if use_dw:
             coreir_lib_name = "float_DW"
