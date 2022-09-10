@@ -111,8 +111,6 @@ class GlbLoadDma(Generator):
         self.fifo_empty = self.var("fifo_empty", 1)
         self.fifo_almost_full = self.var("fifo_almost_full", 1)
         self.fifo_almost_empty = self.var("fifo_almost_empty", 1)
-        self.pipeline_ctrl_in = self.var("pipeline_ctrl_in", width=self._params.cgra_per_glb + 1)
-        self.pipeline_ctrl_out = self.var("pipeline_ctrl_out", width=self._params.cgra_per_glb + 1)
         self.fifo_depth = self._params.max_num_chain * 2 + self._params.tile2sram_rd_delay
 
         self.data_g2f_rdy_muxed = self.var("data_g2f_rdy_muxed", 1, size=self._params.cgra_per_glb, packed=True)
@@ -173,6 +171,7 @@ class GlbLoadDma(Generator):
         self.add_always(self.interrupt_ff)
         self.add_dma2bank_clk_en()
         self.add_pipeline_ctrl()
+        self.add_pipeline_flush()
 
         # Loop iteration shared for cycle and data
         self.loop_iter = GlbLoopIter(self._params, loop_level=self._params.load_dma_loop_level)
@@ -434,10 +433,11 @@ class GlbLoadDma(Generator):
                 self.ctrl_g2f_w[i] = 0
 
     def add_pipeline_ctrl(self):
+        self.pipeline_ctrl_in = self.var("pipeline_ctrl_in", width=self._params.cgra_per_glb)
+        self.pipeline_ctrl_out = self.var("pipeline_ctrl_out", width=self._params.cgra_per_glb)
         for i in range(self._params.cgra_per_glb):
             self.wire(self.pipeline_ctrl_in[i], self.ctrl_g2f_w[i])
-        self.wire(self.pipeline_ctrl_in[self._params.cgra_per_glb], self.data_flush_w)
-        self.pipeline_ctrl = Pipeline(width=self._params.cgra_per_glb + 1, depth=2)
+        self.pipeline_ctrl = Pipeline(width=self._params.cgra_per_glb, depth=2)
         self.add_child("pipeline_ctrl",
                        self.pipeline_ctrl,
                        clk=self.clk,
@@ -448,7 +448,18 @@ class GlbLoadDma(Generator):
 
         for i in range(self._params.cgra_per_glb):
             self.wire(self.ctrl_g2f[i], self.pipeline_ctrl_out[i])
-        self.wire(self.data_flush, self.pipeline_ctrl_out[self._params.cgra_per_glb])
+
+    def add_pipeline_flush(self):
+        assert self._params.flush_crossbar_pipeline_depth <= 2
+        self.pipeline_flush = Pipeline(width=1,
+                                       depth=(2 - self._params.flush_crossbar_pipeline_depth))
+        self.add_child("pipeline_flush",
+                       self.pipeline_flush,
+                       clk=self.clk,
+                       clk_en=const(1, 1),
+                       reset=self.reset,
+                       in_=self.data_flush_w,
+                       out_=self.data_flush)
 
     @ always_comb
     def ld_dma_done_pulse_logic(self):
