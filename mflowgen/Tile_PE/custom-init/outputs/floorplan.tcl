@@ -17,7 +17,7 @@ set core_density_target $::env(core_density_target); # Placement density of 65% 
 # must be the same to allow for abutment at the top level
 
 # Maintain even row height for power domains
-set core_height 150
+set core_height 186
 
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]

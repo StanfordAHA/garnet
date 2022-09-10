@@ -159,9 +159,8 @@ class GlobalBufferParams:
                                   + glb_bank2sw_pipeline_depth + sram_gen_output_pipeline_depth
                                   + sram_macro_read_latency
                                   )
-    # Not used by TSMC (yet)
-    flush_crossbar_pipeline_depth: int = 1
 
+    flush_crossbar_pipeline_depth: int = 1
     rd_clk_en_margin: int = 3
     wr_clk_en_margin: int = 3
     proc_clk_en_margin: int = 4

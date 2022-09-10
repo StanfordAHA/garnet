@@ -22,8 +22,11 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = get_sys_adk()
-  adk_view = 'multicorner-multivt'
+  adk_view = 'multivt'
   pwr_aware = True
+
+  if pwr_aware:
+      adk_view = adk_view + '-pm'
 
   synth_power = False
   if os.environ.get('SYNTH_POWER') == 'True':
@@ -53,8 +56,6 @@ def construct():
     'num_words'           : 512,
     'word_size'           : 32,
     'mux_size'            : 4,
-    'corner'              : "tt0p8v25c",
-    'bc_corner'           : "ffg0p88v125c",
     'partial_write'       : False,
     # Hold target slack
     'hold_target_slack'   : 0.015,
@@ -70,7 +71,8 @@ def construct():
     'app_to_run'        : 'tests/conv_3_3',
     'saif_instance'     : 'testbench/dut',
     'testbench_name'    : 'testbench',
-    'strip_path'        : 'testbench/dut'
+    'strip_path'        : 'testbench/dut',
+    'drc_env_setup'     : 'drcenv-block.sh'
   }
 
   #-----------------------------------------------------------------------
@@ -85,18 +87,19 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  rtl                  = Step( this_dir + '/../common/rtl'                         )
-  genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
-  constraints          = Step( this_dir + '/constraints'                           )
-  gen_sram             = Step( this_dir + '/../common/gen_sram_macro'              )
-  custom_init          = Step( this_dir + '/custom-init'                           )
-  custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                  )
-  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                  )
-  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                      )
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
-  testbench            = Step( this_dir + '/../common/testbench'                   )
-  application          = Step( this_dir + '/../common/application'                 )
-  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
+  rtl                  = Step( this_dir + '/../common/rtl'                          )
+  genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
+  constraints          = Step( this_dir + '/constraints'                            )
+  gen_sram             = Step( this_dir + '/../common/gen_sram_macro'               )
+  custom_init          = Step( this_dir + '/custom-init'                            )
+  custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
+  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
+  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                       )
+  custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
+  testbench            = Step( this_dir + '/../common/testbench'                    )
+  application          = Step( this_dir + '/../common/application'                  )
+  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
+  drc_pm               = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
   if synth_power:
     post_synth_power     = Step( this_dir + '/../common/tile-post-synth-power'     )
   post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'         )
@@ -120,7 +123,7 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  genlibdb       = Step( 'cadence-genus-genlib',           default=True )
+  genlibdb       = Step( 'cadence-innovus-genlib',         default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -137,7 +140,7 @@ def construct():
   # Add sram macro inputs to downstream nodes
 
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-  #pt_signoff.extend_inputs( ['sram_tt.db'] )
+  pt_signoff.extend_inputs( ['sram_tt.db'] )
   genlibdb.extend_inputs( ['sram_tt.lib'] )
 
   # These steps need timing and lef info for srams
@@ -233,6 +236,7 @@ def construct():
   g.add_step( genlibdb             )
   g.add_step( lib2db               )
   g.add_step( drc                  )
+  g.add_step( drc_pm               )
   g.add_step( lvs                  )
   g.add_step( custom_lvs           )
   g.add_step( debugcalibre         )
@@ -267,6 +271,7 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
+  g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      lvs            )
 
   g.connect_by_name( gen_sram,      synth          )
@@ -283,6 +288,7 @@ def construct():
   g.connect_by_name( gen_sram,      genlibdb       )
   g.connect_by_name( gen_sram,      pt_signoff     )
   g.connect_by_name( gen_sram,      drc            )
+  g.connect_by_name( gen_sram,      drc_pm         )
   g.connect_by_name( gen_sram,      lvs            )
 
   g.connect_by_name( rtl,         synth     )
@@ -305,6 +311,9 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
+  # Need this because we're using innovus for lib generation
+  g.connect_by_name( iflow,    genlibdb       )
+  
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -319,8 +328,10 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        drc            )
+  g.connect_by_name( signoff,        drc_pm         )
   g.connect_by_name( signoff,        lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,              genlibdb )
@@ -349,6 +360,7 @@ def construct():
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
+  g.connect_by_name( drc_pm,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
   # Pwr aware steps:
@@ -417,8 +429,8 @@ def construct():
 
   # Adding new input for genlibdb node to run
   order = genlibdb.get_param('order') # get the default script run order
-  read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
-  order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
+  extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
+  order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
   genlibdb.update_params( { 'order': order } )
 
 

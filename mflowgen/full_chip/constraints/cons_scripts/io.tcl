@@ -9,8 +9,6 @@
 #------------------------------------------------------------------------------
 
 # Don't optimize away any of our I/O cells
-set_dont_touch [ get_cells ANAIOPAD* ]
-
 set_dont_touch [ get_cells IOPAD* ]
 
 # I/O Timing constraints
@@ -19,23 +17,23 @@ set master_clk_period     [expr ${soc_master_clk_period} * ${soc_clk_div_factor}
 # ------------------------------------------------------------------------------
 # Butterphy
 # ------------------------------------------------------------------------------
-set_input_delay -max 12 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tdi)]
-set_input_delay -min 1.0 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tdi)]
-
-set_input_delay -max 12 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tms)]
-set_input_delay -min 1.0 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tms)]
-
-set_input_delay -max 12 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_reset_n)]
-set_input_delay -min 1.0 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_reset_n)]
-
-set_input_delay -max 12 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_ext_rstb)]
-set_input_delay -min 1.0 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_ext_rstb)]
-
-set_input_delay -max 12 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_ext_dump_start)]
-set_input_delay -min 1.0 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_ext_dump_start)]
-
-set_output_delay -max 4 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tdo)]
-set_output_delay -min -4 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tdo)]
+#set_input_delay -max 12 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tdi)]
+#set_input_delay -min 1.0 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tdi)]
+#
+#set_input_delay -max 12 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tms)]
+#set_input_delay -min 1.0 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tms)]
+#
+#set_input_delay -max 12 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_reset_n)]
+#set_input_delay -min 1.0 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_reset_n)]
+#
+#set_input_delay -max 12 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_ext_rstb)]
+#set_input_delay -min 1.0 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_ext_rstb)]
+#
+#set_input_delay -max 12 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_ext_dump_start)]
+#set_input_delay -min 1.0 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_ext_dump_start)]
+#
+#set_output_delay -max 4 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tdo)]
+#set_output_delay -min -4 -clock [get_clocks btfy_jtag_clk] [get_ports $port_names(btfy_jtag_tdo)]
 
 # ------------------------------------------------------------------------------
 # TLX FWD Channel

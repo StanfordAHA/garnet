@@ -11,9 +11,12 @@
 # Date   : March 26, 2020
 
 #-------------------------------------------------------------------------
-# M1 power stripes
+# M1 power stripes.
+# Generating manually instead of using sroute because it's faster.
 #-------------------------------------------------------------------------
-set M1_width 0.09
+set M1_min_width [dbGet [dbGetLayerByZ 1].minWidth]
+# This is the width sroute uses
+set M1_width [expr 2 * $M1_min_width]
                                                           
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
@@ -34,7 +37,7 @@ addStripe \
   -spacing [expr [dbGet top.fPlan.coreSite.size_y] - $M1_width]   \
   -set_to_set_distance [expr 2 * [dbGet top.fPlan.coreSite.size_y]]   \
   -direction horizontal   \
-  -layer M1   \
+  -layer 1   \
   -width $M1_width \
   -nets {VDD VSS}
 
@@ -94,7 +97,7 @@ set M3_str_offset           [expr $M3_str_pitch + $M3_route_pitchX/2 - $M3_str_w
 
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
-setViaGenMode -ignore_DRC true
+setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer 1 \
@@ -141,14 +144,14 @@ setViaGenMode -viarule_preference default
 setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
-setAddStripeMode -stacked_via_bottom_layer M4 \
-                 -stacked_via_top_layer    M5 \
+setAddStripeMode -stacked_via_bottom_layer 4 \
+                 -stacked_via_top_layer    5 \
                  -ignore_DRC false
 
 set srams [get_cells -quiet -hier -filter {is_memory_cell==true}]
 foreach_in_collection block $srams {
     selectInst $block
-    addStripe -nets {VSS VDD} -layer M5 -direction vertical \
+    addStripe -nets {VSS VDD} -layer 5 -direction vertical \
         -width $M5_str_width                                \
         -spacing $M5_str_intraset_spacing                   \
         -set_to_set_distance $M5_str_interset_pitch         \
@@ -183,7 +186,7 @@ setAddStripeMode -stacked_via_bottom_layer 3 \
                  -ignore_DRC false
 
 #-------------------------------------------------------------------------
-# Add horizontal M8 stripes below phy block
+# Add horizontal M8 stripes
 #-------------------------------------------------------------------------
 #
 # Use -start to offset the stripes slightly away from the core edge.
@@ -198,13 +201,7 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
     -max_same_layer_jog_length $pmesh_bot_str_pitch               \
     -padcore_ring_bottom_layer_limit $pmesh_bot                   \
     -padcore_ring_top_layer_limit $pmesh_top                      \
-    -start [expr $pmesh_bot_str_pitch]                            \
-    -stop 4000
-
-#-------------------------------------------------------------------------
-# Add horizontal M8 power stripes on either side of phy block at top of chip
-#-------------------------------------------------------------------------
-source -verbose inputs/phy-stripes.tcl
+    -start [expr $pmesh_bot_str_pitch]                            
 
 #-------------------------------------------------------------------------
 # Power mesh top settings (vertical)
@@ -253,12 +250,12 @@ setViaGenMode -ignore_DRC true
 
 setAddStripeMode -reset
 setAddStripeMode -stacked_via_bottom_layer $pmesh_top \
-                 -stacked_via_top_layer    AP \
+                 -stacked_via_top_layer    LB \
                  -ignore_DRC true
 
 addStripe -nets {VDD VSS} \
   -over_bumps 1 \
-  -layer AP -direction horizontal \
+  -layer LB -direction horizontal \
   -width 30.0 -spacing 20.0 -number_of_sets 1 \
   -start_from left \
   -area {1050.0 1050.0 3850.0 3850.0}
