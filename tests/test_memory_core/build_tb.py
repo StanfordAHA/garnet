@@ -64,6 +64,7 @@ from lake.modules.onyx_pe import OnyxPE
 from lassen.sim import PE_fc
 from peak import family
 from lake.modules.scanner_pipe import ScannerPipe
+import tempfile
 
 
 class SparseTBBuilder(m.Generator2):
@@ -1526,7 +1527,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     # elif 'matmul_ikj.gv' in app_name:
     elif 'matmul_ikj' in app_name:
-        shape_ = 4
+        shape_ = 8
         b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=10)
         c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=10)
         b_matrix.dump_outputs()
@@ -1808,33 +1809,40 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     return output_matrix, output_format, output_name, input_dims
 
 
+def create_or_clean(dir_path):
+    if not os.path.isdir(dir_path):
+        os.mkdir(dir_path)
+    else:
+        # Otherwise clean it
+        for filename in os.listdir(dir_path):
+            full_del_path = dir_path + "/" + filename
+            if os.path.isfile(full_del_path):
+                ret = os.remove(full_del_path)
+            elif os.path.isdir(full_del_path):
+                ret = shutil.rmtree(full_del_path)
+
+
+def prep_test_dir(base_dir, dir_arg, sub_dir):
+    if dir_arg is None:
+        ret_dir = f"{base_dir}/{sub_dir}"
+    else:
+        ret_dir = dir_arg
+    create_or_clean(ret_dir)
+    ret_dir = os.path.abspath(ret_dir)
+    return ret_dir
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Sparse TB Generator')
-    parser.add_argument('--sam_graph',
-                        type=str,
-                        default="/home/max/Documents/SPARSE/sam/compiler/sam-outputs/dot/mat_identity.gv")
-    parser.add_argument('--output_dir',
-                        type=str,
-                        default="/home/max/Documents/SPARSE/garnet/mek_outputs")
-    parser.add_argument('--input_dir',
-                        type=str,
-                        default="/Users/maxwellstrange/Documents/SPARSE/garnet/final_matrix_inputs")
-    parser.add_argument('--test_dump_dir',
-                        type=str,
-                        default="/home/max/Documents/SPARSE/garnet/mek_dump/")
-    parser.add_argument('--matrix_tmp_dir',
-                        type=str,
-                        default="/Users/maxwellstrange/Documents/SPARSE/garnet/tmp_matrix_inputs")
-    parser.add_argument('--gold_dir',
-                        type=str,
-                        default="/Users/maxwellstrange/Documents/SPARSE/garnet/gold_out")
-    parser.add_argument('--print_inputs',
-                        type=str,
-                        default=None)
-    parser.add_argument('--fifo_depth',
-                        type=int,
-                        default=8)
+    parser.add_argument('--sam_graph', type=str, default=None)
+    parser.add_argument('--output_dir', type=str, default=None)
+    parser.add_argument('--input_dir', type=str, default=None)
+    parser.add_argument('--test_dump_dir', type=str, default=None)
+    parser.add_argument('--matrix_tmp_dir', type=str, default=None)
+    parser.add_argument('--gold_dir', type=str, default=None)
+    parser.add_argument('--print_inputs', type=str, default=None)
+    parser.add_argument('--fifo_depth', type=int, default=8)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--height', type=int, default=16)
     parser.add_argument('--width', type=int, default=16)
@@ -1853,20 +1861,15 @@ if __name__ == "__main__":
     parser.add_argument('--dump_bitstream', action="store_true")
     parser.add_argument('--no_harden_flush', action="store_true")
     parser.add_argument('--dump_glb', action="store_true")
-    parser.add_argument('--glb_dir',
-                        type=str,
-                        default="/home/max/Documents/SPARSE/garnet/GLB_DIR")
+    parser.add_argument('--glb_dir', type=str, default=None)
     parser.add_argument('--just_glb', action="store_true")
     parser.add_argument('--fiber_access', action="store_true")
+    parser.add_argument('--base_dir', type=str, default=None)
+
     args = parser.parse_args()
     bespoke = args.bespoke
-    output_dir = args.output_dir
-    input_dir = args.input_dir
     use_fork = args.ic_fork
-    matrix_tmp_dir = args.matrix_tmp_dir
     seed = args.seed
-    test_dump_dir = args.test_dump_dir
-    gold_dir = args.gold_dir
     give_tensor = args.give_tensor
     fifo_depth = args.fifo_depth
     physical_sram = args.physical_sram
@@ -1881,11 +1884,29 @@ if __name__ == "__main__":
     harden_flush = not args.no_harden_flush
     print_inputs = args.print_inputs
     dump_glb = args.dump_glb
-    glb_dir = args.glb_dir
     chip_h = args.height
     chip_w = args.width
     just_glb = args.just_glb
     use_fiber_access = args.fiber_access
+
+    assert sam_graph is not None, f"No sam graph pointed to..."
+
+    if args.base_dir is None:
+        base_dir_td = tempfile.TemporaryDirectory()
+        base_dir = base_dir_td.name
+    else:
+        base_dir = args.base_dir
+        if not os.path.isdir(base_dir):
+            os.mkdir(base_dir)
+
+    print(f"BASE DIR BEING USED:\t{base_dir}")
+
+    output_dir = prep_test_dir(base_dir, args.output_dir, "OUTPUT_DIR")
+    input_dir = prep_test_dir(base_dir, args.input_dir, "INPUT_DIR")
+    matrix_tmp_dir = prep_test_dir(base_dir, args.matrix_tmp_dir, "MAT_TMP_DIR")
+    test_dump_dir = prep_test_dir(base_dir, args.test_dump_dir, "DUMP_DIR")
+    gold_dir = prep_test_dir(base_dir, args.gold_dir, "GOLD_DIR")
+    glb_dir = prep_test_dir(base_dir, args.glb_dir, "GLB_DIR")
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
@@ -1896,7 +1917,7 @@ if __name__ == "__main__":
     # Create PE verilog for inclusion...
     if gen_pe is True:
         pe_child = PE_fc(family.MagmaFamily())
-        m.compile(f"{args.test_dump_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
+        m.compile(f"{test_dump_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
         m.clear_cachedFunctions()
         m.frontend.coreir_.ResetCoreIR()
         m.generator.reset_generator_cache()
@@ -2075,7 +2096,8 @@ if __name__ == "__main__":
                                    harden_flush=harden_flush,
                                    altcore=altcore,
                                    ready_valid=True,
-                                   add_pond=add_pond)
+                                   add_pond=add_pond,
+                                   scgra=False)
 
         if just_verilog:
             circuit = interconnect.circuit()
@@ -2092,11 +2114,27 @@ if __name__ == "__main__":
     out_mat.dump_outputs()
     if dump_glb:
 
-        # Make sure glb path exists
-        if not os.path.isdir(glb_dir):
-            os.mkdir(glb_dir)
+        # Want to dump specific tests...
 
-        out_mat.dump_outputs(glb_override=True, glb_dump_dir=glb_dir)
+        test_name_base = sam_graph.split('/')[-1].rstrip('.gv')
+        print(f"TEST BASE NAME: {test_name_base}")
+
+        if combined:
+            combined_str = "combined"
+        else:
+            combined_str = ""
+
+        full_test_name = f"{test_name_base}_{combined_str}_seed_{seed}"
+
+        full_test_glb_dir = f"{glb_dir}/{full_test_name}"
+
+        print(f"DUMPING GLB STUFF TO: {full_test_glb_dir}")
+
+        # Make sure glb path exists
+        if not os.path.isdir(full_test_glb_dir):
+            os.mkdir(full_test_glb_dir)
+
+        out_mat.dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir)
 
     # Now coalesce them into combo files and put in final landing zone
     # First clear the out dir
@@ -2156,7 +2194,8 @@ if __name__ == "__main__":
             # print(tensor_desc_str)
             glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_))
 
-        prepare_glb_collateral(glb_dir=glb_dir,
+        # prepare_glb_collateral(glb_dir=glb_dir,
+        prepare_glb_collateral(glb_dir=full_test_glb_dir,
                                bitstream=f"{test_dump_dir}/bitstream.bs",
                                matrices_in=input_dir,
                                design_place=f"{test_dump_dir}/design.place",
@@ -2244,7 +2283,12 @@ if __name__ == "__main__":
     # tester.wait_until_high(tester.circuit.done, timeout=2000)
 
     from conftest import run_tb_fn
-    run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd=test_dump_dir, include_PE=True)
+    try:
+        run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd=test_dump_dir, include_PE=True)
+    except Exception as e:
+        # Do cleanup on failure...
+        if args.base_dir is None:
+            base_dir_td.cleanup()
     # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
 
     stb.display_names()
@@ -2259,4 +2303,13 @@ if __name__ == "__main__":
     print(f"SIM")
     print(sim_mat_np)
 
-    assert numpy.array_equal(output_matrix, sim_mat_np)
+    try:
+        assert numpy.array_equal(output_matrix, sim_mat_np)
+    except Exception as e:
+        # Do cleanup on failure...
+        if args.base_dir is None:
+            base_dir_td.cleanup()
+
+    # Do final cleanup...
+    if args.base_dir is None:
+        base_dir_td.cleanup()
