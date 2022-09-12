@@ -85,7 +85,7 @@ set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_read_data_inputs
 # Constrain OUTPUTS
 # set_output_delay constraints for output ports
 # 100ps for margin?
-set o_delay [expr 0.0 * ${clock_period}]
+set o_delay [expr 0.1 * ${clock_period}]
 set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
 # Set timing on pass through clock
