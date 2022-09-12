@@ -24,6 +24,13 @@ def construct():
   adk_name = get_sys_adk()
   adk_view = 'multivt'
 
+  if adk_name == 'tsmc16':
+      read_hdl_defines = 'TSMC16'
+  elif adk_name == 'gf12-adk':
+      read_hdl_defines = 'GF12'
+  else:
+      read_hdl_defines = ''
+
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
@@ -33,6 +40,7 @@ def construct():
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : True,
+    'read_hdl_defines'  : read_hdl_defines,
     # RTL Generation
     'array_width'       : 32,
     'array_height'      : 16,
@@ -51,6 +59,7 @@ def construct():
     # I am defaulting to True because nothing is worse than finishing
     # a sim and needing the wave but not having it...
     'waves'             : True,
+    'drc_env_setup'     : 'drcenv-block.sh'
   }
 
   #-----------------------------------------------------------------------
@@ -66,18 +75,19 @@ def construct():
 
   # Custom steps
 
-  rtl            = Step( this_dir + '/../common/rtl'                       )
-  Tile_MemCore   = Step( this_dir + '/Tile_MemCore'                        )
-  Tile_PE        = Step( this_dir + '/Tile_PE'                             )
-  constraints    = Step( this_dir + '/constraints'                         )
-  dc_postcompile = Step( this_dir + '/custom-dc-postcompile'               )
-  custom_init    = Step( this_dir + '/custom-init'                         )
-  custom_power   = Step( this_dir + '/../common/custom-power-hierarchical' )
-  custom_cts     = Step( this_dir + '/custom-cts-overrides'                )
-  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
-  gls_args       = Step( this_dir + '/gls_args'                            )
-  testbench      = Step( this_dir + '/testbench'                           )
-  lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
+  rtl            = Step( this_dir + '/../common/rtl'                          )
+  Tile_MemCore   = Step( this_dir + '/Tile_MemCore'                           )
+  Tile_PE        = Step( this_dir + '/Tile_PE'                                )
+  constraints    = Step( this_dir + '/constraints'                            )
+  dc_postcompile = Step( this_dir + '/custom-dc-postcompile'                  )
+  custom_init    = Step( this_dir + '/custom-init'                            )
+  custom_power   = Step( this_dir + '/../common/custom-power-hierarchical'    )
+  custom_cts     = Step( this_dir + '/custom-cts-overrides'                   )
+  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                       )
+  gls_args       = Step( this_dir + '/gls_args'                               )
+  testbench      = Step( this_dir + '/testbench'                              )
+  lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
+  drc_pm         = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
 
 
   # Default steps
@@ -97,8 +107,8 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  #genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
-  genlib         = Step( 'cadence-genus-genlib',           default=True )
+  pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  genlib         = Step( 'cadence-innovus-genlib',         default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -116,9 +126,9 @@ def construct():
   synth.extend_inputs( ['Tile_MemCore_tt.lib'] )
   pt_signoff.extend_inputs( ['Tile_PE_tt.db'] )
   pt_signoff.extend_inputs( ['Tile_MemCore_tt.db'] )
-  #genlibdb.extend_inputs( ['Tile_PE.db'] )
+  pt_genlibdb.extend_inputs( ['Tile_PE_tt.db'] )
   genlib.extend_inputs( ['Tile_PE_tt.lib'] )
-  #genlibdb.extend_inputs( ['Tile_MemCore.db'] )
+  pt_genlibdb.extend_inputs( ['Tile_MemCore_tt.db'] )
   genlib.extend_inputs( ['Tile_MemCore_tt.lib'] )
 
   e2e_apps = ["tests/conv_3_3", "apps/cascade", "apps/harris_auto", "apps/resnet_i1_o1_mem", "apps/resnet_i1_o1_pond"]
@@ -222,8 +232,10 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
+  g.add_step( pt_genlibdb    )
   g.add_step( lib2db         )
   g.add_step( drc            )
+  g.add_step( drc_pm         )
   g.add_step( custom_lvs     )
   g.add_step( lvs            )
   g.add_step( debugcalibre   )
@@ -254,6 +266,7 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
+  g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      lvs            )
 
   if use_e2e:
@@ -292,9 +305,10 @@ def construct():
       g.connect_by_name( Tile_MemCore,      postroute_hold )
       g.connect_by_name( Tile_MemCore,      signoff        )
       g.connect_by_name( Tile_MemCore,      pt_signoff     )
-      #g.connect_by_name( Tile_MemCore,      genlibdb       )
+      g.connect_by_name( Tile_MemCore,      pt_genlibdb    )
       g.connect_by_name( Tile_MemCore,      genlib         )
       g.connect_by_name( Tile_MemCore,      drc            )
+      g.connect_by_name( Tile_MemCore,      drc_pm         )
       g.connect_by_name( Tile_MemCore,      lvs            )
       # These rules LVS BOX the SRAM macro, so they should
       # only be used if memory tile is present
@@ -318,9 +332,10 @@ def construct():
   g.connect_by_name( Tile_PE,      postroute_hold )
   g.connect_by_name( Tile_PE,      signoff        )
   g.connect_by_name( Tile_PE,      pt_signoff     )
-  #g.connect_by_name( Tile_PE,      genlibdb       )
+  g.connect_by_name( Tile_PE,      pt_genlibdb    )
   g.connect_by_name( Tile_PE,      genlib         )
   g.connect_by_name( Tile_PE,      drc            )
+  g.connect_by_name( Tile_PE,      drc_pm         )
   g.connect_by_name( Tile_PE,      lvs            )
 
   #g.connect_by_name( rtl,            dc        )
@@ -354,6 +369,7 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
+  g.connect_by_name( iflow,    genlib         )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -368,17 +384,19 @@ def construct():
   g.connect_by_name( postroute,    postroute_hold )
   g.connect_by_name( postroute_hold, signoff      )
   g.connect_by_name( signoff,      drc            )
+  g.connect_by_name( signoff,      drc_pm         )
   g.connect_by_name( signoff,      lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
   
-  #g.connect_by_name( adk,          genlibdb   )
-  g.connect_by_name( adk,          genlib   )
-  #g.connect_by_name( signoff,      genlibdb   )
-  g.connect_by_name( signoff,      genlib   )
+  g.connect_by_name( adk,          pt_genlibdb )
+  g.connect_by_name( adk,          genlib      )
+  g.connect_by_name( signoff,      pt_genlibdb )
+  g.connect_by_name( signoff,      genlib      )
   
   g.connect_by_name( genlib,       lib2db   )
 
@@ -387,6 +405,7 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
+  g.connect_by_name( drc_pm,   debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
@@ -420,11 +439,11 @@ def construct():
   #dc.update_params( { 'order': order } )
   #synth.update_params( { 'order': order } )
 
-  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # pt_genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
   # very long and is not necessary
-  #order = genlibdb.get_param('order')
-  #order.remove( 'write-interface-timing.tcl' )
-  #genlibdb.update_params( { 'order': order } )
+  order = pt_genlibdb.get_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  pt_genlibdb.update_params( { 'order': order } )
 
   # init -- Add 'dont-touch.tcl' before reporting
 

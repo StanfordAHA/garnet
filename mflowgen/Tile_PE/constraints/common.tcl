@@ -149,20 +149,21 @@ set_multicycle_path 1 -to [get_ports read_config_data* -filter direction==out] -
 ## Constrain SB to ~200 ps
 set sb_delay 0.210
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
-set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
+set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] [expr ${sb_delay} + ${i_delay} + ${o_delay}]
 # Then override the rest of the paths to be full clock period
-set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${clock_period}
+set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${clock_period}
 
 ########################################################################
 # END
 ########################################################################
 
-set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
 
 if $::env(PWR_AWARE) {
     source inputs/dc-dont-use-constraints.tcl
     # source inputs/pe-constraints-2.tcl
     set_dont_touch [get_cells -hierarchical *u_mux_logic*]
+    # Prevent buffers in paths from SB input ports
+    set_dont_touch_network [get_ports *SB* -filter "direction==in"] -no_propagate
 } 
 
 # False paths

@@ -1,8 +1,10 @@
 from canal.interconnect import Interconnect
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.mux_wrapper import MuxWrapper
+from gemstone.common.transform import FromMagma
 from gemstone.common.transform import pipeline_wire
 import magma
+import mantle
 
 
 def config_port_pass(interconnect: Interconnect, pipeline=False):
@@ -94,20 +96,26 @@ def wire_core_flush_pass(interconnect: Interconnect):
         tile.add_ports(flush=magma.In(TBit))
         for core in cores:
             if "flush" in core.ports:
-                # we just add a 1-bit config reg to control the flush
-                flush_mux = MuxWrapper(2, 1, name="flush_mux")
-                core.add_config("flush_mux_sel", 1)
-                core.wire(flush_mux.ports.S, core.registers["flush_mux_sel"].ports.O)
                 # adding a top level port that needs to be directly chained at the top
                 core.add_ports(flush_core=magma.In(TBit))
-                # by default, we use the global flush signals
-                core.wire(flush_mux.ports.I[0], core.ports.flush_core)
-                core.wire(flush_mux.ports.I[1], core.ports.flush)
+                tile.wire(tile.ports.flush, core.ports.flush_core)
                 # disconnect the core flush first
                 core.disconnect(core.underlying.ports.flush)
-                core.wire(flush_mux.ports.O, core.underlying.ports.flush)
-
-                tile.wire(tile.ports.flush, core.ports.flush_core)
+                if core.name() == "PondCore":
+                    # for pond, OR the flush signals instead of Muxing
+                    flush_or = FromMagma(mantle.DefineOr(2, 1))
+                    core.wire(flush_or.ports.I0, core.ports.flush_core)
+                    core.wire(flush_or.ports.I1, core.ports.flush)
+                    core.wire(flush_or.ports.O, core.underlying.ports.flush)
+                else:
+                    # we just add a 1-bit config reg to control the flush
+                    flush_mux = MuxWrapper(2, 1, name="flush_mux")
+                    core.add_config("flush_mux_sel", 1)
+                    core.wire(flush_mux.ports.S, core.registers["flush_mux_sel"].ports.O)
+                    # by default, we use the global flush signals
+                    core.wire(flush_mux.ports.I[0], core.ports.flush_core)
+                    core.wire(flush_mux.ports.I[1], core.ports.flush)
+                    core.wire(flush_mux.ports.O, core.underlying.ports.flush)
 
     if need_global_flush:
         interconnect.add_ports(flush=magma.In(TBit))

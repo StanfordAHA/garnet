@@ -137,9 +137,9 @@ set_input_transition ${max_trans_passthru} $pt_read_data_inputs
 # Constrain SB to ~100 ps
 set sb_delay 0.3
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
-set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
+set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] [expr ${sb_delay} + ${i_delay} + ${o_delay}]
 # Then override the rest of the paths to be full clock period
-set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* MemCore_inst0*/* FEATURE*/*]] ${clock_period}
+set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] -through [get_pins [list CB*/* DECODE*/* MemCore_inst0*/* FEATURE*/*]] ${clock_period}
 
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
@@ -148,6 +148,8 @@ if $::env(PWR_AWARE) {
     source inputs/dc-dont-use-constraints.tcl
     # source inputs/mem-constraints-2.tcl
     set_dont_touch [get_cells -hierarchical *u_mux_logic*]
+    # Prevent buffers in paths from SB input ports
+    set_dont_touch_network [get_ports *SB* -filter "direction==in"] -no_propagate
 }
 
 # Tile ID false paths
@@ -164,8 +166,8 @@ set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter n
 set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
 
 # False paths from config input ports to SB registers
-set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg*/*
-set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
+set sb_reg_path SB_ID0_5TRACKS_B*_MemCore/REG_T*_B*/I
+set_false_path -from [get_ports config_* -filter direction==in] -through [get_pins $sb_reg_path]
 
 # Timing path to read_config_data output should never transition through a configuration
 # register because we assume the register's value is constant during a read. 

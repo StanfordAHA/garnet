@@ -1,6 +1,7 @@
 import pytest
 import magma
 from gemstone.generator import clear_generator_cache
+import gemstone
 import tempfile
 import shutil
 import os
@@ -92,9 +93,6 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
     with tempfile.TemporaryDirectory() as tempdir:
         if cwd is not None:
             tempdir = cwd
-        print("cwd")
-        print(cwd)
-        print(tempdir)
         rtl_lib = []
         for genesis_verilog in glob.glob(os.path.join(root_dir, "genesis_verif/*.*")):
             shutil.copy(genesis_verilog, tempdir)
@@ -102,7 +100,8 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
         for filename in fp_files(use_dw):
             shutil.copy(filename, tempdir)
             rtl_lib.append(os.path.basename(filename))
-        for aoi_mux in glob.glob(os.path.join(root_dir, "tests/*.sv")):
+        gemstone_dir = os.path.dirname(os.path.dirname(gemstone.__file__))
+        for aoi_mux in glob.glob(os.path.join(gemstone_dir, "tests", "common", "rtl", "*.sv")):
             shutil.copy(aoi_mux, tempdir)
             rtl_lib.append(os.path.basename(aoi_mux))
         for glb_module in glob.glob(os.path.join(root_dir, "tests/test_memory_core/*.sv")):
@@ -122,7 +121,7 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
             m.generator.reset_generator_cache()
             m.logging.flush_all()  # flush all staged logs
 
-            rtl_lib.append("/aha/garnet/garnet_PE.v")
+            rtl_lib.append(os.path.join(root_dir, "garnet_PE.v"))
 
         if use_dw:
             coreir_lib_name = "float_DW"

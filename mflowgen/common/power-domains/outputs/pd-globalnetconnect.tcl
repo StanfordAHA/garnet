@@ -11,7 +11,7 @@
 globalNetConnect VDD_SW -type tiehi -powerdomain TOP
 globalNetConnect VDD    -type tiehi -powerdomain AON
 globalNetConnect VSS    -type tielo
-globalNetConnect VDD    -type pgpin -pin VPP -inst *
-globalNetConnect VSS    -type pgpin -pin VBB -inst *
-globalNetConnect VDD    -type pgpin -pin TVDD -inst *HDR*
+globalNetConnect VDD    -type pgpin -pin VNW -inst *
+globalNetConnect VSS    -type pgpin -pin VPW -inst *
+globalNetConnect VDD    -type pgpin -pin VDDC -inst *
 

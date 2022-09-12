@@ -1,5 +1,5 @@
 ./garnet.v
-./tests/AN2D0BWP16P90.sv
-./tests/AO22D0BWP16P90.sv
+./tests/SC7P5T_AN2X0P5_SSC14R.sv
+./tests/SC7P5T_AO22X0P5_SSC14R.sv
 ./peak_core/CW_fp_mult.v
 ./peak_core/CW_fp_add.v

@@ -36,7 +36,7 @@ modlist=()
 VERBOSE=false
 build_sequence='lvs,gls'
 build_dir=.
-need_space=100G
+need_space=20G
 while [ $# -gt 0 ] ; do
     case "$1" in
         -h|--help)    help; exit;    ;;

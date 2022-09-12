@@ -189,6 +189,9 @@ program glb_test (
                 for (int j = 0; j < kernels[i].dim; j++) begin
                     data_cnt *= kernels[i].extent[j];
                 end
+                void'($root.top.cgra.glb2prr_configure(
+                    kernels[i].tile_id, kernels[i].dim, kernels[i].extent, kernels[i].cycle_stride
+                ));
                 kernels[i].data_arr = new[data_cnt];
                 kernels[i].data_arr_out = new[data_cnt];
                 i_addr = kernels[i].start_addr;

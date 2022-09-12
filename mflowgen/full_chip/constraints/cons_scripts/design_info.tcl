@@ -9,17 +9,10 @@
 #------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
-# Define Port Names (Butterphy)
+# Define Port Names (GCD)
 # ------------------------------------------------------------------------------
 
-set port_names(btfy_jtag_clk)               "pad_jtag_intf_i_phy_tck"
-
-set port_names(btfy_jtag_tdi)               "pad_jtag_intf_i_phy_tdi"
-set port_names(btfy_jtag_tdo)               "pad_jtag_intf_i_phy_tdo"
-set port_names(btfy_jtag_tms)               "pad_jtag_intf_i_phy_tms"
-set port_names(btfy_jtag_reset_n)           "pad_jtag_intf_i_phy_trst_n"
-set port_names(btfy_ext_rstb)               "pad_ext_rstb"
-set port_names(btfy_ext_dump_start)         "pad_ext_dump_start"
+set port_names(gcd_jtag_clk)               ""
 
 # ------------------------------------------------------------------------------
 # Define Port Names (TLX Forward Channel)
