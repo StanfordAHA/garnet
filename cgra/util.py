@@ -350,19 +350,19 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         return additional_core.get((xx, yy), None)
 
     # pond may have inter-core connection
-    # if add_pond:
-    #     # remap
-    #     if intercore_mapping is not None:
-    #         inter_core_connection_1 =  {"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
-    #         inter_core_connection_16 = {"PondTop_output_width_17_num_0": [intercore_mapping["data0"], intercore_mapping["data1"]],
-    #                                     intercore_mapping["res"]: ["PondTop_input_width_17_num_2"]}
-    #     else:
-    #         inter_core_connection_1 =  {"PondTop_output_width_1_num_0": ["bit0"]}
-    #         inter_core_connection_16 = {"PondTop_output_width_17_num_0": ["data0", "data1"],
-    #                                     "res": ["PondTop_input_width_17_num_2"]}
-    # else:
-    inter_core_connection_1 = {}
-    inter_core_connection_16 = {}
+    if add_pond:
+        # remap
+        if intercore_mapping is not None:
+            inter_core_connection_1 =  {"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
+            inter_core_connection_16 = {"PondTop_output_width_17_num_0": [intercore_mapping["data0"], intercore_mapping["data1"], intercore_mapping["data2"]],
+                                        intercore_mapping["res"]: ["PondTop_input_width_17_num_2"]}
+        else:
+            inter_core_connection_1 =  {"PondTop_output_width_1_num_0": ["bit0"]}
+            inter_core_connection_16 = {"PondTop_output_width_17_num_0": ["data0", "data1", "data2"],
+                                        "res": ["PondTop_input_width_17_num_2"]}
+    else:
+        inter_core_connection_1 = {}
+        inter_core_connection_16 = {}
 
     # Specify input and output port connections.
     inputs = set()
@@ -396,7 +396,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 outputs |= {o.qualified_name() for o in core.outputs()}
 
             # Some Pond outputs will be connected to the SBs
-            # outputs.remove("PondTop_output_width_17_num_0")
+            outputs.remove("PondTop_output_width_17_num_0")
 
     # This is slightly different from the original CGRA. Here we connect
     # input to every SB_IN and output to every SB_OUT.

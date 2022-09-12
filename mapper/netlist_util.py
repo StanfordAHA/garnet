@@ -711,10 +711,7 @@ class FixInputsOutputAndPipeline(Visitor):
 
 
 class PackRegsIntoPonds(Visitor):
-    def __init__(
-        self,
-        sinks
-    ):
+    def __init__(self, sinks):
         self.sinks = sinks
 
     def doit(self, dag: Dag):
@@ -731,14 +728,19 @@ class PackRegsIntoPonds(Visitor):
             if hasattr(source, "sink"):
                 self.dag_sources.append(source)
                 self.dag_sinks.append(source.sink)
-        real_sources = [self.node_map[s] for s in self.dag_sources if s in self.node_map]
+        real_sources = [
+            self.node_map[s] for s in self.dag_sources if s in self.node_map
+        ]
         real_sinks = [self.node_map[s] for s in self.dag_sinks if s in self.node_map]
-        return IODag(
-            inputs=self.inputs,
-            outputs=self.outputs,
-            sources=real_sources,
-            sinks=real_sinks,
-        ), self.pond_reg_skipped
+        return (
+            IODag(
+                inputs=self.inputs,
+                outputs=self.outputs,
+                sources=real_sources,
+                sinks=real_sinks,
+            ),
+            self.pond_reg_skipped,
+        )
 
     def find_pe(self, node, num_regs):
         if node.node_name == "global.PE":
@@ -753,13 +755,16 @@ class PackRegsIntoPonds(Visitor):
                 num_regs += 1
         return self.find_pe(new_node, num_regs)
 
-
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if node in self.skip_reg_nodes:
             return
 
-        if node.node_name == "Select" and node.child.node_name == "global.Pond" and not isinstance(node.child, Sink):
+        if (
+            node.node_name == "Select"
+            and node.child.node_name == "global.Pond"
+            and not isinstance(node.child, Sink)
+        ):
             pe_node, num_regs = self.find_pe(node.child, 0)
             self.pe_to_pond_conns[pe_node] = node
             self.pond_reg_skipped[node.child.iname] = num_regs
@@ -784,6 +789,7 @@ class PackRegsIntoPonds(Visitor):
                 self.outputs.append(new_node)
             if node.node_name == "Input":
                 self.inputs.append(new_node)
+
 
 class CountTiles(Visitor):
     def __init__(self):
@@ -849,10 +855,8 @@ def create_netlist_info(
         input_broadcast_branch_factor,
     ).doit(dag)
 
-    gen_dag_img(fdag, "fdag")
     sinks = PipelineBroadcastHelper().doit(fdag)
     pdag, pond_reg_skipped = PackRegsIntoPonds(sinks).doit(fdag)
-    gen_dag_img(pdag, "pdag")
 
     def tile_to_char(t):
         if t.split(".")[1] == "PE":
@@ -878,9 +882,11 @@ def create_netlist_info(
     node_to_metadata = CreateMetaData().doit(pdag)
     info["id_to_metadata"] = {}
     for node, md in node_to_metadata.items():
-        info["id_to_metadata"][nodes_to_ids[node]] = md 
+        info["id_to_metadata"][nodes_to_ids[node]] = md
         if node in pond_reg_skipped:
-            info["id_to_metadata"][nodes_to_ids[node]]['config']['regfile2out_0']['cycle_starting_addr'][0] -= pond_reg_skipped[node]
+            info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"][
+                "cycle_starting_addr"
+            ][0] += pond_reg_skipped[node]
 
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
     info["id_to_instrs"] = {
@@ -901,8 +907,7 @@ def create_netlist_info(
     info["netlist"] = {}
     for bid, ports in netlist.items():
         info["netlist"][bid] = [
-            (nodes_to_ids[node.iname], field)
-            for node, field in ports
+            (nodes_to_ids[node.iname], field) for node, field in ports
         ]
 
     CountTiles().doit(pdag)

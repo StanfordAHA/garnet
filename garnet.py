@@ -267,6 +267,7 @@ class Garnet(Generator):
             result += self.interconnect.configure_placement(x, y, instr,
                                                             node[0])
             if node in self.pes_with_packed_ponds:
+                print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
                 node = self.pes_with_packed_ponds[node]
                 instance = id_to_name[node]
                 if instance not in instrs:
@@ -527,7 +528,8 @@ class Garnet(Generator):
                                                          fixed_pos=fixed_io,
                                                          compact=compact,
                                                          harden_flush=self.harden_flush,
-                                                         pipeline_config_interval=self.pipeline_config_interval)
+                                                         pipeline_config_interval=self.pipeline_config_interval,
+                                                         pes_with_packed_ponds=self.pes_with_packed_ponds)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
