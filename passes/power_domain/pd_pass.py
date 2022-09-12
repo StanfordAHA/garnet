@@ -32,7 +32,7 @@ class PowerDomainConfigReg(Configurable):
 
 __AND_GATE = magma.DefineFromVerilog("""
 module and_cell(input A, input B, output Z);
-SC7P5T_AN2X0P5_SSC14R inst(.A(A), .B(B), .Z(Z));
+AN_CELL inst(.A1(A), .A2(B), .Z(Z));
 endmodule
 """)[0]
 
