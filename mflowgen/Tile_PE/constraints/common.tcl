@@ -83,7 +83,7 @@ remove_driving_cell $pt_read_data_inputs
 #
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
-set i_delay [expr 0.2 * ${clock_period}]
+set i_delay [expr 0.3 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 # Fix config input delay to specific value
