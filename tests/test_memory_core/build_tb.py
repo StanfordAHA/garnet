@@ -803,6 +803,8 @@ class SparseTBBuilder(m.Generator2):
                 conn_to_tensor = {}
                 for idx_, edge in enumerate(edges_to_isect_crd):
                     conn_to_tensor[idx_] = edge.get_attributes()['comment'].strip('"').split('-')[1]
+                print(node)
+                print(conn_to_tensor)
                 kwargs = {'conn_to_tensor': conn_to_tensor}
 
             elif hw_node_type == f"{HWNodeType.Reduce}":
@@ -1527,7 +1529,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     # elif 'matmul_ikj.gv' in app_name:
     elif 'matmul_ikj' in app_name:
-        shape_ = 8
+        shape_ = 4
         b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=10)
         c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=10)
         b_matrix.dump_outputs()
@@ -1842,7 +1844,7 @@ if __name__ == "__main__":
     parser.add_argument('--matrix_tmp_dir', type=str, default=None)
     parser.add_argument('--gold_dir', type=str, default=None)
     parser.add_argument('--print_inputs', type=str, default=None)
-    parser.add_argument('--fifo_depth', type=int, default=8)
+    parser.add_argument('--fifo_depth', type=int, default=2)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--height', type=int, default=16)
     parser.add_argument('--width', type=int, default=16)
@@ -1949,7 +1951,8 @@ if __name__ == "__main__":
                            defer_fifos=True,
                            add_flush=False)
 
-        wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
+        wscan = WriteScanner(data_width=16,
+                             fifo_depth=fifo_depth,
                              defer_fifos=True,
                              add_flush=False)
         strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
@@ -1958,12 +1961,14 @@ if __name__ == "__main__":
                                    tech_map=GF_Tech_Map(depth=512, width=32),
                                    defer_fifos=True,
                                    use_pipelined_scanner=pipeline_scanner,
-                                   add_flush=False)
+                                   add_flush=False,
+                                   fifo_depth=fifo_depth)
         buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
                             tech_map=GF_Tech_Map(depth=512, width=32),
                             defer_fifos=True,
                             optimize_wide=True,
-                            add_flush=False)
+                            add_flush=False,
+                            fifo_depth=fifo_depth)
         strg_ram = StrgRAM(data_width=16,
                            banks=1,
                            memory_width=64,
@@ -1989,24 +1994,28 @@ if __name__ == "__main__":
 
         isect = Intersect(data_width=16,
                           use_merger=False,
-                          fifo_depth=8,
+                          fifo_depth=fifo_depth,
                           defer_fifos=True,
                           add_flush=False)
-        crd_drop = CrdDrop(data_width=16, fifo_depth=fifo_depth,
+        crd_drop = CrdDrop(data_width=16,
+                           fifo_depth=fifo_depth,
                            lift_config=True,
                            defer_fifos=True,
                            add_flush=False)
-        crd_hold = CrdHold(data_width=16, fifo_depth=fifo_depth,
+        crd_hold = CrdHold(data_width=16,
+                           fifo_depth=fifo_depth,
                            lift_config=True,
                            defer_fifos=True,
                            add_flush=False)
-        onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
+        onyxpe = OnyxPE(data_width=16,
+                        fifo_depth=fifo_depth,
+                        defer_fifos=True,
                         ext_pe_prefix=pe_prefix,
                         pe_ro=True,
                         do_config_lift=False,
                         add_flush=False)
         repeat = Repeat(data_width=16,
-                        fifo_depth=8,
+                        fifo_depth=fifo_depth,
                         defer_fifos=True,
                         add_flush=False)
         rsg = RepeatSignalGenerator(data_width=16,
@@ -2273,8 +2282,8 @@ if __name__ == "__main__":
     # for i in range(100000):
     # for i in range(10000):
     # for i in range(2000):
-    # for i in range(50000):
-    for i in range(10000):
+    # for i in range(10000):
+    for i in range(50000):
         tester.step(2)
         tester_if = tester._if(tester.circuit.done)
         tester_if.print("Test is done...\n")
