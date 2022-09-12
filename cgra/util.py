@@ -103,7 +103,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     bit_widths = [1, 17]
     track_length = 1
 
-    fifo_depth = 8
+    fifo_depth = 2
 
     if scgra is True:
         pe_prefix = "PEGEN_"
@@ -159,7 +159,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                defer_fifos=True,
                                add_flush=False)
 
-            wscan = WriteScanner(data_width=16, fifo_depth=fifo_depth,
+            wscan = WriteScanner(data_width=16,
+                                 fifo_depth=fifo_depth,
                                  defer_fifos=True,
                                  add_flush=False)
             strg_ub = StrgUBVec(data_width=16,
@@ -170,12 +171,15 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                        tech_map=GF_Tech_Map(depth=512, width=32),
                                        defer_fifos=True,
                                        add_flush=False,
-                                       use_pipelined_scanner=pipeline_scanner)
-            buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
+                                       use_pipelined_scanner=pipeline_scanner,
+                                       fifo_depth=fifo_depth)
+            buffet = BuffetLike(data_width=16,
+                                mem_depth=512, local_memory=False,
                                 tech_map=GF_Tech_Map(depth=512, width=32),
                                 defer_fifos=True,
                                 optimize_wide=True,
-                                add_flush=False)
+                                add_flush=False,
+                                fifo_depth=fifo_depth)
             strg_ram = StrgRAM(data_width=16,
                                banks=1,
                                memory_width=64,
@@ -187,7 +191,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                comply_with_17=True)
 
             stencil_valid = StencilValid()
-
 
             if use_fiber_access:
                 controllers.append(fiber_access)
@@ -202,24 +205,28 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             isect = Intersect(data_width=16,
                               use_merger=False,
-                              fifo_depth=8,
+                              fifo_depth=fifo_depth,
                               defer_fifos=True,
                               add_flush=False)
-            crd_drop = CrdDrop(data_width=16, fifo_depth=fifo_depth,
+            crd_drop = CrdDrop(data_width=16,
+                               fifo_depth=fifo_depth,
                                lift_config=True,
                                defer_fifos=True,
                                add_flush=False)
-            crd_hold = CrdHold(data_width=16, fifo_depth=fifo_depth,
+            crd_hold = CrdHold(data_width=16,
+                               fifo_depth=fifo_depth,
                                lift_config=True,
                                defer_fifos=True,
                                add_flush=False)
-            onyxpe = OnyxPE(data_width=16, fifo_depth=fifo_depth, defer_fifos=True,
+            onyxpe = OnyxPE(data_width=16,
+                            fifo_depth=fifo_depth,
+                            defer_fifos=True,
                             ext_pe_prefix=pe_prefix,
                             pe_ro=True,
                             do_config_lift=False,
                             add_flush=False)
             repeat = Repeat(data_width=16,
-                            fifo_depth=8,
+                            fifo_depth=fifo_depth,
                             defer_fifos=True,
                             add_flush=False)
             rsg = RepeatSignalGenerator(data_width=16,
