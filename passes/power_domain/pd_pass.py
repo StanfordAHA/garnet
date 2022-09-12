@@ -1,9 +1,9 @@
 from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper, AOIMuxType
 from gemstone.common.transform import replace, Generator, FromMagma
 from io_core.io_core_magma import IOCoreBase
-from canal.interconnect import Interconnect
+from canal.interconnect import Interconnect, SwitchBoxIO
 from gemstone.common.configurable import Configurable, ConfigurationType
-from canal.circuit import flatten_mux
+from canal.circuit import flatten_mux, create_name
 import magma
 import mantle
 
@@ -28,6 +28,13 @@ class PowerDomainConfigReg(Configurable):
     def configure(self, turn_off: bool):
         assert turn_off in {0, 1, True, False}
         return [0, int(turn_off)]
+
+
+__AND_GATE = magma.DefineFromVerilog("""
+module and_cell(input A, input B, output Z);
+AN_CELL inst(.A1(A), .A2(B), .Z(Z));
+endmodule
+""")[0]
 
 
 def add_power_domain(interconnect: Interconnect):
@@ -56,6 +63,27 @@ def add_power_domain(interconnect: Interconnect):
             new_mux = flatten_mux(new_mux, ready_valid=interconnect.ready_valid)
             # replace it!
             replace(cb, old_mux, new_mux)
+
+    # we also need to gate the ready signals with AND gate
+    if interconnect.ready_valid:
+        for (x, y) in interconnect.tile_circuits:
+            tile = interconnect.tile_circuits[(x, y)]
+            for switchbox in tile.sbs.values():
+                sbs = switchbox.switchbox.get_all_sbs()
+                for sb in sbs:
+                    if sb.io != SwitchBoxIO.SB_OUT:
+                        continue
+                    # get ready name
+                    name = create_name(str(sb))
+                    ready_name = name + "_ready"
+                    tile.remove_wire(tile.ports[ready_name], switchbox.ports[ready_name + "_in"])
+                    # use an AND gate
+                    and_gate = FromMagma(__AND_GATE)
+                    and_gate.instance_name = ready_name + "_and"
+                    enable_name = name + "_enable"
+                    tile.wire(and_gate.ports.A, tile.ports[ready_name])
+                    tile.wire(and_gate.ports.B, switchbox.ports[enable_name])
+                    tile.wire(and_gate.ports.Z, switchbox.ports[ready_name + "_in"])
 
 
 class PowerDomainOR(Generator):

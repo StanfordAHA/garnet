@@ -71,6 +71,8 @@ def glb_glc_wiring(garnet):
                 garnet.global_buffer.ports.strm_g2f_interrupt_pulse)
     garnet.wire(garnet.global_controller.ports.pcfg_g2f_interrupt_pulse,
                 garnet.global_buffer.ports.pcfg_g2f_interrupt_pulse)
+    garnet.wire(garnet.global_controller.ports.cgra_stall,
+                garnet.global_buffer.ports.cgra_stall_in)
 
     return garnet
 
@@ -154,6 +156,9 @@ def glb_interconnect_wiring(garnet):
             garnet.wire(garnet.global_buffer.ports[f"strm_data_flush_g2f_{i}"][0],
                         garnet.interconnect.ports.flush[i])
 
+    # stall signal wiring
+    garnet.wire(garnet.global_buffer.ports.cgra_stall, garnet.interconnect.ports.stall)
+
     return garnet
 
 
@@ -166,8 +171,5 @@ def glc_interconnect_wiring(garnet):
                 garnet.interconnect.ports.reset)
     garnet.wire(garnet.interconnect.ports.read_config_data,
                 garnet.global_controller.ports.read_data_in)
-    # stall signal wiring
-    garnet.wire(garnet.global_controller.ports.cgra_stall,
-                garnet.interconnect.ports.stall)
 
     return garnet

@@ -16,21 +16,25 @@ set ao_cell_cnt 0
 set non_ao_diode_cell_cnt 0
 set diode_cell_cnt 0
 
-# Check if the first cell that any net from SB port sees an AO cell (or antenna cell)
-# Pattern match on AO22D since sizeOk constraint will allow cells
-# of different sizes
+# Ensures that all SB input wires go directly to AO cells for clamping or antenna cells.
+# This ensures that if neighboring tiles are off, the signals coming from those tiles
+# into this one can be clamped to 0 without passing through other cells and burning power.
+# We pattern match on AO22[DX] to allow cells of different sizes and drive strengths.
 
-foreach_in_collection cell  [all_fanout -from [get_ports *SB*] -levels 1 -only_cells ] {
- set attr [get_attribute [get_cells $cell] ref_name]
- set name [get_attribute [get_cells $cell] name]
- puts "$attr $name"
- if {[regexp  {AO22D} $attr] } {
-   set ao_cell_cnt [expr $ao_cell_cnt + 1]
- } elseif {[regexp  {ANTENNA} $attr] } { 
-   set diode_cell_cnt [expr $diode_cell_cnt + 1]
- } else {
-   set non_ao_diode_cell_cnt [expr $non_ao_diode_cell_cnt + 1]
- }
+foreach_in_collection sb_port [get_ports *SB*] {
+  foreach_in_collection cell  [all_fanout -from $sb_port -levels 1 -only_cells ] {
+    set attr [get_attribute [get_cells $cell] ref_name]
+    set name [get_attribute [get_cells $cell] hierarchical_name]
+    if {[regexp  {AO22[XD]} $attr]} {
+      set ao_cell_cnt [expr $ao_cell_cnt + 1]
+    } elseif {[regexp  {ANTENNA} $attr] } { 
+      set diode_cell_cnt [expr $diode_cell_cnt + 1]
+    } else {
+      set port_name [get_attribute $sb_port hierarchical_name]
+      set non_ao_diode_cell_cnt [expr $non_ao_diode_cell_cnt + 1]
+      puts "Non-AO/diode connection found from $port_name to $attr $name"
+    }
+  }
 }
 
 # Check the count of AO cells

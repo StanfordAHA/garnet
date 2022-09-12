@@ -24,6 +24,9 @@ else
     # Build up the flags we want to pass to python garnet.v
     flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --glb_tile_mem_size $glb_tile_mem_size"
 
+    # sparsity flags
+    flags+=" --rv --sparse-cgra --sparse-cgra-combined"
+
     if [ $PWR_AWARE == False ]; then
      flags+=" --no-pd"
     fi
@@ -85,6 +88,10 @@ else
       if [ $use_local_garnet == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # docker exec $container_name /bin/bash -c "cd /aha/lake/ && git checkout master && git pull"
+        docker exec $container_name /bin/bash -c "cd /aha/lake/ && git fetch origin && git checkout sparse_strawman && git pull"
+        docker exec $container_name /bin/bash -c "cd /aha/canal/ && git fetch origin && git checkout split_fifo && git pull"
+        docker exec $container_name /bin/bash -c "cd /aha/gemstone/ && git fetch origin && git checkout gf-mux && git pull"
+        docker exec $container_name /bin/bash -c "cd /aha/kratos/ && git checkout master && git pull && DEBUG=1 pip install -e ."
         # Clone local garnet repo to prevent copying untracked files
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet

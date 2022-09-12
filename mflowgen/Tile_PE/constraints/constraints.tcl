@@ -16,6 +16,8 @@
 # set_attribute [get_lib *lvt*] default_threshold_voltage_group LVT
 # set_attribute [get_lib *ulvt*] default_threshold_voltage_group ULVT
 
+set_units -time ns -capacitance pF
+
 if $::env(PWR_AWARE) {
     source inputs/pe-constraints.tcl
 } 
@@ -58,14 +60,11 @@ set_false_path -through [get_cells -hier *config_reg_*] -through [get_pins $sb_r
 set_false_path -through [get_cells -hier *config_reg_*] -to [get_ports SB* -filter direction==out]
 
 # Paths from config input ports to PE registers
-set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
-set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pe_path/* ]]
+set pe_path PE_inst0/PE_inner_W_inst0/PE_inner
+set_false_path -from [get_ports config_* -filter direction==in] -through [get_pins [list $pe_path/* ]]
 
 # Paths from config input ports to the register file in Pond 
 set pond_path PondCore_inst0/PondTop_W_inst0/PondTop/memory_0/data_array_reg*
-
-# Prevent buffers in paths from SB input ports
-set_dont_touch [get_nets -of_objects [get_ports *SB* -filter "direction==in"]]
 
 # set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pond_path/*]] -through [get_pins [list $pe_path/* ]]
 # Set multicycle path from config ports to the register file passing through the ALU

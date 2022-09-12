@@ -23,6 +23,8 @@ import re
 from memory_core.constraints import *
 from memory_core.memtile_util import NetlistBuilder
 
+import pytest
+
 
 def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
@@ -3891,7 +3893,10 @@ def spM_spM_multiplication_hierarchical_json(trace, run_tb, cwd):
     nlb.display_names()
 
 
-def test_GLB_to_WS(trace, run_tb, cwd):
+@pytest.mark.skip
+def test_GLB_to_WS(run_tb):
+    trace = True
+    cwd = "/aha/garnet/tests"
     # Streams and code to create them and align them
     num_cycles = 250
     chip_size = 8

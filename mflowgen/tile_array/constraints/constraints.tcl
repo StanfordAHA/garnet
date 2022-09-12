@@ -11,6 +11,8 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
+set_units -time ns -capacitance pF
+
 set clock_net  clk
 set clock_name ideal_clock
 
@@ -42,7 +44,8 @@ set_input_delay -clock ${clock_name} [expr ${clock_period} * 0.2] [all_inputs]
 
 set_output_delay -clock ${clock_name} 0 [all_outputs]
 
-set_output_delay -clock ${clock_name} [expr 0.7 * ${clock_period}] [get_ports io2glb*]
+set_output_delay -clock ${clock_name} [expr 0.7 * ${clock_period}] [get_ports io2glb* -filter direction==out]
+set_output_delay -clock ${clock_name} [expr 0.7 * ${clock_period}] [get_ports glb2io* -filter direction==out]
 
 # Make all signals limit their fanout
 
@@ -75,7 +78,7 @@ set ext_port_nets [get_nets -of_objects [get_ports]]
 set_dont_touch $ext_port_nets false
 
 # This can catch nets connected to IO tiles, which should be touched
-set io_tile_nets [get_nets -of_objects [get_cells -filter {ref_name =~ Tile_io*}]]
+set io_tile_nets [get_nets -of_objects [get_cells -filter {ref_name =~ Tile_IO*}]]
 set_dont_touch $io_tile_nets false
 
 # Relax read_config_data timing path

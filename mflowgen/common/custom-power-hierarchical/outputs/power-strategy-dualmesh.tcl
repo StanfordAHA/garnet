@@ -15,7 +15,7 @@
 #-------------------------------------------------------------------------
 # Generate horizontal stdcell preroutes
 
-sroute -nets {VDD VSS}
+sroute -connect {corePin} -nets {VDD VSS}
 
 #-------------------------------------------------------------------------
 # Shorter names from the ADK
