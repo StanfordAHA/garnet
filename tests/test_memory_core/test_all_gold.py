@@ -26,39 +26,34 @@ all_tests = [
 ]
 
 
-def dispatch(garnet_top=None, graph=""):
+def dispatch(garnet_top=None, graph="", seed=0):
     subprocess.check_call(
         ['python',
          'tests/test_memory_core/build_tb.py',
          '--ic_fork',
          '--sam_graph',
          f'../sam/compiler/sam-outputs/dot/{graph}.gv',
-         '--output_dir',
-         '/home/max/Documents/SPARSE/garnet/mek_outputs/',
-         '--input_dir',
-         '/home/max/Documents/SPARSE/garnet/final_mat/',
-         '--test_dump_dir',
-         './mek_dump',
-         '--matrix_tmp_dir',
-         'tmp_mat/',
          '--seed',
-         '0',
+         seed,
          '--trace',
-         '--gold_dir',
-         'gold_out/',
-         '--fifo_depth',
-         '8',
          '--gen_pe',
          '--dump_bitstream',
          '--add_pond',
          '--combined',
-         '--pipeline_scanner'], cwd=garnet_top
+         '--pipeline_scanner',
+         '--base_dir',
+         "./TESTING"],
+        cwd=garnet_top
     )
 
 
 if __name__ == "__main__":
 
+    seeds = [0, 1, 2]
+
     for test in all_tests:
-        print(f"RUNNING TEST: {test}")
-        dispatch(garnet_top='/home/max/Documents/SPARSE/garnet/',
-                 graph=test)
+        for seed in seeds:
+            print(f"RUNNING TEST: TESTNAME: {test}")
+            print(f"RUNNING TEST: SEED: {seed}")
+            dispatch(garnet_top='/home/max/Documents/SPARSE/garnet/',
+                     graph=test, seed=seed)
