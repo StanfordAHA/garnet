@@ -36,7 +36,6 @@ def dispatch(garnet_top=None, graph="", seed=0):
          '--seed',
          f'{seed}',
          '--trace',
-         '--gen_pe',
          '--dump_bitstream',
          '--add_pond',
          '--combined',
