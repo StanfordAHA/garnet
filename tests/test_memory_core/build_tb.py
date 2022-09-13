@@ -1545,7 +1545,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         print(b_mat)
         print(c_mat)
         print(output_matrix)
-        # exit()
     elif 'matmul_jik.gv' in app_name:
         # PASSED
         # to glb
@@ -2268,8 +2267,8 @@ if __name__ == "__main__":
         # for i in range(100000):
         # for i in range(10000):
         # for i in range(2000):
-        # for i in range(50000):
-        for i in range(10000):
+        # for i in range(10000):
+        for i in range(50000):
             tester.step(2)
             tester_if = tester._if(tester.circuit.done)
             tester_if.print("Test is done...\n")

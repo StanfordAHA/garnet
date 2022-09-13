@@ -111,7 +111,7 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
             # rtl_lib.append(os.path.join(cwd,"PE.v"))
             pe_prefix = "PEGEN_"
             pe_child = PE_fc(family.MagmaFamily())
-            m.compile(f"garnet_PE",
+            m.compile(f"{tempdir}/garnet_PE",
                       pe_child,
                       output="coreir-verilog",
                       coreir_libs={"float_CW"},
@@ -121,7 +121,7 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
             m.generator.reset_generator_cache()
             m.logging.flush_all()  # flush all staged logs
 
-            rtl_lib.append(os.path.join(root_dir, "garnet_PE.v"))
+            rtl_lib.append(os.path.join(root_dir, f"{tempdir}/garnet_PE.v"))
 
         if use_dw:
             coreir_lib_name = "float_DW"
