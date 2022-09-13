@@ -34,7 +34,7 @@ def dispatch(garnet_top=None, graph="", seed=0):
          '--sam_graph',
          f'../sam/compiler/sam-outputs/dot/{graph}.gv',
          '--seed',
-         seed,
+         f'{seed}',
          '--trace',
          '--gen_pe',
          '--dump_bitstream',
