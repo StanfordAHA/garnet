@@ -364,18 +364,16 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     if add_pond:
         # remap
         if intercore_mapping is not None:
-            inter_core_connection = {
-                "data_out_pond": [intercore_mapping["data0"], intercore_mapping["data1"]],
-                "valid_out_pond": [intercore_mapping["bit0"]],
-                intercore_mapping["res"]: ["data_in_pond"]
-            }
+            inter_core_connection_1 =  {"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
+            inter_core_connection_16 = {"PondTop_output_width_17_num_0": [intercore_mapping["data0"], intercore_mapping["data1"], intercore_mapping["data2"]],
+                                        intercore_mapping["res"]: ["PondTop_input_width_17_num_0", "PondTop_input_width_17_num_1"]}
         else:
-            inter_core_connection = {"data_out_pond": ["data0", "data1"],
-                                     "valid_out_pond": ["bit0"],
-                                     "res": ["data_in_pond"]}
-        # inter_core_connection = {}
+            inter_core_connection_1 =  {"PondTop_output_width_1_num_0": ["bit0"]}
+            inter_core_connection_16 = {"PondTop_output_width_17_num_0": ["data0", "data1", "data2"],
+                                        "res": ["PondTop_input_width_17_num_0", "PondTop_input_width_17_num_1"]}
     else:
-        inter_core_connection = {}
+        inter_core_connection_1 = {}
+        inter_core_connection_16 = {}
 
     # Specify input and output port connections.
     inputs = set()
@@ -401,7 +399,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     if add_pond:
         for core in additional_core.values():
             if isinstance(core, list):
-                print("IS LIST")
                 for actual_core in core:
                     inputs |= {i.qualified_name() for i in actual_core.inputs()}
                     outputs |= {o.qualified_name() for o in actual_core.outputs()}
@@ -409,9 +406,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 inputs |= {i.qualified_name() for i in core.inputs()}
                 outputs |= {o.qualified_name() for o in core.outputs()}
 
-            # Pond outputs will be connected to the SBs
-            # outputs.remove("data_out_pond")
-            # outputs.remove("valid_out_pond")
+            # Some Pond outputs will be connected to the SBs
+            outputs.remove("PondTop_output_width_17_num_0")
 
     # This is slightly different from the original CGRA. Here we connect
     # input to every SB_IN and output to every SB_OUT.
@@ -467,6 +463,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             io_conn = None
         else:
             io_conn = {"in": io_in, "out": io_out}
+        if bit_width == 1:
+            inter_core_connection = inter_core_connection_1
+        else:
+            inter_core_connection = inter_core_connection_16
         ic = create_uniform_interconnect(width, height, bit_width,
                                          create_core,
                                          port_conns,
