@@ -1893,432 +1893,403 @@ if __name__ == "__main__":
 
     assert sam_graph is not None, f"No sam graph pointed to..."
 
-    if args.base_dir is None:
-        base_dir_td = tempfile.TemporaryDirectory()
-        base_dir = base_dir_td.name
-    else:
-        base_dir = args.base_dir
-        if not os.path.isdir(base_dir):
-            os.mkdir(base_dir)
+    with tempfile.TemporaryDirectory() as base_dir_td:
 
-    print(f"BASE DIR BEING USED:\t{base_dir}")
+        if args.base_dir is None:
+            base_dir = base_dir_td.name
+        else:
+            base_dir = args.base_dir
+            if not os.path.isdir(base_dir):
+                os.mkdir(base_dir)
 
-    output_dir = prep_test_dir(base_dir, args.output_dir, "OUTPUT_DIR")
-    input_dir = prep_test_dir(base_dir, args.input_dir, "INPUT_DIR")
-    matrix_tmp_dir = prep_test_dir(base_dir, args.matrix_tmp_dir, "MAT_TMP_DIR")
-    test_dump_dir = prep_test_dir(base_dir, args.test_dump_dir, "DUMP_DIR")
-    gold_dir = prep_test_dir(base_dir, args.gold_dir, "GOLD_DIR")
-    glb_dir = prep_test_dir(base_dir, args.glb_dir, "GLB_DIR")
+        print(f"BASE DIR BEING USED:\t{base_dir}")
 
-    # Make sure to force DISABLE_GP for much quicker runs
-    os.environ['DISABLE_GP'] = '1'
+        output_dir = prep_test_dir(base_dir, args.output_dir, "OUTPUT_DIR")
+        input_dir = prep_test_dir(base_dir, args.input_dir, "INPUT_DIR")
+        matrix_tmp_dir = prep_test_dir(base_dir, args.matrix_tmp_dir, "MAT_TMP_DIR")
+        test_dump_dir = prep_test_dir(base_dir, args.test_dump_dir, "DUMP_DIR")
+        gold_dir = prep_test_dir(base_dir, args.gold_dir, "GOLD_DIR")
+        glb_dir = prep_test_dir(base_dir, args.glb_dir, "GLB_DIR")
 
-    pe_prefix = "PEGEN_"
-    real_pe = False
+        # Make sure to force DISABLE_GP for much quicker runs
+        os.environ['DISABLE_GP'] = '1'
 
-    # Create PE verilog for inclusion...
-    if gen_pe is True:
-        pe_child = PE_fc(family.MagmaFamily())
-        m.compile(f"{test_dump_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
-        m.clear_cachedFunctions()
-        m.frontend.coreir_.ResetCoreIR()
-        m.generator.reset_generator_cache()
-        m.logging.flush_all()  # flush all staged logs
+        pe_prefix = "PEGEN_"
+        real_pe = True
 
-    numpy.random.seed(seed)
-    random.seed(seed)
+        # Create PE verilog for inclusion...
+        if gen_pe is True:
+            pe_child = PE_fc(family.MagmaFamily())
+            m.compile(f"{test_dump_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
+            m.clear_cachedFunctions()
+            m.frontend.coreir_.ResetCoreIR()
+            m.generator.reset_generator_cache()
+            m.logging.flush_all()  # flush all staged logs
 
-    nlb = None
-    interconnect = None
-    if bespoke is False:
-        # chip_width = 20
-        chip_width = 20
-        # chip_height = 32
-        chip_height = 16
-        num_tracks = 5
+        numpy.random.seed(seed)
+        random.seed(seed)
 
-        controllers = []
+        nlb = None
+        interconnect = None
+        if bespoke is False:
+            # chip_width = 20
+            chip_width = 20
+            # chip_height = 32
+            chip_height = 16
+            num_tracks = 5
 
-        if pipeline_scanner:
-            scan = ScannerPipe(data_width=16,
+            controllers = []
+
+            if pipeline_scanner:
+                scan = ScannerPipe(data_width=16,
+                                   fifo_depth=fifo_depth,
+                                   add_clk_enable=True,
+                                   defer_fifos=True,
+                                   add_flush=False)
+            else:
+                scan = Scanner(data_width=16,
                                fifo_depth=fifo_depth,
-                               add_clk_enable=True,
                                defer_fifos=True,
                                add_flush=False)
-        else:
-            scan = Scanner(data_width=16,
-                           fifo_depth=fifo_depth,
-                           defer_fifos=True,
-                           add_flush=False)
 
-        wscan = WriteScanner(data_width=16,
-                             fifo_depth=fifo_depth,
-                             defer_fifos=True,
-                             add_flush=False)
-        strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
-        fiber_access = FiberAccess(data_width=16,
-                                   local_memory=False,
-                                   tech_map=GF_Tech_Map(depth=512, width=32),
-                                   defer_fifos=True,
-                                   use_pipelined_scanner=pipeline_scanner,
-                                   add_flush=False,
-                                   fifo_depth=fifo_depth)
-        buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
-                            tech_map=GF_Tech_Map(depth=512, width=32),
+            wscan = WriteScanner(data_width=16,
+                                 fifo_depth=fifo_depth,
+                                 defer_fifos=True,
+                                 add_flush=False)
+            strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
+            fiber_access = FiberAccess(data_width=16,
+                                       local_memory=False,
+                                       tech_map=GF_Tech_Map(depth=512, width=32),
+                                       defer_fifos=True,
+                                       use_pipelined_scanner=pipeline_scanner,
+                                       add_flush=False,
+                                       fifo_depth=fifo_depth)
+            buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
+                                tech_map=GF_Tech_Map(depth=512, width=32),
+                                defer_fifos=True,
+                                optimize_wide=True,
+                                add_flush=False,
+                                fifo_depth=fifo_depth)
+            strg_ram = StrgRAM(data_width=16,
+                               banks=1,
+                               memory_width=64,
+                               memory_depth=512,
+                               rw_same_cycle=False,
+                               read_delay=1,
+                               addr_width=16,
+                               prioritize_write=True,
+                               comply_with_17=True)
+
+            stencil_valid = StencilValid()
+
+            if use_fiber_access:
+                controllers.append(fiber_access)
+            else:
+                controllers.append(scan)
+                controllers.append(wscan)
+                controllers.append(buffet)
+
+            controllers.append(strg_ub)
+            controllers.append(strg_ram)
+            controllers.append(stencil_valid)
+
+            isect = Intersect(data_width=16,
+                              use_merger=False,
+                              fifo_depth=fifo_depth,
+                              defer_fifos=True,
+                              add_flush=False)
+            crd_drop = CrdDrop(data_width=16,
+                               fifo_depth=fifo_depth,
+                               lift_config=True,
+                               defer_fifos=True,
+                               add_flush=False)
+            crd_hold = CrdHold(data_width=16,
+                               fifo_depth=fifo_depth,
+                               lift_config=True,
+                               defer_fifos=True,
+                               add_flush=False)
+            onyxpe = OnyxPE(data_width=16,
+                            fifo_depth=fifo_depth,
                             defer_fifos=True,
-                            optimize_wide=True,
-                            add_flush=False,
-                            fifo_depth=fifo_depth)
-        strg_ram = StrgRAM(data_width=16,
-                           banks=1,
-                           memory_width=64,
-                           memory_depth=512,
-                           rw_same_cycle=False,
-                           read_delay=1,
-                           addr_width=16,
-                           prioritize_write=True,
-                           comply_with_17=True)
-
-        stencil_valid = StencilValid()
-
-        if use_fiber_access:
-            controllers.append(fiber_access)
-        else:
-            controllers.append(scan)
-            controllers.append(wscan)
-            controllers.append(buffet)
-
-        controllers.append(strg_ub)
-        controllers.append(strg_ram)
-        controllers.append(stencil_valid)
-
-        isect = Intersect(data_width=16,
-                          use_merger=False,
-                          fifo_depth=fifo_depth,
-                          defer_fifos=True,
-                          add_flush=False)
-        crd_drop = CrdDrop(data_width=16,
-                           fifo_depth=fifo_depth,
-                           lift_config=True,
-                           defer_fifos=True,
-                           add_flush=False)
-        crd_hold = CrdHold(data_width=16,
-                           fifo_depth=fifo_depth,
-                           lift_config=True,
-                           defer_fifos=True,
-                           add_flush=False)
-        onyxpe = OnyxPE(data_width=16,
-                        fifo_depth=fifo_depth,
-                        defer_fifos=True,
-                        ext_pe_prefix=pe_prefix,
-                        pe_ro=True,
-                        do_config_lift=False,
-                        add_flush=False)
-        repeat = Repeat(data_width=16,
+                            ext_pe_prefix=pe_prefix,
+                            pe_ro=True,
+                            do_config_lift=False,
+                            add_flush=False)
+            repeat = Repeat(data_width=16,
+                            fifo_depth=fifo_depth,
+                            defer_fifos=True,
+                            add_flush=False)
+            rsg = RepeatSignalGenerator(data_width=16,
+                                        passthru=False,
+                                        fifo_depth=fifo_depth,
+                                        defer_fifos=True,
+                                        add_flush=False)
+            regcr = Reg(data_width=16,
                         fifo_depth=fifo_depth,
                         defer_fifos=True,
                         add_flush=False)
-        rsg = RepeatSignalGenerator(data_width=16,
-                                    passthru=False,
-                                    fifo_depth=fifo_depth,
-                                    defer_fifos=True,
-                                    add_flush=False)
-        regcr = Reg(data_width=16,
-                    fifo_depth=fifo_depth,
-                    defer_fifos=True,
-                    add_flush=False)
 
-        controllers_2 = []
+            controllers_2 = []
 
-        controllers_2.append(isect)
-        controllers_2.append(crd_drop)
-        controllers_2.append(crd_hold)
-        controllers_2.append(onyxpe)
-        controllers_2.append(repeat)
-        controllers_2.append(rsg)
-        controllers_2.append(regcr)
+            controllers_2.append(isect)
+            controllers_2.append(crd_drop)
+            controllers_2.append(crd_hold)
+            controllers_2.append(onyxpe)
+            controllers_2.append(repeat)
+            controllers_2.append(rsg)
+            controllers_2.append(regcr)
 
-        if combined is True:
-            altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "p",
-                                           'name': "PE",
-                                           'input_prefix': "PE_"}),
-                       (CoreCombinerCore, {'controllers_list': controllers_2,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "p",
-                                           'name': "PE",
-                                           'input_prefix': "PE_"}),
-                       (CoreCombinerCore, {'controllers_list': controllers_2,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "p",
-                                           'name': "PE",
-                                           'input_prefix': "PE_"}),
-                       (CoreCombinerCore, {'controllers_list': controllers,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "m",
-                                           'name': "MemCore",
-                                           'input_prefix': "MEM_"})]
-            # altcore = [(CoreCombinerCore, {'controllers_list': controllers,
-            #                                'use_sim_sram': not physical_sram,
-            #                                'tech_map': GF_Tech_Map(depth=512, width=32),
-            #                                'pnr_tag': "C",
-            #                                'name': "MemCore",
-            #                                'input_prefix': "MEM_"}),
-            #            (CoreCombinerCore, {'controllers_list': controllers_2,
-            #                                'use_sim_sram': not physical_sram,
-            #                                'tech_map': GF_Tech_Map(depth=512, width=32),
-            #                                'pnr_tag': "Q",
-            #                                'name': "PE",
-            #                                'input_prefix': "PE_"})]
-            real_pe = True
+            if combined is True:
+                altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
+                                               'use_sim_sram': not physical_sram,
+                                               'tech_map': GF_Tech_Map(depth=512, width=32),
+                                               'pnr_tag': "p",
+                                               'name': "PE",
+                                               'input_prefix': "PE_"}),
+                           (CoreCombinerCore, {'controllers_list': controllers_2,
+                                               'use_sim_sram': not physical_sram,
+                                               'tech_map': GF_Tech_Map(depth=512, width=32),
+                                               'pnr_tag': "p",
+                                               'name': "PE",
+                                               'input_prefix': "PE_"}),
+                           (CoreCombinerCore, {'controllers_list': controllers_2,
+                                               'use_sim_sram': not physical_sram,
+                                               'tech_map': GF_Tech_Map(depth=512, width=32),
+                                               'pnr_tag': "p",
+                                               'name': "PE",
+                                               'input_prefix': "PE_"}),
+                           (CoreCombinerCore, {'controllers_list': controllers,
+                                               'use_sim_sram': not physical_sram,
+                                               'tech_map': GF_Tech_Map(depth=512, width=32),
+                                               'pnr_tag': "m",
+                                               'name': "MemCore",
+                                               'input_prefix': "MEM_"})]
 
+            else:
+                altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
+                                          'add_clk_enable': clk_enable,
+                                          'pipelined': pipeline_scanner}),
+                           (BuffetCore, {'local_mems': True,
+                                         'physical_mem': physical_sram,
+                                         'fifo_depth': fifo_depth,
+                                         'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                           (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
+                           (WriteScannerCore, {'fifo_depth': fifo_depth}),
+                           (RepeatCore, {'fifo_depth': fifo_depth}),
+                           (IntersectCore, {'fifo_depth': fifo_depth}),
+                           (CrdDropCore, {'fifo_depth': fifo_depth}),
+                           (CrdHoldCore, {'fifo_depth': fifo_depth}),
+                           (RepeatSignalGeneratorCore, {'passthru': not use_fork,
+                                                        'fifo_depth': fifo_depth}),
+                           (RegCore, {'fifo_depth': fifo_depth})]
+
+            interconnect = create_cgra(width=chip_width, height=chip_height,
+                                       io_sides=IOSide.North,
+                                       num_tracks=num_tracks,
+                                       add_pd=False,
+                                       # Soften the flush...?
+                                       harden_flush=harden_flush,
+                                       altcore=altcore,
+                                       ready_valid=True,
+                                       add_pond=add_pond,
+                                       scgra=False)
+
+            if just_verilog:
+                circuit = interconnect.circuit()
+                import magma
+                magma.compile(f"{test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
+                exit()
+
+            nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir,
+                                 harden_flush=harden_flush, combined=combined)
+
+        ##### Handling app level file stuff #####
+        output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
+        out_mat = MatrixGenerator(name=output_name, shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
+        out_mat.dump_outputs()
+        if dump_glb:
+
+            # Want to dump specific tests...
+
+            test_name_base = sam_graph.split('/')[-1].rstrip('.gv')
+            print(f"TEST BASE NAME: {test_name_base}")
+
+            if combined:
+                combined_str = "combined"
+            else:
+                combined_str = ""
+
+            full_test_name = f"{test_name_base}_{combined_str}_seed_{seed}"
+
+            full_test_glb_dir = f"{glb_dir}/{full_test_name}"
+
+            print(f"DUMPING GLB STUFF TO: {full_test_glb_dir}")
+
+            # Make sure glb path exists
+            if not os.path.isdir(full_test_glb_dir):
+                os.mkdir(full_test_glb_dir)
+
+            out_mat.dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir)
+
+        # Now coalesce them into combo files and put in final landing zone
+        # First clear the out dir
+        if not os.path.isdir(input_dir):
+            os.mkdir(input_dir)
         else:
-            altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
-                                      'add_clk_enable': clk_enable,
-                                      'pipelined': pipeline_scanner}),
-                       (BuffetCore, {'local_mems': True,
-                                     'physical_mem': physical_sram,
-                                     'fifo_depth': fifo_depth,
-                                     'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                       (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
-                       (WriteScannerCore, {'fifo_depth': fifo_depth}),
-                       (RepeatCore, {'fifo_depth': fifo_depth}),
-                       (IntersectCore, {'fifo_depth': fifo_depth}),
-                       (CrdDropCore, {'fifo_depth': fifo_depth}),
-                       (CrdHoldCore, {'fifo_depth': fifo_depth}),
-                       (RepeatSignalGeneratorCore, {'passthru': not use_fork,
-                                                    'fifo_depth': fifo_depth}),
-                       (RegCore, {'fifo_depth': fifo_depth})]
+            # Otherwise clean it
+            for filename in os.listdir(input_dir):
+                ret = os.remove(input_dir + "/" + filename)
 
-            real_pe = True
+        # hack_in_files = ['./tensor_b_mode_0', './tensor_b_mode_vals']
+        hack_in_files = None
+        coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir, hack_files=hack_in_files)
 
-        interconnect = create_cgra(width=chip_width, height=chip_height,
-                                   io_sides=IOSide.North,
-                                   num_tracks=num_tracks,
-                                   add_pd=False,
-                                   # Soften the flush...?
-                                   harden_flush=harden_flush,
-                                   altcore=altcore,
-                                   ready_valid=True,
-                                   add_pond=add_pond,
-                                   scgra=False)
+        # Clean up output dir...
+        # If it doesn't exist, make it
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
+        else:
+            # Otherwise clean it
+            for filename in os.listdir(output_dir):
+                ret = os.remove(output_dir + "/" + filename)
 
-        if just_verilog:
-            circuit = interconnect.circuit()
-            import magma
-            magma.compile(f"{test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
+        # Get SAM graph
+        # sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
+        sdg = SAMDotGraph(filename=args.sam_graph, local_mems=True, use_fork=use_fork, use_fa=use_fiber_access)
+        mode_map = sdg.get_mode_map()
+        print(f"MODE MAP: {mode_map}")
+        # exit()
+        graph = sdg.get_graph()
+
+        # print(input_dims)
+        ##### Create the actual testbench mapping based on the SAM graph #####
+        stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
+                              # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
+                              output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
+                              real_pe=real_pe, harden_flush=harden_flush, combined=combined,
+                              input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access)
+
+        if dump_bitstream:
+            nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
+
+        if dump_glb:
+
+            glb_info_ = []
+            glb_map = stb.get_glb_mapping()
+            mode_map = stb.get_mode_map()
+            for core, desc_ in glb_map.items():
+                tensor_, mode_, direction_, num_blocks_ = desc_
+                # remap the mode...
+                if mode_ != 'vals':
+                    mode_ = mode_map[tensor_][int(mode_)][0]
+                # print(core)
+                core_placement = stb.get_core_placement(core)
+                # print(core_placement)
+                tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
+                # print(tensor_desc_str)
+                glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_))
+
+            # prepare_glb_collateral(glb_dir=glb_dir,
+            prepare_glb_collateral(glb_dir=full_test_glb_dir,
+                                   bitstream=f"{test_dump_dir}/bitstream.bs",
+                                   matrices_in=input_dir,
+                                   design_place=f"{test_dump_dir}/design.place",
+                                   glb_info=glb_info_)
+
+        stb.display_names()
+        stb.dump_display_names(f"{test_dump_dir}/design.mapped")
+
+        if just_glb:
+            print("Only generating glb collateral and leaving...")
             exit()
 
-        nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir,
-                             harden_flush=harden_flush, combined=combined)
+        ##### Create the actual testbench #####
+        tester = BasicTester(stb, stb.clk, stb.rst_n)
 
-    ##### Handling app level file stuff #####
-    output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
-    out_mat = MatrixGenerator(name=output_name, shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
-    out_mat.dump_outputs()
-    if dump_glb:
-
-        # Want to dump specific tests...
-
-        test_name_base = sam_graph.split('/')[-1].rstrip('.gv')
-        print(f"TEST BASE NAME: {test_name_base}")
-
-        if combined:
-            combined_str = "combined"
-        else:
-            combined_str = ""
-
-        full_test_name = f"{test_name_base}_{combined_str}_seed_{seed}"
-
-        full_test_glb_dir = f"{glb_dir}/{full_test_name}"
-
-        print(f"DUMPING GLB STUFF TO: {full_test_glb_dir}")
-
-        # Make sure glb path exists
-        if not os.path.isdir(full_test_glb_dir):
-            os.mkdir(full_test_glb_dir)
-
-        out_mat.dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir)
-
-    # Now coalesce them into combo files and put in final landing zone
-    # First clear the out dir
-    if not os.path.isdir(input_dir):
-        os.mkdir(input_dir)
-    else:
-        # Otherwise clean it
-        for filename in os.listdir(input_dir):
-            ret = os.remove(input_dir + "/" + filename)
-
-    # hack_in_files = ['./tensor_b_mode_0', './tensor_b_mode_vals']
-    hack_in_files = None
-    coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir, hack_files=hack_in_files)
-
-    # Clean up output dir...
-    # If it doesn't exist, make it
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
-    else:
-        # Otherwise clean it
-        for filename in os.listdir(output_dir):
-            ret = os.remove(output_dir + "/" + filename)
-
-    # Get SAM graph
-    # sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
-    sdg = SAMDotGraph(filename=args.sam_graph, local_mems=True, use_fork=use_fork, use_fa=use_fiber_access)
-    mode_map = sdg.get_mode_map()
-    print(f"MODE MAP: {mode_map}")
-    # exit()
-    graph = sdg.get_graph()
-
-    # print(input_dims)
-    ##### Create the actual testbench mapping based on the SAM graph #####
-    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
-                          # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
-                          output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
-                          real_pe=real_pe, harden_flush=harden_flush, combined=combined,
-                          input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access)
-
-    if dump_bitstream:
-        nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
-
-    if dump_glb:
-
-        glb_info_ = []
-        glb_map = stb.get_glb_mapping()
-        mode_map = stb.get_mode_map()
-        for core, desc_ in glb_map.items():
-            tensor_, mode_, direction_, num_blocks_ = desc_
-            # remap the mode...
-            if mode_ != 'vals':
-                mode_ = mode_map[tensor_][int(mode_)][0]
-            # print(core)
-            core_placement = stb.get_core_placement(core)
-            # print(core_placement)
-            tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
-            # print(tensor_desc_str)
-            glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_))
-
-        # prepare_glb_collateral(glb_dir=glb_dir,
-        prepare_glb_collateral(glb_dir=full_test_glb_dir,
-                               bitstream=f"{test_dump_dir}/bitstream.bs",
-                               matrices_in=input_dir,
-                               design_place=f"{test_dump_dir}/design.place",
-                               glb_info=glb_info_)
-
-    stb.display_names()
-    stb.dump_display_names(f"{test_dump_dir}/design.mapped")
-
-    if just_glb:
-        print("Only generating glb collateral and leaving...")
-        exit()
-
-    ##### Create the actual testbench #####
-    tester = BasicTester(stb, stb.clk, stb.rst_n)
-
-    tester.zero_inputs()
-    tester.poke(stb.io.stall, 1)
-    tester.poke(stb.io.rst_n, 0)
-    tester.eval()
-
-    tester.step(2)
-    tester.poke(stb.rst_n, 1)
-
-    # if nlb is not None:
-    #     tester.reset()
-    # else:
-    #     # pulse reset manually
-    #     tester.poke(stb.rst_n, 0)
-    #     tester.step(2)
-    #     tester.poke(stb.rst_n, 1)
-    #     tester.step(2)
-
-    tester.step(2)
-    # Stall during config
-    tester.poke(stb.io.stall, 1)
-
-    # After stalling, we can configure the circuit
-    # with its configuration bitstream
-    if nlb is not None:
-        cfgdat = nlb.get_config_data()
-        for addr, index in cfgdat:
-            tester.configure(addr, index)
-            # if readback is True:
-            #     self._tester.config_read(addr)
-            tester.eval()
-
-        tester.done_config()
-
-        tester.poke(stb.io.flush, 1)
+        tester.zero_inputs()
+        tester.poke(stb.io.stall, 1)
+        tester.poke(stb.io.rst_n, 0)
         tester.eval()
-        tester.step(2)
-        tester.step(2)
-        tester.step(2)
-        tester.step(2)
-        tester.step(2)
-        tester.step(2)
-        tester.step(2)
-        tester.step(2)
 
-        tester.poke(stb.io.stall, 0)
-    tester.eval()
-
-    # Get flush handle and apply flush to start off app
-    # tester.poke(stb.io.flush, 1)
-    # tester.eval()
-    tester.step(2)
-    tester.step(2)
-    # tester.step(2)
-    # tester.step(2)
-    # tester.step(2)
-    # for i in range(1000):
-    #     tester.step(2)
-    tester.poke(stb.io.flush, 0)
-    tester.eval()
-    # for i in range(100000):
-    # for i in range(10000):
-    # for i in range(2000):
-    # for i in range(10000):
-    for i in range(50000):
         tester.step(2)
-        tester_if = tester._if(tester.circuit.done)
-        tester_if.print("Test is done...\n")
-        tester_if.print("Cycle Count...%d\n", stb.io.cycle_count)
-        tester_if.finish()
-    # tester.wait_until_high(tester.circuit.done, timeout=2000)
+        tester.poke(stb.rst_n, 1)
 
-    from conftest import run_tb_fn
-    try:
+        # if nlb is not None:
+        #     tester.reset()
+        # else:
+        #     # pulse reset manually
+        #     tester.poke(stb.rst_n, 0)
+        #     tester.step(2)
+        #     tester.poke(stb.rst_n, 1)
+        #     tester.step(2)
+
+        tester.step(2)
+        # Stall during config
+        tester.poke(stb.io.stall, 1)
+
+        # After stalling, we can configure the circuit
+        # with its configuration bitstream
+        if nlb is not None:
+            cfgdat = nlb.get_config_data()
+            for addr, index in cfgdat:
+                tester.configure(addr, index)
+                # if readback is True:
+                #     self._tester.config_read(addr)
+                tester.eval()
+
+            tester.done_config()
+
+            tester.poke(stb.io.flush, 1)
+            tester.eval()
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+            tester.step(2)
+
+            tester.poke(stb.io.stall, 0)
+        tester.eval()
+
+        # Get flush handle and apply flush to start off app
+        # tester.poke(stb.io.flush, 1)
+        # tester.eval()
+        tester.step(2)
+        tester.step(2)
+        # tester.step(2)
+        # tester.step(2)
+        # tester.step(2)
+        # for i in range(1000):
+        #     tester.step(2)
+        tester.poke(stb.io.flush, 0)
+        tester.eval()
+        # for i in range(100000):
+        # for i in range(10000):
+        # for i in range(2000):
+        # for i in range(50000):
+        for i in range(10000):
+            tester.step(2)
+            tester_if = tester._if(tester.circuit.done)
+            tester_if.print("Test is done...\n")
+            tester_if.print("Cycle Count...%d\n", stb.io.cycle_count)
+            tester_if.finish()
+        # tester.wait_until_high(tester.circuit.done, timeout=2000)
+
+        from conftest import run_tb_fn
         run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd=test_dump_dir, include_PE=True)
-    except Exception as e:
-        # Do cleanup on failure...
-        if args.base_dir is None:
-            base_dir_td.cleanup()
-    # run_tb_fn(tester, trace=True, disable_ndarray=True, cwd="./")
 
-    stb.display_names()
+        stb.display_names()
 
-    ##### Now check it... #####
-    print(f"GOLD")
-    print(output_matrix)
+        ##### Now check it... #####
+        print(f"GOLD")
+        print(output_matrix)
 
-    sim_mat = get_tensor_from_files(name='X', files_dir=output_dir,
-                                    format=output_format, shape=output_matrix.shape, base=16, early_terminate='x')
-    sim_mat_np = sim_mat.get_matrix()
-    print(f"SIM")
-    print(sim_mat_np)
+        sim_mat = get_tensor_from_files(name='X', files_dir=output_dir,
+                                        format=output_format, shape=output_matrix.shape, base=16, early_terminate='x')
+        sim_mat_np = sim_mat.get_matrix()
+        print(f"SIM")
+        print(sim_mat_np)
 
-    try:
         assert numpy.array_equal(output_matrix, sim_mat_np)
-    except Exception as e:
-        # Do cleanup on failure...
-        if args.base_dir is None:
-            base_dir_td.cleanup()
-
-    # Do final cleanup...
-    if args.base_dir is None:
-        base_dir_td.cleanup()
