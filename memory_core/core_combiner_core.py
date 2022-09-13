@@ -24,7 +24,7 @@ class CoreCombinerCore(LakeCoreBase):
                  data_width=16,  # CGRA Params
                  config_data_width=32,
                  config_addr_width=8,
-                 fifo_depth=8,
+                 fifo_depth=2,
                  controllers_list=None,
                  use_sim_sram=True,
                  tech_map=GF_Tech_Map(depth=512, width=32),
@@ -56,6 +56,7 @@ class CoreCombinerCore(LakeCoreBase):
         self.config_addr_width = config_addr_width
         self.use_sim_sram = use_sim_sram
         self.tech_map = tech_map
+        self.fifo_depth = fifo_depth
 
         self.runtime_mode = None
 
@@ -81,7 +82,8 @@ class CoreCombinerCore(LakeCoreBase):
                                    use_sim_sram=self.use_sim_sram,
                                    tech_map=self.tech_map,
                                    do_config_lift=False,
-                                   io_prefix=self.input_prefix)
+                                   io_prefix=self.input_prefix,
+                                   fifo_depth=self.fifo_depth)
 
             self.dut = self.CC.dut
 
