@@ -164,9 +164,23 @@ def construct():
         'upf_Tile_PE.tcl', 
         'pe-constraints.tcl', 
         'pe-constraints-2.tcl', 
-        'dc-dont-use-constraints.tcl'])
+        'dc-dont-use-constraints.tcl',
+        'check-pdcr-address.sh',
+      ])
 
-      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pe-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
+      # 09/2022 added check-pdcr-address.sh
+      init.extend_inputs([
+        'upf_Tile_PE.tcl', 
+        'pe-load-upf.tcl', 
+        'dont-touch-constraints.tcl', 
+        'pe-pd-params.tcl', 
+        'pd-aon-floorplan.tcl', 
+        'add-endcaps-welltaps-setup.tcl', 
+        'pd-add-endcaps-welltaps.tcl', 
+        'add-power-switches.tcl', 
+        'check-clamp-logic-structure.tcl',
+        'check-pdcr-address.sh',
+      ])
 
       # Need pe-pd-params for parm 'vdd_m3_stripe_sparsity'
       # pd-globalnetconnect, pe-pd-params come from 'power-domains' node
@@ -180,6 +194,11 @@ def construct():
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
   
+      # Fix and repair PowerDomainConfigReg when/if magma decides to renumber it :(
+      synth.pre_extend_commands( ['./inputs/check-pdcr-address.sh'] )
+      init.pre_extend_commands(  ['./inputs/check-pdcr-address.sh'] )
+      pwr_aware_gls.pre_extend_commands( ['./assign-pdcr-address.sh'] )
+
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
 
@@ -387,10 +406,11 @@ def construct():
   # Pwr aware steps:
   if pwr_aware:
       # init node
+      # 09/2022 reordered to load params (pe-pd-params) before using params (pe-load-upf)
       order = init.get_param('order')
       read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
-      order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
-      order.insert( read_idx + 2, 'pe-pd-params.tcl' ) # add here
+      order.insert( read_idx + 1, 'pe-pd-params.tcl' )     # add here
+      order.insert( read_idx + 2, 'pe-load-upf.tcl' )      # add here
       order.insert( read_idx + 3, 'pd-aon-floorplan.tcl' ) # add here
       order.insert( read_idx + 4, 'add-endcaps-welltaps-setup.tcl' ) # add here
       order.insert( read_idx + 5, 'pd-add-endcaps-welltaps.tcl' ) # add here
