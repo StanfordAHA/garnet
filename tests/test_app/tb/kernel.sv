@@ -544,7 +544,7 @@ function void Kernel::compare();
             end
         end
     end
-    for (int i = 0; i < num_outputs; i++) begin
+    for (int idx = 0; idx < num_outputs; idx++) begin
         tmp_output_name_len = output_filenames[idx].len();
         tmp_output_name = output_filenames[idx].substr(0, name_len - 5);
         file_out = $fopen({tmp_output_name, ".txt"}, "w");
