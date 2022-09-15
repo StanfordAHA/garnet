@@ -342,11 +342,9 @@ class Garnet(Generator):
             inter_core_conns = self.inter_core_connections[bw]
             (source, source_port) = conns[0]
             for (sink, sink_port) in conns[1:]:
-                if source_port in inter_core_conns:
-                    if sink_port in inter_core_conns[source_port]:
+                if source_port in inter_core_conns and source[0] == "M":
+                    if sink_port in inter_core_conns[source_port] and sink[0] == 'p':
                         packed_ponds[source] = sink
-                        # del netlist_info['netlist'][edge_id]
-                        # del netlist_info['buses'][edge_id]
 
         for edge_id, conns in netlist_info['netlist'].items():
             new_conns = []
@@ -485,10 +483,15 @@ class Garnet(Generator):
             for name, mapping in netlist_info["netlist"].items():
                 for i in range(len(mapping)):
                     (inst_name, port_name) = mapping[i]
-                    if "data_in_pond" in port_name:
+                    if "data_in_pond_0" in port_name:
                         mapping[i] = (inst_name, "PondTop_input_width_17_num_0")
-                    if "data_out_pond" in port_name:
+                    if "data_out_pond_0" in port_name:
                         mapping[i] = (inst_name, "PondTop_output_width_17_num_0")
+                    if "data_in_pond_1" in port_name:
+                        mapping[i] = (inst_name, "PondTop_input_width_17_num_1")
+                    if "data_out_pond_1" in port_name:
+                        mapping[i] = (inst_name, "PondTop_output_width_17_num_1")
+
 
         self.pack_ponds(netlist_info)
         

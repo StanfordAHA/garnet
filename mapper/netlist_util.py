@@ -741,8 +741,10 @@ class PackRegsIntoPonds(Visitor):
             node.node_name == "Select"
             and node.child.node_name == "cgralib.Pond"
             and not isinstance(node.child, Sink)
+            and node.field == "data_out_pond_0"
         ):
-            pe_node, num_regs = self.find_pe(node.child, 0)
+            pe_node, num_regs = self.find_pe(node, 0)
+            assert pe_node not in self.pe_to_pond_conns, "Multiple ponds are connecting to one PE using the data_out_pond_0 port"
             self.pe_to_pond_conns[pe_node] = node
             self.pond_reg_skipped[node.child.iname] = num_regs
 
