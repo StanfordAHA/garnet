@@ -436,29 +436,6 @@ class VerifyUniqueIname(Visitor):
         self.inames[node.iname] = node
 
 
-class PondFlushes(Transformer):
-    def __init__(self):
-        self.pond_flush_select = None
-        pass
-
-    def generic_visit(self, node: DagNode):
-        Transformer.generic_visit(self, node)
-        if node.node_name == "global.Pond":
-            children = [child for child in node.children()]
-            for idx, child in enumerate(children):
-                if (
-                    len(child.children()) > 0
-                    and child.children()[0].node_name == "global.BitIO"
-                ):
-                    if not self.pond_flush_select:
-                        self.pond_flush_select = Select(
-                            child.children()[0], field="out", type=BitVector[16]
-                        )
-                    children[idx] = self.pond_flush_select
-            node.set_children(*children)
-        return node
-
-
 class PipelineBroadcastHelper(Visitor):
     def __init__(self):
         self.sinks = {}
@@ -762,7 +739,7 @@ class PackRegsIntoPonds(Visitor):
 
         if (
             node.node_name == "Select"
-            and node.child.node_name == "global.Pond"
+            and node.child.node_name == "cgralib.Pond"
             and not isinstance(node.child, Sink)
         ):
             pe_node, num_regs = self.find_pe(node.child, 0)
@@ -814,9 +791,9 @@ class CountTiles(Visitor):
             self.num_ios += 1
         elif node.node_name == "global.PE":
             self.num_pes += 1
-        elif node.node_name == "global.MEM":
+        elif node.node_name == "cgralib.Mem":
             self.num_mems += 1
-        elif node.node_name == "global.Pond":
+        elif node.node_name == "cgralib.Pond":
             self.num_ponds += 1
         elif node.node_name == "Register":
             self.num_regs += 1
@@ -884,7 +861,7 @@ def create_netlist_info(
     for node, md in node_to_metadata.items():
         info["id_to_metadata"][nodes_to_ids[node]] = md
         if node in pond_reg_skipped:
-            info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"][
+            info["id_to_metadata"][nodes_to_ids[node]]["regfile2out_0"][
                 "cycle_starting_addr"
             ][0] += pond_reg_skipped[node]
 
