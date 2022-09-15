@@ -548,11 +548,11 @@ function void Kernel::compare();
         tmp_output_name_len = output_filenames[idx].len();
         tmp_output_name = output_filenames[idx].substr(0, tmp_output_name_len - 5);
         file_out = $fopen({tmp_output_name, ".txt"}, "w");
-        for (int i = 0; i < output_data[0].size(); i++) begin
+        for (int i = 0; i < output_data[idx].size(); i++) begin
             if (i % 8 == 7) begin
-                $fwrite(file_out, "%4h\n", output_data[0][i]);
+                $fwrite(file_out, "%4h\n", output_data[idx][i]);
             end else begin
-                $fwrite(file_out, "%4h ", output_data[0][i]);
+                $fwrite(file_out, "%4h ", output_data[idx][i]);
             end
         end
     end
