@@ -32,8 +32,6 @@ from metamapper.node import Nodes
 from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
 from metamapper import CoreIRContext
 from metamapper.irs.coreir import gen_CoreIRNodes
-from metamapper.lake_mem import gen_MEM_fc
-from metamapper.lake_pond import gen_Pond_fc
 from metamapper.io_tiles import IO_fc, BitIO_fc
 from lassen.sim import PE_fc as lassen_fc
 import metamapper.peak_util as putil
@@ -383,8 +381,6 @@ class Garnet(Generator):
         cutil.load_libs(["cgralib", "commonlib", "float"])
         c.run_passes(["flatten"])
 
-        MEM_fc = gen_MEM_fc()
-        Pond_fc = gen_Pond_fc()
         nodes = gen_CoreIRNodes(16)
 
         putil.load_and_link_peak(
@@ -392,11 +388,6 @@ class Garnet(Generator):
             pe_header,
             {"global.PE": self.pe_fc},
         )
-        #putil.load_and_link_peak(
-        #    nodes,
-        #    mem_header,
-        #    {"global.MEM": (MEM_fc, True)},
-        #)
 
         putil.load_and_link_peak(
             nodes,
@@ -410,15 +401,9 @@ class Garnet(Generator):
             {"global.BitIO": BitIO_fc},
         )
 
-        putil.load_and_link_peak(
-            nodes,
-            pond_header,
-            {"global.Pond": (Pond_fc, True)},
-        )
-
         dag = cutil.coreir_to_dag(nodes, cmod)
         tile_info = {"global.PE": self.pe_fc, "cgralib.Mem": nodes.peak_nodes["cgralib.Mem"],
-                     "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
+                     "global.IO": IO_fc, "global.BitIO": BitIO_fc, "cgralib.Pond": nodes.peak_nodes["cgralib.Pond"]}
         netlist_info = create_netlist_info(app_dir,
                                            dag,
                                            tile_info,
