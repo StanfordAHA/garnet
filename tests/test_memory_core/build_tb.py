@@ -649,7 +649,6 @@ class SparseTBBuilder(m.Generator2):
 
                 file_full = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode}"
                 # Get tx size now
-                print(node.get_format())
                 if not node.get_format() == "dense":
                     with open(file_full, "r") as ff:
                         glb_tx_size = len(ff.readlines())
@@ -803,8 +802,6 @@ class SparseTBBuilder(m.Generator2):
                 conn_to_tensor = {}
                 for idx_, edge in enumerate(edges_to_isect_crd):
                     conn_to_tensor[idx_] = edge.get_attributes()['comment'].strip('"').split('-')[1]
-                print(node)
-                print(conn_to_tensor)
                 kwargs = {'conn_to_tensor': conn_to_tensor}
 
             elif hw_node_type == f"{HWNodeType.Reduce}":
@@ -854,7 +851,6 @@ class SparseTBBuilder(m.Generator2):
             if new_node_type == GLBNode:
                 glb_tensor_ = node.get_attributes()['tensor'].strip('"')
                 glb_type_ = node.get_attributes()['type'].strip('"')
-                print(node.get_attributes())
                 if 'arrayvals' in glb_type_:
                     glb_mode_ = 'vals'
                 else:
@@ -1093,7 +1089,6 @@ class SparseTBBuilder(m.Generator2):
                     self.nlb.configure_tile(core_node.get_name(), pass_config_kwargs_tuple)
                 # elif "s" in self.core_nodes[node.get_name()].get_name():
                 else:
-                    print(node.get_name(), core_node.get_name())
                     if "glb" in node.get_name():
                         node_config_kwargs['sparse_mode'] = 1
                     self.nlb.configure_tile(core_node.get_name(), (1, node_config_kwargs))
@@ -1529,9 +1524,13 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     # elif 'matmul_ikj.gv' in app_name:
     elif 'matmul_ikj' in app_name:
-        shape_ = 4
-        b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=10)
-        c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=10)
+        gold_shape_0 = 20
+        gold_shape_1 = 24
+        gold_shape_2 = 20
+        b_matrix = MatrixGenerator(name="B", shape=[gold_shape_0, gold_shape_1],
+                                   sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=10)
+        c_matrix = MatrixGenerator(name="C", shape=[gold_shape_1, gold_shape_2],
+                                   sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir, value_cap=10)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
@@ -1545,6 +1544,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         print(b_mat)
         print(c_mat)
         print(output_matrix)
+        # exit()
     elif 'matmul_jik.gv' in app_name:
         # PASSED
         # to glb
@@ -2295,4 +2295,8 @@ if __name__ == "__main__":
         print(f"SIM")
         print(sim_mat_np)
 
-        assert numpy.array_equal(output_matrix, sim_mat_np)
+        try:
+            assert numpy.array_equal(output_matrix, sim_mat_np)
+        except AssertionError as e:
+            print(f"Test failed...output matrices are unequal")
+            print(numpy.subtract(output_matrix, sim_mat_np))

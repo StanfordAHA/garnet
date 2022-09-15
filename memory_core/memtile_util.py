@@ -420,8 +420,6 @@ class LakeCoreBase(ConfigurableCore):
                 # ready is floating
                 self.wire(p, Const(1))
 
-        # print(self.__inputs)
-
     def get_config_bitstream(self, instr):
         return
 
@@ -527,11 +525,9 @@ class NetlistBuilder():
 
         if not self.remapping_built:
             for core_key, core_value in self._interconnect.tile_circuits.items():
-                print(f"{core_key}, {core_value.name()}")
                 # if "CoreCombiner" not in core_value.name():
                 if not self.combined:
                     continue
-                # print(core_value)
                 cc_core = core_value.core
                 # get pnr tag
                 pnr_tag = cc_core.pnr_info()
