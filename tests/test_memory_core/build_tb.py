@@ -1200,7 +1200,9 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
                         "cycle_starting_addr": [0],
                         "cycle_stride": [1],
                         "dimensionality": 1,
-                        "extent": [num_lines],
+                        # "extent": [num_lines],
+                        # HAX for testing against GLB
+                        "extent": [num_lines * 10],
                         "write_data_starting_addr": [0],
                         "write_data_stride": [1]
                     },
@@ -1911,10 +1913,8 @@ if __name__ == "__main__":
         nlb = None
         interconnect = None
         if bespoke is False:
-            # chip_width = 20
-            chip_width = 20
-            # chip_height = 32
-            chip_height = 16
+            chip_width = chip_w
+            chip_height = chip_h
             num_tracks = 5
 
             controllers = []
