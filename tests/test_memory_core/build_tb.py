@@ -2119,6 +2119,9 @@ if __name__ == "__main__":
             # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
             numpy.save(f"{full_test_glb_dir}/output_gold.npy", out_mat.get_matrix())
 
+            with open(f"{full_test_glb_dir}/output_name.txt", "w+") as outputname_h_:
+                outputname_h_.write(f"{output_name}\n")
+
         # Now coalesce them into combo files and put in final landing zone
         # First clear the out dir
         if not os.path.isdir(input_dir):
