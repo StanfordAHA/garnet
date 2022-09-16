@@ -153,6 +153,7 @@ def construct():
   custom_init    = Step( this_dir + '/custom-init'                            )
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                       )
   custom_power   = Step( this_dir + '/../common/custom-power-chip'            )
+  custom_cts     = Step( this_dir + '/custom-cts'                             )
   init_fc        = Step( this_dir + '/../common/init-fullchip'                )
   io_file        = Step( this_dir + '/io_file'                                )
   pre_route      = Step( this_dir + '/pre-route'                              )
@@ -290,6 +291,7 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   init.extend_inputs( init_fc.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  cts.extend_inputs( custom_cts.all_outputs() )
 
   synth.extend_inputs( soc_rtl.all_outputs() )
   synth.extend_inputs( read_design.all_outputs() )
@@ -325,6 +327,7 @@ def construct():
   g.add_step( custom_init       )
   g.add_step( power             )
   g.add_step( custom_power      )
+  g.add_step( custom_cts        )
   g.add_step( place             )
   g.add_step( cts               )
   g.add_step( postcts_hold      )
@@ -447,6 +450,7 @@ def construct():
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_lvs,   lvs      )
   g.connect_by_name( custom_power, power    )
+  g.connect_by_name( custom_cts,   cts      )
 
   # Connect both gen_sram_macro nodes to all downstream nodes that
   # need them
