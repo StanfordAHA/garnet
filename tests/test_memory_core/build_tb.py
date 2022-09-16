@@ -71,9 +71,12 @@ class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
                  input_dir=None, output_dir=None, local_mems=True,
                  mode_map=None, real_pe=False, harden_flush=False, combined=False,
-                 input_sizes=None, use_fa=False) -> None:
+                 input_sizes=None, use_fa=False,
+                 verbose=False) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
+
+        self.verbose = verbose
 
         self.nlb = nlb
         self.graph = graph
@@ -277,7 +280,8 @@ class SparseTBBuilder(m.Generator2):
                                         val = 1
                                     self.fabric.wire(actual_port[i], kratos.const(val, 1))
                         except AttributeError:
-                            print(f"Couldn't get bit slice, must be fully driven...{actual_port.name}")
+                            if self.verbose:
+                                print(f"Couldn't get bit slice, must be fully driven...{actual_port.name}")
 
     def add_clk_reset(self):
         '''
@@ -577,9 +581,6 @@ class SparseTBBuilder(m.Generator2):
         self._all_dones = []
 
         glb_nodes = [node for node in self.core_nodes.values() if type(node) == GLBNode]
-        if len(glb_nodes) < 3:
-            print('STOPPING')
-            exit()
         for node in glb_nodes:
             # Now we can realize and connect the glb nodes based on the placement
             glb_data = node.get_data()
@@ -1012,32 +1013,10 @@ class SparseTBBuilder(m.Generator2):
                     dst_core_node = self.core_nodes[dst_name]
 
                 addtl_conns = src_core_node.connect(dst_core_node, edge, kwargs)
-
             else:
-
                 addtl_conns = self.core_nodes[src_name].connect(self.core_nodes[dst_name], edge)
-            # Remap the pe connections
-            # if self.real_pe:
-            #     real_pe_tag = 'f'
-            #     real_pe_remap = {
-            #         'data_out': 'res',
-            #         'data_in_0': 'data0',
-            #         'data_in_1': 'data1'
-            #     }
-
-            #     for conn_block_name, sig_struct in addtl_conns.items():
-            #         for i, complex_sig in enumerate(sig_struct):
-            #             sig_list, width = complex_sig
-            #             for idx, sig_tuple in enumerate(sig_list):
-            #                 prim_name, prim_sig = sig_tuple
-            #                 if prim_name[0] == real_pe_tag:
-            #                     print("Remapping f...")
-            #                     sig_list[idx] = (prim_name, real_pe_remap[prim_sig])
-
             if addtl_conns is not None:
                 self.nlb.add_connections(addtl_conns, defer_placement=True)
-
-        # exit()
 
     def configure_cores(self):
         '''
@@ -1071,14 +1050,16 @@ class SparseTBBuilder(m.Generator2):
 
             else:
                 if node_attr['hwnode'] == 'HWNodeType.GLB':
-                    print("SAW GLB...skipping")
+                    if self.verbose:
+                        print("SAW GLB...skipping")
                     # self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
                     # continue
                 if isinstance(self.core_nodes[node.get_name()], tuple):
                     core_node, flavor = self.core_nodes[node.get_name()]
                 else:
                     core_node = self.core_nodes[node.get_name()]
-                print(f"Node name --- {core_node.get_name()}")
+                if self.verbose:
+                    print(f"Node name --- {core_node.get_name()}")
                 # Hack for now - identify core combiner nodes and pass them the kwargs
                 if "m" in core_node.get_name() or "p" in core_node.get_name():
                     runtime_modes = self.nlb.get_core_runtimes()
@@ -1092,9 +1073,6 @@ class SparseTBBuilder(m.Generator2):
                     if "glb" in node.get_name():
                         node_config_kwargs['sparse_mode'] = 1
                     self.nlb.configure_tile(core_node.get_name(), (1, node_config_kwargs))
-                # else:
-                    # print(node.get_name(), self.core_nodes[node.get_name()].get_name())
-                    # self.nlb.configure_tile(self.core_nodes[node.get_name()].get_name(), node_config_tuple)
 
     def display_names(self):
         if self.bespoke:
@@ -1862,6 +1840,7 @@ if __name__ == "__main__":
     parser.add_argument('--dump_bitstream', action="store_true")
     parser.add_argument('--no_harden_flush', action="store_true")
     parser.add_argument('--dump_glb', action="store_true")
+    parser.add_argument('--verbose', action="store_true")
     parser.add_argument('--glb_dir', type=str, default=None)
     parser.add_argument('--just_glb', action="store_true")
     parser.add_argument('--fiber_access', action="store_true")
@@ -1889,6 +1868,7 @@ if __name__ == "__main__":
     chip_w = args.width
     just_glb = args.just_glb
     use_fiber_access = args.fiber_access
+    verbose = args.verbose
 
     assert sam_graph is not None, f"No sam graph pointed to..."
 
@@ -2134,6 +2114,11 @@ if __name__ == "__main__":
 
             out_mat.dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir)
 
+            # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
+            #     numpy.save(goldout_, out_mat.get_matrix())
+            # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
+            numpy.save(f"{full_test_glb_dir}/output_gold.npy", out_mat.get_matrix())
+
         # Now coalesce them into combo files and put in final landing zone
         # First clear the out dir
         if not os.path.isdir(input_dir):
@@ -2170,7 +2155,8 @@ if __name__ == "__main__":
                               # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
                               output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
                               real_pe=real_pe, harden_flush=harden_flush, combined=combined,
-                              input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access)
+                              input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access,
+                              verbose=verbose)
 
         if dump_bitstream:
             nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
@@ -2185,11 +2171,8 @@ if __name__ == "__main__":
                 # remap the mode...
                 if mode_ != 'vals':
                     mode_ = mode_map[tensor_][int(mode_)][0]
-                # print(core)
                 core_placement = stb.get_core_placement(core)
-                # print(core_placement)
                 tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
-                # print(tensor_desc_str)
                 glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_))
 
             # prepare_glb_collateral(glb_dir=glb_dir,

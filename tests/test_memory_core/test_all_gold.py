@@ -41,7 +41,8 @@ def dispatch(garnet_top=None, graph="", seed=0):
          '--combined',
          '--pipeline_scanner',
          '--base_dir',
-         "./TESTING"],
+         "./TESTING",
+         "--dump_glb"],
         cwd=garnet_top
     )
 
