@@ -448,7 +448,7 @@ class Garnet(Generator):
                     # print("metadata...")
                     # print(metadata)
                     mode = "UB"
-                    if 'stencil_valid' in metadata:
+                    if 'stencil_valid' in metadata["config"]:
                         mode = 'stencil_valid'
                     elif 'mode' in metadata and metadata['mode'] == 'sram':
                         mode = 'ROM'

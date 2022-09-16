@@ -863,7 +863,7 @@ def create_netlist_info(
     for node, md in node_to_metadata.items():
         info["id_to_metadata"][nodes_to_ids[node]] = md
         if node in pond_reg_skipped:
-            info["id_to_metadata"][nodes_to_ids[node]]["regfile2out_0"][
+            info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"][
                 "cycle_starting_addr"
             ][0] += pond_reg_skipped[node]
 
