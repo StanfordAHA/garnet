@@ -1,3 +1,2 @@
-set timing_extract_model_write_min_max_clock_tree_path true
 do_extract_model design.lib -view analysis_default
 
