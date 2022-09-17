@@ -14,7 +14,8 @@ from gemstone.common.util import compress_config_data
 # from memory_core.scanner_core import ScannerCore
 from lake.top.extract_tile_info import *
 from archipelago import pnr
-# from cgra.util import create_cgra
+import time
+
 
 ONYX_PORT_REMAP = {
     'FIFO': {
@@ -463,7 +464,7 @@ class NetlistBuilder():
 
     def __init__(self, interconnect: Interconnect = None, cwd=None,
                  harden_flush=False,
-                 combined=False) -> None:
+                 combined=False, pnr_only=False) -> None:
         # self._registered_cores = {}
         self._netlist = {}
         self._bus = {}
@@ -494,6 +495,7 @@ class NetlistBuilder():
         self.core_to_tag = {}
         self.tag_to_port_remap = {}
         self.combined = combined
+        self.pnr_only = pnr_only
 
     def register_core(self, core, flushable=False, config=None, name=""):
         ''' Register the core/primitive with the
@@ -828,7 +830,11 @@ class NetlistBuilder():
             if used == 0:
                 print(f"Core {core} is not being used...any accesses to its handle will cause a crash...")
         self._config_finalized = True
-        self._circuit = self._interconnect.circuit()
+        if not self.pnr_only:
+            before_time = time.time()
+            self._circuit = self._interconnect.circuit()
+            after_time = time.time()
+            print(f"TIME:\tic_circuit\t{after_time - before_time}")
 
     def get_tester(self):
         assert self._interconnect is not None, "Need to define the interconnect first..."
@@ -838,7 +844,10 @@ class NetlistBuilder():
 
     def get_circuit(self):
         # self._circuit = self._interconnect.circuit()
-        return self._circuit
+        if self.pnr_only:
+            return None
+        else:
+            return self._circuit
 
     def get_config_data(self):
         return self._config_data

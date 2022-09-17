@@ -65,6 +65,7 @@ from lassen.sim import PE_fc
 from peak import family
 from lake.modules.scanner_pipe import ScannerPipe
 import tempfile
+import time
 
 
 class SparseTBBuilder(m.Generator2):
@@ -72,7 +73,7 @@ class SparseTBBuilder(m.Generator2):
                  input_dir=None, output_dir=None, local_mems=True,
                  mode_map=None, real_pe=False, harden_flush=False, combined=False,
                  input_sizes=None, use_fa=False,
-                 verbose=False) -> None:
+                 verbose=False, pnr_only=False) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -115,6 +116,7 @@ class SparseTBBuilder(m.Generator2):
         self.glb_to_io_mapping = {}
         self.glb_cores = {}
         self._ctr = 0
+        self.pnr_only = pnr_only
 
         if bespoke is False:
             self.io = m.IO(
@@ -148,6 +150,8 @@ class SparseTBBuilder(m.Generator2):
             # Now we have the configured CGRA...
             self.nlb.finalize_config()
 
+            if self.pnr_only:
+                return
             # Now attach global buffers based on placement...
             # Get circuit
             self.interconnect_circuit = self.nlb.get_circuit()
@@ -2066,6 +2070,8 @@ if __name__ == "__main__":
                                                         'fifo_depth': fifo_depth}),
                            (RegCore, {'fifo_depth': fifo_depth})]
 
+            time_0 = time.time()
+
             interconnect = create_cgra(width=chip_width, height=chip_height,
                                        io_sides=IOSide.North,
                                        num_tracks=num_tracks,
@@ -2077,6 +2083,9 @@ if __name__ == "__main__":
                                        add_pond=add_pond,
                                        scgra=False)
 
+            time_x = time.time()
+            print(f"TIME:\tcreate_cgra\t{time_x - time_0}")
+
             if just_verilog:
                 circuit = interconnect.circuit()
                 import magma
@@ -2084,7 +2093,11 @@ if __name__ == "__main__":
                 exit()
 
             nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir,
-                                 harden_flush=harden_flush, combined=combined)
+                                 harden_flush=harden_flush, combined=combined,
+                                 pnr_only=just_glb)
+
+            time_1 = time.time()
+            print(f"TIME:\tnlb\t{time_1 - time_x}")
 
         ##### Handling app level file stuff #####
         output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
@@ -2144,6 +2157,9 @@ if __name__ == "__main__":
             for filename in os.listdir(output_dir):
                 ret = os.remove(output_dir + "/" + filename)
 
+        time_2 = time.time()
+        print(f"TIME:\tglb\t{time_2 - time_1}")
+
         # Get SAM graph
         # sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
         sdg = SAMDotGraph(filename=args.sam_graph, local_mems=True, use_fork=use_fork, use_fa=use_fiber_access)
@@ -2152,6 +2168,9 @@ if __name__ == "__main__":
         # exit()
         graph = sdg.get_graph()
 
+        time_3 = time.time()
+        print(f"TIME:\tSAMGRAPH\t{time_3 - time_2}")
+
         # print(input_dims)
         ##### Create the actual testbench mapping based on the SAM graph #####
         stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
@@ -2159,7 +2178,10 @@ if __name__ == "__main__":
                               output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
                               real_pe=real_pe, harden_flush=harden_flush, combined=combined,
                               input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access,
-                              verbose=verbose)
+                              verbose=verbose, pnr_only=just_glb)
+
+        time_4 = time.time()
+        print(f"TIME:\tSTB\t{time_4 - time_3}")
 
         if dump_bitstream:
             nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
