@@ -2106,8 +2106,7 @@ if __name__ == "__main__":
         if dump_glb:
 
             # Want to dump specific tests...
-
-            test_name_base = sam_graph.split('/')[-1].rstrip('.gv')
+            test_name_base = sam_graph.split('/')[-1].split(".")[0]
             print(f"TEST BASE NAME: {test_name_base}")
 
             if combined:
