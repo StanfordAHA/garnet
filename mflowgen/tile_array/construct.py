@@ -62,6 +62,11 @@ def construct():
     'drc_env_setup'     : 'drcenv-block.sh'
   }
 
+  if parameters['PWR_AWARE'] == True:
+      parameters['lvs_adk_view'] = adk_view + '-pm'
+  else:
+      parameters['lvs_adk_view'] = adk_view
+
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
@@ -117,6 +122,10 @@ def construct():
       lvs            = Step( 'cadence-pegasus-lvs',            default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
   vcs_sim        = Step( 'synopsys-vcs-sim',                default=True )
+
+  # Separate ADK for LVS so it has PM cells when needed
+  lvs_adk = adk.clone()
+  lvs_adk.set_name( 'lvs_adk' )
 
   # Add cgra tile macro inputs to downstream nodes
 
@@ -242,6 +251,7 @@ def construct():
   g.add_step( gls_args       )
   g.add_step( testbench      )
   g.add_step( vcs_sim        )
+  g.add_step( lvs_adk        )
 
   if use_e2e:
     for app in e2e_apps:
@@ -267,7 +277,7 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      drc_pm         )
-  g.connect_by_name( adk,      lvs            )
+  g.connect_by_name( lvs_adk,  lvs            )
 
   if use_e2e:
     for app in e2e_apps:
@@ -420,6 +430,9 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
+
+  # LVS adk has separate view parameter
+  lvs_adk.update_params({ 'adk_view' : parameters['lvs_adk_view']})
 
   # Init needs pipeline params for floorplanning
   init.update_params({ 'pipeline_config_interval': parameters['pipeline_config_interval'] }, True)
