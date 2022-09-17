@@ -5,5 +5,5 @@ outputs:
   - xgcd_tt.db
   - xgcd.lef
   - xgcd.gds
-  - xgcd.spi
+  - xgcd.lvs.v
 
