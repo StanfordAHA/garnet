@@ -69,6 +69,7 @@ def construct():
   gen_sram     = Step( this_dir + '/../common/gen_sram_macro'               )
   custom_init  = Step( this_dir + '/custom-init'                            )
   custom_power = Step( this_dir + '/../common/custom-power-leaf'            )
+  custom_cts   = Step( this_dir + '/../common/custom-cts'                   )
   short_fix    = Step( this_dir + '/../common/custom-short-fix'             )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'                       )
   genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'       )
@@ -130,6 +131,7 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  cts.extend_inputs( custom_cts.all_outputs() )
 
   # Add header files to outputs
   rtl.extend_outputs( ['header'] )
@@ -156,6 +158,7 @@ def construct():
   g.add_step( power          )
   g.add_step( custom_power   )
   g.add_step( place          )
+  g.add_step( custom_cts   )
   g.add_step( cts            )
   g.add_step( postcts_hold   )
   g.add_step( route          )
@@ -237,6 +240,7 @@ def construct():
 
   g.connect_by_name( custom_init,  init       )
   g.connect_by_name( custom_power, power      )
+  g.connect_by_name( custom_cts,   cts        )
   g.connect_by_name( custom_lvs,   lvs        )
   g.connect_by_name( init,           power          )
   g.connect_by_name( power,          place          )
@@ -306,7 +310,7 @@ def construct():
   postroute_hold.update_params( { 'order': order } ) ; # Update
 
   # useful_skew
-  # cts.update_params( { 'useful_skew': False }, allow_new=True )
+  cts.update_params( { 'useful_skew': False }, allow_new=True )
   # cts.update_params( { 'useful_skew_ccopt_effort': 'extreme' }, allow_new=True )
 
   return g
