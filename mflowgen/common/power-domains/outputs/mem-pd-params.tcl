@@ -10,7 +10,7 @@
 # fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
 # Sparsity parm controls VDD stripe sparsity for M3 power stripes;
 # sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
-set vdd_m3_stripe_sparsity 2
+set vdd_m3_stripe_sparsity 1
 
 
 # Allow SDF registers?
@@ -68,11 +68,11 @@ set aon_width 160
 # Sets height of AON region as a multiple of the unit stdcell height.
 # This should always be an even number so that the
 # AON region can start an end on an even-numbered row.
-set aon_height 24
+set aon_height 26
 
 # Sets AON box horizontal offset from center in # of unit stdcell widths.
 # Negative offset puts AON left of center, which seems to work slightly better for TSMC build.
-set aon_horiz_offset 0
+set aon_horiz_offset 6
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 15
