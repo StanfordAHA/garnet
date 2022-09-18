@@ -25,7 +25,7 @@ set core_margin_l [expr 5 * $horiz_pitch]
 set sram_margin_t [expr 20 * $vert_pitch]
 set sram_margin_b [expr 80 * $vert_pitch]
 set sram_margin_r [expr 150 * $horiz_pitch] 
-set sram_margin_l [expr 150 * $horiz_pitch]
+set sram_margin_l [expr 175 * $horiz_pitch]
 
 # Get the SRAMs and use both them and floorplan vars to determine 
 # necessary tile size
