@@ -57,11 +57,11 @@ def construct():
     'topographical'     : True,
     'read_hdl_defines'  : read_hdl_defines,
     # RTL Generation
-    'interconnect_only' : True,
+    'interconnect_only' : False,
     'rtl_docker_image'  : 'default', # Current default is 'stanfordaha/garnet:latest'
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
-    'core_density_target': 0.63,
+    'core_density_target': 0.58,
     # Power analysis
     "use_sdf"           : False, # uses sdf but not the way it is in xrun node
     'app_to_run'        : 'tests/conv_3_3',
