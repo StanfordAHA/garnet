@@ -118,8 +118,8 @@ set top [lsort -command port_compare $top]
 set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
 
-# clk pin
-editPin -pin "clk" -side TOP -spreadType CENTER -layer M5
+# clk pin in middle of top side on higher layer than other pins
+editPin -pin "clk" -side TOP -spreadType CENTER -layer 9
 
 # control pins assignment 
 editPin -pin $top -side TOP -spreadType RANGE -start [list 10 $height] -end [list [expr {$width - 10}] $height] -layer M5
