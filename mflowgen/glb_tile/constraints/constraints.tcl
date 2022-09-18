@@ -122,8 +122,8 @@ set_output_delay -clock ${clock_name} 0.8 [get_ports strm_data_*f2g* -filter "di
 set_output_delay -clock ${clock_name} 0.8 [get_ports data_flush* -filter "direction==out"]
 
 # set_min_delay for all tile-connected inputs
-set_min_delay -from [get_ports *_est* -filter "direction==in"] 0.3
-set_min_delay -from [get_ports *_wst* -filter "direction==in"] 0.3
+set_min_delay -from [get_ports *_est* -filter "direction==in"] 0.4
+set_min_delay -from [get_ports *_wst* -filter "direction==in"] 0.4
 set_max_delay -to [get_ports *_est* -filter "direction==out"] 1.0
 set_max_delay -to [get_ports *_wst* -filter "direction==out"] 1.0
 
