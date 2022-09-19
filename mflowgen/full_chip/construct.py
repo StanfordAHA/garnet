@@ -477,24 +477,23 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        lvs            )
+  # Merge guardring gds into design
+  g.connect(signoff.o('design-merged.gds'), merge_gdr.i('design.gds'))
 
   # Send gds with sealring to drc, fill, and lvs
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
+  g.connect_by_name( merge_gdr, lvs )
   # Run pre-fill DRC after signoff
-  g.connect(signoff.o('design-merged.gds'), prefill_drc.i('design_merged.gds'))
+  g.connect_by_name( merge_gdr, prefill_drc )
 
-  # Run Fill on merged GDS without guardring
-  g.connect( signoff.o('design-merged.gds'), fill.i('design.gds') )
+  # Run Fill on merged GDS
+  g.connect( merge_gdr.o('design_merged.gds'), fill.i('design.gds') )
 
   # For GF, Fill is already merged during fill step
   if adk_name == 'gf12-adk':
       # Connect fill directly to DRC steps
-      # Merge guardring gds into design after fill
-      g.connect( fill.o('fill.gds'), merge_gdr.i('design.gds') )
-      # Send filled gds with guardring to drc nodes
-      g.connect_by_name( merge_gdr, drc )
-      g.connect_by_name( merge_gdr, drc_pm )
-      g.connect_by_name( merge_gdr, antenna_drc )
+      g.connect( fill.o('fill.gds'), drc.i('design_merged.gds') )
+      g.connect( fill.o('fill.gds'), drc_pm.i('design_merged.gds') )
+      g.connect( fill.o('fill.gds'), antenna_drc.i('design_merged.gds') )
   else:
       # Merge fill
       g.connect( signoff.o('design-merged.gds'), merge_fill.i('design.gds') )
