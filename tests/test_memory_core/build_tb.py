@@ -1,4 +1,5 @@
 import argparse
+import pickle
 import json
 import sys
 from gemstone.common.testers import BasicTester
@@ -2195,6 +2196,9 @@ if __name__ == "__main__":
                 # remap the mode...
                 if mode_ != 'vals':
                     mode_ = mode_map[tensor_][int(mode_)][0]
+                    # We don't need to emit anything for a dense block
+                    if mode_map[tensor_][int(mode_)][1] == 'd':
+                        continue
                 core_placement = stb.get_core_placement(core)
                 tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
                 glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_))
