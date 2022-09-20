@@ -130,6 +130,13 @@ class CoreCombinerCore(LakeCoreBase):
             instr = config_tuple
             # Check if mem or PE
             if self.pnr_tag == 'm':
+                if 'config' in instr:
+                    instr_new = instr['config']
+                    for k,v in instr.items():
+                        if k != "config":
+                            instr_new[k] = v
+                    instr = instr_new
+
                 if 'mode' in instr and instr['mode'] == 'lake':
                     instr['mode'] = 'UB'
                     if 'stencil_valid' in instr:
@@ -144,13 +151,13 @@ class CoreCombinerCore(LakeCoreBase):
                 else:
                     # Default to UB mode since we get varying consistency in controller indication
                     instr['mode'] = 'UB'
-
+            
                 config_pre = self.dut.get_bitstream(instr)
                 # Add the runtime configuration to the final config
                 for name, v in config_pre:
                     configs = [self.get_config_data(name, v)] + configs
                 # Add in preloaded memory
-                if "init" in instr:
+                if "init" in instr and instr['init'] is not None:
                     # this is SRAM content
                     content = instr['init']
                     for addr, data in enumerate(content):
