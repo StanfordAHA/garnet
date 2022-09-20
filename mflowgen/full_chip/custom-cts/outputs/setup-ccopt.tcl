@@ -96,4 +96,5 @@ if { $::env(useful_skew) } {
 }
 
 # Prevent -200 insertion delay on glb clk
-set_ccopt_property insertion_delay -pin [get_object_name [get_pin -hier global_buffer/clk]] auto
+set_ccopt_property insertion_delay -pin [get_object_name [get_pin -hier global_buffer/clk]] 800ps
+set_ccopt_property insertion_delay -pin [get_object_name [get_pin -hier Interconnect_inst0/clk]] 500ps
