@@ -1,7 +1,7 @@
 from kratos import Generator, always_latch
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
-# CG for clock-gate, I guess
+
 class CG(Generator):
     # TSMC cell 'CKLNQD1BWP16P90' has ports CP, Q
     # GF cell 'SC7P5T_CKGPRELATNX1_SSC14R' has ports CLK, Z
