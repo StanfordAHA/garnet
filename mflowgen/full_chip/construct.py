@@ -236,13 +236,11 @@ def construct():
 
   synth.extend_inputs( ['tile_array_tt.lib', 'tile_array.lef'] )
   synth.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
-  synth.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
   synth.extend_inputs( ['sram_2_tt.lib', 'sram_2.lef'] )
   synth.extend_inputs( ['xgcd_tt.lib', 'xgcd.lef'] )
   pt_signoff.extend_inputs( ['tile_array_tt.db'] )
   pt_signoff.extend_inputs( ['glb_top_tt.db'] )
-  pt_signoff.extend_inputs( ['global_controller_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
   pt_signoff.extend_inputs( ['sram_2_tt.db'] )
   pt_signoff.extend_inputs( ['xgcd_tt.db'] )
@@ -259,7 +257,6 @@ def construct():
   for step in hier_steps:
     step.extend_inputs( ['tile_array_tt.lib', 'tile_array.lef'] )
     step.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
-    step.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
     step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
     step.extend_inputs( ['sram_2_tt.lib', 'sram_2.lef'] )
     step.extend_inputs( ['xgcd_tt.lib', 'xgcd.lef'] )
@@ -269,7 +266,6 @@ def construct():
   for node in gdsmerge_nodes:
       node.extend_inputs( ['tile_array.gds'] )
       node.extend_inputs( ['glb_top.gds'] )
-      node.extend_inputs( ['global_controller.gds'] )
       node.extend_inputs( ['sram.gds'] )
       node.extend_inputs( ['sram_2.gds'] )
       node.extend_inputs( ['xgcd.gds'] )
@@ -280,7 +276,6 @@ def construct():
   lvs.extend_inputs( ['tile_array.sram.spi'] )
   lvs.extend_inputs( ['glb_top.lvs.v'] )
   lvs.extend_inputs( ['glb_top.sram.spi'] )
-  lvs.extend_inputs( ['global_controller.lvs.v'] )
   lvs.extend_inputs( ['sram.spi'] )
   lvs.extend_inputs( ['sram_2.spi'] )
   lvs.extend_inputs( ['xgcd.spi'] )
@@ -401,7 +396,7 @@ def construct():
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
   if parameters['soc_only'] == False:
-      blocks = [tile_array, glb_top, global_controller, dragonphy, xgcd]
+      blocks = [tile_array, glb_top, dragonphy, xgcd]
       for block in blocks:
           g.connect_by_name( block, synth          )
           g.connect_by_name( block, iflow          )
