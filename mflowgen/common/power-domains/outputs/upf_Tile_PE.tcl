@@ -12,7 +12,7 @@ create_power_domain TOP -include_scope
 #    DECODE_FEATURE_8 => DECODE_FEATURE_12 => DECODE_FEATURE_13
 # For further info see steveri notes ~/0notes/vto/pwr-aware-gls.txt
 
-create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_14 coreir_eq_16_inst0 and_inst1 FEATURE_AND_14 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
+create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_15 coreir_eq_16_inst0 and_inst1 FEATURE_AND_15 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
 
 ### Toplevel Connections ######
 ## VDD 

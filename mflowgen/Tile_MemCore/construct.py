@@ -123,7 +123,7 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  genlibdb       = Step( 'cadence-innovus-genlib',         default=True )
+  genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -141,7 +141,7 @@ def construct():
 
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
-  genlibdb.extend_inputs( ['sram_tt.lib'] )
+  genlibdb.extend_inputs( ['sram_tt.lib', 'sram_tt.db'] )
 
   # These steps need timing and lef info for srams
 
@@ -432,6 +432,12 @@ def construct():
   extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
   order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
   genlibdb.update_params( { 'order': order } )
+      
+  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # very long and is not necessary
+  order = genlibdb.get_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  genlibdb.update_params( { 'order': order } )
 
 
   # Pwr aware steps:
@@ -506,7 +512,6 @@ def construct():
 
       order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
       signoff.update_params( { 'order': order } )
-
 
   return g
 

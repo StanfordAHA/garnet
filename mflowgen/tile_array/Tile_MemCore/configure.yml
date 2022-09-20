@@ -19,7 +19,7 @@ outputs:
   - Tile_MemCore.spef.gz
   - sram.spi
   - sram.v
-  - sram-pwr.v
+  - sram_pwr.v
   - sram_tt.db
 
 postconditions:
@@ -35,6 +35,6 @@ postconditions:
   - assert File( 'outputs/Tile_MemCore.sdf' ) # must exist
   - assert File( 'outputs/sram.spi' ) # must exist
   - assert File( 'outputs/sram.v' ) # must exist
-  - assert File( 'outputs/sram-pwr.v' ) # must exist
+  - assert File( 'outputs/sram_pwr.v' ) # must exist
   - assert File( 'outputs/sram_tt.db' ) # must exist
 
