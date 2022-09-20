@@ -187,7 +187,6 @@ class CreateMetaData(Visitor):
         if hasattr(node, "_metadata_"):
             self.node_to_md[node.iname] = node._metadata_
 
-
 class CreateIDs(Visitor):
     def __init__(self, inst_info):
         self.inst_info = inst_info

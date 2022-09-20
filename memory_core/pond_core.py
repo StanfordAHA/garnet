@@ -176,7 +176,7 @@ class PondCore(LakeCoreBase):
         conf_names = []
         for conf_name in conf_names:
             configs += [self.get_config_data(conf_name, 1)]
-        print(configs)
+        print("Pond config:", configs)
         return configs
 
     def get_port_remap(self):
