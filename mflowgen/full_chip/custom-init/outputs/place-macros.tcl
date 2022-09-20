@@ -129,33 +129,6 @@ if { ! $::env(soc_only) } {
     -layer $ADK_POWER_MESH_TOP_LAYER \
     -pgnetonly \
     -box $glb_x_loc [expr $glb_y_loc + (2*$vert_pitch)] $glb_urx [expr $glb_ury - (2*$vert_pitch)]
-  
-  # Place global controller
-  set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
-  set glc_name [get_property $glc hierarchical_name]
-  set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
-  set glc_height [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_y]
-  set glc_y_loc [snap_to_grid [expr $glb_ury + ($vert_pitch * $glb2glc_y_dist)] $pmesh_bot_pitch]
-  set glc_x_loc [snap_to_grid [expr $glb_x_loc + 100] $pmesh_top_pitch]
-  
-  placeinstance $glc_name $glc_x_loc $glc_y_loc -fixed
-  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glc_name -snapToSite
-  
-  # Prevent power vias from blocking pins on GLC (pins on right and left edges)
-  set glc_ury [expr $glc_y_loc + $glc_height]
-  set glc_urx [expr $glc_x_loc + $glc_width]
-  set thickness [expr 10 * $vert_pitch]  
-  createRouteBlk \
-    -name glc_left_pg_via_blk \
-    -cutLayer {4 5 6 7 8 9 10 11 12} \
-    -pgnetonly \
-    -box [expr $glc_x_loc - $thickness] $glc_y_loc $glc_x_loc $glc_ury
-  
-  createRouteBlk \
-    -name glc_right_pg_via_blk \
-    -cutLayer {4 5 6 7 8 9 10 11 12} \
-    -pgnetonly \
-    -box $glc_x_loc $glc_y_loc [expr $glc_urx + $thickness] $glc_ury
 }
 # Place SRAMS
 set srams [get_cells -hier -filter {is_memory_cell==true}]
