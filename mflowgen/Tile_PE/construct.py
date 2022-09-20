@@ -57,11 +57,11 @@ def construct():
     'topographical'     : True,
     'read_hdl_defines'  : read_hdl_defines,
     # RTL Generation
-    'interconnect_only' : True,
+    'interconnect_only' : False,
     'rtl_docker_image'  : 'default', # Current default is 'stanfordaha/garnet:latest'
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
-    'core_density_target': 0.63,
+    'core_density_target': 0.58,
     # Power analysis
     "use_sdf"           : False, # uses sdf but not the way it is in xrun node
     'app_to_run'        : 'tests/conv_3_3',
@@ -131,7 +131,7 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb     = Step( 'cadence-innovus-genlib',        default=True )
+  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -402,6 +402,12 @@ def construct():
   extract_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
   order.insert( extract_idx, 'genlibdb-constraints.tcl' ) # add here
   genlibdb.update_params( { 'order': order } )
+      
+  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # very long and is not necessary
+  order = genlibdb.get_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  genlibdb.update_params( { 'order': order } )
 
   # Pwr aware steps:
   if pwr_aware:
@@ -474,7 +480,7 @@ def construct():
       order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
       order.append('check-clamp-logic-structure.tcl')
       signoff.update_params( { 'order': order } )
-
+      
   return g
 
 if __name__ == '__main__':

@@ -10,7 +10,7 @@
 # fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
 # Sparsity parm controls VDD stripe sparsity for M3 power stripes;
 # sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
-set vdd_m3_stripe_sparsity 3
+set vdd_m3_stripe_sparsity 1
 
 
 # Allow SDF registers?
@@ -18,7 +18,7 @@ set vdd_m3_stripe_sparsity 3
 # If sparsity > 1, should be able to use SDF registers; otherwise this
 # should be false because the M3 stripe density makes SDF routing too
 # difficult (there is a garnet issue about this).
-set adk_allow_sdf_regs true
+set adk_allow_sdf_regs false
 
 
 # Boundary AON TAP params

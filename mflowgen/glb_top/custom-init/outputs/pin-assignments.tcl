@@ -123,8 +123,8 @@ set left_offset 20
 editPin -pin $first_tile -start 5 $height -end $first_tile_pin_range $height -side TOP -spreadType RANGE -spreadDirection clockwise -layer M5
 
 # clk pin and reset pin
-editPin -pin "clk" -side TOP -assign [expr $first_tile_pin_range + $first_tile_pin_offset]  $height -layer M5
-editPin -pin "reset" -side TOP -assign [expr $first_tile_pin_range + 2 * $first_tile_pin_offset] $height -layer M5
+editPin -pin "clk" -side TOP -assign [expr $first_tile_pin_range + $first_tile_pin_offset]  $height -layer 9
+editPin -pin "reset" -side TOP -assign [expr $first_tile_pin_range + 2 * $first_tile_pin_offset] $height -layer 9
 
 # reset first_tile_pin_range to include clk and reset
 set first_tile_pin_range [expr $first_tile_pin_range + 2 * $first_tile_pin_offset + 5]
