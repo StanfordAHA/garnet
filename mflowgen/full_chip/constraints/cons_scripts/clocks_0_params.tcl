@@ -14,6 +14,9 @@
 
 set cgra_master_clk_period          ${clock_period}
 set soc_master_clk_period           1.0
+set trace_clkin_period              20.0
+set xgcd_ext_clk_period             2.0
+set xgcd_design_clk_period          0.125
 
 # ------------------------------------------------------------------------------
 # Clock Division Factors

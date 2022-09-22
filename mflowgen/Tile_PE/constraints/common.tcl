@@ -83,7 +83,7 @@ remove_driving_cell $pt_read_data_inputs
 #
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs
-set i_delay [expr 0.2 * ${clock_period}]
+set i_delay [expr 0.3 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 # Fix config input delay to specific value
@@ -161,7 +161,8 @@ set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -fi
 if $::env(PWR_AWARE) {
     source inputs/dc-dont-use-constraints.tcl
     # source inputs/pe-constraints-2.tcl
-    set_dont_touch [get_cells -hierarchical *u_mux_logic*]
+    set_dont_touch [get_cells -hierarchical CB*/u_mux_logic]
+    set_dont_touch [get_cells -hierarchical SB*/MUX*/u_mux_logic]
     # Prevent buffers in paths from SB input ports
     set_dont_touch_network [get_ports *SB* -filter "direction==in"] -no_propagate
 } 
