@@ -495,7 +495,7 @@ class Garnet(Generator):
 
         self.pack_ponds(netlist_info)
         
-        print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
+        print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
