@@ -93,7 +93,7 @@ def construct():
     'skip_verify_connectivity' : True,
     # Hold fixing
     'signoff_engine' : True,
-    'hold_target_slack'  : 0.060,
+    'hold_target_slack'  : 0.100,
     # LVS
     # - need lvs2 because dragonphy uses LVT cells
     'lvs_extra_spice_include' : 'inputs/adk_lvs2/*.cdl',
