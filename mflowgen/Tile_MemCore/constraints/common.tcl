@@ -85,7 +85,7 @@ set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_read_data_inputs
 # Constrain OUTPUTS
 # set_output_delay constraints for output ports
 # 100ps for margin?
-set o_delay [expr 0.0 * ${clock_period}]
+set o_delay [expr 0.1 * ${clock_period}]
 set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
 # Set timing on pass through clock
@@ -147,7 +147,8 @@ set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -fi
 if $::env(PWR_AWARE) {
     source inputs/dc-dont-use-constraints.tcl
     # source inputs/mem-constraints-2.tcl
-    set_dont_touch [get_cells -hierarchical *u_mux_logic*]
+    set_dont_touch [get_cells -hierarchical CB*/u_mux_logic]
+    set_dont_touch [get_cells -hierarchical SB*/MUX*/u_mux_logic]
     # Prevent buffers in paths from SB input ports
     set_dont_touch_network [get_ports *SB* -filter "direction==in"] -no_propagate
 }

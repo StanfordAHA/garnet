@@ -25,7 +25,7 @@ foreach_in_collection sb_port [get_ports *SB*] {
   foreach_in_collection cell  [all_fanout -from $sb_port -levels 1 -only_cells ] {
     set attr [get_attribute [get_cells $cell] ref_name]
     set name [get_attribute [get_cells $cell] hierarchical_name]
-    if {[regexp  {AO22[XD]} $attr]} {
+    if {[regexp  {(AO22|AN2)[XD]} $attr]} {
       set ao_cell_cnt [expr $ao_cell_cnt + 1]
     } elseif {[regexp  {ANTENNA} $attr] } { 
       set diode_cell_cnt [expr $diode_cell_cnt + 1]
