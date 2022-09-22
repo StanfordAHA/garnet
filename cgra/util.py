@@ -172,7 +172,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                        defer_fifos=True,
                                        add_flush=False,
                                        use_pipelined_scanner=pipeline_scanner,
-                                       fifo_depth=fifo_depth)
+                                       fifo_depth=fifo_depth,
+                                       buffet_optimize_wide=True)
             buffet = BuffetLike(data_width=16,
                                 mem_depth=512, local_memory=False,
                                 tech_map=GF_Tech_Map(depth=512, width=32),
