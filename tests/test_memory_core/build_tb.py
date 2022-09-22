@@ -1947,7 +1947,8 @@ if __name__ == "__main__":
                                        defer_fifos=True,
                                        use_pipelined_scanner=pipeline_scanner,
                                        add_flush=False,
-                                       fifo_depth=fifo_depth)
+                                       fifo_depth=fifo_depth,
+                                       buffet_optimize_wide=True)
             buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
                                 tech_map=GF_Tech_Map(depth=512, width=32),
                                 defer_fifos=True,
@@ -2279,11 +2280,8 @@ if __name__ == "__main__":
         #     tester.step(2)
         tester.poke(stb.io.flush, 0)
         tester.eval()
-        # for i in range(100000):
-        # for i in range(10000):
-        # for i in range(2000):
-        # for i in range(10000):
         for i in range(50000):
+        # for i in range(10000):
             tester.step(2)
             tester_if = tester._if(tester.circuit.done)
             tester_if.print("Test is done...\n")
