@@ -392,8 +392,12 @@ class FlattenIO(Visitor):
         self.node_map[node] = new_node
 
 
-def print_netlist_info(info, filename):
+def print_netlist_info(info, pes_with_packed_ponds, filename):
     outfile = open(filename, "w")
+    print("pes with packed ponds", file=outfile)
+    for k, v in pes_with_packed_ponds.items():
+        print(f"  {k}  {v}", file=outfile)
+
     print("id to instance name", file=outfile)
     for k, v in info["id_to_name"].items():
         print(f"  {k}  {v}", file=outfile)
