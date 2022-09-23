@@ -115,6 +115,11 @@ def construct():
     # Testbench
     'cgra_apps' : ["tests/conv_1_2", "tests/conv_2_1"]
   }
+  
+  if parameters['PWR_AWARE'] == True:
+      parameters['lvs_adk_view'] = adk_view + '-pm'
+  else:
+      parameters['lvs_adk_view'] = adk_view
 
   sram_2_params = {
     # SRAM macros
@@ -131,7 +136,7 @@ def construct():
     'coord_x'   : '-49.98u',
     'coord_y'   : '-49.92u'
   }
-
+  
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
@@ -231,6 +236,10 @@ def construct():
   # Pre-Fill DRC Check
   prefill_drc = drc.clone()
   prefill_drc.set_name( 'pre-fill-drc' )
+  
+  # Separate ADK for LVS so it has PM cells when needed
+  lvs_adk = adk.clone()
+  lvs_adk.set_name( 'lvs_adk' )
 
   # Add cgra tile macro inputs to downstream nodes
 
@@ -344,6 +353,9 @@ def construct():
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
   g.add_step( debugcalibre      )
+  
+  # Different adk view for lvs
+  g.add_step( lvs_adk        )
 
   # Post-Power DRC check
   g.add_step( power_drc         )
@@ -380,7 +392,8 @@ def construct():
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      antenna_drc    )
-  g.connect_by_name( adk,      lvs            )
+  # Use lvs_adk so lvs has access to cells used in lower-level blocks
+  g.connect_by_name( lvs_adk,  lvs            )
 
   # Post-Power DRC check
   g.connect_by_name( adk,      power_drc )
@@ -527,6 +540,9 @@ def construct():
   # Provide different parameter set to second sram node, so it can actually 
   # generate a different sram
   gen_sram_2.update_params( sram_2_params )
+  
+  # LVS adk has separate view parameter
+  lvs_adk.update_params({ 'adk_view' : parameters['lvs_adk_view']})
 
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
