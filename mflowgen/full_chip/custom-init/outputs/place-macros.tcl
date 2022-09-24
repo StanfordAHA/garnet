@@ -112,7 +112,7 @@ if { ! $::env(soc_only) } {
   # Prevent vias to PMESH_BOT_LAYER stripes over GLB
   createRouteBlk \
     -name glb_pmesh_bot_via \
-    -layer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
+    -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
     -pgnetonly \
     -box $glb_x_loc $glb_y_loc $glb_urx $glb_ury
   
@@ -247,7 +247,7 @@ createRouteBlk \
 # Prevent vias to PMESH_BOT_LAYER stripes over XGCD
 createRouteBlk \
   -name xgcd_pmesh_bot_via \
-  -layer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
+  -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
   -pgnetonly \
   -box $xgcd_x_loc $xgcd_y_loc $xgcd_urx $xgcd_ury
 
