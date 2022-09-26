@@ -10,7 +10,7 @@
 # fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
 # Sparsity parm controls VDD stripe sparsity for M3 power stripes;
 # sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
-set vdd_m3_stripe_sparsity 1
+set vdd_m3_stripe_sparsity 3
 
 
 # Allow SDF registers?
@@ -52,7 +52,7 @@ if { $stripes_per_tap != $corrected_stripes_per_tap } {
 #
 # If set to 12 in Amber (TSMC) design, get five columns of switches.
 # If set to 18, get 3 cols symmetrically placed, center col at center chip.
-set stripes_per_switch 18
+set stripes_per_switch 30
 
 # Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
 set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
@@ -70,7 +70,7 @@ set aon_width 160
 set aon_height 24
 
 # Sets AON box horizontal offset from center in # of unit stdcell widths.
-set aon_horiz_offset 0
+set aon_horiz_offset 2
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 30
