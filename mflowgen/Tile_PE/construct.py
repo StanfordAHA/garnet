@@ -61,7 +61,7 @@ def construct():
     'rtl_docker_image'  : 'default', # Current default is 'stanfordaha/garnet:latest'
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
-    'core_density_target': 0.58,
+    'core_density_target': 0.6,
     # Power analysis
     "use_sdf"           : False, # uses sdf but not the way it is in xrun node
     'app_to_run'        : 'tests/conv_3_3',
