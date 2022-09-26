@@ -47,7 +47,7 @@ if { ! $::env(soc_only) } {
   set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)/2.] $pmesh_top_pitch]
     
   placeinstance $interconnect_name $ic_x_loc $ic_y_loc -fixed
-  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $interconnect_name -snapToSite
+  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 15] $vert_pitch $interconnect_name -snapToSite
 
   # Prevent power vias from blocking pins on interconnect (all pins on top edge)
   set ic_ury [expr $ic_y_loc + $ic_height]
@@ -91,7 +91,7 @@ if { ! $::env(soc_only) } {
   
   # Place GLB
   placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
-  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
+  addHaloToBlock [expr $horiz_pitch * 15] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
   
   # Prevent power vias from blocking pins on GLB (pins on bottom and left edges)
   set glb_ury [expr $glb_y_loc + $glb_height]
@@ -187,7 +187,7 @@ foreach_in_collection sram $srams {
   set urx [dbGet [dbGet -p top.insts.name $sram_name].box_urx]
   set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
   set tb_margin $vert_pitch
-  set lr_margin [expr $horiz_pitch * 3]
+  set lr_margin [expr $horiz_pitch * 20]
   if {$urx > $max_urx} {
     set max_urx $urx
   }
@@ -224,7 +224,7 @@ set xgcd_y_loc [snap_to_grid 3600 $pmesh_bot_pitch]
 set xgcd_x_loc [snap_to_grid 2600 $pmesh_top_pitch]
 
 placeinstance $xgcd_name $xgcd_x_loc $xgcd_y_loc -fixed
-addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $xgcd_name -snapToSite
+addHaloToBlock [expr $horiz_pitch * 23] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $xgcd_name -snapToSite
 
 # Prevent power vias from blocking pins on XGCD (pins on TOP and left edges)
 set xgcd_ury [expr $xgcd_y_loc + $xgcd_height]
