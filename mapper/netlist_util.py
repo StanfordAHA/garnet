@@ -696,6 +696,7 @@ class PackRegsIntoPonds(Visitor):
 
     def doit(self, dag: Dag):
         self.skip_reg_nodes = []
+        self.swap_pond_ports = set()
         self.pe_to_pond_conns = {}
         self.pond_reg_skipped = {}
         self.node_map = {}
@@ -720,25 +721,28 @@ class PackRegsIntoPonds(Visitor):
                 sinks=real_sinks,
             ),
             self.pond_reg_skipped,
+            self.swap_pond_ports
         )
 
-    def find_pe(self, node, num_regs):
+    def find_pe(self, node, num_regs, reg_skip_list):
         if node.node_name == "global.PE":
-            return node, num_regs
+            return node, num_regs, reg_skip_list
 
         assert node in self.sinks
         assert len(self.sinks[node]) == 1
         new_node = self.sinks[node][0]
         if new_node.node_name == "Register":
-            self.skip_reg_nodes.append(new_node)
+            reg_skip_list.append(new_node)
             if not isinstance(node, Sink):
                 num_regs += 1
-        return self.find_pe(new_node, num_regs)
+        return self.find_pe(new_node, num_regs, reg_skip_list)
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if node in self.skip_reg_nodes:
             return
+
+        n_node = node
 
         if (
             node.node_name == "Select"
@@ -746,30 +750,35 @@ class PackRegsIntoPonds(Visitor):
             and not isinstance(node.child, Sink)
             and node.field == "data_out_pond_0"
         ):
-            pe_node, num_regs = self.find_pe(node, 0)
-            assert pe_node not in self.pe_to_pond_conns, "Multiple ponds are connecting to one PE using the data_out_pond_0 port"
-            self.pe_to_pond_conns[pe_node] = node
-            self.pond_reg_skipped[node.child.iname] = num_regs
+            pe_node, num_regs, reg_skip_list = self.find_pe(node, 0, [])
+            if pe_node not in self.pe_to_pond_conns:
+                self.pe_to_pond_conns[pe_node] = node
+                self.pond_reg_skipped[node.child.iname] = num_regs
+                self.skip_reg_nodes += reg_skip_list
+            else:
+                # Multiple ponds are connecting to one PE using the data_out_pond_0 port
+                n_node = node.child.select("data_out_pond_1")
+                self.swap_pond_ports.add(n_node.child.iname)
 
-        if node in self.pe_to_pond_conns:
+        if n_node in self.pe_to_pond_conns:
             new_children = []
-            for child in node.children():
+            for child in n_node.children():
                 if child in self.node_map:
                     new_children.append(self.node_map[child])
                 else:
-                    new_children.append(self.pe_to_pond_conns[node])
-            new_node = node.copy()
-            if node not in self.node_map:
+                    new_children.append(self.pe_to_pond_conns[n_node])
+            new_node = n_node.copy()
+            if n_node not in self.node_map:
                 new_node.set_children(*new_children)
-                self.node_map[node] = new_node
+                self.node_map[n_node] = new_node
         else:
-            new_children = [self.node_map[child] for child in node.children()]
-            new_node = node.copy()
+            new_children = [self.node_map[child] for child in n_node.children()]
+            new_node = n_node.copy()
             new_node.set_children(*new_children)
             self.node_map[node] = new_node
-            if node.node_name == "Output":
+            if n_node.node_name == "Output":
                 self.outputs.append(new_node)
-            if node.node_name == "Input":
+            if n_node.node_name == "Input":
                 self.inputs.append(new_node)
 
 
@@ -838,7 +847,7 @@ def create_netlist_info(
     ).doit(dag)
 
     sinks = PipelineBroadcastHelper().doit(fdag)
-    pdag, pond_reg_skipped = PackRegsIntoPonds(sinks).doit(fdag)
+    pdag, pond_reg_skipped, swap_pond_ports = PackRegsIntoPonds(sinks).doit(fdag)
 
     def tile_to_char(t):
         if t.split(".")[1] == "PE":
@@ -869,6 +878,12 @@ def create_netlist_info(
             info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"][
                 "cycle_starting_addr"
             ][0] += pond_reg_skipped[node]
+        elif node in swap_pond_ports:
+            assert "regfile2out_1" not in info["id_to_metadata"][nodes_to_ids[node]]["config"]
+            new_config = {}
+            new_config["in2regfile_0"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["in2regfile_0"]
+            new_config["regfile2out_1"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"]
+            info["id_to_metadata"][nodes_to_ids[node]]["config"] = new_config
 
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
     info["id_to_instrs"] = {
