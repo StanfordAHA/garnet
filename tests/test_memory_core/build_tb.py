@@ -1180,7 +1180,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
 
     for idx_, output_glb_tile in enumerate(output_glb_tiles):
         (core, core_placement, tensor_desc_str, direction, num_blocks) = output_glb_tile
-        assert os.path.exists(f"{glb_dir}/{tensor_desc_str}")
+        assert os.path.exists(f"{glb_dir}/{tensor_desc_str}"), f"{glb_dir}/{tensor_desc_str}"
         # ret = os.remove(matrices_in + "/" + filename)
         os.system(f"xxd -r -p {glb_dir}/{tensor_desc_str} > {glb_dir}/bin/{tensor_desc_str}.raw")
         with open(f"{glb_dir}/{tensor_desc_str}") as tmp_fp:
