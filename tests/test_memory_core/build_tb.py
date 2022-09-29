@@ -1956,10 +1956,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     return output_matrix, output_format, output_name, input_dims
 
 
-def create_or_clean(dir_path):
+def create_or_clean(dir_path, clean_dir=True):
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
-    else:
+    elif clean_dir:
         # Otherwise clean it
         for filename in os.listdir(dir_path):
             full_del_path = dir_path + "/" + filename
@@ -1969,12 +1969,13 @@ def create_or_clean(dir_path):
                 ret = shutil.rmtree(full_del_path)
 
 
-def prep_test_dir(base_dir, dir_arg, sub_dir):
+def prep_test_dir(base_dir, dir_arg, sub_dir, clean_dir=False):
     if dir_arg is None:
         ret_dir = f"{base_dir}/{sub_dir}"
     else:
         ret_dir = dir_arg
-    create_or_clean(ret_dir)
+
+    create_or_clean(ret_dir, clean_dir=clean_dir)
     ret_dir = os.path.abspath(ret_dir)
     return ret_dir
 
