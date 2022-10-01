@@ -204,7 +204,13 @@ proc gen_bumps { bumpCell } {
     select_bumps -bumps [bumps_of_type $bump_types "4"]
     select_bumps -bumps [bumps_of_type $bump_types "5"]
     select_bumps -bumps [bumps_of_type $bump_types "6"]
-    assign_signal_to_bump -selected -net VDD 
+    assign_signal_to_bump -selected -net VDD
+    
+    # Assign ESD label to all power/ground bumps
+    select_bumps -bumps [bumps_of_type $bump_types "g"]
+    foreach bump_center [dbGet selected.bump_shape_center] {
+      add_gui_text -label HC_POWER_ESD -pt $bump_center -layer LBESD -height 1
+    }
     deselect_bumps
 
     # voltage labels to prevent DRCs
