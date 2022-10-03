@@ -14,7 +14,7 @@ if { ! $::env(soc_only) } {
   # Vertical distance (in # pitches) betwween GLB and Tile array
   set ic2glb_y_dist 330
   set glb2glc_y_dist 600
-  set glb2srams_y_dist 600
+  set glb2srams_y_dist 1100
 
   ##############################################################################
   # Lots of congestion at top left corner of GLB, where the top
