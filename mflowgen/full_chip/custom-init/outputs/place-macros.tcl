@@ -125,7 +125,7 @@ if { ! $::env(soc_only) } {
   
   # Prevent PMESH_TOP_LAYER stripes over GLB
   createRouteBlk \
-    -name glb_pmesh_bot \
+    -name glb_pmesh_top \
     -layer $ADK_POWER_MESH_TOP_LAYER \
     -pgnetonly \
     -box $glb_x_loc [expr $glb_y_loc + (2*$vert_pitch)] $glb_urx [expr $glb_ury - (2*$vert_pitch)]
@@ -287,7 +287,7 @@ createRouteBlk \
 
 # Prevent PMESH_TOP_LAYER stripes over XGCD
 createRouteBlk \
-  -name xgcd_pmesh_bot \
+  -name xgcd_pmesh_top \
   -layer $ADK_POWER_MESH_TOP_LAYER \
   -pgnetonly \
   -box $xgcd_x_loc [expr $xgcd_y_loc + (2*$vert_pitch)] $xgcd_urx [expr $xgcd_ury - (2*$vert_pitch)]
