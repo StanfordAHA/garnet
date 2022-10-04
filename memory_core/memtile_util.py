@@ -752,12 +752,18 @@ class NetlistBuilder():
             self.finalize_config()
             return self._config_data
 
-    def write_out_bitstream(self, filename):
+    def write_out_bitstream(self, filename, nospace=False):
         bitstream = self._config_data
+        size_ret = len(bitstream)
+        if nospace:
+            gap = ""
+        else:
+            gap = " "
         with open(filename, "w+") as f:
-            bs = ["{0:08X} {1:08X}".format(entry[0], entry[1]) for entry
+            bs = ["{0:08X}{2}{1:08X}\n".format(entry[0], entry[1], gap) for entry
                   in bitstream]
-            f.write("\n".join(bs))
+            f.write("".join(bs))
+        return size_ret
 
     def get_placement(self):
         if self._placement_up_to_date is False:
