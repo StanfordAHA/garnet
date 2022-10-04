@@ -1,6 +1,7 @@
 import argparse
-import pickle
+import glob
 import json
+import subprocess
 import sys
 from gemstone.common.testers import BasicTester
 from gemstone.common.configurable import ConfigurationType
@@ -67,6 +68,7 @@ from peak import family
 from lake.modules.scanner_pipe import ScannerPipe
 import tempfile
 import time
+import gemstone
 
 
 class SparseTBBuilder(m.Generator2):
@@ -1852,6 +1854,8 @@ if __name__ == "__main__":
     parser.add_argument('--just_glb', action="store_true")
     parser.add_argument('--fiber_access', action="store_true")
     parser.add_argument('--base_dir', type=str, default=None)
+    parser.add_argument('--fault', action="store_true")
+    parser.add_argument('--gen_verilog', action="store_true")
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -1876,6 +1880,10 @@ if __name__ == "__main__":
     just_glb = args.just_glb
     use_fiber_access = args.fiber_access
     verbose = args.verbose
+    fault = args.fault
+    gen_verilog = args.gen_verilog
+
+    test_mem_core_dir = os.path.dirname(__file__)
 
     assert sam_graph is not None, f"No sam graph pointed to..."
 
@@ -1906,7 +1914,8 @@ if __name__ == "__main__":
         # Create PE verilog for inclusion...
         if gen_pe is True:
             pe_child = PE_fc(family.MagmaFamily())
-            m.compile(f"{test_dump_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
+            # m.compile(f"{test_dump_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
+            m.compile(f"{test_mem_core_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
             m.clear_cachedFunctions()
             m.frontend.coreir_.ResetCoreIR()
             m.generator.reset_generator_cache()
@@ -2184,8 +2193,9 @@ if __name__ == "__main__":
         time_4 = time.time()
         print(f"TIME:\tSTB\t{time_4 - time_3}")
 
+        bs_size = nlb.write_out_bitstream(f"{test_dump_dir}/bitstream_nosp.bs", nospace=True)
         if dump_bitstream:
-            nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs")
+            nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs", nospace=False)
 
         if dump_glb:
 
@@ -2217,81 +2227,126 @@ if __name__ == "__main__":
         if just_glb:
             print("Only generating glb collateral and leaving...")
             exit()
-
-        ##### Create the actual testbench #####
-        tester = BasicTester(stb, stb.clk, stb.rst_n)
-
-        tester.zero_inputs()
-        tester.poke(stb.io.stall, 1)
-        tester.poke(stb.io.rst_n, 0)
-        tester.eval()
-
-        tester.step(2)
-        tester.poke(stb.rst_n, 1)
-
-        # if nlb is not None:
-        #     tester.reset()
         # else:
-        #     # pulse reset manually
-        #     tester.poke(stb.rst_n, 0)
-        #     tester.step(2)
-        #     tester.poke(stb.rst_n, 1)
-        #     tester.step(2)
+            # assert len(seed) == 1, f"Do not currently support running more than one seed..."
 
-        tester.step(2)
-        # Stall during config
-        tester.poke(stb.io.stall, 1)
+        time_before_sim = time.time()
 
-        # After stalling, we can configure the circuit
-        # with its configuration bitstream
-        if nlb is not None:
-            cfgdat = nlb.get_config_data()
-            for addr, index in cfgdat:
-                tester.configure(addr, index)
-                # if readback is True:
-                #     self._tester.config_read(addr)
-                tester.eval()
+        if not fault:
+            # Run the normal tb
+            if gen_verilog:
+                import magma
+                magma.compile(f"{test_mem_core_dir}/SparseTBBuilder", stb, coreir_libs={"float_CW"})
 
-            tester.done_config()
+            # Copy collateral...
 
-            tester.poke(stb.io.flush, 1)
+            for test_module in glob.glob(os.path.join(test_mem_core_dir, "*.*v")):
+                shutil.copy(test_module, test_dump_dir)
+            shutil.copy(os.path.join(test_mem_core_dir, "Makefile"), test_dump_dir)
+            shutil.copy(os.path.join(test_mem_core_dir, "run_sim.tcl"), test_dump_dir)
+            # cw_dir = "/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/"
+            cw_dir = "/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/"
+            shutil.copy(os.path.join(test_mem_core_dir, "../../peak_core/CW_fp_add.v"), test_dump_dir)
+            shutil.copy(os.path.join(test_mem_core_dir, "../../peak_core/CW_fp_mult.v"), test_dump_dir)
+            gemstone_dir = os.path.dirname(os.path.dirname(gemstone.__file__))
+            for aoi_mux in glob.glob(os.path.join(gemstone_dir, "tests", "common", "rtl", "*.sv")):
+                shutil.copy(aoi_mux, test_dump_dir)
+
+            my_env = os.environ
+            my_env['WAVEFORM'] = "0"
+            if args.trace:
+                my_env['WAVEFORM'] = "1"
+            my_env['BITSTREAM_SIZE'] = str(bs_size)
+
+            t_c = time.time()
+            subprocess.check_call(
+                ["make", "compile"],
+                cwd=test_dump_dir,
+                env=my_env
+            )
+
+            t_r = time.time()
+            subprocess.check_call(
+                ["make", "run"],
+                cwd=test_dump_dir,
+                env=my_env
+            )
+
+        else:
+            ##### Create the actual testbench #####
+            tester = BasicTester(stb, stb.clk, stb.rst_n)
+
+            tester.zero_inputs()
+            tester.poke(stb.io.stall, 1)
+            tester.poke(stb.io.rst_n, 0)
             tester.eval()
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
-            tester.step(2)
 
-            tester.poke(stb.io.stall, 0)
-        tester.eval()
-
-        # Get flush handle and apply flush to start off app
-        # tester.poke(stb.io.flush, 1)
-        # tester.eval()
-        tester.step(2)
-        tester.step(2)
-        # tester.step(2)
-        # tester.step(2)
-        # tester.step(2)
-        # for i in range(1000):
-        #     tester.step(2)
-        tester.poke(stb.io.flush, 0)
-        tester.eval()
-        for i in range(50000):
-        # for i in range(10000):
             tester.step(2)
-            tester_if = tester._if(tester.circuit.done)
-            tester_if.print("Test is done...\n")
-            tester_if.print("Cycle Count...%d\n", stb.io.cycle_count)
-            tester_if.finish()
-        # tester.wait_until_high(tester.circuit.done, timeout=2000)
+            tester.poke(stb.rst_n, 1)
 
-        from conftest import run_tb_fn
-        run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd=test_dump_dir, include_PE=True)
+            # if nlb is not None:
+            #     tester.reset()
+            # else:
+            #     # pulse reset manually
+            #     tester.poke(stb.rst_n, 0)
+            #     tester.step(2)
+            #     tester.poke(stb.rst_n, 1)
+            #     tester.step(2)
 
+            tester.step(2)
+            # Stall during config
+            tester.poke(stb.io.stall, 1)
+
+            # After stalling, we can configure the circuit
+            # with its configuration bitstream
+            if nlb is not None:
+                cfgdat = nlb.get_config_data()
+                for addr, index in cfgdat:
+                    tester.configure(addr, index)
+                    # if readback is True:
+                    #     self._tester.config_read(addr)
+                    tester.eval()
+
+                tester.done_config()
+
+                tester.poke(stb.io.flush, 1)
+                tester.eval()
+                tester.step(2)
+                tester.step(2)
+                tester.step(2)
+                tester.step(2)
+                tester.step(2)
+                tester.step(2)
+                tester.step(2)
+                tester.step(2)
+
+                tester.poke(stb.io.stall, 0)
+            tester.eval()
+
+            # Get flush handle and apply flush to start off app
+            # tester.poke(stb.io.flush, 1)
+            # tester.eval()
+            tester.step(2)
+            tester.step(2)
+            # tester.step(2)
+            # tester.step(2)
+            # tester.step(2)
+            # for i in range(1000):
+            #     tester.step(2)
+            tester.poke(stb.io.flush, 0)
+            tester.eval()
+            for i in range(50000):
+                tester.step(2)
+                tester_if = tester._if(tester.circuit.done)
+                tester_if.print("Test is done...\n")
+                tester_if.print("Cycle Count...%d\n", stb.io.cycle_count)
+                tester_if.finish()
+            # tester.wait_until_high(tester.circuit.done, timeout=2000)
+
+            from conftest import run_tb_fn
+            run_tb_fn(tester, trace=args.trace, disable_ndarray=False, cwd=test_dump_dir, include_PE=True)
+
+        time_after_sim = time.time()
         stb.display_names()
 
         ##### Now check it... #####
@@ -2309,3 +2364,10 @@ if __name__ == "__main__":
         except AssertionError as e:
             print(f"Test failed...output matrices are unequal")
             print(numpy.subtract(output_matrix, sim_mat_np))
+
+        if fault:
+            print(f"SIMULATION TIME:\t{time_after_sim - time_before_sim}")
+        else:
+            print(f"COMPILE_TIME:\t{t_r - t_c}")
+            print(f"RUN_TIME:\t{time_after_sim - t_r}")
+            print(f"TOTAL_TIME:\t{time_after_sim - time_before_sim}")
