@@ -293,6 +293,8 @@ def construct():
   lvs.extend_inputs( ['sram.spi'] )
   lvs.extend_inputs( ['sram_2.spi'] )
   lvs.extend_inputs( ['xgcd.lvs.v'] )
+  lvs.extend_inputs( ['xgcd-255.lvs.v'] )
+  lvs.extend_inputs( ['xgcd-1279.lvs.v'] )
   lvs.extend_inputs( ['adk_lvs2'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
