@@ -244,6 +244,8 @@ addStripe -nets {VSS VDD} -layer $pmesh_top -direction vertical \
     -start [expr $pmesh_top_str_pitch/2]
 
 # RDL Layer Power stripes (Deliver power from bumps to pmesh_top)
+# If we set ignore_DRC to false, vias from RDL to pmesh_top aren't
+# dropped over our macros, so we must set it to true.
 setViaGenMode -reset
 setViaGenMode -viarule_preference default
 setViaGenMode -ignore_DRC true
@@ -261,3 +263,32 @@ addStripe -nets {VDD VSS} \
   -area {1050.0 1050.0 3850.0 3850.0}
 
 
+# Since we set ignore_DRC to true when drawing RDL stripes, the VV
+# blockages we put over bumps are ignored. We delete vias over bumps
+# after they are placed instead to avoid spacing DRCs.
+foreach bump_center [dbGet top.bumps.bump_shape_center] {
+  # Block VV at LV area of bump
+  set center_x [lindex $bump_center 0]
+  set center_y [lindex $bump_center 1]
+  # Delete all VV vias in square w/ side length "blk_size" centered on bump
+  set blk_size 70.0
+  set blk_llx [expr $center_x - ($blk_size / 2)]
+  set blk_lly [expr $center_y - ($blk_size / 2)]
+  set blk_urx [expr $center_x + ($blk_size / 2)]
+  set blk_ury [expr $center_y + ($blk_size / 2)]
+  editDelete \
+    -layer VV \
+    -use POWER \
+    -area $blk_llx $blk_lly $blk_urx $blk_ury 
+}
+
+
+# Power planner is placing T1 vias over top edge of GLB despite blockage,
+# which causes DRCs. Delete these vias after to fix DRCs.
+set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
+set glb_name [get_property $glb hierarchical_name]
+set glb_bbox [dbGet [dbGet -p top.insts.name $glb_name -i 0].box]
+editDelete \
+  -layer T1 \
+  -use POWER \
+  -area $glb_bbox

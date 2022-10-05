@@ -217,6 +217,18 @@ proc gen_bumps { bumpCell } {
     foreach bump_center [dbGet top.bumps.bump_shape_center] {
       add_gui_text -label 0 -pt $bump_center -layer CUSTOM_LB_test4 -height 1
       add_gui_text -label 0.8 -pt $bump_center -layer CUSTOM_LB_test3 -height 1
+      # Block VV at LV area of bump
+      set center_x [lindex $bump_center 0]
+      set center_y [lindex $bump_center 1]
+      # Create square blockage with side length "blk_size" centered on bump
+      set blk_size 70.0
+      set blk_llx [expr $center_x - ($blk_size / 2)]
+      set blk_lly [expr $center_y - ($blk_size / 2)]
+      set blk_urx [expr $center_x + ($blk_size / 2)]
+      set blk_ury [expr $center_y + ($blk_size / 2)]
+      createRouteBlk \
+        -layer VV \
+        -box $blk_llx $blk_lly $blk_urx $blk_ury 
     }
 
     gui_show_bump_connections
