@@ -560,6 +560,7 @@ def construct():
   # DC needs these params to set macros in soc rtl
   synth.update_params({'TLX_FWD_DATA_LO_WIDTH' : parameters['TLX_FWD_DATA_LO_WIDTH']}, True)
   synth.update_params({'TLX_REV_DATA_LO_WIDTH' : parameters['TLX_REV_DATA_LO_WIDTH']}, True)
+  synth.update_params({'INCLUDE_XGCD' : parameters['INCLUDE_XGCD']}, True)
   init.update_params({'soc_only': parameters['soc_only']}, True)
 
   init.update_params(
