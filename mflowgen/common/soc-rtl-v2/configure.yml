@@ -25,3 +25,7 @@ commands:
 
 parameters:
   include_core: 1
+  soc_only: undefined
+  INCLUDE_XGCD: undefined
+  TLX_FWD_DATA_LO_WIDTH: undefined
+  TLX_REV_DATA_LO_WIDTH: undefined

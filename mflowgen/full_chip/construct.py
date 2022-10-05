@@ -78,6 +78,8 @@ def construct():
     'PWR_AWARE'         : True,
     # Include Garnet?
     'soc_only'          : False,
+    # Include XGCD?
+    'INCLUDE_XGCD'      : True,
     # Include SoC core? (use 0 for false, 1 for true)
     'include_core'      : 1,
     # Include sealring?
@@ -115,7 +117,7 @@ def construct():
     # Testbench
     'cgra_apps' : ["tests/conv_1_2", "tests/conv_2_1"]
   }
-  
+
   if parameters['PWR_AWARE'] == True:
       parameters['lvs_adk_view'] = adk_view + '-pm'
   else:
@@ -136,7 +138,7 @@ def construct():
     'coord_x'   : '-49.98u',
     'coord_y'   : '-49.92u'
   }
-  
+
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
@@ -232,11 +234,11 @@ def construct():
   # Antenna DRC Check
   antenna_drc = drc.clone()
   antenna_drc.set_name( 'antenna-drc' )
-  
+
   # Pre-Fill DRC Check
   prefill_drc = drc.clone()
   prefill_drc.set_name( 'pre-fill-drc' )
-  
+
   # Separate ADK for LVS so it has PM cells when needed
   lvs_adk = adk.clone()
   lvs_adk.set_name( 'lvs_adk' )
@@ -358,7 +360,7 @@ def construct():
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
   g.add_step( debugcalibre      )
-  
+
   # Different adk view for lvs
   g.add_step( lvs_adk        )
 
@@ -516,7 +518,7 @@ def construct():
       g.connect_by_name( merge_fill, drc )
       g.connect_by_name( merge_fill, drc_pm )
       g.connect_by_name( merge_fill, antenna_drc )
-   
+
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
@@ -542,10 +544,10 @@ def construct():
   print(f'parameters["hold_target_slack"]={parameters["hold_target_slack"]}')
   g.update_params( parameters )
 
-  # Provide different parameter set to second sram node, so it can actually 
+  # Provide different parameter set to second sram node, so it can actually
   # generate a different sram
   gen_sram_2.update_params( sram_2_params )
-  
+
   # LVS adk has separate view parameter
   lvs_adk.update_params({ 'adk_view' : parameters['lvs_adk_view']})
 
@@ -611,7 +613,7 @@ def construct():
 
 
   merge_fill.update_params( {'design_top_cell': parameters['design_name'], 'child_top_cell': f"{parameters['design_name']}_F16a"} )
-  
+
   # need to give coordinates for guardring
   merge_gdr.update_params( guardring_params )
 
