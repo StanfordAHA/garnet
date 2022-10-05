@@ -19,10 +19,13 @@ env:
   # Env var used by test_module.sh :(
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
 
-  # For debugging, use $BUILD flag to build in indicated local dir
   TEST: echo exit 13 | mflowgen/test/test_module.sh
-# TEST: echo exit 13 | mflowgen/test/test_module.sh --build_dir /build/pmg${BUILDKITE_BUILD_NUMBER}
 
+  # For debugging, use build_dir flag to save build in indicated local dir
+  # TEST: echo exit 13 | mflowgen/test/test_module.sh --build_dir /build/pmg${BUILDKITE_BUILD_NUMBER}
+
+  # Newer dockers use lake "sparse_strawman" branch offshoots :(
+  RTL_DOCKER_IMAGE: 'stanfordaha/garnet@sha256:dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4'
 
 steps:
 
