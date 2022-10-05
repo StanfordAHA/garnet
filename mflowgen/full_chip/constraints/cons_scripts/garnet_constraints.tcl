@@ -29,11 +29,3 @@ set_multicycle_path -hold 9 -to [get_pins -hier global_buffer/glb_clk_en_bank_ma
 set_multicycle_path -setup 10 -to [get_pins -hier global_buffer/flush_crossbar_sel*]
 set_multicycle_path -hold 9 -to [get_pins -hier global_buffer/flush_crossbar_sel*]
 
-# Don't consider xgcd timing since it's not done yet.
-set_false_path -through [get_cells -hier u_xgcd_wrapper_top]
-set_false_path -from [get_pins -hier u_xgcd_wrapper_top/clk_div_8]
-set_false_path -to [get_pins -hier u_xgcd_wrapper_top/clk_div_8]
-set_false_path -through [get_pins -hier u_xgcd_wrapper_top/clk_div_8]
-
-set_false_path -to [get_clocks xgcd_div8_clk]
-set_false_path -from [get_clocks xgcd_div8_clk]
