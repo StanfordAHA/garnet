@@ -93,7 +93,10 @@ def wire_core_flush_pass(interconnect: Interconnect):
         # need to add a global port
         need_global_flush = True
 
-        tile.add_ports(flush=magma.In(TBit))
+        try:
+            tile.add_ports(flush=magma.In(TBit))
+        except:
+            pass
         for core in cores:
             if "flush" in core.ports:
                 # adding a top level port that needs to be directly chained at the top
