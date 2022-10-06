@@ -1494,7 +1494,7 @@ def coalesce_files(in_dir, out_dir, hack_files=None):
         write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'], out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
 
 
-def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None):
+def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None, zero_input=False):
 
     output_matrix = None
     output_format = None
@@ -1557,7 +1557,11 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # piped
         shape_1 = 16
         shape_2 = 16
-        b_matrix = MatrixGenerator(name="B", shape=[shape_1, shape_2], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        if zero_input:
+            sparsity_use = 1.0
+        else:
+            sparsity_use = 0.7
+        b_matrix = MatrixGenerator(name="B", shape=[shape_1, shape_2], sparsity=sparsity_use, format='CSF', dump_dir=matrix_tmp_dir)
         c_matrix = MatrixGenerator(name="C", shape=[shape_1, shape_2], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
@@ -2069,6 +2073,7 @@ if __name__ == "__main__":
     parser.add_argument('--base_dir', type=str, default=None)
     parser.add_argument('--fault', action="store_true")
     parser.add_argument('--gen_verilog', action="store_true")
+    parser.add_argument('--zero_input', action="store_true")
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2095,6 +2100,7 @@ if __name__ == "__main__":
     verbose = args.verbose
     fault = args.fault
     gen_verilog = args.gen_verilog
+    zero_input = args.zero_input
 
     test_mem_core_dir = os.path.dirname(__file__)
 
@@ -2326,7 +2332,9 @@ if __name__ == "__main__":
             print(f"TIME:\tnlb\t{time_1 - time_x}")
 
         ##### Handling app level file stuff #####
-        output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir, give_tensor, print_inputs)
+        output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir,
+                                                                              give_tensor, print_inputs,
+                                                                              zero_input=zero_input)
         out_mat = MatrixGenerator(name=output_name, shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
         out_mat.dump_outputs()
         if dump_glb:
