@@ -752,7 +752,7 @@ class NetlistBuilder():
             self.finalize_config()
             return self._config_data
 
-    def write_out_bitstream(self, filename, nospace=False):
+    def write_out_bitstream(self, filename, nospace=False, glb=False):
         bitstream = self._config_data
         size_ret = len(bitstream)
         if nospace:
@@ -760,9 +760,14 @@ class NetlistBuilder():
         else:
             gap = " "
         with open(filename, "w+") as f:
-            bs = ["{0:08X}{2}{1:08X}\n".format(entry[0], entry[1], gap) for entry
-                  in bitstream]
-            f.write("".join(bs))
+            if glb:
+                bs = ["{0:08X}{2}{1:08X}".format(entry[0], entry[1], gap) for entry
+                      in bitstream]
+                f.write("\n".join(bs))
+            else:
+                bs = ["{0:08X}{2}{1:08X}\n".format(entry[0], entry[1], gap) for entry
+                      in bitstream]
+                f.write("".join(bs))
         return size_ret
 
     def get_placement(self):
