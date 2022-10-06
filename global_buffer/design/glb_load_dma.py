@@ -450,9 +450,9 @@ class GlbLoadDma(Generator):
             self.wire(self.ctrl_g2f[i], self.pipeline_ctrl_out[i])
 
     def add_pipeline_flush(self):
-        assert self._params.flush_crossbar_pipeline_depth <= 2
+        assert self._params.flush_crossbar_pipeline_depth + self._params.config_port_pipeline_depth <= 2
         self.pipeline_flush = Pipeline(width=1,
-                                       depth=(2 - self._params.flush_crossbar_pipeline_depth))
+                                       depth=(2 - self._params.flush_crossbar_pipeline_depth - self._params.config_port_pipeline_depth))
         self.add_child("pipeline_flush",
                        self.pipeline_flush,
                        clk=self.clk,
