@@ -132,7 +132,7 @@ class CoreCombinerCore(LakeCoreBase):
             if self.pnr_tag == 'm':
                 if 'config' in instr:
                     instr_new = instr['config']
-                    for k,v in instr.items():
+                    for k, v in instr.items():
                         if k != "config":
                             instr_new[k] = v
                     instr = instr_new
@@ -151,7 +151,7 @@ class CoreCombinerCore(LakeCoreBase):
                 else:
                     # Default to UB mode since we get varying consistency in controller indication
                     instr['mode'] = 'UB'
-            
+
                 config_pre = self.dut.get_bitstream(instr)
                 # Add the runtime configuration to the final config
                 for name, v in config_pre:

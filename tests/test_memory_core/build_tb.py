@@ -76,7 +76,7 @@ class SparseTBBuilder(m.Generator2):
                  input_dir=None, output_dir=None, local_mems=True,
                  mode_map=None, real_pe=False, harden_flush=False, combined=False,
                  input_sizes=None, use_fa=False,
-                 verbose=False, pnr_only=False) -> None:
+                 verbose=False, pnr_only=False, width=16, height=16) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
@@ -113,11 +113,14 @@ class SparseTBBuilder(m.Generator2):
         if self.use_fa:
             self.color_to_fa = {}
 
+        self.height = height
+        self.width = width
         self.input_ctr = 0
         self.output_ctr = 1
 
         self.glb_to_io_mapping = {}
         self.glb_cores = {}
+        self.glb_cores_w_map = {}
         self._ctr = 0
         self.pnr_only = pnr_only
 
@@ -255,6 +258,12 @@ class SparseTBBuilder(m.Generator2):
 
     def get_mode_map(self):
         return self.mode_map
+
+    def enumerate_glb_in(self):
+        return range(0, self.width, 2)
+
+    def enumerate_glb_out(self):
+        return range(1, self.width, 2)
 
     def zero_alt_inputs(self):
         '''
@@ -585,7 +594,208 @@ class SparseTBBuilder(m.Generator2):
 
     def attach_glb(self):
 
-        self._all_dones = []
+        # In this case, we should just hook up GLB nodes to every single one...
+        # That way we generate a single verilog, we can swap in the plusargs
+        if not self.bespoke:
+
+            print("NON BESPOKE BULK GLB")
+
+            for glb_in in self.enumerate_glb_in():
+
+                if (glb_in, 0) in self.glb_cores_w_map:
+                    use_param = True
+                    node_ = self.glb_cores_w_map[(glb_in, 0)]
+                    glb_data = node_.get_data()
+                    glb_ready = node_.get_ready()
+                    glb_valid = node_.get_valid()
+                    glb_num_blocks = node_.get_num_blocks()
+                    glb_file_number = node_.get_file_number()
+                    glb_tx_size = node_.get_tx_size()
+
+                    glb_tensor = node_.get_tensor()
+                    print(glb_tensor)
+                    glb_mode_ = node_.get_mode()
+                    if 'vals' not in glb_mode_:
+                        glb_mode_ = int(glb_mode_)
+                        glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                    else:
+                        glb_mode = glb_mode_
+                    # Get the handle for these pins, then instantiate glb
+                else:
+                    use_param = False
+
+                # data_h = self.nlb.get_handle(glb_data, prefix="glb2io_17_")
+                data_h = f"glb2io_17_X{glb_in:02X}_Y00"
+                suffix = str(data_h)[10:]
+                ready_h = f"glb2io_17_{suffix}_ready"
+                valid_h = f"glb2io_17_{suffix}_valid"
+                print(data_h)
+                print(suffix)
+
+                # Get rid of these signals from leftover inputs...
+                self.interconnect_ins.remove(str(data_h))
+                self.interconnect_ins.remove(str(valid_h))
+
+                data_h = self.interconnect_circuit[str(data_h)]
+                ready_h = self.interconnect_circuit[str(ready_h)]
+                valid_h = self.interconnect_circuit[str(valid_h)]
+
+                class _Definition(m.Generator2):
+                    def __init__(self, TX_SIZE, FILE_NAME, ID_no) -> None:
+                        # super().__init__()
+                        self.name = f"glb_write_wrapper_{TX_SIZE}_{ID_no}"
+                        self.io = m.IO(**{
+                            "clk": m.In(m.Clock),
+                            "rst_n": m.In(m.AsyncReset),
+                            "data": m.Out(m.Bits[17]),
+                            "ready": m.In(m.Bit),
+                            "valid": m.Out(m.Bit),
+                            "done": m.Out(m.Bit),
+                            "flush": m.In(m.Bit)
+                        })
+                        self.verilog = f"""
+                glb_write  #(.TX_SIZE({TX_SIZE}), .FILE_NAME({FILE_NAME}))
+                test_glb_inst
+                (
+                    .clk(clk),
+                    .rst_n(rst_n),
+                    .data(data),
+                    .ready(ready),
+                    .valid(valid),
+                    .done(done),
+                    .flush(flush)
+                );
+                """
+
+                if use_param:
+                    file_full = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode}"
+                    # Get tx size now
+                    if not node_.get_format() == "dense":
+                        with open(file_full, "r") as ff:
+                            glb_tx_size = len(ff.readlines())
+                    else:
+                        glb_tx_size = 0
+
+                    file_full = f"\"{file_full}\""
+                else:
+                    file_full = ""
+                    glb_tx_size = 0
+
+                test_glb = _Definition(TX_SIZE=glb_tx_size, FILE_NAME=file_full, ID_no=self.get_next_seq())()
+
+                m.wire(test_glb['data'], data_h)
+                m.wire(ready_h, test_glb['ready'])
+                m.wire(test_glb['valid'], valid_h)
+                m.wire(test_glb.clk, self.io.clk)
+                m.wire(test_glb.rst_n, self.io.rst_n)
+                m.wire(test_glb.flush, self.io.flush)
+
+                self.glb_dones.append(test_glb.done)
+
+            for glb_out in self.enumerate_glb_out():
+
+                if (glb_out, 0) in self.glb_cores_w_map:
+                    use_param = True
+                    node_ = self.glb_cores_w_map[(glb_out, 0)]
+                    glb_data = node_.get_data()
+                    glb_ready = node_.get_ready()
+                    glb_valid = node_.get_valid()
+                    glb_num_blocks = node_.get_num_blocks()
+                    glb_file_number = node_.get_file_number()
+                    glb_tx_size = node_.get_tx_size()
+
+                    glb_tensor = node_.get_tensor()
+                    glb_mode_ = node_.get_mode()
+                    if 'vals' not in glb_mode_:
+                        glb_mode_ = int(glb_mode_)
+                        glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                    else:
+                        glb_mode = glb_mode_
+                    # Get the handle for these pins, then instantiate glb
+                else:
+                    use_param = False
+
+                # data_h = self.nlb.get_handle(glb_data, prefix="io2glb_17_")
+                data_h = f"io2glb_17_X{glb_out:02X}_Y00"
+                suffix = str(data_h)[10:]
+
+                print(data_h)
+                print(suffix)
+
+                ready_h = f"io2glb_17_{suffix}_ready"
+                valid_h = f"io2glb_17_{suffix}_valid"
+
+                # Get rid of this signal from leftover inputs...
+                self.interconnect_ins.remove(str(ready_h))
+
+                data_h = self.interconnect_circuit[str(data_h)]
+                ready_h = self.interconnect_circuit[str(ready_h)]
+                valid_h = self.interconnect_circuit[str(valid_h)]
+
+                class _Definition(m.Generator2):
+                    def __init__(self, NUM_BLOCKS, FILE_NAME1, FILE_NAME2, ID_no) -> None:
+                        # super().__init__()
+                        self.name = f"glb_read_wrapper_{NUM_BLOCKS}_{ID_no}"
+                        self.io = m.IO(**{
+                            "clk": m.In(m.Clock),
+                            "rst_n": m.In(m.AsyncReset),
+                            "data": m.In(m.Bits[17]),
+                            "ready": m.Out(m.Bit),
+                            "valid": m.In(m.Bit),
+                            "done": m.Out(m.Bit),
+                            "flush": m.In(m.Bit)
+                        })
+
+                        self.verilog = f"""
+                glb_read #(.NUM_BLOCKS({NUM_BLOCKS}), .FILE_NAME1({FILE_NAME1}), .FILE_NAME2({FILE_NAME2}))
+                test_glb_inst
+                (
+                    .clk(clk),
+                    .rst_n(rst_n),
+                    .data(data),
+                    .ready(ready),
+                    .valid(valid),
+                    .done(done),
+                    .flush(flush)
+                );
+                """
+
+                ID_no = self.get_next_seq()
+
+                if use_param:
+
+                    if str(glb_mode) == "vals":
+                        f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
+                        f2 = f1
+                    elif node_.get_format() == 'vals':
+                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
+                        f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
+                        f2 = f1
+                    else:
+                        f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_seg\""
+                        f2 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
+                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
+                        # f2 = f1
+
+                else:
+
+                    glb_num_blocks = 0
+                    f1 = ""
+                    f2 = ""
+
+                # test_glb = _Definition(NUM_BLOCKS=glb_num_blocks * 2, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
+                test_glb = _Definition(NUM_BLOCKS=glb_num_blocks, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
+
+                m.wire(data_h, test_glb['data'])
+                m.wire(test_glb['ready'], ready_h)
+                m.wire(valid_h, test_glb['valid'])
+                m.wire(test_glb.clk, self.io.clk)
+                m.wire(test_glb.rst_n, self.io.rst_n)
+                m.wire(test_glb.flush, self.io.flush)
+
+                self.glb_dones.append(test_glb.done)
+
+            return
 
         glb_nodes = [node for node in self.core_nodes.values() if type(node) == GLBNode]
         for node in glb_nodes:
@@ -604,7 +814,6 @@ class SparseTBBuilder(m.Generator2):
                 glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
             else:
                 glb_mode = glb_mode_
-
             # Get the handle for these pins, then instantiate glb
             glb_dir = node.get_direction()
             if glb_dir == 'write':
@@ -918,27 +1127,31 @@ class SparseTBBuilder(m.Generator2):
 
                 glb_format = node.get_attributes()['format'].strip('"') if 'format' in node.get_attributes().keys() else None
 
-                self.core_nodes[node.get_name()] = GLBNode(name=data,
-                                                           data=data,
-                                                           valid=None,
-                                                           # valid=valid,
-                                                           ready=None,
-                                                           # ready=ready,
-                                                           direction=direction,
-                                                           num_blocks=num_blocks,
-                                                           file_number=file_number,
-                                                           tx_size=tx_size,
-                                                           tensor=glb_tensor,
-                                                           mode=glb_mode,
-                                                           format=glb_format)
+                # self.core_nodes[node.get_name()] = GLBNode(name=data,
+                glb_node_use = GLBNode(name=data,
+                                       data=data,
+                                       valid=None,
+                                       # valid=valid,
+                                       ready=None,
+                                       # ready=ready,
+                                       direction=direction,
+                                       num_blocks=num_blocks,
+                                       file_number=file_number,
+                                       tx_size=tx_size,
+                                       tensor=glb_tensor,
+                                       mode=glb_mode,
+                                       format=glb_format)
+                self.core_nodes[node.get_name()] = glb_node_use
 
                 self.glb_to_io_mapping[data] = (glb_tensor, glb_mode, direction, num_blocks)
 
                 if direction == "write":
                     self.glb_cores[data] = (self.input_ctr, 0)
+                    self.glb_cores_w_map[(self.input_ctr, 0)] = glb_node_use
                     self.input_ctr += 2
                 else:
                     self.glb_cores[data] = (self.output_ctr, 0)
+                    self.glb_cores_w_map[(self.output_ctr, 0)] = glb_node_use
                     self.output_ctr += 2
 
             else:
@@ -1885,6 +2098,8 @@ if __name__ == "__main__":
 
     test_mem_core_dir = os.path.dirname(__file__)
 
+    pnr_only = just_glb or (not fault and not gen_verilog)
+
     assert sam_graph is not None, f"No sam graph pointed to..."
 
     with tempfile.TemporaryDirectory() as base_dir_td:
@@ -2105,7 +2320,7 @@ if __name__ == "__main__":
 
             nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir,
                                  harden_flush=harden_flush, combined=combined,
-                                 pnr_only=just_glb)
+                                 pnr_only=pnr_only)
 
             time_1 = time.time()
             print(f"TIME:\tnlb\t{time_1 - time_x}")
@@ -2188,14 +2403,15 @@ if __name__ == "__main__":
                               output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
                               real_pe=real_pe, harden_flush=harden_flush, combined=combined,
                               input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access,
-                              verbose=verbose, pnr_only=just_glb)
+                              verbose=verbose, pnr_only=pnr_only,
+                              width=chip_w, height=chip_h)
 
         time_4 = time.time()
         print(f"TIME:\tSTB\t{time_4 - time_3}")
 
-        bs_size = nlb.write_out_bitstream(f"{test_dump_dir}/bitstream_nosp.bs", nospace=True)
+        bs_size = nlb.write_out_bitstream(f"{test_dump_dir}/bitstream_nosp.bs", nospace=True, glb=False)
         if dump_bitstream:
-            nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs", nospace=False)
+            nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs", nospace=False, glb=True)
 
         if dump_glb:
 
