@@ -59,7 +59,8 @@ class IOCoreReadyValid(LakeCoreBase):
                               fifo_depth=fifo_depth,
                               use_17_to_16_hack=False,
                               allow_bypass=self.allow_bypass,
-                              use_almost_full=self.use_almost_full)
+                              use_almost_full=self.use_almost_full,
+                              add_flush=True)
 
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
