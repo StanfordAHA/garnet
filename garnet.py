@@ -63,7 +63,9 @@ class Garnet(Generator):
                  scgra_combined: bool = True,
                  sb_option: str = "Imran",
                  pipeline_regs_density: list = None,
-                 port_conn_option: list = None):
+                 port_conn_option: list = None,
+                 config_port_pipeline: bool = True
+                 ):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -169,7 +171,7 @@ class Garnet(Generator):
             stall_port_pass(self.interconnect, port_name="flush", port_width=1,
                             col_offset=glb_params.num_cols_per_group, pipeline=True)
         # make multiple configuration ports
-        config_port_pass(self.interconnect, pipeline=True)
+        config_port_pass(self.interconnect, pipeline=config_port_pipeline)
 
         self.inter_core_connections = {}
         for bw, interconnect in self.interconnect._Interconnect__graphs.items():
@@ -645,6 +647,9 @@ def main():
     parser.add_argument("--sb-option", type=str, default="Imran")
     parser.add_argument("--pipeline-regs-density", nargs="+", type=int, default=None)
     parser.add_argument("--port-conn-option", nargs="+", type=int, default=None)
+    parser.add_argument("--config-port-pipeline", dest="config_port_pipeline", action="store_true")
+    parser.add_argument("--no-config-port-pipeline", dest="config_port_pipeline", action="store_false")
+    parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -666,7 +671,8 @@ def main():
                                           cfg_addr_width=32,
                                           cfg_data_width=32,
                                           cgra_axi_addr_width=13,
-                                          axi_data_width=32)
+                                          axi_data_width=32,
+                                          config_port_pipeline=args.config_port_pipeline)
 
     garnet = Garnet(width=args.width, height=args.height,
                     glb_params=glb_params,
@@ -691,7 +697,8 @@ def main():
                     scgra_combined=args.sparse_cgra_combined,
                     sb_option=args.sb_option,
                     pipeline_regs_density=args.pipeline_regs_density,
-                    port_conn_option=args.port_conn_option)
+                    port_conn_option=args.port_conn_option,
+                    config_port_pipeline=args.config_port_pipeline)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
