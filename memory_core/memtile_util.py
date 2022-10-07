@@ -726,7 +726,8 @@ class NetlistBuilder():
                                                 (self._netlist, self._bus),
                                                 cwd=self._cwd,
                                                 harden_flush=self.harden_flush,
-                                                fixed_pos=fixed_io)
+                                                fixed_pos=fixed_io,
+                                                sparse=True)
         self._placement_up_to_date = True
 
     def get_route_config(self):
