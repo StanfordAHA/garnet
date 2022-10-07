@@ -18,5 +18,6 @@ pytest --pycodestyle           \
        --cov memory_core       \
        --ignore=filecmp.py     \
        --ignore=Genesis2/      \
-       --ignore=test_pond.py   \
+       --ignore=tests/test_memory_core/test_pond.py   \
+       --ignore-glob='*/test_pond.py'   \
        -v --cov-report term-missing tests
