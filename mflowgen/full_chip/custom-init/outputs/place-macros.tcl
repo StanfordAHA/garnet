@@ -47,7 +47,7 @@ if { ! $::env(soc_only) } {
   set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)/2.] $pmesh_top_pitch]
     
   placeinstance $interconnect_name $ic_x_loc $ic_y_loc -fixed
-  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 15] $vert_pitch $interconnect_name -snapToSite
+  addHaloToBlock [expr $horiz_pitch * 15] $vert_pitch [expr $horiz_pitch * 21] $vert_pitch $interconnect_name -snapToSite
 
   # Prevent power vias from blocking pins on interconnect (all pins on top edge)
   set ic_ury [expr $ic_y_loc + $ic_height]
