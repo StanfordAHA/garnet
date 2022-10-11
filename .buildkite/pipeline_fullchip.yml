@@ -1,4 +1,5 @@
-agents: { queue: "papers" }
+# Use "edit steps" in pipeline web UI to specify agents.
+# agents: { queue: "papers" }
 
 env:
   GOLD: /build/gold.${BUILDKITE_BUILD_NUMBER}/full_chip
@@ -19,6 +20,9 @@ env:
 
   # Can use this to change target mflowgen branch
   # OVERRIDE_MFLOWGEN_BRANCH: glob-prob
+
+  # Newer dockers use lake "sparse_strawman" branch offshoots :(
+  RTL_DOCKER_IMAGE: 'stanfordaha/garnet@sha256:dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4'
 
 steps:
 - label: 'setup'
@@ -171,6 +175,7 @@ steps:
 - label: 'lvs'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 61G;
+     echo "--- PREVENT SVDB"; $$GARNET_HOME/.buildkite/bin/no-svdb.sh;
      echo "--- MAKE MENTOR-CALIBRE-LVS"; set -o pipefail;
      make mentor-calibre-lvs |& tee make-lvs.log'
   - 'echo "--- DELETE SVDB"; set -x;
@@ -185,7 +190,7 @@ steps:
     - ($LVS_CHECK $GOLD | grep INCORRECT > /dev/null) && exit 13 || exit 0
 - wait: ~
 
-# Not sure if this is ever useful...
+# Optional DRC check. Not sure if this is ever useful...
 # - label: 'drc'
 #   commands:
 #   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 18G;
@@ -196,7 +201,7 @@ steps:
 # Final summary
 - label: 'summary'
   commands:
-  - 'mflowgen/bin/buildcheck.sh $$GOLD --show-all-errors;
+  - 'mflowgen/bin/buildcheck.sh $$GOLD --show-all-errors |& tee $$GOLD/buildcheck.out;
      echo ""; echo "+++ SIZE HISTORY"; echo "";
      test -f /build/size-history && cat /build/size-history;
     '

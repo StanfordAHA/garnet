@@ -155,9 +155,37 @@ def construct():
 
   # Power aware setup
   if pwr_aware:
-      synth.extend_inputs(['designer-interface.tcl', 'upf_Tile_PE.tcl', 'pe-constraints.tcl', 'pe-constraints-2.tcl', 'dc-dont-use-constraints.tcl'])
-      init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pe-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
-      power.extend_inputs(['pd-globalnetconnect.tcl'] )
+
+      # Need pe-pd-params so adk.tcl can access parm 'adk_allow_sdf_regs'
+      # (pe-pd-params come from already-connected 'power-domains' node)
+      synth.extend_inputs([
+        'pe-pd-params.tcl',
+        'designer-interface.tcl', 
+        'upf_Tile_PE.tcl', 
+        'pe-constraints.tcl', 
+        'pe-constraints-2.tcl', 
+        'dc-dont-use-constraints.tcl',
+        'check-pdcr-address.sh',
+      ])
+
+      # 09/2022 added check-pdcr-address.sh
+      init.extend_inputs([
+        'upf_Tile_PE.tcl', 
+        'pe-load-upf.tcl', 
+        'dont-touch-constraints.tcl', 
+        'pe-pd-params.tcl', 
+        'pd-aon-floorplan.tcl', 
+        'add-endcaps-welltaps-setup.tcl', 
+        'pd-add-endcaps-welltaps.tcl', 
+        'add-power-switches.tcl', 
+        'check-clamp-logic-structure.tcl',
+        'check-pdcr-address.sh',
+      ])
+
+      # Need pe-pd-params for parm 'vdd_m3_stripe_sparsity'
+      # pd-globalnetconnect, pe-pd-params come from 'power-domains' node
+      power.extend_inputs(['pd-globalnetconnect.tcl', 'pe-pd-params.tcl'] )
+
       place.extend_inputs(['place-dont-use-constraints.tcl', 'check-clamp-logic-structure.tcl', 'add-aon-tie-cells.tcl'])
       cts.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'])
       postcts_hold.extend_inputs(['conn-aon-cells-vdd.tcl', 'check-clamp-logic-structure.tcl'] )
@@ -166,6 +194,11 @@ def construct():
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
   
+      # Fix and repair PowerDomainConfigReg when/if magma decides to renumber it :(
+      synth.pre_extend_commands( ['./inputs/check-pdcr-address.sh'] )
+      init.pre_extend_commands(  ['./inputs/check-pdcr-address.sh'] )
+      pwr_aware_gls.pre_extend_commands( ['./assign-pdcr-address.sh'] )
+
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
 
@@ -373,10 +406,11 @@ def construct():
   # Pwr aware steps:
   if pwr_aware:
       # init node
+      # 09/2022 reordered to load params (pe-pd-params) before using params (pe-load-upf)
       order = init.get_param('order')
       read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
-      order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
-      order.insert( read_idx + 2, 'pe-pd-params.tcl' ) # add here
+      order.insert( read_idx + 1, 'pe-pd-params.tcl' )     # add here
+      order.insert( read_idx + 2, 'pe-load-upf.tcl' )      # add here
       order.insert( read_idx + 3, 'pd-aon-floorplan.tcl' ) # add here
       order.insert( read_idx + 4, 'add-endcaps-welltaps-setup.tcl' ) # add here
       order.insert( read_idx + 5, 'pd-add-endcaps-welltaps.tcl' ) # add here
@@ -385,10 +419,16 @@ def construct():
       order.append('check-clamp-logic-structure.tcl')
       init.update_params( { 'order': order } )
 
+      # synth node (needs parm 'adk_allow_sdf_regs')
+      order = synth.get_param('order')
+      order.insert( 0, 'pe-pd-params.tcl' )        # add params file
+      synth.update_params( { 'order': order } )
+
       # power node
       order = power.get_param('order')
-      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add here
-      order.remove('globalnetconnect.tcl')
+      order.insert( 0, 'pd-globalnetconnect.tcl' ) # add new 'pd-globalnetconnect'
+      order.remove('globalnetconnect.tcl')         # remove old 'globalnetconnect'
+      order.insert( 0, 'pe-pd-params.tcl' )        # add params file
       power.update_params( { 'order': order } )
 
       # place node
