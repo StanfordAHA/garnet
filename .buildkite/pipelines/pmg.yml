@@ -1,18 +1,14 @@
-# Agents are specified in "pipeline settings" now, see e.g. buildkite.com/tapeout-aha/steps
-# agents: { jobsize: "hours" }
-
-# 04/2022 Now running tests in parallel
-# Old runtime 30-35m, new runtime 20-25m
+# Agents are specified in "pipeline settings", see e.g. buildkite.com/tapeout-aha/steps
 
 ##############################################################################
-# Use this to test a specific branch/commit:
+# TO TEST A SPECIFIC BRANCH/COMMIT
+# -------------------------------------------------
 # Add to env:
 #   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
 # Add to commands:
-# - pwd; git branch; git checkout $$NOV11
+#   - pwd; git branch; git checkout $$NOV11
+# -------------------------------------------------
 
-##############################################################################
-# Note: "echo exit 13" prevents hang at genus/innovus prompt
 env:
   SETUP: source mflowgen/bin/setup-buildkite.sh
 
@@ -25,7 +21,10 @@ env:
   # TEST: echo exit 13 | mflowgen/test/test_module.sh --build_dir /build/pmg${BUILDKITE_BUILD_NUMBER}
 
   # Newer dockers use lake "sparse_strawman" branch offshoots :(
+  # Note 10/10/2022 made this the default in $GARNET/mflowgen/common/rtl/gen_rtl.sh
   RTL_DOCKER_IMAGE: 'stanfordaha/garnet@sha256:dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4'
+
+  # TODO/FIXME Figure out how to use a top-level parm file :(
 
 steps:
 

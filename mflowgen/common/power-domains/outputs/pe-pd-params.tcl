@@ -74,3 +74,28 @@ set aon_horiz_offset 0
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 30
+
+########################################################################
+# pe_power_domain_config_reg_addr
+# 
+# Note that DECODE_FEATURE and FEATURE_AND modules (at least) are
+# auto-assigned names that may change at the whim of the generator.
+# So the designer has to track that and update this parm by hand :(
+# See garnet issue 922 and ~steveri/0notes/vto/pwr-aware-gls.txt
+# 
+# Used by upf_Tile_PE.tcl
+# 
+# We have a script (check-pdcr-address.sh) that updates the address
+# automatically, so should be survivable when/if address not accurate.
+
+set pe_power_domain_config_reg_addr 13
+set aon_elements "
+  PowerDomainOR
+  DECODE_FEATURE_$pe_power_domain_config_reg_addr
+  coreir_eq_16_inst0 and_inst1
+  FEATURE_AND_$pe_power_domain_config_reg_addr
+  PowerDomainConfigReg_inst0
+  const_511_9
+  const_0_8
+"
+
