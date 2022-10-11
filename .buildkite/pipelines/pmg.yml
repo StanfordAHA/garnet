@@ -2,10 +2,12 @@
 
 ##############################################################################
 # TO TEST A SPECIFIC BRANCH/COMMIT
+# -------------------------------------------------
 # Add to env:
 #   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
 # Add to commands:
 #   - pwd; git branch; git checkout $$NOV11
+# -------------------------------------------------
 
 env:
   SETUP: source mflowgen/bin/setup-buildkite.sh
