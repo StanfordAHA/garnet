@@ -26,7 +26,7 @@ set adk_allow_sdf_regs true
 # AON boundary taps must line up with M3 VDD stripes.
 # 'stripes_per_tap' controls the space between AON taps
 # as a multiple of the M3 power stripe pitch.
-set stripes_per_tap 18
+set stripes_per_tap 22
 
 # Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
 # This integer-div followed by integer-mul corrects that situation.
@@ -53,7 +53,7 @@ if { $stripes_per_tap != $corrected_stripes_per_tap } {
 # 
 # sps12 (original default) yields 14 columns of switches and 4.5 hr runtime
 # sps26 yields six columns and finishes in 2.5 hr
-set stripes_per_switch 18
+set stripes_per_switch 22
 
 # Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
 set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
@@ -74,7 +74,9 @@ set aon_height 24
 # Negative offset puts AON left of center, which breaks GF flow
 # set aon_horiz_offset -80
 # set aon_horiz_offset 0 # This failed, not sure why
-set aon_horiz_offset 80
+# If stripes_per_tap is 22, aon_horiz_offset should be 84; 80 creates a dead zone see issue 923.
+# FIXME aon placement should maybe be algorithmic based on distance from power switches etc.
+set aon_horiz_offset 84
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 15
