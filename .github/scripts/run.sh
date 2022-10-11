@@ -9,15 +9,10 @@ export PYTEST_ADDOPTS="--color=yes"
 ROOT=$(dirname $(dirname $(dirname $BASH_SOURCE)))
 cd ${ROOT}
 
-# steveri 10/2022 deleting pond tests (test_pond.py)
-# that have been failing for the past month
-
 pytest --pycodestyle           \
        --cov global_controller \
        --cov io_core           \
        --cov memory_core       \
        --ignore=filecmp.py     \
        --ignore=Genesis2/      \
-       --ignore=tests/test_memory_core/test_pond.py   \
-       --ignore-glob='*/test_pond.py'   \
        -v --cov-report term-missing tests
