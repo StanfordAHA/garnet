@@ -57,7 +57,7 @@ else
       # FIXME/TODO: should be part of top-level parms
       # FIXME/TODO: whrere are top-level parms???
       amber_dense_sha=dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4
-      default_image="stanfordaha/garnet@sha256:${amber_dense_sha}'
+      default_image="stanfordaha/garnet@sha256:${amber_dense_sha}"
 
       if [ "$rtl_docker_image" == ""        ]; then rtl_docker_image=${default_image}; fi
       if [ "$rtl_docker_image" == "default" ]; then rtl_docker_image=${default_image}; fi
