@@ -167,6 +167,8 @@ class GlobalBufferParams:
 
     is_sram_stub: int = 0
 
+    config_port_pipeline_depth: int = 1
+
     # cycle count data width
     cycle_count_width: int = 16
 
@@ -187,6 +189,12 @@ def gen_global_buffer_params(**kwargs):
     cfg_addr_width = kwargs.pop('cfg_addr_width', 32)
     cfg_data_width = kwargs.pop('cfg_data_width', 32)
     is_sram_stub = kwargs.pop('is_sram_stub', 0)
+    config_port_pipeline = kwargs.pop('config_port_pipeline', True)
+
+    if config_port_pipeline is True:
+        config_port_pipeline_depth = 1
+    else:
+        config_port_pipeline_depth = 0
 
     # Check if there is unused kwargs
     if kwargs:
@@ -219,6 +227,7 @@ def gen_global_buffer_params(**kwargs):
                                 cgra_cfg_addr_width=cfg_addr_width,
                                 cgra_cfg_data_width=cfg_data_width,
                                 is_sram_stub=is_sram_stub,
+                                config_port_pipeline_depth=config_port_pipeline_depth
                                 )
     return params
 

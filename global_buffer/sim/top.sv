@@ -105,6 +105,7 @@ module top;
     // ---------------------------------------
     // CGRA signals
     // ---------------------------------------
+    logic [NUM_GROUPS-1:0] strm_data_flush_g2f_pipelined;
     logic [NUM_PRR-1:0] g2c_cfg_wr_en;
     logic [NUM_PRR-1:0][CGRA_CFG_ADDR_WIDTH-1:0] g2c_cfg_wr_addr;
     logic [NUM_PRR-1:0][CGRA_CFG_DATA_WIDTH-1:0] g2c_cfg_wr_data;
@@ -221,6 +222,8 @@ module top;
         .strm_data_g2f_vld(strm_data_g2f_vld),
         .strm_data_g2f_rdy(strm_data_g2f_rdy),
 
+        .strm_data_flush_g2f(strm_data_flush_g2f),
+
 `ifdef PWR
         .VDD(VDD),
         .VSS(VSS),
@@ -228,25 +231,30 @@ module top;
         .*
     );
 
+    always_ff @(posedge clk) begin
+        strm_data_flush_g2f_pipelined <= strm_data_flush_g2f;
+    end
+
     cgra cgra (
         // stall
-        .stall        ({NUM_PRR{1'b0}}),
+        .stall              ({NUM_PRR{1'b0}}),
+        .strm_data_flush_g2f(strm_data_flush_g2f_pipelined),
         // configuration
-        .cfg_wr_en    (g2c_cfg_wr_en),
-        .cfg_wr_addr  (g2c_cfg_wr_addr),
-        .cfg_wr_data  (g2c_cfg_wr_data),
-        .cfg_rd_en    (g2c_cfg_rd_en),
-        .cfg_rd_addr  (g2c_cfg_rd_addr),
-        .cfg_rd_data  (c2g_cfg_rd_data),
+        .cfg_wr_en          (g2c_cfg_wr_en),
+        .cfg_wr_addr        (g2c_cfg_wr_addr),
+        .cfg_wr_data        (g2c_cfg_wr_data),
+        .cfg_rd_en          (g2c_cfg_rd_en),
+        .cfg_rd_addr        (g2c_cfg_rd_addr),
+        .cfg_rd_data        (c2g_cfg_rd_data),
         // data
-        .io1_g2io     (g2c_io1),
-        .io16_g2io    (g2c_io16),
-        .io16_g2io_vld(g2c_io16_vld),
-        .io16_g2io_rdy(g2c_io16_rdy),
-        .io1_io2g     (c2g_io1),
-        .io16_io2g    (c2g_io16),
-        .io16_io2g_vld(c2g_io16_vld),
-        .io16_io2g_rdy(c2g_io16_rdy),
+        .io1_g2io           (g2c_io1),
+        .io16_g2io          (g2c_io16),
+        .io16_g2io_vld      (g2c_io16_vld),
+        .io16_g2io_rdy      (g2c_io16_rdy),
+        .io1_io2g           (c2g_io1),
+        .io16_io2g          (c2g_io16),
+        .io16_io2g_vld      (c2g_io16_vld),
+        .io16_io2g_rdy      (c2g_io16_rdy),
         .*
     );
 

@@ -104,7 +104,7 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
         for aoi_mux in glob.glob(os.path.join(gemstone_dir, "tests", "common", "rtl", "*.sv")):
             shutil.copy(aoi_mux, tempdir)
             rtl_lib.append(os.path.basename(aoi_mux))
-        for glb_module in glob.glob(os.path.join(root_dir, "tests/test_memory_core/*.sv")):
+        for glb_module in glob.glob(os.path.join(root_dir, "tests/test_memory_core/glb*.sv")):
             shutil.copy(glb_module, tempdir)
             rtl_lib.append(os.path.basename(glb_module))
         if include_PE:
