@@ -49,7 +49,7 @@ if {[info exists ADK_AON_TAP_CELL] && [expr {$ADK_AON_TAP_CELL ne ""}]} {
    set tap_width [dbGet [dbGetCellByName $aon_tap_cell].size_x]
    set tap_interval $horiz_tap_pitch
    # Set how many M3 stripe set intervals we want between switches and taps
-   set num_stripe_intervals [expr max(2, $vdd_m3_stripe_sparsity)]
+   set num_stripe_intervals $vdd_m3_stripe_sparsity
    # Set how far from edge to start inserting tap columns
    # This location must align with M3 VDD stripe 
    set tap_edge_offset [expr $M3_str_offset + (2 * $M3_str_intraset_spacing + $M3_str_width) - ($tap_width / 4) + $tap_interval - ( $num_stripe_intervals * $M3_str_interset_pitch)]
