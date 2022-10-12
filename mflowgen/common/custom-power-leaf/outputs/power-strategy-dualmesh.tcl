@@ -74,7 +74,7 @@ set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]
 # Set M3 stripe variables
 
 set M3_str_width            [expr  3 * $M3_min_width]
-set M3_str_pitch            [expr 10 * $M3_route_pitchX]
+set M3_str_pitch            [expr 20 * $M3_route_pitchX]
 
 if $::env(PWR_AWARE) {
   set M3_str_intraset_spacing [expr ($M3_str_pitch - 2*$M3_str_width)/2]
@@ -155,7 +155,7 @@ if $::env(PWR_AWARE) {
 # - M5_str_interset_pitch   : Pitch between same-signal stripes
 
 set M5_str_width            [expr 6 * $M3_str_width]
-set M5_str_pitch            [expr 5 * $M3_str_pitch]
+set M5_str_pitch            [expr 3 * $M3_str_pitch]
 set M5_str_intraset_spacing [expr $M5_str_pitch - $M5_str_width]
 set M5_str_interset_pitch   [expr 2*$M5_str_pitch]
 
@@ -216,9 +216,9 @@ set pmesh_bot_str_width [expr  8 * $M3_str_width]
 
 if $::env(PWR_AWARE) {
     # To allow VDD stripe at top and bottom the SRAM
-    set pmesh_bot_str_pitch [expr 6 * $M3_str_pitch]
+    set pmesh_bot_str_pitch [expr 3 * $M3_str_pitch]
 } else {
-    set pmesh_bot_str_pitch [expr 10 * $M3_str_pitch]
+    set pmesh_bot_str_pitch [expr 5 * $M3_str_pitch]
 }
 
 if $::env(PWR_AWARE) {
