@@ -55,6 +55,12 @@ set_max_fanout 20 $design_name
 
 set_max_transition [expr 0.1*${clock_period}] $design_name
 
+# Relax constraints on reset and stall signals, since these aren't pipelined and can run slower
+set_multicycle_path -setup 2 -from [get_ports reset]
+set_multicycle_path -hold 1 -from [get_ports reset]
+set_multicycle_path -setup 2 -from [get_ports stall*]
+set_multicycle_path -hold 1 -from [get_ports stall*]
+
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
 
