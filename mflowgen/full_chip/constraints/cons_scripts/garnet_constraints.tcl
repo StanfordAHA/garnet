@@ -29,3 +29,12 @@ set_multicycle_path -hold 9 -to [get_pins -hier global_buffer/glb_clk_en_bank_ma
 set_multicycle_path -setup 10 -to [get_pins -hier global_buffer/flush_crossbar_sel*]
 set_multicycle_path -hold 9 -to [get_pins -hier global_buffer/flush_crossbar_sel*]
 
+# Relax tile array and glb reset, stall
+set_multicycle_path -setup 2 -through [get_pins -hier global_buffer/reset]
+set_multicycle_path -hold 1 -through [get_pins -hier global_buffer/reset]
+
+set_multicycle_path -setup 2 -through [get_pins -hier Interconnect_inst0/reset]
+set_multicycle_path -hold 1 -through [get_pins -hier Interconnect_inst0/reset]
+
+set_multicycle_path -setup 2 -through [get_pins -hier Interconnect_inst0/stall*]
+set_multicycle_path -hold 1 -through [get_pins -hier Interconnect_inst0/stall*]
