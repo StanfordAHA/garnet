@@ -148,7 +148,7 @@ set_false_path -from [get_ports $port_names(loop_back_select)]
 # ------------------------------------------------------------------------------
 # CGRA and Rest of SoC
 # ------------------------------------------------------------------------------
-set_clock_groups -asynchronous -group {cgra_gclk cgra_fclk} -group {nic_clk cpu_clk sys_clk dma0_clk dma1_clk}
+set_clock_groups -asynchronous -group {cgra_gclk cgra_fclk} -group {nic_clk cpu_clk sys_clk dma0_clk dma1_clk sram_clk}
 
 # ------------------------------------------------------------------------------
 # TLX and Rest of SoC
