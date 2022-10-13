@@ -9,30 +9,6 @@
 #------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
-# Divided Clocks
-# ------------------------------------------------------------------------------
-foreach idx [list 1 2 4 8 16 32] {
-  set_clock_groups -asynchronous -group [get_clocks by_${idx}_mst_0_clk] -group [get_clocks by_${idx}_mst_1_clk]
-}
-
-foreach idx [list 2 4 8 16 32] {
-  set_multicycle_path $idx -setup -end -from [get_clocks by_${idx}_mst_0_clk] -to [get_clocks by_1_mst_0_clk]
-  set_multicycle_path [expr $idx - 1] -hold -end -from [get_clocks by_${idx}_mst_0_clk] -to [get_clocks by_1_mst_0_clk]
-
-  set_multicycle_path $idx -setup -start -to [get_clocks by_${idx}_mst_0_clk] -from [get_clocks by_1_mst_0_clk]
-  set_multicycle_path [expr $idx - 1] -hold -start -to [get_clocks by_${idx}_mst_0_clk] -from [get_clocks by_1_mst_0_clk]
-}
-
-foreach idx [list 2 4 8 16 32] {
-  set_multicycle_path $idx -setup -end -from [get_clocks by_${idx}_mst_1_clk] -to [get_clocks by_1_mst_1_clk]
-  set_multicycle_path [expr $idx - 1] -hold -end -from [get_clocks by_${idx}_mst_1_clk] -to [get_clocks by_1_mst_1_clk]
-
-  set_multicycle_path $idx -setup -start -to [get_clocks by_${idx}_mst_1_clk] -from [get_clocks by_1_mst_1_clk]
-  set_multicycle_path [expr $idx - 1] -hold -start -to [get_clocks by_${idx}_mst_1_clk] -from [get_clocks by_1_mst_1_clk]
-}
-
-
-# ------------------------------------------------------------------------------
 # DP Clocks and System Clocks
 # ------------------------------------------------------------------------------
 set_clock_groups -asynchronous -group {dp_jtag_clk} -group {dap_clk sys_clk cpu_clk}
@@ -47,11 +23,8 @@ set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk cgra_fcl
 # Trace Clock and CPU Clock
 # ------------------------------------------------------------------------------
 
-set_max_delay [expr $soc_master_clk_period * $soc_clk_div_factor] \
-    -from [get_clocks cpu_clk] -to [get_clocks trace_clkin]
-
-set_max_delay [expr $soc_master_clk_period * $soc_clk_div_factor] \
-    -from [get_clocks trace_clkin] -to [get_clocks cpu_clk]
+set_max_delay $trace_clkin_period -from [get_clocks cpu_clk] -to [get_clocks trace_clkin]
+set_max_delay $trace_clkin_period -from [get_clocks trace_clkin] -to [get_clocks cpu_clk]
 
 # ------------------------------------------------------------------------------
 # XGCD and NIC Clock
@@ -119,9 +92,6 @@ set_false_path -through [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_
 # Clock Controller - Clock Gate
 # ------------------------------------------------------------------------------
 
-# Master clocks
-set_clock_groups -asynchronous -group {m_clk_0} -group {m_clk_1}
-
 # Clock Gates
 set dev_names   [list cpu dap dma0 dma1 sram nic tlx cgra timer0 timer1 uart0 uart1 wdog]
 
@@ -178,16 +148,7 @@ set_false_path -from [get_ports $port_names(loop_back_select)]
 # ------------------------------------------------------------------------------
 # CGRA and Rest of SoC
 # ------------------------------------------------------------------------------
-set_clock_groups -asynchronous -group {cgra_gclk cgra_fclk} -group {nic_clk cpu_clk sys_clk dma0_clk dma1_clk}
-
-if {($cgra_master_clk_period < 2.0) && ($cgra_master_clk_period > 1.0)} {
-  set_multicycle_path 2 -setup -end -from [get_clocks master_clk_0] -to [get_clocks master_clk_1]
-  set_multicycle_path 1 -hold -end -from [get_clocks master_clk_0] -to [get_clocks master_clk_1]
-
-  set_multicycle_path 2 -setup -start -to [get_clocks master_clk_0] -from [get_clocks master_clk_1]
-  set_multicycle_path 1 -hold -start -to [get_clocks master_clk_0] -from [get_clocks master_clk_1]
-}
-
+set_clock_groups -asynchronous -group {cgra_gclk cgra_fclk} -group {nic_clk cpu_clk sys_clk dma0_clk dma1_clk sram_clk}
 
 # ------------------------------------------------------------------------------
 # TLX and Rest of SoC
@@ -199,4 +160,3 @@ set_clock_groups -asynchronous -group {tlx_fwd_fclk tlx_fwd_gclk} -group {sys_cl
 # XGCD and NIC
 # ------------------------------------------------------------------------------
 set_clock_groups -asynchronous -group $xgcd_div8_clk -group {nic_clk}
-
