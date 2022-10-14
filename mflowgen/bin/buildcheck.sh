@@ -241,6 +241,18 @@ if [ "$do_sizes" ]; then
       # E.g. "16-Tile_MemCore   SIZE  243 BY   88 ; AREA     15645"
       printf "%-30s %s %4.0f %s %4.0f %s AREA %9.0f\n" $f1 $lef_size $signoff_area
 
+      # Look for size of e.g. "19-tile_array" or "17-tile_array"
+      # FATAL ERROR if tile array is bigger than the chip!!!
+      if expr "$f1" > /dev/null : '.*-tile_array$'; then 
+          xdim=`echo "$lef_size" | awk '{printf("%d", $2)}'`
+          ydim=`echo "$lef_size" | awk '{printf("%d", $4)}'`
+          if [ $xdim -gt 4700 ]; then 
+              msg="**ERROR/FATAL tile array x dimension > 4700 (overlaps pad frame!)"
+              FATAL=`printf "${FATAL}${msg}\n"`
+              echo $msg
+          fi
+      fi
+
     done
     if [ "$found_lefs" != "True" ]; then echo "  No lefs found"; fi
 fi
@@ -372,7 +384,7 @@ if [ "$do_err" ]; then
     # echo $errfiles
 
     function chop { cut -b 1-$1; }
-    for f in $errfiles; do (
+    for f in $errfiles; do
 
         # Want only the lowest-level log file
         # e.g. "17-tile_array/17-Tile_PE/24-cadence-genus-genlib/logs/genus.log"
@@ -394,7 +406,7 @@ if [ "$do_err" ]; then
             | grep -v 'Error Limit' \
             | chop 80 | sort | uniq -c | sort -rn | head
         echo ""
-    ) done | $filter
+    done | $filter
 
     # find * -name \*.log -exec egrep '(^Error|^\*\*ERROR)' {} \; \
     #   | grep -v 'Error Limit' \
@@ -410,4 +422,15 @@ SEE ALL ERRORS (cut-n-paste):
       egrep -l "\$pat" \$L && egrep "\$pat" \$L && echo ''; done | less -S
 
 EOF
+
 fi
+
+if [ "$FATAL" ]; then
+    echo ""
+    echo "+++ FATAL ERRORS FOUND!!!"
+    echo "$FATAL"
+    exit 13
+fi
+
+                               
+
