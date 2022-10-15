@@ -40,7 +40,7 @@ set width [expr $total_cell_area / $core_density_target / $height]
 # Latest RTL gives width 124, builds array bigger than the chip :(
 # PE width 124 routes in 20 min, but then array is too big.
 # PE width 105 takes over 5 hours to route. So that's too small.
-# PE width 110 routes in ???. Let's use that as a max width, see what happens.
+# PE width 110 routes in 40 min, Let's use that as a max width, see what happens.
 # (Even though I set it to 110, it comes out 112 in the report, not sure why?)
 set max_width 110
 if { $width > $max_width } {
