@@ -8,4 +8,5 @@ outputs:
   - xgcd.lvs.v
   - xgcd-255.lvs.v
   - xgcd-1279.lvs.v
+  - ring_oscillator.lvs.v
 
