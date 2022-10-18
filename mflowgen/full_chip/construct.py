@@ -165,6 +165,7 @@ def construct():
   sealring       = Step( this_dir + '/sealring'                               )
   netlist_fixing = Step( this_dir + '/../common/fc-netlist-fixing'            )
   drc_pm         = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
+  drc_dp         = Step( this_dir + '/gf-drc-dp'                              )
 
   # Block-level designs
 
@@ -295,6 +296,7 @@ def construct():
   lvs.extend_inputs( ['xgcd.lvs.v'] )
   lvs.extend_inputs( ['xgcd-255.lvs.v'] )
   lvs.extend_inputs( ['xgcd-1279.lvs.v'] )
+  lvs.extend_inputs( ['ring_oscillator.lvs.v'] )
   lvs.extend_inputs( ['adk_lvs2'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
@@ -356,6 +358,7 @@ def construct():
   g.add_step( merge_gdr         )
   g.add_step( drc               )
   g.add_step( drc_pm            )
+  g.add_step( drc_dp            )
   g.add_step( antenna_drc       )
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
@@ -398,6 +401,7 @@ def construct():
   g.connect_by_name( adk,      merge_gdr      )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      drc_pm         )
+  g.connect_by_name( adk,      drc_dp         )
   g.connect_by_name( adk,      antenna_drc    )
   # Use lvs_adk so lvs has access to cells used in lower-level blocks
   g.connect_by_name( lvs_adk,  lvs            )
@@ -499,6 +503,9 @@ def construct():
   g.connect_by_name( merge_gdr, lvs )
   # Run pre-fill DRC after signoff
   g.connect_by_name( merge_gdr, prefill_drc )
+  # Run PM DRC after signoff
+  g.connect_by_name( merge_gdr, drc_pm )
+  
 
   # Run Fill on merged GDS
   g.connect( merge_gdr.o('design_merged.gds'), fill.i('design.gds') )
@@ -506,9 +513,10 @@ def construct():
   # For GF, Fill is already merged during fill step
   if adk_name == 'gf12-adk':
       # Connect fill directly to DRC steps
-      g.connect( fill.o('fill.gds'), drc.i('design_merged.gds') )
-      g.connect( fill.o('fill.gds'), drc_pm.i('design_merged.gds') )
+      g.connect( fill.o('fill.gds'), drc_dp.i('design_merged.gds') )
       g.connect( fill.o('fill.gds'), antenna_drc.i('design_merged.gds') )
+      # Connect drc_dp output gds to final signoff drc
+      g.connect_by_name( drc_dp, drc )
   else:
       # Merge fill
       g.connect( signoff.o('design-merged.gds'), merge_fill.i('design.gds') )
@@ -516,7 +524,6 @@ def construct():
 
       # Run DRC on merged and filled gds
       g.connect_by_name( merge_fill, drc )
-      g.connect_by_name( merge_fill, drc_pm )
       g.connect_by_name( merge_fill, antenna_drc )
    
   g.connect_by_name( adk,          pt_signoff   )
@@ -526,8 +533,8 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc,      debugcalibre )
-  g.connect_by_name( lvs,      debugcalibre )
+  #g.connect_by_name( drc,      debugcalibre )
+  #g.connect_by_name( lvs,      debugcalibre )
 
   g.connect_by_name( pre_route, route )
   g.connect_by_name( sealring, signoff )
