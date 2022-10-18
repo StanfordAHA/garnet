@@ -88,7 +88,7 @@ set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]
 # Set M3 stripe variables
 
 set M3_str_width            [expr  3 * $M3_min_width]
-set M3_str_pitch            [expr 10 * $M3_route_pitchX]
+set M3_str_pitch            [expr 20 * $M3_route_pitchX]
 
 set M3_str_intraset_spacing [expr $M3_str_pitch - $M3_str_width]
 set M3_str_interset_pitch   [expr 2*$M3_str_pitch]
@@ -135,7 +135,7 @@ addStripe -nets {VSS VDD} -layer 3 -direction vertical \
 # - M5_str_interset_pitch   : Pitch between same-signal stripes
 
 set M5_str_width            [expr 6 * $M3_str_width]
-set M5_str_pitch            [expr 5 * $M3_str_pitch]
+set M5_str_pitch            [expr 3 * $M3_str_pitch]
 set M5_str_intraset_spacing [expr $M5_str_pitch - $M5_str_width]
 set M5_str_interset_pitch   [expr 2*$M5_str_pitch]
 
@@ -171,7 +171,7 @@ foreach_in_collection block $srams {
 # - pmesh_bot_str_interset_pitch   : Pitch between same-signal stripes
 
 set pmesh_bot_str_width [expr  8 * $M3_str_width]
-set pmesh_bot_str_pitch [expr 10 * $M3_str_pitch]
+set pmesh_bot_str_pitch [expr 5 * $M3_str_pitch]
 
 set pmesh_bot_str_intraset_spacing [expr $pmesh_bot_str_pitch - $pmesh_bot_str_width]
 set pmesh_bot_str_interset_pitch   [expr 2*$pmesh_bot_str_pitch]
@@ -213,7 +213,7 @@ addStripe -nets {VSS VDD} -layer $pmesh_bot -direction horizontal \
 # - pmesh_top_str_interset_pitch   : Pitch between same-signal stripes
 
 set pmesh_top_str_width [expr 16 * $M3_str_width]
-set pmesh_top_str_pitch [expr 20 * $M3_str_pitch] ; # Arbitrary
+set pmesh_top_str_pitch [expr 10 * $M3_str_pitch] ; # Arbitrary
 
 set pmesh_top_str_intraset_spacing [expr $pmesh_top_str_pitch - $pmesh_top_str_width]
 set pmesh_top_str_interset_pitch   [expr 2*$pmesh_top_str_pitch]
