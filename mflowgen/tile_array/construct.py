@@ -34,7 +34,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 1.1,
+    'clock_period'      : 1.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -50,7 +50,7 @@ def construct():
     # Useful Skew (CTS)
     'useful_skew'       : False,
     # hold target slack
-    'hold_target_slack' : 0.015,
+    'hold_target_slack' : 0.07,
     # Pipeline stage insertion
     'pipeline_config_interval': 8,
     'pipeline_stage_height': 30,
