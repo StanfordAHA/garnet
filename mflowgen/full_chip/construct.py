@@ -517,10 +517,10 @@ def construct():
   if adk_name == 'gf12-adk':
       # Connect fill directly to DRC steps
       g.connect( fill.o('fill.gds'), drc_dp.i('design_merged.gds') )
-      g.connect( fill.o('fill.gds'), drc_mas.i('design_merged.gds') )
       g.connect( fill.o('fill.gds'), antenna_drc.i('design_merged.gds') )
       # Connect drc_dp output gds to final signoff drc
       g.connect_by_name( drc_dp, drc )
+      g.connect_by_name( drc_dp, drc_mas )
   else:
       # Merge fill
       g.connect( signoff.o('design-merged.gds'), merge_fill.i('design.gds') )
