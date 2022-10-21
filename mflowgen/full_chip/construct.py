@@ -166,6 +166,7 @@ def construct():
   netlist_fixing = Step( this_dir + '/../common/fc-netlist-fixing'            )
   drc_pm         = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
   drc_dp         = Step( this_dir + '/gf-drc-dp'                              )
+  drc_mas        = Step( this_dir + '/../common/gf-mentor-calibre-drc-mas'    )
 
   # Block-level designs
 
@@ -359,6 +360,7 @@ def construct():
   g.add_step( drc               )
   g.add_step( drc_pm            )
   g.add_step( drc_dp            )
+  g.add_step( drc_mas           )
   g.add_step( antenna_drc       )
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
@@ -402,6 +404,7 @@ def construct():
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      drc_dp         )
+  g.connect_by_name( adk,      drc_mas        )
   g.connect_by_name( adk,      antenna_drc    )
   # Use lvs_adk so lvs has access to cells used in lower-level blocks
   g.connect_by_name( lvs_adk,  lvs            )
@@ -514,6 +517,7 @@ def construct():
   if adk_name == 'gf12-adk':
       # Connect fill directly to DRC steps
       g.connect( fill.o('fill.gds'), drc_dp.i('design_merged.gds') )
+      g.connect( fill.o('fill.gds'), drc_mas.i('design_merged.gds') )
       g.connect( fill.o('fill.gds'), antenna_drc.i('design_merged.gds') )
       # Connect drc_dp output gds to final signoff drc
       g.connect_by_name( drc_dp, drc )
