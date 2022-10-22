@@ -56,7 +56,7 @@ set_input_delay -clock ${clock_name} [expr ${clock_period}/2.0] [all_inputs]
 
 # set_output_delay constraints for output ports
 
-set_output_delay -clock ${clock_name} 0 [all_outputs]
+set_output_delay -clock ${clock_name} [expr $clock_period * 0.3] [all_outputs]
 
 # Make all signals limit their fanout
 
@@ -76,3 +76,4 @@ set_false_path -hold -from [ get_ports clk_in ] -to [ get_ports clk_out ]
 set_output_delay -clock ${clock_name} [expr $clock_period * 0.8] [get_ports reset_out]
 set_input_delay -clock ${clock_name} [expr $clock_period * 0.8] [get_ports glb_cfg_rd_data*]
 set_output_delay -clock ${clock_name} [expr $clock_period * 0.8] [get_ports cgra_stall]
+set_output_delay -clock ${clock_name} [expr $clock_period * 0.9] [get_ports strm*pulse*]
