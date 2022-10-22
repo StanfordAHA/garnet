@@ -30,7 +30,7 @@ set_max_delay $trace_clkin_period -from [get_clocks trace_clkin] -to [get_clocks
 # XGCD and NIC Clock
 # ------------------------------------------------------------------------------
 
-set xgcd_div8_clk core/u_aha_xgcd_integration/u_xgcd_wrapper_top/clk_div_8
+set xgcd_div8_clk core/u_aha_xgcd_integration/u_xgcd_wrapper_top/clk_div_8_1
 
 set_max_delay [expr $xgcd_design_clk_period * 8] \
     -from [get_clocks $xgcd_div8_clk] \
