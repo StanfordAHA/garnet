@@ -26,7 +26,7 @@ set adk_allow_sdf_regs false
 # AON boundary taps must line up with M3 VDD stripes.
 # 'stripes_per_tap' controls the space between AON taps
 # as a multiple of the M3 power stripe pitch.
-set stripes_per_tap 18
+set stripes_per_tap 9
 
 # Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
 # This integer-div followed by integer-mul corrects that situation.
@@ -52,7 +52,7 @@ if { $stripes_per_tap != $corrected_stripes_per_tap } {
 #
 # If set to 12 in Amber (TSMC) design, get five columns of switches.
 # If set to 18, get 3 cols symmetrically placed, center col at center chip.
-set stripes_per_switch 18
+set stripes_per_switch 14
 
 # Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
 set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
@@ -70,7 +70,7 @@ set aon_width 160
 set aon_height 24
 
 # Sets AON box horizontal offset from center in # of unit stdcell widths.
-set aon_horiz_offset 0
+set aon_horiz_offset 2
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 30

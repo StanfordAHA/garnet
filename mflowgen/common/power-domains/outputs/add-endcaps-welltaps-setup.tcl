@@ -17,7 +17,7 @@ set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]
 # Set M3 stripe variables
 
 set M3_str_width            [expr  3 * $M3_min_width]
-set M3_str_pitch            [expr 10 * $M3_route_pitchX]
+set M3_str_pitch            [expr 20 * $M3_route_pitchX]
 
 set M3_str_intraset_spacing [expr ($M3_str_pitch - 2*$M3_str_width)/2]
 set M3_str_interset_pitch   [expr 2*$M3_str_pitch]

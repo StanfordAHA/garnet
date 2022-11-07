@@ -93,7 +93,7 @@ def construct():
     'skip_verify_connectivity' : True,
     # Hold fixing
     'signoff_engine' : True,
-    'hold_target_slack'  : 0.060,
+    'hold_target_slack'  : 0.100,
     # LVS
     # - need lvs2 because dragonphy uses LVT cells
     'lvs_extra_spice_include' : 'inputs/adk_lvs2/*.cdl',
@@ -115,6 +115,11 @@ def construct():
     # Testbench
     'cgra_apps' : ["tests/conv_1_2", "tests/conv_2_1"]
   }
+  
+  if parameters['PWR_AWARE'] == True:
+      parameters['lvs_adk_view'] = adk_view + '-pm'
+  else:
+      parameters['lvs_adk_view'] = adk_view
 
   sram_2_params = {
     # SRAM macros
@@ -131,7 +136,7 @@ def construct():
     'coord_x'   : '-49.98u',
     'coord_y'   : '-49.92u'
   }
-
+  
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
@@ -160,6 +165,8 @@ def construct():
   sealring       = Step( this_dir + '/sealring'                               )
   netlist_fixing = Step( this_dir + '/../common/fc-netlist-fixing'            )
   drc_pm         = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
+  drc_dp         = Step( this_dir + '/gf-drc-dp'                              )
+  drc_mas        = Step( this_dir + '/../common/gf-mentor-calibre-drc-mas'    )
 
   # Block-level designs
 
@@ -231,6 +238,10 @@ def construct():
   # Pre-Fill DRC Check
   prefill_drc = drc.clone()
   prefill_drc.set_name( 'pre-fill-drc' )
+  
+  # Separate ADK for LVS so it has PM cells when needed
+  lvs_adk = adk.clone()
+  lvs_adk.set_name( 'lvs_adk' )
 
   # Add cgra tile macro inputs to downstream nodes
 
@@ -283,7 +294,10 @@ def construct():
   lvs.extend_inputs( ['global_controller.lvs.v'] )
   lvs.extend_inputs( ['sram.spi'] )
   lvs.extend_inputs( ['sram_2.spi'] )
-  lvs.extend_inputs( ['xgcd.spi'] )
+  lvs.extend_inputs( ['xgcd.lvs.v'] )
+  lvs.extend_inputs( ['xgcd-255.lvs.v'] )
+  lvs.extend_inputs( ['xgcd-1279.lvs.v'] )
+  lvs.extend_inputs( ['ring_oscillator.lvs.v'] )
   lvs.extend_inputs( ['adk_lvs2'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
@@ -345,10 +359,15 @@ def construct():
   g.add_step( merge_gdr         )
   g.add_step( drc               )
   g.add_step( drc_pm            )
+  g.add_step( drc_dp            )
+  g.add_step( drc_mas           )
   g.add_step( antenna_drc       )
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
   g.add_step( debugcalibre      )
+  
+  # Different adk view for lvs
+  g.add_step( lvs_adk        )
 
   # Post-Power DRC check
   g.add_step( power_drc         )
@@ -384,8 +403,11 @@ def construct():
   g.connect_by_name( adk,      merge_gdr      )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      drc_pm         )
+  g.connect_by_name( adk,      drc_dp         )
+  g.connect_by_name( adk,      drc_mas        )
   g.connect_by_name( adk,      antenna_drc    )
-  g.connect_by_name( adk,      lvs            )
+  # Use lvs_adk so lvs has access to cells used in lower-level blocks
+  g.connect_by_name( lvs_adk,  lvs            )
 
   # Post-Power DRC check
   g.connect_by_name( adk,      power_drc )
@@ -484,6 +506,9 @@ def construct():
   g.connect_by_name( merge_gdr, lvs )
   # Run pre-fill DRC after signoff
   g.connect_by_name( merge_gdr, prefill_drc )
+  # Run PM DRC after signoff
+  g.connect_by_name( merge_gdr, drc_pm )
+  
 
   # Run Fill on merged GDS
   g.connect( merge_gdr.o('design_merged.gds'), fill.i('design.gds') )
@@ -491,9 +516,11 @@ def construct():
   # For GF, Fill is already merged during fill step
   if adk_name == 'gf12-adk':
       # Connect fill directly to DRC steps
-      g.connect( fill.o('fill.gds'), drc.i('design_merged.gds') )
-      g.connect( fill.o('fill.gds'), drc_pm.i('design_merged.gds') )
+      g.connect( fill.o('fill.gds'), drc_dp.i('design_merged.gds') )
       g.connect( fill.o('fill.gds'), antenna_drc.i('design_merged.gds') )
+      # Connect drc_dp output gds to final signoff drc
+      g.connect_by_name( drc_dp, drc )
+      g.connect_by_name( drc_dp, drc_mas )
   else:
       # Merge fill
       g.connect( signoff.o('design-merged.gds'), merge_fill.i('design.gds') )
@@ -501,7 +528,6 @@ def construct():
 
       # Run DRC on merged and filled gds
       g.connect_by_name( merge_fill, drc )
-      g.connect_by_name( merge_fill, drc_pm )
       g.connect_by_name( merge_fill, antenna_drc )
    
   g.connect_by_name( adk,          pt_signoff   )
@@ -511,8 +537,8 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc,      debugcalibre )
-  g.connect_by_name( lvs,      debugcalibre )
+  #g.connect_by_name( drc,      debugcalibre )
+  #g.connect_by_name( lvs,      debugcalibre )
 
   g.connect_by_name( pre_route, route )
   g.connect_by_name( sealring, signoff )
@@ -532,6 +558,9 @@ def construct():
   # Provide different parameter set to second sram node, so it can actually 
   # generate a different sram
   gen_sram_2.update_params( sram_2_params )
+  
+  # LVS adk has separate view parameter
+  lvs_adk.update_params({ 'adk_view' : parameters['lvs_adk_view']})
 
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
