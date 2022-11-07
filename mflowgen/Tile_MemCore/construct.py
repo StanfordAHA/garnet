@@ -58,11 +58,11 @@ def construct():
     'mux_size'            : 4,
     'partial_write'       : False,
     # Hold target slack
-    'hold_target_slack'   : 0.015,
+    'hold_target_slack'   : 0.030,
     # Utilization target
     'core_density_target' : 0.68,
     # RTL Generation
-    'interconnect_only'   : True,
+    'interconnect_only'   : False,
     'rtl_docker_image'    : 'default', # Current default is 'stanfordaha/garnet:latest'
     # Power Domains
     'PWR_AWARE'         : pwr_aware,

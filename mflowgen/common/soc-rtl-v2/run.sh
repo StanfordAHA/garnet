@@ -4,7 +4,7 @@
 CUR_DIR=$(pwd)
 
 # Clone the SoC Repo
-git clone -b gf12-conversion https://github.com/StanfordAHA/AhaM3SoC.git aham3soc
+git clone https://github.com/StanfordAHA/AhaM3SoC.git aham3soc
 
 # Clone the ARM IP Repo
 git clone /sim/repos/aham3soc_armip aham3soc_armip
