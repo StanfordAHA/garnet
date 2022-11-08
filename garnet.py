@@ -64,8 +64,13 @@ class Garnet(Generator):
                  sb_option: str = "Imran",
                  pipeline_regs_density: list = None,
                  port_conn_option: list = None,
-                 config_port_pipeline: bool = True
-                 ):
+                 config_port_pipeline: bool = True,
+                 mem_width: int = 64,
+                 mem_depth: int = 512,
+                 macro_width: int = 32,
+                 dac_exp: bool = False,
+                 dual_port: bool = False,
+                 rf: bool = False):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -160,7 +165,13 @@ class Garnet(Generator):
                                    scgra_combined=scgra_combined,
                                    switchbox_type=sb_type_dict.get(sb_option, "Invalid Switchbox Type"),
                                    pipeline_regs_density=pipeline_regs_density,
-                                   port_conn_option=port_conn_option)
+                                   port_conn_option=port_conn_option,
+                                   mem_width=mem_width,
+                                   mem_depth=mem_depth,
+                                   macro_width=macro_width,
+                                   dac_exp=dac_exp,
+                                   dual_port=dual_port,
+                                   rf=rf)
 
         self.interconnect = interconnect
 
@@ -649,6 +660,12 @@ def main():
     parser.add_argument("--port-conn-option", nargs="+", type=int, default=None)
     parser.add_argument("--config-port-pipeline", dest="config_port_pipeline", action="store_true")
     parser.add_argument("--no-config-port-pipeline", dest="config_port_pipeline", action="store_false")
+    parser.add_argument("--macro-width", dest="memory macro width", type=int, default=32)
+    parser.add_argument("--mem-width", dest="memory width", type=int, default=64)
+    parser.add_argument("--mem-depth", dest="memory depth", type=int, default=512)
+    parser.add_argument("--dual-port", dest="use dual port memory", action="store_true")
+    parser.add_argument("--rf", dest="register file (no read delay)", action="store_true")
+    parser.add_argument("--dac_exp", dest="dac experiments", action="store_true")
     parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
 
@@ -698,7 +715,13 @@ def main():
                     sb_option=args.sb_option,
                     pipeline_regs_density=args.pipeline_regs_density,
                     port_conn_option=args.port_conn_option,
-                    config_port_pipeline=args.config_port_pipeline)
+                    config_port_pipeline=args.config_port_pipeline,
+                    mem_width=args.mem_width,
+                    mem_depth=args.mem_depth,
+                    macro_width=args.macro_width,
+                    dac_exp=args.dac_exp,
+                    dual_port=args.dual_port,
+                    rf=args.rf)
 
     if args.verilog:
         garnet_circ = garnet.circuit()

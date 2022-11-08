@@ -30,10 +30,23 @@ class CoreCombinerCore(LakeCoreBase):
                  tech_map=GF_Tech_Map(depth=512, width=32),
                  pnr_tag="C",
                  name=None,
-                 input_prefix=""):
+                 input_prefix="",
+                 dual_port=False,
+                 rf=False,
+                 mem_width=16,
+                 mem_depth=512):
 
         self.pnr_tag = pnr_tag
         self.input_prefix = input_prefix
+
+        self.dual_port = dual_port
+        self.rf = rf
+        self.mem_width = mem_width
+        self.mem_depth = mem_depth
+
+        self.read_delay = 1
+        if self.rf:
+            self.read_delay = 0
 
         cc_core_name = "CoreCombiner"
 
@@ -63,7 +76,9 @@ class CoreCombinerCore(LakeCoreBase):
         cache_key = (self.data_width,
                      self.config_data_width,
                      self.config_addr_width,
-                     cc_core_name)
+                     cc_core_name,
+                     dual_port,
+                     rf)
 
         # Check for circuit caching
         if cache_key not in LakeCoreBase._circuit_cache:
@@ -71,8 +86,8 @@ class CoreCombinerCore(LakeCoreBase):
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
             self.CC = CoreCombiner(data_width=data_width,
-                                   mem_width=64,
-                                   mem_depth=512,
+                                   mem_width=self.mem_width,
+                                   mem_depth=self.mem_depth,
                                    banks=1,
                                    config_width=16,
                                    config_addr_width=8,
@@ -83,6 +98,8 @@ class CoreCombinerCore(LakeCoreBase):
                                    tech_map=self.tech_map,
                                    do_config_lift=False,
                                    io_prefix=self.input_prefix,
+                                   rw_same_cycle=self.dual_port,
+                                   read_delay=self.read_delay,
                                    fifo_depth=self.fifo_depth)
 
             self.dut = self.CC.dut
