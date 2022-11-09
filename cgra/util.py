@@ -178,7 +178,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     if rf:
                         read_delay = 0
                     strg_ub = StrgUBThin(
-                        config_mode_str="pond",
+                        config_mode_str="UB",
                         data_width=16,  # CGRA Params
                         mem_width=mem_width,
                         mem_depth=mem_depth,
