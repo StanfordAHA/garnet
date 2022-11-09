@@ -186,7 +186,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                         input_sched_iterator_support=6,
                         output_addr_iterator_support=6,
                         output_sched_iterator_support=6,
-                        interconnect_input_ports=mem_inputs_ports,  # Connection to int
+                        interconnect_input_ports=mem_input_ports,  # Connection to int
                         interconnect_output_ports=mem_output_ports,
                         config_width=16,
                         read_delay=read_delay,  # Cycle delay in read (SRAM vs Register File)
@@ -205,7 +205,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                     strg_ub = StrgUBVec(data_width=16,
                                         mem_width=mem_width,
                                         mem_depth=mem_depth,
-                                        interconnect_input_ports=mem_inputs_ports,
+                                        interconnect_input_ports=mem_input_ports,
                                         interconnect_output_ports=mem_output_ports)
 
             else:
