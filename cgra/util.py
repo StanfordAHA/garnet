@@ -197,6 +197,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                         area_opt_share=False,
                         area_opt_dual_config=False,
                         chaining=True,
+                        name_suffix="_DAC",
                         reduced_id_config_width=16,
                         delay_width=4,
                         iterator_support2=2  # assumes that this port has smaller iter_support
