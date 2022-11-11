@@ -97,7 +97,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 pe_fc=lassen_fc,
                 ready_valid: bool = True,
                 scgra: bool = True,
-                scgra_combined: bool = True):
+                scgra_combined: bool = True,
+                config_bw: int = 16,   # config_bw
+                id_dim: int = 6):      # id_dim
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
     bit_widths = [1, 17]
@@ -165,7 +167,12 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                  add_flush=False)
             strg_ub = StrgUBVec(data_width=16,
                                 mem_width=64,
-                                mem_depth=512)
+                                mem_depth=512,
+                                config_width=config_bw,               # config_bw
+                                reduced_id_config_width=config_bw,    # config_bw
+                                input_addr_iterator_support=id_dim,   # id_dim
+                                input_sched_iterator_support=id_dim,  # id_dim
+                                area_opt=True)                        #
             fiber_access = FiberAccess(data_width=16,
                                        local_memory=False,
                                        tech_map=GF_Tech_Map(depth=512, width=32),
@@ -191,7 +198,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                prioritize_write=True,
                                comply_with_17=True)
 
-            stencil_valid = StencilValid()
+            # stencil_valid = StencilValid()
+            stencil_valid = StencilValid(iterator_support=id_dim,  # id_dim
+                                         config_width=config_bw)   # config_bw
 
             if use_fiber_access:
                 controllers.append(fiber_access)
@@ -369,11 +378,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     if add_pond:
         # remap
         if intercore_mapping is not None:
-            inter_core_connection_1 =  {"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
-            inter_core_connection_16 = {"PondTop_output_width_17_num_0": [intercore_mapping["data0"], intercore_mapping["data1"], intercore_mapping["data2"]],
+            inter_core_connection_1 = {"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
+            inter_core_connection_16 = {"PondTop_output_width_17_num_0": [intercore_mapping["data0"],
+                                                                          intercore_mapping["data1"],
+                                                                          intercore_mapping["data2"]],
                                         intercore_mapping["res"]: ["PondTop_input_width_17_num_0", "PondTop_input_width_17_num_1"]}
         else:
-            inter_core_connection_1 =  {"PondTop_output_width_1_num_0": ["bit0"]}
+            inter_core_connection_1 = {"PondTop_output_width_1_num_0": ["bit0"]}
             inter_core_connection_16 = {"PondTop_output_width_17_num_0": ["data0", "data1", "data2"],
                                         "res": ["PondTop_input_width_17_num_0", "PondTop_input_width_17_num_1"]}
     else:

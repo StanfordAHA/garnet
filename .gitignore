@@ -46,3 +46,8 @@ tests/*/obj_dir/
 dump/
 # COSA temporary files
 CoSA*tmp.out
+
+.gitignore
+.ast_tools/
+global_buffer/
+global_controller/

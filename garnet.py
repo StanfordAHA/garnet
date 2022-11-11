@@ -64,7 +64,9 @@ class Garnet(Generator):
                  sb_option: str = "Imran",
                  pipeline_regs_density: list = None,
                  port_conn_option: list = None,
-                 config_port_pipeline: bool = True
+                 config_port_pipeline: bool = True,
+                 config_bw: int = 16,  # config_bw
+                 id_dim: int = 6       # id_dim
                  ):
         super().__init__()
 
@@ -160,7 +162,10 @@ class Garnet(Generator):
                                    scgra_combined=scgra_combined,
                                    switchbox_type=sb_type_dict.get(sb_option, "Invalid Switchbox Type"),
                                    pipeline_regs_density=pipeline_regs_density,
-                                   port_conn_option=port_conn_option)
+                                   port_conn_option=port_conn_option,
+                                   config_bw=config_bw,  # config_bw
+                                   id_dim=id_dim         # id_dim
+                                   )
 
         self.interconnect = interconnect
 
@@ -310,7 +315,7 @@ class Garnet(Generator):
         for blk_id in inputs:
             x, y = placement[blk_id]
             bit_width = 17 if blk_id[0] == "I" else 1
-            #bit_width = 16 if blk_id[0] == "I" else 1
+            # bit_width = 16 if blk_id[0] == "I" else 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
             print("WEIRD NAME ASSERTION")
@@ -324,7 +329,7 @@ class Garnet(Generator):
                 en_port_name.append(name)
         for blk_id in outputs:
             x, y = placement[blk_id]
-            #bit_width = 16 if blk_id[0] == "I" else 1
+            # bit_width = 16 if blk_id[0] == "I" else 1
             bit_width = 17 if blk_id[0] == "I" else 1
             name = f"io2glb_{bit_width}_X{x:02X}_Y{y:02X}"
             output_interface.append(name)
@@ -357,7 +362,7 @@ class Garnet(Generator):
                     new_conns.append(conn)
             netlist_info['netlist'][edge_id] = new_conns
 
-        self.pes_with_packed_ponds = {pe:pond for pond,pe in packed_ponds.items()}
+        self.pes_with_packed_ponds = {pe: pond for pond, pe in packed_ponds.items()}
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves):
@@ -419,7 +424,7 @@ class Garnet(Generator):
 
         mem_remap = None
         pe_remap = None
-        
+
         for core_key, core_value in self.interconnect.tile_circuits.items():
             actual_core = core_value.core
             pnr_tag = actual_core.pnr_info()
@@ -457,10 +462,10 @@ class Garnet(Generator):
                         # Actually use wr addr for rom mode...
                         hack_remap = {
                             'addr_in_0': 'wr_addr_in',
-                            #'addr_in_0': 'rd_addr_in',
+                            # 'addr_in_0': 'rd_addr_in',
                             'ren_in_0': 'ren',
                             'data_out_0': 'data_out'
-                                }
+                        }
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
                     # print("SHOWING REMAP")
@@ -473,10 +478,10 @@ class Garnet(Generator):
                     pin_remap = pe_remap['alu'][pin_]
                     connections_list[idx] = (tag_, pin_remap)
             netlist_info['netlist'][netlist_id] = connections_list
-                    # Remap the memtile or pondtile pins
-                    #core = self.interconnect.placement[tag_]
-                    #print(core)
-                    #if tag_[0] == 'm
+            # Remap the memtile or pondtile pins
+            # core = self.interconnect.placement[tag_]
+            # print(core)
+            # if tag_[0] == 'm
 
         # print(netlist_info['netlist'])
 
@@ -494,9 +499,8 @@ class Garnet(Generator):
                     if "data_out_pond_1" in port_name:
                         mapping[i] = (inst_name, "PondTop_output_width_17_num_1")
 
-
         self.pack_ponds(netlist_info)
-        
+
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
@@ -649,6 +653,8 @@ def main():
     parser.add_argument("--port-conn-option", nargs="+", type=int, default=None)
     parser.add_argument("--config-port-pipeline", dest="config_port_pipeline", action="store_true")
     parser.add_argument("--no-config-port-pipeline", dest="config_port_pipeline", action="store_false")
+    parser.add_argument("--config-bw", type=int, default=16)  # config_bw
+    parser.add_argument("--id-dim", type=int, default=6)      # id_dim
     parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
 
@@ -698,7 +704,10 @@ def main():
                     sb_option=args.sb_option,
                     pipeline_regs_density=args.pipeline_regs_density,
                     port_conn_option=args.port_conn_option,
-                    config_port_pipeline=args.config_port_pipeline)
+                    config_port_pipeline=args.config_port_pipeline,
+                    config_bw=args.config_bw,  # config_bw
+                    id_dim=args.id_dim         # id_dim
+                    )
 
     if args.verilog:
         garnet_circ = garnet.circuit()
