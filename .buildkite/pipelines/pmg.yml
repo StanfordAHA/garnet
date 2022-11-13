@@ -76,5 +76,5 @@ steps:
   commands:
   - 'export RTL_DOCKER_IMAGE=stanfordaha/garnet:latest;
     $TEST --need_space 30G full_chip --steps rtl --debug'
-  if: build.branch =~ /to-spv/
+  if: build.branch =~ /to-spv/ || build.branch =~ /spV/
 
