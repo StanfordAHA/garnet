@@ -1,0 +1,44 @@
+##############################################################################
+# TO TEST A SPECIFIC BRANCH/COMMIT
+# -------------------------------------------------
+# Add to env:
+#   NOV11: ee214ef77b827f969e4b5f056f5d866cf391be7a
+# Add to commands:
+#   - pwd; git branch; git checkout $$NOV11
+# -------------------------------------------------
+
+env:
+  SETUP: source mflowgen/bin/setup-buildkite.sh
+
+  # Env var used by test_module.sh :(
+  TEST_MODULE_SBFLAGS: '--skip_mflowgen'
+
+  # For debugging, use build_dir flag to save build in indicated local dir
+  # TEST: echo exit 13 | mflowgen/test/test_module.sh
+  TEST: echo exit 13 | mflowgen/test/test_module.sh --build_dir /build/glb${BUILDKITE_BUILD_NUMBER}
+
+  # Newer dockers use lake "sparse_strawman" branch offshoots :(
+  # Note as of 10/10/2022 this is the default (see common/rtl/gen_rtl.sh)
+  RTL_DOCKER_IMAGE: 'stanfordaha/garnet@sha256:dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4'
+
+  # TODO/FIXME Figure out how to use a top-level parm file :(
+
+steps:
+
+##############################################################################
+# COMMON SETUP to initialize mflowgen
+
+- label: 'setup 2m'
+  commands:
+  - '
+     echo "--- SETUP";
+     set -o pipefail;
+     $$SETUP --dir .;
+    '
+- wait
+
+- label: 'gtile init 20m'
+  commands:
+  - $TEST --need_space 30G full_chip glb_top glb_tile --steps lvs --debug
+  - mflowgen/bin/buildcheck.sh full_chip/*glb_top/*glb_tile --show-all-errors
+
