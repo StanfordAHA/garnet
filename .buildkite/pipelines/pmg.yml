@@ -75,5 +75,5 @@ steps:
 - label: 'RTL only'
   commands:
   - $TEST --need_space 30G full_chip --steps rtl --debug
-  if: build.branch ~ /to-spv/
+  if: build.branch =~ /to-spv/
 
