@@ -98,6 +98,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 ready_valid: bool = True,
                 scgra: bool = True,
                 scgra_combined: bool = True,
+                stencil_valid_en: bool = True,
                 config_bw: int = 16,   # config_bw
                 id_dim: int = 6):      # id_dim
     # currently only add 16bit io cores
@@ -169,10 +170,12 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                 mem_width=64,
                                 mem_depth=512,
                                 config_width=config_bw,               # config_bw
-                                reduced_id_config_width=config_bw,    # config_bw
+                                reduced_id_config_width=config_bw,    # config_bw (param exp) or fix at 11 (sharing exp)
                                 input_addr_iterator_support=id_dim,   # id_dim
                                 input_sched_iterator_support=id_dim,  # id_dim
-                                area_opt=True)                        #
+                                area_opt=True,
+                                in2agg_en=True,
+                                agg2sram_en=True)                     #
             fiber_access = FiberAccess(data_width=16,
                                        local_memory=False,
                                        tech_map=GF_Tech_Map(depth=512, width=32),
@@ -198,9 +201,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                prioritize_write=True,
                                comply_with_17=True)
 
-            # stencil_valid = StencilValid()
-            stencil_valid = StencilValid(iterator_support=id_dim,  # id_dim
-                                         config_width=config_bw)   # config_bw
+            if stencil_valid_en:
+                # stencil_valid = StencilValid()
+                stencil_valid = StencilValid(iterator_support=id_dim,  # id_dim
+                                             config_width=config_bw)   # config_bw
 
             if use_fiber_access:
                 controllers.append(fiber_access)
@@ -211,7 +215,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             controllers.append(strg_ub)
             controllers.append(strg_ram)
-            controllers.append(stencil_valid)
+            if stencil_valid_en:
+                controllers.append(stencil_valid)
 
             isect = Intersect(data_width=16,
                               use_merger=False,

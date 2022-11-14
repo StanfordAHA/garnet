@@ -66,7 +66,8 @@ class Garnet(Generator):
                  port_conn_option: list = None,
                  config_port_pipeline: bool = True,
                  config_bw: int = 16,  # config_bw
-                 id_dim: int = 6       # id_dim
+                 id_dim: int = 6,      # id_dim
+                 stencil_valid_en: bool = True
                  ):
         super().__init__()
 
@@ -164,7 +165,8 @@ class Garnet(Generator):
                                    pipeline_regs_density=pipeline_regs_density,
                                    port_conn_option=port_conn_option,
                                    config_bw=config_bw,  # config_bw
-                                   id_dim=id_dim         # id_dim
+                                   id_dim=id_dim,        # id_dim
+                                   stencil_valid_en=stencil_valid_en
                                    )
 
         self.interconnect = interconnect
@@ -456,7 +458,8 @@ class Garnet(Generator):
                     # print(metadata)
                     mode = "UB"
                     if 'stencil_valid' in metadata["config"]:
-                        mode = 'stencil_valid'
+                        if stencil_valid_en:
+                            mode = 'stencil_valid'
                     elif 'mode' in metadata and metadata['mode'] == 'sram':
                         mode = 'ROM'
                         # Actually use wr addr for rom mode...
@@ -655,6 +658,7 @@ def main():
     parser.add_argument("--no-config-port-pipeline", dest="config_port_pipeline", action="store_false")
     parser.add_argument("--config-bw", type=int, default=16)  # config_bw
     parser.add_argument("--id-dim", type=int, default=6)      # id_dim
+    parser.add_argument("--stencil-valid-en", type=bool, default=True)      # stencil_valid_en
     parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
 
@@ -706,7 +710,8 @@ def main():
                     port_conn_option=args.port_conn_option,
                     config_port_pipeline=args.config_port_pipeline,
                     config_bw=args.config_bw,  # config_bw
-                    id_dim=args.id_dim         # id_dim
+                    id_dim=args.id_dim,        # id_dim
+                    stencil_valid_en=args.stencil_valid_en  # stencil_valid_en
                     )
 
     if args.verilog:
