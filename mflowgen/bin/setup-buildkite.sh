@@ -403,6 +403,14 @@ fi
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
+
+  # Local modifications to repo can mean trouble!
+  if $(git diff | head | grep . > /dev/null); then 
+      echo "+++ ERROR found local mods to mflowgen repo in $mflowgen_branch"
+      exit 13
+  fi
+
+  # Branch is pure, go ahead and install
   TOP=$PWD; pip install -e .
 popd
 
@@ -417,7 +425,6 @@ fi
 
 # See what we got
 which mflowgen; pip list | grep mflowgen
-
 
 
 ########################################################################
