@@ -126,6 +126,11 @@ def construct():
   dc.extend_inputs( soc_rtl.all_outputs() )
   dc.extend_inputs( read_design.all_outputs() )
 
+  # TSMC needs streamout *without* the (new) default -uniquify flag
+  # This python method finds 'stream-out.tcl' and strips out that flag.
+  from common.streamout_no_uniquify import streamout_no_uniquify
+  if adk_name == "tsmc16": streamout_no_uniquify(iflow)
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
