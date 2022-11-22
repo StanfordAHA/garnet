@@ -773,20 +773,28 @@ def port_rename(netlist):
                 # "data_in_0", "wen_in_0", "ren_in_0",
                 # "data_out_0", "data_out_1", "stencil_valid"
                 # TODO: Use the Top object from lake to map these back
-                if port == "data_in_0":
+                # ins
+                if port == "chain_data_in_0":
                     port = "input_width_16_num_0"
-                elif port == "wen_in_0":
-                    port = "input_width_1_num_1"
+                elif port == "chain_data_in_0":
+                    port = "input_width_16_num_1"
+                elif port == "data_in_0":
+                    port = "input_width_16_num_2"
+                elif port == "data_in_1":
+                    port = "input_width_16_num_3"
                 elif port == "ren_in_0":
                     port = "input_width_1_num_0"
+                elif port == "wen_in_0":
+                    port = "input_width_1_num_1"
+                elif port == "addr_in_0":
+                    port = "input_width_16_num_2"
+                # outs
                 elif port == "data_out_0":
                     port = "output_width_16_num_0"
                 elif port == "data_out_1":
                     port = "output_width_16_num_1"
                 elif port == "stencil_valid":
                     port = "output_width_1_num_2"
-                elif port == "addr_in_0":
-                    port = "input_width_16_num_2"
 
             net[i] = blk_id, port
     return netlist
