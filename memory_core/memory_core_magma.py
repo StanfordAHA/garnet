@@ -223,27 +223,27 @@ class MemCore(LakeCoreBase):
         mode = instr['mode']
 
         if mode == MemoryMode.UNIFIED_BUFFER:
-            config_runtime = self.dut.get_static_bitstream_json(top_config)
+            config_runtime = self.dut.get_bitstream(top_config)
         elif mode == MemoryMode.ROM:
             # Rom mode is simply SRAM mode with the writes disabled
             config_runtime = [("tile_en", 1),
-                              ("mode", 2),
-                              ("wen_in_0_reg_sel", 1),
-                              ("wen_in_1_reg_sel", 1)]
+                              ("mode", 1),
+                              ("input_width_1_num_0_reg_sel", 1)]
         elif mode == MemoryMode.SRAM:
             # SRAM mode gives 1 write port, 1 read port currently
             config_runtime = [("tile_en", 1),
-                              ("mode", 2),
-                              ("wen_in_1_reg_sel", 1)]
+                              ("mode", 1)]
         elif mode == MemoryMode.FIFO:
             # FIFO mode gives 1 write port, 1 read port currently
-            assert 'depth' in top_config, "FIFO configuration needs a 'depth' - please include one in the config"
-            fifo_depth = int(top_config['depth'])
+            pass # Got rid of it for now...
 
-            config_runtime = [("tile_en", 1),
-                              ("mode", 1),
-                              ("wen_in_1_reg_sel", 1),
-                              ("strg_fifo_fifo_depth", fifo_depth)]
+            # assert 'depth' in top_config, "FIFO configuration needs a 'depth' - please include one in the config"
+            # fifo_depth = int(top_config['depth'])
+
+            # config_runtime = [("tile_en", 1),
+            #                   ("mode", 1),
+            #                   ("wen_in_1_reg_sel", 1),
+            #                   ("strg_fifo_fifo_depth", fifo_depth)]
 
         # Add the runtime configuration to the final config
         for name, v in config_runtime:

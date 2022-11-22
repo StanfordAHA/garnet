@@ -760,15 +760,33 @@ def port_rename(netlist):
                 if port == "rdata":
                     port = "data_out_0"
                 elif port == "wdata":
-                    port = "data_in_0"
+                    port = "input_width_16_num_2"
                 elif port == "ren":
-                    port = "ren_in_0"
+                    port = "input_width_1_num_1"
                 elif port == "wen":
-                    port = "wen_in_0"
+                    port = "input_width_1_num_0"
                 elif port == "addr":
-                    port = "addr_in_0"
+                    port = "input_width_16_num_1"
                 elif port == "valid":
-                    port = "valid_out_0"
+                    port = "output_width_1_num_0"
+
+                # "data_in_0", "wen_in_0", "ren_in_0",
+                # "data_out_0", "data_out_1", "stencil_valid", 
+
+                if port == "data_in_0":
+                    port = "input_width_16_num_0"
+                elif port == "wen_in_0":
+                    port = "input_width_1_num_0"
+                elif port == "ren_in_0":
+                    port = "input_width_1_num_1"
+                elif port == "data_out_0":
+                    port = "output_width_16_num_0"
+                elif port == "data_out_1":
+                    port = "output_width_16_num_1"
+                elif port == "stencil_valid":
+                    # TODO: Include this...
+                    port = "output_width_1_num_0"
+
 
             net[i] = blk_id, port
     return netlist
