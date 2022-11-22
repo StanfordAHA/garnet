@@ -21,12 +21,28 @@ REF=$1
 #     mflowgen/bin/get-step-context.sh $REFDIR
 #     make cadence-innovus-postroute_hold
 
-DBG=
-echo "--- BEGIN $0 $*"
-echo "+++ PRH TEST RIG SETUP - symlink to steps in $REF/full_chip";
+DBG=1
+
+echo "--- BEGIN $0 $*" | sed "s,$GARNET_HOME,\$GARNET_HOME,"
+echo "  GARNET_HOME=$GARNET_HOME"
+
+echo "--- PRH TEST RIG SETUP - symlink to steps in $REF/full_chip";
 for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
 
-    echo $step
+    echo Processing step $step
+
+    # Find name of step in local dir; bug out if exists already
+    [ "$DBG" ] && (make list |& egrep ": $step\$")
+    stepnum=$(make list |& egrep ": $step\$" | awk '{print $2}')
+    local_step=$stepnum-$step
+    [ "$DBG" ] && echo Want local step $local_step; echo ''
+    if test -e $local_step; then
+        echo "Looks like '$local_step' exists already"
+        echo "Doing nothing for '$local_step'"
+        continue
+    fi
+
+    # Find name of step in ref dir
     stepnum=$(cd $REF/full_chip; make list |& egrep ": $step\$" | awk '{print $2}')
     ref_step=$REF/full_chip/$stepnum-$step
     [ "$DBG" ] && echo Found ref step $ref_step
@@ -39,11 +55,7 @@ for step in cadence-innovus-postroute cadence-innovus-flowsetup; do
     [ "$DBG" ] && echo "touch <refdir>/<step>/.prebuilt"
     touch $ref_step/.prebuilt
 
-    [ "$DBG" ] && (make list |& egrep ": $step\$")
-    stepnum=$(make list |& egrep ": $step\$" | awk '{print $2}')
-    local_step=$stepnum-$step
-    [ "$DBG" ] && echo Found local step $local_step; echo ''
-
+    # Link local to ref
     [ "$DBG" ] && echo "Ready to do: ln -s $ref_step $local_step"
     ln -s $ref_step $local_step
     echo "$local_step => $ref_step"

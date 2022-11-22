@@ -51,6 +51,34 @@ fi
 
 echo "--- BEGIN $0 $*"
 
+# Check to see if step has already been done successfully
+step=cadence-innovus-postroute_hold
+if (make -n $step |& grep 'Nothing to be done'); then
+    echo "+++ STEP '$step' ALREADY COMPLETED"
+    echo "Looks like this step has already been completed successfully"
+    echo "If you want to rerun, you'll need to delete or rename it."
+    exit
+fi
+# Rename existing (presumably failed) step if one exists
+stepdir=*-$step
+if test -e $stepdir; then
+    echo "+++ RENAMING FAILED STEP"
+    echo "Looks like a failed step '*-$step' exists already"
+    for i in 0 1 2 3 4 5 6 7 8 9; do
+        cand=${stepdir}-$i
+        if ! test -e $cand; then
+            echo "Renaming '$stepdir' => '$cand'"
+            mv $stepdir $cand
+            break
+        fi
+    done
+    if test -e $stepdir; then 
+        echo 'Too many renames'; exit 13
+    fi
+fi
+
+
+
 # Little sanity check; list all the steps that will be taken.
 
 echo "+++ TODO LIST"
