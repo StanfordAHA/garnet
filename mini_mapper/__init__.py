@@ -776,7 +776,7 @@ def port_rename(netlist):
                 # ins
                 if port == "chain_data_in_0":
                     port = "input_width_16_num_0"
-                elif port == "chain_data_in_0":
+                elif port == "chain_data_in_1":
                     port = "input_width_16_num_1"
                 elif port == "data_in_0":
                     port = "input_width_16_num_2"
