@@ -53,7 +53,9 @@ class Garnet(Generator):
 
         tile_id_width = 16
         config_addr_reg_width = 8
-        num_tracks = 5
+        # num_tracks = 5
+        num_tracks = 3
+
 
         # size
         self.width = width
