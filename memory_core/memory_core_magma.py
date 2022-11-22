@@ -8,10 +8,12 @@ from gemstone.common.core import PnRTag
 from typing import List
 from lake.top.lake_top import LakeTop
 from lake.top.top import Top
+from lake.top.pohan_top import PohanTop
 from lake.passes.passes import change_sram_port_names
 from lake.utils.sram_macro import SRAMMacroInfo
 from lake.top.extract_tile_info import *
 import kratos as kts
+import os
 
 if __name__ == "__main__":
     from memtile_util import LakeCoreBase
@@ -75,8 +77,6 @@ class MemCore(LakeCoreBase):
                  mem_input_ports=1,
                  mem_output_ports=1,
                  use_sram_stub=True,
-                 sram_macro_info=SRAMMacroInfo("TS1N16FFCLLSBLVTC512X32M4S",
-                                               wtsel_value=0, rtsel_value=1),
                  read_delay=1,  # Cycle delay in read (SRAM vs Register File)
                  rw_same_cycle=False,  # Does the memory allow r+w in same cycle?
                  agg_height=4,
@@ -88,7 +88,16 @@ class MemCore(LakeCoreBase):
                  add_flush=True,
                  gen_addr=True):
 
+        top_class = Top
         lake_name = "LakeTop"
+
+        if os.getenv("POHAN_MEM"):
+            print("Using Po-han mem")
+            top_class = PohanTop
+            mem_width = 32
+            mem_depth = 256
+            rw_same_cycle = True
+            lake_name = "LakeTop_Pohan"
 
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
@@ -109,7 +118,6 @@ class MemCore(LakeCoreBase):
         self.mem_input_ports = mem_input_ports
         self.mem_output_ports = mem_output_ports
         self.use_sram_stub = use_sram_stub
-        self.sram_macro_info = sram_macro_info
         self.read_delay = read_delay
         self.rw_same_cycle = rw_same_cycle
         self.agg_height = agg_height
@@ -140,34 +148,28 @@ class MemCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            # self.dut = LakeTop(data_width=self.data_width,
-            top_obj = Top(data_width=self.data_width,
-                          mem_width=self.mem_width,
-                          mem_depth=self.mem_depth,
-                          banks=self.banks,
-                          input_iterator_support=self.input_iterator_support,
-                          output_iterator_support=self.output_iterator_support,
-                          input_config_width=self.input_config_width,
-                          output_config_width=self.output_config_width,
-                          interconnect_input_ports=self.interconnect_input_ports,
-                          interconnect_output_ports=self.interconnect_output_ports,
-                          use_sram_stub=self.use_sram_stub,
-                          sram_macro_info=self.sram_macro_info,
-                          read_delay=self.read_delay,
-                          rw_same_cycle=self.rw_same_cycle,
-                          agg_height=self.agg_height,
-                          config_data_width=self.config_data_width,
-                          config_addr_width=self.config_addr_width,
-                          num_tiles=self.num_tiles,
-                          fifo_mode=self.fifo_mode,
-                          add_clk_enable=self.add_clk_enable,
-                          add_flush=self.add_flush,
-                          name=lake_name,
-                          gen_addr=self.gen_addr)
+            top_obj = top_class(data_width=self.data_width,
+                                mem_width=self.mem_width,
+                                mem_depth=self.mem_depth,
+                                banks=self.banks,
+                                input_iterator_support=self.input_iterator_support,
+                                output_iterator_support=self.output_iterator_support,
+                                config_width=self.config_width,
+                                interconnect_input_ports=self.interconnect_input_ports,
+                                interconnect_output_ports=self.interconnect_output_ports,
+                                use_sim_sram=not self.use_sram_stub,
+                                read_delay=self.read_delay,
+                                rw_same_cycle=self.rw_same_cycle,
+                                agg_height=self.agg_height,
+                                config_data_width=self.config_data_width,
+                                config_addr_width=self.config_addr_width,
+                                num_tiles=self.num_tiles,
+                                add_clk_enable=self.add_clk_enable,
+                                add_flush=self.add_flush,
+                                name=lake_name,
+                                gen_addr=self.gen_addr)
             self.dut = top_obj.get_dut_object()
 
-            # change_sram_port_pass = change_sram_port_names(use_sram_stub, sram_macro_info)
-            #  additional_passes={"change_sram_port": change_sram_port_pass})
             circ = kts.util.to_magma(self.dut,
                                      flatten_array=True,
                                      check_multiple_driver=False,
