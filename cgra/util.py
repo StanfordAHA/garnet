@@ -88,7 +88,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 else:
                     core = IOCore()
             else:
-                use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
+                # use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
+                use_mem_core = (y - y_min) % tile_max == 0
                 if use_mem_core:
                     core = MemCore(use_sram_stub=use_sram_stub)
                 else:
