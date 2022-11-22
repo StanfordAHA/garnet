@@ -26,6 +26,9 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
      echo "--- MAKE TILE_ARRAY"; set -o pipefail;
      make tile_array |& tee make-tile_array.log'
+  - 'echo "--- DELETE SVDB"; set -x;
+     find $$GOLD -name svdb -exec echo /bin/rm -rf {} \; > /tmp/tmp$$.sh;
+     source /tmp/tmp$$.sh; /bin/rm /tmp/tmp$$.sh'
 - wait: ~
 
 # Check tile_array LVS results but don't halt pipeline regardless of outcome
@@ -143,6 +146,9 @@ steps:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 61G;
      echo "--- MAKE MENTOR-CALIBRE-LVS"; set -o pipefail;
      make mentor-calibre-lvs |& tee make-lvs.log'
+  - 'echo "--- DELETE SVDB"; set -x;
+     find $$GOLD -name svdb -exec echo /bin/rm -rf {} \; > /tmp/tmp$$.sh;
+     source /tmp/tmp$$.sh; /bin/rm /tmp/tmp$$.sh'
 - wait: ~
 
 # Check LVS results and FAIL pipeline if results bad
