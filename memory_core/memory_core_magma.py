@@ -91,7 +91,7 @@ class MemCore(LakeCoreBase):
         top_class = Top
         lake_name = "LakeTop"
 
-        if os.getenv("POHAN_MEM"):
+        if os.getenv("POHAN_MEM") is not None:
             print("Using Po-han mem")
             top_class = PohanTop
             mem_width = 32
