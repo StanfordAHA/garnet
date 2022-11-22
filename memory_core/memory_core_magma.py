@@ -223,6 +223,7 @@ class MemCore(LakeCoreBase):
         mode = instr['mode']
 
         if mode == MemoryMode.UNIFIED_BUFFER:
+            top_config['mode'] = "UB"
             config_runtime = self.dut.get_bitstream(top_config)
         elif mode == MemoryMode.ROM:
             # Rom mode is simply SRAM mode with the writes disabled
