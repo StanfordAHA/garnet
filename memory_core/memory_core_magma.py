@@ -70,8 +70,7 @@ class MemCore(LakeCoreBase):
                  banks=1,
                  input_iterator_support=6,  # Addr Controllers
                  output_iterator_support=6,
-                 input_config_width=16,
-                 output_config_width=16,
+                 config_width=16,
                  interconnect_input_ports=2,  # Connection to int
                  interconnect_output_ports=2,
                  mem_input_ports=1,
@@ -111,8 +110,7 @@ class MemCore(LakeCoreBase):
         self.fw_int = int(self.mem_width / self.data_width)
         self.input_iterator_support = input_iterator_support
         self.output_iterator_support = output_iterator_support
-        self.input_config_width = input_config_width
-        self.output_config_width = output_config_width
+        self.config_width = config_width
         self.interconnect_input_ports = interconnect_input_ports
         self.interconnect_output_ports = interconnect_output_ports
         self.mem_input_ports = mem_input_ports
@@ -137,7 +135,7 @@ class MemCore(LakeCoreBase):
         cache_key = (self.data_width, self.mem_width, self.mem_depth, self.banks,
                      self.input_iterator_support, self.output_iterator_support,
                      self.interconnect_input_ports, self.interconnect_output_ports,
-                     self.use_sram_stub, self.sram_macro_info, self.read_delay,
+                     self.use_sram_stub, self.read_delay,
                      self.rw_same_cycle, self.agg_height, self.config_data_width, self.config_addr_width,
                      self.num_tiles, self.fifo_mode,
                      self.add_clk_enable, self.add_flush, self.gen_addr)
@@ -157,10 +155,9 @@ class MemCore(LakeCoreBase):
                                 config_width=self.config_width,
                                 interconnect_input_ports=self.interconnect_input_ports,
                                 interconnect_output_ports=self.interconnect_output_ports,
-                                use_sim_sram=not self.use_sram_stub,
+                                use_sim_sram=self.use_sram_stub,
                                 read_delay=self.read_delay,
                                 rw_same_cycle=self.rw_same_cycle,
-                                agg_height=self.agg_height,
                                 config_data_width=self.config_data_width,
                                 config_addr_width=self.config_addr_width,
                                 num_tiles=self.num_tiles,
