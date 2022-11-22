@@ -229,7 +229,7 @@ class MemCore(LakeCoreBase):
             # Rom mode is simply SRAM mode with the writes disabled
             config_runtime = [("tile_en", 1),
                               ("mode", 1),
-                              ("input_width_1_num_0_reg_sel", 1)]
+                              ("input_width_1_num_1_reg_sel", 1)]
         elif mode == MemoryMode.SRAM:
             # SRAM mode gives 1 write port, 1 read port currently
             config_runtime = [("tile_en", 1),
