@@ -771,7 +771,7 @@ def port_rename(netlist):
                     port = "output_width_1_num_0"
 
                 # "data_in_0", "wen_in_0", "ren_in_0",
-                # "data_out_0", "data_out_1", "stencil_valid", 
+                # "data_out_0", "data_out_1", "stencil_valid"
 
                 if port == "data_in_0":
                     port = "input_width_16_num_0"
@@ -784,9 +784,7 @@ def port_rename(netlist):
                 elif port == "data_out_1":
                     port = "output_width_16_num_1"
                 elif port == "stencil_valid":
-                    # TODO: Include this...
-                    port = "output_width_1_num_0"
-
+                    port = "output_width_1_num_2"
 
             net[i] = blk_id, port
     return netlist
