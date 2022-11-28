@@ -44,6 +44,8 @@ class CoreCombinerCore(LakeCoreBase):
         self.mem_width = mem_width
         self.mem_depth = mem_depth
 
+        self.fw = mem_width // data_width
+
         self.read_delay = 1
         if self.rf:
             self.read_delay = 0
@@ -169,10 +171,16 @@ class CoreCombinerCore(LakeCoreBase):
                     # Default to UB mode since we get varying consistency in controller indication
                     instr['mode'] = 'UB'
 
+                print("BEFORE")
                 config_pre = self.dut.get_bitstream(instr)
+                print("AFTER")
+
                 # Add the runtime configuration to the final config
                 for name, v in config_pre:
                     configs = [self.get_config_data(name, v)] + configs
+
+                print("MEK2")
+                print(configs)
                 # Add in preloaded memory
                 if "init" in instr and instr['init'] is not None:
                     # this is SRAM content
@@ -180,8 +188,12 @@ class CoreCombinerCore(LakeCoreBase):
                     for addr, data in enumerate(content):
                         if (not isinstance(data, int)) and len(data) == 2:
                             addr, data = data
-                        addr = addr >> 2
+                        addr_shift = 0
+                        if self.fw > 1:
+                            addr_shift = kts.clog2(self.fw)
+                        addr = addr >> addr_shift
                         feat_addr = addr // 256 + 1
+                        # And also transform this based on memory depth
                         addr = (addr % 256)
                         configs.append((addr, feat_addr, data))
                 print(configs)
