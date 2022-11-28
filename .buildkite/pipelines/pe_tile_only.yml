@@ -1,7 +1,7 @@
 # Run PE TILE in context of tile_array. Save build in e.g. /build/pe4458
 
 env:
-  GOLD: /build/pe${BUILDKITE_BUILD_NUMBER}
+  BDIR: /build/pe${BUILDKITE_BUILD_NUMBER}
   # OVERRIDE_MFLOWGEN_BRANCH: silent_fail
 
 steps:
@@ -11,14 +11,17 @@ steps:
 
 - label: 'setup'
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$BDIR;
      mflowgen run --design $$GARNET_HOME/mflowgen/tile_array'
 - wait: ~
 
+# Set pe max width to 112: fp limits to 110 but then lvs says 112 OK
 - label: 'PE'
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 30G;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$BDIR --need_space 30G;
      set -o pipefail;
      echo exit 13 | make Tile_PE |& tee make-pe.log;
-     $$GARNET_HOME/.buildkite/pipelines/check_tile_width.sh Tile_PE --max 110
+     $$GARNET_HOME/.buildkite/pipelines/check_tile_width.sh Tile_PE --max 112;
+     /bin/ls -l */*-cadence-innovus-signoff/outputs/design-merged.gds;
+     strings -a */*-cadence-innovus-signoff/outputs/design-merged.gds | grep _gds && exit 13 || echo PASS
      '

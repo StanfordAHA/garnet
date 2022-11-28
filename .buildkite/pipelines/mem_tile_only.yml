@@ -1,8 +1,8 @@
-agents: { jobsize: "hours" }
+# Run MEM TILE in context of tile_array. Save build in e.g. /build/mem4458
 
 env:
-  GOLD: /build/mem${BUILDKITE_BUILD_NUMBER}
-  OVERRIDE_MFLOWGEN_BRANCH: silent_fail
+  BDIR: /build/mem${BUILDKITE_BUILD_NUMBER}
+  # OVERRIDE_MFLOWGEN_BRANCH: silent_fail
 
 steps:
 
@@ -11,14 +11,17 @@ steps:
 
 - label: 'setup'
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$BDIR;
      mflowgen run --design $$GARNET_HOME/mflowgen/tile_array'
 - wait: ~
 
 - label: 'MemTile'
   commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 30G;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$BDIR --need_space 30G;
      set -o pipefail;
-     make Tile_MemCore |& tee make-mem.log'
+     make Tile_MemCore |& tee make-mem.log;
+     /bin/ls -l */*-cadence-innovus-signoff/outputs/design-merged.gds;
+     strings -a */*-cadence-innovus-signoff/outputs/design-merged.gds | grep _gds && exit 13 || echo PASS
+     '
 
 
