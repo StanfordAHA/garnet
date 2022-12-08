@@ -21,7 +21,9 @@ fi
 # ADK for GLS
 if [ -d "inputs/adk" ]; then
   ARGS="$ARGS inputs/adk/stdcells.v"
-  ARGS="$ARGS inputs/adk/stdcells-prim.v"
+  if [ -f "inputs/adk/stdcells-prim.v" ]; then
+      ARGS="$ARGS inputs/adk/stdcells-prim.v"
+  fi
   if [ -f "inputs/adk/stdcells-lvt.v" ]; then
       ARGS="$ARGS inputs/adk/stdcells-lvt.v"
   fi

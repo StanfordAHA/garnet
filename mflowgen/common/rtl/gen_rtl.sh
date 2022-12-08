@@ -58,6 +58,15 @@ else
       if [ "$rtl_docker_image" == ""        ]; then rtl_docker_image=${default_image}; fi
       if [ "$rtl_docker_image" == "default" ]; then rtl_docker_image=${default_image}; fi
 
+      # Env var overrides all else
+      if [ "$RTL_DOCKER_IMAGE" ]; then
+          echo "+++ WARNING overriding local rtl_docker_image w env var RTL_DOCKER_IMAGE"
+          echo "WAS $rtl_docker_image"
+          rtl_docker_image=${RTL_DOCKER_IMAGE}
+          echo "NOW $rtl_docker_image"
+          echo "--- continue..."
+      fi
+
       # To use a docker image with name other than "latest" can do e.g.
       # rtl_docker_image="stanfordaha/garnet:cst"
 
