@@ -145,7 +145,6 @@ def construct():
     parameters.pop('use_local_garnet')
     parameters.pop('drc_env_setup')
     parameters.pop('antenna_drc_env_setup')
-    parameters.pop('lvs_adk_view')
 
   # 'sram_2' and 'guarding' are onyx/GF-only parameters (for now)
 
