@@ -22,8 +22,14 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = get_sys_adk()
+  adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
   adk_view = 'multivt'
+  which_soc = 'onyx'
+
+  # TSMC override(s)
+  if adk_name == 'tsmc16':
+      adk_view = 'view-standard'
+      which_soc = 'amber'
 
   parameters = {
     'construct_path' : __file__,
@@ -54,6 +60,17 @@ def construct():
     'drc_env_setup': 'drcenv-block.sh'
   }
 
+  # TSMC overrides
+  if adk_name == 'tsmc16': parameters.update({
+    'clock_period'      : 1.11,
+    'hold_target_slack'   : 0.03,
+    'use_container' : False,
+  })
+
+  # OG TSMC did not specify drc_env_setup
+  if adk_name == 'tsmc16':
+    parameters.pop('drc_env_setup')
+
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
@@ -77,10 +94,11 @@ def construct():
   custom_init       = Step( this_dir + '/custom-init'                            )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                       )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical'    )
-  custom_cts        = Step( this_dir + '/custom-cts'                             )
   genlib            = Step( this_dir + '/../common/cadence-innovus-genlib'       )
   lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
-  drc_pm            = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
+  if which_soc == 'onyx':
+    custom_cts        = Step( this_dir + '/custom-cts'                             )
+    drc_pm            = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
 
   # Default steps
 
@@ -153,7 +171,8 @@ def construct():
   # Add glb_tile macro inputs to downstream nodes
 
   pt_signoff.extend_inputs( ['glb_tile_tt.db'] )
-  genlib.extend_inputs( ['glb_tile_tt.db'] )
+  if which_soc == 'onyx':
+    genlib.extend_inputs( ['glb_tile_tt.db'] )
 
   # These steps need timing info for glb_tiles
   tile_steps = \
@@ -174,6 +193,10 @@ def construct():
   # Need sram spice file for LVS
   lvs.extend_inputs( ['glb_tile_sram.spi'] )
 
+  if which_soc == 'amber':
+    # Need glb_tile for genlib
+    genlib.extend_inputs( ['glb_tile_tt.lib'] )
+
   xlist = synth.get_postconditions()
   xlist = \
     [ _ for _ in xlist if 'percent_clock_gated' not in _ ]
@@ -183,8 +206,14 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-  cts.extend_inputs( custom_cts.all_outputs() )
+  if which_soc == 'onyx':
+    cts.extend_inputs( custom_cts.all_outputs() )
 
+  # TSMC needs streamout *without* the (new) default -uniquify flag
+  # This python script finds 'stream-out.tcl' and strips out that flag.
+  if adk_name == "tsmc16":
+    from common.streamout_no_uniquify import streamout_no_uniquify
+    streamout_no_uniquify(iflow)
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -205,7 +234,8 @@ def construct():
   g.add_step( power          )
   g.add_step( custom_power   )
   g.add_step( place          )
-  g.add_step( custom_cts   )
+  if which_soc == 'onyx':
+    g.add_step( custom_cts   )
   g.add_step( cts            )
   g.add_step( postcts_hold   )
   g.add_step( route          )
@@ -216,7 +246,8 @@ def construct():
   g.add_step( genlib         )
   g.add_step( lib2db         )
   g.add_step( drc            )
-  g.add_step( drc_pm         )
+  if which_soc == 'onyx':
+    g.add_step( drc_pm         )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
   g.add_step( debugcalibre   )
@@ -243,7 +274,8 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
-  g.connect_by_name( adk,      drc_pm         )
+  if which_soc == 'onyx':
+    g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      lvs            )
   g.connect_by_name( adk,      genlib         )
 
@@ -261,7 +293,8 @@ def construct():
   g.connect_by_name( glb_tile,      pt_signoff   )
   g.connect_by_name( glb_tile,      genlib       )
   g.connect_by_name( glb_tile,      drc          )
-  g.connect_by_name( glb_tile,      drc_pm       )
+  if which_soc == 'onyx':
+    g.connect_by_name( glb_tile,      drc_pm       )
   g.connect_by_name( glb_tile,      lvs          )
 
   g.connect_by_name( rtl,         sim_compile  )
@@ -294,7 +327,8 @@ def construct():
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
-  g.connect_by_name( custom_cts,   cts      )
+  if which_soc == 'onyx':
+    g.connect_by_name( custom_cts,   cts      )
   g.connect_by_name( custom_lvs,   lvs      )
 
   g.connect_by_name( init,         power          )
@@ -306,10 +340,12 @@ def construct():
   g.connect_by_name( postroute,    postroute_hold )
   g.connect_by_name( postroute_hold,    signoff   )
   g.connect_by_name( signoff,      drc            )
-  g.connect_by_name( signoff,      drc_pm         )
+  if which_soc == 'onyx':
+    g.connect_by_name( signoff,      drc_pm         )
   g.connect_by_name( signoff,      lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
+  if which_soc == 'onyx':
+    g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( adk,          pt_signoff     )
@@ -340,7 +376,8 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc_pm,   debugcalibre )
+  if which_soc == 'onyx':
+    g.connect_by_name( drc_pm,   debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
@@ -375,7 +412,8 @@ def construct():
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
 
   # useful_skew
-  # cts.update_params( { 'useful_skew': False }, allow_new=True )
+  if which_soc == "amber":
+    cts.update_params( { 'useful_skew': False }, allow_new=True )
 
   return g
 
