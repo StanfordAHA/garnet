@@ -140,9 +140,8 @@ def construct():
     'hold_target_slack'  : 0.060,
 
   })
-  # OG TSMC did not set use_local_garnet etc.
+  # OG TSMC did not set drc_env_setup etc.
   if adk_name == 'tsmc16':
-    parameters.pop('use_local_garnet')
     parameters.pop('drc_env_setup')
     parameters.pop('antenna_drc_env_setup')
 
