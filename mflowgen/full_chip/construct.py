@@ -138,7 +138,14 @@ def construct():
     'dragonphy_rdl_x'   : '613.565u',
     'dragonphy_rdl_y'   : '3901.872u',
     'hold_target_slack'  : 0.060,
+
   })
+  # OG TSMC did not set use_local_garnet etc.
+  if adk_name == 'tsmc16':
+    parameters.pop('use_local_garnet')
+    parameters.pop('drc_env_setup')
+    parameters.pop('antenna_drc_env_setup')
+    parameters.pop('lvs_adk_view')
 
   # 'sram_2' and 'guarding' are onyx/GF-only parameters (for now)
 
