@@ -15,7 +15,7 @@ steps:
      mflowgen run --design $$GARNET_HOME/mflowgen/tile_array'
 - wait: ~
 
-- label: 'MemTile'
+- label: 'MemTile 2hr'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$BDIR --need_space 30G;
      set -o pipefail;
