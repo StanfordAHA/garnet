@@ -35,7 +35,12 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
      echo "--- MAKE RTL"; set -o pipefail;
-     make rtl |& tee make-rtl.log'
+     make rtl |& tee make-rtl.log;
+     set -x;
+     grep "module precoder_32_1"  10-rtl/outputs/design.v | sort;
+     grep "module precoder_32_19" 10-rtl/outputs/design.v && echo FAIL || echo PASS;
+     grep "module precoder_32_19" 10-rtl/outputs/design.v && exit 13   || exit 0;
+'
 - wait: ~
 
 # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
