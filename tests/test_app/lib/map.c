@@ -166,6 +166,41 @@ int glb_map(void *kernel_) {
     add_config(&kernel->config, GLC_GLB_FLUSH_CROSSBAR_R, kernel_crossbar_config << GLC_GLB_FLUSH_CROSSBAR_SEL_F_LSB);
     printf("Configuration of flush signal crossbar is updated to 0x%0x\n", kernel_crossbar_config);
 
+    FILE *fptr;
+    fptr = fopen("reg_write.h", "w");
+
+    fprintf(fptr, "\n\nstatic void bitstream_glb_config()\n{\n");
+
+    printf("Bitstream Config\n");
+    printf("bitstream size: %d\n", bs_info->size);
+    printf("bitstream start_addr: %lx\n", bs_info->start_addr);
+    int bs_configs = (&bs_info->config)->num_config;
+    printf("config number: %d\n", bs_configs);
+    for(int i = 0; i < bs_configs; i++){
+        printf("addr:%lx  ", (&bs_info->config)->config[i].addr);
+        printf("data:%lx\n", (&bs_info->config)->config[i].data);
+        fprintf(fptr, "glb_reg_write(0x%lx", (&bs_info->config)->config[i].addr & 0xfff);
+        fprintf(fptr, ", 0x%lx);\n", (&bs_info->config)->config[i].data);
+    }
+
+    fprintf(fptr, "}\n");
+    fprintf(fptr, "\n\nstatic void app_glb_config()\n{\n");
+
+    printf("\nApplication Config\n");
+    int configs = (&kernel->config)->num_config;
+    printf("config number: %d\n", configs);
+    for(int i = 0; i < configs; i++){
+        if((&kernel->config)->config[i].addr >= 0x1000){
+            printf("addr:%lx  ", (&kernel->config)->config[i].addr);
+            printf("data:%lx\n", (&kernel->config)->config[i].data);
+            fprintf(fptr, "glb_reg_write(0x%lx", (&kernel->config)->config[i].addr & 0xfff);
+            fprintf(fptr, ", 0x%lx);\n", (&kernel->config)->config[i].data);
+        }
+    }
+    fprintf(fptr, "}\n");
+
+    fclose(fptr);
+
     return 1;
 }
 
