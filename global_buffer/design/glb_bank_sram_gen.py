@@ -12,7 +12,7 @@ class GlbBankSramGen(Generator):
         # clears, but for now it gets us closer to a common master
         if _params.process == "TSMC":
             super().__init__("glb_bank_sram_gen")
-        elif self._params.process == "GF":
+        elif _params.process == "GF":
             super().__init__(f"glb_bank_sram_gen_{addr_width}")
 
         self._params = _params
