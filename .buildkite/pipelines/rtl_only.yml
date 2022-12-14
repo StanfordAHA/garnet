@@ -31,7 +31,7 @@ env:
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
   BUILD: /build/fcrtl-${BUILDKITE_BUILD_NUMBER}
   RTL:   /build/fcrtl-${BUILDKITE_BUILD_NUMBER}/full_chip/10-rtl/outputs/design.v
-  RTL_DOCKER_IMAGE: 'stanfordaha/garnet@sha256:dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4'
+  # RTL_DOCKER_IMAGE: 'stanfordaha/garnet@sha256:dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4'
 
 steps:
 
