@@ -76,6 +76,7 @@ def construct():
     'array_height'      : 16,
     'num_glb_tiles'     : 16,
     'interconnect_only' : False,
+    'use_local_garnet'  : False,
     # glb tile memory size (unit: KB)
     # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
     'glb_tile_mem_size' : 256,   # 256*16 => 4M global buffer
