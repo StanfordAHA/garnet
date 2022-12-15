@@ -2,6 +2,7 @@
 # agents: { queue: "papers" }
 
 env:
+  WHICH_SOC: amber
   GOLD: /build/gold.${BUILDKITE_BUILD_NUMBER}/full_chip
   LVS_CHECK: ./mflowgen/bin/buildcheck.sh --lvs
 
