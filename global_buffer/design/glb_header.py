@@ -37,6 +37,10 @@ class GlbHeader():
                                            (f"stride_{i}", self._params.glb_addr_width + 1),
                                            (f"cycle_stride_{i}", self._params.cycle_count_width)]
             self.cfg_dma_header_t = PackedStruct("dma_header_t", dma_header_struct_list)
+
+            # All headers same for amber version
+            self.cfg_load_dma_header_t = PackedStruct("dma_header_t", dma_header_struct_list)
+            self.cfg_store_dma_header_t = PackedStruct("dma_header_t", dma_header_struct_list)
         else:
             self.cfg_store_dma_ctrl_t = PackedStruct("store_dma_ctrl_t",
                                                      [("mode", 2),
