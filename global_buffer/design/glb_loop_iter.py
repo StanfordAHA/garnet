@@ -1,5 +1,6 @@
 from kratos import Generator, clog2, always_ff, always_comb, posedge, const
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
+import os
 
 
 class GlbLoopIter(Generator):
@@ -9,6 +10,8 @@ class GlbLoopIter(Generator):
         super().__init__(f"glb_loop_iter_{loop_level}")
         self._params = _params
         self.loop_level = loop_level
+        if os.getenv('WHICH_SOC') == "amber":
+            self.loop_level = self._params.loop_level
 
         # INPUTS
         self.clk = self.clock("clk")
