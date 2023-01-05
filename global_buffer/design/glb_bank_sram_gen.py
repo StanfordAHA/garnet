@@ -8,11 +8,11 @@ from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 class GlbBankSramGen(Generator):
     def __init__(self, addr_width, _params: GlobalBufferParams):
 
-        # FIXME this TSMC/GF fix might goo away after the smoke
+        # FIXME this TSMC/GF fix might go away after the smoke
         # clears, but for now it gets us closer to a common master
-        if self._params.process == "TSMC":
+        if _params.process == "TSMC":
             super().__init__("glb_bank_sram_gen")
-        elif self._params.process == "GF":
+        elif _params.process == "GF":
             super().__init__(f"glb_bank_sram_gen_{addr_width}")
 
         self._params = _params

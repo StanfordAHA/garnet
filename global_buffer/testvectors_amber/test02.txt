@@ -1,0 +1,15 @@
+// G2F: tile15/bank31/512, F2G: tile0/bank1/512
+2
+00
+G2F 15 31 0 0
+1
+512
+1
+1
+testvectors/512_v0.dat
+F2G 0 1 0 0
+1
+512
+1
+1
+testvectors/512_v1.dat

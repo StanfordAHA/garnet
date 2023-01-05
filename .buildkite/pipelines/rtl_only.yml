@@ -26,12 +26,14 @@
 #      fi'
 
 env:
+  # BUILD: /build/fcrtl-${BUILDKITE_BUILD_NUMBER}
+  BUILD: .
+
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
   SETUP: 'source mflowgen/bin/setup-buildkite.sh'
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
-  BUILD: /build/fcrtl-${BUILDKITE_BUILD_NUMBER}
-  RTL:   /build/fcrtl-${BUILDKITE_BUILD_NUMBER}/full_chip/10-rtl/outputs/design.v
   RTL_DOCKER_IMAGE: 'stanfordaha/garnet@sha256:dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4'
+  WHICH_SOC: amber
 
 steps:
 
@@ -50,7 +52,8 @@ steps:
 - label: 'RTL only'
   commands:
   - $TEST --build_dir $BUILD full_chip --steps rtl --debug
-  - ls -l $$RTL
-  - grep 'module precoder_32_1'  $$RTL | sort
-  - grep 'module precoder_32_19' $$RTL && echo FAIL || echo PASS
-  - grep 'module precoder_32_19' $$RTL && exit 13   || exit 0
+  - 'RTL=$BUILD/full_chip/*-rtl/outputs/design.v;
+     grep "module precoder_32_1"  $$RTL | sort;
+     grep "module precoder_32_19" $$RTL && echo FAIL || echo PASS;
+     grep "module precoder_32_19" $$RTL && exit 13   || exit 0;
+     '

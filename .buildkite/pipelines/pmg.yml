@@ -10,6 +10,7 @@
 # -------------------------------------------------
 
 env:
+  WHICH_SOC: amber
   SETUP: source mflowgen/bin/setup-buildkite.sh
 
   # Env var used by test_module.sh :(

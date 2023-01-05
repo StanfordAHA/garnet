@@ -45,7 +45,21 @@ RUN_LOG ?= run.log
 HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
 NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-prim.v
+ifeq ($(WHICH_SOC), amber)
+    #FIXME: pm cells should be removed!
+    NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-pm.v
+endif
+
 TB_FILES ?= -F sim/tb_global_buffer.f 
+
+# test vectors
+# To succeed, amber builds will need to set WHICH_SOC env var to "amber"
+# onyx builds don't need to do anything new
+ifeq ($(WHICH_SOC), amber)
+    TESTVECTORS = testvectors_amber
+else
+    TESTVECTORS = testvectors
+endif
 
 # -------------------------------------------------------------------
 # Commands
