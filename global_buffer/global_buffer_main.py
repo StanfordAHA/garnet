@@ -1,14 +1,11 @@
 import argparse
-
+import os
 if os.getenv('WHICH_SOC') == "amber":
     from global_buffer.design_amber.global_buffer import GlobalBuffer
 else:
     from global_buffer.design.global_buffer import GlobalBuffer
-
-
 from global_buffer.design.global_buffer_parameter import gen_global_buffer_params, gen_header_files
 from systemRDL.util import gen_rdl_header
-import os
 import pathlib
 import kratos as k
 
