@@ -63,6 +63,15 @@ endif
 
 TB_FILES ?= -F $(SIM)/tb_global_buffer.f 
 
+# test vectors
+# To succeed, amber builds will need to set WHICH_SOC env var to "amber"
+# onyx builds don't need to do anything new
+ifeq ($(WHICH_SOC), amber)
+    TESTVECTORS = testvectors_amber
+else
+    TESTVECTORS = testvectors
+endif
+
 # -------------------------------------------------------------------
 # Commands
 # -------------------------------------------------------------------
