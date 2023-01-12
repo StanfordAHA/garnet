@@ -2266,6 +2266,7 @@ if __name__ == "__main__":
     sim_mat_dir = args.sim_mat_dir
     sim_dir = args.sim_dir
     mem_width = args.mem_width
+    mtx_tmp_dir = args.matrix_tmp_dir
 
     if do_comparison:
 
@@ -2573,6 +2574,8 @@ if __name__ == "__main__":
                 output_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.output_dir, "OUTPUT_DIR")
                 input_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.input_dir, "INPUT_DIR")
                 matrix_tmp_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.matrix_tmp_dir, "MAT_TMP_DIR")
+                if mtx_tmp_dir is not None:
+                    matrix_tmp_dir = mtx_tmp_dir
                 # test_dump_dir = prep_test_dir(base_dir, args.test_dump_dir, "DUMP_DIR")
                 gold_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.gold_dir, "GOLD_DIR")
                 glb_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.glb_dir, "GLB_DIR")
