@@ -497,6 +497,33 @@ class NetlistBuilder():
         self.combined = combined
         self.pnr_only = pnr_only
 
+    def reset(self):
+        self._netlist = {}
+        self._bus = {}
+        self._connection_num = 0
+        self._core_num = 0
+        self._placement = None
+        self._routing = None
+        self._placement_up_to_date = False
+        self._config_data = None
+        self._config_data = []
+        self._flushable = []
+        self._cores = []
+        self._core_config = {}
+        self._config_finalized = False
+        self._circuit = None
+        self._core_names = {}
+        self._core_used = {}
+        self._dest_counts = {}
+        self._core_remappings = {}
+        self._core_runtime_mode = {}
+        self._core_map = {}
+        self.remapping_built = False
+        self.tag_to_core = {}
+        self.core_to_tag = {}
+        self.tag_to_port_remap = {}
+        self.pnr_only = True
+
     def register_core(self, core, flushable=False, config=None, name=""):
         ''' Register the core/primitive with the
             data structure and return unique ID
@@ -716,6 +743,10 @@ class NetlistBuilder():
                         continue
                     # print(signal_name)
                     # print(self._core_remappings[mapped_core])
+                    print("Printing signal name")
+                    print(signal_name)
+                    print(mapped_core)
+                    print(self._core_remappings[mapped_core])
                     assert signal_name in self._core_remappings[mapped_core]
                     remapped_sig = self._core_remappings[mapped_core][signal_name]
                     self._netlist[conn_name][i] = (mapped_core, remapped_sig)
