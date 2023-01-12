@@ -142,6 +142,8 @@ else ifeq ($(TOOL), VCS)
 	DUMP_ARGS = -ucli -i dump_fsdb.tcl
 endif
 
+TEST_DIR?=/home/max/Documents/SPARSE/garnet/VEC_IDENTITY/
+COMPARISON_SCRIPT?=/home/max/Documents/SPARSE/garnet/tests/test_memory_core/build_tb.py
 
 .PHONY: compile
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
@@ -150,9 +152,13 @@ compile:
 	$(COMPILE)
 
 .PHONY: run
+run: TEST_ARGS = $(TEST_DIR)/COLLAT_DIR/PARGS.txt
+run: TMP_PARGS = $(shell cat $(TEST_ARGS))
 run:
 # $(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
-	$(RUN) $(DUMP_ARGS) +BITSTREAM_SIZE=$(BITSTREAM_SIZE)
+	rm -f $(TEST_DIR)/OUTPUT_DIR/*
+	$(RUN) $(DUMP_ARGS) $(TMP_PARGS)
+	python $(COMPARISON_SCRIPT) --do_comparison --gold_mat_dir=$(TEST_DIR)/GLB_DIR --sim_mat_dir=$(TEST_DIR)/OUTPUT_DIR/
 
 .PHONY: sim
 # sim: libcgra.so compile run
