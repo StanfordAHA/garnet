@@ -50,16 +50,17 @@ ifeq ($(WHICH_SOC), amber)
     NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-pm.v
 endif
 
-TB_FILES ?= -F sim/tb_global_buffer.f 
-
 # test vectors
 # To succeed, amber builds will need to set WHICH_SOC env var to "amber"
 # onyx builds don't need to do anything new
+TESTVECTORS = testvectors
+SIM = sim
 ifeq ($(WHICH_SOC), amber)
     TESTVECTORS = testvectors_amber
-else
-    TESTVECTORS = testvectors
+    SIM = sim_amber
 endif
+
+TB_FILES ?= -F $(SIM)/tb_global_buffer.f 
 
 # -------------------------------------------------------------------
 # Commands
@@ -153,9 +154,9 @@ else
 endif
 
 ifeq ($(TOOL), XCELIUM)
-	DUMP_ARGS = -input sim/dump_shm.tcl
+	DUMP_ARGS = -input $(SIM)/dump_shm.tcl
 else ifeq ($(TOOL), VCS)
-	DUMP_ARGS = -ucli -i sim/dump_fsdb.tcl
+	DUMP_ARGS = -ucli -i $(SIM)/dump_fsdb.tcl
 endif
 
 ifneq ($(SDF), 0)
