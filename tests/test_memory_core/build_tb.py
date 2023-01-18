@@ -1565,7 +1565,15 @@ def write_glb_file(file_list, out_dir, out_name):
             for l in all_lines:
                 # Get rid of 0x for readmemh compatibility
                 # hexified = str(hex(int(l)))[2:]
-                output_lines.append(f"{int(l):04X}\n")
+                # Convert to positive
+                temp_tkn = int(float(l.strip()))
+                if temp_tkn < 0:
+                    temp_tkn = temp_tkn * -1
+                if temp_tkn >= (2 ** 16):
+                    temp_tkn = temp_tkn - (((temp_tkn // (2 ** 16)) * (2 ** 16)))
+                    #temp_tkn = (2 ** 16) - 1
+                output_lines.append(f"{temp_tkn:04X}\n")
+                #output_lines.append(f"{int(float(l.strip())):04X}\n")
     out_path = f"{out_dir}/{out_name}"
     with open(out_path, "w+") as curr_file:
         curr_file.writelines(output_lines)
@@ -1651,8 +1659,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # to glb
         # combined
         if give_tensor:
-            bshape = read_inputs(os.path.join(matrix_tmp_dir, "Bshape"))
-            cshape = read_inputs(os.path.join(matrix_tmp_dir, "Cshape"))
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
             b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x')
             c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
         else:
