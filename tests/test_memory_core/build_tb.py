@@ -1571,9 +1571,7 @@ def write_glb_file(file_list, out_dir, out_name):
                     temp_tkn = temp_tkn * -1
                 if temp_tkn >= (2 ** 16):
                     temp_tkn = temp_tkn - (((temp_tkn // (2 ** 16)) * (2 ** 16)))
-                    #temp_tkn = (2 ** 16) - 1
                 output_lines.append(f"{temp_tkn:04X}\n")
-                #output_lines.append(f"{int(float(l.strip())):04X}\n")
     out_path = f"{out_dir}/{out_name}"
     with open(out_path, "w+") as curr_file:
         curr_file.writelines(output_lines)
@@ -2219,6 +2217,8 @@ if __name__ == "__main__":
     parser.add_argument('--remote_mems', action="store_true")
     parser.add_argument('--ic_fork', action="store_true")
     parser.add_argument('--give_tensor', action="store_true")
+    # parser.add_argument('--tensor_locs', type=str, default=None, nargs='+')
+    parser.add_argument('--tensor_locs', type=str, default=None)
     parser.add_argument('--physical_sram', action="store_true")
     parser.add_argument('--just_verilog', action="store_true")
     parser.add_argument('--clk_enable', action="store_true")
@@ -2238,10 +2238,12 @@ if __name__ == "__main__":
     parser.add_argument('--gen_verilog', action="store_true")
     parser.add_argument('--zero_input', action="store_true")
     parser.add_argument('--do_comparison', action="store_true")
+    parser.add_argument('--run', type=str, default=None)
     parser.add_argument('--gold_mat_dir', type=str, default=None)
     parser.add_argument('--sim_mat_dir', type=str, default=None)
     parser.add_argument('--sim_dir', type=str, default='SIM_DIR')
     parser.add_argument('--mem_width', type=int, default=64)
+    parser.add_argument('--compile_tb', action="store_true")
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2275,6 +2277,9 @@ if __name__ == "__main__":
     sim_dir = args.sim_dir
     mem_width = args.mem_width
     mtx_tmp_dir = args.matrix_tmp_dir
+    tensor_locs = args.tensor_locs
+    run_all = args.run
+    compile_tb = args.compile_tb
 
     if do_comparison:
 
@@ -2307,16 +2312,74 @@ if __name__ == "__main__":
 
     test_mem_core_dir = os.path.dirname(__file__)
 
-    pnr_only = just_glb or (not fault and not gen_verilog)
-
-    assert len(sam_graphs) > 0, f"No sam graph pointed to..."
-
     # if not os.path.isdir("./SIM_SHARED"):
     #     os.mkdir("./SIM_SHARED")
     # test_dump_dir = prep_test_dir("./SIM_SHARED", None, "DUMP_DIR")
     if not os.path.isdir(sim_dir):
         os.mkdir(sim_dir)
     test_dump_dir = sim_dir
+
+    if run_all is not None:
+
+        for test_module in glob.glob(os.path.join(test_mem_core_dir, "*.*v")):
+            shutil.copy(test_module, test_dump_dir)
+        shutil.copy(os.path.join(test_mem_core_dir, "Makefile"), test_dump_dir)
+        shutil.copy(os.path.join(test_mem_core_dir, "run_sim.tcl"), test_dump_dir)
+        # cw_dir = "/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/"
+        cw_dir = "/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/"
+        shutil.copy(os.path.join(test_mem_core_dir, "../../peak_core/CW_fp_add.v"), test_dump_dir)
+        shutil.copy(os.path.join(test_mem_core_dir, "../../peak_core/CW_fp_mult.v"), test_dump_dir)
+        gemstone_dir = os.path.dirname(os.path.dirname(gemstone.__file__))
+        for aoi_mux in glob.glob(os.path.join(gemstone_dir, "tests", "common", "rtl", "*.sv")):
+            shutil.copy(aoi_mux, test_dump_dir)
+
+        my_env = os.environ
+        my_env['WAVEFORM'] = "0"
+        if args.trace:
+            my_env['WAVEFORM'] = "1"
+        # my_env['TEST_ARGS'] = f"{collat_dir}/PARGS.txt"
+
+        base_dir = args.base_dir
+        bd = f"{os.path.abspath(base_dir)}"
+        if run_all == "all":
+            tests_to_run = os.listdir(bd)
+        else:
+            tests_to_run = [f'{run_all}']
+
+        local_comp = True
+
+        for test_ in tests_to_run:
+
+            my_env['TEST_DIR'] = f"{os.path.abspath(base_dir)}/{test_}"
+
+            if local_comp and compile_tb:
+                t_c = time.time()
+                subprocess.check_call(
+                    ["make", "compile"],
+                    cwd=test_dump_dir,
+                    env=my_env
+                )
+
+            local_comp = False
+
+            try:
+
+                t_r = time.time()
+                subprocess.check_call(
+                    ["make", "run"],
+                    cwd=test_dump_dir,
+                    env=my_env
+                )
+
+            except Exception:
+                print("Failed for some reason...")
+
+        print("Finished running!...Quitting...")
+        exit()
+
+    pnr_only = just_glb or (not fault and not gen_verilog)
+
+    assert len(sam_graphs) > 0, f"No sam graph pointed to..."
 
     # Make sure to force DISABLE_GP for much quicker runs
     os.environ['DISABLE_GP'] = '1'
@@ -2574,14 +2637,23 @@ if __name__ == "__main__":
 
             sam_graph_name = sam_graph.split('/')[-1].split(".")[0]
 
-            for seed in seeds:
+            use_seeds = seeds
 
-                numpy.random.seed(seed)
-                random.seed(seed)
+            if give_tensor:
+                use_seeds = os.listdir(tensor_locs)
+                use_seeds = [dir_ for dir_ in use_seeds if os.path.isdir(os.path.join(tensor_locs, dir_))]
+
+            for seed in use_seeds:
+
+                if not give_tensor:
+                    numpy.random.seed(seed)
+                    random.seed(seed)
 
                 output_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.output_dir, "OUTPUT_DIR")
                 input_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.input_dir, "INPUT_DIR")
-                if mtx_tmp_dir is not None:
+                if give_tensor is not None:
+                    matrix_tmp_dir = os.path.join(tensor_locs, seed)
+                elif mtx_tmp_dir is not None:
                     matrix_tmp_dir = mtx_tmp_dir
                 else:
                     matrix_tmp_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.matrix_tmp_dir, "MAT_TMP_DIR")
@@ -2596,6 +2668,9 @@ if __name__ == "__main__":
                 gold_dirs.append(gold_dir)
                 glb_dirs.append(glb_dir)
                 collat_dirs.append(collat_dir)
+
+                print(tensor_locs)
+                print(matrix_tmp_dir)
 
                 ##### Handling app level file stuff #####
                 output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir,
@@ -2790,7 +2865,7 @@ if __name__ == "__main__":
             my_env['WAVEFORM'] = "0"
             if args.trace:
                 my_env['WAVEFORM'] = "1"
-            # my_env['TEST_ARGS'] = f"{collat_dir}/PARGS.txt"
+
             my_env['TEST_DIR'] = f"{os.path.abspath(base_dir)}/{sam_graph_name}_{seed}"
 
             t_c = time.time()
