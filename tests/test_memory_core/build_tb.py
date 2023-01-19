@@ -2377,7 +2377,7 @@ if __name__ == "__main__":
         print("Finished running!...Quitting...")
         exit()
 
-    pnr_only = just_glb or (not fault and not gen_verilog)
+    pnr_only = (just_glb or not fault) and not gen_verilog
 
     assert len(sam_graphs) > 0, f"No sam graph pointed to..."
 
