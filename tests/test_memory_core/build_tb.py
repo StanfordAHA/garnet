@@ -2833,6 +2833,16 @@ if __name__ == "__main__":
 
             del stbs[sam_graph]
 
+        # Need this before just_glb for early exits
+        if not fault and gen_verilog:
+            # Run the normal tb
+            if gen_verilog:
+                import magma
+                magma.compile(f"{test_mem_core_dir}/SparseTBBuilder", stb_to_gen, coreir_libs={"float_CW"})
+                print("MADE SPARSE TB: ")
+                print(test_mem_core_dir)
+                exit()
+
         if just_glb:
             print("Only generating glb collateral and leaving...")
             exit()
@@ -2842,13 +2852,8 @@ if __name__ == "__main__":
         time_before_sim = time.time()
 
         if not fault:
-            # Run the normal tb
-            if gen_verilog:
-                import magma
-                magma.compile(f"{test_mem_core_dir}/SparseTBBuilder", stb_to_gen, coreir_libs={"float_CW"})
 
             # Copy collateral...
-
             for test_module in glob.glob(os.path.join(test_mem_core_dir, "*.*v")):
                 shutil.copy(test_module, test_dump_dir)
             shutil.copy(os.path.join(test_mem_core_dir, "Makefile"), test_dump_dir)
