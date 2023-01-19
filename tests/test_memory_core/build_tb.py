@@ -2407,157 +2407,6 @@ if __name__ == "__main__":
         chip_height = chip_h
         num_tracks = 5
 
-        controllers = []
-
-        if pipeline_scanner:
-            scan = ScannerPipe(data_width=16,
-                               fifo_depth=fifo_depth,
-                               add_clk_enable=True,
-                               defer_fifos=True,
-                               add_flush=False)
-        else:
-            scan = Scanner(data_width=16,
-                           fifo_depth=fifo_depth,
-                           defer_fifos=True,
-                           add_flush=False)
-
-        wscan = WriteScanner(data_width=16,
-                             fifo_depth=fifo_depth,
-                             defer_fifos=True,
-                             add_flush=False)
-        # strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
-        fiber_access = FiberAccess(data_width=16,
-                                   local_memory=False,
-                                   tech_map=GF_Tech_Map(depth=512, width=32),
-                                   defer_fifos=True,
-                                   use_pipelined_scanner=pipeline_scanner,
-                                   add_flush=False,
-                                   fifo_depth=fifo_depth,
-                                   buffet_optimize_wide=True)
-        buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
-                            tech_map=GF_Tech_Map(depth=512, width=32),
-                            defer_fifos=True,
-                            optimize_wide=True,
-                            add_flush=False,
-                            fifo_depth=fifo_depth)
-        strg_ram = StrgRAM(data_width=16,
-                           banks=1,
-                           memory_width=64,
-                           memory_depth=512,
-                           rw_same_cycle=False,
-                           read_delay=1,
-                           addr_width=16,
-                           prioritize_write=True,
-                           comply_with_17=True)
-
-        stencil_valid = StencilValid()
-
-        if use_fiber_access:
-            controllers.append(fiber_access)
-        else:
-            controllers.append(scan)
-            controllers.append(wscan)
-            controllers.append(buffet)
-
-        # controllers.append(strg_ub)
-        controllers.append(strg_ram)
-        controllers.append(stencil_valid)
-
-        isect = Intersect(data_width=16,
-                          use_merger=False,
-                          fifo_depth=fifo_depth,
-                          defer_fifos=True,
-                          add_flush=False)
-        crd_drop = CrdDrop(data_width=16,
-                           fifo_depth=fifo_depth,
-                           lift_config=True,
-                           defer_fifos=True,
-                           add_flush=False)
-        crd_hold = CrdHold(data_width=16,
-                           fifo_depth=fifo_depth,
-                           lift_config=True,
-                           defer_fifos=True,
-                           add_flush=False)
-        onyxpe = OnyxPE(data_width=16,
-                        fifo_depth=fifo_depth,
-                        defer_fifos=True,
-                        ext_pe_prefix=pe_prefix,
-                        pe_ro=True,
-                        do_config_lift=False,
-                        add_flush=False)
-        repeat = Repeat(data_width=16,
-                        fifo_depth=fifo_depth,
-                        defer_fifos=True,
-                        add_flush=False)
-        rsg = RepeatSignalGenerator(data_width=16,
-                                    passthru=False,
-                                    fifo_depth=fifo_depth,
-                                    defer_fifos=True,
-                                    add_flush=False)
-        regcr = Reg(data_width=16,
-                    fifo_depth=fifo_depth,
-                    defer_fifos=True,
-                    add_flush=False)
-
-        controllers_2 = []
-
-        controllers_2.append(isect)
-        controllers_2.append(crd_drop)
-        controllers_2.append(crd_hold)
-        controllers_2.append(onyxpe)
-        controllers_2.append(repeat)
-        controllers_2.append(rsg)
-        controllers_2.append(regcr)
-
-        if combined is True:
-            altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "p",
-                                           'name': "PE",
-                                           'input_prefix': "PE_",
-                                           'fifo_depth': fifo_depth}),
-                       (CoreCombinerCore, {'controllers_list': controllers_2,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "p",
-                                           'name': "PE",
-                                           'input_prefix': "PE_",
-                                           'fifo_depth': fifo_depth}),
-                       (CoreCombinerCore, {'controllers_list': controllers_2,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "p",
-                                           'name': "PE",
-                                           'input_prefix': "PE_",
-                                           'fifo_depth': fifo_depth}),
-                       (CoreCombinerCore, {'controllers_list': controllers,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
-                                           'pnr_tag': "m",
-                                           'name': "MemCore",
-                                           'input_prefix': "MEM_",
-                                           'fifo_depth': fifo_depth,
-                                           'mem_width': mem_width})]
-
-        else:
-            altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
-                                      'add_clk_enable': clk_enable,
-                                      'pipelined': pipeline_scanner}),
-                       (BuffetCore, {'local_mems': True,
-                                     'physical_mem': physical_sram,
-                                     'fifo_depth': fifo_depth,
-                                     'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                       (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
-                       (WriteScannerCore, {'fifo_depth': fifo_depth}),
-                       (RepeatCore, {'fifo_depth': fifo_depth}),
-                       (IntersectCore, {'fifo_depth': fifo_depth}),
-                       (CrdDropCore, {'fifo_depth': fifo_depth}),
-                       (CrdHoldCore, {'fifo_depth': fifo_depth}),
-                       (RepeatSignalGeneratorCore, {'passthru': not use_fork,
-                                                    'fifo_depth': fifo_depth}),
-                       (RegCore, {'fifo_depth': fifo_depth})]
-
         time_0 = time.time()
 
         interconnect = create_cgra(width=chip_width, height=chip_height,
@@ -2566,10 +2415,10 @@ if __name__ == "__main__":
                                    add_pd=False,
                                    # Soften the flush...?
                                    harden_flush=harden_flush,
-                                   altcore=altcore,
+                                   altcore=None,
                                    ready_valid=True,
                                    add_pond=add_pond,
-                                   scgra=False)
+                                   scgra=True)
 
         time_x = time.time()
         print(f"TIME:\tcreate_cgra\t{time_x - time_0}")
