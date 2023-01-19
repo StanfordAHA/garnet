@@ -2651,7 +2651,7 @@ if __name__ == "__main__":
 
                 output_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.output_dir, "OUTPUT_DIR")
                 input_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.input_dir, "INPUT_DIR")
-                if give_tensor is not None:
+                if give_tensor:
                     matrix_tmp_dir = os.path.join(tensor_locs, seed)
                 elif mtx_tmp_dir is not None:
                     matrix_tmp_dir = mtx_tmp_dir
