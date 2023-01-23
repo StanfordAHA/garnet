@@ -56,6 +56,8 @@ set_input_delay -clock ${clock_name} [expr ${clock_period}/2.0] [all_inputs]
 
 # set_output_delay constraints for output ports
 
+# Onyx uses 0.3 * clock period. Maybe it will work for amber too?
+# set_output_delay -clock ${clock_name} 0 [all_outputs] # original amber constraint
 set_output_delay -clock ${clock_name} [expr $clock_period * 0.3] [all_outputs]
 
 # Make all signals limit their fanout
@@ -73,7 +75,13 @@ set_max_transition [expr 0.05*${clock_period}] $design_name
 
 set_false_path -hold -from [ get_ports clk_in ] -to [ get_ports clk_out ]
 
+set WHICH_SOC "onyx"
+if { [info exists ::env(WHICH_SOC)] } { set WHICH_SOC $::env(WHICH_SOC) }
+
+# Onyx sets these constraints, but amber never did...
+if { $WHICH_SOC == "onyx" } {
 set_output_delay -clock ${clock_name} [expr $clock_period * 0.8] [get_ports reset_out]
 set_input_delay -clock ${clock_name} [expr $clock_period * 0.8] [get_ports glb_cfg_rd_data*]
 set_output_delay -clock ${clock_name} [expr $clock_period * 0.8] [get_ports cgra_stall]
 set_output_delay -clock ${clock_name} [expr $clock_period * 0.9] [get_ports strm*pulse*]
+}
