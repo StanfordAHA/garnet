@@ -104,7 +104,7 @@ int glb_map(void *kernel_) {
 
     // PCFG mux
     int start_tile = group_start * 2;
-    for (int i = start_tile; i < (group_start + num_groups) * GROUP_SIZE; i++) {
+    for (int i = start_tile; i < (group_start + num_groups) * GROUP_SIZE / 2; i++) {
         if (i == start_tile) {
             add_config(&bs_info->config,
                        (1 << AXI_ADDR_WIDTH) + (i << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_PCFG_BROADCAST_MUX_R,
@@ -166,8 +166,11 @@ int glb_map(void *kernel_) {
     add_config(&kernel->config, GLC_GLB_FLUSH_CROSSBAR_R, kernel_crossbar_config << GLC_GLB_FLUSH_CROSSBAR_SEL_F_LSB);
     printf("Configuration of flush signal crossbar is updated to 0x%0x\n", kernel_crossbar_config);
 
+    char* reg_write = kernel->bin_dir;
+    strncat(reg_write, "reg_write.h", BUFFER_SIZE);
     FILE *fptr;
-    fptr = fopen("reg_write.h", "w");
+
+    fptr = fopen(reg_write, "w");
 
     fprintf(fptr, "\n\nstatic void bitstream_glb_config()\n{\n");
 
@@ -177,9 +180,7 @@ int glb_map(void *kernel_) {
     int bs_configs = (&bs_info->config)->num_config;
     printf("config number: %d\n", bs_configs);
     for(int i = 0; i < bs_configs; i++){
-        printf("addr:%lx  ", (&bs_info->config)->config[i].addr);
-        printf("data:%lx\n", (&bs_info->config)->config[i].data);
-        fprintf(fptr, "glb_reg_write(0x%lx", (&bs_info->config)->config[i].addr & 0xfff);
+        fprintf(fptr, "glb_reg_write(0x%lx", (&bs_info->config)->config[i].addr - 0x1000);
         fprintf(fptr, ", 0x%lx);\n", (&bs_info->config)->config[i].data);
     }
 
@@ -191,9 +192,7 @@ int glb_map(void *kernel_) {
     printf("config number: %d\n", configs);
     for(int i = 0; i < configs; i++){
         if((&kernel->config)->config[i].addr >= 0x1000){
-            printf("addr:%lx  ", (&kernel->config)->config[i].addr);
-            printf("data:%lx\n", (&kernel->config)->config[i].data);
-            fprintf(fptr, "glb_reg_write(0x%lx", (&kernel->config)->config[i].addr & 0xfff);
+            fprintf(fptr, "glb_reg_write(0x%lx", (&kernel->config)->config[i].addr - 0x1000);
             fprintf(fptr, ", 0x%lx);\n", (&kernel->config)->config[i].data);
         }
     }

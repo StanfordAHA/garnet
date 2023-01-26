@@ -70,7 +70,7 @@ int parse_num_group(struct KernelInfo *info) {
         if (x > max_x) max_x = x;
     }
 
-    info->num_groups = (max_x + GROUP_SIZE - 1) / GROUP_SIZE;
+    info->num_groups = (max_x + GROUP_SIZE) / GROUP_SIZE;
 
     // clean up
     fclose(fp);
@@ -301,6 +301,8 @@ void *parse_metadata(char *filename) {
     char *dir;
     // Need to free directory
     dir = get_prefix(filename, '/');
+
+    strncpy(info->bin_dir, dir, strnlen(dir, BUFFER_SIZE));
 
     // calculate metadata file size and save it to l_size
     fseek(fp, 0L, SEEK_END);
