@@ -33,7 +33,7 @@ class CoreCombinerCore(LakeCoreBase):
                  input_prefix="",
                  dual_port=False,
                  rf=False,
-                 mem_width=16,
+                 mem_width=64,
                  mem_depth=512):
 
         self.pnr_tag = pnr_tag
