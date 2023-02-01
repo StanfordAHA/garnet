@@ -458,10 +458,10 @@ else
       if [ -d adks/gf12-adk ]; then
           cd adks/gf12-adk; git pull
       elif [ -d adks/tsmc16-adk ]; then
-          cd adks/tsmc16-adk; git pull \
-              || (
-                  echo "+++ WARNING: Could not 'git pull' to retrieve latest version of tsmc16-adk";
-                  echo "=> see mflowgen/bin/setup-buildkite.sh"
+          cd adks/tsmc16-adk; git pull || (\
+              echo "+++ WARNING: Could not 'git pull' to retrieve latest version of tsmc16-adk";
+              echo "=> see mflowgen/bin/setup-buildkite.sh"
+          )
       else
           echo "ERROR ADK not found"
           return 13 || exit 13
