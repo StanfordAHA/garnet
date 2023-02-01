@@ -460,7 +460,7 @@ else
       elif [ -d adks/tsmc16-adk ]; then
           cd adks/tsmc16-adk; git pull || (\
               echo "+++ WARNING: Could not 'git pull' to retrieve latest version of tsmc16-adk";
-              echo "=> see mflowgen/bin/setup-buildkite.sh"
+              echo "=> see mflowgen/bin/setup-buildkite.sh"; echo "."; echo "."
           )
       else
           echo "ERROR ADK not found"
