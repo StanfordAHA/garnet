@@ -150,6 +150,16 @@ def construct():
     from common.streamout_no_uniquify import streamout_no_uniquify
     streamout_no_uniquify(iflow)
 
+  if adk_name == "tsmc16":
+     # Replace default onyx scripts with amber versions instead
+     cmd1 = "cp rtl-scripts-amber/nic400_design_files.tcl  rtl-scripts"
+     cmd2 = "cp rtl-scripts-amber/nic400_include_paths.tcl rtl-scripts"
+     cmd3 = "cp rtl-scripts-amber/soc_design_files.tcl     rtl-scripts"
+     soc_rtl.pre_extend_commands( [ cmd1 ] )
+     soc_rtl.pre_extend_commands( [ cmd2 ] )
+     soc_rtl.pre_extend_commands( [ cmd3 ] )
+
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
