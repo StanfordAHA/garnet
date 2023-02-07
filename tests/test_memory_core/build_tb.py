@@ -1865,8 +1865,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # combined
         # piped
         if give_tensor:
-            bshape = read_inputs(os.path.join(matrix_tmp_dir, "Bshape"))
-            cshape = read_inputs(os.path.join(matrix_tmp_dir, "Cshape"))
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
             b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x')
             c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
         else:
