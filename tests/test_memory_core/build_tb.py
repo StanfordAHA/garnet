@@ -624,7 +624,8 @@ class SparseTBBuilder(m.Generator2):
                     print(self.mode_map)
                     if 'vals' not in glb_mode_:
                         glb_mode_ = int(glb_mode_)
-                        glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                        glb_mode = glb_mode_
+                        # glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
                     else:
                         glb_mode = glb_mode_
                     # Get the handle for these pins, then instantiate glb
@@ -679,8 +680,11 @@ class SparseTBBuilder(m.Generator2):
                     file_full = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode}"
                     # Get tx size now
                     if not node_.get_format() == "dense":
-                        with open(file_full, "r") as ff:
-                            glb_tx_size = len(ff.readlines())
+                        try:
+                            with open(file_full, "r") as ff:
+                                glb_tx_size = len(ff.readlines())
+                        except:
+                            glb_tx_size = 0
                     else:
                         glb_tx_size = 0
 
@@ -719,7 +723,8 @@ class SparseTBBuilder(m.Generator2):
                     glb_mode_ = node_.get_mode()
                     if 'vals' not in glb_mode_:
                         glb_mode_ = int(glb_mode_)
-                        glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                        glb_mode = glb_mode_
+                        # glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
                     else:
                         glb_mode = glb_mode_
                     # Get the handle for these pins, then instantiate glb
@@ -779,14 +784,11 @@ class SparseTBBuilder(m.Generator2):
                         f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
                         f2 = f1
                     elif node_.get_format() == 'vals':
-                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
                         f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
                         f2 = f1
                     else:
                         f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_seg\""
                         f2 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
-                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
-                        # f2 = f1
 
                 else:
 
@@ -825,7 +827,7 @@ class SparseTBBuilder(m.Generator2):
             glb_mode_ = node.get_mode()
             if 'vals' not in glb_mode_:
                 glb_mode_ = int(glb_mode_)
-                glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                glb_mode = glb_mode_
             else:
                 glb_mode = glb_mode_
             # Get the handle for these pins, then instantiate glb
@@ -881,8 +883,11 @@ class SparseTBBuilder(m.Generator2):
                 file_full = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode}"
                 # Get tx size now
                 if not node.get_format() == "dense":
-                    with open(file_full, "r") as ff:
-                        glb_tx_size = len(ff.readlines())
+                    try:
+                        with open(file_full, "r") as ff:
+                            glb_tx_size = len(ff.readlines())
+                    except:
+                        glb_tx_size = 0
                 else:
                     glb_tx_size = 0
 
@@ -949,14 +954,11 @@ class SparseTBBuilder(m.Generator2):
                     f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
                     f2 = f1
                 elif node.get_format() == 'vals':
-                    # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
                     f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
                     f2 = f1
                 else:
                     f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_seg\""
                     f2 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
-                    # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
-                    # f2 = f1
 
                 # test_glb = _Definition(NUM_BLOCKS=glb_num_blocks * 2, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
                 test_glb = _Definition(NUM_BLOCKS=glb_num_blocks, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
@@ -1162,32 +1164,18 @@ class SparseTBBuilder(m.Generator2):
                 glb_mode_ = glb_mode
                 if 'vals' not in glb_mode_:
                     glb_mode_ = int(glb_mode_)
-                    glb_mode__ = self.mode_map[glb_tensor][glb_mode_][0]
+                    glb_mode__ = glb_mode_
+                    # glb_mode__ = self.mode_map[glb_tensor][glb_mode_][0]
                 else:
                     glb_mode__ = glb_mode_
 
                 if direction == "write":
                     self.glb_cores[data] = (self.input_ctr, 0)
                     self.glb_cores_w_map[(self.input_ctr, 0)] = glb_node_use
-                    # file_full = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode__}"
                     file_full = f"{{}}/tensor_{glb_tensor}_mode_{glb_mode__}"
                     print(file_full)
-                    file_full_use = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode__}"
-                    # file_full = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode__}"
-                    # Get tx size now
-                    if not glb_format == "dense":
-                        with open(file_full_use, "r") as ff:
-                            glb_tx_size = len(ff.readlines())
-                    else:
-                        glb_tx_size = 0
 
                     file_full = f"\"{file_full}\""
-
-                    # with open("./PLUSARGS.txt", "a") as pargs_file:
-                    #     pargs_file.write(f"+X{self.input_ctr:02X}_Y00_TX_SIZE={glb_tx_size}\n")
-                    #     pargs_file.write(f"+X{self.input_ctr:02X}_Y00_FILE_NAME={file_full}\n")
-                    # self.plus_args.append(f"+X{self.input_ctr:02X}_Y00_TX_SIZE={glb_tx_size}\n")
-                    # self.plus_args.append(f"+X{self.input_ctr:02X}_Y00_FILE_NAME={file_full}\n")
                     self.plus_args.append((f"+X{self.input_ctr:02X}_Y00_FILE_NAME={file_full}\n", 'input'))
                     self.plus_args.append(f"+X{self.input_ctr:02X}_Y00_ENABLED=1\n")
 
@@ -1198,29 +1186,15 @@ class SparseTBBuilder(m.Generator2):
                     self.glb_cores_w_map[(self.output_ctr, 0)] = glb_node_use
 
                     if str(glb_mode__) == "vals":
-                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode__}\""
                         f1 = f"\"{{}}/tensor_X_mode_{glb_mode__}\""
                         f2 = f1
                     elif glb_format == 'vals':
-                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode__}_crd\""
-                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode__}\""
                         f1 = f"\"{{}}/tensor_X_mode_{glb_mode__}\""
                         f2 = f1
                     else:
-                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode__}_seg\""
-                        # f2 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode__}_crd\""
                         f1 = f"\"{{}}/tensor_X_mode_{glb_mode__}_seg\""
                         f2 = f"\"{{}}/tensor_X_mode_{glb_mode__}_crd\""
-                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode__}\""
-                        # f2 = f1
 
-                    # with open("./PLUSARGS.txt", "a") as pargs_file:
-                    #     pargs_file.write(f"+X{self.output_ctr:02X}_Y00_F1={f1}\n")
-                    #     pargs_file.write(f"+X{self.output_ctr:02X}_Y00_F2={f2}\n")
-                    #     pargs_file.write(f"+X{self.output_ctr:02X}_Y00_NUM_BLOCKS={num_blocks}\n")
-
-                    # self.plus_args.append(f"+X{self.output_ctr:02X}_Y00_F1={f1}\n")
-                    # self.plus_args.append(f"+X{self.output_ctr:02X}_Y00_F2={f2}\n")
                     self.plus_args.append((f"+X{self.output_ctr:02X}_Y00_F1={f1}\n", 'output'))
                     self.plus_args.append((f"+X{self.output_ctr:02X}_Y00_F2={f2}\n", 'output'))
                     self.plus_args.append(f"+X{self.output_ctr:02X}_Y00_NUM_BLOCKS={num_blocks}\n")
@@ -1615,9 +1589,11 @@ def coalesce_files(in_dir, out_dir, hack_files=None):
         write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'], out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
 
 
-def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None, zero_input=False):
+def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None, zero_input=False, tensor_orderings=None):
 
     MAXIMUM_SIZES = 16
+
+    assert tensor_orderings is not None
 
     shapes_ = []
     sparsities_ = []
@@ -1659,8 +1635,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         if give_tensor:
             bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
             cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
-            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x')
-            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['C'])
         else:
             # shape_ = 10
             b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]],
@@ -1684,9 +1662,25 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # combined
         # piped
         # shape_ = 10
-        b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[0], format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[1], format='CSF', dump_dir=matrix_tmp_dir)
-        d_matrix = MatrixGenerator(name="D", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[2], format='CSF', dump_dir=matrix_tmp_dir)
+
+        if give_tensor:
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
+            dshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_D_mode_shape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['C'])
+            d_matrix = get_tensor_from_files(name='D', files_dir=matrix_tmp_dir, shape=dshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['D'])
+        else:
+            b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[0],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+            c_matrix = MatrixGenerator(name="C", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[1],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+            d_matrix = MatrixGenerator(name="D", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[2],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         d_matrix.dump_outputs()
@@ -1709,10 +1703,20 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         #     sparsity_use = 1.0
         # else:
         #     sparsity_use = 0.7
-        b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[0], format='CSF', dump_dir=matrix_tmp_dir)
-        # b_matrix = MatrixGenerator(name="B", shape=[shape_1, shape_2], sparsity=sparsity_use, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[1], format='CSF', dump_dir=matrix_tmp_dir)
-        # c_matrix = MatrixGenerator(name="C", shape=[shape_1, shape_2], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+
+        if give_tensor:
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['C'])
+        else:
+            b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[0],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+            c_matrix = MatrixGenerator(name="C", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[1],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
@@ -1725,12 +1729,14 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # to glb
         # combined
         # piped
-        shape_1 = shapes_[0]
-        # shape_1 = 40
-        shape_2 = shapes_[1]
-        # shape_2 = 36
-        b_matrix = MatrixGenerator(name="B", shape=[shape_1, shape_2], sparsity=sparsities_[0], format='CSF', dump_dir=matrix_tmp_dir)
-        # b_matrix = MatrixGenerator(name="B", shape=[shape_1, shape_2], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+
+        if give_tensor:
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+        else:
+            b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[0],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
@@ -1786,12 +1792,24 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
     elif 'mat_residual.gv' in app_name:
         # Handmade graph
-        shape_1 = shapes_[0]
-        shape_2 = shapes_[1]
         # shape_3 = 4
-        b_matrix = MatrixGenerator(name="b", shape=[shape_1], sparsity=sparsities_[0], format='CSF', dump_dir=matrix_tmp_dir)
-        C_matrix = MatrixGenerator(name="C", shape=[shape_1, shape_2], sparsity=sparsities_[1], format='CSF', dump_dir=matrix_tmp_dir)
-        d_matrix = MatrixGenerator(name="d", shape=[shape_2], sparsity=sparsities_[2], format='CSF', dump_dir=matrix_tmp_dir)
+
+        if give_tensor:
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
+            dshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_D_mode_shape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['C'])
+            d_matrix = get_tensor_from_files(name='D', files_dir=matrix_tmp_dir, shape=dshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['D'])
+        else:
+            b_matrix = MatrixGenerator(name="b", shape=[shapes_[0]], sparsity=sparsities_[0], format='CSF', dump_dir=matrix_tmp_dir)
+            C_matrix = MatrixGenerator(name="C", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[1],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+            d_matrix = MatrixGenerator(name="d", shape=[shapes_[1]], sparsity=sparsities_[2], format='CSF', dump_dir=matrix_tmp_dir)
+
         b_matrix.dump_outputs()
         C_matrix.dump_outputs()
         d_matrix.dump_outputs()
@@ -1867,8 +1885,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         if give_tensor:
             bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
             cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
-            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x')
-            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['C'])
         else:
             gold_shape_0 = 8
             gold_shape_1 = 20
@@ -2211,7 +2231,7 @@ if __name__ == "__main__":
     # parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--seed', type=int, default=0, nargs='+')
     parser.add_argument('--height', type=int, default=16)
-    parser.add_argument('--width', type=int, default=16)
+    parser.add_argument('--width', type=int, default=32)
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
     parser.add_argument('--remote_mems', action="store_true")
@@ -2521,10 +2541,28 @@ if __name__ == "__main__":
                 print(tensor_locs)
                 print(matrix_tmp_dir)
 
+                if sam_graph not in sdgs:
+                    sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork, use_fa=use_fiber_access)
+                    sdgs[sam_graph] = sdg
+                else:
+                    print("REUSE SDG")
+                    sdg = sdgs[sam_graph]
+
+                mode_map = sdg.get_mode_map()
+                print(f"MODE MAP: {mode_map}")
+                # exit()
+                graph = sdg.get_graph()
+
+                mode_maps.append(mode_map)
+                graphs.append(graph)
+
+                time_3 = time.time()
+
                 ##### Handling app level file stuff #####
                 output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir,
                                                                                       give_tensor, print_inputs,
-                                                                                      zero_input=zero_input)
+                                                                                      zero_input=zero_input,
+                                                                                      tensor_orderings=mode_map)
                 output_matrices.append(output_matrix)
                 output_formats.append(output_format)
                 output_names.append(output_name)
@@ -2533,6 +2571,26 @@ if __name__ == "__main__":
                 out_mat = MatrixGenerator(name=output_name, shape=None, sparsity=0.5,
                                           format=output_format, dump_dir=gold_dir, tensor=output_matrix)
                 out_mat.dump_outputs()
+
+                if sam_graph not in stbs:
+                    ##### Create the actual testbench mapping based on the SAM graph #####
+                    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
+                                          # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
+                                          output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
+                                          real_pe=real_pe, harden_flush=harden_flush, combined=combined,
+                                          input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access,
+                                          verbose=verbose, pnr_only=pnr_only,
+                                          width=chip_w, height=chip_h,
+                                          collat_dir=collat_dir)
+                    stbs[sam_graph] = stb
+                    add_bs_args = True
+                else:
+                    stb = stbs[sam_graph]
+                    add_bs_args = False
+
+                if stb_to_gen is None:
+                    stb_to_gen = stb
+                    pnr_only = True
 
                 if dump_glb:
 
@@ -2593,47 +2651,6 @@ if __name__ == "__main__":
                 time_2 = time.time()
                 print(f"TIME:\tglb\t{time_2 - time_1}")
 
-            # Get SAM graph
-            # sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
-
-                if sam_graph not in sdgs:
-                    sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork, use_fa=use_fiber_access)
-                    sdgs[sam_graph] = sdg
-                else:
-                    print("REUSE SDG")
-                    sdg = sdgs[sam_graph]
-
-                mode_map = sdg.get_mode_map()
-                print(f"MODE MAP: {mode_map}")
-                # exit()
-                graph = sdg.get_graph()
-
-                mode_maps.append(mode_map)
-                graphs.append(graph)
-
-                time_3 = time.time()
-                print(f"TIME:\tSAMGRAPH\t{time_3 - time_2}")
-
-                if sam_graph not in stbs:
-                    ##### Create the actual testbench mapping based on the SAM graph #####
-                    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
-                                          # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
-                                          output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
-                                          real_pe=real_pe, harden_flush=harden_flush, combined=combined,
-                                          input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access,
-                                          verbose=verbose, pnr_only=pnr_only,
-                                          width=chip_w, height=chip_h,
-                                          collat_dir=collat_dir)
-                    stbs[sam_graph] = stb
-                    add_bs_args = True
-                else:
-                    stb = stbs[sam_graph]
-                    add_bs_args = False
-
-                if stb_to_gen is None:
-                    stb_to_gen = stb
-                    pnr_only = True
-
                 time_4 = time.time()
                 print(f"TIME:\tSTB\t{time_4 - time_3}")
 
@@ -2659,7 +2676,8 @@ if __name__ == "__main__":
                         tensor_, mode_, direction_, num_blocks_ = desc_
                         # remap the mode...
                         if mode_ != 'vals':
-                            mode_ = mode_map[tensor_][int(mode_)][0]
+                            # mode_ = mode_map[tensor_][int(mode_)][0]
+                            mode_ = mode_
                             # We don't need to emit anything for a dense block
                             if mode_map[tensor_][int(mode_)][1] == 'd':
                                 continue
