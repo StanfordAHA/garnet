@@ -117,11 +117,14 @@ class LakeCoreBase(ConfigurableCore):
         # The rest of the signals to wire to the underlying representation...
         other_signals = []
 
-        if os.getenv('WHICH_SOC') == "amber": io_info_full_bus = False
-        else:                                 io_info_full_bus = io_info.full_bus
-
         # for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array, full_bus in core_interface:
         for io_info in core_interface:
+
+            if os.getenv('WHICH_SOC') == "amber":
+                io_info_full_bus = False
+            else:
+                io_info_full_bus = io_info.full_bus
+
             if io_info.port_name in skip_names:
                 continue
             ind_ports = io_info.port_width
