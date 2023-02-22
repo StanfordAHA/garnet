@@ -1,3 +1,4 @@
+import os
 import magma
 from gemstone.generator.from_magma import FromMagma
 from typing import List
@@ -21,6 +22,9 @@ else:
 
 class PondCore(LakeCoreBase):
 
+    if os.getenv('WHICH_SOC') == "amber": ready_valid = False
+    else                                : ready_valid = True
+
     def __init__(self,
                  data_width=16,  # CGRA Params
                  mem_depth=32,
@@ -37,16 +41,23 @@ class PondCore(LakeCoreBase):
                  amber_pond=False,
                  add_flush=True,
                  gate_flush=True,
-                 ready_valid=True):
+                 ready_valid=ready_valid):
 
         lake_name = "Pond_pond"
 
-        super().__init__(config_data_width=config_data_width,
-                         config_addr_width=config_addr_width,
-                         data_width=data_width,
-                         gate_flush=gate_flush,
-                         ready_valid=ready_valid,
-                         name="PondCore")
+        if os.getenv('WHICH_SOC') == "amber":
+            super().__init__(config_data_width=config_data_width,
+                             config_addr_width=config_addr_width,
+                             data_width=data_width,
+                             gate_flush=gate_flush,
+                             name="PondCore")
+        else:
+            super().__init__(config_data_width=config_data_width,
+                             config_addr_width=config_addr_width,
+                             data_width=data_width,
+                             gate_flush=gate_flush,
+                             ready_valid=ready_valid,
+                             name="PondCore")
 
         # Capture everything to the tile object
         self.interconnect_input_ports = interconnect_input_ports
@@ -76,7 +87,33 @@ class PondCore(LakeCoreBase):
             # Instantiate core object here - will only use the object representation to
             # query for information. The circuit representation will be cached and retrieved
             # in the following steps.
-            if self.amber_pond:
+            if os.getenv('WHICH_SOC') == "amber":
+                self.LT = LakeTop(data_width=self.data_width,
+                                  mem_width=self.data_width,
+                                  mem_depth=self.mem_depth,
+                                  input_iterator_support=self.default_iterator_support,
+                                  output_iterator_support=self.default_iterator_support,
+                                  interconnect_input_ports=self.interconnect_input_ports,
+                                  interconnect_output_ports=self.interconnect_output_ports,
+                                  use_sim_sram=True,
+                                  read_delay=0,
+                                  rw_same_cycle=True,
+                                  config_width=self.data_width,
+                                  config_data_width=self.config_data_width,
+                                  config_addr_width=self.config_addr_width,
+                                  area_opt=self.pond_area_opt,
+                                  pond_area_opt_share=self.pond_area_opt_share,
+                                  pond_area_opt_dual_config=self.pond_area_opt_dual_config,
+                                  fifo_mode=False,
+                                  add_clk_enable=self.add_clk_enable,
+                                  add_flush=self.add_flush,
+                                  stencil_valid=False,
+                                  name="PondTop")
+
+                # Nonsensical but LakeTop now has its ow n internal dut
+                self.dut = self.LT.dut
+
+            elif self.amber_pond:
                 self.dut = Pond(data_width=data_width,  # CGRA Params
                                 mem_depth=mem_depth,
                                 default_iterator_support=2,
