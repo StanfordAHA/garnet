@@ -1,3 +1,4 @@
+import os
 from gemstone.common.testers import BasicTester
 from canal.util import IOSide
 import magma
@@ -118,6 +119,12 @@ class LakeCoreBase(ConfigurableCore):
 
         # for port_name, port_size, port_width, is_ctrl, port_dir, explicit_array, full_bus in core_interface:
         for io_info in core_interface:
+
+            if os.getenv('WHICH_SOC') == "amber":
+                io_info_full_bus = False
+            else:
+                io_info_full_bus = io_info.full_bus
+
             if io_info.port_name in skip_names:
                 continue
             ind_ports = io_info.port_width
@@ -128,7 +135,7 @@ class LakeCoreBase(ConfigurableCore):
                 intf_type = magma.Bits[io_info.port_width]
             # Due to some tooling weirdness, I've also included a way to explicitly mark
             # a wire as a "full" (16b) bus...
-            elif io_info.full_bus:
+            elif io_info_full_bus:
                 ind_ports = 1
                 intf_type = magma.Bits[io_info.port_width]
             dir_type = magma.In
@@ -165,14 +172,14 @@ class LakeCoreBase(ConfigurableCore):
                                               io_info.expl_arr,
                                               i,
                                               io_info.port_name,
-                                              io_info.full_bus))
+                                              io_info_full_bus))
                 else:
                     other_signals.append((io_info.port_name,
                                           io_info.port_dir,
                                           io_info.expl_arr,
                                           0,
                                           io_info.port_name,
-                                          io_info.full_bus))
+                                          io_info_full_bus))
 
         assert (len(self.__outputs) > 0)
 
@@ -299,53 +306,69 @@ class LakeCoreBase(ConfigurableCore):
             if cfg_info.expl_arr:
                 if cfg_info.port_size[0] > 1:
                     for i in range(cfg_info.port_size[0]):
-                        configurations.append((f"{cfg_info.port_name}_{i}", cfg_info.port_width, cfg_info.read_only))
+                        configurations.append((f"{cfg_info.port_name}_{i}", cfg_info.port_width))
                 else:
-                    configurations.append((cfg_info.port_name, cfg_info.port_width, cfg_info.read_only))
+                    configurations.append((cfg_info.port_name, cfg_info.port_width))
             else:
-                configurations.append((cfg_info.port_name, cfg_info.port_width, cfg_info.read_only))
+                configurations.append((cfg_info.port_name, cfg_info.port_width))
+
+            if os.getenv('WHICH_SOC') != "amber":
+                configurations[-1] = configurations[-1] + (cfg_info.read_only,)
 
         # Do all the stuff for the main config
         main_feature = self.__features[0]
-        for config_reg_name, width, read_only_ in configurations:
-            if width == 1:
-                main_feature.add_config(config_reg_name, width, pass_through=read_only_)
-                if read_only_:
-                    self.wire(main_feature.registers[config_reg_name].ports.I[0],
-                              self.underlying.ports[config_reg_name][0])
-                else:
+
+        if os.getenv('WHICH_SOC') == "amber":
+            for config_reg_name, width in configurations:
+                main_feature.add_config(config_reg_name, width)
+                if(width == 1):
                     self.wire(main_feature.registers[config_reg_name].ports.O[0],
                               self.underlying.ports[config_reg_name][0])
-            elif width > 32:
-                # Need to chop it down to size
-                num_regs_remainder = width % 32 != 0
-                num_regs = (width // 32)
-                if num_regs_remainder:
-                    num_regs += 1
-                total_width = width
-                running_base = 0
-                for idx_ in range(num_regs):
-                    if total_width > 32:
-                        use_width = 32
-                    else:
-                        use_width = total_width
-                    main_feature.add_config(f"{config_reg_name}_{idx_}", use_width, pass_through=read_only_)
-                    if read_only_:
-                        self.wire(main_feature.registers[f"{config_reg_name}_{idx_}"].ports.I,
-                                  self.underlying.ports[config_reg_name][running_base:running_base + use_width])
-                    else:
-                        self.wire(main_feature.registers[f"{config_reg_name}_{idx_}"].ports.O,
-                                  self.underlying.ports[config_reg_name][running_base:running_base + use_width])
-                    total_width -= use_width
-                    running_base += use_width
-            else:
-                main_feature.add_config(config_reg_name, width, pass_through=read_only_)
-                if read_only_:
-                    self.wire(main_feature.registers[config_reg_name].ports.I,
-                              self.underlying.ports[config_reg_name])
                 else:
                     self.wire(main_feature.registers[config_reg_name].ports.O,
                               self.underlying.ports[config_reg_name])
+        else:
+            for config_reg_name, width, read_only_ in configurations:
+                if width == 1:
+                    main_feature.add_config(config_reg_name, width, pass_through=read_only_)
+                    if read_only_:
+                        self.wire(main_feature.registers[config_reg_name].ports.I[0],
+                                  self.underlying.ports[config_reg_name][0])
+                    else:
+                        self.wire(main_feature.registers[config_reg_name].ports.O[0],
+                                  self.underlying.ports[config_reg_name][0])
+                elif width > 32:
+                    # Need to chop it down to size
+                    num_regs_remainder = width % 32 != 0
+                    num_regs = (width // 32)
+                    if num_regs_remainder:
+                        num_regs += 1
+                    total_width = width
+                    running_base = 0
+                    for idx_ in range(num_regs):
+                        if total_width > 32:
+                            use_width = 32
+                        else:
+                            use_width = total_width
+                        main_feature.add_config(f"{config_reg_name}_{idx_}", use_width, pass_through=read_only_)
+                        if read_only_:
+                            self.wire(main_feature.registers[f"{config_reg_name}_{idx_}"].ports.I,
+                                      self.underlying.ports[config_reg_name][running_base:running_base + use_width])
+                        else:
+                            self.wire(main_feature.registers[f"{config_reg_name}_{idx_}"].ports.O,
+                                      self.underlying.ports[config_reg_name][running_base:running_base + use_width])
+                        total_width -= use_width
+                        running_base += use_width
+                else:
+                    main_feature.add_config(config_reg_name, width, pass_through=read_only_)
+                    if read_only_:
+                        self.wire(main_feature.registers[config_reg_name].ports.I,
+                                  self.underlying.ports[config_reg_name])
+                    else:
+                        self.wire(main_feature.registers[config_reg_name].ports.O,
+                                  self.underlying.ports[config_reg_name])
+
+
 
         # SRAM
         # These should also account for num features

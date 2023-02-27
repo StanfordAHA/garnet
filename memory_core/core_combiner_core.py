@@ -11,6 +11,7 @@ from lake.modules.intersect import Intersect
 from lake.modules.scanner import Scanner
 from lake.top.tech_maps import GF_Tech_Map
 import kratos as kts
+import os
 
 if __name__ == "__main__":
     from memtile_util import LakeCoreBase
@@ -19,6 +20,11 @@ else:
 
 
 class CoreCombinerCore(LakeCoreBase):
+
+    if os.getenv('WHICH_SOC') == "amber":
+        mem_width_default=16
+    else:
+        mem_width_default=64
 
     def __init__(self,
                  data_width=16,  # CGRA Params
@@ -33,7 +39,7 @@ class CoreCombinerCore(LakeCoreBase):
                  input_prefix="",
                  dual_port=False,
                  rf=False,
-                 mem_width=64,
+                 mem_width=mem_width_default,
                  mem_depth=512):
 
         self.pnr_tag = pnr_tag
@@ -188,10 +194,15 @@ class CoreCombinerCore(LakeCoreBase):
                     for addr, data in enumerate(content):
                         if (not isinstance(data, int)) and len(data) == 2:
                             addr, data = data
-                        addr_shift = 0
-                        if self.fw > 1:
-                            addr_shift = kts.clog2(self.fw)
-                        addr = addr >> addr_shift
+                            
+                        if os.getenv('WHICH_SOC') == "amber":
+                            addr = addr >> 2
+                        else:
+                            addr_shift = 0
+                            if self.fw > 1:
+                                addr_shift = kts.clog2(self.fw)
+                            addr = addr >> addr_shift
+
                         feat_addr = addr // 256 + 1
                         # And also transform this based on memory depth
                         addr = (addr % 256)
