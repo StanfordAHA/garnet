@@ -487,6 +487,10 @@ class Garnet(Generator):
 
 
         self.pack_ponds(netlist_info)
+
+        port_remap_fout = open(app_dir + "/design.port_remap", "w")
+        port_remap_fout.write(json.dumps(pe_remap['alu']))
+        port_remap_fout.close()
         
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
