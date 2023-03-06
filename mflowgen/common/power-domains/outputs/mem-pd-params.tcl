@@ -4,6 +4,12 @@
 # Author: Alex Carsello
 # Date: 3/7/21
 
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "onyx"
+}
+
 # VDD stripe sparsity params
 
 # Always-on domain is much smaller than the switching domain, so need
@@ -11,6 +17,7 @@
 # Sparsity parm controls VDD stripe sparsity for M3 power stripes;
 # sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
 set vdd_m3_stripe_sparsity 1
+if { $WHICH_SOC == "amber" } { set vdd_m3_stripe_sparsity 2 }
 
 
 # Allow SDF registers?
@@ -27,6 +34,7 @@ set adk_allow_sdf_regs true
 # 'stripes_per_tap' controls the space between AON taps
 # as a multiple of the M3 power stripe pitch.
 set stripes_per_tap 9
+if { $WHICH_SOC == "amber" } { set stripes_per_tap 22 }
 
 # Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
 # This integer-div followed by integer-mul corrects that situation.
@@ -54,6 +62,7 @@ if { $stripes_per_tap != $corrected_stripes_per_tap } {
 # sps12 (original default) yields 14 columns of switches and 4.5 hr runtime
 # sps26 yields six columns and finishes in 2.5 hr
 set stripes_per_switch 14
+if { $WHICH_SOC == "amber" } { set stripes_per_switch 22 }
 
 # Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
 set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
@@ -69,10 +78,16 @@ set aon_width 160
 # This should always be an even number so that the
 # AON region can start an end on an even-numbered row.
 set aon_height 26
+if { $WHICH_SOC == "amber" } { set aon_height 24 }
 
 # Sets AON box horizontal offset from center in # of unit stdcell widths.
-# Negative offset puts AON left of center, which seems to work slightly better for TSMC build.
+
+# Negative offset puts AON left of center
+# If stripes_per_tap is 22, aon_horiz_offset should be 84; 80 creates a dead zone see issue 923.
+# FIXME aon placement should maybe be algorithmic based on distance from power switches etc.
+
 set aon_horiz_offset 0
+if { $WHICH_SOC == "amber" } { set aon_horiz_offset 90 }
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 15
