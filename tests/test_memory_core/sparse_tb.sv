@@ -15,7 +15,7 @@ module SparseTBBuilder_tb;
     // parameter BITSTREAM_MAX_SIZE = 4096 - 1;
     parameter BITSTREAM_MAX_SIZE = 4096;
     // integer BITSTREAM_MAX_SIZE;
-    parameter NUM_CYCLES = 20000;
+    parameter NUM_CYCLES = 50000;
 
     logic [63:0] bitstream [0:BITSTREAM_MAX_SIZE - 1];
     logic [31:0] bitstream_addr [0:BITSTREAM_MAX_SIZE - 1];
