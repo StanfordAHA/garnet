@@ -69,6 +69,7 @@ from lake.modules.scanner_pipe import ScannerPipe
 import tempfile
 import time
 import gemstone
+import torch
 
 
 class SparseTBBuilder(m.Generator2):
@@ -2170,6 +2171,34 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # exit()
         output_format = "CSF"
         output_name = "x"
+    elif 'tensor4_multiply2.gv' in app_name:
+        # X(i,k,j,m)=B(i,j,k,l)*C(i,l,j,m)
+        # -f=X:ssss:0,1,2,3 -f=B:ssss:0,2,1,3 -f=C:ssss:0,2,3,1 -s=reorder(i,k,j,m,l)
+        shape_i = 4
+        shape_j = 4
+        shape_k = 4
+        shape_l = 4
+        shape_m = 4
+
+        b_matrix = MatrixGenerator(name="B", shape=[shape_i, shape_j, shape_k, shape_l], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_i,shape_l, shape_j, shape_m], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+
+        # Permute B and C
+        b_ref = torch.from_numpy(b_mat)
+        c_ref = torch.from_numpy(c_mat)
+        b_ref = torch.permute(b_ref, (0, 2, 1, 3))
+        c_ref = torch.permute(c_ref, (0, 3, 1, 2))
+
+        output_ref = torch.einsum('ijkl, iljm->ikjm', b_ref, c_ref).numpy()
+        # output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        output_matrix = MatrixGenerator("gold", shape=output_ref.shape, sparsity=0.1, format='CSF', dump_dir='test', tensor=output_ref)
+        # output_matrix.dump_outputs(format='CSF')
+        output_format = "CSF"
+        output_name = "X"
     else:
         raise NotImplementedError
 
@@ -2305,7 +2334,7 @@ if __name__ == "__main__":
 
         # This is where we do the fallback comparison...
         # First get gold matrix from the output...
-        gold_matrix = numpy.load(f"{gold_mat_dir}/output_gold.npy")
+        gold_matrix = numpy.load(f"{gold_mat_dir}/output_gold.npy", allow_pickle=True)
         name_line = None
         with open(f"{gold_mat_dir}/output_name.txt") as output_name_h_:
             name_line = output_name_h_.readlines()[0].strip()
@@ -2550,7 +2579,7 @@ if __name__ == "__main__":
 
                 mode_map = sdg.get_mode_map()
                 print(f"MODE MAP: {mode_map}")
-                # exit()
+                exit()
                 graph = sdg.get_graph()
 
                 mode_maps.append(mode_map)
