@@ -78,11 +78,12 @@ class SparseTBBuilder(m.Generator2):
                  collat_dir=None,
                  mode_map=None, real_pe=False, harden_flush=False, combined=False,
                  input_sizes=None, use_fa=False,
-                 verbose=False, pnr_only=False, width=16, height=16) -> None:
+                 verbose=False, pnr_only=False, width=16, height=16, give_tensor=False) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
         self.verbose = verbose
+        self.give_tensor = give_tensor
 
         self.nlb = nlb
         self.graph = graph
@@ -624,9 +625,12 @@ class SparseTBBuilder(m.Generator2):
                     print(glb_mode_)
                     print(self.mode_map)
                     if 'vals' not in glb_mode_:
-                        glb_mode_ = int(glb_mode_)
-                        glb_mode = glb_mode_
-                        # glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                        if self.give_tensor:
+                            glb_mode_ = int(glb_mode_)
+                            glb_mode = glb_mode_
+                        else:
+                            glb_mode_ = int(glb_mode_)
+                            glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
                     else:
                         glb_mode = glb_mode_
                     # Get the handle for these pins, then instantiate glb
@@ -723,9 +727,12 @@ class SparseTBBuilder(m.Generator2):
                     glb_tensor = node_.get_tensor()
                     glb_mode_ = node_.get_mode()
                     if 'vals' not in glb_mode_:
-                        glb_mode_ = int(glb_mode_)
-                        glb_mode = glb_mode_
-                        # glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                        if self.give_tensor:
+                            glb_mode_ = int(glb_mode_)
+                            glb_mode = glb_mode_
+                        else:
+                            glb_mode_ = int(glb_mode_)
+                            glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
                     else:
                         glb_mode = glb_mode_
                     # Get the handle for these pins, then instantiate glb
@@ -1164,9 +1171,13 @@ class SparseTBBuilder(m.Generator2):
 
                 glb_mode_ = glb_mode
                 if 'vals' not in glb_mode_:
-                    glb_mode_ = int(glb_mode_)
-                    glb_mode__ = glb_mode_
-                    # glb_mode__ = self.mode_map[glb_tensor][glb_mode_][0]
+                    if self.give_tensor:
+                        glb_mode_ = int(glb_mode_)
+                        glb_mode__ = glb_mode_
+                    else:
+                        print(self.mode_map)
+                        glb_mode_ = int(glb_mode_)
+                        glb_mode__ = self.mode_map[glb_tensor][glb_mode_][0]
                 else:
                     glb_mode__ = glb_mode_
 
@@ -2194,8 +2205,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         c_ref = torch.permute(c_ref, (0, 3, 1, 2))
 
         output_ref = torch.einsum('ijkl, iljm->ikjm', b_ref, c_ref).numpy()
+        print(output_ref.shape)
         # output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
-        output_matrix = MatrixGenerator("gold", shape=output_ref.shape, sparsity=0.1, format='CSF', dump_dir='test', tensor=output_ref)
+        output_matrix = output_ref
+        # output_matrix = MatrixGenerator("gold", shape=output_ref.shape, sparsity=0.1, format='CSF', dump_dir='test', tensor=output_ref)
         # output_matrix.dump_outputs(format='CSF')
         output_format = "CSF"
         output_name = "X"
@@ -2579,7 +2592,7 @@ if __name__ == "__main__":
 
                 mode_map = sdg.get_mode_map()
                 print(f"MODE MAP: {mode_map}")
-                exit()
+                # exit()
                 graph = sdg.get_graph()
 
                 mode_maps.append(mode_map)
@@ -2610,7 +2623,7 @@ if __name__ == "__main__":
                                           input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access,
                                           verbose=verbose, pnr_only=pnr_only,
                                           width=chip_w, height=chip_h,
-                                          collat_dir=collat_dir)
+                                          collat_dir=collat_dir, give_tensor=give_tensor)
                     stbs[sam_graph] = stb
                     add_bs_args = True
                 else:
