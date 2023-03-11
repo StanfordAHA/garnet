@@ -66,9 +66,9 @@ set alignment_instname_base "core_alignment_grid"
 # Place alignment cells
 create_and_place_cell 900 4000 $alignment_cellname "cdmm1"
 create_and_place_cell 2400 3600 $alignment_cellname "cdmm2"
-create_and_place_cell 4400 3530 $alignment_cellname "cdmm3"
-create_and_place_cell 250 2000 $alignment_cellname "cdmm4"
-create_and_place_cell 4655 2000 $alignment_cellname "cdmm5"
+create_and_place_cell 4402 3530 $alignment_cellname "cdmm3"
+create_and_place_cell 251 2000 $alignment_cellname "cdmm4"
+create_and_place_cell 4654 2000 $alignment_cellname "cdmm5"
 create_and_place_cell 2250 250 $alignment_cellname "cdmm6"
-create_and_place_cell 4250 250 $alignment_cellname "cdmm7"
+create_and_place_cell 4248 250 $alignment_cellname "cdmm7"
 

@@ -15,7 +15,7 @@ module SparseTBBuilder_tb;
     // parameter BITSTREAM_MAX_SIZE = 4096 - 1;
     parameter BITSTREAM_MAX_SIZE = 4096;
     // integer BITSTREAM_MAX_SIZE;
-    parameter NUM_CYCLES = 20000;
+    parameter NUM_CYCLES = 50000;
 
     logic [63:0] bitstream [0:BITSTREAM_MAX_SIZE - 1];
     logic [31:0] bitstream_addr [0:BITSTREAM_MAX_SIZE - 1];
@@ -39,11 +39,13 @@ module SparseTBBuilder_tb;
     integer THIS_CYC_COUNT;
     integer BITSTREAM_CURR_SIZE;
     integer BITSTREAM_CURR_SIZE_CNT;
+    string  BITSTREAM_LOCATION;
 
     initial begin
         // string file_str;
         // file_str = $sformatf("/home/max/Documents/SPARSE/garnet/generic_memory_%d.txt", FILE_NO);
-        $readmemh("bitstream_nosp.bs", bitstream);
+        $value$plusargs("BITSTREAM_LOCATION=%s", BITSTREAM_LOCATION);
+        $readmemh(BITSTREAM_LOCATION, bitstream);
         for (integer i_ = 0; i_ < BITSTREAM_MAX_SIZE; i_ = i_ + 1) begin
             bitstream_addr[i_] = bitstream[i_][63: 32];
             bitstream_data[i_] = bitstream[i_][31: 0];

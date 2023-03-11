@@ -69,18 +69,21 @@ from lake.modules.scanner_pipe import ScannerPipe
 import tempfile
 import time
 import gemstone
+import torch
 
 
 class SparseTBBuilder(m.Generator2):
     def __init__(self, nlb: NetlistBuilder = None, graph: Graph = None, bespoke=False,
                  input_dir=None, output_dir=None, local_mems=True,
+                 collat_dir=None,
                  mode_map=None, real_pe=False, harden_flush=False, combined=False,
                  input_sizes=None, use_fa=False,
-                 verbose=False, pnr_only=False, width=16, height=16) -> None:
+                 verbose=False, pnr_only=False, width=16, height=16, give_tensor=False) -> None:
         assert nlb is not None or bespoke is True, "NLB is none..."
         assert graph is not None, "Graph is none..."
 
         self.verbose = verbose
+        self.give_tensor = give_tensor
 
         self.nlb = nlb
         self.graph = graph
@@ -123,6 +126,8 @@ class SparseTBBuilder(m.Generator2):
         self.glb_cores_w_map = {}
         self._ctr = 0
         self.pnr_only = pnr_only
+        self.collat_dir = collat_dir
+        self.plus_args = []
 
         if bespoke is False:
             self.io = m.IO(
@@ -602,6 +607,8 @@ class SparseTBBuilder(m.Generator2):
 
             for glb_in in self.enumerate_glb_in():
 
+                print(f"GLB_BULK_{glb_in}")
+
                 if (glb_in, 0) in self.glb_cores_w_map:
                     use_param = True
                     node_ = self.glb_cores_w_map[(glb_in, 0)]
@@ -615,12 +622,19 @@ class SparseTBBuilder(m.Generator2):
                     glb_tensor = node_.get_tensor()
                     print(glb_tensor)
                     glb_mode_ = node_.get_mode()
+                    print(glb_mode_)
+                    print(self.mode_map)
                     if 'vals' not in glb_mode_:
-                        glb_mode_ = int(glb_mode_)
-                        glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                        if self.give_tensor:
+                            glb_mode_ = int(glb_mode_)
+                            glb_mode = glb_mode_
+                        else:
+                            glb_mode_ = int(glb_mode_)
+                            glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
                     else:
                         glb_mode = glb_mode_
                     # Get the handle for these pins, then instantiate glb
+                    print(glb_mode)
                 else:
                     use_param = False
 
@@ -641,7 +655,7 @@ class SparseTBBuilder(m.Generator2):
                 valid_h = self.interconnect_circuit[str(valid_h)]
 
                 class _Definition(m.Generator2):
-                    def __init__(self, TX_SIZE, FILE_NAME, ID_no) -> None:
+                    def __init__(self, TX_SIZE, FILE_NAME, ID_no, LOCATION) -> None:
                         # super().__init__()
                         self.name = f"glb_write_wrapper_{TX_SIZE}_{ID_no}"
                         self.io = m.IO(**{
@@ -654,7 +668,7 @@ class SparseTBBuilder(m.Generator2):
                             "flush": m.In(m.Bit)
                         })
                         self.verilog = f"""
-                glb_write  #(.TX_SIZE({TX_SIZE}), .FILE_NAME({FILE_NAME}))
+                glb_write  #(.TX_SIZE({TX_SIZE}), .FILE_NAME({FILE_NAME}), .LOCATION({LOCATION}))
                 test_glb_inst
                 (
                     .clk(clk),
@@ -671,8 +685,11 @@ class SparseTBBuilder(m.Generator2):
                     file_full = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode}"
                     # Get tx size now
                     if not node_.get_format() == "dense":
-                        with open(file_full, "r") as ff:
-                            glb_tx_size = len(ff.readlines())
+                        try:
+                            with open(file_full, "r") as ff:
+                                glb_tx_size = len(ff.readlines())
+                        except:
+                            glb_tx_size = 0
                     else:
                         glb_tx_size = 0
 
@@ -681,7 +698,10 @@ class SparseTBBuilder(m.Generator2):
                     file_full = ""
                     glb_tx_size = 0
 
-                test_glb = _Definition(TX_SIZE=glb_tx_size, FILE_NAME=file_full, ID_no=self.get_next_seq())()
+                location_str = f"\"X{glb_in:02X}_Y00\""
+                test_glb = _Definition(TX_SIZE=glb_tx_size, FILE_NAME=file_full,
+                                       ID_no=self.get_next_seq(),
+                                       LOCATION=location_str)()
 
                 m.wire(test_glb['data'], data_h)
                 m.wire(ready_h, test_glb['ready'])
@@ -707,8 +727,12 @@ class SparseTBBuilder(m.Generator2):
                     glb_tensor = node_.get_tensor()
                     glb_mode_ = node_.get_mode()
                     if 'vals' not in glb_mode_:
-                        glb_mode_ = int(glb_mode_)
-                        glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                        if self.give_tensor:
+                            glb_mode_ = int(glb_mode_)
+                            glb_mode = glb_mode_
+                        else:
+                            glb_mode_ = int(glb_mode_)
+                            glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
                     else:
                         glb_mode = glb_mode_
                     # Get the handle for these pins, then instantiate glb
@@ -733,7 +757,7 @@ class SparseTBBuilder(m.Generator2):
                 valid_h = self.interconnect_circuit[str(valid_h)]
 
                 class _Definition(m.Generator2):
-                    def __init__(self, NUM_BLOCKS, FILE_NAME1, FILE_NAME2, ID_no) -> None:
+                    def __init__(self, NUM_BLOCKS, FILE_NAME1, FILE_NAME2, ID_no, LOCATION) -> None:
                         # super().__init__()
                         self.name = f"glb_read_wrapper_{NUM_BLOCKS}_{ID_no}"
                         self.io = m.IO(**{
@@ -747,7 +771,7 @@ class SparseTBBuilder(m.Generator2):
                         })
 
                         self.verilog = f"""
-                glb_read #(.NUM_BLOCKS({NUM_BLOCKS}), .FILE_NAME1({FILE_NAME1}), .FILE_NAME2({FILE_NAME2}))
+                glb_read #(.NUM_BLOCKS({NUM_BLOCKS}), .FILE_NAME1({FILE_NAME1}), .FILE_NAME2({FILE_NAME2}), .LOCATION({LOCATION}))
                 test_glb_inst
                 (
                     .clk(clk),
@@ -768,14 +792,11 @@ class SparseTBBuilder(m.Generator2):
                         f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
                         f2 = f1
                     elif node_.get_format() == 'vals':
-                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
                         f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
                         f2 = f1
                     else:
                         f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_seg\""
                         f2 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
-                        # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
-                        # f2 = f1
 
                 else:
 
@@ -784,7 +805,10 @@ class SparseTBBuilder(m.Generator2):
                     f2 = ""
 
                 # test_glb = _Definition(NUM_BLOCKS=glb_num_blocks * 2, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
-                test_glb = _Definition(NUM_BLOCKS=glb_num_blocks, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
+                location_str = f"\"X{glb_out:02X}_Y00\""
+                test_glb = _Definition(NUM_BLOCKS=glb_num_blocks, FILE_NAME1=f1,
+                                       FILE_NAME2=f2, ID_no=ID_no,
+                                       LOCATION=location_str)()
 
                 m.wire(data_h, test_glb['data'])
                 m.wire(test_glb['ready'], ready_h)
@@ -811,7 +835,7 @@ class SparseTBBuilder(m.Generator2):
             glb_mode_ = node.get_mode()
             if 'vals' not in glb_mode_:
                 glb_mode_ = int(glb_mode_)
-                glb_mode = self.mode_map[glb_tensor][glb_mode_][0]
+                glb_mode = glb_mode_
             else:
                 glb_mode = glb_mode_
             # Get the handle for these pins, then instantiate glb
@@ -867,8 +891,11 @@ class SparseTBBuilder(m.Generator2):
                 file_full = f"{self.input_dir}/tensor_{glb_tensor}_mode_{glb_mode}"
                 # Get tx size now
                 if not node.get_format() == "dense":
-                    with open(file_full, "r") as ff:
-                        glb_tx_size = len(ff.readlines())
+                    try:
+                        with open(file_full, "r") as ff:
+                            glb_tx_size = len(ff.readlines())
+                    except:
+                        glb_tx_size = 0
                 else:
                     glb_tx_size = 0
 
@@ -935,14 +962,11 @@ class SparseTBBuilder(m.Generator2):
                     f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
                     f2 = f1
                 elif node.get_format() == 'vals':
-                    # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
                     f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
                     f2 = f1
                 else:
                     f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_seg\""
                     f2 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}_crd\""
-                    # f1 = f"\"{self.output_dir}/tensor_X_mode_{glb_mode}\""
-                    # f2 = f1
 
                 # test_glb = _Definition(NUM_BLOCKS=glb_num_blocks * 2, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
                 test_glb = _Definition(NUM_BLOCKS=glb_num_blocks, FILE_NAME1=f1, FILE_NAME2=f2, ID_no=ID_no)()
@@ -1145,13 +1169,49 @@ class SparseTBBuilder(m.Generator2):
 
                 self.glb_to_io_mapping[data] = (glb_tensor, glb_mode, direction, num_blocks)
 
+                glb_mode_ = glb_mode
+                if 'vals' not in glb_mode_:
+                    if self.give_tensor:
+                        glb_mode_ = int(glb_mode_)
+                        glb_mode__ = glb_mode_
+                    else:
+                        print(self.mode_map)
+                        glb_mode_ = int(glb_mode_)
+                        glb_mode__ = self.mode_map[glb_tensor][glb_mode_][0]
+                else:
+                    glb_mode__ = glb_mode_
+
                 if direction == "write":
                     self.glb_cores[data] = (self.input_ctr, 0)
                     self.glb_cores_w_map[(self.input_ctr, 0)] = glb_node_use
+                    file_full = f"{{}}/tensor_{glb_tensor}_mode_{glb_mode__}"
+                    print(file_full)
+
+                    file_full = f"\"{file_full}\""
+                    self.plus_args.append((f"+X{self.input_ctr:02X}_Y00_FILE_NAME={file_full}\n", 'input'))
+                    self.plus_args.append(f"+X{self.input_ctr:02X}_Y00_ENABLED=1\n")
+
                     self.input_ctr += 2
+
                 else:
                     self.glb_cores[data] = (self.output_ctr, 0)
                     self.glb_cores_w_map[(self.output_ctr, 0)] = glb_node_use
+
+                    if str(glb_mode__) == "vals":
+                        f1 = f"\"{{}}/tensor_X_mode_{glb_mode__}\""
+                        f2 = f1
+                    elif glb_format == 'vals':
+                        f1 = f"\"{{}}/tensor_X_mode_{glb_mode__}\""
+                        f2 = f1
+                    else:
+                        f1 = f"\"{{}}/tensor_X_mode_{glb_mode__}_seg\""
+                        f2 = f"\"{{}}/tensor_X_mode_{glb_mode__}_crd\""
+
+                    self.plus_args.append((f"+X{self.output_ctr:02X}_Y00_F1={f1}\n", 'output'))
+                    self.plus_args.append((f"+X{self.output_ctr:02X}_Y00_F2={f2}\n", 'output'))
+                    self.plus_args.append(f"+X{self.output_ctr:02X}_Y00_NUM_BLOCKS={num_blocks}\n")
+                    self.plus_args.append(f"+X{self.output_ctr:02X}_Y00_ENABLED=1\n")
+
                     self.output_ctr += 2
 
             else:
@@ -1313,6 +1373,47 @@ class SparseTBBuilder(m.Generator2):
     def get_core_placement(self, core):
         return self.nlb.get_core_placement(core)
 
+    def add_plus_arg(self, new_parg):
+        # self.plus_args.append(f"{new_parg}\n")
+        self.plus_args.append(new_parg)
+
+    def dump_plus_args(self, fp_, input_dir=None, output_dir=None, collat_dir=None):
+
+        if input_dir is None:
+            input_dir = self.input_dir
+
+        if output_dir is None:
+            output_dir = self.output_dir
+
+        if collat_dir is None:
+            collat_dir = self.collat_dir
+
+        with open(fp_, 'w+') as fp_handle:
+            # fp_handle.writelines(self.plus_args)
+            for parg in self.plus_args:
+                if isinstance(parg, tuple):
+                    to_write_pholder = parg[0]
+                    if parg[1] == 'input':
+                        to_write_wo_pholder = to_write_pholder.format(input_dir)
+                        # Also add in the tx_size here...
+                        file_path_from_parg = to_write_wo_pholder[9:].split('=')[1]
+                        file_path_from_parg_no_quotes = file_path_from_parg.strip().strip('\"')
+                        len_file = 0
+                        try:
+                            with open(file_path_from_parg_no_quotes, 'r') as fd_temp_:
+                                len_file = len(fd_temp_.readlines())
+                        except:
+                            len_file = 0
+                        tx_size_line = f"{to_write_pholder[0:8]}_TX_SIZE={len_file}\n"
+                        fp_handle.write(tx_size_line)
+                    elif parg[1] == 'collat':
+                        to_write_wo_pholder = to_write_pholder.format(collat_dir)
+                    else:
+                        to_write_wo_pholder = to_write_pholder.format(output_dir)
+                    fp_handle.write(to_write_wo_pholder)
+                else:
+                    fp_handle.write(parg)
+
 
 def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, design_place=None, glb_info=None):
 
@@ -1422,7 +1523,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
                         "dimensionality": 1,
                         # "extent": [num_lines],
                         # HAX for testing against GLB
-                        "extent": [num_lines * 10],
+                        "extent": [num_lines * 10 + 500],
                         "write_data_starting_addr": [0],
                         "write_data_stride": [1]
                     },
@@ -1450,7 +1551,13 @@ def write_glb_file(file_list, out_dir, out_name):
             for l in all_lines:
                 # Get rid of 0x for readmemh compatibility
                 # hexified = str(hex(int(l)))[2:]
-                output_lines.append(f"{int(l):04X}\n")
+                # Convert to positive
+                temp_tkn = int(float(l.strip()))
+                if temp_tkn < 0:
+                    temp_tkn = temp_tkn * -1
+                if temp_tkn >= (2 ** 16):
+                    temp_tkn = temp_tkn - (((temp_tkn // (2 ** 16)) * (2 ** 16)))
+                output_lines.append(f"{temp_tkn:04X}\n")
     out_path = f"{out_dir}/{out_name}"
     with open(out_path, "w+") as curr_file:
         curr_file.writelines(output_lines)
@@ -1494,7 +1601,32 @@ def coalesce_files(in_dir, out_dir, hack_files=None):
         write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals'], out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals')
 
 
-def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None, zero_input=False):
+def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None, zero_input=False, tensor_orderings=None):
+
+    MAXIMUM_SIZES = 16
+
+    assert tensor_orderings is not None
+
+    shapes_ = []
+    sparsities_ = []
+    # Create 16 sizes - would be enough for now
+    for idx_ in range(MAXIMUM_SIZES):
+        shapes_.append(random.randint(0, 10))
+
+    for idx_ in range(10):
+        sparsity_choice = random.randint(0, 4)
+        sparsity_to_use = 0.0
+        if sparsity_choice == 0:
+            sparsity_to_use = 0.0
+        elif sparsity_choice == 1:
+            sparsity_to_use = 0.25
+        elif sparsity_choice == 2:
+            sparsity_to_use = 0.5
+        elif sparsity_choice == 3:
+            sparsity_to_use = 0.75
+        elif sparsity_choice == 4:
+            sparsity_to_use = 1.0
+        sparsities_.append(sparsity_to_use)
 
     output_matrix = None
     output_format = None
@@ -1513,14 +1645,20 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # to glb
         # combined
         if give_tensor:
-            bshape = read_inputs(os.path.join(matrix_tmp_dir, "Bshape"))
-            cshape = read_inputs(os.path.join(matrix_tmp_dir, "Cshape"))
-            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x')
-            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['C'])
         else:
-            shape_ = 10
-            b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-            c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            # shape_ = 10
+            b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]],
+                                       sparsity=sparsities_[0], format='CSF', dump_dir=matrix_tmp_dir)
+            # b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            c_matrix = MatrixGenerator(name="C", shape=[shapes_[0], shapes_[1]],
+                                       sparsity=sparsities_[1], format='CSF', dump_dir=matrix_tmp_dir)
+            # c_matrix = MatrixGenerator(name="C", shape=[shapes_[0], shapes_[1]], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
             b_matrix.dump_outputs()
             c_matrix.dump_outputs()
 
@@ -1535,10 +1673,26 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # to glb
         # combined
         # piped
-        shape_ = 10
-        b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        d_matrix = MatrixGenerator(name="D", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # shape_ = 10
+
+        if give_tensor:
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
+            dshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_D_mode_shape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['C'])
+            d_matrix = get_tensor_from_files(name='D', files_dir=matrix_tmp_dir, shape=dshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['D'])
+        else:
+            b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[0],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+            c_matrix = MatrixGenerator(name="C", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[1],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+            d_matrix = MatrixGenerator(name="D", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[2],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         d_matrix.dump_outputs()
@@ -1555,14 +1709,26 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # to glb
         # combined
         # piped
-        shape_1 = 16
-        shape_2 = 16
-        if zero_input:
-            sparsity_use = 1.0
+        # shape_1 = 16
+        # shape_2 = 16
+        # if zero_input:
+        #     sparsity_use = 1.0
+        # else:
+        #     sparsity_use = 0.7
+
+        if give_tensor:
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['C'])
         else:
-            sparsity_use = 0.7
-        b_matrix = MatrixGenerator(name="B", shape=[shape_1, shape_2], sparsity=sparsity_use, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[shape_1, shape_2], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+            b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[0],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+            c_matrix = MatrixGenerator(name="C", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[1],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
@@ -1575,9 +1741,14 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # to glb
         # combined
         # piped
-        shape_1 = 40
-        shape_2 = 36
-        b_matrix = MatrixGenerator(name="B", shape=[shape_1, shape_2], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+
+        if give_tensor:
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+        else:
+            b_matrix = MatrixGenerator(name="B", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[0],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         b_mat = b_matrix.get_matrix()
         output_matrix = b_mat
@@ -1594,16 +1765,21 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     elif 'mat_mattransmul.gv' in app_name:
         # WRONG GRAPH
-        shape_ = 20
+        shape_ = shapes_[0]
+
+        print(f"MATTRANSMUL: SHAPE: {shape_}, sparsities: {sparsities_[0]}, {sparsities_[1]}, {sparsities_[2]}")
+
+        # shape_ = 20
         b_matrix = MatrixGenerator(name="b", shape=[1], sparsity=0, format='CSF',
                                    dump_dir=matrix_tmp_dir)
-        C_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF',
+        # C_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='CSF',
+        C_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=sparsities_[0], format='CSF',
                                    dump_dir=matrix_tmp_dir)
-        d_matrix = MatrixGenerator(name="d", shape=[shape_], sparsity=0.7, format='CSF',
+        d_matrix = MatrixGenerator(name="d", shape=[shape_], sparsity=sparsities_[1], format='CSF',
                                    dump_dir=matrix_tmp_dir)
         e_matrix = MatrixGenerator(name="e", shape=[1], sparsity=0, format='CSF',
                                    dump_dir=matrix_tmp_dir)
-        f_matrix = MatrixGenerator(name="f", shape=[shape_], sparsity=0.7, format='CSF',
+        f_matrix = MatrixGenerator(name="f", shape=[shape_], sparsity=sparsities_[2], format='CSF',
                                    dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         C_matrix.dump_outputs()
@@ -1628,12 +1804,24 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
     elif 'mat_residual.gv' in app_name:
         # Handmade graph
-        shape_1 = 8
-        shape_2 = 16
         # shape_3 = 4
-        b_matrix = MatrixGenerator(name="b", shape=[shape_1], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        C_matrix = MatrixGenerator(name="C", shape=[shape_1, shape_2], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        d_matrix = MatrixGenerator(name="d", shape=[shape_2], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+
+        if give_tensor:
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
+            dshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_D_mode_shape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['C'])
+            d_matrix = get_tensor_from_files(name='D', files_dir=matrix_tmp_dir, shape=dshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['D'])
+        else:
+            b_matrix = MatrixGenerator(name="b", shape=[shapes_[0]], sparsity=sparsities_[0], format='CSF', dump_dir=matrix_tmp_dir)
+            C_matrix = MatrixGenerator(name="C", shape=[shapes_[0], shapes_[1]], sparsity=sparsities_[1],
+                                       format='CSF', dump_dir=matrix_tmp_dir)
+            d_matrix = MatrixGenerator(name="d", shape=[shapes_[1]], sparsity=sparsities_[2], format='CSF', dump_dir=matrix_tmp_dir)
+
         b_matrix.dump_outputs()
         C_matrix.dump_outputs()
         d_matrix.dump_outputs()
@@ -1647,10 +1835,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "x"
         # raise NotImplementedError
     elif 'mat_sddmm.gv' in app_name:
-        shape_ = 10
-        b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
-        d_matrix = MatrixGenerator(name="D", shape=[shape_, shape_], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
+        shape_ = shapes_[0]
+        b_matrix = MatrixGenerator(name="B", shape=[shape_, shape_], sparsity=sparsities_[0], format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_, shape_], sparsity=sparsities_[1], format='UNC', dump_dir=matrix_tmp_dir)
+        d_matrix = MatrixGenerator(name="D", shape=[shape_, shape_], sparsity=sparsities_[2], format='UNC', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
         d_matrix.dump_outputs()
@@ -1707,10 +1895,12 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # combined
         # piped
         if give_tensor:
-            bshape = read_inputs(os.path.join(matrix_tmp_dir, "Bshape"))
-            cshape = read_inputs(os.path.join(matrix_tmp_dir, "Cshape"))
-            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x')
-            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x')
+            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
+            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['B'])
+            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+                                             tensor_ordering=tensor_orderings['C'])
         else:
             gold_shape_0 = 8
             gold_shape_1 = 20
@@ -1992,6 +2182,36 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # exit()
         output_format = "CSF"
         output_name = "x"
+    elif 'tensor4_multiply2.gv' in app_name:
+        # X(i,k,j,m)=B(i,j,k,l)*C(i,l,j,m)
+        # -f=X:ssss:0,1,2,3 -f=B:ssss:0,2,1,3 -f=C:ssss:0,2,3,1 -s=reorder(i,k,j,m,l)
+        shape_i = 4
+        shape_j = 4
+        shape_k = 4
+        shape_l = 4
+        shape_m = 4
+
+        b_matrix = MatrixGenerator(name="B", shape=[shape_i, shape_j, shape_k, shape_l], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_i,shape_l, shape_j, shape_m], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+
+        # Permute B and C
+        b_ref = torch.from_numpy(b_mat)
+        c_ref = torch.from_numpy(c_mat)
+        b_ref = torch.permute(b_ref, (0, 2, 1, 3))
+        c_ref = torch.permute(c_ref, (0, 3, 1, 2))
+
+        output_ref = torch.einsum('ijkl, iljm->ikjm', b_ref, c_ref).numpy()
+        print(output_ref.shape)
+        # output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        output_matrix = output_ref
+        # output_matrix = MatrixGenerator("gold", shape=output_ref.shape, sparsity=0.1, format='CSF', dump_dir='test', tensor=output_ref)
+        # output_matrix.dump_outputs(format='CSF')
+        output_format = "CSF"
+        output_name = "X"
     else:
         raise NotImplementedError
 
@@ -2016,7 +2236,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
 def create_or_clean(dir_path):
     if not os.path.isdir(dir_path):
-        os.mkdir(dir_path)
+        # os.mkdir(dir_path)
+        os.makedirs(dir_path)
     else:
         # Otherwise clean it
         for filename in os.listdir(dir_path):
@@ -2040,7 +2261,8 @@ def prep_test_dir(base_dir, dir_arg, sub_dir):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Sparse TB Generator')
-    parser.add_argument('--sam_graph', type=str, default=None)
+    # parser.add_argument('--sam_graph', type=str, default=None)
+    parser.add_argument('--sam_graph', type=str, default=None, nargs='+')
     parser.add_argument('--output_dir', type=str, default=None)
     parser.add_argument('--input_dir', type=str, default=None)
     parser.add_argument('--test_dump_dir', type=str, default=None)
@@ -2048,14 +2270,17 @@ if __name__ == "__main__":
     parser.add_argument('--gold_dir', type=str, default=None)
     parser.add_argument('--print_inputs', type=str, default=None)
     parser.add_argument('--fifo_depth', type=int, default=2)
-    parser.add_argument('--seed', type=int, default=0)
+    # parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--seed', type=int, default=0, nargs='+')
     parser.add_argument('--height', type=int, default=16)
-    parser.add_argument('--width', type=int, default=16)
+    parser.add_argument('--width', type=int, default=32)
     parser.add_argument('--trace', action="store_true")
     parser.add_argument('--bespoke', action="store_true")
     parser.add_argument('--remote_mems', action="store_true")
     parser.add_argument('--ic_fork', action="store_true")
     parser.add_argument('--give_tensor', action="store_true")
+    # parser.add_argument('--tensor_locs', type=str, default=None, nargs='+')
+    parser.add_argument('--tensor_locs', type=str, default=None)
     parser.add_argument('--physical_sram', action="store_true")
     parser.add_argument('--just_verilog', action="store_true")
     parser.add_argument('--clk_enable', action="store_true")
@@ -2074,11 +2299,18 @@ if __name__ == "__main__":
     parser.add_argument('--fault', action="store_true")
     parser.add_argument('--gen_verilog', action="store_true")
     parser.add_argument('--zero_input', action="store_true")
+    parser.add_argument('--do_comparison', action="store_true")
+    parser.add_argument('--run', type=str, default=None)
+    parser.add_argument('--gold_mat_dir', type=str, default=None)
+    parser.add_argument('--sim_mat_dir', type=str, default=None)
+    parser.add_argument('--sim_dir', type=str, default='SIM_DIR')
+    parser.add_argument('--mem_width', type=int, default=64)
+    parser.add_argument('--compile_tb', action="store_true")
 
     args = parser.parse_args()
     bespoke = args.bespoke
     use_fork = args.ic_fork
-    seed = args.seed
+    seeds = args.seed
     give_tensor = args.give_tensor
     fifo_depth = args.fifo_depth
     physical_sram = args.physical_sram
@@ -2087,7 +2319,7 @@ if __name__ == "__main__":
     gen_pe = args.gen_pe
     add_pond = args.add_pond
     combined = args.combined
-    sam_graph = args.sam_graph
+    sam_graphs = args.sam_graph
     pipeline_scanner = args.pipeline_scanner
     dump_bitstream = args.dump_bitstream
     harden_flush = not args.no_harden_flush
@@ -2101,12 +2333,187 @@ if __name__ == "__main__":
     fault = args.fault
     gen_verilog = args.gen_verilog
     zero_input = args.zero_input
+    do_comparison = args.do_comparison
+    gold_mat_dir = args.gold_mat_dir
+    sim_mat_dir = args.sim_mat_dir
+    sim_dir = args.sim_dir
+    mem_width = args.mem_width
+    mtx_tmp_dir = args.matrix_tmp_dir
+    tensor_locs = args.tensor_locs
+    run_all = args.run
+    compile_tb = args.compile_tb
+
+    if do_comparison:
+
+        # This is where we do the fallback comparison...
+        # First get gold matrix from the output...
+        gold_matrix = numpy.load(f"{gold_mat_dir}/output_gold.npy", allow_pickle=True)
+        name_line = None
+        with open(f"{gold_mat_dir}/output_name.txt") as output_name_h_:
+            name_line = output_name_h_.readlines()[0].strip()
+        output_name = name_line
+        assert output_name is not None
+
+        sim_matrix = get_tensor_from_files(name='X', files_dir=sim_mat_dir,
+                                           format="CSF",
+                                           shape=gold_matrix.shape, base=16, early_terminate='x')
+        sim_matrix_np = sim_matrix.get_matrix()
+
+        print(f"GOLD")
+        gold_matrix = gold_matrix.astype(numpy.uint16, casting='unsafe')
+        print(gold_matrix)
+        print(f"SIM")
+        sim_matrix_np = sim_matrix_np.astype(numpy.uint16, casting='unsafe')
+        print(sim_matrix)
+        assert numpy.array_equal(gold_matrix, sim_matrix_np)
+
+        exit()
+
+    #########
+    print(sam_graphs)
 
     test_mem_core_dir = os.path.dirname(__file__)
 
-    pnr_only = just_glb or (not fault and not gen_verilog)
+    # if not os.path.isdir("./SIM_SHARED"):
+    #     os.mkdir("./SIM_SHARED")
+    # test_dump_dir = prep_test_dir("./SIM_SHARED", None, "DUMP_DIR")
+    if not os.path.isdir(sim_dir):
+        os.mkdir(sim_dir)
+    test_dump_dir = sim_dir
 
-    assert sam_graph is not None, f"No sam graph pointed to..."
+    if run_all is not None:
+
+        for test_module in glob.glob(os.path.join(test_mem_core_dir, "*.*v")):
+            shutil.copy(test_module, test_dump_dir)
+        shutil.copy(os.path.join(test_mem_core_dir, "Makefile"), test_dump_dir)
+        shutil.copy(os.path.join(test_mem_core_dir, "run_sim.tcl"), test_dump_dir)
+        # cw_dir = "/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/"
+        cw_dir = "/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/"
+        shutil.copy(os.path.join(test_mem_core_dir, "../../peak_core/CW_fp_add.v"), test_dump_dir)
+        shutil.copy(os.path.join(test_mem_core_dir, "../../peak_core/CW_fp_mult.v"), test_dump_dir)
+        gemstone_dir = os.path.dirname(os.path.dirname(gemstone.__file__))
+        for aoi_mux in glob.glob(os.path.join(gemstone_dir, "tests", "common", "rtl", "*.sv")):
+            shutil.copy(aoi_mux, test_dump_dir)
+
+        my_env = os.environ
+        my_env['WAVEFORM'] = "0"
+        if args.trace:
+            my_env['WAVEFORM'] = "1"
+        # my_env['TEST_ARGS'] = f"{collat_dir}/PARGS.txt"
+
+        base_dir = args.base_dir
+        bd = f"{os.path.abspath(base_dir)}"
+        if run_all == "all":
+            tests_to_run = os.listdir(bd)
+        else:
+            tests_to_run = [f'{run_all}']
+
+        local_comp = True
+
+        for test_ in tests_to_run:
+
+            my_env['TEST_DIR'] = f"{os.path.abspath(base_dir)}/{test_}"
+
+            if local_comp and compile_tb:
+                t_c = time.time()
+                subprocess.check_call(
+                    ["make", "compile"],
+                    cwd=test_dump_dir,
+                    env=my_env
+                )
+
+            local_comp = False
+
+            try:
+
+                t_r = time.time()
+                subprocess.check_call(
+                    ["make", "run"],
+                    cwd=test_dump_dir,
+                    env=my_env
+                )
+
+            except Exception:
+                print("Failed for some reason...")
+
+        print("Finished running!...Quitting...")
+        exit()
+
+    pnr_only = (just_glb or not fault) and not gen_verilog
+
+    assert len(sam_graphs) > 0, f"No sam graph pointed to..."
+
+    # Make sure to force DISABLE_GP for much quicker runs
+    os.environ['DISABLE_GP'] = '1'
+
+    pe_prefix = "PEGEN_"
+    real_pe = True
+
+    # Create PE verilog for inclusion...
+    if gen_pe is True:
+        pe_child = PE_fc(family.MagmaFamily())
+        # m.compile(f"{test_dump_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
+        m.compile(f"{test_mem_core_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
+        m.clear_cachedFunctions()
+        m.frontend.coreir_.ResetCoreIR()
+        m.generator.reset_generator_cache()
+        m.logging.flush_all()  # flush all staged logs
+
+    # numpy.random.seed(seed)
+    # random.seed(seed)
+
+    nlb = None
+    interconnect = None
+    if bespoke is False:
+        chip_width = chip_w
+        chip_height = chip_h
+        num_tracks = 5
+
+        time_0 = time.time()
+
+        interconnect = create_cgra(width=chip_width, height=chip_height,
+                                   io_sides=IOSide.North,
+                                   num_tracks=num_tracks,
+                                   add_pd=False,
+                                   # Soften the flush...?
+                                   harden_flush=harden_flush,
+                                   altcore=None,
+                                   ready_valid=True,
+                                   add_pond=add_pond,
+                                   scgra=True)
+
+        time_x = time.time()
+        print(f"TIME:\tcreate_cgra\t{time_x - time_0}")
+
+        if just_verilog:
+            circuit = interconnect.circuit()
+            import magma
+            magma.compile(f"{test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
+            exit()
+
+        nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir,
+                             harden_flush=harden_flush, combined=combined,
+                             pnr_only=pnr_only)
+
+        time_1 = time.time()
+        print(f"TIME:\tnlb\t{time_1 - time_x}")
+
+    # for sam_graph in sam_graphs:
+
+    # output_dirs = []
+    # input_dirs = []
+    # matrix_tmp_dirs = []
+    # # test_dump_dir = prep_test_dir(base_dir, args.test_dump_dir, "DUMP_DIR")
+    # gold_dirs = []
+    # glb_dirs = []
+    # collat_dirs = []
+
+    # output_matrices = []
+    # output_formats = []
+    # output_names = []
+    # input_dims_s = []
+
+    stb_to_gen = None
 
     with tempfile.TemporaryDirectory() as base_dir_td:
 
@@ -2119,334 +2526,231 @@ if __name__ == "__main__":
 
         print(f"BASE DIR BEING USED:\t{base_dir}")
 
-        output_dir = prep_test_dir(base_dir, args.output_dir, "OUTPUT_DIR")
-        input_dir = prep_test_dir(base_dir, args.input_dir, "INPUT_DIR")
-        matrix_tmp_dir = prep_test_dir(base_dir, args.matrix_tmp_dir, "MAT_TMP_DIR")
-        test_dump_dir = prep_test_dir(base_dir, args.test_dump_dir, "DUMP_DIR")
-        gold_dir = prep_test_dir(base_dir, args.gold_dir, "GOLD_DIR")
-        glb_dir = prep_test_dir(base_dir, args.glb_dir, "GLB_DIR")
+        for sam_graph in sam_graphs:
 
-        # Make sure to force DISABLE_GP for much quicker runs
-        os.environ['DISABLE_GP'] = '1'
+            sdgs = {}
+            mode_maps = []
+            graphs = []
+            stbs = {}
 
-        pe_prefix = "PEGEN_"
-        real_pe = True
+            output_dirs = []
+            input_dirs = []
+            matrix_tmp_dirs = []
+            # test_dump_dir = prep_test_dir(base_dir, args.test_dump_dir, "DUMP_DIR")
+            gold_dirs = []
+            glb_dirs = []
+            collat_dirs = []
 
-        # Create PE verilog for inclusion...
-        if gen_pe is True:
-            pe_child = PE_fc(family.MagmaFamily())
-            # m.compile(f"{test_dump_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
-            m.compile(f"{test_mem_core_dir}/PE", pe_child, output="coreir-verilog", coreir_libs={"float_CW"}, verilog_prefix=pe_prefix)
-            m.clear_cachedFunctions()
-            m.frontend.coreir_.ResetCoreIR()
-            m.generator.reset_generator_cache()
-            m.logging.flush_all()  # flush all staged logs
+            output_matrices = []
+            output_formats = []
+            output_names = []
+            input_dims_s = []
 
-        numpy.random.seed(seed)
-        random.seed(seed)
+            sam_graph_name = sam_graph.split('/')[-1].split(".")[0]
 
-        nlb = None
-        interconnect = None
-        if bespoke is False:
-            chip_width = chip_w
-            chip_height = chip_h
-            num_tracks = 5
+            use_seeds = seeds
 
-            controllers = []
+            if give_tensor:
+                use_seeds = os.listdir(tensor_locs)
+                use_seeds = [dir_ for dir_ in use_seeds if os.path.isdir(os.path.join(tensor_locs, dir_))]
 
-            if pipeline_scanner:
-                scan = ScannerPipe(data_width=16,
-                                   fifo_depth=fifo_depth,
-                                   add_clk_enable=True,
-                                   defer_fifos=True,
-                                   add_flush=False)
-            else:
-                scan = Scanner(data_width=16,
-                               fifo_depth=fifo_depth,
-                               defer_fifos=True,
-                               add_flush=False)
+            for seed in use_seeds:
 
-            wscan = WriteScanner(data_width=16,
-                                 fifo_depth=fifo_depth,
-                                 defer_fifos=True,
-                                 add_flush=False)
-            strg_ub = StrgUBVec(data_width=16, mem_width=64, mem_depth=512)
-            fiber_access = FiberAccess(data_width=16,
-                                       local_memory=False,
-                                       tech_map=GF_Tech_Map(depth=512, width=32),
-                                       defer_fifos=True,
-                                       use_pipelined_scanner=pipeline_scanner,
-                                       add_flush=False,
-                                       fifo_depth=fifo_depth,
-                                       buffet_optimize_wide=True)
-            buffet = BuffetLike(data_width=16, mem_depth=512, local_memory=False,
-                                tech_map=GF_Tech_Map(depth=512, width=32),
-                                defer_fifos=True,
-                                optimize_wide=True,
-                                add_flush=False,
-                                fifo_depth=fifo_depth)
-            strg_ram = StrgRAM(data_width=16,
-                               banks=1,
-                               memory_width=64,
-                               memory_depth=512,
-                               rw_same_cycle=False,
-                               read_delay=1,
-                               addr_width=16,
-                               prioritize_write=True,
-                               comply_with_17=True)
+                if not give_tensor:
+                    numpy.random.seed(seed)
+                    random.seed(seed)
 
-            stencil_valid = StencilValid()
+                output_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.output_dir, "OUTPUT_DIR")
+                input_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.input_dir, "INPUT_DIR")
+                if give_tensor:
+                    matrix_tmp_dir = os.path.join(tensor_locs, seed)
+                elif mtx_tmp_dir is not None:
+                    matrix_tmp_dir = mtx_tmp_dir
+                else:
+                    matrix_tmp_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.matrix_tmp_dir, "MAT_TMP_DIR")
+                # test_dump_dir = prep_test_dir(base_dir, args.test_dump_dir, "DUMP_DIR")
+                gold_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.gold_dir, "GOLD_DIR")
+                glb_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.glb_dir, "GLB_DIR")
+                collat_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.glb_dir, "COLLAT_DIR")
+                output_dirs.append(output_dir)
+                input_dirs.append(input_dir)
+                matrix_tmp_dirs.append(matrix_tmp_dir)
+                # test_dump_dir = prep_test_dir(base_dir, args.test_dump_dir, "DUMP_DIR"))
+                gold_dirs.append(gold_dir)
+                glb_dirs.append(glb_dir)
+                collat_dirs.append(collat_dir)
 
-            if use_fiber_access:
-                controllers.append(fiber_access)
-            else:
-                controllers.append(scan)
-                controllers.append(wscan)
-                controllers.append(buffet)
+                print(tensor_locs)
+                print(matrix_tmp_dir)
 
-            controllers.append(strg_ub)
-            controllers.append(strg_ram)
-            controllers.append(stencil_valid)
+                if sam_graph not in sdgs:
+                    sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork, use_fa=use_fiber_access)
+                    sdgs[sam_graph] = sdg
+                else:
+                    print("REUSE SDG")
+                    sdg = sdgs[sam_graph]
 
-            isect = Intersect(data_width=16,
-                              use_merger=False,
-                              fifo_depth=fifo_depth,
-                              defer_fifos=True,
-                              add_flush=False)
-            crd_drop = CrdDrop(data_width=16,
-                               fifo_depth=fifo_depth,
-                               lift_config=True,
-                               defer_fifos=True,
-                               add_flush=False)
-            crd_hold = CrdHold(data_width=16,
-                               fifo_depth=fifo_depth,
-                               lift_config=True,
-                               defer_fifos=True,
-                               add_flush=False)
-            onyxpe = OnyxPE(data_width=16,
-                            fifo_depth=fifo_depth,
-                            defer_fifos=True,
-                            ext_pe_prefix=pe_prefix,
-                            pe_ro=True,
-                            do_config_lift=False,
-                            add_flush=False)
-            repeat = Repeat(data_width=16,
-                            fifo_depth=fifo_depth,
-                            defer_fifos=True,
-                            add_flush=False)
-            rsg = RepeatSignalGenerator(data_width=16,
-                                        passthru=False,
-                                        fifo_depth=fifo_depth,
-                                        defer_fifos=True,
-                                        add_flush=False)
-            regcr = Reg(data_width=16,
-                        fifo_depth=fifo_depth,
-                        defer_fifos=True,
-                        add_flush=False)
+                mode_map = sdg.get_mode_map()
+                print(f"MODE MAP: {mode_map}")
+                # exit()
+                graph = sdg.get_graph()
 
-            controllers_2 = []
+                mode_maps.append(mode_map)
+                graphs.append(graph)
 
-            controllers_2.append(isect)
-            controllers_2.append(crd_drop)
-            controllers_2.append(crd_hold)
-            controllers_2.append(onyxpe)
-            controllers_2.append(repeat)
-            controllers_2.append(rsg)
-            controllers_2.append(regcr)
+                time_3 = time.time()
 
-            if combined is True:
-                altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
-                                               'use_sim_sram': not physical_sram,
-                                               'tech_map': GF_Tech_Map(depth=512, width=32),
-                                               'pnr_tag': "p",
-                                               'name': "PE",
-                                               'input_prefix': "PE_",
-                                               'fifo_depth': fifo_depth}),
-                           (CoreCombinerCore, {'controllers_list': controllers_2,
-                                               'use_sim_sram': not physical_sram,
-                                               'tech_map': GF_Tech_Map(depth=512, width=32),
-                                               'pnr_tag': "p",
-                                               'name': "PE",
-                                               'input_prefix': "PE_",
-                                               'fifo_depth': fifo_depth}),
-                           (CoreCombinerCore, {'controllers_list': controllers_2,
-                                               'use_sim_sram': not physical_sram,
-                                               'tech_map': GF_Tech_Map(depth=512, width=32),
-                                               'pnr_tag': "p",
-                                               'name': "PE",
-                                               'input_prefix': "PE_",
-                                               'fifo_depth': fifo_depth}),
-                           (CoreCombinerCore, {'controllers_list': controllers,
-                                               'use_sim_sram': not physical_sram,
-                                               'tech_map': GF_Tech_Map(depth=512, width=32),
-                                               'pnr_tag': "m",
-                                               'name': "MemCore",
-                                               'input_prefix': "MEM_",
-                                               'fifo_depth': fifo_depth})]
+                ##### Handling app level file stuff #####
+                output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir,
+                                                                                      give_tensor, print_inputs,
+                                                                                      zero_input=zero_input,
+                                                                                      tensor_orderings=mode_map)
+                output_matrices.append(output_matrix)
+                output_formats.append(output_format)
+                output_names.append(output_name)
+                input_dims_s.append(input_dims)
 
-            else:
-                altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
-                                          'add_clk_enable': clk_enable,
-                                          'pipelined': pipeline_scanner}),
-                           (BuffetCore, {'local_mems': True,
-                                         'physical_mem': physical_sram,
-                                         'fifo_depth': fifo_depth,
-                                         'tech_map': GF_Tech_Map(depth=512, width=32)}),
-                           (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
-                           (WriteScannerCore, {'fifo_depth': fifo_depth}),
-                           (RepeatCore, {'fifo_depth': fifo_depth}),
-                           (IntersectCore, {'fifo_depth': fifo_depth}),
-                           (CrdDropCore, {'fifo_depth': fifo_depth}),
-                           (CrdHoldCore, {'fifo_depth': fifo_depth}),
-                           (RepeatSignalGeneratorCore, {'passthru': not use_fork,
-                                                        'fifo_depth': fifo_depth}),
-                           (RegCore, {'fifo_depth': fifo_depth})]
+                out_mat = MatrixGenerator(name=output_name, shape=None, sparsity=0.5,
+                                          format=output_format, dump_dir=gold_dir, tensor=output_matrix)
+                out_mat.dump_outputs()
 
-            time_0 = time.time()
+                if sam_graph not in stbs:
+                    ##### Create the actual testbench mapping based on the SAM graph #####
+                    stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
+                                          # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
+                                          output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
+                                          real_pe=real_pe, harden_flush=harden_flush, combined=combined,
+                                          input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access,
+                                          verbose=verbose, pnr_only=pnr_only,
+                                          width=chip_w, height=chip_h,
+                                          collat_dir=collat_dir, give_tensor=give_tensor)
+                    stbs[sam_graph] = stb
+                    add_bs_args = True
+                else:
+                    stb = stbs[sam_graph]
+                    add_bs_args = False
 
-            interconnect = create_cgra(width=chip_width, height=chip_height,
-                                       io_sides=IOSide.North,
-                                       num_tracks=num_tracks,
-                                       add_pd=False,
-                                       # Soften the flush...?
-                                       harden_flush=harden_flush,
-                                       altcore=altcore,
-                                       ready_valid=True,
-                                       add_pond=add_pond,
-                                       scgra=False)
+                if stb_to_gen is None:
+                    stb_to_gen = stb
+                    pnr_only = True
 
-            time_x = time.time()
-            print(f"TIME:\tcreate_cgra\t{time_x - time_0}")
+                if dump_glb:
 
-            if just_verilog:
-                circuit = interconnect.circuit()
+                    # Want to dump specific tests...
+                    test_name_base = sam_graph.split('/')[-1].split(".")[0]
+                    print(f"TEST BASE NAME: {test_name_base}")
+
+                    if combined:
+                        combined_str = "combined"
+                    else:
+                        combined_str = ""
+
+                    full_test_name = f"{test_name_base}_{combined_str}_seed_{seed}"
+
+                    full_test_glb_dir = f"{glb_dir}/{full_test_name}"
+
+                    print(f"DUMPING GLB STUFF TO: {full_test_glb_dir}")
+
+                    # Make sure glb path exists
+                    if not os.path.isdir(full_test_glb_dir):
+                        os.mkdir(full_test_glb_dir)
+
+                    out_mat.dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir)
+
+                    # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
+                    #     numpy.save(goldout_, out_mat.get_matrix())
+                    # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
+                    numpy.save(f"{full_test_glb_dir}/output_gold.npy", out_mat.get_matrix())
+                    numpy.save(f"{glb_dir}/output_gold.npy", out_mat.get_matrix())
+
+                    with open(f"{glb_dir}/output_name.txt", "w+") as outputname_h_:
+                        outputname_h_.write(f"{output_name}\n")
+                    with open(f"{full_test_glb_dir}/output_name.txt", "w+") as outputname_h_:
+                        outputname_h_.write(f"{output_name}\n")
+
+                # Now coalesce them into combo files and put in final landing zone
+                # First clear the out dir
+                if not os.path.isdir(input_dir):
+                    os.mkdir(input_dir)
+                else:
+                    # Otherwise clean it
+                    for filename in os.listdir(input_dir):
+                        ret = os.remove(input_dir + "/" + filename)
+
+                # hack_in_files = ['./tensor_b_mode_0', './tensor_b_mode_vals']
+                hack_in_files = None
+                coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir, hack_files=hack_in_files)
+
+                # Clean up output dir...
+                # If it doesn't exist, make it
+                if not os.path.isdir(output_dir):
+                    os.mkdir(output_dir)
+                else:
+                    # Otherwise clean it
+                    for filename in os.listdir(output_dir):
+                        ret = os.remove(output_dir + "/" + filename)
+
+                time_2 = time.time()
+                print(f"TIME:\tglb\t{time_2 - time_1}")
+
+                time_4 = time.time()
+                print(f"TIME:\tSTB\t{time_4 - time_3}")
+
+                # collat_dir = collat_dirs[idx_]
+
+                bs_size = nlb.write_out_bitstream(f"{collat_dir}/bitstream_nosp.bs", nospace=True, glb=False)
+                if add_bs_args:
+                    # stb.add_plus_arg(f"+BITSTREAM_LOCATION={collat_dir}/bitstream_nosp.bs")
+                    stb.add_plus_arg((f"+BITSTREAM_LOCATION={{}}/bitstream_nosp.bs\n", 'collat'))
+                    stb.add_plus_arg(f"+BITSTREAM_SIZE={bs_size}\n")
+                # stb.dump_plus_args(f"{collat_dir}/PARGS.txt")
+                stb.dump_plus_args(f"{collat_dir}/PARGS.txt", input_dir=input_dir, output_dir=output_dir, collat_dir=collat_dir)
+
+                if dump_bitstream:
+                    nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs", nospace=False, glb=True)
+
+                if dump_glb:
+
+                    glb_info_ = []
+                    glb_map = stb.get_glb_mapping()
+                    mode_map = stb.get_mode_map()
+                    for core, desc_ in glb_map.items():
+                        tensor_, mode_, direction_, num_blocks_ = desc_
+                        # remap the mode...
+                        if mode_ != 'vals':
+                            # mode_ = mode_map[tensor_][int(mode_)][0]
+                            mode_ = mode_
+                            # We don't need to emit anything for a dense block
+                            if mode_map[tensor_][int(mode_)][1] == 'd':
+                                continue
+                        core_placement = stb.get_core_placement(core)
+                        tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
+                        glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_))
+
+                    # prepare_glb_collateral(glb_dir=glb_dir,
+                    prepare_glb_collateral(glb_dir=full_test_glb_dir,
+                                           bitstream=f"{test_dump_dir}/bitstream.bs",
+                                           matrices_in=input_dir,
+                                           design_place=f"{test_dump_dir}/design.place",
+                                           glb_info=glb_info_)
+
+                stb.display_names()
+                stb.dump_display_names(f"{test_dump_dir}/design.mapped")
+                stb.dump_display_names(f"{collat_dir}/design.mapped")
+
+            nlb.reset()
+
+            del stbs[sam_graph]
+
+        # Need this before just_glb for early exits
+        if not fault and gen_verilog:
+            # Run the normal tb
+            if gen_verilog:
                 import magma
-                magma.compile(f"{test_dump_dir}/SparseTBBuilder", circuit, coreir_libs={"float_CW"})
+                magma.compile(f"{test_mem_core_dir}/SparseTBBuilder", stb_to_gen, coreir_libs={"float_CW"})
+                print("MADE SPARSE TB: ")
+                print(test_mem_core_dir)
                 exit()
-
-            nlb = NetlistBuilder(interconnect=interconnect, cwd=test_dump_dir,
-                                 harden_flush=harden_flush, combined=combined,
-                                 pnr_only=pnr_only)
-
-            time_1 = time.time()
-            print(f"TIME:\tnlb\t{time_1 - time_x}")
-
-        ##### Handling app level file stuff #####
-        output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir,
-                                                                              give_tensor, print_inputs,
-                                                                              zero_input=zero_input)
-        out_mat = MatrixGenerator(name=output_name, shape=None, sparsity=0.5, format=output_format, dump_dir=gold_dir, tensor=output_matrix)
-        out_mat.dump_outputs()
-        if dump_glb:
-
-            # Want to dump specific tests...
-            test_name_base = sam_graph.split('/')[-1].split(".")[0]
-            print(f"TEST BASE NAME: {test_name_base}")
-
-            if combined:
-                combined_str = "combined"
-            else:
-                combined_str = ""
-
-            full_test_name = f"{test_name_base}_{combined_str}_seed_{seed}"
-
-            full_test_glb_dir = f"{glb_dir}/{full_test_name}"
-
-            print(f"DUMPING GLB STUFF TO: {full_test_glb_dir}")
-
-            # Make sure glb path exists
-            if not os.path.isdir(full_test_glb_dir):
-                os.mkdir(full_test_glb_dir)
-
-            out_mat.dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir)
-
-            # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
-            #     numpy.save(goldout_, out_mat.get_matrix())
-            # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
-            numpy.save(f"{full_test_glb_dir}/output_gold.npy", out_mat.get_matrix())
-
-            with open(f"{full_test_glb_dir}/output_name.txt", "w+") as outputname_h_:
-                outputname_h_.write(f"{output_name}\n")
-
-        # Now coalesce them into combo files and put in final landing zone
-        # First clear the out dir
-        if not os.path.isdir(input_dir):
-            os.mkdir(input_dir)
-        else:
-            # Otherwise clean it
-            for filename in os.listdir(input_dir):
-                ret = os.remove(input_dir + "/" + filename)
-
-        # hack_in_files = ['./tensor_b_mode_0', './tensor_b_mode_vals']
-        hack_in_files = None
-        coalesce_files(in_dir=matrix_tmp_dir, out_dir=input_dir, hack_files=hack_in_files)
-
-        # Clean up output dir...
-        # If it doesn't exist, make it
-        if not os.path.isdir(output_dir):
-            os.mkdir(output_dir)
-        else:
-            # Otherwise clean it
-            for filename in os.listdir(output_dir):
-                ret = os.remove(output_dir + "/" + filename)
-
-        time_2 = time.time()
-        print(f"TIME:\tglb\t{time_2 - time_1}")
-
-        # Get SAM graph
-        # sdg = SAMDotGraph(filename=args.sam_graph, local_mems=not args.remote_mems, use_fork=use_fork)
-        sdg = SAMDotGraph(filename=args.sam_graph, local_mems=True, use_fork=use_fork, use_fa=use_fiber_access)
-        mode_map = sdg.get_mode_map()
-        print(f"MODE MAP: {mode_map}")
-        # exit()
-        graph = sdg.get_graph()
-
-        time_3 = time.time()
-        print(f"TIME:\tSAMGRAPH\t{time_3 - time_2}")
-
-        # print(input_dims)
-        ##### Create the actual testbench mapping based on the SAM graph #####
-        stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
-                              # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
-                              output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
-                              real_pe=real_pe, harden_flush=harden_flush, combined=combined,
-                              input_sizes=tuple(input_dims.items()), use_fa=use_fiber_access,
-                              verbose=verbose, pnr_only=pnr_only,
-                              width=chip_w, height=chip_h)
-
-        time_4 = time.time()
-        print(f"TIME:\tSTB\t{time_4 - time_3}")
-
-        bs_size = nlb.write_out_bitstream(f"{test_dump_dir}/bitstream_nosp.bs", nospace=True, glb=False)
-        if dump_bitstream:
-            nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs", nospace=False, glb=True)
-
-        if dump_glb:
-
-            glb_info_ = []
-            glb_map = stb.get_glb_mapping()
-            mode_map = stb.get_mode_map()
-            for core, desc_ in glb_map.items():
-                tensor_, mode_, direction_, num_blocks_ = desc_
-                # remap the mode...
-                if mode_ != 'vals':
-                    mode_ = mode_map[tensor_][int(mode_)][0]
-                    # We don't need to emit anything for a dense block
-                    if mode_map[tensor_][int(mode_)][1] == 'd':
-                        continue
-                core_placement = stb.get_core_placement(core)
-                tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
-                glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_))
-
-            # prepare_glb_collateral(glb_dir=glb_dir,
-            prepare_glb_collateral(glb_dir=full_test_glb_dir,
-                                   bitstream=f"{test_dump_dir}/bitstream.bs",
-                                   matrices_in=input_dir,
-                                   design_place=f"{test_dump_dir}/design.place",
-                                   glb_info=glb_info_)
-
-        stb.display_names()
-        stb.dump_display_names(f"{test_dump_dir}/design.mapped")
 
         if just_glb:
             print("Only generating glb collateral and leaving...")
@@ -2457,13 +2761,8 @@ if __name__ == "__main__":
         time_before_sim = time.time()
 
         if not fault:
-            # Run the normal tb
-            if gen_verilog:
-                import magma
-                magma.compile(f"{test_mem_core_dir}/SparseTBBuilder", stb, coreir_libs={"float_CW"})
 
             # Copy collateral...
-
             for test_module in glob.glob(os.path.join(test_mem_core_dir, "*.*v")):
                 shutil.copy(test_module, test_dump_dir)
             shutil.copy(os.path.join(test_mem_core_dir, "Makefile"), test_dump_dir)
@@ -2480,7 +2779,8 @@ if __name__ == "__main__":
             my_env['WAVEFORM'] = "0"
             if args.trace:
                 my_env['WAVEFORM'] = "1"
-            my_env['BITSTREAM_SIZE'] = str(bs_size)
+
+            my_env['TEST_DIR'] = f"{os.path.abspath(base_dir)}/{sam_graph_name}_{seed}"
 
             t_c = time.time()
             subprocess.check_call(

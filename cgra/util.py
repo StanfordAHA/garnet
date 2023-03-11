@@ -40,6 +40,7 @@ from lake.modules.write_scanner import WriteScanner
 from lake.modules.intersect import Intersect
 from lake.modules.reg_cr import Reg
 from lake.modules.strg_ub_vec import StrgUBVec
+from lake.modules.strg_ub_thin import StrgUBThin
 from lake.modules.crddrop import CrdDrop
 from lake.modules.crdhold import CrdHold
 from lake.modules.strg_RAM import StrgRAM
@@ -97,7 +98,15 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 pe_fc=lassen_fc,
                 ready_valid: bool = True,
                 scgra: bool = True,
-                scgra_combined: bool = True):
+                scgra_combined: bool = True,
+                mem_width: int = 64,
+                mem_depth: int = 512,
+                mem_input_ports: int = 2,
+                mem_output_ports: int = 2,
+                macro_width: int = 32,
+                dac_exp: bool = False,
+                dual_port: bool = False,
+                rf: bool = False):
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
     bit_widths = [1, 17]
@@ -132,7 +141,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                        (BuffetCore, {'local_mems': True,
                                      'physical_mem': physical_sram,
                                      'fifo_depth': fifo_depth,
-                                     'tech_map': GF_Tech_Map(depth=512, width=32)}),
+                                     'tech_map': GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port)}),
                        (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
                        (WriteScannerCore, {'fifo_depth': fifo_depth}),
                        (RepeatCore, {'fifo_depth': fifo_depth}),
@@ -163,28 +172,66 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                  fifo_depth=fifo_depth,
                                  defer_fifos=True,
                                  add_flush=False)
-            strg_ub = StrgUBVec(data_width=16,
-                                mem_width=64,
-                                mem_depth=512)
+            if dac_exp:
+                if dual_port:
+                    read_delay = 1
+                    if rf:
+                        read_delay = 0
+                    strg_ub = StrgUBThin(
+                        config_mode_str="UB",
+                        data_width=16,  # CGRA Params
+                        mem_width=mem_width,
+                        mem_depth=mem_depth,
+                        input_addr_iterator_support=6,
+                        input_sched_iterator_support=6,
+                        output_addr_iterator_support=6,
+                        output_sched_iterator_support=6,
+                        interconnect_input_ports=mem_input_ports,  # Connection to int
+                        interconnect_output_ports=mem_output_ports,
+                        config_width=16,
+                        read_delay=read_delay,  # Cycle delay in read (SRAM vs Register File)
+                        rw_same_cycle=dual_port,
+                        gen_addr=True,
+                        comply_with_17=True,
+                        area_opt=False,
+                        area_opt_share=False,
+                        area_opt_dual_config=False,
+                        chaining=True,
+                        name_suffix="_DAC",
+                        reduced_id_config_width=16,
+                        delay_width=4,
+                        iterator_support2=2  # assumes that this port has smaller iter_support
+                    )
+                else:
+                    strg_ub = StrgUBVec(data_width=16,
+                                        mem_width=mem_width,
+                                        mem_depth=mem_depth,
+                                        interconnect_input_ports=mem_input_ports,
+                                        interconnect_output_ports=mem_output_ports)
+
+            else:
+                strg_ub = StrgUBVec(data_width=16,
+                                    mem_width=mem_width,
+                                    mem_depth=mem_depth)
             fiber_access = FiberAccess(data_width=16,
                                        local_memory=False,
-                                       tech_map=GF_Tech_Map(depth=512, width=32),
+                                       tech_map=GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port),
                                        defer_fifos=True,
                                        add_flush=False,
                                        use_pipelined_scanner=pipeline_scanner,
                                        fifo_depth=fifo_depth,
                                        buffet_optimize_wide=True)
             buffet = BuffetLike(data_width=16,
-                                mem_depth=512, local_memory=False,
-                                tech_map=GF_Tech_Map(depth=512, width=32),
+                                mem_depth=mem_depth, local_memory=False,
+                                tech_map=GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port),
                                 defer_fifos=True,
                                 optimize_wide=True,
                                 add_flush=False,
                                 fifo_depth=fifo_depth)
             strg_ram = StrgRAM(data_width=16,
                                banks=1,
-                               memory_width=64,
-                               memory_depth=512,
+                               memory_width=mem_width,
+                               memory_depth=mem_depth,
                                rw_same_cycle=False,
                                read_delay=1,
                                addr_width=16,
@@ -193,16 +240,21 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             stencil_valid = StencilValid()
 
-            if use_fiber_access:
-                controllers.append(fiber_access)
+            if dac_exp:
+                controllers.append(strg_ub)
+                controllers.append(strg_ram)
+                controllers.append(stencil_valid)
             else:
-                controllers.append(scan)
-                controllers.append(wscan)
-                controllers.append(buffet)
+                if use_fiber_access:
+                    controllers.append(fiber_access)
+                else:
+                    controllers.append(scan)
+                    controllers.append(wscan)
+                    controllers.append(buffet)
 
-            controllers.append(strg_ub)
-            controllers.append(strg_ram)
-            controllers.append(stencil_valid)
+                controllers.append(strg_ub)
+                controllers.append(strg_ram)
+                controllers.append(stencil_valid)
 
             isect = Intersect(data_width=16,
                               use_merger=False,
@@ -252,32 +304,48 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'tech_map': GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port),
                                            'pnr_tag': "p",
                                            'name': "PE",
+                                           'mem_width': mem_width,
+                                           'mem_depth': mem_depth,
                                            'input_prefix': "PE_",
-                                           'fifo_depth': fifo_depth}),
+                                           'fifo_depth': fifo_depth,
+                                           'dual_port': dual_port,
+                                           'rf': rf}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'tech_map': GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port),
                                            'pnr_tag': "p",
+                                           'mem_width': mem_width,
+                                           'mem_depth': mem_depth,
                                            'name': "PE",
                                            'input_prefix': "PE_",
-                                           'fifo_depth': fifo_depth}),
+                                           'fifo_depth': fifo_depth,
+                                           'dual_port': dual_port,
+                                           'rf': rf}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'tech_map': GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port),
                                            'pnr_tag': "p",
+                                           'mem_width': mem_width,
+                                           'mem_depth': mem_depth,
                                            'name': "PE",
                                            'input_prefix': "PE_",
-                                           'fifo_depth': fifo_depth}),
+                                           'fifo_depth': fifo_depth,
+                                           'dual_port': dual_port,
+                                           'rf': rf}),
                        (CoreCombinerCore, {'controllers_list': controllers,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': GF_Tech_Map(depth=512, width=32),
+                                           'tech_map': GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port),
                                            'pnr_tag': "m",
+                                           'mem_width': mem_width,
+                                           'mem_depth': mem_depth,
                                            'name': "MemCore",
                                            'input_prefix': "MEM_",
-                                           'fifo_depth': fifo_depth})]
+                                           'fifo_depth': fifo_depth,
+                                           'dual_port': dual_port,
+                                           'rf': rf})]
 
         real_pe = True
 
@@ -369,11 +437,12 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     if add_pond:
         # remap
         if intercore_mapping is not None:
-            inter_core_connection_1 =  {"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
-            inter_core_connection_16 = {"PondTop_output_width_17_num_0": [intercore_mapping["data0"], intercore_mapping["data1"], intercore_mapping["data2"]],
+            inter_core_connection_1 = {"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
+            inter_core_connection_16 = {"PondTop_output_width_17_num_0": [intercore_mapping["data0"], intercore_mapping["data1"],
+                                        intercore_mapping["data2"]],
                                         intercore_mapping["res"]: ["PondTop_input_width_17_num_0", "PondTop_input_width_17_num_1"]}
         else:
-            inter_core_connection_1 =  {"PondTop_output_width_1_num_0": ["bit0"]}
+            inter_core_connection_1 = {"PondTop_output_width_1_num_0": ["bit0"]}
             inter_core_connection_16 = {"PondTop_output_width_17_num_0": ["data0", "data1", "data2"],
                                         "res": ["PondTop_input_width_17_num_0", "PondTop_input_width_17_num_1"]}
     else:

@@ -18,7 +18,7 @@ foreach idx $clk_div_factors {
       -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_div/CLK_by_${idx}] \
       -divide_by 1 \
       -add \
-      -master_clock by_${idx}_mst_1_clk \
+      -master_clock by_${idx}_mst_0_clk \
       [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_clk_selector_tlx_clk/CLK_OUT]
 }
 
@@ -47,5 +47,5 @@ create_generated_clock -name tlx_fwd_strobe \
 # ------------------------------------------------------------------------------
 # TLX Reverse Clock
 # ------------------------------------------------------------------------------
-create_clock -name tlx_rev_clk -period [expr ${soc_master_clk_period} * 4] \
+create_clock -name tlx_rev_clk -period [expr ${soc_master_clk_period} * 2] \
     [get_ports $port_names(tlx_rev_clk)]

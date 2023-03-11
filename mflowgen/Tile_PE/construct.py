@@ -61,7 +61,7 @@ def construct():
     'rtl_docker_image'  : 'default', # Current default is 'stanfordaha/garnet:latest'
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
-    'core_density_target': 0.58,
+    'core_density_target': 0.6,
     # Power analysis
     "use_sdf"           : False, # uses sdf but not the way it is in xrun node
     'app_to_run'        : 'tests/conv_3_3',
@@ -99,6 +99,7 @@ def construct():
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
+  custom_cts           = Step( this_dir + '/custom-cts'                             )
   short_fix            = Step( this_dir + '/../common/custom-short-fix'             )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'         )
@@ -148,6 +149,7 @@ def construct():
   # Add extra input edges to innovus steps that need custom tweaks
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  cts.extend_inputs( custom_cts.all_outputs() )
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
   synth.extend_inputs( custom_genus_scripts.all_outputs() )
   iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
@@ -213,6 +215,7 @@ def construct():
   g.add_step( custom_init              )
   g.add_step( power                    )
   g.add_step( custom_power             )
+  g.add_step( custom_cts               )
   g.add_step( place                    )
   g.add_step( cts                      )
   g.add_step( postcts_hold             )
@@ -291,6 +294,7 @@ def construct():
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
+  g.connect_by_name( custom_cts,   cts      )
 
   # Fetch short-fix script in prep for eventual use by postroute
   g.connect_by_name( short_fix, postroute )

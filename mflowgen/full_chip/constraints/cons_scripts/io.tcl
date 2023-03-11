@@ -12,7 +12,7 @@
 set_dont_touch [ get_cells IOPAD* ]
 
 # I/O Timing constraints
-set master_clk_period     [expr ${soc_master_clk_period} * ${soc_clk_div_factor}]
+set master_clk_period     $soc_master_clk_period
 
 # ------------------------------------------------------------------------------
 # Butterphy
@@ -148,8 +148,8 @@ set_multicycle_path -hold -end -to [get_ports $port_names(uart1_txd)] 19
 # Power-on Reset
 # ------------------------------------------------------------------------------
 
-set_input_delay -max [expr ${master_clk_period} * 0.6] -clock [get_clocks master_clk_1] [get_ports $port_names(poreset_n)]
-set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks master_clk_1] [get_ports $port_names(poreset_n)]
+set_input_delay -max [expr ${master_clk_period} * 0.6] -clock [get_clocks master_clk] [get_ports $port_names(poreset_n)]
+set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks master_clk] [get_ports $port_names(poreset_n)]
 
 set_multicycle_path -setup -end -from [get_ports $port_names(poreset_n)] 4
 set_multicycle_path -hold -end -from [get_ports $port_names(poreset_n)] 3

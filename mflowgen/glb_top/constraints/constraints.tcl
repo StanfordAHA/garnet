@@ -56,7 +56,6 @@ set_driving_cell -no_design_rule \
 #=========================================================================
 # set_input_delay constraints for input ports
 set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
-set_input_delay -clock ${clock_name} 0 [get_ports reset]
 
 #=========================================================================
 # output delay

@@ -47,11 +47,12 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
 if {[info exists ADK_AON_TAP_CELL] && [expr {$ADK_AON_TAP_CELL ne ""}]} {
    set aon_tap_cell $ADK_AON_TAP_CELL
    set tap_width [dbGet [dbGetCellByName $aon_tap_cell].size_x]
-   # We really shouldn't have to add the polypitch here, but in practice
-   # the pitch was off by 1 for some reason
-   set tap_interval [expr $horiz_tap_pitch + $polypitch_x]
-   # Start the taps 2 stripe set intervals to the left of the pwr switches
-   set tap_edge_offset [expr $M3_str_offset + (2 * $M3_str_intraset_spacing + $M3_str_width) - ($tap_width / 3) + $horiz_switch_pitch - (2 * $M3_str_interset_pitch)]
+   set tap_interval $horiz_tap_pitch
+   # Set how many M3 stripe set intervals we want between switches and taps
+   set num_stripe_intervals $vdd_m3_stripe_sparsity
+   # Set how far from edge to start inserting tap columns
+   # This location must align with M3 VDD stripe 
+   set tap_edge_offset [expr $M3_str_offset + (2 * $M3_str_intraset_spacing + $M3_str_width) - ($tap_width / 4) + $tap_interval - ( $num_stripe_intervals * $M3_str_interset_pitch)]
    # Try adding well tap to SD domain
    addWellTap -cell $aon_tap_cell \
               -prefix WELLTAP \

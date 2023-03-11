@@ -14,7 +14,7 @@ if { ! $::env(soc_only) } {
   # Vertical distance (in # pitches) betwween GLB and Tile array
   set ic2glb_y_dist 330
   set glb2glc_y_dist 600
-  set glb2srams_y_dist 600
+  set glb2srams_y_dist 1100
 
   ##############################################################################
   # Lots of congestion at top left corner of GLB, where the top
@@ -47,7 +47,7 @@ if { ! $::env(soc_only) } {
   set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)/2.] $pmesh_top_pitch]
     
   placeinstance $interconnect_name $ic_x_loc $ic_y_loc -fixed
-  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $interconnect_name -snapToSite
+  addHaloToBlock [expr $horiz_pitch * 15] $vert_pitch [expr $horiz_pitch * 21] $vert_pitch $interconnect_name -snapToSite
 
   # Prevent power vias from blocking pins on interconnect (all pins on top edge)
   set ic_ury [expr $ic_y_loc + $ic_height]
@@ -91,7 +91,7 @@ if { ! $::env(soc_only) } {
   
   # Place GLB
   placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
-  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
+  addHaloToBlock [expr $horiz_pitch * 15] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
   
   # Prevent power vias from blocking pins on GLB (pins on bottom and left edges)
   set glb_ury [expr $glb_y_loc + $glb_height]
@@ -112,7 +112,7 @@ if { ! $::env(soc_only) } {
   # Prevent vias to PMESH_BOT_LAYER stripes over GLB
   createRouteBlk \
     -name glb_pmesh_bot_via \
-    -layer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
+    -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
     -pgnetonly \
     -box $glb_x_loc $glb_y_loc $glb_urx $glb_ury
   
@@ -125,7 +125,7 @@ if { ! $::env(soc_only) } {
   
   # Prevent PMESH_TOP_LAYER stripes over GLB
   createRouteBlk \
-    -name glb_pmesh_bot \
+    -name glb_pmesh_top \
     -layer $ADK_POWER_MESH_TOP_LAYER \
     -pgnetonly \
     -box $glb_x_loc [expr $glb_y_loc + (2*$vert_pitch)] $glb_urx [expr $glb_ury - (2*$vert_pitch)]
@@ -214,7 +214,7 @@ foreach_in_collection sram $srams {
   set urx [dbGet [dbGet -p top.insts.name $sram_name].box_urx]
   set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
   set tb_margin $vert_pitch
-  set lr_margin [expr $horiz_pitch * 3]
+  set lr_margin [expr $horiz_pitch * 20]
   if {$urx > $max_urx} {
     set max_urx $urx
   }
@@ -251,7 +251,7 @@ set xgcd_y_loc [snap_to_grid 3600 $pmesh_bot_pitch]
 set xgcd_x_loc [snap_to_grid 2600 $pmesh_top_pitch]
 
 placeinstance $xgcd_name $xgcd_x_loc $xgcd_y_loc -fixed
-addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $xgcd_name -snapToSite
+addHaloToBlock [expr $horiz_pitch * 23] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $xgcd_name -snapToSite
 
 # Prevent power vias from blocking pins on XGCD (pins on TOP and left edges)
 set xgcd_ury [expr $xgcd_y_loc + $xgcd_height]
@@ -274,7 +274,7 @@ createRouteBlk \
 # Prevent vias to PMESH_BOT_LAYER stripes over XGCD
 createRouteBlk \
   -name xgcd_pmesh_bot_via \
-  -layer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
+  -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
   -pgnetonly \
   -box $xgcd_x_loc $xgcd_y_loc $xgcd_urx $xgcd_ury
 
@@ -287,7 +287,7 @@ createRouteBlk \
 
 # Prevent PMESH_TOP_LAYER stripes over XGCD
 createRouteBlk \
-  -name xgcd_pmesh_bot \
+  -name xgcd_pmesh_top \
   -layer $ADK_POWER_MESH_TOP_LAYER \
   -pgnetonly \
   -box $xgcd_x_loc [expr $xgcd_y_loc + (2*$vert_pitch)] $xgcd_urx [expr $xgcd_ury - (2*$vert_pitch)]

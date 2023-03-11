@@ -38,7 +38,7 @@ set soc_integration_files [concat [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaMemIntegration/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaPeripherals/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaPlatformController/verilog -types f *.v] [
-  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaPlatformController/rdl/verilog -types f *.v] [
+#  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaPlatformController/rdl/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaSoCPartialIntegration/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaTlxIntegration/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaTlxIntegration/rdl/verilog -types f *.v] [

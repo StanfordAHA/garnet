@@ -38,7 +38,7 @@ def construct():
     # Power Domains (leave this false)
     'PWR_AWARE'         : False,
     # hold target slack
-    'hold_target_slack' : 30,
+    'hold_target_slack' : 0.015,
     # Utilization target
     'core_density_target' : 0.50,
     'drc_env_setup'     : 'drcenv-block.sh'
