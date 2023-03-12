@@ -487,6 +487,10 @@ class Garnet(Generator):
 
 
         self.pack_ponds(netlist_info)
+
+        port_remap_fout = open(app_dir + "/design.port_remap", "w")
+        port_remap_fout.write(json.dumps(pe_remap['alu']))
+        port_remap_fout.close()
         
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
@@ -757,8 +761,26 @@ def main():
                 input_broadcast_branch_factor=args.input_broadcast_branch_factor,
                 input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
-        if args.pipeline_pnr:
-            return
+        if args.pipeline_pnr and not args.generate_bitstream_only:
+            # Calling clockwork for rescheduling pipelined app
+            import subprocess
+            import copy
+            cwd = os.path.dirname(args.app) + "/.."
+            cmd = ["make", "-C", str(cwd), "reschedule_mem"] 
+            env = copy.deepcopy(os.environ)
+            subprocess.check_call(
+                cmd,
+                env=env,
+                cwd=cwd
+            )
+
+            placement, routing, id_to_name, instance_to_instr, \
+                netlist, bus = garnet.place_and_route(
+                    args.app, True, compact=args.compact,
+                    load_only=True,
+                    pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
+                    input_broadcast_branch_factor=args.input_broadcast_branch_factor,
+                    input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
         bitstream, (inputs, outputs, reset, valid,
                     en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,
