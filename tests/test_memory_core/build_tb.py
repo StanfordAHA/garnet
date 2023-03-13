@@ -2184,32 +2184,113 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "x"
     elif 'tensor4_multiply2.gv' in app_name:
         # X(i,k,j,m)=B(i,j,k,l)*C(i,l,j,m)
-        # -f=X:ssss:0,1,2,3 -f=B:ssss:0,2,1,3 -f=C:ssss:0,2,3,1 -s=reorder(i,k,j,m,l)
-        shape_i = 4
+        # X=ssss0123,B=ssss0213,C=ssss0231
+        shape_i = 3
         shape_j = 4
-        shape_k = 4
-        shape_l = 4
+        shape_k = 3
+        shape_l = 2
         shape_m = 4
 
-        b_matrix = MatrixGenerator(name="B", shape=[shape_i, shape_j, shape_k, shape_l], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[shape_i,shape_l, shape_j, shape_m], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        # generate B(j,k,j,l) and C(i,j,m,l)
+        b_matrix = MatrixGenerator(name="B", shape=[shape_i, shape_k, shape_j, shape_l], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_i, shape_j, shape_m, shape_l], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
+
+        # permute matrix for gold generation
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
+        b_ref = torch.from_numpy(b_mat) # [i,k,j,l]
+        c_ref = torch.from_numpy(c_mat) # [i,j,m,l]
+        b_ref = torch.permute(b_ref, (0, 2, 1, 3)) # [i,j,k,l]
+        c_ref = torch.permute(c_ref, (0, 3, 1, 2)) # [i,l,j,m]
 
-        # Permute B and C
-        b_ref = torch.from_numpy(b_mat)
-        c_ref = torch.from_numpy(c_mat)
-        b_ref = torch.permute(b_ref, (0, 2, 1, 3))
-        c_ref = torch.permute(c_ref, (0, 3, 1, 2))
+        print("--------------B_ref after permute--------------")
+        print(b_ref.shape)
+        print(b_ref)
+        print("--------------C_ref after permute--------------")
+        print(c_ref.shape)
+        print(c_ref)
+        
 
         output_ref = torch.einsum('ijkl, iljm->ikjm', b_ref, c_ref).numpy()
-        print(output_ref.shape)
-        # output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        print("--------------output_ref--------------")
+        print(output_ref.shape) # ikjm
+        print(output_ref)
         output_matrix = output_ref
-        # output_matrix = MatrixGenerator("gold", shape=output_ref.shape, sparsity=0.1, format='CSF', dump_dir='test', tensor=output_ref)
-        # output_matrix.dump_outputs(format='CSF')
+        output_format = "CSF"
+        output_name = "X"
+    elif 'tensor4_multiply.gv' in app_name:
+        # X(i,j,k,l)=B(i,k,j,m)*C(i,l,j,m)ikjm, iljm->ijkl
+        # X=ssss0123,B=ssss0213,C=ssss0213
+        shape_i = 3
+        shape_j = 4
+        shape_k = 4
+        shape_l = 2
+        shape_m = 4
+
+        # generate B(j,k,j,m) and C(i,l,j,m)
+        b_matrix = MatrixGenerator(name="B", shape=[shape_i, shape_j, shape_k, shape_m], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_i, shape_j, shape_l, shape_m], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+
+        # permute matrix for gold generation
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        B_ref = torch.from_numpy(b_mat)
+        C_ref = torch.from_numpy(c_mat)
+
+        B_ref = torch.permute(B_ref, (0,2,1,3))
+        C_ref = torch.permute(C_ref, (0,2,1,3))
+
+        print("------------------------after permute B_ref: ")
+        print(B_ref.shape)
+        print(B_ref)
+        print("------------------------after permute C_ref: ")
+        print(C_ref.shape)
+        print(C_ref)
+        
+
+        output_matrix = torch.einsum('ikjm, iljm->ijkl', B_ref, C_ref).numpy()
+        print("--------------output_ref--------------")
+        print(output_matrix.shape)
+        print(output_matrix)
+        output_format = "CSF"
+        output_name = "X"
+    elif 'tensor3_linear_multiply.gv' in app_name:
+        # X(i,j,k)=B(j,l)*C(i,l,k)
+        # X=sss012,B=ss01,C=sss021
+        shape_i = 3
+        shape_j = 4
+        shape_k = 4
+        shape_l = 2
+
+        # generate B(j,l) and C(i,k,l)
+        b_matrix = MatrixGenerator(name="B", shape=[shape_j, shape_l], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_i, shape_k, shape_l], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix.dump_outputs()
+        c_matrix.dump_outputs()
+
+        # permute matrix for gold generation
+        b_mat = b_matrix.get_matrix()
+        c_mat = c_matrix.get_matrix()
+        B_ref = torch.from_numpy(b_mat)
+        C_ref = torch.from_numpy(c_mat)
+
+        C_ref = torch.permute(C_ref, (0,2,1))
+
+        print("---------------B_ref---------------")
+        print(B_ref.shape)
+        print(B_ref)
+        print("---------------C_ref---------------")
+        print(C_ref.shape)
+        print(C_ref)
+
+        output_matrix = torch.einsum('jl, ilk->ijk', B_ref, C_ref).numpy()
+        print("---------------output_matrix---------------")
+        print(output_matrix.shape)
+        print(output_matrix)
         output_format = "CSF"
         output_name = "X"
     else:
