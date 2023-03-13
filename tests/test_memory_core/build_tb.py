@@ -2306,6 +2306,7 @@ if __name__ == "__main__":
     parser.add_argument('--sim_dir', type=str, default='SIM_DIR')
     parser.add_argument('--mem_width', type=int, default=64)
     parser.add_argument('--compile_tb', action="store_true")
+    parser.add_argument('--perf_debug', action="store_true")
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2342,6 +2343,7 @@ if __name__ == "__main__":
     tensor_locs = args.tensor_locs
     run_all = args.run
     compile_tb = args.compile_tb
+    perf_debug = args.perf_debug
 
     if do_comparison:
 
@@ -2480,7 +2482,8 @@ if __name__ == "__main__":
                                    altcore=None,
                                    ready_valid=True,
                                    add_pond=add_pond,
-                                   scgra=True)
+                                   scgra=True,
+                                   perf_debug=perf_debug)
 
         time_x = time.time()
         print(f"TIME:\tcreate_cgra\t{time_x - time_0}")
