@@ -109,7 +109,11 @@ def construct():
   custom_init          = Step( this_dir + '/custom-init'                            )
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
-  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                       )
+  if adk_name == 'tsmc16':
+    custom_lvs           = Step( this_dir + '/custom-lvs-rules-amber'               )
+  else:
+    custom_lvs           = Step( this_dir + '/custom-lvs-rules'                     )
+
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
   testbench            = Step( this_dir + '/../common/testbench'                    )
   application          = Step( this_dir + '/../common/application'                  )
