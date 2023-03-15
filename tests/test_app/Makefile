@@ -60,23 +60,24 @@ RUN_LOG ?= run.log
 # -------------------------------------------------------------------
 # Command
 # -------------------------------------------------------------------
+
+ifeq ($(WAVEFORM), 1)
+WAVEFORM_ARGS = -debug_access+all -kdb +vpi +memcbk +vcsd
+endif
+
 VCS = vcs \
-	  -debug_accss+all \
 	  -sverilog \
-	  -timescale=100ps/1ps \
+	  -timescale=1ps/1ps \
 	  -full64 \
 	  -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
 	  -top top \
-	  -kdb \
-	  +vpi \
-	  +memcbk \
-	  +vcsd \
 	  +vcs+lic+wait \
 	  +vcs+initreg+random \
 	  +overlap \
 	  +v2k \
 	  -l vcs.log \
+	  $(WAVEFORM_ARGS) \
 	  $(COMPILE_ARGS) \
 	  $(INPUT_ARGS)
 
