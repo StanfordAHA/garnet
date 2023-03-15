@@ -75,7 +75,10 @@ def construct():
   rtl                  = Step( this_dir + '/rtl'                                   )
   constraints          = Step( this_dir + '/constraints'                           )
   custom_init          = Step( this_dir + '/custom-init'                           )
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
+  if adk_name == 'tsmc16':
+    custom_power         = Step( this_dir + '/../common/custom-power-leaf-amber'      )
+  else:
+    custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
   lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
   lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
   if which_soc == "onyx":
