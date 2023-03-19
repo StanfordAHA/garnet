@@ -189,7 +189,10 @@ def construct():
   read_design    = Step( this_dir + '/../common/fc-custom-read-design'        )
   custom_init    = Step( this_dir + '/custom-init'                            )
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                       )
-  custom_power   = Step( this_dir + '/../common/custom-power-chip'            )
+  if adk_name == 'tsmc16':
+    custom_power         = Step( this_dir + '/../common/custom-power-chip-amber' )
+  else:
+    custom_power         = Step( this_dir + '/../common/custom-power-chip' )
   if which_soc == 'onyx':
     custom_cts           = Step( this_dir + '/custom-cts'                           )
   init_fc        = Step( this_dir + '/../common/init-fullchip'                )

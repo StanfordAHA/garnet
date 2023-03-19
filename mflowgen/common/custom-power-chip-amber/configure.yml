@@ -1,0 +1,21 @@
+#=========================================================================
+# Custom Scripts -- power
+#=========================================================================
+
+name: custom-power-chip
+
+# The purpose of this step is to provide new inputs for the generic power step, e.g.
+#    custom_power = Step( this_dir + '/../common/custom-power-chip')
+#    power        = Step( 'cadence-innovus-power', default=True )
+#    power.extend_inputs( custom_power.all_outputs() )
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+outputs:
+  - globalnetconnect.tcl
+  - power-strategy-dualmesh.tcl
+  - phy-stripes.tcl
+  - attach-results-to-outputs.tcl
+  - add-endcaps-welltaps.tcl

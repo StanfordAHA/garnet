@@ -111,10 +111,10 @@ def construct():
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
   if adk_name == 'tsmc16':
     custom_lvs           = Step( this_dir + '/custom-lvs-rules-amber'               )
+    custom_power         = Step( this_dir + '/../common/custom-power-leaf-amber'      )
   else:
     custom_lvs           = Step( this_dir + '/custom-lvs-rules'                     )
-
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
+    custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
   testbench            = Step( this_dir + '/../common/testbench'                    )
   application          = Step( this_dir + '/../common/application'                  )
   lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
@@ -126,8 +126,12 @@ def construct():
 
   # Power aware setup
   if pwr_aware:
-      power_domains = Step( this_dir + '/../common/power-domains' )
-      pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
+      if adk_name == 'tsmc16':
+        power_domains = Step( this_dir + '/../common/power-domains-amber' )
+        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
+      else:
+        power_domains = Step( this_dir + '/../common/power-domains' )
+        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
   # Default steps
   info           = Step( 'info',                           default=True )
