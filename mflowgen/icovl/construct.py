@@ -50,7 +50,10 @@ def construct():
   # Custom steps
   rtl                  = Step( this_dir + '/rtl'                   )
   constraints          = Step( this_dir + '/constraints'           )
-  init_fullchip        = Step( this_dir + '/../common/init-fullchip')
+  if adk_name == 'tsmc16':
+    init_fullchip        = Step( this_dir + '/../common/init-fullchip-amber')
+  else:
+    init_fullchip        = Step( this_dir + '/../common/init-fullchip'      )
 
 #   # More custom steps: custom power step (unused)
 #   custom_power         = Step( this_dir + '/../common/custom-power-leaf' )

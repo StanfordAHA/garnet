@@ -55,7 +55,10 @@ def construct():
   soc_rtl              = Step( this_dir + '/../common/soc-rtl-v2'                )
   rtl                  = Step( this_dir + '/rtl'                         )   
   constraints          = Step( this_dir + '/constraints'                 )
-  init_fullchip        = Step( this_dir + '/../common/init-fullchip'     )
+  if adk_name == 'tsmc16':
+    init_fullchip        = Step( this_dir + '/../common/init-fullchip-amber')
+  else:
+    init_fullchip        = Step( this_dir + '/../common/init-fullchip'      )
   netlist_fixing       = Step( this_dir + '/../common/fc-netlist-fixing' )
 
   if which_soc == 'amber':
