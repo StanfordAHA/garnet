@@ -192,6 +192,7 @@ def construct():
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                       )
   print(f"FOO adk_name='{adk_name}'")
   if adk_name == 'tsmc16':
+    print(f"FOO2 adk_name='{adk_name}'")
     custom_power         = Step( this_dir + '/../common/custom-power-chip-amber' )
     init_fc              = Step( this_dir + '/../common/init-fullchip-amber'     )
   else:
