@@ -67,7 +67,10 @@ def construct():
 
   rtl            = Step( this_dir + '/../common/rtl'                       )
   soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                )
-  gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
+  if adk_name == 'tsmc16':
+    gen_sram             = Step( this_dir + '/../common/gen_sram_macro_amber'   )
+  else:
+    gen_sram             = Step( this_dir + '/../common/gen_sram_macro'         )
   constraints    = Step( this_dir + '/constraints'                         )
   read_design    = Step( this_dir + '/../common/fc-custom-read-design'        )
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )

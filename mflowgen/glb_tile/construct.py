@@ -85,12 +85,13 @@ def construct():
 
   rtl          = Step( this_dir + '/../common/rtl'                          )
   constraints  = Step( this_dir + '/constraints'                            )
-  gen_sram     = Step( this_dir + '/../common/gen_sram_macro'               )
   custom_init  = Step( this_dir + '/custom-init'                            )
   if adk_name == 'tsmc16':
-    custom_power         = Step( this_dir + '/../common/custom-power-leaf-amber'      )
+    gen_sram     = Step( this_dir + '/../common/gen_sram_macro_amber  '       )
+    custom_power = Step( this_dir + '/../common/custom-power-leaf-amber'      )
   else:
-    custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
+    gen_sram     = Step( this_dir + '/../common/gen_sram_macro'               )
+    custom_power = Step( this_dir + '/../common/custom-power-leaf'            )
   short_fix    = Step( this_dir + '/../common/custom-short-fix'             )
   custom_lvs   = Step( this_dir + '/custom-lvs-rules'                       )
   genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'       )
