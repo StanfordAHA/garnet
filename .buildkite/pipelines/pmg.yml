@@ -73,7 +73,7 @@ steps:
 # GF branches cannot run synthesis on my machine, so do RTL only I guess
 - label: 'RTL only'
   commands:
-  - 'export RTL_DOCKER_IMAGE=stanfordaha/garnet:latest;
+  - 'export WHICH_SOC=onyx; export RTL_DOCKER_IMAGE=stanfordaha/garnet:latest;
     $TEST --need_space 30G full_chip --steps rtl --debug'
   if: build.branch =~ /to-spv/ || build.branch =~ /spV/
 
