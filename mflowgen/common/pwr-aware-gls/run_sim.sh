@@ -13,12 +13,6 @@ if [ -d "inputs/adk" ]; then
   fi
 fi
 
-# Overwrite testbench with amber versions if needed (default is onyx version)
-if [ "$WHICH_SOC" == "amber" ]; then
-  cp amber/tb_Tile_PE.v .
-  cp amber/tb_Tile_MemCore.v .
-fi
-
 # Set-up testbench
 if [ $design_name == "Tile_PE" ]; then 
    ARGS="$ARGS -top tb_Tile_PE"
