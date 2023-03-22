@@ -188,12 +188,14 @@ def construct():
     constraints    = Step( this_dir + '/constraints'                            )
 
   read_design    = Step( this_dir + '/../common/fc-custom-read-design'        )
-  custom_init    = Step( this_dir + '/custom-init'                            )
-  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                       )
   if adk_name == 'tsmc16':
+    custom_init          = Step( this_dir + '/custom-init-amber'                 )
+    custom_lvs           = Step( this_dir + '/custom-lvs-rules-amber'            )
     custom_power         = Step( this_dir + '/../common/custom-power-chip-amber' )
     init_fc              = Step( this_dir + '/../common/init-fullchip-amber'     )
   else:
+    custom_init          = Step( this_dir + '/custom-init'                 )
+    custom_lvs           = Step( this_dir + '/custom-lvs-rules'            )
     custom_power         = Step( this_dir + '/../common/custom-power-chip' )
     custom_cts           = Step( this_dir + '/custom-cts'                  )
     init_fc              = Step( this_dir + '/../common/init-fullchip'     )
