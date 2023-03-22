@@ -84,16 +84,22 @@ def construct():
   # Custom steps
 
   rtl          = Step( this_dir + '/../common/rtl'                          )
-  constraints  = Step( this_dir + '/constraints'                            )
-  custom_init  = Step( this_dir + '/custom-init'                            )
+
   if adk_name == 'tsmc16':
+    constraints  = Step( this_dir + '/constraints-amber'                      )
+    custom_init  = Step( this_dir + '/custom-init-amber'                      )
     gen_sram     = Step( this_dir + '/../common/gen_sram_macro_amber'         )
     custom_power = Step( this_dir + '/../common/custom-power-leaf-amber'      )
+    short_fix    = Step( this_dir + '/../common/custom-short-fix'             )
+    custom_lvs   = Step( this_dir + '/custom-lvs-rules-amber'                 )
   else:
+    constraints  = Step( this_dir + '/constraints'                            )
+    custom_init  = Step( this_dir + '/custom-init'                            )
     gen_sram     = Step( this_dir + '/../common/gen_sram_macro'               )
     custom_power = Step( this_dir + '/../common/custom-power-leaf'            )
-  short_fix    = Step( this_dir + '/../common/custom-short-fix'             )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'                       )
+    short_fix    = Step( this_dir + '/../common/custom-short-fix'             )
+    custom_lvs   = Step( this_dir + '/custom-lvs-rules'                       )
+
   genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'       )
   lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
   if which_soc == 'onyx':
