@@ -64,7 +64,7 @@ def construct():
   if adk_name == 'tsmc16': parameters.update({
     'clock_period'      : 1.11,
     'hold_target_slack'   : 0.03,
-    'use_container' : False,
+    # 'use_container' : False,
   })
 
   # OG TSMC did not specify drc_env_setup
@@ -90,9 +90,14 @@ def construct():
   sim_run           = Step( this_dir + '/sim-run'                                )
   sim_gl_compile    = Step( this_dir + '/sim-gl-compile'                         )
   glb_tile          = Step( this_dir + '/glb_tile'                               )
-  constraints       = Step( this_dir + '/constraints'                            )
-  custom_init       = Step( this_dir + '/custom-init'                            )
-  custom_lvs        = Step( this_dir + '/custom-lvs-rules'                       )
+  if adk_name == 'tsmc16':
+    constraints       = Step( this_dir + '/constraints-amber'                      )
+    custom_init       = Step( this_dir + '/custom-init-amber'                      )
+    custom_lvs        = Step( this_dir + '/custom-lvs-rules-amber'                 )
+  else:
+    constraints       = Step( this_dir + '/constraints'                            )
+    custom_init       = Step( this_dir + '/custom-init'                            )
+    custom_lvs        = Step( this_dir + '/custom-lvs-rules'                       )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical'    )
   genlib            = Step( this_dir + '/../common/cadence-innovus-genlib'       )
   lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
