@@ -87,7 +87,7 @@ def construct():
   constraints  = Step( this_dir + '/constraints'                            )
   custom_init  = Step( this_dir + '/custom-init'                            )
   if adk_name == 'tsmc16':
-    gen_sram     = Step( this_dir + '/../common/gen_sram_macro_amber  '       )
+    gen_sram     = Step( this_dir + '/../common/gen_sram_macro_amber'         )
     custom_power = Step( this_dir + '/../common/custom-power-leaf-amber'      )
   else:
     gen_sram     = Step( this_dir + '/../common/gen_sram_macro'               )
