@@ -10,6 +10,13 @@
 # Authors: Alex Carsello, Teguh Hofstee
 # Date: 1/24/2020
 
+# Default SoC is Onyx
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "onyx"
+}
+
 # Need to set interactive constraint mode when using
 # Innovus to generate .lib files
 #set_interactive_constraint_modes [all_constraint_modes]
@@ -26,6 +33,7 @@ set_case_analysis 1 $rmux_outputs
 #set fifo_reg_outputs [get_pins -of_objects $fifo_regs -filter "direction==out"]
 #set_case_analysis 0 $fifo_reg_outputs
 
+if { $WHICH_SOC != "amber" } {
 # set Fifo start high
 set fifo_regs [get_cells -hier *REG*start_value]
 set fifo_reg_outputs [get_pins -of_objects $fifo_regs -filter "direction==out"]
@@ -40,3 +48,4 @@ set_case_analysis 1 $fifo_reg_outputs
 set empty_n_regs [get_cells -hier REG_T*SplitFifo*empty_n_reg]
 set empty_n_reg_outputs [get_pins -of_objects $empty_n_regs -filter "direction==out"]
 set_case_analysis 1 $empty_n_reg_outputs
+}
