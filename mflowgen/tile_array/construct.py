@@ -101,10 +101,20 @@ def construct():
   Tile_PE        = Step( this_dir + '/Tile_PE'                                )
   constraints    = Step( this_dir + '/constraints'                            )
   dc_postcompile = Step( this_dir + '/custom-dc-postcompile'                  )
-  custom_init    = Step( this_dir + '/custom-init'                            )
+
+  if adk_name == 'tsmc16':
+    custom_init    = Step( this_dir + '/custom-init-amber'      )
+  else:
+    custom_init    = Step( this_dir + '/custom-init'            )
+
   custom_power   = Step( this_dir + '/../common/custom-power-hierarchical'    )
   custom_cts     = Step( this_dir + '/custom-cts-overrides'                   )
-  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                       )
+
+  if adk_name == 'tsmc16':
+    custom_lvs     = Step( this_dir + '/custom-lvs-rules-amber' )
+  else:
+    custom_lvs     = Step( this_dir + '/custom-lvs-rules'       )
+
   gls_args       = Step( this_dir + '/gls_args'                               )
   testbench      = Step( this_dir + '/testbench'                              )
   lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
