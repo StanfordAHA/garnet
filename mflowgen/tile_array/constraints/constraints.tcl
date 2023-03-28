@@ -99,7 +99,7 @@ set_dont_touch $ext_port_nets false
 # This can catch nets connected to IO tiles, which should be touched
 if { $WHICH_SOC == "amber" } {
 set io_tile_nets [get_nets -of_objects [get_cells -filter {ref_name =~ Tile_io*}]]
-} else
+} else {
 set io_tile_nets [get_nets -of_objects [get_cells -filter {ref_name =~ Tile_IO*}]]
 }
 set_dont_touch $io_tile_nets false
