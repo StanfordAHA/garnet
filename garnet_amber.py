@@ -41,7 +41,7 @@ from metamapper.lake_pond import gen_Pond_fc
 from metamapper.io_tiles import IO_fc, BitIO_fc
 from lassen.sim import PE_fc as lassen_fc
 import metamapper.peak_util as putil
-from mapper.netlist_util import create_netlist_info, print_netlist_info
+from mapper_amber.netlist_util import create_netlist_info, print_netlist_info
 from metamapper.coreir_mapper import Mapper
 
 # set the debug mode to false to speed up construction
