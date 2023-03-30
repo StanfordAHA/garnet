@@ -1,18 +1,17 @@
-import os
-if os.getenv('WHICH_SOC') == "amber":
-    import garnet_amber
-    if __name__ == "__main__": garnet_amber.main()
-    exit()
-
 import argparse
 import magma
 from canal.util import IOSide, SwitchBoxType
 from gemstone.common.configurable import ConfigurationType
 from gemstone.common.jtag_type import JTAGType
-from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
 from gemstone.generator.generator import Generator, set_debug_mode
 from global_buffer.io_placement import place_io_blk
-from global_buffer.design.global_buffer import GlobalBufferMagma
+
+import os
+if os.getenv('WHICH_SOC') == "amber":
+    from global_buffer.design_amber.global_buffer import GlobalBufferMagma
+else:
+    from global_buffer.design.global_buffer import GlobalBufferMagma
+
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
 from global_buffer.global_buffer_main import gen_param_header
 from systemRDL.util import gen_rdl_header
@@ -24,7 +23,6 @@ from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wirin
 import json
 from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
 from passes.interconnect_port_pass import stall_port_pass, config_port_pass
-import os
 import archipelago
 import archipelago.power
 import archipelago.io
@@ -38,6 +36,8 @@ from metamapper.node import Nodes
 from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
 from metamapper import CoreIRContext
 from metamapper.irs.coreir import gen_CoreIRNodes
+from metamapper.lake_mem import gen_MEM_fc
+from metamapper.lake_pond import gen_Pond_fc
 from metamapper.io_tiles import IO_fc, BitIO_fc
 from lassen.sim import PE_fc as lassen_fc
 import metamapper.peak_util as putil
@@ -54,7 +54,6 @@ class Garnet(Generator):
                  mem_ratio: int = 4,
                  num_tracks: int = 5,
                  tile_layout_option: int = 0,
-                 amber_pond: bool = False,
                  add_pond: bool = True,
                  pond_area_opt: bool = False,
                  pond_area_opt_share: bool = False,
@@ -65,20 +64,9 @@ class Garnet(Generator):
                  glb_params: GlobalBufferParams = GlobalBufferParams(),
                  pe_fc=lassen_fc,
                  ready_valid: bool = False,
-                 scgra: bool = False,
-                 scgra_combined: bool = True,
                  sb_option: str = "Imran",
                  pipeline_regs_density: list = None,
-                 port_conn_option: list = None,
-                 config_port_pipeline: bool = True,
-                 mem_width: int = 64,
-                 mem_depth: int = 512,
-                 mem_input_ports: int = 2,
-                 mem_output_ports: int = 2,
-                 macro_width: int = 32,
-                 dac_exp: bool = False,
-                 dual_port: bool = False,
-                 rf: bool = False):
+                 port_conn_option: list = None):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -94,7 +82,6 @@ class Garnet(Generator):
         self.config_data_width = config_data_width
         axi_addr_width = self.glb_params.cgra_axi_addr_width
         axi_data_width = self.glb_params.axi_data_width
-        self.amber_pond = amber_pond
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
 
@@ -154,14 +141,13 @@ class Garnet(Generator):
                                    tile_id_width=tile_id_width,
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
-                                   amber_pond=amber_pond,
                                    add_pond=add_pond,
                                    pond_area_opt=pond_area_opt,
                                    pond_area_opt_share=pond_area_opt_share,
                                    pond_area_opt_dual_config=pond_area_opt_dual_config,
                                    use_io_valid=use_io_valid,
-                                   use_sim_sram=use_sim_sram,
                                    harden_flush=harden_flush,
+                                   use_sim_sram=use_sim_sram,
                                    global_signal_wiring=wiring,
                                    pipeline_config_interval=pipeline_config_interval,
                                    mem_ratio=(1, mem_ratio),
@@ -169,19 +155,9 @@ class Garnet(Generator):
                                    standalone=standalone,
                                    pe_fc=pe_fc,
                                    ready_valid=ready_valid,
-                                   scgra=scgra,
-                                   scgra_combined=scgra_combined,
                                    switchbox_type=sb_type_dict.get(sb_option, "Invalid Switchbox Type"),
                                    pipeline_regs_density=pipeline_regs_density,
-                                   port_conn_option=port_conn_option,
-                                   mem_width=mem_width,
-                                   mem_depth=mem_depth,
-                                   mem_input_ports=mem_input_ports,
-                                   mem_output_ports=mem_output_ports,
-                                   macro_width=macro_width,
-                                   dac_exp=dac_exp,
-                                   dual_port=dual_port,
-                                   rf=rf)
+                                   port_conn_option=port_conn_option)
 
         self.interconnect = interconnect
 
@@ -192,11 +168,7 @@ class Garnet(Generator):
             stall_port_pass(self.interconnect, port_name="flush", port_width=1,
                             col_offset=glb_params.num_cols_per_group, pipeline=True)
         # make multiple configuration ports
-        config_port_pass(self.interconnect, pipeline=config_port_pipeline)
-
-        self.inter_core_connections = {}
-        for bw, interconnect in self.interconnect._Interconnect__graphs.items():
-            self.inter_core_connections[bw] = interconnect.inter_core_connection
+        config_port_pass(self.interconnect, pipeline=True)
 
         if not interconnect_only:
             self.add_ports(
@@ -276,7 +248,7 @@ class Garnet(Generator):
                       self.ports.read_config_data)
 
             if harden_flush:
-                self.add_ports(flush=magma.In(magma.Bits[self.width // 4]))
+                self.add_ports(flush=magma.In(magma.Bits[1]))
                 self.wire(self.ports.flush, self.interconnect.ports.flush)
 
     def map(self, halide_src):
@@ -291,15 +263,6 @@ class Garnet(Generator):
             instr = instrs[instance]
             result += self.interconnect.configure_placement(x, y, instr,
                                                             node[0])
-            if node in self.pes_with_packed_ponds:
-                print(f"pond {self.pes_with_packed_ponds[node]} being packed with {node} in {x},{y}")
-                node = self.pes_with_packed_ponds[node]
-                instance = id_to_name[node]
-                if instance not in instrs:
-                    continue
-                instr = instrs[instance]
-                result += self.interconnect.configure_placement(x, y, instr,
-                                                                node[0])
         return result
 
     def convert_mapped_to_netlist(self, mapped):
@@ -330,13 +293,9 @@ class Garnet(Generator):
 
         for blk_id in inputs:
             x, y = placement[blk_id]
-            bit_width = 17 if blk_id[0] == "I" else 1
-            #bit_width = 16 if blk_id[0] == "I" else 1
+            bit_width = 16 if blk_id[0] == "I" else 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
-            print("WEIRD NAME ASSERTION")
-            print(name)
-            print(self.interconnect.interface())
             assert name in self.interconnect.interface()
             blk_name = id_to_name[blk_id]
             if "reset" in blk_name:
@@ -345,8 +304,7 @@ class Garnet(Generator):
                 en_port_name.append(name)
         for blk_id in outputs:
             x, y = placement[blk_id]
-            #bit_width = 16 if blk_id[0] == "I" else 1
-            bit_width = 17 if blk_id[0] == "I" else 1
+            bit_width = 16 if blk_id[0] == "I" else 1
             name = f"io2glb_{bit_width}_X{x:02X}_Y{y:02X}"
             output_interface.append(name)
             assert name in self.interconnect.interface()
@@ -356,33 +314,15 @@ class Garnet(Generator):
         return input_interface, output_interface,\
             (reset_port_name, valid_port_name, en_port_name)
 
-    def pack_ponds(self, netlist_info):
-        packed_ponds = {}
-
-        for edge_id in list(netlist_info['netlist']):
-            conns = netlist_info['netlist'][edge_id]
-            bw = netlist_info["buses"][edge_id]
-            inter_core_conns = self.inter_core_connections[bw]
-            (source, source_port) = conns[0]
-            for (sink, sink_port) in conns[1:]:
-                if source_port in inter_core_conns and source[0] == "M":
-                    if sink_port in inter_core_conns[source_port] and sink[0] == 'p':
-                        packed_ponds[source] = sink
-
-        for edge_id, conns in netlist_info['netlist'].items():
-            new_conns = []
-            for conn in conns:
-                if conn[0] in packed_ponds:
-                    new_conns.append((packed_ponds[conn[0]], conn[1]))
-                else:
-                    new_conns.append(conn)
-            netlist_info['netlist'][edge_id] = new_conns
-
-        self.pes_with_packed_ponds = {pe:pond for pond,pe in packed_ponds.items()}
-
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves):
         app_dir = os.path.dirname(app)
+
+        # Amber version needs headers from headers_amber directory
+        print(f"--- FOO found app_dir='{appdir}'")
+        if app_dir[-7:] == "headers":
+            app_dir = app_dir + "_amber"
+        print(f"--- FOO and now app_dir='{appdir}'")
 
         if self.pe_fc == lassen_fc:
             pe_header = f"{app_dir}/lassen_header.json"
@@ -396,18 +336,24 @@ class Garnet(Generator):
 
         app_file = app
         c = CoreIRContext(reset=True)
-        cutil.load_libs(["cgralib"])
         cmod = cutil.load_from_json(app_file)
         c = CoreIRContext()
-        cutil.load_libs(["cgralib", "commonlib", "float"])
+        cutil.load_libs(["commonlib", "float"])
         c.run_passes(["flatten"])
 
+        MEM_fc = gen_MEM_fc()
+        Pond_fc = gen_Pond_fc()
         nodes = gen_CoreIRNodes(16)
 
         putil.load_and_link_peak(
             nodes,
             pe_header,
             {"global.PE": self.pe_fc},
+        )
+        putil.load_and_link_peak(
+            nodes,
+            mem_header,
+            {"global.MEM": (MEM_fc, True)},
         )
 
         putil.load_and_link_peak(
@@ -422,9 +368,15 @@ class Garnet(Generator):
             {"global.BitIO": BitIO_fc},
         )
 
+        putil.load_and_link_peak(
+            nodes,
+            pond_header,
+            {"global.Pond": (Pond_fc, True)},
+        )
+
         dag = cutil.coreir_to_dag(nodes, cmod)
-        tile_info = {"global.PE": self.pe_fc, "cgralib.Mem": nodes.peak_nodes["cgralib.Mem"],
-                     "global.IO": IO_fc, "global.BitIO": BitIO_fc, "cgralib.Pond": nodes.peak_nodes["cgralib.Pond"]}
+        tile_info = {"global.PE": self.pe_fc, "global.MEM": MEM_fc,
+                     "global.IO": IO_fc, "global.BitIO": BitIO_fc, "global.Pond": Pond_fc}
         netlist_info = create_netlist_info(app_dir,
                                            dag,
                                            tile_info,
@@ -435,71 +387,16 @@ class Garnet(Generator):
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves)
 
-        mem_remap = None
-        pe_remap = None
-        
-        for core_key, core_value in self.interconnect.tile_circuits.items():
-            actual_core = core_value.core
-            pnr_tag = actual_core.pnr_info()
-            if isinstance(pnr_tag, list):
-                continue
-            pnr_tag = pnr_tag.tag_name
-            if pnr_tag == "m" and mem_remap is None:
-                mem_remap = actual_core.get_port_remap()
-            elif pnr_tag == "p" and pe_remap is None:
-                pe_remap = actual_core.get_port_remap()
-            elif mem_remap is not None and pe_remap is not None:
-                break
+        # temporally remapping of port names for the new Pond
+        for name, mapping in netlist_info["netlist"].items():
+            for i in range(len(mapping)):
+                (inst_name, port_name) = mapping[i]
+                if "data_in_pond" in port_name:
+                    mapping[i] = (inst_name, "input_width_16_num_2")
+                if "data_out_pond" in port_name:
+                    mapping[i] = (inst_name, "output_width_16_num_0")
 
-        for netlist_id, connections_list in netlist_info['netlist'].items():
-            for idx, connection in enumerate(connections_list):
-                tag_, pin_ = connection
-                if tag_[0] == 'm':
-                    # get mode...
-                    metadata = netlist_info['id_to_metadata'][tag_]
-                    mode = "UB"
-                    if 'stencil_valid' in metadata["config"]:
-                        mode = 'stencil_valid'
-                    elif 'mode' in metadata and metadata['mode'] == 'sram':
-                        mode = 'ROM'
-                        # Actually use wr addr for rom mode...
-                        hack_remap = {
-                            'addr_in_0': 'wr_addr_in',
-                            'ren_in_0': 'ren',
-                            'data_out_0': 'data_out'
-                                }
-                        assert pin_ in hack_remap
-                        pin_ = hack_remap[pin_]
-                    pin_remap = mem_remap[mode][pin_]
-                    connections_list[idx] = (tag_, pin_remap)
-                elif tag_[0] == 'p':
-                    pin_remap = pe_remap['alu'][pin_]
-                    connections_list[idx] = (tag_, pin_remap)
-            netlist_info['netlist'][netlist_id] = connections_list
-
-        if not self.amber_pond:
-            # temporally remapping of port names for the new Pond
-            for name, mapping in netlist_info["netlist"].items():
-                for i in range(len(mapping)):
-                    (inst_name, port_name) = mapping[i]
-                    if "data_in_pond_0" in port_name:
-                        mapping[i] = (inst_name, "PondTop_input_width_17_num_0")
-                    if "data_out_pond_0" in port_name:
-                        mapping[i] = (inst_name, "PondTop_output_width_17_num_0")
-                    if "data_in_pond_1" in port_name:
-                        mapping[i] = (inst_name, "PondTop_input_width_17_num_1")
-                    if "data_out_pond_1" in port_name:
-                        mapping[i] = (inst_name, "PondTop_output_width_17_num_1")
-
-
-        self.pack_ponds(netlist_info)
-
-        port_remap_fout = open(app_dir + "/design.port_remap", "w")
-        port_remap_fout.write(json.dumps(pe_remap['alu']))
-        port_remap_fout.close()
-        
-        print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
-
+        print_netlist_info(netlist_info, app_dir + "/netlist_info.txt")
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
 
@@ -516,7 +413,6 @@ class Garnet(Generator):
             fixed_io = None
         else:
             fixed_io = place_io_blk(id_to_name)
-
         placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
                                                          load_only=load_only,
                                                          cwd=app_dir,
@@ -524,8 +420,7 @@ class Garnet(Generator):
                                                          fixed_pos=fixed_io,
                                                          compact=compact,
                                                          harden_flush=self.harden_flush,
-                                                         pipeline_config_interval=self.pipeline_config_interval,
-                                                         pes_with_packed_ponds=self.pes_with_packed_ponds)
+                                                         pipeline_config_interval=self.pipeline_config_interval)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
@@ -618,7 +513,6 @@ def main():
                         dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
-    parser.add_argument("--amber-pond", action="store_true")
     parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--compact", action="store_true")
@@ -640,25 +534,12 @@ def main():
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
-    parser.add_argument("--sparse-cgra", action="store_true")
-    parser.add_argument("--sparse-cgra-combined", action="store_true")
     parser.add_argument("--no-pond-area-opt", action="store_true")
     parser.add_argument("--pond-area-opt-share", action="store_true")
     parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
     parser.add_argument("--sb-option", type=str, default="Imran")
     parser.add_argument("--pipeline-regs-density", nargs="+", type=int, default=None)
     parser.add_argument("--port-conn-option", nargs="+", type=int, default=None)
-    parser.add_argument("--config-port-pipeline", dest="config_port_pipeline", action="store_true")
-    parser.add_argument("--no-config-port-pipeline", dest="config_port_pipeline", action="store_false")
-    parser.add_argument("--macro-width", type=int, default=32)
-    parser.add_argument("--mem-width", type=int, default=64)
-    parser.add_argument("--mem-depth", type=int, default=512)
-    parser.add_argument("--mem-input-ports", type=int, default=2)
-    parser.add_argument("--mem-output-ports", type=int, default=2)
-    parser.add_argument("--dual-port", action="store_true")
-    parser.add_argument("--rf", action="store_true")
-    parser.add_argument("--dac-exp", action="store_true")
-    parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
 
     if not args.interconnect_only:
@@ -680,8 +561,7 @@ def main():
                                           cfg_addr_width=32,
                                           cfg_data_width=32,
                                           cgra_axi_addr_width=13,
-                                          axi_data_width=32,
-                                          config_port_pipeline=args.config_port_pipeline)
+                                          axi_data_width=32)
 
     garnet = Garnet(width=args.width, height=args.height,
                     glb_params=glb_params,
@@ -690,7 +570,6 @@ def main():
                     num_tracks=args.num_tracks,
                     tile_layout_option=args.tile_layout_option,
                     pipeline_config_interval=args.pipeline_config_interval,
-                    amber_pond=args.amber_pond,
                     add_pond=not args.no_pond,
                     pond_area_opt=not args.no_pond_area_opt,
                     pond_area_opt_share=args.pond_area_opt_share,
@@ -702,18 +581,9 @@ def main():
                     standalone=args.standalone,
                     pe_fc=pe_fc,
                     ready_valid=args.ready_valid,
-                    scgra=args.sparse_cgra,
-                    scgra_combined=args.sparse_cgra_combined,
                     sb_option=args.sb_option,
                     pipeline_regs_density=args.pipeline_regs_density,
-                    port_conn_option=args.port_conn_option,
-                    config_port_pipeline=args.config_port_pipeline,
-                    mem_width=args.mem_width,
-                    mem_depth=args.mem_depth,
-                    macro_width=args.macro_width,
-                    dac_exp=args.dac_exp,
-                    dual_port=args.dual_port,
-                    rf=args.rf)
+                    port_conn_option=args.port_conn_option)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
@@ -721,26 +591,6 @@ def main():
                       coreir_libs={"float_CW"},
                       passes=["rungenerators", "inline_single_instances", "clock_gate"],
                       inline=False)
-
-        # copy in cell definitions
-        files = AOIMuxWrapper.get_sv_files()
-        with open("garnet.v", "a") as garnet_v:
-            for filename in files:
-                with open(filename) as f:
-                    garnet_v.write(f.read())
-        if args.sparse_cgra:
-            # Cat the PE together...
-            # files_cat = ['garnet.v', 'garnet_PE.v']
-            lines_garnet = None
-            lines_pe = None
-            with open('garnet.v', 'r') as gfd:
-                lines_garnet = gfd.readlines()
-            with open('garnet_PE.v', 'r') as gfd:
-                lines_pe = gfd.readlines()
-            with open('garnet.v', 'w+') as gfd:
-                gfd.writelines(lines_garnet)
-                gfd.writelines(lines_pe)
-
         garnet.create_stub()
         if not args.interconnect_only:
             garnet_home = os.getenv('GARNET_HOME')
@@ -767,26 +617,8 @@ def main():
                 input_broadcast_branch_factor=args.input_broadcast_branch_factor,
                 input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
-        if args.pipeline_pnr and not args.generate_bitstream_only:
-            # Calling clockwork for rescheduling pipelined app
-            import subprocess
-            import copy
-            cwd = os.path.dirname(args.app) + "/.."
-            cmd = ["make", "-C", str(cwd), "reschedule_mem"] 
-            env = copy.deepcopy(os.environ)
-            subprocess.check_call(
-                cmd,
-                env=env,
-                cwd=cwd
-            )
-
-            placement, routing, id_to_name, instance_to_instr, \
-                netlist, bus = garnet.place_and_route(
-                    args.app, True, compact=args.compact,
-                    load_only=True,
-                    pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
-                    input_broadcast_branch_factor=args.input_broadcast_branch_factor,
-                    input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+        if args.pipeline_pnr:
+            return
 
         bitstream, (inputs, outputs, reset, valid,
                     en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,
