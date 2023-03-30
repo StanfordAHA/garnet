@@ -16,10 +16,14 @@ env:
   # Env var used by test_module.sh :(
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
 
+# For normal operation leave off build_dir flag to save disk space
   TEST: echo exit 13 | mflowgen/test/test_module.sh
+  BDIR: .
 
-  # For debugging, use build_dir flag to save build in indicated local dir
-  # TEST: echo exit 13 | mflowgen/test/test_module.sh --build_dir /build/pmg${BUILDKITE_BUILD_NUMBER}
+# For debugging, use build_dir flag to save build in indicated local dir
+#   TEST: echo exit 13 | mflowgen/test/test_module.sh --build_dir /build/pmg${BUILDKITE_BUILD_NUMBER}
+#   BDIR: /build/pmg${BUILDKITE_BUILD_NUMBER}
+
 
   # Newer dockers use lake "sparse_strawman" branch offshoots :(
   # Note as of 10/10/2022 this is the default (see common/rtl/gen_rtl.sh)
@@ -49,31 +53,73 @@ steps:
 # But GF branches cannot run synthesis on my machine, so
 # add if-condition to do a single RTL-only test for GF branches;
 
+
+# PTILE through init
 # Set pe max width to 112: fp limits to 110 but then lvs says 112 OK
 - label: 'ptile init 20m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
-  - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 112
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
-  if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
+  - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 112 $BDIR
+  - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_PE --show-all-errors
+  if: build.branch !~ /to-spv/ && build.branch !~ /spV/
 
-- label: 'mtile init 25m'
-  commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
-  - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250
-  - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_MemCore --show-all-errors
-  if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
 
-- label: 'gtile init 20m'
-  commands:
-  - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
-  - mflowgen/bin/buildcheck.sh full_chip/*glb_top/*glb_tile --show-all-errors
-  if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
+# PTILE through LVS
+# - label: 'ptile lvs 2h'
+#   commands:
+#   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps mentor-calibre-lvs --debug
+#   - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 112 $BDIR
+#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_PE --show-all-errors
+#   if: build.branch !~ /to-spv/ && build.branch !~ /spV/
 
+
+
+# MTILE through init
+# - label: 'mtile init 25m'
+#   commands:
+#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
+#   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
+#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
+#   if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
+
+# MTILE through LVS
+# - label: 'mtile lvs 2h'
+#   commands:
+#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps mentor-calibre-lvs --debug
+#   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
+#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
+#   if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
+
+
+
+# GTILE through init
+# - label: 'gtile init 20m'
+#   commands:
+#   - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
+#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top/*glb_tile --show-all-errors
+#   if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
+
+# GTILE through LVS
+# - label: 'gtile lvs 3h'
+#   commands:
+#   - $TEST --need_space 30G full_chip glb_top glb_tile --steps mentor-calibre-lvs --debug
+#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top/*glb_tile --show-all-errors
+#   if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
+
+
+# GTOP through LVS
+# - label: 'gtop lvs 3h?'
+#   commands:
+#   - $TEST --need_space 30G full_chip glb_top --steps mentor-calibre-lvs --debug
+#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top --show-all-errors
+#   if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
+
+
+
+# ONYX BRANCHES ONLY
 # GF branches cannot run synthesis on my machine, so do RTL only I guess
-- label: 'RTL only'
+- label: 'RTL only 25m'
   commands:
   - 'export WHICH_SOC=onyx; export RTL_DOCKER_IMAGE=stanfordaha/garnet:latest;
     $TEST --need_space 30G full_chip --steps rtl --debug'
-  if: build.branch =~ /to-spv/ || build.branch =~ /spV/
-
+  if: build.branch =~ /to-spv/ || build.branch =~ /spV/ || build.branch =~ /sms/
