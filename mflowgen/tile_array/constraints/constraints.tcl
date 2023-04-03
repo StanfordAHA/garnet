@@ -11,6 +11,13 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
+# Default SoC is Onyx
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "onyx"
+}
+
 set_units -time ns -capacitance pF
 
 set clock_net  clk
@@ -44,8 +51,12 @@ set_input_delay -clock ${clock_name} [expr ${clock_period} * 0.2] [all_inputs]
 
 set_output_delay -clock ${clock_name} 0 [all_outputs]
 
+if { $WHICH_SOC == "amber" } {
+set_output_delay -clock ${clock_name} [expr 0.7 * ${clock_period}] [get_ports io2glb*]
+} else {
 set_output_delay -clock ${clock_name} [expr 0.7 * ${clock_period}] [get_ports io2glb* -filter direction==out]
 set_output_delay -clock ${clock_name} [expr 0.7 * ${clock_period}] [get_ports glb2io* -filter direction==out]
+}
 
 # Make all signals limit their fanout
 
@@ -55,11 +66,13 @@ set_max_fanout 20 $design_name
 
 set_max_transition [expr 0.1*${clock_period}] $design_name
 
+if { $WHICH_SOC != "amber" } {
 # Relax constraints on reset and stall signals, since these aren't pipelined and can run slower
 set_multicycle_path -setup 2 -from [get_ports reset]
 set_multicycle_path -hold 1 -from [get_ports reset]
 set_multicycle_path -setup 2 -from [get_ports stall*]
 set_multicycle_path -hold 1 -from [get_ports stall*]
+}
 
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
@@ -84,7 +97,11 @@ set ext_port_nets [get_nets -of_objects [get_ports]]
 set_dont_touch $ext_port_nets false
 
 # This can catch nets connected to IO tiles, which should be touched
+if { $WHICH_SOC == "amber" } {
+set io_tile_nets [get_nets -of_objects [get_cells -filter {ref_name =~ Tile_io*}]]
+} else {
 set io_tile_nets [get_nets -of_objects [get_cells -filter {ref_name =~ Tile_IO*}]]
+}
 set_dont_touch $io_tile_nets false
 
 # Relax read_config_data timing path
