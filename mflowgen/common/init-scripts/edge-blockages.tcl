@@ -11,6 +11,12 @@
 # Author : Alex Carsello
 # Date   : April 29, 2020
 
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "onyx"
+}
+
 # Get design size
 set ury [dbGet top.fPlan.box_ury]
 set urx [dbGet top.fPlan.box_urx]
@@ -18,6 +24,7 @@ set urx [dbGet top.fPlan.box_urx]
 # Set thickness of blockage
 # This must be less then pin width. Otherwise, the pins will be inaccessible
 set blockage_width 0.18
+if { $WHICH_SOC == "amber" } { set blockage_width 0.3 }
 
 createRouteBlk -name bottom -exceptpgnet -layer all -box 0 0 $urx $blockage_width
 createRouteBlk -name right -exceptpgnet -layer all -box [expr $urx - $blockage_width] 0 $urx $ury

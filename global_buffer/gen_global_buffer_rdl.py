@@ -184,18 +184,27 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     st_dma_ctrl_r = Reg("st_dma_ctrl")
     st_dma_mode_f = Field("mode", 2)
     st_dma_ctrl_r.add_child(st_dma_mode_f)
-    st_dma_valid_mode_f = Field("valid_mode", 2)
-    st_dma_ctrl_r.add_child(st_dma_valid_mode_f)
+
+    if os.getenv('WHICH_SOC') == "amber":
+        st_dma_use_valid_f = Field("use_valid", 1)
+        st_dma_ctrl_r.add_child(st_dma_use_valid_f)
+    else:
+        st_dma_valid_mode_f = Field("valid_mode", 2)
+        st_dma_ctrl_r.add_child(st_dma_valid_mode_f)
+
     st_dma_data_mux_f = Field("data_mux", 2)
     st_dma_ctrl_r.add_child(st_dma_data_mux_f)
     st_dma_num_repeat_f = Field("num_repeat", clog2(params.queue_depth) + 1)
     st_dma_ctrl_r.add_child(st_dma_num_repeat_f)
     addr_map.add_child(st_dma_ctrl_r)
 
-    st_dma_num_blocks_r = Reg("st_dma_num_blocks")
-    st_dma_num_blocks_f = Field("value", params.axi_data_width)
-    st_dma_num_blocks_r.add_child(st_dma_num_blocks_f)
-    addr_map.add_child(st_dma_num_blocks_r)
+    if os.getenv('WHICH_SOC') == "amber":
+        pass
+    else:
+        st_dma_num_blocks_r = Reg("st_dma_num_blocks")
+        st_dma_num_blocks_f = Field("value", params.axi_data_width)
+        st_dma_num_blocks_r.add_child(st_dma_num_blocks_f)
+        addr_map.add_child(st_dma_num_blocks_r)
 
     # Store DMA Header
     if params.queue_depth == 1:
@@ -205,7 +214,10 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
 
     # dim reg
     dim_r = Reg(f"dim")
-    dim_f = Field(f"dim", width=clog2(params.store_dma_loop_level) + 1)
+    if os.getenv('WHICH_SOC') == "amber":
+        dim_f = Field(f"dim", width=clog2(params.loop_level) + 1)
+    else:
+        dim_f = Field(f"dim", width=clog2(params.store_dma_loop_level) + 1)
     dim_r.add_child(dim_f)
     st_dma_header_rf.add_child(dim_r)
 
@@ -222,7 +234,12 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     st_dma_header_rf.add_child(cycle_start_addr_r)
 
     # num_word reg
-    for i in range(params.store_dma_loop_level):
+    if os.getenv('WHICH_SOC') == "amber":
+        LL = params.loop_level
+    else:
+        LL = params.store_dma_loop_level
+
+    for i in range(LL):
         range_r = Reg(f"range_{i}")
         range_f = Field("range", width=params.axi_data_width)
         range_r.add_child(range_f)
@@ -242,10 +259,18 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     ld_dma_ctrl_r = Reg("ld_dma_ctrl")
     ld_dma_mode_f = Field("mode", 2)
     ld_dma_ctrl_r.add_child(ld_dma_mode_f)
-    ld_dma_valid_mode_f = Field("valid_mode", 2)
-    ld_dma_ctrl_r.add_child(ld_dma_valid_mode_f)
-    ld_dma_flush_mode_f = Field("flush_mode", 1)
-    ld_dma_ctrl_r.add_child(ld_dma_flush_mode_f)
+
+    if os.getenv('WHICH_SOC') == "amber":
+        ld_dma_use_valid_f = Field("use_valid", 1)
+        ld_dma_ctrl_r.add_child(ld_dma_use_valid_f)
+        ld_dma_use_flush_f = Field("use_flush", 1)
+        ld_dma_ctrl_r.add_child(ld_dma_use_flush_f)
+    else:
+        ld_dma_valid_mode_f = Field("valid_mode", 2)
+        ld_dma_ctrl_r.add_child(ld_dma_valid_mode_f)
+        ld_dma_flush_mode_f = Field("flush_mode", 1)
+        ld_dma_ctrl_r.add_child(ld_dma_flush_mode_f)
+
     ld_dma_data_mux_f = Field("data_mux", 2)
     ld_dma_ctrl_r.add_child(ld_dma_data_mux_f)
     ld_dma_num_repeat_f = Field("num_repeat", clog2(params.queue_depth) + 1)
@@ -265,7 +290,11 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
 
     # dim reg
     dim_r = Reg(f"dim")
-    dim_f = Field(f"dim", width=clog2(params.load_dma_loop_level) + 1)
+    if os.getenv('WHICH_SOC') == "amber":
+        dim_f = Field(f"dim", width=clog2(params.loop_level) + 1)
+    else:
+        dim_f = Field(f"dim", width=clog2(params.load_dma_loop_level) + 1)
+
     dim_r.add_child(dim_f)
     ld_dma_header_rf.add_child(dim_r)
 
@@ -282,7 +311,12 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     ld_dma_header_rf.add_child(cycle_start_addr_r)
 
     # num_word reg
-    for i in range(params.load_dma_loop_level):
+    if os.getenv('WHICH_SOC') == "amber":
+        LL = params.loop_level
+    else:
+        LL = params.load_dma_loop_level
+
+    for i in range(LL):
         range_r = Reg(f"range_{i}")
         range_f = Field("range", width=params.axi_data_width)
         range_r.add_child(range_f)

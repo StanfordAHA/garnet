@@ -403,6 +403,17 @@ fi
 echo "--- PIP INSTALL $mflowgen branch $mflowgen_branch"; date
 pushd $mflowgen
   git checkout $mflowgen_branch; git pull
+
+  # Local modifications to repo can mean trouble!
+  if $(git diff | head | grep . > /dev/null); then 
+      echo "+++ ERROR found local mods to mflowgen repo in $mflowgen_branch"
+      exit 13
+  fi
+
+  [ "$OVERRIDE_MFLOWGEN_HASH" ] && echo "--- git checkout $OVERRIDE_MFLOWGEN_HASH"
+  [ "$OVERRIDE_MFLOWGEN_HASH" ] && git checkout $OVERRIDE_MFLOWGEN_HASH
+
+  # Branch is pure, go ahead and install
   TOP=$PWD; pip install -e .
 popd
 
@@ -417,7 +428,6 @@ fi
 
 # See what we got
 which mflowgen; pip list | grep mflowgen
-
 
 
 ########################################################################
@@ -451,7 +461,10 @@ else
       if [ -d adks/gf12-adk ]; then
           cd adks/gf12-adk; git pull
       elif [ -d adks/tsmc16-adk ]; then
-          cd adks/tsmc16-adk; git pull
+          cd adks/tsmc16-adk; git pull || (\
+              echo "+++ WARNING: Could not 'git pull' to retrieve latest version of tsmc16-adk";
+              echo "=> see mflowgen/bin/setup-buildkite.sh"; echo "."; echo "."
+          )
       else
           echo "ERROR ADK not found"
           return 13 || exit 13

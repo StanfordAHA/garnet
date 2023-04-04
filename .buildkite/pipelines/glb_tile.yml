@@ -1,7 +1,5 @@
 # Builds glb_tile but not from scratch, uses pre-cached gold collateral
 
-agents: { jobsize: "hours" }
-
 ##############################################################################
 # Use this to test a specific branch/commit:
 # Add to env:

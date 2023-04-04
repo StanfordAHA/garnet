@@ -1,3 +1,10 @@
+# Default SoC is Onyx
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "onyx"
+}
+
 #=========================================================================
 # Design Constraints File
 #=========================================================================
@@ -167,8 +174,13 @@ set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter n
 set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
 
 # False paths from config input ports to SB registers
-set sb_reg_path SB_ID0_5TRACKS_B*_MemCore/REG_T*_B*/I
-set_false_path -from [get_ports config_* -filter direction==in] -through [get_pins $sb_reg_path]
+if { $WHICH_SOC == "amber" } {
+    set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg*/*
+    set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
+} else {
+    set sb_reg_path SB_ID0_5TRACKS_B*_MemCore/REG_T*_B*/I
+    set_false_path -from [get_ports config_* -filter direction==in] -through [get_pins $sb_reg_path]
+}
 
 # Timing path to read_config_data output should never transition through a configuration
 # register because we assume the register's value is constant during a read. 

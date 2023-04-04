@@ -1,8 +1,3 @@
-# run PE LVS ONLY
-
-# agents: { jobsize: "hours" }
-agents: { queue: "papers" }
-
 ##############################################################################
 # Use this to test a specific branch/commit:
 # Add to env:

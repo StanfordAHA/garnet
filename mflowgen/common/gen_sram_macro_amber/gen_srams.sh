@@ -72,7 +72,7 @@ ln -s ../$sram_name/NLDM/${sram_name}_${corner}.lib outputs/sram_tt.lib
 ln -s ../$sram_name/NLDM/${sram_name}_${bc_corner}.lib outputs/sram_ff.lib
 ln -s ../$sram_name/GDSII/${sram_name}_m4xdh.gds outputs/sram.gds
 ln -s ../$sram_name/LEF/${sram_name}_m4xdh.lef outputs/sram.lef
-ln -s ../$sram_name/VERILOG/${sram_name}_pwr.v outputs/sram-pwr.v
+ln -s ../$sram_name/VERILOG/${sram_name}_pwr.v outputs/sram_pwr.v
 ln -s ../$sram_name/VERILOG/${sram_name}.v outputs/sram.v
 ln -s ../$sram_name/SPICE/${sram_name}.spi outputs/sram.spi
 

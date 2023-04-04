@@ -81,7 +81,8 @@ set sram_spacing_x_odd 0
 # reasonable number of pitches
 # Spread out further for power domains
 if $::env(PWR_AWARE) {
-  set sram_spacing_x_even [expr 520 * $horiz_pitch]
+  set sram_spacing_x_even [expr 520 * $horiz_pitch]  ;# gf12 default
+  if { $adk == "tsmc16" } { set sram_spacing_x_even [expr 400 * $horiz_pitch] } ;# amber override
 } else {
   set sram_spacing_x_even [expr 200 * $horiz_pitch]
 }

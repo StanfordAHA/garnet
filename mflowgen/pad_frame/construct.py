@@ -17,8 +17,12 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = get_sys_adk()
+  adk_name = get_sys_adk()   # E.g. 'gf12-adk' or 'tsmc16'
   adk_view = 'view-standard'
+
+  # TSMC override(s)
+  if adk_name == 'tsmc16': which_soc = 'amber'
+  else:                    which_soc = 'onyx'
 
   parameters = {
     'construct_path'    : __file__,
@@ -51,11 +55,27 @@ def construct():
   soc_rtl              = Step( this_dir + '/../common/soc-rtl-v2'                )
   rtl                  = Step( this_dir + '/rtl'                         )   
   constraints          = Step( this_dir + '/constraints'                 )
-  init_fullchip        = Step( this_dir + '/../common/init-fullchip'     )
+  if adk_name == 'tsmc16':
+    init_fullchip        = Step( this_dir + '/../common/init-fullchip-amber')
+  else:
+    init_fullchip        = Step( this_dir + '/../common/init-fullchip'      )
   netlist_fixing       = Step( this_dir + '/../common/fc-netlist-fixing' )
 
+  if which_soc == 'amber':
+    # Custom step 'pre-flowsetup'
+    # To get new lef cells e.g. 'icovl-cells.lef' into iflow, we gotta:
+    # - create new step 'pre_flowsetup' whose outputs are icovl cells
+    # -- link via "commands" group in pre-iflow/configure.yml
+    # - connect pre-flowsetup step to flowsetup (iflow) step
+    # - extend iflow inputs to include icovl cells
+    # - iflow "setup.tcl" automatically includes "inputs/*.lef"
+    pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
+
   # More custom steps
-  custom_power         = Step( this_dir + '/../common/custom-power-chip' )
+  if adk_name == 'tsmc16':
+    custom_power         = Step( this_dir + '/../common/custom-power-chip-amber' )
+  else:
+    custom_power         = Step( this_dir + '/../common/custom-power-chip' )
 
   # It's not plugged in yet!
   # custom_power         = Step( this_dir + '/custom-power'                )
@@ -119,6 +139,32 @@ def construct():
 
   # Ouch. iflow and everyone that connects to iflow must also include
   # the icovl/dtcd lefs I guess?
+  if which_soc == 'amber':
+    pre_flowsetup_followers = [
+      # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+      iflow, init # can we get away with this?
+    ]
+    for step in pre_flowsetup_followers:
+      step.extend_inputs( [ 
+        "icovl-cells.lef", "dtcd-cells.lef", 
+        "bumpcells.lef" 
+      ] )
+
+  # TSMC needs streamout *without* the (new) default -uniquify flag
+  # This python method finds 'stream-out.tcl' and strips out that flag.
+  if adk_name == "tsmc16":
+    from common.streamout_no_uniquify import streamout_no_uniquify
+    streamout_no_uniquify(iflow)
+
+  if adk_name == "tsmc16":
+     # Replace default onyx scripts with amber versions instead
+     cmd1 = "cp rtl-scripts-amber/nic400_design_files.tcl  rtl-scripts"
+     cmd2 = "cp rtl-scripts-amber/nic400_include_paths.tcl rtl-scripts"
+     cmd3 = "cp rtl-scripts-amber/soc_design_files.tcl     rtl-scripts"
+     soc_rtl.pre_extend_commands( [ cmd1 ] )
+     soc_rtl.pre_extend_commands( [ cmd2 ] )
+     soc_rtl.pre_extend_commands( [ cmd3 ] )
+
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -130,6 +176,8 @@ def construct():
   g.add_step( constraints              )
   g.add_step( dc                       )
 
+  if which_soc == 'amber':
+    g.add_step( pre_flowsetup            )
   g.add_step( iflow                    )
   g.add_step( init_fullchip            )
   g.add_step( init                     )
@@ -157,6 +205,8 @@ def construct():
   # Connect by name
 
   g.connect_by_name( adk,      dc            )
+  if which_soc == 'amber':
+    g.connect_by_name( adk,      pre_flowsetup )
   g.connect_by_name( adk,      iflow         )
   g.connect_by_name( adk,      init          )
   g.connect_by_name( adk,      init_fill     )
@@ -180,6 +230,12 @@ def construct():
   g.connect_by_name( dc,       init         )
   g.connect_by_name( dc,       power        )
   g.connect_by_name( dc,       place        )
+
+  if which_soc == 'amber':
+    # g.connect_by_name( pre_flowsetup,  iflow   )
+    # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+    for step in pre_flowsetup_followers:
+      g.connect_by_name( pre_flowsetup, step)
 
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
@@ -259,6 +315,11 @@ def construct():
     ]}
   )
 
+  if which_soc == 'amber':
+    index = init.index(   'alignment-cells.tcl')
+    init.insert( index+1, 'analog-bumps/route-phy-bumps.tcl' )
+    init.insert( index+2, 'analog-bumps/bump-connect.tcl'    )
+  
   order = power.get_param('order')
   order.append( 'add-endcaps-welltaps.tcl' )
   power.update_params( { 'order': order } )

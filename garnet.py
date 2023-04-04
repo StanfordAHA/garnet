@@ -429,9 +429,6 @@ class Garnet(Generator):
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves)
 
-        # print("NETLIST INFO")
-        # print(netlist_info)
-
         mem_remap = None
         pe_remap = None
         
@@ -443,27 +440,17 @@ class Garnet(Generator):
             pnr_tag = pnr_tag.tag_name
             if pnr_tag == "m" and mem_remap is None:
                 mem_remap = actual_core.get_port_remap()
-                # print("MEM PORT REMAP!")
-                # print(mem_remap)
             elif pnr_tag == "p" and pe_remap is None:
                 pe_remap = actual_core.get_port_remap()
             elif mem_remap is not None and pe_remap is not None:
                 break
 
-        # print(mem_remap)
-        # print(pe_remap)
-
-        # Remap here...
-        # print("Actual netlist...")
-        # print(netlist_info['netlist'])
         for netlist_id, connections_list in netlist_info['netlist'].items():
             for idx, connection in enumerate(connections_list):
                 tag_, pin_ = connection
                 if tag_[0] == 'm':
                     # get mode...
                     metadata = netlist_info['id_to_metadata'][tag_]
-                    # print("metadata...")
-                    # print(metadata)
                     mode = "UB"
                     if 'stencil_valid' in metadata["config"]:
                         mode = 'stencil_valid'
@@ -472,28 +459,17 @@ class Garnet(Generator):
                         # Actually use wr addr for rom mode...
                         hack_remap = {
                             'addr_in_0': 'wr_addr_in',
-                            #'addr_in_0': 'rd_addr_in',
                             'ren_in_0': 'ren',
                             'data_out_0': 'data_out'
                                 }
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
-                    # print("SHOWING REMAP")
-                    # print(f"MODE {mode}")
-                    # print(mem_remap[mode])
-                    # print(f"remapping pin {pin_} to {mem_remap[mode][pin_]}")
                     pin_remap = mem_remap[mode][pin_]
                     connections_list[idx] = (tag_, pin_remap)
                 elif tag_[0] == 'p':
                     pin_remap = pe_remap['alu'][pin_]
                     connections_list[idx] = (tag_, pin_remap)
             netlist_info['netlist'][netlist_id] = connections_list
-                    # Remap the memtile or pondtile pins
-                    #core = self.interconnect.placement[tag_]
-                    #print(core)
-                    #if tag_[0] == 'm
-
-        # print(netlist_info['netlist'])
 
         if not self.amber_pond:
             # temporally remapping of port names for the new Pond
@@ -511,6 +487,10 @@ class Garnet(Generator):
 
 
         self.pack_ponds(netlist_info)
+
+        port_remap_fout = open(app_dir + "/design.port_remap", "w")
+        port_remap_fout.write(json.dumps(pe_remap['alu']))
+        port_remap_fout.close()
         
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
@@ -781,8 +761,26 @@ def main():
                 input_broadcast_branch_factor=args.input_broadcast_branch_factor,
                 input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
-        if args.pipeline_pnr:
-            return
+        if args.pipeline_pnr and not args.generate_bitstream_only:
+            # Calling clockwork for rescheduling pipelined app
+            import subprocess
+            import copy
+            cwd = os.path.dirname(args.app) + "/.."
+            cmd = ["make", "-C", str(cwd), "reschedule_mem"] 
+            env = copy.deepcopy(os.environ)
+            subprocess.check_call(
+                cmd,
+                env=env,
+                cwd=cwd
+            )
+
+            placement, routing, id_to_name, instance_to_instr, \
+                netlist, bus = garnet.place_and_route(
+                    args.app, True, compact=args.compact,
+                    load_only=True,
+                    pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
+                    input_broadcast_branch_factor=args.input_broadcast_branch_factor,
+                    input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
         bitstream, (inputs, outputs, reset, valid,
                     en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,

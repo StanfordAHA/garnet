@@ -296,6 +296,7 @@ task Environment::wait_interrupt(e_glb_ctrl glb_ctrl, bit [$clog2(NUM_GLB_TILES)
         end
         begin
             repeat (5_000_000) @(vifc_axil.cbd);
+            repeat (1_000_000) @(vifc_axil.cbd);
             $error("@%0t: %m ERROR: Interrupt wait timeout ", $time);
         end
     join_any

@@ -27,14 +27,24 @@ if $::env(PWR_AWARE) {
     source inputs/mem-constraints.tcl
 }
 
+# Which SoC?
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "onyx"
+}
+
+set module MemCore_inner_W_inst0
+if { $WHICH_SOC == "amber" } { set module LakeTop_W_inst0 }
+
 create_mode -name UNIFIED_BUFFER
 set_constraint_mode UNIFIED_BUFFER
 
 # Read common 
 source -echo -verbose ${common_cnst}
 
-set_case_analysis 0 MemCore_inst0/MemCore_inner_W_inst0/mode[0]
-set_case_analysis 0 MemCore_inst0/MemCore_inner_W_inst0/mode[1]
+set_case_analysis 0 MemCore_inst0/$module/mode[0]
+set_case_analysis 0 MemCore_inst0/$module/mode[1]
 
 create_mode -name FIFO
 set_constraint_mode FIFO
@@ -42,8 +52,8 @@ set_constraint_mode FIFO
 # Read common 
 source -echo -verbose ${common_cnst}
 
-set_case_analysis 1 MemCore_inst0/MemCore_inner_W_inst0/mode[0]
-set_case_analysis 0 MemCore_inst0/MemCore_inner_W_inst0/mode[1]
+set_case_analysis 1 MemCore_inst0/$module/mode[0]
+set_case_analysis 0 MemCore_inst0/$module/mode[1]
 
 create_mode -name SRAM
 set_constraint_mode SRAM
@@ -51,5 +61,5 @@ set_constraint_mode SRAM
 # Read common 
 source -echo -verbose ${common_cnst}
 
-set_case_analysis 0 MemCore_inst0/MemCore_inner_W_inst0/mode[0]
-set_case_analysis 1 MemCore_inst0/MemCore_inner_W_inst0/mode[1]
+set_case_analysis 0 MemCore_inst0/$module/mode[0]
+set_case_analysis 1 MemCore_inst0/$module/mode[1]

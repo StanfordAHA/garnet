@@ -19,7 +19,7 @@ echo $pe_dir
 
 # "echo" to unglob why not
 resdir=`echo $pe_dir/*synthesis/results_syn`
-egrep ^Tile_PE $resdir/final_area.rpt | awk -v max_area=11000 '
+egrep ^Tile_PE $resdir/final_area.rpt | awk -v max_area=8500 '
 { printf("Total area: %d\n", $NF);
   if ($NF > max_area) {
     print ""

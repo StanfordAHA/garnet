@@ -10,12 +10,23 @@
 # Author : Christopher Torng
 # Date   : March 26, 2018
 
+# Default SoC is Onyx
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "onyx"
+}
+
 #-------------------------------------------------------------------------
 # Stdcell power rail preroute
 #-------------------------------------------------------------------------
 # Generate horizontal stdcell preroutes
 
+if { $WHICH_SOC == "amber" } {
+sroute -nets {VDD VSS}
+} else {
 sroute -connect {corePin} -nets {VDD VSS}
+}
 
 #-------------------------------------------------------------------------
 # Shorter names from the ADK

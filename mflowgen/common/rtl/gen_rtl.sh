@@ -24,8 +24,10 @@ else
     # Build up the flags we want to pass to python garnet.v
     flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --glb_tile_mem_size $glb_tile_mem_size"
 
+  if [ "$WHICH_SOC" != "amber" ]; then
     # sparsity flags
     flags+=" --rv --sparse-cgra --sparse-cgra-combined"
+  fi
 
     if [ $PWR_AWARE == False ]; then
      flags+=" --no-pd"
@@ -55,8 +57,26 @@ else
 
       # Choose a docker image; can set via "rtl_docker_image" parameter
       default_image="stanfordaha/garnet:latest"
+
+  if [ "$WHICH_SOC" == "amber" ]; then
+      # NOW: to make this branch (master-tsmc) work, must use specific docker image
+      # FIXME/TODO: should be part of top-level parms
+      # FIXME/TODO: whrere are top-level parms???
+      amber_dense_sha=dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4
+      default_image="stanfordaha/garnet@sha256:${amber_dense_sha}"
+  fi
+
       if [ "$rtl_docker_image" == ""        ]; then rtl_docker_image=${default_image}; fi
       if [ "$rtl_docker_image" == "default" ]; then rtl_docker_image=${default_image}; fi
+
+      # Env var overrides all else
+      if [ "$RTL_DOCKER_IMAGE" ]; then
+          echo "+++ WARNING overriding local rtl_docker_image w env var RTL_DOCKER_IMAGE"
+          echo "WAS $rtl_docker_image"
+          rtl_docker_image=${RTL_DOCKER_IMAGE}
+          echo "NOW $rtl_docker_image"
+          echo "--- continue..."
+      fi
 
       # To use a docker image with name other than "latest" can do e.g.
       # rtl_docker_image="stanfordaha/garnet:cst"
@@ -102,6 +122,9 @@ else
       docker exec $container_name /bin/bash -c \
         '# Func to check python package creds (Added 02/2021 as part of cst vetting)
          # (Single-quote regime)
+
+         # Oh what a hack
+         export WHICH_SOC='$WHICH_SOC'
 
          function checkpip {
              # Example: checkpip ast.t "peak "

@@ -1,3 +1,4 @@
+import os
 import magma
 import tempfile
 import urllib.request
@@ -61,6 +62,11 @@ def lift_mem_core_ports(port, tile, tile_core):  # pragma: nocover
 
 class MemCore(LakeCoreBase):
 
+    if os.getenv('WHICH_SOC') == "amber":
+        tech_map_default=TSMC_Tech_Map(depth=512, width=32)
+    else:
+        tech_map_default=  GF_Tech_Map(depth=512, width=32)
+
     def __init__(self,
                  data_width=16,  # CGRA Params
                  mem_width=64,
@@ -86,17 +92,24 @@ class MemCore(LakeCoreBase):
                  gate_flush=True,
                  override_name=None,
                  gen_addr=True,
-                 tech_map=GF_Tech_Map(depth=512, width=32),
+                 tech_map=tech_map_default,
                  ready_valid=False):
 
         lake_name = "LakeTop"
 
-        super().__init__(config_data_width=config_data_width,
-                         config_addr_width=config_addr_width,
-                         data_width=data_width,
-                         gate_flush=gate_flush,
-                         ready_valid=ready_valid,
-                         name="MemCore")
+        if os.getenv('WHICH_SOC') == "amber":
+            super().__init__(config_data_width=config_data_width,
+                             config_addr_width=config_addr_width,
+                             data_width=data_width,
+                             gate_flush=gate_flush,
+                             name="MemCore")
+        else:
+            super().__init__(config_data_width=config_data_width,
+                             config_addr_width=config_addr_width,
+                             data_width=data_width,
+                             gate_flush=gate_flush,
+                             ready_valid=ready_valid,
+                             name="MemCore")
 
         # Capture everything to the tile object
         # self.data_width = data_width
@@ -290,8 +303,9 @@ class MemCore(LakeCoreBase):
         else:
             mode = mode_map[instr['mode']]
 
-        if type(mode) is int:
-            mode = mode_num_map[mode]
+        if os.getenv('WHICH_SOC') != "amber":
+            if type(mode) is int:
+                mode = mode_num_map[mode]
 
         if mode == MemoryMode.UNIFIED_BUFFER:
             config_runtime = self.dut.get_static_bitstream_json(top_config)
