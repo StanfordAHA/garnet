@@ -29,6 +29,9 @@ env:
   # BUILD: /build/fcrtl-${BUILDKITE_BUILD_NUMBER}
   BUILD: .
 
+  # Compare result to reference build, yes?
+  REF_RTL: /build/gold.offload/deleteme.bka/gold.474/full_chip/10-rtl/outputs/design.v
+
   TEST: 'echo exit 13 | mflowgen/test/test_module.sh'
   SETUP: 'source mflowgen/bin/setup-buildkite.sh'
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
@@ -43,6 +46,9 @@ steps:
 - label: 'setup 2m'
   commands:
   - '
+     test -f $$REF_RTL || echo "--- ERROR cannot find RTL ref $$REF_RTL";
+     test -f $$REF_RTL || echo exit;
+
      echo "--- SETUP";
      set -o pipefail;
      $$SETUP --dir .;
@@ -53,7 +59,20 @@ steps:
   commands:
   - $TEST --build_dir $BUILD full_chip --steps rtl --debug
   - 'RTL=$BUILD/full_chip/*-rtl/outputs/design.v;
+
+     echo "--- PRECODER CHECK";
      grep "module precoder_32_1"  $$RTL | sort;
      grep "module precoder_32_19" $$RTL && echo FAIL || echo PASS;
-     grep "module precoder_32_19" $$RTL && exit 13   || exit 0;
+     grep "module precoder_32_19" $$RTL && exit 13   || echo PASS;
+
+     echo "--- RTL COMPARE";
+     set -x;
+     test -f $$REF_RTL || echo "--- ERROR cannot find RTL ref $$REF_RTL";
+     test -f $$REF_RTL || exit 0;
+     echo diff $$RTL $$REF_RTL;
+     diff $$RTL $$REF_RTL || echo "+++ RTL COMPARE FOUND DIFFS";
+     echo "unsorted diff $$RTL $$REF_RTL";
+     diff $$RTL $$REF_RTL | wc -l;
+     echo "sorted diff $$RTL $$REF_RTL";
+     diff <(sort $$RTL | sed "s/,//g") <(sort $$REF_RTL | sed "s/,//g") | wc -l;
      '
