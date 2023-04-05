@@ -10,6 +10,9 @@
 # -------------------------------------------------
 
 env:
+  # Buildkite runs on arm machine, so can really only test amber version
+  # (because of SRAM I think?). Therefore set WHICH_SOC=amber
+
   WHICH_SOC: amber
   SETUP: source mflowgen/bin/setup-buildkite.sh
 
@@ -47,12 +50,12 @@ steps:
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
-# Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
+# Builds in dir e.g. mflowgen/full_chip/19-tile_array/17-Tile_PE
 
-# For non-GF (TSMC) branches, run the usual three tile tests.
-# But GF branches cannot run synthesis on my machine, so
-# add if-condition to do a single RTL-only test for GF branches;
+# Default is to run three tile tests (PE, Mem, GLB) up through
+# floorplanning (init), which should take about 20-30 minutes.
 
+# ------------------------------------------------------------------------
 
 # PTILE through init
 # Set pe max width to 112: fp limits to 110 but then lvs says 112 OK
@@ -61,8 +64,6 @@ steps:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
   - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 112 $BDIR
   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_PE --show-all-errors
-  if: build.branch !~ /to-spv/ && build.branch !~ /spV/
-
 
 # PTILE through LVS
 # - label: 'ptile lvs 2h'
@@ -72,15 +73,14 @@ steps:
 #   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_PE --show-all-errors
 #   if: build.branch !~ /to-spv/ && build.branch !~ /spV/
 
-
+# ------------------------------------------------------------------------
 
 # MTILE through init
-# - label: 'mtile init 25m'
-#   commands:
-#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
-#   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
-#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
-#   if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
+- label: 'mtile init 25m'
+  commands:
+  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
+  - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
+  - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
 
 # MTILE through LVS
 # - label: 'mtile lvs 2h'
@@ -88,38 +88,35 @@ steps:
 #   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps mentor-calibre-lvs --debug
 #   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
 #   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
-#   if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
 
-
+# ------------------------------------------------------------------------
 
 # GTILE through init
-# - label: 'gtile init 20m'
-#   commands:
-#   - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
-#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top/*glb_tile --show-all-errors
-#   if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
+- label: 'gtile init 20m'
+  commands:
+  - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
+  - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top/*glb_tile --show-all-errors
 
 # GTILE through LVS
 # - label: 'gtile lvs 3h'
 #   commands:
 #   - $TEST --need_space 30G full_chip glb_top glb_tile --steps mentor-calibre-lvs --debug
 #   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top/*glb_tile --show-all-errors
-#   if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
 
+# ------------------------------------------------------------------------
 
 # GTOP through LVS
 # - label: 'gtop lvs 3h?'
 #   commands:
 #   - $TEST --need_space 30G full_chip glb_top --steps mentor-calibre-lvs --debug
 #   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top --show-all-errors
-#   if: build.branch !~ /to-spv/ &&  build.branch !~ /spV/
 
-
+# ------------------------------------------------------------------------
 
 # ONYX BRANCHES ONLY
 # GF branches cannot run synthesis on my machine, so do RTL only I guess
-- label: 'RTL only 25m'
-  commands:
-  - 'export WHICH_SOC=onyx; export RTL_DOCKER_IMAGE=stanfordaha/garnet:latest;
-    $TEST --need_space 30G full_chip --steps rtl --debug'
-  if: build.branch =~ /to-spv/ || build.branch =~ /spV/ || build.branch =~ /sms/
+# - label: 'RTL only 25m'
+#   commands:
+#   - 'export WHICH_SOC=onyx; export RTL_DOCKER_IMAGE=stanfordaha/garnet:latest;
+#     $TEST --need_space 30G full_chip --steps rtl --debug'
+#   if: build.branch =~ /to-spv/ || build.branch =~ /spV/ || build.branch =~ /sms/
