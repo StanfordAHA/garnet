@@ -65,9 +65,15 @@ ifeq ($(WAVEFORM), 1)
 WAVEFORM_ARGS = -debug_access+all -kdb +vpi +memcbk +vcsd
 endif
 
+ifeq ($(WHICH_SOC), amber)
+TIMESCALE = -timescale=100ps/1ps
+else
+TIMESCALE = -timescale=1ps/1ps
+endif
+
 VCS = vcs \
 	  -sverilog \
-	  -timescale=1ps/1ps \
+	  $(TIMESCALE) \
 	  -full64 \
 	  -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
