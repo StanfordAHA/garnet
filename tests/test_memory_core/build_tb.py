@@ -69,7 +69,7 @@ from lake.modules.scanner_pipe import ScannerPipe
 import tempfile
 import time
 import gemstone
-import torch
+#import torch
 
 
 class SparseTBBuilder(m.Generator2):
