@@ -2211,7 +2211,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         print("--------------C_ref after permute--------------")
         print(c_ref.shape)
         print(c_ref)
-        
 
         output_ref = torch.einsum('ijkl, iljm->ikjm', b_ref, c_ref).numpy()
         print("--------------output_ref--------------")
@@ -2802,8 +2801,10 @@ if __name__ == "__main__":
                         tensor_, mode_, direction_, num_blocks_ = desc_
                         # remap the mode...
                         if mode_ != 'vals':
-                            # mode_ = mode_map[tensor_][int(mode_)][0]
-                            mode_ = mode_
+                            if give_tensor:
+                                mode_ = mode_
+                            else:
+                                mode_ = mode_map[tensor_][int(mode_)][0]
                             # We don't need to emit anything for a dense block
                             if mode_map[tensor_][int(mode_)][1] == 'd':
                                 continue
