@@ -1,3 +1,14 @@
+# 03/2023 Building a common requirements.txt for both amber and onyx versions.
+# Adopted existing onyx version wholesale.
+# For the record, the amber version had the following differences before the merge:
+# 
+#     diff --git a/requirements.txt b/requirements.txt
+#     --e git+https://github.com/StanfordAHA/gemstone.git#egg=gemstone
+#     +-e git+https://github.com/StanfordAHA/gemstone.git@gf-mux#egg=gemstone
+#     ...
+#     --e git+https://github.com/StanfordAHA/lake.git#egg=lake-aha
+#     +-e git+https://github.com/StanfordAHA/lake@sparse_strawman#egg=lake-aha
+
 coreir>=2.0.123  # should be first so we get the latest version
 -e git+https://github.com/StanfordAHA/gemstone.git@gf-mux#egg=gemstone
 -e git+https://github.com/StanfordAHA/canal.git#egg=canal
