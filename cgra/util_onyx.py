@@ -106,7 +106,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 macro_width: int = 32,
                 dac_exp: bool = False,
                 dual_port: bool = False,
-                rf: bool = False):
+                rf: bool = False,
+                perf_debug: bool = False):
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
     bit_widths = [1, 17]
@@ -161,7 +162,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                    fifo_depth=fifo_depth,
                                    add_clk_enable=True,
                                    defer_fifos=True,
-                                   add_flush=False)
+                                   add_flush=False,
+                                   perf_debug=perf_debug)
             else:
                 scan = Scanner(data_width=16,
                                fifo_depth=fifo_depth,
@@ -171,7 +173,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             wscan = WriteScanner(data_width=16,
                                  fifo_depth=fifo_depth,
                                  defer_fifos=True,
-                                 add_flush=False)
+                                 add_flush=False,
+                                 perf_debug=perf_debug)
             if dac_exp:
                 if dual_port:
                     read_delay = 1
@@ -220,7 +223,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                        add_flush=False,
                                        use_pipelined_scanner=pipeline_scanner,
                                        fifo_depth=fifo_depth,
-                                       buffet_optimize_wide=True)
+                                       buffet_optimize_wide=True,
+                                       perf_debug=perf_debug)
             buffet = BuffetLike(data_width=16,
                                 mem_depth=mem_depth, local_memory=False,
                                 tech_map=GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port),
@@ -260,37 +264,44 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                               use_merger=False,
                               fifo_depth=fifo_depth,
                               defer_fifos=True,
-                              add_flush=False)
+                              add_flush=False,
+                              perf_debug=perf_debug)
             crd_drop = CrdDrop(data_width=16,
                                fifo_depth=fifo_depth,
                                lift_config=True,
                                defer_fifos=True,
-                               add_flush=False)
+                               add_flush=False,
+                               perf_debug=perf_debug)
             crd_hold = CrdHold(data_width=16,
                                fifo_depth=fifo_depth,
                                lift_config=True,
                                defer_fifos=True,
-                               add_flush=False)
+                               add_flush=False,
+                               perf_debug=perf_debug)
             onyxpe = OnyxPE(data_width=16,
                             fifo_depth=fifo_depth,
                             defer_fifos=True,
                             ext_pe_prefix=pe_prefix,
                             pe_ro=True,
                             do_config_lift=False,
-                            add_flush=False)
+                            add_flush=False,
+                            perf_debug=perf_debug)
             repeat = Repeat(data_width=16,
                             fifo_depth=fifo_depth,
                             defer_fifos=True,
-                            add_flush=False)
+                            add_flush=False,
+                            perf_debug=perf_debug)
             rsg = RepeatSignalGenerator(data_width=16,
                                         passthru=False,
                                         fifo_depth=fifo_depth,
                                         defer_fifos=True,
-                                        add_flush=False)
+                                        add_flush=False,
+                                        perf_debug=perf_debug)
             regcr = Reg(data_width=16,
                         fifo_depth=fifo_depth,
                         defer_fifos=True,
-                        add_flush=False)
+                        add_flush=False,
+                        perf_debug=perf_debug)
 
             controllers_2 = []
 
