@@ -22,6 +22,7 @@ static struct IOInfo io_info_list[MAX_NUM_KERNEL * MAX_NUM_IO];
 static int io_info_index = 0;
 
 // parse the place file to calculate the number of columns used
+// currently counts columns by tiles, not routes, buffering with one extra column 
 int parse_num_group(struct KernelInfo *info) {
     char *filename = info->placement_filename;
 
@@ -70,6 +71,8 @@ int parse_num_group(struct KernelInfo *info) {
         if (x > max_x) max_x = x;
     }
 
+    // Add another column for possible routing
+    max_x += 1;
     info->num_groups = (max_x + GROUP_SIZE) / GROUP_SIZE;
 
     // clean up
