@@ -10,6 +10,8 @@ export PYTEST_ADDOPTS="--color=yes"
 # cd ${ROOT}
 cd /aha/garnet
 
+source /aha/bin/activate
+
 pytest --pycodestyle           \
        --cov global_controller \
        --cov io_core           \

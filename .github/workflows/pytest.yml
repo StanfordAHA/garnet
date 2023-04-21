@@ -48,6 +48,7 @@ jobs:
       shell: bash
       run: |
         docker exec -i CONTAINER bash -c "/aha/garnet/.github/scripts/run_pytest.sh"
+
     - name: Upload Coverage
       shell: bash
       # CODECOV_TOKEN secret stored at https://github.com/StanfordAHA/garnet/settings/secrets/actions
