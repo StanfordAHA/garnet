@@ -31,7 +31,7 @@ jobs:
       run: |
         docker pull stanfordaha/garnet:latest
         docker run -d -it --name CONTAINER stanfordaha/garnet:latest bash
-        docker exec stanfordaha/garnet:latest /bin/bash -c "rm -rf /aha/garnet"
+        docker exec CONTAINER /bin/bash -c "rm -rf /aha/garnet"
         docker cp ../garnet CONTAINER:/aha/garnet
 
 #     - name: Install deps 🛠️
