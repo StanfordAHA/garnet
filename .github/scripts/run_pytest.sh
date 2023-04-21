@@ -1,15 +1,15 @@
-set +x
-
 # Set up correct python environment maybe
-# LAKE_DIR=$(dirname $(dirname `python -c "import lake; print(lake.__file__)"`))
-# source ${LAKE_DIR}/scripts/setenv.sh
 source /aha/bin/activate
 
-# force color
-export PYTEST_ADDOPTS="--color=yes"
+# pip install pytest-cov pytest-pycodestyle
+pip install pytest-cov
+
+# NO COLOR!! Color is the worst.
+# export PYTEST_ADDOPTS="--color=yes"
+export PYTEST_ADDOPTS=
 
 cd /aha/garnet
-pytest --pycodestyle           \
+pytest \
        --cov global_controller \
        --cov io_core           \
        --cov memory_core       \
