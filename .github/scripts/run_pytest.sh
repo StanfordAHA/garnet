@@ -9,7 +9,9 @@ pip install pytest-cov
 export PYTEST_ADDOPTS=
 
 cd /aha/garnet
-pytest \
+
+# -rs => show extra info on skipped tests?
+pytest -rs \
        --cov global_controller \
        --cov io_core           \
        --cov memory_core       \
