@@ -10,8 +10,8 @@ export PYTEST_ADDOPTS=
 
 cd /aha/garnet
 
-# -rs => show extra info on skipped tests?
-pytest -rs \
+# -rfEs => show extra info on skipped tests, see `-r` in `pytest --help`
+pytest -rfEs \
        --cov global_controller \
        --cov io_core           \
        --cov memory_core       \
