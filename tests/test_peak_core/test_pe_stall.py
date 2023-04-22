@@ -8,7 +8,7 @@ import os
 import pytest
 
 
-@pytest.mark.skip(reason="(Temporary?) skip for clean master branch, see garnet issue 924")
+@pytest.mark.skip(reason="04/2023 skip for clean master branch, see garnet issue 924")
 def test_pe_stall(run_tb):
     core = PeakCore(PE_fc)
     core.finalize()
