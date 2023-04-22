@@ -20,12 +20,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Checkout submodules
       shell: bash
       run: |
         auth_header="$(git config --local --get http.https://github.com/.extraheader)"
         git submodule sync --recursive
         git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+
     - name: Pull and run docker 🐋 
       shell: bash
       run: |
@@ -33,16 +35,6 @@ jobs:
         docker run -d -it --name CONTAINER stanfordaha/garnet:latest bash
         docker exec CONTAINER /bin/bash -c "rm -rf /aha/garnet"
         docker cp ../garnet CONTAINER:/aha/garnet
-
-#     - name: Install deps 🛠️
-#       shell: bash
-#       run: |
-#         docker exec -i garnet bash -c "apt update"
-#         docker exec -i garnet bash -c "apt install -y default-jre"
-#         docker exec -i garnet bash -c "pip install -r /garnet/requirements.txt"
-#         docker exec -i garnet bash -c "pip install coveralls"
-#         docker exec -i garnet bash -c "pip install pytest"
-#         docker exec -i garnet bash -c "pip install pytest-cov pytest-pycodestyle z3-solver genesis2"
 
     - name: Run tests ⚙️
       shell: bash
@@ -54,12 +46,3 @@ jobs:
       # CODECOV_TOKEN secret stored at https://github.com/StanfordAHA/garnet/settings/secrets/actions
       run: |
         docker exec -i CONTAINER bash -c "cd /aha/garnet/ && bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }}"
-
-
-
-#       if [ $use_local_garnet == True ]; then
-#         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
-#         # Clone local garnet repo to prevent copying untracked files
-#         git clone $GARNET_HOME ./garnet
-#         docker cp ./garnet $container_name:/aha/garnet
-#       fi
