@@ -1,4 +1,5 @@
-agents: { docker: true }
+agents:
+  docker: "true"
 
 env:
   CONTAINER: deleteme_garnet_ci${BUILDKITE_BUILD_NUMBER}
