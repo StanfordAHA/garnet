@@ -18,25 +18,13 @@ steps:
   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
   - docker cp ./garnet $CONTAINER:/aha/garnet
-  - docker exec $CONTAINER /bin/bash -c "source /aha/bin/activate"
-  - docker exec $CONTAINER /bin/bash -c "source /cad/modules/tcl/init/sh"
-  - docker exec $CONTAINER /bin/bash -c "module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2"
-
-  #   # make /bin/sh symlink to bash instead of dash:
-  #   - echo "dash dash/sh boolean false" | debconf-set-selections
-  #   - DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
-  #   - apt update
-  #   - apt install time
-  #   - ls /aha
-  #   - pip freeze
-  #   - (cd garnet && echo "garnet" && git rev-parse --verify HEAD)
-  #   # Run regression tests
-  #   - if [[ $$FLOW_REPO ]]; then
-  #       export CONFIG=pr;
-  #     fi
-
-  # See aha/util/regress.py for test-suite options
-  -  docker exec $CONTAINER /bin/bash -c "aha regress resnet_tests"
+  - docker exec $CONTAINER /bin/bash -c "
+      source /aha/bin/activate;
+      source /cad/modules/tcl/init/sh;
+      module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
+      pwd; aha regress resnet_tests;
+    "
+      
 
 
   # ???
@@ -129,3 +117,40 @@ steps:
 
 
 
+
+
+# - label: ":wrench: Aha regressions"
+#   commands:
+#   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
+#   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
+#   - docker cp ./garnet $CONTAINER:/aha/garnet
+#   - docker exec $CONTAINER /bin/bash -c "source /aha/bin/activate;
+#   - docker exec $CONTAINER /bin/bash -c "source /cad/modules/tcl/init/sh"
+#   - docker exec $CONTAINER /bin/bash -c "module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2"
+# 
+#   #   # make /bin/sh symlink to bash instead of dash:
+#   #   - echo "dash dash/sh boolean false" | debconf-set-selections
+#   #   - DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+#   #   - apt update
+#   #   - apt install time
+#   #   - ls /aha
+#   #   - pip freeze
+#   #   - (cd garnet && echo "garnet" && git rev-parse --verify HEAD)
+#   #   # Run regression tests
+#   #   - if [[ $$FLOW_REPO ]]; then
+#   #       export CONFIG=pr;
+#   #     fi
+# 
+#   # See aha/util/regress.py for test-suite options
+#   -  docker exec $CONTAINER /bin/bash -c "aha regress resnet_tests"
+#   -  docker exec $CONTAINER /bin/bash -c "pwd; aha regress resnet_tests"
+# 
+# 
+#   # ???
+#   #   # We report success to the aha-flow app by removing the .TEST file,
+#   #   # which is created in the post-checkout hook and checked for in the
+#   #   # pre-exit hook.
+#   #   - echo "--- Removing Failure Canary"
+#   #   - ls -al /buildkite
+#   #   - rm -rf /buildkite/.TEST
+#   #   - ls -al /buildkite
