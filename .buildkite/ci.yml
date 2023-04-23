@@ -8,12 +8,16 @@ env:
 steps:
 
 - label: "Get latest docker"
+  agents:
+    docker: "true"
   commands:
   - docker pull $IMAGE
 
 - wait
 
 - label: ":wrench: Aha regressions"
+  agents:
+    docker: "true"
   commands:
   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
@@ -44,6 +48,8 @@ steps:
 #   continue_on_failure: true
 
 - label: "Delete container"
+  agents:
+    docker: "true"
   commands:
   - docker kill $CONTAINER
   - yes | docker image prune -a --filter "until=24h" --filter=label='description=garnet' || true
