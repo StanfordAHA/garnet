@@ -1,3 +1,5 @@
+agents: { docker: true }
+
 env:
   CONTAINER: deleteme_garnet_ci${BUILDKITE_BUILD_NUMBER}
   IMAGE: stanfordaha/garnet:latest
@@ -7,8 +9,6 @@ steps:
 - label: "Get latest docker"
   commands:
   - docker pull $IMAGE
-  agents:
-    docker: true
 
 - wait
 
@@ -46,8 +46,6 @@ steps:
   #   - ls -al /buildkite
   #   - rm -rf /buildkite/.TEST
   #   - ls -al /buildkite
-  agents:
-    docker: true
 
   
 # ALWAYS clean up regardless of test success or failure
@@ -59,8 +57,6 @@ steps:
   commands:
   - docker kill $CONTAINER
   - yes | docker image prune -a --filter "until=24h" --filter=label='description=garnet' || true
-  agents:
-    docker: true
 
 
 
