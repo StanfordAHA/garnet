@@ -21,8 +21,11 @@ steps:
   commands:
   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
-  - docker cp ./garnet $CONTAINER:/aha/garnet
+  - echo foo
+  - docker cp . $CONTAINER:/aha/garnet
+  - echo foobar
   - docker exec $CONTAINER /bin/bash -c "
+      echo foobarbaz;
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
