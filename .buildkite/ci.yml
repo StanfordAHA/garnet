@@ -11,13 +11,10 @@ steps:
   agents:
     docker: "true"
   commands:
-  - yes | head
-  - yes | docker image prune -a --filter "until=24h" --filter=label='description=garnet'
-  - docker image prune --force -a --filter "until=24h" --filter=label='description=garnet' || true
+  - docker kill $CONTAINER
+  - docker container prune --force --filter "until=24h" --filter=label='description=garnet' || true
+  - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true
   - exit -1
-
-- wait
-
 
 - label: "Get latest docker"
   agents:
