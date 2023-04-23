@@ -35,7 +35,7 @@ steps:
   #     fi
 
   # See aha/util/regress.py for test-suite options
-  - aha regress resnet_tests
+  -  docker exec $CONTAINER /bin/bash -c "aha regress resnet_tests"
 
 
   # ???
@@ -50,8 +50,9 @@ steps:
   
 # ALWAYS clean up regardless of test success or failure
 
-- wait ~
-  continue_on_failure: true
+- wait: { continue_on_failure: true } # One step at a time + continue on failure
+# - wait ~
+#   continue_on_failure: true
 
 - label: "Delete container"
   commands:
