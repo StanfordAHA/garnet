@@ -13,6 +13,7 @@ steps:
   commands:
   - yes | head
   - yes | docker image prune -a --filter "until=24h" --filter=label='description=garnet'
+  - docker image prune --force -a --filter "until=24h" --filter=label='description=garnet' || true
   - exit -1
 
 - wait
