@@ -11,7 +11,6 @@ steps:
   agents:
     docker: "true"
   commands:
-  - docker kill $CONTAINER
   - docker container prune --force --filter "until=24h" --filter=label='description=garnet' || true
   - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true
   - exit -1
