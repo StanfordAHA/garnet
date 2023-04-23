@@ -7,6 +7,15 @@ env:
 
 steps:
 
+- label: "Delete container"
+  agents:
+    docker: "true"
+  commands:
+  - docker kill $CONTAINER
+  - yes | head
+  - yes | docker image prune -a --filter "until=24h" --filter=label='description=garnet'
+  - exit -1
+
 - label: "Get latest docker"
   agents:
     docker: "true"
