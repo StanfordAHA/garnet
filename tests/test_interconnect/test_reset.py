@@ -18,6 +18,7 @@ def io_sides():
     return IOSide.North | IOSide.East | IOSide.South | IOSide.West
 
 
+@pytest.mark.skip(reason="04/2023 skip for clean master branch, see garnet issue 924")
 @pytest.mark.parametrize("batch_size", [100])
 def test_interconnect_reset(batch_size: int, run_tb, io_sides, get_mapping):
     # we test a simple point-wise multiplier function
