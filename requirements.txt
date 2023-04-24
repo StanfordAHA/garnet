@@ -1,3 +1,20 @@
+##############################################################################
+# WARNING do not use this file as a basis for your garnet-build
+# environment. You will likely be disappointed, as it is not well
+# maintained. Instead, use docker "garnet/latest" e.g.
+# 
+#     IMAGE=stanfordaha/garnet:latest
+#     CONTAINER=deleteme-mycontainer
+#     docker pull $IMAGE
+#     docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
+#     docker exec -ti $CONTAINER  /bin/bash
+#     flags="--width 4 --height 2 --pipeline_config_interval 8 -v"
+#     flags+=" --glb_tile_mem_size 256 --interconnect-only"
+#     flags+=" --dump-config-reg"
+#     echo $flags | fold -sw 40
+#     garnet.py $flags
+
+##############################################################################
 # 03/2023 Building a common requirements.txt for both amber and onyx versions.
 # Adopted existing onyx version wholesale.
 # For the record, the amber version had the following differences before the merge:
