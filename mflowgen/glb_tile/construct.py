@@ -21,36 +21,54 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = get_sys_adk()
-  adk_view = 'view-standard'
+  adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
+  adk_view = 'multivt'
+  which_soc = 'onyx'
+
+  # TSMC override(s)
+  if adk_name == 'tsmc16':
+      adk_view = 'view-standard'
+      which_soc = 'amber'
 
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'glb_tile',
-    'clock_period'   : 1.11,
+    'clock_period'   : 1.0,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : True,
     # Floorplan
-    'bank_height'    : 8,
     'array_width' : 32,
     'num_glb_tiles'       : 16,
     # Memory size (unit: KB)
     'glb_tile_mem_size' : 256,
     # SRAM macros
-    'num_words'      : 2048,
+    'num_words'      : 4096,
     'word_size'      : 64,
     'mux_size'       : 8,
-    'corner'         : "tt0p8v25c",
+    'num_subarrays'  : 2,
     'partial_write'  : True,
      # Power Domains
     'PWR_AWARE'         : False,
     # hold target slack
-    'hold_target_slack' : 0.03
-
+    'hold_target_slack' : 0.03,
+    'drc_env_setup': 'drcenv-block.sh'
   }
+
+  # TSMC overrides
+  if adk_name == 'tsmc16': parameters.update({
+    'clock_period'   : 1.11,
+    'bank_height'    : 8,
+    'num_words'      : 2048,
+    'corner'         : "tt0p8v25c",
+  })
+
+  # OG TSMC did not set num_subarrays etc.
+  if adk_name == 'tsmc16':
+    parameters.pop('num_subarrays')
+    parameters.pop('drc_env_setup')
 
   #-----------------------------------------------------------------------
   # Create nodes
@@ -66,14 +84,27 @@ def construct():
   # Custom steps
 
   rtl          = Step( this_dir + '/../common/rtl'                          )
-  constraints  = Step( this_dir + '/constraints'                  )
-  gen_sram     = Step( this_dir + '/../common/gen_sram_macro'     )
-  custom_init  = Step( this_dir + '/custom-init'                  )
-  custom_power = Step( this_dir + '/../common/custom-power-leaf'  )
-  short_fix    = Step( this_dir + '/../common/custom-short-fix'   )
-  custom_lvs   = Step( this_dir + '/custom-lvs-rules'             )
-  genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'    )
-  lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
+
+  if adk_name == 'tsmc16':
+    constraints  = Step( this_dir + '/constraints-amber'                      )
+    custom_init  = Step( this_dir + '/custom-init-amber'                      )
+    gen_sram     = Step( this_dir + '/../common/gen_sram_macro_amber'         )
+    custom_power = Step( this_dir + '/../common/custom-power-leaf-amber'      )
+    short_fix    = Step( this_dir + '/../common/custom-short-fix'             )
+    custom_lvs   = Step( this_dir + '/custom-lvs-rules-amber'                 )
+  else:
+    constraints  = Step( this_dir + '/constraints'                            )
+    custom_init  = Step( this_dir + '/custom-init'                            )
+    gen_sram     = Step( this_dir + '/../common/gen_sram_macro'               )
+    custom_power = Step( this_dir + '/../common/custom-power-leaf'            )
+    short_fix    = Step( this_dir + '/../common/custom-short-fix'             )
+    custom_lvs   = Step( this_dir + '/custom-lvs-rules'                       )
+
+  genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'       )
+  lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
+  if which_soc == 'onyx':
+    custom_cts   = Step( this_dir + '/../common/custom-cts'                   )
+    drc_pm       = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
 
 
   # Default steps
@@ -109,6 +140,7 @@ def construct():
 
   # Add sram macro inputs to downstream nodes
 
+  if which_soc == 'onyx': genlib.extend_inputs( ['sram_tt.db'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   # These steps need timing and lef info for srams
@@ -129,6 +161,8 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  if which_soc == 'onyx':
+    cts.extend_inputs( custom_cts.all_outputs() )
 
   # Add header files to outputs
   rtl.extend_outputs( ['header'] )
@@ -139,6 +173,12 @@ def construct():
   #-----------------------------------------------------------------------
 
   postroute_hold.extend_inputs( short_fix.all_outputs() )
+
+  # TSMC needs streamout *without* the (new) default -uniquify flag
+  # This python script finds 'stream-out.tcl' and strips out that flag.
+  if adk_name == "tsmc16":
+    from common.streamout_no_uniquify import streamout_no_uniquify
+    streamout_no_uniquify(iflow)
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -155,6 +195,8 @@ def construct():
   g.add_step( power          )
   g.add_step( custom_power   )
   g.add_step( place          )
+  if which_soc == 'onyx':
+    g.add_step( custom_cts   )
   g.add_step( cts            )
   g.add_step( postcts_hold   )
   g.add_step( route          )
@@ -164,8 +206,10 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
-  g.add_step( lib2db       )
+  g.add_step( lib2db         )
   g.add_step( drc            )
+  if which_soc == 'onyx':
+    g.add_step( drc_pm         )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
   g.add_step( debugcalibre   )
@@ -189,6 +233,8 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
+  if which_soc == 'onyx':
+    g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      lvs            )
   g.connect_by_name( adk,      genlib         )
 
@@ -206,6 +252,8 @@ def construct():
   g.connect_by_name( gen_sram,      genlib         )
   g.connect_by_name( gen_sram,      pt_signoff     )
   g.connect_by_name( gen_sram,      drc            )
+  if which_soc == 'onyx':
+    g.connect_by_name( gen_sram,      drc_pm         )
   g.connect_by_name( gen_sram,      lvs            )
 
   g.connect_by_name( rtl,         synth        )
@@ -233,6 +281,8 @@ def construct():
 
   g.connect_by_name( custom_init,  init       )
   g.connect_by_name( custom_power, power      )
+  if which_soc == 'onyx':
+    g.connect_by_name( custom_cts,   cts        )
   g.connect_by_name( custom_lvs,   lvs        )
   g.connect_by_name( init,           power          )
   g.connect_by_name( power,          place          )
@@ -243,8 +293,12 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        drc            )
+  if which_soc == 'onyx':
+    g.connect_by_name( signoff,        drc_pm         )
   g.connect_by_name( signoff,        lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  if which_soc == 'onyx':
+    g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff, genlib )
@@ -260,6 +314,8 @@ def construct():
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
+  if which_soc == 'onyx':
+    g.connect_by_name( drc_pm,   debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
   #-----------------------------------------------------------------------
@@ -271,7 +327,12 @@ def construct():
   g.update_params( parameters )
 
   # Add bank height param to init
-  init.update_params( { 'bank_height': parameters['bank_height'] }, True )
+  if which_soc == 'onyx':
+    # number of banks is fixed to 2
+    bank_height = (parameters['glb_tile_mem_size'] * 1024 // 2) // (parameters['num_words'] * (parameters['word_size'] // 8))
+    init.update_params( { 'bank_height': bank_height }, True )
+  else:
+    init.update_params( { 'bank_height': parameters['bank_height'] }, True )
 
   # Change nthreads
   synth.update_params( { 'nthreads': 4 } )

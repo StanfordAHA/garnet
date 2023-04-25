@@ -1,3 +1,10 @@
+# Default SoC is Onyx
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "onyx"
+}
+
 #=========================================================================
 # Design Constraints File
 #=========================================================================
@@ -85,7 +92,7 @@ set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_read_data_inputs
 # Constrain OUTPUTS
 # set_output_delay constraints for output ports
 # 100ps for margin?
-set o_delay [expr 0.0 * ${clock_period}]
+set o_delay [expr 0.1 * ${clock_period}]
 set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
 # Set timing on pass through clock
@@ -137,9 +144,9 @@ set_input_transition ${max_trans_passthru} $pt_read_data_inputs
 # Constrain SB to ~100 ps
 set sb_delay 0.3
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
-set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
+set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] [expr ${sb_delay} + ${i_delay} + ${o_delay}]
 # Then override the rest of the paths to be full clock period
-set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* MemCore_inst0*/* FEATURE*/*]] ${clock_period}
+set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] -through [get_pins [list CB*/* DECODE*/* MemCore_inst0*/* FEATURE*/*]] ${clock_period}
 
 #set_input_transition 1 [all_inputs]
 #set_max_transition 10 [all_outputs]
@@ -147,7 +154,8 @@ set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE
 if $::env(PWR_AWARE) {
     source inputs/dc-dont-use-constraints.tcl
     # source inputs/mem-constraints-2.tcl
-    set_dont_touch [get_cells -hierarchical *u_mux_logic*]
+    set_dont_touch [get_cells -hierarchical CB*/u_mux_logic]
+    set_dont_touch [get_cells -hierarchical SB*/MUX*/u_mux_logic]
     # Prevent buffers in paths from SB input ports
     set_dont_touch_network [get_ports *SB* -filter "direction==in"] -no_propagate
 }
@@ -166,8 +174,13 @@ set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter n
 set_false_path -from [get_ports config* -filter direction==in] -to [get_ports SB* -filter direction==out]
 
 # False paths from config input ports to SB registers
-set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg*/*
-set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
+if { $WHICH_SOC == "amber" } {
+    set sb_reg_path SB_ID0_5TRACKS_B*/REG_T*_B*/value__CE/value_reg*/*
+    set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins $sb_reg_path]
+} else {
+    set sb_reg_path SB_ID0_5TRACKS_B*_MemCore/REG_T*_B*/I
+    set_false_path -from [get_ports config_* -filter direction==in] -through [get_pins $sb_reg_path]
+}
 
 # Timing path to read_config_data output should never transition through a configuration
 # register because we assume the register's value is constant during a read. 

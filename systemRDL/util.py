@@ -3,7 +3,7 @@ import argparse
 import sys
 import os
 from systemrdl import RDLCompiler, node, RDLCompileError
-from peakrdl.html import HTMLExporter
+from peakrdl_html import HTMLExporter
 from dataclasses import dataclass
 
 

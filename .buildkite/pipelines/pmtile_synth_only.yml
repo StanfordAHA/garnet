@@ -22,10 +22,11 @@ steps:
 # INDIVIDUAL TILE RUNS
 # Builds in dir e.g. mflowgen/full_chip/19-tile_array/16-Tile_MemCore
 
+# Set pe max width to 112: fp limits to 110 but then lvs says 112 OK
 - label: 'PE synth 20m'
   commands:
   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps synthesis --debug
-  - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 110
+  - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 112
   - mflowgen/bin/buildcheck.sh full_chip/*tile_array/*Tile_PE --show-all-errors
 
 - label: 'MemCore synth 25m'

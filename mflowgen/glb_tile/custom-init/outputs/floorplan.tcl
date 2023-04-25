@@ -22,9 +22,9 @@ set core_margin_l [expr 5 * $horiz_pitch]
 
 # Amount of space between SRAM banks and core area
 # boundary on each side
-set sram_margin_t [expr 4 * $vert_pitch]
-set sram_margin_b [expr 150 * $vert_pitch]
-set sram_margin_r [expr 175 * $horiz_pitch] 
+set sram_margin_t [expr 20 * $vert_pitch]
+set sram_margin_b [expr 80 * $vert_pitch]
+set sram_margin_r [expr 150 * $horiz_pitch] 
 set sram_margin_l [expr 175 * $horiz_pitch]
 
 # Get the SRAMs and use both them and floorplan vars to determine 
@@ -32,10 +32,10 @@ set sram_margin_l [expr 175 * $horiz_pitch]
 set srams [get_cells -hierarchical *sram_array*]
 set sram_width [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name *sram_array* -i 0].cell.size_y]
-set sram_spacing_y 0
+set sram_spacing_y 15
 # Magic numbers, see https://github.com/StanfordAHA/garnet/issues/804
-set sram_spacing_x_odd  15
-set sram_spacing_x_even 15
+set sram_spacing_x_odd  20
+set sram_spacing_x_even 20
 # Bank height from env var; currently 8 (see glb_tile/construct.py)
 set bank_height $::env(bank_height)
 

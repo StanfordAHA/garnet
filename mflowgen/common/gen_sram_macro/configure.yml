@@ -1,14 +1,14 @@
 name: gen_sram_macro
 
 commands:
-  - bash gen_srams.sh
+  - bash inputs/adk/gen_srams.sh
 
 inputs:
   - adk
 
 outputs:
   - sram.v
-  - sram-pwr.v
+  - sram_pwr.v
   - sram.lef
   - sram_tt.lib
   - sram_ff.lib
@@ -17,12 +17,21 @@ outputs:
   - sram.spi
 
 parameters:
+  # SRAM Families:
+  # S1DB: single port high density
+  # S1PB: single port high performance
+  # SDPB: dual port high performance
+  # R2PB: dual port reg file
+  sram_family: "S1DB"
   num_words: 2048
   word_size: 64
   mux_size: 8
-  corner: "tt0p8v25c"
-  bc_corner: "ffg0p88v125c"
+  num_subarrays: 2
+  corner: "TT_0P800V_025C"
+  bc_corner: "FFPG_0P945V_125C"
   partial_write: False
+  leakage_opt: False
+  redundancy: False
 
 postconditions:
    # Sanity check to see if we at least got one sram

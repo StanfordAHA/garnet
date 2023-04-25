@@ -32,5 +32,4 @@ outputs:
   - upf_Tile_MemCore.tcl
   - upf_Tile_PE.tcl
   - add-aon-tie-cells.tcl
-  - check-pdcr-address.sh
  

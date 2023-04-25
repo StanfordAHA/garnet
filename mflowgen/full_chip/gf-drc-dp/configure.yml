@@ -1,0 +1,65 @@
+#=========================================================================
+# Node to perform DRC + double patterning decomposition
+#=========================================================================
+# Author : Christopher Torng
+# Date   : November 5, 2019
+#
+
+name: gf-drc-dp
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - design_merged.gds
+  - adk
+
+outputs:
+  - drc.results
+  - drc.summary
+  - design_merged.gds
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - if [ -f "inputs/adk/drcenv-chip-dp.sh" ]; then source inputs/adk/drcenv-chip-dp.sh; fi
+  - envsubst < drc.runset.template > drc.runset
+  - calibre -gui -drc -batch -runset drc.runset
+  - if [ -f "./DP_colored.gds" ]; then calibredrv inputs/adk/decomp_merge_in_memory.calibredrv inputs/design_merged.gds DP_colored.gds {design_name}  DP_merged.gds; fi
+  - mkdir -p outputs && cd outputs
+  - ln -sf ../drc.results
+  - ln -sf ../drc.summary
+  - ln -sf ../DP_merged.gds design_merged.gds
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+  # Use the rule deck "inputs/adk/${drc_rule_deck}"
+  drc_rule_deck: calibre-drc-block.rule
+
+#-------------------------------------------------------------------------
+# Debug
+#-------------------------------------------------------------------------
+
+debug:
+  - calibredrv -m ./DP_merged.gds \
+               -l inputs/adk/calibre.layerprops \
+               -rve -drc drc.results
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+preconditions:
+
+  - assert Tool( 'calibre' )
+  - assert File( 'inputs/adk' )
+  - assert File( 'inputs/design_merged.gds' )
+
+

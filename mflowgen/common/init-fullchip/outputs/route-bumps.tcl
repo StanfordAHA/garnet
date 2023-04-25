@@ -63,18 +63,11 @@ proc route_bumps { route_cmd} {
     puts "@file_info: Route bumps group 2b: top left corner"
     select_bumpring_section  24 26  1  4; sleep 1; $route_cmd; # top left corner
 
-    puts "@file_info: Skipping PHY region in top center area"
-    #     puts "@file_info: Route bumps group 3: top row exc. right corner, 37 bumps"
-    #     select_bumpring_section  24 99 1 22; deselect_obj Bump_619.24.21; select_obj   Bump_673.26.23
+    puts "@file_info: Route bumps group 3: top middle, 39 bumps"
+    select_bumpring_section  24 99 5 17; sleep 1; $route_cmd;
 
-    # FIXME could/should insert blockage here and eliminate fix_jtag later, see 'proc fix_jtag'
-    puts "@file_info: Route bumps group 3: top right, 12 bumps inc. phy jtag"
-    select_bumpring_section  24 99 18 22
-    # deselect_obj Bump_619.24.21; # Remove this,
-    select_obj     Bump_673.26.23;   # add that (pad_ext_dump_start)...
-    select_obj     Bump_647.25.23;   # and this (pad_ramp_clock maybe) 
-    select_obj     Bump_648.25.24;   # and this (VSS)
-    sleep 1; $route_cmd
+    puts "@file_info: Route bumps group 3: top right, 12 bumps"
+    select_bumpring_section  24 99 18 22; sleep 1; $route_cmd
 
     puts "@file_info: Route bumps group 4a: top right corner"
     select_bumpring_section 14 99 23 99; sleep 1; $route_cmd; # top right corner
@@ -84,10 +77,6 @@ proc route_bumps { route_cmd} {
 
     puts "@file_info: Route bumps group 4c: right center bottom, 15 bumps"
     select_bumpring_section  7 10 21 99; sleep 1; $route_cmd;  # right center bottom
-
-    # Last minute hack: reroute JTAG bump that shorts with SJK hand routes
-    puts "@file_info: Last minute hack to fix jtag routes"
-    fix_jtag
 
     ########################################################################
     # Final check. Expect "all bumps connected (288/288)"
@@ -167,9 +156,6 @@ proc select_bump_ring {} {
     }
     # If we did the above correctly, this should add nothing new
     select_bumps -type signal
-
-    # Finally; deselect phy bumps, they get routed separately elewhere
-    deselect_phy_bumps
 }
 
 proc deselect_phy_bumps {} {
@@ -224,8 +210,8 @@ proc myfcroute { args } {
 
     # LEGACY
     setFlipChipMode -connectPowerCellToBump true
-    setFlipChipMode -layerChangeBotLayer AP
-    setFlipChipMode -layerChangeTopLayer AP
+    setFlipChipMode -layerChangeBotLayer LB
+    setFlipChipMode -layerChangeTopLayer LB
     setFlipChipMode -route_style manhattan
     setFlipChipMode -connectPowerCellToBump true
 
@@ -246,8 +232,8 @@ proc myfcroute { args } {
     # including power bumps---why???
     # See github garnet repo issue 462
     fcroute -type signal \
-        -layerChangeBotLayer AP \
-        -layerChangeTopLayer AP \
+        -layerChangeBotLayer LB \
+        -layerChangeTopLayer LB \
         -routeWidth 3.6 \
         {*}$args
     # redraw; # good? --no not really, didn't work

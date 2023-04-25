@@ -6,6 +6,7 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
 garnet_dir := $(mkfile_dir)/../..
+gemstone_dir := $(realpath $(garnet_dir))/../gemstone
 netlist_dir := $(mkfile_dir)/netlist
 glc_dir := $(garnet_dir)/global_controller
 APP_ARGS ?= +APP0=app0
@@ -30,7 +31,6 @@ DESIGN_FILES += $(garnet_dir)/global_buffer/header/global_buffer_param.svh \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_pio.sv \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_decode.sv \
 				$(garnet_dir)/global_controller/systemRDL/output/glc_jrdl_logic.sv \
-				-v $(garnet_dir)/tests/AN2D0BWP16P90.sv -v $(garnet_dir)/tests/AO22D0BWP16P90.sv \
 				$(garnet_dir)/genesis_verif/*.sv
 
 TB_FILES += -F tb/tb_cgra.f
@@ -60,23 +60,30 @@ RUN_LOG ?= run.log
 # -------------------------------------------------------------------
 # Command
 # -------------------------------------------------------------------
+
+ifeq ($(WAVEFORM), 1)
+WAVEFORM_ARGS = -debug_access+all -kdb +vpi +memcbk +vcsd
+endif
+
+ifeq ($(WHICH_SOC), amber)
+TIMESCALE = -timescale=100ps/1ps
+else
+TIMESCALE = -timescale=1ps/1ps
+endif
+
 VCS = vcs \
-	  -debug_accss+all \
 	  -sverilog \
-	  -timescale=100ps/1ps \
+	  $(TIMESCALE) \
 	  -full64 \
 	  -ldflags "-Wl,--no-as-needed" \
 	  -CFLAGS "-m64" \
 	  -top top \
-	  -kdb \
-	  +vpi \
-	  +memcbk \
-	  +vcsd \
 	  +vcs+lic+wait \
 	  +vcs+initreg+random \
 	  +overlap \
 	  +v2k \
 	  -l vcs.log \
+	  $(WAVEFORM_ARGS) \
 	  $(COMPILE_ARGS) \
 	  $(INPUT_ARGS)
 

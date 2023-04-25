@@ -8,6 +8,9 @@ ARGS="$ARGS -input cmd.tcl -ALLOWREDEFINITION"
 # ADK for GLS
 if [ -d "inputs/adk" ]; then
   ARGS="$ARGS inputs/adk/*pwr*.v"
+  if [ -f "inputs/adk/stdcells-prim.v" ]; then
+      ARGS="$ARGS inputs/adk/stdcells-prim.v"
+  fi
 fi
 
 # Set-up testbench

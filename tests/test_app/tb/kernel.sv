@@ -527,6 +527,9 @@ function void Kernel::compare();
     int num_pixels;
     int num_io_tiles;
     int file_out;
+    string tmp_output_name;
+    string tmp_filename_nopath = "";
+    int tmp_output_name_len;
     // Hacky way to interleave output data in io_block to final output
     // TODO: Make interleave and uninterleave as a function
     for (int i = 0; i < num_outputs; i++) begin
@@ -542,13 +545,20 @@ function void Kernel::compare();
             end
         end
     end
-    // dump output (Assuming one output)
-    file_out = $fopen("output.txt", "w");
-    for (int i = 0; i < output_data[0].size(); i++) begin
-        if (i % 8 == 7) begin
-            $fwrite(file_out, "%4h\n", output_data[0][i]);
-        end else begin
-            $fwrite(file_out, "%4h ", output_data[0][i]);
+    for (int idx = 0; idx < num_outputs; idx++) begin
+        tmp_output_name_len = output_filenames[idx].len();
+        tmp_output_name = {output_filenames[idx].substr(0, tmp_output_name_len - 5), ".txt"};
+	foreach(tmp_output_name[j]) begin
+            if (tmp_output_name[j]=="/") tmp_filename_nopath = "";
+            else                         tmp_filename_nopath = {tmp_filename_nopath, tmp_output_name[j]};
+        end
+        file_out = $fopen(tmp_filename_nopath, "w");
+        for (int i = 0; i < output_data[idx].size(); i++) begin
+            if (i % 8 == 7) begin
+                $fwrite(file_out, "%4h\n", output_data[idx][i]);
+            end else begin
+                $fwrite(file_out, "%4h ", output_data[idx][i]);
+            end
         end
     end
     result = 0;

@@ -1,0 +1,1 @@
+../../init-fullchip/outputs/attach-results-to-outputs.tcl

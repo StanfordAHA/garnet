@@ -28,9 +28,6 @@ set soc_cmdk_files [concat [
   glob -nocomplain -directory inputs/rtl/aham3soc_armip/logical/cmsdk/cmsdk_ahb_eg_slave/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc_armip/logical/AhaPeriphAhbMtx/verilog/AhaPeriphAhbMtx -types f *.v ] ]
 
-# AXI SRAM Interface Converter
-set soc_sram_if_files [ glob -nocomplain -directory inputs/rtl/aham3soc_armip/logical/if_converters/axi_sram_if -types f *.v]
-
 # Integration Files
 set soc_integration_files [concat [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaCM3CodeRegionIntegration/verilog -types f *.v] [
@@ -41,11 +38,13 @@ set soc_integration_files [concat [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaMemIntegration/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaPeripherals/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaPlatformController/verilog -types f *.v] [
-  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaPlatformController/rdl/verilog -types f *.v] [
+#  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaPlatformController/rdl/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaSoCPartialIntegration/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaTlxIntegration/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaTlxIntegration/rdl/verilog -types f *.v] [
-  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaStdCells/asic/verilog -types f *.v]]
+  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaXGCDIntegration/verilog -types f *.v] [
+  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/ProcessTech/SRAM/ASIC/GF -types f *.v] [
+  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/ProcessTech/StdCells/ASIC/GF -types f *.v]]
 
 # PL330 DMA Files
 set soc_dma_files [concat [
@@ -69,7 +68,6 @@ source inputs/rtl-scripts/nic400_design_files.tcl
 set soc_design_files [concat \
   $soc_cm3_files \
   $soc_cmdk_files \
-  $soc_sram_if_files \
   $soc_integration_files \
   $soc_dma_files \
   $soc_tlx_files \
@@ -79,7 +77,6 @@ set soc_design_files [concat \
 set soc_design_files [concat \
   $soc_cm3_files \
   $soc_cmdk_files \
-  $soc_sram_if_files \
   $soc_integration_files \
   $soc_dma_files \
   $soc_tlx_files \

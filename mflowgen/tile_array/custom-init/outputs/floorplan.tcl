@@ -115,8 +115,8 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set tiles($row,$col,y_loc) $y_loc
     placeInstance $tiles($row,$col,name) $x_loc $y_loc -fixed
 
-    # Add Power stripe Routing Blockages over tiles on M3, M8, because the
-    # tiles already have these stripes
+    # Add Power stripe Routing Blockages over tiles on M3, ADK_POWER_MESH_BOT_LAYER,
+    # because the tiles already have these stripes
     set llx [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_llx]
     set lly [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_lly]
     set urx [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_urx]
@@ -125,7 +125,7 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set lr_margin [expr $horiz_pitch * 6]
     createRouteBlk \
       -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-      -layer {3 8} \
+      -layer [list 3 $ADK_POWER_MESH_BOT_LAYER] \
       -pgnetonly
 
     set x_loc [expr $x_loc + $tiles($row,$col,width) + $tile_separation_x]
@@ -142,22 +142,27 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
   set y_loc [expr $y_loc + $tiles($row,$min_col,height) + $y_space]
 }
 
+set tiles_llx [dbGet [dbGet -p top.insts.name $tiles($max_row,$min_col,name)].box_llx]
+set tiles_lly [dbGet [dbGet -p top.insts.name $tiles($max_row,$min_col,name)].box_lly]
+set tiles_urx [dbGet [dbGet -p top.insts.name $tiles($min_row,$max_col,name)].box_urx]
+set tiles_ury [dbGet [dbGet -p top.insts.name $tiles($min_row,$max_col,name)].box_ury]
+
 addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
 
 # Create a blockage for PG vias around the grid since vias too close to the grid edges can block
 # connections from pins on the edges to tie cells.
 # left
-createRouteBlk -box [expr $start_x - $horiz_pitch * 6] $start_y $start_x \
-                    [expr $start_y + $grid_height] -pgnetonly -cutLayer all
+createRouteBlk -box [expr $tiles_llx - $horiz_pitch * 15] $tiles_lly $tiles_llx \
+                    $tiles_ury -pgnetonly -cutLayer all
 # top
-createRouteBlk -box $start_x [expr $start_y + $grid_height] [expr $start_x + $grid_width] \
-                    [expr $start_y + $grid_height + 2 * $vert_pitch] -pgnetonly -cutLayer all
+createRouteBlk -box $tiles_llx $tiles_ury $tiles_urx \
+                    [expr $tiles_ury + 2 * $vert_pitch] -pgnetonly -cutLayer all
 # right 
-createRouteBlk -box [expr $start_x + $grid_width] $start_y [expr $start_x + $grid_width + $horiz_pitch * 6] \
-                    [expr $start_y + $grid_height] -pgnetonly -cutLayer all
+createRouteBlk -box $tiles_urx $tiles_lly [expr $tiles_urx + $horiz_pitch * 15] \
+                    $tiles_ury -pgnetonly -cutLayer all
 # bottom
-createRouteBlk -box $start_x [expr $start_y - 2 * $vert_pitch] [expr $start_x + $grid_width] \
-                    $start_y -pgnetonly -cutLayer all
+createRouteBlk -box $tiles_llx [expr $tiles_lly - 2 * $vert_pitch] $tiles_urx \
+                    $tiles_lly -pgnetonly -cutLayer all
 
 # Manually connect all of the tile_id pins
 selectPin *tile_id*

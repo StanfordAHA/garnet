@@ -35,6 +35,7 @@ proc port_compare {a b} {
 
 set array_width $env(array_width)
 set num_glb_tiles $env(num_glb_tiles)
+# flush output pins are added every $prr_size glb_tiles
 set prr_size 4
 set cgra_data_width 16
 set cgra_cfg_addr_width 32
@@ -50,8 +51,14 @@ for {set j 0} {$j < $array_width} {incr j} {
         lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g[[expr {$j*$cgra_data_width+$k}]]"]]
         lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f[[expr {$j*$cgra_data_width+$k}]]"]]
     }
-    lappend tile_ports($j) [get_object_name [get_ports "strm_data_valid_f2g[$j]"]]
-    lappend tile_ports($j) [get_object_name [get_ports "strm_data_valid_g2f[$j]"]]
+    lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g_rdy[$j]"]]
+    lappend tile_ports($j) [get_object_name [get_ports "strm_data_f2g_vld[$j]"]]
+
+    lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f_rdy[$j]"]]
+    lappend tile_ports($j) [get_object_name [get_ports "strm_data_g2f_vld[$j]"]]
+
+    lappend tile_ports($j) [get_object_name [get_ports "strm_ctrl_f2g[$j]"]]
+    lappend tile_ports($j) [get_object_name [get_ports "strm_ctrl_g2f[$j]"]]
     for {set k 0} {$k < $cgra_cfg_addr_width} {incr k} {
         lappend tile_ports($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_addr[[expr {$j*$cgra_cfg_addr_width+$k}]]"]]
     }
@@ -60,6 +67,7 @@ for {set j 0} {$j < $array_width} {incr j} {
     }
     lappend tile_ports($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_wr_en[$j]"]]
     lappend tile_ports($j) [get_object_name [get_ports "cgra_cfg_g2f_cfg_rd_en[$j]"]]
+    lappend tile_ports($j) [get_object_name [get_ports "cgra_stall[$j]"]]
     if {[expr {($j % $prr_size) == 0}]} {
         lappend tile_ports($j) [get_object_name [get_ports "strm_data_flush_g2f[[expr {$j / $prr_size}]]"]]
     }
@@ -102,23 +110,25 @@ foreach a [get_object_name $all] {
 for {set j 0} {$j < $array_width} {incr j} {
     set tile_ports($j) [lsort -command port_compare $tile_ports($j)]
 }
-
 set first_tile [lsort -command port_compare $first_tile]
+set first_tile_pin_offset 2.0
 set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
-set first_tile_pin_range [expr {[llength $first_tile] * 0.5 + 5}]
-set center [expr {($width - $first_tile_pin_range) / 2 + $first_tile_pin_range}]
+set first_tile_pin_range [expr {[llength $first_tile] * $first_tile_pin_offset + 5}]
 set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
 set left_offset 20
 
-set glb_tile_port_offset [expr {($width - $first_tile_pin_range) / $num_glb_tiles }]
  
 # pins for glb <-> soc
 editPin -pin $first_tile -start 5 $height -end $first_tile_pin_range $height -side TOP -spreadType RANGE -spreadDirection clockwise -layer M5
 
-# clk pin
-editPin -pin "clk" -side TOP -assign [expr $center-10]  $height -layer M5
-editPin -pin "reset" -side TOP -assign [expr $center+10] $height -layer M5
+# clk pin and reset pin
+editPin -pin "clk" -side TOP -assign [expr $first_tile_pin_range + $first_tile_pin_offset]  $height -layer 9
+editPin -pin "reset" -side TOP -assign [expr $first_tile_pin_range + 2 * $first_tile_pin_offset] $height -layer 9
+
+# reset first_tile_pin_range to include clk and reset
+set first_tile_pin_range [expr $first_tile_pin_range + 2 * $first_tile_pin_offset + 5]
+set glb_tile_port_offset [expr {($width - $first_tile_pin_range) / $num_glb_tiles }]
 
 # for glb <-> glc
 for {set i 0} {$i < $num_glb_tiles} {incr i} {

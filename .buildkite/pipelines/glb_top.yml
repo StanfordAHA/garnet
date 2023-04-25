@@ -2,6 +2,7 @@
 # agents: { queue: "papers" }
 
 env:
+  WHICH_SOC: amber
   GOLD: /build/glb${BUILDKITE_BUILD_NUMBER}/full_chip
   # OVERRIDE_MFLOWGEN_BRANCH: placementCheck
 

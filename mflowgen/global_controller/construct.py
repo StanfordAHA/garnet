@@ -21,8 +21,14 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = get_sys_adk()
-  adk_view = 'multicorner'
+  adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
+  adk_view = 'multivt'
+  which_soc = 'onyx'
+
+  # TSMC override(s)
+  if adk_name == 'tsmc16':
+    adk_view = 'multicorner'
+    which_soc = 'amber'
 
   parameters = {
     'construct_path'    : __file__,
@@ -38,10 +44,20 @@ def construct():
     # Power Domains (leave this false)
     'PWR_AWARE'         : False,
     # hold target slack
-    'hold_target_slack' : 0.030,
+    'hold_target_slack' : 0.015,
     # Utilization target
-    'core_density_target' : 0.50
+    'core_density_target' : 0.50,
+    'drc_env_setup'     : 'drcenv-block.sh'
   }
+
+  # TSMC overrides
+  if adk_name == 'tsmc16': parameters.update({
+    'hold_target_slack' : 0.030,
+  })
+
+  # OG TSMC did not specify drc_env_setup
+  if adk_name == 'tsmc16':
+    parameters.pop('drc_env_setup')
 
   #-----------------------------------------------------------------------
   # Create nodes
@@ -59,8 +75,16 @@ def construct():
   rtl                  = Step( this_dir + '/rtl'                                   )
   constraints          = Step( this_dir + '/constraints'                           )
   custom_init          = Step( this_dir + '/custom-init'                           )
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf'           )
+  if adk_name == 'tsmc16':
+    custom_power         = Step( this_dir + '/../common/custom-power-leaf-amber'      )
+  else:
+    custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
   lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
+  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'          )
+  if which_soc == "onyx":
+    drc_pm               = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm')
+    drc_mas              = Step( this_dir + '/../common/gf-mentor-calibre-drc-mas'   )
+
 
   # Default steps
 
@@ -78,7 +102,10 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlib       = Step( 'cadence-genus-genlib',          default=True )
+  if which_soc == "onyx":
+    genlib       = Step( 'cadence-innovus-genlib',        default=True )
+  else:
+    genlib       = Step( 'cadence-genus-genlib',          default=True )
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -91,6 +118,12 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+
+  # TSMC needs streamout *without* the (new) default -uniquify flag
+  # This python script finds 'stream-out.tcl' and strips out that flag.
+  if adk_name == "tsmc16":
+    from common.streamout_no_uniquify import streamout_no_uniquify
+    streamout_no_uniquify(iflow)
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -116,6 +149,9 @@ def construct():
   g.add_step( genlib                   )
   g.add_step( lib2db                   )
   g.add_step( drc                      )
+  if which_soc == "onyx":
+    g.add_step( drc_pm                   )
+    g.add_step( drc_mas                  )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
 
@@ -137,6 +173,9 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      drc          )
+  if which_soc == "onyx":
+    g.connect_by_name( adk,      drc_pm       )
+    g.connect_by_name( adk,      drc_mas      )
   g.connect_by_name( adk,      lvs          )
 
   g.connect_by_name( rtl,         synth     )
@@ -148,15 +187,17 @@ def construct():
   g.connect_by_name( synth,    place        )
   g.connect_by_name( synth,    cts          )
 
-  g.connect_by_name( iflow,    init         )
-  g.connect_by_name( iflow,    power        )
-  g.connect_by_name( iflow,    place        )
-  g.connect_by_name( iflow,    cts          )
-  g.connect_by_name( iflow,    postcts_hold )
-  g.connect_by_name( iflow,    route        )
-  g.connect_by_name( iflow,    postroute    )
+  g.connect_by_name( iflow,    init           )
+  g.connect_by_name( iflow,    power          )
+  g.connect_by_name( iflow,    place          )
+  g.connect_by_name( iflow,    cts            )
+  g.connect_by_name( iflow,    postcts_hold   )
+  g.connect_by_name( iflow,    route          )
+  g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
-  g.connect_by_name( iflow,    signoff      )
+  g.connect_by_name( iflow,    signoff        )
+  if which_soc == "onyx":
+    g.connect_by_name( iflow,    genlib         )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -170,8 +211,14 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,      drc          )
+  if which_soc == "onyx":
+    g.connect_by_name( signoff,      drc_pm       )
+    g.connect_by_name( signoff,      drc_mas       )
   g.connect_by_name( signoff,      lvs          )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  if which_soc == "onyx":
+    g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
+    g.connect(signoff.o('design-merged.gds'), drc_mas.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,      genlib   )
@@ -187,6 +234,8 @@ def construct():
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
+  if which_soc == "onyx":
+    g.connect_by_name( drc_pm,   debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
   #-----------------------------------------------------------------------
@@ -199,12 +248,13 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
-  # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
+  if which_soc == "amber":
+    # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
 
-  order = init.get_param('order') # get the default script run order
-  floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
-  order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
-  init.update_params( { 'order': order } )
+    order = init.get_param('order') # get the default script run order
+    floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
+    order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
+    init.update_params( { 'order': order } )
   
   # Add density target parameter
   init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )

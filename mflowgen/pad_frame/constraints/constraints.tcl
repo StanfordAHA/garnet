@@ -11,6 +11,8 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
+set_units -time ns -capacitance pF
+
 set clock_net  pad_MASTER_CLK
 set clock_name ideal_clock
 
@@ -53,9 +55,10 @@ set_max_transition [expr 0.25*${dc_clock_period}] $dc_design_name
 # sr 02/2020
 # haha IOPAD cells already have dont_touch property but not ANAIOPAD :(
 # Without dont_touch, they disappear during dc-synthesis
-set_dont_touch [ get_cells ANAIOPAD* ]
+set dt_cells [ get_cells -quiet ANAIOPAD* ]
+if { $dt_cells != "" } { set_dont_touch $dt_cells }
 
 # sr 02/2020
 # Arg turns out not all IOPAD cells have dont_touch property I guess
-set_dont_touch [ get_cells IOPAD* ]
-
+set dt_cells [ get_cells -quiet IOPAD* ]
+if { $dt_cells != "" } { set_dont_touch $dt_cells }

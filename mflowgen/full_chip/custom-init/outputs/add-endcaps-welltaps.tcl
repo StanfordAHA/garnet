@@ -14,6 +14,6 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
   adk_set_end_cap_mode
   adk_set_well_tap_mode
   adk_add_end_caps
-  adk_add_well_taps
+  adk_add_well_taps_fixed_gap
 }
 

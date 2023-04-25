@@ -1,0 +1,14 @@
+{"namespaces":{
+  "global":{
+    "modules":{
+      "IO":{
+        "type":["Record",[
+          ["in",["Array",16,"BitIn"]],
+          ["out",["Array",16,"Bit"]]
+        ]],
+        "modparams":{"mode":"String"}
+      }
+    }
+  }
+}
+}
