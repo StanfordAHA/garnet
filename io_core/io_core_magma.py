@@ -1,6 +1,6 @@
 import magma
 from gemstone.common.core import ConfigurableCore, PnRTag, ConfigurationType, Core
-from gemstone.generator import FromMagma
+from gemstone.generator import FromMagma, Const
 from kratos import Generator, posedge, always_ff, mux, ternary
 from kratos.util import to_magma
 from mantle import DefineRegister

@@ -36,30 +36,45 @@ GLB_TOP_SDF ?= gls/glb.sdf
 GLB_TILE_SDF ?= gls/glb_tile.sdf
 
 # runtime
-RUN_ARGS ?= +test01 +test02 +test03 +test04 +test05 +test06 +test07 +test08 +test09 +test10 +test11
-RUN_ARGS += +MAX_NUM_TEST=11
+RUN_ARGS ?= +test01 +test02 +test03 +test04 +test05 +test06 +test07 +test08 +test09 +test10 +test11 +test12
+RUN_ARGS += +MAX_NUM_TEST=12
 RUN_ARGS += +DEBUG
 RUN_LOG ?= run.log
 
 # design files
 HEADER_FILES ?= header/global_buffer_param.svh header/glb.svh 
 DESIGN_FILES ?= global_buffer.sv systemRDL/output/glb_pio.sv systemRDL/output/glb_jrdl_decode.sv systemRDL/output/glb_jrdl_logic.sv
-#FIXME: pm cells should be removed!
-NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-pm.v
-TB_FILES ?= -F sim/tb_global_buffer.f 
+NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-prim.v
+ifeq ($(WHICH_SOC), amber)
+    #FIXME: pm cells should be removed!
+    NETLIST_FILES ?= gls/glb.vcs.v gls/glb_tile.vcs.v gls/glb_tile_sram.v gls/stdcells.v gls/stdcells-pm.v
+endif
+
+# test vectors
+# To succeed, amber builds will need to set WHICH_SOC env var to "amber"
+# onyx builds don't need to do anything new
+TESTVECTORS = testvectors
+SIM = sim
+ifeq ($(WHICH_SOC), amber)
+    TESTVECTORS = testvectors_amber
+    SIM = sim_amber
+endif
+
+TB_FILES ?= -F $(SIM)/tb_global_buffer.f 
 
 # -------------------------------------------------------------------
 # Commands
 # -------------------------------------------------------------------
 GENERATE_TV = \
-    python testvectors/gen_glb_test.py --data testvectors/64_v0.dat --num 64 --seed 0; \
-    python testvectors/gen_glb_test.py --data testvectors/512_v0.dat --num 512 --seed 0; \
-    python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num 512 --seed 1; \
-    python testvectors/gen_glb_test.py --data testvectors/4096_v0.dat --num 4096 --seed 0; \
-    python testvectors/gen_glb_test.py --data testvectors/4096_v1.dat --num 4096 --seed 1; \
-    python testvectors/gen_glb_test.py --data testvectors/1024_v0.dat --num 1024 --seed 0; \
-    python testvectors/gen_glb_test.py --data testvectors/1024_v1.dat --num 1024 --seed 1; \
-    python testvectors/gen_glb_test.py --data testvectors/3844_v0.dat --num 3844 --seed 0;
+    python testvectors/gen_glb_test.py --data testvectors/64_v0.dat --num_data 64 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/512_v0.dat --num_data 512 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/512_v1.dat --num_data 512 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/4096_v0.dat --num_data 4096 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/4096_v1.dat --num_data 4096 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/1024_v0.dat --num_data 1024 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/1024_v1.dat --num_data 1024 --seed 1; \
+    python testvectors/gen_glb_test.py --data testvectors/3844_v0.dat --num_data 3844 --seed 0; \
+    python testvectors/gen_glb_test.py --data testvectors/3844_v0_b5.dat --num_data 3844 --seed 0 --num_blocks 5;
 
 XRUN = xrun \
 	   -64bit \
@@ -118,7 +133,7 @@ rtl:
 # -------------------------------------------------------------------
 # Compile & Run
 # -------------------------------------------------------------------
-COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=$(CLK_SRC_LATENCY_TIMEUNIT) 
+COMPILE_RTL_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=0ps 
 COMPILE_GLS_ARGS += +define+CLK_PERIOD=$(CLK_PERIOD_TIMEUNIT) +define+TIMEUNIT=$(TIMEUNIT) +define+TIMEPRECISION=$(TIMEPRECISION) +define+CLK_SRC_LATENCY=$(CLK_SRC_LATENCY_TIMEUNIT) 
 ifeq ($(TOOL), XCELIUM)
     COMPILE = $(XRUN)
@@ -139,9 +154,9 @@ else
 endif
 
 ifeq ($(TOOL), XCELIUM)
-	DUMP_ARGS = -input sim/dump_shm.tcl
+	DUMP_ARGS = -input $(SIM)/dump_shm.tcl
 else ifeq ($(TOOL), VCS)
-	DUMP_ARGS = -ucli -i sim/dump_fsdb.tcl
+	DUMP_ARGS = -ucli -i $(SIM)/dump_fsdb.tcl
 endif
 
 ifneq ($(SDF), 0)

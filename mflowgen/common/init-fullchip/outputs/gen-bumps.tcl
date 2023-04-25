@@ -8,7 +8,7 @@
 setNanoRouteMode -routeInsertAntennaDiode true
 
 # set_db route_design_antenna_cell_name ANTENNABWP16P90 
-setNanoRouteMode -routeAntennaCellName ANTENNABWP16P90 
+setNanoRouteMode -routeAntennaCellName $ADK_ANTENNA_CELL
 
 # set_db route_design_fix_top_layer_antenna true
 # FIXME CANNOT FIND COMMON UI EQUIVALENT FOR THIS
@@ -49,13 +49,14 @@ proc bumps_of_type {bump_array type} {
     }
     return $bump_list
 }
-proc gen_bumps {} {
+# bumpCell: name of bump cell from ADK
+proc gen_bumps { bumpCell } {
     set core_fp_width 4900
     set core_fp_height 4900
-    set bumpCell PAD85APB_LF_BU
     set io_root IOPAD
     set nb 26
-    set bp 173.470; # 170 / 98%
+    #set bp 173.470; # 170 / 98%
+    set bp 170; # bump pitch with no shrink
     set bump_array_width [expr ($nb - 1) * $bp]
     set bofsW [expr ($core_fp_width - $bump_array_width) / 2.0]
     set bofsS [expr ($core_fp_height - $bump_array_width) / 2.0]
@@ -152,14 +153,9 @@ proc gen_bumps {} {
     select_bumps -bumps [bumps_of_type $bump_types "g"]
     assign_signal_to_bump -selected -net VSS 
 
-    # sr 1910 This is the original code. Looks like a VDD->VSS short to me!!!
-    # sr 1911 Okay never mind, it goes to the VSS *port* of the VDD pad I guess.
+    # Assign VSS bumps to VSS pads
     assign_bumps -multi_bumps_to_multi_pads -selected -pg_only \
-        -pg_nets VSS -pg_insts ${io_root}*VDDPST_* \
-        -exclude_region {1050 1050 3840 3840}
-
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only \
-        -pg_nets VSS -pg_insts ${io_root}*VDD_* \
+        -pg_nets VSS -pg_insts ${io_root}*VSS* \
         -exclude_region {1050 1050 3840 3840}
 
     #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only
@@ -177,7 +173,7 @@ proc gen_bumps {} {
     deselect_bumps
     select_bumps -bumps [bumps_of_type $bump_types "o"]
     assign_signal_to_bump -selected -net VDDPST
-    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDDPST -pg_insts ${io_root}*VDDPST_*  -exclude_region {1050 1050 3840 3840}
+    assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDDPST -pg_insts ${io_root}*VDDIO*  -exclude_region {1050 1050 3840 3840}
     #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDDPST -pg_insts ${io_root}*VDDPSTANA_*  -exclude_region {1050 1050 3840 3840}
 
     # sr 1911: **WARN: (IMPSIP-7355):  PG net 'VDD' is dangling.
@@ -189,20 +185,9 @@ proc gen_bumps {} {
     #assign_bumps -multi_bumps_to_multi_pads -selected -pg_only -pg_nets VDD -pg_insts ${io_root}*VDDANA_*  -exclude_region {1050 1050 3840 3840}
 
     ########################################################################
-    # SIGNAL BUMP ASSIGNMENTS - automatically mostly,
-    # except for a couple special assignments for the PHY...
+    # SIGNAL BUMP ASSIGNMENTS - automatically
     # Ugh yes it's a mixture of stylus and legacy commands :( :(
 
-    # On special assignment from the analog guys...
-    # two new digital signals for the phy with specific bumps requested
-    # FIXME/TODO should do this for all the analog signals (i.e. jtag)
-    # you know build an array or a dictionary or sumpm
-    set cross_bump Bump_620.24.22; set cross_net pad_freq_lvl_cross
-    set ramp_bump  Bump_647.25.23; set ramp_net  pad_ramp_clock
-    
-    assignSigToBump -net $cross_net -bumps $cross_bump
-    assignSigToBump -net $ramp_net  -bumps $ramp_bump
-    
     # Select all signal bumps
     deselect_bump
     select_bump -bumps [bumps_of_type $bump_types "s"]
@@ -219,15 +204,33 @@ proc gen_bumps {} {
     select_bumps -bumps [bumps_of_type $bump_types "4"]
     select_bumps -bumps [bumps_of_type $bump_types "5"]
     select_bumps -bumps [bumps_of_type $bump_types "6"]
-    assign_signal_to_bump -selected -net VDD 
+    assign_signal_to_bump -selected -net VDD
+    
+    # Assign ESD label to all power/ground bumps
+    select_bumps -bumps [bumps_of_type $bump_types "g"]
+    foreach bump_center [dbGet selected.bump_shape_center] {
+      add_gui_text -label HC_POWER_ESD -pt $bump_center -layer LBESD -height 1
+    }
     deselect_bumps
 
     # voltage labels to prevent DRCs
     foreach bump_center [dbGet top.bumps.bump_shape_center] {
-      add_gui_text -label 0 -pt $bump_center -layer CUSTOM_AP_test4 -height 1
-      add_gui_text -label 0.8 -pt $bump_center -layer CUSTOM_AP_test3 -height 1
+      add_gui_text -label 0 -pt $bump_center -layer CUSTOM_LB_test4 -height 1
+      add_gui_text -label 0.8 -pt $bump_center -layer CUSTOM_LB_test3 -height 1
+      # Block VV at LV area of bump
+      set center_x [lindex $bump_center 0]
+      set center_y [lindex $bump_center 1]
+      # Create square blockage with side length "blk_size" centered on bump
+      set blk_size 70.0
+      set blk_llx [expr $center_x - ($blk_size / 2)]
+      set blk_lly [expr $center_y - ($blk_size / 2)]
+      set blk_urx [expr $center_x + ($blk_size / 2)]
+      set blk_ury [expr $center_y + ($blk_size / 2)]
+      createRouteBlk \
+        -layer VV \
+        -box $blk_llx $blk_lly $blk_urx $blk_ury 
     }
 
     gui_show_bump_connections
 }
-gen_bumps
+gen_bumps $ADK_BUMP_CELL

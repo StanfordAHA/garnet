@@ -1,84 +1,84 @@
 module tb_Tile_PE();
-  reg [15:0] SB_T0_EAST_SB_IN_B16;
+  reg [16:0] SB_T0_EAST_SB_IN_B17;
   reg [0:0] SB_T0_EAST_SB_IN_B1;
   reg [0:0] SB_T0_EAST_SB_OUT_B1;
-  reg [15:0] SB_T0_EAST_SB_OUT_B16;
-  reg [15:0] SB_T0_NORTH_SB_IN_B16;
+  reg [16:0] SB_T0_EAST_SB_OUT_B17;
+  reg [16:0] SB_T0_NORTH_SB_IN_B17;
   reg [0:0] SB_T0_NORTH_SB_IN_B1;
   reg [0:0] SB_T0_NORTH_SB_OUT_B1;
-  reg [15:0] SB_T0_NORTH_SB_OUT_B16;
-  reg [15:0] SB_T0_SOUTH_SB_IN_B16;
+  reg [16:0] SB_T0_NORTH_SB_OUT_B17;
+  reg [16:0] SB_T0_SOUTH_SB_IN_B17;
   reg [0:0] SB_T0_SOUTH_SB_IN_B1;
   reg [0:0] SB_T0_SOUTH_SB_OUT_B1;
-  reg [15:0] SB_T0_SOUTH_SB_OUT_B16;
-  reg [15:0] SB_T0_WEST_SB_IN_B16;
+  reg [16:0] SB_T0_SOUTH_SB_OUT_B17;
+  reg [16:0] SB_T0_WEST_SB_IN_B17;
   reg [0:0] SB_T0_WEST_SB_IN_B1;
   reg [0:0] SB_T0_WEST_SB_OUT_B1;
-  reg [15:0] SB_T0_WEST_SB_OUT_B16;
-  reg [15:0] SB_T1_EAST_SB_IN_B16;
+  reg [16:0] SB_T0_WEST_SB_OUT_B17;
+  reg [16:0] SB_T1_EAST_SB_IN_B17;
   reg [0:0] SB_T1_EAST_SB_IN_B1;
   reg [0:0] SB_T1_EAST_SB_OUT_B1;
-  reg [15:0] SB_T1_EAST_SB_OUT_B16;
-  reg [15:0] SB_T1_NORTH_SB_IN_B16;
+  reg [16:0] SB_T1_EAST_SB_OUT_B17;
+  reg [16:0] SB_T1_NORTH_SB_IN_B17;
   reg [0:0] SB_T1_NORTH_SB_IN_B1;
   reg [0:0] SB_T1_NORTH_SB_OUT_B1;
-  reg [15:0] SB_T1_NORTH_SB_OUT_B16;
-  reg [15:0] SB_T1_SOUTH_SB_IN_B16;
+  reg [16:0] SB_T1_NORTH_SB_OUT_B17;
+  reg [16:0] SB_T1_SOUTH_SB_IN_B17;
   reg [0:0] SB_T1_SOUTH_SB_IN_B1;
   reg [0:0] SB_T1_SOUTH_SB_OUT_B1;
-  reg [15:0] SB_T1_SOUTH_SB_OUT_B16;
-  reg [15:0] SB_T1_WEST_SB_IN_B16;
+  reg [16:0] SB_T1_SOUTH_SB_OUT_B17;
+  reg [16:0] SB_T1_WEST_SB_IN_B17;
   reg [0:0] SB_T1_WEST_SB_IN_B1;
   reg [0:0] SB_T1_WEST_SB_OUT_B1;
-  reg [15:0] SB_T1_WEST_SB_OUT_B16;
-  reg [15:0] SB_T2_EAST_SB_IN_B16;
+  reg [16:0] SB_T1_WEST_SB_OUT_B17;
+  reg [16:0] SB_T2_EAST_SB_IN_B17;
   reg [0:0] SB_T2_EAST_SB_IN_B1;
   reg [0:0] SB_T2_EAST_SB_OUT_B1;
-  reg [15:0] SB_T2_EAST_SB_OUT_B16;
-  reg [15:0] SB_T2_NORTH_SB_IN_B16;
+  reg [16:0] SB_T2_EAST_SB_OUT_B17;
+  reg [16:0] SB_T2_NORTH_SB_IN_B17;
   reg [0:0] SB_T2_NORTH_SB_IN_B1;
   reg [0:0] SB_T2_NORTH_SB_OUT_B1;
-  reg [15:0] SB_T2_NORTH_SB_OUT_B16;
-  reg [15:0] SB_T2_SOUTH_SB_IN_B16;
+  reg [16:0] SB_T2_NORTH_SB_OUT_B17;
+  reg [16:0] SB_T2_SOUTH_SB_IN_B17;
   reg [0:0] SB_T2_SOUTH_SB_IN_B1;
   reg [0:0] SB_T2_SOUTH_SB_OUT_B1;
-  reg [15:0] SB_T2_SOUTH_SB_OUT_B16;
-  reg [15:0] SB_T2_WEST_SB_IN_B16;
+  reg [16:0] SB_T2_SOUTH_SB_OUT_B17;
+  reg [16:0] SB_T2_WEST_SB_IN_B17;
   reg [0:0] SB_T2_WEST_SB_IN_B1;
   reg [0:0] SB_T2_WEST_SB_OUT_B1;
-  reg [15:0] SB_T2_WEST_SB_OUT_B16;
-  reg [15:0] SB_T3_EAST_SB_IN_B16;
+  reg [16:0] SB_T2_WEST_SB_OUT_B17;
+  reg [16:0] SB_T3_EAST_SB_IN_B17;
   reg [0:0] SB_T3_EAST_SB_IN_B1;
   reg [0:0] SB_T3_EAST_SB_OUT_B1;
-  reg [15:0] SB_T3_EAST_SB_OUT_B16;
-  reg [15:0] SB_T3_NORTH_SB_IN_B16;
+  reg [16:0] SB_T3_EAST_SB_OUT_B17;
+  reg [16:0] SB_T3_NORTH_SB_IN_B17;
   reg [0:0] SB_T3_NORTH_SB_IN_B1;
   reg [0:0] SB_T3_NORTH_SB_OUT_B1;
-  reg [15:0] SB_T3_NORTH_SB_OUT_B16;
-  reg [15:0] SB_T3_SOUTH_SB_IN_B16;
+  reg [16:0] SB_T3_NORTH_SB_OUT_B17;
+  reg [16:0] SB_T3_SOUTH_SB_IN_B17;
   reg [0:0] SB_T3_SOUTH_SB_IN_B1;
   reg [0:0] SB_T3_SOUTH_SB_OUT_B1;
-  reg [15:0] SB_T3_SOUTH_SB_OUT_B16;
-  reg [15:0] SB_T3_WEST_SB_IN_B16;
+  reg [16:0] SB_T3_SOUTH_SB_OUT_B17;
+  reg [16:0] SB_T3_WEST_SB_IN_B17;
   reg [0:0] SB_T3_WEST_SB_IN_B1;
   reg [0:0] SB_T3_WEST_SB_OUT_B1;
-  reg [15:0] SB_T3_WEST_SB_OUT_B16;
-  reg [15:0] SB_T4_EAST_SB_IN_B16;
+  reg [16:0] SB_T3_WEST_SB_OUT_B17;
+  reg [16:0] SB_T4_EAST_SB_IN_B17;
   reg [0:0] SB_T4_EAST_SB_IN_B1;
   reg [0:0] SB_T4_EAST_SB_OUT_B1;
-  reg [15:0] SB_T4_EAST_SB_OUT_B16;
-  reg [15:0] SB_T4_NORTH_SB_IN_B16;
+  reg [16:0] SB_T4_EAST_SB_OUT_B17;
+  reg [16:0] SB_T4_NORTH_SB_IN_B17;
   reg [0:0] SB_T4_NORTH_SB_IN_B1;
   reg [0:0] SB_T4_NORTH_SB_OUT_B1;
-  reg [15:0] SB_T4_NORTH_SB_OUT_B16;
-  reg [15:0] SB_T4_SOUTH_SB_IN_B16;
+  reg [16:0] SB_T4_NORTH_SB_OUT_B17;
+  reg [16:0] SB_T4_SOUTH_SB_IN_B17;
   reg [0:0] SB_T4_SOUTH_SB_IN_B1;
   reg [0:0] SB_T4_SOUTH_SB_OUT_B1;
-  reg [15:0] SB_T4_SOUTH_SB_OUT_B16;
-  reg [15:0] SB_T4_WEST_SB_IN_B16;
+  reg [16:0] SB_T4_SOUTH_SB_OUT_B17;
+  reg [16:0] SB_T4_WEST_SB_IN_B17;
   reg [0:0] SB_T4_WEST_SB_IN_B1;
   reg [0:0] SB_T4_WEST_SB_OUT_B1;
-  reg [15:0] SB_T4_WEST_SB_OUT_B16;
+  reg [16:0] SB_T4_WEST_SB_OUT_B17;
   reg  clk;
   reg  clk_out;
   reg clk_pass_through;
@@ -173,8 +173,7 @@ module tb_Tile_PE();
       #1 $display("==== TEST2: DISABLE TILE  ======");
       #1 $display("===================================");   
       #1 $display("------------PS REGISTER DISABLE:--------------");
-      // Hacky script 'assign-pdcr-address.sh' must insert address below
-      #1 config_config_addr = 32'h___PDCONFIG_ADDR___;
+      #1 config_config_addr = 32'h000F0000;
       #1 config_config_data = 32'h00000001;
     
       // Set tile_id through the hi/lo pins
@@ -247,8 +246,7 @@ module tb_Tile_PE();
       #1 $display("===================================");
       #1 $display("------------PS REGISTER DISABLE:--------------");
        #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.config_config_addr);
-      // Hacky script 'assign-pdcr-address.sh' must insert address below
-      #1 config_config_addr = 32'h___PDCONFIG_ADDR___;
+      #1 config_config_addr = 32'h000F0000;
       #1 config_config_data = 32'h0;
        #1 $display("reset signal value = %h", dut.PowerDomainConfigReg_inst0.config_config_addr);
       #1 config_write = 1;
@@ -284,8 +282,7 @@ module tb_Tile_PE();
       #1 $display("-----DISABLE TILE and CHECK IF GLOBAL SIGNALS STILL ON--------");
       #1 $display("tile_id after shutdown = %h", tile_id);
       #1 $display("lo after shutdown = %h", lo);  
-      // Hacky script 'assign-pdcr-address.sh' must insert address below
-      #1 config_config_addr = 32'h___PDCONFIG_ADDR___;
+      #1 config_config_addr = 32'h000F0000;
       #1 config_config_data = 32'h00000001;
       #1 config_write = 1;
       #1 config_read = 0;
@@ -366,8 +363,7 @@ module tb_Tile_PE();
       #1 $display("===================================");
 
       #1 config_write = 1;
-      // Hacky script 'assign-pdcr-address.sh' must insert address below
-      #1 config_config_addr = 32'h___PDCONFIG_ADDR___;
+      #1 config_config_addr = 32'h000F0000;
       #1 config_config_data = 32'h0;
       #1 config_read = 0;
       #1 stall = 0;
@@ -391,8 +387,7 @@ module tb_Tile_PE();
       #1 $display("\n===================================");
       #1 $display("==== TEST 8 - AOI-CONST-MUX OUT CHECKS  ======");
       #1 $display("==================================="); 
-      // Hacky script 'assign-pdcr-address.sh' must insert address below
-      #1 config_config_addr = 32'h___PDCONFIG_ADDR___;
+      #1 config_config_addr = 32'h000D0000;
       #1 config_config_data = 32'h0;
       #1 config_write = 1;
       #1 $display("VDD = %h", VDD);
@@ -441,92 +436,92 @@ module tb_Tile_PE();
       //#1 config_config_addr = 32'h00070008;
       //#1 config_config_data = 32'd1;
       //#1 config_write = 1;
-      //#1 $display("Sel = %d", dut.SB_ID0_5TRACKS_B16_PE.MUX_SB_T0_EAST_SB_OUT_B16.mux_aoi_4_16_inst0.O);
-      //#1 assert (dut.SB_ID0_5TRACKS_B16_PE.MUX_SB_T0_EAST_SB_OUT_B16.mux_aoi_4_16_inst0.O == 0) $display ("ASSERTION 6 PASS: Constant mux output generated when sel==height");
+      //#1 $display("Sel = %d", dut.SB_ID0_5TRACKS_B17_PE.MUX_SB_T0_EAST_SB_OUT_B17.mux_aoi_4_16_inst0.O);
+      //#1 assert (dut.SB_ID0_5TRACKS_B17_PE.MUX_SB_T0_EAST_SB_OUT_B17.mux_aoi_4_16_inst0.O == 0) $display ("ASSERTION 6 PASS: Constant mux output generated when sel==height");
 */
 end
 
   Tile_PE dut(
-    .SB_T0_EAST_SB_IN_B16(SB_T0_EAST_SB_IN_B16),
+    .SB_T0_EAST_SB_IN_B17(SB_T0_EAST_SB_IN_B17),
     .SB_T0_EAST_SB_IN_B1(SB_T0_EAST_SB_IN_B1),
     .SB_T0_EAST_SB_OUT_B1(SB_T0_EAST_SB_OUT_B1),
-    .SB_T0_EAST_SB_OUT_B16(SB_T0_EAST_SB_OUT_B16),
-    .SB_T0_NORTH_SB_IN_B16(SB_T0_NORTH_SB_IN_B16),
+    .SB_T0_EAST_SB_OUT_B17(SB_T0_EAST_SB_OUT_B17),
+    .SB_T0_NORTH_SB_IN_B17(SB_T0_NORTH_SB_IN_B17),
     .SB_T0_NORTH_SB_IN_B1(SB_T0_NORTH_SB_IN_B1),
     .SB_T0_NORTH_SB_OUT_B1(SB_T0_NORTH_SB_OUT_B1),
-    .SB_T0_NORTH_SB_OUT_B16(SB_T0_NORTH_SB_OUT_B16),
-    .SB_T0_SOUTH_SB_IN_B16(SB_T0_SOUTH_SB_IN_B16),
+    .SB_T0_NORTH_SB_OUT_B17(SB_T0_NORTH_SB_OUT_B17),
+    .SB_T0_SOUTH_SB_IN_B17(SB_T0_SOUTH_SB_IN_B17),
     .SB_T0_SOUTH_SB_IN_B1(SB_T0_SOUTH_SB_IN_B1),
     .SB_T0_SOUTH_SB_OUT_B1(SB_T0_SOUTH_SB_OUT_B1),
-    .SB_T0_SOUTH_SB_OUT_B16(SB_T0_SOUTH_SB_OUT_B16),
-    .SB_T0_WEST_SB_IN_B16(SB_T0_WEST_SB_IN_B16),
+    .SB_T0_SOUTH_SB_OUT_B17(SB_T0_SOUTH_SB_OUT_B17),
+    .SB_T0_WEST_SB_IN_B17(SB_T0_WEST_SB_IN_B17),
     .SB_T0_WEST_SB_IN_B1(SB_T0_WEST_SB_IN_B1),
     .SB_T0_WEST_SB_OUT_B1(SB_T0_WEST_SB_OUT_B1),
-    .SB_T0_WEST_SB_OUT_B16(SB_T0_WEST_SB_OUT_B16),
-    .SB_T1_EAST_SB_IN_B16(SB_T1_EAST_SB_IN_B16),
+    .SB_T0_WEST_SB_OUT_B17(SB_T0_WEST_SB_OUT_B17),
+    .SB_T1_EAST_SB_IN_B17(SB_T1_EAST_SB_IN_B17),
     .SB_T1_EAST_SB_IN_B1(SB_T1_EAST_SB_IN_B1),
     .SB_T1_EAST_SB_OUT_B1(SB_T1_EAST_SB_OUT_B1),
-    .SB_T1_EAST_SB_OUT_B16(SB_T1_EAST_SB_OUT_B16),
-    .SB_T1_NORTH_SB_IN_B16(SB_T1_NORTH_SB_IN_B16),
+    .SB_T1_EAST_SB_OUT_B17(SB_T1_EAST_SB_OUT_B17),
+    .SB_T1_NORTH_SB_IN_B17(SB_T1_NORTH_SB_IN_B17),
     .SB_T1_NORTH_SB_IN_B1(SB_T1_NORTH_SB_IN_B1),
     .SB_T1_NORTH_SB_OUT_B1(SB_T1_NORTH_SB_OUT_B1),
-    .SB_T1_NORTH_SB_OUT_B16(SB_T1_NORTH_SB_OUT_B16),
-    .SB_T1_SOUTH_SB_IN_B16(SB_T1_SOUTH_SB_IN_B16),
+    .SB_T1_NORTH_SB_OUT_B17(SB_T1_NORTH_SB_OUT_B17),
+    .SB_T1_SOUTH_SB_IN_B17(SB_T1_SOUTH_SB_IN_B17),
     .SB_T1_SOUTH_SB_IN_B1(SB_T1_SOUTH_SB_IN_B1),
     .SB_T1_SOUTH_SB_OUT_B1(SB_T1_SOUTH_SB_OUT_B1),
-    .SB_T1_SOUTH_SB_OUT_B16(SB_T1_SOUTH_SB_OUT_B16),
-    .SB_T1_WEST_SB_IN_B16(SB_T1_WEST_SB_IN_B16),
+    .SB_T1_SOUTH_SB_OUT_B17(SB_T1_SOUTH_SB_OUT_B17),
+    .SB_T1_WEST_SB_IN_B17(SB_T1_WEST_SB_IN_B17),
     .SB_T1_WEST_SB_IN_B1(SB_T1_WEST_SB_IN_B1),
     .SB_T1_WEST_SB_OUT_B1(SB_T1_WEST_SB_OUT_B1),
-    .SB_T1_WEST_SB_OUT_B16(SB_T1_WEST_SB_OUT_B16),
-    .SB_T2_EAST_SB_IN_B16(SB_T2_EAST_SB_IN_B16),
+    .SB_T1_WEST_SB_OUT_B17(SB_T1_WEST_SB_OUT_B17),
+    .SB_T2_EAST_SB_IN_B17(SB_T2_EAST_SB_IN_B17),
     .SB_T2_EAST_SB_IN_B1(SB_T2_EAST_SB_IN_B1),
     .SB_T2_EAST_SB_OUT_B1(SB_T2_EAST_SB_OUT_B1),
-    .SB_T2_EAST_SB_OUT_B16(SB_T2_EAST_SB_OUT_B16),
-    .SB_T2_NORTH_SB_IN_B16(SB_T2_NORTH_SB_IN_B16),
+    .SB_T2_EAST_SB_OUT_B17(SB_T2_EAST_SB_OUT_B17),
+    .SB_T2_NORTH_SB_IN_B17(SB_T2_NORTH_SB_IN_B17),
     .SB_T2_NORTH_SB_IN_B1(SB_T2_NORTH_SB_IN_B1),
     .SB_T2_NORTH_SB_OUT_B1(SB_T2_NORTH_SB_OUT_B1),
-    .SB_T2_NORTH_SB_OUT_B16(SB_T2_NORTH_SB_OUT_B16),
-    .SB_T2_SOUTH_SB_IN_B16(SB_T2_SOUTH_SB_IN_B16),
+    .SB_T2_NORTH_SB_OUT_B17(SB_T2_NORTH_SB_OUT_B17),
+    .SB_T2_SOUTH_SB_IN_B17(SB_T2_SOUTH_SB_IN_B17),
     .SB_T2_SOUTH_SB_IN_B1(SB_T2_SOUTH_SB_IN_B1),
     .SB_T2_SOUTH_SB_OUT_B1(SB_T2_SOUTH_SB_OUT_B1),
-    .SB_T2_SOUTH_SB_OUT_B16(SB_T2_SOUTH_SB_OUT_B16),
-    .SB_T2_WEST_SB_IN_B16(SB_T2_WEST_SB_IN_B16),
+    .SB_T2_SOUTH_SB_OUT_B17(SB_T2_SOUTH_SB_OUT_B17),
+    .SB_T2_WEST_SB_IN_B17(SB_T2_WEST_SB_IN_B17),
     .SB_T2_WEST_SB_IN_B1(SB_T2_WEST_SB_IN_B1),
     .SB_T2_WEST_SB_OUT_B1(SB_T2_WEST_SB_OUT_B1),
-    .SB_T2_WEST_SB_OUT_B16(SB_T2_WEST_SB_OUT_B16),
-    .SB_T3_EAST_SB_IN_B16(SB_T3_EAST_SB_IN_B16),
+    .SB_T2_WEST_SB_OUT_B17(SB_T2_WEST_SB_OUT_B17),
+    .SB_T3_EAST_SB_IN_B17(SB_T3_EAST_SB_IN_B17),
     .SB_T3_EAST_SB_IN_B1(SB_T3_EAST_SB_IN_B1),
     .SB_T3_EAST_SB_OUT_B1(SB_T3_EAST_SB_OUT_B1),
-    .SB_T3_EAST_SB_OUT_B16(SB_T3_EAST_SB_OUT_B16),
-    .SB_T3_NORTH_SB_IN_B16(SB_T3_NORTH_SB_IN_B16),
+    .SB_T3_EAST_SB_OUT_B17(SB_T3_EAST_SB_OUT_B17),
+    .SB_T3_NORTH_SB_IN_B17(SB_T3_NORTH_SB_IN_B17),
     .SB_T3_NORTH_SB_IN_B1(SB_T3_NORTH_SB_IN_B1),
     .SB_T3_NORTH_SB_OUT_B1(SB_T3_NORTH_SB_OUT_B1),
-    .SB_T3_NORTH_SB_OUT_B16(SB_T3_NORTH_SB_OUT_B16),
-    .SB_T3_SOUTH_SB_IN_B16(SB_T3_SOUTH_SB_IN_B16),
+    .SB_T3_NORTH_SB_OUT_B17(SB_T3_NORTH_SB_OUT_B17),
+    .SB_T3_SOUTH_SB_IN_B17(SB_T3_SOUTH_SB_IN_B17),
     .SB_T3_SOUTH_SB_IN_B1(SB_T3_SOUTH_SB_IN_B1),
     .SB_T3_SOUTH_SB_OUT_B1(SB_T3_SOUTH_SB_OUT_B1),
-    .SB_T3_SOUTH_SB_OUT_B16(SB_T3_SOUTH_SB_OUT_B16),
-    .SB_T3_WEST_SB_IN_B16(SB_T3_WEST_SB_IN_B16),
+    .SB_T3_SOUTH_SB_OUT_B17(SB_T3_SOUTH_SB_OUT_B17),
+    .SB_T3_WEST_SB_IN_B17(SB_T3_WEST_SB_IN_B17),
     .SB_T3_WEST_SB_IN_B1(SB_T3_WEST_SB_IN_B1),
     .SB_T3_WEST_SB_OUT_B1(SB_T3_WEST_SB_OUT_B1),
-    .SB_T3_WEST_SB_OUT_B16(SB_T3_WEST_SB_OUT_B16),
-    .SB_T4_EAST_SB_IN_B16(SB_T4_EAST_SB_IN_B16),
+    .SB_T3_WEST_SB_OUT_B17(SB_T3_WEST_SB_OUT_B17),
+    .SB_T4_EAST_SB_IN_B17(SB_T4_EAST_SB_IN_B17),
     .SB_T4_EAST_SB_IN_B1(SB_T4_EAST_SB_IN_B1),
     .SB_T4_EAST_SB_OUT_B1(SB_T4_EAST_SB_OUT_B1),
-    .SB_T4_EAST_SB_OUT_B16(SB_T4_EAST_SB_OUT_B16),
-    .SB_T4_NORTH_SB_IN_B16(SB_T4_NORTH_SB_IN_B16),
+    .SB_T4_EAST_SB_OUT_B17(SB_T4_EAST_SB_OUT_B17),
+    .SB_T4_NORTH_SB_IN_B17(SB_T4_NORTH_SB_IN_B17),
     .SB_T4_NORTH_SB_IN_B1(SB_T4_NORTH_SB_IN_B1),
     .SB_T4_NORTH_SB_OUT_B1(SB_T4_NORTH_SB_OUT_B1),
-    .SB_T4_NORTH_SB_OUT_B16(SB_T4_NORTH_SB_OUT_B16),
-    .SB_T4_SOUTH_SB_IN_B16(SB_T4_SOUTH_SB_IN_B16),
+    .SB_T4_NORTH_SB_OUT_B17(SB_T4_NORTH_SB_OUT_B17),
+    .SB_T4_SOUTH_SB_IN_B17(SB_T4_SOUTH_SB_IN_B17),
     .SB_T4_SOUTH_SB_IN_B1(SB_T4_SOUTH_SB_IN_B1),
     .SB_T4_SOUTH_SB_OUT_B1(SB_T4_SOUTH_SB_OUT_B1),
-    .SB_T4_SOUTH_SB_OUT_B16(SB_T4_SOUTH_SB_OUT_B16),
-    .SB_T4_WEST_SB_IN_B16(SB_T4_WEST_SB_IN_B16),
+    .SB_T4_SOUTH_SB_OUT_B17(SB_T4_SOUTH_SB_OUT_B17),
+    .SB_T4_WEST_SB_IN_B17(SB_T4_WEST_SB_IN_B17),
     .SB_T4_WEST_SB_IN_B1(SB_T4_WEST_SB_IN_B1),
     .SB_T4_WEST_SB_OUT_B1(SB_T4_WEST_SB_OUT_B1),
-    .SB_T4_WEST_SB_OUT_B16(SB_T4_WEST_SB_OUT_B16),
+    .SB_T4_WEST_SB_OUT_B17(SB_T4_WEST_SB_OUT_B17),
     .clk(clk),
     .clk_out(clk_out),
     .clk_pass_through(clk_pass_through),

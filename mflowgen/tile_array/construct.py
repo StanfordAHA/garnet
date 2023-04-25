@@ -24,15 +24,27 @@ def construct():
   adk_name = get_sys_adk()
   adk_view = 'multivt'
 
+  if adk_name == 'tsmc16':
+      read_hdl_defines = 'TSMC16'
+  elif adk_name == 'gf12-adk':
+      read_hdl_defines = 'GF12'
+  else:
+      read_hdl_defines = ''
+
+  # TSMC override(s)
+  if adk_name == 'tsmc16': which_soc = 'amber'
+  else:                    which_soc = 'onyx'
+
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 1.1,
+    'clock_period'      : 1.0,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : True,
+    'read_hdl_defines'  : read_hdl_defines,
     # RTL Generation
     'array_width'       : 32,
     'array_height'      : 16,
@@ -42,7 +54,7 @@ def construct():
     # Useful Skew (CTS)
     'useful_skew'       : False,
     # hold target slack
-    'hold_target_slack' : 0.015,
+    'hold_target_slack' : 0.07,
     # Pipeline stage insertion
     'pipeline_config_interval': 8,
     'pipeline_stage_height': 30,
@@ -51,7 +63,25 @@ def construct():
     # I am defaulting to True because nothing is worse than finishing
     # a sim and needing the wave but not having it...
     'waves'             : True,
+    'drc_env_setup'     : 'drcenv-block.sh'
   }
+
+  if parameters['PWR_AWARE'] == True:
+      parameters['lvs_adk_view'] = adk_view + '-pm'
+  else:
+      parameters['lvs_adk_view'] = adk_view
+
+  # TSMC overrides
+  if adk_name == 'tsmc16': parameters.update({
+    'clock_period'      : 1.1,
+    'hold_target_slack' : 0.015,
+  })
+
+  # OG TSMC did not set read_hdl_defines etc.
+  if adk_name == 'tsmc16':
+    parameters.pop('read_hdl_defines')
+    parameters.pop('drc_env_setup')
+    parameters.pop('lvs_adk_view')
 
   #-----------------------------------------------------------------------
   # Create nodes
@@ -66,18 +96,30 @@ def construct():
 
   # Custom steps
 
-  rtl            = Step( this_dir + '/../common/rtl'                       )
-  Tile_MemCore   = Step( this_dir + '/Tile_MemCore'                        )
-  Tile_PE        = Step( this_dir + '/Tile_PE'                             )
-  constraints    = Step( this_dir + '/constraints'                         )
-  dc_postcompile = Step( this_dir + '/custom-dc-postcompile'               )
-  custom_init    = Step( this_dir + '/custom-init'                         )
-  custom_power   = Step( this_dir + '/../common/custom-power-hierarchical' )
-  custom_cts     = Step( this_dir + '/custom-cts-overrides'                )
-  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
-  gls_args       = Step( this_dir + '/gls_args'                            )
-  testbench      = Step( this_dir + '/testbench'                           )
-  lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'        )
+  rtl            = Step( this_dir + '/../common/rtl'                          )
+  Tile_MemCore   = Step( this_dir + '/Tile_MemCore'                           )
+  Tile_PE        = Step( this_dir + '/Tile_PE'                                )
+  constraints    = Step( this_dir + '/constraints'                            )
+  dc_postcompile = Step( this_dir + '/custom-dc-postcompile'                  )
+
+  if adk_name == 'tsmc16':
+    custom_init    = Step( this_dir + '/custom-init-amber'      )
+  else:
+    custom_init    = Step( this_dir + '/custom-init'            )
+
+  custom_power   = Step( this_dir + '/../common/custom-power-hierarchical'    )
+  custom_cts     = Step( this_dir + '/custom-cts-overrides'                   )
+
+  if adk_name == 'tsmc16':
+    custom_lvs     = Step( this_dir + '/custom-lvs-rules-amber' )
+  else:
+    custom_lvs     = Step( this_dir + '/custom-lvs-rules'       )
+
+  gls_args       = Step( this_dir + '/gls_args'                               )
+  testbench      = Step( this_dir + '/testbench'                              )
+  lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
+  if which_soc == 'onyx':
+    drc_pm         = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
 
 
   # Default steps
@@ -97,8 +139,13 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  #genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
-  genlib         = Step( 'cadence-genus-genlib',           default=True )
+  if which_soc == 'onyx':
+    pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
+    genlib         = Step( 'cadence-innovus-genlib',         default=True )
+  else:
+    #genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
+    genlib         = Step( 'cadence-genus-genlib',           default=True )
+
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -108,6 +155,11 @@ def construct():
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
   vcs_sim        = Step( 'synopsys-vcs-sim',                default=True )
 
+  # Separate ADK for LVS so it has PM cells when needed
+  if which_soc == 'onyx':
+    lvs_adk = adk.clone()
+    lvs_adk.set_name( 'lvs_adk' )
+
   # Add cgra tile macro inputs to downstream nodes
 
   #dc.extend_inputs( ['Tile_PE.db'] )
@@ -116,10 +168,11 @@ def construct():
   synth.extend_inputs( ['Tile_MemCore_tt.lib'] )
   pt_signoff.extend_inputs( ['Tile_PE_tt.db'] )
   pt_signoff.extend_inputs( ['Tile_MemCore_tt.db'] )
-  #genlibdb.extend_inputs( ['Tile_PE.db'] )
   genlib.extend_inputs( ['Tile_PE_tt.lib'] )
-  #genlibdb.extend_inputs( ['Tile_MemCore.db'] )
   genlib.extend_inputs( ['Tile_MemCore_tt.lib'] )
+  if which_soc == 'onyx':
+    pt_genlibdb.extend_inputs( ['Tile_PE_tt.db'] )
+    pt_genlibdb.extend_inputs( ['Tile_MemCore_tt.db'] )
 
   e2e_apps = ["tests/conv_3_3", "apps/cascade", "apps/harris_auto", "apps/resnet_i1_o1_mem", "apps/resnet_i1_o1_pond"]
 
@@ -196,6 +249,12 @@ def construct():
 
   cts.extend_inputs( custom_cts.all_outputs() )
 
+  # TSMC needs streamout *without* the (new) default -uniquify flag
+  # This python script finds 'stream-out.tcl' and strips out that flag.
+  if adk_name == "tsmc16":
+    from common.streamout_no_uniquify import streamout_no_uniquify
+    streamout_no_uniquify(iflow)
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -230,6 +289,10 @@ def construct():
   g.add_step( gls_args       )
   g.add_step( testbench      )
   g.add_step( vcs_sim        )
+  if which_soc == "onyx":
+    g.add_step( pt_genlibdb    )
+    g.add_step( drc_pm         )
+    g.add_step( lvs_adk        )
 
   if use_e2e:
     for app in e2e_apps:
@@ -254,7 +317,12 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
-  g.connect_by_name( adk,      lvs            )
+
+  if which_soc == "onyx":
+    g.connect_by_name( adk,      drc_pm         )
+    g.connect_by_name( lvs_adk,  lvs            )
+  else:
+    g.connect_by_name( adk,      lvs            )
 
   if use_e2e:
     for app in e2e_apps:
@@ -292,7 +360,6 @@ def construct():
       g.connect_by_name( Tile_MemCore,      postroute_hold )
       g.connect_by_name( Tile_MemCore,      signoff        )
       g.connect_by_name( Tile_MemCore,      pt_signoff     )
-      #g.connect_by_name( Tile_MemCore,      genlibdb       )
       g.connect_by_name( Tile_MemCore,      genlib         )
       g.connect_by_name( Tile_MemCore,      drc            )
       g.connect_by_name( Tile_MemCore,      lvs            )
@@ -300,8 +367,10 @@ def construct():
       # only be used if memory tile is present
       g.connect_by_name( custom_lvs,        lvs            )
       g.connect_by_name( Tile_MemCore,      vcs_sim        )
+      if which_soc == "onyx":
+        g.connect_by_name( Tile_MemCore,      pt_genlibdb    )
+        g.connect_by_name( Tile_MemCore,      drc_pm         )
 
-  
   # inputs to Tile_PE
   g.connect_by_name( rtl, Tile_PE )
   # outputs from Tile_PE
@@ -318,10 +387,12 @@ def construct():
   g.connect_by_name( Tile_PE,      postroute_hold )
   g.connect_by_name( Tile_PE,      signoff        )
   g.connect_by_name( Tile_PE,      pt_signoff     )
-  #g.connect_by_name( Tile_PE,      genlibdb       )
   g.connect_by_name( Tile_PE,      genlib         )
   g.connect_by_name( Tile_PE,      drc            )
   g.connect_by_name( Tile_PE,      lvs            )
+  if which_soc == "onyx":
+    g.connect_by_name( Tile_PE,      pt_genlibdb    )
+    g.connect_by_name( Tile_PE,      drc_pm         )
 
   #g.connect_by_name( rtl,            dc        )
   #g.connect_by_name( constraints,    dc        )
@@ -354,6 +425,8 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
+  if which_soc == "onyx":
+    g.connect_by_name( iflow,    genlib         )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -371,14 +444,21 @@ def construct():
   g.connect_by_name( signoff,      lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
+  if which_soc == "onyx":
+    g.connect_by_name( signoff,      drc_pm         )
+    g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
-  
-  #g.connect_by_name( adk,          genlibdb   )
-  g.connect_by_name( adk,          genlib   )
-  #g.connect_by_name( signoff,      genlibdb   )
-  g.connect_by_name( signoff,      genlib   )
+
+  if which_soc == "onyx":
+    g.connect_by_name( adk,          pt_genlibdb )
+    g.connect_by_name( adk,          genlib      )
+    g.connect_by_name( signoff,      pt_genlibdb )
+    g.connect_by_name( signoff,      genlib      )
+  else:
+    g.connect_by_name( adk,          genlib   )
+    g.connect_by_name( signoff,      genlib   )
   
   g.connect_by_name( genlib,       lib2db   )
 
@@ -389,6 +469,8 @@ def construct():
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
+  if which_soc == "onyx":
+    g.connect_by_name( drc_pm,   debugcalibre )
 
   g.connect_by_name( adk,           vcs_sim )
   g.connect_by_name( testbench,     vcs_sim )
@@ -401,6 +483,10 @@ def construct():
   #-----------------------------------------------------------------------
 
   g.update_params( parameters )
+
+  # LVS adk has separate view parameter
+  if which_soc == "onyx":
+    lvs_adk.update_params({ 'adk_view' : parameters['lvs_adk_view']})
 
   # Init needs pipeline params for floorplanning
   init.update_params({ 'pipeline_config_interval': parameters['pipeline_config_interval'] }, True)
@@ -420,11 +506,12 @@ def construct():
   #dc.update_params( { 'order': order } )
   #synth.update_params( { 'order': order } )
 
-  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # pt_genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
   # very long and is not necessary
-  #order = genlibdb.get_param('order')
-  #order.remove( 'write-interface-timing.tcl' )
-  #genlibdb.update_params( { 'order': order } )
+  if which_soc == "onyx":
+    order = pt_genlibdb.get_param('order')
+    order.remove( 'write-interface-timing.tcl' )
+    pt_genlibdb.update_params( { 'order': order } )
 
   # init -- Add 'dont-touch.tcl' before reporting
 

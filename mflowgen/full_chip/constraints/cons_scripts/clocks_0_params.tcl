@@ -9,15 +9,19 @@
 #------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
-# Clock Period
-# ------------------------------------------------------------------------------
-
-set cgra_master_clk_period          ${clock_period}
-set soc_master_clk_period           1.0
-
-# ------------------------------------------------------------------------------
 # Clock Division Factors
 # ------------------------------------------------------------------------------
 
 set cgra_clk_div_factor             1
 set soc_clk_div_factor              2
+
+
+# ------------------------------------------------------------------------------
+# Clock Period
+# ------------------------------------------------------------------------------
+
+set cgra_master_clk_period          ${clock_period}
+set soc_master_clk_period           [expr $cgra_master_clk_period * $soc_clk_div_factor]
+set trace_clkin_period              20.0
+set xgcd_ext_clk_period             2.0
+set xgcd_design_clk_period          0.125

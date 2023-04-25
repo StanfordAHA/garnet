@@ -1,3 +1,16 @@
+# Add any netlist modifications/hacks necessary to make LVS pass here.
+# Alex: In the the past this was used for pad ring and dragonphy signals, but
+# I don't think we need it anymore
+
+# Default SoC is Onyx
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "onyx"
+}
+
+if { $WHICH_SOC == "amber" } {
+
 #netlist fixing for pad ring
 addNet ESD_0 -ground -physical
 addNet ESD_1 -ground -physical
@@ -125,3 +138,4 @@ foreach x [get_property [get_cells {*IOPAD*jtag_intf* *IOPAD*ext_rstb* *IOPAD_ex
   attachTerm -noNewPort $x RTE RTE_3
 }
 
+}

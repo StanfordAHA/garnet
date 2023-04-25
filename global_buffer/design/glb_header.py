@@ -1,10 +1,9 @@
-from kratos import PackedStruct, clog2
+import os
+from kratos import PackedStruct, clog2, enum
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
 class GlbHeader():
-    enum_cache = {}
-
     def __init__(self, _params: GlobalBufferParams):
         self._params = _params
 
@@ -16,27 +15,64 @@ class GlbHeader():
                                                [("tile_connected", 1),
                                                 ("latency", self._params.pcfg_latency_width)])
 
-        self.cfg_store_dma_ctrl_t = PackedStruct("store_dma_ctrl_t",
-                                                 [("mode", 2),
-                                                  ("use_valid", 1),
-                                                     ("data_mux", 2),
-                                                     ("num_repeat", clog2(self._params.queue_depth) + 1)])
+        if os.getenv('WHICH_SOC') == "amber":
+            self.cfg_store_dma_ctrl_t = PackedStruct("store_dma_ctrl_t",
+                                                     [("mode", 2),
+                                                      ("use_valid", 1),
+                                                         ("data_mux", 2),
+                                                         ("num_repeat", clog2(self._params.queue_depth) + 1)])
 
-        self.cfg_load_dma_ctrl_t = PackedStruct("load_dma_ctrl_t",
-                                                [("mode", 2),
-                                                 ("use_valid", 1),
-                                                 ("use_flush", 1),
-                                                    ("data_mux", 2),
-                                                    ("num_repeat", clog2(self._params.queue_depth) + 1)])
+            self.cfg_load_dma_ctrl_t = PackedStruct("load_dma_ctrl_t",
+                                                    [("mode", 2),
+                                                     ("use_valid", 1),
+                                                     ("use_flush", 1),
+                                                        ("data_mux", 2),
+                                                        ("num_repeat", clog2(self._params.queue_depth) + 1)])
 
-        dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
-                                  ("cycle_start_addr", self._params.cycle_count_width)]
-        dma_header_struct_list += [("dim", 1 + clog2(self._params.loop_level))]
-        for i in range(self._params.loop_level):
-            dma_header_struct_list += [(f"range_{i}", self._params.axi_data_width),
-                                       (f"stride_{i}", self._params.glb_addr_width + 1),
-                                       (f"cycle_stride_{i}", self._params.cycle_count_width)]
-        self.cfg_dma_header_t = PackedStruct("dma_header_t", dma_header_struct_list)
+            dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
+                                      ("cycle_start_addr", self._params.cycle_count_width)]
+            dma_header_struct_list += [("dim", 1 + clog2(self._params.loop_level))]
+            for i in range(self._params.loop_level):
+                dma_header_struct_list += [(f"range_{i}", self._params.axi_data_width),
+                                           (f"stride_{i}", self._params.glb_addr_width + 1),
+                                           (f"cycle_stride_{i}", self._params.cycle_count_width)]
+            self.cfg_dma_header_t = PackedStruct("dma_header_t", dma_header_struct_list)
+
+            # All headers same for amber version
+            self.cfg_load_dma_header_t = PackedStruct("dma_header_t", dma_header_struct_list)
+            self.cfg_store_dma_header_t = PackedStruct("dma_header_t", dma_header_struct_list)
+        else:
+            self.cfg_store_dma_ctrl_t = PackedStruct("store_dma_ctrl_t",
+                                                     [("mode", 2),
+                                                      ("valid_mode", 2),
+                                                         ("data_mux", 2),
+                                                         ("num_repeat", clog2(self._params.queue_depth) + 1)])
+
+            self.cfg_load_dma_ctrl_t = PackedStruct("load_dma_ctrl_t",
+                                                    [("mode", 2),
+                                                     ("valid_mode", 2),
+                                                     ("flush_mode", 1),
+                                                        ("data_mux", 2),
+                                                        ("num_repeat", clog2(self._params.queue_depth) + 1)])
+
+            load_dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
+                                           ("cycle_start_addr", self._params.cycle_count_width)]
+            load_dma_header_struct_list += [("dim", 1 + clog2(self._params.load_dma_loop_level))]
+            for i in range(self._params.load_dma_loop_level):
+                load_dma_header_struct_list += [(f"range_{i}", self._params.axi_data_width),
+                                                (f"stride_{i}", self._params.glb_addr_width + 1),
+                                                (f"cycle_stride_{i}", self._params.cycle_count_width)]
+            self.cfg_load_dma_header_t = PackedStruct("load_dma_header_t", load_dma_header_struct_list)
+
+            store_dma_header_struct_list = [("start_addr", self._params.glb_addr_width),
+                                            ("cycle_start_addr", self._params.cycle_count_width)]
+            store_dma_header_struct_list += [("dim", 1 + clog2(self._params.store_dma_loop_level))]
+            for i in range(self._params.store_dma_loop_level):
+                store_dma_header_struct_list += [(f"range_{i}", self._params.axi_data_width),
+                                                 (f"stride_{i}", self._params.glb_addr_width + 1),
+                                                 (f"cycle_stride_{i}", self._params.cycle_count_width)]
+            self.cfg_store_dma_header_t = PackedStruct("store_dma_header_t", store_dma_header_struct_list)
+
 
         # pcfg dma header
         self.cfg_pcfg_dma_ctrl_t = PackedStruct("pcfg_dma_ctrl_t",

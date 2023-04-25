@@ -35,6 +35,12 @@ echo ""
 # E.g. if address = 18 then vector = '00120000'
 addr=`echo $vn | awk '{printf("%04X0000", $0)}'`
 
+# Overwrite testbench with amber versions if needed (default is onyx version)
+if [ "$WHICH_SOC" == "amber" ]; then
+  cp amber/tb_Tile_PE.v .
+  cp amber/tb_Tile_MemCore.v .
+fi
+
 set -x
 mv tb_Tile_PE.v tb_Tile_PE.v.orig
 sed "s/___PDCONFIG_ADDR___/$addr/g" tb_Tile_PE.v.orig > tb_Tile_PE.v

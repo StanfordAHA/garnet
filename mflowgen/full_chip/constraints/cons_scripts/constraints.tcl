@@ -30,6 +30,7 @@ source -echo -verbose inputs/cons_scripts/clocks_4_cgra.tcl
 source -echo -verbose inputs/cons_scripts/clocks_5_periph.tcl
 source -echo -verbose inputs/cons_scripts/clocks_6_jtag.tcl
 source -echo -verbose inputs/cons_scripts/clocks_7_trace.tcl
+source -echo -verbose inputs/cons_scripts/clocks_8_xgcd.tcl
 
 # ------------------------------------------------------------------------------
 # IO Constraints for Source-Sync Interfaces

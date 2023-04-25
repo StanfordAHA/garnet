@@ -67,7 +67,10 @@ def construct():
 
   rtl            = Step( this_dir + '/../common/rtl'                       )
   soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                )
-  gen_sram       = Step( this_dir + '/../common/gen_sram_macro'            )
+  if adk_name == 'tsmc16':
+    gen_sram             = Step( this_dir + '/../common/gen_sram_macro_amber'   )
+  else:
+    gen_sram             = Step( this_dir + '/../common/gen_sram_macro'         )
   constraints    = Step( this_dir + '/constraints'                         )
   read_design    = Step( this_dir + '/../common/fc-custom-read-design'        )
   custom_lvs     = Step( this_dir + '/custom-lvs-rules'                    )
@@ -125,6 +128,11 @@ def construct():
 
   dc.extend_inputs( soc_rtl.all_outputs() )
   dc.extend_inputs( read_design.all_outputs() )
+
+  # TSMC needs streamout *without* the (new) default -uniquify flag
+  # This python method finds 'stream-out.tcl' and strips out that flag.
+  from common.streamout_no_uniquify import streamout_no_uniquify
+  if adk_name == "tsmc16": streamout_no_uniquify(iflow)
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes

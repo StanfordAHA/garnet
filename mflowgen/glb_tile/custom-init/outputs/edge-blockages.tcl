@@ -17,7 +17,7 @@ set urx [dbGet top.fPlan.box_urx]
 
 # Set thickness of blockage
 # This must be less then pin width. Otherwise, the pins will be inaccessible
-set blockage_width 0.3
+set blockage_width 0.18
 
 createRouteBlk -name bottom -exceptpgnet -layer all -box 0 0 $urx $blockage_width
 createRouteBlk -name right -exceptpgnet -layer all -box [expr $urx - $blockage_width] 0 $urx $ury

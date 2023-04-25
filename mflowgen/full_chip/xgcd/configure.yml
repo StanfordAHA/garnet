@@ -1,0 +1,12 @@
+name: xgcd
+
+outputs:
+  - xgcd_tt.lib
+  - xgcd_tt.db
+  - xgcd.lef
+  - xgcd.gds
+  - xgcd.lvs.v
+  - xgcd-255.lvs.v
+  - xgcd-1279.lvs.v
+  - ring_oscillator.lvs.v
+
