@@ -1311,6 +1311,8 @@ class SparseTBBuilder(m.Generator2):
                 node_config_ret = self.core_nodes[node.get_name()].configure(node_attr)
             if node_config_ret is not None:
                 node_config_tuple, node_config_kwargs = node_config_ret
+            else:
+                node_config_kwargs = {}
             # GLB tiles return none so that we don't try to config map them...
             if self.bespoke:
                 if node_attr['hwnode'] == 'HWNodeType.GLB':
