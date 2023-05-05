@@ -16,36 +16,37 @@ if [ -f ../inputs/design.v ]; then
   exit
 fi
 
-  # Did not find existing design.v. Generate a new one UNLESS soc_only is true
-  if [ $soc_only = True ]; then
+# Did not find existing design.v. Generate a new one UNLESS soc_only is true
+if [ $soc_only = True ]; then
     echo "soc_only set to true. Garnet not included"
     touch outputs/design.v
     echo '--- gen_rtl END' `date +%H:%M`
     exit
-  fi
+fi
 
-    # Generate design.v
+##############################################################################
+# Generate design.v
 
-    # Clean out old rtl outputs
-    rm -rf $GARNET_HOME/genesis_verif
-    rm -f $GARNET_HOME/garnet.v
+# Clean out old rtl outputs
+rm -rf $GARNET_HOME/genesis_verif
+rm -f  $GARNET_HOME/garnet.v
 
-    # Build up the flags we want to pass to python garnet.v
-    flags="--width $array_width --height $array_height"
-    flags+=" --pipeline_config_interval $pipeline_config_interval"
-    flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
+# Build up the flags we want to pass to python garnet.v
+flags="--width $array_width --height $array_height"
+flags+=" --pipeline_config_interval $pipeline_config_interval"
+flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 
-    # sparsity flags for onyx
-    [ "$WHICH_SOC" != "amber" ] && flags+=" --rv --sparse-cgra --sparse-cgra-combined"
+# sparsity flags for onyx
+[ "$WHICH_SOC" != "amber" ] && flags+=" --rv --sparse-cgra --sparse-cgra-combined"
 
-    # Default is power-aware, but can be turned off
-    [ $PWR_AWARE == False ] && flags+=" --no-pd"
+# Default is power-aware, but can be turned off
+[ $PWR_AWARE == False ] && flags+=" --no-pd"
 
-    # Where/when is this used?
-    [ $interconnect_only == True ] && flags+=" --interconnect-only"
+# Where/when is this used?
+[ $interconnect_only == True ] && flags+=" --interconnect-only"
 
-    # Use aha docker container for all dependencies
-    if [ $use_container == True ]; then
+# Use aha docker container for all dependencies
+if [ $use_container == True ]; then
       echo "Use aha docker container for all dependencies"
 
       # Clone AHA repo
@@ -232,8 +233,8 @@ fi
       fi
       set +x
 
-    # Else we want to use local python env to generate rtl
-    else    # if NOT [ $use_container == True ]
+# Else we want to use local python env to generate rtl
+else    # if NOT [ $use_container == True ]
       current_dir=$(pwd)
       cd $GARNET_HOME
 
@@ -267,7 +268,7 @@ fi
         cp -r global_controller/header/* $current_dir/outputs/header/
       fi
       cd $current_dir ;
-    fi
+fi
 
 
 echo '--- gen_rtl END' `date +%H:%M`
