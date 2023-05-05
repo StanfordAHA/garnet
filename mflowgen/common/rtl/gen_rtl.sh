@@ -128,7 +128,6 @@ if [ $use_container == True ]; then
             archipelago          ec505e6     80 (a1,b79)        kuree/archipelago
             canal                6fec524     19 (a19,b0)        stanfordaha/canal
             clockwork            efdd95e    135 (a0,b135)       dillonhuff/clockwork
-            garnet               9982932     10 (a5,b5)         stanfordaha/garnet
             gemstone             28b10a6      9 (a9,b0)         stanfordaha/gemstone
             kratos               873b369     91 (a91,b0)        kuree/kratos
             lake                 837ffe1      2 (a2,b0)         StanfordAHA/lake
