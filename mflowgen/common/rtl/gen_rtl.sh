@@ -66,13 +66,13 @@ if [ $use_container == True ]; then
       # Choose a docker image; can set via "rtl_docker_image" parameter
       default_image="stanfordaha/garnet:latest"
 
-      if [ "$WHICH_SOC" == "amber" ]; then
-          # NOW: to make this branch (master-tsmc) work, must use specific docker image
-          # FIXME/TODO: should be part of top-level parms
-          # FIXME/TODO: whrere are top-level parms???
-          amber_dense_sha=dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4
-          default_image="stanfordaha/garnet@sha256:${amber_dense_sha}"
-      fi
+#       if [ "$WHICH_SOC" == "amber" ]; then
+#           # NOW: to make this branch (master-tsmc) work, must use specific docker image
+#           # FIXME/TODO: should be part of top-level parms
+#           # FIXME/TODO: whrere are top-level parms???
+#           amber_dense_sha=dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4
+#           default_image="stanfordaha/garnet@sha256:${amber_dense_sha}"
+#       fi
 
       if [ "$rtl_docker_image" == ""        ]; then rtl_docker_image=${default_image}; fi
       if [ "$rtl_docker_image" == "default" ]; then rtl_docker_image=${default_image}; fi
@@ -118,6 +118,55 @@ if [ $use_container == True ]; then
         # Clone local garnet repo to prevent copying untracked files
         git clone $GARNET_HOME ./garnet
         docker cp ./garnet $container_name:/aha/garnet
+      fi
+      
+      # How does amber config differ from onyx default?
+      # (Optimally this would be the empty set :( )
+      amber_diffs='
+            Halide-to-Hardware   e8798fa     84 (a2,b82)        stanfordaha/Halide-to-Hardware
+            MetaMapper           e25b6f6      1 (a0,b1)         rdaly525/MetaMapper
+            archipelago          ec505e6     80 (a1,b79)        kuree/archipelago
+            canal                6fec524     19 (a19,b0)        stanfordaha/canal
+            clockwork            efdd95e    135 (a0,b135)       dillonhuff/clockwork
+            garnet               9982932     10 (a5,b5)         stanfordaha/garnet
+            gemstone             28b10a6      9 (a9,b0)         stanfordaha/gemstone
+            kratos               873b369     91 (a91,b0)        kuree/kratos
+            lake                 837ffe1      2 (a2,b0)         StanfordAHA/lake
+            lassen               70edcf3      2 (a2,b0)         stanfordaha/lassen
+            mantle               fb8532a      2 (a2,b0)         phanrahan/mantle
+            peak                 9a24cf7     10 (a10,b0)        cdonovick/peak
+            pycoreir             80e072e     30 (a30,b0)        leonardt/pycoreir
+       '
+
+      # Update container for amber config if necessary
+      if [ "$WHICH_SOC" == "amber" ]; then
+          echo "+++ Updating container with amber diffs"
+          echo "$amber_diffs"
+          echo "------------------------------------------------------------------------"
+
+          echo "BEFORE:"
+          docker exec $container_name /bin/bash -c "git submodule status"
+          echo "------------------------------------------------------------------------"
+
+          # E.g. updates="cd /aha/garnet   && git checkout 9982932
+          #               cd /aha/gemstone && git checkout 28b10a6
+          #               cd /aha/kratos   && git checkout 873b369
+          #               cd /aha/lake     && git checkout 837ffe1"
+
+          updates=`echo "$amber_diffs" | awk 'NF>=2{printf( "cd /aha/%-18s && git checkout %s\n", $1, $2 )}'`
+          echo "$updates"
+          echo "------------------------------------------------------------------------"
+
+          echo "$updates" | while read u; do 
+              echo "docker exec $container_name /bin/bash -c '$u'"
+              docker exec $container_name /bin/bash -c "$u"
+              printf "\n"
+          done
+          echo "------------------------------------------------------------------------"
+          echo "AFTER:"
+          docker exec $container_name /bin/bash -c "git submodule status"
+          echo "------------------------------------------------------------------------"
+          echo "--- continue..."
       fi
       
       #docker exec $container_name /bin/bash -c "cd /aha && git checkout master && git pull && git submodule update"
