@@ -28,9 +28,11 @@ env:
 #   BDIR: /build/pmg${BUILDKITE_BUILD_NUMBER}
 
 
+  # Against my better judgment maybe; docker is now defined/assembled in gen_rtl.sh
+  # 
   # Newer dockers use lake "sparse_strawman" branch offshoots :(
   # Note as of 10/10/2022 this is the default (see common/rtl/gen_rtl.sh)
-  RTL_DOCKER_IMAGE: 'stanfordaha/garnet@sha256:dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4'
+  # RTL_DOCKER_IMAGE: 'stanfordaha/garnet@sha256:dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4'
 
   # TODO/FIXME Figure out how to use a top-level parm file :(
 
