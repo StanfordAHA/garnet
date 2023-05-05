@@ -12,30 +12,37 @@ if [ -f ../inputs/design.v ]; then
     echo "Using header from parent graph"
     (cd outputs; ln -s ../../inputs/header)
   fi
-else
+  echo '--- gen_rtl END' `date +%H:%M`
+  exit
+fi
+
+  # Did not find existing design.v. Generate a new one UNLESS soc_only is true
   if [ $soc_only = True ]; then
     echo "soc_only set to true. Garnet not included"
     touch outputs/design.v
-  else
+    echo '--- gen_rtl END' `date +%H:%M`
+    exit
+  fi
+
+    # Generate design.v
+
     # Clean out old rtl outputs
     rm -rf $GARNET_HOME/genesis_verif
     rm -f $GARNET_HOME/garnet.v
 
     # Build up the flags we want to pass to python garnet.v
-    flags="--width $array_width --height $array_height --pipeline_config_interval $pipeline_config_interval -v --glb_tile_mem_size $glb_tile_mem_size"
+    flags="--width $array_width --height $array_height"
+    flags+=" --pipeline_config_interval $pipeline_config_interval"
+    flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 
-  if [ "$WHICH_SOC" != "amber" ]; then
-    # sparsity flags
-    flags+=" --rv --sparse-cgra --sparse-cgra-combined"
-  fi
+    # sparsity flags for onyx
+    [ "$WHICH_SOC" != "amber" ] && flags+=" --rv --sparse-cgra --sparse-cgra-combined"
 
-    if [ $PWR_AWARE == False ]; then
-     flags+=" --no-pd"
-    fi
+    # Default is power-aware, but can be turned off
+    [ $PWR_AWARE == False ] && flags+=" --no-pd"
 
-    if [ $interconnect_only == True ]; then
-     flags+=" --interconnect-only"
-    fi
+    # Where/when is this used?
+    [ $interconnect_only == True ] && flags+=" --interconnect-only"
 
     # Use aha docker container for all dependencies
     if [ $use_container == True ]; then
@@ -58,13 +65,13 @@ else
       # Choose a docker image; can set via "rtl_docker_image" parameter
       default_image="stanfordaha/garnet:latest"
 
-  if [ "$WHICH_SOC" == "amber" ]; then
-      # NOW: to make this branch (master-tsmc) work, must use specific docker image
-      # FIXME/TODO: should be part of top-level parms
-      # FIXME/TODO: whrere are top-level parms???
-      amber_dense_sha=dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4
-      default_image="stanfordaha/garnet@sha256:${amber_dense_sha}"
-  fi
+      if [ "$WHICH_SOC" == "amber" ]; then
+          # NOW: to make this branch (master-tsmc) work, must use specific docker image
+          # FIXME/TODO: should be part of top-level parms
+          # FIXME/TODO: whrere are top-level parms???
+          amber_dense_sha=dd688c7b98b034dadea9f7177781c97a7a030d737ae4751a78dbb97ae8b72af4
+          default_image="stanfordaha/garnet@sha256:${amber_dense_sha}"
+      fi
 
       if [ "$rtl_docker_image" == ""        ]; then rtl_docker_image=${default_image}; fi
       if [ "$rtl_docker_image" == "default" ]; then rtl_docker_image=${default_image}; fi
@@ -226,7 +233,7 @@ else
       set +x
 
     # Else we want to use local python env to generate rtl
-    else
+    else    # if NOT [ $use_container == True ]
       current_dir=$(pwd)
       cd $GARNET_HOME
 
@@ -261,7 +268,6 @@ else
       fi
       cd $current_dir ;
     fi
-  fi
-fi
+
 
 echo '--- gen_rtl END' `date +%H:%M`
