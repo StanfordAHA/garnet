@@ -122,12 +122,16 @@ if [ $use_container == True ]; then
         docker cp ./garnet $container_name:/aha/garnet
       fi
       
+      # N'EXISTE PAS
+      # archipelago          ec505e6     80 (a1,b79)        kuree/archipelago
+
+
       # How does amber config differ from onyx default?
       # (Optimally this would be the empty set :( )
       amber_diffs='
             Halide-to-Hardware   e8798fa     84 (a2,b82)        stanfordaha/Halide-to-Hardware
             MetaMapper           e25b6f6      1 (a0,b1)         rdaly525/MetaMapper
-            archipelago          ec505e6     80 (a1,b79)        kuree/archipelago
+            archipelago          f35e6e5
             canal                6fec524     19 (a19,b0)        stanfordaha/canal
             clockwork            efdd95e    135 (a0,b135)       dillonhuff/clockwork
             gemstone             28b10a6      9 (a9,b0)         stanfordaha/gemstone
