@@ -531,7 +531,7 @@ class Garnet(Generator):
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
     def fix_pond_flush_bug(self, placement, routing):
-
+        # This is a fix for the Onyx pond hardware, in future chips we can remove this
         pond_locs = []
         for node, (x, y) in placement.items():
             if node[0] == "M" or (node in self.pes_with_packed_ponds and self.pes_with_packed_ponds[node][0] == "M"):
