@@ -169,7 +169,7 @@ if [ $use_container == True ]; then
               # kratos update requires pip install because reasons
               if expr "$u" : "cd /aha/kratos"; then
                   echo "docker exec $container_name /bin/bash -c 'cd /aha/kratos & pip install .)'"
-                  docker exec $container_name /bin/bash -c "cd /aha/kratos & pip install .)"
+                  docker exec $container_name /bin/bash -c "cd /aha/kratos & pip install ."
               fi
               printf "\n"
           done
