@@ -170,7 +170,7 @@ if [ $use_container == True ]; then
               if expr "$u" : "cd /aha/kratos"; then
                   echo "docker exec $container_name /bin/bash -c 'cd /aha/kratos & pip install .)'"
                   docker exec $container_name /bin/bash -c \
-                         "source /aha/bin/activate; cd /aha/kratos && pip install ."
+                         "source /aha/bin/activate; cd /aha/kratos && pip install ." || echo okay
               fi
               printf "\n"
           done
@@ -187,11 +187,11 @@ if [ $use_container == True ]; then
 
       # run garnet.py in container and concat all verilog outputs
       echo "---docker exec $container_name"
-
+      set -x
       docker exec $container_name /bin/bash -c \
         '# Func to check python package creds (Added 02/2021 as part of cst vetting)
          # (Single-quote regime)
-
+         set -x
          # Oh what a hack
          export WHICH_SOC='$WHICH_SOC'
 
@@ -218,11 +218,11 @@ if [ $use_container == True ]; then
          # location and latest commit hash for each.
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
 
-         pip list | grep kratos
+         pip list | grep kratos;
 
          source /aha/bin/activate; # Set up the build environment
 
-         pip list | grep kratos
+         pip list | grep kratos;
 
          if [ $interconnect_only == True ]; then
            echo --- INTERCONNECT_ONLY: aha garnet $flags
