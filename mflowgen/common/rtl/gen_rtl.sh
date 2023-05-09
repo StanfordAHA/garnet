@@ -169,7 +169,8 @@ if [ $use_container == True ]; then
               # kratos update requires pip install because reasons
               if expr "$u" : "cd /aha/kratos"; then
                   echo "docker exec $container_name /bin/bash -c 'cd /aha/kratos & pip install .)'"
-                  docker exec $container_name /bin/bash -c "cd /aha/kratos && pip install ."
+                  docker exec $container_name /bin/bash -c \
+                         "source /aha/bin/activate; cd /aha/kratos && pip install ."
               fi
               printf "\n"
           done
@@ -217,7 +218,11 @@ if [ $use_container == True ]; then
          # location and latest commit hash for each.
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
 
+         pip list | grep kratos
+
          source /aha/bin/activate; # Set up the build environment
+
+         pip list | grep kratos
 
          if [ $interconnect_only == True ]; then
            echo --- INTERCONNECT_ONLY: aha garnet $flags
