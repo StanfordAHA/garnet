@@ -218,11 +218,11 @@ if [ $use_container == True ]; then
          # location and latest commit hash for each.
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
 
-         pip list | grep kratos;
+         pip list | grep kratos || echo kratos not found
 
          source /aha/bin/activate; # Set up the build environment
 
-         pip list | grep kratos;
+         pip list | grep kratos || echo kratos not found
 
          if [ $interconnect_only == True ]; then
            echo --- INTERCONNECT_ONLY: aha garnet $flags
