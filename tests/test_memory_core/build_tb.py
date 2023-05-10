@@ -70,6 +70,7 @@ import tempfile
 import time
 import gemstone
 import torch
+from sparse_app_mappings import get_tensor
 
 
 class SparseTBBuilder(m.Generator2):
@@ -1602,26 +1603,30 @@ def coalesce_files(in_dir, out_dir, hack_files=None, unroll=1):
             done = False
             while done is False:
                 if f'tensor_{tname}_mode_{mode_num}_seg_{copy_}' in all_in_files:
-                # Found it...
-                # Now coalesce the seg/crd into a single file
+                    # Found it...
+                    # Now coalesce the seg/crd into a single file
                     write_glb_file([f'{in_dir}/tensor_{tname}_mode_{mode_num}_seg_{copy_}',
-                                f'{in_dir}/tensor_{tname}_mode_{mode_num}_crd_{copy_}'],
-                                out_dir=out_dir, out_name=f'tensor_{tname}_mode_{mode_num}_{copy_}')
+                                   f'{in_dir}/tensor_{tname}_mode_{mode_num}_crd_{copy_}'],
+                                   out_dir=out_dir, out_name=f'tensor_{tname}_mode_{mode_num}_{copy_}')
                     mode_num = mode_num + 1
                 else:
                     done = True
         # Now do vals
         for copy_ in range(unroll):
-            write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals_{copy_}'],
-                            out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals_{copy_}')
+            if f'tensor_{tname}_mode_vals_{copy_}' in all_in_files:
+                write_glb_file([f'{in_dir}/tensor_{tname}_mode_vals_{copy_}'],
+                               out_dir=out_dir, out_name=f'tensor_{tname}_mode_vals_{copy_}')
 
 
 def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None,
-                  zero_input=False, tensor_orderings=None, clean=True, suffix=""):
+                  zero_input=False, tensor_orderings=None, clean=True, suffix="",
+                  cached_inputs=None):
 
     MAXIMUM_SIZES = 16
 
     assert tensor_orderings is not None
+
+    ret_outputs = {}
 
     shapes_ = []
     sparsities_ = []
@@ -1910,27 +1915,42 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # to glb
         # combined
         # piped
-        if give_tensor:
-            bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
-            cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
-            b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
-                                             tensor_ordering=tensor_orderings['B'])
-            c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
-                                             tensor_ordering=tensor_orderings['C'])
+        # if give_tensor:
+        #     bshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_B_mode_shape"))
+        #     cshape = read_inputs(os.path.join(matrix_tmp_dir, "tensor_C_mode_shape"))
+        #     b_matrix = get_tensor_from_files(name='B', files_dir=matrix_tmp_dir, shape=bshape, base=10, early_terminate='x',
+        #                                      tensor_ordering=tensor_orderings['B'])
+        #     c_matrix = get_tensor_from_files(name='C', files_dir=matrix_tmp_dir, shape=cshape, base=10, early_terminate='x',
+        #                                      tensor_ordering=tensor_orderings['C'])
+        # else:
+        #     gold_shape_0 = 8
+        #     gold_shape_1 = 20
+        #     gold_shape_2 = 8
+        #     b_matrix = MatrixGenerator(name="B", shape=[gold_shape_0, gold_shape_1],
+        #                                sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir,
+        #                                clean=clean)
+        #     c_matrix = MatrixGenerator(name="C", shape=[gold_shape_2, gold_shape_1],
+        #                                sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir,
+        #                                clean=clean)
+        #     b_matrix.dump_outputs(suffix=suffix)
+        #     c_matrix.dump_outputs(suffix=suffix)
+        if 'B' not in cached_inputs:
+            b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'])
         else:
-            gold_shape_0 = 8
-            gold_shape_1 = 20
-            gold_shape_2 = 8
-            b_matrix = MatrixGenerator(name="B", shape=[gold_shape_0, gold_shape_1],
-                                       sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir,
-                                       clean=clean)
-            c_matrix = MatrixGenerator(name="C", shape=[gold_shape_2, gold_shape_1],
-                                       sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir,
-                                       clean=clean)
-            b_matrix.dump_outputs(suffix=suffix)
-            c_matrix.dump_outputs(suffix=suffix)
-        b_mat = b_matrix.get_matrix()
-        c_mat = c_matrix.get_matrix()
+            b_mat = cached_inputs['B']
+            b_shape = b_mat.shape
+            shapes_[0] = b_shape[0]
+            shapes_[1] = b_shape[1]
+        # c_mat = c_matrix.get_matrix()
+        if 'C' not in cached_inputs:
+            c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'])
+        else:
+            c_mat = cached_inputs['C']
+
+        ret_outputs['B'] = b_mat
+        ret_outputs['C'] = c_mat
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
@@ -2212,18 +2232,20 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         shape_m = 4
 
         # generate B(j,k,j,l) and C(i,j,m,l)
-        b_matrix = MatrixGenerator(name="B", shape=[shape_i, shape_k, shape_j, shape_l], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[shape_i, shape_j, shape_m, shape_l], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix = MatrixGenerator(name="B", shape=[shape_i, shape_k, shape_j, shape_l],
+                                   sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_i, shape_j, shape_m, shape_l],
+                                   sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
 
         # permute matrix for gold generation
         b_mat = b_matrix.get_matrix()
         c_mat = c_matrix.get_matrix()
-        b_ref = torch.from_numpy(b_mat) # [i,k,j,l]
-        c_ref = torch.from_numpy(c_mat) # [i,j,m,l]
-        b_ref = torch.permute(b_ref, (0, 2, 1, 3)) # [i,j,k,l]
-        c_ref = torch.permute(c_ref, (0, 3, 1, 2)) # [i,l,j,m]
+        b_ref = torch.from_numpy(b_mat)  # [i,k,j,l]
+        c_ref = torch.from_numpy(c_mat)  # [i,j,m,l]
+        b_ref = torch.permute(b_ref, (0, 2, 1, 3))  # [i,j,k,l]
+        c_ref = torch.permute(c_ref, (0, 3, 1, 2))  # [i,l,j,m]
 
         print("--------------B_ref after permute--------------")
         print(b_ref.shape)
@@ -2234,7 +2256,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         output_ref = torch.einsum('ijkl, iljm->ikjm', b_ref, c_ref).numpy()
         print("--------------output_ref--------------")
-        print(output_ref.shape) # ikjm
+        print(output_ref.shape)  # ikjm
         print(output_ref)
         output_matrix = output_ref
         output_format = "CSF"
@@ -2249,8 +2271,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         shape_m = 4
 
         # generate B(j,k,j,m) and C(i,l,j,m)
-        b_matrix = MatrixGenerator(name="B", shape=[shape_i, shape_j, shape_k, shape_m], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
-        c_matrix = MatrixGenerator(name="C", shape=[shape_i, shape_j, shape_l, shape_m], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
+        b_matrix = MatrixGenerator(name="B", shape=[shape_i, shape_j, shape_k, shape_m], sparsity=0.7,
+                                   format='CSF', dump_dir=matrix_tmp_dir)
+        c_matrix = MatrixGenerator(name="C", shape=[shape_i, shape_j, shape_l, shape_m], sparsity=0.7,
+                                   format='CSF', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
         c_matrix.dump_outputs()
 
@@ -2260,8 +2284,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         B_ref = torch.from_numpy(b_mat)
         C_ref = torch.from_numpy(c_mat)
 
-        B_ref = torch.permute(B_ref, (0,2,1,3))
-        C_ref = torch.permute(C_ref, (0,2,1,3))
+        B_ref = torch.permute(B_ref, (0, 2, 1, 3))
+        C_ref = torch.permute(C_ref, (0, 2, 1, 3))
 
         print("------------------------after permute B_ref: ")
         print(B_ref.shape)
@@ -2269,7 +2293,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         print("------------------------after permute C_ref: ")
         print(C_ref.shape)
         print(C_ref)
-        
 
         output_matrix = torch.einsum('ikjm, iljm->ijkl', B_ref, C_ref).numpy()
         print("--------------output_ref--------------")
@@ -2297,7 +2320,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         B_ref = torch.from_numpy(b_mat)
         C_ref = torch.from_numpy(c_mat)
 
-        C_ref = torch.permute(C_ref, (0,2,1))
+        C_ref = torch.permute(C_ref, (0, 2, 1))
 
         print("---------------B_ref---------------")
         print(B_ref.shape)
@@ -2331,7 +2354,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                 print(vals)
             sys.stdout = original_stdout
 
-    return output_matrix, output_format, output_name, input_dims
+    return output_matrix, output_format, output_name, input_dims, ret_outputs
 
 
 def create_or_clean(dir_path):
@@ -2451,25 +2474,26 @@ if __name__ == "__main__":
 
         # This is where we do the fallback comparison...
         # First get gold matrix from the output...
-        gold_matrix = numpy.load(f"{gold_mat_dir}/output_gold.npy", allow_pickle=True)
-        name_line = None
-        with open(f"{gold_mat_dir}/output_name.txt") as output_name_h_:
-            name_line = output_name_h_.readlines()[0].strip()
-        output_name = name_line
-        assert output_name is not None
+        for i in range(unroll):
+            gold_matrix = numpy.load(f"{gold_mat_dir}/output_gold_{i}.npy", allow_pickle=True)
+            name_line = None
+            with open(f"{gold_mat_dir}/output_name.txt") as output_name_h_:
+                name_line = output_name_h_.readlines()[0].strip()
+            output_name = name_line
+            assert output_name is not None
 
-        sim_matrix = get_tensor_from_files(name='X', files_dir=sim_mat_dir,
-                                           format="CSF",
-                                           shape=gold_matrix.shape, base=16, early_terminate='x')
-        sim_matrix_np = sim_matrix.get_matrix()
+            sim_matrix = get_tensor_from_files(name='X', files_dir=sim_mat_dir,
+                                               format="CSF",
+                                               shape=gold_matrix.shape, base=16, early_terminate='x', suffix=f"_{i}")
+            sim_matrix_np = sim_matrix.get_matrix()
 
-        print(f"GOLD")
-        gold_matrix = gold_matrix.astype(numpy.uint16, casting='unsafe')
-        print(gold_matrix)
-        print(f"SIM")
-        sim_matrix_np = sim_matrix_np.astype(numpy.uint16, casting='unsafe')
-        print(sim_matrix)
-        assert numpy.array_equal(gold_matrix, sim_matrix_np)
+            print(f"GOLD_{i}")
+            gold_matrix = gold_matrix.astype(numpy.uint16, casting='unsafe')
+            print(gold_matrix)
+            print(f"SIM_{i}")
+            sim_matrix_np = sim_matrix_np.astype(numpy.uint16, casting='unsafe')
+            print(sim_matrix)
+            assert numpy.array_equal(gold_matrix, sim_matrix_np)
 
         exit()
 
@@ -2517,6 +2541,7 @@ if __name__ == "__main__":
         for test_ in tests_to_run:
 
             my_env['TEST_DIR'] = f"{os.path.abspath(base_dir)}/{test_}"
+            my_env['UNROLL'] = f"{unroll}"
 
             if local_comp and compile_tb:
                 t_c = time.time()
@@ -2650,6 +2675,7 @@ if __name__ == "__main__":
             output_formats = []
             output_names = []
             input_dims_s = []
+            out_mats = []
 
             sam_graph_name = sam_graph.split('/')[-1].split(".")[0]
 
@@ -2708,14 +2734,20 @@ if __name__ == "__main__":
 
                 # Need to unroll this as well
                 clean = True
+                # Assume we are unrolling 'B' for now...
+                cached_inputs = {}
                 for i in range(unroll):
-                ##### Handling app level file stuff #####
-                    output_matrix, output_format, output_name, input_dims = software_gold(sam_graph, matrix_tmp_dir,
-                                                                                          give_tensor, print_inputs,
-                                                                                          zero_input=zero_input,
-                                                                                          tensor_orderings=mode_map,
-                                                                                          clean=clean,
-                                                                                          suffix=f"_{i}")
+                    ##### Handling app level file stuff #####
+                    output_matrix, output_format, output_name, input_dims, ret_outputs = software_gold(sam_graph, matrix_tmp_dir,
+                                                                                                       give_tensor, print_inputs,
+                                                                                                       zero_input=zero_input,
+                                                                                                       tensor_orderings=mode_map,
+                                                                                                       clean=clean,
+                                                                                                       suffix=f"_{i}",
+                                                                                                       cached_inputs=cached_inputs)
+
+                    if 'B' in ret_outputs and 'B' not in cached_inputs:
+                        cached_inputs['B'] = ret_outputs['B']
 
                     if clean:
                         clean = False
@@ -2737,6 +2769,7 @@ if __name__ == "__main__":
                         clean = False
 
                     out_mat.dump_outputs(suffix=f"_{i}")
+                    out_mats.append(out_mat)
                     # exit()
 
                 if sam_graph not in stbs:
@@ -2781,13 +2814,13 @@ if __name__ == "__main__":
                         os.mkdir(full_test_glb_dir)
 
                     for i in range(unroll):
-                        out_mat.dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir, suffix=f"_{i}")
+                        out_mats[i].dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir, suffix=f"_{i}")
 
                     # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
                     #     numpy.save(goldout_, out_mat.get_matrix())
                     # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
-                    numpy.save(f"{full_test_glb_dir}/output_gold.npy", out_mat.get_matrix())
-                    numpy.save(f"{glb_dir}/output_gold.npy", out_mat.get_matrix())
+                        numpy.save(f"{full_test_glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
+                        numpy.save(f"{glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
 
                     with open(f"{glb_dir}/output_name.txt", "w+") as outputname_h_:
                         outputname_h_.write(f"{output_name}\n")
@@ -2911,6 +2944,8 @@ if __name__ == "__main__":
 
             my_env['TEST_DIR'] = f"{os.path.abspath(base_dir)}/{sam_graph_name}_{seed}"
 
+            my_env['UNROLL'] = f"{unroll}"
+
             t_c = time.time()
             subprocess.check_call(
                 ["make", "compile"],
@@ -3003,20 +3038,22 @@ if __name__ == "__main__":
         stb.display_names()
 
         ##### Now check it... #####
-        print(f"GOLD")
-        print(output_matrices[0])
+        for i in range(unroll):
+            print(f"GOLD_{i}")
+            print(output_matrices[i])
 
-        sim_mat = get_tensor_from_files(name='X', files_dir=output_dir,
-                                        format=output_format, shape=output_matrix.shape, base=16, early_terminate='x')
-        sim_mat_np = sim_mat.get_matrix()
-        print(f"SIM")
-        print(sim_mat_np)
+            sim_mat = get_tensor_from_files(name='X', files_dir=output_dir,
+                                            format=output_format, shape=output_matrices[i].shape, base=16, early_terminate='x',
+                                            suffix=f"_{i}")
+            sim_mat_np = sim_mat.get_matrix()
+            print(f"SIM_{i}")
+            print(sim_mat_np)
 
-        try:
-            assert numpy.array_equal(output_matrix, sim_mat_np)
-        except AssertionError as e:
-            print(f"Test failed...output matrices are unequal")
-            print(numpy.subtract(output_matrix, sim_mat_np))
+            try:
+                assert numpy.array_equal(output_matrices[i], sim_mat_np)
+            except AssertionError as e:
+                print(f"Test failed...output matrices are unequal")
+                print(numpy.subtract(output_matrix, sim_mat_np))
 
         if fault:
             print(f"SIMULATION TIME:\t{time_after_sim - time_before_sim}")
