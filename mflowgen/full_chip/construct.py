@@ -423,7 +423,6 @@ def construct():
   g.add_step( tile_array        )
   g.add_step( glb_top           )
   g.add_step( global_controller )
-  g.add_step( dragonphy         )
   g.add_step( constraints       )
   g.add_step( read_design       )
   g.add_step( synth             )
@@ -479,6 +478,7 @@ def construct():
   # Amber-specific nodes
   if which_soc == 'amber':
     g.add_step( merge_rdl         )
+    g.add_step( dragonphy         )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -533,13 +533,11 @@ def construct():
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
   if parameters['soc_only'] == False:
-
-      # FIXME This seems wrong...why is dragonphy in there???
+      blocks = [tile_array, glb_top, global_controller]
       if which_soc == 'onyx':
-        blocks = [tile_array, glb_top, global_controller, dragonphy, xgcd]
-
-      if which_soc == 'amber':
-        blocks = [tile_array, glb_top, global_controller, dragonphy]
+        blocks += [xgcd]
+      elif which_soc == 'amber':
+        blocks += [dragonphy]
 
       for block in blocks:
           g.connect_by_name( block, synth          )
