@@ -62,7 +62,14 @@ if [ $use_container == True ]; then
       # Prune docker images...
       # ("yes" emits endless stream of y's)
       echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
-      yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
+
+      # no prune for now omg (TEMPORARY)
+      # yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
+
+
+
+
+
 
       echo ""; echo "After pruning:"; echo ""
       docker images; echo ""
