@@ -90,12 +90,13 @@ else
 fi
 
 # For better or worse: I put this in gen_rtl.sh
-# # Hack it up! FIXME should use same mechanism as onyx...define AO/AN_CELL 
-# cat design.v \
-#     | sed 's/AN_CELL inst/AN2D0BWP16P90 inst/' \
-#     | sed 's/AO_CELL inst/AO22D0BWP16P90 inst/' \
-#           > /tmp/tmp.v
-# mv -f /tmp/tmp.v design.v
+# Hack it up! FIXME should use same mechanism as onyx...define AO/AN_CELL
+# Also see: garnet/mflowgen/common/rtl/gen_rtl.sh, gemstone/tests/common/rtl/{AN_CELL.sv,AO_CELL.sv}
+cat design.v \
+    | sed 's/AN_CELL inst/AN2D0BWP16P90 inst/' \
+    | sed 's/AO_CELL inst/AO22D0BWP16P90 inst/' \
+          > /tmp/tmp.v
+mv -f /tmp/tmp.v design.v
 
 
 # # Compare to ref

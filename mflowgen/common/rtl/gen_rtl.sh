@@ -258,8 +258,24 @@ if [ $use_container == True ]; then
 
       echo '--- gen_rtl docker cleanup BEGIN' `date +%H:%M`
 
+
+
       # Copy the concatenated design.v output out of the container
-      docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
+      # docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
+
+      # FIXME there might be a more elegant solution for this, see e.g.
+      # /aha/gemstone/tests/common/rtl/{AN_CELL.sv,AO_CELL.sv}
+      if [ "$WHICH_SOC" == "amber" ]; then
+          echo '--- AN_CELL hack'
+          docker cp $container_name:/aha/garnet/design.v - \
+                 | sed 's/AN_CELL inst/ AN2D0BWP16P90 inst/' \
+                 | sed 's/AO_CELL inst/ AO22D0BWP16P90 inst/' \
+                 > ../outputs/design.v
+      else
+          docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
+      fi
+
+
 
       if [ $glb_only == True ]; then
         docker cp $container_name:/aha/garnet/global_buffer/header ../outputs/header
