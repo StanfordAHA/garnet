@@ -1,5 +1,9 @@
 This directory is `$garnet/mflowgen` . From here, you can build various components of the garnet chip. E.g. to build the PE tile you would follow instructions below.
 
+Before trying to build any of the mflowgen graphs, ensure that you have installed this mflowgen subdirectory of garnet as a python package by running the following command in this directory:
+```
+pip install -e .
+```
 Note that you will have to be on a machine with tsmc permissions e.g. the arm7 or tsmc machines. From there, you will need access to a clone of the mflowgen repo e.g.
 ```
   % mkdir /sim/$USER/github; cd /sim/$USER/github
@@ -49,7 +53,7 @@ Inside the mflowgen repo, make and inhabit a sandbox area for the build
 ```
 Configure mflowgen for the tile
 ```
-  % ../configure --design $garnet/mflowgen/Tile_PE
+  % mflowgen run --design $garnet/mflowgen/Tile_PE
 ```
 `make list` at the command prompt tells what you can do now that you're configured. E.g. if target 19 is `mentor-calibre-drc`, you should be able to build and check the tile by doing
 ```
