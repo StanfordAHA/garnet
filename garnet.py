@@ -538,10 +538,11 @@ class Garnet(Generator):
                 pond_locs.append((x, y))
 
         pond_to_1bit_routes = defaultdict(set)
-        for net_id, route in routing.items():
-            new_segs = []
-            for seg_index, segment in enumerate(route):
-                for node_idx, node in  enumerate(segment):
+        for _, route in routing.items():
+            for segment in route:
+                if segment[-1] == "CB_flush":
+                    continue
+                for node in  segment:
                     if "SB" in str(node) and node.io.value == 0 and node.width == 1 and (node.x, node.y) in pond_locs:
                         pond_to_1bit_routes[(node.x, node.y)].add((node.track, node.side.value))
                         
