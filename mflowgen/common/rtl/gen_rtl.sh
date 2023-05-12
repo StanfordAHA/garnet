@@ -17,7 +17,7 @@ if [ -f ../inputs/design.v ]; then
 fi
 
 # Did not find existing design.v. Generate a new one UNLESS soc_only is true
-if [ $soc_only = True ]; then
+if [ "$soc_only" == True ]; then
     echo "soc_only set to true. Garnet not included"
     touch outputs/design.v
     echo '--- gen_rtl END' `date +%H:%M`
@@ -40,13 +40,13 @@ flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 [ "$WHICH_SOC" != "amber" ] && flags+=" --rv --sparse-cgra --sparse-cgra-combined"
 
 # Default is power-aware, but can be turned off
-[ $PWR_AWARE == False ] && flags+=" --no-pd"
+[ "$PWR_AWARE" == False ] && flags+=" --no-pd"
 
 # Where/when is this used?
-[ $interconnect_only == True ] && flags+=" --interconnect-only"
+[ "$interconnect_only" == True ] && flags+=" --interconnect-only"
 
 # Use aha docker container for all dependencies
-if [ $use_container == True ]; then
+if [ "$use_container" == True ]; then
       echo "Use aha docker container for all dependencies"
 
 # What!!? No!!! Why??? Never used??
@@ -116,7 +116,7 @@ if [ $use_container == True ]; then
       # MAKE SURE the docker container gets killed when this script dies.
       trap "docker kill $container_name" EXIT
 
-      if [ $use_local_garnet == True ]; then
+      if [ "$use_local_garnet" == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
         # Clone local garnet repo to prevent copying untracked files
         git clone $GARNET_HOME ./garnet
@@ -222,6 +222,9 @@ if [ $use_container == True ]; then
          # echo '+++ PIPCHECK-BEFORE'; checkpip ast.t magma 'peak '; echo '--- Continue build'
 
          source /aha/bin/activate; # Set up the build environment
+
+         # FIXME note that 'if' statements below will fail if e.g. 'interconnect_only' not set
+         # Easy fix is not obvious since we are already inside a double-quoted string :(
 
          if [ $interconnect_only == True ]; then
            echo --- INTERCONNECT_ONLY: aha garnet $flags
