@@ -137,7 +137,10 @@ fi
 
 printf "\n"
 echo "+++ Compare result to reference build"
-ref=$scriptdir/ref/garnet-4x2.v
+
+# Reference designs are gzipped to saze space
+ref=garnet-4x2.v
+cp $scriptdir/ref/$ref.gz .; gunzip $ref.gz
 f1=design.v; f2=$ref
 
 # Need 'sed s/unq...' to handle the case where both designs are
