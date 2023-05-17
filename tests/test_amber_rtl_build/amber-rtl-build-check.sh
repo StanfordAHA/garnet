@@ -29,14 +29,26 @@ EXAMPLE test from inside docker
     dexec "cd /aha/garnet && git fetch origin && git checkout origin/amber-docker-updates"
     dexec "/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh --local"
 
+
     # OR run the test using local copy of repo
-    GARNET_HOME=/nobackup/steveri/github/garnet    
-    function dexec { docker exec \$container /bin/bash -c "\$*"; }
-    dexec "rm -rf /aha/garnet"
-    git clone \$GARNET_HOME /tmp/garnet
-    docker cp /tmp/garnet \$container:/aha/garnet
-    /bin/rm -rf /tmp/garnet
-    dexec "/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh --local"
+
+      # Setup
+      GARNET_HOME=/nobackup/steveri/github/garnet    
+      function dexec { docker exec \$container /bin/bash -c "\$*"; }
+
+      # Copy local repo to docker container
+      dexec "rm -rf /aha/garnet"
+      git clone \$GARNET_HOME /tmp/garnet
+      docker cp /tmp/garnet \$container:/aha/garnet
+      /bin/rm -rf /tmp/garnet
+
+      # Update the docker container for amber build
+      updates=\`dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh --get-amber-updates-only"\`
+      dexec "\$updates"
+
+      # Run the test
+      bc=/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh
+      dexec "\$bc --local"
 EOF
 }
 
