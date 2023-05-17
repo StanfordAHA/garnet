@@ -49,27 +49,21 @@ flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 if [ "$use_container" == True ]; then
       echo "Use aha docker container for all dependencies"
 
-# What!!? No!!! Why??? Never used??
-#       
-#       # Clone AHA repo
-#       echo '--- gen_rtl aha clone BEGIN' `date +%H:%M`
-#       git clone https://github.com/StanfordAHA/aha.git
-#       cd aha
-
+      ########################################################################
+      # What!!? No!!! Why??? Never used??
+      #       
+      #       # Clone AHA repo
+      #       echo '--- gen_rtl aha clone BEGIN' `date +%H:%M`
+      #       git clone https://github.com/StanfordAHA/aha.git
+      #       cd aha
+      # 
       # Again: why?
       mkdir -p aha; cd aha
+      ########################################################################
 
       # Prune docker images...
-      # ("yes" emits endless stream of y's)
       echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
-
-      # no prune for now omg (TEMPORARY)
-      # yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
-
-
-
-
-
+      docker image prune -f -a --filter "until=6h" --filter=label='description=garnet' || true
 
       echo ""; echo "After pruning:"; echo ""
       docker images; echo ""
@@ -161,13 +155,22 @@ if [ "$use_container" == True ]; then
 
           echo "$updates" | while read u; do 
               echo "docker exec $container_name /bin/bash -c '$u'"
-              docker exec $container_name /bin/bash -c "$u"
-              printf "\n"
+              docker exec $container_name /bin/bash -c "$u"; printf "\n"
+
               # kratos update requires pip install because reasons
               if expr "$u" : "cd /aha/kratos" > /dev/null; then
+
                   echo "docker exec $container_name /bin/bash -c 'cd /aha/kratos & pip install .)'"
                   docker exec $container_name /bin/bash -c \
-                         "source /aha/bin/activate; cd /aha/kratos && pip install ." || echo okay
+                         'cd /aha/kratos && rm -rf build'
+
+                  # Various non-fatal things can go wrong during this pip install,
+                  # thus the "|| echo okay" at the end
+                  docker exec $container_name /bin/bash -c \
+                         "source /aha/bin/activate; \
+                          cd /aha/kratos && pip install . --no-cache-dir --no-binary kratos" \
+                      || echo okay
+
               fi
               printf "\n"
           done
@@ -254,31 +257,27 @@ if [ "$use_container" == True ]; then
 
       echo '--- gen_rtl docker cleanup BEGIN' `date +%H:%M`
 
-
-
       # Copy the concatenated design.v output out of the container
-      # docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
+      docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
 
       # FIXME there might be a more elegant solution for this, see e.g.
       # /aha/gemstone/tests/common/rtl/{AN_CELL.sv,AO_CELL.sv}
       if [ "$WHICH_SOC" == "amber" ]; then
           echo '--- AN_CELL hack'
-          docker cp $container_name:/aha/garnet/design.v - \
+          # docker cp $container_name:/aha/garnet/design.v ../outputs/tmp$$.v
+          cat ../outputs/design.v \
                  | sed 's/AN_CELL inst/ AN2D0BWP16P90 inst/' \
                  | sed 's/AO_CELL inst/ AO22D0BWP16P90 inst/' \
-                 > ../outputs/design.v
-      else
-          docker cp $container_name:/aha/garnet/design.v ../outputs/design.v
+                 > ../outputs/tmp$$.v
+          mv ../outputs/tmp$$.v ../outputs/design.v
       fi
-
-
 
       if [ $glb_only == True ]; then
         docker cp $container_name:/aha/garnet/global_buffer/header ../outputs/header
       elif [ $interconnect_only == False ]; then
         docker cp $container_name:/aha/garnet/global_buffer/header ../glb_header
         docker cp $container_name:/aha/garnet/global_controller/header ../glc_header
-        mkdir ../outputs/header
+        mkdir -p ../outputs/header
         cp -r ../glb_header/* ../outputs/header/
         cp -r ../glc_header/* ../outputs/header/
       fi
