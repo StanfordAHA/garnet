@@ -16,24 +16,27 @@ EXAMPLE test from outside docker
    $cmd --docker && echo PASS || echo FAIL
 
 EXAMPLE test from inside docker
+    cd /tmp/scratch        # (optional)
+
     # Fire up a docker container
     image=stanfordaha/garnet:latest
     container=deleteme
     docker pull \$image
     docker run -id --name \$container --rm -v /cad:/cad \$image bash
 
-    # Run the test using garnet master branch
+    # Run the test using garnet branch e.g. "amber-docker-updates"
     function dexec { docker exec \$container /bin/bash -c "\$*"; }
-    dexec "cd /aha/garnet && git checkout master && git pull"
+    dexec "cd /aha/garnet && git fetch origin && git checkout origin/amber-docker-updates"
     dexec "/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh --local"
 
     # OR run the test using local copy of repo
     GARNET_HOME=/nobackup/steveri/github/garnet    
     function dexec { docker exec \$container /bin/bash -c "\$*"; }
-    docker exec $container /bin/bash -c "rm -rf /aha/garnet"
-    git clone $GARNET_HOME /tmp/garnet
-    docker cp /tmp/garnet $container:/aha/garnet
+    dexec "rm -rf /aha/garnet"
+    git clone \$GARNET_HOME /tmp/garnet
+    docker cp /tmp/garnet \$container:/aha/garnet
     /bin/rm -rf /tmp/garnet
+    dexec "/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh --local"
 EOF
 }
 
@@ -89,7 +92,7 @@ if [ "$1" == "--docker" ]; then
 else
     # RTL-build flags
     flags="--width $width --height $((width/2)) --pipeline_config_interval 8 -v --glb_tile_mem_size 256"
-    echo $flags
+    echo "FLAGS: $flags"
 
     # Prep/clean
     cd /aha
