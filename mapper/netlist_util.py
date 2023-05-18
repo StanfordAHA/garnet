@@ -1,4 +1,4 @@
-import os, math
+import os, math, re
 from graphviz import Digraph
 from collections import defaultdict
 from hwtypes import Bit, BitVector
@@ -19,6 +19,7 @@ from metamapper.common_passes import AddID, print_dag, gen_dag_img
 from DagVisitor import Visitor, Transformer
 from peak.mapper.utils import Unbound
 from lassen.sim import PE_fc as lassen_fc
+from mapper.netlist_graph import Node, NetlistGraph
 
 
 class CreateBuses(Visitor):
@@ -906,6 +907,23 @@ def create_netlist_info(
         info["netlist"][bid] = [
             (nodes_to_ids[node.iname], field) for node, field in ports
         ]
+
+    if os.path.isfile(app_dir + "manual.place"):
+        os.remove(app_dir + "manual.place")
+
+    graph = NetlistGraph(info)
+    # graph.generate_tile_id()
+    graph.get_in_ub_latency(app_dir = app_dir)
+
+    if "MANUAL_PLACER" in os.environ:
+        # remove mem reg in conn for manual placement
+        graph.remove_mem_reg_tree()
+
+        # # generate tiles connection info
+        # graph.generate_tile_conn()
+
+        # manual placement
+        graph.manualy_place_resnet(app_dir = app_dir)
 
     CountTiles().doit(pdag)
 

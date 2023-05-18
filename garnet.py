@@ -516,7 +516,7 @@ class Garnet(Generator):
         if unconstrained_io:
             fixed_io = None
         else:
-            fixed_io = place_io_blk(id_to_name)
+            fixed_io = place_io_blk(id_to_name, app_dir)
 
         placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
                                                          load_only=load_only,
