@@ -19,15 +19,18 @@ EXAMPLE test from inside docker
     cd /tmp/scratch        # (optional)
 
     # 1. Setup / fire up a docker container
-    image=stanfordaha/garnet:latest
-    container=deleteme
-    docker pull \$image
-    docker run -id --name \$container --rm -v /cad:/cad \$image bash
-    function dexec { docker exec \$container /bin/bash -c "\$*"; }
+
+      image=stanfordaha/garnet:latest
+      container=deleteme
+      docker pull \$image
+      docker run -id --name \$container --rm -v /cad:/cad \$image bash
+      function dexec { docker exec \$container /bin/bash -c "\$*"; }
 
     # 2a. Run the test using garnet branch e.g. "amber-docker-updates"
 
       dexec "cd /aha/garnet && git fetch origin && git checkout origin/amber-docker-updates"
+      dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh --get-amber-updates-only > tmp"
+      dexec "set -x; source tmp"
       dexec "/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh --local"
 
 
@@ -35,7 +38,7 @@ EXAMPLE test from inside docker
 
       # Setup
       GARNET_HOME=/nobackup/steveri/github/garnet    
-      function dexec { docker exec \$container /bin/bash -c "\$*"; }
+      < See item 1 above for rest of setup>
 
       # Copy local repo to docker container
       dexec "rm -rf /aha/garnet"
@@ -45,7 +48,7 @@ EXAMPLE test from inside docker
 
       # Update the docker container for amber build
       updates=\`dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh --get-amber-updates-only"\`
-      dexec "\$updates"
+      dexec "set -x; \$updates"
 
       # Run the test
       bc=/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh
