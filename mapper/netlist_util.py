@@ -911,16 +911,12 @@ def create_netlist_info(
     if os.path.isfile(app_dir + "manual.place"):
         os.remove(app_dir + "manual.place")
 
-    graph = NetlistGraph(info)
-    # graph.generate_tile_id()
-    graph.get_in_ub_latency(app_dir = app_dir)
-
     if "MANUAL_PLACER" in os.environ:
+        graph = NetlistGraph(info)
+        graph.get_in_ub_latency(app_dir = app_dir)
+        
         # remove mem reg in conn for manual placement
         graph.remove_mem_reg_tree()
-
-        # # generate tiles connection info
-        # graph.generate_tile_conn()
 
         # manual placement
         graph.manualy_place_resnet(app_dir = app_dir)
