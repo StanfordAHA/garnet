@@ -18,19 +18,20 @@ EXAMPLE test from outside docker
 EXAMPLE test from inside docker
     cd /tmp/scratch        # (optional)
 
-    # Fire up a docker container
+    # 1. Setup / fire up a docker container
     image=stanfordaha/garnet:latest
     container=deleteme
     docker pull \$image
     docker run -id --name \$container --rm -v /cad:/cad \$image bash
-
-    # Run the test using garnet branch e.g. "amber-docker-updates"
     function dexec { docker exec \$container /bin/bash -c "\$*"; }
-    dexec "cd /aha/garnet && git fetch origin && git checkout origin/amber-docker-updates"
-    dexec "/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh --local"
+
+    # 2a. Run the test using garnet branch e.g. "amber-docker-updates"
+
+      dexec "cd /aha/garnet && git fetch origin && git checkout origin/amber-docker-updates"
+      dexec "/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh --local"
 
 
-    # OR run the test using local copy of repo
+    # 2b. OR run the test using local copy of repo
 
       # Setup
       GARNET_HOME=/nobackup/steveri/github/garnet    
