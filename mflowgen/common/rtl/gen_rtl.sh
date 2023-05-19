@@ -17,6 +17,7 @@ function get_amber_updates {
       source /aha/bin/activate && cd /aha/kratos && pip install . --no-cache-dir --no-binary kratos;
     '
 }
+# Option to simply print update commands and exit
 if [ "$1" == "--get-amber-updates-only" ]; then
     get_amber_updates
     exit
