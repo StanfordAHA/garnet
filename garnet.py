@@ -516,7 +516,7 @@ class Garnet(Generator):
         if unconstrained_io:
             fixed_io = None
         else:
-            fixed_io = place_io_blk(id_to_name)
+            fixed_io = place_io_blk(id_to_name, app_dir)
 
         placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
                                                          load_only=load_only,
@@ -537,21 +537,21 @@ class Garnet(Generator):
             if node[0] == "M" or (node in self.pes_with_packed_ponds and self.pes_with_packed_ponds[node][0] == "M"):
                 pond_locs.append((x, y))
 
+        ponds_with_routed_flush = []
         pond_to_1bit_routes = defaultdict(set)
         for _, route in routing.items():
             for segment in route:
-                if segment[-1] == "CB_flush":
-                    continue
+                if "flush" in segment[-1].node_str() and "flush" in segment[-1].node_str() and (segment[-1].x, segment[-1].y) in pond_locs:
+                    ponds_with_routed_flush.append((segment[-1].x, segment[-1].y))
                 for node in  segment:
                     if "SB" in str(node) and node.io.value == 0 and node.width == 1 and (node.x, node.y) in pond_locs:
                         pond_to_1bit_routes[(node.x, node.y)].add((node.track, node.side.value))
                         
         bitstream = []
-
         for (x,y), nodes in pond_to_1bit_routes.items():
             need_fix = False
             for node in nodes:
-                if node[0] == 0 and node[1] == 3:
+                if node[0] == 0 and node[1] == 3 and (x,y) not in ponds_with_routed_flush:
                     need_fix = True
 
             if need_fix:
