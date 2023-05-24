@@ -154,11 +154,11 @@ f1=design.v; f2=$ref
 function vcompare { sort $1 | sed 's/,$//' | sed 's/unq[0-9*]/unq/' | sed '/^\s*$/d'; }
 
 printf "\n"
-echo Comparing `vcompare $f1 | wc -l` lines of $f1
-echo to `vcompare $f2 | wc -l` lines of $f2
+echo "Comparing `vcompare $f1 | wc -l` lines of $f1"
+echo "versus    `vcompare $f2 | wc -l` lines of $f2"
 printf "\n"
 
-printf "diff $f1 $f2"
+echo "diff $f1 $f2"
 ndiffs=`diff -Bb -I Date <(vcompare $f1) <(vcompare $f2) | wc -l`
 
 if [ "$ndiffs" != "0" ]; then
