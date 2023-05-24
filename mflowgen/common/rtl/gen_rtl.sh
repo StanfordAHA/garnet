@@ -22,7 +22,7 @@ function update_kratos {
       cd /aha/kratos && rm -rf build;
       source /aha/bin/activate && cd /aha/kratos && pip install . --no-cache-dir --no-binary kratos;
     '
-
+}
 # Option to simply print update commands and exit
 if [ "$1" == "--get-amber-updates-only" -o "$1" == "-u" ]; then
     get_amber_updates

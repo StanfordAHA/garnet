@@ -29,7 +29,7 @@ EXAMPLE test from inside docker
     # 2a. Run the test using garnet branch e.g. "amber-docker-updates"
 
       dexec "cd /aha/garnet && git fetch origin && git checkout origin/amber-docker-updates"
-      dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh --get-amber-updates-only > tmp"
+      dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh -u | tee tmp"
       dexec "set -x; source tmp"
       dexec "/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh --local"
 
@@ -47,7 +47,7 @@ EXAMPLE test from inside docker
       /bin/rm -rf /tmp/garnet
 
       # Update the docker container for amber build
-      updates=\`dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh --get-amber-updates-only"\`
+      updates=\`dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh -u"\`
       dexec "set -x; \$updates"
 
       # Run the test
