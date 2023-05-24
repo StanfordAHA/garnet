@@ -151,9 +151,15 @@ f1=design.v; f2=$ref
 # exactly the same but different "unq" suffixes e.g.
 #     < Register_unq3 Register_inst0 (
 #     > Register_unq2 Register_inst0 (
-function vcompare { sort $1 | sed 's/,$//' | sed 's/unq[0-9*]/unq/'; }
+function vcompare { sort $1 | sed 's/,$//' | sed 's/unq[0-9*]/unq/' | sed '/^\s*$/d'; }
 
-ndiffs=`diff -I Date <(vcompare $f1) <(vcompare $f2) | wc -l`
+printf "\n"
+echo Comparing `vcompare $f1 | wc -l` lines of $f1
+echo to `vcompare $f2 | wc -l` lines of $f2
+printf "\n"
+
+printf "diff $f1 $f2"
+ndiffs=`diff -Bb -I Date <(vcompare $f1) <(vcompare $f2) | wc -l`
 
 if [ "$ndiffs" != "0" ]; then
 
