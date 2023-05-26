@@ -29,7 +29,7 @@ EXAMPLE test from inside docker
     # 2a. Run the test using garnet branch e.g. "amber-docker-updates"
 
       dexec "cd /aha/garnet && git fetch origin && git checkout origin/amber-docker-updates"
-      dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh --get-amber-updates-only > tmp"
+      dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh -u | tee tmp"
       dexec "set -x; source tmp"
       dexec "/aha/garnet/tests/test_amber_rtl_build/amber-rtl-build-check.sh --local"
 
@@ -47,7 +47,7 @@ EXAMPLE test from inside docker
       /bin/rm -rf /tmp/garnet
 
       # Update the docker container for amber build
-      updates=\`dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh --get-amber-updates-only"\`
+      updates=\`dexec "/aha/garnet/mflowgen/common/rtl/gen_rtl.sh -u"\`
       dexec "set -x; \$updates"
 
       # Run the test
@@ -142,8 +142,9 @@ fi
 printf "\n"
 echo "+++ Compare result to reference build"
 
-# Reference designs are gzipped to saze space
+# Reference designs are gzipped to save space
 ref=garnet-4x2.v
+test -f $ref && rm $ref
 cp $scriptdir/ref/$ref.gz .; gunzip $ref.gz
 f1=design.v; f2=$ref
 
@@ -151,9 +152,15 @@ f1=design.v; f2=$ref
 # exactly the same but different "unq" suffixes e.g.
 #     < Register_unq3 Register_inst0 (
 #     > Register_unq2 Register_inst0 (
-function vcompare { sort $1 | sed 's/,$//' | sed 's/unq[0-9*]/unq/'; }
+function vcompare { sort $1 | sed 's/,$//' | sed 's/unq[0-9*]/unq/' | sed '/^\s*$/d'; }
 
-ndiffs=`diff -I Date <(vcompare $f1) <(vcompare $f2) | wc -l`
+printf "\n"
+echo "Comparing `vcompare $f1 | wc -l` lines of $f1"
+echo "versus    `vcompare $f2 | wc -l` lines of $f2"
+printf "\n"
+
+echo "diff $f1 $f2"
+ndiffs=`diff -Bb -I Date <(vcompare $f1) <(vcompare $f2) | wc -l`
 
 if [ "$ndiffs" != "0" ]; then
 

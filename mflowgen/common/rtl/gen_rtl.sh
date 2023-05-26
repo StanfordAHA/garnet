@@ -11,15 +11,22 @@ function get_amber_updates {
       cd /aha/canal        && git checkout 6fec524;
       cd /aha/clockwork    && git checkout efdd95e;
       cd /aha/gemstone     && git checkout 28b10a6;
-      cd /aha/kratos       && git checkout 873b369;
       cd /aha/lake         && git checkout 837ffe1;
+    '
+}
+function update_kratos {
+    # (currently unused maybe, but leave it here for future ref)
+    # kratos is extra
+    echo '
+      cd /aha/kratos && git checkout 873b369;
       cd /aha/kratos && rm -rf build;
       source /aha/bin/activate && cd /aha/kratos && pip install . --no-cache-dir --no-binary kratos;
     '
 }
 # Option to simply print update commands and exit
-if [ "$1" == "--get-amber-updates-only" ]; then
+if [ "$1" == "--get-amber-updates-only" -o "$1" == "-u" ]; then
     get_amber_updates
+    # update_kratos
     exit
 fi
 
