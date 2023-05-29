@@ -164,6 +164,7 @@ int glb_map(void *kernel_) {
         kernel_crossbar_config += (crossbar_config[i] << (((int)ceil(log(NUM_GLB_TILES) / log(2))) * i));
     }
     add_config(&kernel->config, GLC_GLB_FLUSH_CROSSBAR_R, kernel_crossbar_config << GLC_GLB_FLUSH_CROSSBAR_SEL_F_LSB);
+
     printf("Configuration of flush signal crossbar is updated to 0x%0x\n", kernel_crossbar_config);
 
     char* reg_write = kernel->bin_dir;
@@ -230,10 +231,21 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
             mode = LD_DMA_VALID_MODE_READY_VALID;
         else
             mode = LD_DMA_VALID_MODE_STATIC;
+	// if(io_tile_info->pos.x == 4){
+    //     printf("flush mode\n");
         add_config(config_info,
-                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
+                  (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
                    ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
-                    (mux_sel << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)));
+                     (0b01 << GLB_LD_DMA_CTRL_FLUSH_MODE_F_LSB)
+                    | (mux_sel << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)));
+	// } else {
+    //         printf("reg mode\n");
+	//         add_config(config_info,
+    //               (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
+    //               ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
+    //                (mux_sel << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)));
+
+	// }
         add_config(config_info,
                    (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_HEADER_0_DIM_R,
                    loop_dim);
