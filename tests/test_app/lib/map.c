@@ -57,6 +57,7 @@ void update_bs_configuration(struct BitstreamInfo *bs_info) {
 int glb_map(void *kernel_) {
     struct KernelInfo *kernel = kernel_;
     int num_groups = kernel->num_groups;
+    printf("number of monitor groups: %d\n", monitor.num_groups);
     printf("number of groups: %d\n", num_groups);
 
     // This is just greedy algorithm to schedule applications
@@ -82,10 +83,14 @@ int glb_map(void *kernel_) {
         if (success != 0) break;
     }
     // no available group
+    
+    group_start = 0; 
     if (group_start == -1) {
         printf("Application does not fit on array. Possible error CGRA too small, applications overlapping\n");
         return 0;
     }
+
+    printf("group start: %d\n", group_start);
 
     for (int i = group_start; i < group_start + num_groups; i++) {
         monitor.groups[i] = 1;
