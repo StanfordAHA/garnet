@@ -250,6 +250,14 @@ class CoreCombinerCore(LakeCoreBase):
 
         for name, v in configs_cc:
             configs = [self.get_config_data(name, v)] + configs
+
+        configs_pre = [
+                ('flush_mux_sel', 1),
+            ]
+
+        for name, v in configs_pre:
+            configs = [self.get_config_data(name, v)] + configs
+
         return configs
 
     def pnr_info(self):

@@ -1353,6 +1353,8 @@ class SparseTBBuilder(m.Generator2):
                     if "glb" in node.get_name():
                         node_config_kwargs['sparse_mode'] = 1
                     self.nlb.configure_tile(core_node.get_name(), (1, node_config_kwargs))
+        self.nlb.configure_tile("i0", (1, node_config_kwargs))
+
 
     def display_names(self):
         if self.bespoke:

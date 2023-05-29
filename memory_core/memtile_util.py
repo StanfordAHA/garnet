@@ -775,6 +775,12 @@ class NetlistBuilder():
                     self._netlist[conn_name][i] = (mapped_core, remapped_sig)
 
         print("Done remapping...")
+        
+        fixed_io["i0"] = (4, 0)
+        fixed_io["m0"] = (3, 1)
+        fixed_io["m2"] = (3, 2)
+        fixed_io["m4"] = (3, 3)
+        fixed_io["m6"] = (3, 4)
 
         self._placement, self._routing, _ = pnr(self._interconnect,
                                                 (self._netlist, self._bus),
