@@ -29,6 +29,7 @@ import archipelago
 import archipelago.power
 import archipelago.io
 import math
+from collections import defaultdict
 
 from peak_gen.peak_wrapper import wrapped_peak_class
 from peak_gen.arch import read_arch
@@ -515,7 +516,7 @@ class Garnet(Generator):
         if unconstrained_io:
             fixed_io = None
         else:
-            fixed_io = place_io_blk(id_to_name)
+            fixed_io = place_io_blk(id_to_name, app_dir)
 
         placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
                                                          load_only=load_only,
@@ -529,15 +530,60 @@ class Garnet(Generator):
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
+    def fix_pond_flush_bug(self, placement, routing):
+        # This is a fix for the Onyx pond hardware, in future chips we can remove this
+        pond_locs = []
+        for node, (x, y) in placement.items():
+            if node[0] == "M" or (node in self.pes_with_packed_ponds and self.pes_with_packed_ponds[node][0] == "M"):
+                pond_locs.append((x, y))
+
+        ponds_with_routed_flush = []
+        pond_to_1bit_routes = defaultdict(set)
+        for _, route in routing.items():
+            for segment in route:
+                if "flush" in segment[-1].node_str() and "flush" in segment[-1].node_str() and (segment[-1].x, segment[-1].y) in pond_locs:
+                    ponds_with_routed_flush.append((segment[-1].x, segment[-1].y))
+                for node in  segment:
+                    if "SB" in str(node) and node.io.value == 0 and node.width == 1 and (node.x, node.y) in pond_locs:
+                        pond_to_1bit_routes[(node.x, node.y)].add((node.track, node.side.value))
+                        
+        bitstream = []
+        for (x,y), nodes in pond_to_1bit_routes.items():
+            need_fix = False
+            for node in nodes:
+                if node[0] == 0 and node[1] == 3 and (x,y) not in ponds_with_routed_flush:
+                    need_fix = True
+
+            if need_fix:
+                found_fix = False
+                for side in range(4):
+                    for track in range(5):
+                        if (side, track+1) not in nodes:
+                            found_fix = True
+                            break
+                    if found_fix:
+                        break
+
+                assert found_fix, f"HW bug at flush CB {x},{y} the pond at this location will flush randomly, you will need to change the place and route result"
+                source_str = ["SB", track+1, x, y, side, 0, 1]
+                source_node = self.interconnect.parse_node(source_str)
+                dest_str = ["PORT", "flush", x, y, 1]
+                dest_node = self.interconnect.parse_node(dest_str)
+                bitstream += self.interconnect.get_node_bitstream_config(source_node, dest_node)
+        return bitstream
+
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
                            compact=False):
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
+        
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
+        bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instance_to_instr)
+
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
         inputs, outputs = self.get_input_output(netlist)
