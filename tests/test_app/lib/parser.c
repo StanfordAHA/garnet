@@ -21,10 +21,9 @@ static int bitstream_info_index = 0;
 static struct IOInfo io_info_list[MAX_NUM_KERNEL * MAX_NUM_IO];
 static int io_info_index = 0;
 
-// parse the place file to calculate the number of columns used
-// currently counts columns by tiles, not routes, buffering with one extra column 
+// parse the route file to calculate the number of columns used
 int parse_num_group(struct KernelInfo *info) {
-    char *filename = info->placement_filename;
+    char *filename = info->bitstream_filename;
 
     FILE *fp;
     char *line = NULL;
@@ -41,7 +40,6 @@ int parse_num_group(struct KernelInfo *info) {
 
     while ((read = getline(&line, &len, fp)) != -1) {
         if (read == 0) continue;
-        if (line[0] == '-' || line[0] == 'B') continue;
 
         // we parse one char at a time
         int idx = 0, buf_index = 0;
@@ -62,17 +60,14 @@ int parse_num_group(struct KernelInfo *info) {
             }
             idx++;
         } while (c != EOF && c != '\n' && idx < read);
-        if (buf_index < 4) continue;
-        char *s_x = buffer[1];
+        char *s_x = buffer[0];
         // char *s_y = buffer[2];
-        int x = atoi(s_x);  // NOLINT
-        // int y = atoi(s_y); // NOLINT
+        int number  = (int)strtol(s_x, NULL, 16);
+        int x = (number & 0xff00) >> 8;
 
         if (x > max_x) max_x = x;
     }
 
-    // Add another column for possible routing
-    max_x += 1;
     info->num_groups = (max_x + GROUP_SIZE) / GROUP_SIZE;
 
     // clean up

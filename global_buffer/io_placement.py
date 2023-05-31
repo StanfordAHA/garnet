@@ -8,7 +8,7 @@ def natural_keys(text):
     return [ atoi(c) for c in re.split(r'(\d+)', text) ]
 
 
-def place_io_blk(id_to_name):
+def place_io_blk(id_to_name, app_dir):
     """Hacky function to place the IO blocks"""
 
     if os.getenv('WHICH_SOC') == "amber":
@@ -85,4 +85,11 @@ def place_io_blk(id_to_name):
     if reset is not None:
         placement[reset] = (0, 0)
 
+    # manual placement of PE/MEM tiles if needed
+    if os.path.isfile(app_dir + "/manual.place"):
+        with open(app_dir + "/manual.place", "r") as f:
+            data = f.readlines()
+            for dat in data:
+                name, x, y = tuple(dat.split(" "))
+                placement[name] = (x.strip(), y.strip())
     return placement
