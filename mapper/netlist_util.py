@@ -603,6 +603,162 @@ class FixInputsOutputAndPipeline(Visitor):
                 source_idx += 1
             sink.set_children(*children_temp)
 
+    def create_register_chain_IO2MEM(
+        self,
+        new_io_node,
+        new_select_node,
+        old_select_node,
+        sinks,
+        bit,
+        min_stages=2,
+        chain_branch_factor=2,
+    ):
+        if bit:
+            register_source = BitRegisterSource
+            register_sink = BitRegisterSink
+        else:
+            register_source = RegisterSource
+            register_sink = RegisterSink
+
+        print("Creating register chain for:", new_io_node.iname, "with", len(sinks), "sinks")
+        
+        # reorder pond sinks for PnR
+        if "io16in_kernel_host_stencil" in new_io_node.iname:
+            sinks_order_dict = {}
+            for _ in range(len(sinks)):
+                sink_node = sinks[_]
+                reg_idx = int(re.search(r"BANK_(\d+)_", sink_node.iname).group(1))
+                sinks_order_dict.update({sink_node: reg_idx})
+            sorted_sinks_order_dict = sorted(sinks_order_dict.items(), key=lambda x: x[1])
+            sorted_sinks_order_dict = dict(sorted_sinks_order_dict)
+            sinks_seq = list(sorted_sinks_order_dict.keys())
+            half = len(sinks) // 2
+            sinks = sinks_seq[:half] + sinks_seq[half:][::-1]
+        
+        # use more input regs for input broadcast paths
+        if "io16in_input_host_stencil" in new_io_node.iname:
+            min_stages = 4
+
+        itr_sinks = [sinks]
+
+        if min_stages > 1:
+            for _ in range(min_stages - 1):
+                if _ == 0:
+                    new_reg_sink = register_sink(
+                        new_select_node, iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                    )
+                else:
+                    new_reg_sink = register_sink(
+                        new_reg_source, iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                    )
+                new_reg_source = register_source(
+                    iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                )
+                self.added_regs += 1
+                self.dag_sources.append(new_reg_source)
+                self.dag_sinks.append(new_reg_sink)
+                self.node_map[new_reg_source] = new_reg_source
+                self.node_map[new_reg_sink] = new_reg_sink
+
+        self.added_regs += 1
+        self.dag_sources.append(new_reg_source)
+        self.dag_sinks.append(new_reg_sink)
+        self.node_map[new_reg_source] = new_reg_source
+        self.node_map[new_reg_sink] = new_reg_sink
+
+        chain_source = new_reg_source
+        for sinks_reg in itr_sinks:
+            prev_reg_source = chain_source
+            for idx, sink in enumerate(sinks_reg):
+
+                if idx % chain_branch_factor == 0:
+                    new_reg_sink = register_sink(
+                        prev_reg_source,
+                        iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                    )
+                    new_reg_source = register_source(
+                        iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                    )
+                    self.added_regs += 1
+                    self.dag_sources.append(new_reg_source)
+                    self.dag_sinks.append(new_reg_sink)
+                    self.node_map[new_reg_source] = new_reg_source
+                    self.node_map[new_reg_sink] = new_reg_sink
+                    children_temp = list(sink.children())
+                    reg_index = children_temp.index(old_select_node)
+                    children_temp[reg_index] = new_reg_source
+                    sink.set_children(*children_temp)
+
+                    prev_reg_source = new_reg_source
+                else:
+                    children_temp = list(sink.children())
+                    reg_index = children_temp.index(old_select_node)
+                    children_temp[reg_index] = new_reg_source
+                    sink.set_children(*children_temp)
+
+    def create_register_chain_MEM2PE(
+        self,
+        new_io_node,
+        new_select_node,
+        old_select_node,
+        sinks,
+        bit,
+        chain_branch_factor = 2,
+    ):
+        if bit:
+            register_source = BitRegisterSource
+            register_sink = BitRegisterSink
+        else:
+            register_source = RegisterSource
+            register_sink = RegisterSink
+
+        print("Creating register chain for:", new_io_node.iname, "with", len(sinks), "sinks")
+
+        # reorder the PE sinks for PnR
+        sinks_order_dict = {}
+        for _ in range(len(sinks)):
+            sink_node = sinks[_]
+            reg_idx = int(re.search(r"i(\d+)", sink_node.iname).group(1))
+            sinks_order_dict.update({sink_node: reg_idx})
+        sorted_sinks_order_dict = sorted(sinks_order_dict.items(), key=lambda x: x[1])
+        sorted_sinks_order_dict = dict(sorted_sinks_order_dict)
+        sinks_seq = list(sorted_sinks_order_dict.keys())
+        sinks = []
+        for _ in range(len(sinks_seq)//2):
+            sinks.append(sinks_seq[_])
+            sinks.append(sinks_seq[_ + len(sinks_seq)//2])
+        if len(sinks_seq) % 2 == 1:
+            sinks.append(sinks_seq[len(sinks_seq)//2])
+        half = len(sinks)//2
+        (sinks_left, sinks_right) = (sinks[:half][::-1], sinks[half:])
+
+        for sinks_reg in [sinks_left, sinks_right]:
+            prev_reg_source = new_select_node
+            for idx, sink in enumerate(sinks_reg):
+                if idx % chain_branch_factor == 0:
+                    new_reg_sink = register_sink(
+                        prev_reg_source,
+                        iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                    )
+                    new_reg_source = register_source(
+                        iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                    )
+                    self.added_regs += 1
+                    self.dag_sources.append(new_reg_source)
+                    self.dag_sinks.append(new_reg_sink)
+                    self.node_map[new_reg_source] = new_reg_source
+                    self.node_map[new_reg_sink] = new_reg_sink
+                    children_temp = list(sink.children())
+                    reg_index = children_temp.index(old_select_node)
+                    children_temp[reg_index] = new_reg_source
+                    sink.set_children(*children_temp)
+                    prev_reg_source = new_reg_source
+                else:
+                    children_temp = list(sink.children())
+                    reg_index = children_temp.index(old_select_node)
+                    children_temp[reg_index] = new_reg_source
+                    sink.set_children(*children_temp)
+    
     def visit_Select(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if not (
@@ -612,17 +768,41 @@ class FixInputsOutputAndPipeline(Visitor):
             new_children = [self.node_map[child] for child in node.children()]
             io_child = new_children[0]
 
+            # -----------------IO-to-MEM/Pond Paths Pipelining-------------------- #
             if "io16in" in io_child.iname:
                 new_node = new_children[0].select("io2f_17")
                 if self.pipeline_inputs:
-                    self.create_register_tree(
-                        io_child,
-                        new_node,
-                        node,
-                        self.sinks[node],
-                        False,
-                        min_stages=self.max_flush_cycles,
-                    )
+                    if "IO2MEM_REG_CHAIN" not in os.environ:
+                        self.create_register_tree(
+                            io_child,
+                            new_node,
+                            node,
+                            self.sinks[node],
+                            False,
+                            min_stages=self.max_flush_cycles,
+                        )
+                    else:
+                        self.create_register_chain_IO2MEM(
+                            io_child,
+                            new_node,
+                            node,
+                            self.sinks[node],
+                            False,
+                        )
+
+            # -----------------MEM-to-PE Paths Pipelining-------------------- #
+            elif "input_cgra_stencil" in io_child.iname:
+                new_node = new_children[0].select("data_out_0")
+                if "MEM2PE_REG_CHAIN" in os.environ:
+                    if self.pipeline_inputs:
+                        self.create_register_chain_MEM2PE(
+                            io_child,
+                            new_node,
+                            node,
+                            self.sinks[node],
+                            False,
+                        )
+
             elif "io1in" in io_child.iname:
                 new_node = new_children[0].select("io2f_1")
                 if self.pipeline_inputs:
@@ -914,6 +1094,7 @@ def create_netlist_info(
     if "MANUAL_PLACER" in os.environ:
         graph = NetlistGraph(info)
         graph.get_in_ub_latency(app_dir = app_dir)
+        graph.get_compute_kernel_latency(app_dir = app_dir)
         
         # remove mem reg in conn for manual placement
         graph.remove_mem_reg_tree()
