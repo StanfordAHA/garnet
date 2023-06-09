@@ -37,7 +37,7 @@ steps:
 
 - label: 'setup 5m'
   commands:
-  - 'echo "--- DOCKER SETUP"; docker pull stanfordaha/garnet:latest'
+  - 'echo "--- RTL SETUP"; docker pull stanfordaha/garnet:latest'
   - '
      echo "--- PD SETUP";
      set -o pipefail;
@@ -79,7 +79,6 @@ steps:
         shell: ["/bin/bash", "-e", "-c"]
 
 - wait
-
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
