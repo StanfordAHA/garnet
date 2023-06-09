@@ -5,7 +5,6 @@
 # Author :
 # Date   :
 #
-
 import os
 import sys
 
@@ -22,7 +21,9 @@ def construct():
   #-----------------------------------------------------------------------
 
   adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
-  adk_view = 'multivt'
+  # adk_view = 'multivt'
+  adk_view = 'view-standard'
+  adk_stdcell = 'b15_7t_108pp'
   which_soc = 'onyx'
 
   # TSMC override(s)
@@ -33,9 +34,10 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'global_controller',
-    'clock_period'      : 1.0,
+    'clock_period'      : 1.0*1000,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
+    'adk_stdcell'       : adk_stdcell,
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : True,

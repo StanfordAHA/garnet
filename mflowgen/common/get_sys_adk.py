@@ -11,6 +11,8 @@ def get_sys_adk():
             adk_name = 'gf12-adk'
         elif os.path.isdir('/tsmc16'):
             adk_name = 'tsmc16'
+        elif os.path.isdir('/intel16'):
+            adk_name = 'intel16-adk'
         else:
             raise EnvironmentError('Set MFLOWGEN_ADK_NAME environment variable to name of adk you wish to use.')
 
