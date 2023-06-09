@@ -40,10 +40,12 @@ steps:
   - rm -rf /aha/garnet
   - ls /workdir
   - cp -rp /workdir /aha/garnet
+  - cd /aha; git log | head
   - /aha/aha/bin/rtl-goldcheck.sh amber
   plugins:
     - docker#v3.2.0:
         image: stanfordaha/garnet:latest
+        always-pull: true
         volumes:
           - "/cad/:/cad"
         mount-checkout: true
