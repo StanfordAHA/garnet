@@ -38,7 +38,8 @@ steps:
 - label: "Gold RTL: Amber"
   commands:
   - rm -rf /aha/garnet
-  - mv /workdir /aha/garnet
+  - ls /workdir
+  - cp -rp /workdir /aha/garnet
   - /aha/aha/bin/rtl-goldcheck.sh amber
   plugins:
     - docker#v3.2.0:
