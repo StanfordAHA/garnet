@@ -1,5 +1,3 @@
-FOOOOOOOO
-
 import os
 if os.getenv('WHICH_SOC') == "amber":
     import garnet_amber

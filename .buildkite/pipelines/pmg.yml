@@ -35,7 +35,7 @@ steps:
 ##############################################################################
 # COMMON SETUP to initialize mflowgen
 
-- label: 'setup 2m'
+- label: 'setup 5m'
   commands:
   - 'echo "--- DOCKER SETUP"; docker pull stanfordaha/garnet:latest'
   - '
