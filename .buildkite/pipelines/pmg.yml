@@ -33,7 +33,23 @@ env:
 steps:
 
 ##############################################################################
+# COMMON SETUP to initialize mflowgen
+
+- label: 'setup 2m'
+  commands:
+  - 'echo "--- DOCKER SETUP"; docker pull stanfordaha/garnet:latest'
+  - '
+     echo "--- PD SETUP";
+     set -o pipefail;
+     $$SETUP --dir .;
+    '
+- wait
+
+
+##############################################################################
 # Two quick RTL checks
+
+#        always-pull: true
 
 - label: "Gold RTL: Amber"
   commands:
@@ -45,42 +61,34 @@ steps:
   plugins:
     - docker#v3.2.0:
         image: stanfordaha/garnet:latest
-        always-pull: true
         volumes:
           - "/cad/:/cad"
         mount-checkout: true
         shell: ["/bin/bash", "-e", "-c"]
 
-# - label: "Gold RTL: Onyx"
-#   commands:
-#   - rm -rf /aha/garnet
-#   - mv /workdir /aha/garnet
-#   - /aha/aha/bin/rtl-goldcheck.sh onyx
-#   plugins:
-#     - docker#v3.2.0:
-#         image: garnet:latest
-#         volumes:
-#           - "/cad/:/cad"
-#         mount-checkout: true
-#         shell: ["/bin/bash", "-e", "-c"]
+- label: "Gold RTL: Onyx"
+  commands:
+  - rm -rf /aha/garnet
+  - ls /workdir
+  - cp -rp /workdir /aha/garnet
+  - cd /aha; git log | head
+  - /aha/aha/bin/rtl-goldcheck.sh onyx
+  plugins:
+    - docker#v3.2.0:
+        image: stanfordaha/garnet:latest
+        volumes:
+          - "/cad/:/cad"
+        mount-checkout: true
+        shell: ["/bin/bash", "-e", "-c"]
+
 
 - wait
 
 - label:   'exit 13 and quit'
   command: 'exit 13'
-
-
-##############################################################################
-# COMMON SETUP to initialize mflowgen
-
-- label: 'setup 2m'
-  commands:
-  - '
-     echo "--- SETUP";
-     set -o pipefail;
-     $$SETUP --dir .;
-    '
 - wait
+
+
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
