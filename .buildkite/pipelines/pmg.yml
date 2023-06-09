@@ -45,13 +45,10 @@ steps:
     '
 - wait
 
-
 ##############################################################################
-# Two quick RTL checks
+# Two quick RTL checks running in docker containers
 
-#        always-pull: true
-
-- label: "Gold RTL: Amber"
+- label: "Gold RTL: Amber 1m"
   commands:
   - rm -rf /aha/garnet
   - ls /workdir
@@ -59,14 +56,14 @@ steps:
   - cd /aha; git log | head
   - /aha/aha/bin/rtl-goldcheck.sh amber
   plugins:
-    - docker#v3.2.0:
-        image: stanfordaha/garnet:latest
-        volumes:
-          - "/cad/:/cad"
-        mount-checkout: true
-        shell: ["/bin/bash", "-e", "-c"]
+  - docker#v3.2.0:
+    image: stanfordaha/garnet:latest
+    volumes:
+    - "/cad/:/cad"
+    mount-checkout: true
+    shell: ["/bin/bash", "-e", "-c"]
 
-- label: "Gold RTL: Onyx"
+- label: "Gold RTL: Onyx 1m"
   commands:
   - rm -rf /aha/garnet
   - ls /workdir
@@ -74,21 +71,14 @@ steps:
   - cd /aha; git log | head
   - /aha/aha/bin/rtl-goldcheck.sh onyx
   plugins:
-    - docker#v3.2.0:
-        image: stanfordaha/garnet:latest
-        volumes:
-          - "/cad/:/cad"
-        mount-checkout: true
-        shell: ["/bin/bash", "-e", "-c"]
-
+  - docker#v3.2.0:
+    image: stanfordaha/garnet:latest
+    volumes:
+    - "/cad/:/cad"
+    mount-checkout: true
+    shell: ["/bin/bash", "-e", "-c"]
 
 - wait
-
-- label:   'exit 13 and quit'
-  command: 'exit 13'
-- wait
-
-
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
