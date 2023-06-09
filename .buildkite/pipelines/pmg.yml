@@ -46,7 +46,7 @@ steps:
 - wait
 
 ##############################################################################
-# Two quick RTL checks running in docker containers
+# Two quick RTL checks
 
 - label: "Gold RTL: Amber 1m"
   commands:
@@ -56,12 +56,12 @@ steps:
   - cd /aha; git log | head
   - /aha/aha/bin/rtl-goldcheck.sh amber
   plugins:
-  - docker#v3.2.0:
-    image: stanfordaha/garnet:latest
-    volumes:
-    - "/cad/:/cad"
-    mount-checkout: true
-    shell: ["/bin/bash", "-e", "-c"]
+    - docker#v3.2.0:
+        image: stanfordaha/garnet:latest
+        volumes:
+          - "/cad/:/cad"
+        mount-checkout: true
+        shell: ["/bin/bash", "-e", "-c"]
 
 - label: "Gold RTL: Onyx 1m"
   commands:
@@ -71,14 +71,13 @@ steps:
   - cd /aha; git log | head
   - /aha/aha/bin/rtl-goldcheck.sh onyx
   plugins:
-  - docker#v3.2.0:
-    image: stanfordaha/garnet:latest
-    volumes:
-    - "/cad/:/cad"
-    mount-checkout: true
-    shell: ["/bin/bash", "-e", "-c"]
+    - docker#v3.2.0:
+        image: stanfordaha/garnet:latest
+        volumes:
+          - "/cad/:/cad"
+        mount-checkout: true
+        shell: ["/bin/bash", "-e", "-c"]
 
-- wait
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
