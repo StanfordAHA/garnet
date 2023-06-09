@@ -78,6 +78,8 @@ steps:
         mount-checkout: true
         shell: ["/bin/bash", "-e", "-c"]
 
+- wait
+
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
