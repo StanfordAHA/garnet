@@ -775,12 +775,38 @@ class NetlistBuilder():
                     self._netlist[conn_name][i] = (mapped_core, remapped_sig)
 
         print("Done remapping...")
-        
-        fixed_io["i0"] = (4, 0)
+                
+        #fixed_io["i0"] = (4, 0)
+        fixed_io["I1"] = (0, 0)
+        fixed_io["I7"] = (2, 0)
+        fixed_io["I3"] = (1, 0)
+        fixed_io["I5"] = (3, 0)
+
+        fixed_io["I1_2"] = (4, 0)
+        fixed_io["I7_2"] = (6, 0)
+        fixed_io["I3_2"] = (5, 0)
+        fixed_io["I5_2"] = (7, 0)
+
+        # config 1
         fixed_io["m0"] = (3, 1)
         fixed_io["m2"] = (3, 2)
         fixed_io["m4"] = (3, 3)
         fixed_io["m6"] = (3, 4)
+        fixed_io["m0_2"] = (3, 5)
+        fixed_io["m2_2"] = (3, 6)
+        fixed_io["m4_2"] = (3, 7)
+        fixed_io["m6_2"] = (3, 8)
+
+        # # config 2
+        # fixed_io["m0_2"] = (3, 1)
+        # fixed_io["m2_2"] = (3, 2)
+        # fixed_io["m4_2"] = (3, 3)
+        # fixed_io["m6_2"] = (3, 4)
+        # fixed_io["m0"] = (3, 5)
+        # fixed_io["m2"] = (3, 6)
+        # fixed_io["m4"] = (3, 7)
+        # fixed_io["m6"] = (3, 8)
+
 
         self._placement, self._routing, _ = pnr(self._interconnect,
                                                 (self._netlist, self._bus),
@@ -891,6 +917,11 @@ class NetlistBuilder():
         core_x, core_y = self._placement[core]
         core_config_data = self._interconnect.configure_placement(core_x, core_y, config, **kwargs)
         self._config_data += core_config_data
+        if "m" in core or "I" in core:
+            new_mem_tile = core+"_2"
+            core_x, core_y = self._placement[new_mem_tile]
+            core_config_data = self._interconnect.configure_placement(core_x, core_y, config, **kwargs)
+            self._config_data += core_config_data
 
     def finalize_config(self):
         # Also generate placement..
