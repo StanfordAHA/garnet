@@ -4,7 +4,8 @@ from sam.sim.test.test import read_inputs
 
 
 def get_tensor(input_name=None, shapes=None, give_tensor=False,
-               tmp_dir=None, dump=None, suffix="", clean=False, tensor_ordering=None):
+               tmp_dir=None, dump=None, suffix="", clean=False, tensor_ordering=None, sparsity=None,
+               format='CSF'):
 
     if give_tensor:
         assert tmp_dir is not None
@@ -15,8 +16,8 @@ def get_tensor(input_name=None, shapes=None, give_tensor=False,
     else:
         assert dump is not None
         assert shapes is not None
-        matrix_gen = MatrixGenerator(name=input_name, shape=shapes, sparsity=0.7,
-                                     format='CSF', dump_dir=dump, clean=clean)
+        matrix_gen = MatrixGenerator(name=input_name, shape=shapes, sparsity=sparsity,
+                                     format=format, dump_dir=dump, clean=clean)
         matrix_gen.dump_outputs(suffix=suffix)
 
     ret_mat = matrix_gen.get_matrix()
