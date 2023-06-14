@@ -1750,7 +1750,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
                            sparsity=0)
-        c_mat = get_tensor(input_name='C', shapes=[shape_, shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        C_mat = get_tensor(input_name='C', shapes=[shape_, shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                            sparsity=sparsities_[0])
         d_mat = get_tensor(input_name='d', shapes=[shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
