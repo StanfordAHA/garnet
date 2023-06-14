@@ -113,6 +113,7 @@ def test_interconnect_point_wise(batch_size: int, run_tb, io_sides, get_mapping)
 
     run_tb(tester, include_PE=True)
 
+
 @pytest.mark.skip(reason="04/2023 skip for clean master branch, see garnet issue 924")
 def test_interconnect_sram(run_tb, io_sides, get_mapping):
     # NEW: PASSES

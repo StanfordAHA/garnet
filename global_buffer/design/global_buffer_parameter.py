@@ -84,9 +84,6 @@ class GlobalBufferParams:
     cgra_axi_data_width: int = 32
     cgra_cfg_addr_width: int = 32
     cgra_cfg_data_width: int = 32
-    load_dma_fifo_depth: int = 16
-    store_dma_fifo_depth: int = 4
-    max_num_chain: int = 8
 
     # Not used by TSMC (yet)
     load_dma_fifo_depth: int = 16
@@ -168,7 +165,6 @@ class GlobalBufferParams:
     # Not used by TSMC (yet)
     flush_crossbar_pipeline_depth: int = 1
 
-    flush_crossbar_pipeline_depth: int = 1
     rd_clk_en_margin: int = 3
     wr_clk_en_margin: int = 3
     proc_clk_en_margin: int = 4
@@ -201,12 +197,6 @@ def gen_global_buffer_params(**kwargs):
     cfg_addr_width = kwargs.pop('cfg_addr_width', 32)
     cfg_data_width = kwargs.pop('cfg_data_width', 32)
     is_sram_stub = kwargs.pop('is_sram_stub', 0)
-    config_port_pipeline = kwargs.pop('config_port_pipeline', True)
-
-    if config_port_pipeline is True:
-        config_port_pipeline_depth = 1
-    else:
-        config_port_pipeline_depth = 0
 
     # config_port_pipeline not used by TSMC (yet)
     # pop() returns True if config_port_pipeline not exists
