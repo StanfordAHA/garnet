@@ -281,14 +281,6 @@ def construct():
   # Antenna DRC Check
   antenna_drc = drc.clone()
   antenna_drc.set_name( 'antenna-drc' )
-  
-  # Pre-Fill DRC Check
-  prefill_drc = drc.clone()
-  prefill_drc.set_name( 'pre-fill-drc' )
-  
-  # Separate ADK for LVS so it has PM cells when needed
-  lvs_adk = adk.clone()
-  lvs_adk.set_name( 'lvs_adk' )
 
   if which_soc == 'onyx':
     # Pre-Fill DRC Check
@@ -428,7 +420,6 @@ def construct():
   g.add_step( rtl               )
   g.add_step( soc_rtl           )
   g.add_step( gen_sram          )
-  g.add_step( gen_sram_2        )
   g.add_step( tile_array        )
   g.add_step( glb_top           )
   g.add_step( global_controller )
@@ -442,7 +433,6 @@ def construct():
   g.add_step( custom_init       )
   g.add_step( power             )
   g.add_step( custom_power      )
-  g.add_step( custom_cts        )
   g.add_step( place             )
   g.add_step( cts               )
   g.add_step( postcts_hold      )
@@ -456,18 +446,11 @@ def construct():
   g.add_step( pt_signoff        )
   g.add_step( fill              )
   g.add_step( merge_fill        )
-  g.add_step( merge_gdr         )
   g.add_step( drc               )
-  g.add_step( drc_pm            )
-  g.add_step( drc_dp            )
-  g.add_step( drc_mas           )
   g.add_step( antenna_drc       )
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
   g.add_step( debugcalibre      )
-  
-  # Different adk view for lvs
-  g.add_step( lvs_adk        )
 
   # Post-Power DRC check
   g.add_step( power_drc         )
@@ -504,7 +487,6 @@ def construct():
   # Connect by name
 
   g.connect_by_name( adk,      gen_sram       )
-  g.connect_by_name( adk,      gen_sram_2     )
   g.connect_by_name( adk,      synth          )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
@@ -518,11 +500,7 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      fill           )
   g.connect_by_name( adk,      merge_fill     )
-  g.connect_by_name( adk,      merge_gdr      )
   g.connect_by_name( adk,      drc            )
-  g.connect_by_name( adk,      drc_pm         )
-  g.connect_by_name( adk,      drc_dp         )
-  g.connect_by_name( adk,      drc_mas        )
   g.connect_by_name( adk,      antenna_drc    )
 
   # Onyx-specific connections
@@ -682,6 +660,7 @@ def construct():
       # Run DRC on merged and filled gds
       g.connect_by_name( merge_fill, drc )
       g.connect_by_name( merge_fill, antenna_drc )
+
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
@@ -733,8 +712,8 @@ def construct():
       'main.tcl','quality-of-life.tcl',
       'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
       'alignment-cells.tcl',
-      #'analog-bumps/route-phy-bumps.tcl',
-      #'analog-bumps/bump-connect.tcl',
+      'analog-bumps/route-phy-bumps.tcl',
+      'analog-bumps/bump-connect.tcl',
       'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
       'place-macros.tcl', 'dont-touch.tcl'
     ]}
