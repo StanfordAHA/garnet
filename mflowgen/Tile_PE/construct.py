@@ -176,7 +176,6 @@ def construct():
   # Add extra input edges to innovus steps that need custom tweaks
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-  cts.extend_inputs( custom_cts.all_outputs() )
   genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
   synth.extend_inputs( custom_genus_scripts.all_outputs() )
   iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
@@ -262,7 +261,6 @@ def construct():
   g.add_step( custom_init              )
   g.add_step( power                    )
   g.add_step( custom_power             )
-  g.add_step( custom_cts               )
   g.add_step( place                    )
   g.add_step( cts                      )
   g.add_step( postcts_hold             )
@@ -275,7 +273,6 @@ def construct():
   g.add_step( genlibdb                 )
   g.add_step( lib2db                   )
   g.add_step( drc                      )
-  g.add_step( drc_pm                   )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
 
@@ -309,7 +306,6 @@ def construct():
   g.connect_by_name( adk,      postroute    )
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      drc          )
-  g.connect_by_name( adk,      drc_pm       )
   g.connect_by_name( adk,      lvs          )
 
   g.connect_by_name( rtl,         synth          )
@@ -337,11 +333,9 @@ def construct():
   g.connect_by_name( iflow,    route        )
   g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    signoff      )
-  g.connect_by_name( iflow,    genlibdb     )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
-  g.connect_by_name( custom_cts,   cts      )
 
   # Fetch short-fix script in prep for eventual use by postroute
   g.connect_by_name( short_fix, postroute )
@@ -355,10 +349,8 @@ def construct():
   g.connect_by_name( postroute,    signoff      )
 
   g.connect_by_name( signoff,      drc          )
-  g.connect_by_name( signoff,      drc_pm       )
   g.connect_by_name( signoff,      lvs          )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,              genlibdb )
@@ -384,7 +376,6 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc_pm,   debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 

@@ -281,10 +281,8 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( genlib         )
-  g.add_step( pt_genlibdb    )
   g.add_step( lib2db         )
   g.add_step( drc            )
-  g.add_step( drc_pm         )
   g.add_step( custom_lvs     )
   g.add_step( lvs            )
   g.add_step( debugcalibre   )
@@ -364,7 +362,6 @@ def construct():
       g.connect_by_name( Tile_MemCore,      pt_signoff     )
       g.connect_by_name( Tile_MemCore,      genlib         )
       g.connect_by_name( Tile_MemCore,      drc            )
-      g.connect_by_name( Tile_MemCore,      drc_pm         )
       g.connect_by_name( Tile_MemCore,      lvs            )
       # These rules LVS BOX the SRAM macro, so they should
       # only be used if memory tile is present
@@ -392,7 +389,6 @@ def construct():
   g.connect_by_name( Tile_PE,      pt_signoff     )
   g.connect_by_name( Tile_PE,      genlib         )
   g.connect_by_name( Tile_PE,      drc            )
-  g.connect_by_name( Tile_PE,      drc_pm         )
   g.connect_by_name( Tile_PE,      lvs            )
   if which_soc == "onyx":
     g.connect_by_name( Tile_PE,      pt_genlibdb    )
@@ -445,10 +441,8 @@ def construct():
   g.connect_by_name( postroute,    postroute_hold )
   g.connect_by_name( postroute_hold, signoff      )
   g.connect_by_name( signoff,      drc            )
-  g.connect_by_name( signoff,      drc_pm         )
   g.connect_by_name( signoff,      lvs            )
   g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
   if which_soc == "onyx":
     g.connect_by_name( signoff,      drc_pm         )
@@ -473,7 +467,6 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc_pm,   debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
   if which_soc == "onyx":
