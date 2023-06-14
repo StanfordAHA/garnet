@@ -1,7 +1,27 @@
-def place_io_blk(id_to_name):
+import re
+import os
+
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+def natural_keys(text):
+    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
+
+
+def place_io_blk(id_to_name, app_dir):
     """Hacky function to place the IO blocks"""
 
-    blks = [blk for blk, _ in sorted(id_to_name.items(), key=lambda item: item[1])]
+    if os.getenv('WHICH_SOC') == "amber":
+        blks = [blk for blk, _ in sorted(id_to_name.items(), key=lambda item: item[1])]
+
+    else:
+        # This is very hacky, if you change this sorting, the GLB scripts will break
+        id_to_name_list = list(id_to_name.items())
+
+        # Human sort thing from Kalhan used in GLB scripts
+        id_to_name_list.sort(key=lambda x: natural_keys(x[1]))
+
+        blks = [blk for (blk,_) in id_to_name_list]
 
     placement = {}
     # find out all the IO blocks
@@ -65,4 +85,11 @@ def place_io_blk(id_to_name):
     if reset is not None:
         placement[reset] = (0, 0)
 
+    # manual placement of PE/MEM tiles if needed
+    if os.path.isfile(app_dir + "/manual.place"):
+        with open(app_dir + "/manual.place", "r") as f:
+            data = f.readlines()
+            for dat in data:
+                name, x, y = tuple(dat.split(" "))
+                placement[name] = (x.strip(), y.strip())
     return placement

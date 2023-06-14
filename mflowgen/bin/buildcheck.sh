@@ -20,6 +20,10 @@ Usage: $0 [ -slrtgeah ] <build_dir>
   -e,--err     do_err
   -R, --retry  do_qcheck
   -q, --qrc    do_qcheck
+  -t --timing  check timing (frequency and slack)
+     --freq    check timing (frequency and slack)
+     --slack   check timing (frequency and slack)
+
 
 
 EOF
@@ -34,7 +38,7 @@ DBG=
 # Process command-line args
 build_dirs=()
 opstring=''
-ALL="sLrleRq"
+ALL="sLrleRqt"
 show_all_errs=false
 
 while [ $# -gt 0 ] ; do
@@ -51,6 +55,10 @@ while [ $# -gt 0 ] ; do
         --retr*) opstring="${opstring}R" ;; # retry or retries e.g.
         --qrc*)  opstring="${opstring}q" ;; # qrc check
         --QRC*)  opstring="${opstring}q" ;; # qrc check
+
+        --tim*)  opstring="${opstring}t" ;; # timing check, freq and slack
+        --freq)  opstring="${opstring}t" ;; # timing check, freq and slack
+        --slack) opstring="${opstring}t" ;; # timing check, freq and slack
 
         --all)   opstring="${opstring}${ALL}";  ;;
          -a)     opstring="${opstring}${ALL}";  ;;
@@ -107,6 +115,7 @@ done
 [ "${options[e]}" ] && do_err=true
 [ "${options[R]}" ] && do_qcheck=true
 [ "${options[q]}" ] && do_qcheck=true
+[ "${options[t]}" ] && do_timing=true
 
 if [ "$DBG" ]; then
     test "$do_sizes"    == true && echo DO_SIZES
@@ -115,6 +124,7 @@ if [ "$DBG" ]; then
     test "$do_logs"     == true && echo DO_LOGS
     test "$do_err"      == true && echo DO_ERR
     test "$do_qcheck"   == true && echo DO_QCHECK
+    test "$do_timing"   == true && echo DO_TIMING
     # exit
 fi
 
@@ -231,6 +241,18 @@ if [ "$do_sizes" ]; then
       # E.g. "16-Tile_MemCore   SIZE  243 BY   88 ; AREA     15645"
       printf "%-30s %s %4.0f %s %4.0f %s AREA %9.0f\n" $f1 $lef_size $signoff_area
 
+      # Look for size of e.g. "19-tile_array" or "17-tile_array"
+      # FATAL ERROR if tile array is bigger than the chip!!!
+      if expr "$f1" > /dev/null : '.*-tile_array$'; then 
+          xdim=`echo "$lef_size" | awk '{printf("%d", $2)}'`
+          ydim=`echo "$lef_size" | awk '{printf("%d", $4)}'`
+          if [ $xdim -gt 4700 ]; then 
+              msg="**ERROR/FATAL tile array x dimension > 4700 (overlaps pad frame!)"
+              FATAL=`printf "${FATAL}${msg}\n"`
+              echo $msg
+          fi
+      fi
+
     done
     if [ "$found_lefs" != "True" ]; then echo "  No lefs found"; fi
 fi
@@ -297,6 +319,38 @@ if [ "$do_logs" ]; then
 fi
 
 ########################################################################
+# Timing information (clock period / frequency and slack) via freq-slack.sh e.g.
+# Module                 Target Frequency     Slack
+# -------------------------------------------------
+# GarnetSOC            1000 MHz    1.00 ns   -3.670
+# 
+# global_controller    1000 MHz    1.00 ns   -0.004
+# global_buffer         900 MHz    1.11 ns   -3.136
+# glb_tile              900 MHz    1.11 ns   -0.162
+# 
+# tile_array            909 MHz    1.10 ns   -0.046
+# Tile_MemCore          909 MHz    1.10 ns   -0.034
+# Tile_PE               909 MHz    1.10 ns   -0.233
+# -------------------------------------------------
+#   * Clock speed from *-signoff/results/*.pt.sdc
+#   * Slack from */reports/postroute_all.tarpt
+if [ "$do_timing" ]; then
+    echo ''; echo "+++ TIMING"
+
+    function where_this_script_lives {
+        scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
+        scriptdir=${0%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
+        if test "$scriptdir" == "$scriptpath"; then scriptdir="."; fi
+        # scriptdir=`cd $scriptdir; pwd`
+        (cd $scriptdir; pwd)
+    }
+    script_home=`where_this_script_lives`
+    $script_home/freq-slack.sh .
+fi
+
+
+
+########################################################################
 # Check to see if we had to restart/retry anywhere b/c of QRC failures
 if [ "$do_qcheck" ]; then
     echo ''; echo '+++ RETRIES REQUIRED?'
@@ -330,7 +384,7 @@ if [ "$do_err" ]; then
     # echo $errfiles
 
     function chop { cut -b 1-$1; }
-    for f in $errfiles; do (
+    for f in $errfiles; do
 
         # Want only the lowest-level log file
         # e.g. "17-tile_array/17-Tile_PE/24-cadence-genus-genlib/logs/genus.log"
@@ -352,7 +406,7 @@ if [ "$do_err" ]; then
             | grep -v 'Error Limit' \
             | chop 80 | sort | uniq -c | sort -rn | head
         echo ""
-    ) done | $filter
+    done | $filter
 
     # find * -name \*.log -exec egrep '(^Error|^\*\*ERROR)' {} \; \
     #   | grep -v 'Error Limit' \
@@ -368,4 +422,15 @@ SEE ALL ERRORS (cut-n-paste):
       egrep -l "\$pat" \$L && egrep "\$pat" \$L && echo ''; done | less -S
 
 EOF
+
 fi
+
+if [ "$FATAL" ]; then
+    echo ""
+    echo "+++ FATAL ERRORS FOUND!!!"
+    echo "$FATAL"
+    exit 13
+fi
+
+                               
+

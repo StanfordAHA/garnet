@@ -160,3 +160,12 @@ def run_tb_fn(tester, cwd=None, trace=False, include_PE=False, **magma_args):
 @pytest.fixture
 def run_tb():
     return run_tb_fn
+
+
+# We'll try this. What's the worst that can happen?
+# The idea is that, if it's an amber build, the amber conftest defs
+# will seemlessly replace/supercede the defaults above haha
+import os
+if os.getenv('WHICH_SOC') == "amber":
+    import conftest_amber.py
+

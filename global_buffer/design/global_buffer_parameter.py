@@ -88,6 +88,11 @@ class GlobalBufferParams:
     store_dma_fifo_depth: int = 4
     max_num_chain: int = 8
 
+    # Not used by TSMC (yet)
+    load_dma_fifo_depth: int = 16
+    store_dma_fifo_depth: int = 4
+    max_num_chain: int = 8
+
     # cell parameters
     process: str = "GF"
     tsmc_icg_name: str = "CKLNQD1BWP16P90"
@@ -95,7 +100,7 @@ class GlobalBufferParams:
     tsmc_sram_macro_prefix: str = "TS1N16FFCLLSBLVTC2048X64M8SW"
     gf_sram_macro_prefix: str = "IN12LP_S1DB_"
 
-    # constant variables
+    # constant variables: not used by TSMC (yet)
     st_dma_valid_mode_valid: int = 0
     st_dma_valid_mode_ready_valid: int = 1
     st_dma_valid_mode_static: int = 2
@@ -160,6 +165,9 @@ class GlobalBufferParams:
                                   + sram_macro_read_latency
                                   )
 
+    # Not used by TSMC (yet)
+    flush_crossbar_pipeline_depth: int = 1
+
     flush_crossbar_pipeline_depth: int = 1
     rd_clk_en_margin: int = 3
     wr_clk_en_margin: int = 3
@@ -167,6 +175,7 @@ class GlobalBufferParams:
 
     is_sram_stub: int = 0
 
+    # Not used by TSMC (yet)
     config_port_pipeline_depth: int = 1
 
     # cycle count data width
@@ -175,6 +184,9 @@ class GlobalBufferParams:
     # interrupt cnt
     interrupt_cnt: int = 5
 
+    # TSMC-specific tweaks
+    if os.getenv('WHICH_SOC') == "amber":
+        process = "TSMC"
 
 def gen_global_buffer_params(**kwargs):
     # User-defined parameters
@@ -189,6 +201,15 @@ def gen_global_buffer_params(**kwargs):
     cfg_addr_width = kwargs.pop('cfg_addr_width', 32)
     cfg_data_width = kwargs.pop('cfg_data_width', 32)
     is_sram_stub = kwargs.pop('is_sram_stub', 0)
+    config_port_pipeline = kwargs.pop('config_port_pipeline', True)
+
+    if config_port_pipeline is True:
+        config_port_pipeline_depth = 1
+    else:
+        config_port_pipeline_depth = 0
+
+    # config_port_pipeline not used by TSMC (yet)
+    # pop() returns True if config_port_pipeline not exists
     config_port_pipeline = kwargs.pop('config_port_pipeline', True)
 
     if config_port_pipeline is True:

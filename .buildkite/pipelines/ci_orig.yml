@@ -1,0 +1,25 @@
+steps:
+- label: "Pruning docker images"
+  commands:
+  - yes | docker image prune -a --filter "until=24h" --filter=label='description=garnet' || true
+- wait
+- label: ":wrench: Build  and Test Garnet Unit Test"
+  commands:
+  - source /aha/bin/activate
+  - source /cad/modules/tcl/init/sh
+  - module load base xcelium/19.03.003 vcs
+  - rm -rf /aha/garnet
+  - cp -r /workdir /aha/garnet
+  - echo "--- Install requirements"
+  - pip install -r /aha/garnet/requirements.txt
+  - pip install pytest-cov pytest-pycodestyle z3-solver genesis2 coveralls
+  - echo "--- Running CI tests"
+  - cd /aha/garnet && bash .github/scripts/run.sh
+  plugins:
+    - docker#v3.2.0:
+        image: stanfordaha/garnet
+        volumes:
+          - "/cad/:/cad"
+        shell: ["/bin/bash", "-e", "-c"]
+  agents:
+    docker: true
