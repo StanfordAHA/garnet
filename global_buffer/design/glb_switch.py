@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, always_comb, posedge, concat, const, clog2
+from kratos import Generator, always_ff, always_comb, posedge, concat, const
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 from global_buffer.design.glb_tile_ifc import GlbTileInterface
 from global_buffer.design.glb_header import GlbHeader

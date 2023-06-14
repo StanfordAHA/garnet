@@ -306,11 +306,11 @@ class LakeCoreBase(ConfigurableCore):
             if cfg_info.expl_arr:
                 if cfg_info.port_size[0] > 1:
                     for i in range(cfg_info.port_size[0]):
-                        configurations.append((f"{cfg_info.port_name}_{i}", cfg_info.port_width, cfg_info.read_only))
+                        configurations.append((f"{cfg_info.port_name}_{i}", cfg_info.port_width))
                 else:
-                    configurations.append((cfg_info.port_name, cfg_info.port_width, cfg_info.read_only))
+                    configurations.append((cfg_info.port_name, cfg_info.port_width))
             else:
-                configurations.append((cfg_info.port_name, cfg_info.port_width, cfg_info.read_only))
+                configurations.append((cfg_info.port_name, cfg_info.port_width))
 
             if os.getenv('WHICH_SOC') != "amber":
                 configurations[-1] = configurations[-1] + (cfg_info.read_only,)
