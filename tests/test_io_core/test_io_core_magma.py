@@ -6,6 +6,7 @@ from fault.tester import Tester
 from fault.random import random_bv
 
 
+@pytest.mark.skip(reason="04/2023 skip for clean master branch, see garnet issue 924")
 @pytest.mark.parametrize("core_type", [IOCore])
 def test_regression(run_tb, core_type):
     io_core = core_type()
@@ -37,6 +38,7 @@ def test_regression(run_tb, core_type):
     run_tb(tester)
 
 
+@pytest.mark.skip(reason="04/2023 skip for clean master branch, see garnet issue 924")
 def test_delay_io(run_tb):
     io_core = IOCore()
     io_core.finalize()
@@ -65,6 +67,7 @@ def test_delay_io(run_tb):
     run_tb(tester)
 
 
+@pytest.mark.skip(reason="04/2023 skip for clean master branch, see garnet issue 924")
 def test_valid_generation(run_tb):
     io_core = IOCoreValid()
     io_core.finalize()

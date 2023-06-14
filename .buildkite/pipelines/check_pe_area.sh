@@ -1,13 +1,20 @@
-#!/usr/bin/bash
+#!/bin/bash
+
+# Can do e.g. "check_pe_area.sh --max 10400 215" to check dir
+# /build/gold.215 for max PE size 10400 (default is 8500)
+
+MAX=8500
+if [ "$1" == "--max" ]; then shift; MAX=$1; shift; fi
 
 # Can do e.g. "check_pe_area.sh 215" to check dir /build/gold.215
 # else defaults to curdir
+# (Or is this too silly)
 if [ "$1" != "" ]; then cd /build/gold.$1; fi
 
 
 cat <<EOF
 
---- FINAL CHECK: Tile_PE total area must be < 7500 u^2
+--- FINAL CHECK: Tile_PE total area must be < $MAX u^2
 
 EOF
 
@@ -19,7 +26,7 @@ echo $pe_dir
 
 # "echo" to unglob why not
 resdir=`echo $pe_dir/*synthesis/results_syn`
-egrep ^Tile_PE $resdir/final_area.rpt | awk -v max_area=11000 '
+egrep ^Tile_PE $resdir/final_area.rpt | awk -v max_area=$MAX '
 { printf("Total area: %d\n", $NF);
   if ($NF > max_area) {
     print ""

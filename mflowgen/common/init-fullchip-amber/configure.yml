@@ -1,0 +1,47 @@
+#=========================================================================
+# Custom Scripts -- init
+#=========================================================================
+
+name: init-fullchip
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - io_file
+
+# FIXME  I'm sure this is not how this is supposed to work...[sr02.2020]
+commands:
+  - cp inputs/io_file outputs/io_file
+
+# Default order can be found in e.g.
+# mflowgen/steps/cadence-innovus-init/configure.yml
+#     - main.tcl
+#     - quality-of-life.tcl
+#     - floorplan.tcl
+#     - pin-assignments.tcl
+#     - make-path-groups.tcl
+#     - reporting.tcl
+# 
+# Todo: I think we're gonna move endcaps to a separate stage,
+# maybe power or placement?
+# Also: pad frame does not need pin assignments, uses io_file instead.
+# Also: adding io_fillers as a separate script, hope that's okay.
+# Adding stylus compatibility and alignment cell scripts
+# Also (maybe temporary) script to attach results/gds to outputs/gds
+# [sr05.2020] Adding analog-bumps directory for analog bump routing scripts
+outputs:
+  - add-endcaps-welltaps.tcl
+  - stylus-compatibility-procs.tcl
+  - floorplan.tcl
+  - io-fillers.tcl
+  - alignment-cells.tcl
+  - sealring.tcl
+  - attach-results-to-outputs.tcl
+  - io_file
+  # Bump routing inc. entire directory of analog (PHY) bump scripts
+  - gen-bumps.tcl
+  - check-bumps.tcl
+  - route-bumps.tcl
+  - analog-bumps

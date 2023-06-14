@@ -2,6 +2,7 @@
 # agents: { queue: "papers" }
 
 env:
+  WHICH_SOC: amber
   GOLD: /build/gold.${BUILDKITE_BUILD_NUMBER}/full_chip
   LVS_CHECK: ./mflowgen/bin/buildcheck.sh --lvs
 
@@ -21,6 +22,9 @@ env:
   # Can use this to change target mflowgen branch
   # OVERRIDE_MFLOWGEN_BRANCH: glob-prob
 
+  # Can use this to change target mflowgen hash
+  # OVERRIDE_MFLOWGEN_HASH: ec0934f9
+
 steps:
 - label: 'setup'
   commands:
@@ -32,7 +36,12 @@ steps:
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
      echo "--- MAKE RTL"; set -o pipefail;
-     make rtl |& tee make-rtl.log'
+     make rtl |& tee make-rtl.log;
+     set -x;
+     grep "module precoder_32_1"  10-rtl/outputs/design.v | sort;
+     grep "module precoder_32_19" 10-rtl/outputs/design.v && echo FAIL || echo PASS;
+     grep "module precoder_32_19" 10-rtl/outputs/design.v && exit 13   || exit 0;
+'
 - wait: ~
 
 # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail

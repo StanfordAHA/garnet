@@ -1,3 +1,9 @@
+import os
+if os.getenv('WHICH_SOC') == "amber":
+    import garnet_amber
+    if __name__ == "__main__": garnet_amber.main()
+    exit()
+
 import argparse
 import magma
 from canal.util import IOSide, SwitchBoxType
@@ -23,6 +29,7 @@ import archipelago
 import archipelago.power
 import archipelago.io
 import math
+from collections import defaultdict
 
 from peak_gen.peak_wrapper import wrapped_peak_class
 from peak_gen.arch import read_arch
@@ -429,9 +436,6 @@ class Garnet(Generator):
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves)
 
-        # print("NETLIST INFO")
-        # print(netlist_info)
-
         mem_remap = None
         pe_remap = None
         
@@ -443,27 +447,17 @@ class Garnet(Generator):
             pnr_tag = pnr_tag.tag_name
             if pnr_tag == "m" and mem_remap is None:
                 mem_remap = actual_core.get_port_remap()
-                # print("MEM PORT REMAP!")
-                # print(mem_remap)
             elif pnr_tag == "p" and pe_remap is None:
                 pe_remap = actual_core.get_port_remap()
             elif mem_remap is not None and pe_remap is not None:
                 break
 
-        # print(mem_remap)
-        # print(pe_remap)
-
-        # Remap here...
-        # print("Actual netlist...")
-        # print(netlist_info['netlist'])
         for netlist_id, connections_list in netlist_info['netlist'].items():
             for idx, connection in enumerate(connections_list):
                 tag_, pin_ = connection
                 if tag_[0] == 'm':
                     # get mode...
                     metadata = netlist_info['id_to_metadata'][tag_]
-                    # print("metadata...")
-                    # print(metadata)
                     mode = "UB"
                     if 'stencil_valid' in metadata["config"]:
                         mode = 'stencil_valid'
@@ -472,28 +466,17 @@ class Garnet(Generator):
                         # Actually use wr addr for rom mode...
                         hack_remap = {
                             'addr_in_0': 'wr_addr_in',
-                            #'addr_in_0': 'rd_addr_in',
                             'ren_in_0': 'ren',
                             'data_out_0': 'data_out'
                                 }
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
-                    # print("SHOWING REMAP")
-                    # print(f"MODE {mode}")
-                    # print(mem_remap[mode])
-                    # print(f"remapping pin {pin_} to {mem_remap[mode][pin_]}")
                     pin_remap = mem_remap[mode][pin_]
                     connections_list[idx] = (tag_, pin_remap)
                 elif tag_[0] == 'p':
                     pin_remap = pe_remap['alu'][pin_]
                     connections_list[idx] = (tag_, pin_remap)
             netlist_info['netlist'][netlist_id] = connections_list
-                    # Remap the memtile or pondtile pins
-                    #core = self.interconnect.placement[tag_]
-                    #print(core)
-                    #if tag_[0] == 'm
-
-        # print(netlist_info['netlist'])
 
         if not self.amber_pond:
             # temporally remapping of port names for the new Pond
@@ -511,6 +494,10 @@ class Garnet(Generator):
 
 
         self.pack_ponds(netlist_info)
+
+        port_remap_fout = open(app_dir + "/design.port_remap", "w")
+        port_remap_fout.write(json.dumps(pe_remap['alu']))
+        port_remap_fout.close()
         
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
@@ -529,7 +516,7 @@ class Garnet(Generator):
         if unconstrained_io:
             fixed_io = None
         else:
-            fixed_io = place_io_blk(id_to_name)
+            fixed_io = place_io_blk(id_to_name, app_dir)
 
         placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
                                                          load_only=load_only,
@@ -543,15 +530,60 @@ class Garnet(Generator):
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
+    def fix_pond_flush_bug(self, placement, routing):
+        # This is a fix for the Onyx pond hardware, in future chips we can remove this
+        pond_locs = []
+        for node, (x, y) in placement.items():
+            if node[0] == "M" or (node in self.pes_with_packed_ponds and self.pes_with_packed_ponds[node][0] == "M"):
+                pond_locs.append((x, y))
+
+        ponds_with_routed_flush = []
+        pond_to_1bit_routes = defaultdict(set)
+        for _, route in routing.items():
+            for segment in route:
+                if "flush" in segment[-1].node_str() and "flush" in segment[-1].node_str() and (segment[-1].x, segment[-1].y) in pond_locs:
+                    ponds_with_routed_flush.append((segment[-1].x, segment[-1].y))
+                for node in  segment:
+                    if "SB" in str(node) and node.io.value == 0 and node.width == 1 and (node.x, node.y) in pond_locs:
+                        pond_to_1bit_routes[(node.x, node.y)].add((node.track, node.side.value))
+                        
+        bitstream = []
+        for (x,y), nodes in pond_to_1bit_routes.items():
+            need_fix = False
+            for node in nodes:
+                if node[0] == 0 and node[1] == 3 and (x,y) not in ponds_with_routed_flush:
+                    need_fix = True
+
+            if need_fix:
+                found_fix = False
+                for side in range(4):
+                    for track in range(5):
+                        if (side, track+1) not in nodes:
+                            found_fix = True
+                            break
+                    if found_fix:
+                        break
+
+                assert found_fix, f"HW bug at flush CB {x},{y} the pond at this location will flush randomly, you will need to change the place and route result"
+                source_str = ["SB", track+1, x, y, side, 0, 1]
+                source_node = self.interconnect.parse_node(source_str)
+                dest_str = ["PORT", "flush", x, y, 1]
+                dest_node = self.interconnect.parse_node(dest_str)
+                bitstream += self.interconnect.get_node_bitstream_config(source_node, dest_node)
+        return bitstream
+
     def generate_bitstream(self, halide_src, placement, routing, id_to_name, instance_to_instr, netlist, bus,
                            compact=False):
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
+        
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
+        bitstream += self.fix_pond_flush_bug(placement, routing)
         bitstream += self.get_placement_bitstream(placement, id_to_name,
                                                   instance_to_instr)
+
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
         inputs, outputs = self.get_input_output(netlist)
@@ -781,8 +813,26 @@ def main():
                 input_broadcast_branch_factor=args.input_broadcast_branch_factor,
                 input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
-        if args.pipeline_pnr:
-            return
+        if args.pipeline_pnr and not args.generate_bitstream_only:
+            # Calling clockwork for rescheduling pipelined app
+            import subprocess
+            import copy
+            cwd = os.path.dirname(args.app) + "/.."
+            cmd = ["make", "-C", str(cwd), "reschedule_mem"] 
+            env = copy.deepcopy(os.environ)
+            subprocess.check_call(
+                cmd,
+                env=env,
+                cwd=cwd
+            )
+
+            placement, routing, id_to_name, instance_to_instr, \
+                netlist, bus = garnet.place_and_route(
+                    args.app, True, compact=args.compact,
+                    load_only=True,
+                    pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
+                    input_broadcast_branch_factor=args.input_broadcast_branch_factor,
+                    input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
         bitstream, (inputs, outputs, reset, valid,
                     en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,

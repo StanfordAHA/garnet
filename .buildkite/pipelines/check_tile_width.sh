@@ -6,7 +6,7 @@
 # Also used in per-checkin CI test e.g. pmg.yml:
 #   commands:
 #   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
-#   - .buildkite/pipelines/check_pe_area.sh Tile_PE --max 110
+#   - .buildkite/pipelines/check_pe_area.sh Tile_PE --max 112
 
 function usage {
 cat <<EOF

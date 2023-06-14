@@ -21,7 +21,7 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = get_sys_adk()
+  adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
   adk_view = 'multivt'
   pwr_aware = True
 
@@ -34,6 +34,13 @@ def construct():
   # power domains do not work with post-synth power
   if synth_power:
       pwr_aware = False
+
+  want_drc_pm      = True
+
+  # TSMC override(s)
+  if adk_name == 'tsmc16':
+      adk_view    = 'multicorner-multivt'
+      want_drc_pm = False
 
   if adk_name == 'tsmc16':
       read_hdl_defines = 'TSMC16'
@@ -75,6 +82,14 @@ def construct():
     'drc_env_setup'     : 'drcenv-block.sh'
   }
 
+  # TSMC overrides
+  if adk_name == 'tsmc16': parameters.update({
+    'corner'              : "tt0p8v25c",
+    'bc_corner'           : "ffg0p88v125c",
+    'hold_target_slack'   : 0.015,
+    'interconnect_only'   : True,
+  })
+
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
@@ -90,24 +105,34 @@ def construct():
   rtl                  = Step( this_dir + '/../common/rtl'                          )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
   constraints          = Step( this_dir + '/constraints'                            )
-  gen_sram             = Step( this_dir + '/../common/gen_sram_macro'               )
   custom_init          = Step( this_dir + '/custom-init'                            )
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
-  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                       )
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
+  if adk_name == 'tsmc16':
+    gen_sram             = Step( this_dir + '/../common/gen_sram_macro_amber'         )
+    custom_lvs           = Step( this_dir + '/custom-lvs-rules-amber'                 )
+    custom_power         = Step( this_dir + '/../common/custom-power-leaf-amber'      )
+  else:
+    gen_sram             = Step( this_dir + '/../common/gen_sram_macro'               )
+    custom_lvs           = Step( this_dir + '/custom-lvs-rules'                       )
+    custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
   testbench            = Step( this_dir + '/../common/testbench'                    )
   application          = Step( this_dir + '/../common/application'                  )
   lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
-  drc_pm               = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
+  if want_drc_pm:
+    drc_pm             = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
   if synth_power:
     post_synth_power     = Step( this_dir + '/../common/tile-post-synth-power'     )
   post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'         )
 
   # Power aware setup
   if pwr_aware:
-      power_domains = Step( this_dir + '/../common/power-domains' )
-      pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
+      if adk_name == 'tsmc16':
+        power_domains = Step( this_dir + '/../common/power-domains-amber' )
+        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
+      else:
+        power_domains = Step( this_dir + '/../common/power-domains' )
+        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
   # Default steps
   info           = Step( 'info',                           default=True )
@@ -123,7 +148,11 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  if adk_name == 'gf12-adk':
+      genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  else:
+      genlibdb       = Step( 'cadence-genus-genlib',           default=True )
+
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -140,8 +169,14 @@ def construct():
   # Add sram macro inputs to downstream nodes
 
   synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-  pt_signoff.extend_inputs( ['sram_tt.db'] )
-  genlibdb.extend_inputs( ['sram_tt.lib', 'sram_tt.db'] )
+
+  if adk_name == 'tsmc16':
+    #pt_signoff.extend_inputs( ['sram_tt.db'] )
+    genlibdb.extend_inputs( ['sram_tt.lib'] )
+
+  elif adk_name == 'gf12-adk':
+    pt_signoff.extend_inputs( ['sram_tt.db'] )
+    genlibdb.extend_inputs( ['sram_tt.lib', 'sram_tt.db'] )
 
   # These steps need timing and lef info for srams
 
@@ -179,6 +214,11 @@ def construct():
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )
   synth.set_param( 'order', order )
+
+  # TSMC needs streamout *without* the (new) default -uniquify flag
+  # This strips off the unwanted flag
+  from common.streamout_no_uniquify import streamout_no_uniquify
+  if adk_name == "tsmc16": streamout_no_uniquify(iflow)
 
   # Power aware setup
   if pwr_aware:
@@ -380,6 +420,19 @@ def construct():
       g.connect_by_name( signoff,              pwr_aware_gls)
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
 
+  # New step, added for gf12
+  if want_drc_pm:
+      g.add_step( drc_pm )
+      g.connect_by_name( adk,           drc_pm         )
+      g.connect_by_name( gen_sram,      drc_pm         )
+      g.connect_by_name( signoff,       drc_pm         )
+      g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
+      g.connect_by_name( drc_pm,        debugcalibre   )
+
+  # Need this because gf12 uses innovus for lib generation
+  if adk_name == 'gf12-adk':
+      g.connect_by_name( iflow,    genlibdb       )
+
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -428,16 +481,25 @@ def construct():
   init.update_params( { 'order': order } )
 
   # Adding new input for genlibdb node to run
-  order = genlibdb.get_param('order') # get the default script run order
-  extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
-  order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
-  genlibdb.update_params( { 'order': order } )
-      
-  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
-  # very long and is not necessary
-  order = genlibdb.get_param('order')
-  order.remove( 'write-interface-timing.tcl' )
-  genlibdb.update_params( { 'order': order } )
+
+  if adk_name == 'gf12-adk':
+    # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)
+    order = genlibdb.get_param('order') # get the default script run order
+    extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
+    order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
+    genlibdb.update_params( { 'order': order } )
+
+    # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+    # very long and is not necessary
+    order = genlibdb.get_param('order')
+    order.remove( 'write-interface-timing.tcl' )
+    genlibdb.update_params( { 'order': order } )
+
+  else:
+    order = genlibdb.get_param('order') # get the default script run order
+    read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
+    order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
+    genlibdb.update_params( { 'order': order } )
 
 
   # Pwr aware steps:

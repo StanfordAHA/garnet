@@ -1,0 +1,1 @@
+s1(11Jan2023:11:07:41):  xrun -64bit -sv -timescale 1ns/1ns -debug -sysv -top SparseTBBuilder_tb -elaborate -l xrun.log -covoverwrite +maxdelays -access r -notimingchecks +define+CLK_PERIOD=1ns sparse_tb.sv SparseTBBuilder.v CW_fp_add.v CW_fp_mult.v AN_CELL.sv AO_CELL.sv glb_read.sv glb_write.sv PE.v 

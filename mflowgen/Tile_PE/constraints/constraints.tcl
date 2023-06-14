@@ -22,6 +22,13 @@ if $::env(PWR_AWARE) {
     source inputs/pe-constraints.tcl
 } 
 
+# Which SoC are we targeting?
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "onyx"
+}
+
 # Case analysis/scenarios
 
 set alu_path PE_inst0/WrappedPE_inst0\$PE_inst0/ALU_inst0
@@ -60,8 +67,14 @@ set_false_path -through [get_cells -hier *config_reg_*] -through [get_pins $sb_r
 set_false_path -through [get_cells -hier *config_reg_*] -to [get_ports SB* -filter direction==out]
 
 # Paths from config input ports to PE registers
+if { $WHICH_SOC == "amber" } {
+set pe_path PE_inst0/WrappedPE_inst0\$PE_inst0
+set_false_path -from [get_ports config_* -filter direction==in] -to [get_pins [list $pe_path/* ]]
+} else {
 set pe_path PE_inst0/PE_inner_W_inst0/PE_inner
 set_false_path -from [get_ports config_* -filter direction==in] -through [get_pins [list $pe_path/* ]]
+}
+
 
 # Paths from config input ports to the register file in Pond 
 set pond_path PondCore_inst0/PondTop_W_inst0/PondTop/memory_0/data_array_reg*

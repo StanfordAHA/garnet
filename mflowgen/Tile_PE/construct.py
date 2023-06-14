@@ -21,7 +21,7 @@ def construct():
   # Parameters
   #-----------------------------------------------------------------------
 
-  adk_name = get_sys_adk()
+  adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
   adk_view = 'multivt'
   pwr_aware = True
 
@@ -38,6 +38,15 @@ def construct():
   # power domains do not work with post-synth power
   if synth_power:
       pwr_aware = False
+
+  want_drc_pm      = True
+  want_custom_cts  = True
+
+  # TSMC override(s)
+  if adk_name == 'tsmc16':
+      adk_view         = 'multicorner-multivt'
+      want_drc_pm      = False
+      want_custom_cts  = False
 
   if adk_name == 'tsmc16':
       read_hdl_defines = 'TSMC16'
@@ -70,6 +79,11 @@ def construct():
     'strip_path'        : 'testbench/dut',
     'drc_env_setup'     : 'drcenv-block.sh'
     }
+  # TSMC overrides
+  if adk_name == 'tsmc16': parameters.update({
+    'interconnect_only'  : True,
+    'core_density_target': 0.63,
+  })
 
   # User-level option to change clock frequency
   # E.g. 'export clock_period_PE="4.0"' to target 250MHz
@@ -98,8 +112,12 @@ def construct():
   custom_init          = Step( this_dir + '/custom-init'                            )
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
-  custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
-  custom_cts           = Step( this_dir + '/custom-cts'                             )
+  if adk_name == 'tsmc16':
+    custom_power         = Step( this_dir + '/../common/custom-power-leaf-amber'      )
+  else:
+    custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
+  if want_custom_cts:
+    custom_cts           = Step( this_dir + '/custom-cts'                           )
   short_fix            = Step( this_dir + '/../common/custom-short-fix'             )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
   custom_timing_assert = Step( this_dir + '/../common/custom-timing-assert'         )
@@ -107,7 +125,8 @@ def construct():
   testbench            = Step( this_dir + '/../common/testbench'                    )
   application          = Step( this_dir + '/../common/application'                  )
   lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
-  drc_pm               = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
+  if want_drc_pm:
+    drc_pm               = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
   if synth_power:
     post_synth_power     = Step( this_dir + '/../common/tile-post-synth-power'     )
   post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'         )
@@ -116,8 +135,12 @@ def construct():
   power_domains = None
   pwr_aware_gls = None
   if pwr_aware:
-      power_domains = Step( this_dir + '/../common/power-domains' )
-      pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
+      if adk_name == 'tsmc16':
+        power_domains = Step( this_dir + '/../common/power-domains-amber' )
+        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' ) # this will soon follow maybe
+      else:
+        power_domains = Step( this_dir + '/../common/power-domains' )
+        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
   # Default steps
   info         = Step( 'info',                          default=True )
@@ -132,7 +155,11 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
+  if adk_name == 'gf12-adk':
+      genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  else:
+      genlibdb       = Step( 'cadence-genus-genlib',           default=True )
+
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -181,7 +208,15 @@ def construct():
         'pe-constraints-2.tcl', 
         'dc-dont-use-constraints.tcl'])
 
+      # Eventually want to extend this to GF as well...!
+      if adk_name == 'tsmc16':
+        synth.extend_inputs([ 'check-pdcr-address.sh' ])
+
       init.extend_inputs(['upf_Tile_PE.tcl', 'pe-load-upf.tcl', 'dont-touch-constraints.tcl', 'pe-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl', 'check-clamp-logic-structure.tcl'])
+
+      # Eventually want to extend this to GF as well...!
+      if adk_name == 'tsmc16':
+        init.extend_inputs([ 'check-pdcr-address.sh' ])
 
       # Need pe-pd-params for parm 'vdd_m3_stripe_sparsity'
       # pd-globalnetconnect, pe-pd-params come from 'power-domains' node
@@ -195,8 +230,20 @@ def construct():
       signoff.extend_inputs(['conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl', 'check-clamp-logic-structure.tcl'] )
       pwr_aware_gls.extend_inputs(['design.vcs.pg.v'])
   
+      # Eventually want to extend this to GF as well...!
+      if adk_name == 'tsmc16':
+        # Fix and repair PowerDomainConfigReg when/if magma decides to renumber it :(
+        synth.pre_extend_commands( ['./inputs/check-pdcr-address.sh'] )
+        init.pre_extend_commands(  ['./inputs/check-pdcr-address.sh'] )
+        pwr_aware_gls.pre_extend_commands( ['./assign-pdcr-address.sh'] )
+
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
+
+  # TSMC needs streamout *without* the (new) default -uniquify flag
+  # This python method finds 'stream-out.tcl' and strips out that flag.
+  from common.streamout_no_uniquify import streamout_no_uniquify
+  if adk_name == "tsmc16": streamout_no_uniquify(iflow)
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -356,6 +403,24 @@ def construct():
       g.connect_by_name( signoff,              pwr_aware_gls)
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
 
+  # New 'custom_cts' step added for gf12
+  if want_custom_cts:
+    cts.extend_inputs( custom_cts.all_outputs() )
+    g.add_step(        custom_cts               )
+    g.connect_by_name( custom_cts,   cts        )
+
+  # New 'drc_pm' step, added for gf12
+  if want_drc_pm:
+      g.add_step( drc_pm )
+      g.connect_by_name( adk,           drc_pm         )
+      g.connect_by_name( signoff,       drc_pm         )
+      g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
+      g.connect_by_name( drc_pm,        debugcalibre   )
+
+  # Need this because gf12 uses innovus for lib generation
+  if adk_name == 'gf12-adk':
+      g.connect_by_name( iflow,    genlibdb       )
+
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -402,24 +467,36 @@ def construct():
   init.update_params( { 'order': order } )
 
   # Adding new input for genlibdb node to run
-  order = genlibdb.get_param('order') # get the default script run order
-  extract_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
-  order.insert( extract_idx, 'genlibdb-constraints.tcl' ) # add here
-  genlibdb.update_params( { 'order': order } )
-      
-  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
-  # very long and is not necessary
-  order = genlibdb.get_param('order')
-  order.remove( 'write-interface-timing.tcl' )
-  genlibdb.update_params( { 'order': order } )
+
+  if adk_name == 'gf12-adk':
+    # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)
+    order = genlibdb.get_param('order') # get the default script run order
+    extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
+    order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
+    genlibdb.update_params( { 'order': order } )
+
+    # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+    # very long and is not necessary
+    order = genlibdb.get_param('order')
+    order.remove( 'write-interface-timing.tcl' )
+    genlibdb.update_params( { 'order': order } )
+
+  else:
+    order = genlibdb.get_param('order') # get the default script run order
+    read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
+    order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
+    genlibdb.update_params( { 'order': order } )
+
 
   # Pwr aware steps:
   if pwr_aware:
       # init node
       order = init.get_param('order')
       read_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
-      order.insert( read_idx + 1, 'pe-load-upf.tcl' ) # add here
-      order.insert( read_idx + 2, 'pe-pd-params.tcl' ) # add here
+
+      # 09/2022 reordered to load params (pe-pd-params) before using params (pe-load-upf)
+      order.insert( read_idx + 1, 'pe-pd-params.tcl' ) # add here
+      order.insert( read_idx + 2, 'pe-load-upf.tcl' ) # add here
       order.insert( read_idx + 3, 'pd-aon-floorplan.tcl' ) # add here
       order.insert( read_idx + 4, 'add-endcaps-welltaps-setup.tcl' ) # add here
       order.insert( read_idx + 5, 'pd-add-endcaps-welltaps.tcl' ) # add here

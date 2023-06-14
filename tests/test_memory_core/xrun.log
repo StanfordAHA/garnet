@@ -1,0 +1,30 @@
+xrun(64): 20.09-s007: (c) Copyright 1995-2020 Cadence Design Systems, Inc.
+TOOL:	xrun(64)	20.09-s007: Started on Jan 11, 2023 at 11:07:41 PST
+xrun
+	-64bit
+	-sv
+	-timescale 1ns/1ns
+	-debug
+	-sysv
+	-top SparseTBBuilder_tb
+	-elaborate
+	-l xrun.log
+	-covoverwrite
+	+maxdelays
+	-access r
+	-notimingchecks
+	+define+CLK_PERIOD=1ns
+	sparse_tb.sv
+	SparseTBBuilder.v
+	CW_fp_add.v
+	CW_fp_mult.v
+	AN_CELL.sv
+	AO_CELL.sv
+	glb_read.sv
+	glb_write.sv
+	PE.v
+xrun: *E,FILEMIS: Cannot find the provided file CW_fp_add.v.
+xrun: *E,FILEMIS: Cannot find the provided file CW_fp_mult.v.
+xrun: *E,FILEMIS: Cannot find the provided file AN_CELL.sv.
+xrun: *E,FILEMIS: Cannot find the provided file AO_CELL.sv.
+TOOL:	xrun(64)	20.09-s007: Exiting on Jan 11, 2023 at 11:07:41 PST  (total: 00:00:00)
