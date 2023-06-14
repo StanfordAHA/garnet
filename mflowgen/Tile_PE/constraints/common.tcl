@@ -161,7 +161,7 @@ set_multicycle_path 1 -to [get_ports read_config_data* -filter direction==out] -
 set sb_delay 0.210
 if { $WHICH_SOC == "amber" } {
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
-set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] [expr ${sb_delay} + ${i_delay} + ${o_delay}]
+set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
 # Then override the rest of the paths to be full clock period
 set_max_delay -from SB*_IN_* -to SB*_OUT_* -through [get_pins [list CB*/* DECODE*/* PE_inst0*/* FEATURE*/*]] ${clock_period}
 } else {
