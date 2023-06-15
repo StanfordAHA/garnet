@@ -788,6 +788,8 @@ class NetlistBuilder():
         fixed_io["I5_2"] = (7, 0)
 
         # config 1
+
+        breakpoint()
         fixed_io["m0"] = (3, 1)
         fixed_io["m2"] = (3, 2)
         fixed_io["m4"] = (3, 3)
@@ -796,16 +798,8 @@ class NetlistBuilder():
         fixed_io["m2_2"] = (3, 6)
         fixed_io["m4_2"] = (3, 7)
         fixed_io["m6_2"] = (3, 8)
-
-        # # config 2
-        # fixed_io["m0_2"] = (3, 1)
-        # fixed_io["m2_2"] = (3, 2)
-        # fixed_io["m4_2"] = (3, 3)
-        # fixed_io["m6_2"] = (3, 4)
-        # fixed_io["m0"] = (3, 5)
-        # fixed_io["m2"] = (3, 6)
-        # fixed_io["m4"] = (3, 7)
-        # fixed_io["m6"] = (3, 8)
+        fixed_io["p0_3"] = (1, 1)
+        fixed_io["p6_3"] = (1, 2) 
 
 
         self._placement, self._routing, _ = pnr(self._interconnect,
