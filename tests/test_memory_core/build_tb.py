@@ -1807,6 +1807,12 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=sparsities_[2], format='UNC')
 
         d_mat_trans = numpy.transpose(d_mat)
+
+        # Have to include the input dimensions for mapping
+        input_dims['B'] = tuple(b_mat.shape)
+        input_dims['C'] = tuple(c_mat.shape)
+        input_dims['D'] = tuple(d_mat.shape)
+
         # exit()
         # First transpose c_mat
         tmp = numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe')
