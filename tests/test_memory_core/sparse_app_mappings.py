@@ -4,7 +4,7 @@ from sam.sim.test.test import read_inputs
 
 
 def get_tensor(input_name=None, shapes=None, give_tensor=False,
-               tmp_dir=None, dump=None, suffix="", clean=False, tensor_ordering=None, sparsity=None,
+               tmp_dir=None, dump=None, suffix="", clean=False, tensor_ordering=None, sparsity=0.7,
                format='CSF'):
 
     if give_tensor:
