@@ -1635,17 +1635,17 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         shapes_.append(random.randint(1, 10))
 
     for idx_ in range(10):
-        sparsity_choice = random.randint(0, 4)
+        sparsity_choice = random.randint(0, 10)
         sparsity_to_use = 0.0
         if sparsity_choice == 0:
             sparsity_to_use = 0.0
-        elif sparsity_choice == 1:
+        elif sparsity_choice <= 3:
             sparsity_to_use = 0.25
-        elif sparsity_choice == 2:
+        elif sparsity_choice <= 5:
             sparsity_to_use = 0.5
-        elif sparsity_choice == 3:
+        elif sparsity_choice <= 8:
             sparsity_to_use = 0.75
-        elif sparsity_choice == 4:
+        elif sparsity_choice <= 10:
             sparsity_to_use = 1.0
         sparsities_.append(sparsity_to_use)
 
