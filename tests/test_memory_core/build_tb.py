@@ -1862,7 +1862,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         if 'B' not in cached_inputs:
             b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'])
+                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                               sparsity=sparsities_[0])
         else:
             b_mat = cached_inputs['B']
             b_shape = b_mat.shape
@@ -1871,7 +1872,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # c_mat = c_matrix.get_matrix()
         if 'C' not in cached_inputs:
             c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'])
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                               sparsity=sparsities_[1])
         else:
             c_mat = cached_inputs['C']
 
@@ -2620,6 +2622,8 @@ if __name__ == "__main__":
 
             sam_graph_name = sam_graph.split('/')[-1].split(".")[0]
 
+            if isinstance(seeds, int):
+                seeds = [seeds]
             use_seeds = seeds
 
             if give_tensor:
