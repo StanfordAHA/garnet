@@ -157,6 +157,7 @@ class SparseTBBuilder(m.Generator2):
                 self.nlb.configure_tile(flush_in, (1, 0))
             self.configure_cores()
 
+
             # self.config = self.io.config
             # Now we have the configured CGRA...
             self.nlb.finalize_config()
@@ -1355,8 +1356,9 @@ class SparseTBBuilder(m.Generator2):
                     self.nlb.configure_tile(core_node.get_name(), (1, node_config_kwargs))
         #breakpoint()
         node_config_kwargs = {'cmrg_enable': 0, 'cmrg_stop_lvl': 0, 'op': 0, 'mode': 'intersect'}
-        self.nlb.configure_tile("p0_3", (1, node_config_kwargs))
-        self.nlb.configure_tile("p6_3", (1, node_config_kwargs))
+        self.nlb.configure_tile("p100", (1, node_config_kwargs))
+        self.nlb.configure_tile("p101", (1, node_config_kwargs))
+        self.nlb.configure_tile("p102", (1, node_config_kwargs))
 
     def display_names(self):
         if self.bespoke:

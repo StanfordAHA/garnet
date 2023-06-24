@@ -776,30 +776,90 @@ class NetlistBuilder():
 
         print("Done remapping...")
                 
-        #fixed_io["i0"] = (4, 0)
-        fixed_io["I1"] = (0, 0)
-        fixed_io["I7"] = (2, 0)
-        fixed_io["I3"] = (1, 0)
-        fixed_io["I5"] = (3, 0)
+        # vec identity
+        # fixed_io["I1"] = (0, 0)
+        # fixed_io["I7"] = (2, 0)
+        # fixed_io["I3"] = (1, 0)
+        # fixed_io["I5"] = (3, 0)
 
-        fixed_io["I1_2"] = (4, 0)
-        fixed_io["I7_2"] = (6, 0)
-        fixed_io["I3_2"] = (5, 0)
-        fixed_io["I5_2"] = (7, 0)
+        # fixed_io["I1_2"] = (4, 0)
+        # fixed_io["I7_2"] = (6, 0)
+        # fixed_io["I3_2"] = (5, 0)
+        # fixed_io["I5_2"] = (7, 0)
 
-        # config 1
+        # fixed_io["m0"] = (3, 1)
+        # fixed_io["m2"] = (3, 2)
+        # fixed_io["m4"] = (3, 3)
+        # fixed_io["m6"] = (3, 4)
+        # fixed_io["m0_2"] = (3, 5)
+        # fixed_io["m2_2"] = (3, 6)
+        # fixed_io["m4_2"] = (3, 7)
+        # fixed_io["m6_2"] = (3, 8)
+        # fixed_io["p100"] = (1, 1)
+        # fixed_io["p101"] = (1, 2) 
+        # fixed_io["p102"] = (1, 3) 
 
-        breakpoint()
-        fixed_io["m0"] = (3, 1)
-        fixed_io["m2"] = (3, 2)
-        fixed_io["m4"] = (3, 3)
-        fixed_io["m6"] = (3, 4)
-        fixed_io["m0_2"] = (3, 5)
-        fixed_io["m2_2"] = (3, 6)
-        fixed_io["m4_2"] = (3, 7)
-        fixed_io["m6_2"] = (3, 8)
-        fixed_io["p0_3"] = (1, 1)
-        fixed_io["p6_3"] = (1, 2) 
+        # matmul
+        fixed_io["I8"] = (0, 0)
+        fixed_io["I12"] = (2, 0)
+        fixed_io["I16"] = (4, 0)
+        fixed_io["I20"] = (6, 0)
+        fixed_io["I22"] = (8, 0)
+        fixed_io["I24"] = (10, 0)
+        fixed_io["I10"] = (1, 0)
+        fixed_io["I14"] = (3, 0)
+        fixed_io["I18"] = (5, 0)
+
+        fixed_io["I8_2"] = (12, 0)
+        fixed_io["I12_2"] = (14, 0)
+        fixed_io["I16_2"] = (16, 0)
+        fixed_io["I20_2"] = (18, 0)
+        fixed_io["I22_2"] = (20, 0)
+        fixed_io["I24_2"] = (22, 0)
+        fixed_io["I10_2"] = (13, 0)
+        fixed_io["I14_2"] = (15, 0)
+        fixed_io["I18_2"] = (17, 0)
+
+
+        fixed_io["p0"] = (0, 1)
+        fixed_io["p1"] = (0, 2)
+        fixed_io["p2"] = (0, 3)
+        fixed_io["p3"] = (0, 4)
+        fixed_io["p4"] = (0, 5)
+        fixed_io["p5"] = (0, 6)
+        fixed_io["p6"] = (0, 7)
+        fixed_io["p0_2"] = (4, 1)
+        fixed_io["p1_2"] = (4, 2)
+        fixed_io["p2_2"] = (4, 3)
+        fixed_io["p3_2"] = (4, 4)
+        fixed_io["p4_2"] = (4, 5)
+        fixed_io["p5_2"] = (4, 6)
+        fixed_io["p6_2"] = (4, 7)
+        fixed_io["m7"] = (3, 1)
+        fixed_io["m9"] = (3, 2)
+        fixed_io["m11"] = (3, 3)
+        fixed_io["m13"] = (3, 4)
+        fixed_io["m15"] = (3, 5)
+        fixed_io["m17"] = (3, 6)
+        fixed_io["m19"] = (3, 7)
+        fixed_io["m21"] = (3, 8)
+        fixed_io["m23"] = (3, 9)
+        fixed_io["m7_2"] = (7, 1)
+        fixed_io["m9_2"] = (7, 2)
+        fixed_io["m11_2"] = (7, 3)
+        fixed_io["m13_2"] = (7, 4)
+        fixed_io["m15_2"] = (7, 5)
+        fixed_io["m17_2"] = (7, 6)
+        fixed_io["m19_2"] = (7, 7)
+        fixed_io["m21_2"] = (7, 8)
+        fixed_io["m23_2"] = (7, 9)
+
+        fixed_io["p100"] = (6, 2)
+        fixed_io["p101"] = (6, 4) 
+        fixed_io["p102"] = (6, 6) 
+
+
+
 
 
         self._placement, self._routing, _ = pnr(self._interconnect,
@@ -911,11 +971,12 @@ class NetlistBuilder():
         core_x, core_y = self._placement[core]
         core_config_data = self._interconnect.configure_placement(core_x, core_y, config, **kwargs)
         self._config_data += core_config_data
-        if "m" in core or "I" in core:
-            new_mem_tile = core+"_2"
-            core_x, core_y = self._placement[new_mem_tile]
-            core_config_data = self._interconnect.configure_placement(core_x, core_y, config, **kwargs)
-            self._config_data += core_config_data
+        if "m" in core or "I" in core or "p" in core:
+            if not core in ("p100", "p101", "p102"):
+                new_mem_tile = core+"_2"
+                core_x, core_y = self._placement[new_mem_tile]
+                core_config_data = self._interconnect.configure_placement(core_x, core_y, config, **kwargs)
+                self._config_data += core_config_data
 
     def finalize_config(self):
         # Also generate placement..
