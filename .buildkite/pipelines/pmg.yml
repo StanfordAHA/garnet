@@ -64,6 +64,7 @@ steps:
   commands:
   - '
      docker pull $$IMAGE; container=$$CONTAINER-onyx;
+     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
      function dexec { docker exec $$container /bin/bash -c "$$*"; };
      dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
      dexec "/aha/aha/bin/rtl-goldcheck.sh onyx" || $$FAIL_ONYX | $$UPLOAD;
