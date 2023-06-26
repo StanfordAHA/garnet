@@ -46,63 +46,66 @@ steps:
 #     '
 # - wait
 
-- label: "Gold RTL: Amber 1m"
-  commands:
-  - '
-     docker pull $$IMAGE; container=$$CONTAINER-amber
-     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
-     function dexec { docker exec $$container /bin/bash -c "$$*"; };
-     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
-     dexec "/aha/aha/bin/rtl-goldcheck.sh amber" || $$FAIL_AMBER | $$UPLOAD;
-     docker kill $$container
-    '
-
-- label: "Gold RTL: Onyx 1m"
-  commands:
-  - '
-     docker pull $$IMAGE; container=$$CONTAINER-onyx
-     function dexec { docker exec $$container /bin/bash -c "$$*"; };
-     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
-     dexec "/aha/aha/bin/rtl-goldcheck.sh onyx" || $$FAIL_ONYX | $$UPLOAD;
-     docker kill $$container
-    '
-- wait
-
-
 ##############################################################################
 # Two quick RTL checks
 
 - label: "Gold RTL: Amber 1m"
   commands:
-  - rm -rf /aha/garnet
-  - ls /workdir
-  - cp -rp /workdir /aha/garnet
-  - cd /aha; git log | head
-  - /aha/aha/bin/rtl-goldcheck.sh amber
-  plugins:
-    - docker#v3.2.0:
-        image: stanfordaha/garnet:latest
-        volumes:
-          - "/cad/:/cad"
-        mount-checkout: true
-        shell: ["/bin/bash", "-e", "-c"]
+  - '
+     docker pull $$IMAGE; container=$$CONTAINER-amber;
+     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
+     function dexec { docker exec $$container /bin/bash -c "$$*"; };
+     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
+     dexec "/aha/aha/bin/rtl-goldcheck.sh amber" || $$FAIL_AMBER | $$UPLOAD;
+     docker kill $$container;
+    '
 
 - label: "Gold RTL: Onyx 1m"
   commands:
-  - rm -rf /aha/garnet
-  - ls /workdir
-  - cp -rp /workdir /aha/garnet
-  - cd /aha; git log | head
-  - /aha/aha/bin/rtl-goldcheck.sh onyx || $FAIL | $UPLOAD
-  plugins:
-    - docker#v3.2.0:
-        image: stanfordaha/garnet:latest
-        volumes:
-          - "/cad/:/cad"
-        mount-checkout: true
-        shell: ["/bin/bash", "-e", "-c"]
+  - '
+     docker pull $$IMAGE; container=$$CONTAINER-onyx;
+     function dexec { docker exec $$container /bin/bash -c "$$*"; };
+     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
+     dexec "/aha/aha/bin/rtl-goldcheck.sh onyx" || $$FAIL_ONYX | $$UPLOAD;
+     docker kill $$container;
+    '
+- wait
 
-- wait: { continue_on_failure: true }
+
+# ##############################################################################
+# # Two quick RTL checks
+# 
+# - label: "Gold RTL: Amber 1m"
+#   commands:
+#   - rm -rf /aha/garnet
+#   - ls /workdir
+#   - cp -rp /workdir /aha/garnet
+#   - cd /aha; git log | head
+#   - /aha/aha/bin/rtl-goldcheck.sh amber
+#   plugins:
+#     - docker#v3.2.0:
+#         image: stanfordaha/garnet:latest
+#         volumes:
+#           - "/cad/:/cad"
+#         mount-checkout: true
+#         shell: ["/bin/bash", "-e", "-c"]
+# 
+# - label: "Gold RTL: Onyx 1m"
+#   commands:
+#   - rm -rf /aha/garnet
+#   - ls /workdir
+#   - cp -rp /workdir /aha/garnet
+#   - cd /aha; git log | head
+#   - /aha/aha/bin/rtl-goldcheck.sh onyx || $FAIL | $UPLOAD
+#   plugins:
+#     - docker#v3.2.0:
+#         image: stanfordaha/garnet:latest
+#         volumes:
+#           - "/cad/:/cad"
+#         mount-checkout: true
+#         shell: ["/bin/bash", "-e", "-c"]
+# 
+# - wait: { continue_on_failure: true }
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
