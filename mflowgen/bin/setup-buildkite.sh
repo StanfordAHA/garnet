@@ -463,7 +463,7 @@ else
           ADK_REPO=/sim/repos/gf12-adk
           test -e adks          || mkdir adks
           test -e adks/gf12-adk || (cd adks && git clone $ADK_REPO)
-          pushd adks/gf12-adk; git pull; popd
+          (cd adks/gf12-adk; git pull)
 
       else
           ADK_REPO=/sim/buildkite-agent/adks
