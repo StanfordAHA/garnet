@@ -458,16 +458,11 @@ else
 
     pushd $mflowgen
 
-      # Where $bk=/sim/buildkite-agent:
-      # On tsmc machines, adks can be found on $bk/mflowgen.master AND $bk/adks
-      # On gf machine, adks are only in $bk/mflowgen.master
-      # FIXME/TODO Consult with Alex or somebody to find out where gf12 adks are really supposed to live
-
       function is_gf { test -e /sim/buildkite-agent/mflowgen.master/adks/gf12-adk; }
       if is_gf; then
-          ADK_REPO=/sim/buildkite-agent/mflowgen.master/adks
-          test -e adks          || ln -s $ADK_REPO
-          test -e adks/gf12-adk || (cd adks && ln -s $ADK_REPO/gf12-adk)
+          ADK_REPO=/sim/repos/gf12-adk
+          test -e adks          || mkdir adks
+          test -e adks/gf12-adk || (cd adks && git clone $ADK_REPO)
           pushd adks/gf12-adk; git pull; popd
 
       else
