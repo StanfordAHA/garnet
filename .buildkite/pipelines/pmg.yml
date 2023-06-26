@@ -30,8 +30,8 @@ env:
 
 
   # ($FAIL|$UPLOAD): Inserts a "fail" bubble in the buildkite pipeline log
-  FAIL_ONYX   : 'echo steps : [ { label : ":x: ONYX_BUILD_FAILED :x:" ,  command : exit } ]'
-  FAIL_AMBER  : 'echo steps : [ { label : ":x: AMBER_BUILD_FAILED :x:" , command : exit } ]'
+  FAIL_ONYX   : 'echo steps : [ { label : ":x: ONYX_FAILED :x:" ,  command : exit } ]'
+  FAIL_AMBER  : 'echo steps : [ { label : ":x: AMBER_FAILED :x:" , command : exit } ]'
   UPLOAD : 'buildkite-agent pipeline upload'
 
   # For docker-based gold checks
@@ -48,6 +48,11 @@ steps:
 
 ##############################################################################
 # Two quick RTL checks
+
+- label: "TEST DELETEME"
+  commands:
+  - echo foo | grep bar || $FAIL_AMBER | $UPLOAD
+  - echo foo | grep bar || $FAIL_ONYX | $UPLOAD
 
 - label: "Gold RTL: Amber 1m"
   commands:
