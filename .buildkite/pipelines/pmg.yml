@@ -44,6 +44,8 @@ steps:
   - 'echo foo | grep bar || $$FAIL | $$UPLOAD'
   - echo ' --- 3 --- '
   - echo foo | grep bar || $FAIL | $UPLOAD
+  - echo ' --- 4 --- '
+  - echo foo | grep bar || $$FAIL | $$UPLOAD
 - wait
 
 
