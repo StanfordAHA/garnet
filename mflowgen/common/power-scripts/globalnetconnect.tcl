@@ -24,4 +24,13 @@ if { $WHICH_SOC == "amber" } {
 } else {
     globalNetConnect VSS -type pgpin -pin VPW -inst *
     globalNetConnect VDD -type pgpin -pin VNW -inst *
+    # stdcells
+    globalNetConnect VDD -type pgpin -pin vcc    -inst *
+    globalNetConnect VSS -type pgpin -pin vssx   -inst *
+    # SRAMs
+    globalNetConnect VDD -type pgpin -pin vddp    -inst *
+    globalNetConnect VSS -type pgpin -pin vss     -inst *
+    # RF RAMs
+    globalNetConnect VDD -type pgpin -pin vcc_nom -inst *
+    globalNetConnect VSS -type pgpin -pin vss     -inst *
 }
