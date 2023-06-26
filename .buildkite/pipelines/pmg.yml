@@ -30,48 +30,42 @@ env:
 
 
   # ($FAIL|$UPLOAD): Inserts a "fail" bubble in the buildkite pipeline log
-  FAIL  : 'echo steps : [ { label : FAIL , command : exit } ]'
+  FAIL_ONYX   : 'echo steps : [ { label : FAILED_ONYX_BUILD ,  command : exit } ]'
+  FAIL_AMBER  : 'echo steps : [ { label : FAILED_AMBER_BUILD , command : exit } ]'
   UPLOAD : 'buildkite-agent pipeline upload'
+
+  # For docker-based gold checks
+  IMAGE     : stanfordaha/garnet:latest
+  CONTAINER : gold-check-${BUILDKITE_BUILD_NUMBER}
 
 steps:
 
-##############################################################################
-# COMMON SETUP to initialize mflowgen
-
-- label: 'quickFailTest'
-  commands:
-  - echo ' --- 2 --- '
-  - 'echo foo | grep bar || $$FAIL | $$UPLOAD'
-  - echo ' --- 3 --- '
-  - echo foo | grep bar || $FAIL | $UPLOAD
-  - echo ' --- 4 --- '
-  - echo foo | grep bar || $$FAIL | $$UPLOAD
-- wait
-
-
-
-# - label: 'setup 5m'
+# - label: "Docker Setup 1m"
 #   commands:
-#   - 'echo "--- RTL SETUP"; docker pull stanfordaha/garnet:latest'
 #   - '
-#      echo "--- PD SETUP";
-#      set -o pipefail;
-#      $$SETUP --dir .;
 #     '
 # - wait
 
-- label: "no plugin version"
+- label: "Gold RTL: Amber 1m"
   commands:
   - '
-  image=stanfordaha/garnet:latest;
-  container=deleteme-steveri-latest;
-  docker pull $$image;
-  docker run -id --name $$container --rm -v /cad:/cad $$image bash;
-  function dexec { docker exec $$container /bin/bash -c "$$*"; };
-  dexec "rm -rf /aha/garnet";
-  docker cp . $$container:/aha/garnet;
-  dexec "/aha/aha/bin/rtl-goldcheck.sh onyx" || $$FAIL | $$UPLOAD;
-  '
+     docker pull $$IMAGE; container=$$CONTAINER-amber
+     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
+     function dexec { docker exec $$container /bin/bash -c "$$*"; };
+     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
+     dexec "/aha/aha/bin/rtl-goldcheck.sh amber" || $$FAIL_AMBER | $$UPLOAD;
+     docker kill $$container
+    '
+
+- label: "Gold RTL: Onyx 1m"
+  commands:
+  - '
+     docker pull $$IMAGE; container=$$CONTAINER-onyx
+     function dexec { docker exec $$container /bin/bash -c "$$*"; };
+     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
+     dexec "/aha/aha/bin/rtl-goldcheck.sh onyx" || $$FAIL_ONYX | $$UPLOAD;
+     docker kill $$container
+    '
 - wait
 
 
