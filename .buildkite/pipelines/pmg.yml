@@ -78,7 +78,7 @@ steps:
         mount-checkout: true
         shell: ["/bin/bash", "-e", "-c"]
 
-- wait
+- wait: { continue_on_failure: true }
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
