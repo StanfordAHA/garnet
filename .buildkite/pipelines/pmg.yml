@@ -65,11 +65,11 @@ steps:
   - '
   image=stanfordaha/garnet:latest;
   container=deleteme-steveri-latest;
-  docker pull $image;
-  docker run -id --name $container --rm -v /cad:/cad $image bash;
-  function dexec { docker exec $container /bin/bash -c "$*"; };
+  docker pull $$image;
+  docker run -id --name $$container --rm -v /cad:/cad $$image bash;
+  function dexec { docker exec $$container /bin/bash -c "$$*"; };
   dexec "rm -rf /aha/garnet";
-  docker cp . $container:/aha/garnet;
+  docker cp . $$container:/aha/garnet;
   dexec "/aha/aha/bin/rtl-goldcheck.sh onyx || $$FAIL | $$UPLOAD;
   '
 - wait
