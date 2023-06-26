@@ -252,10 +252,31 @@ def construct():
 
   if which_soc == "amber":
     # init -- Add 'add-endcaps-welltaps.tcl' after 'floorplan.tcl'
-
     order = init.get_param('order') # get the default script run order
     floorplan_idx = order.index( 'floorplan.tcl' ) # find floorplan.tcl
     order.insert( floorplan_idx + 1, 'add-endcaps-welltaps.tcl' ) # add here
+    init.update_params( { 'order': order } )
+  elif which_soc == "onyx" and adk_name == "intel16-adk":
+    new_init_steps_after_main = [
+      'innovus-pnr-config.tcl'
+    ]
+    new_init_steps_after_pin_assign = [
+      # 'create-clktree-ndr.tcl',
+      'create-rows.tcl',
+      'add-tracks.tcl',
+      'create-boundary-blockage.tcl',
+      'add-endcaps-welltaps.tcl',
+      'insert-input-antenna-diodes.tcl',
+      'create-special-grid.tcl'
+    ]
+    order = init.get_param('order')
+    # remove the default taps tcl because it has to be added
+    # after create-boundary-blockage.tcl
+    order.remove('add-endcaps-welltaps.tcl')
+    idx = order.index('main.tcl')
+    order[idx+1:idx+1] = new_init_steps_after_main
+    idx = order.index('pin-assignments.tcl')
+    order[idx+1:idx+1] = new_init_steps_after_pin_assign
     init.update_params( { 'order': order } )
   
   # Add density target parameter
