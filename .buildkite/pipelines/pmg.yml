@@ -30,8 +30,8 @@ env:
 
 
   # ($FAIL|$UPLOAD): Inserts a "fail" bubble in the buildkite pipeline log
-  FAIL_ONYX   : 'echo steps : [ { label : FAILED_ONYX_BUILD ,  command : exit } ]'
-  FAIL_AMBER  : 'echo steps : [ { label : FAILED_AMBER_BUILD , command : exit } ]'
+  FAIL_ONYX   : 'echo steps : [ { label : ":x: ONYX_BUILD_FAILED :x:" ,  command : exit } ]'
+  FAIL_AMBER  : 'echo steps : [ { label : ":x: AMBER_BUILD_FAILED :x:" , command : exit } ]'
   UPLOAD : 'buildkite-agent pipeline upload'
 
   # For docker-based gold checks
