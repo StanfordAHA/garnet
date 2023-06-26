@@ -38,6 +38,17 @@ steps:
 ##############################################################################
 # COMMON SETUP to initialize mflowgen
 
+- label: 'quickFailTest'
+  commands:
+  - echo ' --- 1 --- '
+  - exit 13 || $FAIL | $UPLOAD
+  - echo ' --- 2 --- '
+  - 'exit 13 || $$FAIL | $$UPLOAD'
+  - echo ' --- 3 --- '
+- wait
+
+
+
 - label: 'setup 5m'
   commands:
   - 'echo "--- RTL SETUP"; docker pull stanfordaha/garnet:latest'
@@ -72,7 +83,7 @@ steps:
   - ls /workdir
   - cp -rp /workdir /aha/garnet
   - cd /aha; git log | head
-  - /aha/aha/bin/rtl-goldcheck.sh onyx || $$FAIL | $$UPLOAD
+  - /aha/aha/bin/rtl-goldcheck.sh onyx || $FAIL | $UPLOAD
   plugins:
     - docker#v3.2.0:
         image: stanfordaha/garnet:latest
