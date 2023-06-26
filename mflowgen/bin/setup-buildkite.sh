@@ -458,10 +458,10 @@ else
 
     pushd $mflowgen
 
-      # SBKA=/sim/buildkite-agent
-      # On tsmc machines, adks can be found on SBKA/mflowgen.master AND SBKA/adks
-      # On gf machine, adks are only in SBKA/mflowgen.master
-      # FIXME Consult with Alex or somebody to find out where gf12 adks really live
+      # Where $bk=/sim/buildkite-agent:
+      # On tsmc machines, adks can be found on $bk/mflowgen.master AND $bk/adks
+      # On gf machine, adks are only in $bk/mflowgen.master
+      # FIXME/TODO Consult with Alex or somebody to find out where gf12 adks are really supposed to live
 
       function is_gf { test -e /sim/buildkite-agent/mflowgen.master/adks/gf12-adk; }
       if is_gf; then
