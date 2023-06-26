@@ -457,17 +457,30 @@ else
     # flock above and below prevents competition for the 'git pull' command maybe
 
     pushd $mflowgen
-      test -e adks || ln -s /sim/buildkite-agent/adks
-      if [ -d adks/gf12-adk ]; then
-          cd adks/gf12-adk; git pull
-      elif [ -d adks/tsmc16-adk ]; then
-          cd adks/tsmc16-adk; git pull || (\
-              echo "+++ WARNING: Could not 'git pull' to retrieve latest version of tsmc16-adk";
-              echo "=> see mflowgen/bin/setup-buildkite.sh"; echo "."; echo "."
-          )
+
+      # SBKA=/sim/buildkite-agent
+      # On tsmc machines, adks can be found on SBKA/mflowgen.master AND SBKA/adks
+      # On gf machine, adks are only in SBKA/mflowgen.master
+      # FIXME Consult with Alex or somebody to find out where gf12 adks really live
+
+      function is_gf { test -e /sim/buildkite-agent/mflowgen.master/adks/gf12-adk; }
+      if is_gf; then
+          ADK_REPO=/sim/buildkite-agent/mflowgen.master/adks
+          test -e adks          || ln -s $ADK_REPO
+          test -e adks/gf12-adk || (cd adks && ln -s $ADK_REPO/gf12-adk)
+          pushd adks/gf12-adk; git pull; popd
+
       else
-          echo "ERROR ADK not found"
-          return 13 || exit 13
+          ADK_REPO=/sim/buildkite-agent/adks
+          test -e adks            || ln -s $ADK_REPO
+          test -e adks/tsmc16-adk || (cd adks && ln -s $ADK_REPO/tsmc16-adk)
+          test -e adks/tsmc16     || (cd adks && ln -s tsmc16-adk tsmc16)
+
+          # Not using git anymore, just use frozen adk in $ADK_REPO :(
+          # pushd adks/tsmc16-adk; git pull || (\
+          #     echo "+++ WARNING: Could not 'git pull' to retrieve latest version of tsmc16-adk";
+          #     echo "=> see mflowgen/bin/setup-buildkite.sh"; echo "."; echo "."
+          # ); popd
       fi
     popd
 fi
@@ -478,10 +491,8 @@ if ! touch $MFLOWGEN_PATH/is_touchable; then
     return 13 || exit 13
 fi
 
-
 echo "--- UNLOCK "; date
 flockmsg "Release! The lock!"; flock -u 9
-
 
 ########################################################################
 # TCLSH VERSION CHECK
