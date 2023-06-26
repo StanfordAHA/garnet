@@ -42,8 +42,8 @@ steps:
   commands:
   - echo ' --- 1 --- '
   - (exit 13 || $FAIL | $UPLOAD)
-  - echo ' --- 2 --- '
-  - `exit 13 || $FAIL | $UPLOAD`
+#   - echo ' --- 2 --- '
+#   - `exit 13 || $FAIL | $UPLOAD`
   - echo ' --- 3 --- '
   - 'exit 13 || $$FAIL | $$UPLOAD'
 - wait
