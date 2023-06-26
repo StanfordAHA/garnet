@@ -28,7 +28,10 @@ env:
 #   BDIR: /build/pmg${BUILDKITE_BUILD_NUMBER}
 
 
-  # TODO/FIXME Figure out how to use a top-level parm file :(
+
+  # ($FAIL|$UPLOAD): Inserts a "fail" bubble in the buildkite pipeline log
+  FAIL  : 'echo steps : [ { label : FAIL , command : exit } ]'
+  UPLOAD : 'buildkite-agent pipeline upload'
 
 steps:
 
@@ -69,7 +72,7 @@ steps:
   - ls /workdir
   - cp -rp /workdir /aha/garnet
   - cd /aha; git log | head
-  - /aha/aha/bin/rtl-goldcheck.sh onyx
+  - /aha/aha/bin/rtl-goldcheck.sh onyx || $$FAIL | $$UPLOAD
   plugins:
     - docker#v3.2.0:
         image: stanfordaha/garnet:latest
