@@ -46,13 +46,25 @@ steps:
 #     '
 # - wait
 
-##############################################################################
-# Two quick RTL checks
+# - label: 'quickFailTest'
+#   commands:
+#   - echo ' --- 2 --- '
+#   - 'echo foo | grep bar || $$FAIL | $$UPLOAD'
+#   - echo ' --- 3 --- '
+#   - echo foo | grep bar || $FAIL | $UPLOAD
+#   - echo ' --- 4 --- '
+#   - echo foo | grep bar || $$FAIL | $$UPLOAD
+# - wait
 
 - label: "TEST DELETEME"
   commands:
-  - echo foo | grep bar || $FAIL_AMBER | $UPLOAD
-  - echo foo | grep bar || $FAIL_ONYX | $UPLOAD
+  - 'echo foo | grep bar || $$FAIL_ONYX | $$UPLOAD'
+- wait
+
+
+
+##############################################################################
+# Two quick RTL checks
 
 - label: "Gold RTL: Amber 1m"
   commands:
