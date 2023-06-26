@@ -40,29 +40,6 @@ env:
 
 steps:
 
-# - label: "Docker Setup 1m"
-#   commands:
-#   - '
-#     '
-# - wait
-
-# - label: 'quickFailTest'
-#   commands:
-#   - echo ' --- 2 --- '
-#   - 'echo foo | grep bar || $$FAIL | $$UPLOAD'
-#   - echo ' --- 3 --- '
-#   - echo foo | grep bar || $FAIL | $UPLOAD
-#   - echo ' --- 4 --- '
-#   - echo foo | grep bar || $$FAIL | $$UPLOAD
-# - wait
-
-- label: "TEST DELETEME"
-  commands:
-  - 'echo foo | grep bar || $$FAIL_ONYX | $$UPLOAD'
-- wait
-
-
-
 ##############################################################################
 # Two quick RTL checks
 
@@ -88,42 +65,6 @@ steps:
      docker kill $$container;
     '
 - wait
-
-
-# ##############################################################################
-# # Two quick RTL checks
-# 
-# - label: "Gold RTL: Amber 1m"
-#   commands:
-#   - rm -rf /aha/garnet
-#   - ls /workdir
-#   - cp -rp /workdir /aha/garnet
-#   - cd /aha; git log | head
-#   - /aha/aha/bin/rtl-goldcheck.sh amber
-#   plugins:
-#     - docker#v3.2.0:
-#         image: stanfordaha/garnet:latest
-#         volumes:
-#           - "/cad/:/cad"
-#         mount-checkout: true
-#         shell: ["/bin/bash", "-e", "-c"]
-# 
-# - label: "Gold RTL: Onyx 1m"
-#   commands:
-#   - rm -rf /aha/garnet
-#   - ls /workdir
-#   - cp -rp /workdir /aha/garnet
-#   - cd /aha; git log | head
-#   - /aha/aha/bin/rtl-goldcheck.sh onyx || $FAIL | $UPLOAD
-#   plugins:
-#     - docker#v3.2.0:
-#         image: stanfordaha/garnet:latest
-#         volumes:
-#           - "/cad/:/cad"
-#         mount-checkout: true
-#         shell: ["/bin/bash", "-e", "-c"]
-# 
-# - wait: { continue_on_failure: true }
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
