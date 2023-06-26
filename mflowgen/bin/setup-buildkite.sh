@@ -458,24 +458,20 @@ else
 
     pushd $mflowgen
 
-      function is_gf { test -e /sim/buildkite-agent/mflowgen.master/adks/gf12-adk; }
+      function is_gf { test -e /sim/repos/gf12-adk; }
       if is_gf; then
+          # (Cloned GF repo takes about 100M of disk space.)
           ADK_REPO=/sim/repos/gf12-adk
           test -e adks          || mkdir adks
           test -e adks/gf12-adk || (cd adks && git clone $ADK_REPO)
           (cd adks/gf12-adk; git pull)
 
       else
+          # Not using git anymore for tsmc, instead use frozen adk in $ADK_REPO
           ADK_REPO=/sim/buildkite-agent/adks
           test -e adks            || ln -s $ADK_REPO
           test -e adks/tsmc16-adk || (cd adks && ln -s $ADK_REPO/tsmc16-adk)
           test -e adks/tsmc16     || (cd adks && ln -s tsmc16-adk tsmc16)
-
-          # Not using git anymore, just use frozen adk in $ADK_REPO :(
-          # pushd adks/tsmc16-adk; git pull || (\
-          #     echo "+++ WARNING: Could not 'git pull' to retrieve latest version of tsmc16-adk";
-          #     echo "=> see mflowgen/bin/setup-buildkite.sh"; echo "."; echo "."
-          # ); popd
       fi
     popd
 fi
