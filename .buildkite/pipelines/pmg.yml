@@ -60,7 +60,7 @@ steps:
 #     '
 # - wait
 
-- label "no plugin version"
+- label: "no plugin version"
   commands:
   - '
   image=stanfordaha/garnet:latest;
