@@ -51,7 +51,7 @@ docker cp $GTMP/garnet $container:/aha/garnet;
 /bin/rm -rf $GTMP/garnet
 
 # Build the gold RTL and copy it to $GTMP
-dexec "/aha/aha/bin/rtl-goldcheck.sh $soc" || echo RTL build FAILED
+dexec "/aha/garnet/bin/rtl-goldcheck.sh $soc" || echo RTL build FAILED
 docker cp $container:/aha/garnet/design.v $GTMP/$soc-4x2.v
 gzip $GTMP/$soc-4x2.v
 

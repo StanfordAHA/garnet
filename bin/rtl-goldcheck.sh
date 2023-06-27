@@ -125,11 +125,10 @@ echo "Comparing `cat $f1 | wc -l` lines of $f1"
 echo "versus    `cat $f2 | wc -l` lines of $f2"
 printf "\n"
 
-alias vcompare=/aha/garnet/bin/rtl-goldcompare.sh
+vcompare=/aha/garnet/bin/rtl-goldcompare.sh
 
-echo "/aha/garnet/bin/rtl-goldcompare.sh $f1 $f2"
-# ndiffs=`diff -Bb -I Date $f1 $f2 | wc -l`
-ndiffs=`vcompare $f1 $f2 | wc -l`
+echo "$vcompare $f1 $f2"
+ndiffs=`$vcompare $f1 $f2 | wc -l`
 if [ "$ndiffs" != "0" ]; then
 
     # ------------------------------------------------------------------------
@@ -137,8 +136,7 @@ if [ "$ndiffs" != "0" ]; then
 
     printf "Test FAILED with $ndiffs diffs\n\n"
     printf "Top 40 diffs:"
-    # diff -I Date <(vcompare $f1) <(vcompare $f2) | head -40
-    vcompare $f1 $f2 | head -40
+    $vcompare $f1 $f2 | head -40
     exit 13
 fi
 
