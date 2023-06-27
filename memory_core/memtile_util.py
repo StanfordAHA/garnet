@@ -854,6 +854,7 @@ class NetlistBuilder():
         fixed_io["m21_2"] = (7, 8)
         fixed_io["m23_2"] = (7, 9)
 
+        # KALHAN MANUAL EDIT
         fixed_io["p100"] = (6, 2)
         fixed_io["p101"] = (6, 4) 
         fixed_io["p102"] = (6, 6) 
@@ -971,8 +972,16 @@ class NetlistBuilder():
         core_x, core_y = self._placement[core]
         core_config_data = self._interconnect.configure_placement(core_x, core_y, config, **kwargs)
         self._config_data += core_config_data
+        # KALHAN MANUAL EDIT
+        num_pes = int(os.getenv("PES"))
+        pe_list = []
+        for pe in range(num_pes):
+            pe_num = 100+pe
+            pe_list.append(f'p{pe_num}')
+        
+
         if "m" in core or "I" in core or "p" in core:
-            if not core in ("p100", "p101", "p102"):
+            if not core in pe_list:
                 new_mem_tile = core+"_2"
                 core_x, core_y = self._placement[new_mem_tile]
                 core_config_data = self._interconnect.configure_placement(core_x, core_y, config, **kwargs)

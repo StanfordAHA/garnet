@@ -1355,10 +1355,15 @@ class SparseTBBuilder(m.Generator2):
                         node_config_kwargs['sparse_mode'] = 1
                     self.nlb.configure_tile(core_node.get_name(), (1, node_config_kwargs))
         #breakpoint()
+        # KALHAN MANUAL EDIT
         node_config_kwargs = {'cmrg_enable': 0, 'cmrg_stop_lvl': 0, 'op': 0, 'mode': 'intersect'}
-        self.nlb.configure_tile("p100", (1, node_config_kwargs))
-        self.nlb.configure_tile("p101", (1, node_config_kwargs))
-        self.nlb.configure_tile("p102", (1, node_config_kwargs))
+        num_pes = int(os.getenv("PES"))
+        pe_list = []
+        for pe in range(num_pes):
+            pe_num = 100+pe
+            pe_list.append(f'p{pe_num}')
+        for pe in pe_list:
+            self.nlb.configure_tile(pe, (1, node_config_kwargs))
 
     def display_names(self):
         if self.bespoke:
