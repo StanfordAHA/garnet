@@ -20,7 +20,11 @@ fi
 mkdir -p outputs
 
 if [ "$WHICH_SOC" == "amber" ]; then
-    cp -L *cadence-genus-genlib/outputs/design.lib outputs/tile_array_tt.lib
+    if [ -f *cadence-genus-genlib/outputs/design.lib ]; then 
+      cp -L *cadence-genus-genlib/outputs/design.lib outputs/tile_array_tt.lib
+    elif [ -f *cadence-innovus-genlib/outputs/design.lib ]; then
+      cp -L *cadence-innovus-genlib/outputs/design.lib outputs/tile_array_tt.lib
+    fi
     cp -L *synopsys-dc-lib2db/outputs/design.db outputs/tile_array_tt.db
 else
     cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/tile_array_tt.db
@@ -36,4 +40,5 @@ cp -L *Tile_MemCore/outputs/sram.spi outputs/tile_array.sram.spi
 cp -L *Tile_MemCore/outputs/sram.v outputs/tile_array.sram.v
 cp -L *Tile_MemCore/outputs/sram_pwr.v outputs/tile_array.sram.pwr.v
 cp -L *Tile_MemCore/outputs/sram_tt.db outputs/tile_array.sram_tt.db
+
 
