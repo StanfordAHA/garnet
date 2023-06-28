@@ -158,7 +158,7 @@ def construct():
   if adk_name == 'gf12-adk':
       genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
   else:
-      genlibdb       = Step( 'cadence-genus-genlib',           default=True )
+      genlibdb       = Step( 'cadence-innovus-genlib',           default=True )
 
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )

@@ -139,12 +139,10 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
+  genlib         = Step( 'cadence-innovus-genlib',         default=True )
+
   if which_soc == 'onyx':
     pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
-    genlib         = Step( 'cadence-innovus-genlib',         default=True )
-  else:
-    #genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
-    genlib         = Step( 'cadence-genus-genlib',           default=True )
 
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )

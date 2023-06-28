@@ -22,7 +22,7 @@ fi
 mkdir -p outputs
 
 if [ "$WHICH_SOC" == "amber" ]; then
-cp -L *cadence-genus-genlib/outputs/design.lib outputs/Tile_PE_tt.lib
+cp -L *cadence-innovus-genlib/outputs/design.lib outputs/Tile_PE_tt.lib
 cp -L *synopsys-dc-lib2db/outputs/design.db outputs/Tile_PE_tt.db
 else
 cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/Tile_PE_tt.lib
