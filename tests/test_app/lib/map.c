@@ -240,8 +240,8 @@ int update_io_tile_configuration(struct IOTileInfo *io_tile_info, struct ConfigI
          printf("flush mode\n");
         add_config(config_info,
                   (1 << AXI_ADDR_WIDTH) + (tile << (AXI_ADDR_WIDTH - TILE_SEL_ADDR_WIDTH)) + GLB_LD_DMA_CTRL_R,
-                   ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB) |
-                     (0b01 << GLB_LD_DMA_CTRL_FLUSH_MODE_F_LSB)
+                   ((0b01 << GLB_LD_DMA_CTRL_MODE_F_LSB) | (mode << GLB_LD_DMA_CTRL_VALID_MODE_F_LSB)
+                    | (0b01 << GLB_LD_DMA_CTRL_FLUSH_MODE_F_LSB)
                     | (mux_sel << GLB_LD_DMA_CTRL_DATA_MUX_F_LSB)));
 	// } else {
     //         printf("reg mode\n");
