@@ -144,6 +144,7 @@ endif
 
 TEST_DIR?=/home/max/Documents/SPARSE/garnet/VEC_IDENTITY/
 COMPARISON_SCRIPT?=/home/max/Documents/SPARSE/garnet/tests/test_memory_core/build_tb.py
+UNROLL?=1
 
 .PHONY: compile
 compile: COMPILE_ARGS = $(COMPILE_RTL_ARGS)
@@ -158,7 +159,7 @@ run:
 # $(RUN) $(DUMP_ARGS) $(RUN_ARGS) $(APP_ARGS)
 	rm -f $(TEST_DIR)/OUTPUT_DIR/*
 	$(RUN) $(DUMP_ARGS) $(TMP_PARGS)
-	python $(COMPARISON_SCRIPT) --do_comparison --gold_mat_dir=$(TEST_DIR)/GLB_DIR --sim_mat_dir=$(TEST_DIR)/OUTPUT_DIR/
+	python $(COMPARISON_SCRIPT) --do_comparison --gold_mat_dir=$(TEST_DIR)/GLB_DIR --sim_mat_dir=$(TEST_DIR)/OUTPUT_DIR/ --unroll $(UNROLL)
 
 .PHONY: sim
 # sim: libcgra.so compile run

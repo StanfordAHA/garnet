@@ -3,8 +3,13 @@ import glob
 import subprocess
 import os
 
-b_tensors = glob.glob("../matmul_ijk_ch7-6-b1/formatted/tensor_B*")
-c_tensors = glob.glob("../matmul_ijk_ch7-6-b1/formatted/tensor_C*")
+test = "relat5_tile20" 
+
+b_tensors = glob.glob(f"../matmul_ijk_{test}/formatted/tensor_B*")
+c_tensors = glob.glob(f"../matmul_ijk_{test}/formatted/tensor_C*")
+
+if not os.path.exists("./MAT_TMP_DIR"):
+    os.mkdir("./MAT_TMP_DIR")
 
 os.system("rm -rf ./matmul*")
 os.system("rm -rf ./MAT_TMP_DIR/tile*")
@@ -34,11 +39,11 @@ for b in b_tensors:
 
             shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-            shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-            shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+            shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+            shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-            shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-            shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+            shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+            shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
             shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
