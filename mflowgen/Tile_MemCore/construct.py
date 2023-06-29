@@ -420,9 +420,8 @@ def construct():
       g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
       g.connect_by_name( drc_pm,        debugcalibre   )
 
-  # Need this because gf12 uses innovus for lib generation
-  if adk_name == 'gf12-adk':
-      g.connect_by_name( iflow,    genlibdb       )
+  # Need this because new default is to use innovus for lib generation
+  g.connect_by_name( iflow,    genlibdb       )
 
   #-----------------------------------------------------------------------
   # Parameterize
