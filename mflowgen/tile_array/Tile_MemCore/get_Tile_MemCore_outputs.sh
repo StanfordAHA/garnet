@@ -1,6 +1,5 @@
 #!/bin/bash
-
-set -e;    # FAIL if any individual command fails
+set -eo pipefail   # Fail when/if any individual command in the script fails
 
 mflowgen run --design $GARNET_HOME/mflowgen/Tile_MemCore/
 

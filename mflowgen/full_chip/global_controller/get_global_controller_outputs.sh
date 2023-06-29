@@ -1,4 +1,6 @@
 #!/bin/bash
+set -eo pipefail   # Fail when/if any individual command in the script fails
+
 mflowgen run --design $GARNET_HOME/mflowgen/global_controller/
 make synopsys-dc-lib2db
 if command -v calibre &> /dev/null

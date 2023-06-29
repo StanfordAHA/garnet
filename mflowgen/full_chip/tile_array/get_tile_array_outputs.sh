@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eo pipefail   # Fail when/if any individual command in the script fails
 
 # default is "not amber"
 [ "$WHICH_SOC" ] || WHICH_SOC=default
@@ -36,5 +37,4 @@ cp -L *Tile_MemCore/outputs/sram.spi outputs/tile_array.sram.spi
 cp -L *Tile_MemCore/outputs/sram.v outputs/tile_array.sram.v
 cp -L *Tile_MemCore/outputs/sram_pwr.v outputs/tile_array.sram.pwr.v
 cp -L *Tile_MemCore/outputs/sram_tt.db outputs/tile_array.sram_tt.db
-
 
