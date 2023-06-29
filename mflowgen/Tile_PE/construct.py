@@ -459,10 +459,8 @@ def construct():
 
   # Adding new input for genlibdb node to run
 
-  # Using innovus-genlib for everything now, not just gf12
-  # if adk_name == 'gf12-adk':
-  if True:
-    # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)
+  if adk_name == 'gf12-adk':
+    # gf12 uses synopsys-ptpx for genlib (default is cadence-innovus)
     order = genlibdb.get_param('order') # get the default script run order
     extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
     order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
@@ -474,6 +472,7 @@ def construct():
     order.remove( 'write-interface-timing.tcl' )
     genlibdb.update_params( { 'order': order } )
 
+# tsmc now using innovus-genlib, which apparently does not have read_design.tcl?
 #   else:
 #     order = genlibdb.get_param('order') # get the default script run order
 #     read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
