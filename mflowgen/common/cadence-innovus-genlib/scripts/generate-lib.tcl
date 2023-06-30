@@ -1,2 +1,2 @@
-do_extract_model design.lib -view analysis_default
+do_extract_model design.lib -view $vars(default_setup_view)
 
