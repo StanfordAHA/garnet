@@ -155,10 +155,10 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  if adk_name == 'gf12-adk':
+  if True:
       genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
   else:
-      genlibdb       = Step( this_dir + '/../common/cadence-innovus-genlib' )
+      genlibdb       = Step( 'cadence-genus-genlib',           default=True )
 
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
@@ -408,8 +408,9 @@ def construct():
       g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
       g.connect_by_name( drc_pm,        debugcalibre   )
 
-# Need this because new default is to use innovus for lib generation
-  g.connect_by_name( iflow,    genlibdb       )
+  # Need this because gf12 uses innovus for lib generation
+  if True:
+      g.connect_by_name( iflow,    genlibdb       )
 
   #-----------------------------------------------------------------------
   # Parameterize
@@ -458,8 +459,8 @@ def construct():
 
   # Adding new input for genlibdb node to run
 
-  if adk_name == 'gf12-adk':
-    # gf12 uses synopsys-ptpx for genlib (default is cadence-innovus)
+  if True:
+    # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)
     order = genlibdb.get_param('order') # get the default script run order
     extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
     order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
@@ -471,12 +472,11 @@ def construct():
     order.remove( 'write-interface-timing.tcl' )
     genlibdb.update_params( { 'order': order } )
 
-# tsmc now using innovus-genlib, which apparently does not have read_design.tcl?
-#   else:
-#     order = genlibdb.get_param('order') # get the default script run order
-#     read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
-#     order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
-#     genlibdb.update_params( { 'order': order } )
+  else:
+    order = genlibdb.get_param('order') # get the default script run order
+    read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
+    order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
+    genlibdb.update_params( { 'order': order } )
 
 
   # Pwr aware steps:

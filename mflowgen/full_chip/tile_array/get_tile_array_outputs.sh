@@ -20,8 +20,8 @@ else
 fi
 mkdir -p outputs
 
-if [ "$WHICH_SOC" == "amber" ]; then
-    cp -L *cadence-innovus-genlib/outputs/design.lib outputs/tile_array_tt.lib
+if [ ]; then
+    cp -L *cadence-genus-genlib/outputs/design.lib outputs/tile_array_tt.lib
     cp -L *synopsys-dc-lib2db/outputs/design.db outputs/tile_array_tt.db
 else
     cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/tile_array_tt.db

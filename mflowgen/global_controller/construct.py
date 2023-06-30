@@ -102,7 +102,10 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlib       = Step( 'cadence-innovus-genlib',        default=True )
+  if True:
+    genlib       = Step( 'cadence-innovus-genlib',        default=True )
+  else:
+    genlib       = Step( 'cadence-genus-genlib',          default=True )
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
