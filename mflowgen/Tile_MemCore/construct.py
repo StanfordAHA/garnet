@@ -151,7 +151,7 @@ def construct():
   if adk_name == 'gf12-adk':
       genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
   else:
-      genlibdb       = Step( 'cadence-innovus-genlib',           default=True )
+      genlibdb       = Step( this_dir + '/../common/cadence-innovus-genlib' )
 
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
@@ -472,7 +472,6 @@ def construct():
 
   # Adding new input for genlibdb node to run
 
-  # Using innovus-genlib for everything now, not just gf12
   if adk_name == 'gf12-adk':
     # gf12 uses synopsys-ptpx for genlib (default is cadence-innovus)
     order = genlibdb.get_param('order') # get the default script run order
