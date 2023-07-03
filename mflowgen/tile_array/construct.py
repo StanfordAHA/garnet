@@ -139,12 +139,9 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  if True:
-    pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
-    genlib         = Step( 'cadence-innovus-genlib',         default=True )
-  else:
-    #genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
-    genlib         = Step( 'cadence-genus-genlib',           default=True )
+
+  pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  genlib         = Step( 'cadence-innovus-genlib',         default=True )
 
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
@@ -170,9 +167,9 @@ def construct():
   pt_signoff.extend_inputs( ['Tile_MemCore_tt.db'] )
   genlib.extend_inputs( ['Tile_PE_tt.lib'] )
   genlib.extend_inputs( ['Tile_MemCore_tt.lib'] )
-  if True:
-    pt_genlibdb.extend_inputs( ['Tile_PE_tt.db'] )
-    pt_genlibdb.extend_inputs( ['Tile_MemCore_tt.db'] )
+
+  pt_genlibdb.extend_inputs( ['Tile_PE_tt.db'] )
+  pt_genlibdb.extend_inputs( ['Tile_MemCore_tt.db'] )
 
   e2e_apps = ["tests/conv_3_3", "apps/cascade", "apps/harris_auto", "apps/resnet_i1_o1_mem", "apps/resnet_i1_o1_pond"]
 
@@ -450,14 +447,10 @@ def construct():
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
-  if True:
-    g.connect_by_name( adk,          pt_genlibdb )
-    g.connect_by_name( adk,          genlib      )
-    g.connect_by_name( signoff,      pt_genlibdb )
-    g.connect_by_name( signoff,      genlib      )
-  else:
-    g.connect_by_name( adk,          genlib   )
-    g.connect_by_name( signoff,      genlib   )
+  g.connect_by_name( adk,          pt_genlibdb )
+  g.connect_by_name( adk,          genlib      )
+  g.connect_by_name( signoff,      pt_genlibdb )
+  g.connect_by_name( signoff,      genlib      )
   
   g.connect_by_name( genlib,       lib2db   )
 
@@ -505,12 +498,11 @@ def construct():
   #dc.update_params( { 'order': order } )
   #synth.update_params( { 'order': order } )
 
-  # pt_genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # pt_genlibdb -- Remove 'write-interface-timing.tcl' because it takes
   # very long and is not necessary
-  if True:
-    order = pt_genlibdb.get_param('order')
-    order.remove( 'write-interface-timing.tcl' )
-    pt_genlibdb.update_params( { 'order': order } )
+  order = pt_genlibdb.get_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  pt_genlibdb.update_params( { 'order': order } )
 
   # init -- Add 'dont-touch.tcl' before reporting
 

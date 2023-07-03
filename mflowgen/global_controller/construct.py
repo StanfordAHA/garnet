@@ -102,10 +102,7 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  if True:
-    genlib       = Step( 'cadence-innovus-genlib',        default=True )
-  else:
-    genlib       = Step( 'cadence-genus-genlib',          default=True )
+  genlib       = Step( 'cadence-innovus-genlib',        default=True )
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -118,6 +115,15 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+
+  # Must adjust pin_cap_tolerance to prevent this:
+  # **ERROR: (TECHLIB-1071): Identified pin capacitance mismatch
+  #   '0.015400' and '0.015300' in pin 'trst_n', for cell
+  #   'global_controller', between libraries 'analysis_default.lib' and
+  #   'analysis_hold.lib'. The libraries cannot be used for merging.
+
+  cmd = "cat scripts/extract_model.tcl | sed 's/\(merge_model_timing.*\)/\1 -pin_cap_tolerance .001/' > inputs/extract_model.tcl"
+  genlib.pre_extend_commands( [ cmd ] )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python script finds 'stream-out.tcl' and strips out that flag.
@@ -196,8 +202,7 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
-  if which_soc == "onyx":
-    g.connect_by_name( iflow,    genlib         )
+  g.connect_by_name( iflow,    genlib         )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
