@@ -45,6 +45,24 @@ steps:
 - wait: ~
 
 # Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
+
+- label: 'GLC'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 74G;
+     echo "--- MAKE GLOBAL_CONTROLLER"; set -o pipefail;
+     echo exit 13 | make global_controller |& tee make-GLC.log;
+     egrep ^FAILED make-GLC.log && exit 13 || echo PASSED'
+- wait: ~
+
+# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
+- label: 'glb_top'
+  commands:
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 84G;
+     echo "--- MAKE GLB_TOP"; set -o pipefail;
+     echo exit 13 | make glb_top |& tee make-glb_top.log;
+     egrep ^FAILED make-glb_top.log && exit 13 || echo PASSED'
+- wait: ~
+
 - label: 'tile_array'
   commands:
   - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 100G;
@@ -72,23 +90,6 @@ steps:
     - $LVS_CHECK $GOLD
     - ($LVS_CHECK $GOLD | grep INCORRECT > /dev/null) && exit 13 || exit 0
 - wait: { continue_on_failure: true }
-
-# Note: "echo exit 13" prevents hang at genus/innovus prompt, allows clean fail
-- label: 'glb_top'
-  commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 84G;
-     echo "--- MAKE GLB_TOP"; set -o pipefail;
-     echo exit 13 | make glb_top |& tee make-glb_top.log;
-     egrep ^FAILED make-glb_top.log && exit 13 || echo PASSED'
-- wait: ~
-
-- label: 'GLC'
-  commands:
-  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD --need_space 74G;
-     echo "--- MAKE GLOBAL_CONTROLLER"; set -o pipefail;
-     echo exit 13 | make global_controller |& tee make-GLC.log;
-     egrep ^FAILED make-GLC.log && exit 13 || echo PASSED'
-- wait: ~
 
 - label: 'dragon'
   commands:

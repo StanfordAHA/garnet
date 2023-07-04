@@ -6,11 +6,7 @@ set -eo pipefail   # Fail when/if any individual command in the script fails
 
 mflowgen run --design $GARNET_HOME/mflowgen/tile_array/
 
-if [ "$WHICH_SOC" == "amber" ]; then
-    make synopsys-dc-lib2db -j 2
-else
-    make synopsys-ptpx-genlibdb -j 2
-fi
+make synopsys-ptpx-genlibdb -j 2
 
 if command -v calibre &> /dev/null
 then

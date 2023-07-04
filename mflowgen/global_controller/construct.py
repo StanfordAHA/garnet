@@ -122,7 +122,7 @@ def construct():
   #   'global_controller', between libraries 'analysis_default.lib' and
   #   'analysis_hold.lib'. The libraries cannot be used for merging.
 
-  cmd = "cat scripts/extract_model.tcl | sed 's/\(merge_model_timing.*\)/\1 -pin_cap_tolerance .001/' > inputs/extract_model.tcl"
+  cmd = "cat scripts/extract_model.tcl | sed 's/\(merge_model_timing.*\)/\\1 -pin_cap_tolerance .001/' > inputs/extract_model.tcl"
   genlib.pre_extend_commands( [ cmd ] )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
