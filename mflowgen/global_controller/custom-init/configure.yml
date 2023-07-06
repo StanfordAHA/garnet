@@ -17,4 +17,5 @@ outputs:
   - insert-input-antenna-diodes.tcl
   - create-special-grid.tcl
   - floorplan.tcl
+  - pin-assignments.tcl
 
