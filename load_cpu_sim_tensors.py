@@ -2,7 +2,7 @@ import numpy as np
 import subprocess
 
 # change this
-app_name = "elemmul"
+app_name = "mat_elemadd3"
 
 datasets = [
     'b1_ss',
@@ -57,8 +57,8 @@ datasets = [
     'Trefethen_20b'
 ]
 
-
 for datum_name in datasets:
-    command = f"cp -r SUITESPARSE_TNS/{datum}/{app_name} SPARSE_TESTS/MAT_TMP_DIR/{datum}"
-
+    command1 = f"mkdir SPARSE_TESTS/MAT_TMP_DIR/{datum_name}/"
+    subprocess.run(command1, shell=True)
+    command = f"cp SUITESPARSE_TNS/{datum_name}/{app_name}/* SPARSE_TESTS/MAT_TMP_DIR/{datum_name}"
     subprocess.run(command, shell=True)
