@@ -125,7 +125,8 @@ data_dict = {}
 for key in datasets:
     data_dict[key] = None
 
-app_name = "matmul_ijk"
+# app_name = "matmul_ijk"
+app_name = "mat_identity"
 
 for datum_name in datasets:
     command = "aha glb ../../../garnet/SPARSE_TESTS/{app}_{datum}/GLB_DIR/{app}_combined_seed_{datum} --sparse --sparse-test-name {app} --sparse-comparison /aha/garnet/SPARSE_TESTS/{app}_{datum}/GLB_DIR/{app}_combined_seed_{datum}/ > temp_output.txt".format(app=app_name,datum=datum_name)
@@ -151,6 +152,6 @@ for datum_name in datasets:
 
 print(data_dict)
 
-with open("elemmul_data.txt", 'w') as f: 
+with open("mat_elemadd3_data.txt", 'w') as f: 
     for key, value in data_dict.items(): 
         f.write('%s:%s\n' % (key, value))
