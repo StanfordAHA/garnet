@@ -1,0 +1,11 @@
+// Used to override the default file to realize LVS blackbox
+// To enable, add this "-I ./Overrides" option to the icv command (before including PXL)
+
+lvs_black_box_options (
+    equiv_cells = {
+        {schematic_cell = "<schematic_cell_name>", layout_cell = "<layout_cell_name>"},
+        {schematic_cell = "<schematic_cell_name>", layout_cell = "<layout_cell_name>"}
+    },
+
+    equate_ports = { }
+);
