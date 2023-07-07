@@ -454,7 +454,8 @@ def construct():
 
   # Adding new input for genlibdb node to run
 
-  if True:   # Now true for both TSMC and GF
+  # No longer conditional---amber and onyx now use same genlib mechanism
+  if True:
     order = genlibdb.get_param('order') # get the default script run order
     extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
     order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here

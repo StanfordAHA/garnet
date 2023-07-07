@@ -116,13 +116,16 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
-  # Must adjust pin_cap_tolerance to prevent this:
+  # Must adjust pin_cap_tolerance to prevent:
   # **ERROR: (TECHLIB-1071): Identified pin capacitance mismatch
-  #   '0.015400' and '0.015300' in pin 'trst_n', for cell
-  #   'global_controller', between libraries 'analysis_default.lib' and
-  #   'analysis_hold.lib'. The libraries cannot be used for merging.
+  #   '0.015400' and '0.015300' in pin 'trst_n', for cell 'global_controller',
+  #   between libraries 'analysis_default.lib' and 'analysis_hold.lib'.
 
-  cmd = "cat scripts/extract_model.tcl | sed 's/\(merge_model_timing.*\)/\\1 -pin_cap_tolerance .001/' > inputs/extract_model.tcl"
+  # Before: merge_model_timing ... -outfile design.lib
+  # Or:     merge_model_timing ... -outfile design.lib -pin_cap_tolerance .000001
+  # After:  merge_model_timing ... -outfile design.lib -pin_cap_tolerance .0005
+
+  cmd = "cat scripts/extract_model.tcl | sed 's/\(merge_model_timing.*design.lib\).*/\\1 -pin_cap_tolerance .0005/' > inputs/extract_model.tcl"
   genlib.pre_extend_commands( [ cmd ] )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
