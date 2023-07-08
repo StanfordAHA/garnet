@@ -1,0 +1,32 @@
+p0	===>	"Add"		===>	X0A_Y02
+p1	===>	"Add"		===>	X08_Y02
+p2	===>	"union i"_12		===>	X05_Y05
+p3	===>	"union i"_23		===>	X05_Y06
+p4	===>	"union i"_13		===>	X04_Y05
+p5	===>	"union j"_12		===>	X05_Y03
+p6	===>	"union j"_23		===>	X05_Y04
+p7	===>	"union j"_13		===>	X06_Y03
+m8	===>	fiber_access_0		===>	X03_Y05
+I9	===>	data_in_B_0		===>	X00_Y00
+m10	===>	fiber_access_1		===>	X03_Y04
+I11	===>	data_out_X_0		===>	X01_Y00
+m12	===>	fiber_access_2		===>	X03_Y02
+I13	===>	data_in_B_1		===>	X02_Y00
+m14	===>	fiber_access_3		===>	X03_Y01
+I15	===>	data_out_X_1		===>	X03_Y00
+m16	===>	fiber_access_4		===>	X07_Y01
+I17	===>	data_out_X_vals		===>	X05_Y00
+m18	===>	fiber_access_5		===>	X03_Y03
+I19	===>	data_in_C_1		===>	X04_Y00
+m20	===>	fiber_access_6		===>	X07_Y04
+I21	===>	data_in_D_1		===>	X06_Y00
+m22	===>	fiber_access_7		===>	X07_Y06
+I23	===>	data_in_C_0		===>	X08_Y00
+m24	===>	fiber_access_8		===>	X07_Y05
+I25	===>	data_in_D_0		===>	X0A_Y00
+m26	===>	fiber_access_9		===>	X0B_Y01
+I27	===>	data_in_B_vals		===>	X0C_Y00
+m28	===>	fiber_access_10		===>	X0B_Y02
+I29	===>	data_in_C_vals		===>	X0E_Y00
+m30	===>	fiber_access_11		===>	X07_Y02
+I31	===>	data_in_D_vals		===>	X10_Y00
