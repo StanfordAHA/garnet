@@ -1,0 +1,22 @@
+p0	===>	"intersect i"		===>	X04_Y03
+p1	===>	"CrdDrop i,j"		===>	X04_Y04
+p2	===>	"intersect j"		===>	X06_Y03
+p3	===>	"Mul"		===>	X06_Y02
+m4	===>	fiber_access_0		===>	X07_Y04
+I5	===>	data_in_B_0		===>	X00_Y00
+m6	===>	fiber_access_1		===>	X03_Y01
+I7	===>	data_out_X_0		===>	X01_Y00
+m8	===>	fiber_access_2		===>	X03_Y04
+I9	===>	data_out_X_1		===>	X03_Y00
+m10	===>	fiber_access_3		===>	X03_Y05
+I11	===>	data_in_B_1		===>	X02_Y00
+m12	===>	fiber_access_4		===>	X07_Y01
+I13	===>	data_out_X_vals		===>	X05_Y00
+m14	===>	fiber_access_5		===>	X03_Y03
+I15	===>	data_in_C_1		===>	X04_Y00
+m16	===>	fiber_access_6		===>	X03_Y02
+I17	===>	data_in_C_0		===>	X06_Y00
+m18	===>	fiber_access_7		===>	X07_Y02
+I19	===>	data_in_B_vals		===>	X08_Y00
+m20	===>	fiber_access_8		===>	X07_Y03
+I21	===>	data_in_C_vals		===>	X0A_Y00
