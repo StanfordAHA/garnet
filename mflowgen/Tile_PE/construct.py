@@ -23,7 +23,8 @@ def construct():
 
   adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
   adk_view = 'multivt'
-  pwr_aware = True
+  # pwr_aware = True
+  pwr_aware = False
 
   if pwr_aware:
       adk_view = adk_view + '-pm'
@@ -52,6 +53,8 @@ def construct():
       read_hdl_defines = 'TSMC16'
   elif adk_name == 'gf12-adk':
       read_hdl_defines = 'GF12'
+  elif adk_name == 'intel16-adk':
+      read_hdl_defines = 'INTEL16'
   else:
       read_hdl_defines = ''
 
@@ -84,6 +87,10 @@ def construct():
     'interconnect_only'  : True,
     'core_density_target': 0.63,
   })
+  # INTEL overrides
+  if adk_name == 'intel16-adk': parameters.update({
+    'adk_stdcell'  : 'b15_7t_108pp'
+  })
 
   # User-level option to change clock frequency
   # E.g. 'export clock_period_PE="4.0"' to target 250MHz
@@ -94,6 +101,10 @@ def construct():
       print("@file_info: WARNING setting PE clock period to '%s'" % cp)
       parameters['clock_period'] = cp;
 
+  # INTEL overrides (ns -> ps)
+  if adk_name == 'intel16-adk': parameters.update({
+    'clock_period': parameters['clock_period'] * 1000
+  })
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
@@ -106,8 +117,8 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-
-  rtl                  = Step( this_dir + '/../common/rtl'                          )
+  # rtl                  = Step( this_dir + '/../common/rtl'                          )
+  rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
   constraints          = Step( this_dir + '/constraints'                            )
   custom_init          = Step( this_dir + '/custom-init'                            )
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
@@ -155,10 +166,10 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  if adk_name == 'gf12-adk':
+  if adk_name in ['gf12-adk', 'intel16-adk']:
       genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
   else:
-      genlibdb       = Step( 'cadence-genus-genlib',           default=True )
+      genlibdb       = Step( 'cadence-innovus-genlib',         default=True )
 
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
@@ -408,8 +419,8 @@ def construct():
       g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
       g.connect_by_name( drc_pm,        debugcalibre   )
 
-  # Need this because gf12 uses innovus for lib generation
-  if adk_name == 'gf12-adk':
+  # Need this because gf12/intel16 uses innovus for lib generation
+  if adk_name in ['gf12-adk', 'intel16-adk']:
       g.connect_by_name( iflow,    genlibdb       )
 
   #-----------------------------------------------------------------------
@@ -459,7 +470,7 @@ def construct():
 
   # Adding new input for genlibdb node to run
 
-  if adk_name == 'gf12-adk':
+  if adk_name in ['gf12-adk', 'intel16-adk']:
     # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)
     order = genlibdb.get_param('order') # get the default script run order
     extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
