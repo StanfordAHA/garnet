@@ -43,7 +43,7 @@ set_driving_cell -no_design_rule \
 set_max_fanout 20 $design_name
 # Make all signals meet good slew
 # set_input_delay constraints for input ports
-set_max_transition 0.120 $design_name
+set_max_transition [expr 0.120*1000] $design_name
 
 # Passthrough clock outputs
 set pt_clk_out [get_ports clk*out*]
@@ -85,7 +85,7 @@ set i_delay [expr 0.2 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 # Fix config input delay to specific value
-set pt_i_delay 0.700
+set pt_i_delay [expr 0.700*1000]
 set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_inputs
 set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_read_data_inputs
 
@@ -97,7 +97,7 @@ set_output_delay -clock ${clock_name} ${o_delay} [all_outputs]
 
 # Set timing on pass through clock
 # Set clock min delay and max delay
-set clock_max_delay 0.05
+set clock_max_delay [expr 0.05 * 1000]
 set_max_delay -to $pt_clk_out $clock_max_delay
 
 # Min and max delay a little more than our clock
@@ -107,11 +107,11 @@ set_min_delay -to $pt_outputs ${min_w_in}
 set_min_delay -to $pt_read_data_outputs ${min_w_in}
 
 # Pass through (not clock) timing margin
-set alt_passthru_margin 0.03
+set alt_passthru_margin [expr 0.03*1000]
 set alt_passthru_max [expr ${min_w_in} + ${alt_passthru_margin}]
 set_max_delay -to $pt_outputs ${alt_passthru_max}
 # This doesn't need to be as tight
-set rd_cfg_margin 0.300
+set rd_cfg_margin [expr 0.300*1000]
 set_max_delay -from $pt_read_data_inputs -to $pt_read_data_outputs [expr ${rd_cfg_margin} + ${pt_i_delay} + ${o_delay}]
 
 # Relax config_addr -> read_config_data path
@@ -127,7 +127,7 @@ set_load ${mark_approx_cap} $pt_read_data_outputs
 set_load ${mark_approx_cap} $pt_clk_out
 
 # Set max transition on these outputs as well
-set max_trans_passthru .020
+set max_trans_passthru [expr 0.020 * 1000]
 set_max_transition ${max_trans_passthru} $pt_outputs
 set_max_transition ${max_trans_passthru} $pt_read_data_outputs
 set_max_transition ${max_trans_passthru} $pt_clk_out
@@ -142,7 +142,7 @@ set_input_transition ${max_trans_passthru} $pt_read_data_inputs
 # Constrain Feedthrough FIFO bypass
 #
 # Constrain SB to ~100 ps
-set sb_delay 0.3
+set sb_delay [expr 0.3*1000]
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
 set_max_delay -from [get_ports SB* -filter direction==in] -to [get_ports SB* -filter direction==out] [expr ${sb_delay} + ${i_delay} + ${o_delay}]
 # Then override the rest of the paths to be full clock period

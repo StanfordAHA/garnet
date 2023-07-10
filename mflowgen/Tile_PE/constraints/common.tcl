@@ -18,7 +18,7 @@ set_max_fanout 20 $design_name
 
 # Make all signals meet good slew
 
-set_max_transition 0.1 $design_name
+set_max_transition [expr 0.1*1000] $design_name
 
 # This constraint sets the load capacitance in picofarads of the
 # output pins of your design.
@@ -40,7 +40,7 @@ set_max_fanout 10 $design_name
 
 # Make all signals meet good slew
 
-set_max_transition 0.050 $design_name
+set_max_transition [expr 0.050*1000] $design_name
 
 ########################################################################
 # FROM MEM TILE (mostly)
@@ -98,7 +98,7 @@ set i_delay [expr 0.3 * ${clock_period}]
 set_input_delay -clock ${clock_name} ${i_delay} [all_inputs -no_clocks]
 # Pass through should have no input delay
 # Fix config input delay to specific value
-set pt_i_delay 0.700
+set pt_i_delay [expr 0.700*1000]
 set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_clk_in
 set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_inputs
 set_input_delay -clock ${clock_name} ${pt_i_delay} $pt_read_data_inputs
@@ -115,7 +115,7 @@ set_output_delay -clock ${clock_name} 0 $pt_read_data_outputs
 # Set timing on pass through clock
 # Set clock min delay and max delay
 set clock_min_delay 0
-set clock_max_delay 0.05
+set clock_max_delay [expr 0.05*1000]
 set_min_delay -from $pt_clk_in -to $pt_clk_out [expr ${clock_min_delay} + ${pt_i_delay} + ${o_delay}]
 set_max_delay -from $pt_clk_in -to $pt_clk_out [expr ${clock_max_delay} + ${pt_i_delay} + ${o_delay}]
 
@@ -126,11 +126,11 @@ set_min_delay -to $pt_outputs ${min_w_in}
 set_min_delay -to $pt_read_data_outputs ${min_w_in}
 
 # Pass through (not clock) timing margin
-set alt_passthru_margin 0.03
+set alt_passthru_margin [expr 0.03*1000]
 set alt_passthru_max [expr ${min_w_in} + ${alt_passthru_margin}]
 set_max_delay -to $pt_outputs ${alt_passthru_max}
 # This doesn't need to be as tight
-set rd_cfg_margin 0.300
+set rd_cfg_margin [expr 0.300*1000]
 set_max_delay -from $pt_read_data_inputs -to $pt_read_data_outputs [expr ${rd_cfg_margin} + ${pt_i_delay} + ${o_delay}]
 
 # 5fF approx load
@@ -141,7 +141,7 @@ set_load ${mark_approx_cap} $pt_read_data_outputs
 set_load ${mark_approx_cap} $pt_clk_out
 
 # Set max transition on these outputs as well
-set max_trans_passthru .020
+set max_trans_passthru [expr 0.020*1000]
 set_max_transition ${max_trans_passthru} $pt_outputs
 set_max_transition ${max_trans_passthru} $pt_read_data_outputs
 set_max_transition ${max_trans_passthru} $pt_clk_out
@@ -158,7 +158,7 @@ set_multicycle_path 2 -to [get_ports read_config_data* -filter direction==out] -
 set_multicycle_path 1 -to [get_ports read_config_data* -filter direction==out] -hold
 
 ## Constrain SB to ~200 ps
-set sb_delay 0.210
+set sb_delay [expr 0.210*1000]
 if { $WHICH_SOC == "amber" } {
 # Use this first command to constrain all feedthrough paths to just the desired SB delay
 set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
