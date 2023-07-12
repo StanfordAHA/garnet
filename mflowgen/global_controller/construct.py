@@ -116,15 +116,6 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
 
-  # Must adjust pin_cap_tolerance to prevent:
-  # **ERROR: (TECHLIB-1071): Identified pin capacitance mismatch
-  #   '0.015400' and '0.015300' in pin 'trst_n', for cell 'global_controller',
-  #   between libraries 'analysis_default.lib' and 'analysis_hold.lib'.
-
-  # Before: merge_model_timing ... -outfile design.lib
-  # Or:     merge_model_timing ... -outfile design.lib -pin_cap_tolerance .000001
-  # After:  merge_model_timing ... -outfile design.lib -pin_cap_tolerance .0005
-
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python script finds 'stream-out.tcl' and strips out that flag.
   if adk_name == "tsmc16":

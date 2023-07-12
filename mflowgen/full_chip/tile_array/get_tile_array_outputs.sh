@@ -16,8 +16,8 @@ else
 fi
 mkdir -p outputs
 
-    cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/tile_array_tt.db
-    cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/tile_array_tt.lib
+cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/tile_array_tt.db
+cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/tile_array_tt.lib
 
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/tile_array.lef
 cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/tile_array.vcs.v
