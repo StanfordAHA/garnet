@@ -455,17 +455,16 @@ def construct():
   # Adding new input for genlibdb node to run
 
   # No longer conditional---amber and onyx now use same genlib mechanism
-  if True:
-    order = genlibdb.get_param('order') # get the default script run order
-    extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
-    order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
-    genlibdb.update_params( { 'order': order } )
+  order = genlibdb.get_param('order') # get the default script run order
+  extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
+  order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
+  genlibdb.update_params( { 'order': order } )
 
-    # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
-    # very long and is not necessary
-    order = genlibdb.get_param('order')
-    order.remove( 'write-interface-timing.tcl' )
-    genlibdb.update_params( { 'order': order } )
+  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # very long and is not necessary
+  order = genlibdb.get_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  genlibdb.update_params( { 'order': order } )
 
   # Pwr aware steps:
   if pwr_aware:
