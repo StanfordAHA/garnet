@@ -80,12 +80,13 @@ set_multicycle_path -hold 1 -from [get_ports stall*]
 # Ensure that no buffers get inserted on abutted nets
 # First get all nets connected to CGRA tiles
 set tile_nets [get_nets -of_objects [get_cells -filter {ref_name =~ *Tile*}]]
-# Now iterate over collection and check if net connects ONLY to
-# CGRA tiles and no other cells. If this is true, don't try to route it.
+# Now iterate over collection and check if net connects > 1
+# CGRA tile and no other cells. If this is true, don't try to route it.
 foreach_in_collection net $tile_nets {
   set connected_cells [get_cells -of_object $net]
   set connected_tiles [filter_collection $connected_cells {ref_name =~ *Tile*}]
-  if { [compare_collections $connected_cells $connected_tiles] == 0 } {
+  set num_connected_tiles [sizeof_collection $connected_tiles]
+  if {($num_connected_tiles > 1) && ([compare_collections $connected_cells $connected_tiles] == 0)} {
     set_dont_touch $net true
   }
 }
@@ -111,3 +112,10 @@ set_multicycle_path 9 -to [get_ports read_config_data] -hold
 # causes hi,lo -> tile_id connections on cgra tiles to be
 # optimized away and replaced with tie cells.
 #set_dont_touch [get_references *mantle_wire*]
+
+# 1. After transitioning TSMC genlib from genus to innovus/ptpx, synthesis
+#    started inserting buffers on these hi/lo nets (below)! Why??
+# 2. These nets are either tied constant hi or lo, right?
+#    Timing should not be an issue!?
+set_dont_touch [get_nets Tile*_lo_*]
+set_dont_touch [get_nets Tile*_hi_*]
