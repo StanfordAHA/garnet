@@ -12,7 +12,10 @@ fi
 
 mkdir -p outputs
 
-if [ -f *cadence-genus-genlib/outputs/design.lib ]; then 
+if [ -f *synopsys-ptpx-genlibdb/outputs/design.lib ]; then 
+  cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/global_controller_tt.lib
+
+elif [ -f *cadence-genus-genlib/outputs/design.lib ]; then 
   cp -L *cadence-genus-genlib/outputs/design.lib outputs/global_controller_tt.lib
 
 elif [ -f *cadence-innovus-genlib/outputs/design.lib ]; then
