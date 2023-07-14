@@ -3,35 +3,10 @@
 # Endcap and well tap insertion 
 #-------------------------------------------------------------------------
 
-# FIXME this seems like a terrible way to distinguish amber vs. onyx!!
-# TSMC16 adk.tcl explicitly does: set ADK_WELL_TAP_CELL ""; set ADK_END_CAP_CELL ""
-set IS_AMBER 0
-if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
-    set IS_AMBER 1
-}
+# Insert tap cells only on the boundary for SD domain if ADK specifies.
+# Power switches will provide substrate connection for the core if no AON taps in adk.
+# Insert both tap cells in the entire AON domain (since they dont have power switches)
 
-if { $IS_AMBER } {
-
-    # Only add taps in core area if ADK specifies an AON tap cell
-    if {[info exists ADK_AON_TAP_CELL] && [expr {$ADK_AON_TAP_CELL ne ""}]} {
-       set aon_tap_cell $ADK_AON_TAP_CELL
-       set tap_width [dbGet [dbGetCellByName $aon_tap_cell].size_x]
-       # We really shouldn't have to add the polypitch here, but in practice
-       # the pitch was off by 1 for some reason
-       set tap_interval [expr $horiz_tap_pitch + $polypitch_x]
-       # Start the taps 2 stripe set intervals to the left of the pwr switches
-       set tap_edge_offset [expr $M3_str_offset + (2 * $M3_str_intraset_spacing + $M3_str_width) - ($tap_width / 3) + $horiz_switch_pitch - (2 * $M3_str_interset_pitch)]
-       # Try adding well tap to SD domain
-       addWellTap -cell $aon_tap_cell \
-                  -prefix WELLTAP \
-                  -cellInterval $tap_interval \
-                  -inRowOffset $tap_edge_offset \
-                  -fixedGap \
-                  -powerDomain TOP
-    } else {
-       echo "WARNING: Not adding core area tap cells because ADK doesn't specity ADK_AON_TAP_CELL"
-    }
-}
 # Only add boundary taps if ADK specifies an AON boundary tap cell
 if {[info exists ADK_AON_BOUNDARY_TAP_CELL] && [expr {$ADK_AON_BOUNDARY_TAP_CELL ne ""}]} {
     set aon_tap_cell $ADK_AON_BOUNDARY_TAP_CELL
@@ -62,19 +37,47 @@ if {[info exists ADK_AON_BOUNDARY_TAP_CELL] && [expr {$ADK_AON_BOUNDARY_TAP_CELL
     echo "WARNING: Not adding boundary taps because ADK doesn't specify ADK_AON_BOUNDARY_TAP_CELL"
 }
 
-
-
-# TSMC16 requires specification of different taps/caps for different
-# locations/orientations, which the foundation flow does not natively support
-
-# Insert tap cells only on the boundary for SD domain
-# Power switches will provide substrate connection for the core
-# Insert both tap cells in the entire AON domain (since they dont have power switches)
-
 if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
-    
     adk_add_endcap_well_taps_sd_pwr_domains
     adk_add_end_caps
     adk_add_endcap_well_taps_aon_pwr_domains  
 }
 
+# FIXME this seems like a terrible way to distinguish amber vs. onyx!!
+# TSMC16 adk.tcl explicitly does: set ADK_WELL_TAP_CELL ""; set ADK_END_CAP_CELL ""
+set IS_AMBER 0
+if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
+    set IS_AMBER 1
+}
+
+# Only add taps in core area if ADK specifies an AON tap cell
+if {[info exists ADK_AON_TAP_CELL] && [expr {$ADK_AON_TAP_CELL ne ""}]} {
+   set aon_tap_cell $ADK_AON_TAP_CELL
+   set tap_width [dbGet [dbGetCellByName $aon_tap_cell].size_x]
+
+   set tap_interval $horiz_tap_pitch
+   # Set how many M3 stripe set intervals we want between switches and taps (onyx only)
+   set num_stripe_intervals $vdd_m3_stripe_sparsity
+   # Set how far from edge to start inserting tap columns
+   # This location must align with M3 VDD stripe 
+   set tap_edge_offset [expr $M3_str_offset + (2 * $M3_str_intraset_spacing + $M3_str_width) - ($tap_width / 4) + $tap_interval - ( $num_stripe_intervals * $M3_str_interset_pitch)]
+
+   # Amber overrides
+   if { $IS_AMBER } {
+       # We really shouldn't have to add the polypitch here, but in practice
+       # the pitch was off by 1 for some reason
+       set tap_interval [expr $horiz_tap_pitch + $polypitch_x]
+
+       # Start the taps 2 stripe set intervals to the left of the pwr switches
+       set tap_edge_offset [expr $M3_str_offset + (2 * $M3_str_intraset_spacing + $M3_str_width) - ($tap_width / 3) + $horiz_switch_pitch - (2 * $M3_str_interset_pitch)]
+   }
+   # Try adding well tap to SD domain
+   addWellTap -cell $aon_tap_cell \
+              -prefix WELLTAP \
+              -cellInterval $tap_interval \
+              -inRowOffset $tap_edge_offset \
+              -fixedGap \
+              -powerDomain TOP
+} else {
+   echo "WARNING: Not adding core area tap cells because ADK doesn't specity ADK_AON_TAP_CELL"
+}
