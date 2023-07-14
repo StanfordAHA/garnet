@@ -1,15 +1,12 @@
 #!/bin/bash
+set -eo pipefail   # Fail when/if any individual command in the script fails
 
 # default is "not amber"
 [ "$WHICH_SOC" ] || WHICH_SOC=default
 
 mflowgen run --design $GARNET_HOME/mflowgen/tile_array/
 
-if [ "$WHICH_SOC" == "amber" ]; then
-    make synopsys-dc-lib2db -j 2
-else
-    make synopsys-ptpx-genlibdb -j 2
-fi
+make synopsys-ptpx-genlibdb -j 2
 
 if command -v calibre &> /dev/null
 then
@@ -19,13 +16,8 @@ else
 fi
 mkdir -p outputs
 
-if [ "$WHICH_SOC" == "amber" ]; then
-    cp -L *cadence-genus-genlib/outputs/design.lib outputs/tile_array_tt.lib
-    cp -L *synopsys-dc-lib2db/outputs/design.db outputs/tile_array_tt.db
-else
-    cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/tile_array_tt.db
-    cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/tile_array_tt.lib
-fi
+cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/tile_array_tt.db
+cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/tile_array_tt.lib
 
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/tile_array.lef
 cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/tile_array.vcs.v

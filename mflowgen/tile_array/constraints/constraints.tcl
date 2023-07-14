@@ -112,3 +112,10 @@ set_multicycle_path 9 -to [get_ports read_config_data] -hold
 # causes hi,lo -> tile_id connections on cgra tiles to be
 # optimized away and replaced with tie cells.
 #set_dont_touch [get_references *mantle_wire*]
+
+# 1. After transitioning TSMC genlib from genus to innovus/ptpx, synthesis
+#    started inserting buffers on these hi/lo nets (below)! Why??
+# 2. These nets are either tied constant hi or lo, right?
+#    Timing should not be an issue!?
+set_dont_touch [get_nets Tile*_lo_*]
+set_dont_touch [get_nets Tile*_hi_*]
