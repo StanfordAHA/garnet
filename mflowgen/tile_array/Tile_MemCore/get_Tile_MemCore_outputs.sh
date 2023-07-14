@@ -1,6 +1,5 @@
 #!/bin/bash
-
-set -e;    # FAIL if any individual command fails
+set -eo pipefail   # Fail when/if any individual command in the script fails
 
 mflowgen run --design $GARNET_HOME/mflowgen/Tile_MemCore/
 
@@ -22,13 +21,10 @@ fi
 # make pwr-aware-gls
 
 mkdir -p outputs
-if [ "$WHICH_SOC" == "amber" ]; then
-cp -L *cadence-genus-genlib/outputs/design.lib outputs/Tile_MemCore_tt.lib
-cp -L *synopsys-dc-lib2db/outputs/design.db outputs/Tile_MemCore_tt.db
-else
+
 cp -L *synopsys-ptpx-genlibdb/outputs/design.lib outputs/Tile_MemCore_tt.lib
 cp -L *synopsys-ptpx-genlibdb/outputs/design.db outputs/Tile_MemCore_tt.db
-fi
+
 cp -L *cadence-innovus-signoff/outputs/design.lef outputs/Tile_MemCore.lef
 cp -L *cadence-innovus-signoff/outputs/design-merged.gds outputs/Tile_MemCore.gds
 cp -L *cadence-innovus-signoff/outputs/design.vcs.v outputs/Tile_MemCore.vcs.v
