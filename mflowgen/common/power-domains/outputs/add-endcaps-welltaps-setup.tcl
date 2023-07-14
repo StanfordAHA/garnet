@@ -1,10 +1,13 @@
-
 #-------------------------------------------------------------------------
 # Endcap and well tap specification
 #-------------------------------------------------------------------------
 
-
-
+# FIXME this seems like a terrible way to distinguish amber vs. onyx!!
+# TSMC16 adk.tcl explicitly does: set ADK_WELL_TAP_CELL ""; set ADK_END_CAP_CELL ""
+set IS_AMBER 0
+if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
+    set IS_AMBER 1
+}
 deleteInst *TAP*
 deleteInst *ENDCAP*
 deleteInst *tap*
@@ -18,16 +21,17 @@ set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]
 
 set M3_str_width            [expr  3 * $M3_min_width]
 set M3_str_pitch            [expr 20 * $M3_route_pitchX]
-
+if { $IS_AMBER } { 
+  set M3_str_pitch          [expr 10 * $M3_route_pitchX]
+}
 set M3_str_intraset_spacing [expr ($M3_str_pitch - 2*$M3_str_width)/2]
 set M3_str_interset_pitch   [expr 2*$M3_str_pitch]
 set M3_str_offset           [expr $M3_str_pitch + $M3_route_pitchX/2 - $M3_str_width/2]
 
 set core_llx [dbGet top.fPlan.coreBox_llx]
-    
+
 # Align tap cells with M3 pitch so that the M1 VPP pin is directly aligned with the M3 VDD net
 
 # Pitch is a multiple of the M3 VDD stripe pitch 
 set horiz_tap_pitch [expr $stripes_per_tap * $M3_str_interset_pitch]
 set horiz_switch_pitch [expr $stripes_per_switch * $M3_str_interset_pitch]
-
