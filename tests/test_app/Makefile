@@ -173,3 +173,7 @@ compile-gls:
 .PHONY: clean
 clean:
 	rm -rf xrun.log xrun.history xcelium.d simv simv.daidir csrc vcs.log cgra.shm cgra.fsdb sdf_stats.txt sdf_logs
+
+.PHONY: clean_sparse_outputs
+clean_sparse_outputs:
+	rm -f tensor_*
