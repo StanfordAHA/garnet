@@ -176,4 +176,4 @@ clean:
 
 .PHONY: clean_sparse_outputs
 clean_sparse_outputs:
-	rm tensor_*
+	rm -f tensor_*
