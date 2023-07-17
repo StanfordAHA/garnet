@@ -1357,14 +1357,16 @@ class SparseTBBuilder(m.Generator2):
                 else:
                     if "glb" in node.get_name():
                         node_config_kwargs['sparse_mode'] = 1
-                    self.nlb.configure_tile(core_node.get_name(), (1, node_config_kwargs))
+                    # KALHAN MANUAL EDIT
+                    if core_node.get_name() in ["I7", "I11", "I10"]:
+                        self.nlb.configure_tile(core_node.get_name(), (1, node_config_kwargs))
         #breakpoint()
         # KALHAN MANUAL EDIT
         node_config_kwargs = {'cmrg_enable': 0, 'cmrg_stop_lvl': 0, 'op': 0, 'mode': 'intersect'}
         num_pes = int(os.getenv("PES"))
         pe_list = []
         for pe in range(num_pes):
-            pe_num = 100+pe
+            pe_num = 1000+pe
             pe_list.append(f'p{pe_num}')
         for pe in pe_list:
             self.nlb.configure_tile(pe, (1, node_config_kwargs))
@@ -1373,8 +1375,8 @@ class SparseTBBuilder(m.Generator2):
         if self.bespoke:
             for key, val in self.name_maps.items():
                 print(f"{key} => {val}")
-        else:
-            self.nlb.display_names()
+        # else:
+        #     self.nlb.display_names()
 
     def dump_display_names(self, output_file):
         with open(output_file, "w+") as outfile_handle:
@@ -1874,7 +1876,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         if 'B' not in cached_inputs:
             b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                               sparsity=sparsities_[0])
+                               sparsity=0.25)
         else:
             b_mat = cached_inputs['B']
             b_shape = b_mat.shape
@@ -1884,7 +1886,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         if 'C' not in cached_inputs:
             c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                                dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                               sparsity=sparsities_[1])
+                               sparsity=0.25)
         else:
             c_mat = cached_inputs['C']
 
@@ -2841,7 +2843,17 @@ if __name__ == "__main__":
                             # We don't need to emit anything for a dense block
                             if mode_map[tensor_][int(mode_)][1] == 'd':
                                 continue
-                        core_placement = stb.get_core_placement(core)
+                        fixed_io = {}
+                        fixed_io["I7"] = (0, 0)
+                        fixed_io["I11"] = (2, 0)
+                        fixed_io["I15"] = (4, 0)
+                        fixed_io["I19"] = (6, 0)
+                        fixed_io["I21"] = (8, 0)
+                        fixed_io["I23"] = (10, 0)
+                        fixed_io["I10"] = (1, 0)
+                        fixed_io["I14"] = (3, 0)
+                        fixed_io["I18"] = (5, 0)
+                        core_placement = fixed_io[core]
                         tensor_desc_str = f"tensor_{tensor_}_mode_{mode_}"
                         glb_info_.append((core, core_placement, tensor_desc_str, direction_, num_blocks_, file_no_))
 
