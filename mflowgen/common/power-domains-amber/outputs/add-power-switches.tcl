@@ -85,7 +85,7 @@ if { [ dbGet top.name ] == "Tile_MemCore" } {
 
   puts "\nChecking to see that well taps exist in space between SRAMs\n"
 
-  # FIXME Why don't we need this check?? Doesn't it run for PW aas well??
+  # FIXME Why don't we need this check?? Doesn't it run for PW as well??
   # # Check that we are in the mem tile
   # if 'dbget top.name' != 'Tile_MemCore' then no check needed
 

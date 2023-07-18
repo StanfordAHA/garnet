@@ -4,29 +4,35 @@
 # Author: Alex Carsello
 # Date: 3/7/21
 
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "default"
+}
 # VDD stripe sparsity params
 
 # Always-on domain is much smaller than the switching domain, so need
 # fewer VDD AON power stripes vs. VDD_SW switching-domain stripes.
 # Sparsity parm controls VDD stripe sparsity for M3 power stripes;
 # sparsity 3 means one VDD stripe for every three VDD_SW stripes etc.
-set vdd_m3_stripe_sparsity 3
-
+set vdd_m3_stripe_sparsity 1
+if { $WHICH_SOC == "amber" } { set vdd_m3_stripe_sparsity 3 }
 
 # Allow SDF registers?
 
 # If sparsity > 1, should be able to use SDF registers; otherwise this
 # should be false because the M3 stripe density makes SDF routing too
 # difficult (there is a garnet issue about this).
-set adk_allow_sdf_regs true
-
+set adk_allow_sdf_regs false
+if { $WHICH_SOC == "amber" } { set adk_allow_sdf_regs true }
 
 # Boundary AON TAP params
 
 # AON boundary taps must line up with M3 VDD stripes.
 # 'stripes_per_tap' controls the space between AON taps
 # as a multiple of the M3 power stripe pitch.
-set stripes_per_tap 18
+set stripes_per_tap 9
+if { $WHICH_SOC == "amber" } { set stripes_per_tap 18 }
 
 # Note that 'stripes_per_tap' must be a multiple of vdd sparsity.
 # This integer-div followed by integer-mul corrects that situation.
@@ -52,7 +58,8 @@ if { $stripes_per_tap != $corrected_stripes_per_tap } {
 #
 # If set to 12 in Amber (TSMC) design, get five columns of switches.
 # If set to 18, get 3 cols symmetrically placed, center col at center chip.
-set stripes_per_switch 18
+set stripes_per_switch 14
+if { $WHICH_SOC == "amber" } { set stripes_per_switch 18 }
 
 # Note that 'stripes_per_switch' must be a multiple of vdd sparsity.
 set vdd_stripes_per_switch [ expr $stripes_per_switch / $vdd_m3_stripe_sparsity ]
@@ -70,32 +77,8 @@ set aon_width 160
 set aon_height 24
 
 # Sets AON box horizontal offset from center in # of unit stdcell widths.
-set aon_horiz_offset 0
+set aon_horiz_offset 2
+if { $WHICH_SOC == "amber" } { set aon_horiz_offset 0 }
 
 # Sets AON box vertical offset from center in # of unit stdcell heights.
 set aon_vert_offset 30
-
-########################################################################
-# pe_power_domain_config_reg_addr
-# 
-# Note that DECODE_FEATURE and FEATURE_AND modules (at least) are
-# auto-assigned names that may change at the whim of the generator.
-# So the designer has to track that and update this parm by hand :(
-# See garnet issue 922 and ~steveri/0notes/vto/pwr-aware-gls.txt
-# 
-# Used by upf_Tile_PE.tcl
-# 
-# We have a script (check-pdcr-address.sh) that updates the address
-# automatically, so should be survivable when/if address not accurate.
-
-set pe_power_domain_config_reg_addr 13
-set aon_elements "
-  PowerDomainOR
-  DECODE_FEATURE_$pe_power_domain_config_reg_addr
-  coreir_eq_16_inst0 and_inst1
-  FEATURE_AND_$pe_power_domain_config_reg_addr
-  PowerDomainConfigReg_inst0
-  const_511_9
-  const_0_8
-"
-

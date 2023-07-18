@@ -1,3 +1,8 @@
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "default"
+}
 ######## Create Power Domains ###########
 # Default Power Domain - SD when tile not used 
 create_power_domain TOP -include_scope
@@ -5,9 +10,32 @@ create_power_domain TOP -include_scope
 # AON Domain - Modules that stay ON when tile is OFF 
 # PS configuration logic and tie cells for hi/lo outputs that drive the tile_id
 
-# create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_13 coreir_eq_16_inst0 and_inst1 FEATURE_AND_13 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
+########################################################################
+# pe_power_domain_config_reg_addr
+# 
+# Note that DECODE_FEATURE and FEATURE_AND modules (at least) are
+# auto-assigned names that may change at the whim of the generator.
+# So the designer has to track that and update this parm by hand :(
+# See garnet issue 922 and ~steveri/0notes/vto/pwr-aware-gls.txt
+# 
+# Used by upf_Tile_PE.tcl
+# 
+# We have a script (check-pdcr-address.sh) that updates the address
+# automatically, so should be survivable when/if address not accurate.
 
-# aon_elements should be defined in 'pe-pd-params.tcl'
+# create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_13 coreir_eq_16_inst0 and_inst1 FEATURE_AND_13 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
+# create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_15 coreir_eq_16_inst0 and_inst1 FEATURE_AND_15 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
+set pe_power_domain_config_reg_addr 15
+if { $WHICH_SOC == "amber" } { set pe_power_domain_config_reg_addr 13 }
+set aon_elements "
+  PowerDomainOR
+  DECODE_FEATURE_$pe_power_domain_config_reg_addr
+  coreir_eq_16_inst0 and_inst1
+  FEATURE_AND_$pe_power_domain_config_reg_addr
+  PowerDomainConfigReg_inst0
+  const_511_9
+  const_0_8
+"
 create_power_domain AON -elements $aon_elements
 
 ### Toplevel Connections ######
