@@ -26,7 +26,7 @@ create_power_domain TOP -include_scope
 # create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_13 coreir_eq_16_inst0 and_inst1 FEATURE_AND_13 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
 # create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_15 coreir_eq_16_inst0 and_inst1 FEATURE_AND_15 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
 set pe_power_domain_config_reg_addr 15
-if { $WHICH_SOC == "amber" } { set pe_power_domain_config_reg_addr 13 }
+if { $WHICH_SOC == "amber" } { set pe_power_domain_config_reg_addr 17 }
 set aon_elements "
   PowerDomainOR
   DECODE_FEATURE_$pe_power_domain_config_reg_addr
