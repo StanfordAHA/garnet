@@ -1,6 +1,9 @@
+
 #-------------------------------------------------------------------------
 # Endcap and well tap specification
 #-------------------------------------------------------------------------
+
+
 
 # FIXME this seems like a terrible way to distinguish amber vs. onyx!!
 # TSMC16 adk.tcl explicitly does: set ADK_WELL_TAP_CELL ""; set ADK_END_CAP_CELL ""
@@ -21,6 +24,7 @@ set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]
 
 set M3_str_width            [expr  3 * $M3_min_width]
 set M3_str_pitch            [expr 20 * $M3_route_pitchX]
+
 if { $IS_AMBER } { 
   set M3_str_pitch          [expr 10 * $M3_route_pitchX]
 }
