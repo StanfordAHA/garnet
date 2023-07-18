@@ -5,11 +5,10 @@
 
 
 
-# FIXME this seems like a terrible way to distinguish amber vs. onyx!!
-# TSMC16 adk.tcl explicitly does: set ADK_WELL_TAP_CELL ""; set ADK_END_CAP_CELL ""
-set IS_AMBER 0
-if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
-    set IS_AMBER 1
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "default"
 }
 deleteInst *TAP*
 deleteInst *ENDCAP*
@@ -25,7 +24,7 @@ set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]
 set M3_str_width            [expr  3 * $M3_min_width]
 set M3_str_pitch            [expr 20 * $M3_route_pitchX]
 
-if { $IS_AMBER } { 
+if { $WHICH_SOC == "amber" } {
   set M3_str_pitch          [expr 10 * $M3_route_pitchX]
 }
 set M3_str_intraset_spacing [expr ($M3_str_pitch - 2*$M3_str_width)/2]
