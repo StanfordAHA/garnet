@@ -2,6 +2,11 @@
 # Add power switches for power aware flow
 # ------------------------------------------------------------------------
 
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "default"
+}
 # Choose the power switch name for this technology
 set switch_name $ADK_POWER_SWITCH
 
@@ -37,7 +42,6 @@ addPowerSwitch -column -powerDomain TOP \
 #-----------------------------------------------------------------------------
 
 puts "--- Check well taps"
-
 
 if {[info exists ADK_AON_TAP_CELL] && [expr {$ADK_AON_TAP_CELL ne ""}]} {
     set tap_cell $ADK_AON_TAP_CELL
@@ -78,16 +82,12 @@ if { $ps_to_left && $ps_to_right } {
   exit 13
 }
 
-if { [ dbGet top.name ] == "Tile_MemCore" } {
+if { [ dbGet top.name ] == "Tile_MemCore" && $WHICH_SOC == "amber" } {
   #-----------------------------------------------------------------------------
   # Check that well taps (i.e. well-tap power-switch combos) exist between SRAMs
   #-----------------------------------------------------------------------------
 
   puts "\nChecking to see that well taps exist in space between SRAMs\n"
-
-  # FIXME Why don't we need this check?? Doesn't it run for PW as well??
-  # # Check that we are in the mem tile
-  # if 'dbget top.name' != 'Tile_MemCore' then no check needed
 
   # Find the srams
   set sram_collection [get_cells -quiet -hier -filter {is_memory_cell==true}]

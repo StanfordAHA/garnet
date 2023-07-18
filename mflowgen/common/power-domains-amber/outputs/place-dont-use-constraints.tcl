@@ -3,7 +3,11 @@
 # Dont use cells list 
 # ------------------------------------------------------------------------
 
-
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "default"
+}
 
 # Some cells see following warnings during placement:
 # **WARN: (IMPOPT-3564):  The following cells are set dont_use temporarily by the tool 
@@ -15,6 +19,7 @@
 # **WARN: (IMPSP-270):    Cannot find a legal location for MASTER CELL 'XNR4D0BWP16P90'.
 # **WARN: (IMPSP-270):    Cannot find a legal location for MASTER CELL 'XOR4D0BWP16P90'.
 #  Set don't use on these cells upfront in P&R as well as in synthesis
+if { $WHICH_SOC == "amber" } {
  setDontUse XNR4D0BWP16P90       true
  setDontUse MUX2D1BWP16P90       true
  setDontUse XOR4D0BWP16P90       true
@@ -22,3 +27,4 @@
  setDontUse CKLNQOPTBBD1BWP16P90 true
  setDontUse CKMUX2D4BWP16P90     true
  setDontUse CKMUX2D1BWP16P90     true
+}
