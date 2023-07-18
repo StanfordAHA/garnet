@@ -1,10 +1,26 @@
+if { [info exists ::env(WHICH_SOC)] } {
+    set WHICH_SOC $::env(WHICH_SOC)
+} else {
+    set WHICH_SOC "default"
+}
 ######## Create Power Domains ###########
 # Default Power Domain - SD when tile not used 
 create_power_domain TOP -include_scope
 #create_power_domain TOP
 # AON Domain - Modules that stay ON when tile is OFF  
 # PS configuration logic and tie cells for hi/lo outputs that drive the tile_id
-create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_12 coreir_eq_16_inst0 and_inst1 FEATURE_AND_12 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
+set pe_power_domain_config_reg_addr 12
+if { $WHICH_SOC == "amber" } { set pe_power_domain_config_reg_addr 15 }
+set aon_elements "
+  PowerDomainOR
+  DECODE_FEATURE_$pe_power_domain_config_reg_addr
+  coreir_eq_16_inst0 and_inst1
+  FEATURE_AND_$pe_power_domain_config_reg_addr
+  PowerDomainConfigReg_inst0
+  const_511_9
+  const_0_8
+"
+create_power_domain AON -elements $aon_elements
 
 ### Toplevel Connections ######
 ## VDD 
