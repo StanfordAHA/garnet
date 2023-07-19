@@ -10,7 +10,7 @@ import os
 import sys
 import pathlib
 
-from mflowgen.components import Graph, Step
+from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
@@ -81,15 +81,18 @@ def construct():
 
   g.set_adk( adk_name )
   adk = g.get_adk_step()
+  
+  # Subgraphs
+
+  glb_tile = Subgraph( this_dir + '/../glb_tile', 'glb_tile' )
 
   # Custom steps
-
+  
   rtl               = Step( this_dir + '/../common/rtl'                          )
   testbench         = Step( this_dir + '/testbench'                              )
   sim_compile       = Step( this_dir + '/sim-compile'                            )
   sim_run           = Step( this_dir + '/sim-run'                                )
   sim_gl_compile    = Step( this_dir + '/sim-gl-compile'                         )
-  glb_tile          = Step( this_dir + '/glb_tile'                               )
   if adk_name == 'tsmc16':
     constraints       = Step( this_dir + '/constraints-amber'                      )
     custom_init       = Step( this_dir + '/custom-init-amber'                      )
