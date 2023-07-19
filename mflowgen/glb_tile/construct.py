@@ -138,6 +138,23 @@ def construct():
     'core_height' : 0
     }, allow_new=True )
 
+  # Add graph outputs so this can be used in hierarchical flows
+  g.add_output( genlib, 'design.lib', 'glb_tile_tt.lib' )
+  g.add_output( lib2db, 'design.db', 'glb_tile_tt.db' )
+  g.add_output( signoff, 'design.lef', 'glb_tile.lef' )
+  g.add_output( signoff, 'design-merged.gds', 'glb_tile.gds' )
+  g.add_output( signoff, 'design.sdf', 'glb_tile.sdf' )
+  g.add_output( signoff, 'design.vcs.v', 'glb_tile.vcs.v' )
+  g.add_output( signoff, 'design.vcs.pg.v', 'glb_tile.vcs.pg.v' )
+  g.add_output( signoff, 'design.spef.gz', 'glb_tile.spef.gz' )
+  g.add_output( lvs, 'design_merged.lvs.v', 'glb_tile.lvs.v' )
+  g.add_output( gen_sram, 'sram.spi', 'glb_tile_sram.spi' )
+  g.add_output( gen_sram, 'sram.v', 'glb_tile_sram.v' )
+  g.add_output( gen_sram, 'sram_pwr.v', 'glb_tile_sram_pwr.v' )
+  g.add_output( gen_sram, 'sram_tt.db', 'glb_tile_sram_tt.db' )
+  g.add_output( gen_sram, 'sram_tt.lib', 'glb_tile_sram_tt.lib' )
+  g.add_output( gen_sram, 'sram_ff.lib', 'glb_tile_sram_ff.lib' )
+
   # Add sram macro inputs to downstream nodes
 
   if which_soc == 'onyx': genlib.extend_inputs( ['sram_tt.db'] )
