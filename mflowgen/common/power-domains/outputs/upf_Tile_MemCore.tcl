@@ -1,8 +1,7 @@
-if { [info exists ::env(WHICH_SOC)] } {
-    set WHICH_SOC $::env(WHICH_SOC)
-} else {
-    set WHICH_SOC "default"
-}
+# Set env var WHICH_SOC=amber for amber build, else uses default settings
+set WHICH_SOC "default"
+if { [info exists ::env(WHICH_SOC)] } { set WHICH_SOC $::env(WHICH_SOC) }
+
 ######## Create Power Domains ###########
 # Default Power Domain - SD when tile not used 
 create_power_domain TOP -include_scope

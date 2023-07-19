@@ -4,11 +4,10 @@
 # Author: Alex Carsello
 # Date: 3/7/21
 
-if { [info exists ::env(WHICH_SOC)] } {
-    set WHICH_SOC $::env(WHICH_SOC)
-} else {
-    set WHICH_SOC "default"
-}
+# Set env var WHICH_SOC=amber for amber build, else uses default settings
+set WHICH_SOC "default"
+if { [info exists ::env(WHICH_SOC)] } { set WHICH_SOC $::env(WHICH_SOC) }
+
 # VDD stripe sparsity params
 
 # Always-on domain is much smaller than the switching domain, so need

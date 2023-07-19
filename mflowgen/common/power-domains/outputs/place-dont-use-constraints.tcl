@@ -1,13 +1,10 @@
+# Set env var WHICH_SOC=amber for amber build, else uses default settings
+set WHICH_SOC "default"
+if { [info exists ::env(WHICH_SOC)] } { set WHICH_SOC $::env(WHICH_SOC) }
 
 #------------------------------------------------------------------------
 # Dont use cells list 
 # ------------------------------------------------------------------------
-
-if { [info exists ::env(WHICH_SOC)] } {
-    set WHICH_SOC $::env(WHICH_SOC)
-} else {
-    set WHICH_SOC "default"
-}
 
 # Some cells see following warnings during placement:
 # **WARN: (IMPOPT-3564):  The following cells are set dont_use temporarily by the tool 
