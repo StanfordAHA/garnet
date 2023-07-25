@@ -436,6 +436,9 @@ class Garnet(Generator):
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves)
 
+
+        # Remapping all of the ports in the application to generic ports that exist in the hardware
+        # Seems really brittle, we should probably do this in a better way
         mem_remap = None
         pe_remap = None
         
@@ -478,25 +481,30 @@ class Garnet(Generator):
                     connections_list[idx] = (tag_, pin_remap)
             netlist_info['netlist'][netlist_id] = connections_list
 
+        # I guess we are hardcoding these for now
+        pond_remap = {}
+        pond_remap["data_in_pond_0"] = "PondTop_input_width_17_num_0"
+        pond_remap["data_out_pond_0"] = "PondTop_output_width_17_num_0"
+        pond_remap["data_in_pond_1"] = "PondTop_input_width_17_num_1"
+        pond_remap["data_out_pond_1"] = "PondTop_output_width_17_num_1"
+
         if not self.amber_pond:
-            # temporally remapping of port names for the new Pond
             for name, mapping in netlist_info["netlist"].items():
                 for i in range(len(mapping)):
                     (inst_name, port_name) = mapping[i]
-                    if "data_in_pond_0" in port_name:
-                        mapping[i] = (inst_name, "PondTop_input_width_17_num_0")
-                    if "data_out_pond_0" in port_name:
-                        mapping[i] = (inst_name, "PondTop_output_width_17_num_0")
-                    if "data_in_pond_1" in port_name:
-                        mapping[i] = (inst_name, "PondTop_input_width_17_num_1")
-                    if "data_out_pond_1" in port_name:
-                        mapping[i] = (inst_name, "PondTop_output_width_17_num_1")
+                    if port_name in pond_remap:
+                        mapping[i] = (inst_name, pond_remap[port_name])
 
 
         self.pack_ponds(netlist_info)
 
+        all_remaps = {}
+        all_remaps['pe'] = pe_remap['alu']
+        all_remaps['pond'] = pond_remap
+        all_remaps['mem'] = mem_remap
+
         port_remap_fout = open(app_dir + "/design.port_remap", "w")
-        port_remap_fout.write(json.dumps(pe_remap['alu']))
+        port_remap_fout.write(json.dumps(all_remaps))
         port_remap_fout.close()
         
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
