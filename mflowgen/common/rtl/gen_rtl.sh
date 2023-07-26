@@ -33,11 +33,11 @@ fi
 echo '--- gen_rtl BEGIN' `date +%H:%M`
 
 # Hierarchical flows can accept RTL as an input from parent graph
-if [ -f ../inputs/design.v ]; then
+if [ -f inputs/design.v ]; then
   echo "Using RTL from parent graph"
   mkdir -p outputs
   (cd outputs; ln -s ../../inputs/design.v)
-  if [ -d ../inputs/header ]; then
+  if [ -d inputs/header ]; then
     echo "Using header from parent graph"
     (cd outputs; ln -s ../../inputs/header)
   fi

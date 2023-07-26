@@ -103,7 +103,13 @@ def construct():
     'core_height' : 0
     }, allow_new=True )
 
-  # Add graph outputs so this can be used in hierarchical flows
+  # Add graph inputs and outputs so this can be used in hierarchical flows
+
+  # Inputs
+  g.add_input( rtl, 'design.v', 'design.v' )
+  g.add_input( rtl, 'header', 'header' )
+
+  # Outputs
   g.add_output( genlib, 'design.lib', 'glb_tile_tt.lib' )
   g.add_output( lib2db, 'design.db', 'glb_tile_tt.db' )
   g.add_output( signoff, 'design.lef', 'glb_tile.lef' )
@@ -148,8 +154,7 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
   cts.extend_inputs( custom_cts.all_outputs() )
 
-  # Add header files to outputs
-  rtl.extend_outputs( ['header'] )
+  # Header files required for glb rtl output
   rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
   #-----------------------------------------------------------------------
