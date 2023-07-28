@@ -135,12 +135,8 @@ def construct():
   power_domains = None
   pwr_aware_gls = None
   if pwr_aware:
-      if adk_name == 'tsmc16':
-        power_domains = Step( this_dir + '/../common/power-domains-amber' )
-        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' ) # this will soon follow maybe
-      else:
-        power_domains = Step( this_dir + '/../common/power-domains' )
-        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
+    power_domains = Step( this_dir + '/../common/power-domains' )
+    pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
   # Default steps
   info         = Step( 'info',                          default=True )
