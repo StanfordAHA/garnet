@@ -6,7 +6,7 @@ set -x
 
 # git remote set-url origin https://github.com/hofstee/aha
 if ! git remote set-url origin https://github.com/hofstee/aha; then
-  test -f aha || git clone https://github.com/hofstee/aha
+  test -e aha || git clone https://github.com/hofstee/aha
   cd aha
   git remote set-url origin https://github.com/hofstee/aha
 fi
