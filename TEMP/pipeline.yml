@@ -34,7 +34,7 @@ steps:
   agents:
     docker: true
   plugins:
-  - 'uber-workflow/run-without-clone':
+  - thedyrt/skip-checkout#v0.1.1: ~
   
 - label: ":hammer: Amber Gold RTL"
   key: "goldcheck-amber"
@@ -113,4 +113,4 @@ steps:
   agents:
     docker: true
   plugins:
-  - 'uber-workflow/run-without-clone':
+  - thedyrt/skip-checkout#v0.1.1: ~
