@@ -4,25 +4,19 @@ set -x
 # FIXME/NOTE! can skip a lot of stuff by checking to see if
 # $FLOW_REPO / $FLOW_HEAD_SHA already been set
 
-
-unset FAIL
 # git remote set-url origin https://github.com/hofstee/aha
-
-ls .git || echo no git
-ls aha/.git || echo no aha git
-
 if ! git remote set-url origin https://github.com/hofstee/aha; then
-  test -f aha || git clone https://github.com/hofstee/aha || echo failed TWICE
+  test -f aha || git clone https://github.com/hofstee/aha
   cd aha
   git remote set-url origin https://github.com/hofstee/aha
 fi
 
-# cd aha || echo no aha
 git submodule foreach --recursive "git clean -ffxdq"
 git clean -ffxdq
 set -x; echo git fetch -v --prune -- origin $BUILDKITE_COMMIT
 
-# set -x; git fetch -v --prune -- origin $BUILDKITE_COMMIT || git fetch -v --prune -- origin master
+unset FAIL
+# FAIL means build was triggered by foreign (non-aha) repo, i.e. one of the submods
 set -x; git fetch -v --prune -- origin $BUILDKITE_COMMIT || FAIL=true
 [ "$FAIL" ] && git fetch -v --prune -- origin master || echo okay
 
@@ -54,6 +48,9 @@ fi
 # https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
 # curl -s https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh > /tmp/tmp
 # BUILDKITE_BUILD_NUMBER
+
+# Temporarily, for dev purposes, load pipeline from garnet repo;
+# later replace aha repo .buildkite/pipeline.yml w dev from garnet, see?
 
 u=https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/pipeline.yml
 

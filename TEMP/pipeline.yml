@@ -1,47 +1,28 @@
-# CHECKOUT env var must be set by aha pipeline flow steps config
-# see https://buildkite.com/stanford-aha/aha-flow/settings/steps
 env:
   CONFIG: ${CONFIG:-daily}
+
+  # CHECKOUT env var should have been set by aha pipeline flow steps config
+  # see https://buildkite.com/stanford-aha/aha-flow/settings/steps
   CHECKOUT: /tmp/ahaflow-custom-checkout-$$BUILDKITE_BUILD_NUMBER.sh
-  UTMP: /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow
 
 steps:
 # This first step builds the docker image that gets used by all subsequent steps.
 - label: ":wrench: Build Docker Image"
   key: "docker-build"
   commands:
-  - set -x; pwd
-  - set -x; ls .buildkite || echo no .buildkite
-  - set -x; ls .buildkite/hooks || echo no .buildkite/hooks
-
-  - set -x; ls /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow/ || echo no caddo flow
-  - set -x; ls /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow/.buildkite || echo no caddo bk
-  - set -x; ls /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow/.buildkite/hooks || echo no caddo bk hooks i dunno
-
-  - set -x; ls -ld $UTMP
-  - set -x; ls -ld $UTMP/temp || echo no tempy
-  - set -x; ls -ld $UTMP/temp/.TEST || echo no testy
-
-  - set -x; who am i || echo who am i anyway
-  - set -x; whoami   || echo whoami anyway
-  - set -x; cd $UTMP; mkdir -p temp; rm -rf temp/.TEST; touch temp/.TEST
-
-
-
-  - echo "--- successed or not i dunno"
-  - exit 13
-
 
   - echo "--- Custom checkout"
   - source $$CHECKOUT;if [[ $$FLOW_REPO ]]; then (
       echo "--- Handle PR"
       cd $FLOW_REPO && git fetch && git checkout $FLOW_HEAD_SHA;
     ) fi
+
   - echo "--- Creating garnet Image"
   - docker build . -t "garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA"
   # Docker image successfully built, clear out .TEST file to avoid
   # reporting failure to aha-flow-app.
   - rm -rf temp/.TEST
+
   - echo "--- Pruning Docker Images"
   - yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
   agents:
