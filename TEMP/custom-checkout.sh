@@ -16,12 +16,13 @@ git submodule sync --recursive
 git submodule update --init --recursive --force
 git submodule foreach --recursive "git reset --hard"
 
-echo "+++ Looking for submod commit $BUILDKITE_COMMIT"
+echo "--- Looking for submod commit $BUILDKITE_COMMIT"
 unset FOUND_SUBMOD
 [ "$FAIL" ] && for submod in garnet Halide-to-Hardware lassen gemstone canal lake; do
+    echo "--- - " Looking in submod $submod
     # (cd $submod; git checkout $BUILDKITE_COMMIT && echo UPDATE SUBMOD $submod || echo NOT $submod);
-    (cd $submod; git pull && git checkout $BUILDKITE_COMMIT) && FOUND_SUBMOD=true || echo "+++ -NOT Ssubmod"
-    [ "$FOUND_SUBMOD" ] && 
+    (cd $submod; git fetch origin && git checkout $BUILDKITE_COMMIT) && FOUND_SUBMOD=true || echo "--- -- NOT " Ssubmod
+    [ "$FOUND_SUBMOD" ] && echo "--- -- FOUND " $submod
     [ "$FOUND_SUBMOD" ] && break
 done || echo okay no submod updates needed
 
