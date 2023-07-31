@@ -12,6 +12,11 @@ steps:
   - set -x; pwd
   - set -x; ls .buildkite || echo no .buildkite
   - set -x; ls .buildkite/hooks || echo no .buildkite/hooks
+
+  - set -x; ls /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow/ || echo no caddo flow
+  - set -x; ls /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow/.buildkite || echo no caddo bk
+  - set -x; ls /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow/.buildkite/hooks || echo no caddo bk hooks i dunno
+
   - echo "--- successed or not i dunno"
   - exit 13
 
