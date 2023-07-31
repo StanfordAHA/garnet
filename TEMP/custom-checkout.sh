@@ -2,6 +2,7 @@
 set -x
 
 unset FAIL
+git remote set-url origin https://github.com/hofstee/aha || echo failed ONCE
 ls .git || echo no git
 ls aha/.git || echo no aha git
 cd aha
