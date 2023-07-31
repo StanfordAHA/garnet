@@ -2,7 +2,9 @@
 set -x
 
 unset FAIL
-git clone https://github.com/hofstee/aha
+ls .git || echo no git
+ls aha/.git || echo no aha git
+cd aha
 git remote set-url origin https://github.com/hofstee/aha
 git submodule foreach --recursive "git clean -ffxdq"
 git clean -ffxdq
