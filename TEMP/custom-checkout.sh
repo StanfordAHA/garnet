@@ -37,6 +37,15 @@ unset FOUND_SUBMOD
     [ "$FOUND_SUBMOD" ] && break
 done || echo okay no submod updates needed
 
+# want?
+if [ "$FOUND_SUBMOD" ]; then
+    export FLOW_REPO=$submod
+    export FLOW_REPO_SHA=$BUILDKITE_COMMIT
+    export BUILDKITE_COMMIT=master
+    export BUILDKITE_COMMIT_MESSAGE="hello woild"
+fi
+
+
 # https://github.com/StanfordAHA/garnet/blob/aha-flow-no-heroku/TEMP/custom-checkout.sh
 # https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
 # curl -s https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh > /tmp/tmp
