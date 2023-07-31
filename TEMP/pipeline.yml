@@ -1,0 +1,101 @@
+# CHECKOUT env var must be set by aha pipeline flow steps config
+# see https://buildkite.com/stanford-aha/aha-flow/settings/steps
+env:
+  CONFIG: ${CONFIG:-daily}
+  CHECKOUT: /tmp/ahaflow-custom-checkout-$$BUILDKITE_BUILD_NUMBER.sh
+
+steps:
+- label: ":wrench: Build Docker Image"
+  key: "docker-build"
+  commands:
+  - echo "--- Custom checkout"
+  - source $$CHECKOUT;if [[ $$FLOW_REPO ]]; then (
+      echo "--- Handle PR"
+      cd $FLOW_REPO && git fetch && git checkout $FLOW_HEAD_SHA;
+    ) fi
+  - echo "--- Creating garnet Image"
+  - docker build . -t "garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA"
+  # Docker image successfully built, clear out .TEST file to avoid
+  # reporting failure to aha-flow-app.
+  - rm -rf temp/.TEST
+  - echo "--- Pruning Docker Images"
+  - yes | docker image prune -a --filter "until=6h" --filter=label='description=garnet' || true
+  agents:
+    docker: true
+  plugins:
+  - 'uber-workflow/run-without-clone':
+  
+- label: ":hammer: Amber Gold RTL"
+  key: "goldcheck-amber"
+  depends_on: "docker-build"
+  commands:
+  - /aha/aha/bin/rtl-goldcheck.sh amber
+  plugins:
+    - docker#v3.2.0:
+        image: garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA
+        volumes:
+          - "/cad/:/cad"
+          - "./temp:/buildkite:rw"
+        mount-checkout: false
+        propagate-environment: true
+        environment:
+          - CONFIG
+          - FLOW_REPO
+        shell: ["/bin/bash", "-e", "-c"]
+  agents:
+    docker: true
+
+
+- label: ":hammer: Onyx Integration Tests"
+  key: "integration-tests"
+  depends_on: "docker-build"
+  commands:
+  - source /aha/bin/activate
+  - source /cad/modules/tcl/init/sh
+  - module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2
+  # make /bin/sh symlink to bash instead of dash:
+  - echo "dash dash/sh boolean false" | debconf-set-selections
+  - DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+  - apt update
+  - apt install time
+  - ls /aha
+  - pip freeze
+  - (cd garnet && echo "garnet" && git rev-parse --verify HEAD)
+  # Run regression tests
+  - if [[ $$FLOW_REPO ]]; then
+      export CONFIG=pr;
+    fi
+  - aha regress $$CONFIG
+  # We report success to the aha-flow app by removing the .TEST file,
+  # which is created in the post-checkout hook and checked for in the
+  # pre-exit hook.
+  - echo "--- Removing Failure Canary"
+  - ls -al /buildkite
+  - rm -rf /buildkite/.TEST
+  - ls -al /buildkite
+  plugins:
+    - docker#v3.2.0:
+        image: garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA
+        volumes:
+          - "/cad/:/cad"
+          - "./temp:/buildkite:rw"
+        mount-checkout: false
+        propagate-environment: true
+        environment:
+          - CONFIG
+          - FLOW_REPO
+        shell: ["/bin/bash", "-e", "-c"]
+  agents:
+    docker: true
+
+# FIXME does docker image get removed even when dependence(s) fail?
+- label: ":skull_and_crossbones: Delete Docker Image"
+  depends_on:
+  - "integration-tests"
+  - "goldcheck-amber"
+  commands:
+  # '--no-prune' so it doesn't prune dangling images, we want to use
+  # them for the Docker cache.
+  - docker image rm "garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA" --no-prune
+  agents:
+    docker: true

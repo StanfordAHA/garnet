@@ -50,3 +50,10 @@ fi
 # https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
 # curl -s https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh > /tmp/tmp
 # BUILDKITE_BUILD_NUMBER
+
+u=https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/pipeline.yml
+
+ls -l .buildkite/pipeline.yml
+curl -s $u > .buildkite/pipeline.yml
+ls -l .buildkite/pipeline.yml
+
