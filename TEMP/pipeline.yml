@@ -9,6 +9,13 @@ steps:
 - label: ":wrench: Build Docker Image"
   key: "docker-build"
   commands:
+  - set -x; pwd
+  - set -x; ls .buildkite || echo no .buildkite
+  - set -x; ls .buildkite/hooks || echo no .buildkite/hooks
+  - echo "--- successed or not i dunno"
+  - exit 13
+
+
   - echo "--- Custom checkout"
   - source $$CHECKOUT;if [[ $$FLOW_REPO ]]; then (
       echo "--- Handle PR"
