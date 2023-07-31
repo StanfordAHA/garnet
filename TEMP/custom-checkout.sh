@@ -2,15 +2,18 @@
 set -x
 
 unset FAIL
-git remote set-url origin https://github.com/hofstee/aha || echo failed ONCE
-pwd
-ls
-test -f aha || git clone https://github.com/hofstee/aha || echo failed TWICE
+# git remote set-url origin https://github.com/hofstee/aha
 
 ls .git || echo no git
 ls aha/.git || echo no aha git
-cd aha || echo no aha
-git remote set-url origin https://github.com/hofstee/aha
+
+if ! git remote set-url origin https://github.com/hofstee/aha; then
+  test -f aha || git clone https://github.com/hofstee/aha || echo failed TWICE
+  cd aha
+  git remote set-url origin https://github.com/hofstee/aha
+fi
+
+# cd aha || echo no aha
 git submodule foreach --recursive "git clean -ffxdq"
 git clean -ffxdq
 set -x; echo git fetch -v --prune -- origin $BUILDKITE_COMMIT
