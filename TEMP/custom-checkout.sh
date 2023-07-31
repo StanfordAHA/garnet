@@ -1,6 +1,10 @@
 #!/bin/bash
 set -x
 
+# FIXME/NOTE! can skip a lot of stuff by checking to see if
+# $FLOW_REPO / $FLOW_HEAD_SHA already been set
+
+
 unset FAIL
 # git remote set-url origin https://github.com/hofstee/aha
 

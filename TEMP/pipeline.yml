@@ -5,6 +5,7 @@ env:
   CHECKOUT: /tmp/ahaflow-custom-checkout-$$BUILDKITE_BUILD_NUMBER.sh
 
 steps:
+# This first step builds the docker image that gets used by all subsequent steps.
 - label: ":wrench: Build Docker Image"
   key: "docker-build"
   commands:
@@ -31,6 +32,7 @@ steps:
   commands:
   - /aha/aha/bin/rtl-goldcheck.sh amber
   plugins:
+    - 'uber-workflow/run-without-clone':
     - docker#v3.2.0:
         image: garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA
         volumes:
@@ -74,6 +76,7 @@ steps:
   - rm -rf /buildkite/.TEST
   - ls -al /buildkite
   plugins:
+    - 'uber-workflow/run-without-clone':
     - docker#v3.2.0:
         image: garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA
         volumes:
@@ -99,3 +102,5 @@ steps:
   - docker image rm "garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA" --no-prune
   agents:
     docker: true
+  plugins:
+  - 'uber-workflow/run-without-clone':
