@@ -24,6 +24,7 @@ steps:
 
   - set -x; who am i || echo who am i anyway
   - set -x; whoami   || echo whoami anyway
+  - set -x; cd $UTMP; mkdir -p temp; rm -rf temp/.TEST; touch temp/.TEST
 
 
 
