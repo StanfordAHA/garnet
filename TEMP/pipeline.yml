@@ -42,7 +42,7 @@ steps:
   commands:
   - /aha/aha/bin/rtl-goldcheck.sh amber
   plugins:
-    - 'uber-workflow/run-without-clone':
+    - thedyrt/skip-checkout#v0.1.1: ~
     - docker#v3.2.0:
         image: garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA
         volumes:
@@ -86,7 +86,7 @@ steps:
   - rm -rf /buildkite/.TEST
   - ls -al /buildkite
   plugins:
-    - 'uber-workflow/run-without-clone':
+    - thedyrt/skip-checkout#v0.1.1: ~
     - docker#v3.2.0:
         image: garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA
         volumes:
