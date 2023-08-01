@@ -12,6 +12,8 @@ ls -l /tmp/ahaflow-custom-checkout* || echo nope
 echo '-------------'
 ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/ || echo nope
 echo '-------------'
+ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/aha || echo nope
+echo '-------------'
 who am i
 whoami
 
