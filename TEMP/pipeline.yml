@@ -19,6 +19,13 @@ steps:
   - ls -ld /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp || echo nope
   - echo '------------------------------------------------------------------------'
   - ls -1 /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/.buildkite/hooks/post-checkout || echo nope
+  - echo '------------------------------------------------------------------------'
+  - pwd
+  - echo '------------------------------------------------------------------------'
+  - ls -ld .buildkite/hooks || echo nope
+  - echo '------------------------------------------------------------------------'
+  - ls -l .buildkite/hooks || echo nope
+  - echo '------------------------------------------------------------------------'
   - echo "--- debug END"
 
   - echo "--- successed or not i dunno"
@@ -73,6 +80,8 @@ steps:
         echo /tmp/ahaflow-custom-checkout-$$BUILDKITE_BUILD_NUMBER.sh
         echo source $CHECKOUT
         source $CHECKOUT
+        .buildkite/hooks/post-checkout
+      pre-exit: .buildkite/hooks/pre-exit
 
 
 #       post-checkout: |
