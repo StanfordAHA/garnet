@@ -63,7 +63,7 @@ steps:
 
   - matrix-org/download#v1.1.0:
       urls:
-        - https://raw.githubusercontent.com/StanfordAHA/garnet/aha/flow-no-heroku/TEMP/custom-checkout.sh
+        - https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
   - SpencerSharkey/hooks:
       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
 
@@ -134,7 +134,7 @@ steps:
   plugins:
     - matrix-org/download#v1.1.0:
         urls:
-          - https://raw.githubusercontent.com/StanfordAHA/garnet/aha/flow-no-heroku/TEMP/custom-checkout.sh
+          - https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
     - SpencerSharkey/hooks:
         precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
 
