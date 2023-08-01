@@ -73,7 +73,7 @@ steps:
 #   - SpencerSharkey/hooks:
 #       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
   - improbable-eng/metahook:
-      post-checkout: |
+      pre-checkout: |
         set -x
         pwd; ls -l 
         echo source $CHECKOUT
