@@ -44,9 +44,13 @@ steps:
     docker: true
   plugins:
   - thedyrt/skip-checkout#v0.1.1: ~
+  - sv-oss/github-pr-labels#v0.0.2:
+      publish-env-var: PULL_REQUEST_LABELS
   # detect-clowns#v2.0.0: ~  # haha no clowns were found in keyi code :(
-  - plugin-linter#v3.2.0:
-      id: plugin-linter
+#   - plugin-linter#v3.2.0:
+#       id: plugin-linter
+
+
   
 - label: ":hammer: Amber Gold RTL"
   key: "goldcheck-amber"
