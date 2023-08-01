@@ -12,8 +12,6 @@ steps:
   commands:
 
   - echo "--- Custom checkout"
-
-  
   - echo "+++ debug BEGIN"
   - echo '------------------------------------------------------------------------'
   - ls -ld /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp || echo nope
@@ -44,7 +42,7 @@ steps:
   # !!!
   - echo "+++ debug BEGIN"
 
-  - source .buildkite/hooks/post-checkout
+#   - source .buildkite/hooks/post-checkout
 
 
 
@@ -76,15 +74,17 @@ steps:
 #       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
   - improbable-eng/metahook:
       post-checkout: |
-        pwd
-        ls -l .buildkite/hooks || echo nop
         set -x
-        echo /tmp/ahaflow-custom-checkout-$$BUILDKITE_BUILD_NUMBER.sh
+        pwd; ls -l 
         echo source $CHECKOUT
         source $CHECKOUT
+        echo '-------------------------------------------'
+        echo FOOOOOO
         pwd
-        source .buildkite/hooks/post-checkout
-      pre-exit: source .buildkite/hooks/pre-exit
+        ls -l .buildkite || echo nop
+        ls -l .buildkite/hooks || echo nop
+        set -x; source .buildkite/hooks/post-checkout
+      pre-exit: pwd; ls; source .buildkite/hooks/pre-exit
 
 
 #       post-checkout: |

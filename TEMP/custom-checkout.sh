@@ -70,3 +70,8 @@ u=https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/p
 ls -l .buildkite/pipeline.yml
 curl -s $u > .buildkite/pipeline.yml
 ls -l .buildkite/pipeline.yml
+
+pwd
+ls -l .buildkite || echo nop
+ls -l .buildkite/hooks || echo nop
+
