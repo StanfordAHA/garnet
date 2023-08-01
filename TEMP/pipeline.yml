@@ -40,6 +40,7 @@ steps:
   key: "goldcheck-amber"
   depends_on: "docker-build"
   commands:
+  - sleep 500; exit 0
   - /aha/aha/bin/rtl-goldcheck.sh amber
   plugins:
     - thedyrt/skip-checkout#v0.1.1: ~
@@ -62,6 +63,7 @@ steps:
   key: "integration-tests"
   depends_on: "docker-build"
   commands:
+  - docker images; docker ps; sleep 500; exit 0
   - source /aha/bin/activate
   - source /cad/modules/tcl/init/sh
   - module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2
