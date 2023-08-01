@@ -84,7 +84,11 @@ steps:
         ls -l .buildkite || echo nop
         ls -l .buildkite/hooks || echo nop
         set -x; source .buildkite/hooks/post-checkout
-      pre-exit: pwd; ls; source .buildkite/hooks/pre-exit
+      pre-exit: |
+        pwd
+        ls
+        chmod +x .buildkite/hooks/pre-exit; ./.buildkite/hooks/pre-exit
+        source .buildkite/hooks/pre-exit
 
 
 #       post-checkout: |
