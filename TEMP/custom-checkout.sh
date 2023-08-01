@@ -2,7 +2,11 @@
 
 ########################################################################
 set -x
-echo "+++ POSTt CHECKOUT DEBUG"
+echo "+++ POST CHECKOUT DEBUG 1"
+
+echo '-----'
+ls -l /tmp/ahaflow-custom-checkout-$BUILDKITE_BUILD_NUMBER.sh || echo nope
+grep nope /tmp/ahaflow-custom-checkout-$BUILDKITE_BUILD_NUMBER.sh || echo nope
 
 echo '-----'
 ls -ld /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp || echo nope

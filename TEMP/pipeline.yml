@@ -21,6 +21,10 @@ steps:
   - ls -1 /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/.buildkite/hooks/post-checkout || echo nope
   - echo "--- debug END"
 
+  - echo "--- successed or not i dunno"
+  - exit 13
+
+
 
   # The "if FLOW_REPO" part is redundant when/if not using heroku...
   # - source $$CHECKOUT
@@ -34,8 +38,6 @@ steps:
 
   - set -x; source .buildkite/hooks/post-checkout
 
-  - echo "--- successed or not i dunno"
-  - exit 13
 
 
 
