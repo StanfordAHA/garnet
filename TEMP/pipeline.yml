@@ -88,7 +88,7 @@ steps:
         pwd
         ls
         chmod +x .buildkite/hooks/pre-exit; ./.buildkite/hooks/pre-exit
-        source .buildkite/hooks/pre-exit
+#         source .buildkite/hooks/pre-exit # complains about unbound variable :( ??
 
 
 #       post-checkout: |
