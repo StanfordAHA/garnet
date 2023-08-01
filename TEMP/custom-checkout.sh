@@ -5,7 +5,6 @@ set +x # debug OFF
 echo "+++ checkout.sh trash"
 echo '-------------'
 ls -l /tmp/ahaflow-custom-checkout* || echo nope
-test -e /tmp/ahaflow-custom-checkout*NUMBER.sh && rm /tmp/ahaflow-custom-checkout*NUMBER.sh || echo nope
 echo '-------------'
 echo "--- CONTINUE"
 ########################################################################
@@ -71,7 +70,3 @@ u=https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/p
 ls -l .buildkite/pipeline.yml
 curl -s $u > .buildkite/pipeline.yml
 ls -l .buildkite/pipeline.yml
-
-
-
-

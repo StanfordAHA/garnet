@@ -76,12 +76,15 @@ steps:
 #       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
   - improbable-eng/metahook:
       post-checkout: |
+        pwd
+        ls -l .buildkite/hooks || echo nop
         set -x
         echo /tmp/ahaflow-custom-checkout-$$BUILDKITE_BUILD_NUMBER.sh
         echo source $CHECKOUT
         source $CHECKOUT
-        .buildkite/hooks/post-checkout
-      pre-exit: .buildkite/hooks/pre-exit
+        pwd
+        source .buildkite/hooks/post-checkout
+      pre-exit: source .buildkite/hooks/pre-exit
 
 
 #       post-checkout: |
