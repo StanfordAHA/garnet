@@ -57,7 +57,8 @@ steps:
   agents:
     docker: true
   plugins:
-  - thedyrt/skip-checkout#v0.1.1: ~
+  - uber-workflow/run-without-clone:
+# - thedyrt/skip-checkout#v0.1.1: ~
 #   - sv-oss/github-pr-labels#v0.0.2:
 #       publish-env-var: PULL_REQUEST_LABELS
 
@@ -68,15 +69,19 @@ steps:
 #       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
   - improbable-eng/metahook:
       post-checkout: |
-        echo foo
-        pwd
-        ls -l
-        set -x; curl -s https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh > custom-checkout.sh
-        pwd
-        ls -l
-        chmod +x ./custom-checkout.sh
-        ls -l
-        ./custom-checkout.sh
+        set -x
+        echo /tmp/ahaflow-custom-checkout-$$BUILDKITE_BUILD_NUMBER.sh
+        echo source $$CHECKOUT
+        source $$CHECKOUT
+
+
+#       post-checkout: |
+#         set -x; curl -s https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh > custom-checkout.sh
+#         pwd
+#         ls -l
+#         chmod +x ./custom-checkout.sh
+#         ls -l
+#         ./custom-checkout.sh
 
 
   
@@ -176,4 +181,5 @@ steps:
   agents:
     docker: true
   plugins:
-  - thedyrt/skip-checkout#v0.1.1: ~
+  - uber-workflow/run-without-clone:
+# - thedyrt/skip-checkout#v0.1.1: ~
