@@ -6,7 +6,7 @@ env
 cd $BUILDKITE_BUILD_PATH 
 
 ########################################################################
-echo "+++ checkout.sh trash"
+echo "+++ checkout.sh trashhhh"
 echo '-------------'
 ls -l /tmp/ahaflow-custom-checkout* || echo nope
 echo '-------------'
