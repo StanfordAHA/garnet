@@ -64,9 +64,10 @@ steps:
   - matrix-org/download#v1.1.0:
       urls:
         - https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
-  - SpencerSharkey/hooks:
-      precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
-
+#   - SpencerSharkey/hooks:
+#       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
+  - improbable-eng/metahook:
+      post-checkout: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
 
 
   
