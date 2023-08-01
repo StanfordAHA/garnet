@@ -71,8 +71,8 @@ steps:
       post-checkout: |
         set -x
         echo /tmp/ahaflow-custom-checkout-$$BUILDKITE_BUILD_NUMBER.sh
-        echo source $$CHECKOUT
-        source $$CHECKOUT
+        echo source $CHECKOUT
+        source $CHECKOUT
 
 
 #       post-checkout: |

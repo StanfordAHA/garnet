@@ -1,24 +1,11 @@
 #!/bin/bash
 
 ########################################################################
-set -x
-echo "+++ POST CHECKOUT DEBUG 3"
-
-echo '-----'
+echo "+++ checkout.sh trash"
+echo '-------------'
 ls -l /tmp/ahaflow-custom-checkout* || echo nope
-ls -l /tmp/ahaflow-custom-checkout-$BUILDKITE_BUILD_NUMBER.sh || echo nope
-grep nope /tmp/ahaflow-custom-checkout-$BUILDKITE_BUILD_NUMBER.sh || echo nope
-
-echo '-----'
-ls -ld /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp || echo nope
-
-echo '-----'
-ls -1 /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/.buildkite/hooks/post-checkout || echo nope
-
-# Don't need this no more
-# /bin/rm -rf /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp || echo nope
-
-set +x
+test -e /tmp/ahaflow-custom-checkout*NUMBER.sh && rm /tmp/ahaflow-custom-checkout*NUMBER.sh || echo nope
+echo '-------------'
 echo "--- CONTINUE"
 ########################################################################
 
