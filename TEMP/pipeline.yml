@@ -13,13 +13,13 @@ steps:
 
   - echo "--- Custom checkout"
 
+  
+  - echo "+++ debug BEGIN"
   - echo '------------------------------------------------------------------------'
-  - ls -ld /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp
+  - ls -ld /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp || echo nope
   - echo '------------------------------------------------------------------------'
-  - ls -1 /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/.buildkite/hooks/post-checkout
-
-  - echo "--- successed or not i dunno"
-  - exit 13
+  - ls -1 /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/.buildkite/hooks/post-checkout || echo nope
+  - echo "--- debug END"
 
 
   # The "if FLOW_REPO" part is redundant when/if not using heroku...
@@ -28,6 +28,17 @@ steps:
       echo "--- Handle PR"
       cd $FLOW_REPO && git fetch && git checkout $FLOW_HEAD_SHA;
     ) fi
+
+  # !!!
+  - echo "+++ debug BEGIN"
+
+  - set -x; source .buildkite/hooks/post-checkout
+
+  - echo "--- successed or not i dunno"
+  - exit 13
+
+
+
 
   # Note, from here down, FLOW_REPO and FLOW_HEAD_SHA are null
   # if not called via heroku (I think)
