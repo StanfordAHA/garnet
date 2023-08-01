@@ -44,7 +44,9 @@ steps:
     docker: true
   plugins:
   - thedyrt/skip-checkout#v0.1.1: ~
-  - detect-clowns#v2.0.0: ~
+  # detect-clowns#v2.0.0: ~  # haha no clowns were found in keyi code :(
+  - plugin-linter#v3.2.0:
+      id: plugin-linter
   
 - label: ":hammer: Amber Gold RTL"
   key: "goldcheck-amber"
