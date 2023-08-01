@@ -61,13 +61,15 @@ steps:
 #   - sv-oss/github-pr-labels#v0.0.2:
 #       publish-env-var: PULL_REQUEST_LABELS
 
-  - matrix-org/download#v1.1.0:
-      urls:
-        - https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
+#   - matrix-org/download#v1.1.0:
+#       urls:
+#         - https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
 #   - SpencerSharkey/hooks:
 #       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
   - improbable-eng/metahook:
-      post-checkout: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
+      post-checkout: |
+        curl -s https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh > custom-checkout.sh
+        custom-checkout.sh
 
 
   
