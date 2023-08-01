@@ -1,5 +1,87 @@
 #!/bin/bash
 
+########################################################################
+set -x
+echo "+++ POST CHECKOUT DEBUG -- hooks"
+
+echo '------------------------------------------------------------------------'
+ls -l /var/lib/buildkite-agent/builds/
+
+echo '------------------------------------------------------------------------'
+ls -l /var/lib/buildkite-agent/builds/*
+
+echo '------------------------------------------------------------------------'
+ls -l /var/lib/buildkite-agent/builds/*/stanford-aha
+
+echo '------------------------------------------------------------------------'
+ls -l /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/
+
+echo '------------------------------------------------------------------------'
+echo '------------------------------------------------------------------------'
+echo '------------------------------------------------------------------------'
+ls -1 /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/.buildkite/hooks/post*
+
+echo '------------------------------------------------------------------------'
+ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/temp
+
+
+# ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/.buildkite/hooks || echo nope
+# for f in /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/.buildkite/hooks/*; do
+#     echo $f; cat $f; echo "------------"; done || echo nope
+
+
+echo "+++ POST CHECKOUT DEBUG -- temp"
+ls -l /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/temp || echo nope
+for f in /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/temp/*; do
+    echo $f; cat $f; echo "------------"; done || echo nope
+
+echo "+++ POST CHECKOUT DEBUG -- TEST"
+pwd
+    mkdir -p temp
+    ls -ld temp
+    ls -l temp
+    rm -rf temp/.TEST
+    touch temp/.TEST
+
+    sleep 120
+
+    rm -rf temp/.TEST
+
+
+
+
+
+set +x
+exit 0
+########################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # FIXME/NOTE! can skip a lot of stuff by checking to see if
 # $FLOW_REPO / $FLOW_HEAD_SHA already been set
 
@@ -62,16 +144,5 @@ curl -s $u > .buildkite/pipeline.yml
 ls -l .buildkite/pipeline.yml
 
 
-set -x
-echo "+++ POST CHECKOUT DEBUG -- hooks"
-ls -l /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/.buildkite/hooks || echo nope
-for f in /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/.buildkite/hooks/*; do
-    echo $f; cat $f; echo "------------"; done || echo nope
-
-echo "+++ POST CHECKOUT DEBUG -- temp"
-ls -l /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/temp || echo nope
-for f in /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/temp/*; do
-    echo $f; cat $f; echo "------------"; done || echo nope
-set +x
 
 
