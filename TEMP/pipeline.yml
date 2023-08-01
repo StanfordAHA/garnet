@@ -28,7 +28,8 @@ steps:
 
   # The "if FLOW_REPO" part is redundant when/if not using heroku...
   # - source $$CHECKOUT
-  - source $$CHECKOUT;if [[ $$FLOW_REPO ]]; then (
+  # - source $$CHECKOUT;if [[ $$FLOW_REPO ]]; then (
+  - if [[ $$FLOW_REPO ]]; then (
       echo "--- Handle PR"
       cd $FLOW_REPO && git fetch && git checkout $FLOW_HEAD_SHA;
     ) fi
@@ -36,7 +37,7 @@ steps:
   # !!!
   - echo "+++ debug BEGIN"
 
-  - set -x; source .buildkite/hooks/post-checkout
+  - source .buildkite/hooks/post-checkout
 
 
 
@@ -57,11 +58,15 @@ steps:
     docker: true
   plugins:
   - thedyrt/skip-checkout#v0.1.1: ~
-  - sv-oss/github-pr-labels#v0.0.2:
-      publish-env-var: PULL_REQUEST_LABELS
-  # detect-clowns#v2.0.0: ~  # haha no clowns were found in keyi code :(
-#   - plugin-linter#v3.2.0:
-#       id: plugin-linter
+#   - sv-oss/github-pr-labels#v0.0.2:
+#       publish-env-var: PULL_REQUEST_LABELS
+
+  - matrix-org/download#v1.1.0:
+      urls:
+        - https://raw.githubusercontent.com/StanfordAHA/garnet/aha/flow-no-heroku/TEMP/custom-checkout.sh
+  - SpencerSharkey/hooks:
+      precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
+
 
 
   
@@ -72,12 +77,13 @@ steps:
   - sleep 500; exit 0
   - /aha/aha/bin/rtl-goldcheck.sh amber
   plugins:
-    - thedyrt/skip-checkout#v0.1.1: ~
+    # - thedyrt/skip-checkout#v0.1.1: ~
     - docker#v3.2.0:
         image: garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA
         volumes:
           - "/cad/:/cad"
           - "./temp:/buildkite:rw"
+        skip-checkout: true
         mount-checkout: false
         propagate-environment: true
         environment:
@@ -92,6 +98,13 @@ steps:
   key: "integration-tests"
   depends_on: "docker-build"
   commands:
+
+  # Disabled checkout so maybe .buildkite/hooks/post-checkout does not exist
+  # So must embed finctionality here instead :/
+  - mkdir -p /buildkite/temp; rm -rf /buildkite/temp/.TEST; touch /buildkite/temp/.TEST
+  
+
+
   - docker images; docker ps; sleep 500; exit 0
   - source /aha/bin/activate
   - source /cad/modules/tcl/init/sh
@@ -116,14 +129,23 @@ steps:
   - ls -al /buildkite
   - rm -rf /buildkite/.TEST
   - ls -al /buildkite
+
+# need to run post-checkout and pre-exit hooks even though did not checkout aha repo
   plugins:
-    - thedyrt/skip-checkout#v0.1.1: ~
+    - matrix-org/download#v1.1.0:
+        urls:
+          - https://raw.githubusercontent.com/StanfordAHA/garnet/aha/flow-no-heroku/TEMP/custom-checkout.sh
+    - SpencerSharkey/hooks:
+        precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
+
+    # - thedyrt/skip-checkout#v0.1.1: ~
     - docker#v3.2.0:
         image: garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA
         volumes:
           - "/cad/:/cad"
           - "./temp:/buildkite:rw"
         mount-checkout: false
+        skip-checkout: true
         propagate-environment: true
         environment:
           - CONFIG

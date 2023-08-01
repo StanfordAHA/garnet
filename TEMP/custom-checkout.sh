@@ -14,7 +14,8 @@ ls -ld /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-
 echo '-----'
 ls -1 /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/.buildkite/hooks/post-checkout || echo nope
 
-/bin/rm -rf /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp || echo nope
+# Don't need this no more
+# /bin/rm -rf /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp || echo nope
 
 set +x
 echo "--- CONTINUE"
