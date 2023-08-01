@@ -13,6 +13,15 @@ steps:
 
   - echo "--- Custom checkout"
 
+  - echo '------------------------------------------------------------------------'
+  - ls -ld /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp
+  - echo '------------------------------------------------------------------------'
+  - ls -1 /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/.buildkite/hooks/post-checkout
+
+  - echo "--- successed or not i dunno"
+  - exit 13
+
+
   # The "if FLOW_REPO" part is redundant when/if not using heroku...
   # - source $$CHECKOUT
   - source $$CHECKOUT;if [[ $$FLOW_REPO ]]; then (
@@ -35,6 +44,7 @@ steps:
     docker: true
   plugins:
   - thedyrt/skip-checkout#v0.1.1: ~
+  - detect-clowns#v2.0.0: ~
   
 - label: ":hammer: Amber Gold RTL"
   key: "goldcheck-amber"
