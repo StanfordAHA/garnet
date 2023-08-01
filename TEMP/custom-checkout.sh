@@ -2,7 +2,7 @@
 
 ########################################################################
 set -x
-echo "+++ POST CHECKOUT DEBUG 1"
+echo "+++ POST CHECKOUT DEBUG 2"
 
 echo '-----'
 ls -l /tmp/ahaflow-custom-checkout-$BUILDKITE_BUILD_NUMBER.sh || echo nope
