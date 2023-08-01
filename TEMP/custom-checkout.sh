@@ -1,6 +1,10 @@
 #!/bin/bash
 set +x # debug OFF
 
+pwd
+env
+cd $BUILDKITE_BUILD_PATH 
+
 ########################################################################
 echo "+++ checkout.sh trash"
 echo '-------------'
