@@ -10,6 +10,11 @@ echo "+++ checkout.sh trash"
 echo '-------------'
 ls -l /tmp/ahaflow-custom-checkout* || echo nope
 echo '-------------'
+ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/ || echo nope
+echo '-------------'
+who am i
+whoami
+
 echo "--- CONTINUE"
 ########################################################################
 
@@ -17,7 +22,7 @@ echo "--- CONTINUE"
 # $FLOW_REPO / $FLOW_HEAD_SHA already been set
 
 # git remote set-url origin https://github.com/hofstee/aha
-if ! git remote set-url origin https://github.com/hofstee/aha; then
+if ! git remote set-url origin https://github.com/hofstee/aha 2> /dev/null; then
   test -e aha || git clone https://github.com/hofstee/aha
   cd aha
   git remote set-url origin https://github.com/hofstee/aha
