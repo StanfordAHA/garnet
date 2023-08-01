@@ -17,7 +17,9 @@ unset FAIL
 # FAIL means build was triggered by foreign (non-aha) repo, i.e. one of the submods
 echo git fetch -v --prune -- origin $BUILDKITE_COMMIT
 git fetch -v --prune -- origin $BUILDKITE_COMMIT || FAIL=true
-[ "$FAIL" ] && git fetch -v --prune -- origin master || echo okay
+AMBER_DEFAULT_BRANCH=master
+AMBER_DEFAULT_BRANCH=no-heroku
+[ "$FAIL" ] && git fetch -v --prune -- origin $AMBER_DEFAULT_BRANCH || echo okay
 
 git checkout -f FETCH_HEAD
 git submodule sync --recursive

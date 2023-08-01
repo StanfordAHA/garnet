@@ -59,7 +59,7 @@ steps:
     docker: true
 
 
-- label: ":hammer: Onyx Integration Tests 3"
+- label: ":hammer: Onyx Integration Tests"
   key: "integration-tests"
   depends_on: "docker-build"
   commands:
