@@ -61,3 +61,17 @@ ls -l .buildkite/pipeline.yml
 curl -s $u > .buildkite/pipeline.yml
 ls -l .buildkite/pipeline.yml
 
+
+set -x
+echo "+++ POST CHECKOUT DEBUG -- hooks"
+ls -l /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/.buildkite/hooks || echo nope
+for f in /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/.buildkite/hooks/*; do
+    echo $f; cat $f; echo "------------"; done || echo nope
+
+echo "+++ POST CHECKOUT DEBUG -- temp"
+ls -l /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/temp || echo nope
+for f in /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/temp/*; do
+    echo $f; cat $f; echo "------------"; done || echo nope
+set +x
+
+
