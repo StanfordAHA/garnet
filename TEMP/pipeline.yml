@@ -68,8 +68,15 @@ steps:
 #       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
   - improbable-eng/metahook:
       post-checkout: |
-        curl -s https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh > custom-checkout.sh
-        custom-checkout.sh
+        echo foo
+        pwd
+        ls -l
+        set -x; curl -s https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh > custom-checkout.sh
+        pwd
+        ls -l
+        chmod +x ./custom-checkout.sh
+        ls -l
+        ./custom-checkout.sh
 
 
   
