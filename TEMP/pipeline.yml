@@ -34,7 +34,9 @@ steps:
   # The "if FLOW_REPO" part is redundant when/if not using heroku...
   # - source $$CHECKOUT
   # - source $$CHECKOUT;if [[ $$FLOW_REPO ]]; then (
+  - env
   - echo FLOW_REPO=$$FLOW_REPO
+  - echo FLOW_REPO=$FLOW_REPO
   - 'set -x;
      pwd;
      test -e tmp-vars && source tmp-vars;

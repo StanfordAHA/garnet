@@ -50,7 +50,7 @@ test -e $d && /bin/rm -rf $d || echo nop
 git clone https://github.com/hofstee/aha $d; cd $d
 
 git remote set-url origin https://github.com/hofstee/aha
-git submodule foreach --recursive 'echo "---   $name"; git clean -ffxdq'
+git submodule foreach --recursive "git clean -ffxdq"
 git clean -ffxdq
 
 unset PR_FROM_SUBMOD
@@ -96,8 +96,8 @@ if [ "$PR_FROM_SUBMOD" ]; then
         # be sourced in same scope as var usage, see?
         pwd # Should be e.g. /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow
         test -e tmp-vars && /bin/rm -rf tmp-vars
-        echo "export FLOW_REPO=$submod" >> tmp-vars
-        echo "export FLOW_REPO_SHA=$BUILDKITE_COMMIT" >> tmp-vars
+        echo "FLOW_REPO=$submod; export FLOW_REPO" >> tmp-vars
+        echo "FLOW_REPO_SHA=$BUILDKITE_COMMIT; export FLOW_REPO_SHA" >> tmp-vars
     else
         echo "ERROR could not find requesting submod"; exit 13
     fi
