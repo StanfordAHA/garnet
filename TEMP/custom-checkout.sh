@@ -1,12 +1,11 @@
 #!/bin/bash
 
-echo "--- BEGIN CUSTOM CHECKOUT"
-
 # save and restore existing shell opts in case script is sourced
 RESTORE_SHELLOPTS="$(set +o)"
-
 set +u # nounset? not on my watch!
 set +x # debug OFF
+
+echo "--- BEGIN CUSTOM CHECKOUT"
 
 # IF this works it enables all kinds of optimiztions
 echo FLOW_REPO=$FLOW_REPO || echo nop
@@ -124,7 +123,7 @@ set +x
 # later replace aha repo .buildkite/pipeline.yml w dev from garnet, see?
 
 if [ "$FOUND_SUBMOD" ]; then
-  if [ "$submod" == "garnet ]; then
+  if [ "$submod" == "garnet" ]; then
 echo "+++ FOR NOW, load pipeline from garnet aha-flow-no-heroku"
 echo "  BEFORE: " `ls -l .buildkite/pipeline.yml`
 u=https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/pipeline.yml
