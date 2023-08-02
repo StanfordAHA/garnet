@@ -9,13 +9,13 @@ echo "--- BEGIN CUSTOM CHECKOUT"
 
 # IF this works it enables all kinds of optimiztions
 echo FLOW_REPO=$FLOW_REPO || echo nop
-echo FLOW_REPO_SHA=$FLOW_REPO_SHA || echo nop
+echo FLOW_HEAD_SHA=$FLOW_HEAD_SHA || echo nop
 
 # This is supposed to detect heroku jobs
 if [ "$BUILDKITE_STEP_KEY" == "" ]; then
     if [ "$FLOW_REPO" ]; then
         echo "--- HEROKU DETECTED"
-        BUILDKITE_COMMIT=$FLOW_REPO_SHA
+        BUILDKITE_COMMIT=$FLOW_HEAD_SHA
         echo Reset BUILD_COMMIT=$BUILD_COMMIT
     fi
 fi
@@ -114,7 +114,7 @@ if [ "$PR_FROM_SUBMOD" ]; then
         pwd # Should be e.g. /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow
         test -e tmp-vars && /bin/rm -rf tmp-vars
         echo "FLOW_REPO=$submod; export FLOW_REPO" >> tmp-vars
-        echo "FLOW_REPO_SHA=$BUILDKITE_COMMIT; export FLOW_REPO_SHA" >> tmp-vars
+        echo "FLOW_HEAD_SHA=$BUILDKITE_COMMIT; export FLOW_HEAD_SHA" >> tmp-vars
     else
         echo "ERROR could not find requesting submod"; exit 13
     fi
