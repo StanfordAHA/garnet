@@ -125,7 +125,7 @@ set +x
 # if [ "$FOUND_SUBMOD" ]; then
 #   if [ "$submod" == "garnet" ]; then
 
-if (cd garnet; git log aha-flow-no-heroku | grep $BUILDKITE_COMMIT); then
+if (cd garnet; git log remotes/origin/aha-flow-no-heroku | grep $BUILDKITE_COMMIT); then
     echo "+++ FOR NOW, load pipeline from garnet aha-flow-no-heroku"
     # echo "  BEFORE: " `ls -l .buildkite/pipeline.yml`
     u=https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/pipeline.yml
