@@ -77,12 +77,12 @@ steps:
 #   - SpencerSharkey/hooks:
 #       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
   - improbable-eng/metahook:
-      environment: |
-        test -e tmp-vars && source tmp-vars
       pre-checkout: |
         echo source $CHECKOUT
         source $CHECKOUT
         # set -x; source .buildkite/hooks/post-checkout
+      pre-command: |
+        set -x; test -e tmp-vars && source tmp-vars
       pre-exit: |
         pwd
         ls

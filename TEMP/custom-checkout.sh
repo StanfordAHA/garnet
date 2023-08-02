@@ -50,7 +50,7 @@ test -e $d && /bin/rm -rf $d || echo nop
 git clone https://github.com/hofstee/aha $d; cd $d
 
 git remote set-url origin https://github.com/hofstee/aha
-git submodule foreach --recursive "git clean -ffxdq"
+git submodule foreach --recursive 'echo "---   $name"; git clean -ffxdq'
 git clean -ffxdq
 
 unset PR_FROM_SUBMOD
