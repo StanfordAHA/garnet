@@ -86,19 +86,22 @@ if [ "$PR_FROM_SUBMOD" ]; then
         [ "$FOUND_SUBMOD" ] && echo "--- -- FOUND " $submod
         [ "$FOUND_SUBMOD" ] && break
     done
+    echo now i am here
 
     # # want?
+    set -x
     if [ "$FOUND_SUBMOD" ]; then
         # These are used later by pipeline.xml
         # BUT NOT as global env vars; this script must
         # be sourced in same scope as var usage, see?
         pwd # Should be e.g. /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow
         test -e tmp-vars && /bin/rm -rf tmp-vars
-        echo "export FLOW_REPO=$submod" >> tmp-evars
-        echo "export FLOW_REPO_SHA=$BUILDKITE_COMMIT" >> tmp-evars
+        echo "export FLOW_REPO=$submod" >> tmp-vars
+        echo "export FLOW_REPO_SHA=$BUILDKITE_COMMIT" >> tmp-vars
     else
         echo "ERROR could not find requesting submod"; exit 13
     fi
+    set +x
 fi
 
 echo '+++ FLOW_REPO?'
