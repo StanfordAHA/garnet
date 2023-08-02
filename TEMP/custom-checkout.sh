@@ -3,7 +3,7 @@
 echo "--- BEGIN CUSTOM CHECKOUT"
 
 # save and restore existing shell opts in case script is sourced
-SHELLOPTS_BACKUP="${SHELLOPTS}"
+RESTORE_SHELLOPTS="$(set +o)"
 
 set +u # nounset? not on my watch!
 set +x # debug OFF
@@ -89,18 +89,14 @@ fi
 
 echo "+++ for now, load pipeline from garnet aha-flow-no-heroku"
 
-set -x
 echo "BEFORE: " `ls -l .buildkite/pipeline.yml`
 u=https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/pipeline.yml
-curl -s $u > .buildkite/pipeline.yml
+echo "curl -s $u > .buildkite/pipeline.yml"
+      curl -s $u > .buildkite/pipeline.yml
 echo "AFTER: " `ls -l .buildkite/pipeline.yml`
-set +x
 
-echo "+++ Have we got hooks?"
-pwd
-ls -l .buildkite/hooks || echo nop
+# echo "+++ Got hooks?"; ls -l .buildkite/hooks || echo nop
 
 echo "--- RESTORE SHELLOPTS"
-export SHELLOPTS="${SHELLOPTS_BACKUP}"
-
-echo "--- CUSTOM CHECKOUT DONE"
+set -vx; eval "$RESTORE_SHELLOPTS"
+pwd
