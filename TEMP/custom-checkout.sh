@@ -1,4 +1,11 @@
 #!/bin/bash
+
+echo "--- BEGIN CUSTOM CHECKOUT"
+
+# save and restore existing shell opts in case script is sourced
+SHELLOPTS_BACKUP="${SHELLOPTS}"
+
+set +u # nounset? not on my watch!
 set +x # debug OFF
 
 pwd
@@ -86,3 +93,4 @@ pwd
 ls -l .buildkite || echo nop
 ls -l .buildkite/hooks || echo nop
 
+export SHELLOPTS="$SHELLOPTS_BACKUP}
