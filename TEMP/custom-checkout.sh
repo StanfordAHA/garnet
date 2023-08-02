@@ -8,67 +8,46 @@ RESTORE_SHELLOPTS="$(set +o)"
 set +u # nounset? not on my watch!
 set +x # debug OFF
 
-# BUILDKITE_BUILD_CHECKOUT_PATH=/var/lib/buildkite-agent/builds/r7cad-docker-1/stanford-aha/aha-flow
-echo I am now in dir `pwd` # We are in root dir (/) !!!oh no!!!
+# echo "+++ checkout.sh cleanup"
+# rm /tmp/ahaflow-custom-checkout-83* || echo nop
+# rm /tmp/ahaflow-custom-checkout-84[01]* || echo nop
 
-echo "+++ checkout.sh cleanup"
-rm /tmp/ahaflow-custom-checkout-83* || echo nop
-rm /tmp/ahaflow-custom-checkout-84[01]* || echo nop
-
-########################################################################
-echo "+++ checkout.sh trash"
-echo '-------------'
-ls -l /tmp/ahaflow-custom-checkout* || echo nope
-
-echo '-------------'
-ls -ld /var/lib/buildkite-agent/builds/*[1-8]/stanford-aha/aha-flow/ || echo nope
-
-echo '-------------'
-ls -ld /var/lib/buildkite-agent/builds/*[1-8]/stanford-aha/aha-flow/aha || echo nope
-
-echo '-------------'
-ls -ld /var/lib/buildkite-agent/builds/*[1-8]/stanford-aha/aha-flow/.buildkite/hooks || echo nope
-
-echo '-------------'
-ls -ld /var/lib/buildkite-agent/builds/*[1-8]/stanford-aha/aha-flow/aha/.buildkite/hooks || echo nope
+# ########################################################################
+# echo "+++ checkout.sh trash"
+# echo '-------------'
+# ls -l /tmp/ahaflow-custom-checkout* || echo nope
+# 
+# echo '-------------'
+# ls -ld /var/lib/buildkite-agent/builds/*[1-8]/stanford-aha/aha-flow/ || echo nope
+# 
+# echo '-------------'
+# ls -ld /var/lib/buildkite-agent/builds/*[1-8]/stanford-aha/aha-flow/aha || echo nope
+# 
+# echo '-------------'
+# ls -ld /var/lib/buildkite-agent/builds/*[1-8]/stanford-aha/aha-flow/.buildkite/hooks || echo nope
+# 
+# echo '-------------'
+# ls -ld /var/lib/buildkite-agent/builds/*[1-8]/stanford-aha/aha-flow/aha/.buildkite/hooks || echo nope
 
 echo '-------------'
-echo I am `whoami`
  
 # # No!
 # f='/tmp/ahaflow-custom-checkout-$BUILDKITE_BUILD_NUMBER.sh'
 # test -f $f && /bin/rm $f
 # 
 # 
-echo "--- CONTINUE"
-########################################################################
+# echo "--- CONTINUE"
+# ########################################################################
 
-# FIXME/NOTE! can skip a lot of stuff by checking to see if
-# $FLOW_REPO / $FLOW_HEAD_SHA already been set
-
-# set -x
-# # git remote set-url origin https://github.com/hofstee/aha
-# if ! git remote set-url origin https://github.com/hofstee/aha 2> /dev/null; then
-#   test -e aha || git clone https://github.com/hofstee/aha
-#   cd aha
-#   git remote set-url origin https://github.com/hofstee/aha
-# fi
-# set +x
-
-##############################################################################
-d=$BUILDKITE_BUILD_CHECKOUT_PATH
-
-# echo cd $d
-# cd $d
+# BUILDKITE_BUILD_CHECKOUT_PATH=/var/lib/buildkite-agent/builds/r7cad-docker-1/stanford-aha/aha-flow
+echo I am `whoami`
+echo I am in dir `pwd` # We are in root dir (/) !!!oh no!!!
 
 # This is what I SHOULD do...
 echo "--- CLONE AHA REPO"
-# cd $d
-# test -e aha && /bin/rm -rf aha
+d=$BUILDKITE_BUILD_CHECKOUT_PATH
 test -e $d && /bin/rm -rf $d || echo nop
-
-git clone https://github.com/hofstee/aha $d
-cd $d
+git clone https://github.com/hofstee/aha $d; cd $d
 
 git remote set-url origin https://github.com/hofstee/aha
 git submodule foreach --recursive "git clean -ffxdq"
@@ -77,7 +56,7 @@ git clean -ffxdq
 unset PR_FROM_SUBMOD
 # PR_FROM_SUBMOD means build was triggered by foreign (non-aha) repo, i.e. one of the submods
 echo git fetch -v --prune -- origin $BUILDKITE_COMMIT
-if git fetch -v --prune -- origin $BUILDKITE_COMMIT; then
+if   git fetch -v --prune -- origin $BUILDKITE_COMMIT; then
     echo "Checked out aha commit '$BUILDKITE_COMMIT'"
 else
     echo '-------------------------------------------'
@@ -113,12 +92,21 @@ if [ "$PR_FROM_SUBMOD" ]; then
         # These are used later by pipeline.xml
         # BUT NOT as global env vars; this script must
         # be sourced in same scope as var usage, see?
-        FLOW_REPO=$submod
-        FLOW_REPO_SHA=$BUILDKITE_COMMIT
+        pwd # Should be e.g. /var/lib/buildkite-agent/builds/r7cad-docker-2/stanford-aha/aha-flow
+        test -e tmp-vars && /bin/rm -rf tmp-vars
+        echo "export FLOW_REPO=$submod" >> tmp-evars
+        echo "export FLOW_REPO_SHA=$BUILDKITE_COMMIT" >> tmp-evars
     else
         echo "ERROR could not find requesting submod"; exit 13
     fi
 fi
+
+echo '+++ FLOW_REPO?'
+set -x
+ls -l tmp-vars || echo no
+cat tmp-vars || echo no
+set +x
+
 
 # https://github.com/StanfordAHA/garnet/blob/aha-flow-no-heroku/TEMP/custom-checkout.sh
 # https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
@@ -129,12 +117,11 @@ fi
 # later replace aha repo .buildkite/pipeline.yml w dev from garnet, see?
 
 echo "+++ FOR NOW, load pipeline from garnet aha-flow-no-heroku"
-
 echo "  BEFORE: " `ls -l .buildkite/pipeline.yml`
 u=https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/pipeline.yml
-echo "  curl -s $u > .buildkite/pipeline.yml"
         curl -s $u > .buildkite/pipeline.yml
-echo "  AFTER:  " `ls -l .buildkite/pipeline.yml`
+# echo "  curl -s $u > .buildkite/pipeline.yml"
+# echo "  AFTER:  " `ls -l .buildkite/pipeline.yml`
 
 # echo "+++ WHAT IS UP WITH THE HOOKS?"
 # # set -x

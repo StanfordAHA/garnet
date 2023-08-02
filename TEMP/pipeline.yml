@@ -35,10 +35,13 @@ steps:
   # - source $$CHECKOUT
   # - source $$CHECKOUT;if [[ $$FLOW_REPO ]]; then (
   - echo FLOW_REPO=$$FLOW_REPO
-  - set -x if [[ $$FLOW_REPO ]]; then (
-      echo "--- Handle PR"
-      cd $FLOW_REPO && git fetch && git checkout $FLOW_HEAD_SHA;
-    ) fi
+  - 'set -x;
+     pwd;
+     test -e tmp-vars && source tmp-vars;
+     if [[ $$FLOW_REPO ]]; then
+       echo "--- Handle PR";
+       cd $FLOW_REPO && git fetch && git checkout $FLOW_HEAD_SHA;
+     fi'
 
   # !!!
   - echo "+++ debug BEGIN"
@@ -74,6 +77,8 @@ steps:
 #   - SpencerSharkey/hooks:
 #       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
   - improbable-eng/metahook:
+      environment: |
+        test -e tmp-vars && source tmp-vars
       pre-checkout: |
         echo source $CHECKOUT
         source $CHECKOUT
