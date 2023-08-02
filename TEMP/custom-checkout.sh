@@ -46,21 +46,11 @@ cd $BUILDKITE_BUILD_CHECKOUT_PATH
 
 # This is what I SHOULD do...
 echo "--- CLONE AHA REPO"
-cd $BUILDKITE_BUILD_PATH
+cd $BUILDKITE_BUILD_CHECKOUT_PATH
 
 set -x
-ls -l aha/.buildkite/hooks || echo nop
-grep foo aha/.buildkite/hooks/* || echo nop
-
 test -e aha && /bin/rm -rf aha
-
-ls -l aha/.buildkite/hooks || echo nop
-grep foo aha/.buildkite/hooks/* || echo nop
-
-
 git clone https://github.com/hofstee/aha
-ls -l aha/.buildkite/hooks || echo nop
-grep foo aha/.buildkite/hooks/* || echo nop
 set +x
 
 cd aha
