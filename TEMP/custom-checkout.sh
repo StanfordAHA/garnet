@@ -10,27 +10,34 @@ set +x # debug OFF
 
 # BUILDKITE_BUILD_CHECKOUT_PATH=/var/lib/buildkite-agent/builds/r7cad-docker-1/stanford-aha/aha-flow
 echo I am now in dir `pwd` # We are in root dir (/) !!!oh no!!!
-echo cd $BUILDKITE_BUILD_CHECKOUT_PATH
-cd $BUILDKITE_BUILD_CHECKOUT_PATH
 
-# ########################################################################
-# echo "+++ checkout.sh trash"
-# echo '-------------'
-# ls -l /tmp/ahaflow-custom-checkout* || echo nope
-# echo '-------------'
-# ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/ || echo nope
-# echo '-------------'
-# ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/aha || echo nope
-# echo '-------------'
-# echo I am `whoami`
-# 
+########################################################################
+echo "+++ checkout.sh trash"
+echo '-------------'
+ls -l /tmp/ahaflow-custom-checkout* || echo nope
+
+echo '-------------'
+ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/ || echo nope
+
+echo '-------------'
+ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/aha || echo nope
+
+echo '-------------'
+ls -l /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/.buildkite/hooks || echo nope
+
+echo '-------------'
+ls -l /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/aha/.buildkite/hooks || echo nope
+
+echo '-------------'
+echo I am `whoami`
+ 
 # # No!
 # f='/tmp/ahaflow-custom-checkout-$BUILDKITE_BUILD_NUMBER.sh'
 # test -f $f && /bin/rm $f
 # 
 # 
-# echo "--- CONTINUE"
-# ########################################################################
+echo "--- CONTINUE"
+########################################################################
 
 # FIXME/NOTE! can skip a lot of stuff by checking to see if
 # $FLOW_REPO / $FLOW_HEAD_SHA already been set
@@ -44,18 +51,20 @@ cd $BUILDKITE_BUILD_CHECKOUT_PATH
 # fi
 # set +x
 
+##############################################################################
+d=$BUILDKITE_BUILD_CHECKOUT_PATH
+
+# echo cd $d
+# cd $d
+
 # This is what I SHOULD do...
 echo "--- CLONE AHA REPO"
-cd $BUILDKITE_BUILD_CHECKOUT_PATH
+# cd $d
+# test -e aha && /bin/rm -rf aha
+test -e $d && /bin/rm -rf $d || echo nop
 
-set -x
-test -e aha && /bin/rm -rf aha
-git clone https://github.com/hofstee/aha
-set +x
-
-cd aha
-
-
+git clone https://github.com/hofstee/aha $d
+cd $d
 
 git remote set-url origin https://github.com/hofstee/aha
 git submodule foreach --recursive "git clean -ffxdq"
@@ -67,6 +76,7 @@ echo git fetch -v --prune -- origin $BUILDKITE_COMMIT
 if git fetch -v --prune -- origin $BUILDKITE_COMMIT; then
     echo "Checked out aha commit '$BUILDKITE_COMMIT'"
 else
+    echo '-------------------------------------------'
     echo 'Requested commit does not exist in aha repo'
     echo 'This must be a pull request from one of the submods'
     PR_FROM_SUBMOD=true
@@ -76,12 +86,6 @@ else
     echo "Meanwhile, will use default branch '$AHA_DEFAULT_BRANCH' for aha repo"
     git fetch -v --prune -- origin $AHA_DEFAULT_BRANCH
 fi
-
-echo '+++ HOOKS'
-pwd
-ls -l aha/.buildkite/hooks || echo nop
-grep foo aha/.buildkite/hooks/* || echo nop
-
 
 git checkout -f FETCH_HEAD
 git submodule sync --recursive
@@ -112,11 +116,6 @@ if [ "$PR_FROM_SUBMOD" ]; then
     fi
 fi
 
-echo '+++ HOOKS 124'
-pwd
-ls -l aha/.buildkite/hooks || echo nop
-grep foo aha/.buildkite/hooks/* || echo nop
-
 # https://github.com/StanfordAHA/garnet/blob/aha-flow-no-heroku/TEMP/custom-checkout.sh
 # https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
 # curl -s https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh > /tmp/tmp
@@ -134,22 +133,19 @@ echo "curl -s $u > .buildkite/pipeline.yml"
 echo "AFTER:  " `ls -l .buildkite/pipeline.yml`
 
 echo "+++ WHAT IS UP WITH THE HOOKS?"
-set -x
-echo '--------------'
-git branch
-echo '--------------'
-git status -uno
+# set -x
+# echo '--------------'
+# git branch
+# echo '--------------'
+# git status -uno
 ls -l .buildkite/hooks || echo nop
 cat .buildkite/hooks/post-checkout || echo hop
 set +x
 
 echo '+++ HOOKS 155'
 pwd
-ls -l aha/.buildkite/hooks || echo nop
-grep foo aha/.buildkite/hooks/* || echo nop
-
-
-
+ls -l .buildkite/hooks || echo nop
+grep foo .buildkite/hooks/* || echo nop
 
 echo "--- RESTORE SHELLOPTS"
 eval "$RESTORE_SHELLOPTS"
