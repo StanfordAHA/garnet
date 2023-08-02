@@ -8,10 +8,9 @@ RESTORE_SHELLOPTS="$(set +o)"
 set +u # nounset? not on my watch!
 set +x # debug OFF
 
-pwd # We are in root dir (/) !!!oh no!!!
+echo I am now in dir `pwd` # We are in root dir (/) !!!oh no!!!
 echo cd $BUILDKITE_BUILD_PATH
 cd $BUILDKITE_BUILD_PATH
-pwd
 
 # ########################################################################
 # echo "+++ checkout.sh trash"
@@ -47,9 +46,20 @@ pwd
 # This is what I SHOULD do...
 echo "--- CLONE AHA REPO"
 cd $BUILDKITE_BUILD_PATH
+
+set -x
+ls -l aha/.buildkite/hooks || echo nop
+grep foo aha/.buildkite/hooks || echo nop
+
 test -e aha && /bin/rm -rf aha
 git clone https://github.com/hofstee/aha
+ls -l aha/.buildkite/hooks || echo nop
+grep foo aha/.buildkite/hooks || echo nop
+set +x
+
 cd aha
+
+
 
 git remote set-url origin https://github.com/hofstee/aha
 git submodule foreach --recursive "git clean -ffxdq"
@@ -58,11 +68,18 @@ git clean -ffxdq
 unset PR_FROM_SUBMOD
 # PR_FROM_SUBMOD means build was triggered by foreign (non-aha) repo, i.e. one of the submods
 echo git fetch -v --prune -- origin $BUILDKITE_COMMIT
-git fetch -v --prune -- origin $BUILDKITE_COMMIT || PR_FROM_SUBMOD=true
+if git fetch -v --prune -- origin $BUILDKITE_COMMIT; then
+    echo "Checked out aha commit '$BUILDKITE_COMMIT'"
+else
+    echo 'Requested commit does not exist in aha repo'
+    echo 'This must be a pull request from one of the submods'
+    PR_FROM_SUBMOD=true
 
-# AMBER_DEFAULT_BRANCH=no-heroku
-AMBER_DEFAULT_BRANCH=master
-[ "$PR_FROM_SUBMOD" ] && git fetch -v --prune -- origin $AMBER_DEFAULT_BRANCH || echo okay
+    echo "Meanwhile, will default branch '$AHA_DEFAULT_BRANCH' for aha repo"
+    # AHA_DEFAULT_BRANCH=no-heroku
+    AHA_DEFAULT_BRANCH=master
+    git fetch -v --prune -- origin $AHA_DEFAULT_BRANCH
+fi
 
 git checkout -f FETCH_HEAD
 git submodule sync --recursive
@@ -101,15 +118,24 @@ fi
 # Temporarily, for dev purposes, load pipeline from garnet repo;
 # later replace aha repo .buildkite/pipeline.yml w dev from garnet, see?
 
-echo "+++ for now, load pipeline from garnet aha-flow-no-heroku"
+echo "+++ FOR NOW, load pipeline from garnet aha-flow-no-heroku"
 
 echo "BEFORE: " `ls -l .buildkite/pipeline.yml`
 u=https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/pipeline.yml
 echo "curl -s $u > .buildkite/pipeline.yml"
       curl -s $u > .buildkite/pipeline.yml
-echo "AFTER: " `ls -l .buildkite/pipeline.yml`
+echo "AFTER:  " `ls -l .buildkite/pipeline.yml`
 
-# echo "+++ Got hooks?"; ls -l .buildkite/hooks || echo nop
+echo "+++ WHAT IS UP WITH THE HOOKS?"
+set -x
+echo '--------------'
+git branch
+echo '--------------'
+git status -uno
+ls -l .buildkite/hooks || echo nop
+cat .buildkite/hooks/post-checkout || echo hop
+set +x
+
 
 echo "--- RESTORE SHELLOPTS"
 eval "$RESTORE_SHELLOPTS"
