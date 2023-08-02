@@ -10,6 +10,14 @@ echo "--- BEGIN CUSTOM CHECKOUT"
 # IF this works it enables all kinds of optimiztions
 echo FLOW_REPO=$FLOW_REPO || echo nop
 
+# This is supposed to detect heroku jobs
+if [ "$BUILDKITE_STEP_KEY" == "" ]; then
+    if [ "$FLOW_REPO" ]; then
+        BUILDKITE_COMMIT=FLOW_REPO_SHA
+    fi
+fi
+
+
 
 # echo "+++ checkout.sh cleanup"
 # rm /tmp/ahaflow-custom-checkout-83* || echo nop
@@ -73,10 +81,13 @@ else
     git fetch -v --prune -- origin $AHA_DEFAULT_BRANCH
 fi
 
+set -x
 git checkout -f FETCH_HEAD
 git submodule sync --recursive
 git submodule update --init --recursive --force
 git submodule foreach --recursive "git reset --hard"
+set +x
+
 
 if [ "$PR_FROM_SUBMOD" ]; then
     echo "--- Handle PR"
