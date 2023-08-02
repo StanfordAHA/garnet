@@ -9,11 +9,14 @@ echo "--- BEGIN CUSTOM CHECKOUT"
 
 # IF this works it enables all kinds of optimiztions
 echo FLOW_REPO=$FLOW_REPO || echo nop
+echo FLOW_REPO_SHA=$FLOW_REPO_SHA || echo nop
 
 # This is supposed to detect heroku jobs
 if [ "$BUILDKITE_STEP_KEY" == "" ]; then
     if [ "$FLOW_REPO" ]; then
-        BUILDKITE_COMMIT=FLOW_REPO_SHA
+        echo "--- HEROKU DETECTED"
+        BUILDKITE_COMMIT=$FLOW_REPO_SHA
+        echo Reset BUILD_COMMIT=$BUILD_COMMIT
     fi
 fi
 
