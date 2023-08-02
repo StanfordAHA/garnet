@@ -2,15 +2,15 @@
 
 echo "--- BEGIN CUSTOM CHECKOUT"
 
-# IF this works it enables all kinds of optimiztions
-echo FLOW_REPO=$FLOW_REPO || echo nop
-
-
 # save and restore existing shell opts in case script is sourced
 RESTORE_SHELLOPTS="$(set +o)"
 
 set +u # nounset? not on my watch!
 set +x # debug OFF
+
+# IF this works it enables all kinds of optimiztions
+echo FLOW_REPO=$FLOW_REPO || echo nop
+
 
 # echo "+++ checkout.sh cleanup"
 # rm /tmp/ahaflow-custom-checkout-83* || echo nop
