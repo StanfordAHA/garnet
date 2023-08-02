@@ -14,13 +14,12 @@ echo FLOW_HEAD_SHA=$FLOW_HEAD_SHA || echo nop
 # This is supposed to detect heroku jobs
 if [ "$BUILDKITE_STEP_KEY" == "" ]; then
     if [ "$FLOW_REPO" ]; then
+        # set commit to "master" and let default pipeline do the rest
         echo "--- HEROKU DETECTED"
-        BUILDKITE_COMMIT=$FLOW_HEAD_SHA
+        BUILDKITE_COMMIT=master
         echo Reset BUILD_COMMIT=$BUILD_COMMIT
     fi
 fi
-
-
 
 # echo "+++ checkout.sh cleanup"
 # rm /tmp/ahaflow-custom-checkout-83* || echo nop
@@ -119,6 +118,8 @@ if [ "$PR_FROM_SUBMOD" ]; then
         echo "ERROR could not find requesting submod"; exit 13
     fi
     set +x
+else
+    echo "--- NOT A PULL REQUEST"
 fi
 
 echo '+++ FLOW_REPO?'
