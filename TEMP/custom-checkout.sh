@@ -8,9 +8,10 @@ RESTORE_SHELLOPTS="$(set +o)"
 set +u # nounset? not on my watch!
 set +x # debug OFF
 
+# BUILDKITE_BUILD_CHECKOUT_PATH=/var/lib/buildkite-agent/builds/r7cad-docker-1/stanford-aha/aha-flow
 echo I am now in dir `pwd` # We are in root dir (/) !!!oh no!!!
-echo cd $BUILDKITE_BUILD_PATH
-cd $BUILDKITE_BUILD_PATH
+echo cd $BUILDKITE_BUILD_CHECKOUT_PATH
+cd $BUILDKITE_BUILD_CHECKOUT_PATH
 
 # ########################################################################
 # echo "+++ checkout.sh trash"
@@ -49,12 +50,17 @@ cd $BUILDKITE_BUILD_PATH
 
 set -x
 ls -l aha/.buildkite/hooks || echo nop
-grep foo aha/.buildkite/hooks || echo nop
+grep foo aha/.buildkite/hooks/* || echo nop
 
 test -e aha && /bin/rm -rf aha
+
+ls -l aha/.buildkite/hooks || echo nop
+grep foo aha/.buildkite/hooks/* || echo nop
+
+
 git clone https://github.com/hofstee/aha
 ls -l aha/.buildkite/hooks || echo nop
-grep foo aha/.buildkite/hooks || echo nop
+grep foo aha/.buildkite/hooks/* || echo nop
 set +x
 
 cd aha
@@ -75,11 +81,17 @@ else
     echo 'This must be a pull request from one of the submods'
     PR_FROM_SUBMOD=true
 
-    echo "Meanwhile, will default branch '$AHA_DEFAULT_BRANCH' for aha repo"
     # AHA_DEFAULT_BRANCH=no-heroku
     AHA_DEFAULT_BRANCH=master
+    echo "Meanwhile, will use default branch '$AHA_DEFAULT_BRANCH' for aha repo"
     git fetch -v --prune -- origin $AHA_DEFAULT_BRANCH
 fi
+
+echo '+++ HOOKS'
+pwd
+ls -l aha/.buildkite/hooks || echo nop
+grep foo aha/.buildkite/hooks/* || echo nop
+
 
 git checkout -f FETCH_HEAD
 git submodule sync --recursive
@@ -110,6 +122,11 @@ if [ "$PR_FROM_SUBMOD" ]; then
     fi
 fi
 
+echo '+++ HOOKS 124'
+pwd
+ls -l aha/.buildkite/hooks || echo nop
+grep foo aha/.buildkite/hooks/* || echo nop
+
 # https://github.com/StanfordAHA/garnet/blob/aha-flow-no-heroku/TEMP/custom-checkout.sh
 # https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh
 # curl -s https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/custom-checkout.sh > /tmp/tmp
@@ -135,6 +152,13 @@ git status -uno
 ls -l .buildkite/hooks || echo nop
 cat .buildkite/hooks/post-checkout || echo hop
 set +x
+
+echo '+++ HOOKS 155'
+pwd
+ls -l aha/.buildkite/hooks || echo nop
+grep foo aha/.buildkite/hooks/* || echo nop
+
+
 
 
 echo "--- RESTORE SHELLOPTS"
