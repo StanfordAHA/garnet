@@ -13,7 +13,7 @@ env
 cd $BUILDKITE_BUILD_PATH 
 
 ########################################################################
-echo "+++ checkout.sh trashhhh"
+echo "+++ checkout.sh trash"
 echo '-------------'
 ls -l /tmp/ahaflow-custom-checkout* || echo nope
 echo '-------------'
@@ -21,8 +21,12 @@ ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/ || echo nope
 echo '-------------'
 ls -ld /var/lib/buildkite-agent/builds/*/stanford-aha/aha-flow/aha || echo nope
 echo '-------------'
-who am i
-whoami
+echo I am `whoami`
+
+# No!
+f='/tmp/ahaflow-custom-checkout-$BUILDKITE_BUILD_NUMBER.sh'
+test -f $f && /bin/rm $f
+
 
 echo "--- CONTINUE"
 ########################################################################
@@ -83,14 +87,20 @@ fi
 # Temporarily, for dev purposes, load pipeline from garnet repo;
 # later replace aha repo .buildkite/pipeline.yml w dev from garnet, see?
 
+echo "+++ for now, load pipeline from garnet aha-flow-no-heroku"
+
+set -x
+echo "BEFORE: " `ls -l .buildkite/pipeline.yml`
 u=https://raw.githubusercontent.com/StanfordAHA/garnet/aha-flow-no-heroku/TEMP/pipeline.yml
-
-ls -l .buildkite/pipeline.yml
 curl -s $u > .buildkite/pipeline.yml
-ls -l .buildkite/pipeline.yml
+echo "AFTER: " `ls -l .buildkite/pipeline.yml`
+set +x
 
+echo "+++ Have we got hooks?"
 pwd
-ls -l .buildkite || echo nop
 ls -l .buildkite/hooks || echo nop
 
-export SHELLOPTS="$SHELLOPTS_BACKUP}
+echo "--- RESTORE SHELLOPTS"
+export SHELLOPTS="${SHELLOPTS_BACKUP}"
+
+echo "--- CUSTOM CHECKOUT DONE"
