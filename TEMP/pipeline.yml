@@ -11,30 +11,31 @@ steps:
   key: "docker-build"
   commands:
 
-  - echo "--- Custom checkout"
-  - echo "+++ debug BEGIN"
-  - echo '------------------------------------------------------------------------'
-  - ls -ld /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp || echo nope
-  - echo '------------------------------------------------------------------------'
-  - ls -1 /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/.buildkite/hooks/post-checkout || echo nope
-  - echo '------------------------------------------------------------------------'
-  - pwd
-  - echo '------------------------------------------------------------------------'
-  - ls -ld .buildkite/hooks || echo nope
-  - echo '------------------------------------------------------------------------'
-  - ls -l .buildkite/hooks || echo nope
-  - echo '------------------------------------------------------------------------'
-  - echo "--- debug END"
-
-  - echo "--- successed or not i dunno"
-  - exit 13
+#   - echo "--- Custom checkout"
+#   - echo "+++ debug BEGIN"
+#   - echo '------------------------------------------------------------------------'
+#   - ls -ld /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/temp || echo nope
+#   - echo '------------------------------------------------------------------------'
+#   - ls -1 /var/lib/buildkite-agent/builds/r7cad-docker-[12345678]/stanford-aha/aha-flow/.buildkite/hooks/post-checkout || echo nope
+#   - echo '------------------------------------------------------------------------'
+#   - pwd
+#   - echo '------------------------------------------------------------------------'
+#   - ls -ld .buildkite/hooks || echo nope
+#   - echo '------------------------------------------------------------------------'
+#   - ls -l .buildkite/hooks || echo nope
+#   - echo '------------------------------------------------------------------------'
+#   - echo "--- debug END"
+# 
+#   - echo "--- successed or not i dunno"
+#   - exit 13
 
 
 
   # The "if FLOW_REPO" part is redundant when/if not using heroku...
   # - source $$CHECKOUT
   # - source $$CHECKOUT;if [[ $$FLOW_REPO ]]; then (
-  - if [[ $$FLOW_REPO ]]; then (
+  - echo FLOW_REPO=$$FLOW_REPO
+  - set -x if [[ $$FLOW_REPO ]]; then (
       echo "--- Handle PR"
       cd $FLOW_REPO && git fetch && git checkout $FLOW_HEAD_SHA;
     ) fi
@@ -74,16 +75,9 @@ steps:
 #       precommand: $${BUILDKITE_DOWNLOADS_PATH}/custom-checkout.sh
   - improbable-eng/metahook:
       pre-checkout: |
-        set -x
-        pwd; ls -l 
         echo source $CHECKOUT
         source $CHECKOUT
-        echo '-------------------------------------------'
-        echo FOOOOOO
-        pwd
-        ls -l .buildkite || echo nop
-        ls -l .buildkite/hooks || echo nop
-        set -x; source .buildkite/hooks/post-checkout
+        # set -x; source .buildkite/hooks/post-checkout
       pre-exit: |
         pwd
         ls
