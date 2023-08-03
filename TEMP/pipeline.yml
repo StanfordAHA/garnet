@@ -55,8 +55,9 @@ steps:
 
   - echo "--- Creating garnet Image"
   - docker build . -t "garnet:$BUILDKITE_COMMIT$FLOW_REPO$FLOW_HEAD_SHA"
-  # Docker image successfully built, clear out .TEST file to avoid
-  # reporting failure to aha-flow-app.
+  # Clear out .TEST file to avoid reporting failure to aha-flow-app.
+  # This is a heroku thing I guess.
+  # FIXME remove heroku, remove this, along with pre-exit and post-checkout hooks
   - rm -rf temp/.TEST
 
   - echo "--- Pruning Docker Images"
