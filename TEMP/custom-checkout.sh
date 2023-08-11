@@ -7,7 +7,7 @@ set +x # debug OFF
 
 echo "--- BEGIN CUSTOM CHECKOUT"
 
-# IF this works it enables all kinds of optimiztions
+# IF this works it enables all kinds of optimiztions maybe
 echo FLOW_REPO=$FLOW_REPO || echo nop
 echo FLOW_HEAD_SHA=$FLOW_HEAD_SHA || echo nop
 
