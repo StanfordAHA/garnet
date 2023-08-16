@@ -7,16 +7,17 @@ ln -s ./inputs/sim
 
 if [ $PWR_AWARE = "True" ]; then
   if [ -f inputs/adk/stdcells-prim.v ]; then
-  NETLIST_FILES="inputs/adk/stdcells-pwr.v inputs/glb_tile_sram_pwr.v inputs/glb_tile.vcs.pg.v inputs/design.vcs.pg.v"
+  NETLIST_FILES="inputs/glb_tile_sram_pwr.v inputs/glb_tile.vcs.pg.v inputs/design.vcs.pg.v -v inputs/adk/stdcells-prim.v -v inputs/adk/stdcells-pwr.v -v inputs/adk/stdcells-ulvt-pwr.v -v inputs/adk/stdcells-lvt-pwr.v"
   else
   # FIXME: PM standard cells should be removed!
-  NETLIST_FILES="inputs/adk/stdcells-pwr.v inputs/adk/stdcells-pm-pwr.v inputs/glb_tile_sram_pwr.v inputs/glb_tile.vcs.pg.v inputs/design.vcs.pg.v"
+  NETLIST_FILES="inputs/glb_tile_sram_pwr.v inputs/glb_tile.vcs.pg.v inputs/design.vcs.pg.v -v inputs/adk/stdcells-pm-pwr.v -v inputs/adk/stdcells-pwr.v -v inputs/adk/stdcells-ulvt-pwr.v -v inputs/adk/stdcells-lvt-pwr.v"
   fi
 else
   if [ -f inputs/adk/stdcells-prim.v ]; then
-  NETLIST_FILES="inputs/glb_tile_sram.v inputs/adk/stdcells-prim.v inputs/adk/stdcells.v inputs/glb_tile.vcs.v inputs/design.vcs.v"
+  NETLIST_FILES="inputs/glb_tile_sram.v inputs/glb_tile.vcs.v inputs/design.vcs.v -v inputs/adk/stdcells-prim.v -v inputs/adk/stdcells.v -v inputs/adk/stdcells-ulvt.v -v inputs/adk/stdcells-lvt.v"
   else
-  NETLIST_FILES="inputs/glb_tile_sram.v inputs/adk/stdcells.v inputs/adk/stdcells-pm.v inputs/glb_tile.vcs.v inputs/design.vcs.v"
+  NETLIST_FILES="inputs/glb_tile_sram.v inputs/glb_tile.vcs.v inputs/design.vcs.v -v inputs/adk/stdcells-pm.v -v inputs/adk/stdcells.v -v inputs/adk/stdcells-ulvt.v -v inputs/adk/stdcells-lvt.v"
+  fi
 fi
 
 if [ $sdf = "True" ]; then
