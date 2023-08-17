@@ -142,7 +142,7 @@ echo "-- 60G has been enough in the past"
 echo "-- Not sure about space < 60G and > 3G"
 echo ""
 function help_space { (
-    echo "How big is /sim?"; echo df /sim; df /sim; echo ""
+    echo "How big is /sim?"; echo df -h /sim; df -h /sim; echo ""
     echo "/sim usage breakdown:"; du -hx --max-depth=0 /sim/* 2> /dev/null  | sort -rn | head; echo ""
     cd $tmpdir
     echo "Top space hogs in $tmpdir:"; ls -ls | sort -rn | head; echo ""
