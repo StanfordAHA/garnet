@@ -332,7 +332,7 @@ echo "AFTER:  OA_HOME=$OA_HOME"
 echo ""
 
 # Okay let's check and see what we got.
-echo "--- REQUIREMENTS CHECK"; echo ""
+echo "--- REQUIREMENTS CHECK, sourcing $garnet/bin/requirements_check.sh"; echo ""
 
 # Maybe don't need to check python libs and eggs no more...?
 # $garnet/bin/requirements_check.sh -v --debug
