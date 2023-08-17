@@ -246,9 +246,10 @@ fi
 
 ########################################################################
 # Clean up debris in /sim/tmp
-echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
-[ "$USER" != "buildkite-agent" ] && $garnet/mflowgen/bin/cleanup-buildkite.sh
-
+if [ "$USER" != "buildkite-agent" ]; then
+     echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
+     $garnet/mflowgen/bin/cleanup-buildkite.sh
+fi
 
 ########################################################################
 # Build environment and check requirements
