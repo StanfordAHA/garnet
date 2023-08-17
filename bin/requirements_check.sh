@@ -144,12 +144,12 @@ echo ""
 function help_space { (
     echo "How big is /sim?"; echo df -h /sim; df -h /sim; echo ""
     echo "/sim usage breakdown:"; du -hx --max-depth=0 /sim/* 2> /dev/null  | sort -rn | head; echo ""
-    cd $tmpdir
-    echo "Top space hogs in $tmpdir:"; ls -ls | sort -rn | head; echo ""
-    echo "Top space hogs owned by me"; ls -ls | grep `whoami` | sort -rn | head; echo ""
-    echo "Top dir hogs:"; du -x --max-depth=0 * 2> /dev/null  | sort -rn | head; echo ""
-    echo "Top dir hogs owned by me":
-    find * -maxdepth 0 -user `whoami` -exec du -x --max-depth=0 {} \; 2> /dev/null | sort -rn | head
+    # cd $tmpdir
+    # echo "Top space hogs in $tmpdir:"; ls -ls | sort -rn | head; echo ""
+    # echo "Top space hogs owned by me"; ls -ls | grep `whoami` | sort -rn | head; echo ""
+    # echo "Top dir hogs:"; du -x --max-depth=0 * 2> /dev/null  | sort -rn | head; echo ""
+    # echo "Top dir hogs owned by me":
+    # find * -maxdepth 0 -user `whoami` -exec du -x --max-depth=0 {} \; 2> /dev/null | sort -rn | head
     echo ""
 ) }
 help_space
