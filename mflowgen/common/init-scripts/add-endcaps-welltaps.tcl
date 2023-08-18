@@ -5,17 +5,17 @@
 # Date   : 
 if {[info exists ADK_WELL_TAP_CELL] && [info exists ADK_WELL_TAP_INTERVAL]} {
   puts "Info: Found well-tap cell and interval in ADK, using it to add well taps"
-  specifyCellEdgeSpacing tap1 tap1 ${ADK_WELL_TAP_INTERVAL}
-  specifyCellEdgeType -cell ${ADK_WELL_TAP_CELL} -left tap1
-  specifyCellEdgeType -cell ${ADK_WELL_TAP_CELL} -right tap1
-  
-  addWellTap -cell [list ${ADK_WELL_TAP_CELL}] \
-             -prefix       TAP_2H \
-             -cellInterval ${ADK_WELL_TAP_INTERVAL}
-  
-  verifyWellTap -cell [list ${ADK_WELL_TAP_CELL}] \
-                -report reports/welltap.rpt \
+  addWellTap -prefix TAP_2H \
+             -cell [list ${ADK_WELL_TAP_CELL_2H}] \
+             -cellInterval ${ADK_WELL_TAP_INTERVAL} \
+             -incremental ${ADK_WELL_TAP_CELL_1H}
+
+  addWellTap -prefix TAP_1H \
+             -cell [list ${ADK_WELL_TAP_CELL_1H}] \
+             -cellInterval ${ADK_WELL_TAP_INTERVAL} \
+             -incremental ${ADK_WELL_TAP_CELL_2H}
+
+  verifyWellTap -cell [list ${ADK_WELL_TAP_CELL_2H} ${ADK_WELL_TAP_CELL_1H}] \
+                -report reports/welltap-1h2h.rpt \
                 -rule   [ expr ${ADK_WELL_TAP_INTERVAL}/2 ]
-  
-  deleteCellEdgeSpacing tap1 tap1
 }
