@@ -2,6 +2,7 @@ name: gen_sram_macro
 
 commands:
   - python3 inputs/adk/gen_srams.py
+  - sed --in-place '/^\s*SITE.*\;/d' outputs/*.lef
 
 inputs:
   - adk
