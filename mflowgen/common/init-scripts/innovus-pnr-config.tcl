@@ -9,3 +9,9 @@
 
 # This is a process defined in adk.tcl to hide sensitive information
 adk_innovus_pnr_config
+
+# Remove assigns without buffering (for regular signals)
+remove_assigns
+
+# Remove assigns by adding buffers (for top level ports)
+remove_assigns -buffering
