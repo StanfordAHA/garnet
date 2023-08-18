@@ -64,8 +64,8 @@ if { $width > $max_width } {
 # Core bounding box margins
 set core_margin_t $vert_pitch
 set core_margin_b $vert_pitch 
-set core_margin_r [expr 10 * $horiz_pitch]
-set core_margin_l [expr 10 * $horiz_pitch]
+set core_margin_r [expr 4 * $horiz_pitch]
+set core_margin_l [expr 4 * $horiz_pitch]
 
 #-------------------------------------------------------------------------
 # Floorplan

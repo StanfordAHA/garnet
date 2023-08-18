@@ -1,0 +1,1 @@
+../../../common/init-scripts/innovus-pnr-config.tcl
