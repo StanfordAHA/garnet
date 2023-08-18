@@ -36,6 +36,7 @@ def construct():
   if synth_power:
       pwr_aware = False
 
+  want_custom_cts  = True
   want_drc_pm      = True
 
   # TSMC override(s)
@@ -55,7 +56,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
-    'clock_period'        : 1.1,
+    'clock_period'        : 1.00,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     # Synthesis
@@ -68,7 +69,8 @@ def construct():
     'mux_size'            : 4,
     'partial_write'       : False,
     # Hold target slack
-    'hold_target_slack'   : 0.030,
+    'setup_target_slack': 0,
+    'hold_target_slack' : 0.015,
     # Utilization target
     'core_density_target' : 0.68,
     # RTL Generation
@@ -98,10 +100,12 @@ def construct():
     'adk_stdcell'  : 'b15_7t_108pp'
   })
 
-  # INTEL overrides (ns -> ps)
-  if adk_name == 'intel16-adk': parameters.update({
-    'clock_period': parameters['clock_period'] * 1000
-  })
+  # INTEL overrides
+  if adk_name == 'intel16-adk':
+      parameters.update({
+        'clock_period': parameters['clock_period'] * 1000
+      })
+      want_drc_pm = False
 
   #-----------------------------------------------------------------------
   # Create nodes
@@ -122,6 +126,8 @@ def construct():
   custom_init          = Step( this_dir + '/custom-init'                            )
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
+  if want_custom_cts:
+    custom_cts           = Step( this_dir + '/custom-cts'                             )
   if adk_name == 'tsmc16':
     gen_sram             = Step( this_dir + '/../common/gen_sram_macro_amber'         )
     custom_lvs           = Step( this_dir + '/custom-lvs-rules-amber'                 )
@@ -167,7 +173,10 @@ def construct():
   else:
       genlibdb       = Step( 'cadence-innovus-genlib',           default=True )
 
-  if which("calibre") is not None:
+  if adk_name == 'intel16-adk':
+      drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
+      lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
+  elif which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
   else:
@@ -377,8 +386,9 @@ def construct():
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        drc            )
   g.connect_by_name( signoff,        lvs            )
-  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
+  if adk_name != "intel16-adk":
+      g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+      g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,              genlibdb )
   g.connect_by_name( adk,                  genlibdb )
@@ -405,8 +415,9 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc,      debugcalibre )
-  g.connect_by_name( lvs,      debugcalibre )
+  if adk_name != "intel16-adk":
+      g.connect_by_name( drc,      debugcalibre )
+      g.connect_by_name( lvs,      debugcalibre )
 
   # Pwr aware steps:
   if pwr_aware:
@@ -424,6 +435,12 @@ def construct():
       g.connect_by_name( gen_sram,             pwr_aware_gls)
       g.connect_by_name( signoff,              pwr_aware_gls)
       #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
+
+  # New 'custom_cts' step added for gf12
+  if want_custom_cts:
+    cts.extend_inputs( custom_cts.all_outputs() )
+    g.add_step(        custom_cts               )
+    g.connect_by_name( custom_cts,   cts        )
 
   # New step, added for gf12
   if want_drc_pm:
@@ -477,13 +494,32 @@ def construct():
   # which scripts get run and when they get run.
 
   # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
-
-  order = init.get_param('order') # get the default script run order
-  path_group_idx = order.index( 'make-path-groups.tcl' ) 
-  order.insert( path_group_idx + 1, 'additional-path-groups.tcl' )
-  pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
-  order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
-  init.update_params( { 'order': order } )
+  if adk_name == 'intel16-adk':
+    init.update_params( { 'order': [
+      'pre-init.tcl',
+      'main.tcl',
+      'innovus-pnr-config.tcl',
+      'dont-use.tcl',
+      'quality-of-life.tcl',
+      'floorplan.tcl',
+      'pin-assignments.tcl',
+      'create-rows.tcl',
+      'add-tracks.tcl',
+      'create-boundary-blockage.tcl',
+      'add-endcaps-welltaps.tcl',
+      'insert-input-antenna-diodes.tcl',
+      'create-special-grid.tcl',
+      'make-path-groups.tcl',
+      'additional-path-groups.tcl',
+      'reporting.tcl'
+    ] } )
+  else:
+    order = init.get_param('order') # get the default script run order
+    path_group_idx = order.index( 'make-path-groups.tcl' ) 
+    order.insert( path_group_idx + 1, 'additional-path-groups.tcl' )
+    pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
+    order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
+    init.update_params( { 'order': order } )
 
   # Adding new input for genlibdb node to run
 

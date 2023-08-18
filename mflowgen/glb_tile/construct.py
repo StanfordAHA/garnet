@@ -23,7 +23,7 @@ def construct():
 
   adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
   adk_view = 'multivt'
-  which_soc = 'onyx'
+  which_soc = 'onyx-intel16'
 
   # TSMC override(s)
   if adk_name == 'tsmc16':
@@ -33,7 +33,7 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'glb_tile',
-    'clock_period'   : 1.0,
+    'clock_period'   : 1.00,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
     # Synthesis
@@ -54,6 +54,7 @@ def construct():
     'PWR_AWARE'         : False,
     # hold target slack
     'hold_target_slack' : 0.03,
+    'setup_target_slack' : 0.00,
     'drc_env_setup': 'drcenv-block.sh'
   }
 
@@ -70,6 +71,13 @@ def construct():
     parameters.pop('num_subarrays')
     parameters.pop('drc_env_setup')
 
+  # INTEL overrides
+  if adk_name == 'intel16-adk': parameters.update({
+    'adk_stdcell' :'b15_7t_108pp',
+    'clock_period' : parameters['clock_period'] * 1000,
+    'mux_size' : 4
+  })
+
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
@@ -83,7 +91,8 @@ def construct():
 
   # Custom steps
 
-  rtl          = Step( this_dir + '/../common/rtl'                          )
+  # rtl          = Step( this_dir + '/../common/rtl'                          )
+  rtl          = Step( this_dir + '/../common/rtl-cache'                          )
 
   if adk_name == 'tsmc16':
     constraints  = Step( this_dir + '/constraints-amber'                      )
@@ -100,9 +109,12 @@ def construct():
     short_fix    = Step( this_dir + '/../common/custom-short-fix'             )
     custom_lvs   = Step( this_dir + '/custom-lvs-rules'                       )
 
-  genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'       )
+  if adk_name == 'intel16-adk':
+    genlib       = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  else:
+    genlib       = Step( this_dir + '/../common/cadence-innovus-genlib'       )
   lib2db       = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
-  if which_soc == 'onyx':
+  if which_soc in ['onyx', 'onyx-intel16']:
     custom_cts   = Step( this_dir + '/../common/custom-cts'                   )
     drc_pm       = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
 
@@ -123,7 +135,12 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff           = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff        = Step( 'synopsys-pt-timing-signoff',    default=True )
-  if which("calibre") is not None:
+  if adk_name == 'intel16-adk':
+      drc               = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
+      lvs               = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
+      calibre_drc       = Step( this_dir + '/../common/intel16-mentor-calibre-drc' )
+      calibre_lvs       = Step( this_dir + '/../common/intel16-mentor-calibre-lvs' )
+  elif which("calibre") is not None:
       drc               = Step( 'mentor-calibre-drc',            default=True )
       lvs               = Step( 'mentor-calibre-lvs',            default=True )
   else:
@@ -140,7 +157,7 @@ def construct():
 
   # Add sram macro inputs to downstream nodes
 
-  if which_soc == 'onyx': genlib.extend_inputs( ['sram_tt.db'] )
+  if which_soc in ['onyx', 'onyx-intel16']: genlib.extend_inputs( ['sram_tt.db', 'sram_tt.lib'] )
   pt_signoff.extend_inputs( ['sram_tt.db'] )
 
   # These steps need timing and lef info for srams
@@ -156,6 +173,7 @@ def construct():
 
   # Need SRAM spice file for LVS
   lvs.extend_inputs( ['sram.spi'] )
+  calibre_lvs.extend_inputs( ['sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -208,9 +226,11 @@ def construct():
   g.add_step( genlib         )
   g.add_step( lib2db         )
   g.add_step( drc            )
+  g.add_step( calibre_drc    )
   if which_soc == 'onyx':
     g.add_step( drc_pm         )
   g.add_step( lvs            )
+  g.add_step( calibre_lvs    )
   g.add_step( custom_lvs     )
   g.add_step( debugcalibre   )
 
@@ -233,9 +253,11 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
+  g.connect_by_name( adk,      calibre_drc    )
   if which_soc == 'onyx':
     g.connect_by_name( adk,      drc_pm         )
   g.connect_by_name( adk,      lvs            )
+  g.connect_by_name( adk,      calibre_lvs    )
   g.connect_by_name( adk,      genlib         )
 
   g.connect_by_name( gen_sram,      synth          )
@@ -252,9 +274,11 @@ def construct():
   g.connect_by_name( gen_sram,      genlib         )
   g.connect_by_name( gen_sram,      pt_signoff     )
   g.connect_by_name( gen_sram,      drc            )
+  g.connect_by_name( gen_sram,      calibre_drc    )
   if which_soc == 'onyx':
     g.connect_by_name( gen_sram,      drc_pm         )
   g.connect_by_name( gen_sram,      lvs            )
+  g.connect_by_name( gen_sram,      calibre_lvs    )
 
   g.connect_by_name( rtl,         synth        )
   g.connect_by_name( constraints, synth        )
@@ -283,7 +307,8 @@ def construct():
   g.connect_by_name( custom_power, power      )
   if which_soc == 'onyx':
     g.connect_by_name( custom_cts,   cts        )
-  g.connect_by_name( custom_lvs,   lvs        )
+  if adk_name != 'intel16-adk':
+    g.connect_by_name( custom_lvs,   lvs        )
   g.connect_by_name( init,           power          )
   g.connect_by_name( power,          place          )
   g.connect_by_name( place,          cts            )
@@ -293,13 +318,16 @@ def construct():
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
   g.connect_by_name( signoff,        drc            )
+  g.connect_by_name( signoff,        calibre_drc    )
   if which_soc == 'onyx':
     g.connect_by_name( signoff,        drc_pm         )
   g.connect_by_name( signoff,        lvs            )
-  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+  g.connect_by_name( signoff,        calibre_lvs    )
   if which_soc == 'onyx':
     g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
+  if adk_name != "intel16-adk":
+    g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+    g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff, genlib )
   g.connect_by_name( adk,     genlib )
@@ -313,10 +341,11 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc,      debugcalibre )
   if which_soc == 'onyx':
     g.connect_by_name( drc_pm,   debugcalibre )
-  g.connect_by_name( lvs,      debugcalibre )
+  if adk_name != "intel16-adk":
+    g.connect_by_name( drc,      debugcalibre )
+    g.connect_by_name( lvs,      debugcalibre )
 
   #-----------------------------------------------------------------------
   # Parameterize
@@ -327,7 +356,7 @@ def construct():
   g.update_params( parameters )
 
   # Add bank height param to init
-  if which_soc == 'onyx':
+  if which_soc in ['onyx', 'onyx-intel16']:
     # number of banks is fixed to 2
     bank_height = (parameters['glb_tile_mem_size'] * 1024 // 2) // (parameters['num_words'] * (parameters['word_size'] // 8))
     init.update_params( { 'bank_height': bank_height }, True )
@@ -340,10 +369,29 @@ def construct():
 
   # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
 
-  order = init.get_param('order') # get the default script run order
-  pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
-  order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
-  init.update_params( { 'order': order } )
+  if adk_name == 'intel16-adk':
+    init.update_params( { 'order': [
+      'pre-init.tcl',
+      'main.tcl',
+      'innovus-pnr-config.tcl',
+      'dont-use.tcl',
+      'quality-of-life.tcl',
+      'floorplan.tcl',
+      'pin-assignments.tcl',
+      'create-rows.tcl',
+      'add-tracks.tcl',
+      'create-boundary-blockage.tcl',
+      'add-endcaps-welltaps.tcl',
+      'insert-input-antenna-diodes.tcl',
+      'create-special-grid.tcl',
+      'make-path-groups.tcl',
+      'reporting.tcl'
+    ] } )
+  else:
+    order = init.get_param('order') # get the default script run order
+    pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
+    order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
+    init.update_params( { 'order': order } )
 
   # Disable pwr aware flow
   init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True )
@@ -353,9 +401,9 @@ def construct():
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
 
   # Add fix-shorts as the last thing to do in postroute_hold
-  order = postroute_hold.get_param('order') ; # get the default script run order
-  order.append('fix-shorts.tcl' )           ; # Add fix-shorts at the end
-  postroute_hold.update_params( { 'order': order } ) ; # Update
+  # order = postroute_hold.get_param('order') ; # get the default script run order
+  # order.append('fix-shorts.tcl' )           ; # Add fix-shorts at the end
+  # postroute_hold.update_params( { 'order': order } ) ; # Update
 
   # useful_skew
   cts.update_params( { 'useful_skew': False }, allow_new=True )

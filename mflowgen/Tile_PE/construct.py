@@ -61,7 +61,7 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Tile_PE',
-    'clock_period'      : 1.1,
+    'clock_period'      : 1.00,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     # Synthesis
@@ -74,6 +74,9 @@ def construct():
     # Power Domains
     'PWR_AWARE'         : pwr_aware,
     'core_density_target': 0.6,
+    # Timing Slack
+    'setup_target_slack': 0,
+    'hold_target_slack' : 0.015,
     # Power analysis
     "use_sdf"           : False, # uses sdf but not the way it is in xrun node
     'app_to_run'        : 'tests/conv_3_3',
@@ -101,10 +104,12 @@ def construct():
       print("@file_info: WARNING setting PE clock period to '%s'" % cp)
       parameters['clock_period'] = cp;
 
-  # INTEL overrides (ns -> ps)
-  if adk_name == 'intel16-adk': parameters.update({
-    'clock_period': parameters['clock_period'] * 1000
-  })
+  # INTEL overrides
+  if adk_name == 'intel16-adk':
+      parameters.update({
+        'clock_period': parameters['clock_period'] * 1000
+      })
+      want_drc_pm = False
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
@@ -164,6 +169,7 @@ def construct():
   postcts_hold = Step( 'cadence-innovus-postcts_hold',  default=True )
   route        = Step( 'cadence-innovus-route',         default=True )
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
+  postroute_hold = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
   if adk_name in ['gf12-adk', 'intel16-adk']:
@@ -171,7 +177,10 @@ def construct():
   else:
       genlibdb       = Step( 'cadence-innovus-genlib',         default=True )
 
-  if which("calibre") is not None:
+  if adk_name == 'intel16-adk':
+      drc          = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
+      lvs          = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
+  elif which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
   else:
@@ -277,6 +286,7 @@ def construct():
   g.add_step( postcts_hold             )
   g.add_step( route                    )
   g.add_step( postroute                )
+  g.add_step( postroute_hold           )
   g.add_step( short_fix                )
   g.add_step( signoff                  )
   g.add_step( pt_signoff               )
@@ -315,6 +325,7 @@ def construct():
   g.connect_by_name( adk,      postcts_hold )
   g.connect_by_name( adk,      route        )
   g.connect_by_name( adk,      postroute    )
+  g.connect_by_name( adk,      postroute_hold)
   g.connect_by_name( adk,      signoff      )
   g.connect_by_name( adk,      drc          )
   g.connect_by_name( adk,      lvs          )
@@ -343,6 +354,7 @@ def construct():
   g.connect_by_name( iflow,    postcts_hold )
   g.connect_by_name( iflow,    route        )
   g.connect_by_name( iflow,    postroute    )
+  g.connect_by_name( iflow,    postroute_hold)
   g.connect_by_name( iflow,    signoff      )
 
   g.connect_by_name( custom_init,  init     )
@@ -351,18 +363,20 @@ def construct():
   # Fetch short-fix script in prep for eventual use by postroute
   g.connect_by_name( short_fix, postroute )
 
-  g.connect_by_name( init,         power        )
-  g.connect_by_name( power,        place        )
-  g.connect_by_name( place,        cts          )
-  g.connect_by_name( cts,          postcts_hold )
-  g.connect_by_name( postcts_hold, route        )
-  g.connect_by_name( route,        postroute    )
-  g.connect_by_name( postroute,    signoff      )
+  g.connect_by_name( init,           power          )
+  g.connect_by_name( power,          place          )
+  g.connect_by_name( place,          cts            )
+  g.connect_by_name( cts,            postcts_hold   )
+  g.connect_by_name( postcts_hold,   route          )
+  g.connect_by_name( route,          postroute      )
+  g.connect_by_name( postroute,      postroute_hold )
+  g.connect_by_name( postroute_hold, signoff        )
 
   g.connect_by_name( signoff,      drc          )
   g.connect_by_name( signoff,      lvs          )
-  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
+  if adk_name != "intel16-adk":
+      g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+      g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( signoff,              genlibdb )
   g.connect_by_name( adk,                  genlibdb )
@@ -387,8 +401,9 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
-  g.connect_by_name( drc,      debugcalibre )
-  g.connect_by_name( lvs,      debugcalibre )
+  if adk_name != "intel16-adk":
+      g.connect_by_name( drc,      debugcalibre )
+      g.connect_by_name( lvs,      debugcalibre )
 
   # Pwr aware steps:
   if pwr_aware:
@@ -461,12 +476,32 @@ def construct():
   # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
   # and 'additional-path-groups' after 'make_path_groups'
 
-  order = init.get_param('order') # get the default script run order
-  path_group_idx = order.index( 'make-path-groups.tcl' )
-  order.insert( path_group_idx + 1, 'additional-path-groups.tcl' )
-  pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
-  order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
-  init.update_params( { 'order': order } )
+  if adk_name == 'intel16-adk':
+    init.update_params( { 'order': [
+      'pre-init.tcl',
+      'main.tcl',
+      'innovus-pnr-config.tcl',
+      'dont-use.tcl',
+      'quality-of-life.tcl',
+      'floorplan.tcl',
+      'pin-assignments.tcl',
+      'create-rows.tcl',
+      'add-tracks.tcl',
+      'create-boundary-blockage.tcl',
+      'add-endcaps-welltaps.tcl',
+      'insert-input-antenna-diodes.tcl',
+      'create-special-grid.tcl',
+      'make-path-groups.tcl',
+      'additional-path-groups.tcl',
+      'reporting.tcl'
+    ] } )
+  else:
+    order = init.get_param('order') # get the default script run order
+    path_group_idx = order.index( 'make-path-groups.tcl' )
+    order.insert( path_group_idx + 1, 'additional-path-groups.tcl' )
+    pin_idx = order.index( 'pin-assignments.tcl' ) # find pin-assignments.tcl
+    order.insert( pin_idx + 1, 'edge-blockages.tcl' ) # add here
+    init.update_params( { 'order': order } )
 
   # Adding new input for genlibdb node to run
 
