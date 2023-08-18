@@ -88,10 +88,6 @@ foreach pnet {VDD VSS} {
 set prev_layer m2
 set i 0
 foreach layer { m3 m4 m5 m6 m7 m8 } {
-    # get layer information
-    set Metal_min_width    [dbGet [dbGetLayerByName $layer].minWidth]
-    set Metal_route_pitchX [dbGet [dbGetLayerByName $layer].pitchX]
-    set Metal_route_pitchY [dbGet [dbGetLayerByName $layer].pitchY]
     # configure via gen
     setViaGenMode -reset
     setViaGenMode -viarule_preference default
@@ -112,15 +108,28 @@ foreach layer { m3 m4 m5 m6 m7 m8 } {
     set stripe_spacing        [lindex $ADK_M3_TO_M8_STRIPE_SPACE_LIST $i]
     set stripe_interset_pitch [expr 2 * ($stripe_width + $stripe_spacing)]
     # create the stripes
-    addStripe \
-        -nets                {VSS VDD} \
-        -layer               $layer \
-        -direction           $stripe_direction \
-        -width               $stripe_width \
-        -start_offset        $stripe_offset \
-        -spacing             $stripe_spacing \
-        -set_to_set_distance $stripe_interset_pitch \
-        -extend_to           design_boundary
+    if { $layer == "m5" || $layer == "m6" } {
+        # for m5 and m6, don't extend the stripes to the design boundary
+        # because there are pins
+        addStripe \
+            -nets                {VSS VDD} \
+            -layer               $layer \
+            -direction           $stripe_direction \
+            -width               $stripe_width \
+            -start_offset        $stripe_offset \
+            -spacing             $stripe_spacing \
+            -set_to_set_distance $stripe_interset_pitch
+    } else {
+        addStripe \
+            -nets                {VSS VDD} \
+            -layer               $layer \
+            -direction           $stripe_direction \
+            -width               $stripe_width \
+            -start_offset        $stripe_offset \
+            -spacing             $stripe_spacing \
+            -set_to_set_distance $stripe_interset_pitch \
+            -extend_to           design_boundary
+    }
     # update previous metal layer
     set prev_layer $layer
     set i [expr $i + 1]
