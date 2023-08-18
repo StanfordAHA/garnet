@@ -40,9 +40,6 @@ if { $::env(useful_skew) } {
   setOptMode -usefulSkew      false
 }
 
-# Set target_insertion_delay to match mem tile insertion delay
-set_ccopt_property target_insertion_delay 175ps
-
 # Specify clock tree synthesis cells and slew
 set_ccopt_mode \
   -integration "native" \
