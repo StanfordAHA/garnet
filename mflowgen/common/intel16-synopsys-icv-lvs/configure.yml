@@ -14,13 +14,16 @@ inputs:
   - design-merged.gds
   - design.lvs.v
 
+outputs:
+  - LVS.results
+
 #-------------------------------------------------------------------------
 # Commands
 #-------------------------------------------------------------------------
 
 commands:
-  - source v2sp.sh
-  - source inputs/adk/run-lvs.sh
+  - python3 v2sp.py
+  - source inputs/adk/run-icv-lvs.sh
 
 #-------------------------------------------------------------------------
 # Parameters

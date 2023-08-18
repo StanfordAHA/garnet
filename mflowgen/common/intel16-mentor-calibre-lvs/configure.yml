@@ -1,38 +1,37 @@
 #=========================================================================
-# Synopsys IC Validator Calibre DRC
+# Mentor Graphics Calibre LVS
 #=========================================================================
 
-name: intel16-synopsys-icv-drc
+name: intel16-mentor-calibre-lvs
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
-
+# layout   : design-merged.gds
+# schematic: design.lvs.v
 inputs:
   - adk
   - design-merged.gds
+  - design.lvs.v
 
 outputs:
-  - drc_drcd.results
-  - drc_denall.local.results
-  - drc_denall.concentrated.results
-  - drc_denall.global.results
-  - drc_IPall.results
-  - drc_IL.results
-  - drc_LU.results
-  - drc_TUC.results
+  - LVS.summary
 
 #-------------------------------------------------------------------------
 # Commands
 #-------------------------------------------------------------------------
 
 commands:
-  - source inputs/adk/run-icv-drc-drcd.sh
-  - source inputs/adk/run-icv-drc-denall.sh
-  - source inputs/adk/run-icv-drc-IPall.sh
-  - source inputs/adk/run-icv-drc-IL.sh
-  - source inputs/adk/run-icv-drc-LU.sh
-  - source inputs/adk/run-icv-drc-TUC.sh
+  - python3 v2sp.py
+  - source inputs/adk/run-calibre-lvs.sh
+
+#-------------------------------------------------------------------------
+# Debug
+#-------------------------------------------------------------------------
+
+debug:
+  - calibredrv -m inputs/design-merged.gds \
+               -rve -lvs svdb
 
 #-------------------------------------------------------------------------
 # Parameters
@@ -46,6 +45,7 @@ parameters:
 #-------------------------------------------------------------------------
 
 preconditions:
-  - assert Tool( 'icv' )
+  - assert Tool( 'calibre' )
   - assert File( 'inputs/adk' )
   - assert File( 'inputs/design-merged.gds' )
+  - assert File( 'inputs/design.lvs.v' )

@@ -1,8 +1,8 @@
 #=========================================================================
-# Synopsys IC Validator Calibre DRC
+# Mentor Graphics Calibre DRC
 #=========================================================================
 
-name: intel16-synopsys-icv-drc
+name: intel16-mentor-calibre-drc
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
@@ -13,26 +13,18 @@ inputs:
   - design-merged.gds
 
 outputs:
-  - drc_drcd.results
-  - drc_denall.local.results
-  - drc_denall.concentrated.results
-  - drc_denall.global.results
-  - drc_IPall.results
-  - drc_IL.results
-  - drc_LU.results
-  - drc_TUC.results
+  - drc_DRCC.summary
+  - drc_DRCPERC.summary
+  - drc_IPall.summary
 
 #-------------------------------------------------------------------------
 # Commands
 #-------------------------------------------------------------------------
 
 commands:
-  - source inputs/adk/run-icv-drc-drcd.sh
-  - source inputs/adk/run-icv-drc-denall.sh
-  - source inputs/adk/run-icv-drc-IPall.sh
-  - source inputs/adk/run-icv-drc-IL.sh
-  - source inputs/adk/run-icv-drc-LU.sh
-  - source inputs/adk/run-icv-drc-TUC.sh
+  - source inputs/adk/run-calibre-drc-DRCC.sh
+  - source inputs/adk/run-calibre-drc-DRCPERC.sh
+  - source inputs/adk/run-calibre-drc-IPall.sh
 
 #-------------------------------------------------------------------------
 # Parameters
@@ -46,6 +38,6 @@ parameters:
 #-------------------------------------------------------------------------
 
 preconditions:
-  - assert Tool( 'icv' )
+  - assert Tool( 'calibre' )
   - assert File( 'inputs/adk' )
   - assert File( 'inputs/design-merged.gds' )
