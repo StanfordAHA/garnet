@@ -156,17 +156,15 @@ help_space
 # G=$(( 1024 * 1024 * 1024 ))
 G=$(( 1024 * 1024 )) ; # As reported by df in 1024-byte blocks!
 if [[ $avail -lt $(( 3 * $G )) ]]; then
-    ERROR "less than 3G definitely NOT ENOUGH for full chip postroute"
+    ERROR "$TMPDIR less than 3G definitely NOT ENOUGH for full chip postroute"
     echo "Recommend you do something like 'export TMPDIR=/sim/tmp'"
-    # help_space
-    exit 13
+    echo Giving up...; exit 13
 elif [[ $avail -lt $(( 20 * $G )) ]]; then
-    ERROR "less than 20G probably NOT ENOUGH for full chip postroute"
+    ERROR "$TMPDIR less than 20G probably NOT ENOUGH for full chip postroute"
     echo "Recommend you do something like 'export TMPDIR=/sim/tmp'"
-    # help_space
-    exit 13
+    echo Giving up...; exit 13
 elif [[ $avail -lt $(( 60 * $G )) ]]; then
-    echo "***WARNING less than 60G not (yet) proven to be enough"
+    echo "***WARNING $TMPDIR less than 60G not (yet) proven to be enough"
     echo "           Recommend you do something like 'export TMPDIR=/sim/tmp'"
     echo ""
 fi
