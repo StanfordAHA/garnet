@@ -236,6 +236,24 @@ def construct():
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
 
+  # Add graph inputs and outputs so this can be used in hierarchical flows
+
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+  g.add_input( 'header'  , rtl.i('header')   )
+
+  # Outputs
+  g.add_output( 'Tile_PE_tt.lib',      genlibdb.o('design.lib')       )
+  g.add_output( 'Tile_PE_tt.db',       genlibdb.o('design.db')        )
+  g.add_output( 'Tile_PE.lef',         signoff.o('design.lef')        )
+  g.add_output( 'Tile_PE.gds',         signoff.o('design-merged.gds') )
+  g.add_output( 'Tile_PE.sdf',         signoff.o('design.sdf')        )
+  g.add_output( 'Tile_PE.vcs.v',       signoff.o('design.vcs.v')      )
+  g.add_output( 'Tile_PE.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
+  g.add_output( 'Tile_PE.spef.gz',     signoff.o('design.spef.gz')    )
+  g.add_output( 'Tile_PE.pt.sdc',      signoff.o('design.pt.sdc')     )
+  g.add_output( 'Tile_PE.lvs.v',       lvs.o('design_merged.lvs.v')   )
+
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python method finds 'stream-out.tcl' and strips out that flag.
   from common.streamout_no_uniquify import streamout_no_uniquify
