@@ -9,7 +9,7 @@
 import os
 import sys
 
-from mflowgen.components import Graph, Step
+from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
@@ -97,7 +97,7 @@ def construct():
   # Custom steps
 
   rtl            = Step( this_dir + '/../common/rtl'                          )
-  Tile_MemCore   = Step( this_dir + '/Tile_MemCore'                           )
+  Tile_MemCore   = Subgraph( this_dir + '/../Tile_MemCore', 'Tile_MemCore'    )
   Tile_PE        = Step( this_dir + '/Tile_PE'                                )
   constraints    = Step( this_dir + '/constraints'                            )
   dc_postcompile = Step( this_dir + '/custom-dc-postcompile'                  )
