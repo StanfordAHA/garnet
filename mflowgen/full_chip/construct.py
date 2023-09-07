@@ -210,9 +210,9 @@ def construct():
 
   # Block-level designs
 
-  tile_array        = Subgraph( this_dir + '/../tile_array', 'tile_array' )
-  glb_top           = Subgraph( this_dir + '/../glb_top',    'glb_top'    )
-  global_controller = Step( this_dir + '/global_controller' )
+  tile_array        = Subgraph( this_dir + '/../tile_array',        'tile_array'        )
+  glb_top           = Subgraph( this_dir + '/../glb_top',           'glb_top'           )
+  global_controller = Subgraph( this_dir + '/../global_controller', 'global_controller' )
 
   if which_soc == 'amber':
     dragonphy         = Step( this_dir + '/dragonphy')
