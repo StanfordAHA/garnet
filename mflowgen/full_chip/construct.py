@@ -210,8 +210,8 @@ def construct():
 
   # Block-level designs
 
-  tile_array        = Step( this_dir + '/tile_array'        )
-  glb_top           = Subgraph( this_dir + '/../glb_top', 'glb_top' )
+  tile_array        = Subgraph( this_dir + '/../tile_array', 'tile_array' )
+  glb_top           = Subgraph( this_dir + '/../glb_top',    'glb_top'    )
   global_controller = Step( this_dir + '/global_controller' )
 
   if which_soc == 'amber':
