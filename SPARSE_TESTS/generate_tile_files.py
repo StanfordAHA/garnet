@@ -2,8 +2,9 @@ import shutil
 import glob
 import subprocess
 import os
+import sys
 
-app_name = "mat_elemmul"
+app_name = sys.argv[1]
 
 tiles = glob.glob(f"./{app_name}_tile*")
 

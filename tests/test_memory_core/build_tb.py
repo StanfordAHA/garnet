@@ -1449,6 +1449,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         # assert os.path.exists(f"{matrices_in}/{tensor_desc_str}_{file_number_}")
         assert os.path.exists(f"{matrices_in}/{tensor_desc_str}")
         # ret = os.remove(matrices_in + "/" + filename)
+        # breakpoint()
         os.system(f"xxd -r -p {matrices_in}/{tensor_desc_str} > {glb_dir}/bin/{tensor_desc_str}.raw")
         with open(f"{matrices_in}/{tensor_desc_str}") as tmp_fp:
             num_lines = len(tmp_fp.readlines())
@@ -1504,11 +1505,12 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
 
     for idx_, output_glb_tile in enumerate(output_glb_tiles):
         (core, core_placement, tensor_desc_str, direction, num_blocks, file_number) = output_glb_tile
-        print(tensor_desc_str)
-        print(file_number)
-        print(glb_dir)
+        print("tensor desc str: ", tensor_desc_str)
+        print("file number: ", file_number)
+        print("glb dir: ", glb_dir)
         assert os.path.exists(f"{glb_dir}/{tensor_desc_str}")
         # ret = os.remove(matrices_in + "/" + filename)
+
         os.system(f"xxd -r -p {glb_dir}/{tensor_desc_str} > {glb_dir}/bin/{tensor_desc_str}.raw")
         with open(f"{glb_dir}/{tensor_desc_str}") as tmp_fp:
             num_lines = len(tmp_fp.readlines())
@@ -1551,7 +1553,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
 
 
 def write_glb_file(file_list, out_dir, out_name):
-
+    # breakpoint()
     output_lines = []
 
     for f in file_list:
@@ -1764,21 +1766,43 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         print(f"MATTRANSMUL: SHAPE: {shape_}, sparsities: {sparsities_[0]}, {sparsities_[1]}, {sparsities_[2]}")
 
-        b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+        vec_ordering = ((1, (0, 's')),)
+        print(vec_ordering)
+
+        # b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=False, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
+        #                    sparsity=0)
+        # C_mat = get_tensor(input_name='C', shapes=[shape_, shape_], give_tensor=False, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+        #                    sparsity=sparsities_[0])
+        # d_mat = get_tensor(input_name='d', shapes=[shape_], give_tensor=False, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
+        #                    sparsity=sparsities_[1])
+        # e_mat = get_tensor(input_name='e', shapes=[1], give_tensor=False, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
+        #                    sparsity=0)
+        # f_mat = get_tensor(input_name='f', shapes=[shape_], give_tensor=False, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
+        #                    sparsity=sparsities_[2])
+
+
+        C_mat = get_tensor(input_name='C', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['C'],
                            sparsity=0)
-        C_mat = get_tensor(input_name='C', shapes=[shape_, shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+        d_mat = get_tensor(input_name='d', shapes=[shape_, shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
                            sparsity=sparsities_[0])
-        d_mat = get_tensor(input_name='d', shapes=[shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
-                           sparsity=sparsities_[1])
-        e_mat = get_tensor(input_name='e', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
-                           sparsity=0)
         f_mat = get_tensor(input_name='f', shapes=[shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
-                           sparsity=sparsities_[2])
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
+                           sparsity=sparsities_[1])
+        e_mat = 2
+        b_mat = 2
+
+        # print("b_mat shape: ", b_mat.shape)
+        print("c_mat shape: ", C_mat.shape)
+        print("d_mat shape: ", d_mat.shape)
+        print("f_mat shape: ", f_mat.shape)
+        # print("e_mat shape: ", e_mat.shape)
 
         output_matrix = numpy.add(numpy.multiply(e_mat, f_mat, dtype=numpy.uint16, casting='unsafe'),
                                   numpy.multiply(b_mat,
@@ -1788,11 +1812,18 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                                                  dtype=numpy.uint16,
                                                  casting='unsafe'),
                                   dtype=numpy.uint16, casting='unsafe')
+
+        
+
+        # output_matrix = numpy.add(numpy.matmul(b_mat, c_mat,dtype=numpy.uint16,casting='unsafe'),d_mat,dtype=numpy.uint16,casting='unsafe')
         output_format = "CSF"
         output_name = "x"
 
     elif 'mat_residual.gv' in app_name:
         # Handmade graph
+
+        vec_ordering = ((1, (0, 's')),)
+        print(vec_ordering)
 
         b_mat = get_tensor(input_name='b', shapes=[shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
@@ -1801,7 +1832,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                            sparsity=sparsities_[1])
         d_mat = get_tensor(input_name='d', shapes=[shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
                            sparsity=sparsities_[2])
 
         output_matrix = numpy.subtract(b_mat,
@@ -1816,12 +1847,26 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         b_mat = get_tensor(input_name='B', shapes=[shape_, shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                            sparsity=sparsities_[0])
+        print("BMAT shape is : ", b_mat.shape)
+        
         c_mat = get_tensor(input_name='C', shapes=[shape_, shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
                            sparsity=sparsities_[1], format='UNC')
         d_mat = get_tensor(input_name='D', shapes=[shape_, shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
                            sparsity=sparsities_[2], format='UNC')
+
+        # b_mat = get_tensor(input_name='B', shapes=[30, 30], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+        #                    sparsity=sparsities_[0])
+        # print("BMAT shape is : ", b_mat.shape)
+        
+        # c_mat = get_tensor(input_name='C', shapes=[30, 30], give_tensor=False, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
+        #                    sparsity=sparsities_[1])
+        # d_mat = get_tensor(input_name='D', shapes=[30, 30], give_tensor=False, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+        #                    sparsity=sparsities_[2])
 
         d_mat_trans = numpy.transpose(d_mat)
 
@@ -1829,6 +1874,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         input_dims['B'] = tuple(b_mat.shape)
         input_dims['C'] = tuple(c_mat.shape)
         input_dims['D'] = tuple(d_mat.shape)
+
+        print("b_mat shape is: ", b_mat.shape)
+        print("c_mat shape is: ", c_mat.shape)
+        print("d_mat shape is: ", d_mat.shape)
 
         # exit()
         # First transpose c_mat
@@ -1843,13 +1892,19 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # combined
         # piped
 
+        vec_ordering = ((1, (0, 's')),)
+        print(vec_ordering)
+
         b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                            sparsity=sparsities_[0])
         c_mat = get_tensor(input_name='c', shapes=[shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
                            sparsity=sparsities_[1])
         # First transpose c_mat
+        print(b_mat.shape)
+        print(c_mat.shape)
+
         output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "x"
@@ -1871,14 +1926,14 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # exit()
         output_format = "CSF"
         output_name = "x"
-    elif 'matmul_ijk.gv' in app_name:
+    elif 'matmul_ijk_crddrop.gv' in app_name:
         # PASSES
         # to glb
         # combined
         # piped
 
         # if 'B' not in cached_inputs:
-        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=True, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                             sparsity=sparsities_[0])
         # else:
@@ -1888,7 +1943,128 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         #     shapes_[1] = b_shape[1]
         # c_mat = c_matrix.get_matrix()
         # if 'C' not in cached_inputs:
-        c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        # import pdb; pdb.set_trace()
+        c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=True, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=sparsities_[1])
+        # else:
+        #     c_mat = cached_inputs['C']
+
+        ret_outputs['B'] = b_mat
+        ret_outputs['C'] = c_mat
+        # First transpose c_mat
+        # c_mat_trans = c_mat
+        # b_mat = numpy.transpose(b_mat)
+        c_mat_trans = numpy.transpose(c_mat)
+
+        # breakpoint()
+
+        # print("\nCMAT_TRANS SHAPE IS: ", c_mat_trans.shape)
+        # print("\nBMAT SHAPE IS: ", b_mat.shape)
+        # print("\n\n")
+
+        # print("\nBMAT is: \n", b_mat)
+        # print("\nCMAT_TRANS is: \n", c_mat_trans)
+        # print("\n\n")
+
+        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+
+        if numpy.count_nonzero(output_matrix) > 900:
+            print("ERROR")
+            raise Exception
+            
+        output_format = "CSF"
+        output_name = "X"
+
+    elif 'mat_mask_tri.gv' in app_name or 'mat_mask_tri_fiberwrite.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[20, 20], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                                sparsity=0.2)
+
+        c_mat = get_tensor(input_name='C', shapes=[20, 20], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=0.2)
+
+        d_mat = get_tensor(input_name='D', shapes=[20, 20], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                            sparsity=0.2)
+        # breakpoint()
+        ret_outputs['B'] = b_mat
+        ret_outputs['C'] = c_mat
+        ret_outputs['D'] = d_mat
+        # First transpose c_mat
+        # c_mat_trans = numpy.transpose(c_mat)
+        # breakpoint()
+        output_matrix = numpy.zeros([1]) 
+        d_mat_trans = numpy.transpose(d_mat)
+        output_matrix[0] = numpy.sum(numpy.multiply(numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe'), b_mat, dtype=numpy.uint16, casting='unsafe'))
+        output_matrix = output_matrix.astype(numpy.uint16)
+        # output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "x"
+    elif 'mat_vecmul_iter.gv' in app_name:
+
+        vec_ordering = ((1, (0, 's')),)
+        print(vec_ordering)
+
+        b_mat = get_tensor(input_name='B', shapes=[5, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                                sparsity=0.2)
+
+        c_mat = get_tensor(input_name='C', shapes=[10, 7], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=0.2)
+
+        d_mat = get_tensor(input_name='D', shapes=[7, 3], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                            sparsity=0.2)
+
+        e_mat = get_tensor(input_name='E', shapes=[3, 5], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['E'],
+                            sparsity=0.2)
+        f_mat = get_tensor(input_name='f', shapes=[5], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
+                           sparsity=0.2)
+
+        # breakpoint()
+        ret_outputs['B'] = b_mat
+        ret_outputs['C'] = c_mat
+        ret_outputs['D'] = d_mat
+        ret_outputs['E'] = e_mat
+        ret_outputs['f'] = f_mat
+
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        d_mat_trans = numpy.transpose(d_mat)
+        e_mat_trans = numpy.transpose(e_mat)
+        b_c_mat = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        b_c_d_mat = numpy.matmul(b_c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+        b_c_d_e_mat = numpy.matmul(b_c_d_mat, e_mat, dtype=numpy.uint16, casting='unsafe')
+        output_matrix = numpy.matmul(b_c_d_e_mat, f_mat, dtype=numpy.uint16, casting='unsafe')
+
+
+        output_matrix = output_matrix.astype(numpy.uint16)
+        output_format = "CSF"
+        output_name = "x"
+    elif 'matmul_ijk.gv' in app_name:
+        # PASSES
+        # to glb
+        # combined
+        # piped
+
+        # if 'B' not in cached_inputs:
+        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=True, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                            sparsity=sparsities_[0])
+        # else:
+        #     b_mat = cached_inputs['B']
+        #     b_shape = b_mat.shape
+        #     shapes_[0] = b_shape[0]
+        #     shapes_[1] = b_shape[1]
+        # c_mat = c_matrix.get_matrix()
+        # if 'C' not in cached_inputs:
+        # import pdb; pdb.set_trace()
+        c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=True, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                             sparsity=sparsities_[1])
         # else:
@@ -2462,6 +2638,7 @@ if __name__ == "__main__":
             print(f"SIM_{i}")
             sim_matrix_np = sim_matrix_np.astype(numpy.uint16, casting='unsafe')
             print(sim_matrix)
+
             assert numpy.array_equal(gold_matrix, sim_matrix_np)
 
         exit()
@@ -2627,8 +2804,8 @@ if __name__ == "__main__":
 
         for sam_graph in sam_graphs:
 
-            sam_graph = sam_graph.replace("onyx-dot", "dot")
-            print(f"SAM GRAPH DIR:\t {sam_graph}")
+            # sam_graph = sam_graph.replace("onyx-dot", "dot")
+            print(f"SAM GRAPH:\t{sam_graph}")
 
             sdgs = {}
             mode_maps = []
@@ -2645,6 +2822,8 @@ if __name__ == "__main__":
 
             sam_graph_name = sam_graph.split('/')[-1].split(".")[0]
 
+            # sam_graph = sam_graph.replace("onyx-dot", "dot")
+
             if isinstance(seeds, int):
                 seeds = [seeds]
             use_seeds = seeds
@@ -2655,7 +2834,6 @@ if __name__ == "__main__":
 
             for seed in use_seeds:
 
-                # For each seed we can produce multiple unrolled.
                 output_matrices = []
                 output_formats = []
                 output_names = []
@@ -2693,7 +2871,7 @@ if __name__ == "__main__":
                     # sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
                     #                   use_fa=use_fiber_access, unroll=unroll)
                     sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
-                                      use_fa=use_fiber_access)
+                                      use_fa=use_fiber_access, unroll=unroll)
                     sdgs[sam_graph] = sdg
                 else:
                     print("REUSE SDG")
@@ -2743,7 +2921,7 @@ if __name__ == "__main__":
                     #                           clean=clean)
 
                     out_mat = MatrixGenerator(name=output_names[i], shape=None, sparsity=0.5,
-                                              format=output_formats[i], dump_dir=gold_dir, tensor=output_matrices[i])
+                                              format=output_formats[i], dump_dir=gold_dir, tensor=output_matrices[i], clean=clean)
 
                     if clean:
                         clean = False
@@ -2753,9 +2931,10 @@ if __name__ == "__main__":
                     # out_mat.dump_outputs(suffix=f"_{i}")
                     out_mats.append(out_mat)
                     # exit()
-
+                # breakpoint()
                 if sam_graph not in stbs:
                     ##### Create the actual testbench mapping based on the SAM graph #####
+                    # breakpoint()
                     stb = SparseTBBuilder(nlb=nlb, graph=graph, bespoke=bespoke, input_dir=input_dir,
                                           # output_dir=output_dir, local_mems=not args.remote_mems, mode_map=tuple(mode_map.items()))
                                           output_dir=output_dir, local_mems=True, mode_map=tuple(mode_map.items()),
@@ -2854,7 +3033,7 @@ if __name__ == "__main__":
                     nlb.write_out_bitstream(f"{test_dump_dir}/bitstream.bs", nospace=False, glb=True)
 
                 if dump_glb:
-
+                    # breakpoint()
                     glb_info_ = []
                     glb_map = stb.get_glb_mapping()
                     mode_map = stb.get_mode_map()
@@ -2886,6 +3065,7 @@ if __name__ == "__main__":
 
             nlb.reset()
 
+            # breakpoint()
             del stbs[sam_graph]
 
         # Need this before just_glb for early exits
