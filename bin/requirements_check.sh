@@ -147,7 +147,7 @@ function help_space { (
     du -hx --max-depth=0 /sim/* 2> /dev/null  | sort -rn | grep G | head
     printf "\n\n"
 ) }
-help_space
+help_space || echo "okay if fail, do not want to crash the build"
 # G=$(( 1024 * 1024 * 1024 ))
 G=$(( 1024 * 1024 )) ; # As reported by df in 1024-byte blocks!
 if [[ $avail -lt $(( 3 * $G )) ]]; then
