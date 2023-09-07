@@ -3,9 +3,13 @@ import glob
 import subprocess
 import os
 import json
+import sys
+
+## copy_formatted, take 
+
 
 # test = "bcsstm26" 
-test = "adder_trans_02"
+# test = "qiulp"
 # test = "bcsstm26"
 # test = "adder_dcop_30"
 # test = "n4c6-b1"
@@ -15,7 +19,9 @@ test = "adder_trans_02"
 # app_name = "mat_mattransmul"
 # app_name = "mat_vecmul_ij"
 # app_name = "mat_elemadd"
-app_name = "mat_vecmul_ij"
+app_name = sys.argv[1]
+test = sys.argv[2]
+# app_name = "mat_vecmul_ij"
 # app_name = "mat_elemadd3"
 # app_name = "mat_elemmul"
 const_val = 2 # only for mat_mattransmul
@@ -26,6 +32,10 @@ tiles_accumulation = {}
 b_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}/{app_name}/formatted/tensor_B*")
 c_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}/{app_name}/formatted/tensor_C*")
 d_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}/{app_name}/formatted/tensor_D*")
+e_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}/{app_name}/formatted/tensor_E*")
+
+b_ns_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_mode_2*")
+c_ns_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_mode_2*")
 
 print("b_tensors: ", b_tensors)
 print("c_tensors: ", c_tensors)
@@ -37,21 +47,41 @@ print("d_tensors: ", d_tensors)
 b_vec_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}/{app_name}/formatted/tensor_b*")
 c_vec_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}/{app_name}/formatted/tensor_c*")
 d_vec_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}/{app_name}/formatted/tensor_d*")
+f_vec_tensors = glob.glob(f"/aha/garnet/tiles_{app_name}_{test}/{app_name}/formatted/tensor_f*")
 
 d_loc_paired = []
 b_loc_paired = []
 
+b_loc_seen = set()
+c_loc_seen = set()
+d_loc_seen = set()
+
 if not os.path.exists("SPARSE_TESTS/MAT_TMP_DIR"):
     os.mkdir("SPARSE_TESTS/MAT_TMP_DIR")
 
-os.system(f"rm -rf SPARSE_TESTS/{app_name}*")
-os.system(f"rm -rf SPARSE_TESTS/MAT_TMP_DIR/tile*")
+exit_status = os.system(f"rm -rf SPARSE_TESTS/{app_name}*")
+exit_status = os.system(f"rm -rf SPARSE_TESTS/{app_name}_crddrop*")
+
+if os.WEXITSTATUS(exit_status) != 0:
+    raise RuntimeError(f"Command 'rm -rf SPARSE_TESTS/{app_name}*' returned non-zero exit status {os.WEXITSTATUS(exit_status)}.")
+
+exit_status = os.system(f"rm -rf SPARSE_TESTS/MAT_TMP_DIR/tile*")
+
+if os.WEXITSTATUS(exit_status) != 0:
+    raise RuntimeError(f"Command 'rm -rf SPARSE_TESTS/{app_name}*' returned non-zero exit status {os.WEXITSTATUS(exit_status)}.")
 
 tile = 0
 
-b_equal_c_no_d = 0
-c_equal_d_no_b = 0
-b_equal_d_no_c = 0
+
+def find_tensor(tensor_list, tile_id):
+    for temp in tensor_list:
+        temp_loc = temp.split("_")
+        index = temp_loc.index("tile")
+        temp_loc = temp_loc[index+1:]
+        # breakpoint()
+        if temp_loc == tile_id:
+            return temp
+    return None
 
 os.chdir("SPARSE_TESTS")
 
@@ -59,10 +89,17 @@ if app_name == "matmul_ijk":
     for b in b_tensors:
         for c in c_tensors:
             tile_str = "tile" + str(tile)
-            b_loc = b[-7:]
-            c_loc = c[-7:]
-            b_loc = b_loc.split("_")
-            c_loc = c_loc.split("_")
+            # b_loc = b[-7:]
+            # c_loc = c[-7:]
+            b_loc = b.split("_")
+            c_loc = c.split("_")
+
+            index = b_loc.index("tile")
+            b_loc = b_loc[index+1:]
+
+            index = c_loc.index("tile")
+            c_loc = c_loc[index+1:]
+
             if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
                 print(b, c)
 
@@ -95,14 +132,94 @@ if app_name == "matmul_ijk":
                 shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
                 tile = tile + 1
+
+
+# if app_name == "matmul_ijk":
+#     for b in b_ns_tensors:
+#         for c in c_ns_tensors:
+#             # mode 2 == mode 0, mode 3 == mode 1
+
+#             if "seg" in b or "seg" in c:
+#                 continue
+
+#             tile_str = "tile" + str(tile)
+#             b_loc = b.split("_")
+#             c_loc = c.split("_")
+            
+#             b_loc = b_loc[-2:]
+#             c_loc = c_loc[-2:]
+
+#             # breakpoint()
+
+#             if(b_loc[1] == c_loc[1]):
+#                 tiles_accumulation[tile] = [b_loc, c_loc]
+#                 if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
+#                     os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+
+#                 #only crds, copy mode 0
+#                 shutil.copy(f"{b}", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+#                 shutil.copy(f"{c}", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+
+#                 b_seg_id = f"seg_{b_loc[0]}_{b_loc[1]}"
+#                 c_seg_id = f"seg_{c_loc[0]}_{c_loc[1]}"
+
+#                 b_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_mode_2_{b_seg_id}"
+#                 c_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_mode_2_{c_seg_id}"
+
+#                 shutil.copy(f"{b_seg_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+#                 shutil.copy(f"{c_seg_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+
+#                 # mode 1
+#                 b_crd_id = f"crd_{b_loc[0]}_{b_loc[1]}"
+#                 c_crd_id = f"crd_{c_loc[0]}_{c_loc[1]}"
+
+#                 b_crd_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_mode_3_{b_crd_id}"
+#                 c_crd_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_mode_3_{c_crd_id}"
+
+#                 shutil.copy(f"{b_crd_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+#                 shutil.copy(f"{c_crd_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+
+#                 b_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_mode_3_{b_seg_id}"
+#                 c_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_mode_3_{c_seg_id}"
+
+#                 shutil.copy(f"{b_seg_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+#                 shutil.copy(f"{c_seg_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+
+#                 #vals
+#                 b_vals_id = f"vals_{b_loc[0]}_{b_loc[1]}"
+#                 c_vals_id = f"vals_{c_loc[0]}_{c_loc[1]}"
+
+#                 b_vals_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_{b_vals_id}"
+#                 c_vals_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_{c_vals_id}"
+
+#                 shutil.copy(f"{b_vals_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+#                 shutil.copy(f"{c_vals_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+
+#                 #shape
+#                 with open(f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape", "w") as f:
+#                     f.write("120\n30\n")
+#                 with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape", "w") as f:
+#                     f.write("30\n120\n")
+
+#                 tile = tile + 1
+
 elif app_name == "mat_elemadd" or app_name == "mat_elemmul":
     for b in b_tensors:
         for c in c_tensors:
             tile_str = "tile" + str(tile)
-            b_loc = b[-7:]
-            c_loc = c[-7:]
-            b_loc = b_loc.split("_")
-            c_loc = c_loc.split("_")
+            # b_loc = b[-7:]
+            # c_loc = c[-7:]
+            # b_loc = b_loc.split("_")
+            # c_loc = c_loc.split("_")
+            b_loc = b.split("_")
+            c_loc = c.split("_")
+
+            index = b_loc.index("tile")
+            b_loc = b_loc[index+1:]
+
+            index = c_loc.index("tile")
+            c_loc = c_loc[index+1:]
+
             if(b_loc == c_loc):
                 print(b, c)
                 if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
@@ -263,11 +380,20 @@ elif app_name == "mat_vecmul_ij":
     for b in b_tensors:
         for c in c_vec_tensors:
             tile_str = "tile" + str(tile)
-            b_loc = b[-7:]
-            c_loc = c[-3:]
+            # b_loc = b[-7:]
+            # c_loc = c[-3:]
 
-            b_loc = b_loc.split("_")
-            c_loc = c_loc.split("_")
+            # b_loc = b_loc.split("_")
+            # c_loc = c_loc.split("_")
+
+            b_loc = b.split("_")
+            c_loc = c.split("_")
+
+            index = b_loc.index("tile")
+            b_loc = b_loc[index+1:]
+
+            index = c_loc.index("tile")
+            c_loc = c_loc[index+1:]
 
             # if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
             if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1]):
@@ -394,7 +520,167 @@ elif app_name == "mat_residual":
                         file.write(contents)
 
                     tile = tile + 1
+elif app_name == "mat_mask_tri":
+    for b in b_tensors:
+        for c in c_tensors:
+            # b_loc = b[-7:]
+            # c_loc = c[-7:]
+            b_loc = b.split("_")
+            c_loc = c.split("_")
 
+            index = b_loc.index("tile")
+            b_loc = b_loc[index+1:]
+
+            index = c_loc.index("tile")
+            c_loc = c_loc[index+1:]
+
+            if not (b_loc[0] == c_loc[0] and b_loc[2] == c_loc[2]):
+                continue
+
+            for d in d_tensors:
+                tile_str = "tile" + str(tile)
+                d_loc = d.split("_")
+                index = d_loc.index("tile")
+                d_loc = d_loc[index+1:]
+
+                if(c_loc[1] == d_loc[0] and c_loc[3] == d_loc[2] and b_loc[1] == d_loc[1] and b_loc[3] == d_loc[3] and b_loc[0] == c_loc[0] and b_loc[2] == c_loc[2]):
+                    print(b, c, d)
+                    if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
+                        os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+
+                    shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                    shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+
+                    shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                    shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+
+                    shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+
+                    shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+
+                    shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                    shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+
+                    shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                    shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+
+                    shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+
+                    shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+
+                    shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+                    shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+
+                    shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+                    shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+
+                    shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+
+                    shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+
+                    # subprocess.call(["aha",
+                    #     "regress",
+                    #     "fast"],
+                    #     text=True)
+
+                    # shutil.copy("/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/output_gold.npy", "/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin")
+                    # shutil.copytree("/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin", f"/aha/garnet/SPARSE_TESTS/{tile_str}")
+                    tile = tile + 1
+elif app_name == "mat_vecmul_iter":
+    for b in b_tensors:
+        for c in c_tensors:
+            # b_loc = b[-7:]
+            # c_loc = c[-7:]
+            b_loc = b.split("_")
+            c_loc = c.split("_")
+
+            index = b_loc.index("tile")
+            b_loc = b_loc[index+1:]
+
+            index = c_loc.index("tile")
+            c_loc = c_loc[index+1:]
+
+            # check j coord
+            if not (b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
+                continue
+
+            for d in d_tensors:
+                d_loc = d.split("_")
+                index = d_loc.index("tile")
+                d_loc = d_loc[index+1:]
+
+                # check k coord
+                if not (c_loc[1] == d_loc[0] and c_loc[3] == d_loc[2]):
+                    continue
+
+                for e in e_tensors:
+                    e_loc = e.split("_")
+                    index = e_loc.index("tile")
+                    e_loc = e_loc[index+1:]
+
+                    # check l coord
+                    if not (d_loc[1] == e_loc[0] and d_loc[3] == e_loc[2]):
+                        continue
+
+                    for f in f_vec_tensors:
+                        tile_str = "tile" + str(tile)
+                        f_loc = f.split("_")
+                        index = f_loc.index("tile")
+                        f_loc = f_loc[index+1:]
+
+                        # check m coord 
+                        if (d_loc[1] == e_loc[0] and d_loc[3] == e_loc[2] and c_loc[1] == d_loc[0] and c_loc[3] == d_loc[2] and b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2] and e_loc[1] == f_loc[0] and e_loc[3] == f_loc[1]):
+                            print(b, c, d, e, f)
+                            if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
+                                os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+
+                            shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                            shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+
+                            shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                            shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+
+                            shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+
+                            shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+
+                            shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                            shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+
+                            shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                            shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+
+                            shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+
+                            shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+
+                            shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+                            shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+
+                            shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+                            shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+
+                            shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+
+                            shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+
+                            shutil.copy(f"{e}/E0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_0_crd")
+                            shutil.copy(f"{e}/E0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_0_seg")
+
+                            shutil.copy(f"{e}/E1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_1_crd")
+                            shutil.copy(f"{e}/E1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_1_seg")
+
+                            shutil.copy(f"{e}/E_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_vals")
+
+                            shutil.copy(f"{e}/E_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_shape")
+
+                            shutil.copy(f"{f}/f1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_crd")
+                            shutil.copy(f"{f}/f1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_seg")
+
+                            shutil.copy(f"{f}/f_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_vals")
+                            shutil.copy(f"{f}/f_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_shape")
+                            
+                            tile = tile + 1
 elif app_name == "mat_sddmm":
     for b in b_tensors:
         for c in c_tensors:
@@ -452,22 +738,31 @@ elif app_name == "mat_sddmm":
 elif app_name == "mat_elemadd3":
     for b in b_tensors:
         for c in c_tensors:
+            b_loc = b.split("_")
+            c_loc = c.split("_")
+
+            index = b_loc.index("tile")
+            b_loc = b_loc[index+1:]
+
+            index = c_loc.index("tile")
+            c_loc = c_loc[index+1:]
+
+            b_loc_seen.add(tuple(b_loc))
+            c_loc_seen.add(tuple(c_loc))
+
+            if (b_loc != c_loc):
+                continue
+
             for d in d_tensors:
                 tile_str = "tile" + str(tile)
-                b_loc = b[-7:]
-                c_loc = c[-7:]
-                b_loc = b_loc.split("_")
-                c_loc = c_loc.split("_")
-                d_loc = d[-7:]
-                d_loc = d_loc.split("_")
+                d_loc = d.split("_")
 
-                if(b_loc == c_loc and b_loc != d_loc):
-                    b_equal_c_no_d += 1
-                if(c_loc == d_loc and b_loc != c_loc):
-                    c_equal_d_no_b += 1
-                if(b_loc == d_loc and b_loc != c_loc):
-                    b_equal_d_no_c += 1
 
+                index = d_loc.index("tile")
+                d_loc = d_loc[index+1:]
+
+                d_loc_seen.add(tuple(d_loc))
+            
                 if(b_loc == c_loc and b_loc == d_loc):
                     print(b, c, d)
                     if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
@@ -513,11 +808,190 @@ elif app_name == "mat_elemadd3":
                     # print("we are on tile ", tile)
 
 print("tiles_accumulation: ", tiles_accumulation)
-print("b_equal_c_no_d: ", b_equal_c_no_d)
-print("c_equal_d_no_b: ", c_equal_d_no_b)
-print("b_equal_d_no_c: ", b_equal_d_no_c)
 
 with open("../tiles_accumulation.json", "w") as file:
     json.dump(tiles_accumulation, file)
+
+if app_name == "mat_elemadd3":
+    shared_BC_not_D = (b_loc_seen & c_loc_seen) - d_loc_seen
+    shared_BD_not_C = (b_loc_seen & d_loc_seen) - c_loc_seen
+    shared_CD_not_B = (c_loc_seen & d_loc_seen) - b_loc_seen
+
+    print("shared BC not D: ", shared_BC_not_D)
+    print("shared BD not C: ", shared_BD_not_C)
+    print("shared CD not B: ", shared_CD_not_B)
+
+    for tile_id in shared_BD_not_C:
+        b = find_tensor(b_tensors, list(tile_id))
+        if b == None:
+            raise Exception
+
+        d = find_tensor(d_tensors, list(tile_id))
+        if d == None:
+            raise Exception
+        
+        # go to tile file in MAT_TMP_DIR. create empty D
+        
+        tile_str = "tile" + str(tile)
+
+        if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
+            os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+        
+        c = c_tensors[0]
+        shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+        shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+
+        shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+        shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+
+        shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+
+        shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+
+        shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+        shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+
+        shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+        shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+
+        shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+
+        shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+
+        shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+        shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+
+        shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+        shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+
+        shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+
+        shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+
+        #write ones to vals
+        lines = []
+        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r') as file:
+            lines = file.readlines()
+        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'w') as file:
+            file.writelines(['0\n']*len(lines))
+        
+        tile = tile+1
+
+    for tile_id in shared_CD_not_B:
+        c = find_tensor(c_tensors, list(tile_id))
+        if c == None:
+            raise Exception
+
+        d = find_tensor(d_tensors, list(tile_id))
+        if d == None:
+            raise Exception
+        
+        # go to tile file in MAT_TMP_DIR. create empty B
+        
+        tile_str = "tile" + str(tile)
+
+        if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
+            os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+
+        b = b_tensors[0]
+        
+        shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+        shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+
+        shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+        shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+
+        shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+
+        shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+
+        shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+        shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+
+        shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+        shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+
+        shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+
+        shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+
+        shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+        shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+
+        shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+        shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+
+        shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+
+        shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+
+
+        #write ones to vals
+        lines = []
+        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals", 'r') as file:
+            lines = file.readlines()
+        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals", 'w') as file:
+            file.writelines(['0\n']*len(lines))
+        
+        tile = tile+1
+
+    for tile_id in shared_BD_not_C:
+        b = find_tensor(b_tensors, list(tile_id))
+        if b == None:
+            raise Exception
+
+        d = find_tensor(d_tensors, list(tile_id))
+        if d == None:
+            raise Exception
+        
+        # go to tile file in MAT_TMP_DIR. create empty B
+        
+        tile_str = "tile" + str(tile)
+
+        if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
+            os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+
+        c = c_tensors[0]
+        
+        shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+        shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+
+        shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+        shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+
+        shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+
+        shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+
+        shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+        shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+
+        shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+        shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+
+        shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+
+        shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+
+        shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+        shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+
+        shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+        shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+
+        shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+
+        shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+
+
+        #write ones to vals
+        lines = []
+        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r') as file:
+            lines = file.readlines()
+        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'w') as file:
+            file.writelines(['0\n']*len(lines))
+        
+        tile = tile+1
+
 
 print("there are ", tile, " tiles")

@@ -3,9 +3,10 @@ import glob
 import random
 import os
 
-app = "mat_mattransmul"
-test = "rel5" 
-num_samples = 50
+app = "matmul_ijk_crddrop"
+# test = "n4c6-b1" 
+test = "qiulp"
+num_samples = 10
 
 #data = ["cage3"]
 #data = ["Trec4"]
@@ -23,21 +24,21 @@ lst = [int(tile.replace(f"./SPARSE_TESTS/{app}_tile", "")) for tile in name_list
 largest_num = max(lst)
 
 #take random sample
-# tiles_to_run = random.sample(range(0, largest_num),num_samples)
+tiles_to_run = random.sample(range(0, largest_num),num_samples)
 
 print("NUM TILES: ", largest_num)
 
 name_list = []
-for i in range(largest_num+1):
-        name_list.append(f"tile{i}")
-# for i in tiles_to_run:
+# for i in range(largest_num+1):
 #         name_list.append(f"tile{i}")
+for i in tiles_to_run:
+        name_list.append(f"tile{i}")
 
 data = name_list
 
 # print(data)
 
-f = open(f"sparse_sweep_{app}_{test}.txt", "w")
+f = open(f"sparse_sweep_{app}_{test}_FIX.txt", "w")
 
 for datum in data:
 #     print(app, datum)
@@ -80,7 +81,7 @@ for i in range(largest_num+1):
 data = name_list
 print(name_list)
 
-f2 = open(f"sparse_sweep_{app}_{test}.txt", "r")
+f2 = open(f"sparse_sweep_{app}_{test}_FIX.txt", "r")
 
 lines = f2.readlines()
 
@@ -89,10 +90,10 @@ idx = 0
 for line in lines:
    if "total time" in line:
        time = line.split()[3]
-       print(data[idx], time)
+       print(f"tile {idx}: ", data[idx], time)
        total_time += float(time)
        idx = idx + 1
 
-print(f"total time for {app} {datum} is ", total_time)
+print(f"total time for sample {app} {datum} is ", total_time)
 
 print("the largest number is ", largest_num)
