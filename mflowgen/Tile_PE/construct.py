@@ -129,7 +129,6 @@ def construct():
 
   # Inputs
   g.add_input( 'design.v', rtl.i('design.v') )
-  g.add_input( 'header'  , rtl.i('header')   )
 
   # Outputs
   g.add_output( 'Tile_PE_tt.lib',      genlibdb.o('design.lib')       )
