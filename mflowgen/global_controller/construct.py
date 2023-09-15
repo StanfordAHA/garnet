@@ -115,6 +115,23 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  
+  # Add graph inputs and outputs so this can be used in hierarchical flows
+
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+
+  # Outputs
+  g.add_output( 'global_controller_tt.lib',      genlibdb.o('design.lib')       )
+  g.add_output( 'global_controller_tt.db',       genlibdb.o('design.db')        )
+  g.add_output( 'global_controller.lef',         signoff.o('design.lef')        )
+  g.add_output( 'global_controller.vcs.v',       signoff.o('design.vcs.v')      )
+  g.add_output( 'global_controller.sdf',         signoff.o('design.sdf')        )
+  g.add_output( 'global_controller.gds',         signoff.o('design-merged.gds') )
+  g.add_output( 'global_controller.lvs.v',       lvs.o('design_merged.lvs.v')   )
+  g.add_output( 'global_controller.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
+  g.add_output( 'global_controller.spef.gz',     signoff.o('design.spef.gz')    )
+  g.add_output( 'global_controller.pt.sdc',      signoff.o('design.pt.sdc')     )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python script finds 'stream-out.tcl' and strips out that flag.
