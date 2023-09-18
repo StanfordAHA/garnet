@@ -77,8 +77,8 @@ steps:
 - label: 'ptile init 20m'
   commands:
   # - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
-  - 'set -x; source mflowgen/bin/setup-buildkite.sh --dir .;
-     mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
+  - 'source mflowgen/bin/setup-buildkite.sh --dir .;
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
      make tile_array-Tile_MemCore-init'
   - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 112 $BDIR
   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_PE --show-all-errors
