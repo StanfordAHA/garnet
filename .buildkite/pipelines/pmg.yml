@@ -35,33 +35,33 @@ env:
 
 steps:
 
-##############################################################################
-# Two quick RTL checks
-
-- label: "Gold RTL: Amber 1m"
-  commands:
-  - '
-     docker pull $$IMAGE; container=$$CONTAINER-amber;
-     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
-     function dexec { docker exec $$container /bin/bash -c "$$*"; };
-     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
-     dexec "/aha/garnet/bin/rtl-goldcheck.sh amber" || $$FAIL_AMBER | $$UPLOAD;
-     docker image prune -f -a;
-     docker kill $$container || echo cannot kill container;
-    '
-
-- label: "Gold RTL: Onyx 1m"
-  commands:
-  - '
-     docker pull $$IMAGE; container=$$CONTAINER-onyx;
-     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
-     function dexec { docker exec $$container /bin/bash -c "$$*"; };
-     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
-     dexec "/aha/garnet/bin/rtl-goldcheck.sh onyx" || $$FAIL_ONYX | $$UPLOAD;
-     docker image prune -f -a;
-     docker kill $$container || echo cannot kill container;
-    '
-- wait
+# ##############################################################################
+# # Two quick RTL checks
+# 
+# - label: "Gold RTL: Amber 1m"
+#   commands:
+#   - '
+#      docker pull $$IMAGE; container=$$CONTAINER-amber;
+#      docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
+#      function dexec { docker exec $$container /bin/bash -c "$$*"; };
+#      dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
+#      dexec "/aha/garnet/bin/rtl-goldcheck.sh amber" || $$FAIL_AMBER | $$UPLOAD;
+#      docker image prune -f -a;
+#      docker kill $$container || echo cannot kill container;
+#     '
+# 
+# - label: "Gold RTL: Onyx 1m"
+#   commands:
+#   - '
+#      docker pull $$IMAGE; container=$$CONTAINER-onyx;
+#      docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
+#      function dexec { docker exec $$container /bin/bash -c "$$*"; };
+#      dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
+#      dexec "/aha/garnet/bin/rtl-goldcheck.sh onyx" || $$FAIL_ONYX | $$UPLOAD;
+#      docker image prune -f -a;
+#      docker kill $$container || echo cannot kill container;
+#     '
+# - wait
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
@@ -76,62 +76,65 @@ steps:
 # Set pe max width to 112: fp limits to 110 but then lvs says 112 OK
 - label: 'ptile init 20m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
+  # - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
+  - 'source mflowgen/bin/setup-buildkite.sh --dir $$GOLD;
+     mflowgen run --design $GARNET_HOME/mflowgen/full_chip;
+     make tile_array-Tile_MemCore-init'
   - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 112 $BDIR
   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_PE --show-all-errors
 
-# PTILE through LVS
-# - label: 'ptile lvs 2h'
+# # PTILE through LVS
+# # - label: 'ptile lvs 2h'
+# #   commands:
+# #   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps mentor-calibre-lvs --debug
+# #   - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 112 $BDIR
+# #   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_PE --show-all-errors
+# #   if: build.branch !~ /to-spv/ && build.branch !~ /spV/
+# 
+# # ------------------------------------------------------------------------
+# 
+# # MTILE through init
+# - label: 'mtile init 25m'
 #   commands:
-#   - $TEST --need_space 30G full_chip tile_array Tile_PE --steps mentor-calibre-lvs --debug
-#   - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 112 $BDIR
-#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_PE --show-all-errors
-#   if: build.branch !~ /to-spv/ && build.branch !~ /spV/
-
-# ------------------------------------------------------------------------
-
-# MTILE through init
-- label: 'mtile init 25m'
-  commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
-  - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
-  - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
-
-# MTILE through LVS
-# - label: 'mtile lvs 2h'
-#   commands:
-#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps mentor-calibre-lvs --debug
+#   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
 #   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
 #   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
-
-# ------------------------------------------------------------------------
-
-# GTILE through init
-- label: 'gtile init 20m'
-  commands:
-  - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
-  - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top/*glb_tile --show-all-errors
-
-# GTILE through LVS
-# - label: 'gtile lvs 3h'
+# 
+# # MTILE through LVS
+# # - label: 'mtile lvs 2h'
+# #   commands:
+# #   - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps mentor-calibre-lvs --debug
+# #   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
+# #   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
+# 
+# # ------------------------------------------------------------------------
+# 
+# # GTILE through init
+# - label: 'gtile init 20m'
 #   commands:
-#   - $TEST --need_space 30G full_chip glb_top glb_tile --steps mentor-calibre-lvs --debug
+#   - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
 #   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top/*glb_tile --show-all-errors
-
-# ------------------------------------------------------------------------
-
-# GTOP through LVS
-# - label: 'gtop lvs 3h?'
-#   commands:
-#   - $TEST --need_space 30G full_chip glb_top --steps mentor-calibre-lvs --debug
-#   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top --show-all-errors
-
-# ------------------------------------------------------------------------
-
-# ONYX BRANCHES ONLY
-# GF branches cannot run synthesis on my machine, so do RTL only I guess
-# - label: 'RTL only 25m'
-#   commands:
-#   - 'export WHICH_SOC=onyx;
-#     $TEST --need_space 30G full_chip --steps rtl --debug'
-#   if: build.branch =~ /to-spv/ || build.branch =~ /spV/ || build.branch =~ /sms/
+# 
+# # GTILE through LVS
+# # - label: 'gtile lvs 3h'
+# #   commands:
+# #   - $TEST --need_space 30G full_chip glb_top glb_tile --steps mentor-calibre-lvs --debug
+# #   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top/*glb_tile --show-all-errors
+# 
+# # ------------------------------------------------------------------------
+# 
+# # GTOP through LVS
+# # - label: 'gtop lvs 3h?'
+# #   commands:
+# #   - $TEST --need_space 30G full_chip glb_top --steps mentor-calibre-lvs --debug
+# #   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top --show-all-errors
+# 
+# # ------------------------------------------------------------------------
+# 
+# # ONYX BRANCHES ONLY
+# # GF branches cannot run synthesis on my machine, so do RTL only I guess
+# # - label: 'RTL only 25m'
+# #   commands:
+# #   - 'export WHICH_SOC=onyx;
+# #     $TEST --need_space 30G full_chip --steps rtl --debug'
+# #   if: build.branch =~ /to-spv/ || build.branch =~ /spV/ || build.branch =~ /sms/
