@@ -17,7 +17,6 @@ env:
   SETUP: source mflowgen/bin/setup-buildkite.sh
 
   # Env var used by test_module.sh :(
-  # Note: even though it skips the "mflowgen clone" step, it still does a "git pull" update.
   TEST_MODULE_SBFLAGS: '--skip_mflowgen'
 
 # For normal operation leave off build_dir flag to save disk space
