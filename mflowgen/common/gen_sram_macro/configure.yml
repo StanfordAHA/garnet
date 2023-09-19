@@ -9,13 +9,15 @@ inputs:
 
 outputs:
   - sram.v
-  # - sram_pwr.v
   - sram.lef
-  - sram_tt.lib
-  - sram_ff.lib
-  # - sram_ss.lib
-  - sram_tt.db  # Need this back for power on ptpx
+  - sram-typical.lib
+  - sram-bc.lib
+  - sram-wc.lib
+  - sram-typical.db
+  - sram-bc.db
+  - sram-wc.db
   - sram.gds
+  - sram.oas
   - sram.spi
 
 parameters:
@@ -32,4 +34,9 @@ parameters:
 
 postconditions:
    # Sanity check to see if we at least got one sram
-   - assert File( 'outputs/sram_tt.lib' )
+   - assert File( 'outputs/sram-typical.lib' )
+   - assert File( 'outputs/sram-bc.lib' )
+   - assert File( 'outputs/sram-wc.lib' )
+   - assert File( 'outputs/sram-typical.db' )
+   - assert File( 'outputs/sram-bc.db' )
+   - assert File( 'outputs/sram-wc.db' )
