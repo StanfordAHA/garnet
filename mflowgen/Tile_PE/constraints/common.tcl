@@ -115,7 +115,11 @@ set_max_delay -to ${pt_outputs} ${max_delay_pt_general}
 # -- pt_read_config
 set min_delay_pt_rd_cfg [expr ${max_delay_pt_clk} + 0]
 set max_delay_pt_rd_cfg [expr ${pt_i_delay} + ${pt_o_delay} + 300]
-set_min_delay                              -to ${pt_read_data_outputs} ${min_delay_pt_rd_cfg}
+# read_config_data can come from (1) internal regs or (2) passthrough inputs
+# For (1), the min delay is 50ps
+# For (2), the min delay is 700+50=750ps (need to consider the input delay)
+set_min_delay                              -to ${pt_read_data_outputs} 50
+set_min_delay -from ${pt_read_data_inputs} -to ${pt_read_data_outputs} ${min_delay_pt_rd_cfg}
 set_max_delay -from ${pt_read_data_inputs} -to ${pt_read_data_outputs} ${max_delay_pt_rd_cfg}
 
 #=========================================================================
@@ -152,7 +156,7 @@ set_multicycle_path 1 -to [get_ports read_config_data* -filter direction==out] -
 # Switch Box Delay
 #=========================================================================
 ## Constrain SB to ~200 ps
-set sb_delay 200
+set sb_delay 300
 if { $WHICH_SOC == "amber" } {
     # Use this first command to constrain all feedthrough paths to just the desired SB delay
     set_max_delay -from SB*_IN_* -to SB*_OUT_* [expr ${sb_delay} + ${i_delay} + ${o_delay}]
@@ -172,19 +176,6 @@ if { $WHICH_SOC == "amber" } {
 if { $WHICH_SOC == "amber" } {
 set_operating_conditions tt0p8v25c -library tcbn16ffcllbwp16p90tt0p8v25c
 }
-
-if $::env(PWR_AWARE) {
-    source inputs/dc-dont-use-constraints.tcl
-    # source inputs/pe-constraints-2.tcl
-    if { $WHICH_SOC == "amber" } {
-    set_dont_touch [get_cells -hierarchical *u_mux_logic*]
-    } else {
-    set_dont_touch [get_cells -hierarchical CB*/u_mux_logic]
-    set_dont_touch [get_cells -hierarchical SB*/MUX*/u_mux_logic]
-    }
-    # Prevent buffers in paths from SB input ports
-    set_dont_touch_network [get_ports *SB* -filter "direction==in"] -no_propagate
-} 
 
 #=========================================================================
 # False Path

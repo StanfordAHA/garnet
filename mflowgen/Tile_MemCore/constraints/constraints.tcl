@@ -20,13 +20,6 @@ set_units -time ps -capacitance pF
 
 set common_cnst inputs/common.tcl
 
-##############################
-# Check for power aware
-##############################
-if $::env(PWR_AWARE) {
-    source inputs/mem-constraints.tcl
-}
-
 # Which SoC?
 if { [info exists ::env(WHICH_SOC)] } {
     set WHICH_SOC $::env(WHICH_SOC)

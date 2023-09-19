@@ -18,10 +18,6 @@
 
 set_units -time ps -capacitance pF
 
-if $::env(PWR_AWARE) {
-    source inputs/pe-constraints.tcl
-} 
-
 # Which SoC are we targeting?
 if { [info exists ::env(WHICH_SOC)] } {
     set WHICH_SOC $::env(WHICH_SOC)
