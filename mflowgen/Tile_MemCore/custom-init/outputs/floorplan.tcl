@@ -80,12 +80,7 @@ set sram_spacing_x_odd 0
 # Set spacing between pinned sides of SRAMs to some 
 # reasonable number of pitches
 # Spread out further for power domains
-if $::env(PWR_AWARE) {
-  set sram_spacing_x_even [expr 520 * $horiz_pitch]  ;# gf12 default
-  if { $adk == "tsmc16" } { set sram_spacing_x_even [expr 400 * $horiz_pitch] } ;# amber override
-} else {
-  set sram_spacing_x_even [expr 200 * $horiz_pitch]
-}
+set sram_spacing_x_even [expr 200 * $horiz_pitch]
 
 # Parameter for how many SRAMs to stack vertically
 set bank_height 1
@@ -141,15 +136,3 @@ foreach_in_collection sram $srams {
     set col [expr $col + 1]
   }
 }
-
-# Make total height of the SRAMs including the boundary cells even
-# so it doesn't block placement of a power switch that is inserted
-# on the even row, else a power switch won't be inserted on that
-# column for that row that can cause LUP DRCs
-
-if $::env(PWR_AWARE) {
-  addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] [expr $vert_pitch * 2]
-} else {
-  addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
-}
-
