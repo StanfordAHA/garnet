@@ -117,7 +117,6 @@ def construct():
 
   gls_args       = Step( this_dir + '/gls_args'                               )
   testbench      = Step( this_dir + '/testbench'                              )
-# lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
   if which_soc == 'onyx':
     drc_pm         = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
 
@@ -163,7 +162,6 @@ def construct():
   synth.extend_inputs( ['Tile_MemCore_tt.lib'] )
   pt_signoff.extend_inputs( ['Tile_PE_tt.db'] )
   pt_signoff.extend_inputs( ['Tile_MemCore_tt.db'] )
-
   pt_genlibdb.extend_inputs( ['Tile_PE_tt.db'] )
   pt_genlibdb.extend_inputs( ['Tile_MemCore_tt.db'] )
 
@@ -281,7 +279,6 @@ def construct():
   g.add_step( testbench      )
   g.add_step( vcs_sim        )
   g.add_step( pt_genlibdb    )
-
   if which_soc == "onyx":
     g.add_step( drc_pm         )
     g.add_step( lvs_adk        )
