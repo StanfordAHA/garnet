@@ -7,11 +7,11 @@ name: intel16-synopsys-icv-lvs
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
-# layout   : design-merged.gds
+# layout   : design-merged.oas
 # schematic: design.lvs.v
 inputs:
   - adk
-  - design-merged.gds
+  - design-merged.oas
   - design.lvs.v
 
 outputs:
@@ -40,5 +40,5 @@ preconditions:
   - assert Tool( 'icv' )
   - assert Tool( 'calibre' )
   - assert File( 'inputs/adk' )
-  - assert File( 'inputs/design-merged.gds' )
+  - assert File( 'inputs/design-merged.oas' )
   - assert File( 'inputs/design.lvs.v' )

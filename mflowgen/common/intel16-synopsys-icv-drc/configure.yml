@@ -10,29 +10,29 @@ name: intel16-synopsys-icv-drc
 
 inputs:
   - adk
-  - design-merged.gds
+  - design-merged.oas
 
 outputs:
-  - drc_drcd.results
-  - drc_denall.local.results
-  - drc_denall.concentrated.results
-  - drc_denall.global.results
-  - drc_IPall.results
-  - drc_IL.results
-  - drc_LU.results
-  - drc_TUC.results
+  - antenna.results
+  - collat.results
+  - drc-drcd.results
+  - drc-lu.results
+  - drc-denall.results
+  - drc-cden-lden-collat.results
+  # - drc-fullchip.results
 
 #-------------------------------------------------------------------------
 # Commands
 #-------------------------------------------------------------------------
 
 commands:
+  - source inputs/adk/run-icv-antenna.sh
+  - source inputs/adk/run-icv-collat.sh
   - source inputs/adk/run-icv-drc-drcd.sh
+  - source inputs/adk/run-icv-drc-lu.sh
   - source inputs/adk/run-icv-drc-denall.sh
-  - source inputs/adk/run-icv-drc-IPall.sh
-  - source inputs/adk/run-icv-drc-IL.sh
-  - source inputs/adk/run-icv-drc-LU.sh
-  - source inputs/adk/run-icv-drc-TUC.sh
+  - source inputs/adk/run-icv-drc-cden-lden-collat.sh
+  # - source inputs/adk/run-icv-drc-fullchip.sh
 
 #-------------------------------------------------------------------------
 # Parameters
@@ -48,4 +48,4 @@ parameters:
 preconditions:
   - assert Tool( 'icv' )
   - assert File( 'inputs/adk' )
-  - assert File( 'inputs/design-merged.gds' )
+  - assert File( 'inputs/design-merged.oas' )
