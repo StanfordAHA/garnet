@@ -51,3 +51,4 @@ else
     echo "Docker check looks okay."
 fi
 unset FAIL
+/bin/rm $tmpfile

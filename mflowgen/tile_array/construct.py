@@ -9,7 +9,7 @@
 import os
 import sys
 
-from mflowgen.components import Graph, Step
+from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
@@ -97,8 +97,8 @@ def construct():
   # Custom steps
 
   rtl            = Step( this_dir + '/../common/rtl'                          )
-  Tile_MemCore   = Step( this_dir + '/Tile_MemCore'                           )
-  Tile_PE        = Step( this_dir + '/Tile_PE'                                )
+  Tile_MemCore   = Subgraph( this_dir + '/../Tile_MemCore', 'Tile_MemCore'    )
+  Tile_PE        = Subgraph( this_dir + '/../Tile_PE',      'Tile_PE'         )
   constraints    = Step( this_dir + '/constraints'                            )
   dc_postcompile = Step( this_dir + '/custom-dc-postcompile'                  )
 
@@ -139,12 +139,9 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  if which_soc == 'onyx':
-    pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
-    genlib         = Step( 'cadence-innovus-genlib',         default=True )
-  else:
-    #genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
-    genlib         = Step( 'cadence-genus-genlib',           default=True )
+
+  pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  genlib         = Step( 'cadence-innovus-genlib',         default=True )
 
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
@@ -170,9 +167,9 @@ def construct():
   pt_signoff.extend_inputs( ['Tile_MemCore_tt.db'] )
   genlib.extend_inputs( ['Tile_PE_tt.lib'] )
   genlib.extend_inputs( ['Tile_MemCore_tt.lib'] )
-  if which_soc == 'onyx':
-    pt_genlibdb.extend_inputs( ['Tile_PE_tt.db'] )
-    pt_genlibdb.extend_inputs( ['Tile_MemCore_tt.db'] )
+
+  pt_genlibdb.extend_inputs( ['Tile_PE_tt.db'] )
+  pt_genlibdb.extend_inputs( ['Tile_MemCore_tt.db'] )
 
   e2e_apps = ["tests/conv_3_3", "apps/cascade", "apps/harris_auto", "apps/resnet_i1_o1_mem", "apps/resnet_i1_o1_pond"]
 
@@ -248,6 +245,25 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
 
   cts.extend_inputs( custom_cts.all_outputs() )
+  
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+
+  # Outputs
+  g.add_output( 'tile_array_tt.lib',      genlib.o('design.lib')         )
+  g.add_output( 'tile_array_tt.db',       lib2db.o('design.db')          )
+  g.add_output( 'tile_array.lef',         signoff.o('design.lef')        )
+  g.add_output( 'tile_array.vcs.v',       signoff.o('design.vcs.v')      )
+  g.add_output( 'tile_array.sdf',         signoff.o('design.sdf')        )
+  g.add_output( 'tile_array.gds',         signoff.o('design-merged.gds') )
+  g.add_output( 'tile_array.lvs.v',       lvs.o('design_merged.lvs.v')   )
+  g.add_output( 'tile_array.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
+  g.add_output( 'tile_array.spef.gz',     signoff.o('design.spef.gz')    )
+  g.add_output( 'tile_array.sram.spi',    Tile_MemCore.o('sram.spi')     )
+  g.add_output( 'tile_array.sram.v',      Tile_MemCore.o('sram.v')       )
+  g.add_output( 'tile_array.sram_pwr.v',  Tile_MemCore.o('sram_pwr.v')   )
+  g.add_output( 'tile_array.sram_tt.db',  Tile_MemCore.o('sram_tt.db')   )
+  g.add_output( 'tile_array.sram_tt.lib', Tile_MemCore.o('sram_tt.lib')  )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python script finds 'stream-out.tcl' and strips out that flag.
@@ -289,8 +305,8 @@ def construct():
   g.add_step( gls_args       )
   g.add_step( testbench      )
   g.add_step( vcs_sim        )
+  g.add_step( pt_genlibdb    )
   if which_soc == "onyx":
-    g.add_step( pt_genlibdb    )
     g.add_step( drc_pm         )
     g.add_step( lvs_adk        )
 
@@ -367,8 +383,8 @@ def construct():
       # only be used if memory tile is present
       g.connect_by_name( custom_lvs,        lvs            )
       g.connect_by_name( Tile_MemCore,      vcs_sim        )
+      g.connect_by_name( Tile_MemCore,      pt_genlibdb    )
       if which_soc == "onyx":
-        g.connect_by_name( Tile_MemCore,      pt_genlibdb    )
         g.connect_by_name( Tile_MemCore,      drc_pm         )
 
   # inputs to Tile_PE
@@ -390,8 +406,8 @@ def construct():
   g.connect_by_name( Tile_PE,      genlib         )
   g.connect_by_name( Tile_PE,      drc            )
   g.connect_by_name( Tile_PE,      lvs            )
+  g.connect_by_name( Tile_PE,      pt_genlibdb    )
   if which_soc == "onyx":
-    g.connect_by_name( Tile_PE,      pt_genlibdb    )
     g.connect_by_name( Tile_PE,      drc_pm         )
 
   #g.connect_by_name( rtl,            dc        )
@@ -425,8 +441,7 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
-  if which_soc == "onyx":
-    g.connect_by_name( iflow,    genlib         )
+  g.connect_by_name( iflow,    genlib         )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -451,14 +466,10 @@ def construct():
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
-  if which_soc == "onyx":
-    g.connect_by_name( adk,          pt_genlibdb )
-    g.connect_by_name( adk,          genlib      )
-    g.connect_by_name( signoff,      pt_genlibdb )
-    g.connect_by_name( signoff,      genlib      )
-  else:
-    g.connect_by_name( adk,          genlib   )
-    g.connect_by_name( signoff,      genlib   )
+  g.connect_by_name( adk,          pt_genlibdb )
+  g.connect_by_name( adk,          genlib      )
+  g.connect_by_name( signoff,      pt_genlibdb )
+  g.connect_by_name( signoff,      genlib      )
   
   g.connect_by_name( genlib,       lib2db   )
 
@@ -506,12 +517,11 @@ def construct():
   #dc.update_params( { 'order': order } )
   #synth.update_params( { 'order': order } )
 
-  # pt_genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # pt_genlibdb -- Remove 'write-interface-timing.tcl' because it takes
   # very long and is not necessary
-  if which_soc == "onyx":
-    order = pt_genlibdb.get_param('order')
-    order.remove( 'write-interface-timing.tcl' )
-    pt_genlibdb.update_params( { 'order': order } )
+  order = pt_genlibdb.get_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  pt_genlibdb.update_params( { 'order': order } )
 
   # init -- Add 'dont-touch.tcl' before reporting
 

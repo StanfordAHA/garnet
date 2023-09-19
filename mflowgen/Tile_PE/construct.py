@@ -135,12 +135,8 @@ def construct():
   power_domains = None
   pwr_aware_gls = None
   if pwr_aware:
-      if adk_name == 'tsmc16':
-        power_domains = Step( this_dir + '/../common/power-domains-amber' )
-        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' ) # this will soon follow maybe
-      else:
-        power_domains = Step( this_dir + '/../common/power-domains' )
-        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
+    power_domains = Step( this_dir + '/../common/power-domains' )
+    pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
   # Default steps
   info         = Step( 'info',                          default=True )
@@ -155,10 +151,7 @@ def construct():
   postroute    = Step( 'cadence-innovus-postroute',     default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  if adk_name == 'gf12-adk':
-      genlibdb       = Step( 'synopsys-ptpx-genlibdb',         default=True )
-  else:
-      genlibdb       = Step( 'cadence-genus-genlib',           default=True )
+  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
 
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
@@ -238,6 +231,23 @@ def construct():
 
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
+
+  # Add graph inputs and outputs so this can be used in hierarchical flows
+
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+
+  # Outputs
+  g.add_output( 'Tile_PE_tt.lib',      genlibdb.o('design.lib')       )
+  g.add_output( 'Tile_PE_tt.db',       genlibdb.o('design.db')        )
+  g.add_output( 'Tile_PE.lef',         signoff.o('design.lef')        )
+  g.add_output( 'Tile_PE.gds',         signoff.o('design-merged.gds') )
+  g.add_output( 'Tile_PE.sdf',         signoff.o('design.sdf')        )
+  g.add_output( 'Tile_PE.vcs.v',       signoff.o('design.vcs.v')      )
+  g.add_output( 'Tile_PE.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
+  g.add_output( 'Tile_PE.spef.gz',     signoff.o('design.spef.gz')    )
+  g.add_output( 'Tile_PE.pt.sdc',      signoff.o('design.pt.sdc')     )
+  g.add_output( 'Tile_PE.lvs.v',       lvs.o('design_merged.lvs.v')   )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python method finds 'stream-out.tcl' and strips out that flag.
@@ -408,9 +418,7 @@ def construct():
       g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
       g.connect_by_name( drc_pm,        debugcalibre   )
 
-  # Need this because gf12 uses innovus for lib generation
-  if adk_name == 'gf12-adk':
-      g.connect_by_name( iflow,    genlibdb       )
+  g.connect_by_name( iflow,    genlibdb       )
 
   #-----------------------------------------------------------------------
   # Parameterize
@@ -459,25 +467,17 @@ def construct():
 
   # Adding new input for genlibdb node to run
 
-  if adk_name == 'gf12-adk':
-    # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)
-    order = genlibdb.get_param('order') # get the default script run order
-    extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
-    order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
-    genlibdb.update_params( { 'order': order } )
+  # No longer conditional---amber and onyx now use same genlib mechanism
+  order = genlibdb.get_param('order') # get the default script run order
+  extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
+  order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
+  genlibdb.update_params( { 'order': order } )
 
-    # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
-    # very long and is not necessary
-    order = genlibdb.get_param('order')
-    order.remove( 'write-interface-timing.tcl' )
-    genlibdb.update_params( { 'order': order } )
-
-  else:
-    order = genlibdb.get_param('order') # get the default script run order
-    read_idx = order.index( 'read_design.tcl' ) # find read_design.tcl
-    order.insert( read_idx + 1, 'genlibdb-constraints.tcl' ) # add here
-    genlibdb.update_params( { 'order': order } )
-
+  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # very long and is not necessary
+  order = genlibdb.get_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  genlibdb.update_params( { 'order': order } )
 
   # Pwr aware steps:
   if pwr_aware:

@@ -10,7 +10,7 @@ import os
 import sys
 import pathlib
 
-from mflowgen.components import Graph, Step
+from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
@@ -81,15 +81,18 @@ def construct():
 
   g.set_adk( adk_name )
   adk = g.get_adk_step()
+  
+  # Subgraphs
+
+  glb_tile = Subgraph( this_dir + '/../glb_tile', 'glb_tile' )
 
   # Custom steps
-
+  
   rtl               = Step( this_dir + '/../common/rtl'                          )
   testbench         = Step( this_dir + '/testbench'                              )
   sim_compile       = Step( this_dir + '/sim-compile'                            )
   sim_run           = Step( this_dir + '/sim-run'                                )
   sim_gl_compile    = Step( this_dir + '/sim-gl-compile'                         )
-  glb_tile          = Step( this_dir + '/glb_tile'                               )
   if adk_name == 'tsmc16':
     constraints       = Step( this_dir + '/constraints-amber'                      )
     custom_init       = Step( this_dir + '/custom-init-amber'                      )
@@ -127,6 +130,27 @@ def construct():
       drc            = Step( 'cadence-pegasus-drc',           default=True )
       lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
+  
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+  g.add_input( 'header'  , rtl.i('header')   )
+
+  # Outputs
+  g.add_output( 'glb_top_tt.lib',      genlib.o('design.lib')         )
+  g.add_output( 'glb_top_tt.db',       lib2db.o('design.db')          )
+  g.add_output( 'glb_top.lef',         signoff.o('design.lef')        )
+  g.add_output( 'glb_top.gds',         signoff.o('design-merged.gds') )
+  g.add_output( 'glb_top.sdf',         signoff.o('design.sdf')        )
+  g.add_output( 'glb_top.vcs.v',       signoff.o('design.vcs.v')      )
+  g.add_output( 'glb_top.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
+  g.add_output( 'glb_top.spef.gz',     signoff.o('design.spef.gz')    )
+  g.add_output( 'glb_top.lvs.v',       lvs.o('design_merged.lvs.v')   )
+  g.add_output( 'glb_top.sram.spi',    glb_tile.o('glb_tile_sram.spi')         )
+  g.add_output( 'glb_top.sram.v',      glb_tile.o('glb_tile_sram.v')           )
+  g.add_output( 'glb_top.sram_pwr.v',  glb_tile.o('glb_tile_sram_pwr.v')       )
+  g.add_output( 'glb_top.sram_tt.db',  glb_tile.o('glb_tile_sram_tt.db')       )
+  g.add_output( 'glb_top.sram_tt.lib', glb_tile.o('glb_tile_sram_tt.lib')      )
+  g.add_output( 'glb_top.sram_ff.lib', glb_tile.o('glb_tile_sram_ff.lib')      )
 
   if parameters['tool'] == 'VCS':
     sim_compile.extend_outputs(['simv', 'simv.daidir'])
