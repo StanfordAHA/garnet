@@ -246,9 +246,10 @@ fi
 
 ########################################################################
 # Clean up debris in /sim/tmp
-echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
-[ "$USER" != "buildkite-agent" ] && $garnet/mflowgen/bin/cleanup-buildkite.sh
-
+if [ "$USER" != "buildkite-agent" ]; then
+     echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
+     $garnet/mflowgen/bin/cleanup-buildkite.sh
+fi
 
 ########################################################################
 # Build environment and check requirements
@@ -331,7 +332,7 @@ echo "AFTER:  OA_HOME=$OA_HOME"
 echo ""
 
 # Okay let's check and see what we got.
-echo "--- REQUIREMENTS CHECK"; echo ""
+echo "--- REQUIREMENTS CHECK, sourcing $garnet/bin/requirements_check.sh"; echo ""
 
 # Maybe don't need to check python libs and eggs no more...?
 # $garnet/bin/requirements_check.sh -v --debug
@@ -457,17 +458,21 @@ else
     # flock above and below prevents competition for the 'git pull' command maybe
 
     pushd $mflowgen
-      test -e adks || ln -s /sim/buildkite-agent/adks
-      if [ -d adks/gf12-adk ]; then
-          cd adks/gf12-adk; git pull
-      elif [ -d adks/tsmc16-adk ]; then
-          cd adks/tsmc16-adk; git pull || (\
-              echo "+++ WARNING: Could not 'git pull' to retrieve latest version of tsmc16-adk";
-              echo "=> see mflowgen/bin/setup-buildkite.sh"; echo "."; echo "."
-          )
+
+      function is_gf { test -e /sim/repos/gf12-adk; }
+      if is_gf; then
+          # (Cloned GF repo takes about 100M of disk space.)
+          ADK_REPO=/sim/repos/gf12-adk
+          test -e adks          || mkdir adks
+          test -e adks/gf12-adk || (cd adks && git clone $ADK_REPO)
+          (cd adks/gf12-adk; git pull)
+
       else
-          echo "ERROR ADK not found"
-          return 13 || exit 13
+          # Not using git anymore for tsmc, instead use frozen adk in $ADK_REPO
+          ADK_REPO=/sim/buildkite-agent/adks
+          test -e adks            || ln -s $ADK_REPO
+          test -e adks/tsmc16-adk || (cd adks && ln -s $ADK_REPO/tsmc16-adk)
+          test -e adks/tsmc16     || (cd adks && ln -s tsmc16-adk tsmc16)
       fi
     popd
 fi
@@ -478,10 +483,8 @@ if ! touch $MFLOWGEN_PATH/is_touchable; then
     return 13 || exit 13
 fi
 
-
 echo "--- UNLOCK "; date
 flockmsg "Release! The lock!"; flock -u 9
-
 
 ########################################################################
 # TCLSH VERSION CHECK

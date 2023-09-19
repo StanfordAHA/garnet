@@ -2614,12 +2614,6 @@ if __name__ == "__main__":
             glb_dirs = []
             collat_dirs = []
 
-            output_matrices = []
-            output_formats = []
-            output_names = []
-            input_dims_s = []
-            out_mats = []
-
             sam_graph_name = sam_graph.split('/')[-1].split(".")[0]
 
             if isinstance(seeds, int):
@@ -2631,6 +2625,13 @@ if __name__ == "__main__":
                 use_seeds = [dir_ for dir_ in use_seeds if os.path.isdir(os.path.join(tensor_locs, dir_))]
 
             for seed in use_seeds:
+
+                # For each seed we can produce multiple unrolled.
+                output_matrices = []
+                output_formats = []
+                output_names = []
+                input_dims_s = []
+                out_mats = []
 
                 if not give_tensor:
                     numpy.random.seed(seed)
