@@ -30,7 +30,7 @@ env:
 
   # Note: this skips new "mflowgen clone"
   # but still does "git pull" update of existing clone.
-  SETUP_FLAGS: '--dir $$BDIR --skip_mflowgen --need_space 30G'
+  SETUP_FLAGS: '--dir $BDIR --skip_mflowgen --need_space 30G'
 
 
 steps:
