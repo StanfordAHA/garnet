@@ -22,16 +22,16 @@ env:
   FAIL_AMBER  : 'echo steps : [ { label : ":x: AMBER_FAILED :x:" , command : exit } ]'
   UPLOAD : 'buildkite-agent pipeline upload'
 
-  # Env var used by test_module.sh :(
-  TEST_MODULE_SBFLAGS: '--skip_mflowgen'
-
-# For normal operation leave off build_dir flag to save disk space
-  TEST: echo exit 13 | mflowgen/test/test_module.sh
+  # For normal operation leave off build_dir flag to save disk space
   BDIR: .
 
-# For debugging, use build_dir flag to save build in indicated local dir
-#   TEST: echo exit 13 | mflowgen/test/test_module.sh --build_dir /build/pmg${BUILDKITE_BUILD_NUMBER}
-#   BDIR: /build/pmg${BUILDKITE_BUILD_NUMBER}
+  # For debugging
+  # BDIR: /build/pmg${BUILDKITE_BUILD_NUMBER}
+
+  # Note: this skips new "mflowgen clone"
+  # but still does "git pull" update of existing clone.
+  SETUP_FLAGS: '--dir $BDIR --skip_mflowgen --need_space 30G'
+
 
 steps:
 
@@ -76,7 +76,12 @@ steps:
 # Set pe max width to 112: fp limits to 110 but then lvs says 112 OK
 - label: 'ptile init 20m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_PE --steps init --debug
+  - 'source mflowgen/bin/setup-buildkite.sh $$SETUP_FLAGS;
+     echo "--- BEGIN mflowgen run";
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+     echo "--- BEGIN make init";
+     echo make tile_array-Tile_PE-cadence-innovus-init;
+     echo exit 13 | make tile_array-Tile_PE-cadence-innovus-init;'
   - .buildkite/pipelines/check_tile_width.sh Tile_PE --max 112 $BDIR
   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_PE --show-all-errors
 
@@ -93,7 +98,12 @@ steps:
 # MTILE through init
 - label: 'mtile init 25m'
   commands:
-  - $TEST --need_space 30G full_chip tile_array Tile_MemCore --steps init --debug
+  - 'source mflowgen/bin/setup-buildkite.sh $$SETUP_FLAGS;
+     echo "--- BEGIN mflowgen run";
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+     echo "--- BEGIN make init";
+     echo make tile_array-Tile_MemCore-cadence-innovus-init;
+     echo exit 13 | make tile_array-Tile_MemCore-cadence-innovus-init;'
   - .buildkite/pipelines/check_tile_width.sh Tile_MemCore --max 250 $BDIR
   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*tile_array/*Tile_MemCore --show-all-errors
 
@@ -109,7 +119,12 @@ steps:
 # GTILE through init
 - label: 'gtile init 20m'
   commands:
-  - $TEST --need_space 30G full_chip glb_top glb_tile --steps init --debug
+  - 'source mflowgen/bin/setup-buildkite.sh $$SETUP_FLAGS;
+     echo "--- BEGIN mflowgen run";
+     mflowgen run --design $$GARNET_HOME/mflowgen/full_chip;
+     echo "--- BEGIN make init";
+     echo make glb_top-glb_tile-cadence-innovus-init;
+     echo exit 13 | make glb_top-glb_tile-cadence-innovus-init;'
   - mflowgen/bin/buildcheck.sh $BDIR/full_chip/*glb_top/*glb_tile --show-all-errors
 
 # GTILE through LVS
