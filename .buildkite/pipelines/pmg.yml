@@ -61,7 +61,7 @@ steps:
      docker image prune -f -a;
      docker kill $$container || echo cannot kill container;
     '
-- wait
+- wait: { continue_on_failure: true }
 
 ##############################################################################
 # INDIVIDUAL TILE RUNS
