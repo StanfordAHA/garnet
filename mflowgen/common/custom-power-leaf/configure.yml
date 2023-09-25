@@ -12,3 +12,13 @@ outputs:
   - globalnetconnect.tcl
   - power-strategy-dualmesh.tcl
 
+tests:
+  - description: power analysis
+    test_node: cadence-voltus-static-power-analysis
+    default: True
+    attach_points:
+      - POWER
+      - PLACE
+      - CTS
+      - ROUTE
+      - SIGNOFF 
