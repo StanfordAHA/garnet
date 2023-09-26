@@ -1419,7 +1419,7 @@ class SparseTBBuilder(m.Generator2):
                     fp_handle.write(parg)
 
 
-def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, design_place=None, glb_info=None):
+def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, design_place=None, glb_info=None, test_dump_dir=None):
 
     assert glb_dir is not None
     assert bitstream is not None
@@ -1430,8 +1430,8 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
     # Call this when ready for it
     if not os.path.exists(glb_dir):
         os.mkdir(glb_dir)
-    if not os.path.exists(f"{glb_dir}/bin"):
-        os.mkdir(f"{glb_dir}/bin")
+
+    shutil.copytree(test_dump_dir, f"{glb_dir}/bin", dirs_exist_ok=True)
 
     input_glb_tiles = [glb_tile for glb_tile in glb_info if glb_tile[3] == 'write']
     output_glb_tiles = [glb_tile for glb_tile in glb_info if glb_tile[3] == 'read']
@@ -1453,9 +1453,6 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
             num_lines = len(tmp_fp.readlines())
         # num_lines = os.system(f"wc -l {matrices_in}/{filename}")
         input_glb_tiles[idx_] = (core, core_placement, tensor_desc_str, num_lines, num_blocks, file_number_)
-
-    shutil.copyfile(bitstream, f"{glb_dir}/bin/bitstream.bs")
-    shutil.copyfile(design_place, f"{glb_dir}/bin/design.place")
 
     design_meta_json = {}
     design_meta_json["testing"] = {
@@ -2369,7 +2366,7 @@ if __name__ == "__main__":
     parser.add_argument('--run', type=str, default=None)
     parser.add_argument('--gold_mat_dir', type=str, default=None)
     parser.add_argument('--sim_mat_dir', type=str, default=None)
-    parser.add_argument('--sim_dir', type=str, default='SIM_DIR')
+    parser.add_argument('--sim_dir', type=str, default='/aha/garnet/SIM_DIR')
     parser.add_argument('--mem_width', type=int, default=64)
     parser.add_argument('--compile_tb', action="store_true")
     parser.add_argument('--perf_debug', action="store_true")
@@ -2840,7 +2837,8 @@ if __name__ == "__main__":
                                            bitstream=f"{test_dump_dir}/bitstream.bs",
                                            matrices_in=input_dir,
                                            design_place=f"{test_dump_dir}/design.place",
-                                           glb_info=glb_info_)
+                                           glb_info=glb_info_,
+                                           test_dump_dir=test_dump_dir)
 
                 stb.display_names()
                 stb.dump_display_names(f"{test_dump_dir}/design.mapped")
