@@ -2627,7 +2627,7 @@ if __name__ == "__main__":
 
         for sam_graph in sam_graphs:
 
-            sam_graph = sam_graph.replace("onyx-dot", "dot")
+            # sam_graph = sam_graph.replace("onyx-dot", "dot")
             print(f"SAM GRAPH DIR:\t {sam_graph}")
 
             sdgs = {}

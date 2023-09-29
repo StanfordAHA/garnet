@@ -1,27 +1,25 @@
-p0	===>	"CrdDrop i,j"		===>	X04_Y02
-p1	===>	"RepeatSignalGenerator i"		===>	X06_Y02
-p2	===>	"Repeat i: C"		===>	X04_Y03
-p3	===>	"CrdDrop j,k"		===>	X04_Y01
-p4	===>	"RepeatSignalGenerator j"		===>	X04_Y04
-p5	===>	"Repeat j: B"		===>	X04_Y05
-p6	===>	"intersect k"		===>	X05_Y03
-p7	===>	"Mul"		===>	X08_Y04
-p8	===>	"Reduce"		===>	X08_Y03
-m9	===>	fiber_access_0		===>	X03_Y01
-I10	===>	data_in_B_0		===>	X00_Y00
-m11	===>	fiber_access_1		===>	X03_Y02
-I12	===>	data_out_X_0		===>	X01_Y00
-m13	===>	fiber_access_2		===>	X03_Y04
+p0	===>	"RepeatSignalGenerator i"		===>	X0A_Y02
+p1	===>	"Repeat i: C"		===>	X08_Y03
+p2	===>	"RepeatSignalGenerator j"		===>	X09_Y03
+p3	===>	"Repeat j: B"		===>	X0A_Y03
+p4	===>	"intersect k"		===>	X08_Y08
+p5	===>	"Mul"		===>	X06_Y0A
+p6	===>	"Reduce"		===>	X06_Y0C
+I7	===>	data_in_B_0		===>	X00_Y00
+m8	===>	fiber_access_0		===>	X0B_Y02
+m9	===>	fiber_access_1		===>	X0B_Y01
+I10	===>	data_out_X_0		===>	X01_Y00
+I11	===>	data_in_C_1		===>	X02_Y00
+m12	===>	fiber_access_2		===>	X07_Y03
+m13	===>	fiber_access_3		===>	X07_Y02
 I14	===>	data_out_X_1		===>	X03_Y00
-m15	===>	fiber_access_3		===>	X03_Y03
-I16	===>	data_in_C_1		===>	X02_Y00
-m17	===>	fiber_access_4		===>	X03_Y05
-I18	===>	data_in_B_1		===>	X04_Y00
-m19	===>	fiber_access_5		===>	X07_Y01
-I20	===>	data_out_X_vals		===>	X05_Y00
-m21	===>	fiber_access_6		===>	X07_Y03
-I22	===>	data_in_C_0		===>	X06_Y00
-m23	===>	fiber_access_7		===>	X07_Y05
-I24	===>	data_in_B_vals		===>	X08_Y00
-m25	===>	fiber_access_8		===>	X07_Y02
-I26	===>	data_in_C_vals		===>	X0A_Y00
+I15	===>	data_in_B_1		===>	X04_Y00
+m16	===>	fiber_access_4		===>	X07_Y07
+m17	===>	fiber_access_5		===>	X07_Y0B
+I18	===>	data_out_X_vals		===>	X05_Y00
+I19	===>	data_in_C_0		===>	X06_Y00
+m20	===>	fiber_access_6		===>	X07_Y08
+I21	===>	data_in_B_vals		===>	X08_Y00
+m22	===>	fiber_access_7		===>	X07_Y0A
+I23	===>	data_in_C_vals		===>	X0A_Y00
+m24	===>	fiber_access_8		===>	X07_Y09
