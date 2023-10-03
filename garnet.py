@@ -459,7 +459,7 @@ class Garnet(Generator):
                     # get mode...
                     metadata = netlist_info['id_to_metadata'][tag_]
                     mode = "UB"
-                    if 'stencil_valid' in metadata["config"]:
+                    if 'stencil_valid' in metadata["config"] and "stencil_valid" in pin_:
                         mode = 'stencil_valid'
                     elif 'mode' in metadata and metadata['mode'] == 'sram':
                         mode = 'ROM'
@@ -472,6 +472,7 @@ class Garnet(Generator):
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
                     pin_remap = mem_remap[mode][pin_]
+
                     connections_list[idx] = (tag_, pin_remap)
                 elif tag_[0] == 'p':
                     pin_remap = pe_remap['alu'][pin_]
