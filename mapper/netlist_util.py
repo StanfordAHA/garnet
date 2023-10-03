@@ -526,7 +526,7 @@ class FixInputsOutputAndPipeline(Visitor):
         bit,
         min_stages=1,
     ):
-
+        
         if bit:
             register_source = BitRegisterSource
             register_sink = BitRegisterSink
@@ -909,7 +909,8 @@ class PackRegsIntoPonds(Visitor):
         if node.node_name == "global.PE":
             return node, num_regs, reg_skip_list
 
-        assert node in self.sinks
+        if node not in self.sinks:
+            return None, None, None
         assert len(self.sinks[node]) == 1
         new_node = self.sinks[node][0]
         if new_node.node_name == "Register":
@@ -932,7 +933,10 @@ class PackRegsIntoPonds(Visitor):
             and node.field == "data_out_pond_0"
         ):
             pe_node, num_regs, reg_skip_list = self.find_pe(node, 0, [])
-            if pe_node not in self.pe_to_pond_conns:
+            if pe_node is None:
+                n_node = node.child.select("data_out_pond_1")
+                self.swap_pond_ports.add(n_node.child.iname)
+            elif pe_node not in self.pe_to_pond_conns:
                 self.pe_to_pond_conns[pe_node] = node
                 self.pond_reg_skipped[node.child.iname] = num_regs
                 self.skip_reg_nodes += reg_skip_list
