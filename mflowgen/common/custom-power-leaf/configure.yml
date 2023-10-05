@@ -13,9 +13,8 @@ outputs:
   - power-strategy-dualmesh.tcl
 
 tests:
-  - description: power analysis
-    test_node: cadence-voltus-static-power-analysis
-    default: True
+  - description: power-analysis
+    test_graph: ir_test
     attach_points:
       - POWER
       - PLACE
