@@ -65,9 +65,10 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'GarnetSOC_pad_frame',
-    'clock_period'      : 1.1,
+    'clock_period'      : 2.0*1000,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
+    'adk_stdcell'       : 'b15_7t_108pp',
     # Synthesis
     'flatten_effort'    : 0,
     'topographical'     : True,
@@ -83,9 +84,9 @@ def construct():
     # Power Domains
     'PWR_AWARE'         : True,
     # Include Garnet?
-    'soc_only'          : False,
+    'soc_only'          : True,
     # Include SoC core? (use 0 for false, 1 for true)
-    'include_core'      : 1,
+    'include_core'      : 0,
     # Include sealring?
     'include_sealring'  : False,
     # SRAM macros
@@ -251,7 +252,7 @@ def construct():
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
       # GF has a different way of running fill
-      if adk_name == 'gf12-adk':
+      if adk_name == 'intel16-adk':
           fill           = Step (this_dir + '/../common/mentor-calibre-fill-gf' )
           merge_gdr      = Step( 'mentor-calibre-gdsmerge-child',  default=True )
       else:
@@ -292,20 +293,12 @@ def construct():
     lvs_adk.set_name( 'lvs_adk' )
 
   # Add cgra tile macro inputs to downstream nodes
-
-  synth.extend_inputs( ['tile_array_tt.lib', 'tile_array.lef'] )
-  synth.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
-  synth.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
-  synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-
-  if which_soc == 'onyx':
-    synth.extend_inputs( ['sram_2_tt.lib', 'sram_2.lef'] )
-    synth.extend_inputs( ['xgcd_tt.lib', 'xgcd.lef'] )
-
-  elif which_soc == 'amber':
-    # Exclude dragonphy_top from synth inputs to prevent
-    # floating dragonphy inputs from being tied to 0
-    synth.extend_inputs( ['dragonphy_top.lef'] )
+  # TODO: Recover me after TMA
+  # synth.extend_inputs( ['tile_array_tt.lib', 'tile_array.lef'] )
+  # synth.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
+  # synth.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
+  # synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
+  # synth.extend_inputs( ['sram_2_tt.lib', 'sram_2.lef'] )
 
   pt_signoff.extend_inputs( ['tile_array_tt.db'] )
   pt_signoff.extend_inputs( ['glb_top_tt.db'] )
@@ -393,7 +386,7 @@ def construct():
 
   power.extend_outputs( ["design-merged.gds"] )
 
-  if parameters['interconnect_only'] is False:
+  if parameters['interconnect_only'] is False and parameters['soc_only'] is False:
     rtl.extend_outputs( ['header'] )
     rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
@@ -593,16 +586,17 @@ def construct():
 
   # Connect gen_sram_macro node(s) to all downstream nodes that
   # need them
-  sram_nodes = [synth, iflow, init, power, place, cts, postcts_hold,
-                route, postroute, postroute_hold, signoff, pt_signoff,
-                drc, lvs]
-  for node in sram_nodes:
-    g.connect_by_name( gen_sram, node )
-    if which_soc == 'onyx':
-      for sram_output in gen_sram_2.all_outputs():
-          node_input = sram_output.replace('sram', 'sram_2')
-          if node_input in node.all_inputs():
-              g.connect(gen_sram_2.o(sram_output), node.i(node_input))
+  # TODO: Temporarily removed for TMA, recover me later
+  # sram_nodes = [synth, iflow, init, power, place, cts, postcts_hold,
+  #               route, postroute, postroute_hold, signoff, pt_signoff,
+  #               drc, lvs]
+  # for node in sram_nodes:
+  #   g.connect_by_name( gen_sram, node )
+  #   if which_soc == 'onyx':
+  #     for sram_output in gen_sram_2.all_outputs():
+  #         node_input = sram_output.replace('sram', 'sram_2')
+  #         if node_input in node.all_inputs():
+  #             g.connect(gen_sram_2.o(sram_output), node.i(node_input))
 
   # Full chip floorplan stuff
   g.connect_by_name( io_file, init_fc )
@@ -707,29 +701,28 @@ def construct():
   synth.update_params({'TLX_REV_DATA_LO_WIDTH' : parameters['TLX_REV_DATA_LO_WIDTH']}, True)
   init.update_params({'soc_only': parameters['soc_only']}, True)
 
-  if which_soc == 'amber': init.update_params(
-    {'order': [
-      'main.tcl','quality-of-life.tcl',
-      'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-      'alignment-cells.tcl',
-      'analog-bumps/route-phy-bumps.tcl',
-      'analog-bumps/bump-connect.tcl',
-      'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
-      'place-macros.tcl', 'dont-touch.tcl'
-    ]}
-  )
-
-  if which_soc == 'onyx': init.update_params(
-    {'order': [
-      'main.tcl','quality-of-life.tcl',
-      'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-      'alignment-cells.tcl',
-      #'analog-bumps/route-phy-bumps.tcl',
-      #'analog-bumps/bump-connect.tcl',
-      'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
-      'place-macros.tcl', 'dont-touch.tcl'
-    ]}
-  )
+  init.update_params( {'order': [
+      'pre-init.tcl', # ------------------------ new
+      'main.tcl',
+      'innovus-pnr-config.tcl', # -------------- new
+      'dont-use.tcl', # ------------------------ new
+      'quality-of-life.tcl',
+      'stylus-compatibility-procs.tcl',
+      'floorplan.tcl',
+      'create-rows.tcl', # --------------------- new
+      'add-tracks.tcl', # ---------------------- new
+      'add-endcaps-welltaps.tcl', # ---------- new (not sure if needed)
+      # 'insert-input-antenna-diodes.tcl', # --- new (not sure if needed)
+      'create-special-grid.tcl', # ----------- new (not sure if needed)
+      'io-fillers.tcl',
+      # 'alignment-cells.tcl',
+      'gen-bumps.tcl',
+      # 'check-bumps.tcl',
+      'route-bumps.tcl',
+      # 'place-macros.tcl',
+      'create-boundary-blockage.tcl', # ------ new (not sure if needed)
+      # 'dont-touch.tcl'
+  ] } )
 
   # glb_top parameters update
   glb_top.update_params({'array_width': parameters['array_width']}, True)
