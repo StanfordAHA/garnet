@@ -10,11 +10,13 @@ name: init-fullchip
 
 inputs:
   - io_file
+  - io_pad_placement.tcl
 
 # FIXME  I'm sure this is not how this is supposed to work...[sr02.2020]
 commands:
   - cd outputs 
   - ln -s ../inputs/io_file io_file
+  - ln -s ../inputs/io_pad_placement.tcl io_pad_placement.tcl
 
 # Default order can be found in e.g.
 # mflowgen/steps/cadence-innovus-init/configure.yml
@@ -41,6 +43,7 @@ outputs:
   - sealring.tcl
   - attach-results-to-outputs.tcl
   - io_file
+  - io_pad_placement.tcl
   # Bump routing inc. entire directory of analog (PHY) bump scripts
   - gen-bumps.tcl
   - check-bumps.tcl

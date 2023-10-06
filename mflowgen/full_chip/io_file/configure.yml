@@ -12,9 +12,11 @@ name: io_file
 #-------------------------------------------------------------------------
 inputs:
   - io_file
+  - io_pad_placement.tcl
 
 outputs:
   - io_file
+  - io_pad_placement.tcl
 
 
 #-------------------------------------------------------------------------
@@ -22,3 +24,4 @@ outputs:
 #-------------------------------------------------------------------------
 commands:
   - cp -L inputs/io_file outputs
+  - cp -L inputs/io_pad_placement.tcl outputs
