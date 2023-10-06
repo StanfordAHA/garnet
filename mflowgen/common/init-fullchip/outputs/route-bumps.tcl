@@ -17,17 +17,233 @@ proc route_bumps_main {} {
     ######################################################################
     # MAIN executable portion of script
 
-    # Do analog bumps FIRST I guess
-    # source inputs/{route-phy-bumps,build-phy-nets}.tcl
-    # route_phy_bumps
-    
-    # This works well, routes all bumps fairly easily
-    # set_proc_verbose route_bumps_within_region; # For debugging
-    route_bumps route_bumps_within_region
+    set ring_info [add_power_rings]
+    add_stripes_from_pads_to_rings $ring_info
+    # route_signal_bumps
+    # route_power_bumps
+
     ######################################################################
 }
 
-proc route_bumps { route_cmd} {
+proc add_power_rings {} {
+    # set the ring parameters
+    # ring width: maximum width of the layer
+    # ring spacing: 2x the minimum spacing of the layer
+    set ring_layer gm0
+    set ring_width [dbGet [dbGet -p head.layers.name $ring_layer].maxWidth]
+    set ring_spacing [expr 2 * [dbGet [dbGet -p head.layers.name $ring_layer].minSpacing]]
+    
+    # # obtain the pads object on each side
+    # set pads_top    [dbGet top.insts.name IOPAD_top*]
+    # set pads_bottom [dbGet top.insts.name IOPAD_bottom*]
+    # set pads_left   [dbGet top.insts.name IOPAD_left*]
+    # set pads_right  [dbGet top.insts.name IOPAD_right*]
+    # # compute the max/min x location of the top/bottom pads
+    # # this values are used to compute the ring offset on left/right
+    # set min_x 9999
+    # set max_x 0
+    # foreach obj [concat $pads_top $pads_bottom] {
+    #     set pad_obj [dbGet -p top.insts.name $obj]
+    #     set pad_llx [dbGet $pad_obj.box_llx]
+    #     set pad_urx [dbGet $pad_obj.box_urx]
+    #     if { $pad_llx < $min_x } {
+    #         set min_x $pad_llx
+    #     }
+    #     if { $pad_urx > $max_x } {
+    #         set max_x $pad_urx
+    #     }
+    # }
+    # # compute the max/min y location of the left/right pads
+    # # this values are used to compute the ring offset on top/bottom
+    # set min_y 9999
+    # set max_y 0
+    # foreach obj [concat $pads_left $pads_right] {
+    #     set pad_obj [dbGet -p top.insts.name $obj]
+    #     set pad_lly [dbGet $pad_obj.box_lly]
+    #     set pad_ury [dbGet $pad_obj.box_ury]
+    #     if { $pad_lly < $min_y } {
+    #         set min_y $pad_lly
+    #     }
+    #     if { $pad_ury > $max_y } {
+    #         set max_y $pad_ury
+    #     }
+    # }
+    # # compute the offset of the rings
+    # # we have 3 rings (VDDPST, VSS, VDD), so we need to deduct 3 ring width and 2 ring spacing
+    # set core_box_llx [dbGet top.fPlan.coreBox_llx]
+    # set core_box_lly [dbGet top.fPlan.coreBox_lly]
+    # set core_box_urx [dbGet top.fPlan.coreBox_urx]
+    # set core_box_ury [dbGet top.fPlan.coreBox_ury]
+    # set offset_top    [expr ($core_box_ury - $max_y) - (3 * $ring_width) - (2 * $ring_spacing)]
+    # set offset_bottom [expr ($min_y - $core_box_lly) - (3 * $ring_width) - (2 * $ring_spacing)]
+    # set offset_left   [expr ($min_x - $core_box_llx) - (3 * $ring_width) - (2 * $ring_spacing)]
+    # set offset_right  [expr ($core_box_urx - $max_x) - (3 * $ring_width) - (2 * $ring_spacing)]
+
+    set offset_top    40.0
+    set offset_bottom 40.0
+    set offset_left   44.0
+    set offset_right  44.0
+
+    # Create the rings
+    # Note that we are creating rings inside the core, so we need to make the offset negative values
+    # TODO: Do we need to snap the ring wires to the grid?
+    #       -snap_wire_center_to_grid None | Grid | Half_Grid | Either
+    addRing \
+        -nets {VDDPST VSS VDD} \
+        -layer $ring_layer \
+        -width $ring_width \
+        -spacing $ring_spacing \
+        -offset "top -$offset_top bottom -$offset_bottom left -$offset_left right -$offset_right"
+    
+    # will be used to create the stripes
+    return [list $ring_width $ring_spacing $offset_top $offset_bottom $offset_left $offset_right]
+}
+
+proc get_pad_shape_bound { pad_module_name pad_pin_name x_or_y min_or_max } {
+    set pad_obj [dbGet -p head.allCells.name $pad_module_name]
+    set pin_obj [dbGet -p $pad_obj.pgTerms.name $pad_pin_name]
+    if {$x_or_y eq "x"} {
+        set collection [concat [dbGet $pin_obj.pins.allShapes.shapes.rect_llx] \
+                               [dbGet $pin_obj.pins.allShapes.shapes.rect_urx]]
+    } elseif {$x_or_y eq "y"} {
+        set collection [concat [dbGet $pin_obj.pins.allShapes.shapes.rect_lly] \
+                               [dbGet $pin_obj.pins.allShapes.shapes.rect_ury]]
+    } else {
+        puts "Invalid selection"
+    }
+    
+    set collection [lsort -real $collection]
+    set max_value [lindex $collection end]
+    set min_value [lindex $collection 0]
+
+    if {$min_or_max eq "min"} {
+        set value $min_value
+    } elseif {$min_or_max eq "max"} {
+        set value $max_value
+    } else {
+        set value "Invalid"
+    }
+    return $value
+}
+
+proc add_stripes_from_pads_to_rings { ring_info } {
+    # Add power stripes to connect the power rails in the pads to the power ring
+    #
+    #  power  -----------------X----- vcc
+    #  rings  -----------X-----|----- vss
+    #         ------X----|-----|----- vccio
+    #               |    |     |               
+    #               |    |     |               
+    #               |    |     |               
+    #               |    |     |               
+    #               |    |     |               
+    #               |    |     |               
+    #               |    |     |               
+    #   IO    ------|----|-----X----- vcc
+    #   Pad   ------|----X----------- vss
+    #   Rings ------X----|----------- vccio
+    #         ------|----X----------- vss
+    #         ------X----|----------- vccio
+    #         ------|----X----------- vss
+    #         ------X----|----------- vccio
+    #         ------|----X----------- vss
+    #         ------X---------------- vccio
+    set ring_width         [lindex $ring_info 0]
+    set ring_spacing       [lindex $ring_info 1]
+    set ring_offset_top    [lindex $ring_info 2]
+    set ring_offset_bottom [lindex $ring_info 3]
+    set ring_offset_left   [lindex $ring_info 4]
+    set ring_offset_right  [lindex $ring_info 5]
+    
+    set stripe_layer gmb
+    foreach side {top bottom left right} {
+        set pad_objs [dbGet -p top.insts.name IOPAD_$side*]
+        foreach pad_obj $pad_objs {
+            set pad_inst_name [dbGet $pad_obj.name]
+            set pad_cell_name [dbGet $pad_obj.cell.name]
+            set pad_box_llx [dbGet $pad_obj.box_llx]
+            set pad_box_lly [dbGet $pad_obj.box_lly]
+            set pad_box_urx [dbGet $pad_obj.box_urx]
+            set pad_box_ury [dbGet $pad_obj.box_ury]
+            set i 0
+            foreach pwr_io { vccio vss* vcc } {
+                if {$side eq "top"} {
+                    set port_bound [get_pad_shape_bound $pad_cell_name $pwr_io y max]
+                    set sbox_llx [expr $pad_box_llx]
+                    set sbox_lly [expr $pad_box_lly - $ring_offset_top - ($i+1)*$ring_width - $i*$ring_spacing]
+                    set sbox_urx [expr $pad_box_urx]
+                    set sbox_ury [expr $pad_box_lly + $port_bound]
+                    set stripe_direction "vertical"
+                    set pad_length [dbGet $pad_obj.box_sizex]
+                } elseif {$side eq "bottom"} {
+                    set port_bound [get_pad_shape_bound $pad_cell_name $pwr_io y max]
+                    set sbox_llx [expr $pad_box_llx]
+                    set sbox_lly [expr $pad_box_ury - $port_bound]
+                    set sbox_urx [expr $pad_box_urx]
+                    set sbox_ury [expr $pad_box_ury + $ring_offset_bottom + ($i+1)*$ring_width + $i*$ring_spacing]
+                    set stripe_direction "vertical"
+                    set pad_length [dbGet $pad_obj.box_sizex]
+                } elseif {$side eq "left"} {
+                    set port_bound [get_pad_shape_bound $pad_cell_name $pwr_io x min]
+                    set sbox_llx [expr $pad_box_llx + $port_bound]
+                    set sbox_lly [expr $pad_box_lly]
+                    set sbox_urx [expr $pad_box_urx + $ring_offset_left + ($i+1)*$ring_width + $i*$ring_spacing]
+                    set sbox_ury [expr $pad_box_ury]
+                    set stripe_direction "horizontal"
+                    set pad_length [dbGet $pad_obj.box_sizey]
+                } elseif {$side eq "right"} {
+                    set port_bound [get_pad_shape_bound $pad_cell_name $pwr_io x min]
+                    set sbox_llx [expr $pad_box_llx - $ring_offset_right - ($i+1)*$ring_width - $i*$ring_spacing]
+                    set sbox_lly [expr $pad_box_lly]
+                    set sbox_urx [expr $pad_box_urx - $port_bound]
+                    set sbox_ury [expr $pad_box_ury]
+                    set stripe_direction "horizontal"
+                    set pad_length [dbGet $pad_obj.box_sizey]
+                }
+
+                if {$pwr_io eq "vccio"} {
+                    set stripe_net VDDPST
+                } elseif {$pwr_io eq "vss*"} {
+                    set stripe_net VSS
+                } elseif {$pwr_io eq "vcc"} {
+                    set stripe_net VDD
+                }
+
+                if {[string match "*SUPPLY*" $pad_inst_name]} {
+                    puts "This is a supply pad"
+                    set stripe_width [expr 2 * [dbGet [dbGet -p head.layers.name $stripe_layer].maxWidth] / 3]
+                    set interval [expr $pad_length / 4]
+                    set stripe_offset [expr ($i+1)*($interval) - ($stripe_width/2)]
+                } else {
+                    puts "This is a signal pad"
+                    set stripe_width [expr [dbGet [dbGet -p head.layers.name $stripe_layer].maxWidth] / 3]
+                    set interval [expr $pad_length / 5]
+                    if {$pwr_io eq "vccio"} {
+                        set stripe_offset [expr ($i+1)*($interval) - ($stripe_width/2)]
+                    } else {
+                        set stripe_offset [expr ($i+1)*($interval) - ($stripe_width/2) + $interval]
+                    }
+                }
+
+                puts "pad $pad_inst_name: $sbox_llx $sbox_lly $sbox_urx $sbox_ury"
+
+                # add the stripe
+                addStripe \
+                    -area "$sbox_llx $sbox_lly $sbox_urx $sbox_ury" \
+                    -direction $stripe_direction \
+                    -layer $stripe_layer \
+                    -nets $stripe_net \
+                    -width $stripe_width \
+                    -start_offset $stripe_offset \
+                    -number_of_sets 1
+                
+                incr i
+            }
+        }
+    }
+}
+
+proc route_signal_bumps { route_cmd } {
     # route_cmd options:
     # set route_cmd route_sig_then_pwr; # route sig bumps to pins, pwr bumps to rungs
     # set route_cmd route_power       ; # route power bumps to pads
