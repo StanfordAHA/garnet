@@ -1,0 +1,1720 @@
+insert kernel: hw_input_global_wrapper_s0_y to producer buffer: hw_input_global_wrapper_stencil
+insert kernel: hw_output_s0_y_yi to producer buffer: hw_output_stencil
+insert kernel: mult_s0_y to producer buffer: mult_stencil
+Producer kernels...
+  hw_input_global_wrapper_stencil -> hw_input_global_wrapper_s0_y 
+  hw_output_stencil -> hw_output_s0_y_yi 
+  mult_stencil -> mult_s0_y 
+Multi-write buffers
+Built initializer / update maps
+  # multi_write buffers = 0
+program: pointwise
+Inputs...
+  hw_input_stencil
+Outputs...
+  hw_output_stencil
+buffers...
+operations...
+for (int root = 0; root < 1; root++) {
+  for (int hw_input_global_wrapper_s0_y = 0; hw_input_global_wrapper_s0_y < 64; hw_input_global_wrapper_s0_y++) {
+    for (int hw_input_global_wrapper_s0_x_x = 0; hw_input_global_wrapper_s0_x_x < 64; hw_input_global_wrapper_s0_x_x++) {
+      op_hcompute_hw_input_global_wrapper_stencil: hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] = hcompute_hw_input_global_wrapper_stencil(hw_input_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x])
+    }
+  }
+  for (int mult_s0_y = 0; mult_s0_y < 64; mult_s0_y++) {
+    for (int mult_s0_x_x = 0; mult_s0_x_x < 64; mult_s0_x_x++) {
+      op_hcompute_mult_stencil: mult_stencil[mult_s0_y, mult_s0_x_x] = hcompute_mult_stencil(hw_input_global_wrapper_stencil[mult_s0_y, mult_s0_x_x])
+    }
+  }
+  for (int hw_output_s0_y_yi = 0; hw_output_s0_y_yi < 64; hw_output_s0_y_yi++) {
+    for (int hw_output_s0_x_xi_xi = 0; hw_output_s0_x_xi_xi < 64; hw_output_s0_x_xi_xi++) {
+      op_hcompute_hw_output_stencil: hw_output_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] = hcompute_hw_output_stencil(mult_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi])
+    }
+  }
+}
+Unoptimized schedule...
+  : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [0, 0, 1, mult_s0_y, 0, mult_s0_x_x, 0] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [0, 0, 0, hw_input_global_wrapper_s0_y, 0, hw_input_global_wrapper_s0_x_x, 0] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [0, 0, 2, hw_output_s0_y_yi, 0, hw_output_s0_x_xi_xi, 0] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+{
+  for (int c3 = 0; c3 <= 63; c3 += 1)
+    for (int c5 = 0; c5 <= 63; c5 += 1)
+      op_hcompute_hw_input_global_wrapper_stencil(0, c3, c5);
+  for (int c3 = 0; c3 <= 63; c3 += 1)
+    for (int c5 = 0; c5 <= 63; c5 += 1)
+      op_hcompute_mult_stencil(0, c3, c5);
+  for (int c3 = 0; c3 <= 63; c3 += 1)
+    for (int c5 = 0; c5 <= 63; c5 += 1)
+      op_hcompute_hw_output_stencil(0, c3, c5);
+}
+Creating ports for op: mult_stencil
+cond = { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> mult_stencil[mult_s0_y, mult_s0_x_x] }
+	Adding output port: mult_stencil_op_hcompute_mult_stencil_0
+		Consumed: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> mult_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+current out port name: 
+	mult_stencil_op_hcompute_mult_stencil_0
+Creating ports for op: hw_input_global_wrapper_stencil
+cond = { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> hw_input_global_wrapper_stencil[mult_s0_y, mult_s0_x_x] }
+	Adding output port: hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+		Consumed: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> hw_input_global_wrapper_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+Opt sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [0, 0, 1, mult_s0_y, 0, mult_s0_x_x, 0] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [0, 0, 0, hw_input_global_wrapper_s0_y, 0, hw_input_global_wrapper_s0_x_x, 0] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [0, 0, 2, hw_output_s0_y_yi, 0, hw_output_s0_x_xi_xi, 0] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom      : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+SDom     : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom ITS  : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+Dom UNN  : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Per group...
+  dspace_id       = op_hcompute_mult_stencil
+  other_dspace_id = op_hcompute_mult_stencil
+  Schedule domain set: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  Domain set from prg: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  ITS: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+ITS      : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [0, 0, 1, mult_s0_y, 0, mult_s0_x_x, 0] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+current out port name: 
+	hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+Creating ports for op: hw_output_stencil
+cond = { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> hw_output_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] }
+	Adding output port: hw_output_stencil_op_hcompute_hw_output_stencil_2
+		Consumed: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> hw_output_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+current out port name: 
+	hw_output_stencil_op_hcompute_hw_output_stencil_2
+cond = { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> mult_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] }
+	Adding output port: mult_stencil_op_hcompute_hw_output_stencil_3
+		Consumed: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> mult_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Opt sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [0, 0, 1, mult_s0_y, 0, mult_s0_x_x, 0] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [0, 0, 0, hw_input_global_wrapper_s0_y, 0, hw_input_global_wrapper_s0_x_x, 0] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [0, 0, 2, hw_output_s0_y_yi, 0, hw_output_s0_x_xi_xi, 0] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom      : { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+SDom     : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom ITS  : { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom UNN  : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Per group...
+  dspace_id       = op_hcompute_hw_output_stencil
+  other_dspace_id = op_hcompute_hw_output_stencil
+  Schedule domain set: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+  Domain set from prg: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+  ITS: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+ITS      : { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [0, 0, 2, hw_output_s0_y_yi, 0, hw_output_s0_x_xi_xi, 0] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+current out port name: 
+	mult_stencil_op_hcompute_hw_output_stencil_3
+cond = { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] }
+	Adding output port: hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+		Consumed: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+current out port name: 
+	hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+Creating ports for op: hw_input_stencil
+cond = { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] }
+	Adding output port: hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_5
+		Consumed: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+Opt sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [0, 0, 1, mult_s0_y, 0, mult_s0_x_x, 0] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [0, 0, 0, hw_input_global_wrapper_s0_y, 0, hw_input_global_wrapper_s0_x_x, 0] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [0, 0, 2, hw_output_s0_y_yi, 0, hw_output_s0_x_xi_xi, 0] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom      : { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+SDom     : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom ITS  : { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+Dom UNN  : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Per group...
+  dspace_id       = op_hcompute_hw_input_global_wrapper_stencil
+  other_dspace_id = op_hcompute_hw_input_global_wrapper_stencil
+  Schedule domain set: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  Domain set from prg: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  ITS: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+ITS      : { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [0, 0, 0, hw_input_global_wrapper_s0_y, 0, hw_input_global_wrapper_s0_x_x, 0] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+current out port name: 
+	hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_5
+generating banks for buffer: hw_input_global_wrapper_stencil
+getting rddom
+rddom = { hw_input_global_wrapper_stencil[i0, i1] : 0 <= i0 <= 63 and 0 <= i1 <= 63 }
+Adding bank between hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4 and hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+Done generating register-file style banks for hw_input_global_wrapper_stencil, bank list size = 1
+  after banking there are 1 banks
+  Bank name: hw_input_global_wrapper_stencil_all_inputs_to_all_outputs
+	input: 
+    hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+	 output: 
+    hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+extracting box from { hw_input_global_wrapper_stencil[i0, i1] : 0 <= i0 <= 63 and 0 <= i1 <= 63 }
+extracting box from { hw_input_global_wrapper_stencil[i0, i1] : 0 <= i0 <= 63 and 0 <= i1 <= 63 }
+Constraint aff with div: { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [(root)] }
+cg = (((1*root)) == 0)
+Constraint aff with div: { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [(hw_input_global_wrapper_s0_y)] }
+cg = (((1*hw_input_global_wrapper_s0_y)) >= 0)
+Constraint aff with div: { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [(63 - hw_input_global_wrapper_s0_y)] }
+cg = (((63 + -1*hw_input_global_wrapper_s0_y)) >= 0)
+Constraint aff with div: { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [(hw_input_global_wrapper_s0_x_x)] }
+cg = (((1*hw_input_global_wrapper_s0_x_x)) >= 0)
+Constraint aff with div: { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [(63 - hw_input_global_wrapper_s0_x_x)] }
+cg = (((63 + -1*hw_input_global_wrapper_s0_x_x)) >= 0)
+Input port:hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4, Get ram string: (((1*hw_input_global_wrapper_s0_y)) - 0) * 1 + (((1*hw_input_global_wrapper_s0_x_x)) - 0) * 64
+Constraint aff with div: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [(root)] }
+cg = (((1*root)) == 0)
+Constraint aff with div: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [(mult_s0_y)] }
+cg = (((1*mult_s0_y)) >= 0)
+Constraint aff with div: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [(63 - mult_s0_y)] }
+cg = (((63 + -1*mult_s0_y)) >= 0)
+Constraint aff with div: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [(mult_s0_x_x)] }
+cg = (((1*mult_s0_x_x)) >= 0)
+Constraint aff with div: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [(63 - mult_s0_x_x)] }
+cg = (((63 + -1*mult_s0_x_x)) >= 0)
+generating banks for buffer: mult_stencil
+getting rddom
+rddom = { mult_stencil[i0, i1] : 0 <= i0 <= 63 and 0 <= i1 <= 63 }
+Adding bank between mult_stencil_op_hcompute_mult_stencil_0 and mult_stencil_op_hcompute_hw_output_stencil_3
+Done generating register-file style banks for mult_stencil, bank list size = 1
+  after banking there are 1 banks
+  Bank name: mult_stencil_all_inputs_to_all_outputs
+	input: 
+    mult_stencil_op_hcompute_mult_stencil_0
+	 output: 
+    mult_stencil_op_hcompute_hw_output_stencil_3
+extracting box from { mult_stencil[i0, i1] : 0 <= i0 <= 63 and 0 <= i1 <= 63 }
+extracting box from { mult_stencil[i0, i1] : 0 <= i0 <= 63 and 0 <= i1 <= 63 }
+Constraint aff with div: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [(root)] }
+cg = (((1*root)) == 0)
+Constraint aff with div: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [(mult_s0_y)] }
+cg = (((1*mult_s0_y)) >= 0)
+Constraint aff with div: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [(63 - mult_s0_y)] }
+cg = (((63 + -1*mult_s0_y)) >= 0)
+Constraint aff with div: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [(mult_s0_x_x)] }
+cg = (((1*mult_s0_x_x)) >= 0)
+Constraint aff with div: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [(63 - mult_s0_x_x)] }
+cg = (((63 + -1*mult_s0_x_x)) >= 0)
+Input port:mult_stencil_op_hcompute_mult_stencil_0, Get ram string: (((1*mult_s0_y)) - 0) * 1 + (((1*mult_s0_x_x)) - 0) * 64
+Constraint aff with div: { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [(root)] }
+cg = (((1*root)) == 0)
+Constraint aff with div: { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [(hw_output_s0_y_yi)] }
+cg = (((1*hw_output_s0_y_yi)) >= 0)
+Constraint aff with div: { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [(63 - hw_output_s0_y_yi)] }
+cg = (((63 + -1*hw_output_s0_y_yi)) >= 0)
+Constraint aff with div: { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [(hw_output_s0_x_xi_xi)] }
+cg = (((1*hw_output_s0_x_xi_xi)) >= 0)
+Constraint aff with div: { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [(63 - hw_output_s0_x_xi_xi)] }
+cg = (((63 + -1*hw_output_s0_x_xi_xi)) >= 0)
+Prog: unoptimized_pointwise
+Generating compute for: op_hcompute_hw_input_global_wrapper_stencil
+Got srcs
+Got iteration variables
+got in_buffers
+created res
+finding out buffers
+Checking if program is a boundary
+Generating compute for: op_hcompute_mult_stencil
+Got srcs
+Got iteration variables
+got in_buffers
+op = op_hcompute_mult_stencil
+created res
+finding out buffers
+Checking if program is a boundary
+Generating compute for: op_hcompute_hw_output_stencil
+Got srcs
+Got iteration variables
+got in_buffers
+op = op_hcompute_hw_output_stencil
+created res
+finding out buffers
+Checking if program is a boundary
+Trying to find hw_input_stencil in buffers
+Trying bundle: op_hcompute_hw_input_global_wrapper_stencil_read
+done trying bundles
+No bundle for input: hw_input_stencil
+No bundle for input: hw_input_stencil
+Trying bundle: op_hcompute_hw_output_stencil_write
+done trying bundle
+No bundle for input: hw_output_stencil
+Got args
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i6)] }
+cg = (((1*i6)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i4)] }
+cg = (((1*i4)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(-1 + i2)] }
+cg = (((-1 + 1*i2)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i1)] }
+cg = (((1*i1)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i0)] }
+cg = (((1*i0)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i3)] }
+cg = (((1*i3)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(63 - i3)] }
+cg = (((63 + -1*i3)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i5)] }
+cg = (((1*i5)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(63 - i5)] }
+cg = (((63 + -1*i5)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i6)] }
+cg = (((1*i6)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i4)] }
+cg = (((1*i4)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i2)] }
+cg = (((1*i2)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i1)] }
+cg = (((1*i1)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i0)] }
+cg = (((1*i0)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i3)] }
+cg = (((1*i3)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(63 - i3)] }
+cg = (((63 + -1*i3)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i5)] }
+cg = (((1*i5)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(63 - i5)] }
+cg = (((63 + -1*i5)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i6)] }
+cg = (((1*i6)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i4)] }
+cg = (((1*i4)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(-2 + i2)] }
+cg = (((-2 + 1*i2)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i1)] }
+cg = (((1*i1)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i0)] }
+cg = (((1*i0)) == 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i3)] }
+cg = (((1*i3)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(63 - i3)] }
+cg = (((63 + -1*i3)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(i5)] }
+cg = (((1*i5)) >= 0)
+Constraint aff with div: { [i0, i1, i2, i3, i4, i5, i6] -> [(63 - i5)] }
+cg = (((63 + -1*i5)) >= 0)
+Trying to find hw_input_stencil in buffers
+Trying bundle: op_hcompute_hw_input_global_wrapper_stencil_read
+done trying bundles
+No bundle for input: hw_input_stencil
+No bundle for input: hw_input_stencil
+Trying bundle: op_hcompute_hw_output_stencil_write
+done trying bundle
+No bundle for input: hw_output_stencil
+Got args
+Trying to find hw_input_stencil in buffers
+Trying bundle: op_hcompute_hw_input_global_wrapper_stencil_read
+done trying bundles
+No bundle for input: hw_input_stencil
+No bundle for input: hw_input_stencil
+Trying bundle: op_hcompute_hw_output_stencil_write
+done trying bundle
+No bundle for input: hw_output_stencil
+Got args
+Generating accel wrapper
+# in bundles: 1
+Generating arg list
+Generating driver function
+buf = hw_input_stencil
+Generated accel wrapper
+Generating accel wrapper
+Generating arg list
+Generating driver function
+Generating bmp harness
+Generated channels
+Generating inputs
+in dim = 0
+Trying to find hw_input_stencil in buffers
+Trying bundle: op_hcompute_hw_input_global_wrapper_stencil_read
+done trying bundles
+No bundle for input: hw_input_stencil
+No bundle for input: hw_input_stencil
+Trying bundle: op_hcompute_hw_output_stencil_write
+done trying bundle
+No bundle for input: hw_output_stencil
+Got args
+# in bundles: 1
+# in bundles: 1
+# in bundles: 1
+# in bundles: 1
+# in bundles: 1
+# in bundles: 1
+# in bundles: 1
+# in bundles: 1
+# in bundles: 1
+Built unoptimized code
+cmd: echo $CLKWRK_PATH
+/aha/clockwork
+cmd: g++ -fstack-protector-all -std=c++11 -I $CLKWRK_PATH regression_tb_unoptimized_pointwise.cpp unoptimized_pointwise.cpp
+Running CGRA flow on pointwise
+program: pointwise
+Inputs...
+  hw_input_stencil
+Outputs...
+  hw_output_stencil
+buffers...
+  hw_input_stencil[]
+operations...
+for (int root = 0; root < 1; root++) {
+  for (int hw_input_global_wrapper_s0_y = 0; hw_input_global_wrapper_s0_y < 64; hw_input_global_wrapper_s0_y++) {
+    for (int hw_input_global_wrapper_s0_x_x = 0; hw_input_global_wrapper_s0_x_x < 64; hw_input_global_wrapper_s0_x_x++) {
+      op_hcompute_hw_input_global_wrapper_stencil: hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] = hcompute_hw_input_global_wrapper_stencil(hw_input_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x])
+    }
+  }
+  for (int mult_s0_y = 0; mult_s0_y < 64; mult_s0_y++) {
+    for (int mult_s0_x_x = 0; mult_s0_x_x < 64; mult_s0_x_x++) {
+      op_hcompute_mult_stencil: mult_stencil[mult_s0_y, mult_s0_x_x] = hcompute_mult_stencil(hw_input_global_wrapper_stencil[mult_s0_y, mult_s0_x_x])
+    }
+  }
+  for (int hw_output_s0_y_yi = 0; hw_output_s0_y_yi < 64; hw_output_s0_y_yi++) {
+    for (int hw_output_s0_x_xi_xi = 0; hw_output_s0_x_xi_xi < 64; hw_output_s0_x_xi_xi++) {
+      op_hcompute_hw_output_stencil: hw_output_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] = hcompute_hw_output_stencil(mult_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi])
+    }
+  }
+}
+Buffer: hw_input_global_wrapper_stencil
+  Producers...
+Got consumers
+Writes: { hw_input_global_wrapper_stencil[i0, i1] : 0 <= i0 <= 63 and 0 <= i1 <= 63 }
+    Min offset (counting only writers): 0, 0
+Visit produce locations: hw_input_global_wrapper_stencil: addr =  [hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x]
+New produce locations: hw_input_global_wrapper_stencil: addr =  [hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0]
+Visit consume locations: hw_input_global_wrapper_stencil: addr =  [mult_s0_y, mult_s0_x_x]
+New consume locations: hw_input_global_wrapper_stencil: addr =  [mult_s0_y+0,  mult_s0_x_x+0]
+Buffer: hw_input_stencil
+  Producers...
+3
+Got consumers
+Writes: { hw_input_stencil[i0, i1] : 0 <= i0 <= 63 and 0 <= i1 <= 63 }
+    Min offset (counting only writers): 0, 0
+Visit consume locations: hw_input_stencil: addr =  [hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x]
+New consume locations: hw_input_stencil: addr =  [hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0]
+Buffer: hw_output_stencil
+  Producers...
+Got consumers
+    Min offset (counting only writers): 0, 0
+Visit produce locations: hw_output_stencil: addr =  [hw_output_s0_y_yi, hw_output_s0_x_xi_xi]
+New produce locations: hw_output_stencil: addr =  [hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0]
+Buffer: mult_stencil
+  Producers...
+Got consumers
+Writes: { mult_stencil[i0, i1] : 0 <= i0 <= 63 and 0 <= i1 <= 63 }
+    Min offset (counting only writers): 0, 0
+Visit produce locations: mult_stencil: addr =  [mult_s0_y, mult_s0_x_x]
+New produce locations: mult_stencil: addr =  [mult_s0_y+0,  mult_s0_x_x+0]
+Visit consume locations: mult_stencil: addr =  [hw_output_s0_y_yi, hw_output_s0_x_xi_xi]
+New consume locations: mult_stencil: addr =  [hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0]
+program: pointwise
+Inputs...
+  hw_input_stencil
+Outputs...
+  hw_output_stencil
+buffers...
+  hw_input_stencil[]
+operations...
+for (int root = 0; root < 1; root++) {
+  for (int hw_input_global_wrapper_s0_y = 0; hw_input_global_wrapper_s0_y < 64; hw_input_global_wrapper_s0_y++) {
+    for (int hw_input_global_wrapper_s0_x_x = 0; hw_input_global_wrapper_s0_x_x < 64; hw_input_global_wrapper_s0_x_x++) {
+      op_hcompute_hw_input_global_wrapper_stencil: hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0] = hcompute_hw_input_global_wrapper_stencil(hw_input_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0])
+    }
+  }
+  for (int mult_s0_y = 0; mult_s0_y < 64; mult_s0_y++) {
+    for (int mult_s0_x_x = 0; mult_s0_x_x < 64; mult_s0_x_x++) {
+      op_hcompute_mult_stencil: mult_stencil[mult_s0_y+0,  mult_s0_x_x+0] = hcompute_mult_stencil(hw_input_global_wrapper_stencil[mult_s0_y+0,  mult_s0_x_x+0])
+    }
+  }
+  for (int hw_output_s0_y_yi = 0; hw_output_s0_y_yi < 64; hw_output_s0_y_yi++) {
+    for (int hw_output_s0_x_xi_xi = 0; hw_output_s0_x_xi_xi < 64; hw_output_s0_x_xi_xi++) {
+      op_hcompute_hw_output_stencil: hw_output_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0] = hcompute_hw_output_stencil(mult_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0])
+    }
+  }
+}
+cmd: mkdir -p ./map_result/pointwise
+After Loop Perfection
+program: pointwise
+Inputs...
+  hw_input_stencil
+Outputs...
+  hw_output_stencil
+buffers...
+  hw_input_stencil[]
+operations...
+for (int root = 0; root < 1; root++) {
+  for (int hw_input_global_wrapper_s0_y = 0; hw_input_global_wrapper_s0_y < 64; hw_input_global_wrapper_s0_y++) {
+    for (int hw_input_global_wrapper_s0_x_x = 0; hw_input_global_wrapper_s0_x_x < 64; hw_input_global_wrapper_s0_x_x++) {
+      op_hcompute_hw_input_global_wrapper_stencil: hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0] = hcompute_hw_input_global_wrapper_stencil(hw_input_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0])
+    }
+  }
+  for (int mult_s0_y = 0; mult_s0_y < 64; mult_s0_y++) {
+    for (int mult_s0_x_x = 0; mult_s0_x_x < 64; mult_s0_x_x++) {
+      op_hcompute_mult_stencil: mult_stencil[mult_s0_y+0,  mult_s0_x_x+0] = hcompute_mult_stencil(hw_input_global_wrapper_stencil[mult_s0_y+0,  mult_s0_x_x+0])
+    }
+  }
+  for (int hw_output_s0_y_yi = 0; hw_output_s0_y_yi < 64; hw_output_s0_y_yi++) {
+    for (int hw_output_s0_x_xi_xi = 0; hw_output_s0_x_xi_xi < 64; hw_output_s0_x_xi_xi++) {
+      op_hcompute_hw_output_stencil: hw_output_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0] = hcompute_hw_output_stencil(mult_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0])
+    }
+  }
+}
+hcompute_hw_input_global_wrapper_stencil
+Compute Kernel latency in0_hw_input_stencil : {"0":{"latency":3,"pe_port":""}}
+	max compute Kernel latency 3
+	port compute Kernel latency in0_hw_input_stencil_0 : 0
+hcompute_mult_stencil
+Compute Kernel latency in0_hw_input_global_wrapper_stencil : {"0":{"latency":1,"pe_port":["mul_pipelined_i2605_i1376","data0"]}}
+	max compute Kernel latency 1
+	port compute Kernel latency in0_hw_input_global_wrapper_stencil_0 : 0
+hcompute_hw_output_stencil
+Compute Kernel latency in0_mult_stencil : {"0":{"latency":0,"pe_port":""}}
+	max compute Kernel latency 0
+	port compute Kernel latency in0_mult_stencil_0 : 0
+hcompute_hw_input_global_wrapper_stencil: 3 
+hcompute_hw_output_stencil: 0 
+hcompute_mult_stencil: 1 
+
+sorted kernel: {}
+sorted kernel: {hw_input_global_wrapper_s0_y}
+sorted kernel: {hw_input_global_wrapper_s0_y}
+sorted kernel: {hw_input_global_wrapper_s0_y, mult_s0_y}
+prod -> cons: hw_input_global_wrapper_s0_y->mult_s0_y
+		prod depth vec: {64, 64}
+		cons depth vec: {64, 64}
+	 buffers_written: {hw_input_global_wrapper_stencil}
+	 buffers_read: {hw_input_global_wrapper_stencil}
+	buf: hw_input_global_wrapper_stencil
+	dep map: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> op_hcompute_mult_stencil[root' = 0, mult_s0_y = hw_input_global_wrapper_s0_y, mult_s0_x_x = hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+		prod in dim: 1	out dim: {1}
+		prod in dim: 2	out dim: {2}
+align dim pair: 
+    1, 1
+    2, 2
+transform align array to pad dim: 
+	{0, 1, 2, 3}
+	{0, 1, 2, 3}
+	prod align array:{0, 1, 2}
+	cons align array:{0, 1, 2}
+
+
+		kernel: hw_input_global_wrapper_s0_y, pad vec: {0, 1, 2}
+
+
+		kernel: mult_s0_y, pad vec: {0, 1, 2}
+prod -> cons: mult_s0_y->hw_output_s0_y_yi
+		prod depth vec: {64, 64}
+		cons depth vec: {64, 64}
+	 buffers_written: {mult_stencil}
+	 buffers_read: {mult_stencil}
+	buf: mult_stencil
+	dep map: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> op_hcompute_hw_output_stencil[root' = 0, hw_output_s0_y_yi = mult_s0_y, hw_output_s0_x_xi_xi = mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+		prod in dim: 1	out dim: {1}
+		prod in dim: 2	out dim: {2}
+align dim pair: 
+    1, 1
+    2, 2
+transform align array to pad dim: 
+	{0, 1, 2, 3}
+	{0, 1, 2, 3}
+	prod align array:{0, 1, 2}
+	cons align array:{0, 1, 2}
+
+
+		kernel: hw_input_global_wrapper_s0_y, pad vec: {0, 1, 2}
+
+
+		kernel: hw_output_s0_y_yi, pad vec: {0, 1, 2}
+
+
+		kernel: mult_s0_y, pad vec: {0, 1, 2}
+    kernel: hw_input_global_wrapper_s0_y
+        pad indice: {0, 1, 2}
+        loop depth: {64, 64}
+    kernel: hw_output_s0_y_yi
+        pad indice: {0, 1, 2}
+        loop depth: {64, 64}
+    kernel: mult_s0_y
+        pad indice: {0, 1, 2}
+        loop depth: {64, 64}
+    final depth index :{64, 64}
+    most intensive kernel:hw_input_global_wrapper_s0_y
+program: pointwise
+Inputs...
+  hw_input_stencil
+Outputs...
+  hw_output_stencil
+buffers...
+  hw_input_stencil[]
+operations...
+for (int root = 0; root < 1; root++) {
+  for (int hw_input_global_wrapper_s0_y = 0; hw_input_global_wrapper_s0_y < 64; hw_input_global_wrapper_s0_y++) {
+    for (int hw_input_global_wrapper_s0_x_x = 0; hw_input_global_wrapper_s0_x_x < 64; hw_input_global_wrapper_s0_x_x++) {
+      op_hcompute_hw_input_global_wrapper_stencil: hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0] = hcompute_hw_input_global_wrapper_stencil(hw_input_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0])
+    }
+  }
+  for (int mult_s0_y = 0; mult_s0_y < 64; mult_s0_y++) {
+    for (int mult_s0_x_x = 0; mult_s0_x_x < 64; mult_s0_x_x++) {
+      op_hcompute_mult_stencil: mult_stencil[mult_s0_y+0,  mult_s0_x_x+0] = hcompute_mult_stencil(hw_input_global_wrapper_stencil[mult_s0_y+0,  mult_s0_x_x+0])
+    }
+  }
+  for (int hw_output_s0_y_yi = 0; hw_output_s0_y_yi < 64; hw_output_s0_y_yi++) {
+    for (int hw_output_s0_x_xi_xi = 0; hw_output_s0_x_xi_xi < 64; hw_output_s0_x_xi_xi++) {
+      op_hcompute_hw_output_stencil: hw_output_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0] = hcompute_hw_output_stencil(mult_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0])
+    }
+  }
+}
+sorted kernel: {}
+sorted kernel: {hw_input_global_wrapper_s0_y}
+sorted kernel: {hw_input_global_wrapper_s0_y}
+sorted kernel: {hw_input_global_wrapper_s0_y, mult_s0_y}
+prod -> cons: hw_input_global_wrapper_s0_y->mult_s0_y
+		prod depth vec: {64, 64}
+		cons depth vec: {64, 64}
+	 buffers_written: {hw_input_global_wrapper_stencil}
+	 buffers_read: {hw_input_global_wrapper_stencil}
+	buf: hw_input_global_wrapper_stencil
+	dep map: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> op_hcompute_mult_stencil[root' = 0, mult_s0_y = hw_input_global_wrapper_s0_y, mult_s0_x_x = hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+		prod in dim: 1	out dim: {1}
+		prod in dim: 2	out dim: {2}
+align dim pair: 
+    1, 1
+    2, 2
+transform align array to pad dim: 
+	{0, 1, 2, 3}
+	{0, 1, 2, 3}
+	prod align array:{0, 1, 2}
+	cons align array:{0, 1, 2}
+
+
+		kernel: hw_input_global_wrapper_s0_y, pad vec: {0, 1, 2}
+
+
+		kernel: mult_s0_y, pad vec: {0, 1, 2}
+prod -> cons: mult_s0_y->hw_output_s0_y_yi
+		prod depth vec: {64, 64}
+		cons depth vec: {64, 64}
+	 buffers_written: {mult_stencil}
+	 buffers_read: {mult_stencil}
+	buf: mult_stencil
+	dep map: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> op_hcompute_hw_output_stencil[root' = 0, hw_output_s0_y_yi = mult_s0_y, hw_output_s0_x_xi_xi = mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+		prod in dim: 1	out dim: {1}
+		prod in dim: 2	out dim: {2}
+align dim pair: 
+    1, 1
+    2, 2
+transform align array to pad dim: 
+	{0, 1, 2, 3}
+	{0, 1, 2, 3}
+	prod align array:{0, 1, 2}
+	cons align array:{0, 1, 2}
+
+
+		kernel: hw_input_global_wrapper_s0_y, pad vec: {0, 1, 2}
+
+
+		kernel: hw_output_s0_y_yi, pad vec: {0, 1, 2}
+
+
+		kernel: mult_s0_y, pad vec: {0, 1, 2}
+  hw_input_global_wrapper_s0_y: 0, 1, 2
+  hw_output_s0_y_yi: 0, 1, 2
+  mult_s0_y: 0, 1, 2
+level = 0, op = root
+  child = hw_input_global_wrapper_s0_y
+    checking if we should pad op_hcompute_hw_input_global_wrapper_stencil
+  child = mult_s0_y
+    checking if we should pad op_hcompute_mult_stencil
+  child = hw_output_s0_y_yi
+    checking if we should pad op_hcompute_hw_output_stencil
+level = 1, op = hw_input_global_wrapper_s0_y
+  child = hw_input_global_wrapper_s0_x_x
+    checking if we should pad op_hcompute_hw_input_global_wrapper_stencil
+level = 2, op = hw_input_global_wrapper_s0_x_x
+  child = op_hcompute_hw_input_global_wrapper_stencil
+    checking if we should pad op_hcompute_hw_input_global_wrapper_stencil
+level = 1, op = mult_s0_y
+  child = mult_s0_x_x
+    checking if we should pad op_hcompute_mult_stencil
+level = 2, op = mult_s0_x_x
+  child = op_hcompute_mult_stencil
+    checking if we should pad op_hcompute_mult_stencil
+level = 1, op = hw_output_s0_y_yi
+  child = hw_output_s0_x_xi_xi
+    checking if we should pad op_hcompute_hw_output_stencil
+level = 2, op = hw_output_s0_x_xi_xi
+  child = op_hcompute_hw_output_stencil
+    checking if we should pad op_hcompute_hw_output_stencil
+program: pointwise
+Inputs...
+  hw_input_stencil
+Outputs...
+  hw_output_stencil
+buffers...
+  hw_input_stencil[]
+operations...
+for (int root = 0; root < 1; root++) {
+  for (int hw_input_global_wrapper_s0_y = 0; hw_input_global_wrapper_s0_y < 64; hw_input_global_wrapper_s0_y++) {
+    for (int hw_input_global_wrapper_s0_x_x = 0; hw_input_global_wrapper_s0_x_x < 64; hw_input_global_wrapper_s0_x_x++) {
+      op_hcompute_hw_input_global_wrapper_stencil: hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0] = hcompute_hw_input_global_wrapper_stencil(hw_input_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0])
+    }
+  }
+  for (int mult_s0_y = 0; mult_s0_y < 64; mult_s0_y++) {
+    for (int mult_s0_x_x = 0; mult_s0_x_x < 64; mult_s0_x_x++) {
+      op_hcompute_mult_stencil: mult_stencil[mult_s0_y+0,  mult_s0_x_x+0] = hcompute_mult_stencil(hw_input_global_wrapper_stencil[mult_s0_y+0,  mult_s0_x_x+0])
+    }
+  }
+  for (int hw_output_s0_y_yi = 0; hw_output_s0_y_yi < 64; hw_output_s0_y_yi++) {
+    for (int hw_output_s0_x_xi_xi = 0; hw_output_s0_x_xi_xi < 64; hw_output_s0_x_xi_xi++) {
+      op_hcompute_hw_output_stencil: hw_output_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0] = hcompute_hw_output_stencil(mult_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0])
+    }
+  }
+}
+program: pointwise
+Inputs...
+  hw_input_stencil
+Outputs...
+  hw_output_stencil
+buffers...
+  hw_input_stencil[]
+operations...
+for (int root = 0; root < 1; root++) {
+  for (int hw_input_global_wrapper_s0_y = 0; hw_input_global_wrapper_s0_y < 64; hw_input_global_wrapper_s0_y++) {
+    for (int hw_input_global_wrapper_s0_x_x = 0; hw_input_global_wrapper_s0_x_x < 64; hw_input_global_wrapper_s0_x_x++) {
+      op_hcompute_hw_input_global_wrapper_stencil: hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0] = hcompute_hw_input_global_wrapper_stencil(hw_input_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0])
+    }
+  }
+  for (int mult_s0_y = 0; mult_s0_y < 64; mult_s0_y++) {
+    for (int mult_s0_x_x = 0; mult_s0_x_x < 64; mult_s0_x_x++) {
+      op_hcompute_mult_stencil: mult_stencil[mult_s0_y+0,  mult_s0_x_x+0] = hcompute_mult_stencil(hw_input_global_wrapper_stencil[mult_s0_y+0,  mult_s0_x_x+0])
+    }
+  }
+  for (int hw_output_s0_y_yi = 0; hw_output_s0_y_yi < 64; hw_output_s0_y_yi++) {
+    for (int hw_output_s0_x_xi_xi = 0; hw_output_s0_x_xi_xi < 64; hw_output_s0_x_xi_xi++) {
+      op_hcompute_hw_output_stencil: hw_output_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0] = hcompute_hw_output_stencil(mult_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0])
+    }
+  }
+}
+pointwise is a stencil pipeline
+Computing validity deps for hw_input_global_wrapper_stencil
+Computing validity deps for hw_input_stencil
+Computing validity deps for hw_output_stencil
+Computing validity deps for mult_stencil
+Finite validity: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> op_hcompute_mult_stencil[root' = 0, mult_s0_y = hw_input_global_wrapper_s0_y, mult_s0_x_x = hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> op_hcompute_hw_output_stencil[root' = 0, hw_output_s0_y_yi = mult_s0_y, hw_output_s0_x_xi_xi = mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  Dep = { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> op_hcompute_mult_stencil[root' = 0, mult_s0_y = hw_input_global_wrapper_s0_y, mult_s0_x_x = hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  Dep = { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> op_hcompute_hw_output_stencil[root' = 0, hw_output_s0_y_yi = mult_s0_y, hw_output_s0_x_xi_xi = mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+Got deps
+Schedule dim = 3
+  scheduling dimension 0
+  { op_hcompute_hw_input_global_wrapper_stencil[root = 0] -> op_hcompute_mult_stencil[root' = 0] }
+  { op_hcompute_mult_stencil[root = 0] -> op_hcompute_hw_output_stencil[root' = 0] }
+Consumed data...
+  { op_hcompute_mult_stencil[root = 0] -> op_hcompute_hw_input_global_wrapper_stencil[root' = 0] }
+bound: { op_hcompute_mult_stencil[root] -> op_hcompute_hw_input_global_wrapper_stencil[(0)] }
+    affine upper bound on data needed: { op_hcompute_mult_stencil[root] -> [(0)] }
+      domain of bound: { op_hcompute_mult_stencil[root = 0] }
+Extracting linear rational approximation: { op_hcompute_mult_stencil[root] -> [(0)] }
+  { op_hcompute_hw_output_stencil[root = 0] -> op_hcompute_mult_stencil[root' = 0] }
+bound: { op_hcompute_hw_output_stencil[root] -> op_hcompute_mult_stencil[(0)] }
+    affine upper bound on data needed: { op_hcompute_hw_output_stencil[root] -> [(0)] }
+      domain of bound: { op_hcompute_hw_output_stencil[root = 0] }
+Extracting linear rational approximation: { op_hcompute_hw_output_stencil[root] -> [(0)] }
+Extracted sched params
+ILP Problem: { [s_op_hcompute_mult_stencil, s_op_hcompute_hw_input_global_wrapper_stencil, s_op_hcompute_hw_output_stencil] : s_op_hcompute_mult_stencil > 0 and s_op_hcompute_hw_input_global_wrapper_stencil > 0 and s_op_hcompute_hw_output_stencil > 0 }
+Writing problem to mod file...
+  # of constraints: 3
+  legal point  : { [1, 1, 1] }
+  minimal point: 0
+Schedule params...
+  { op_hcompute_mult_stencil[root = 0] -> op_hcompute_hw_input_global_wrapper_stencil[root' = 0] }
+  { op_hcompute_hw_output_stencil[root = 0] -> op_hcompute_mult_stencil[root' = 0] }
+Done with schedule
+Clockwork schedules...
+  op_hcompute_hw_input_global_wrapper_stencil: { [i] -> [(i)] }
+  op_hcompute_hw_output_stencil: { [i] -> [(i)] }
+  op_hcompute_mult_stencil: { [i] -> [(i)] }
+  scheduling dimension 1
+  { op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y] -> op_hcompute_mult_stencil[mult_s0_y = hw_input_global_wrapper_s0_y] : 0 <= hw_input_global_wrapper_s0_y <= 63 }
+  { op_hcompute_mult_stencil[mult_s0_y] -> op_hcompute_hw_output_stencil[hw_output_s0_y_yi = mult_s0_y] : 0 <= mult_s0_y <= 63 }
+Consumed data...
+  { op_hcompute_mult_stencil[mult_s0_y] -> op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y = mult_s0_y] : 0 <= mult_s0_y <= 63 }
+bound: { op_hcompute_mult_stencil[mult_s0_y] -> op_hcompute_hw_input_global_wrapper_stencil[(mult_s0_y)] }
+    affine upper bound on data needed: { op_hcompute_mult_stencil[mult_s0_y] -> [(mult_s0_y)] }
+      domain of bound: { op_hcompute_mult_stencil[mult_s0_y] : 0 <= mult_s0_y <= 63 }
+Extracting linear rational approximation: { op_hcompute_mult_stencil[mult_s0_y] -> [(mult_s0_y)] }
+  { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] -> op_hcompute_mult_stencil[mult_s0_y = hw_output_s0_y_yi] : 0 <= hw_output_s0_y_yi <= 63 }
+bound: { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] -> op_hcompute_mult_stencil[(hw_output_s0_y_yi)] }
+    affine upper bound on data needed: { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] -> [(hw_output_s0_y_yi)] }
+      domain of bound: { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] : 0 <= hw_output_s0_y_yi <= 63 }
+Extracting linear rational approximation: { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] -> [(hw_output_s0_y_yi)] }
+Extracted sched params
+ILP Problem: { [s_op_hcompute_mult_stencil, s_op_hcompute_hw_input_global_wrapper_stencil, s_op_hcompute_hw_output_stencil] : s_op_hcompute_hw_input_global_wrapper_stencil = s_op_hcompute_mult_stencil and s_op_hcompute_hw_output_stencil = s_op_hcompute_mult_stencil and s_op_hcompute_mult_stencil > 0 }
+Writing problem to mod file...
+  # of constraints: 5
+  legal point  : { [1, 1, 1] }
+  minimal point: -3
+Schedule params...
+  { op_hcompute_mult_stencil[mult_s0_y] -> op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y = mult_s0_y] : 0 <= mult_s0_y <= 63 }
+  { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] -> op_hcompute_mult_stencil[mult_s0_y = hw_output_s0_y_yi] : 0 <= hw_output_s0_y_yi <= 63 }
+Done with schedule
+Clockwork schedules...
+  op_hcompute_hw_input_global_wrapper_stencil: { [i] -> [(i)] }
+  op_hcompute_hw_output_stencil: { [i] -> [(i)] }
+  op_hcompute_mult_stencil: { [i] -> [(i)] }
+  scheduling dimension 2
+  { op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_x_x] -> op_hcompute_mult_stencil[mult_s0_x_x = hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  { op_hcompute_mult_stencil[mult_s0_x_x] -> op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi = mult_s0_x_x] : 0 <= mult_s0_x_x <= 63 }
+Consumed data...
+  { op_hcompute_mult_stencil[mult_s0_x_x] -> op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_x_x = mult_s0_x_x] : 0 <= mult_s0_x_x <= 63 }
+bound: { op_hcompute_mult_stencil[mult_s0_x_x] -> op_hcompute_hw_input_global_wrapper_stencil[(mult_s0_x_x)] }
+    affine upper bound on data needed: { op_hcompute_mult_stencil[mult_s0_x_x] -> [(mult_s0_x_x)] }
+      domain of bound: { op_hcompute_mult_stencil[mult_s0_x_x] : 0 <= mult_s0_x_x <= 63 }
+Extracting linear rational approximation: { op_hcompute_mult_stencil[mult_s0_x_x] -> [(mult_s0_x_x)] }
+  { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] -> op_hcompute_mult_stencil[mult_s0_x_x = hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_x_xi_xi <= 63 }
+bound: { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] -> op_hcompute_mult_stencil[(hw_output_s0_x_xi_xi)] }
+    affine upper bound on data needed: { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] -> [(hw_output_s0_x_xi_xi)] }
+      domain of bound: { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_x_xi_xi <= 63 }
+Extracting linear rational approximation: { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] -> [(hw_output_s0_x_xi_xi)] }
+Extracted sched params
+ILP Problem: { [s_op_hcompute_mult_stencil, s_op_hcompute_hw_input_global_wrapper_stencil, s_op_hcompute_hw_output_stencil] : s_op_hcompute_hw_input_global_wrapper_stencil = s_op_hcompute_mult_stencil and s_op_hcompute_hw_output_stencil = s_op_hcompute_mult_stencil and s_op_hcompute_mult_stencil > 0 }
+Writing problem to mod file...
+  # of constraints: 5
+  legal point  : { [1, 1, 1] }
+  minimal point: -3
+Schedule params...
+  { op_hcompute_mult_stencil[mult_s0_x_x] -> op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_x_x = mult_s0_x_x] : 0 <= mult_s0_x_x <= 63 }
+  { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] -> op_hcompute_mult_stencil[mult_s0_x_x = hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_x_xi_xi <= 63 }
+Done with schedule
+Clockwork schedules...
+  op_hcompute_hw_input_global_wrapper_stencil: { [i] -> [(i)] }
+  op_hcompute_hw_output_stencil: { [i] -> [(i)] }
+  op_hcompute_mult_stencil: { [i] -> [(i)] }
+Final schedule...
+  op_hcompute_hw_input_global_wrapper_stencil
+    1*d2*1*1 + 1*0
+    1*d1*1*1 + 1*0
+    1*d0*1*1 + 1*0
+
+  op_hcompute_hw_output_stencil
+    1*d2*1*1 + 1*0
+    1*d1*1*1 + 1*0
+    1*d0*1*1 + 1*0
+
+  op_hcompute_mult_stencil
+    1*d2*1*1 + 1*0
+    1*d1*1*1 + 1*0
+    1*d0*1*1 + 1*0
+
+Sched expr: 1*d2 + 0
+Sched expr: 1*d1 + 0
+Sched expr: 1*d0 + 0
+Map str: { op_hcompute_hw_input_global_wrapper_stencil[d0, d1, d2] -> [1*d2 + 0, 1*d1 + 0, 1*d0 + 0] }
+map got str
+Sched expr: 1*d2 + 0
+Sched expr: 1*d1 + 0
+Sched expr: 1*d0 + 0
+Map str: { op_hcompute_hw_output_stencil[d0, d1, d2] -> [1*d2 + 0, 1*d1 + 0, 1*d0 + 0] }
+map got str
+Sched expr: 1*d2 + 0
+Sched expr: 1*d1 + 0
+Sched expr: 1*d0 + 0
+Map str: { op_hcompute_mult_stencil[d0, d1, d2] -> [1*d2 + 0, 1*d1 + 0, 1*d0 + 0] }
+map got str
+Clockwork schedule...
+  { op_hcompute_mult_stencil[d0, d1, d2] -> [d2, d1, d0] }
+  { op_hcompute_hw_output_stencil[d0, d1, d2] -> [d2, d1, d0] }
+  { op_hcompute_hw_input_global_wrapper_stencil[d0, d1, d2] -> [d2, d1, d0] }
+Domain...
+  { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+bounds...{ [i0, i1, 0] : 0 <= i0 <= 63 and 0 <= i1 <= 63 }
+lengths
+1
+64
+64
+1
+Fused iis
+  4096
+  64
+  1
+Finite validity: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> op_hcompute_mult_stencil[root' = 0, mult_s0_y = hw_input_global_wrapper_s0_y, mult_s0_x_x = hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> op_hcompute_hw_output_stencil[root' = 0, hw_output_s0_y_yi = mult_s0_y, hw_output_s0_x_xi_xi = mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  Dep = { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> op_hcompute_mult_stencil[root' = 0, mult_s0_y = hw_input_global_wrapper_s0_y, mult_s0_x_x = hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  Dep = { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> op_hcompute_hw_output_stencil[root' = 0, hw_output_s0_y_yi = mult_s0_y, hw_output_s0_x_xi_xi = mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+Got deps
+Schedule dim = 3
+  scheduling dimension 0
+  { op_hcompute_hw_input_global_wrapper_stencil[root = 0] -> op_hcompute_mult_stencil[root' = 0] }
+  { op_hcompute_mult_stencil[root = 0] -> op_hcompute_hw_output_stencil[root' = 0] }
+Consumed data...
+  { op_hcompute_mult_stencil[root = 0] -> op_hcompute_hw_input_global_wrapper_stencil[root' = 0] }
+bound: { op_hcompute_mult_stencil[root] -> op_hcompute_hw_input_global_wrapper_stencil[(0)] }
+    affine upper bound on data needed: { op_hcompute_mult_stencil[root] -> [(0)] }
+      domain of bound: { op_hcompute_mult_stencil[root = 0] }
+Extracting linear rational approximation: { op_hcompute_mult_stencil[root] -> [(0)] }
+  { op_hcompute_hw_output_stencil[root = 0] -> op_hcompute_mult_stencil[root' = 0] }
+bound: { op_hcompute_hw_output_stencil[root] -> op_hcompute_mult_stencil[(0)] }
+    affine upper bound on data needed: { op_hcompute_hw_output_stencil[root] -> [(0)] }
+      domain of bound: { op_hcompute_hw_output_stencil[root = 0] }
+Extracting linear rational approximation: { op_hcompute_hw_output_stencil[root] -> [(0)] }
+Extracted sched params
+ILP Problem: { [s_op_hcompute_mult_stencil, s_op_hcompute_hw_input_global_wrapper_stencil, s_op_hcompute_hw_output_stencil] : s_op_hcompute_mult_stencil > 0 and s_op_hcompute_hw_input_global_wrapper_stencil > 0 and s_op_hcompute_hw_output_stencil > 0 }
+Writing problem to mod file...
+  # of constraints: 3
+  legal point  : { [1, 1, 1] }
+  minimal point: 0
+Schedule params...
+  { op_hcompute_mult_stencil[root = 0] -> op_hcompute_hw_input_global_wrapper_stencil[root' = 0] }
+  { op_hcompute_hw_output_stencil[root = 0] -> op_hcompute_mult_stencil[root' = 0] }
+Done with schedule
+Clockwork schedules...
+  op_hcompute_hw_input_global_wrapper_stencil: { [i] -> [(i)] }
+  op_hcompute_hw_output_stencil: { [i] -> [(i)] }
+  op_hcompute_mult_stencil: { [i] -> [(i)] }
+  scheduling dimension 1
+  { op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y] -> op_hcompute_mult_stencil[mult_s0_y = hw_input_global_wrapper_s0_y] : 0 <= hw_input_global_wrapper_s0_y <= 63 }
+  { op_hcompute_mult_stencil[mult_s0_y] -> op_hcompute_hw_output_stencil[hw_output_s0_y_yi = mult_s0_y] : 0 <= mult_s0_y <= 63 }
+Consumed data...
+  { op_hcompute_mult_stencil[mult_s0_y] -> op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y = mult_s0_y] : 0 <= mult_s0_y <= 63 }
+bound: { op_hcompute_mult_stencil[mult_s0_y] -> op_hcompute_hw_input_global_wrapper_stencil[(mult_s0_y)] }
+    affine upper bound on data needed: { op_hcompute_mult_stencil[mult_s0_y] -> [(mult_s0_y)] }
+      domain of bound: { op_hcompute_mult_stencil[mult_s0_y] : 0 <= mult_s0_y <= 63 }
+Extracting linear rational approximation: { op_hcompute_mult_stencil[mult_s0_y] -> [(mult_s0_y)] }
+  { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] -> op_hcompute_mult_stencil[mult_s0_y = hw_output_s0_y_yi] : 0 <= hw_output_s0_y_yi <= 63 }
+bound: { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] -> op_hcompute_mult_stencil[(hw_output_s0_y_yi)] }
+    affine upper bound on data needed: { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] -> [(hw_output_s0_y_yi)] }
+      domain of bound: { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] : 0 <= hw_output_s0_y_yi <= 63 }
+Extracting linear rational approximation: { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] -> [(hw_output_s0_y_yi)] }
+Extracted sched params
+ILP Problem: { [s_op_hcompute_mult_stencil, s_op_hcompute_hw_input_global_wrapper_stencil, s_op_hcompute_hw_output_stencil] : s_op_hcompute_hw_input_global_wrapper_stencil = s_op_hcompute_mult_stencil and s_op_hcompute_hw_output_stencil = s_op_hcompute_mult_stencil and s_op_hcompute_mult_stencil > 0 }
+Writing problem to mod file...
+  # of constraints: 5
+  legal point  : { [1, 1, 1] }
+  minimal point: -3
+Schedule params...
+  { op_hcompute_mult_stencil[mult_s0_y] -> op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y = mult_s0_y] : 0 <= mult_s0_y <= 63 }
+  { op_hcompute_hw_output_stencil[hw_output_s0_y_yi] -> op_hcompute_mult_stencil[mult_s0_y = hw_output_s0_y_yi] : 0 <= hw_output_s0_y_yi <= 63 }
+Done with schedule
+Clockwork schedules...
+  op_hcompute_hw_input_global_wrapper_stencil: { [i] -> [(i)] }
+  op_hcompute_hw_output_stencil: { [i] -> [(i)] }
+  op_hcompute_mult_stencil: { [i] -> [(i)] }
+  scheduling dimension 2
+  { op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_x_x] -> op_hcompute_mult_stencil[mult_s0_x_x = hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  { op_hcompute_mult_stencil[mult_s0_x_x] -> op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi = mult_s0_x_x] : 0 <= mult_s0_x_x <= 63 }
+Consumed data...
+  { op_hcompute_mult_stencil[mult_s0_x_x] -> op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_x_x = mult_s0_x_x] : 0 <= mult_s0_x_x <= 63 }
+bound: { op_hcompute_mult_stencil[mult_s0_x_x] -> op_hcompute_hw_input_global_wrapper_stencil[(mult_s0_x_x)] }
+    affine upper bound on data needed: { op_hcompute_mult_stencil[mult_s0_x_x] -> [(mult_s0_x_x)] }
+      domain of bound: { op_hcompute_mult_stencil[mult_s0_x_x] : 0 <= mult_s0_x_x <= 63 }
+Extracting linear rational approximation: { op_hcompute_mult_stencil[mult_s0_x_x] -> [(mult_s0_x_x)] }
+  { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] -> op_hcompute_mult_stencil[mult_s0_x_x = hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_x_xi_xi <= 63 }
+bound: { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] -> op_hcompute_mult_stencil[(hw_output_s0_x_xi_xi)] }
+    affine upper bound on data needed: { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] -> [(hw_output_s0_x_xi_xi)] }
+      domain of bound: { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_x_xi_xi <= 63 }
+Extracting linear rational approximation: { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] -> [(hw_output_s0_x_xi_xi)] }
+Extracted sched params
+ILP Problem: { [s_op_hcompute_hw_output_stencil, s_op_hcompute_mult_stencil, s_op_hcompute_hw_input_global_wrapper_stencil] : s_op_hcompute_mult_stencil = s_op_hcompute_hw_output_stencil and s_op_hcompute_hw_input_global_wrapper_stencil = s_op_hcompute_hw_output_stencil and s_op_hcompute_hw_output_stencil > 0 }
+Writing problem to mod file...
+  # of constraints: 5
+  legal point  : { [1, 1, 1] }
+  minimal point: -3
+Schedule params...
+  { op_hcompute_hw_output_stencil[hw_output_s0_x_xi_xi] -> op_hcompute_mult_stencil[mult_s0_x_x = hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_x_xi_xi <= 63 }
+  { op_hcompute_mult_stencil[mult_s0_x_x] -> op_hcompute_hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_x_x = mult_s0_x_x] : 0 <= mult_s0_x_x <= 63 }
+Done with schedule
+Clockwork schedules...
+  op_hcompute_hw_input_global_wrapper_stencil: { [i] -> [(i)] }
+  op_hcompute_hw_output_stencil: { [i] -> [(i)] }
+  op_hcompute_mult_stencil: { [i] -> [(i)] }
+Original Loop iis
+  root q: 1, d = 0
+    ii = 4096
+  hw_input_global_wrapper_s0_y q: 1, d = 0
+    ii = 64
+  hw_input_global_wrapper_s0_x_x q: 1, d = 0
+    ii = 1
+  root q: 1, d = 0
+    ii = 4096
+  mult_s0_y q: 1, d = 0
+    ii = 64
+  mult_s0_x_x q: 1, d = 0
+    ii = 1
+  root q: 1, d = 0
+    ii = 4096
+  hw_output_s0_y_yi q: 1, d = 0
+    ii = 64
+  hw_output_s0_x_xi_xi q: 1, d = 0
+    ii = 1
+inner ops: op_hcompute_hw_input_global_wrapper_stencil
+inner ops: op_hcompute_hw_input_global_wrapper_stencil, offset: 0
+inner ops: op_hcompute_mult_stencil
+inner ops: op_hcompute_mult_stencil, offset: 3
+inner ops: op_hcompute_hw_output_stencil
+inner ops: op_hcompute_hw_output_stencil, offset: 4
+schedule for n: { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedmap = { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedmap = { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+schedmap = { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x]; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+orginal schedule before relax: { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x]; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedmap = { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedmap = { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+schedmap = { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x]; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+Start times...
+{ start_op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63; start_op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; start_op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  pre adjustment min: { [0] }
+Adjusting delays of pointwise
+schedule for n: { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedmap = { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedmap = { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+schedmap = { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x]; op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+sorted kernel: {}
+sorted kernel: {hw_input_global_wrapper_s0_y}
+sorted kernel: {hw_input_global_wrapper_s0_y}
+sorted kernel: {hw_input_global_wrapper_s0_y, mult_s0_y}
+Adjusting delay of hw_input_global_wrapper_s0_y
+read map: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+Kernel <hw_input_global_wrapper_s0_y> has Delay slack: 0
+Offset with in parent: 0
+Adjusting delay of mult_s0_y
+read map: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> hw_input_global_wrapper_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+write map: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+writes: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+reads : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> hw_input_global_wrapper_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+Schedule...
+  { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Time to write: { [i0] -> hw_input_global_wrapper_stencil[o0, i0 - 64o0] : 0 <= o0 <= 63 and -63 + i0 <= 64o0 <= i0 }
+Time to read : { [i0] -> hw_input_global_wrapper_stencil[o0, -3 + i0 - 64o0] : 0 <= o0 <= 63 and -66 + i0 <= 64o0 <= -3 + i0 }
+PC times     : { [i0] -> [3 + i0] : 0 <= i0 <= 4095 }
+DDs          : { [3] }
+    Producers: op_hcompute_hw_input_global_wrapper_stencil
+    sched: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+    Consumers: op_hcompute_mult_stencil
+    sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+Kernel <mult_s0_y> has Delay slack: 0
+Offset with in parent: 0
+Adjusting delay of hw_output_s0_y_yi
+read map: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> mult_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+write map: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> mult_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+writes: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> mult_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+reads : { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> mult_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Schedule...
+  { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Time to write: { [i0] -> mult_stencil[o0, -3 + i0 - 64o0] : 0 <= o0 <= 63 and -66 + i0 <= 64o0 <= -3 + i0 }
+Time to read : { [i0] -> mult_stencil[o0, -4 + i0 - 64o0] : 0 <= o0 <= 63 and -67 + i0 <= 64o0 <= -4 + i0 }
+PC times     : { [i0] -> [1 + i0] : 3 <= i0 <= 4098 }
+DDs          : { [1] }
+    Producers: op_hcompute_mult_stencil
+    sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+    Consumers: op_hcompute_hw_output_stencil
+    sched: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Kernel <hw_output_s0_y_yi> has Delay slack: 0
+Offset with in parent: 0
+    Find buffers need to be rewritten: hw_input_global_wrapper_stencil
+
+Filter buffers...
+
+schedule for n: { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedmap = { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedmap = { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+schedmap = { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x]; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+Final schedule in ISL notation: { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x]; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedmap = { end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedmap = { end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x]; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedule for n: { end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [4 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+schedmap = { end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x]; end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [4 + 4096root + 64mult_s0_y + mult_s0_x_x]; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+Final end schedule after relax: { end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x]; end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [4 + 4096root + 64mult_s0_y + mult_s0_x_x]; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+After codegen: 
+schedule for n: { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedmap = { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedmap = { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+schedmap = { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x]; op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+Computing validity deps for hw_input_global_wrapper_stencil
+Computing validity deps for hw_input_stencil
+Computing validity deps for hw_output_stencil
+Computing validity deps for mult_stencil
+program: pointwise
+Inputs...
+  hw_input_stencil
+Outputs...
+  hw_output_stencil
+buffers...
+  hw_input_stencil[]
+operations...
+for (int root = 0; root < 1; root++) {
+  for (int hw_input_global_wrapper_s0_y = 0; hw_input_global_wrapper_s0_y < 64; hw_input_global_wrapper_s0_y++) {
+    for (int hw_input_global_wrapper_s0_x_x = 0; hw_input_global_wrapper_s0_x_x < 64; hw_input_global_wrapper_s0_x_x++) {
+      op_hcompute_hw_input_global_wrapper_stencil: hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0] = hcompute_hw_input_global_wrapper_stencil(hw_input_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0])
+    }
+  }
+  for (int mult_s0_y = 0; mult_s0_y < 64; mult_s0_y++) {
+    for (int mult_s0_x_x = 0; mult_s0_x_x < 64; mult_s0_x_x++) {
+      op_hcompute_mult_stencil: mult_stencil[mult_s0_y+0,  mult_s0_x_x+0] = hcompute_mult_stencil(hw_input_global_wrapper_stencil[mult_s0_y+0,  mult_s0_x_x+0])
+    }
+  }
+  for (int hw_output_s0_y_yi = 0; hw_output_s0_y_yi < 64; hw_output_s0_y_yi++) {
+    for (int hw_output_s0_x_xi_xi = 0; hw_output_s0_x_xi_xi < 64; hw_output_s0_x_xi_xi++) {
+      op_hcompute_hw_output_stencil: hw_output_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0] = hcompute_hw_output_stencil(mult_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0])
+    }
+  }
+}
+schedule for n: { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedmap = { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedmap = { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+schedmap = { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x]; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+Start times...
+  { start_op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+  { start_op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  { start_op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  min: { [0] }
+schedule for n: { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedmap = { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedmap = { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+schedmap = { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x]; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedmap = { end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedmap = { end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x]; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedule for n: { end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [4 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+schedmap = { end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x]; end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [4 + 4096root + 64mult_s0_y + mult_s0_x_x]; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+Schedule...
+  { start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+  { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+  { start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+  Cycle deps: { end_op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> start_op_hcompute_mult_stencil[root' = 0, mult_s0_y = hw_input_global_wrapper_s0_y, mult_s0_x_x = hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; end_op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> start_op_hcompute_hw_output_stencil[root' = 0, hw_output_s0_y_yi = mult_s0_y, hw_output_s0_x_xi_xi = mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  Earlier deps: { start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> end_op_hcompute_mult_stencil[root', mult_s0_y, mult_s0_x_x] : mult_s0_x_x > 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64mult_s0_y; start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> start_op_hcompute_mult_stencil[root', mult_s0_y', mult_s0_x_x'] : mult_s0_x_x' > 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64mult_s0_y'; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> start_op_hcompute_mult_stencil[root', mult_s0_y, mult_s0_x_x] : mult_s0_x_x >= 2 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64mult_s0_y; end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> start_op_hcompute_mult_stencil[root', mult_s0_y', mult_s0_x_x'] : mult_s0_x_x' >= 2 + 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64mult_s0_y'; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> start_op_hcompute_mult_stencil[root', mult_s0_y, mult_s0_x_x] : mult_s0_x_x >= -2 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64mult_s0_y; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> end_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : hw_input_global_wrapper_s0_x_x >= 2 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64hw_input_global_wrapper_s0_y; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> end_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : hw_output_s0_x_xi_xi >= -3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64hw_output_s0_y_yi; end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> end_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : hw_input_global_wrapper_s0_x_x >= 2 + 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64hw_input_global_wrapper_s0_y; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> end_op_hcompute_mult_stencil[root', mult_s0_y, mult_s0_x_x] : mult_s0_x_x > 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64mult_s0_y; start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> start_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : hw_output_s0_x_xi_xi >= 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64hw_output_s0_y_yi; end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> start_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : hw_output_s0_x_xi_xi > 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64hw_output_s0_y_yi; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> start_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi', hw_output_s0_x_xi_xi'] : hw_output_s0_x_xi_xi' > 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64hw_output_s0_y_yi'; end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> start_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y', hw_input_global_wrapper_s0_x_x'] : hw_input_global_wrapper_s0_x_x' >= 4 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64hw_input_global_wrapper_s0_y'; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> start_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y', hw_input_global_wrapper_s0_x_x'] : hw_input_global_wrapper_s0_x_x' > 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64hw_input_global_wrapper_s0_y'; end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> end_op_hcompute_mult_stencil[root', mult_s0_y, mult_s0_x_x] : mult_s0_x_x >= 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64mult_s0_y; start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> start_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : hw_input_global_wrapper_s0_x_x >= 4 + 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64hw_input_global_wrapper_s0_y; end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> end_op_hcompute_mult_stencil[root', mult_s0_y', mult_s0_x_x'] : mult_s0_x_x' > 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64mult_s0_y'; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> start_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi', hw_output_s0_x_xi_xi'] : hw_output_s0_x_xi_xi' > 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64hw_output_s0_y_yi'; end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> start_op_hcompute_mult_stencil[root', mult_s0_y, mult_s0_x_x] : mult_s0_x_x > 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64mult_s0_y; end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> end_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : hw_output_s0_x_xi_xi > 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64hw_output_s0_y_yi; start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> end_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : hw_input_global_wrapper_s0_x_x > 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64hw_input_global_wrapper_s0_y; end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> end_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y', hw_input_global_wrapper_s0_x_x'] : hw_input_global_wrapper_s0_x_x' > 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64hw_input_global_wrapper_s0_y'; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> end_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y', hw_input_global_wrapper_s0_x_x'] : hw_input_global_wrapper_s0_x_x' >= -2 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64hw_input_global_wrapper_s0_y'; end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> end_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : hw_output_s0_x_xi_xi >= 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64hw_output_s0_y_yi; end_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> start_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : hw_output_s0_x_xi_xi >= 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64hw_output_s0_y_yi; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> end_op_hcompute_mult_stencil[root', mult_s0_y, mult_s0_x_x] : mult_s0_x_x >= -3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64mult_s0_y; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> start_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : hw_input_global_wrapper_s0_x_x >= 5 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64hw_input_global_wrapper_s0_y; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> end_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : hw_input_global_wrapper_s0_x_x >= 2 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64hw_input_global_wrapper_s0_y; start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> end_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : hw_output_s0_x_xi_xi >= 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64hw_output_s0_y_yi; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> start_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : hw_input_global_wrapper_s0_x_x >= 5 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64hw_input_global_wrapper_s0_y; end_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> end_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi', hw_output_s0_x_xi_xi'] : hw_output_s0_x_xi_xi' > 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64hw_output_s0_y_yi'; start_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> end_op_hcompute_mult_stencil[root', mult_s0_y', mult_s0_x_x'] : mult_s0_x_x' >= 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64mult_s0_y'; start_op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> start_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : hw_output_s0_x_xi_xi >= -3 + 4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x - 4096root' - 64hw_output_s0_y_yi; end_op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> start_op_hcompute_hw_input_global_wrapper_stencil[root', hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : hw_input_global_wrapper_s0_x_x >= 5 + 4096root + 64mult_s0_y + mult_s0_x_x - 4096root' - 64hw_input_global_wrapper_s0_y; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> end_op_hcompute_hw_output_stencil[root', hw_output_s0_y_yi', hw_output_s0_x_xi_xi'] : hw_output_s0_x_xi_xi' > 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64hw_output_s0_y_yi'; start_op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> start_op_hcompute_mult_stencil[root', mult_s0_y, mult_s0_x_x] : mult_s0_x_x >= 2 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi - 4096root' - 64mult_s0_y }
+  Violated deps: {  }
+schedule for n: { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedmap = { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] }
+schedmap = { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+schedule for n: { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x] }
+schedmap = { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> [3 + 4096root + 64mult_s0_y + mult_s0_x_x]; op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 4096root + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi]; op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [4096root + 64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] }
+result schedule: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Creating ports for op: mult_stencil
+cond = { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> mult_stencil[mult_s0_y+0,  mult_s0_x_x+0] }
+	Adding output port: mult_stencil_op_hcompute_mult_stencil_0
+		Consumed: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> mult_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+current out port name: 
+	mult_stencil_op_hcompute_mult_stencil_0
+Creating ports for op: hw_input_global_wrapper_stencil
+cond = { op_hcompute_mult_stencil[root, mult_s0_y, mult_s0_x_x] -> hw_input_global_wrapper_stencil[mult_s0_y+0,  mult_s0_x_x+0] }
+	Adding output port: hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+		Consumed: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> hw_input_global_wrapper_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+Opt sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom      : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+SDom     : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom ITS  : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+Dom UNN  : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Per group...
+  dspace_id       = op_hcompute_mult_stencil
+  other_dspace_id = op_hcompute_mult_stencil
+  Schedule domain set: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  Domain set from prg: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  ITS: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+ITS      : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+origin sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+current out port name: 
+	hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+Creating ports for op: hw_output_stencil
+cond = { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> hw_output_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0] }
+	Adding output port: hw_output_stencil_op_hcompute_hw_output_stencil_2
+		Consumed: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> hw_output_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+current out port name: 
+	hw_output_stencil_op_hcompute_hw_output_stencil_2
+cond = { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> mult_stencil[hw_output_s0_y_yi+0,  hw_output_s0_x_xi_xi+0] }
+	Adding output port: mult_stencil_op_hcompute_hw_output_stencil_3
+		Consumed: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> mult_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Opt sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom      : { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+SDom     : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom ITS  : { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom UNN  : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Per group...
+  dspace_id       = op_hcompute_hw_output_stencil
+  other_dspace_id = op_hcompute_hw_output_stencil
+  Schedule domain set: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+  Domain set from prg: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+  ITS: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+ITS      : { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+origin sched: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+current out port name: 
+	mult_stencil_op_hcompute_hw_output_stencil_3
+cond = { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0] }
+	Adding output port: hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+		Consumed: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+current out port name: 
+	hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+Creating ports for op: hw_input_stencil
+cond = { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_stencil[hw_input_global_wrapper_s0_y+0,  hw_input_global_wrapper_s0_x_x+0] }
+	Adding output port: hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_5
+		Consumed: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+Opt sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom      : { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+SDom     : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Dom ITS  : { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+Dom UNN  : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Per group...
+  dspace_id       = op_hcompute_hw_input_global_wrapper_stencil
+  other_dspace_id = op_hcompute_hw_input_global_wrapper_stencil
+  Schedule domain set: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  Domain set from prg: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  ITS: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+ITS      : { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+origin sched: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+current out port name: 
+	hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_5
+Latency of application is: { [4099] }
+Global schedule: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63; op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63; op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+# in bundles: 1
+Generating compute unit for op_hcompute_hw_input_global_wrapper_stencil
+getting incoming buffers to op_hcompute_hw_input_global_wrapper_stencil
+  consumed: hw_input_stencil
+Found compute file for pointwise
+getting incoming buffers to op_hcompute_hw_input_global_wrapper_stencil
+  consumed: hw_input_stencil
+Looking for connection for hw_input_stencil.op_hcompute_hw_input_global_wrapper_stencil_read
+# of selects = 0
+inner_compute() : global.hcompute_hw_input_global_wrapper_stencil
+name = in0_hw_input_stencil
+More than oune outgoing bundle
+# of selects = 1
+inner_compute() : global.hcompute_hw_input_global_wrapper_stencil
+  name = in0_hw_input_stencil
+  bundle.first = hw_input_global_wrapper_stencil
+  after split  = hw_input_global_wrapper_stencil
+  name = out_hw_input_global_wrapper_stencil
+  bundle.first = hw_input_global_wrapper_stencil
+  after split  = hw_input_global_wrapper_stencil
+Generating compute unit for op_hcompute_mult_stencil
+getting incoming buffers to op_hcompute_mult_stencil
+  consumed: hw_input_global_wrapper_stencil
+Found compute file for pointwise
+getting incoming buffers to op_hcompute_mult_stencil
+  consumed: hw_input_global_wrapper_stencil
+Looking for connection for hw_input_global_wrapper_stencil.op_hcompute_mult_stencil_read
+# of selects = 0
+inner_compute() : global.hcompute_mult_stencil
+name = in0_hw_input_global_wrapper_stencil
+More than oune outgoing bundle
+# of selects = 1
+inner_compute() : global.hcompute_mult_stencil
+  name = in0_hw_input_global_wrapper_stencil
+  bundle.first = mult_stencil
+  after split  = mult_stencil
+  name = out_mult_stencil
+  bundle.first = mult_stencil
+  after split  = mult_stencil
+Generating compute unit for op_hcompute_hw_output_stencil
+getting incoming buffers to op_hcompute_hw_output_stencil
+  consumed: mult_stencil
+Found compute file for pointwise
+getting incoming buffers to op_hcompute_hw_output_stencil
+  consumed: mult_stencil
+Looking for connection for mult_stencil.op_hcompute_hw_output_stencil_read
+# of selects = 0
+inner_compute() : global.hcompute_hw_output_stencil
+name = in0_mult_stencil
+More than oune outgoing bundle
+# of selects = 1
+inner_compute() : global.hcompute_hw_output_stencil
+  name = in0_mult_stencil
+  bundle.first = hw_output_stencil
+  after split  = hw_output_stencil
+  name = out_hw_output_stencil
+  bundle.first = hw_output_stencil
+  after split  = hw_output_stencil
+create shift register for --- hw_input_global_wrapper_stencil
+	---- 1 in ports
+		hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+			dom : { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+			acc : { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+			sched: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+			min location: { hw_input_global_wrapper_stencil[0, 0] }
+			max location: { hw_input_global_wrapper_stencil[63, 63] }
+
+	---- 1 out ports:
+		hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+			dom : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+			acc : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> hw_input_global_wrapper_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+			sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+			min location: { hw_input_global_wrapper_stencil[0, 0] }
+			max location: { hw_input_global_wrapper_stencil[63, 63] }
+
+	---- Input Bundles
+		op_hcompute_hw_input_global_wrapper_stencil_write
+		---- Ports...
+			hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+	---- Output Bundles
+		op_hcompute_mult_stencil_read
+		---- Ports...
+			hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+
+==== No reduce ops on this buffer
+Writer name: op_hcompute_hw_input_global_wrapper_stencil
+read_op read: {hw_input_global_wrapper_stencil}
+read_op write: {mult_stencil, }
+write_op write: {mult_stencil}
+write_op read: {hw_input_stencil, }
+Calculate DDs for creating shift registers.
+writes: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+reads : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> hw_input_global_wrapper_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+Schedule...
+  { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+Time to write: { [i0] -> hw_input_global_wrapper_stencil[o0, i0 - 64o0] : 0 <= o0 <= 63 and -63 + i0 <= 64o0 <= i0 }
+Time to read : { [i0] -> hw_input_global_wrapper_stencil[o0, -3 + i0 - 64o0] : 0 <= o0 <= 63 and -66 + i0 <= 64o0 <= -3 + i0 }
+PC times     : { [i0] -> [3 + i0] : 0 <= i0 <= 4095 }
+DDs          : { [3] }
+DD           : 3
+writer op    : op_hcompute_hw_input_global_wrapper_stencil
+DG: ...
+# nodes: 2
+# edges: 1
+Group:     hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+        hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4 -> (0) hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+Fanin Group:     hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+        hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1 -> (0) hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+
+Naive Shift registers...
+# nodes: 2
+# edges: 1
+Group:     hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+        hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4 -> (0) hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+Fanin Group:     hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+        hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1 -> (0) hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+
+inpt: hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+  hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1 -(0)-> 0
+Groups...
+  Group...
+# nodes: 2
+# edges: 1
+Group:     hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+        hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4 -> (0) hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+Fanin Group:     hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+        hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1 -> (0) hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+
+edge: hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4=>hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1, w=0
+after sort: outpt->hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1, w=0
+	subbranch size: 0
+# nodes: 2
+# edges: 1
+Group:     hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+        hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4 -> (0) hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1
+Fanin Group:     hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+        hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1 -> (0) hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+Bank writers: 
+Bank readers: 
+Shift Register Output: 
+	memtiles IO:: 
+		 hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4->hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1, delay = 0
+	register IO:: 
+Bank writers: 
+Bank readers: 
+Shift Register Output: 
+	memtiles IO:: 
+		 hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4->hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1, delay = 0
+	register IO:: 
+
+After shift register optimization: Bank writers: 
+Bank readers: 
+Shift Register Output: 
+	memtiles IO:: 
+		 hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4->hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1, delay = 0
+	register IO:: 
+
+Done ports: {hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1}
+reduced buffer: --- hw_input_global_wrapper_stencil
+	---- 1 in ports
+		hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+			dom : { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+			acc : { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_global_wrapper_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+			sched: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+			min location: { hw_input_global_wrapper_stencil[0, 0] }
+			max location: { hw_input_global_wrapper_stencil[63, 63] }
+
+	---- 0 out ports:
+	---- Input Bundles
+		op_hcompute_hw_input_global_wrapper_stencil_write
+		---- Ports...
+			hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4
+	---- Output Bundles
+
+SR outputs: {hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1}
+BUF outputs: {}
+After banking optimization: Bank writers: 
+Bank readers: 
+Shift Register Output: 
+	memtiles IO:: 
+		 hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4->hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1, delay = 0
+	register IO:: 
+
+After bank merging: Bank writers: 
+Bank readers: 
+Shift Register Output: 
+	memtiles IO:: 
+		 hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4->hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1, delay = 0
+	register IO:: 
+
+add input: hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_4 to pt2wire
+add output: hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_1 to pt2wire
+addr need tight: {}
+  Before Merge: 
+    acc map: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+    sched: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+    reduce_map: { hw_input_stencil[d0, d1] -> hw_input_stencil[64d0 + d1] }
+    1d acc map: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_stencil[64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+span range: 64, up_level_stride : 64
+span range: 64, up_level_stride : 64
+	access map merge pair: {{0, 1} }
+	schedule merge pair: {{0, 1} }
+merge pair: {0, 1} , {0, 1} 
+access map: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_stencil[64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+  After Merge: 
+    schedule: { op_hcompute_hw_input_global_wrapper_stencil[0, i1] -> [i1] : 0 <= i1 <= 4095 }
+    access map: { op_hcompute_hw_input_global_wrapper_stencil[0, i1] -> hw_input_stencil[i1] : 0 <= i1 <= 4095 }
+"dimensionality",2,0
+"cycle_starting_addr",0,0
+"extent_1",1,0
+"cycle_stride_1",0,0
+"extent_0",4096,0
+"cycle_stride_0",1,0
+"read_data_starting_addr",0,0
+"read_data_stride_1",0,0
+"read_data_stride_0",1,0
+	Write map: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> hw_input_stencil[hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+addr need tight: {}
+  Before Merge: 
+    acc map: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> hw_output_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+    sched: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+    reduce_map: { hw_output_stencil[d0, d1] -> hw_output_stencil[64d0 + d1] }
+    1d acc map: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> hw_output_stencil[64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+span range: 64, up_level_stride : 64
+span range: 64, up_level_stride : 64
+	access map merge pair: {{0, 1} }
+	schedule merge pair: {{0, 1} }
+merge pair: {0, 1} , {0, 1} 
+access map: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> hw_output_stencil[64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+  After Merge: 
+    schedule: { op_hcompute_hw_output_stencil[0, i1] -> [4 + i1] : 0 <= i1 <= 4095 }
+    access map: { op_hcompute_hw_output_stencil[0, i1] -> hw_output_stencil[i1] : 0 <= i1 <= 4095 }
+"dimensionality",2,0
+"cycle_starting_addr",4,0
+"extent_1",1,0
+"cycle_stride_1",0,0
+"extent_0",4096,0
+"cycle_stride_0",1,0
+"write_data_starting_addr",0,0
+"write_data_stride_1",0,0
+"write_data_stride_0",1,0
+	Write map: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> hw_output_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+create shift register for --- mult_stencil
+	---- 1 in ports
+		mult_stencil_op_hcompute_mult_stencil_0
+			dom : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+			acc : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> mult_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+			sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+			min location: { mult_stencil[0, 0] }
+			max location: { mult_stencil[63, 63] }
+
+	---- 1 out ports:
+		mult_stencil_op_hcompute_hw_output_stencil_3
+			dom : { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+			acc : { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> mult_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+			sched: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+			min location: { mult_stencil[0, 0] }
+			max location: { mult_stencil[63, 63] }
+
+	---- Input Bundles
+		op_hcompute_mult_stencil_write
+		---- Ports...
+			mult_stencil_op_hcompute_mult_stencil_0
+	---- Output Bundles
+		op_hcompute_hw_output_stencil_read
+		---- Ports...
+			mult_stencil_op_hcompute_hw_output_stencil_3
+
+==== No reduce ops on this buffer
+Writer name: op_hcompute_mult_stencil
+read_op read: {mult_stencil}
+read_op write: {hw_output_stencil, }
+write_op write: {hw_output_stencil}
+write_op read: {hw_input_global_wrapper_stencil, }
+Calculate DDs for creating shift registers.
+writes: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> mult_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+reads : { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> mult_stencil[hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Schedule...
+  { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+  { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+Time to write: { [i0] -> mult_stencil[o0, -3 + i0 - 64o0] : 0 <= o0 <= 63 and -66 + i0 <= 64o0 <= -3 + i0 }
+Time to read : { [i0] -> mult_stencil[o0, -4 + i0 - 64o0] : 0 <= o0 <= 63 and -67 + i0 <= 64o0 <= -4 + i0 }
+PC times     : { [i0] -> [1 + i0] : 3 <= i0 <= 4098 }
+DDs          : { [1] }
+DD           : 1
+writer op    : op_hcompute_mult_stencil
+DG: ...
+# nodes: 2
+# edges: 1
+Group:     mult_stencil_op_hcompute_mult_stencil_0
+        mult_stencil_op_hcompute_mult_stencil_0 -> (0) mult_stencil_op_hcompute_hw_output_stencil_3
+Fanin Group:     mult_stencil_op_hcompute_mult_stencil_0
+        mult_stencil_op_hcompute_hw_output_stencil_3 -> (0) mult_stencil_op_hcompute_mult_stencil_0
+
+Naive Shift registers...
+# nodes: 2
+# edges: 1
+Group:     mult_stencil_op_hcompute_mult_stencil_0
+        mult_stencil_op_hcompute_mult_stencil_0 -> (0) mult_stencil_op_hcompute_hw_output_stencil_3
+Fanin Group:     mult_stencil_op_hcompute_mult_stencil_0
+        mult_stencil_op_hcompute_hw_output_stencil_3 -> (0) mult_stencil_op_hcompute_mult_stencil_0
+
+inpt: mult_stencil_op_hcompute_mult_stencil_0
+  mult_stencil_op_hcompute_hw_output_stencil_3 -(0)-> 0
+Groups...
+  Group...
+# nodes: 2
+# edges: 1
+Group:     mult_stencil_op_hcompute_mult_stencil_0
+        mult_stencil_op_hcompute_mult_stencil_0 -> (0) mult_stencil_op_hcompute_hw_output_stencil_3
+Fanin Group:     mult_stencil_op_hcompute_mult_stencil_0
+        mult_stencil_op_hcompute_hw_output_stencil_3 -> (0) mult_stencil_op_hcompute_mult_stencil_0
+
+edge: mult_stencil_op_hcompute_mult_stencil_0=>mult_stencil_op_hcompute_hw_output_stencil_3, w=0
+after sort: outpt->mult_stencil_op_hcompute_hw_output_stencil_3, w=0
+	subbranch size: 0
+# nodes: 2
+# edges: 1
+Group:     mult_stencil_op_hcompute_mult_stencil_0
+        mult_stencil_op_hcompute_mult_stencil_0 -> (0) mult_stencil_op_hcompute_hw_output_stencil_3
+Fanin Group:     mult_stencil_op_hcompute_mult_stencil_0
+        mult_stencil_op_hcompute_hw_output_stencil_3 -> (0) mult_stencil_op_hcompute_mult_stencil_0
+Bank writers: 
+Bank readers: 
+Shift Register Output: 
+	memtiles IO:: 
+		 mult_stencil_op_hcompute_mult_stencil_0->mult_stencil_op_hcompute_hw_output_stencil_3, delay = 0
+	register IO:: 
+Bank writers: 
+Bank readers: 
+Shift Register Output: 
+	memtiles IO:: 
+		 mult_stencil_op_hcompute_mult_stencil_0->mult_stencil_op_hcompute_hw_output_stencil_3, delay = 0
+	register IO:: 
+
+After shift register optimization: Bank writers: 
+Bank readers: 
+Shift Register Output: 
+	memtiles IO:: 
+		 mult_stencil_op_hcompute_mult_stencil_0->mult_stencil_op_hcompute_hw_output_stencil_3, delay = 0
+	register IO:: 
+
+Done ports: {mult_stencil_op_hcompute_hw_output_stencil_3}
+reduced buffer: --- mult_stencil
+	---- 1 in ports
+		mult_stencil_op_hcompute_mult_stencil_0
+			dom : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+			acc : { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> mult_stencil[mult_s0_y, mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+			sched: { op_hcompute_mult_stencil[root = 0, mult_s0_y, mult_s0_x_x] -> [3 + 64mult_s0_y + mult_s0_x_x] : 0 <= mult_s0_y <= 63 and 0 <= mult_s0_x_x <= 63 }
+			min location: { mult_stencil[0, 0] }
+			max location: { mult_stencil[63, 63] }
+
+	---- 0 out ports:
+	---- Input Bundles
+		op_hcompute_mult_stencil_write
+		---- Ports...
+			mult_stencil_op_hcompute_mult_stencil_0
+	---- Output Bundles
+
+SR outputs: {mult_stencil_op_hcompute_hw_output_stencil_3}
+BUF outputs: {}
+After banking optimization: Bank writers: 
+Bank readers: 
+Shift Register Output: 
+	memtiles IO:: 
+		 mult_stencil_op_hcompute_mult_stencil_0->mult_stencil_op_hcompute_hw_output_stencil_3, delay = 0
+	register IO:: 
+
+After bank merging: Bank writers: 
+Bank readers: 
+Shift Register Output: 
+	memtiles IO:: 
+		 mult_stencil_op_hcompute_mult_stencil_0->mult_stencil_op_hcompute_hw_output_stencil_3, delay = 0
+	register IO:: 
+
+add input: mult_stencil_op_hcompute_mult_stencil_0 to pt2wire
+add output: mult_stencil_op_hcompute_hw_output_stencil_3 to pt2wire
+Visit op: op_hcompute_hw_output_stencil
+Schedule to generate affine controller: { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+pma: { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [(4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi)] : root = 0 and 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+sched = { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] -> [(4 + 64hw_output_s0_y_yi + hw_output_s0_x_xi_xi)] }
+  dom = { op_hcompute_hw_output_stencil[root = 0, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] : 0 <= hw_output_s0_y_yi <= 63 and 0 <= hw_output_s0_x_xi_xi <= 63 }
+ls = { op_hcompute_hw_output_stencil[root, hw_output_s0_y_yi, hw_output_s0_x_xi_xi] }
+v = 0
+Add ub node to be aff ctrl
+"dimensionality",3,0
+"cycle_starting_addr",4,0
+"extent_2",1,0
+"cycle_stride_2",0,0
+"extent_1",64,0
+"cycle_stride_1",64,0
+"extent_0",64,0
+"cycle_stride_0",1,0
+Generating Verilog Testing Collateral for: op_hcompute_hw_output_stencil_port_controller
+Module: cgralib.Mem_amber(ID:_U0, ctrl_width:16, has_chain_en:False, has_external_addrgen:False, has_flush:True, has_read_valid:False, has_reset:False, has_stencil_valid:True, has_valid:False, is_rom:False, num_inputs:1, num_outputs:1, use_prebuilt_mem:True, width:16)
+  Type: {'rst_n':BitIn, 'clk_en':BitIn, 'clk':coreir.clkIn, 'data_in_0':BitIn[16], 'chain_data_in_0':BitIn[16], 'data_out_0':Bit[16], 'stencil_valid':Bit, 'flush':BitIn}
+  Def? No
+Verilog module type: cgralib_Mem_amber__ID_U0__ctrl_width16__has_chain_enFalse__has_external_addrgenFalse__has_flushTrue__has_read_validFalse__has_resetFalse__has_stencil_validTrue__has_validFalse__is_romFalse__num_inputs1__num_outputs1__use_prebuilt_memTrue__width16
+Find compute
+Done Finding compute , op Latency : 0, read Latency: 0
+Delaying read
+Returning delayed...
+Delaying exe
+Returning delayed...
+Delaying writes
+Returning delayed...
+getting incoming buffers to op_hcompute_hw_output_stencil
+  consumed: mult_stencil
+Visit op: op_hcompute_mult_stencil
+getting incoming buffers to op_hcompute_mult_stencil
+  consumed: hw_input_global_wrapper_stencil
+Visit op: op_hcompute_hw_input_global_wrapper_stencil
+getting incoming buffers to op_hcompute_hw_input_global_wrapper_stencil
+  consumed: hw_input_stencil
+Schedule to generate affine controller: { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+pma: { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [(64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x)] : root = 0 and 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+sched = { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] -> [(64hw_input_global_wrapper_s0_y + hw_input_global_wrapper_s0_x_x)] }
+  dom = { op_hcompute_hw_input_global_wrapper_stencil[root = 0, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] : 0 <= hw_input_global_wrapper_s0_y <= 63 and 0 <= hw_input_global_wrapper_s0_x_x <= 63 }
+ls = { op_hcompute_hw_input_global_wrapper_stencil[root, hw_input_global_wrapper_s0_y, hw_input_global_wrapper_s0_x_x] }
+v = 3
+Add ub node to be aff ctrl
+"dimensionality",3,0
+"cycle_starting_addr",3,0
+"extent_2",1,0
+"cycle_stride_2",0,0
+"extent_1",64,0
+"cycle_stride_1",64,0
+"extent_0",64,0
+"cycle_stride_0",1,0
+Generating Verilog Testing Collateral for: op_hcompute_hw_input_global_wrapper_stencil_port_controller
+Module: cgralib.Mem_amber(ID:_U4, ctrl_width:16, has_chain_en:False, has_external_addrgen:False, has_flush:True, has_read_valid:False, has_reset:False, has_stencil_valid:True, has_valid:False, is_rom:False, num_inputs:1, num_outputs:1, use_prebuilt_mem:True, width:16)
+  Type: {'rst_n':BitIn, 'clk_en':BitIn, 'clk':coreir.clkIn, 'data_in_0':BitIn[16], 'chain_data_in_0':BitIn[16], 'data_out_0':Bit[16], 'stencil_valid':Bit, 'flush':BitIn}
+  Def? No
+Verilog module type: cgralib_Mem_amber__ID_U4__ctrl_width16__has_chain_enFalse__has_external_addrgenFalse__has_flushTrue__has_read_validFalse__has_resetFalse__has_stencil_validTrue__has_validFalse__is_romFalse__num_inputs1__num_outputs1__use_prebuilt_memTrue__width16
+Find compute
+Done Finding compute , op Latency : 3, read Latency: 0
+Delaying read
+Returning delayed...
+Delaying exe
+Returning delayed...
+Delaying writes
+Returning delayed...
+Module: global.pointwise
+  Type: {'clk':coreir.clkIn, 'reset':BitIn, 'hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read_en':Bit, 'hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read':BitIn[16][1], 'hw_output_stencil_op_hcompute_hw_output_stencil_write_valid':Bit, 'hw_output_stencil_op_hcompute_hw_output_stencil_write':Bit[16][1]}
+  Def? Yes
+  Def:
+    Instances:
+      _U8 : reg(has_clr:False, has_en:False, has_rst:False, width:16)
+      hw_input_global_wrapper_stencil : hw_input_global_wrapper_stencil_ub
+      mult_stencil : mult_stencil_ub
+      op_hcompute_hw_input_global_wrapper_stencil : cu_op_hcompute_hw_input_global_wrapper_stencil
+      op_hcompute_hw_input_global_wrapper_stencil_exe_start : op_hcompute_hw_input_global_wrapper_stencil_exe_start_pt__U6
+      op_hcompute_hw_input_global_wrapper_stencil_port_controller : Mem_amber(ID:_U4, ctrl_width:16, has_chain_en:False, has_external_addrgen:False, has_flush:True, has_read_valid:False, has_reset:False, has_stencil_valid:True, has_valid:False, is_rom:False, num_inputs:1, num_outputs:1, use_prebuilt_mem:True, width:16)
+      op_hcompute_hw_input_global_wrapper_stencil_port_controller_clk_en_const : const
+      op_hcompute_hw_input_global_wrapper_stencil_read_start : op_hcompute_hw_input_global_wrapper_stencil_read_start_pt__U5
+      op_hcompute_hw_input_global_wrapper_stencil_write_start : op_hcompute_hw_input_global_wrapper_stencil_write_start_pt__U7
+      op_hcompute_hw_output_stencil : cu_op_hcompute_hw_output_stencil
+      op_hcompute_hw_output_stencil_exe_start : op_hcompute_hw_output_stencil_exe_start_pt__U2
+      op_hcompute_hw_output_stencil_port_controller : Mem_amber(ID:_U0, ctrl_width:16, has_chain_en:False, has_external_addrgen:False, has_flush:True, has_read_valid:False, has_reset:False, has_stencil_valid:True, has_valid:False, is_rom:False, num_inputs:1, num_outputs:1, use_prebuilt_mem:True, width:16)
+      op_hcompute_hw_output_stencil_port_controller_clk_en_const : const
+      op_hcompute_hw_output_stencil_read_start : op_hcompute_hw_output_stencil_read_start_pt__U1
+      op_hcompute_hw_output_stencil_write_start : op_hcompute_hw_output_stencil_write_start_pt__U3
+      op_hcompute_mult_stencil : cu_op_hcompute_mult_stencil
+    Connections:
+      hw_input_global_wrapper_stencil.reset <=> self.reset
+      mult_stencil.reset <=> self.reset
+      op_hcompute_hw_output_stencil_port_controller.flush <=> self.reset
+      op_hcompute_hw_input_global_wrapper_stencil_port_controller.flush <=> self.reset
+      op_hcompute_hw_output_stencil.hw_output_stencil_op_hcompute_hw_output_stencil_write <=> self.hw_output_stencil_op_hcompute_hw_output_stencil_write
+      op_hcompute_hw_output_stencil_port_controller.clk <=> self.clk
+      op_hcompute_hw_input_global_wrapper_stencil_port_controller.clk <=> self.clk
+      op_hcompute_hw_output_stencil_port_controller.clk_en <=> op_hcompute_hw_output_stencil_port_controller_clk_en_const.out
+      op_hcompute_hw_output_stencil_port_controller.rst_n <=> op_hcompute_hw_output_stencil_port_controller_clk_en_const.out
+      op_hcompute_hw_output_stencil_port_controller.stencil_valid <=> op_hcompute_hw_output_stencil_read_start.in
+      op_hcompute_hw_output_stencil_exe_start.in <=> op_hcompute_hw_output_stencil_port_controller.stencil_valid
+      op_hcompute_hw_output_stencil_port_controller.stencil_valid <=> op_hcompute_hw_output_stencil_write_start.in
+      op_hcompute_hw_output_stencil_write_start.out <=> self.hw_output_stencil_op_hcompute_hw_output_stencil_write_valid
+      mult_stencil.op_hcompute_hw_output_stencil_read <=> op_hcompute_hw_output_stencil.mult_stencil_op_hcompute_hw_output_stencil_read
+      mult_stencil.op_hcompute_mult_stencil_write <=> op_hcompute_mult_stencil.mult_stencil_op_hcompute_mult_stencil_write
+      hw_input_global_wrapper_stencil.op_hcompute_mult_stencil_read <=> op_hcompute_mult_stencil.hw_input_global_wrapper_stencil_op_hcompute_mult_stencil_read
+      hw_input_global_wrapper_stencil.op_hcompute_hw_input_global_wrapper_stencil_write <=> op_hcompute_hw_input_global_wrapper_stencil.hw_input_global_wrapper_stencil_op_hcompute_hw_input_global_wrapper_stencil_write
+      op_hcompute_hw_input_global_wrapper_stencil_port_controller.clk_en <=> op_hcompute_hw_input_global_wrapper_stencil_port_controller_clk_en_const.out
+      op_hcompute_hw_input_global_wrapper_stencil_port_controller.rst_n <=> op_hcompute_hw_input_global_wrapper_stencil_port_controller_clk_en_const.out
+      op_hcompute_hw_input_global_wrapper_stencil_port_controller.stencil_valid <=> op_hcompute_hw_input_global_wrapper_stencil_read_start.in
+      op_hcompute_hw_input_global_wrapper_stencil_exe_start.in <=> op_hcompute_hw_input_global_wrapper_stencil_port_controller.stencil_valid
+      op_hcompute_hw_input_global_wrapper_stencil_port_controller.stencil_valid <=> op_hcompute_hw_input_global_wrapper_stencil_write_start.in
+      op_hcompute_hw_input_global_wrapper_stencil_read_start.out <=> self.hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read_en
+      op_hcompute_hw_input_global_wrapper_stencil.hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read <=> self.hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read
+      _U8.in <=> self.hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read[0]
+
+Find top interface: clk
+Find top interface: hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read
+Find top interface: hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read_en
+Find top interface: hw_output_stencil_op_hcompute_hw_output_stencil_write
+Find top interface: hw_output_stencil_op_hcompute_hw_output_stencil_write_valid
+Find top interface: reset
+    Connect the read directly to write port of GLB!
+    op_hcompute_hw_output_stencil_port_controller(ID:_U0, ctrl_width:16, has_chain_en:False, has_external_addrgen:False, has_flush:True, has_read_valid:False, has_reset:False, has_stencil_valid:True, has_valid:False, is_rom:False, num_inputs:1, num_outputs:1, use_prebuilt_mem:True, width:16)() : cgralib.Mem_amber
+    Sel: clk
+    Sel: clk_en
+    Sel: flush
+    Sel: rst_n
+    Sel: stencil_valid
+    Connect the read directly to write port of GLB!
+    op_hcompute_hw_input_global_wrapper_stencil_port_controller(ID:_U4, ctrl_width:16, has_chain_en:False, has_external_addrgen:False, has_flush:True, has_read_valid:False, has_reset:False, has_stencil_valid:True, has_valid:False, is_rom:False, num_inputs:1, num_outputs:1, use_prebuilt_mem:True, width:16)() : cgralib.Mem_amber
+    Sel: clk
+    Sel: clk_en
+    Sel: flush
+    Sel: rst_n
+    Sel: stencil_valid
+inlining op_hcompute_hw_output_stencil_write_start
+inlining op_hcompute_hw_output_stencil_read_start
+inlining op_hcompute_hw_output_stencil_exe_start
+inlining op_hcompute_hw_input_global_wrapper_stencil_write_start
+inlining op_hcompute_hw_input_global_wrapper_stencil_read_start
+inlining op_hcompute_hw_input_global_wrapper_stencil_exe_start
+inlining mult_stencil
+inlining _U8
+inlining hw_input_global_wrapper_stencil
+inlining op_hcompute_hw_output_stencil
+inlining op_hcompute_hw_input_global_wrapper_stencil
+inlining inner_compute$c0
+inlining c0
+inlining inner_compute$c1
+inlining c1
+inlining op_hcompute_hw_input_global_wrapper_stencil_port_controller_clk_en_const
+inlining op_hcompute_hw_output_stencil_port_controller_clk_en_const
+inlining op_hcompute_hw_input_global_wrapper_stencil_port_controller
+inlining op_hcompute_hw_output_stencil_port_controller
+inlining inner_compute$mul_pipelined_i2605_i1376
+inlining mul_pipelined_i2605_i1376
+inlining op_hcompute_mult_stencil
+    new memory syntax transformation!
+    op_hcompute_hw_output_stencil_port_controller(ID:_U0, ctrl_width:16, has_chain_en:False, has_external_addrgen:False, has_flush:True, has_read_valid:False, has_reset:False, has_stencil_valid:True, has_valid:False, is_rom:False, num_inputs:1, num_outputs:1, use_prebuilt_mem:True, width:16)() : cgralib.Mem_amber
+    Sel: clk
+    Sel: clk_en
+    Sel: flush
+    Sel: rst_n
+    Sel: stencil_valid
+    garnet buf sel: clk
+    garnet buf sel: clk_en
+    garnet buf sel: flush
+    garnet buf sel: rst_n
+    garnet buf sel: stencil_valid
+    new memory syntax transformation!
+    op_hcompute_hw_input_global_wrapper_stencil_port_controller(ID:_U4, ctrl_width:16, has_chain_en:False, has_external_addrgen:False, has_flush:True, has_read_valid:False, has_reset:False, has_stencil_valid:True, has_valid:False, is_rom:False, num_inputs:1, num_outputs:1, use_prebuilt_mem:True, width:16)() : cgralib.Mem_amber
+    Sel: clk
+    Sel: clk_en
+    Sel: flush
+    Sel: rst_n
+    Sel: stencil_valid
+    garnet buf sel: clk
+    garnet buf sel: clk_en
+    garnet buf sel: flush
+    garnet buf sel: rst_n
+    garnet buf sel: stencil_valid

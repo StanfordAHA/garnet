@@ -1,0 +1,59 @@
+pes with packed ponds
+id to instance name
+  I0  io16_hw_output_stencil_op_hcompute_hw_output_stencil_write_0
+  i1  io1_hw_output_stencil_op_hcompute_hw_output_stencil_write_valid
+  m2  op_hcompute_hw_output_stencil_port_controller_garnet
+  I3  io16in_hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read_0
+  r4  io16in_hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read_0$reg0
+  r5  io16in_hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read_0$reg1
+  r6  io16in_hw_input_stencil_op_hcompute_hw_input_global_wrapper_stencil_read_0$reg2
+  p7  op_hcompute_mult_stencil$inner_compute$mul_pipelined_i2605_i1376
+  r8  io16_hw_output_stencil_op_hcompute_hw_output_stencil_write_0$reg3
+  r9  io1_hw_output_stencil_op_hcompute_hw_output_stencil_write_valid$reg4
+id_to_Instrs
+  I0, (2,)
+  i1, (2,)
+  m2, <class 'peak.mapper.utils.Unbound'>
+  I3, (1,)
+  r4, 0
+  r5, 0
+  r6, 0
+  p7, 151115727456341582151756
+  r8, 0
+  r9, 0
+id_to_metadata
+  m2, {'config': {'stencil_valid': {'cycle_starting_addr': [4], 'cycle_stride': [1, 64], 'dimensionality': 2, 'extent': [64, 64]}}, 'init': None, 'mode': 'lake'}
+buses
+  e1, 17
+  e2, 1
+  e3, 17
+  e5, 17
+  e6, 17
+  e7, 17
+  e8, 17
+  e15, 1
+netlist
+  e1
+    ('r8', 'reg')
+    ('I0', 'f2io_17')
+  e2
+    ('r9', 'reg')
+    ('i1', 'f2io_1')
+  e3
+    ('I3', 'io2f_17')
+    ('r4', 'reg')
+  e5
+    ('r4', 'reg')
+    ('r5', 'reg')
+  e6
+    ('r5', 'reg')
+    ('r6', 'reg')
+  e7
+    ('r6', 'reg')
+    ('p7', 'PE_input_width_17_num_0')
+  e8
+    ('p7', 'PE_output_width_17_num_0')
+    ('r8', 'reg')
+  e15
+    ('m2', 'MEM_output_width_1_num_2')
+    ('r9', 'reg')

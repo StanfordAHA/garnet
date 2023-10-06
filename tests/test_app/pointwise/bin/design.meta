@@ -1,0 +1,4 @@
+placement=design.place
+bitstream=pointwise.bs
+input=input.pgm
+output=gold.pgm

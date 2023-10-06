@@ -1,0 +1,2 @@
+layout=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise/bin/design.layout
+graph=1 /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise/bin/1.graph 17 /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise/bin/17.graph
