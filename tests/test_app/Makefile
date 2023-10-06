@@ -9,7 +9,7 @@ garnet_dir := $(mkfile_dir)/../..
 gemstone_dir := $(realpath $(garnet_dir))/../gemstone
 netlist_dir := $(mkfile_dir)/netlist
 glc_dir := $(garnet_dir)/global_controller
-APP_ARGS ?= +APP0=$(mkfile_dir)pointwise
+APP_ARGS ?= +APP0=$(mkfile_dir)/pointwise
 
 TOOL ?= VCS
 export WAVEFORM ?= 0
