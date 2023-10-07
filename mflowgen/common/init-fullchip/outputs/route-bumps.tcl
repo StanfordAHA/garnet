@@ -19,7 +19,7 @@ proc route_bumps_main {} {
 
     set ring_info [add_power_rings]
     add_stripes_from_pads_to_rings $ring_info
-    # route_signal_bumps
+    route_signal_bumps
     # route_power_bumps
 
     ######################################################################
@@ -127,17 +127,13 @@ proc get_pad_shape_bound { pad_module_name pad_pin_name x_or_y min_or_max } {
 }
 
 proc add_stripes_from_pads_to_rings { ring_info } {
-    # Add power stripes to connect the power rails in the pads to the power ring
+    # Add power stripes to connect the power rails
+    # in the pads to the power ring:
     #
     #  power  -----------------X----- vcc
     #  rings  -----------X-----|----- vss
     #         ------X----|-----|----- vccio
-    #               |    |     |               
-    #               |    |     |               
-    #               |    |     |               
-    #               |    |     |               
-    #               |    |     |               
-    #               |    |     |               
+    #               |    |     |                            
     #               |    |     |               
     #   IO    ------|----|-----X----- vcc
     #   Pad   ------|----X----------- vss
@@ -156,6 +152,7 @@ proc add_stripes_from_pads_to_rings { ring_info } {
     set ring_offset_right  [lindex $ring_info 5]
     
     set stripe_layer gmb
+
     foreach side {top bottom left right} {
         set pad_objs [dbGet -p top.insts.name IOPAD_$side*]
         foreach pad_obj $pad_objs {
@@ -200,7 +197,7 @@ proc add_stripes_from_pads_to_rings { ring_info } {
                     set stripe_direction "horizontal"
                     set pad_length [dbGet $pad_obj.box_sizey]
                 }
-
+                # compute the stripe net
                 if {$pwr_io eq "vccio"} {
                     set stripe_net VDDPST
                 } elseif {$pwr_io eq "vss*"} {
@@ -208,14 +205,12 @@ proc add_stripes_from_pads_to_rings { ring_info } {
                 } elseif {$pwr_io eq "vcc"} {
                     set stripe_net VDD
                 }
-
+                # compute the stripe width and offset
                 if {[string match "*SUPPLY*" $pad_inst_name]} {
-                    puts "This is a supply pad"
                     set stripe_width [expr 2 * [dbGet [dbGet -p head.layers.name $stripe_layer].maxWidth] / 3]
                     set interval [expr $pad_length / 4]
                     set stripe_offset [expr ($i+1)*($interval) - ($stripe_width/2)]
                 } else {
-                    puts "This is a signal pad"
                     set stripe_width [expr [dbGet [dbGet -p head.layers.name $stripe_layer].maxWidth] / 3]
                     set interval [expr $pad_length / 5]
                     if {$pwr_io eq "vccio"} {
@@ -224,9 +219,6 @@ proc add_stripes_from_pads_to_rings { ring_info } {
                         set stripe_offset [expr ($i+1)*($interval) - ($stripe_width/2) + $interval]
                     }
                 }
-
-                puts "pad $pad_inst_name: $sbox_llx $sbox_lly $sbox_urx $sbox_ury"
-
                 # add the stripe
                 addStripe \
                     -area "$sbox_llx $sbox_lly $sbox_urx $sbox_ury" \
@@ -236,14 +228,39 @@ proc add_stripes_from_pads_to_rings { ring_info } {
                     -width $stripe_width \
                     -start_offset $stripe_offset \
                     -number_of_sets 1
-                
+                # advanced to the next power net
                 incr i
             }
         }
     }
 }
 
-proc route_signal_bumps { route_cmd } {
+proc select_signal_bumps_within { area } {
+    deselect_bump
+    select_bump -area $area -type signal
+    deselect_bump -floating
+}
+
+proc route_signal_bumps {} {
+
+    # fcroute configuration
+    setFlipChipMode -reset
+    setFlipChipMode -layerChangeTopLayer                  gmb
+    setFlipChipMode -layerChangeBotLayer                  gm0
+    setFlipChipMode -routeWidth                           4.0
+    setFlipChipMode -route_style                          manhattan
+    setFlipChipMode -allow_layer_change                   true
+    setFlipChipMode -connectPowerCellToBump               true
+    setFlipChipMode -honor_bump_connect_target_constraint true
+    setFlipChipMode -prevent_via_under_bump               true
+
+    # select a portion of the signal bumps
+    select_signal_bumps_within {0 0 1000 1000}
+    set bump_route_area [get_bump_region];
+    fcroute -type signal -incremental -selected_bump -area $bump_route_area -connectInsideArea
+}
+
+proc route_bumps { route_cmd } {
     # route_cmd options:
     # set route_cmd route_sig_then_pwr; # route sig bumps to pins, pwr bumps to rungs
     # set route_cmd route_power       ; # route power bumps to pads
