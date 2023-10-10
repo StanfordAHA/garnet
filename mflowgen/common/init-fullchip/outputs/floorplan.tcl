@@ -18,10 +18,13 @@ globalNetConnect VDD    -type pgpin -pin vcc   -inst *
 globalNetConnect VSS    -type pgpin -pin vssp  -inst *
 globalNetConnect VSS    -type pgpin -pin vssb  -inst *
 
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set hori_pitch [dbGet top.fPlan.coreSite.size_x]
+
 set fp_width          3924.72
 set fp_height         4084.92
-set fp_margin_width   71.28
-set fp_margin_height  71.82
+set fp_margin_width   [expr 71.28 + 8 * $hori_pitch]
+set fp_margin_height  [expr 71.82 + 2 * $vert_pitch]
 
 floorPlan \
     -coreMarginsBy die \

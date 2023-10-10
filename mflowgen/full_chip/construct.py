@@ -105,9 +105,42 @@ def construct():
   guardring_params = {
     # Merging guardring into OASIS
     'child_oas' : 'inputs/adk/guardring.oas',
-    'coord_x'   : '-49.98u',
-    'coord_y'   : '-49.92u'
+    'coord_x'   : '0',
+    'coord_y'   : '0'
   }
+
+  init_order = [
+      'pre-init.tcl',
+      'main.tcl',
+      'innovus-pnr-config.tcl',
+      'dont-use.tcl',
+      'quality-of-life.tcl',
+      'stylus-compatibility-procs.tcl',
+      'floorplan.tcl',
+      'create-rows.tcl',
+      'add-tracks.tcl',
+      'add-endcaps-welltaps.tcl',
+      'create-special-grid.tcl',
+      'io-fillers.tcl',
+      # 'alignment-cells.tcl',
+      'gen-bumps.tcl',
+      # 'check-bumps.tcl',
+      'route-bumps.tcl',
+      # 'place-macros.tcl',
+      'create-boundary-blockage.tcl',
+      # 'dont-touch.tcl'
+  ]
+
+  drc_rule_decks = [
+    # "antenna",
+    # "collat",
+    "drc-drcd",
+    # "drc-lu",
+    # "drc-denall",
+    # "drc-cden-lden-collat",
+    # "drc-fullchip",
+    # "tapein"
+  ]
   
   #-----------------------------------------------------------------------
   # Create nodes
@@ -153,20 +186,19 @@ def construct():
   # cgra_gl_sim_verdict   = Step( this_dir + '/cgra_gl_sim_verdict'  )
 
   # Default steps
-  info           = Step( 'info',                           default=True )
-  synth          = Step( 'cadence-genus-synthesis',        default=True )
-  iflow          = Step( 'cadence-innovus-flowsetup',      default=True )
-  init           = Step( 'cadence-innovus-init',           default=True )
-  power          = Step( 'cadence-innovus-power',          default=True )
-  place          = Step( 'cadence-innovus-place',          default=True )
-  cts            = Step( 'cadence-innovus-cts',            default=True )
-  postcts_hold   = Step( 'cadence-innovus-postcts_hold',   default=True )
-  route          = Step( 'cadence-innovus-route',          default=True )
-  postroute      = Step( 'cadence-innovus-postroute',      default=True )
-  postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
-  signoff        = Step( 'cadence-innovus-signoff',        default=True )
-  pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-
+  info           = Step( 'info',                             default=True )
+  synth          = Step( 'cadence-genus-synthesis',          default=True )
+  iflow          = Step( 'cadence-innovus-flowsetup',        default=True )
+  init           = Step( 'cadence-innovus-init',             default=True )
+  power          = Step( 'cadence-innovus-power',            default=True )
+  place          = Step( 'cadence-innovus-place',            default=True )
+  cts            = Step( 'cadence-innovus-cts',              default=True )
+  postcts_hold   = Step( 'cadence-innovus-postcts_hold',     default=True )
+  route          = Step( 'cadence-innovus-route',            default=True )
+  postroute      = Step( 'cadence-innovus-postroute',        default=True )
+  postroute_hold = Step( 'cadence-innovus-postroute_hold',   default=True )
+  signoff        = Step( 'cadence-innovus-signoff',          default=True )
+  pt_signoff     = Step( 'synopsys-pt-timing-signoff',       default=True )
   merge_gdr      = Step( 'mentor-calibre-oasismerge-child',  default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',    default=True )
 
@@ -286,8 +318,7 @@ def construct():
   g.add_step( gen_sram_2        )
   g.add_step( custom_cts        )
   g.add_step( merge_gdr         ) 
-  # Different adk view for lvs
-  g.add_step( lvs_adk           )
+
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -311,7 +342,6 @@ def construct():
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      gen_sram_2     )
   g.connect_by_name( adk,      merge_gdr      )
-  g.connect_by_name( lvs_adk,  lvs            )
   # Connect RTL verification nodes
   g.connect_by_name( rtl, cgra_rtl_sim_compile )
   g.connect_by_name( cgra_sim_build, cgra_rtl_sim_run )
@@ -393,11 +423,25 @@ def construct():
   g.connect_by_name( route,          postroute      )
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
-  g.connect_by_name( signoff,        lvs            )
 
   # Merge guardring oasis into design
-  g.connect(signoff.o('design-merged.oas'), merge_gdr.i('design.oas'))
-  # TODO: Send oasis with guardring to drc, fill, and lvs
+  early_drc_check = True
+  if early_drc_check:
+    custom_init.extend_outputs(["stream-out.tcl"])
+    init.extend_inputs(["stream-out.tcl"])
+    g.connect(custom_init.o('stream-out.tcl'), init.i('stream-out.tcl'))
+    init_order.append("stream-out.tcl")
+    init.extend_outputs(["design-merged.oas"])
+    init.extend_commands(["ln -sf ../design-merged.oas design-merged.oas"])
+    g.connect_by_name( init,       merge_gdr      )
+  else:
+    g.connect_by_name( signoff,    merge_gdr      )
+  
+  # g.connect_by_name( merge_gdr,      fill           )
+  # g.connect_by_name( fill,           drc            )
+  g.connect_by_name( merge_gdr,      drc            )
+
+  g.connect_by_name( fill,           lvs            )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
@@ -422,8 +466,6 @@ def construct():
   # Provide different parameter set to second sram node, so it can actually 
   # generate a different sram
   gen_sram_2.update_params( sram_2_params )
-  # LVS adk has separate view parameter
-  lvs_adk.update_params({ 'adk_view' : parameters['lvs_adk_view']})
 
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
@@ -436,28 +478,8 @@ def construct():
   synth.update_params({'TLX_REV_DATA_LO_WIDTH' : parameters['TLX_REV_DATA_LO_WIDTH']}, True)
   init.update_params({'soc_only': parameters['soc_only']}, True)
 
-  init.update_params( {'order': [
-      'pre-init.tcl', # ------------------------ new
-      'main.tcl',
-      'innovus-pnr-config.tcl', # -------------- new
-      'dont-use.tcl', # ------------------------ new
-      'quality-of-life.tcl',
-      'stylus-compatibility-procs.tcl',
-      'floorplan.tcl',
-      'create-rows.tcl', # --------------------- new
-      'add-tracks.tcl', # ---------------------- new
-      'add-endcaps-welltaps.tcl', # ---------- new (not sure if needed)
-      # 'insert-input-antenna-diodes.tcl', # --- new (not sure if needed)
-      'create-special-grid.tcl', # ----------- new (not sure if needed)
-      'io-fillers.tcl',
-      # 'alignment-cells.tcl',
-      'gen-bumps.tcl',
-      # 'check-bumps.tcl',
-      'route-bumps.tcl',
-      # 'place-macros.tcl',
-      'create-boundary-blockage.tcl', # ------ new (not sure if needed)
-      # 'dont-touch.tcl'
-  ] } )
+  init.update_params( {'order': init_order } )
+  drc.update_params( {'rule_decks': drc_rule_decks } )
 
   # glb_top parameters update
   glb_top.update_params({'array_width': parameters['array_width']}, True)

@@ -44,6 +44,7 @@ outputs:
   - attach-results-to-outputs.tcl
   - io_file
   - io_pad_placement.tcl
+  - fcroute-extra-config.cfg
   # Bump routing inc. entire directory of analog (PHY) bump scripts
   - gen-bumps.tcl
   - check-bumps.tcl

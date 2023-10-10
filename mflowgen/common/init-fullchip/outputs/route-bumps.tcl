@@ -17,10 +17,49 @@ proc route_bumps_main {} {
     ######################################################################
     # MAIN executable portion of script
 
-    set ring_info [add_power_rings]
-    add_stripes_from_pads_to_rings $ring_info
+    # 1. create a temporary obstruction in signal pad (east)
+    set signal_track_width 6.0
+    set pad_size_x 45.36
+    set pad_size_y 47.88
+    set gate_thickness [expr ($pad_size_y - $signal_track_width) / 2]
+    set rect_a "0.00 0.00 $pad_size_x $gate_thickness"
+    set rect_b "0.00 0.00 1.00 $pad_size_y"
+    set rect_c "0.00 [expr $pad_size_y - $gate_thickness] $pad_size_x $pad_size_y"
+    add_cell_obs \
+        -cell sdio_1v8_e1 \
+        -layer gmb \
+        -rects "$rect_a $rect_b $rect_c" \
+        -exceptPGNet
+    
+    # 2. create a temporary obstruction in signal pad (north)
+    set signal_track_width 6.0
+    set pad_size_x 43.2
+    set pad_size_y 47.88
+    set gate_thickness [expr ($pad_size_x - $signal_track_width) / 2]
+    set rect_a "0.00 0.00 $gate_thickness $pad_size_y"
+    set rect_b "0.00 [expr $pad_size_y - 1.00] $pad_size_x $pad_size_y"
+    set rect_c "[expr $pad_size_x-$gate_thickness] 0.00 $pad_size_x $pad_size_y"
+    add_cell_obs \
+        -cell sdio_1v8_n1 \
+        -layer gmb \
+        -rects "$rect_a $rect_b $rect_c" \
+        -exceptPGNet
+
+    # 2. route signal bumps
     route_signal_bumps
+
+    # 3. create power ring
+    set ring_info [add_power_rings]
+
+    # 4. connect pads to ring with stripes
+    add_stripes_from_pads_to_rings $ring_info
+
+    # 5. route power bumps
     # route_power_bumps
+
+    # remove the temporary obstruction in the IO pads
+    delete_cell_obs -cell sdio_1v8_e1 -layer gmb
+    delete_cell_obs -cell sdio_1v8_n1 -layer gmb
 
     ######################################################################
 }
@@ -144,12 +183,20 @@ proc add_stripes_from_pads_to_rings { ring_info } {
     #         ------X----|----------- vccio
     #         ------|----X----------- vss
     #         ------X---------------- vccio
+    set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+    set hori_pitch [dbGet top.fPlan.coreSite.size_x]
+
     set ring_width         [lindex $ring_info 0]
     set ring_spacing       [lindex $ring_info 1]
-    set ring_offset_top    [lindex $ring_info 2]
-    set ring_offset_bottom [lindex $ring_info 3]
-    set ring_offset_left   [lindex $ring_info 4]
-    set ring_offset_right  [lindex $ring_info 5]
+
+    # ring offset is relative to the core box
+    # but here we need to compute the offset relative to the pads
+    # and there is a small pitch gap between the pads and the core box
+    # (this is defined in the floorplan.tcl)
+    set ring_offset_top    [expr [lindex $ring_info 2] + 2 * $vert_pitch]
+    set ring_offset_bottom [expr [lindex $ring_info 3] + 2 * $vert_pitch]
+    set ring_offset_left   [expr [lindex $ring_info 4] + 8 * $hori_pitch]
+    set ring_offset_right  [expr [lindex $ring_info 5] + 8 * $hori_pitch]
     
     set stripe_layer gmb
 
@@ -163,7 +210,7 @@ proc add_stripes_from_pads_to_rings { ring_info } {
             set pad_box_urx [dbGet $pad_obj.box_urx]
             set pad_box_ury [dbGet $pad_obj.box_ury]
             set i 0
-            foreach pwr_io { vccio vss* vcc } {
+            foreach pwr_io { vss* vccio vcc } {
                 if {$side eq "top"} {
                     set port_bound [get_pad_shape_bound $pad_cell_name $pwr_io y max]
                     set sbox_llx [expr $pad_box_llx]
@@ -197,28 +244,44 @@ proc add_stripes_from_pads_to_rings { ring_info } {
                     set stripe_direction "horizontal"
                     set pad_length [dbGet $pad_obj.box_sizey]
                 }
-                # compute the stripe net
-                if {$pwr_io eq "vccio"} {
-                    set stripe_net VDDPST
-                } elseif {$pwr_io eq "vss*"} {
-                    set stripe_net VSS
-                } elseif {$pwr_io eq "vcc"} {
-                    set stripe_net VDD
-                }
                 # compute the stripe width and offset
                 if {[string match "*SUPPLY*" $pad_inst_name]} {
-                    set stripe_width [expr 2 * [dbGet [dbGet -p head.layers.name $stripe_layer].maxWidth] / 3]
-                    set interval [expr $pad_length / 4]
-                    set stripe_offset [expr ($i+1)*($interval) - ($stripe_width/2)]
+                    # SUPPLY pad
+                    if {$pwr_io eq "vss*"} {
+                        set stripe_net VDDPST
+                        set stripe_width 12.0
+                        set stripe_offset ???
+                    } elseif {$pwr_io eq "vccio"} {
+                        set stripe_net VSS
+                        set stripe_width 12.0
+                        set stripe_offset ???
+                    } elseif {$pwr_io eq "vcc"} {
+                        set stripe_net VDD
+                        set stripe_width 12.0
+                        set stripe_offset ???
+                    }
+                    # based on i, compute the offset
+                    # space = (pad_length - stripe_width*3) / 2
+                    # offset vss = (space + stripe_width)*0
+                    # offset vccio = (space + stripe_width)*1
+                    # offset vcc = (space + stripe_width)*2
                 } else {
-                    set stripe_width [expr [dbGet [dbGet -p head.layers.name $stripe_layer].maxWidth] / 3]
-                    set interval [expr $pad_length / 5]
-                    if {$pwr_io eq "vccio"} {
-                        set stripe_offset [expr ($i+1)*($interval) - ($stripe_width/2)]
-                    } else {
-                        set stripe_offset [expr ($i+1)*($interval) - ($stripe_width/2) + $interval]
+                    # SIGNAL pad
+                    if {$pwr_io eq "vss*"} {
+                        set stripe_net VDDPST
+                        set stripe_width 8.0
+                        set stripe_offset ???
+                    } elseif {$pwr_io eq "vccio"} {
+                        set stripe_net VSS
+                        set stripe_width 8.0
+                        set stripe_offset ???
+                    } elseif {$pwr_io eq "vcc"} {
+                        set stripe_net VDD
+                        set stripe_width 12.0
+                        set stripe_offset ???
                     }
                 }
+                setAddStripeMode -ignore_DRC true
                 # add the stripe
                 addStripe \
                     -area "$sbox_llx $sbox_lly $sbox_urx $sbox_ury" \
@@ -235,29 +298,116 @@ proc add_stripes_from_pads_to_rings { ring_info } {
     }
 }
 
-proc select_signal_bumps_within { area } {
+proc create_route_blockage_on_signal_pads {} {
+    # 
+    add_cell_obs -cell sdio_1v8_e1 -layer gmb -rects {{0.00 0.00 45.36 15.152} {0.00 0.00 1.00 47.88} {0.00 19.152 45.36 47.88}} -exceptPGNet
+    add_cell_obs -cell sdio_1v8_n1 -layer gmb -rects {{0.00 0.00 25.72 47.88} {0.00 47.00 43.2 47.88} {29.72 0.00 43.2 47.88}} -exceptPGNet
+}
+
+
+proc select_bumps_within { area type } {
     deselect_bump
-    select_bump -area $area -type signal
+    select_bump -area $area -type $type
     deselect_bump -floating
 }
 
 proc route_signal_bumps {} {
 
+    # fcroute configuration (manhattan, 45DegreeRoute)
+    setFlipChipMode -reset
+    setFlipChipMode -layerChangeTopLayer                  gmb
+    setFlipChipMode -layerChangeBotLayer                  gmb
+    setFlipChipMode -routeWidth                           4.00
+    setFlipChipMode -route_style                          manhattan
+    setViaGenMode   -invoke_verifyGeometry                false
+    # setFlipChipMode -connectPowerCellToBump               true
+    setFlipChipMode -honor_bump_connect_target_constraint true
+    setFlipChipMode -ignore_pad_type_check                true
+    setFlipChipMode -prevent_via_under_bump               true
+    setFlipChipMode -lower_layer_prevent_45_routing       true
+    setSrouteMode   -allowWrongWayRoute                   true
+
+    # select a portion of the signal bumps
+    set bump_select_regions {}
+    lappend bump_select_regions {0 0 4000 500}
+    lappend bump_select_regions {0 100 500 3900}
+    lappend bump_select_regions {100 3680 3800 4000}
+    lappend bump_select_regions {3500 100 4000 3880}
+    foreach region $bump_select_regions {
+        select_bumps_within $region signal
+        set bump_route_area [get_bump_region]
+        fcroute \
+            -type signal \
+            -incremental \
+            -selected_bump \
+            -area $bump_route_area \
+            -connectInsideArea \
+            -extraConfig inputs/fcroute-extra-config.cfg \
+            -verbose
+    }
+    fillNotch
+}
+
+proc route_power_bumps {} {
+
     # fcroute configuration
     setFlipChipMode -reset
     setFlipChipMode -layerChangeTopLayer                  gmb
-    setFlipChipMode -layerChangeBotLayer                  gm0
-    setFlipChipMode -routeWidth                           4.0
+    setFlipChipMode -layerChangeBotLayer                  gmb
+    setFlipChipMode -routeWidth                           8.00
     setFlipChipMode -route_style                          manhattan
-    setFlipChipMode -allow_layer_change                   true
-    setFlipChipMode -connectPowerCellToBump               true
+    setFlipChipMode -connectPowerCellToBump               false
     setFlipChipMode -honor_bump_connect_target_constraint true
+    setFlipChipMode -ignore_pad_type_check                true
     setFlipChipMode -prevent_via_under_bump               true
+    setFlipChipMode -lower_layer_prevent_45_routing       true
 
-    # select a portion of the signal bumps
-    select_signal_bumps_within {0 0 1000 1000}
-    set bump_route_area [get_bump_region];
-    fcroute -type signal -incremental -selected_bump -area $bump_route_area -connectInsideArea
+    # sroute config
+    setSrouteMode -reset
+    setSrouteMode -allowWrongWayRoute true
+
+    # route power bumps to ring
+    select_bumps_within {150 275 300 3800} ground
+    set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
+    set xmax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.x]]
+    set ymin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.y]]
+    set ymax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.y]]
+    set xmin [expr $xmin - 250]
+    set xmax [expr $xmax + 50]
+    set ymin [expr $ymin - 50]
+    set ymax [expr $ymax + 50]
+    # set bump_route_area [get_bump_region];
+    fcroute \
+        -type power \
+        -incremental \
+        -selected_bump \
+        -area "$xmin $ymin $xmax $ymax" \
+        -connectInsideArea \
+        -extraConfig inputs/fcroute-extra-config.cfg \
+        -jogControl preferSameLayer \
+        -verbose
+    
+    select_bumps_within {450 660 520 3450} power
+    set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
+    set xmax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.x]]
+    set ymin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.y]]
+    set ymax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.y]]
+    set xmin [expr $xmin - 500]
+    set xmax [expr $xmax + 50]
+    set ymin [expr $ymin - 50]
+    set ymax [expr $ymax + 50]
+    # set bump_route_area [get_bump_region];
+    fcroute \
+        -type power \
+        -incremental \
+        -selected_bump \
+        -area "$xmin $ymin $xmax $ymax" \
+        -connectInsideArea \
+        -extraConfig inputs/fcroute-extra-config.cfg \
+        -jogControl preferSameLayer \
+        -verbose
+    
+    fillNotch
 }
 
 proc route_bumps { route_cmd } {

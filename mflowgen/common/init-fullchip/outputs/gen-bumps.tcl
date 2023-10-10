@@ -140,38 +140,47 @@ proc gen_bumps { bumpCell } {
     "dddddddddddddddddddddddd"
     }
 
+    # Assign signal bumps
+    deselect_bump
+    select_bump -bumps [bumps_of_type $bump_types "d"]
+    # exclude the outer most bumps
+    deselect_bump -area {0 0 4000 100}
+    deselect_bump -area {0 0 100 4000}
+    deselect_bump -area {0 3950 4000 4050}
+    deselect_bump -area {3800 0 4000 4050}
+    assignBump -selected -exclude_pgnet {VDD VSS VDDPST}
     deselect_bumps
 
     # Assign all IOVDD bumps
-    deselect_bumps
-    select_bumps -bumps [bumps_of_type $bump_types "o"]
-    assign_signal_to_bump -selected -net VDDPST
-    assign_bumps \
-        -multi_bumps_to_multi_pads \
-        -selected \
-        -pg_only \
-        -pg_nets VDDPST \
-        -pg_insts *SUPPLY*
-    # Assign all IOVSS bumps
-    deselect_bumps
-    select_bumps -bumps [bumps_of_type $bump_types "g"]
-    assign_signal_to_bump -selected -net VSS 
-    assign_bumps \
-        -multi_bumps_to_multi_pads \
-        -selected \
-        -pg_only \
-        -pg_nets VSS \
-        -pg_insts *SUPPLY*
+    # deselect_bumps
+    # select_bumps -bumps [bumps_of_type $bump_types "o"]
+    # assign_signal_to_bump -selected -net VDDPST
+    # assign_bumps \
+    #     -multi_bumps_to_multi_pads \
+    #     -selected \
+    #     -pg_only \
+    #     -pg_nets VDDPST \
+    #     -pg_insts *SUPPLY*
+    # # Assign all IOVSS bumps
+    # deselect_bumps
+    # select_bumps -bumps [bumps_of_type $bump_types "g"]
+    # assign_signal_to_bump -selected -net VSS 
+    # assign_bumps \
+    #     -multi_bumps_to_multi_pads \
+    #     -selected \
+    #     -pg_only \
+    #     -pg_nets VSS \
+    #     -pg_insts *SUPPLY*
 
     ########################################################################
     # SIGNAL BUMP ASSIGNMENTS - automatically
     # Ugh yes it's a mixture of stylus and legacy commands :( :(
 
     # Select all signal bumps
-    deselect_bump
-    select_bump -bumps [bumps_of_type $bump_types "d"]
-    assignBump -selected -exclude_pgnet {VDD VSS VDDPST}
-    deselect_bumps
+    # deselect_bump
+    # select_bump -bumps [bumps_of_type $bump_types "d"]
+    # assignBump -selected -exclude_pgnet {VDD VSS VDDPST}
+    # deselect_bumps
     
     # Assign ESD label to all power/ground bumps
     # select_bumps -bumps [bumps_of_type $bump_types "g"]
