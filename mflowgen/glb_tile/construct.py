@@ -103,6 +103,29 @@ def construct():
     'core_height' : 0
     }, allow_new=True )
 
+  # Add graph inputs and outputs so this can be used in hierarchical flows
+
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+  g.add_input( 'header'  , rtl.i('header')   )
+
+  # Outputs
+  g.add_output( 'glb_tile_tt.lib',      genlib.o('design.lib')         )
+  g.add_output( 'glb_tile_tt.db',       lib2db.o('design.db')          )
+  g.add_output( 'glb_tile.lef',         signoff.o('design.lef')        )
+  g.add_output( 'glb_tile.gds',         signoff.o('design-merged.gds') )
+  g.add_output( 'glb_tile.sdf',         signoff.o('design.sdf')        )
+  g.add_output( 'glb_tile.vcs.v',       signoff.o('design.vcs.v')      )
+  g.add_output( 'glb_tile.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
+  g.add_output( 'glb_tile.spef.gz',     signoff.o('design.spef.gz')    )
+  g.add_output( 'glb_tile.lvs.v',       lvs.o('design_merged.lvs.v')   )
+  g.add_output( 'glb_tile_sram.spi',    gen_sram.o('sram.spi')         )
+  g.add_output( 'glb_tile_sram.v',      gen_sram.o('sram.v')           )
+  g.add_output( 'glb_tile_sram_pwr.v',  gen_sram.o('sram_pwr.v')       )
+  g.add_output( 'glb_tile_sram_tt.db',  gen_sram.o('sram_tt.db')       )
+  g.add_output( 'glb_tile_sram_tt.lib', gen_sram.o('sram_tt.lib')      )
+  g.add_output( 'glb_tile_sram_ff.lib', gen_sram.o('sram_ff.lib')      )
+
   # Add sram macro inputs to downstream nodes
   # [TODO]: Need to do timing signoff/lib gen for 3 different corners (typical, bc, wc)
   genlib.extend_inputs(     ['sram-typical.lib', 'sram-bc.lib', 'sram-wc.lib'] )
@@ -131,8 +154,7 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
   cts.extend_inputs( custom_cts.all_outputs() )
 
-  # Add header files to outputs
-  rtl.extend_outputs( ['header'] )
+  # Header files required for glb rtl output
   rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
   #-----------------------------------------------------------------------
