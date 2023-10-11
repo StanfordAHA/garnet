@@ -65,8 +65,8 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  # rtl                = Step( this_dir + '/../common/rtl'                          )
-  rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
+  rtl                  = Step( this_dir + '/../common/rtl'                          )
+  #rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
   constraints          = Step( this_dir + '/constraints'                            )
   custom_init          = Step( this_dir + '/custom-init'                            )
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
@@ -141,7 +141,7 @@ def construct():
   g.add_output( 'Tile_PE.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
   g.add_output( 'Tile_PE.spef.gz',     signoff.o('design.spef.gz')    )
   g.add_output( 'Tile_PE.pt.sdc',      signoff.o('design.pt.sdc')     )
-  g.add_output( 'Tile_PE.lvs.v',       lvs.o('design_merged.lvs.v')   )
+  #g.add_output( 'Tile_PE.lvs.v',       lvs.o('design_merged.lvs.v')   )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes

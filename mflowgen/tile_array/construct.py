@@ -244,8 +244,8 @@ def construct():
   g.add_input( 'design.v', rtl.i('design.v') )
 
   # Outputs
-  g.add_output( 'tile_array_tt.lib',      genlib.o('design.lib')         )
-  g.add_output( 'tile_array_tt.db',       lib2db.o('design.db')          )
+  g.add_output( 'tile_array_tt.lib',      pt_genlibdb.o('design.lib')         )
+  g.add_output( 'tile_array_tt.db',       pt_genlibdb.o('design.db')          )
   g.add_output( 'tile_array.lef',         signoff.o('design.lef')        )
   g.add_output( 'tile_array.vcs.v',       signoff.o('design.vcs.v')      )
   g.add_output( 'tile_array.sdf',         signoff.o('design.sdf')        )
@@ -255,9 +255,11 @@ def construct():
   g.add_output( 'tile_array.spef.gz',     signoff.o('design.spef.gz')    )
   g.add_output( 'tile_array.sram.spi',    Tile_MemCore.o('sram.spi')     )
   g.add_output( 'tile_array.sram.v',      Tile_MemCore.o('sram.v')       )
-  g.add_output( 'tile_array.sram_pwr.v',  Tile_MemCore.o('sram_pwr.v')   )
-  g.add_output( 'tile_array.sram_tt.db',  Tile_MemCore.o('sram_tt.db')   )
-  g.add_output( 'tile_array.sram_tt.lib', Tile_MemCore.o('sram_tt.lib')  )
+  #g.add_output( 'tile_array.sram_pwr.v',  Tile_MemCore.o('sram_pwr.v')   )
+  g.add_output( 'tile_array.sram_bc.db',  Tile_MemCore.o('sram_bc.db')   )
+  g.add_output( 'tile_array.sram_wc.db',  Tile_MemCore.o('sram_wc.db')   )
+  g.add_output( 'tile_array.sram_bc.lib', Tile_MemCore.o('sram_bc.lib')  )
+  g.add_output( 'tile_array.sram_wc.lib', Tile_MemCore.o('sram_wc.lib')  )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python script finds 'stream-out.tcl' and strips out that flag.
