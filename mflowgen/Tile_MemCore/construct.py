@@ -113,7 +113,7 @@ def construct():
   # Add sram macro inputs to downstream nodes
   synth.extend_inputs(      ['sram-typical.lib', 'sram-bc.lib', 'sram-wc.lib', 'sram.lef'] )
   pt_signoff.extend_inputs( ['sram-typical.db',  'sram-bc.db',  'sram-wc.db'] )
-  genlibdb.extend_inputs(   ['sram-typical.lib', 'sram-bc.lib', 'sram-wc.lib'] )
+  genlibdb.extend_inputs(   ['sram-typical.db', 'sram-bc.db', 'sram-wc.db'] )
 
   # These steps need timing and lef info for srams
   sram_steps = \
@@ -167,6 +167,8 @@ def construct():
   g.add_output( 'sram_bc.lib',              gen_sram.o('sram-bc.lib')      )
   g.add_output( 'sram_wc.db',               gen_sram.o('sram-wc.db')       )
   g.add_output( 'sram_wc.lib',              gen_sram.o('sram-wc.lib')      )
+  g.add_output( 'sram_typical.db',          gen_sram.o('sram-typical.db')  )
+  g.add_output( 'sram_typical.lib',         gen_sram.o('sram-typical.lib') )
 
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )
