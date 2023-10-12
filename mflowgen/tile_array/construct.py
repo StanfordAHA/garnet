@@ -38,9 +38,10 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 1.0,
+    'clock_period'      : 1.10 * 1000,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
+    'adk_stdcell'       : 'b15_7t_108pp',
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : True,
@@ -257,9 +258,11 @@ def construct():
   g.add_output( 'tile_array.sram.v',      Tile_MemCore.o('sram.v')       )
   #g.add_output( 'tile_array.sram_pwr.v',  Tile_MemCore.o('sram_pwr.v')   )
   g.add_output( 'tile_array.sram_bc.db',  Tile_MemCore.o('sram_bc.db')   )
-  g.add_output( 'tile_array.sram_wc.db',  Tile_MemCore.o('sram_wc.db')   )
   g.add_output( 'tile_array.sram_bc.lib', Tile_MemCore.o('sram_bc.lib')  )
+  g.add_output( 'tile_array.sram_wc.db',  Tile_MemCore.o('sram_wc.db')   )
   g.add_output( 'tile_array.sram_wc.lib', Tile_MemCore.o('sram_wc.lib')  )
+  g.add_output( 'tile_array.sram_typical.db',  Tile_MemCore.o('sram_typical.db')   )
+  g.add_output( 'tile_array.sram_typical.lib', Tile_MemCore.o('sram_typical.lib')  )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python script finds 'stream-out.tcl' and strips out that flag.
