@@ -120,11 +120,11 @@ set left_offset 20
 
  
 # pins for glb <-> soc
-editPin -pin $first_tile -start 5 $height -end $first_tile_pin_range $height -side TOP -spreadType RANGE -spreadDirection clockwise -layer M5
+editPin -pin $first_tile -start 5 $height -end $first_tile_pin_range $height -side TOP -spreadType RANGE -spreadDirection clockwise -layer 5
 
 # clk pin and reset pin
-editPin -pin "clk" -side TOP -assign [expr $first_tile_pin_range + $first_tile_pin_offset]  $height -layer 9
-editPin -pin "reset" -side TOP -assign [expr $first_tile_pin_range + 2 * $first_tile_pin_offset] $height -layer 9
+editPin -pin "clk" -side TOP -assign [expr $width / 2]  $height -layer 7
+editPin -pin "reset" -side TOP -assign [expr ($width / 2) + 2 * $first_tile_pin_offset] $height -layer 7
 
 # reset first_tile_pin_range to include clk and reset
 set first_tile_pin_range [expr $first_tile_pin_range + 2 * $first_tile_pin_offset + 5]
@@ -132,11 +132,11 @@ set glb_tile_port_offset [expr {($width - $first_tile_pin_range) / $num_glb_tile
 
 # for glb <-> glc
 for {set i 0} {$i < $num_glb_tiles} {incr i} {
-    editPin -pin $glb_tile_ports($i) -start [list [expr {$first_tile_pin_range + $glb_tile_port_offset * $i + 20}] $height] -end [list [expr {$first_tile_pin_range + $glb_tile_port_offset * ($i + 1) - 20}] $height] -side TOP -spreadType RANGE -spreadDirection clockwise -layer M5
+    editPin -pin $glb_tile_ports($i) -start [list [expr {$first_tile_pin_range + $glb_tile_port_offset * $i + 20}] $height] -end [list [expr {$first_tile_pin_range + $glb_tile_port_offset * ($i + 1) - 20}] $height] -side TOP -spreadType RANGE -spreadDirection clockwise -layer 5
 }
   
 # bottom pins
 for {set j 0} {$j < $array_width} {incr j} {
-    editPin -pin $tile_ports($j) -start [list [expr {($tile_width/2)*$j+5+$left_offset}] 0] -end [list [expr {($tile_width/2)*($j+1)-5+$left_offset}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer M5
+    editPin -pin $tile_ports($j) -start [list [expr {($tile_width/2)*$j+5+$left_offset}] 0] -end [list [expr {($tile_width/2)*($j+1)-5+$left_offset}] 0] -side BOTTOM -spreadType RANGE -spreadDirection counterclockwise -layer 5
 }
 
