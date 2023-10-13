@@ -254,7 +254,7 @@ def construct():
   g.add_output( 'tile_array.vcs.v',       signoff.o('design.vcs.v')      )
   g.add_output( 'tile_array.sdf',         signoff.o('design.sdf')        )
   g.add_output( 'tile_array.gds',         signoff.o('design-merged.gds') )
-  g.add_output( 'tile_array.lvs.v',       lvs.o('design_merged.lvs.v')   )
+  #g.add_output( 'tile_array.lvs.v',       lvs.o('design_merged.lvs.v')   )
   g.add_output( 'tile_array.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
   g.add_output( 'tile_array.spef.gz',     signoff.o('design.spef.gz')    )
   g.add_output( 'tile_array.sram.spi',    Tile_MemCore.o('sram.spi')     )
