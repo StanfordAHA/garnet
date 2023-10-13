@@ -159,7 +159,7 @@ def construct():
   g.add_output( 'Tile_MemCore.vcs.pg.v',    signoff.o('design.vcs.pg.v')       )
   g.add_output( 'Tile_MemCore.spef.gz',     signoff.o('design.rcbest.spef.gz') )
   g.add_output( 'Tile_MemCore.pt.sdc',      signoff.o('design.pt.sdc')         )
-  #g.add_output( 'Tile_MemCore.lvs.v',       lvs.o('design_merged.lvs.v')       )
+  g.add_output( 'Tile_MemCore.lvs.v',       lvs.o('design_merged.lvs.v')       )
   g.add_output( 'sram.spi',                 gen_sram.o('sram.spi')             )
   g.add_output( 'sram.v',                   gen_sram.o('sram.v')               )
   #g.add_output( 'sram_pwr.v',               gen_sram.o('sram_pwr.v')           )

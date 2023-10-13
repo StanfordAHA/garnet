@@ -141,7 +141,7 @@ def construct():
   g.add_output( 'Tile_PE.vcs.pg.v',    signoff.o('design.vcs.pg.v')       )
   g.add_output( 'Tile_PE.spef.gz',     signoff.o('design.rcbest.spef.gz') )
   g.add_output( 'Tile_PE.pt.sdc',      signoff.o('design.pt.sdc')         )
-  #g.add_output( 'Tile_PE.lvs.v',       lvs.o('design_merged.lvs.v')   )
+  g.add_output( 'Tile_PE.lvs.v',       lvs.o('design_merged.lvs.v')       )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes

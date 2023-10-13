@@ -117,7 +117,7 @@ def construct():
   g.add_output( 'glb_tile.vcs.v',       signoff.o('design.vcs.v')           )
   g.add_output( 'glb_tile.vcs.pg.v',    signoff.o('design.vcs.pg.v')        )
   g.add_output( 'glb_tile.spef.gz',     signoff.o('design.rcbest.spef.gz')  )
-  #g.add_output( 'glb_tile.lvs.v',       lvs.o('design_merged.lvs.v')        )
+  g.add_output( 'glb_tile.lvs.v',       lvs.o('design_merged.lvs.v')        )
   g.add_output( 'glb_tile_sram.spi',    gen_sram.o('sram.spi')              )
   g.add_output( 'glb_tile_sram.v',      gen_sram.o('sram.v')                )
   #g.add_output( 'glb_tile_sram_pwr.v',  gen_sram.o('sram_pwr.v')            )
