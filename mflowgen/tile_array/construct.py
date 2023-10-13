@@ -141,6 +141,9 @@ def construct():
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
   pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
 
+  if adk_name == 'intel16-adk':
+      drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
+      lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
   if which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
@@ -451,11 +454,6 @@ def construct():
   g.connect_by_name( postroute_hold, signoff      )
   g.connect_by_name( signoff,      drc            )
   g.connect_by_name( signoff,      lvs            )
-  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
-  if which_soc == "onyx":
-    g.connect_by_name( signoff,      drc_pm         )
-    g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )

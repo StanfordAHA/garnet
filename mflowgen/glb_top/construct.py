@@ -124,7 +124,10 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
-  if which("calibre") is not None:
+  if adk_name == 'intel16-adk':
+      drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
+      lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
+  elif which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
   else:
@@ -373,13 +376,7 @@ def construct():
   g.connect_by_name( postroute,    postroute_hold )
   g.connect_by_name( postroute_hold,    signoff   )
   g.connect_by_name( signoff,      drc            )
-  if which_soc == 'onyx':
-    g.connect_by_name( signoff,      drc_pm         )
   g.connect_by_name( signoff,      lvs            )
-  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
-  if which_soc == 'onyx':
-    g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( adk,          pt_signoff     )
   g.connect_by_name( signoff,      pt_signoff     )
