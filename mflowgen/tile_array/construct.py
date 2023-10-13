@@ -158,9 +158,9 @@ def construct():
   # Add cgra tile macro inputs to downstream nodes
 
   #dc.extend_inputs( ['Tile_PE.db'] )
-  synth.extend_inputs( ['Tile_PE_tt.lib'] )
+  synth.extend_inputs( ['Tile_PE_tt.lib', 'Tile_PE.lef'] )
   #dc.extend_inputs( ['Tile_MemCore.db'] )
-  synth.extend_inputs( ['Tile_MemCore_tt.lib'] )
+  synth.extend_inputs( ['Tile_MemCore_tt.lib', 'Tile_MemCore.lef'] )
   pt_signoff.extend_inputs( ['Tile_PE_tt.db'] )
   pt_signoff.extend_inputs( ['Tile_MemCore_tt.db'] )
   pt_genlibdb.extend_inputs( ['Tile_PE_tt.db'] )
