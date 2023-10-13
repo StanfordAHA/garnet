@@ -144,7 +144,7 @@ def construct():
   if adk_name == 'intel16-adk':
       drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
       lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
-  if which("calibre") is not None:
+  elif which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
   else:
