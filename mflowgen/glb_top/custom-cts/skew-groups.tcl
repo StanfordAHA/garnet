@@ -8,5 +8,5 @@
 #set_ccopt_property -skew_group glb_tiles constrains ccopt
 
 foreach_in_collection clk_pin [get_pins -hier glb_tile_gen*/clk] {
-    set_ccopt_property -pin [get_object_name $clk_pin] insertion_delay 300ps
+    set_ccopt_property -pin [get_object_name $clk_pin] insertion_delay 400ps
 }
