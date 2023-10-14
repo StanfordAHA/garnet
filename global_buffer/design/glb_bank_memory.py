@@ -20,6 +20,8 @@ class GlbBankMemory(Generator):
         self.data_out = self.output("data_out", self._params.bank_data_width)
 
         # local variables
+        self.sram_ren = self.var("sram_ren", 1)
+        self.sram_ren_d = self.var("sram_ren_d", 1)
         self.sram_wen = self.var("sram_wen", 1)
         self.sram_wen_d = self.var("sram_wen_d", 1)
         self.sram_cen = self.var("sram_cen", 1)
@@ -37,9 +39,9 @@ class GlbBankMemory(Generator):
         self.add_always(self.sram_ctrl_logic)
 
     def add_glb_bank_memory_pipeline(self):
-        sram_signals_in = concat(self.sram_wen, self.sram_cen,
+        sram_signals_in = concat(self.sram_ren, self.sram_wen, self.sram_cen,
                                  self.sram_addr, self.sram_data_in, self.sram_data_in_bit_sel)
-        sram_signals_out = concat(self.sram_wen_d, self.sram_cen_d,
+        sram_signals_out = concat(self.sram_ren_d, self.sram_wen_d, self.sram_cen_d,
                                   self.sram_addr_d, self.sram_data_in_d, self.sram_data_in_bit_sel_d)
 
         sram_signals_pipeline = Pipeline(width=sram_signals_in.width,
@@ -78,6 +80,7 @@ class GlbBankMemory(Generator):
                            RESET=self.reset,
                            CEB=(~self.sram_cen_d),
                            WEB=(~self.sram_wen_d),
+                           REB=(~self.sram_ren_d),
                            A=self.sram_addr_d,
                            D=self.sram_data_in_d,
                            Q=self.sram_data_out)
@@ -85,9 +88,14 @@ class GlbBankMemory(Generator):
                 self.wire(self.glb_bank_sram_gen.BWEB, ~self.sram_data_in_bit_sel_d)
             elif self._params.process == "GF":
                 self.wire(self.glb_bank_sram_gen.BW, self.sram_data_in_bit_sel_d)
+            elif self._params.process == "INTEL":
+                self.wire(self.glb_bank_sram_gen.BWEB, ~self.sram_data_in_bit_sel_d)
+            else:
+                raise Exception("process should be tsmc, gf, or intel")
 
     @always_comb
     def sram_ctrl_logic(self):
+        self.sram_ren = self.ren
         self.sram_wen = self.wen
         self.sram_cen = self.wen | self.ren
         self.sram_addr = self.addr[self._params.bank_addr_width - 1, self._params.bank_byte_offset]
