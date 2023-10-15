@@ -119,7 +119,8 @@ def construct():
       'floorplan.tcl',
       'create-rows.tcl',
       'add-tracks.tcl',
-      'add-endcaps-welltaps.tcl',
+      # move the well tap insertion after power planning to save time 
+      # 'add-endcaps-welltaps.tcl',
       'create-special-grid.tcl',
       'io-fillers.tcl',
       # 'alignment-cells.tcl',
@@ -127,7 +128,7 @@ def construct():
       # 'check-bumps.tcl',
       'route-bumps.tcl',
       # 'place-macros.tcl',
-      'create-boundary-blockage.tcl',
+      # 'create-boundary-blockage.tcl',
       # 'dont-touch.tcl'
   ]
 
@@ -266,8 +267,6 @@ def construct():
   synth.extend_inputs( soc_rtl.all_outputs() )
   synth.extend_inputs( read_design.all_outputs() )
   synth.extend_inputs( ["cons_scripts"] )
-
-  power.extend_outputs( ["design-merged.oas"] )
 
   if parameters['interconnect_only'] is False and parameters['soc_only'] is False:
     rtl.extend_outputs( ['header'] )
@@ -425,21 +424,9 @@ def construct():
   g.connect_by_name( postroute_hold, signoff        )
 
   # Merge guardring oasis into design
-  early_drc_check = True
-  if early_drc_check:
-    custom_init.extend_outputs(["stream-out.tcl"])
-    init.extend_inputs(["stream-out.tcl"])
-    g.connect(custom_init.o('stream-out.tcl'), init.i('stream-out.tcl'))
-    init_order.append("stream-out.tcl")
-    init.extend_outputs(["design-merged.oas"])
-    init.extend_commands(["ln -sf ../design-merged.oas design-merged.oas"])
-    g.connect_by_name( init,       merge_gdr      )
-  else:
-    g.connect_by_name( signoff,    merge_gdr      )
-  
-  # g.connect_by_name( merge_gdr,      fill           )
-  # g.connect_by_name( fill,           drc            )
-  g.connect_by_name( merge_gdr,      drc            )
+  g.connect_by_name( merge_gdr,      fill           )
+  g.connect_by_name( fill,           drc            )
+  # g.connect_by_name( merge_gdr,      drc            )
 
   g.connect_by_name( fill,           lvs            )
 
@@ -497,10 +484,8 @@ def construct():
   # Power node order manipulation
   order = power.get_param('order')
   # Move endcap/welltap insertion to end of power step to improve runtime
-  order.append( 'add-endcaps-welltaps.tcl' )
-  # Stream out post-power OASIS so that we can run DRC here
-  order.append( 'innovus-foundation-flow/custom-scripts/stream-out.tcl' )
-  order.append( 'attach-results-to-outputs.tcl' )
+  # order.append( 'add-endcaps-welltaps.tcl' )
+  order.insert(0, 'add-endcaps-welltaps.tcl' )
   power.update_params( { 'order': order } )
 
   # Add pre-route plugin to insert skip_routing commands
@@ -516,6 +501,25 @@ def construct():
   signoff.update_params( { 'order': order } )
 
   merge_gdr.update_params( guardring_params )
+
+  # Check the DRC at early stage of P&R
+  early_drc_check, early_drc_check_type = True, "power"
+  early_drc_check_type = "power"
+  if early_drc_check:
+    if early_drc_check_type == "init":
+      init_order.append('innovus-foundation-flow/custom-scripts/stream-out.tcl')
+      init.extend_outputs(["design-merged.oas"])
+      init.extend_commands(["ln -sf ../results/design-merged.oas design-merged.oas"])
+      g.connect_by_name( init, merge_gdr )
+    elif early_drc_check_type == "power":
+      power_order = power.get_param('order')
+      power_order.append( 'innovus-foundation-flow/custom-scripts/stream-out.tcl' )
+      power.update_params( { 'order': power_order } )
+      power.extend_outputs(["design-merged.oas"])
+      power.extend_commands(["ln -sf ../results/design-merged.oas design-merged.oas"])
+      g.connect_by_name( power, merge_gdr )
+  else:
+    g.connect_by_name( signoff,    merge_gdr      )
 
   return g
 
