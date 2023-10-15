@@ -70,7 +70,7 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  # rtl                = Step( this_dir + '/../common/rtl'                          )
+  #rtl                  = Step( this_dir + '/../common/rtl'                          )
   rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
   constraints          = Step( this_dir + '/constraints'                            )
@@ -113,7 +113,7 @@ def construct():
   # Add sram macro inputs to downstream nodes
   synth.extend_inputs(      ['sram-typical.lib', 'sram-bc.lib', 'sram-wc.lib', 'sram.lef'] )
   pt_signoff.extend_inputs( ['sram-typical.db',  'sram-bc.db',  'sram-wc.db'] )
-  genlibdb.extend_inputs(   ['sram-typical.lib', 'sram-bc.lib', 'sram-wc.lib'] )
+  genlibdb.extend_inputs(   ['sram-typical.db', 'sram-bc.db', 'sram-wc.db'] )
 
   # These steps need timing and lef info for srams
   sram_steps = \
@@ -143,6 +143,32 @@ def construct():
   power.extend_inputs( ["sdc"] )
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
+  
+  # Add graph inputs and outputs so this can be used in hierarchical flows
+
+  # Inputs
+  #g.add_input( 'design.v', rtl.i('design.v') )
+
+  # Outputs
+  g.add_output( 'Tile_MemCore_tt.lib',      genlibdb.o('design.lib')           )
+  g.add_output( 'Tile_MemCore_tt.db',       genlibdb.o('design.db')            )
+  g.add_output( 'Tile_MemCore.lef',         signoff.o('design.lef')            )
+  g.add_output( 'Tile_MemCore.gds',         signoff.o('design-merged.gds')     )
+  g.add_output( 'Tile_MemCore.sdf',         signoff.o('design.sdf')            )
+  g.add_output( 'Tile_MemCore.vcs.v',       signoff.o('design.vcs.v')          )
+  g.add_output( 'Tile_MemCore.vcs.pg.v',    signoff.o('design.vcs.pg.v')       )
+  g.add_output( 'Tile_MemCore.spef.gz',     signoff.o('design.rcbest.spef.gz') )
+  g.add_output( 'Tile_MemCore.pt.sdc',      signoff.o('design.pt.sdc')         )
+  g.add_output( 'Tile_MemCore.lvs.v',       lvs.o('design_merged.lvs.v')       )
+  g.add_output( 'sram.spi',                 gen_sram.o('sram.spi')             )
+  g.add_output( 'sram.v',                   gen_sram.o('sram.v')               )
+  #g.add_output( 'sram_pwr.v',               gen_sram.o('sram_pwr.v')           )
+  g.add_output( 'sram_bc.db',               gen_sram.o('sram-bc.db')           )
+  g.add_output( 'sram_bc.lib',              gen_sram.o('sram-bc.lib')          )
+  g.add_output( 'sram_wc.db',               gen_sram.o('sram-wc.db')           )
+  g.add_output( 'sram_wc.lib',              gen_sram.o('sram-wc.lib')          )
+  g.add_output( 'sram_typical.db',          gen_sram.o('sram-typical.db')      )
+  g.add_output( 'sram_typical.lib',         gen_sram.o('sram-typical.lib')     )
 
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )

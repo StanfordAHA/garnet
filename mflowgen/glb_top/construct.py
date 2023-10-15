@@ -10,7 +10,7 @@ import os
 import sys
 import pathlib
 
-from mflowgen.components import Graph, Step
+from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
@@ -34,10 +34,11 @@ def construct():
   parameters = {
     'construct_path' : __file__,
     'design_name'    : 'global_buffer',
-    'clock_period'      : 1.0,
+    'clock_period'      : 1.0 * 1000,
     'sim_clock_period'  : 1.42,
     'adk'            : adk_name,
     'adk_view'       : adk_view,
+    'adk_stdcell'    : 'b15_7t_108pp',
     # Synthesis
     'flatten_effort' : 3,
     'topographical'  : True,
@@ -81,15 +82,18 @@ def construct():
 
   g.set_adk( adk_name )
   adk = g.get_adk_step()
+  
+  # Subgraphs
+
+  glb_tile = Subgraph( this_dir + '/../glb_tile', 'glb_tile' )
 
   # Custom steps
-
+  
   rtl               = Step( this_dir + '/../common/rtl'                          )
   testbench         = Step( this_dir + '/testbench'                              )
   sim_compile       = Step( this_dir + '/sim-compile'                            )
   sim_run           = Step( this_dir + '/sim-run'                                )
   sim_gl_compile    = Step( this_dir + '/sim-gl-compile'                         )
-  glb_tile          = Step( this_dir + '/glb_tile'                               )
   if adk_name == 'tsmc16':
     constraints       = Step( this_dir + '/constraints-amber'                      )
     custom_init       = Step( this_dir + '/custom-init-amber'                      )
@@ -120,13 +124,40 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
-  if which("calibre") is not None:
+  if adk_name == 'intel16-adk':
+      drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
+      lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
+  elif which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',            default=True )
       lvs            = Step( 'mentor-calibre-lvs',            default=True )
   else:
       drc            = Step( 'cadence-pegasus-drc',           default=True )
       lvs            = Step( 'cadence-pegasus-lvs',           default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
+  
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+  g.add_input( 'header'  , rtl.i('header')   )
+
+  # Outputs
+  g.add_output( 'glb_top_tt.lib',           genlib.o('design.lib')                  )
+  g.add_output( 'glb_top_tt.db',            lib2db.o('design.db')                   )
+  g.add_output( 'glb_top.lef',              signoff.o('design.lef')                 )
+  g.add_output( 'glb_top.gds',              signoff.o('design-merged.gds')          )
+  g.add_output( 'glb_top.sdf',              signoff.o('design.sdf')                 )
+  g.add_output( 'glb_top.vcs.v',            signoff.o('design.vcs.v')               )
+  g.add_output( 'glb_top.vcs.pg.v',         signoff.o('design.vcs.pg.v')            )
+  g.add_output( 'glb_top.spef.gz',          signoff.o('design.spef.gz')             )
+  g.add_output( 'glb_top.lvs.v',            lvs.o('design_merged.lvs.v')            )
+  g.add_output( 'glb_top.sram.spi',         glb_tile.o('glb_tile_sram.spi')         )
+  g.add_output( 'glb_top.sram.v',           glb_tile.o('glb_tile_sram.v')           )
+  #g.add_output( 'glb_top.sram_pwr.v',       glb_tile.o('glb_tile_sram_pwr.v')       )
+  g.add_output( 'glb_top.sram_wc.db',       glb_tile.o('glb_tile_sram_wc.db')       )
+  g.add_output( 'glb_top.sram_wc.lib',      glb_tile.o('glb_tile_sram_wc.lib')      )
+  g.add_output( 'glb_top.sram_bc.db',       glb_tile.o('glb_tile_sram_bc.db')       )
+  g.add_output( 'glb_top.sram_bc.lib',      glb_tile.o('glb_tile_sram_bc.lib')      )
+  g.add_output( 'glb_top.sram_typical.db',  glb_tile.o('glb_tile_sram_typical.db')  )
+  g.add_output( 'glb_top.sram_typical.lib', glb_tile.o('glb_tile_sram_typical.lib') )
 
   if parameters['tool'] == 'VCS':
     sim_compile.extend_outputs(['simv', 'simv.daidir'])
@@ -345,13 +376,7 @@ def construct():
   g.connect_by_name( postroute,    postroute_hold )
   g.connect_by_name( postroute_hold,    signoff   )
   g.connect_by_name( signoff,      drc            )
-  if which_soc == 'onyx':
-    g.connect_by_name( signoff,      drc_pm         )
   g.connect_by_name( signoff,      lvs            )
-  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
-  if which_soc == 'onyx':
-    g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
   g.connect_by_name( adk,          pt_signoff     )
   g.connect_by_name( signoff,      pt_signoff     )

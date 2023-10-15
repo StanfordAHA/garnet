@@ -89,6 +89,14 @@ foreach_in_collection net $tile_nets {
   if {($num_connected_tiles > 1) && ([compare_collections $connected_cells $connected_tiles] == 0)} {
     set_dont_touch $net true
   }
+  # Don't touch the tile ID nets
+  set net_name [get_property $net name]
+  foreach tile_id_net_name {_tile_id _hi_ _lo_} {
+    if {[string first $tile_id_net_name $net_name] != -1} {
+      set_dont_touch $net true
+    }
+  }
+
 }
 
 # This can catch nets connected to external ports of tile_array.
@@ -108,7 +116,3 @@ set_dont_touch $io_tile_nets false
 set_multicycle_path 10 -to [get_ports read_config_data] -setup
 set_multicycle_path 9 -to [get_ports read_config_data] -hold
 
-# Don't ungroup references to *mantle_wire* because doing so 
-# causes hi,lo -> tile_id connections on cgra tiles to be
-# optimized away and replaced with tie cells.
-#set_dont_touch [get_references *mantle_wire*]

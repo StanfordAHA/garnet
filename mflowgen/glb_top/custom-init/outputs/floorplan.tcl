@@ -65,8 +65,8 @@ foreach_in_collection tile $tiles {
   set tile_name [get_property $tile full_name]
   placeInstance $tile_name $x_loc $y_loc -fixed
 
-  # Create M3 & M8 pg net blockage to prevent DRC from interaction
-  # with tile stripes
+  # Create pg net blockage for all power stripe layers in tile
+  # to prevent DRC from interaction with tile stripes
   set llx [dbGet [dbGet -p top.insts.name $tile_name].box_llx]
   set lly [dbGet [dbGet -p top.insts.name $tile_name].box_lly]
   set urx [dbGet [dbGet -p top.insts.name $tile_name].box_urx]
@@ -76,7 +76,7 @@ foreach_in_collection tile $tiles {
   createRouteBlk \
     -inst $tile_name \
     -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-    -layer {3 8} \
+    -layer {3 4 5 6 7 8} \
     -pgnetonly
 
   set x_loc [expr $x_loc + $tile_width + $gap]

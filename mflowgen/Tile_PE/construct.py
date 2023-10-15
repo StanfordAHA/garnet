@@ -65,8 +65,8 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  # rtl                = Step( this_dir + '/../common/rtl'                          )
-  rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
+  rtl                  = Step( this_dir + '/../common/rtl'                          )
+  #rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
   constraints          = Step( this_dir + '/constraints'                            )
   custom_init          = Step( this_dir + '/custom-init'                            )
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
@@ -125,6 +125,23 @@ def construct():
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )
   synth.set_param( 'order', order )
+
+  # Add graph inputs and outputs so this can be used in hierarchical flows
+
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+
+  # Outputs
+  g.add_output( 'Tile_PE_tt.lib',      genlibdb.o('design.lib')           )
+  g.add_output( 'Tile_PE_tt.db',       genlibdb.o('design.db')            )
+  g.add_output( 'Tile_PE.lef',         signoff.o('design.lef')            )
+  g.add_output( 'Tile_PE.gds',         signoff.o('design-merged.gds')     )
+  g.add_output( 'Tile_PE.sdf',         signoff.o('design.sdf')            )
+  g.add_output( 'Tile_PE.vcs.v',       signoff.o('design.vcs.v')          )
+  g.add_output( 'Tile_PE.vcs.pg.v',    signoff.o('design.vcs.pg.v')       )
+  g.add_output( 'Tile_PE.spef.gz',     signoff.o('design.rcbest.spef.gz') )
+  g.add_output( 'Tile_PE.pt.sdc',      signoff.o('design.pt.sdc')         )
+  g.add_output( 'Tile_PE.lvs.v',       lvs.o('design_merged.lvs.v')       )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
