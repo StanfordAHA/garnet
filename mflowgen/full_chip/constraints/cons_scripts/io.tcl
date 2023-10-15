@@ -10,6 +10,8 @@
 
 # Don't optimize away any of our I/O cells
 set_dont_touch [ get_cells IOPAD* ]
+set_dont_touch [ get_cells corner* ]
+set_dont_touch [ get_cells ring_terminator* ]
 
 # I/O Timing constraints
 set master_clk_period     $soc_master_clk_period
@@ -153,22 +155,3 @@ set_input_delay -min [expr ${master_clk_period} * 0.3] -clock [get_clocks master
 
 set_multicycle_path -setup -end -from [get_ports $port_names(poreset_n)] 4
 set_multicycle_path -hold -end -from [get_ports $port_names(poreset_n)] 3
-
-# ------------------------------------------------------------------------------
-# XGCD
-# ------------------------------------------------------------------------------
-
-set XGCD_OUT_PORTS [list \
-    $port_names(xgcd0_start) \
-    $port_names(xgcd1_start) \
-    $port_names(xgcd0_done) \
-    $port_names(xgcd1_done) \
-]
-
-set_false_path -from [get_ports $port_names(xgcd_clk_select)]
-
-set_output_delay -min 0.0 -clock [get_clocks Vxgcd_clk] [get_ports $XGCD_OUT_PORTS]
-set_output_delay -max [expr $xgcd_design_clk_period * 8 * 0.4] -clock [get_clocks Vxgcd_clk] [get_ports $XGCD_OUT_PORTS]
-
-set_multicycle_path 8 -setup -start -to [get_clocks Vxgcd_clk]
-set_multicycle_path 7 -hold -start -to [get_clocks Vxgcd_clk]

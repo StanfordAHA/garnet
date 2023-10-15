@@ -25,6 +25,7 @@ def construct():
   adk_view = 'multivt'
 
   read_hdl_defines = 'INTEL16'
+  add_fill_before_drc_lvs_check = False
 
   parameters = {
     'construct_path'      : __file__,
@@ -238,8 +239,19 @@ def construct():
   g.connect_by_name( postroute,             postroute_hold       )
   g.connect_by_name( postroute_hold,        signoff              )
 
-  g.connect_by_name( signoff,               drc                  )
-  g.connect_by_name( signoff,               lvs                  )
+  if add_fill_before_drc_lvs_check:
+    # setup fill node
+    fill = Step( this_dir + '/../common/intel16-mentor-calibre-fill')
+    g.add_step( fill )
+    g.connect_by_name( adk,                   fill               )
+    g.connect_by_name( signoff,               fill               )
+    # connect fill node to drc/lvs
+    g.connect_by_name( fill,                  drc                )
+    g.connect_by_name( fill,                  lvs                )
+  else:
+    # connect signoff to drc/lvs
+    g.connect_by_name( signoff,               drc                )
+    g.connect_by_name( signoff,               lvs                )
 
   g.connect_by_name( signoff,               genlibdb             )
   g.connect_by_name( adk,                   genlibdb             )

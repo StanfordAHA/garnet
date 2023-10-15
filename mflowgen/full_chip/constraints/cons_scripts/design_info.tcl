@@ -12,13 +12,13 @@
 # Define Port Names (XGCD)
 # ------------------------------------------------------------------------------
 
-set port_names(xgcd_ext_clk)                "pad_XGCD_EXT_CLK"
-set port_names(xgcd_clk_select)             "pad_XGCD_CLK_SELECT"
-set port_names(xgcd_div8_clk)               "pad_XGCD_DIV8_CLK"
-set port_names(xgcd0_start)                 "pad_XGCD0_START"
-set port_names(xgcd1_start)                 "pad_XGCD1_START"
-set port_names(xgcd0_done)                  "pad_XGCD0_DONE"
-set port_names(xgcd1_done)                  "pad_XGCD1_DONE"
+# set port_names(xgcd_ext_clk)                "pad_XGCD_EXT_CLK"
+# set port_names(xgcd_clk_select)             "pad_XGCD_CLK_SELECT"
+# set port_names(xgcd_div8_clk)               "pad_XGCD_DIV8_CLK"
+# set port_names(xgcd0_start)                 "pad_XGCD0_START"
+# set port_names(xgcd1_start)                 "pad_XGCD1_START"
+# set port_names(xgcd0_done)                  "pad_XGCD0_DONE"
+# set port_names(xgcd1_done)                  "pad_XGCD1_DONE"
 
 # ------------------------------------------------------------------------------
 # Define Port Names (TLX Forward Channel)

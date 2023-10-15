@@ -13,13 +13,15 @@
 # Set design context
 # ------------------------------------------------------------------------------
 
-set clock_ports   [list   $port_names(xgcd_ext_clk) \
-                          $port_names(tlx_rev_clk) \
-                          $port_names(dp_jtag_clk) \
-                          $port_names(cgra_jtag_clk) \
-                          $port_names(master_clk) \
-                          $port_names(trace_clkin) \
-                  ]
+# TODO: recover this after TMA
+# set clock_ports   [list   $port_names(xgcd_ext_clk) \
+#                           $port_names(tlx_rev_clk) \
+#                           $port_names(dp_jtag_clk) \
+#                           $port_names(cgra_jtag_clk) \
+#                           $port_names(master_clk) \
+#                           $port_names(trace_clkin) \
+#                   ]
+set clock_ports   [list $port_names(master_clk)]
 
 # Set the maximum fanout value on the design
 set_max_fanout 32 ${design_name}

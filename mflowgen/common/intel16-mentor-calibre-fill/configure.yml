@@ -1,8 +1,8 @@
 #=========================================================================
-# Synopsys IC Validator Calibre DRC
+# Mentor Graphics Calibre Smartfill
 #=========================================================================
 
-name: intel16-synopsys-icv-drc
+name: intel16-mentor-calibre-fill
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
@@ -13,22 +13,15 @@ inputs:
   - design-merged.oas
 
 outputs:
-  - antenna.results
-  - collat.results
-  - drc-drcd.results
-  - drc-lu.results
-  - drc-denall.results
-  - drc-cden-lden-collat.results
+  - design-merged.oas
 
 #-------------------------------------------------------------------------
 # Commands
 #-------------------------------------------------------------------------
 
 commands:
-  - for rule_deck in $(echo "$rule_decks" | tr ',' '\n')
-  - do
-  -     bash ./inputs/adk/run-icv-$rule_deck.sh
-  - done
+  - source inputs/adk/run-calibre-fill.sh
+  - ln -sf ../design-merged.oas ./outputs/design-merged.oas
 
 #-------------------------------------------------------------------------
 # Parameters
@@ -36,19 +29,12 @@ commands:
 
 parameters:
   design_name: undefined
-  rule_decks:
-    - antenna
-    - collat
-    - drc-drcd
-    - drc-lu
-    - drc-denall
-    - drc-cden-lden-collat
 
 #-------------------------------------------------------------------------
 # Assertions
 #-------------------------------------------------------------------------
 
 preconditions:
-  - assert Tool( 'icv' )
+  - assert Tool( 'calibre' )
   - assert File( 'inputs/adk' )
   - assert File( 'inputs/design-merged.oas' )

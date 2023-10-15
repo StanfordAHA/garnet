@@ -12,6 +12,21 @@ set pitch_y [dbGet top.fPlan.coreSite.size_y]
 set fp_width  [dbGet top.fPlan.box_urx]
 set fp_height [dbGet top.fPlan.box_ury]
 
+set core_box_llx [dbGet top.fPlan.coreBox_llx]
+set core_box_lly [dbGet top.fPlan.coreBox_lly]
+set core_box_urx [dbGet top.fPlan.coreBox_urx]
+set core_box_ury [dbGet top.fPlan.coreBox_ury]
+
+# TODO: Switch this between full and core
+# set box_llx 0
+# set box_lly 0
+# set box_urx $fp_width
+# set box_ury $fp_height
+set box_llx $core_box_llx
+set box_lly $core_box_lly
+set box_urx $core_box_urx
+set box_ury $core_box_ury
+
 # get the white space width
 set ws_left   [expr $pitch_x * $ADK_WHITE_SPACE_FACTOR_HORI]
 set ws_right  [expr $pitch_x * $ADK_WHITE_SPACE_FACTOR_HORI]
@@ -19,11 +34,11 @@ set ws_top    [expr $pitch_y * $ADK_WHITE_SPACE_FACTOR_VERT]
 set ws_bottom [expr $pitch_y * $ADK_WHITE_SPACE_FACTOR_VERT]
 
 # Compute the bbox for the placement blockage on 4 sides
-#                llx                        lly                       urx       ury
-set pblk_bottom "0                          0                         $fp_width $ws_bottom"
-set pblk_top    "0                          [expr $fp_height-$ws_top] $fp_width $fp_height"
-set pblk_left   "0                          0                         $ws_left  $fp_height"
-set pblk_right  "[expr $fp_width-$ws_right] 0                         $fp_width $fp_height"
+#                llx                       lly                     urx                        ury
+set pblk_bottom "$box_llx                  $box_lly                $box_urx                   [expr $box_lly + $ws_bottom]"
+set pblk_top    "$box_llx                  [expr $box_ury-$ws_top] $box_urx                   $box_ury"
+set pblk_left   "$box_llx                  $box_lly                [expr $box_llx + $ws_left] $box_ury"
+set pblk_right  "[expr $box_urx-$ws_right] $box_lly                $box_urx                   $box_ury"
 
 # Put the placement blockage to form white space
 createPlaceBlockage \
@@ -38,22 +53,18 @@ set ws_right  $ADK_BOUNDARY_ROUTE_BLOCKAGE_WIDTH
 set ws_top    $ADK_BOUNDARY_ROUTE_BLOCKAGE_WIDTH
 set ws_bottom $ADK_BOUNDARY_ROUTE_BLOCKAGE_WIDTH
 
-# Compute the bbox of routing blockage on 4 sides
 #                   dimension-x                dimension-y 
-set rblk_bottom_ll "0                          0"
-set rblk_bottom_ur "$fp_width                  $ws_bottom"
-
+set rblk_bottom_ll "$box_llx                   $box_lly"
+set rblk_bottom_ur "$box_urx                   [expr $box_lly + $ws_bottom]" 
 #                   dimension-x                dimension-y 
-set rblk_top_ll    "0                          [expr $fp_height-$ws_top]"
-set rblk_top_ur    "$fp_width                  $fp_height"
-
+set rblk_top_ll    "$box_llx                   [expr $box_ury-$ws_top]"
+set rblk_top_ur    "$box_urx                   $box_ury"
 #                   dimension-x                dimension-y 
-set rblk_left_ll   "0                          0"
-set rblk_left_ur   "$ws_left                   $fp_height"
-
+set rblk_left_ll   "$box_llx                   $box_lly"
+set rblk_left_ur   "[expr $box_llx + $ws_left] $box_ury"
 #                   dimension-x                dimension-y 
-set rblk_right_ll  "[expr $fp_width-$ws_right] 0"
-set rblk_right_ur  "$fp_width                  $fp_height"
+set rblk_right_ll  "[expr $box_urx-$ws_right]  $box_lly"
+set rblk_right_ur  "$box_urx                   $box_ury"
 
 # createRouteBlk command requires the bbox to be specified in position list
 set rblk_list [list \

@@ -13,7 +13,7 @@
 # Units
 # -----------------------------------------------------------------------------
 
-set_units -time ns -capacitance pF
+# set_units -time ps -capacitance pF
 
 # -----------------------------------------------------------------------------
 # Clock timing
@@ -60,7 +60,7 @@ set max_capacitance                 1.00
 # Transition time targets
 # -----------------------------------------------------------------------------
 
-set max_transition                  0.100
+set max_transition                  100
 
 # Clock transition requirement
 set max_clock_transition            [expr $max_transition /2.0 ]

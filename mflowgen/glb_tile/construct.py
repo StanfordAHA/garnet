@@ -76,8 +76,8 @@ def construct():
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'     )
-  # calibre_drc        = Step( this_dir + '/../common/intel16-mentor-calibre-drc'   )
-  # calibre_lvs        = Step( this_dir + '/../common/intel16-mentor-calibre-lvs'   )
+  calibre_drc        = Step( this_dir + '/../common/intel16-mentor-calibre-drc'   )
+  calibre_lvs        = Step( this_dir + '/../common/intel16-mentor-calibre-lvs'   )
 
   # Default steps
   info              = Step( 'info',                          default=True )
