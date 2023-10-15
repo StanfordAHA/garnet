@@ -9,7 +9,7 @@
 import os
 import sys
 
-from mflowgen.components import Graph, Step
+from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
@@ -171,9 +171,9 @@ def construct():
   lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'   )
 
   # Block-level designs
-  tile_array        = Step( this_dir + '/tile_array'        )
-  glb_top           = Step( this_dir + '/glb_top'           )
-  global_controller = Step( this_dir + '/global_controller' )
+  tile_array        = Subgraph( this_dir + '/../tile_array',        'tile_array'        )
+  glb_top           = Subgraph( this_dir + '/../glb_top',           'glb_top'           )
+  global_controller = Subgraph( this_dir + '/../global_controller', 'global_controller' )
 
   # CGRA simulation
   cgra_rtl_sim_compile  = Step( this_dir + '/cgra_rtl_sim_compile' )

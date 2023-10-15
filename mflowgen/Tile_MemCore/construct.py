@@ -143,6 +143,28 @@ def construct():
   power.extend_inputs( ["sdc"] )
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
+  
+  # Add graph inputs and outputs so this can be used in hierarchical flows
+
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+
+  # Outputs
+  g.add_output( 'Tile_MemCore_tt.lib',      genlibdb.o('design.lib')       )
+  g.add_output( 'Tile_MemCore_tt.db',       genlibdb.o('design.db')        )
+  g.add_output( 'Tile_MemCore.lef',         signoff.o('design.lef')        )
+  g.add_output( 'Tile_MemCore.gds',         signoff.o('design-merged.gds') )
+  g.add_output( 'Tile_MemCore.sdf',         signoff.o('design.sdf')        )
+  g.add_output( 'Tile_MemCore.vcs.v',       signoff.o('design.vcs.v')      )
+  g.add_output( 'Tile_MemCore.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
+  g.add_output( 'Tile_MemCore.spef.gz',     signoff.o('design.spef.gz')    )
+  g.add_output( 'Tile_MemCore.pt.sdc',      signoff.o('design.pt.sdc')     )
+  g.add_output( 'Tile_MemCore.lvs.v',       lvs.o('design_merged.lvs.v')   )
+  g.add_output( 'sram.spi',                 gen_sram.o('sram.spi')         )
+  g.add_output( 'sram.v',                   gen_sram.o('sram.v')           )
+  g.add_output( 'sram_pwr.v',               gen_sram.o('sram_pwr.v')       )
+  g.add_output( 'sram_tt.db',               gen_sram.o('sram_tt.db')       )
+  g.add_output( 'sram_tt.lib',              gen_sram.o('sram_tt.lib')      )
 
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )

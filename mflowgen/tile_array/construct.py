@@ -9,7 +9,7 @@
 import os
 import sys
 
-from mflowgen.components import Graph, Step
+from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
@@ -97,8 +97,8 @@ def construct():
   # Custom steps
 
   rtl            = Step( this_dir + '/../common/rtl'                          )
-  Tile_MemCore   = Step( this_dir + '/Tile_MemCore'                           )
-  Tile_PE        = Step( this_dir + '/Tile_PE'                                )
+  Tile_MemCore   = Subgraph( this_dir + '/../Tile_MemCore', 'Tile_MemCore'    )
+  Tile_PE        = Subgraph( this_dir + '/../Tile_PE',      'Tile_PE'         )
   constraints    = Step( this_dir + '/constraints'                            )
   dc_postcompile = Step( this_dir + '/custom-dc-postcompile'                  )
 
@@ -239,6 +239,25 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
 
   cts.extend_inputs( custom_cts.all_outputs() )
+  
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+
+  # Outputs
+  g.add_output( 'tile_array_tt.lib',      genlib.o('design.lib')         )
+  g.add_output( 'tile_array_tt.db',       lib2db.o('design.db')          )
+  g.add_output( 'tile_array.lef',         signoff.o('design.lef')        )
+  g.add_output( 'tile_array.vcs.v',       signoff.o('design.vcs.v')      )
+  g.add_output( 'tile_array.sdf',         signoff.o('design.sdf')        )
+  g.add_output( 'tile_array.gds',         signoff.o('design-merged.gds') )
+  g.add_output( 'tile_array.lvs.v',       lvs.o('design_merged.lvs.v')   )
+  g.add_output( 'tile_array.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
+  g.add_output( 'tile_array.spef.gz',     signoff.o('design.spef.gz')    )
+  g.add_output( 'tile_array.sram.spi',    Tile_MemCore.o('sram.spi')     )
+  g.add_output( 'tile_array.sram.v',      Tile_MemCore.o('sram.v')       )
+  g.add_output( 'tile_array.sram_pwr.v',  Tile_MemCore.o('sram_pwr.v')   )
+  g.add_output( 'tile_array.sram_tt.db',  Tile_MemCore.o('sram_tt.db')   )
+  g.add_output( 'tile_array.sram_tt.lib', Tile_MemCore.o('sram_tt.lib')  )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python script finds 'stream-out.tcl' and strips out that flag.
