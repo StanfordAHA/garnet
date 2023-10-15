@@ -81,7 +81,7 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff        = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlib         = Step( 'cadence-innovus-genlib',        default=True )
+  genlibdb       = Step( 'synopsys-ptpx-genlibdb',        default=True )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -126,7 +126,7 @@ def construct():
   g.add_step( postroute_hold           )
   g.add_step( signoff                  )
   g.add_step( pt_signoff               )
-  g.add_step( genlib                   )
+  g.add_step( genlibdb                 )
   g.add_step( lib2db                   )
   g.add_step( drc                      )
   g.add_step( lvs                      )
@@ -169,7 +169,7 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
-  g.connect_by_name( iflow,    genlib         )
+  g.connect_by_name( iflow,    genlibdb       )
 
   g.connect_by_name( custom_init,  init       )
   g.connect_by_name( custom_power, power      )
@@ -185,10 +185,10 @@ def construct():
   g.connect_by_name( signoff,        drc            )
   g.connect_by_name( signoff,        lvs            )
 
-  g.connect_by_name( signoff,      genlib   )
-  g.connect_by_name( adk,          genlib   )
+  g.connect_by_name( signoff,      genlibdb )
+  g.connect_by_name( adk,          genlibdb )
   
-  g.connect_by_name( genlib,       lib2db   )
+  g.connect_by_name( genlibdb,     lib2db   )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )

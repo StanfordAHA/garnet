@@ -10,5 +10,5 @@ name: custom-power-hierarchical
 
 outputs:
   - globalnetconnect.tcl
-  - power-strategy-dualmesh.tcl
+  - power-strategy.tcl
 
