@@ -14,6 +14,7 @@ proc port_compare {a b} {
     set a_sliced [split [lindex $a_sliced 1] "\]"]
     set a1 [lindex $a_sliced 0]
 
+
     set b_sliced [split $b "\["]
     set b0 [lindex $b_sliced 0]
     set b_sliced [split [lindex $b_sliced 1] "\]"]
@@ -119,7 +120,8 @@ set width [dbGet top.fPlan.box_urx]
 set height [dbGet top.fPlan.box_ury]
 
 # clk pin in middle of top side on higher layer than other pins
-editPin -pin "clk" -side TOP -spreadType CENTER -layer 9
+# editPin -pin "clk" -side TOP -spreadType CENTER -layer 9
+editPin -pin "clk" -side TOP -spreadType CENTER -layer M7
 
 # control pins assignment 
 editPin -pin $top -side TOP -spreadType RANGE -start [list 10 $height] -end [list [expr {$width - 10}] $height] -layer M5

@@ -38,9 +38,10 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 1.0,
+    'clock_period'      : 1.10 * 1000,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
+    'adk_stdcell'       : 'b15_7t_108pp',
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : True,
@@ -117,7 +118,6 @@ def construct():
 
   gls_args       = Step( this_dir + '/gls_args'                               )
   testbench      = Step( this_dir + '/testbench'                              )
-  lib2db         = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
   if which_soc == 'onyx':
     drc_pm         = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
 
@@ -139,11 +139,12 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-
   pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
-  genlib         = Step( 'cadence-innovus-genlib',         default=True )
 
-  if which("calibre") is not None:
+  if adk_name == 'intel16-adk':
+      drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
+      lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
+  elif which("calibre") is not None:
       drc            = Step( 'mentor-calibre-drc',             default=True )
       lvs            = Step( 'mentor-calibre-lvs',             default=True )
   else:
@@ -160,14 +161,11 @@ def construct():
   # Add cgra tile macro inputs to downstream nodes
 
   #dc.extend_inputs( ['Tile_PE.db'] )
-  synth.extend_inputs( ['Tile_PE_tt.lib'] )
+  synth.extend_inputs( ['Tile_PE_tt.lib', 'Tile_PE.lef'] )
   #dc.extend_inputs( ['Tile_MemCore.db'] )
-  synth.extend_inputs( ['Tile_MemCore_tt.lib'] )
+  synth.extend_inputs( ['Tile_MemCore_tt.lib', 'Tile_MemCore.lef'] )
   pt_signoff.extend_inputs( ['Tile_PE_tt.db'] )
   pt_signoff.extend_inputs( ['Tile_MemCore_tt.db'] )
-  genlib.extend_inputs( ['Tile_PE_tt.lib'] )
-  genlib.extend_inputs( ['Tile_MemCore_tt.lib'] )
-
   pt_genlibdb.extend_inputs( ['Tile_PE_tt.db'] )
   pt_genlibdb.extend_inputs( ['Tile_MemCore_tt.db'] )
 
@@ -250,8 +248,8 @@ def construct():
   g.add_input( 'design.v', rtl.i('design.v') )
 
   # Outputs
-  g.add_output( 'tile_array_tt.lib',      genlib.o('design.lib')         )
-  g.add_output( 'tile_array_tt.db',       lib2db.o('design.db')          )
+  g.add_output( 'tile_array_tt.lib',      pt_genlibdb.o('design.lib')         )
+  g.add_output( 'tile_array_tt.db',       pt_genlibdb.o('design.db')          )
   g.add_output( 'tile_array.lef',         signoff.o('design.lef')        )
   g.add_output( 'tile_array.vcs.v',       signoff.o('design.vcs.v')      )
   g.add_output( 'tile_array.sdf',         signoff.o('design.sdf')        )
@@ -261,9 +259,13 @@ def construct():
   g.add_output( 'tile_array.spef.gz',     signoff.o('design.spef.gz')    )
   g.add_output( 'tile_array.sram.spi',    Tile_MemCore.o('sram.spi')     )
   g.add_output( 'tile_array.sram.v',      Tile_MemCore.o('sram.v')       )
-  g.add_output( 'tile_array.sram_pwr.v',  Tile_MemCore.o('sram_pwr.v')   )
-  g.add_output( 'tile_array.sram_tt.db',  Tile_MemCore.o('sram_tt.db')   )
-  g.add_output( 'tile_array.sram_tt.lib', Tile_MemCore.o('sram_tt.lib')  )
+  #g.add_output( 'tile_array.sram_pwr.v',  Tile_MemCore.o('sram_pwr.v')   )
+  g.add_output( 'tile_array.sram_bc.db',  Tile_MemCore.o('sram_bc.db')   )
+  g.add_output( 'tile_array.sram_bc.lib', Tile_MemCore.o('sram_bc.lib')  )
+  g.add_output( 'tile_array.sram_wc.db',  Tile_MemCore.o('sram_wc.db')   )
+  g.add_output( 'tile_array.sram_wc.lib', Tile_MemCore.o('sram_wc.lib')  )
+  g.add_output( 'tile_array.sram_typical.db',  Tile_MemCore.o('sram_typical.db')   )
+  g.add_output( 'tile_array.sram_typical.lib', Tile_MemCore.o('sram_typical.lib')  )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python script finds 'stream-out.tcl' and strips out that flag.
@@ -296,8 +298,6 @@ def construct():
   g.add_step( postroute_hold )
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
-  g.add_step( genlib         )
-  g.add_step( lib2db         )
   g.add_step( drc            )
   g.add_step( custom_lvs     )
   g.add_step( lvs            )
@@ -376,7 +376,6 @@ def construct():
       g.connect_by_name( Tile_MemCore,      postroute_hold )
       g.connect_by_name( Tile_MemCore,      signoff        )
       g.connect_by_name( Tile_MemCore,      pt_signoff     )
-      g.connect_by_name( Tile_MemCore,      genlib         )
       g.connect_by_name( Tile_MemCore,      drc            )
       g.connect_by_name( Tile_MemCore,      lvs            )
       # These rules LVS BOX the SRAM macro, so they should
@@ -403,7 +402,6 @@ def construct():
   g.connect_by_name( Tile_PE,      postroute_hold )
   g.connect_by_name( Tile_PE,      signoff        )
   g.connect_by_name( Tile_PE,      pt_signoff     )
-  g.connect_by_name( Tile_PE,      genlib         )
   g.connect_by_name( Tile_PE,      drc            )
   g.connect_by_name( Tile_PE,      lvs            )
   g.connect_by_name( Tile_PE,      pt_genlibdb    )
@@ -441,7 +439,6 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
-  g.connect_by_name( iflow,    genlib         )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -457,21 +454,12 @@ def construct():
   g.connect_by_name( postroute_hold, signoff      )
   g.connect_by_name( signoff,      drc            )
   g.connect_by_name( signoff,      lvs            )
-  g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
-  g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
-  if which_soc == "onyx":
-    g.connect_by_name( signoff,      drc_pm         )
-    g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
   g.connect_by_name( adk,          pt_genlibdb )
-  g.connect_by_name( adk,          genlib      )
   g.connect_by_name( signoff,      pt_genlibdb )
-  g.connect_by_name( signoff,      genlib      )
-  
-  g.connect_by_name( genlib,       lib2db   )
 
   g.connect_by_name( adk,      debugcalibre )
   #g.connect_by_name( dc,       debugcalibre )
@@ -519,6 +507,7 @@ def construct():
 
   # pt_genlibdb -- Remove 'write-interface-timing.tcl' because it takes
   # very long and is not necessary
+  # if which_soc == "onyx":
   order = pt_genlibdb.get_param('order')
   order.remove( 'write-interface-timing.tcl' )
   pt_genlibdb.update_params( { 'order': order } )

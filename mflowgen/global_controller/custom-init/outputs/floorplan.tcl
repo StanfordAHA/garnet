@@ -1,53 +1,47 @@
 #=========================================================================
 # floorplan.tcl
 #=========================================================================
-# Author : Christopher Torng
-# Date   : March 26, 2018
+# Author :
+# Date   :
 
 #-------------------------------------------------------------------------
 # Floorplan variables
 #-------------------------------------------------------------------------
 
-# Set the floorplan to target a reasonable placement density with a good
-# aspect ratio (height:width). An aspect ratio of 2.0 here will make a
-# rectangular chip with a height that is twice the width.
-
 set core_aspect_ratio   1.00; # Aspect ratio 1.0 for a square chip
 set core_density_target $::env(core_density_target);
 
-# Make room in the floorplan for the core power ring
+# Compute netlist cell area
+set cell_area 0
+foreach c [dbGet head.libCells {.numRefs > 0}] {
+    set insts [dbGet $c.numRefs]
+    set area [expr $insts * [dbGet $c.size_x] * [dbGet $c.size_y]]
+	set cell_area [expr $cell_area + $area]
+}
 
-set pwr_net_list {VDD VSS}; # List of power nets in the core power ring
+# Reserve white space at the boundary
+set pitch_x [dbGet top.fPlan.coreSite.size_x]
+set pitch_y [dbGet top.fPlan.coreSite.size_y]
+set ws_left   [expr $pitch_x * $ADK_WHITE_SPACE_FACTOR_HORI]
+set ws_right  [expr $pitch_x * $ADK_WHITE_SPACE_FACTOR_HORI]
+set ws_top    [expr $pitch_y * $ADK_WHITE_SPACE_FACTOR_VERT]
+set ws_bottom [expr $pitch_y * $ADK_WHITE_SPACE_FACTOR_VERT]
 
-set M1_min_width   [dbGet [dbGetLayerByZ 1].minWidth]
-set M1_min_spacing [dbGet [dbGetLayerByZ 1].minSpacing]
+# Compute chip size
+# (1) core_aspect_ratio = width / height
+# (2) cell_area         = width * height * core_density_target
+set height [expr sqrt($cell_area / $core_density_target / $core_aspect_ratio)]
+set width  [expr $core_aspect_ratio * $height]
 
-set savedvars(p_ring_width)   [expr 48 * $M1_min_width];   # Arbitrary!
-set savedvars(p_ring_spacing) [expr 24 * $M1_min_spacing]; # Arbitrary!
-
-# Core bounding box margins
-
-set core_margin_t [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_b [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_r [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
-set core_margin_l [expr ([llength $pwr_net_list] * ($savedvars(p_ring_width) + $savedvars(p_ring_spacing))) + $savedvars(p_ring_spacing)]
+# Round-up to the nearest round_y/x and include white space
+set round_y [expr 2 * $pitch_y]
+set round_x [expr 4 * $pitch_x]
+set height [expr int(ceil($height / $round_y)) * $round_y + $ws_top + $ws_bottom]
+set width  [expr int(ceil($width  / $round_x)) * $round_x + $ws_left + $ws_right]
 
 #-------------------------------------------------------------------------
 # Floorplan
 #-------------------------------------------------------------------------
-
-# Calling floorPlan with the "-r" flag sizes the floorplan according to
-# the core aspect ratio and a density target (70% is a reasonable
-# density).
-#
-
-floorPlan -r $core_aspect_ratio $core_density_target \
-             $core_margin_l $core_margin_b $core_margin_r $core_margin_t
-
+floorPlan -d $width $height 0 0 0 0
 setFlipping s
-
-# Use automatic floorplan synthesis to pack macros (e.g., SRAMs) together
-
 planDesign
-
-

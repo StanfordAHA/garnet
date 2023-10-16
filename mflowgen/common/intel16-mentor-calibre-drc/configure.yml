@@ -1,0 +1,43 @@
+#=========================================================================
+# Mentor Graphics Calibre DRC
+#=========================================================================
+
+name: intel16-mentor-calibre-drc
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - adk
+  - design-merged.gds
+
+outputs:
+  - drc_DRCC.summary
+  - drc_DRCPERC.summary
+  - drc_IPall.summary
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - source inputs/adk/run-calibre-drc-DRCC.sh
+  - source inputs/adk/run-calibre-drc-DRCPERC.sh
+  - source inputs/adk/run-calibre-drc-IPall.sh
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+preconditions:
+  - assert Tool( 'calibre' )
+  - assert File( 'inputs/adk' )
+  - assert File( 'inputs/design-merged.gds' )

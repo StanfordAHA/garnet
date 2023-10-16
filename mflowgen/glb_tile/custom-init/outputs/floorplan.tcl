@@ -17,8 +17,8 @@ set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
 set core_margin_t $vert_pitch
 set core_margin_b $vert_pitch 
-set core_margin_r [expr 5 * $horiz_pitch]
-set core_margin_l [expr 5 * $horiz_pitch]
+set core_margin_r [expr 4 * $horiz_pitch]
+set core_margin_l [expr 4 * $horiz_pitch]
 
 # Amount of space between SRAM banks and core area
 # boundary on each side
@@ -75,7 +75,7 @@ proc snap_to_grid {input granularity} {
 }
 
 # Use margin variables to determine sram start location
-set sram_start_y [snap_to_grid [expr $core_margin_b + $sram_margin_b] $vert_pitch]
+set sram_start_y [snap_to_grid [expr $core_margin_b + $sram_margin_b] [expr 2*$vert_pitch]]
 set sram_start_x [snap_to_grid [expr $core_margin_l + $sram_margin_l] $horiz_pitch]
 
 set y_loc $sram_start_y
@@ -84,8 +84,7 @@ set col 0
 set row 0
 foreach_in_collection sram $srams {
   set sram_name [get_property $sram full_name]
-  # Does this line make sense?
-  set y_loc [snap_to_grid $y_loc $horiz_pitch]
+  set y_loc [snap_to_grid $y_loc [expr 2*$vert_pitch]]
   if {[expr $col % 2] == 0} {
     placeInstance $sram_name $x_loc $y_loc MY -fixed
   } else {
@@ -100,11 +99,11 @@ foreach_in_collection sram $srams {
   set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
   set tb_margin $vert_pitch
   set lr_margin [expr $horiz_pitch * 3]
-  createRouteBlk \
-    -inst $sram_name \
-    -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-    -layer 3 \
-    -pgnetonly
+  # createRouteBlk \
+  #   -inst $sram_name \
+  #   -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
+  #   -layer 3 \
+  #   -pgnetonly
 
   set row [expr $row + 1]
   set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
@@ -122,5 +121,5 @@ foreach_in_collection sram $srams {
   }
 }
 
-addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
+addHaloToBlock -allMacro [expr $horiz_pitch * 4] $vert_pitch [expr $horiz_pitch * 4] 1.53
 

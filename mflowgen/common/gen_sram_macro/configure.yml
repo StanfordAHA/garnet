@@ -1,38 +1,42 @@
 name: gen_sram_macro
 
 commands:
-  - bash inputs/adk/gen_srams.sh
+  - python inputs/adk/gen_srams.py
+  - sed --in-place '/^\s*SITE.*\;/d' outputs/*.lef
 
 inputs:
   - adk
 
 outputs:
   - sram.v
-  - sram_pwr.v
   - sram.lef
-  - sram_tt.lib
-  - sram_ff.lib
-  - sram_tt.db  # Need this back for power on ptpx
+  - sram-typical.lib
+  - sram-bc.lib
+  - sram-wc.lib
+  - sram-typical.db
+  - sram-bc.db
+  - sram-wc.db
   - sram.gds
+  - sram.oas
   - sram.spi
 
 parameters:
   # SRAM Families:
-  # S1DB: single port high density
-  # S1PB: single port high performance
-  # SDPB: dual port high performance
-  # R2PB: dual port reg file
-  sram_family: "S1DB"
-  num_words: 2048
-  word_size: 64
-  mux_size: 8
-  num_subarrays: 2
-  corner: "TT_0P800V_025C"
-  bc_corner: "FFPG_0P945V_125C"
-  partial_write: False
-  leakage_opt: False
-  redundancy: False
+  # SRAM_1P: single-port SRAM
+  # RF_2P: two-port register file
+  sram_family: "SRAM_1P"
+  num_words: 512
+  word_size: 32
+  mux_size: 4
+  tt_corner: "tttt_0.85v_25c"
+  bc_corner: "pfff_0.89v_-40c"
+  wc_corner: "psss_0.765v_125c"
 
 postconditions:
    # Sanity check to see if we at least got one sram
-   - assert File( 'outputs/sram_tt.lib' )
+   - assert File( 'outputs/sram-typical.lib' )
+   - assert File( 'outputs/sram-bc.lib' )
+   - assert File( 'outputs/sram-wc.lib' )
+   - assert File( 'outputs/sram-typical.db' )
+   - assert File( 'outputs/sram-bc.db' )
+   - assert File( 'outputs/sram-wc.db' )

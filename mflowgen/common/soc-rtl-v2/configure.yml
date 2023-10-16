@@ -15,6 +15,7 @@ outputs:
   - rtl
   - rtl-scripts
   - io_file
+  - io_pad_placement.tcl
 
 #-------------------------------------------------------------------------
 # Commands

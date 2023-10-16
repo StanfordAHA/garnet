@@ -1,0 +1,45 @@
+#=========================================================================
+# Synopsys IC Validator Calibre DRC
+#=========================================================================
+
+name: intel16-synopsys-icv-lvs
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+# layout   : design-merged.oas
+# schematic: design.lvs.v
+inputs:
+  - adk
+  - design-merged.oas
+  - design.lvs.v
+
+outputs:
+  - LVS.results
+  - design_merged.lvs.v
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - python3 v2sp.py
+  - source inputs/adk/run-icv-lvs.sh
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+preconditions:
+  - assert Tool( 'icv' )
+  - assert Tool( 'calibre' )
+  - assert File( 'inputs/adk' )
+  - assert File( 'inputs/design-merged.oas' )
+  - assert File( 'inputs/design.lvs.v' )

@@ -36,7 +36,7 @@ set_driving_cell -no_design_rule \
 set_max_fanout 20 $dc_design_name
 # Make all signals meet good slew
 # set_input_delay constraints for input ports
-set_max_transition 0.120 $dc_design_name
+set_max_transition [expr 0.120*1000] $dc_design_name
 
 # Constrain INPUTS
 # - make this non-zero to avoid hold buffers on input-registered designs

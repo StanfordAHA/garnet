@@ -16,16 +16,9 @@
 # containing generalized constraints for the designs, then provide overriding
 # constraints in different operational modes.
 
-set_units -time ns -capacitance pF
+set_units -time ps -capacitance pF
 
 set common_cnst inputs/common.tcl
-
-##############################
-# Check for power aware
-##############################
-if $::env(PWR_AWARE) {
-    source inputs/mem-constraints.tcl
-}
 
 # Which SoC?
 if { [info exists ::env(WHICH_SOC)] } {

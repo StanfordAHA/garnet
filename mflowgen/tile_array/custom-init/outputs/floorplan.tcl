@@ -125,7 +125,7 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set lr_margin [expr $horiz_pitch * 6]
     createRouteBlk \
       -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-      -layer [list 3 $ADK_POWER_MESH_BOT_LAYER] \
+      -layer [list 3 4 5 6 7 8] \
       -pgnetonly
 
     set x_loc [expr $x_loc + $tiles($row,$col,width) + $tile_separation_x]

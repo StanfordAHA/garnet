@@ -11,7 +11,7 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
-set_units -time ns -capacitance pF
+set_units -time ps -capacitance pF
 
 #=========================================================================
 # clk
@@ -106,26 +106,26 @@ set_driving_cell -no_design_rule \
 #=========================================================================
 # set_input_delay
 #=========================================================================
-set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
-set_input_delay -clock ${clock_name} 0.3 [get_ports *_est* -filter "direction==in"]
-set_input_delay -clock ${clock_name} 0.3 [get_ports *_wst* -filter "direction==in"]
+set_input_delay -clock ${clock_name} 200 [all_inputs -no_clocks]
+set_input_delay -clock ${clock_name} 300 [get_ports *_est* -filter "direction==in"]
+set_input_delay -clock ${clock_name} 300 [get_ports *_wst* -filter "direction==in"]
 
 # set_output_delay constraints for output ports
-set_output_delay -clock ${clock_name} 0.3 [all_outputs]
-set_output_delay -clock ${clock_name} 0.6 [get_ports *_est* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.6 [get_ports *_wst* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 300 [all_outputs]
+set_output_delay -clock ${clock_name} 600 [get_ports *_est* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 600 [get_ports *_wst* -filter "direction==out"]
 
 # g2f output ports should have high output_delay to make internal delay low
-set_output_delay -clock ${clock_name} 0.8 [get_ports cgra_cfg_*g2f* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.8 [get_ports strm_data_*g2f* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.8 [get_ports strm_data_*f2g* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.8 [get_ports data_flush* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 800 [get_ports cgra_cfg_*g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 800 [get_ports strm_data_*g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 800 [get_ports strm_data_*f2g* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 800 [get_ports data_flush* -filter "direction==out"]
 
 # set_min_delay for all tile-connected inputs
-set_min_delay -from [get_ports *_est* -filter "direction==in"] 0.4
-set_min_delay -from [get_ports *_wst* -filter "direction==in"] 0.4
-set_max_delay -to [get_ports *_est* -filter "direction==out"] 1.0
-set_max_delay -to [get_ports *_wst* -filter "direction==out"] 1.0
+set_min_delay -from [get_ports *_est* -filter "direction==in"] 400
+set_min_delay -from [get_ports *_wst* -filter "direction==in"] 400
+set_max_delay -to [get_ports *_est* -filter "direction==out"] 1000
+set_max_delay -to [get_ports *_wst* -filter "direction==out"] 1000
 
 #=========================================================================
 # set false path
