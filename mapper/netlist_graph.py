@@ -149,6 +149,21 @@ class NetlistGraph:
                 visited2.remove(current_node.node_id)
                 path2.pop()
 
+        def dfs_pe_to_out_mem(current_node):
+            if current_node.node_id not in visited2:
+                visited3.add(current_node.node_id)
+                path3.append(current_node)
+
+                if "output_cgra_stencil" in current_node.node_id and "m" in current_node.node_name:
+                    return len(path3) - 2 
+
+                for source_node in current_node.sources:
+                    result = dfs_pe_to_out_mem(source_node)
+                    if result is not None:
+                        return result
+                visited3.remove(current_node.node_id)
+                path3.pop()
+
         visited1 = set()
         path1 = []
         latency_out_mem_to_pe = dfs_out_mem_to_pe(output_mem, pe_node)
@@ -156,8 +171,13 @@ class NetlistGraph:
         if latency_out_mem_to_pe:
             visited2 = set()
             path2 = []
-            latency_pe_to_in_mem = dfs_pe_to_in_mem(pe_node)
-            if latency_pe_to_in_mem:
+            visited3 = set()
+            path3 = []
+            if "add_pipelined" in pe_node.node_id:
+                latency_pe_to_out_mem = dfs_pe_to_out_mem(pe_node)
+                return latency_out_mem_to_pe + latency_pe_to_out_mem
+            else:
+                latency_pe_to_in_mem = dfs_pe_to_in_mem(pe_node)
                 return latency_out_mem_to_pe + latency_pe_to_in_mem
 
     def get_compute_kernel_latency(self, app_dir):
@@ -173,6 +193,16 @@ class NetlistGraph:
             if "hcompute_output_cgra_stencil" in kernel:
                 for kernel_port, d1 in latency_dict.items():
                     if "input_cgra_stencil" in kernel_port:
+                        for port_num, d2 in d1.items():
+                            pe_id = d2["pe_port"][0]
+                            for node in self.pe_nodes:
+                                if pe_id in node.node_id:
+                                    pe_node = node
+                            for mem_node in self.mem_nodes:
+                                if "ub_output_cgra_stencil" in mem_node.node_id:
+                                    if self.count_input_latencies(mem_node, pe_node):
+                                        d2["latency"] = self.count_input_latencies(mem_node, pe_node)
+                    elif "in2_output_cgra_stencil" in kernel_port:
                         for port_num, d2 in d1.items():
                             pe_id = d2["pe_port"][0]
                             for node in self.pe_nodes:
@@ -255,9 +285,16 @@ class NetlistGraph:
                 break
         # add output mem to list
         for node in self.mem_nodes:
-            if mem_chain and len(node.sources) == 3 and "I" in node.sinks[1].node_name:
-                output_mem.append(node)
-                self._find_source_mem(node, output_mem)
+            is_output_mem = False
+            # if mem_chain and len(node.sources) == 3 and "I" in node.sinks[1].node_name:
+            if mem_chain and len(node.sources) == 3:
+                for sink_node in node.sinks:
+                    if "I" in sink_node.node_name:
+                        is_output_mem = True
+                        break
+                if is_output_mem:
+                    output_mem.append(node)
+                    self._find_source_mem(node, output_mem)
             elif not mem_chain and len(node.sources) == 2:
                 output_mem.append(node)
 
@@ -344,7 +381,7 @@ class NetlistGraph:
             stencil_x = 3
             stencil_y = 4
             for node in self.mem_nodes:
-                if len(node.sources) == 0:
+                if "port_controller" in node.node_id:
                     (node.x, node.y) = (stencil_x, stencil_y)
                     if stencil_x == round(k_oc / 4) * 4 - 9:
                         stencil_x += 4
@@ -359,13 +396,13 @@ class NetlistGraph:
                         stencil_x += 4
 
         # place IO tile, currently use fixed positions
-        weight_IO_idx = [0, 4, 8, 12, 16, 20, 24, 28]
-        ifmap_IO_idx = [2, 6, 10, 14, 18, 22, 26, 30]
+        weight_IO_idx = [0, 24, 28, 4, 8, 12, 16, 20]
+        ifmap_IO_idx = [2, 6, 26, 10, 22, 14, 18, 30]
         if glb_o == 4:
             output_IO_idx = [3, 11, 19, 27]
         else:
             output_IO_idx = [3, 7, 11, 15, 19, 23, 27, 31]
-        output_IO_idx = [3, 7, 11, 15, 19, 23, 27, 31]
+        output_IO_idx = [1, 5, 9, 11, 19, 23, 27, 31]
         weight_IO = []
         ifmap_IO = []
         output_IO = []

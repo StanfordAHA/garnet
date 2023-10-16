@@ -130,7 +130,6 @@ def construct():
 
   # Inputs
   g.add_input( 'design.v', rtl.i('design.v') )
-
   # Outputs
   g.add_output( 'Tile_PE_tt.lib',      genlibdb.o('design.lib')           )
   g.add_output( 'Tile_PE_tt.db',       genlibdb.o('design.db')            )
@@ -320,7 +319,6 @@ def construct():
   ] } )
 
   # Adding new input for genlibdb node to run
-
   # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)
   order = genlibdb.get_param('order') # get the default script run order
   extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
