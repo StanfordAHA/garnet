@@ -119,17 +119,14 @@ def construct():
       'floorplan.tcl',
       'create-rows.tcl',
       'add-tracks.tcl',
-      # move the well tap insertion after power planning to save time 
-      # 'add-endcaps-welltaps.tcl',
+      # 'add-endcaps-welltaps.tcl', # move the well tap insertion after power planning to save time
       'create-special-grid.tcl',
       'io-fillers.tcl',
       # 'alignment-cells.tcl',
-      'gen-bumps.tcl',
-      # 'check-bumps.tcl',
-      'route-bumps.tcl',
+      # 'gen-bumps.tcl', # TODO: turn-off for TMA2
+      # 'route-bumps.tcl', # TODO: turn-off for TMA2
       # 'place-macros.tcl',
       # 'create-boundary-blockage.tcl',
-      # 'dont-touch.tcl'
   ]
 
   drc_rule_decks = [

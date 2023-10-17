@@ -3,17 +3,20 @@
 #=========================================================================
 # Author : 
 # Date   : 
+if {[info exists ADK_WELL_TAP_CELL] && [info exists ADK_WELL_TAP_INTERVAL]} {
+  puts "Info: Found well-tap cell and interval in ADK, using it to add well taps"
+  addWellTap -prefix TAP_2H \
+             -cell [list ${ADK_WELL_TAP_CELL_2H}] \
+             -cellInterval ${ADK_WELL_TAP_INTERVAL} \
+             -avoidAbutment
 
-#-------------------------------------------------------------------------
-# Endcap and well tap specification
-#-------------------------------------------------------------------------
-# TSMC16 requires specification of different taps/caps for different
-# locations/orientations, which the foundation flow does not natively support
+  addWellTap -prefix TAP_1H \
+             -cell [list ${ADK_WELL_TAP_CELL_1H}] \
+             -cellInterval [expr ${ADK_WELL_TAP_INTERVAL} / 2] \
+             -incremental ${ADK_WELL_TAP_CELL_2H} \
+             -avoidAbutment
 
-if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
-  adk_set_end_cap_mode
-  adk_set_well_tap_mode
-  adk_add_end_caps
-  adk_add_well_taps_fixed_gap
+  verifyWellTap -cell [list ${ADK_WELL_TAP_CELL_2H} ${ADK_WELL_TAP_CELL_1H}] \
+                -rule ${ADK_WELL_TAP_INTERVAL} \
+                -report reports/welltap-1h2h.rpt
 }
-

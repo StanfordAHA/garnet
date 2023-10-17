@@ -320,7 +320,7 @@ def construct():
     'pin-assignments.tcl',
     'create-rows.tcl',
     'add-tracks.tcl',
-    'create-boundary-blockage.tcl',
+    # 'create-boundary-blockage.tcl',
     'add-endcaps-welltaps.tcl',
     'insert-input-antenna-diodes.tcl',
     'create-special-grid.tcl',

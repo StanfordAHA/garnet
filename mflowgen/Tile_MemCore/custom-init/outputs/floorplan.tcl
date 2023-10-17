@@ -2,65 +2,36 @@
 # floorplan.tcl
 #=========================================================================
 # This script is called from the Innovus init flow step.
-#
-# Author : Christopher Torng
-# Date   : March 26, 2018
-
-#-------------------------------------------------------------------------
-# Parameters
-#-------------------------------------------------------------------------
-
-set adk $::env(adk)
 
 #-------------------------------------------------------------------------
 # Floorplan variables
 #-------------------------------------------------------------------------
-
-# Density target: width will be adjusted to meet this cell density
-set core_density_target $::env(core_density_target); # Placement density of 70% is reasonable
-# Core height : number of vertical pitches in height of core area
-# We fix this value because the height of the memory and PE tiles
-# must be the same to allow for abutment at the top level
-
-# Maintain even row height
-# gf12 wants core_height 180, tsmc16 wants 150.
-# Eventually this will be programmatical based on row_height or maybe a parameter
-set core_height 226; # For gf12, specifically
-if { $adk == "tsmc16" } { set core_height 150 }
-
+ 
+set hori_pitch [dbGet top.fPlan.coreSite.size_x]
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
+set tech_pitch_x [expr 5 * $hori_pitch]
+set tech_pitch_y [expr 1 * $vert_pitch]
 
-# Calculate actual core height from height param
-set height [expr $core_height * $vert_pitch]
+set core_margin_left   $tech_pitch_x
+set core_margin_bottom $tech_pitch_y
+set core_margin_right  $tech_pitch_x
+set core_margin_top    $tech_pitch_y
 
-# Now begin width calculation
-# Get the combined area of all cells in the design
-set cell_areas [get_property [get_cells *] area]
-set total_cell_area 0
-foreach area $cell_areas {
-  set total_cell_area [expr $total_cell_area + $area]
-}
-
-# Calculate FP width that will meet density target given fixed height 
-set width [expr $total_cell_area / $core_density_target / $height]
-
-# Core bounding box margins
-
-set core_margin_t $vert_pitch
-set core_margin_b $vert_pitch 
-set core_margin_r [expr 10 * $horiz_pitch]
-set core_margin_l [expr 10 * $horiz_pitch]
+set core_width  [expr 400 * $tech_pitch_x - $core_margin_left - $core_margin_right]
+set core_height [expr 300 * $tech_pitch_y - $core_margin_top - $core_margin_bottom]
 
 #-------------------------------------------------------------------------
 # Floorplan
 #-------------------------------------------------------------------------
 
-floorPlan -s $width $height \
-             $core_margin_l $core_margin_b $core_margin_r $core_margin_t
+floorPlan -s $core_width $core_height \
+             $core_margin_left $core_margin_bottom $core_margin_right $core_margin_top
 
 setFlipping s
 
+#-------------------------------------------------------------------------
+# SRAM Placement
+#-------------------------------------------------------------------------
 proc snap_to_grid {input granularity} {
    set new_value [expr ceil($input / $granularity) * $granularity]
    return $new_value
@@ -80,7 +51,7 @@ set sram_spacing_x_odd 0
 # Set spacing between pinned sides of SRAMs to some 
 # reasonable number of pitches
 # Spread out further for power domains
-set sram_spacing_x_even [expr 200 * $horiz_pitch]
+set sram_spacing_x_even [expr 200 * $hori_pitch]
 
 # Parameter for how many SRAMs to stack vertically
 set bank_height 1
@@ -94,10 +65,11 @@ set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_
 set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
 set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank_height - 1))]
 
-set sram_start_y [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $block_height)/2.] $vert_pitch]
-set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/2.] $horiz_pitch]
+# snap the 2x height
+set sram_start_y [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $block_height)/2.] [expr $vert_pitch*2]]
+set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/2.] $hori_pitch]
 
-set y_loc $sram_start_y
+set y_loc [expr $sram_start_y + $vert_pitch]
 set x_loc $sram_start_x
 set col 0
 set row 0
@@ -115,12 +87,12 @@ foreach_in_collection sram $srams {
   set urx [dbGet [dbGet -p top.insts.name $sram_name].box_urx]
   set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
   set tb_margin $vert_pitch
-  set lr_margin [expr $horiz_pitch * 3]
-  createRouteBlk \
-    -inst $sram_name \
-    -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-    -layer 3 \
-    -pgnetonly
+  set lr_margin [expr $hori_pitch * 3]
+  # createRouteBlk \
+  #   -inst $sram_name \
+  #   -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
+  #   -layer 3 \
+  #   -pgnetonly
   set row [expr $row + 1]
   set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
   # Next column over

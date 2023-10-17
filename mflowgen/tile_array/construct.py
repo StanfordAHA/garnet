@@ -47,7 +47,7 @@ def construct():
     'topographical'     : True,
     'read_hdl_defines'  : read_hdl_defines,
     # RTL Generation
-    'array_width'       : 32,
+    'array_width'       : 28,
     'array_height'      : 16,
     'interconnect_only' : False,
     # Power Domains

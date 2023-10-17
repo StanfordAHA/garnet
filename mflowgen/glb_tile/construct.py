@@ -36,10 +36,10 @@ def construct():
     'flatten_effort'     : 3,
     'topographical'      : True,
     # Floorplan
-    'array_width'        : 32,
-    'num_glb_tiles'      : 16,
+    'array_width'        : 28,
+    'num_glb_tiles'      : 14,
     # Memory size (unit: KB)
-    'glb_tile_mem_size'  : 256,
+    'glb_tile_mem_size'  : 128,
     # SRAM macros
     'num_words'          : 4096,
     'word_size'          : 64,
@@ -64,8 +64,8 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  # rtl                = Step( this_dir + '/../common/rtl'                          )
-  rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
+  rtl                = Step( this_dir + '/../common/rtl'                          )
+  # rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
   constraints          = Step( this_dir + '/constraints'                            )
   custom_init          = Step( this_dir + '/custom-init'                            )
   gen_sram             = Step( this_dir + '/../common/gen_sram_macro'               )
@@ -302,7 +302,7 @@ def construct():
     'pin-assignments.tcl',
     'create-rows.tcl',
     'add-tracks.tcl',
-    'create-boundary-blockage.tcl',
+    # 'create-boundary-blockage.tcl',
     'add-endcaps-welltaps.tcl',
     'insert-input-antenna-diodes.tcl',
     'create-special-grid.tcl',

@@ -47,8 +47,8 @@ def construct():
     # array_width = width of CGRA below GLB; `pin-assignments.tcl` uses
     # these parms to set up per-cgra-column ports connecting glb tile
     # signals in glb_top to corresponding CGRA tile columns below glb_top
-    'array_width'         : 32,
-    'num_glb_tiles'       : 16,
+    'array_width'         : 28,
+    'num_glb_tiles'       : 14,
     'tool'                : "VCS",
     # glb tile memory size (unit: KB)
     'use_container' : True,

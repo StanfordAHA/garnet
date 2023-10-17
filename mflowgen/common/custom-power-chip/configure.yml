@@ -14,8 +14,6 @@ name: custom-power-chip
 #-------------------------------------------------------------------------
 
 outputs:
-  - globalnetconnect.tcl
-  - power-strategy-dualmesh.tcl
-  - phy-stripes.tcl
-  - attach-results-to-outputs.tcl
   - add-endcaps-welltaps.tcl
+  - globalnetconnect.tcl
+  - power-strategy.tcl

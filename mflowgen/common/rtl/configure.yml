@@ -14,13 +14,13 @@ outputs:
 parameters:
   array_width: 4
   array_height: 2
-  glb_tile_mem_size: 256
+  glb_tile_mem_size: 128
   num_glb_tiles: 2
   pipeline_config_interval: 8
   interconnect_only: False
   glb_only: False
   soc_only: False
-  PWR_AWARE: True
+  PWR_AWARE: False
 
   # If true, use docker container for python environment
   use_container: True
