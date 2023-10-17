@@ -1994,6 +1994,24 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.transpose(output_matrix)
         output_format = "CSF"
         output_name = "X"
+    elif 'masked_broadcast.gv' in app_name:
+        B_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=sparsities_[0])
+        c_mat = get_tensor(input_name='c', shapes=[shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
+                           sparsity=0.0)
+        assert c_mat.shape[0] == B_mat.shape[0]
+        # broadcasting
+        print(B_mat)
+        print(c_mat)
+        output_matrix = numpy.zeros((shapes_[0], shapes_[0]))
+        for i in range(0, output_matrix.shape[0]):
+            for j in range(0, output_matrix.shape[1]):
+                if B_mat[i][j] != 0:   
+                    output_matrix[i][j] = c_mat[i]
+        output_format = "CSF"
+        output_name = "X"
     elif 'matmul_jki.gv' in app_name:
         raise NotImplementedError
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='CSF', dump_dir=matrix_tmp_dir)
@@ -2824,7 +2842,7 @@ if __name__ == "__main__":
 
                     full_test_glb_dir = f"{glb_dir}/{full_test_name}"
 
-                    print(f"DUMPING GLB STUFF TO: {full_test_glb_dir}")
+                    print(f"DUMPING GLB STUFF TO:  {full_test_glb_dir}")
 
                     # Make sure glb path exists
                     if not os.path.isdir(full_test_glb_dir):
