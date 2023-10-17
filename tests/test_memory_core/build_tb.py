@@ -2009,7 +2009,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         for i in range(0, output_matrix.shape[0]):
             for j in range(0, output_matrix.shape[1]):
                 if B_mat[i][j] != 0:   
-                    output_matrix[i][j] = c_mat[i]
+                    output_matrix[i][j] = c_mat[j]
         output_format = "CSF"
         output_name = "X"
     elif 'matmul_jki.gv' in app_name:
