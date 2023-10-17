@@ -84,6 +84,7 @@ def construct():
   testbench            = Step( this_dir + '/../common/testbench'                    )
   application          = Step( this_dir + '/../common/application'                  )
   lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
+
   post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'          )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'     )
@@ -106,6 +107,7 @@ def construct():
   debugcalibre         = Step( 'cadence-innovus-debug-calibre',        default=True )
 
 
+
   # Extra DC input
   synth.extend_inputs(["common.tcl"])
   synth.extend_inputs(["simple_common.tcl"])
@@ -114,6 +116,7 @@ def construct():
   synth.extend_inputs(      ['sram-typical.lib', 'sram-bc.lib', 'sram-wc.lib', 'sram.lef'] )
   pt_signoff.extend_inputs( ['sram-typical.db',  'sram-bc.db',  'sram-wc.db'] )
   genlibdb.extend_inputs(   ['sram-typical.db', 'sram-bc.db', 'sram-wc.db'] )
+
 
   # These steps need timing and lef info for srams
   sram_steps = \
@@ -335,15 +338,12 @@ def construct():
   extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
   order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
   genlibdb.update_params( { 'order': order } )
-
   # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
   # very long and is not necessary
   order = genlibdb.get_param('order')
   order.remove( 'write-interface-timing.tcl' )
   genlibdb.update_params( { 'order': order } )
-
   return g
-
 
 if __name__ == '__main__':
   g = construct()

@@ -141,20 +141,26 @@ echo "-- Note need more than 3G for postroute of full chip"
 echo "-- 60G has been enough in the past"
 echo "-- Not sure about space < 60G and > 3G"
 echo ""
+function help_space { (
+    echo "How big is /sim?"; echo df -h /sim; df -h /sim; echo ""
+    echo "/sim usage breakdown:"
+    du -hx --max-depth=0 /sim/* 2> /dev/null  | sort -rn | grep G | head
+    printf "\n\n"
+) }
 # G=$(( 1024 * 1024 * 1024 ))
 G=$(( 1024 * 1024 )) ; # As reported by df in 1024-byte blocks!
 if [[ $avail -lt $(( 3 * $G )) ]]; then
-    ERROR "less than 3G definitely NOT ENOUGH for full chip postroute"
+    ERROR "$TMPDIR less than 3G definitely NOT ENOUGH for full chip postroute"
     echo "Recommend you do something like 'export TMPDIR=/sim/tmp'"
-    echo ""
-    exit 13
+    help_space
+    echo Giving up...; exit 13
 elif [[ $avail -lt $(( 20 * $G )) ]]; then
-    ERROR "less than 20G probably NOT ENOUGH for full chip postroute"
+    ERROR "$TMPDIR less than 20G probably NOT ENOUGH for full chip postroute"
     echo "Recommend you do something like 'export TMPDIR=/sim/tmp'"
-    echo ""
-    exit 13
+    help_space
+    echo Giving up...; exit 13
 elif [[ $avail -lt $(( 60 * $G )) ]]; then
-    echo "***WARNING less than 60G not (yet) proven to be enough"
+    echo "***WARNING $TMPDIR less than 60G not (yet) proven to be enough"
     echo "           Recommend you do something like 'export TMPDIR=/sim/tmp'"
     echo ""
 fi

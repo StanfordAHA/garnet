@@ -170,7 +170,6 @@ def construct():
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
   g.connect_by_name( iflow,    genlibdb       )
-
   g.connect_by_name( custom_init,  init       )
   g.connect_by_name( custom_power, power      )
 
@@ -225,6 +224,12 @@ def construct():
   
   # Add density target parameter
   init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
+
+  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # very long and is not necessary
+  order = genlibdb.get_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  genlibdb.update_params( { 'order': order } )
 
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )

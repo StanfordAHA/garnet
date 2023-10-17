@@ -1,3 +1,7 @@
+# Set env var WHICH_SOC=amber for amber build, else uses default settings
+set WHICH_SOC "default"
+if { [info exists ::env(WHICH_SOC)] } { set WHICH_SOC $::env(WHICH_SOC) }
+
 ######## Create Power Domains ###########
 # Default Power Domain - SD when tile not used 
 create_power_domain TOP -include_scope
@@ -5,14 +9,31 @@ create_power_domain TOP -include_scope
 # AON Domain - Modules that stay ON when tile is OFF 
 # PS configuration logic and tie cells for hi/lo outputs that drive the tile_id
 
-# FIXME note that DECODE_FEATURE and FEATURE_AND modules (at least)
-# are auto-generated names that may change at the whim of the
-# generator. We have had to manually change the name here, at least
-# twice so far as a result of failing CI tests, i.e.
-#    DECODE_FEATURE_8 => DECODE_FEATURE_12 => DECODE_FEATURE_13
-# For further info see steveri notes ~/0notes/vto/pwr-aware-gls.txt
+########################################################################
+# pe_power_domain_config_reg_addr
+# 
+# Note that DECODE_FEATURE and FEATURE_AND modules (at least) are
+# auto-assigned names that may change at the whim of the generator.
+# So the designer has to track that and update this parm by hand :(
+# See garnet issue 922 and ~steveri/0notes/vto/pwr-aware-gls.txt
+# 
+# Used by upf_Tile_PE.tcl
+# 
+# We have a script (check-pdcr-address.sh) that updates the address
+# automatically, so should be survivable when/if address not accurate.
 
-create_power_domain AON -elements { PowerDomainOR DECODE_FEATURE_15 coreir_eq_16_inst0 and_inst1 FEATURE_AND_15 PowerDomainConfigReg_inst0 const_511_9 const_0_8}
+set pe_power_domain_config_reg_addr 15
+if { $WHICH_SOC == "amber" } { set pe_power_domain_config_reg_addr 17 }
+set aon_elements "
+  PowerDomainOR
+  DECODE_FEATURE_$pe_power_domain_config_reg_addr
+  coreir_eq_16_inst0 and_inst1
+  FEATURE_AND_$pe_power_domain_config_reg_addr
+  PowerDomainConfigReg_inst0
+  const_511_9
+  const_0_8
+"
+create_power_domain AON -elements $aon_elements
 
 ### Toplevel Connections ######
 ## VDD 

@@ -505,13 +505,12 @@ def construct():
   #dc.update_params( { 'order': order } )
   #synth.update_params( { 'order': order } )
 
-  # pt_genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # pt_genlibdb -- Remove 'write-interface-timing.tcl' because it takes
   # very long and is not necessary
   # if which_soc == "onyx":
   order = pt_genlibdb.get_param('order')
   order.remove( 'write-interface-timing.tcl' )
   pt_genlibdb.update_params( { 'order': order } )
-
 
   # init -- Add 'dont-touch.tcl' before reporting
 
