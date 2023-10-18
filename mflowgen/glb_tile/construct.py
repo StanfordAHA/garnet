@@ -28,7 +28,7 @@ def construct():
   parameters = {
     'construct_path'     : __file__,
     'design_name'        : 'glb_tile',
-    'clock_period'       : 1.10 * 1000,
+    'clock_period'       : 1.10*1000,
     'adk'                : adk_name,
     'adk_view'           : adk_view,
     'adk_stdcell'        : 'b15_7t_108pp',
@@ -283,9 +283,13 @@ def construct():
   g.update_params( parameters )
 
   # Add bank height param to init
-  # number of banks is fixed to 2
-  bank_height = (parameters['glb_tile_mem_size'] * 1024 // 2) // (parameters['num_words'] * (parameters['word_size'] // 8))
+  # number of banks is fixed to 1
+  size_per_SRAM_in_bytes = parameters['num_words'] * (parameters['word_size'] // 8)
+  size_per_glb_tile_in_bytes = parameters['glb_tile_mem_size'] * 1024
+  bank_height = size_per_glb_tile_in_bytes // size_per_SRAM_in_bytes
   init.update_params( { 'bank_height': bank_height }, True )
+
+  print("Bank height: {}".format(bank_height))
 
   # Change nthreads
   synth.update_params( { 'nthreads': 4 } )
@@ -307,8 +311,22 @@ def construct():
     'insert-input-antenna-diodes.tcl',
     'create-special-grid.tcl',
     'make-path-groups.tcl',
+    # 'sram-hold-false-path.tcl',
     'reporting.tcl'
   ] } )
+
+  # DRC Rule Decks
+  drc_rule_decks = [
+    "antenna",
+    "collat",
+    "drc-drcd",
+    "drc-lu",
+    "drc-denall"
+    # "drc-cden-lden-collat",
+    # "drc-fullchip",
+    # "tapein"
+  ]
+  drc.update_params( {'rule_decks': drc_rule_decks } )
 
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )

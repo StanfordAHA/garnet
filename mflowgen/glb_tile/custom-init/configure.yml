@@ -18,4 +18,5 @@ outputs:
   - add-tracks.tcl
   - insert-input-antenna-diodes.tcl
   - create-special-grid.tcl
+  - sram-hold-false-path.tcl
 
