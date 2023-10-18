@@ -17,7 +17,7 @@ set core_margin_bottom $tech_pitch_y
 set core_margin_right  $tech_pitch_x
 set core_margin_top    $tech_pitch_y
 
-set core_width  [expr 400 * $tech_pitch_x - $core_margin_left - $core_margin_right]
+set core_width  [expr 392 * $tech_pitch_x - $core_margin_left - $core_margin_right]
 set core_height [expr 300 * $tech_pitch_y - $core_margin_top - $core_margin_bottom]
 
 #-------------------------------------------------------------------------
@@ -69,7 +69,7 @@ set block_height [expr ($sram_height * $bank_height) + ($sram_spacing_y * ($bank
 set sram_start_y [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $block_height)/2.] [expr $vert_pitch*2]]
 set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/2.] $hori_pitch]
 
-set y_loc [expr $sram_start_y + $vert_pitch]
+set y_loc $sram_start_y
 set x_loc $sram_start_x
 set col 0
 set row 0
@@ -80,19 +80,19 @@ foreach_in_collection sram $srams {
   } else {
     placeInstance $sram_name $x_loc $y_loc MY -fixed
   }
-  # Create M3 pg net blockage to prevent DRC from interaction
-  # with M5 stripes
-  set llx [dbGet [dbGet -p top.insts.name $sram_name].box_llx]
-  set lly [dbGet [dbGet -p top.insts.name $sram_name].box_lly]
-  set urx [dbGet [dbGet -p top.insts.name $sram_name].box_urx]
-  set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
-  set tb_margin $vert_pitch
-  set lr_margin [expr $hori_pitch * 3]
-  # createRouteBlk \
-  #   -inst $sram_name \
-  #   -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-  #   -layer 3 \
-  #   -pgnetonly
+  # create Halo around the SRAM
+  set halo_left   $tech_pitch_x
+  set halo_bottom $tech_pitch_y 
+  set halo_right  $tech_pitch_x 
+  set halo_top    [expr $tech_pitch_y + $vert_pitch]
+  addHaloToBlock \
+      $halo_left \
+      $halo_bottom \
+      $halo_right \
+      $halo_top \
+      -snapToSite \
+      $sram_name
+
   set row [expr $row + 1]
   set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
   # Next column over

@@ -30,7 +30,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_PE',
-    'clock_period'        : 1.1 * 1000,
+    'clock_period'        : 1.1*1000,
     'core_density_target' : 0.6,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
@@ -66,7 +66,6 @@ def construct():
 
   # Custom steps
   rtl                  = Step( this_dir + '/../common/rtl'                          )
-  #rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
   constraints          = Step( this_dir + '/constraints'                            )
   custom_init          = Step( this_dir + '/custom-init'                            )
   custom_genus_scripts = Step( this_dir + '/custom-genus-scripts'                   )
@@ -317,6 +316,19 @@ def construct():
     'additional-path-groups.tcl',
     'reporting.tcl'
   ] } )
+
+  # DRC Rule Decks
+  drc_rule_decks = [
+    "antenna",
+    "collat",
+    "drc-drcd",
+    "drc-lu",
+    "drc-denall"
+    # "drc-cden-lden-collat",
+    # "drc-fullchip",
+    # "tapein"
+  ]
+  drc.update_params( {'rule_decks': drc_rule_decks } )
 
   # Adding new input for genlibdb node to run
   # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)

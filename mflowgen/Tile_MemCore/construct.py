@@ -29,7 +29,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
-    'clock_period'        : 1.10 * 1000,
+    'clock_period'        : 1.20*1000,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     'adk_stdcell'         : 'b15_7t_108pp',
@@ -329,8 +329,22 @@ def construct():
     'create-special-grid.tcl',
     'make-path-groups.tcl',
     'additional-path-groups.tcl',
+    # 'sram-hold-false-path.tcl', # somehow it has problem
     'reporting.tcl'
   ] } )
+
+  # DRC Rule Decks
+  drc_rule_decks = [
+    "antenna",
+    "collat",
+    "drc-drcd",
+    "drc-lu",
+    "drc-denall"
+    # "drc-cden-lden-collat",
+    # "drc-fullchip",
+    # "tapein"
+  ]
+  drc.update_params( {'rule_decks': drc_rule_decks } )
 
   # Adding new input for genlibdb node to run
   # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)

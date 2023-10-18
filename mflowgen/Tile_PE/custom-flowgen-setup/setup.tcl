@@ -31,7 +31,12 @@ set vars(rcworst,T)             125
 # MMMC Setup (Delay Corners)
 #---------------------------------------------------------------------
 # define delay corners
-set vars(delay_corners) "delay_best delay_worst"
+set vars(delay_corners) "delay_typical delay_best delay_worst"
+
+# delay_corner: typical
+set vars(delay_typical,early_library_set)    libs_typical
+set vars(delay_typical,late_library_set)     libs_typical
+set vars(delay_typical,rc_corner)            typical
 
 # delay_corner: best
 set vars(delay_best,early_library_set)    libs_bc
@@ -73,7 +78,11 @@ foreach s ${active_scenarios} {
 set vars(analysis_views)                         [concat ${setup_a_views} ${hold_a_views}]
 
 foreach s ${active_scenarios} {
-    set vars(analysis_setup_${s},delay_corner)         delay_worst
+    # You can also use delay_worst for setup
+    # But, it will be challenging to meet timing
+    #   set vars(analysis_setup_${s},delay_corner) delay_worst
+    # For now, we use typical corner for setup
+    set vars(analysis_setup_${s},delay_corner)         delay_typical
     set vars(analysis_setup_${s},constraint_mode)      constraints_${s}
     set vars(analysis_hold_${s},delay_corner)          delay_best
     set vars(analysis_hold_${s},constraint_mode)       constraints_${s}
