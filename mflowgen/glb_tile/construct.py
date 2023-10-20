@@ -75,8 +75,8 @@ def construct():
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                   )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'     )
-  calibre_drc        = Step( this_dir + '/../common/intel16-mentor-calibre-drc'   )
-  calibre_lvs        = Step( this_dir + '/../common/intel16-mentor-calibre-lvs'   )
+  # calibre_drc        = Step( this_dir + '/../common/intel16-mentor-calibre-drc'   )
+  # calibre_lvs        = Step( this_dir + '/../common/intel16-mentor-calibre-lvs'   )
 
   # Default steps
   info              = Step( 'info',                          default=True )
@@ -148,7 +148,7 @@ def construct():
 
   # Need SRAM spice file for LVS
   lvs.extend_inputs( ['sram.spi'] )
-  calibre_lvs.extend_inputs( ['sram.spi'] )
+  # calibre_lvs.extend_inputs( ['sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -184,9 +184,9 @@ def construct():
   g.add_step( pt_signoff           )
   g.add_step( genlibdb             )
   g.add_step( drc                  )
-  g.add_step( calibre_drc          )
+  # g.add_step( calibre_drc          )
   g.add_step( lvs                  )
-  g.add_step( calibre_lvs          )
+  # g.add_step( calibre_lvs          )
   g.add_step( custom_lvs           )
   g.add_step( debugcalibre         )
   g.add_step( custom_flowgen_setup )
@@ -209,9 +209,9 @@ def construct():
   g.connect_by_name( adk,                  postroute_hold )
   g.connect_by_name( adk,                  signoff        )
   g.connect_by_name( adk,                  drc            )
-  g.connect_by_name( adk,                  calibre_drc    )
+  # g.connect_by_name( adk,                  calibre_drc    )
   g.connect_by_name( adk,                  lvs            )
-  g.connect_by_name( adk,                  calibre_lvs    )
+  # g.connect_by_name( adk,                  calibre_lvs    )
   g.connect_by_name( adk,                  genlibdb       )
   g.connect_by_name( gen_sram,             synth          )
   g.connect_by_name( gen_sram,             iflow          )
@@ -227,9 +227,9 @@ def construct():
   g.connect_by_name( gen_sram,             genlibdb       )
   g.connect_by_name( gen_sram,             pt_signoff     )
   g.connect_by_name( gen_sram,             drc            )
-  g.connect_by_name( gen_sram,             calibre_drc    )
+  # g.connect_by_name( gen_sram,             calibre_drc    )
   g.connect_by_name( gen_sram,             lvs            )
-  g.connect_by_name( gen_sram,             calibre_lvs    )
+  # g.connect_by_name( gen_sram,             calibre_lvs    )
   g.connect_by_name( rtl,                  synth          )
   g.connect_by_name( constraints,          synth          )
   g.connect_by_name( synth,                iflow          )
@@ -259,9 +259,9 @@ def construct():
   g.connect_by_name( postroute,            postroute_hold )
   g.connect_by_name( postroute_hold,       signoff        )
   g.connect_by_name( signoff,              drc            )
-  g.connect_by_name( signoff,              calibre_drc    )
+  # g.connect_by_name( signoff,              calibre_drc    )
   g.connect_by_name( signoff,              lvs            )
-  g.connect_by_name( signoff,              calibre_lvs    )
+  # g.connect_by_name( signoff,              calibre_lvs    )
   g.connect_by_name( signoff,              genlibdb       )
   g.connect_by_name( adk,                  genlibdb       )
   g.connect_by_name( adk,                  pt_signoff     )
