@@ -76,9 +76,9 @@ set row 0
 foreach_in_collection sram $srams {
   set sram_name [get_property $sram full_name]
   if {[expr $col % 2] == 1} {
-    placeInstance $sram_name $x_loc $y_loc -fixed
+    placeInstance $sram_name [expr $x_loc + $hori_pitch] $y_loc -fixed
   } else {
-    placeInstance $sram_name $x_loc $y_loc MY -fixed
+    placeInstance $sram_name [expr $x_loc - $hori_pitch] $y_loc MY -fixed
   }
   # create Halo around the SRAM
   set halo_left   $tech_pitch_x
