@@ -51,6 +51,13 @@ set gap_y [expr ($floorplan_height - $sram_height * 4) / 5.0]
 # loop through each SRAM and place it
 set x_loc $gap_x
 set y_loc $gap_y
+# DRC Fix: Looks like the power stripes happens to connect to the "tip"
+#          of the SRAM power pin (vddp). This causes several DRC on v4/m5
+#          because the overlap region is too small.
+#          To fix this, we move the SRAM x-location a little bit to the left
+#          such that the power stripe and power pin can have a nice cross
+#          overlap.
+set x_loc [expr $x_loc - 5 * $hori_pitch]
 foreach_in_collection sram [get_cells -hierarchical *sram_array*] {
   set sram_name [get_property $sram full_name]
   set x_loc_snap [snap_to_grid $x_loc [expr 2*$hori_pitch]]
