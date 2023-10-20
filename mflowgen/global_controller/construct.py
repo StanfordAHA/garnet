@@ -102,10 +102,7 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff      = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-  if which_soc == "onyx":
-    genlib       = Step( 'cadence-innovus-genlib',        default=True )
-  else:
-    genlib       = Step( 'cadence-genus-genlib',          default=True )
+  genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
   if which("calibre") is not None:
       drc          = Step( 'mentor-calibre-drc',            default=True )
       lvs          = Step( 'mentor-calibre-lvs',            default=True )
@@ -118,6 +115,23 @@ def construct():
 
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
+  
+  # Add graph inputs and outputs so this can be used in hierarchical flows
+
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+
+  # Outputs
+  g.add_output( 'global_controller_tt.lib',      genlibdb.o('design.lib')       )
+  g.add_output( 'global_controller_tt.db',       genlibdb.o('design.db')        )
+  g.add_output( 'global_controller.lef',         signoff.o('design.lef')        )
+  g.add_output( 'global_controller.vcs.v',       signoff.o('design.vcs.v')      )
+  g.add_output( 'global_controller.sdf',         signoff.o('design.sdf')        )
+  g.add_output( 'global_controller.gds',         signoff.o('design-merged.gds') )
+  g.add_output( 'global_controller.lvs.v',       lvs.o('design_merged.lvs.v')   )
+  g.add_output( 'global_controller.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
+  g.add_output( 'global_controller.spef.gz',     signoff.o('design.spef.gz')    )
+  g.add_output( 'global_controller.pt.sdc',      signoff.o('design.pt.sdc')     )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python script finds 'stream-out.tcl' and strips out that flag.
@@ -146,7 +160,7 @@ def construct():
   g.add_step( postroute_hold )
   g.add_step( signoff                  )
   g.add_step( pt_signoff   )
-  g.add_step( genlib                   )
+  g.add_step( genlibdb                 )
   g.add_step( lib2db                   )
   g.add_step( drc                      )
   if which_soc == "onyx":
@@ -196,8 +210,7 @@ def construct():
   g.connect_by_name( iflow,    postroute      )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff        )
-  if which_soc == "onyx":
-    g.connect_by_name( iflow,    genlib         )
+  g.connect_by_name( iflow,    genlibdb       )
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -221,10 +234,9 @@ def construct():
     g.connect(signoff.o('design-merged.gds'), drc_mas.i('design_merged.gds'))
   g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-  g.connect_by_name( signoff,      genlib   )
-  g.connect_by_name( adk,          genlib   )
-  
-  g.connect_by_name( genlib,       lib2db   )
+  g.connect_by_name( signoff,      genlibdb )
+  g.connect_by_name( adk,          genlibdb )
+  g.connect_by_name( genlibdb,     lib2db   )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
@@ -258,6 +270,12 @@ def construct():
   
   # Add density target parameter
   init.update_params( { 'core_density_target': parameters['core_density_target'] }, True )
+
+  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
+  # very long and is not necessary
+  order = genlibdb.get_param('order')
+  order.remove( 'write-interface-timing.tcl' )
+  genlibdb.update_params( { 'order': order } )
 
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )
