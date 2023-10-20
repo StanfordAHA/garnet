@@ -18,7 +18,7 @@ if { [info exists ::env(WHICH_SOC)] } {
     set WHICH_SOC "onyx"
 }
 
-set_units -time ns -capacitance pF
+set_units -time ps -capacitance fF
 
 set clock_net  clk
 set clock_name ideal_clock

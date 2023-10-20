@@ -126,7 +126,7 @@ set_max_delay -from ${pt_read_data_inputs} -to ${pt_read_data_outputs} ${max_del
 #=========================================================================
 # Passthrough load capacitance
 #=========================================================================
-set mark_approx_cap 0.025
+set mark_approx_cap 25
 set_load ${mark_approx_cap} ${pt_outputs}
 set_load ${mark_approx_cap} ${pt_read_data_outputs}
 set_load ${mark_approx_cap} ${pt_clk_out}

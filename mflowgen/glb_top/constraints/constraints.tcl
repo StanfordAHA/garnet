@@ -11,7 +11,7 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
-set_units -time ns -capacitance pF
+set_units -time ps -capacitance fF
 
 #=========================================================================
 # clk
@@ -61,13 +61,13 @@ set_input_delay -clock ${clock_name} 0.2 [all_inputs -no_clocks]
 # output delay
 #=========================================================================
 # set_output_delay constraints for output ports
-set_output_delay -clock ${clock_name} 0.2 [all_outputs]
+set_output_delay -clock ${clock_name} 200 [all_outputs]
 # Higher output delay for output signals to cgra
-set_output_delay -clock ${clock_name} 0.4 [get_ports cgra_cfg_g2f* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.5 [get_ports strm_data_flush_g2f* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.5 [get_ports strm_data*g2f* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.5 [get_ports strm_data*f2g* -filter "direction==out"]
-set_output_delay -clock ${clock_name} 0.5 [get_ports cgra_stall* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 400 [get_ports cgra_cfg_g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 500 [get_ports strm_data_flush_g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 500 [get_ports strm_data*g2f* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 500 [get_ports strm_data*f2g* -filter "direction==out"]
+set_output_delay -clock ${clock_name} 500 [get_ports cgra_stall* -filter "direction==out"]
 
 #=========================================================================
 # set_muticycle_path & set_false path

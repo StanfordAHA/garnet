@@ -16,7 +16,7 @@
 # containing generalized constraints for the designs, then provide overriding
 # constraints in different operational modes.
 
-set_units -time ps -capacitance pF
+set_units -time ps -capacitance fF
 
 set common_cnst inputs/common.tcl
 

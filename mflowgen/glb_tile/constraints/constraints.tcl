@@ -11,7 +11,7 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
-set_units -time ps -capacitance pF
+set_units -time ps -capacitance fF
 
 #=========================================================================
 # clk

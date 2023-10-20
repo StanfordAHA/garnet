@@ -11,7 +11,7 @@
 # is too large the tools will have no trouble but you will get a very
 # conservative implementation.
 
-set_units -capacitance pF -time ps
+set_units -capacitance fF -time ps
 
 set clock_net  clk_in
 set clock_name ideal_clock
