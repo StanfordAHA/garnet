@@ -24,6 +24,8 @@ outputs:
 
 commands:
   - python3 v2sp.py
+  # The following step is a temporary hot fix for PDK103
+  - source inputs/adk/fix-pdk103-lvs-sram.sh
   - source inputs/adk/run-icv-lvs.sh
 
 #-------------------------------------------------------------------------
