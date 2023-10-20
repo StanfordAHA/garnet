@@ -94,7 +94,7 @@ editPin -pin [get_property $east2 hierarchical_name] -start [list $width [expr $
 set tile_id [get_property [get_ports tile_id] hierarchical_name]
 set hi [get_property [get_ports hi] hierarchical_name]
 set lo [get_property [get_ports lo] hierarchical_name]
-set tile_id_layer M6
+set tile_id_layer M4
 
 set id_ports [lindex $hi 0]
 for {set i 0} {$i < [llength $tile_id]} {incr i} {
