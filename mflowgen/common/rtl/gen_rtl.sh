@@ -212,6 +212,14 @@ if [ "$use_container" == True ]; then
          # FIXME note that 'if' statements below will fail if e.g. 'interconnect_only' not set
          # Easy fix is not obvious since we are already inside a double-quoted string :(
 
+         # checkout lake hack, we shouldn't have to do this after:
+         #   1. the lake change has been merged into lake master
+         #   2. aha master has been updated to point to the new lake master
+         #   3. the docker image has been updated to point to the new aha master
+         cd /aha/lake
+         git checkout 72626e4205773ddb0f1414499b3245387e1ad2fb
+         cd /aha
+
          if [ $interconnect_only == True ]; then
            echo --- INTERCONNECT_ONLY: aha garnet $flags
            aha garnet $flags; # Here is where we build the verilog for the main chip
