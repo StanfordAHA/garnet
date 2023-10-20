@@ -113,6 +113,7 @@ def construct():
   g.add_output( 'glb_tile_tt.db',       genlibdb.o('design.db')             )
   g.add_output( 'glb_tile.lef',         signoff.o('design.lef')             )
   g.add_output( 'glb_tile.gds',         signoff.o('design-merged.gds')      )
+  g.add_output( 'glb_tile.oas',         signoff.o('design-merged.oas')      )
   g.add_output( 'glb_tile.sdf',         signoff.o('design.sdf')             )
   g.add_output( 'glb_tile.vcs.v',       signoff.o('design.vcs.v')           )
   g.add_output( 'glb_tile.vcs.pg.v',    signoff.o('design.vcs.pg.v')        )

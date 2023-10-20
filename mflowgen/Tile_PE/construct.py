@@ -134,6 +134,7 @@ def construct():
   g.add_output( 'Tile_PE_tt.db',       genlibdb.o('design.db')            )
   g.add_output( 'Tile_PE.lef',         signoff.o('design.lef')            )
   g.add_output( 'Tile_PE.gds',         signoff.o('design-merged.gds')     )
+  g.add_output( 'Tile_PE.oas',         signoff.o('design-merged.oas')     )
   g.add_output( 'Tile_PE.sdf',         signoff.o('design.sdf')            )
   g.add_output( 'Tile_PE.vcs.v',       signoff.o('design.vcs.v')          )
   g.add_output( 'Tile_PE.vcs.pg.v',    signoff.o('design.vcs.pg.v')       )
