@@ -307,7 +307,7 @@ def construct():
     'floorplan.tcl',
     'pin-assignments.tcl',
     'create-rows.tcl',
-    'add-tracks.tcl',
+    # 'add-tracks.tcl', # maybe this is the root cause for the DRCs?
     # 'create-boundary-blockage.tcl',
     'add-endcaps-welltaps.tcl',
     'insert-input-antenna-diodes.tcl',

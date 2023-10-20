@@ -70,8 +70,8 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  #rtl                  = Step( this_dir + '/../common/rtl'                          )
-  rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
+  rtl                  = Step( this_dir + '/../common/rtl'                          )
+  #rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
   constraints          = Step( this_dir + '/constraints'                            )
   custom_init          = Step( this_dir + '/custom-init'                            )
@@ -322,7 +322,7 @@ def construct():
     'floorplan.tcl',
     'pin-assignments.tcl',
     'create-rows.tcl',
-    'add-tracks.tcl',
+    # 'add-tracks.tcl',
     # 'create-boundary-blockage.tcl',
     'add-endcaps-welltaps.tcl',
     'insert-input-antenna-diodes.tcl',
