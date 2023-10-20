@@ -3,6 +3,9 @@ name: rtl
 commands:
   - bash gen_rtl.sh
 
+inputs:
+  - design.v
+
 outputs:
   - design.v
 

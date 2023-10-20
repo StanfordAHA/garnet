@@ -1058,9 +1058,15 @@ class SparseTBBuilder(m.Generator2):
                 core_tag = "crddrop"
                 outer = node.get_attributes()['outer'].strip('"')
                 inner = node.get_attributes()['inner'].strip('"')
+                if 'mode' in node.get_attributes():
+                    mode = int(node.get_attributes()['mode'].strip('"'))
+                else:
+                    # if not specified, mode is set to crddrop mode
+                    mode = 1 
                 kwargs = {
                     "outer": outer,
-                    "inner": inner
+                    "inner": inner,
+                    "mode": mode
                 }
             elif hw_node_type == f"{HWNodeType.CrdHold}" or hw_node_type == HWNodeType.CrdHold:
                 new_node_type = CrdHoldNode
@@ -1419,7 +1425,7 @@ class SparseTBBuilder(m.Generator2):
                     fp_handle.write(parg)
 
 
-def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, design_place=None, glb_info=None):
+def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, design_place=None, glb_info=None, test_dump_dir=None):
 
     assert glb_dir is not None
     assert bitstream is not None
@@ -1430,8 +1436,8 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
     # Call this when ready for it
     if not os.path.exists(glb_dir):
         os.mkdir(glb_dir)
-    if not os.path.exists(f"{glb_dir}/bin"):
-        os.mkdir(f"{glb_dir}/bin")
+
+    shutil.copytree(test_dump_dir, f"{glb_dir}/bin", dirs_exist_ok=True)
 
     input_glb_tiles = [glb_tile for glb_tile in glb_info if glb_tile[3] == 'write']
     output_glb_tiles = [glb_tile for glb_tile in glb_info if glb_tile[3] == 'read']
@@ -1453,9 +1459,6 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
             num_lines = len(tmp_fp.readlines())
         # num_lines = os.system(f"wc -l {matrices_in}/{filename}")
         input_glb_tiles[idx_] = (core, core_placement, tensor_desc_str, num_lines, num_blocks, file_number_)
-
-    shutil.copyfile(bitstream, f"{glb_dir}/bin/bitstream.bs")
-    shutil.copyfile(design_place, f"{glb_dir}/bin/design.place")
 
     design_meta_json = {}
     design_meta_json["testing"] = {
@@ -1774,6 +1777,77 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "x"
 
+    elif 'mat_mask_tri.gv' in app_name in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[2]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                                sparsity=0.9)
+
+        c_mat = get_tensor(input_name='C', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=0.9)
+
+        d_mat = get_tensor(input_name='D', shapes=[shapes_[2], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                            sparsity=0.9)
+        # breakpoint()
+        ret_outputs['B'] = b_mat
+        ret_outputs['C'] = c_mat
+        ret_outputs['D'] = d_mat
+        # First transpose c_mat
+        # c_mat_trans = numpy.transpose(c_mat)
+        # breakpoint()
+        output_matrix = numpy.zeros([1]) 
+        d_mat_trans = numpy.transpose(d_mat)
+        output_matrix[0] = numpy.sum(numpy.multiply(numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe'), b_mat, dtype=numpy.uint16, casting='unsafe'))
+        output_matrix = output_matrix.astype(numpy.uint16)
+        # output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "x"
+    elif 'mat_vecmul_iter.gv' in app_name:
+
+        vec_ordering = ((1, (0, 's')),)
+        print(vec_ordering)
+
+        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[2]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                                sparsity=0.9)
+
+        c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=0.9)
+
+        d_mat = get_tensor(input_name='D', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                            sparsity=0.9)
+
+        e_mat = get_tensor(input_name='E', shapes=[shapes_[1], shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['E'],
+                            sparsity=0.9)
+        f_mat = get_tensor(input_name='f', shapes=[shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
+                           sparsity=0.9)
+
+        # breakpoint()
+        ret_outputs['B'] = b_mat
+        ret_outputs['C'] = c_mat
+        ret_outputs['D'] = d_mat
+        ret_outputs['E'] = e_mat
+        ret_outputs['f'] = f_mat
+
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        d_mat_trans = numpy.transpose(d_mat)
+        e_mat_trans = numpy.transpose(e_mat)
+        b_c_mat = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        b_c_d_mat = numpy.matmul(b_c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+        b_c_d_e_mat = numpy.matmul(b_c_d_mat, e_mat, dtype=numpy.uint16, casting='unsafe')
+        output_matrix = numpy.matmul(b_c_d_e_mat, f_mat, dtype=numpy.uint16, casting='unsafe')
+
+
+        output_matrix = output_matrix.astype(numpy.uint16)
+        output_format = "CSF"
+        output_name = "x"
+
     elif 'mat_residual.gv' in app_name:
         # Handmade graph
 
@@ -1830,7 +1904,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                            sparsity=sparsities_[0])
         c_mat = get_tensor(input_name='c', shapes=[shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
                            sparsity=sparsities_[1])
         # First transpose c_mat
         output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
@@ -2369,7 +2443,7 @@ if __name__ == "__main__":
     parser.add_argument('--run', type=str, default=None)
     parser.add_argument('--gold_mat_dir', type=str, default=None)
     parser.add_argument('--sim_mat_dir', type=str, default=None)
-    parser.add_argument('--sim_dir', type=str, default='SIM_DIR')
+    parser.add_argument('--sim_dir', type=str, default='/aha/garnet/SIM_DIR')
     parser.add_argument('--mem_width', type=int, default=64)
     parser.add_argument('--compile_tb', action="store_true")
     parser.add_argument('--perf_debug', action="store_true")
@@ -2614,12 +2688,6 @@ if __name__ == "__main__":
             glb_dirs = []
             collat_dirs = []
 
-            output_matrices = []
-            output_formats = []
-            output_names = []
-            input_dims_s = []
-            out_mats = []
-
             sam_graph_name = sam_graph.split('/')[-1].split(".")[0]
 
             if isinstance(seeds, int):
@@ -2631,6 +2699,13 @@ if __name__ == "__main__":
                 use_seeds = [dir_ for dir_ in use_seeds if os.path.isdir(os.path.join(tensor_locs, dir_))]
 
             for seed in use_seeds:
+
+                # For each seed we can produce multiple unrolled.
+                output_matrices = []
+                output_formats = []
+                output_names = []
+                input_dims_s = []
+                out_mats = []
 
                 if not give_tensor:
                     numpy.random.seed(seed)
@@ -2839,7 +2914,8 @@ if __name__ == "__main__":
                                            bitstream=f"{test_dump_dir}/bitstream.bs",
                                            matrices_in=input_dir,
                                            design_place=f"{test_dump_dir}/design.place",
-                                           glb_info=glb_info_)
+                                           glb_info=glb_info_,
+                                           test_dump_dir=test_dump_dir)
 
                 stb.display_names()
                 stb.dump_display_names(f"{test_dump_dir}/design.mapped")

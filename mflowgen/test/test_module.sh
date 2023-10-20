@@ -1,6 +1,9 @@
 #!/bin/bash
 
-function help {
+# Script can now be either executed standalone *OR* sourced
+[[ "$0" != "$BASH_SOURCE[0]" ]] && EXIT=return || EXIT=exit
+
+function HELP {
     cat <<EOF
 
 Usage: $0 [OPTION] <module>,<subgraph>,<subsubgraph>... --steps <step1>,<step2>...
@@ -39,7 +42,7 @@ build_dir=.
 need_space=100G
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -h|--help)    help; exit;    ;;
+        -h|--help)    HELP; $EXIT;   ;;
         -v|--verbose) VERBOSE=true;  ;;
         -q|--quiet)   VERBOSE=false; ;;
         --debug)      DEBUG=true;    ;;
@@ -56,7 +59,7 @@ while [ $# -gt 0 ] ; do
 
         # Any other 'dashed' arg
         -*)
-            echo "***ERROR: unrecognized arg '$1'"; help; exit; ;;
+            echo "***ERROR: unrecognized arg '$1'"; HELP; $EXIT; ;;
 
         # Any non-dashed arg
         *)
@@ -86,10 +89,12 @@ fi
 # Find GARNET_HOME
 function where_this_script_lives {
   # Where this script lives
-  scriptpath=$0      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
-  scriptdir=${0%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
+  local cmd="$0"             # Is script being executed or sourced?
+  [ "${BASH_SOURCE[0]}" -ef "$0" ] || cmd="${BASH_SOURCE[0]}" # -ef:"same device and inode"
+  cmd=`realpath "$cmd"`      # In case of symlinks
+  local scriptpath=$cmd      # E.g. "build_tarfile.sh" or "foo/bar/build_tarfile.sh"
+  local scriptdir=${cmd%/*}  # E.g. "build_tarfile.sh" or "foo/bar"
   if test "$scriptdir" == "$scriptpath"; then scriptdir="."; fi
-  # scriptdir=`cd $scriptdir; pwd`
   (cd $scriptdir; pwd)
 }
 script_home=`where_this_script_lives`
@@ -108,7 +113,7 @@ export GARNET_HOME=$garnet
 # Branch filter. Seldom used.
 # Refuses to proceed if branch does not match regex "branch_filter"
 if [ "$branch_filter" ]; then
-    $garnet/mflowgen/bin/check_branch.sh "$branch_filter" || exit 13
+    $garnet/mflowgen/bin/check_branch.sh "$branch_filter" || $EXIT 13
 fi
 
 # Exit on error in any stage of any pipeline (is this a good idea?)
@@ -142,7 +147,7 @@ source $garnet/mflowgen/bin/setup-buildkite.sh \
        --dir $build_dir \
        --need_space $need_space \
        $TEST_MODULE_SBFLAGS \
-       || exit 13
+       || $EXIT 13
 
 echo "--- Building in destination dir `pwd`"
 
@@ -249,7 +254,7 @@ if [ "$copy_list" ]; then
         ls $gold/*${m} >& /dev/null || echo FAIL
         ls $gold/*${m} >& /dev/null || FAIL=true
         if [ "$FAIL" == "true" ]; then
-            echo "***ERROR: could not find cache dir '$gold'"; exit 13; fi
+            echo "***ERROR: could not find cache dir '$gold'"; $EXIT 13; fi
         gold=`cd $gold/*${m}; pwd`
     done
     [ "$DEBUG" ] && echo "  Found gold cache directory '$gold'"
@@ -264,7 +269,7 @@ if [ "$copy_list" ]; then
         # NOTE if cd command fails, pwd (disastrously) defaults to current dir
         # cache=`cd $gold/*${step}; pwd` || FAIL=true
         # if [ "$FAIL" == "true" ]; then
-        #     echo "***ERROR: could not find cache dir '$gold'"; exit 13
+        #     echo "***ERROR: could not find cache dir '$gold'"; $EXIT 13
         # fi
 
         cache=`cd $gold/*${step}` || FAIL=true
@@ -361,7 +366,7 @@ for step in ${build_sequence[@]}; do
         echo 'Looks like we failed, here are some errors maybe:'
         echo grep -i error mflowgen-run.log
         grep -i error mflowgen-run.log
-        exit 13
+        $EXIT 13
     fi
 
 done
@@ -371,10 +376,9 @@ function PASS { return 0; }
 function sumfilter { 
     grep -v 'errors: 0, warnings: 0' | awk '$2 == "echo" { next } {print}' | cut -b 1-64
 }
-cat -n $f | grep -i error  | sumfilter | tail | tee -a tmp.summary || PASS; echo "-----"
-cat -n $f | grep    FAIL   | sumfilter | tail | tee -a tmp.summary || PASS; echo "-----"
-cat -n $f | grep -i passed | sumfilter | tail | tee -a tmp.summary || PASS; echo ""
-
+cat -n make*.log | grep -i error  | sumfilter | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n make*.log | grep    FAIL   | sumfilter | tail | tee -a tmp.summary || PASS; echo "-----"
+cat -n make*.log | grep -i passed | sumfilter | tail | tee -a tmp.summary || PASS; echo ""
 
 echo '+++ Kill stray docker if necessary'
 
@@ -395,8 +399,7 @@ if [ "$container" ]; then
 fi
 
 echo '+++ FAIL if make job failed, duh.'
-egrep '^make: .* Error 1' make*.log && exit 13 || echo 'Did not fail. Right?'
-
+egrep '^make: .* Error 1' make*.log && $EXIT 13 || echo 'Did not fail. Right?'
 
 ########################################################################
 echo '+++ SUMMARY of what we did'
@@ -416,8 +419,4 @@ echo '+++ RUNTIMES'; make runtimes
 echo ""; pwd; ls -l .stamp; cat .stamp || PASS; echo "Time now: `date`"
 
 grep AssertionError tmp.summary && echo '------' || PASS
-grep AssertionError tmp.summary && exit 13 || PASS
-
-exit
-
-# See test_module.sh.orig for old stuff that we might want to revive someday...
+grep AssertionError tmp.summary && $EXIT 13 || PASS
