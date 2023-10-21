@@ -13,4 +13,9 @@ outputs:
   - floorplan.tcl
   - pin-assignments.tcl
   - dont-touch.tcl
-
+  - add-tracks.tcl
+  - create-boundary-blockage.tcl
+  - create-rows.tcl
+  - create-special-grid.tcl
+  - innovus-pnr-config.tcl
+  - insert-input-antenna-diodes.tcl
