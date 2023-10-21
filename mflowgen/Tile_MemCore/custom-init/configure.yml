@@ -20,3 +20,4 @@ outputs:
   - insert-input-antenna-diodes.tcl
   - create-special-grid.tcl
   - sram-hold-false-path.tcl
+  - place-dic-cells.tcl
