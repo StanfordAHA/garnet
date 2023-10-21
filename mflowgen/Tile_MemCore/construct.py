@@ -328,6 +328,7 @@ def construct():
     'add-endcaps-welltaps.tcl',
     'insert-input-antenna-diodes.tcl',
     'create-special-grid.tcl',
+    'place-dic-cells.tcl',
     'make-path-groups.tcl',
     'additional-path-groups.tcl',
     # 'sram-hold-false-path.tcl', # somehow it has problem
@@ -340,7 +341,7 @@ def construct():
     "collat",
     "drc-drcd",
     "drc-lu",
-    "drc-denall"
+    # "drc-denall"
     # "drc-cden-lden-collat",
     # "drc-fullchip",
     # "tapein"

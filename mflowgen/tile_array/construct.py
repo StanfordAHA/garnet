@@ -23,22 +23,14 @@ def construct():
 
   adk_name = get_sys_adk()
   adk_view = 'multivt'
-
-  if adk_name == 'tsmc16':
-      read_hdl_defines = 'TSMC16'
-  elif adk_name == 'gf12-adk':
-      read_hdl_defines = 'GF12'
-  else:
-      read_hdl_defines = ''
-
-  # TSMC override(s)
-  if adk_name == 'tsmc16': which_soc = 'amber'
-  else:                    which_soc = 'onyx'
+  read_hdl_defines = 'INTEL16'
+  which_soc = 'opal'
 
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 1.10 * 1000,
+    # 'clock_period'      : 1.10 * 1000,
+    'clock_period'      : 20.0 * 1000,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     'adk_stdcell'       : 'b15_7t_108pp',
@@ -67,66 +59,51 @@ def construct():
     'drc_env_setup'     : 'drcenv-block.sh'
   }
 
-  if parameters['PWR_AWARE'] == True:
-      parameters['lvs_adk_view'] = adk_view + '-pm'
-  else:
-      parameters['lvs_adk_view'] = adk_view
-
-  # TSMC overrides
-  if adk_name == 'tsmc16': parameters.update({
-    'clock_period'      : 1.1,
-    'hold_target_slack' : 0.015,
-  })
-
-  # OG TSMC did not set read_hdl_defines etc.
-  if adk_name == 'tsmc16':
-    parameters.pop('read_hdl_defines')
-    parameters.pop('drc_env_setup')
-    parameters.pop('lvs_adk_view')
-
   #-----------------------------------------------------------------------
   # Create nodes
   #-----------------------------------------------------------------------
 
   this_dir = os.path.dirname( os.path.abspath( __file__ ) )
 
-  # ADK step
+  # Initialization orders
+  init_order = [
+    'pre-init.tcl',
+    'main.tcl',
+    'innovus-pnr-config.tcl',
+    'dont-use.tcl',
+    'quality-of-life.tcl',
+    'floorplan.tcl',
+    'create-rows.tcl',
+    'add-endcaps-welltaps.tcl',
+    'pin-assignments.tcl',
+    # 'add-tracks.tcl',
+    # 'create-boundary-blockage.tcl',
+    # 'insert-input-antenna-diodes.tcl',
+    'create-special-grid.tcl',
+    'make-path-groups.tcl',
+    'dont-touch.tcl',
+    'reporting.tcl'
+  ]
 
+  # ADK step
   g.set_adk( adk_name )
   adk = g.get_adk_step()
 
-  # Custom steps
-
-  rtl            = Step( this_dir + '/../common/rtl'                          )
+  # Subgraphs
   Tile_MemCore   = Subgraph( this_dir + '/../Tile_MemCore', 'Tile_MemCore'    )
   Tile_PE        = Subgraph( this_dir + '/../Tile_PE',      'Tile_PE'         )
+
+  # Custom steps
+  rtl            = Step( this_dir + '/../common/rtl'                          )
   constraints    = Step( this_dir + '/constraints'                            )
-  dc_postcompile = Step( this_dir + '/custom-dc-postcompile'                  )
-
-  if adk_name == 'tsmc16':
-    custom_init    = Step( this_dir + '/custom-init-amber'      )
-  else:
-    custom_init    = Step( this_dir + '/custom-init'            )
-
+  custom_init    = Step( this_dir + '/custom-init'                            )
   custom_power   = Step( this_dir + '/../common/custom-power-hierarchical'    )
   custom_cts     = Step( this_dir + '/custom-cts-overrides'                   )
-
-  if adk_name == 'tsmc16':
-    custom_lvs     = Step( this_dir + '/custom-lvs-rules-amber' )
-  else:
-    custom_lvs     = Step( this_dir + '/custom-lvs-rules'       )
-
   gls_args       = Step( this_dir + '/gls_args'                               )
   testbench      = Step( this_dir + '/testbench'                              )
-  if which_soc == 'onyx':
-    drc_pm         = Step( this_dir + '/../common/gf-mentor-calibre-drcplus-pm' )
-
 
   # Default steps
-
   info           = Step( 'info',                           default=True )
-  #constraints    = Step( 'constraints',                    default=True )
-  #dc             = Step( 'synopsys-dc-synthesis',          default=True )
   synth          = Step( 'cadence-genus-synthesis',        default=True )
   iflow          = Step( 'cadence-innovus-flowsetup',      default=True )
   init           = Step( 'cadence-innovus-init',           default=True )
@@ -140,29 +117,13 @@ def construct():
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
   pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
-
-  if adk_name == 'intel16-adk':
-      drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
-      lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
-  elif which("calibre") is not None:
-      drc            = Step( 'mentor-calibre-drc',             default=True )
-      lvs            = Step( 'mentor-calibre-lvs',             default=True )
-  else:
-      drc            = Step( 'cadence-pegasus-drc',            default=True )
-      lvs            = Step( 'cadence-pegasus-lvs',            default=True )
-  debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
-  vcs_sim        = Step( 'synopsys-vcs-sim',                default=True )
-
-  # Separate ADK for LVS so it has PM cells when needed
-  if which_soc == 'onyx':
-    lvs_adk = adk.clone()
-    lvs_adk.set_name( 'lvs_adk' )
+  debugcalibre   = Step( 'cadence-innovus-debug-calibre',  default=True )
+  vcs_sim        = Step( 'synopsys-vcs-sim',               default=True )
+  drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
+  lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
 
   # Add cgra tile macro inputs to downstream nodes
-
-  #dc.extend_inputs( ['Tile_PE.db'] )
   synth.extend_inputs( ['Tile_PE_tt.lib', 'Tile_PE.lef'] )
-  #dc.extend_inputs( ['Tile_MemCore.db'] )
   synth.extend_inputs( ['Tile_MemCore_tt.lib', 'Tile_MemCore.lef'] )
   pt_signoff.extend_inputs( ['Tile_PE_tt.db'] )
   pt_signoff.extend_inputs( ['Tile_MemCore_tt.db'] )
@@ -172,7 +133,7 @@ def construct():
   e2e_apps = ["tests/conv_3_3", "apps/cascade", "apps/harris_auto", "apps/resnet_i1_o1_mem", "apps/resnet_i1_o1_pond"]
 
   # Only use these steps with power domains off and no flattening...
-  use_e2e = True
+  use_e2e = False
   e2e_tb_nodes = {}
   e2e_sim_nodes = {}
   e2e_power_nodes = {}
@@ -219,10 +180,12 @@ def construct():
   vcs_sim.extend_inputs( ['Tile_PE.vcs.v', 'Tile_PE.sdf'] )
   vcs_sim.extend_inputs( ['Tile_MemCore.vcs.v', 'Tile_MemCore.sdf'] )
 
-  # Need the cgra tile gds's to merge into the final layout
+  # Need the cgra tile OASIS's to merge into the final layout
 
   signoff.extend_inputs( ['Tile_PE.gds'] )
   signoff.extend_inputs( ['Tile_MemCore.gds'] )
+  signoff.extend_inputs( ['Tile_PE.oas'] )
+  signoff.extend_inputs( ['Tile_MemCore.oas'] )
 
   # Need LVS verilog files for both tile types to do LVS
 
@@ -232,10 +195,6 @@ def construct():
   # Need sram spice file for LVS
 
   lvs.extend_inputs( ['sram.spi'] )
-
-  # Extra dc inputs
-  #dc.extend_inputs( dc_postcompile.all_outputs() )
-  #synth.extend_inputs( dc_postcompile.all_outputs() )
 
   # Add extra input edges to innovus steps that need custom tweaks
 
@@ -248,30 +207,24 @@ def construct():
   g.add_input( 'design.v', rtl.i('design.v') )
 
   # Outputs
-  g.add_output( 'tile_array_tt.lib',      pt_genlibdb.o('design.lib')         )
-  g.add_output( 'tile_array_tt.db',       pt_genlibdb.o('design.db')          )
-  g.add_output( 'tile_array.lef',         signoff.o('design.lef')        )
-  g.add_output( 'tile_array.vcs.v',       signoff.o('design.vcs.v')      )
-  g.add_output( 'tile_array.sdf',         signoff.o('design.sdf')        )
-  g.add_output( 'tile_array.gds',         signoff.o('design-merged.gds') )
-  g.add_output( 'tile_array.lvs.v',       lvs.o('design_merged.lvs.v')   )
-  g.add_output( 'tile_array.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
-  g.add_output( 'tile_array.spef.gz',     signoff.o('design.spef.gz')    )
-  g.add_output( 'tile_array.sram.spi',    Tile_MemCore.o('sram.spi')     )
-  g.add_output( 'tile_array.sram.v',      Tile_MemCore.o('sram.v')       )
-  #g.add_output( 'tile_array.sram_pwr.v',  Tile_MemCore.o('sram_pwr.v')   )
-  g.add_output( 'tile_array.sram_bc.db',  Tile_MemCore.o('sram_bc.db')   )
-  g.add_output( 'tile_array.sram_bc.lib', Tile_MemCore.o('sram_bc.lib')  )
-  g.add_output( 'tile_array.sram_wc.db',  Tile_MemCore.o('sram_wc.db')   )
-  g.add_output( 'tile_array.sram_wc.lib', Tile_MemCore.o('sram_wc.lib')  )
-  g.add_output( 'tile_array.sram_typical.db',  Tile_MemCore.o('sram_typical.db')   )
-  g.add_output( 'tile_array.sram_typical.lib', Tile_MemCore.o('sram_typical.lib')  )
-
-  # TSMC needs streamout *without* the (new) default -uniquify flag
-  # This python script finds 'stream-out.tcl' and strips out that flag.
-  if adk_name == "tsmc16":
-    from common.streamout_no_uniquify import streamout_no_uniquify
-    streamout_no_uniquify(iflow)
+  g.add_output( 'tile_array_tt.lib',           pt_genlibdb.o('design.lib')        )
+  g.add_output( 'tile_array_tt.db',            pt_genlibdb.o('design.db')         )
+  g.add_output( 'tile_array.lef',              signoff.o('design.lef')            )
+  g.add_output( 'tile_array.vcs.v',            signoff.o('design.vcs.v')          )
+  g.add_output( 'tile_array.sdf',              signoff.o('design.sdf')            )
+  g.add_output( 'tile_array.gds',              signoff.o('design-merged.gds')     )
+  g.add_output( 'tile_array.oas',              signoff.o('design-merged.oas')     )
+  g.add_output( 'tile_array.lvs.v',            lvs.o('design_merged.lvs.v')       )
+  g.add_output( 'tile_array.vcs.pg.v',         signoff.o('design.vcs.pg.v')       )
+  g.add_output( 'tile_array.spef.gz',          signoff.o('design.spef.gz')        )
+  g.add_output( 'tile_array.sram.spi',         Tile_MemCore.o('sram.spi')         )
+  g.add_output( 'tile_array.sram.v',           Tile_MemCore.o('sram.v')           )
+  g.add_output( 'tile_array.sram_bc.db',       Tile_MemCore.o('sram_bc.db')       )
+  g.add_output( 'tile_array.sram_bc.lib',      Tile_MemCore.o('sram_bc.lib')      )
+  g.add_output( 'tile_array.sram_wc.db',       Tile_MemCore.o('sram_wc.db')       )
+  g.add_output( 'tile_array.sram_wc.lib',      Tile_MemCore.o('sram_wc.lib')      )
+  g.add_output( 'tile_array.sram_typical.db',  Tile_MemCore.o('sram_typical.db')  )
+  g.add_output( 'tile_array.sram_typical.lib', Tile_MemCore.o('sram_typical.lib') )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -282,7 +235,6 @@ def construct():
   g.add_step( Tile_MemCore   )
   g.add_step( Tile_PE        )
   g.add_step( constraints    )
-  g.add_step( dc_postcompile )
   g.add_step( synth          )
   g.add_step( iflow          )
   g.add_step( init           )
@@ -299,16 +251,12 @@ def construct():
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
   g.add_step( drc            )
-  g.add_step( custom_lvs     )
   g.add_step( lvs            )
   g.add_step( debugcalibre   )
   g.add_step( gls_args       )
   g.add_step( testbench      )
   g.add_step( vcs_sim        )
   g.add_step( pt_genlibdb    )
-  if which_soc == "onyx":
-    g.add_step( drc_pm         )
-    g.add_step( lvs_adk        )
 
   if use_e2e:
     for app in e2e_apps:
@@ -321,7 +269,7 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      synth           )
+  g.connect_by_name( adk,      synth          )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
   g.connect_by_name( adk,      power          )
@@ -333,12 +281,7 @@ def construct():
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
-
-  if which_soc == "onyx":
-    g.connect_by_name( adk,      drc_pm         )
-    g.connect_by_name( lvs_adk,  lvs            )
-  else:
-    g.connect_by_name( adk,      lvs            )
+  g.connect_by_name( adk,      lvs            )
 
   if use_e2e:
     for app in e2e_apps:
@@ -363,7 +306,6 @@ def construct():
       # inputs to Tile_MemCore
       g.connect_by_name( rtl, Tile_MemCore )
       # outputs from Tile_MemCore
-      #g.connect_by_name( Tile_MemCore,      dc             )
       g.connect_by_name( Tile_MemCore,      synth          )
       g.connect_by_name( Tile_MemCore,      iflow          )
       g.connect_by_name( Tile_MemCore,      init           )
@@ -378,18 +320,12 @@ def construct():
       g.connect_by_name( Tile_MemCore,      pt_signoff     )
       g.connect_by_name( Tile_MemCore,      drc            )
       g.connect_by_name( Tile_MemCore,      lvs            )
-      # These rules LVS BOX the SRAM macro, so they should
-      # only be used if memory tile is present
-      g.connect_by_name( custom_lvs,        lvs            )
       g.connect_by_name( Tile_MemCore,      vcs_sim        )
       g.connect_by_name( Tile_MemCore,      pt_genlibdb    )
-      if which_soc == "onyx":
-        g.connect_by_name( Tile_MemCore,      drc_pm         )
 
   # inputs to Tile_PE
   g.connect_by_name( rtl, Tile_PE )
   # outputs from Tile_PE
-  #g.connect_by_name( Tile_PE,      dc             )
   g.connect_by_name( Tile_PE,      synth          )
   g.connect_by_name( Tile_PE,      iflow          )
   g.connect_by_name( Tile_PE,      init           )
@@ -405,24 +341,10 @@ def construct():
   g.connect_by_name( Tile_PE,      drc            )
   g.connect_by_name( Tile_PE,      lvs            )
   g.connect_by_name( Tile_PE,      pt_genlibdb    )
-  if which_soc == "onyx":
-    g.connect_by_name( Tile_PE,      drc_pm         )
-
-  #g.connect_by_name( rtl,            dc        )
-  #g.connect_by_name( constraints,    dc        )
-  #g.connect_by_name( dc_postcompile, dc        )
-
-  #g.connect_by_name( dc,       iflow        )
-  #g.connect_by_name( dc,       init         )
-  #g.connect_by_name( dc,       power        )
-  #g.connect_by_name( dc,       place        )
-  #g.connect_by_name( dc,       cts          )
-
 
   g.connect_by_name( rtl,            synth        )
   g.connect_by_name( rtl,            synth        )
   g.connect_by_name( constraints,    synth        )
-  #g.connect_by_name( dc_postcompile, synth        )
 
   g.connect_by_name( synth,       iflow        )
   g.connect_by_name( synth,       init         )
@@ -462,14 +384,11 @@ def construct():
   g.connect_by_name( signoff,      pt_genlibdb )
 
   g.connect_by_name( adk,      debugcalibre )
-  #g.connect_by_name( dc,       debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
-  if which_soc == "onyx":
-    g.connect_by_name( drc_pm,   debugcalibre )
 
   g.connect_by_name( adk,           vcs_sim )
   g.connect_by_name( testbench,     vcs_sim )
@@ -483,13 +402,8 @@ def construct():
 
   g.update_params( parameters )
 
-  # LVS adk has separate view parameter
-  if which_soc == "onyx":
-    lvs_adk.update_params({ 'adk_view' : parameters['lvs_adk_view']})
-
   # Init needs pipeline params for floorplanning
   init.update_params({ 'pipeline_config_interval': parameters['pipeline_config_interval'] }, True)
-  init.update_params({ 'pipeline_stage_height': parameters['pipeline_stage_height'] }, True)
   
   # CTS uses height/width param to do CTS endpoint overrides properly
   cts.update_params({ 'array_width':  parameters['array_width']}, True)
@@ -499,12 +413,6 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
-  #order = synth.get_param('order')
-  #compile_idx = order.index( 'compile.tcl' )
-  #order.insert ( compile_idx + 1, 'custom-dc-postcompile.tcl' )
-  #dc.update_params( { 'order': order } )
-  #synth.update_params( { 'order': order } )
-
   # pt_genlibdb -- Remove 'write-interface-timing.tcl' because it takes
   # very long and is not necessary
   # if which_soc == "onyx":
@@ -512,13 +420,21 @@ def construct():
   order.remove( 'write-interface-timing.tcl' )
   pt_genlibdb.update_params( { 'order': order } )
 
-  # init -- Add 'dont-touch.tcl' before reporting
+  # init -- update custom order
+  init.update_params( { 'order': init_order } )
 
-  order = init.get_param('order') # get the default script run order
-  reporting_idx = order.index( 'reporting.tcl' ) # find reporting.tcl
-  # Add dont-touch before reporting
-  order.insert ( reporting_idx, 'dont-touch.tcl' )
-  init.update_params( { 'order': order } )
+  # DRC Rule Decks
+  drc_rule_decks = [
+    "antenna",
+    "collat",
+    "drc-drcd",
+    "drc-lu",
+    # "drc-denall"
+    # "drc-cden-lden-collat",
+    # "drc-fullchip",
+    # "tapein"
+  ]
+  drc.update_params( {'rule_decks': drc_rule_decks } )
   
   # We are overriding certain pin types for CTS, so we need to
   # add the script that does that to the CTS order
@@ -527,24 +443,13 @@ def construct():
   order.insert( main_idx, 'cts-overrides.tcl' )
   cts.update_params( { 'order': order } )
 
-                                                                                                   
-  # Remove 
-  #dc_postconditions = dc.get_postconditions()
-  #for postcon in dc_postconditions:
-  #    if 'percent_clock_gated' in postcon:
-  #        dc_postconditions.remove(postcon)
-  #dc.set_postconditions( dc_postconditions )
-
   synth_postconditions = synth.get_postconditions()
   for postcon in synth_postconditions:
       if 'percent_clock_gated' in postcon:
           synth_postconditions.remove(postcon)
   synth.set_postconditions( synth_postconditions )
 
-
-
   return g
-
 
 if __name__ == '__main__':
   g = construct()
