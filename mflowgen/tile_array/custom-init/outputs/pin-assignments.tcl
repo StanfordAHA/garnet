@@ -67,7 +67,7 @@ editPin \
     -side LEFT \
     -spreadType RANGE \
     -spreadDirection clockwise \
-    -layer 6
+    -layer m6
 
 # This speeds up pin assignment
 setPinAssignMode -pinEditInBatch true
@@ -81,7 +81,7 @@ for {set col 0} {$col < $num_cgra_tiles} {incr col} {
         -side TOP \
         -spreadType RANGE \
         -spreadDirection clockwise \
-        -layer 5
+        -layer m5
 }
 setPinAssignMode -pinEditInBatch false
 

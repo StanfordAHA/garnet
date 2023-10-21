@@ -13,23 +13,25 @@
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
+set tech_pitch_x [expr $horiz_pitch * 5]
+set tech_pitch_y [expr $vert_pitch * 1]
+
 set tile_separation_x 0
 set tile_separation_y 0
-set grid_margin_t 300
-set grid_margin_b 100
-set grid_margin_l 500
-set grid_margin_r 200
+set grid_margin_t [expr 40 * $tech_pitch_y]
+set grid_margin_b [expr 20 * $tech_pitch_y]
+set grid_margin_l [expr 9 * $tech_pitch_x]
+set grid_margin_r [expr 9 * $tech_pitch_x]
 set rows_per_pipeline_stage $::env(pipeline_config_interval)
-set pipeline_stage_height [expr $::env(pipeline_stage_height) * $vert_pitch]
+set pipeline_stage_height [expr 20 * $tech_pitch_y]
 
 
 # Core bounding box margins
 
-set core_margin_t $vert_pitch
-set core_margin_b $vert_pitch 
-set core_margin_r [expr 5 * $horiz_pitch]
-set core_margin_l [expr 5 * $horiz_pitch]
-
+set core_margin_t $tech_pitch_y
+set core_margin_b $tech_pitch_y
+set core_margin_r $tech_pitch_x
+set core_margin_l $tech_pitch_x
 
 #-------------------------------------------------------------------------
 # Floorplan
@@ -93,13 +95,9 @@ for {set i $min_col} {$i <= $max_col} {incr i} {
 set grid_width [expr $grid_width - $tile_separation_x]
 
 # Now use the width of the grid and the specified margins to calculate floorplan size
-set grid_margin_t [expr $grid_margin_t * $vert_pitch]
-set grid_margin_b [expr $grid_margin_b * $vert_pitch]
-set grid_margin_l [expr $grid_margin_l * $horiz_pitch]
-set grid_margin_r [expr $grid_margin_r * $horiz_pitch]
 
 floorPlan -s [expr $grid_width + $grid_margin_l + $grid_margin_r] \
-             [expr $grid_height + $grid_margin_t + $grid_margin_b] \
+             [expr $grid_height + $grid_margin_t + $grid_margin_b + $pipeline_stage_height] \
              $core_margin_l $core_margin_b $core_margin_r $core_margin_t
 
 setFlipping s
@@ -121,11 +119,11 @@ for {set row $max_row} {$row >= $min_row} {incr row -1} {
     set lly [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_lly]
     set urx [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_urx]
     set ury [dbGet [dbGet -p top.insts.name $tiles($row,$col,name)].box_ury]
-    set tb_margin [expr $vert_pitch * 2]
-    set lr_margin [expr $horiz_pitch * 6]
+    set tb_margin [expr $vert_pitch * 1]
+    set lr_margin [expr $horiz_pitch * 3]
     createRouteBlk \
       -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-      -layer [list 3 4 5 6 7 8] \
+      -layer [list m1 m2 m3 m4 m5 m6 m7 m8] \
       -pgnetonly
 
     set x_loc [expr $x_loc + $tiles($row,$col,width) + $tile_separation_x]
@@ -147,7 +145,7 @@ set tiles_lly [dbGet [dbGet -p top.insts.name $tiles($max_row,$min_col,name)].bo
 set tiles_urx [dbGet [dbGet -p top.insts.name $tiles($min_row,$max_col,name)].box_urx]
 set tiles_ury [dbGet [dbGet -p top.insts.name $tiles($min_row,$max_col,name)].box_ury]
 
-addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
+addHaloToBlock -allMacro [expr $horiz_pitch * 3] [expr $vert_pitch * 2] [expr $horiz_pitch * 3] [expr $vert_pitch * 2]
 
 # Create a blockage for PG vias around the grid since vias too close to the grid edges can block
 # connections from pins on the edges to tie cells.

@@ -42,15 +42,17 @@ foreach macro $macro_list {
   # ex: insts:top/all/the/way/down/to/this/macro
   set macro [lindex [split $macro ":"] end]
   set macro [lindex [split $macro "/"] end]
+
+  puts "macro: $macro"
   # how it works?
   # "dbGet top.insts.name $macro": use $macro to filter out the instances that have the name "$macro"
   # "-p" option will take you back up one hierarchy (such that you can access other properties)
   # thus, "dbGet -p top.insts.name $macro" will give you the instance object that has a name $macro
   # Finally, .box can be used to access its bounding box property
-  set macro_box_llx [dbGet [dbGet -p -regexp top.insts.name $macro].box_llx]
-  set macro_box_lly [dbGet [dbGet -p -regexp top.insts.name $macro].box_lly]
-  set macro_box_urx [dbGet [dbGet -p -regexp top.insts.name $macro].box_urx]
-  set macro_box_ury [dbGet [dbGet -p -regexp top.insts.name $macro].box_ury]
+  set macro_box_llx [dbGet [dbGet -p top.insts.name *$macro].box_llx]
+  set macro_box_lly [dbGet [dbGet -p top.insts.name *$macro].box_lly]
+  set macro_box_urx [dbGet [dbGet -p top.insts.name *$macro].box_urx]
+  set macro_box_ury [dbGet [dbGet -p top.insts.name *$macro].box_ury]
 
   set macro_box [list \
     $macro_box_llx \

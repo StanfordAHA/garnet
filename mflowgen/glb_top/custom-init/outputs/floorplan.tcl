@@ -13,18 +13,21 @@
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
+set tech_pitch_x [expr $horiz_pitch * 5]
+set tech_pitch_y [expr $vert_pitch * 1]
+
 # Core bounding box margins
 
-set core_margin_t $vert_pitch
-set core_margin_b $vert_pitch 
-set core_margin_r [expr 5 * $horiz_pitch]
-set core_margin_l [expr 5 * $horiz_pitch]
+set core_margin_t $tech_pitch_y
+set core_margin_b $tech_pitch_y
+set core_margin_r $tech_pitch_x
+set core_margin_l $tech_pitch_x
 
 # Margins between glb tiles and core edge
-set tile_margin_t [expr 100 * $vert_pitch]
-set tile_margin_b [expr 100 * $vert_pitch]
-set tile_margin_l [expr 360 * $horiz_pitch]
-set tile_margin_r [expr 150 * $horiz_pitch]
+set tile_margin_t [expr 20 * $tech_pitch_y]
+set tile_margin_b [expr 40 * $tech_pitch_y]
+set tile_margin_l [expr 9 * $tech_pitch_x]
+set tile_margin_r [expr 9 * $tech_pitch_x]
 
 set tiles [get_cells *glb_tile*]
 set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
@@ -76,11 +79,11 @@ foreach_in_collection tile $tiles {
   createRouteBlk \
     -inst $tile_name \
     -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-    -layer {3 4 5 6 7 8} \
+    -layer {m1 m2 m3 m4 m5 m6 m7 m8} \
     -pgnetonly
 
   set x_loc [expr $x_loc + $tile_width + $gap]
 }
 
-addHaloToBlock -allMacro [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch
+addHaloToBlock -allMacro [expr $horiz_pitch * 3] [expr $vert_pitch * 2] [expr $horiz_pitch * 3] [expr $vert_pitch * 2]
 
