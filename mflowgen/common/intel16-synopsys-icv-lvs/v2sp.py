@@ -12,17 +12,17 @@ else:
 
 # concatenate .v and .sp files
 sp_files = []
-for sp_filename in os.listdir('inputs/adk'):
-    if sp_filename.endswith('.sp') or sp_filename.endswith('.spi'):
-        sp_files.append(os.path.join('inputs/adk', sp_filename))
+for filename in os.listdir('inputs/adk'):
+    if filename.endswith('.sp') or filename.endswith('.spi') or filename.endswith('.cdl'):
+        sp_files.append(os.path.join('inputs/adk', filename))
 
-for sp_filename in os.listdir('inputs'):
-    if sp_filename.endswith('.sp') or sp_filename.endswith('.spi'):
-        sp_files.append(os.path.join('inputs', sp_filename))
+for filename in os.listdir('inputs'):
+    if filename.endswith('.sp') or filename.endswith('.spi') or filename.endswith('.cdl'):
+        sp_files.append(os.path.join('inputs', filename))
 
 with open(os.path.join(work_dir, 'cells.sp'), 'w') as sp_file:
-    for sp_filename in sp_files:
-        with open(sp_filename, 'r') as f:
+    for filename in sp_files:
+        with open(filename, 'r') as f:
             sp_file.write(f.read())
 
 with open(os.path.join(work_dir, 'design.lvs.v'), 'w') as v_file:
