@@ -211,6 +211,7 @@ def construct():
 
   # Need the glb_tile gds to merge into the final layout
 
+  signoff.extend_inputs( ['glb_tile.oas'] )
   signoff.extend_inputs( ['glb_tile.gds'] )
 
   # Need glb_tile lvs.v file for LVS
