@@ -17,9 +17,9 @@ set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set dic_cd_inst_name INTEL_DIC_CD
 set dic_cd_x [snap_to_grid 103 $hori_pitch]
 set dic_cd_y [snap_to_grid 150 $vert_pitch]
-set halo_cd_left   $hori_pitch
+set halo_cd_left   [expr $hori_pitch * 5]
 set halo_cd_bottom $vert_pitch
-set halo_cd_right  $hori_pitch
+set halo_cd_right   [expr $hori_pitch * 5]
 set halo_cd_top    $vert_pitch
 addInst \
     -cell $ADK_DIC_CELL_CD \
@@ -38,9 +38,9 @@ addHaloToBlock \
 set dic_reg_inst_name INTEL_DIC_REG
 set dic_reg_x [snap_to_grid 104 $hori_pitch]
 set dic_reg_y [snap_to_grid 40 $vert_pitch]
-set halo_reg_left   $hori_pitch
-set halo_reg_right  $hori_pitch
+set halo_reg_left    [expr $hori_pitch * 5]
 set halo_reg_bottom $vert_pitch
+set halo_reg_right   [expr $hori_pitch * 5]
 set halo_reg_top    $vert_pitch
 addInst \
     -cell $ADK_DIC_CELL_REG \
