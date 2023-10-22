@@ -20,8 +20,8 @@ set tile_separation_x 0
 set tile_separation_y 0
 set grid_margin_t [expr 40 * $tech_pitch_y]
 set grid_margin_b [expr 20 * $tech_pitch_y]
-set grid_margin_l [expr 9 * $tech_pitch_x]
-set grid_margin_r [expr 9 * $tech_pitch_x]
+set grid_margin_l [expr 29 * $tech_pitch_x]
+set grid_margin_r [expr 29 * $tech_pitch_x]
 set rows_per_pipeline_stage $::env(pipeline_config_interval)
 set pipeline_stage_height [expr 20 * $tech_pitch_y]
 
