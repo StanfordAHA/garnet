@@ -325,10 +325,10 @@ def construct():
     'create-rows.tcl',
     # 'add-tracks.tcl',
     # 'create-boundary-blockage.tcl',
-    'add-endcaps-welltaps.tcl',
-    'insert-input-antenna-diodes.tcl',
     'create-special-grid.tcl',
     'place-dic-cells.tcl',
+    'add-endcaps-welltaps.tcl',
+    'insert-input-antenna-diodes.tcl',
     'make-path-groups.tcl',
     'additional-path-groups.tcl',
     # 'sram-hold-false-path.tcl', # somehow it has problem

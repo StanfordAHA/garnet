@@ -15,12 +15,12 @@ set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 
 # Place DIC-CD
 set dic_cd_inst_name INTEL_DIC_CD
-set dic_cd_x [snap_to_grid 103 $hori_pitch]
+set dic_cd_x [snap_to_grid 140 $hori_pitch]
 set dic_cd_y [snap_to_grid 150 $vert_pitch]
 set halo_cd_left   [expr $hori_pitch * 5]
-set halo_cd_bottom $vert_pitch
-set halo_cd_right   [expr $hori_pitch * 5]
-set halo_cd_top    $vert_pitch
+set halo_cd_bottom [expr $vert_pitch * 2]
+set halo_cd_right  [expr $hori_pitch * 5]
+set halo_cd_top    [expr $vert_pitch * 1]
 addInst \
     -cell $ADK_DIC_CELL_CD \
     -inst $dic_cd_inst_name \
@@ -36,12 +36,12 @@ addHaloToBlock \
 
 # Place DIC-REG
 set dic_reg_inst_name INTEL_DIC_REG
-set dic_reg_x [snap_to_grid 104 $hori_pitch]
+set dic_reg_x [snap_to_grid 140 $hori_pitch]
 set dic_reg_y [snap_to_grid 40 $vert_pitch]
-set halo_reg_left    [expr $hori_pitch * 5]
-set halo_reg_bottom $vert_pitch
-set halo_reg_right   [expr $hori_pitch * 5]
-set halo_reg_top    $vert_pitch
+set halo_reg_left   [expr $hori_pitch * 5]
+set halo_reg_bottom [expr $vert_pitch * 1]
+set halo_reg_right  [expr $hori_pitch * 5]
+set halo_reg_top    [expr $vert_pitch * 1]
 addInst \
     -cell $ADK_DIC_CELL_REG \
     -inst $dic_reg_inst_name \
