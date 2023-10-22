@@ -26,3 +26,4 @@ outputs:
   - create-special-grid.tcl
   - innovus-pnr-config.tcl
   - insert-input-antenna-diodes.tcl
+  - enable-gmz-routing.tcl

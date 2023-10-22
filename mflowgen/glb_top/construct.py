@@ -68,6 +68,7 @@ def construct():
     'pre-init.tcl',
     'main.tcl',
     'innovus-pnr-config.tcl',
+    'enable-gmz-routing.tcl',
     'dont-use.tcl',
     'quality-of-life.tcl',
     'floorplan.tcl',
