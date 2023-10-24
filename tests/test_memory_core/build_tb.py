@@ -1058,9 +1058,15 @@ class SparseTBBuilder(m.Generator2):
                 core_tag = "crddrop"
                 outer = node.get_attributes()['outer'].strip('"')
                 inner = node.get_attributes()['inner'].strip('"')
+                if 'mode' in node.get_attributes():
+                    mode = int(node.get_attributes()['mode'].strip('"'))
+                else:
+                    # if not specified, mode is set to crddrop mode
+                    mode = 1 
                 kwargs = {
                     "outer": outer,
-                    "inner": inner
+                    "inner": inner,
+                    "mode": mode
                 }
             elif hw_node_type == f"{HWNodeType.CrdHold}" or hw_node_type == HWNodeType.CrdHold:
                 new_node_type = CrdHoldNode
