@@ -2845,7 +2845,7 @@ if __name__ == "__main__":
 
                     full_test_glb_dir = f"{glb_dir}/{full_test_name}"
 
-                    print(f"DUMPING GLB STUFF TO:  {full_test_glb_dir}")
+                    print(f"DUMPING GLB STUFF TO: {full_test_glb_dir}")
 
                     # Make sure glb path exists
                     if not os.path.isdir(full_test_glb_dir):
