@@ -303,7 +303,7 @@ class NetlistGraph:
         assert k_oc > 4, "k_oc is too small; please unset MANUAL_PLACER"
         output_mem_x = 3
         output_mem_y = 1
-        if k_oc <= 14:
+        if k_oc <= 8:
             for node in output_mem:
                 (node.x, node.y) = (output_mem_x, output_mem_y)
                 if output_mem_y < 2:
@@ -367,7 +367,9 @@ class NetlistGraph:
         # place stencil mem
         glb_o_match = re.search(r'glb_o=(\d+)', HALIDE_GEN_ARGS)
         glb_o = int(glb_o_match.group(1)) if glb_o_match else None
-        if not glb_o_match or glb_o <= 7:
+        glb_i_match = re.search(r'glb_i=(\d+)', HALIDE_GEN_ARGS)
+        glb_i = int(glb_i_match.group(1)) if glb_i_match else None
+        if not glb_o_match:
             stencil_x = 3
             stencil_y = 5
             for node in self.mem_nodes:
@@ -396,13 +398,22 @@ class NetlistGraph:
                         stencil_x += 4
 
         # place IO tile, currently use fixed positions
-        weight_IO_idx = [0, 24, 28, 4, 8, 12, 16, 20]
-        ifmap_IO_idx = [2, 6, 26, 10, 22, 14, 18, 30]
+        if glb_o == 8:
+            weight_IO_idx = [0, 24, 28, 4, 8, 12, 16, 20]
+            ifmap_IO_idx = [2, 6, 26, 10, 22, 14, 18, 30]
+        elif glb_o == 7:
+            weight_IO_idx = [0, 24, 4, 8, 12, 16, 20]
+            ifmap_IO_idx = [2, 6, 26, 10, 22, 14, 18]
         if glb_o == 4:
             output_IO_idx = [3, 11, 19, 27]
         else:
-            output_IO_idx = [3, 7, 11, 15, 19, 23, 27, 31]
-        output_IO_idx = [1, 5, 9, 11, 19, 23, 27, 31]
+            output_IO_idx = []
+        if glb_i == 8:
+            output_IO_idx = [1, 5, 9, 11, 19, 23, 27, 31]
+        elif glb_i == 7:
+            output_IO_idx = [1, 5, 9, 11, 19, 23, 27]
+        else:
+            output_IO_idx = []
         weight_IO = []
         ifmap_IO = []
         output_IO = []

@@ -229,6 +229,7 @@ class CoreCombinerCore(LakeCoreBase):
                 configs = [self.get_config_data(name, v)] + configs
             config_dense_bypass = [(f"{self.get_port_remap()['alu']['data0']}_dense", 1),
                                    (f"{self.get_port_remap()['alu']['data1']}_dense", 1),
+                                   (f"{self.get_port_remap()['alu']['data2']}_dense", 1),
                                    (f"{self.get_port_remap()['alu']['res']}_dense", 1)]
             for name, v in config_dense_bypass:
                 configs = [self.get_config_data(name, v)] + configs
