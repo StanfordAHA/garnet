@@ -33,7 +33,7 @@ class CoreCombinerCore(LakeCoreBase):
                  fifo_depth=2,
                  controllers_list=None,
                  use_sim_sram=True,
-                 tech_map=GF_Tech_Map(depth=512, width=32),
+                 tech_map_name='Intel',
                  pnr_tag="C",
                  name=None,
                  input_prefix="",
@@ -76,7 +76,7 @@ class CoreCombinerCore(LakeCoreBase):
         self.config_data_width = config_data_width
         self.config_addr_width = config_addr_width
         self.use_sim_sram = use_sim_sram
-        self.tech_map = tech_map
+        self.tech_map_name = tech_map_name
         self.fifo_depth = fifo_depth
 
         self.runtime_mode = None
@@ -103,12 +103,12 @@ class CoreCombinerCore(LakeCoreBase):
                                    name=f"{cc_core_name}_inner",
                                    controllers=controllers_list,
                                    use_sim_sram=self.use_sim_sram,
-                                   tech_map=self.tech_map,
                                    do_config_lift=False,
                                    io_prefix=self.input_prefix,
                                    rw_same_cycle=self.dual_port,
                                    read_delay=self.read_delay,
-                                   fifo_depth=self.fifo_depth)
+                                   fifo_depth=self.fifo_depth,
+                                   tech_map_name=tech_map_name)
 
             self.dut = self.CC.dut
 
