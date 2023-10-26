@@ -42,12 +42,15 @@ def add_extents(json_tile1, json_tile2):
     tile2_X_mode1_extents = tile2['IOs']["outputs"][1]["shape"]
     tile2_X_mode2_extents = tile2['IOs']["outputs"][2]["shape"]
     
-    tile1_mode0_extents += tile2_mode0_extents
-    tile1['IOs']["outputs"][0]["shape"] = tile1_mode0_extents
-    tile1_mode1_extents += tile2_mode1_extents
+    tile1_mode0_extents[0] += tile2_mode0_extents[0]
+    tile1['IOs']["inputs"][0]["shape"] = tile1_mode0_extents
+    tile1['IOs']["inputs"][0]["io_tiles"][0]["addr"]["extent"] = tile1_mode0_extents
+    tile1_mode1_extents[0] += tile2_mode1_extents[0]
     tile1['IOs']["inputs"][1]["shape"] = tile1_mode1_extents
-    tile1_vals_extents += tile2_vals_extents
+    tile1['IOs']["inputs"][1]["io_tiles"][0]["addr"]["extent"] = tile1_mode0_extents
+    tile1_vals_extents[0] += tile2_vals_extents[0]
     tile1['IOs']["inputs"][2]["shape"] = tile1_vals_extents
+    tile1['IOs']["inputs"][2]["io_tiles"][0]["addr"]["extent"] = tile1_vals_extents
     
     tile1_X_mode0_num_blocks *= 2
     tile1['IOs']["outputs"][0]["io_tiles"][0]["num_blocks"] = tile1_X_mode0_num_blocks
@@ -56,10 +59,13 @@ def add_extents(json_tile1, json_tile2):
     
     tile1_X_mode0_extents += tile2_X_mode0_extents
     tile1['IOs']["outputs"][0]["shape"] = tile1_X_mode0_extents
+    tile1['IOs']["outputs"][0]["extents"] = tile1_X_mode0_extents
     tile1_X_mode1_extents += tile2_X_mode1_extents
     tile1['IOs']["outputs"][1]["shape"] = tile1_X_mode1_extents
+    tile1['IOs']["outputs"][1]["extents"] = tile1_X_mode1_extents
     tile1_X_mode2_extents += tile2_X_mode2_extents
     tile1['IOs']["outputs"][2]["shape"] = tile1_X_mode2_extents
+    tile1['IOs']["outputs"][2]["extents"] = tile1_X_mode1_extents
     
     json_string = json.dumps(tile1)
     f_tile1.close()
