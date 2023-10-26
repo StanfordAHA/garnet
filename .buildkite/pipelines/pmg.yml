@@ -42,35 +42,32 @@ steps:
 - label: "Gold RTL: Amber 1m"
   commands:
   - '
-     set -x;
      docker pull $$IMAGE; container=$$CONTAINER-amber;
      docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
      function dexec { docker exec $$container /bin/bash -c "$$*"; };
      dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
      dexec "/aha/garnet/bin/rtl-goldcheck.sh amber" || $$FAIL_AMBER | $$UPLOAD;
-     docker cp $$container:/aha/garnet/design.v /tmp;
+     docker cp $$container:/aha/garnet/design.v /tmp/amber-4x2.v;
      docker image prune -f -a;
      docker kill $$container || echo cannot kill container;
-     echo "HOW TO UPDATE GOLD MODEL when/if diffs are benign:";
-     echo "scp `hostname`:/tmp/design.v /tmp";
-     echo "gunzip -c \$GARNET_REPO/bin/ref/amber-4x2.v.gz > /tmp/amber-4x2.v";
-     echo "diff /tmp/amber-4x2.v /tmp/design.v";
-     echo "gzip /tmp/amber-4x2.v; mv /tmp/amber-4x2.v.gz \$GARNET_REPO/bin/ref/";
+     ./bin/rtl-goldfetch.sh `hostname` amber;
     '
 
-# - label: "Gold RTL: Onyx 1m"
-#   commands:
-#   - '
-#      docker pull $$IMAGE; container=$$CONTAINER-onyx;
-#      docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
-#      function dexec { docker exec $$container /bin/bash -c "$$*"; };
-#      dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
-#      dexec "/aha/garnet/bin/rtl-goldcheck.sh onyx" || $$FAIL_ONYX | $$UPLOAD;
-#      docker image prune -f -a;
-#      docker kill $$container || echo cannot kill container;
-#     '
-# - wait: { continue_on_failure: true }
-# 
+- label: "Gold RTL: Onyx 1m"
+  commands:
+  - '
+     docker pull $$IMAGE; container=$$CONTAINER-onyx;
+     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
+     function dexec { docker exec $$container /bin/bash -c "$$*"; };
+     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
+     dexec "/aha/garnet/bin/rtl-goldcheck.sh onyx" || $$FAIL_ONYX | $$UPLOAD;
+     docker cp $$container:/aha/garnet/design.v /tmp/onyx-4x2.v;
+     docker image prune -f -a;
+     docker kill $$container || echo cannot kill container;
+     ./bin/rtl-goldfetch.sh `hostname` onyx;
+    '
+- wait: { continue_on_failure: true }
+
 # ##############################################################################
 # # INDIVIDUAL TILE RUNS
 # # Builds in dir e.g. mflowgen/full_chip/19-tile_array/17-Tile_PE
