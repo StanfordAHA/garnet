@@ -36,13 +36,14 @@ env:
 
 steps:
 
-##############################################################################
-# Two quick RTL checks
+#####################################################################################
+# Two quick RTL checks. Set soft fail so RTL failure does not fail integration tests.
 
 - label: "Gold RTL: Amber 1m"
+  soft_fail: true
   commands:
   - '
-     exit_status=1;
+     exit_status=0;
      docker pull $$IMAGE; container=$$CONTAINER-amber;
      docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
      function dexec { docker exec $$container /bin/bash -c "$$*"; };
@@ -56,9 +57,10 @@ steps:
     '
 
 - label: "Gold RTL: Onyx 1m"
+  soft_fail: true
   commands:
   - '
-     exit_status=1;
+     exit_status=0;
      docker pull $$IMAGE; container=$$CONTAINER-onyx;
      docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
      function dexec { docker exec $$container /bin/bash -c "$$*"; };

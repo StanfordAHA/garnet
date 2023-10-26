@@ -67,7 +67,7 @@ else echo "$HELP" && exit 13; fi
 
 
 ########################################################################
-echo '--- RTL test BEGIN ($1)' `date`
+echo "--- RTL test BEGIN ($1)' `date`"
 echo "WHICH_SOC: $WHICH_SOC"
 echo "FLAGS: $flags"
 
