@@ -17,9 +17,10 @@ env:
   IMAGE     : stanfordaha/garnet:latest
   CONTAINER : gold-check-${BUILDKITE_BUILD_NUMBER}
 
+  # (see buildkite/emojis)
   # ($FAIL|$UPLOAD): Inserts a "fail" bubble in the buildkite pipeline log
-  FAIL_ONYX   : 'echo steps : [ { label : ":x: ONYX_FAILED :x:" ,  command : exit } ]'
-  FAIL_AMBER  : 'echo steps : [ { label : ":x: AMBER_FAILED :x:" , command : exit } ]'
+  FAIL_ONYX   : 'echo steps : [ { label : ":warning: ONYX_FAILED" ,   command : exit } ]'
+  FAIL_AMBER  : 'echo steps : [ { label : ":warning: AMBER_FAILED" , command : exit } ]'
   UPLOAD : 'buildkite-agent pipeline upload'
 
   # For normal operation leave off build_dir flag to save disk space
@@ -47,8 +48,14 @@ steps:
      function dexec { docker exec $$container /bin/bash -c "$$*"; };
      dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
      dexec "/aha/garnet/bin/rtl-goldcheck.sh amber" || $$FAIL_AMBER | $$UPLOAD;
+     docker cp $$container:/aha/garnet/design.v /tmp;
      docker image prune -f -a;
      docker kill $$container || echo cannot kill container;
+     echo "HOW TO UPDATE GOLD MODEL when/if diffs are benign:";
+     echo "scp `hostname`:/tmp/design.v /tmp";
+     echo "gunzip -c \$GARNET_REPO/bin/ref/amber-4x2.v.gz > /tmp/amber-4x2.v";
+     echo "diff /tmp/amber-4x2.v /tmp/design.v";
+     echo "gzip /tmp/amber-4x2.v; mv /tmp/amber-4x2.v.gz \$GARNET_REPO/bin/ref/";
     '
 
 # - label: "Gold RTL: Onyx 1m"

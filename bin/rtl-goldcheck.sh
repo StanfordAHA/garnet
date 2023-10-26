@@ -137,6 +137,8 @@ if [ "$ndiffs" != "0" ]; then
     printf "Test FAILED with $ndiffs diffs\n\n"
     printf "Top 40 diffs:"
     $vcompare $f1 $f2 | head -40
+    printf "\ndiff $f1 $f2"
+    printf "Test FAILED with $ndiffs diffs\n"
     exit 13
 fi
 
