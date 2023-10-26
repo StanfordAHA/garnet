@@ -25,14 +25,15 @@ EXAMPLE
 [ "$1" == "" ] && echo "$HELP" && exit
 
 
-hostname=$1 # Name of host where docker container ran
-soc=$2    # E.g. "amber" or "onyx"
+hostname=$1         # Name of host where docker container ran
+soc=$2              # E.g. "amber" or "onyx"
+socv42=${soc}-4x2.v
 
 cat <<EOF
 HOW TO UPDATE GOLD MODEL when/if diffs are benign:
 
-  scp ${hostname}:/tmp/design.v /tmp/${soc}-4x2
-  gunzip -c \$GARNET_REPO/bin/ref/${soc}-4x2.v.gz > /tmp/gold.v
-  \$GARNET_REPO/bin/rtl-goldcompare.sh /tmp/gold.v /tmp/${soc}-4x2.v
-  gzip /tmp/${soc}-4x2.v; mv /tmp/${soc}.v.gz \$GARNET_REPO/bin/ref/";
+  scp ${hostname}:/tmp/${socv42} /tmp/
+  gunzip -c \$GARNET_REPO/bin/ref/${socv42}.gz > /tmp/gold.v
+  \$GARNET_REPO/bin/rtl-goldcompare.sh /tmp/gold.v /tmp/${socv42}
+  gzip /tmp/${socv42}; mv /tmp/${socv42}.gz \$GARNET_REPO/bin/ref/
 EOF
