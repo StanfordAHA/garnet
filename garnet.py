@@ -50,8 +50,13 @@ set_debug_mode(False)
 
 
 class Garnet(Generator):
-    def __init__(self, width, height, add_pd, interconnect_only: bool = False,
-                 use_sim_sram: bool = True, standalone: bool = False,
+    def __init__(self, args,
+                 width,
+                 height,
+                 add_pd,
+                 interconnect_only: bool = False,
+                 use_sim_sram: bool = True,
+                 standalone: bool = False,
                  mem_ratio: int = 4,
                  num_tracks: int = 5,
                  tile_layout_option: int = 0,
@@ -729,7 +734,9 @@ def main():
                                           axi_data_width=32,
                                           config_port_pipeline=args.config_port_pipeline)
 
-    garnet = Garnet(width=args.width, height=args.height,
+    garnet = Garnet(args,
+                    width=args.width,
+                    height=args.height,
                     glb_params=glb_params,
                     add_pd=not args.no_pd,
                     mem_ratio=args.mem_ratio,
