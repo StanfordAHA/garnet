@@ -55,7 +55,7 @@ class Garnet(Generator):
                  height, 
                  add_pd, 
                  # interconnect_only: bool = False,
-                 use_sim_sram: bool = True,
+                 # use_sim_sram: bool = True,
                  # standalone: bool = False,
                  # mem_ratio: int = 4,
                  # num_tracks: int = 5,
@@ -774,7 +774,7 @@ def main():
 
                     # use_io_valid=args.use_io_valid,
                     # interconnect_only=args.interconnect_only,
-                    use_sim_sram=args.use_sim_sram,
+                    # use_sim_sram=args.use_sim_sram,
                     # standalone=args.standalone,
 #     garnet = Garnet(args, width=args.width, height=args.height,
                     pe_fc=pe_fc,
