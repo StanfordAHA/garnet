@@ -62,11 +62,13 @@ class Garnet(Generator):
                  pond_area_opt_dual_config: bool = False,
                  use_io_valid: bool = False,
                  harden_flush: bool = True,
-                 pipeline_config_interval: int = 8,
+                 # pipeline_config_interval: int = 8,
+
+                 # These are not part of args array
                  glb_params: GlobalBufferParams = GlobalBufferParams(),
-# class Garnet(Generator):
                  pe_fc=lassen_fc,
-                 ready_valid: bool = False,
+
+                 # ready_valid: bool = False, # parser overrides False default w True default...right?
                  # scgra: bool = False,
                  # scgra_combined: bool = True,
                  # sb_option: str = "Imran",
@@ -109,7 +111,7 @@ class Garnet(Generator):
         self.height = height
 
         self.harden_flush = harden_flush
-        self.pipeline_config_interval = pipeline_config_interval
+        self.pipeline_config_interval = args.pipeline_config_interval
 
         # only north side has IO
         if standalone:
@@ -118,6 +120,8 @@ class Garnet(Generator):
             io_side = IOSide.North
 
         self.pe_fc = pe_fc
+
+# class Garnet(Generator):
 
         if not interconnect_only:
             # width must be even number
@@ -167,19 +171,19 @@ class Garnet(Generator):
                                    use_sim_sram=use_sim_sram,
                                    harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
-                                   pipeline_config_interval=pipeline_config_interval,
+                                   # pipeline_config_interval=args.pipeline_config_interval,
                                    mem_ratio=(1, mem_ratio),
                                    tile_layout_option=tile_layout_option,
                                    standalone=standalone,
 #         interconnect = create_cgra(width, height, io_side,
                                    pe_fc=pe_fc,
-                                   ready_valid=ready_valid,
+                                   # ready_valid=ready_valid,
 
-                                   # These two are tricky, leave them for now...
+                                   # These three are tricky, leave them for now...
                                    scgra=args.sparse_cgra,
                                    scgra_combined=args.sparse_cgra_combined,
-
                                    switchbox_type=sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
+
                                    # pipeline_regs_density=pipeline_regs_density,
                                    # port_conn_option=port_conn_option,
                                    # mem_width=mem_width,
@@ -743,7 +747,7 @@ def main():
                     mem_ratio=args.mem_ratio,
                     num_tracks=args.num_tracks,
                     tile_layout_option=args.tile_layout_option,
-                    pipeline_config_interval=args.pipeline_config_interval,
+                    # pipeline_config_interval=args.pipeline_config_interval,
                     amber_pond=args.amber_pond,
                     add_pond=not args.no_pond,
                     pond_area_opt=not args.no_pond_area_opt,
@@ -756,7 +760,7 @@ def main():
                     standalone=args.standalone,
 #     garnet = Garnet(args, width=args.width, height=args.height,
                     pe_fc=pe_fc,
-                    ready_valid=args.ready_valid,
+                    # ready_valid=args.ready_valid,
                     # scgra=args.sparse_cgra,
                     # scgra_combined=args.sparse_cgra_combined,
                     # sb_option=args.sb_option,
