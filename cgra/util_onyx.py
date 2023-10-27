@@ -112,12 +112,22 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 tech_map='intel'):
 
     # For garnet.py refactor. Allow option for args to come in via "args" parm.
-    def check_args(locals, vars):
+    def replace_w_args(locals, vars):
         for v in vars:
             try: locals[v] = locals['args'].__dict__[v]
             except: pass
 
-    check_args(locals(), [
+    replace_w_args(locals(), [
+        'altcore',
+        'pe_fc',
+        'ready_valid',
+        'scgra',
+        'scgra_combined',
+        'mem_width',
+        'mem_depth',
+        'mem_input_ports',
+        'mem_output_ports',
+        'macro_width',
         'dac_exp',
         'dual_port',
         'rf', 
