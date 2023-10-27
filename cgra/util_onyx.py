@@ -111,22 +111,25 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 perf_debug: bool = False,
                 tech_map='intel'):
 
-    # For garnet.py refactor. Allow option for args to come in via "args" parm.
-    def replace_w_args(locals, vars):
-        for v in vars:
-            try:
-                if v == 'use_sim_sram':
-                    print(f"--- BOO1 {locals[v]}")
-                    print(f"--- BOO2 {locals['args'].__dict__[v]}")
-                locals[v] = locals['args'].__dict__[v]
-            except: pass
+#     # For garnet.py refactor. Allow option for args to come in via "args" parm.
+#     def replace_w_args(locals, vars):
+#         for v in vars:
+#             try:
+#                 if v == 'use_sim_sram':
+#                     print(f"--- BOO1 {locals[v]}")
+#                     print(f"--- BOO2 {locals['args'].__dict__[v]}")
+#                 locals[v] = locals['args'].__dict__[v]
+#                 if v == 'use_sim_sram':
+#                     print(f"--- BOO1a {locals[v]}")
+#                     print(f"--- BOO2a {locals['args'].__dict__[v]}")
+#             except: pass
 
     print(f'--- FOO1 {args.__dict__}')
     print(f'--- FOO2 {args.use_sim_sram}')
     print(f'--- FOO3 {use_sim_sram}')
 
 
-    replace_w_args(locals(), [
+    vars = [
         'add_reg',
         'mem_ratio',
         'reg_addr_width',
@@ -165,7 +168,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         'dac_exp',
         'dual_port',
         'rf', 
-    ])
+    ]
+    for v in vars:
+            try:
+                v = args.__dict__[v]
+            except: pass
+
+#     replace_w_args(locals(), vars)
 
     print(f'--- FOO2a {args.use_sim_sram}')
     print(f'--- FOO3a {use_sim_sram}')
