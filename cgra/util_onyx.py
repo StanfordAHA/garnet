@@ -66,6 +66,7 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
 
 
 def create_cgra(width: int, height: int, io_sides: IOSide,
+                args=args,
                 add_reg: bool = True,
                 mem_ratio: Tuple[int, int] = (1, 4),
                 reg_addr_width: int = 8,
@@ -106,9 +107,19 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 macro_width: int = 32,
                 dac_exp: bool = False,
                 dual_port: bool = False,
-                rf: bool = False,
+                rf: bool = False,          # Can optionally come in via "args"
                 perf_debug: bool = False,
                 tech_map='intel'):
+
+    # For garnet.py refactor. Allow option for args to come in via "args" parm.
+    def check_args(locals, vars):
+        for v in vars:
+            try: locals[v] = locals['args'].__dict__[v]
+            except: pass
+
+    check_args(locals(), ['rf'])
+
+
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
     bit_widths = [1, 17]

@@ -79,7 +79,8 @@ class Garnet(Generator):
                  macro_width: int = 32,
                  dac_exp: bool = False,
                  dual_port: bool = False,
-                 rf: bool = False):
+                 # rf: bool = False       # Instead, init arg w action="store_true"
+                 ):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -150,6 +151,7 @@ class Garnet(Generator):
         }
 
         interconnect = create_cgra(width, height, io_side,
+                                   args,
                                    reg_addr_width=config_addr_reg_width,
                                    config_data_width=config_data_width,
                                    tile_id_width=tile_id_width,
@@ -182,7 +184,8 @@ class Garnet(Generator):
                                    macro_width=macro_width,
                                    dac_exp=dac_exp,
                                    dual_port=dual_port,
-                                   rf=rf)
+                                   # rf=rf              # Now uses args to find rf
+                                   )
 
         self.interconnect = interconnect
 

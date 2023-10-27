@@ -57,7 +57,10 @@ steps:
     '
 
 - label: "Gold RTL: Onyx 1m"
-  soft_fail: true
+
+  # Let's NOT be soft for awhile. Remember to restore this before final merge!
+  # soft_fail: true
+
   commands:
   - '
      exit_status=0;
