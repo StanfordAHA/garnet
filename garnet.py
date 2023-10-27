@@ -58,9 +58,13 @@ class Garnet(Generator):
                  tile_layout_option: int = 0,
                  amber_pond: bool = False,
                  add_pond: bool = True,
-                 pond_area_opt: bool = False,
-                 pond_area_opt_share: bool = False,
-                 pond_area_opt_dual_config: bool = False,
+
+                 # Huh these three all say default False but
+                 # options parser guarantees that default is actually TRUE !
+                 # pond_area_opt: bool = False,
+                 # pond_area_opt_share: bool = False,
+                 # pond_area_opt_dual_config: bool = False,
+
                  # use_io_valid: bool = False,
                  # harden_flush: bool = True,
                  # pipeline_config_interval: int = 8,
@@ -168,9 +172,9 @@ class Garnet(Generator):
                                    add_pd=add_pd,
                                    amber_pond=amber_pond,
                                    add_pond=add_pond,
-                                   pond_area_opt=pond_area_opt,
-                                   pond_area_opt_share=pond_area_opt_share,
-                                   pond_area_opt_dual_config=pond_area_opt_dual_config,
+                                   # pond_area_opt=pond_area_opt,
+                                   # pond_area_opt_share=pond_area_opt_share,
+                                   # pond_area_opt_dual_config=pond_area_opt_dual_config,
                                    # use_io_valid=use_io_valid,
                                    use_sim_sram=use_sim_sram,
                                    # harden_flush=harden_flush,
@@ -754,9 +758,9 @@ def main():
                     # pipeline_config_interval=args.pipeline_config_interval,
                     amber_pond=args.amber_pond,
                     add_pond=not args.no_pond,
-                    pond_area_opt=not args.no_pond_area_opt,
-                    pond_area_opt_share=args.pond_area_opt_share,
-                    pond_area_opt_dual_config=not args.no_pond_area_opt_dual_config,
+                    # pond_area_opt=not args.no_pond_area_opt,
+                    # pond_area_opt_share=args.pond_area_opt_share,
+                    # pond_area_opt_dual_config=not args.no_pond_area_opt_dual_config,
 
                     # harden_flush=not args.no_harden_flush,
                     # harden_flush=args.harden_flush,
