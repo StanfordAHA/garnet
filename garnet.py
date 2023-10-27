@@ -50,7 +50,8 @@ set_debug_mode(False)
 
 
 class Garnet(Generator):
-    def __init__(self, args, width, height, add_pd, interconnect_only: bool = False,
+    def __init__(self, args, width, height, add_pd, 
+                 # interconnect_only: bool = False,
                  use_sim_sram: bool = True, standalone: bool = False,
                  mem_ratio: int = 4,
                  num_tracks: int = 5,
@@ -84,6 +85,7 @@ class Garnet(Generator):
                  # dual_port: bool = False, # Instead, init arg w action="store_true"
                  # rf: bool = False         # Instead, init arg w action="store_true"
                  ):
+        interconnect_only = args.interconnect_only
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -757,9 +759,9 @@ def main():
                     pond_area_opt_dual_config=not args.no_pond_area_opt_dual_config,
 
                     # harden_flush=not args.no_harden_flush,
-                    harden_flush=args.harden_flush,
+                    # harden_flush=args.harden_flush,
 
-                    use_io_valid=args.use_io_valid,
+                    # use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
                     use_sim_sram=args.use_sim_sram,
                     standalone=args.standalone,
