@@ -117,8 +117,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             try: locals[v] = locals['args'].__dict__[v]
             except: pass
 
-    print(args.__dict__)
-    assert use_sim_sram == args.use_sim_sram
+    print(f'--- FOO1 {args.__dict__)}')
+    print(f'--- FOO2 {args.use_sim_sram)}')
+    print(f'--- FOO3 {use_sim_sram)}')
+
 
     replace_w_args(locals(), [
         'add_reg',
@@ -160,6 +162,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         'dual_port',
         'rf', 
     ])
+
+    print(f'--- FOO2a {args.use_sim_sram)}')
+    print(f'--- FOO3a {use_sim_sram)}')
+
 
 
     # currently only add 16bit io cores
