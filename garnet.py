@@ -77,10 +77,13 @@ class Garnet(Generator):
                  mem_input_ports: int = 2,
                  mem_output_ports: int = 2,
                  macro_width: int = 32,
-                 dac_exp: bool = False,
-                 dual_port: bool = False,
-                 # rf: bool = False       # Instead, init arg w action="store_true"
+                 # dac_exp: bool = False,   # Instead, init arg w action="store_true"
+                 # dual_port: bool = False, # Instead, init arg w action="store_true"
+                 # rf: bool = False         # Instead, init arg w action="store_true"
                  ):
+        # dac_exp=args.dac_exp
+        # dual_port=args.dual_port
+        # rf=args.rf
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -182,9 +185,9 @@ class Garnet(Generator):
                                    mem_input_ports=mem_input_ports,
                                    mem_output_ports=mem_output_ports,
                                    macro_width=macro_width,
-                                   dac_exp=dac_exp,
-                                   dual_port=dual_port,
-                                   # rf=rf              # Now uses args to find rf
+                                   # dac_exp=dac_exp,      # Now uses args to find rf
+                                   # dual_port=dual_port, # Now uses args to find rf
+                                   # rf=rf                # Now uses args to find rf
                                    )
 
         self.interconnect = interconnect
@@ -760,9 +763,9 @@ def main():
                     mem_width=args.mem_width,
                     mem_depth=args.mem_depth,
                     macro_width=args.macro_width,
-                    dac_exp=args.dac_exp,
-                    dual_port=args.dual_port,
-                    # rf=rf              # Now uses args to find rf
+                    # dac_exp=args.dac_exp,      # Now uses args to find rf
+                    # dual_port=args.dual_port,  # Now uses args to find rf
+                    # rf=rf                      # Now uses args to find rf
                     )
 
     if args.verilog:

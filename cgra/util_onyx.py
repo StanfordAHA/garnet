@@ -105,8 +105,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 mem_input_ports: int = 2,
                 mem_output_ports: int = 2,
                 macro_width: int = 32,
-                dac_exp: bool = False,
-                dual_port: bool = False,
+                dac_exp: bool = False,    # Can optionally come in via "args"
+                dual_port: bool = False,   # Can optionally come in via "args"
                 rf: bool = False,          # Can optionally come in via "args"
                 perf_debug: bool = False,
                 tech_map='intel'):
@@ -117,7 +117,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             try: locals[v] = locals['args'].__dict__[v]
             except: pass
 
-    check_args(locals(), ['rf'])
+    check_args(locals(), [
+        'dac_exp',
+        'dual_port',
+        'rf', 
+    ])
 
 
     # currently only add 16bit io cores
