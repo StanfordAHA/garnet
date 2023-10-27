@@ -13,17 +13,28 @@ from mflowgen.components import Graph, Step
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
-def construct():
+def construct(**kwargs):
 
   g = Graph()
+
+  try:
+    design_name = kwargs['design_name']
+  except KeyError:
+    print('Error: ir_test requires design_name input parameter')
+    sys.exit(1)
+
+  try:
+    clock_period = kwargs['clock_period']
+  except KeyError:
+    clock_period = 2000
 
   #-----------------------------------------------------------------------
   # Parameters
   #-----------------------------------------------------------------------
 
   parameters = {
-    'design_name': 'global_controller',
-    'clock_period': 1.0
+    'design_name': design_name,
+    'clock_period': clock_period
   }
 
   #-----------------------------------------------------------------------
