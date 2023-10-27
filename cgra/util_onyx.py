@@ -114,12 +114,16 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     # For garnet.py refactor. Allow option for args to come in via "args" parm.
     def replace_w_args(locals, vars):
         for v in vars:
-            try: locals[v] = locals['args'].__dict__[v]
+            try:
+                if v == 'use_sim_sram':
+                    print(f"--- BOO1 {locals[v]}")
+                    print(f"--- BOO2 {locals['args'].__dict__[v]}")
+                locals[v] = locals['args'].__dict__[v]
             except: pass
 
-    print(f'--- FOO1 {args.__dict__)}')
-    print(f'--- FOO2 {args.use_sim_sram)}')
-    print(f'--- FOO3 {use_sim_sram)}')
+    print(f'--- FOO1 {args.__dict__}')
+    print(f'--- FOO2 {args.use_sim_sram}')
+    print(f'--- FOO3 {use_sim_sram}')
 
 
     replace_w_args(locals(), [
@@ -163,8 +167,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         'rf', 
     ])
 
-    print(f'--- FOO2a {args.use_sim_sram)}')
-    print(f'--- FOO3a {use_sim_sram)}')
+    print(f'--- FOO2a {args.use_sim_sram}')
+    print(f'--- FOO3a {use_sim_sram}')
 
 
 
