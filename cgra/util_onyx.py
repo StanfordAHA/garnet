@@ -130,7 +130,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
 
     def check_arg(args, vname, v):
-        try:    return args..__dict__[vname]
+        try:    return args.__dict__[vname]
         except: return v
 
     add_reg                   = check_arg(args, add_reg,                   'add_reg')
