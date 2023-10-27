@@ -66,7 +66,7 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
 
 
 def create_cgra(width: int, height: int, io_sides: IOSide,
-                args=args,
+                args={},
                 add_reg: bool = True,
                 mem_ratio: Tuple[int, int] = (1, 4),
                 reg_addr_width: int = 8,
