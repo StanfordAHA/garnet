@@ -70,12 +70,12 @@ class Garnet(Generator):
                  scgra_combined: bool = True,
                  sb_option: str = "Imran",
                  pipeline_regs_density: list = None,
-                 port_conn_option: list = None,
-                 config_port_pipeline: bool = True,
+                 # port_conn_option: list = None,
+                 # config_port_pipeline: bool = True,
                  # mem_width: int = 64,
                  # mem_depth: int = 512,
-                 mem_input_ports: int = 2,
-                 mem_output_ports: int = 2,
+                 # mem_input_ports: int = 2,
+                 # mem_output_ports: int = 2,
                  # macro_width: int = 32,   # Instead, init arg w default=32
                  # dac_exp: bool = False,   # Instead, init arg w action="store_true"
                  # dual_port: bool = False, # Instead, init arg w action="store_true"
@@ -179,11 +179,11 @@ class Garnet(Generator):
                                    scgra_combined=scgra_combined,
                                    switchbox_type=sb_type_dict.get(sb_option, "Invalid Switchbox Type"),
                                    pipeline_regs_density=pipeline_regs_density,
-                                   port_conn_option=port_conn_option,
+                                   # port_conn_option=port_conn_option,
                                    # mem_width=mem_width,
                                    # mem_depth=mem_depth,
-                                   mem_input_ports=mem_input_ports,
-                                   mem_output_ports=mem_output_ports,
+                                   # mem_input_ports=mem_input_ports,
+                                   # mem_output_ports=mem_output_ports,
                                    # macro_width=macro_width,         # Now uses args to find rf
                                    # dac_exp=dac_exp,     # Now uses args to find rf
                                    # dual_port=dual_port, # Now uses args to find rf
@@ -758,8 +758,8 @@ def main():
                     scgra_combined=args.sparse_cgra_combined,
                     sb_option=args.sb_option,
                     pipeline_regs_density=args.pipeline_regs_density,
-                    port_conn_option=args.port_conn_option,
-                    config_port_pipeline=args.config_port_pipeline,
+                    # port_conn_option=args.port_conn_option,
+                    # config_port_pipeline=args.config_port_pipeline,
                     # mem_width=args.mem_width,
                     # mem_depth=args.mem_depth,
                     # macro_width=args.macro_width,
