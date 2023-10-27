@@ -61,7 +61,7 @@ class Garnet(Generator):
                  pond_area_opt_share: bool = False,
                  pond_area_opt_dual_config: bool = False,
                  use_io_valid: bool = False,
-                 harden_flush: bool = True,
+                 # harden_flush: bool = True,
                  # pipeline_config_interval: int = 8,
 
                  # These are not part of args array
@@ -110,6 +110,8 @@ class Garnet(Generator):
         self.width = width
         self.height = height
 
+        # FIXME why have both harden_flush and self.harden_flush??
+        harden_flush = args.harden_flush
         self.harden_flush = harden_flush
         self.pipeline_config_interval = args.pipeline_config_interval
 
@@ -169,7 +171,7 @@ class Garnet(Generator):
                                    pond_area_opt_dual_config=pond_area_opt_dual_config,
                                    use_io_valid=use_io_valid,
                                    use_sim_sram=use_sim_sram,
-                                   harden_flush=harden_flush,
+                                   # harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
                                    # pipeline_config_interval=args.pipeline_config_interval,
                                    mem_ratio=(1, mem_ratio),
