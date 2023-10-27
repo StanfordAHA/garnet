@@ -57,7 +57,7 @@ class Garnet(Generator):
                  num_tracks: int = 5,
                  tile_layout_option: int = 0,
                  amber_pond: bool = False,
-                 add_pond: bool = True,
+                 # add_pond: bool = True,
 
                  # Huh these three all say default False but
                  # options parser guarantees that default is actually TRUE !
@@ -171,7 +171,10 @@ class Garnet(Generator):
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
                                    amber_pond=amber_pond,
-                                   add_pond=add_pond,
+
+                                   # This one is tricky, leave it alone for now
+                                   add_pond=not args.no_pond,
+
                                    # pond_area_opt=pond_area_opt,
                                    # pond_area_opt_share=pond_area_opt_share,
                                    # pond_area_opt_dual_config=pond_area_opt_dual_config,
@@ -757,7 +760,7 @@ def main():
                     tile_layout_option=args.tile_layout_option,
                     # pipeline_config_interval=args.pipeline_config_interval,
                     amber_pond=args.amber_pond,
-                    add_pond=not args.no_pond,
+                    # add_pond=not args.no_pond,
                     # pond_area_opt=not args.no_pond_area_opt,
                     # pond_area_opt_share=args.pond_area_opt_share,
                     # pond_area_opt_dual_config=not args.no_pond_area_opt_dual_config,
