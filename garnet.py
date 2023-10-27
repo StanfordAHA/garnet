@@ -72,7 +72,7 @@ class Garnet(Generator):
                  sb_option: str = "Imran",
                  pipeline_regs_density: list = None,
                  port_conn_option: list = None,
-                 config_port_pipeline: bool = True,
+                 # config_port_pipeline: bool = True,
                  # mem_width: int = 64,
                  # mem_depth: int = 512,
                  # mem_input_ports: int = 2,
@@ -201,7 +201,7 @@ class Garnet(Generator):
             stall_port_pass(self.interconnect, port_name="flush", port_width=1,
                             col_offset=glb_params.num_cols_per_group, pipeline=True)
         # make multiple configuration ports
-        config_port_pass(self.interconnect, pipeline=config_port_pipeline)
+        config_port_pass(self.interconnect, pipeline=args.config_port_pipeline)
 
         self.inter_core_connections = {}
         for bw, interconnect in self.interconnect._Interconnect__graphs.items():
@@ -762,7 +762,7 @@ def main():
                     sb_option=args.sb_option,
                     pipeline_regs_density=args.pipeline_regs_density,
                     port_conn_option=args.port_conn_option,
-                    config_port_pipeline=args.config_port_pipeline,
+                    # config_port_pipeline=args.config_port_pipeline,
                     # mem_width=args.mem_width,
                     # mem_depth=args.mem_depth,
                     # macro_width=args.macro_width,
