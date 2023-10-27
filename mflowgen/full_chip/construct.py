@@ -122,12 +122,12 @@ def construct():
       'add-tracks.tcl',
       # 'add-endcaps-welltaps.tcl', # move the well tap insertion after power planning to save time
       'place-dic-cells-tma2.tcl',
-      'create-special-grid.tcl',
-      'io-fillers.tcl',
       # 'alignment-cells.tcl',
       # 'gen-bumps.tcl', # TODO: turn-off for TMA2
       # 'route-bumps.tcl', # TODO: turn-off for TMA2
       'place-macros.tcl',
+      'create-special-grid.tcl',
+      'io-fillers.tcl',
       # 'create-boundary-blockage.tcl',
   ]
 
@@ -486,8 +486,8 @@ def construct():
   # Power node order manipulation
   order = power.get_param('order')
   # Move endcap/welltap insertion to end of power step to improve runtime
-  # order.append( 'add-endcaps-welltaps.tcl' )
-  order.insert(0, 'add-endcaps-welltaps.tcl' )
+  order.append( 'add-endcaps-welltaps.tcl' )
+  # order.insert(0, 'add-endcaps-welltaps.tcl' )
   power.update_params( { 'order': order } )
 
   # Add pre-route plugin to insert skip_routing commands
@@ -505,7 +505,7 @@ def construct():
   merge_gdr.update_params( guardring_params )
 
   # Check the DRC at early stage of P&R
-  early_drc_check, early_drc_check_type = True, "power"
+  early_drc_check, early_drc_check_type = False, "power"
   early_drc_check_type = "power"
   if early_drc_check:
     if early_drc_check_type == "init":

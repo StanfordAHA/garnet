@@ -17,7 +17,8 @@ set_clock_groups -asynchronous -group {dp_jtag_clk} -group {dap_clk sys_clk cpu_
 # CGRA JTAG and Functional Clock
 # ------------------------------------------------------------------------------
 
-set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk cgra_fclk global_controller_clk}
+# set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk cgra_fclk global_controller_clk}
+set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk cgra_fclk}
 
 # ------------------------------------------------------------------------------
 # Trace Clock and CPU Clock
@@ -30,15 +31,15 @@ set_max_delay $trace_clkin_period -from [get_clocks trace_clkin] -to [get_clocks
 # XGCD and NIC Clock
 # ------------------------------------------------------------------------------
 
-set xgcd_div8_clk core/u_aha_xgcd_integration/u_xgcd_wrapper_top/clk_div_8_1
+# set xgcd_div8_clk core/u_aha_xgcd_integration/u_xgcd_wrapper_top/clk_div_8_1
 
-set_max_delay [expr $xgcd_design_clk_period * 8] \
-    -from [get_clocks $xgcd_div8_clk] \
-    -to [get_clocks nic_clk]
+# set_max_delay [expr $xgcd_design_clk_period * 8] \
+#     -from [get_clocks $xgcd_div8_clk] \
+#     -to [get_clocks nic_clk]
 
-set_max_delay [expr $xgcd_design_clk_period * 8] \
-    -from [get_clocks nic_clk] \
-    -to [get_clocks $xgcd_div8_clk]
+# set_max_delay [expr $xgcd_design_clk_period * 8] \
+#     -from [get_clocks nic_clk] \
+#     -to [get_clocks $xgcd_div8_clk]
 
 # ------------------------------------------------------------------------------
 # Clock Controller - Clock Select
@@ -159,4 +160,4 @@ set_clock_groups -asynchronous -group {tlx_fwd_fclk tlx_fwd_gclk} -group {sys_cl
 # ------------------------------------------------------------------------------
 # XGCD and NIC
 # ------------------------------------------------------------------------------
-set_clock_groups -asynchronous -group $xgcd_div8_clk -group {nic_clk}
+# set_clock_groups -asynchronous -group $xgcd_div8_clk -group {nic_clk}

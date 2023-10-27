@@ -6,10 +6,26 @@
 #
 # Author : Alex Carsello
 # Date   : March 19,2020
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 
-if { ! $::env(soc_only) } {
+proc snap_to_grid {input granularity} {
+   set new_value [expr ceil($input / $granularity) * $granularity]
+   return $new_value
+}
+
+set hori_pitch [dbGet top.fPlan.coreSite.size_x]
+set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+set tech_pitch_x [expr 5 * $hori_pitch]
+set tech_pitch_y [expr 1 * $vert_pitch]
+
+set place_tile_array 0
+set place_glb_top 0
+# set place_tile_array [expr !$::env(soc_only)]
+# set place_glb_top [expr !$::env(soc_only)]
+
+##############################################################################
+###                        Placing Tile Array                              ###
+##############################################################################
+if { $place_tile_array } {
   # Params
   # Vertical distance (in # pitches) betwween GLB and Tile array
   set ic2glb_y_dist 330
@@ -47,7 +63,7 @@ if { ! $::env(soc_only) } {
   set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)/2.] $pmesh_top_pitch]
     
   placeinstance $interconnect_name $ic_x_loc $ic_y_loc -fixed
-  addHaloToBlock [expr $horiz_pitch * 15] $vert_pitch [expr $horiz_pitch * 21] $vert_pitch $interconnect_name -snapToSite
+  addHaloToBlock [expr $hori_pitch * 15] $vert_pitch [expr $hori_pitch * 21] $vert_pitch $interconnect_name -snapToSite
 
   # Prevent power vias from blocking pins on interconnect (all pins on top edge)
   set ic_ury [expr $ic_y_loc + $ic_height]
@@ -71,7 +87,7 @@ if { ! $::env(soc_only) } {
     -name ic_pmesh_bot \
     -layer $ADK_POWER_MESH_BOT_LAYER \
     -pgnetonly \
-    -box [expr $ic_x_loc + (8*$horiz_pitch)] $ic_y_loc [expr $ic_urx - (8*$horiz_pitch)] $ic_ury
+    -box [expr $ic_x_loc + (8*$hori_pitch)] $ic_y_loc [expr $ic_urx - (8*$hori_pitch)] $ic_ury
   
   # Prevent PMESH_TOP_LAYER stripes over IC
   createRouteBlk \
@@ -79,7 +95,12 @@ if { ! $::env(soc_only) } {
     -layer $ADK_POWER_MESH_TOP_LAYER \
     -pgnetonly \
     -box $ic_x_loc [expr $ic_y_loc + (2*$vert_pitch)] $ic_urx [expr $ic_ury - (2*$vert_pitch)]
-  
+}
+
+##############################################################################
+###                        Placing GLB Top                                 ###
+##############################################################################
+if { $place_glb_top } {
   # GLB placement prep
   set glb [get_cells -hier -filter {ref_lib_cell_name==global_buffer}]
   set glb_name [get_property $glb hierarchical_name]
@@ -91,7 +112,7 @@ if { ! $::env(soc_only) } {
   
   # Place GLB
   placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
-  addHaloToBlock [expr $horiz_pitch * 15] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glb_name -snapToSite
+  addHaloToBlock [expr $hori_pitch * 15] $vert_pitch [expr $hori_pitch * 3] $vert_pitch $glb_name -snapToSite
   
   # Prevent power vias from blocking pins on GLB (pins on bottom and left edges)
   set glb_ury [expr $glb_y_loc + $glb_height]
@@ -121,7 +142,7 @@ if { ! $::env(soc_only) } {
     -name glb_pmesh_bot \
     -layer $ADK_POWER_MESH_BOT_LAYER \
     -pgnetonly \
-    -box [expr $glb_x_loc + (8*$horiz_pitch)] $glb_y_loc [expr $glb_urx - (8*$horiz_pitch)] $glb_ury
+    -box [expr $glb_x_loc + (8*$hori_pitch)] $glb_y_loc [expr $glb_urx - (8*$hori_pitch)] $glb_ury
   
   # Prevent PMESH_TOP_LAYER stripes over GLB
   createRouteBlk \
@@ -129,116 +150,54 @@ if { ! $::env(soc_only) } {
     -layer $ADK_POWER_MESH_TOP_LAYER \
     -pgnetonly \
     -box $glb_x_loc [expr $glb_y_loc + (2*$vert_pitch)] $glb_urx [expr $glb_ury - (2*$vert_pitch)]
-  
-  # Deprecated: global controller is now flattened at top level
-  # Place global controller
-  # set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
-  # set glc_name [get_property $glc hierarchical_name]
-  # set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
-  # set glc_height [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_y]
-  # set glc_y_loc [snap_to_grid [expr $glb_ury + ($vert_pitch * $glb2glc_y_dist)] $pmesh_bot_pitch]
-  # set glc_x_loc [snap_to_grid [expr $glb_x_loc + 100] $pmesh_top_pitch]
-  
-  # placeinstance $glc_name $glc_x_loc $glc_y_loc -fixed
-  # addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glc_name -snapToSite
-  
-  # # Prevent power vias from blocking pins on GLC (pins on right and left edges)
-  # set glc_ury [expr $glc_y_loc + $glc_height]
-  # set glc_urx [expr $glc_x_loc + $glc_width]
-  # set thickness [expr 10 * $vert_pitch]  
-  # createRouteBlk \
-  #   -name glc_left_pg_via_blk \
-  #   -cutLayer {4 5 6 7 8 9 10 11 12} \
-  #   -pgnetonly \
-  #   -box [expr $glc_x_loc - $thickness] $glc_y_loc $glc_x_loc $glc_ury
-  
-  # createRouteBlk \
-  #   -name glc_right_pg_via_blk \
-  #   -cutLayer {4 5 6 7 8 9 10 11 12} \
-  #   -pgnetonly \
-  #   -box $glc_x_loc $glc_y_loc [expr $glc_urx + $thickness] $glc_ury
 }
-# Place SRAMS
+
+##############################################################################
+###                         Placing SoC SRAMs                              ###
+##############################################################################
 set srams [get_cells -hier -filter {is_memory_cell==true}]
 set sram_name [get_property [index_collection $srams 0] hierarchical_name]
 set sram_width [dbGet [dbGet -p top.insts.name $sram_name -i 0].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name $sram_name -i 0].cell.size_y]
+set num_of_srams 8
+# TODO: should use dbGet to get this number:
+set core_width 3780.432
+set sram_gap [expr ($core_width - ($num_of_srams * $sram_width)) / ($num_of_srams + 1)]
+set sram_loc_x [expr $sram_gap + 72.144]
+set sram_loc_y [snap_to_grid 3701 $vert_pitch]
 
-# SRAM Placement params
-# SRAMs are abutted vertically
-set sram_spacing_y 0
-# We can abut sides of SRAMS with no pins
-set sram_spacing_x_odd 0
-# Set spacing between pinned sides of SRAMs to some 
-# reasonable number of pitches
-set sram_spacing_x_even [expr 200 * $horiz_pitch]
-
-# Lots of congestion around the SRAMs. Keep getting routing errors in
-# this area. So let's add some space to help it out.
-set sram_spacing_y      [expr 100 * $vert_pitch]
-set sram_spacing_x_odd  [expr 400 * $horiz_pitch]
-set sram_spacing_x_even [expr 400 * $horiz_pitch]
-
-# Parameter for how many SRAMs to stack vertically
-set bank_height 2
-
-# Center the SRAMs within the core area of the tile
-set num_banks [expr [sizeof_collection $srams] / $bank_height]
-set num_spacings [expr $num_banks - 1]
-set num_even_spacings [expr int(ceil($num_spacings/2.0))]
-set num_odd_spacings [expr $num_spacings/2]
-set total_spacing_width [expr ($num_odd_spacings * $sram_spacing_x_odd) + ($num_even_spacings * $sram_spacing_x_even)]
-set block_width [expr ($num_banks * $sram_width) + $total_spacing_width]
-set block_height [expr ($sram_height * $bank_height) + ($sram_height * ($bank_height - 1))]
-
-# Place SoC SRAMs above GLB
-set sram_start_y [snap_to_grid [expr $glb_ury + ($vert_pitch * $glb2srams_y_dist)] $vert_pitch]
-# Place SoC SRAMs near left quarter of chip
-set sram_start_x [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $block_width)/4.] $horiz_pitch]
-
-set y_loc $sram_start_y
-set x_loc $sram_start_x
-set col 0
-set row 0
-set max_urx 0
 foreach_in_collection sram $srams {
+
+  # get sram properties
   set sram_name [get_property $sram full_name]
-  if {[expr $col % 2] == 1} {
-    placeInstance $sram_name $x_loc $y_loc MY -fixed
-  } else {
-    placeinstance $sram_name $x_loc $y_loc -fixed
-  }
-  # Create M3 pg net blockage to prevent DRC from interaction
-  # with M5 stripes or pgnet short with sram pins
-  set llx [dbGet [dbGet -p top.insts.name $sram_name].box_llx]
-  set lly [dbGet [dbGet -p top.insts.name $sram_name].box_lly]
-  set urx [dbGet [dbGet -p top.insts.name $sram_name].box_urx]
-  set ury [dbGet [dbGet -p top.insts.name $sram_name].box_ury]
-  set tb_margin $vert_pitch
-  set lr_margin [expr $horiz_pitch * 20]
-  if {$urx > $max_urx} {
-    set max_urx $urx
-  }
-  addHaloToBlock $lr_margin $tb_margin $lr_margin $tb_margin $sram_name -snapToSite
-  createRouteBlk \
-    -inst $sram_name \
-    -box [expr $llx - $lr_margin] [expr $lly - $tb_margin] [expr $urx + $lr_margin] [expr $ury + $tb_margin] \
-    -layer 3 \
-    -pgnetonly
-  set row [expr $row + 1]
-  set y_loc [expr $y_loc + $sram_height + $sram_spacing_y]
-  # Next column over
-  if {$row >= $bank_height} {
-    set row 0
-    if {[expr $col % 2] == 0} {
-      set sram_spacing_x $sram_spacing_x_even
-    } else {
-      set sram_spacing_x $sram_spacing_x_odd
-    }
-    set x_loc [expr $max_urx + $sram_spacing_x]
-    set y_loc $sram_start_y
-    set col [expr $col + 1]
-  }
+  set sram_obj [dbGet -p top.insts.name $sram_name]
+  set sram_llx [dbGet $sram_obj.box_llx]
+  set sram_lly [dbGet $sram_obj.box_lly]
+  set sram_urx [dbGet $sram_obj.box_urx]
+  set sram_ury [dbGet $sram_obj.box_ury]
+
+  # snap the sram to the grid, and place it
+  set sram_x_loc_snap [snap_to_grid $sram_loc_x $hori_pitch]
+  set sram_y_loc_snap [snap_to_grid $sram_loc_y $vert_pitch]
+  # placeinstance $sram_name $sram_x_loc_snap $sram_y_loc_snap -fixed
+
+  # add halo/routeblk to the sram
+  set halo_left   $tech_pitch_x
+  set halo_bottom $tech_pitch_y 
+  set halo_right  $tech_pitch_x 
+  set halo_top    [expr $tech_pitch_y + $vert_pitch]
+  # addHaloToBlock $halo_left $halo_bottom $halo_right $halo_top -snapToSite $sram_name
+  
+  # add route block to the sram
+  set sram_route_block_llx [snap_to_grid [expr $sram_llx - $halo_left]    $hori_pitch]
+  set sram_route_block_lly [snap_to_grid [expr $sram_lly - $halo_bottom]  $vert_pitch]
+  set sram_route_block_urx [snap_to_grid [expr $sram_urx + $halo_right]   $hori_pitch]
+  set sram_route_block_ury [snap_to_grid [expr $sram_ury + $halo_top]     $vert_pitch]
+  createRouteBlk -layer {m1 m2 m3 m4} -box "$sram_route_block_llx $sram_route_block_lly $sram_route_block_urx $sram_route_block_ury"
+
+  # advance the sram location
+  set sram_loc_x [expr $sram_loc_x + $sram_width + $sram_gap]
+
 }
 
 # Unplace any standard cells that got placed during init. Not sure why they're

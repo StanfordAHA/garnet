@@ -22,4 +22,4 @@ set soc_clk_div_factor              2
 
 set cgra_master_clk_period          ${clock_period}
 set soc_master_clk_period           [expr $cgra_master_clk_period * $soc_clk_div_factor]
-set trace_clkin_period              20.0
+set trace_clkin_period              [expr 20.0 * 1000]

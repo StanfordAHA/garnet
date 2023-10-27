@@ -24,25 +24,19 @@ source -echo -verbose inputs/cons_scripts/design_info.tcl
 # ------------------------------------------------------------------------------
 source -echo -verbose inputs/cons_scripts/clocks_0_params.tcl
 source -echo -verbose inputs/cons_scripts/clocks_1_master.tcl
-# TODO: recover me after TMA
-# source -echo -verbose inputs/cons_scripts/clocks_2_sys.tcl
-# source -echo -verbose inputs/cons_scripts/clocks_3_tlx.tcl
-# source -echo -verbose inputs/cons_scripts/clocks_4_cgra.tcl
-# source -echo -verbose inputs/cons_scripts/clocks_5_periph.tcl
-# source -echo -verbose inputs/cons_scripts/clocks_6_jtag.tcl
-# source -echo -verbose inputs/cons_scripts/clocks_7_trace.tcl
+source -echo -verbose inputs/cons_scripts/clocks_2_sys.tcl
+source -echo -verbose inputs/cons_scripts/clocks_3_tlx.tcl
+source -echo -verbose inputs/cons_scripts/clocks_4_cgra.tcl
+source -echo -verbose inputs/cons_scripts/clocks_5_periph.tcl
+source -echo -verbose inputs/cons_scripts/clocks_6_jtag.tcl
+source -echo -verbose inputs/cons_scripts/clocks_7_trace.tcl
 
 # ------------------------------------------------------------------------------
 # IO Constraints for Source-Sync Interfaces
 # ------------------------------------------------------------------------------
-
-# TODO: recover me after TMA (ALSO delete the dont_touch!)
-set_dont_touch [ get_cells IOPAD* ]
-set_dont_touch [ get_cells corner* ]
-set_dont_touch [ get_cells ring_terminator* ]
-# source -echo -verbose inputs/cons_scripts/io.tcl
-# source -echo -verbose inputs/cons_scripts/pad_strength.tcl
-# source -echo -verbose inputs/cons_scripts/clocks_except_soc.tcl
+source -echo -verbose inputs/cons_scripts/io.tcl
+source -echo -verbose inputs/cons_scripts/pad_strength.tcl
+source -echo -verbose inputs/cons_scripts/clocks_except_soc.tcl
 
 # ------------------------------------------------------------------------------
 # Constraints for paths between CGRA, GLB, GLC

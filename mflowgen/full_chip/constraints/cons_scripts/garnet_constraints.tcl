@@ -15,8 +15,8 @@ set_multicycle_path 9 -hold -through [get_pins -hier *global_controller*/cgra_cf
 set_multicycle_path 10 -setup -through [get_pins -hier *global_controller*/sram_cfg_rd_data*]
 set_multicycle_path 9 -hold -through [get_pins -hier *global_controller*/sram_cfg_rd_data*]
 
-#set_multicycle_path 3 -setup -through [get_pins -hier *global_controller*/glb_cfg_rd_data*]
-#set_multicycle_path 2 -hold -through [get_pins -hier *global_controller*/glb_cfg_rd_data*]
+#####set_multicycle_path 3 -setup -through [get_pins -hier *global_controller*/glb_cfg_rd_data*]
+#####set_multicycle_path 2 -hold -through [get_pins -hier *global_controller*/glb_cfg_rd_data*]
 
 set_multicycle_path 5 -setup -through [get_pins -hier *global_buffer*/*interrupt_pulse*]
 set_multicycle_path 4 -hold  -through [get_pins -hier *global_buffer*/*interrupt_pulse*]

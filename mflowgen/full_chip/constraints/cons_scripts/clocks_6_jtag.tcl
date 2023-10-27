@@ -11,12 +11,12 @@
 # ------------------------------------------------------------------------------
 # DP JTAG Clock
 # ------------------------------------------------------------------------------
-create_clock -name dp_jtag_clk -period 20.0 [get_ports $port_names(dp_jtag_clk)]
+create_clock -name dp_jtag_clk -period [expr 20.0 * 1000] [get_ports $port_names(dp_jtag_clk)]
 
 # ------------------------------------------------------------------------------
 # CGRA JTAG Clock
 # ------------------------------------------------------------------------------
-create_clock -name cgra_jtag_clk -period 20.0 [get_ports $port_names(cgra_jtag_clk)]
+create_clock -name cgra_jtag_clk -period [expr 20.0 * 1000] [get_ports $port_names(cgra_jtag_clk)]
 
 # ------------------------------------------------------------------------------
 # GCD JTAG Clock

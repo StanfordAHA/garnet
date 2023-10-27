@@ -15,8 +15,8 @@ set hori_pitch [dbGet top.fPlan.coreSite.size_x]
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 
 
-for {set x 0} {$x < 4} {incr x} {
-    for {set y 0} {$y < 4} {incr y} {
+for {set x 1} {$x <= 4} {incr x} {
+    for {set y 1} {$y <= 4} {incr y} {
         set loc_x [expr 900*$x]
         set loc_y [expr 900*$y]
         # Place DIC-CD

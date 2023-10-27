@@ -40,10 +40,11 @@ set macro_list [get_db insts -if {.base_cell.base_class == block}]
 foreach macro $macro_list {
   # macro may have hierarchy, so we need to get the last element and use it as the regex filter
   # ex: insts:top/all/the/way/down/to/this/macro
-  set macro [lindex [split $macro ":"] end]
-  set macro [lindex [split $macro "/"] end]
-
+  # set macro [lindex [split $macro ":"] end]
+  set split_list [split $macro "/"]
+  set macro [join [lrange $split_list 1 end] "/"]
   puts "macro: $macro"
+
   # how it works?
   # "dbGet top.insts.name $macro": use $macro to filter out the instances that have the name "$macro"
   # "-p" option will take you back up one hierarchy (such that you can access other properties)
@@ -60,6 +61,8 @@ foreach macro $macro_list {
     $macro_box_urx \
     $macro_box_ury \
   ]
+
+  puts $macro_box
 
   set macro_box_extended [list \
     [expr $macro_box_llx - $width] \

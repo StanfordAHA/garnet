@@ -148,11 +148,8 @@ foreach layer { m3 m4 m5 m6 m7 m8 gmz} {
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set hori_pitch [dbGet top.fPlan.coreSite.size_x]
 
-set vert_pitch [dbGet top.fPlan.coreSite.size_y]
-set hori_pitch [dbGet top.fPlan.coreSite.size_x]
-
 set pwr_gm0_width   2.0
-set pwr_gm0_spacing 1.0
+set pwr_gm0_spacing 4.0
 set pwr_gm0_offset  [expr $pwr_gm0_spacing + 0.5 * $pwr_gm0_width]
 set pwr_gm0_interset_pitch [expr 2 * ($pwr_gm0_width + $pwr_gm0_spacing)]
 
@@ -166,8 +163,11 @@ setViaGenMode -ignore_DRC true
 setAddStripeMode -ignore_DRC true
 setAddStripeMode -stacked_via_bottom_layer gmz \
                  -stacked_via_top_layer    gm0
+
+# You may want to add this back later:
+# -area                "$pwr_area_llx $pwr_area_lly $pwr_area_urx $pwr_area_ury" \
+# For TMA2, just cover the full core area 
 addStripe \
-        -area                "$pwr_area_llx $pwr_area_lly $pwr_area_urx $pwr_area_ury" \
         -nets                {VSS VDD} \
         -layer               gm0 \
         -direction           horizontal \
@@ -204,29 +204,29 @@ addStripe \
 #-------------------------------------------------------------------------
 # Pad / Bump Power Routing: Ring
 #-------------------------------------------------------------------------
-set pwr_ring_layer         gm0
-set pwr_ring_layer_obj     [dbGet -p head.layers.name $pwr_ring_layer]
-set pwr_ring_width         [dbGet $pwr_ring_layer_obj.maxWidth]
-set pwr_ring_spacing       [expr 2 * [dbGet $pwr_ring_layer_obj.minSpacing]]
-set pwr_ring_offset_top    40.0
-set pwr_ring_offset_bottom 40.0
-set pwr_ring_offset_left   44.0
-set pwr_ring_offset_right  44.0
+# set pwr_ring_layer         gm0
+# set pwr_ring_layer_obj     [dbGet -p head.layers.name $pwr_ring_layer]
+# set pwr_ring_width         [dbGet $pwr_ring_layer_obj.maxWidth]
+# set pwr_ring_spacing       [expr 2 * [dbGet $pwr_ring_layer_obj.minSpacing]]
+# set pwr_ring_offset_top    40.0
+# set pwr_ring_offset_bottom 40.0
+# set pwr_ring_offset_left   44.0
+# set pwr_ring_offset_right  44.0
 
-# We don't want to connect to other power mesh
-setAddRingMode -reset
-setAddRingMode -stacked_via_bottom_layer $pwr_ring_layer \
-               -stacked_via_top_layer    $pwr_ring_layer \
-               -skip_via_on_wire_shape {Blockring Stripe Padring Ring Noshape}
-addRing \
-    -nets {VSS VDDPST VDD} \
-    -layer $pwr_ring_layer \
-    -width $pwr_ring_width \
-    -spacing $pwr_ring_spacing \
-    -offset "top    -$pwr_ring_offset_top \
-             bottom -$pwr_ring_offset_bottom \
-             left   -$pwr_ring_offset_left \
-             right  -$pwr_ring_offset_right"
+# # We don't want to connect to other power mesh
+# setAddRingMode -reset
+# setAddRingMode -stacked_via_bottom_layer $pwr_ring_layer \
+#                -stacked_via_top_layer    $pwr_ring_layer \
+#                -skip_via_on_wire_shape {Blockring Stripe Padring Ring Noshape}
+# addRing \
+#     -nets {VSS VDDPST VDD} \
+#     -layer $pwr_ring_layer \
+#     -width $pwr_ring_width \
+#     -spacing $pwr_ring_spacing \
+#     -offset "top    -$pwr_ring_offset_top \
+#              bottom -$pwr_ring_offset_bottom \
+#              left   -$pwr_ring_offset_left \
+#              right  -$pwr_ring_offset_right"
 
 #-------------------------------------------------------------------------
 # Pad / Bump Power Routing: Stripe
@@ -235,97 +235,97 @@ addRing \
 # but here we need to compute the offset relative to the pads
 # and there is a small pitch gap between the pads and the core box
 # (this is defined in the floorplan.tcl)
-set pwr_ring_offset_top    [expr $pwr_ring_offset_top    + 2 * $vert_pitch]
-set pwr_ring_offset_bottom [expr $pwr_ring_offset_bottom + 2 * $vert_pitch]
-set pwr_ring_offset_left   [expr $pwr_ring_offset_left   + 8 * $hori_pitch]
-set pwr_ring_offset_right  [expr $pwr_ring_offset_right  + 8 * $hori_pitch]
+# set pwr_ring_offset_top    [expr $pwr_ring_offset_top    + 2 * $vert_pitch]
+# set pwr_ring_offset_bottom [expr $pwr_ring_offset_bottom + 2 * $vert_pitch]
+# set pwr_ring_offset_left   [expr $pwr_ring_offset_left   + 8 * $hori_pitch]
+# set pwr_ring_offset_right  [expr $pwr_ring_offset_right  + 8 * $hori_pitch]
 
-setAddStripeMode -reset
-setAddStripeMode -ignore_DRC true
-setAddStripeMode -stacked_via_bottom_layer gm0 \
-                 -stacked_via_top_layer    gmb
+# setAddStripeMode -reset
+# setAddStripeMode -ignore_DRC true
+# setAddStripeMode -stacked_via_bottom_layer gm0 \
+#                  -stacked_via_top_layer    gmb
 
-foreach side {top bottom left right} {
-    set pad_objs [dbGet -p top.insts.name IOPAD_$side*]
-    foreach pad_obj $pad_objs {
-        set pad_inst_name [dbGet $pad_obj.name]
-        set pad_cell_name [dbGet $pad_obj.cell.name]
-        set pad_llx [dbGet $pad_obj.box_llx]
-        set pad_lly [dbGet $pad_obj.box_lly]
-        set pad_urx [dbGet $pad_obj.box_urx]
-        set pad_ury [dbGet $pad_obj.box_ury]
-        set i 0
-        foreach pwr_io { vss* vccio vcc } {
-            set sbox_llx $pad_llx
-            set sbox_lly $pad_lly
-            set sbox_urx $pad_urx
-            set sbox_ury $pad_ury
-            if {$side eq "top"} {
-                set sbox_lly [expr $sbox_lly - $pwr_ring_offset_top - ($i+1)*$pwr_ring_width - $i*$pwr_ring_spacing]
-                set stripe_direction "vertical"
-                set pad_length [dbGet $pad_obj.box_sizex]
-            } elseif {$side eq "bottom"} {
-                set sbox_ury [expr $sbox_ury + $pwr_ring_offset_bottom + ($i+1)*$pwr_ring_width + $i*$pwr_ring_spacing]
-                set stripe_direction "vertical"
-                set pad_length [dbGet $pad_obj.box_sizex]
-            } elseif {$side eq "left"} {
-                set sbox_urx [expr $sbox_urx + $pwr_ring_offset_left + ($i+1)*$pwr_ring_width + $i*$pwr_ring_spacing]
-                set stripe_direction "horizontal"
-                set pad_length [dbGet $pad_obj.box_sizey]
-            } elseif {$side eq "right"} {
-                set sbox_llx [expr $sbox_llx - $pwr_ring_offset_right - ($i+1)*$pwr_ring_width - $i*$pwr_ring_spacing]
-                set stripe_direction "horizontal"
-                set pad_length [dbGet $pad_obj.box_sizey]
-            }
-            # compute the stripe width and offset
-            if {[string match "*SUPPLY*" $pad_inst_name]} {
-                # SUPPLY pad
-                if {$pwr_io eq "vss*"} {
-                    set stripe_net VSS
-                } elseif {$pwr_io eq "vccio"} {
-                    set stripe_net VDDPST
-                } elseif {$pwr_io eq "vcc"} {
-                    set stripe_net VDD
-                }
-                # based on i, compute the offset
-                set stripe_width 12.0
-                set space [expr ($pad_length - $stripe_width*3) / 2]
-                set stripe_offset [expr $i*($space + $stripe_width)]
-            } else {
-                # SIGNAL pad
-                set param_vss_stripe_width 8.0
-                set param_vcc_stripe_width 12.0
-                if {$side eq "top" || $side eq "bottom"} {
-                    set param_space 1.3
-                } elseif {$side eq "left" || $side eq "right"} {
-                    set param_space 2.47
-                }
-                if {$pwr_io eq "vss*"} {
-                    set stripe_net VSS
-                    set stripe_width 8.0
-                    set stripe_offset 0
-                } elseif {$pwr_io eq "vccio"} {
-                    set stripe_net VDDPST
-                    set stripe_width 8.0
-                    set stripe_offset [expr $param_vss_stripe_width + $param_space]
-                } elseif {$pwr_io eq "vcc"} {
-                    set stripe_net VDD
-                    set stripe_width 12.0
-                    set stripe_offset [expr $pad_length - $param_vcc_stripe_width]
-                }
-            }
+# foreach side {top bottom left right} {
+#     set pad_objs [dbGet -p top.insts.name IOPAD_$side*]
+#     foreach pad_obj $pad_objs {
+#         set pad_inst_name [dbGet $pad_obj.name]
+#         set pad_cell_name [dbGet $pad_obj.cell.name]
+#         set pad_llx [dbGet $pad_obj.box_llx]
+#         set pad_lly [dbGet $pad_obj.box_lly]
+#         set pad_urx [dbGet $pad_obj.box_urx]
+#         set pad_ury [dbGet $pad_obj.box_ury]
+#         set i 0
+#         foreach pwr_io { vss* vccio vcc } {
+#             set sbox_llx $pad_llx
+#             set sbox_lly $pad_lly
+#             set sbox_urx $pad_urx
+#             set sbox_ury $pad_ury
+#             if {$side eq "top"} {
+#                 set sbox_lly [expr $sbox_lly - $pwr_ring_offset_top - ($i+1)*$pwr_ring_width - $i*$pwr_ring_spacing]
+#                 set stripe_direction "vertical"
+#                 set pad_length [dbGet $pad_obj.box_sizex]
+#             } elseif {$side eq "bottom"} {
+#                 set sbox_ury [expr $sbox_ury + $pwr_ring_offset_bottom + ($i+1)*$pwr_ring_width + $i*$pwr_ring_spacing]
+#                 set stripe_direction "vertical"
+#                 set pad_length [dbGet $pad_obj.box_sizex]
+#             } elseif {$side eq "left"} {
+#                 set sbox_urx [expr $sbox_urx + $pwr_ring_offset_left + ($i+1)*$pwr_ring_width + $i*$pwr_ring_spacing]
+#                 set stripe_direction "horizontal"
+#                 set pad_length [dbGet $pad_obj.box_sizey]
+#             } elseif {$side eq "right"} {
+#                 set sbox_llx [expr $sbox_llx - $pwr_ring_offset_right - ($i+1)*$pwr_ring_width - $i*$pwr_ring_spacing]
+#                 set stripe_direction "horizontal"
+#                 set pad_length [dbGet $pad_obj.box_sizey]
+#             }
+#             # compute the stripe width and offset
+#             if {[string match "*SUPPLY*" $pad_inst_name]} {
+#                 # SUPPLY pad
+#                 if {$pwr_io eq "vss*"} {
+#                     set stripe_net VSS
+#                 } elseif {$pwr_io eq "vccio"} {
+#                     set stripe_net VDDPST
+#                 } elseif {$pwr_io eq "vcc"} {
+#                     set stripe_net VDD
+#                 }
+#                 # based on i, compute the offset
+#                 set stripe_width 12.0
+#                 set space [expr ($pad_length - $stripe_width*3) / 2]
+#                 set stripe_offset [expr $i*($space + $stripe_width)]
+#             } else {
+#                 # SIGNAL pad
+#                 set param_vss_stripe_width 8.0
+#                 set param_vcc_stripe_width 12.0
+#                 if {$side eq "top" || $side eq "bottom"} {
+#                     set param_space 1.3
+#                 } elseif {$side eq "left" || $side eq "right"} {
+#                     set param_space 2.47
+#                 }
+#                 if {$pwr_io eq "vss*"} {
+#                     set stripe_net VSS
+#                     set stripe_width 8.0
+#                     set stripe_offset 0
+#                 } elseif {$pwr_io eq "vccio"} {
+#                     set stripe_net VDDPST
+#                     set stripe_width 8.0
+#                     set stripe_offset [expr $param_vss_stripe_width + $param_space]
+#                 } elseif {$pwr_io eq "vcc"} {
+#                     set stripe_net VDD
+#                     set stripe_width 12.0
+#                     set stripe_offset [expr $pad_length - $param_vcc_stripe_width]
+#                 }
+#             }
             
-            # add the stripe
-            addStripe \
-                -area "$sbox_llx $sbox_lly $sbox_urx $sbox_ury" \
-                -direction $stripe_direction \
-                -layer gmb \
-                -nets $stripe_net \
-                -width $stripe_width \
-                -start_offset $stripe_offset \
-                -number_of_sets 1
-            # advanced to the next power net
-            incr i
-        }
-    }
-}
+#             # add the stripe
+#             addStripe \
+#                 -area "$sbox_llx $sbox_lly $sbox_urx $sbox_ury" \
+#                 -direction $stripe_direction \
+#                 -layer gmb \
+#                 -nets $stripe_net \
+#                 -width $stripe_width \
+#                 -start_offset $stripe_offset \
+#                 -number_of_sets 1
+#             # advanced to the next power net
+#             incr i
+#         }
+#     }
+# }
