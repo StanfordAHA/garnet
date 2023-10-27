@@ -67,8 +67,8 @@ class Garnet(Generator):
 # class Garnet(Generator):
                  pe_fc=lassen_fc,
                  ready_valid: bool = False,
-                 scgra: bool = False,
-                 scgra_combined: bool = True,
+                 # scgra: bool = False,
+                 # scgra_combined: bool = True,
                  # sb_option: str = "Imran",
                  # pipeline_regs_density: list = None,
                  # port_conn_option: list = None,
@@ -82,9 +82,6 @@ class Garnet(Generator):
                  # dual_port: bool = False, # Instead, init arg w action="store_true"
                  # rf: bool = False         # Instead, init arg w action="store_true"
                  ):
-        # dac_exp=args.dac_exp
-        # dual_port=args.dual_port
-        # rf=args.rf
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -177,8 +174,11 @@ class Garnet(Generator):
 #         interconnect = create_cgra(width, height, io_side,
                                    pe_fc=pe_fc,
                                    ready_valid=ready_valid,
-                                   scgra=scgra,
-                                   scgra_combined=scgra_combined,
+
+                                   # These two are tricky, leave them for now...
+                                   scgra=args.sparse_cgra,
+                                   scgra_combined=args.sparse_scgra_combined,
+
                                    switchbox_type=sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
                                    # pipeline_regs_density=pipeline_regs_density,
                                    # port_conn_option=port_conn_option,
@@ -757,8 +757,8 @@ def main():
 #     garnet = Garnet(args, width=args.width, height=args.height,
                     pe_fc=pe_fc,
                     ready_valid=args.ready_valid,
-                    scgra=args.sparse_cgra,
-                    scgra_combined=args.sparse_cgra_combined,
+                    # scgra=args.sparse_cgra,
+                    # scgra_combined=args.sparse_cgra_combined,
                     # sb_option=args.sb_option,
                     # pipeline_regs_density=args.pipeline_regs_density,
                     # port_conn_option=args.port_conn_option,
