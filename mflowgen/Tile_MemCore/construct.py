@@ -150,8 +150,7 @@ def construct():
   # Add graph inputs and outputs so this can be used in hierarchical flows
 
   # Inputs
-  #g.add_input( 'design.v', rtl.i('design.v') )
-
+  g.add_input( 'design.v', rtl.i('design.v') )
   # Outputs
   g.add_output( 'Tile_MemCore_tt.lib',      genlibdb.o('design.lib')           )
   g.add_output( 'Tile_MemCore_tt.db',       genlibdb.o('design.db')            )
@@ -325,8 +324,8 @@ def construct():
     'create-rows.tcl',
     # 'add-tracks.tcl',
     # 'create-boundary-blockage.tcl',
-    'create-special-grid.tcl',
     'place-dic-cells.tcl',
+    'create-special-grid.tcl',
     'add-endcaps-welltaps.tcl',
     'insert-input-antenna-diodes.tcl',
     'make-path-groups.tcl',
