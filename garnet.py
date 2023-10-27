@@ -167,7 +167,7 @@ class Garnet(Generator):
             "Wilton": SwitchBoxType.Wilton
         }
 
-        print(f"--- FOOO {args.use_sim_sram}")
+        print(f"FOOO {args.use_sim_sram}")
         interconnect = create_cgra(width, height, io_side,
                                    args,
                                    reg_addr_width=config_addr_reg_width,
