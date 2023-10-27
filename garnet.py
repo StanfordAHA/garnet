@@ -690,7 +690,7 @@ def main():
     parser.add_argument("--gold-file", type=str, default="",
                         dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
-    parser.add_argument("--no-pd", dest="--no-power-domain", action="store_true")
+    parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--amber-pond", action="store_true")
     parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
