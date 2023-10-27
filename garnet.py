@@ -50,14 +50,8 @@ set_debug_mode(False)
 
 
 class Garnet(Generator):
-    # Goal is to have this look like just "def __init__(self, args)"
-    def __init__(self, args,
-                 width,
-                 height,
-                 add_pd,
-                 interconnect_only: bool = False,
-                 use_sim_sram: bool = True,
-                 standalone: bool = False,
+    def __init__(self, args, width, height, add_pd, interconnect_only: bool = False,
+                 use_sim_sram: bool = True, standalone: bool = False,
                  mem_ratio: int = 4,
                  num_tracks: int = 5,
                  tile_layout_option: int = 0,
@@ -85,8 +79,7 @@ class Garnet(Generator):
                  macro_width: int = 32,
                  dac_exp: bool = False,
                  dual_port: bool = False,
-                 ):
-        rf = args.rf # FIXME/FYI I cannot find where this is ever used anywhere...??
+                 rf: bool = False):
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -189,8 +182,7 @@ class Garnet(Generator):
                                    macro_width=macro_width,
                                    dac_exp=dac_exp,
                                    dual_port=dual_port,
-                                   # rf=rf                 # passed via args now
-                                   )
+                                   rf=rf)
 
         self.interconnect = interconnect
 
@@ -710,7 +702,7 @@ def main():
     parser.add_argument("--mem-input-ports", type=int, default=2)
     parser.add_argument("--mem-output-ports", type=int, default=2)
     parser.add_argument("--dual-port", action="store_true")
-    parser.add_argument("--rf", action="store_true", type=bool, default=False)
+    parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
     parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
@@ -737,9 +729,7 @@ def main():
                                           axi_data_width=32,
                                           config_port_pipeline=args.config_port_pipeline)
 
-    garnet = Garnet(args,
-                    width=args.width,
-                    height=args.height,
+    garnet = Garnet(args, width=args.width, height=args.height,
                     glb_params=glb_params,
                     add_pd=not args.no_pd,
                     mem_ratio=args.mem_ratio,
