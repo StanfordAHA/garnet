@@ -171,6 +171,12 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     dac_exp                   = check_arg(args, dac_exp,                   'dac_exp')
     dual_port                 = check_arg(args, dual_port,                 'dual_port')
     rf                        = check_arg(args, rf,                        'rf')
+
+
+    print(f'--- FOO2a {args.use_sim_sram}')
+    print(f'--- FOO3a {use_sim_sram}')
+
+
 # 
 # 
 # 
