@@ -61,7 +61,7 @@ class Garnet(Generator):
                  pond_area_opt: bool = False,
                  pond_area_opt_share: bool = False,
                  pond_area_opt_dual_config: bool = False,
-                 use_io_valid: bool = False,
+                 # use_io_valid: bool = False,
                  # harden_flush: bool = True,
                  # pipeline_config_interval: int = 8,
 
@@ -171,7 +171,7 @@ class Garnet(Generator):
                                    pond_area_opt=pond_area_opt,
                                    pond_area_opt_share=pond_area_opt_share,
                                    pond_area_opt_dual_config=pond_area_opt_dual_config,
-                                   use_io_valid=use_io_valid,
+                                   # use_io_valid=use_io_valid,
                                    use_sim_sram=use_sim_sram,
                                    # harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
