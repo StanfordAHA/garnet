@@ -762,7 +762,7 @@ def main():
                     # harden_flush=args.harden_flush,
 
                     # use_io_valid=args.use_io_valid,
-                    interconnect_only=args.interconnect_only,
+                    # interconnect_only=args.interconnect_only,
                     use_sim_sram=args.use_sim_sram,
                     standalone=args.standalone,
 #     garnet = Garnet(args, width=args.width, height=args.height,
