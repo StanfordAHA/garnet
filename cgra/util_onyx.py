@@ -110,7 +110,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 perf_debug: bool = False):
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
-    bit_widths = [1, 17]
+    if ready_valid:
+        bit_widths = [1, 17]
+    else:
+        bit_widths = [1, 16]
     track_length = 1
 
     fifo_depth = 2
@@ -446,16 +449,19 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     # pond may have inter-core connection
     if add_pond:
+        bit_width_str = 17 if ready_valid else 16
         # remap
         if intercore_mapping is not None:
-            inter_core_connection_1 = {"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
-            inter_core_connection_16 = {"PondTop_output_width_17_num_0": [intercore_mapping["data0"], intercore_mapping["data1"],
+            inter_core_connection_1 = {f"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
+            inter_core_connection_16 = {f"PondTop_output_width_{bit_width_str}_num_0": [intercore_mapping["data0"], intercore_mapping["data1"],
                                         intercore_mapping["data2"]],
-                                        intercore_mapping["res"]: ["PondTop_input_width_17_num_0", "PondTop_input_width_17_num_1"]}
+                                        intercore_mapping["res"]: [f"PondTop_input_width_{bit_width_str}_num_0",
+                                                                   f"PondTop_input_width_{bit_width_str}_num_1"]}
         else:
             inter_core_connection_1 = {"PondTop_output_width_1_num_0": ["bit0"]}
-            inter_core_connection_16 = {"PondTop_output_width_17_num_0": ["data0", "data1", "data2"],
-                                        "res": ["PondTop_input_width_17_num_0", "PondTop_input_width_17_num_1"]}
+            inter_core_connection_16 = {f"PondTop_output_width_{bit_width_str}_num_0": ["data0", "data1", "data2"],
+                                        "res": [f"PondTop_input_width_{bit_width_str}_num_0",
+                                                f"PondTop_input_width_{bit_width_str}_num_1"]}
     else:
         inter_core_connection_1 = {}
         inter_core_connection_16 = {}
@@ -482,6 +488,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     # outputs.remove("io2glb_17_valid")
 
     if add_pond:
+        bit_width_str = 17 if ready_valid else 16
         for core in additional_core.values():
             if isinstance(core, list):
                 for actual_core in core:
@@ -492,7 +499,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 outputs |= {o.qualified_name() for o in core.outputs()}
 
             # Some Pond outputs will be connected to the SBs
-            outputs.remove("PondTop_output_width_17_num_0")
+            outputs.remove(f"PondTop_output_width_{bit_width_str}_num_0")
 
     # This is slightly different from the original CGRA. Here we connect
     # input to every SB_IN and output to every SB_OUT.
@@ -539,9 +546,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         pipeline_regs = []
     ics = {}
 
+    bit_width_str = 17 if ready_valid else 16
     track_list = list(range(num_tracks))
-    io_in = {"f2io_1": [0], "f2io_17": [0]}
-    io_out = {"io2f_1": track_list, "io2f_17": track_list}
+    io_in = {"f2io_1": [0], f"f2io_{bit_width_str}": [0]}
+    io_out = {"io2f_1": track_list, f"io2f_{bit_width_str}": track_list}
 
     for bit_width in bit_widths:
         if io_sides & IOSide.None_:
