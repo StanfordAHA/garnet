@@ -762,7 +762,8 @@ def main():
                     macro_width=args.macro_width,
                     dac_exp=args.dac_exp,
                     dual_port=args.dual_port,
-                    rf=args.rf)
+                    # rf=rf              # Now uses args to find rf
+                    )
 
     if args.verilog:
         garnet_circ = garnet.circuit()
