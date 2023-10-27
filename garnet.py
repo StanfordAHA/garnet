@@ -184,7 +184,7 @@ class Garnet(Generator):
                                    # pond_area_opt_share=pond_area_opt_share,
                                    # pond_area_opt_dual_config=pond_area_opt_dual_config,
                                    # use_io_valid=use_io_valid,
-                                   # use_sim_sram=args.use_sim_sram,
+                                   use_sim_sram=args.use_sim_sram,
                                    # harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
                                    # pipeline_config_interval=args.pipeline_config_interval,
@@ -775,7 +775,7 @@ def main():
 
                     # use_io_valid=args.use_io_valid,
                     # interconnect_only=args.interconnect_only,
-                    # use_sim_sram=args.use_sim_sram,
+                    use_sim_sram=args.use_sim_sram,
                     # standalone=args.standalone,
 #     garnet = Garnet(args, width=args.width, height=args.height,
                     pe_fc=pe_fc,
