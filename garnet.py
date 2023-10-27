@@ -177,7 +177,7 @@ class Garnet(Generator):
 
                                    # These two are tricky, leave them for now...
                                    scgra=args.sparse_cgra,
-                                   scgra_combined=args.sparse_scgra_combined,
+                                   scgra_combined=args.sparse_cgra_combined,
 
                                    switchbox_type=sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
                                    # pipeline_regs_density=pipeline_regs_density,
