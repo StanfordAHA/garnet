@@ -15,8 +15,8 @@ outputs:
 tests:
   - description: power-analysis
     test_graph: ir_test
+    unit_test_graph: GcdUnit 
     attach_points:
-      - POWER
       - PLACE
       - CTS
       - ROUTE
