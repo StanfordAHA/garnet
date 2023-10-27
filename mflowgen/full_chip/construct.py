@@ -51,7 +51,7 @@ def construct():
   parameters = {
     'construct_path'           : __file__,
     'design_name'              : 'GarnetSOC_pad_frame',
-    'clock_period'             : 2.0*1000,
+    'clock_period'             : 10.0*1000,
     'adk'                      : adk_name,
     'adk_view'                 : adk_view,
     'adk_stdcell'              : 'b15_7t_108pp',
@@ -59,26 +59,20 @@ def construct():
     'flatten_effort'           : 0,
     'topographical'            : True,
     # RTL Generation
-    'array_width'              : 32,
+    'array_width'              : 28,
     'array_height'             : 16,
-    'num_glb_tiles'            : 16,
+    'num_glb_tiles'            : 14,
     'interconnect_only'        : False,
     'use_local_garnet'         : False,
     # glb tile memory size (unit: KB)
     # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
-    'glb_tile_mem_size'        : 256,   # 256*16 => 4M global buffer
+    'glb_tile_mem_size'        : 128,   # 256*16 => 4M global buffer
     # Power Domains
     'PWR_AWARE'                : True,
     # Include Garnet?
     'soc_only'                 : True,
     # Include SoC core? (use 0 for false, 1 for true)
-    'include_core'             : 0,
-    # SRAM macros
-    'num_words'                : 4096,
-    'word_size'                : 64,
-    'mux_size'                 : 8,
-    'num_subarrays'            : 2,
-    'partial_write'            : True,
+    'include_core'             : 1,
     # Low Effort flow
     'express_flow'             : False,
     'skip_verify_connectivity' : True,
@@ -93,13 +87,20 @@ def construct():
     'cgra_apps'                : ["tests/conv_1_2", "tests/conv_2_1"]
   }
 
+  sram_1_params = {
+    # SRAM macros
+    'num_words'         : 4096,
+    'word_size'         : 64,
+    'mux_size'          : 4,
+    'partial_write'     : 1,
+  }
+
   sram_2_params = {
     # SRAM macros
-    'num_words'         : 32768,
+    'num_words'         : 8192,
     'word_size'         : 32,
-    'mux_size'          : 16,
-    'num_subarrays'     : 8,
-    'partial_write'     : True,
+    'mux_size'          : 8,
+    'partial_write'     : 1,
   }
 
   guardring_params = {
@@ -120,12 +121,13 @@ def construct():
       'create-rows.tcl',
       'add-tracks.tcl',
       # 'add-endcaps-welltaps.tcl', # move the well tap insertion after power planning to save time
+      'place-dic-cells-tma2.tcl',
       'create-special-grid.tcl',
       'io-fillers.tcl',
       # 'alignment-cells.tcl',
       # 'gen-bumps.tcl', # TODO: turn-off for TMA2
       # 'route-bumps.tcl', # TODO: turn-off for TMA2
-      # 'place-macros.tcl',
+      'place-macros.tcl',
       # 'create-boundary-blockage.tcl',
   ]
 
@@ -207,18 +209,19 @@ def construct():
   gen_sram_2.set_name( 'gen_sram_macro_2' )
 
   # Add cgra tile macro inputs to downstream nodes
-  # TODO: Recover me after TMA
-  # synth.extend_inputs( ['tile_array_tt.lib', 'tile_array.lef'] )
-  # synth.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
-  # synth.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
-  # synth.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-  # synth.extend_inputs( ['sram_2_tt.lib', 'sram_2.lef'] )
+  # synth.extend_inputs( ['tile_array-typical.lib', 'tile_array.lef'] )
+  # synth.extend_inputs( ['glb_top-typical.lib', 'glb_top.lef'] )
+  # synth.extend_inputs( ['global_controller-typical.lib', 'global_controller.lef'] )
+  synth.extend_inputs( ['sram-typical.lib', 'sram.lef'] )
+  synth.extend_inputs( ['sram_2-typical.lib', 'sram_2.lef'] )
 
-  pt_signoff.extend_inputs( ['tile_array_tt.db'] )
-  pt_signoff.extend_inputs( ['glb_top_tt.db'] )
-  pt_signoff.extend_inputs( ['global_controller_tt.db'] )
-  pt_signoff.extend_inputs( ['sram_tt.db'] )
-  pt_signoff.extend_inputs( ['sram_2_tt.db'] )
+  pt_signoff.extend_inputs( ['tile_array-typical.db'] )
+  pt_signoff.extend_inputs( ['glb_top-typical.db'] )
+  pt_signoff.extend_inputs( ['global_controller-typical.db'] )
+  pt_signoff.extend_inputs( ['sram-typical.db'] )
+  pt_signoff.extend_inputs( ['sram_2-typical.db'] )
+  pt_signoff.extend_inputs( ['sram-bc.db'] )
+  pt_signoff.extend_inputs( ['sram_2-bc.db'] )
 
   route.extend_inputs( ['pre-route.tcl'] )
   signoff.extend_inputs( netlist_fixing.all_outputs() )
@@ -229,11 +232,11 @@ def construct():
       route, postroute, signoff]
 
   for step in hier_steps:
-    step.extend_inputs( ['tile_array_tt.lib', 'tile_array.lef'] )
-    step.extend_inputs( ['glb_top_tt.lib', 'glb_top.lef'] )
-    step.extend_inputs( ['global_controller_tt.lib', 'global_controller.lef'] )
-    step.extend_inputs( ['sram_tt.lib', 'sram.lef'] )
-    step.extend_inputs( ['sram_2_tt.lib', 'sram_2.lef'] )
+    step.extend_inputs( ['tile_array-typical.lib', 'tile_array.lef'] )
+    step.extend_inputs( ['glb_top-typical.lib', 'glb_top.lef'] )
+    step.extend_inputs( ['global_controller-typical.lib', 'global_controller.lef'] )
+    step.extend_inputs( ['sram-typical.lib', 'sram-bc.lib', 'sram.lef'] )
+    step.extend_inputs( ['sram_2-typical.lib', 'sram_2-bc.lib', 'sram_2.lef'] )
 
   # Need all block oasis's to merge into the final layout
   oasismerge_nodes = [signoff, power]
@@ -248,6 +251,7 @@ def construct():
   lvs.extend_inputs( ['tile_array.lvs.v'] )
   lvs.extend_inputs( ['tile_array.sram.spi'] )
   lvs.extend_inputs( ['glb_top.lvs.v'] )
+  
   lvs.extend_inputs( ['glb_top.sram.spi'] )
   lvs.extend_inputs( ['global_controller.lvs.v'] )
   lvs.extend_inputs( ['sram.spi'] )
@@ -396,16 +400,16 @@ def construct():
 
   # Connect gen_sram_macro node(s) to all downstream nodes that need them
   # TODO: Temporarily removed for TMA, recover me later
-  # sram_nodes = [synth, iflow, init, power, place, cts, postcts_hold,
-  #               route, postroute, postroute_hold, signoff, pt_signoff,
-  #               drc, lvs]
-  # for node in sram_nodes:
-  #   g.connect_by_name( gen_sram, node )
-  #   if which_soc == 'onyx':
-  #     for sram_output in gen_sram_2.all_outputs():
-  #         node_input = sram_output.replace('sram', 'sram_2')
-  #         if node_input in node.all_inputs():
-  #             g.connect(gen_sram_2.o(sram_output), node.i(node_input))
+  sram_nodes = [synth, iflow, init, power, place, cts, postcts_hold,
+                route, postroute, postroute_hold, signoff, pt_signoff,
+                drc, lvs]
+  for node in sram_nodes:
+    g.connect_by_name( gen_sram, node )
+    if which_soc == 'onyx-intel16':
+      for sram_output in gen_sram_2.all_outputs():
+          node_input = sram_output.replace('sram', 'sram_2')
+          if node_input in node.all_inputs():
+              g.connect(gen_sram_2.o(sram_output), node.i(node_input))
 
   # Full chip floorplan stuff
   g.connect_by_name( io_file, init_fc )
@@ -449,6 +453,7 @@ def construct():
 
   # Provide different parameter set to second sram node, so it can actually 
   # generate a different sram
+  gen_sram.update_params( sram_1_params )
   gen_sram_2.update_params( sram_2_params )
 
   # Since we are adding an additional input script to the generic Innovus

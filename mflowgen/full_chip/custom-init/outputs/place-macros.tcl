@@ -130,32 +130,33 @@ if { ! $::env(soc_only) } {
     -pgnetonly \
     -box $glb_x_loc [expr $glb_y_loc + (2*$vert_pitch)] $glb_urx [expr $glb_ury - (2*$vert_pitch)]
   
+  # Deprecated: global controller is now flattened at top level
   # Place global controller
-  set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
-  set glc_name [get_property $glc hierarchical_name]
-  set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
-  set glc_height [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_y]
-  set glc_y_loc [snap_to_grid [expr $glb_ury + ($vert_pitch * $glb2glc_y_dist)] $pmesh_bot_pitch]
-  set glc_x_loc [snap_to_grid [expr $glb_x_loc + 100] $pmesh_top_pitch]
+  # set glc [get_cells -hier -filter {ref_lib_cell_name==global_controller}]
+  # set glc_name [get_property $glc hierarchical_name]
+  # set glc_width [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_x]
+  # set glc_height [dbGet [dbGet -p top.insts.name $glc_name -i 0].cell.size_y]
+  # set glc_y_loc [snap_to_grid [expr $glb_ury + ($vert_pitch * $glb2glc_y_dist)] $pmesh_bot_pitch]
+  # set glc_x_loc [snap_to_grid [expr $glb_x_loc + 100] $pmesh_top_pitch]
   
-  placeinstance $glc_name $glc_x_loc $glc_y_loc -fixed
-  addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glc_name -snapToSite
+  # placeinstance $glc_name $glc_x_loc $glc_y_loc -fixed
+  # addHaloToBlock [expr $horiz_pitch * 3] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $glc_name -snapToSite
   
-  # Prevent power vias from blocking pins on GLC (pins on right and left edges)
-  set glc_ury [expr $glc_y_loc + $glc_height]
-  set glc_urx [expr $glc_x_loc + $glc_width]
-  set thickness [expr 10 * $vert_pitch]  
-  createRouteBlk \
-    -name glc_left_pg_via_blk \
-    -cutLayer {4 5 6 7 8 9 10 11 12} \
-    -pgnetonly \
-    -box [expr $glc_x_loc - $thickness] $glc_y_loc $glc_x_loc $glc_ury
+  # # Prevent power vias from blocking pins on GLC (pins on right and left edges)
+  # set glc_ury [expr $glc_y_loc + $glc_height]
+  # set glc_urx [expr $glc_x_loc + $glc_width]
+  # set thickness [expr 10 * $vert_pitch]  
+  # createRouteBlk \
+  #   -name glc_left_pg_via_blk \
+  #   -cutLayer {4 5 6 7 8 9 10 11 12} \
+  #   -pgnetonly \
+  #   -box [expr $glc_x_loc - $thickness] $glc_y_loc $glc_x_loc $glc_ury
   
-  createRouteBlk \
-    -name glc_right_pg_via_blk \
-    -cutLayer {4 5 6 7 8 9 10 11 12} \
-    -pgnetonly \
-    -box $glc_x_loc $glc_y_loc [expr $glc_urx + $thickness] $glc_ury
+  # createRouteBlk \
+  #   -name glc_right_pg_via_blk \
+  #   -cutLayer {4 5 6 7 8 9 10 11 12} \
+  #   -pgnetonly \
+  #   -box $glc_x_loc $glc_y_loc [expr $glc_urx + $thickness] $glc_ury
 }
 # Place SRAMS
 set srams [get_cells -hier -filter {is_memory_cell==true}]
@@ -239,100 +240,6 @@ foreach_in_collection sram $srams {
     set col [expr $col + 1]
   }
 }
-
-# Place XGCD block
-# XGCD placement prep
-set xgcd [get_cells -hier -filter {ref_lib_cell_name==XGCDWrapperTop}]
-set xgcd_name [get_property $xgcd hierarchical_name]
-set xgcd_width [dbGet [dbGet -p top.insts.name $xgcd_name -i 0].cell.size_x]
-set xgcd_height [dbGet [dbGet -p top.insts.name $xgcd_name -i 0].cell.size_y]
-
-set xgcd_y_loc [snap_to_grid 3600 $pmesh_bot_pitch]
-set xgcd_x_loc [snap_to_grid 2600 $pmesh_top_pitch]
-
-placeinstance $xgcd_name $xgcd_x_loc $xgcd_y_loc -fixed
-addHaloToBlock [expr $horiz_pitch * 23] $vert_pitch [expr $horiz_pitch * 3] $vert_pitch $xgcd_name -snapToSite
-
-# Prevent power vias from blocking pins on XGCD (pins on TOP and left edges)
-set xgcd_ury [expr $xgcd_y_loc + $xgcd_height]
-set xgcd_urx [expr $xgcd_x_loc + $xgcd_width]
-set thickness [expr 10 * $vert_pitch]
-# top edge
-createRouteBlk \
-  -name xgcd_top_pg_via_blk \
-  -cutLayer {4 5 6 7 8 9 10 11 12} \
-  -pgnetonly \
-  -box $xgcd_x_loc $xgcd_ury $xgcd_urx [expr $xgcd_ury + $thickness]
-
-#left edge
-createRouteBlk \
-  -name xgcd_left_pg_via_blk \
-  -cutLayer {4 5 6 7 8 9 10 11 12} \
-  -pgnetonly \
-  -box [expr $xgcd_x_loc - $thickness] $xgcd_y_loc $xgcd_x_loc $xgcd_ury
-
-# Prevent vias to PMESH_BOT_LAYER stripes over XGCD
-createRouteBlk \
-  -name xgcd_pmesh_bot_via \
-  -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
-  -pgnetonly \
-  -box $xgcd_x_loc $xgcd_y_loc $xgcd_urx $xgcd_ury
-
-# Prevent PMESH_BOT_LAYER stripes over XGCD
-createRouteBlk \
-  -name xgcd_pmesh_bot \
-  -layer $ADK_POWER_MESH_BOT_LAYER \
-  -pgnetonly \
-  -box [expr $xgcd_x_loc + (8*$horiz_pitch)] $xgcd_y_loc [expr $xgcd_urx - (8*$horiz_pitch)] $xgcd_ury
-
-# Prevent PMESH_TOP_LAYER stripes over XGCD
-createRouteBlk \
-  -name xgcd_pmesh_top \
-  -layer $ADK_POWER_MESH_TOP_LAYER \
-  -pgnetonly \
-  -box $xgcd_x_loc [expr $xgcd_y_loc + (2*$vert_pitch)] $xgcd_urx [expr $xgcd_ury - (2*$vert_pitch)]
-
-
-# Place analog block
-# placeInstance iphy 1352.685 4098.000 -fixed ; # dragonphy
-  #placeInstance iphy 1703.075 4098.000 -fixed ; # dragonphy2 11/2020
-
-# Create route Blockage over dragonphy
-#set llx [dbGet [dbGet -p top.insts.name iphy].box_llx]
-#set lly [dbGet [dbGet -p top.insts.name iphy].box_lly]
-#set urx [dbGet [dbGet -p top.insts.name iphy].box_urx]
-#set ury [dbGet [dbGet -p top.insts.name iphy].box_ury]
-#
-#createRouteBlk \
-#  -box [expr $llx - 5] [expr $lly - 5] [expr $urx + 5] [expr $ury + (3 * $vert_pitch)] \
-#  -layer {3 9} \
-#  -name dragonphy \
-#  -pgnetonly
-#
-#set halo_margin [expr 3 * $vert_pitch]
-#addHaloToBlock $halo_margin $halo_margin $halo_margin $halo_margin  iphy
-
-
-# Skip routing on all analog nets
-
-#set_db [get_db nets ext_clk_async_p] .skip_routing true
-#set_db [get_db nets ext_clk_async_n] .skip_routing true
-#set_db [get_db nets ext_clkn] .skip_routing true
-#set_db [get_db nets ext_clkp] .skip_routing true
-#set_db [get_db nets ext_Vcm] .skip_routing true
-#set_db [get_db nets ext_Vcal] .skip_routing true
-#set_db [get_db nets ext_mdll_clk_refp] .skip_routing true
-#set_db [get_db nets ext_mdll_clk_refn] .skip_routing true
-#set_db [get_db nets ext_mdll_clk_monp] .skip_routing true
-#set_db [get_db nets ext_mdll_clk_monn] .skip_routing true
-#set_db [get_db nets ext_rx_inp] .skip_routing true
-#set_db [get_db nets ext_rx_inn] .skip_routing true
-#set_db [get_db nets ext_rx_inp_test] .skip_routing true
-#set_db [get_db nets ext_rx_inn_test] .skip_routing true
-#set_db [get_db nets clk_out_p] .skip_routing true
-#set_db [get_db nets clk_out_n] .skip_routing true
-#set_db [get_db nets clk_trig_p] .skip_routing true
-#set_db [get_db nets clk_trig_n] .skip_routing true
 
 # Unplace any standard cells that got placed during init. Not sure why they're
 # being placed, but they make power stripe generation take forever.

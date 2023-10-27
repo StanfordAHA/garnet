@@ -31,6 +31,7 @@ parameters:
   tt_corner: "tttt_0.85v_25c"
   bc_corner: "pfff_0.89v_-40c"
   wc_corner: "psss_0.765v_125c"
+  partial_write: 0
 
 postconditions:
    # Sanity check to see if we at least got one sram

@@ -42,9 +42,9 @@ set soc_integration_files [concat [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaSoCPartialIntegration/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaTlxIntegration/verilog -types f *.v] [
   glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaTlxIntegration/rdl/verilog -types f *.v] [
-  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaXGCDIntegration/verilog -types f *.v] [
-  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/ProcessTech/SRAM/ASIC/GF -types f *.v] [
-  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/ProcessTech/StdCells/ASIC/GF -types f *.v]]
+  # glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/AhaXGCDIntegration/verilog -types f *.v] [
+  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/ProcessTech/SRAM/ASIC/INTEL -types f *.v] [
+  glob -nocomplain -directory inputs/rtl/aham3soc/hardware/logical/ProcessTech/StdCells/ASIC/INTEL -types f *.v]]
 
 # PL330 DMA Files
 set soc_dma_files [concat [

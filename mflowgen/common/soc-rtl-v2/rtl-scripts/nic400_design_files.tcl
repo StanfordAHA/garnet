@@ -4,6 +4,9 @@
 
 set soc_nic400_files [concat \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/nic400/verilog/nic400_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/nic400/verilog/nic400_cd_CGRA_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/nic400/verilog/nic400_cd_SYSTEM_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/nic400/verilog/nic400_cd_TLX_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_PERIPH/verilog/nic400_amib_M_AHB_PERIPH_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_PERIPH/verilog/nic400_amib_M_AHB_PERIPH_a_gen_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_PERIPH/verilog/nic400_amib_M_AHB_PERIPH_ahb_m_OnyxIntegration.v \
@@ -14,11 +17,6 @@ set soc_nic400_files [concat \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_TLX_REG/verilog/nic400_amib_M_AHB_TLX_REG_ahb_m_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_TLX_REG/verilog/nic400_amib_M_AHB_TLX_REG_chan_slice_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_TLX_REG/verilog/nic400_amib_M_AHB_TLX_REG_s_gen_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_XGCD/verilog/nic400_amib_M_AHB_XGCD_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_XGCD/verilog/nic400_amib_M_AHB_XGCD_a_gen_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_XGCD/verilog/nic400_amib_M_AHB_XGCD_ahb_m_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_XGCD/verilog/nic400_amib_M_AHB_XGCD_chan_slice_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AHB_XGCD/verilog/nic400_amib_M_AHB_XGCD_s_gen_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AXI_CGRA_DATA/verilog/nic400_amib_M_AXI_CGRA_DATA_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AXI_CGRA_DATA/verilog/nic400_amib_M_AXI_CGRA_DATA_chan_slice_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AXI_CGRA_REG/verilog/nic400_amib_M_AXI_CGRA_REG_OnyxIntegration.v \
@@ -33,10 +31,6 @@ set soc_nic400_files [concat \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AXI_SRAM3/verilog/nic400_amib_M_AXI_SRAM3_chan_slice_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AXI_TLX_DATA/verilog/nic400_amib_M_AXI_TLX_DATA_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AXI_TLX_DATA/verilog/nic400_amib_M_AXI_TLX_DATA_chan_slice_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AXI_XGCD0/verilog/nic400_amib_M_AXI_XGCD0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AXI_XGCD0/verilog/nic400_amib_M_AXI_XGCD0_chan_slice_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AXI_XGCD1/verilog/nic400_amib_M_AXI_XGCD1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/amib_M_AXI_XGCD1/verilog/nic400_amib_M_AXI_XGCD1_chan_slice_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/asib_S_AHB_CPU/verilog/nic400_asib_S_AHB_CPU_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/asib_S_AHB_CPU/verilog/nic400_asib_S_AHB_CPU_ahb_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/asib_S_AHB_CPU/verilog/nic400_asib_S_AHB_CPU_chan_slice_OnyxIntegration.v \
@@ -55,114 +49,80 @@ set soc_nic400_files [concat \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/asib_S_AXI_DMA1/verilog/nic400_asib_S_AXI_DMA1_rd_ss_cdas_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/asib_S_AXI_DMA1/verilog/nic400_asib_S_AXI_DMA1_wr_ss_cdas_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_arb_ml0_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_arb_ml1_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_arb_ml2_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_arb_ml3_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_arb_ml4_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_arb_ml7_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_arb_ml9_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_sel_ml0_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_sel_ml1_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_sel_ml2_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_sel_ml3_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_sel_ml4_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_sel_ml5_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_sel_ml6_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_sel_ml7_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_sel_ml8_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_add_sel_ml9_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_lrg_arb_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_maskcntl_ml0_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_maskcntl_ml1_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_maskcntl_ml2_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_maskcntl_ml3_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_maskcntl_ml4_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_maskcntl_ml5_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_maskcntl_ml6_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_maskcntl_ml7_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_maskcntl_ml8_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_maskcntl_ml9_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_blayer_0_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_blayer_1_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_blayer_2_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_build_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_map_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_mlayer_0_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_mlayer_1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_rd_spi_tt_s0_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_mlayer_2_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_mlayer_3_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_mlayer_4_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_mlayer_5_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_mlayer_6_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_mlayer_7_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_mlayer_8_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ml_mlayer_9_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_qv_cmp_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_rd_st_tt_s0_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_rd_st_tt_s1_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_rd_st_tt_s2_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_rd_wr_arb_0_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_rd_wr_arb_1_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_rd_wr_arb_2_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_rd_wr_arb_3_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ret_sel_ml0_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ret_sel_ml1_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ret_sel_ml2_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ret_sel_ml3_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ret_sel_ml4_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ret_sel_ml5_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ret_sel_ml6_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ret_sel_ml7_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ret_sel_ml8_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_ret_sel_ml9_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_sel_ml0_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_sel_ml1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_spi_tt_s0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_arb_ml0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_arb_ml3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_arb_ml5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_arb_ml6_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_sel_ml0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_sel_ml1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_sel_ml2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_sel_ml3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_sel_ml4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_sel_ml5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_add_sel_ml6_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_lrg_arb_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_maskcntl_ml0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_maskcntl_ml1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_maskcntl_ml2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_maskcntl_ml3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_maskcntl_ml4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_maskcntl_ml5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_maskcntl_ml6_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_blayer_0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_blayer_1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_blayer_2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_build_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_map_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_mlayer_0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_mlayer_1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_mlayer_2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_mlayer_3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_mlayer_4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_mlayer_5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ml_mlayer_6_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_qv_cmp_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_rd_st_tt_s0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_rd_st_tt_s1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_rd_st_tt_s2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ret_sel_ml0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ret_sel_ml1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ret_sel_ml2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ret_sel_ml3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ret_sel_ml4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ret_sel_ml5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_ret_sel_ml6_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_wr_sel_ml0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_wr_sel_ml1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_wr_sel_ml2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_wr_sel_ml3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_wr_sel_ml4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_wr_sel_ml5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_wr_sel_ml6_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_wr_st_tt_s0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_wr_st_tt_s1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm1/verilog/nic400_bm1_wr_st_tt_s2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_add_sel_ml0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_add_sel_ml1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_add_sel_ml2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_add_sel_ml3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_add_sel_ml4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_add_sel_ml5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_maskcntl_ml0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_maskcntl_ml1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_maskcntl_ml2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_maskcntl_ml3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_maskcntl_ml4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_maskcntl_ml5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ml_blayer_0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ml_build_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ml_map_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ml_mlayer_0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ml_mlayer_1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ml_mlayer_2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ml_mlayer_3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ml_mlayer_4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ml_mlayer_5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_rd_spi_tt_s0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_rd_wr_arb_0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_rd_wr_arb_1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_rd_wr_arb_2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_rd_wr_arb_4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ret_sel_ml0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ret_sel_ml1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ret_sel_ml2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ret_sel_ml3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ret_sel_ml4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_ret_sel_ml5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_wr_sel_ml0_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_wr_sel_ml1_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_wr_sel_ml2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_wr_sel_ml3_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_wr_sel_ml4_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_wr_sel_ml5_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm2/verilog/nic400_bm2_wr_spi_tt_s0_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_sel_ml2_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_sel_ml3_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_sel_ml4_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_sel_ml5_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_sel_ml6_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_sel_ml7_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_sel_ml8_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_sel_ml9_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_st_tt_s0_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_st_tt_s1_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/busmatrix_bm0/verilog/nic400_bm0_wr_st_tt_s2_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/cdc_blocks/verilog/nic400_cdc_bypass_sync_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/cdc_blocks/verilog/nic400_cdc_capt_nosync_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/cdc_blocks/verilog/nic400_cdc_capt_sync_OnyxIntegration.v \
@@ -173,7 +133,7 @@ set soc_nic400_files [concat \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/cdc_blocks/verilog/nic400_cdc_corrupt_gry_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/cdc_blocks/verilog/nic400_cdc_launch_gry_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/cdc_blocks/verilog/nic400_cdc_random_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/default_slave_ds_4/verilog/nic400_default_slave_ds_4_OnyxIntegration.v \
+    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/default_slave_ds_1/verilog/nic400_default_slave_ds_1_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_PERIPH_ib/verilog/nic400_ib_M_AHB_PERIPH_ib_axi_to_itb_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_PERIPH_ib/verilog/nic400_ib_M_AHB_PERIPH_ib_chan_slice_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_PERIPH_ib/verilog/nic400_ib_M_AHB_PERIPH_ib_downsize_itb_addr_fmt_OnyxIntegration.v \
@@ -218,36 +178,6 @@ set soc_nic400_files [concat \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_TLX_REG_ib/verilog/nic400_ib_M_AHB_TLX_REG_ib_w_fifo_wr_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_TLX_REG_ib/verilog/nic400_ib_M_AHB_TLX_REG_ib_w_fifo_wr_mux2_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_TLX_REG_ib/verilog/nic400_ib_M_AHB_TLX_REG_ib_w_fifo_wr_mux_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_a_fifo_rd_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_a_fifo_sync_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_a_fifo_wr_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_a_fifo_wr_mux2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_a_fifo_wr_mux_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_axi_to_itb_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_cdc_air_corrupt_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_chan_slice_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_d_fifo_rd_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_d_fifo_sync_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_d_fifo_wr_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_d_fifo_wr_mux2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_d_fifo_wr_mux_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_downsize_itb_addr_fmt_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_downsize_rd_cam_slice_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_downsize_rd_chan_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_downsize_rd_cntrl_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_downsize_resp_cam_slice_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_downsize_wr_cntrl_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_downsize_wr_merge_buffer_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_downsize_wr_mux_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_downsize_wr_resp_block_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_itb_to_axi_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_master_domain_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_slave_domain_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_w_fifo_rd_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_w_fifo_sync_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_w_fifo_wr_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_w_fifo_wr_mux2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AHB_XGCD_ib/verilog/nic400_ib_M_AHB_XGCD_ib_w_fifo_wr_mux_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AXI_CGRA_DATA_ib/verilog/nic400_ib_M_AXI_CGRA_DATA_ib_ar_fifo_rd_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AXI_CGRA_DATA_ib/verilog/nic400_ib_M_AXI_CGRA_DATA_ib_ar_fifo_sync_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_M_AXI_CGRA_DATA_ib/verilog/nic400_ib_M_AXI_CGRA_DATA_ib_ar_fifo_wr_OnyxIntegration.v \
@@ -360,40 +290,6 @@ set soc_nic400_files [concat \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_S_AHB_CPU_ib/verilog/nic400_ib_S_AHB_CPU_ib_upsize_wr_cntrl_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_S_AHB_CPU_ib/verilog/nic400_ib_S_AHB_CPU_ib_upsize_wr_merge_buffer_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_S_AHB_CPU_ib/verilog/nic400_ib_S_AHB_CPU_ib_upsize_wr_resp_block_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_ar_fifo_rd_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_ar_fifo_sync_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_ar_fifo_wr_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_ar_fifo_wr_mux2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_ar_fifo_wr_mux_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_aw_fifo_rd_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_aw_fifo_sync_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_aw_fifo_wr_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_aw_fifo_wr_mux2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_aw_fifo_wr_mux_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_b_fifo_rd_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_b_fifo_sync_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_b_fifo_wr_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_b_fifo_wr_mux2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_b_fifo_wr_mux_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_cdc_air_corrupt_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_chan_slice_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_maskcntl_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_master_domain_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_r_fifo_rd_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_r_fifo_sync_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_r_fifo_wr_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_r_fifo_wr_mux2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_r_fifo_wr_mux_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_slave_domain_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_w_fifo_rd_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_w_fifo_sync_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_w_fifo_wr_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_w_fifo_wr_mux2_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/ib_ib3/verilog/nic400_ib_ib3_w_fifo_wr_mux_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/nic400/verilog/nic400_cd_CGRA_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/nic400/verilog/nic400_cd_SYSTEM_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/nic400/verilog/nic400_cd_TLX_OnyxIntegration.v \
-    inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/nic400/verilog/nic400_cd_XGCD_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/reg_slice/verilog/nic400_ax4_reg_slice_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/reg_slice/verilog/nic400_buf_reg_slice_OnyxIntegration.v \
     inputs/rtl/aham3soc_armip/logical/nic400_OnyxIntegration/reg_slice/verilog/nic400_ful_regd_slice_OnyxIntegration.v \

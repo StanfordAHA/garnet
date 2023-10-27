@@ -16,4 +16,5 @@ outputs:
   - add-tracks.tcl
   - create-boundary-blockage.tcl
   - create-special-grid.tcl
+  - place-dic-cells-tma2.tcl
   # - insert-input-antenna-diodes.tcl
