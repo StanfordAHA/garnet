@@ -50,9 +50,12 @@ set_debug_mode(False)
 
 
 class Garnet(Generator):
-    def __init__(self, args, width, height, add_pd, 
+    def __init__(self, args, 
+                 width, 
+                 height, 
+                 add_pd, 
                  # interconnect_only: bool = False,
-                 # use_sim_sram: bool = True,
+                 use_sim_sram: bool = True,
                  # standalone: bool = False,
                  # mem_ratio: int = 4,
                  # num_tracks: int = 5,
@@ -687,7 +690,7 @@ def main():
     parser.add_argument("--gold-file", type=str, default="",
                         dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
-    parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
+    parser.add_argument("--no-pd", dest="--no-power-domain", action="store_true")
     parser.add_argument("--amber-pond", action="store_true")
     parser.add_argument("--no-pond", action="store_true")
     parser.add_argument("--interconnect-only", action="store_true")
@@ -771,7 +774,7 @@ def main():
 
                     # use_io_valid=args.use_io_valid,
                     # interconnect_only=args.interconnect_only,
-                    # use_sim_sram=args.use_sim_sram,
+                    use_sim_sram=args.use_sim_sram,
                     # standalone=args.standalone,
 #     garnet = Garnet(args, width=args.width, height=args.height,
                     pe_fc=pe_fc,
