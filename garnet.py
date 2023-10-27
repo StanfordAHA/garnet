@@ -56,7 +56,7 @@ class Garnet(Generator):
                  mem_ratio: int = 4,
                  num_tracks: int = 5,
                  tile_layout_option: int = 0,
-                 amber_pond: bool = False,
+                 # amber_pond: bool = False,
                  # add_pond: bool = True,
 
                  # Huh these three all say default False but
@@ -105,7 +105,7 @@ class Garnet(Generator):
         self.config_data_width = config_data_width
         axi_addr_width = self.glb_params.cgra_axi_addr_width
         axi_data_width = self.glb_params.axi_data_width
-        self.amber_pond = amber_pond
+        self.amber_pond = args.amber_pond
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
 
@@ -170,7 +170,7 @@ class Garnet(Generator):
                                    tile_id_width=tile_id_width,
                                    num_tracks=num_tracks,
                                    add_pd=add_pd,
-                                   amber_pond=amber_pond,
+                                   # amber_pond=amber_pond,
 
                                    # This one is tricky, leave it alone for now
                                    add_pond=not args.no_pond,
@@ -759,7 +759,7 @@ def main():
                     num_tracks=args.num_tracks,
                     tile_layout_option=args.tile_layout_option,
                     # pipeline_config_interval=args.pipeline_config_interval,
-                    amber_pond=args.amber_pond,
+                    # amber_pond=args.amber_pond,
                     # add_pond=not args.no_pond,
                     # pond_area_opt=not args.no_pond_area_opt,
                     # pond_area_opt_share=args.pond_area_opt_share,
