@@ -167,6 +167,7 @@ class Garnet(Generator):
             "Wilton": SwitchBoxType.Wilton
         }
 
+        print(f"FOOO {args.use_sim_sram}")
         interconnect = create_cgra(width, height, io_side,
                                    args,
                                    reg_addr_width=config_addr_reg_width,
@@ -183,7 +184,7 @@ class Garnet(Generator):
                                    # pond_area_opt_share=pond_area_opt_share,
                                    # pond_area_opt_dual_config=pond_area_opt_dual_config,
                                    # use_io_valid=use_io_valid,
-                                   # use_sim_sram=args.use_sim_sram,
+                                   use_sim_sram=args.use_sim_sram,
                                    # harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
                                    # pipeline_config_interval=args.pipeline_config_interval,

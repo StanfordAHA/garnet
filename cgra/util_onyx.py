@@ -117,6 +117,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             try: locals[v] = locals['args'].__dict__[v]
             except: pass
 
+    print(args.__dict__)
+    assert use_sim_sram = args.use_sim_sram
+
     replace_w_args(locals(), [
         'add_reg',
         'mem_ratio',
