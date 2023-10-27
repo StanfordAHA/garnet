@@ -686,7 +686,7 @@ def main():
     parser.add_argument("--dump-config-reg", action="store_true")
     parser.add_argument("--virtualize-group-size", type=int, default=4)
     parser.add_argument("--virtualize", action="store_true")
-    parser.add_argument("--no-harden-flush", action="store_true")
+    parser.add_argument("--no-harden-flush", dest="harden_flush", action="store_false")
     parser.add_argument("--use-io-valid", action="store_true")
     parser.add_argument("--pipeline-pnr", action="store_true")
     parser.add_argument("--generate-bitstream-only", action="store_true")
@@ -753,7 +753,10 @@ def main():
                     pond_area_opt=not args.no_pond_area_opt,
                     pond_area_opt_share=args.pond_area_opt_share,
                     pond_area_opt_dual_config=not args.no_pond_area_opt_dual_config,
-                    harden_flush=not args.no_harden_flush,
+
+                    # harden_flush=not args.no_harden_flush,
+                    harden_flush=args.harden_flush,
+
                     use_io_valid=args.use_io_valid,
                     interconnect_only=args.interconnect_only,
                     use_sim_sram=args.use_sim_sram,
