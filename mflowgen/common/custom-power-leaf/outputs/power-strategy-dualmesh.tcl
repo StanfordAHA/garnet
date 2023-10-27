@@ -15,7 +15,12 @@
 #-------------------------------------------------------------------------
 # Generate horizontal stdcell preroutes
 
-if $::env(PWR_AWARE) {
+set pwr_aware false
+if [info exists ::env(PWR_AWARE)] {
+  set pwr_aware $::env(PWR_AWARE)
+}
+
+if $pwr_aware {
  set power_nets {VDD_SW VSS VDD}
  # VDD is 2nd power net so that it can 
  # be available above and below the SRAMs
@@ -76,7 +81,7 @@ set M3_route_pitchX [dbGet [dbGetLayerByZ 3].pitchX]
 set M3_str_width            [expr  3 * $M3_min_width]
 set M3_str_pitch            [expr 20 * $M3_route_pitchX]
 
-if $::env(PWR_AWARE) {
+if $pwr_aware {
   set M3_str_intraset_spacing [expr ($M3_str_pitch - 2*$M3_str_width)/2]
 } else {
   set M3_str_intraset_spacing [expr $M3_str_pitch - $M3_str_width]
@@ -100,7 +105,7 @@ set stripeLly [expr [dbGet top.fPlan.coreBox_lly] - [dbGet [dbGetLayerByZ 1].pit
 set stripeUrx [dbGet top.fPlan.coreBox_urx]
 set stripeUry [expr [dbGet top.fPlan.coreBox_ury] + [dbGet [dbGetLayerByZ 1].pitchY]]
 
-if $::env(PWR_AWARE) {
+if $pwr_aware {
   setAddStripeMode -area [list $stripeLlx $stripeLly $stripeUrx $stripeUry] -ignore_nondefault_domains true -skip_via_on_pin {}
 
   # M3 stripes: VDD_SW and VSS (GND)
@@ -214,14 +219,14 @@ foreach_in_collection block $srams {
 set pmesh_bot_str_width [expr  8 * $M3_str_width]
 
 
-if $::env(PWR_AWARE) {
+if $pwr_aware {
     # To allow VDD stripe at top and bottom the SRAM
     set pmesh_bot_str_pitch [expr 3 * $M3_str_pitch]
 } else {
     set pmesh_bot_str_pitch [expr 5 * $M3_str_pitch]
 }
 
-if $::env(PWR_AWARE) {
+if $pwr_aware {
    set pmesh_bot_str_intraset_spacing [expr ($pmesh_bot_str_pitch - 2*$pmesh_bot_str_width)/2]
 } else {
    set pmesh_bot_str_intraset_spacing [expr $pmesh_bot_str_pitch - $pmesh_bot_str_width]
@@ -234,7 +239,7 @@ setViaGenMode -ignore_DRC false
 
 setAddStripeMode -reset
 setAddStripeMode -reset
-if $::env(PWR_AWARE) {
+if $pwr_aware {
    setAddStripeMode -stacked_via_bottom_layer 3 \
                  -stacked_via_top_layer    $pmesh_top \
                  -ignore_nondefault_domains true
@@ -284,6 +289,6 @@ addStripe -nets $power_nets -layer $pmesh_bot -direction horizontal \
     -extend_to design_boundary
 }
 
-if $::env(PWR_AWARE) {
+if $pwr_aware {
 sroute -allowJogging 0 -allowLayerChange 0 -connect  {secondaryPowerPin} -secondaryPinNet VDD -powerDomains TOP
 }
