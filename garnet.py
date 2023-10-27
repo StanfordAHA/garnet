@@ -50,6 +50,7 @@ set_debug_mode(False)
 
 
 class Garnet(Generator):
+    # Goal is to have this look like just "def __init__(self, args)"
     def __init__(self, args,
                  width,
                  height,
@@ -84,7 +85,8 @@ class Garnet(Generator):
                  macro_width: int = 32,
                  dac_exp: bool = False,
                  dual_port: bool = False,
-                 rf: bool = False):
+                 ):
+        rf = args.rf # FIXME/FYI I cannot find where this is ever used anywhere...??
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -187,7 +189,8 @@ class Garnet(Generator):
                                    macro_width=macro_width,
                                    dac_exp=dac_exp,
                                    dual_port=dual_port,
-                                   rf=rf)
+                                   # rf=rf                 # passed via args now
+                                   )
 
         self.interconnect = interconnect
 
@@ -707,7 +710,7 @@ def main():
     parser.add_argument("--mem-input-ports", type=int, default=2)
     parser.add_argument("--mem-output-ports", type=int, default=2)
     parser.add_argument("--dual-port", action="store_true")
-    parser.add_argument("--rf", action="store_true")
+    parser.add_argument("--rf", action="store_true", type=bool, default=False)
     parser.add_argument("--dac-exp", action="store_true")
     parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
