@@ -52,7 +52,8 @@ set_debug_mode(False)
 class Garnet(Generator):
     def __init__(self, args, width, height, add_pd, 
                  # interconnect_only: bool = False,
-                 use_sim_sram: bool = True, standalone: bool = False,
+                 use_sim_sram: bool = True,
+                 # standalone: bool = False,
                  # mem_ratio: int = 4,
                  # num_tracks: int = 5,
                  # tile_layout_option: int = 0,
@@ -94,7 +95,7 @@ class Garnet(Generator):
 
         # Check consistency of @standalone and @interconnect_only parameters. If
         # @standalone is True, then interconnect_only must also be True.
-        if standalone:
+        if args.standalone:
             assert interconnect_only
 
         # configuration parameters
@@ -122,7 +123,7 @@ class Garnet(Generator):
         self.pipeline_config_interval = args.pipeline_config_interval
 
         # only north side has IO
-        if standalone:
+        if args.standalone:
             io_side = IOSide.None_
         else:
             io_side = IOSide.North
@@ -185,7 +186,7 @@ class Garnet(Generator):
                                    # pipeline_config_interval=args.pipeline_config_interval,
                                    mem_ratio=(1, args.mem_ratio),
                                    # tile_layout_option=tile_layout_option,
-                                   standalone=standalone,
+                                   # standalone=standalone,
 #         interconnect = create_cgra(width, height, io_side,
                                    pe_fc=pe_fc,
                                    # ready_valid=ready_valid,
@@ -771,7 +772,7 @@ def main():
                     # use_io_valid=args.use_io_valid,
                     # interconnect_only=args.interconnect_only,
                     use_sim_sram=args.use_sim_sram,
-                    standalone=args.standalone,
+                    # standalone=args.standalone,
 #     garnet = Garnet(args, width=args.width, height=args.height,
                     pe_fc=pe_fc,
                     # ready_valid=args.ready_valid,
