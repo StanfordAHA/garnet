@@ -129,7 +129,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     print(f'--- FOO3 {use_sim_sram}')
 
 
-    def check_arg(args, vname, v):
+    def check_arg(args, v, vname):
         try:    return args.__dict__[vname]
         except: return v
 
