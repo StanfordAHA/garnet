@@ -18,10 +18,10 @@ import magma
 # from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
 # from global_buffer.global_buffer_main import gen_param_header
 
-# from systemRDL.util import gen_rdl_header
-# from global_controller.global_controller_magma import GlobalController
-# from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
-# from canal.global_signal import GlobalSignalWiring
+from systemRDL.util import gen_rdl_header
+from global_controller.global_controller_magma import GlobalController
+from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
+from canal.global_signal import GlobalSignalWiring
 # from mini_mapper import map_app, get_total_cycle_from_app
 # from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
 # from cgra import create_cgra
@@ -107,7 +107,6 @@ class Garnet(Generator):
 
 # class Garnet(Generator):
 
-        from canal.global_signal import GlobalSignalWiring
         if not interconnect_only:
             # width must be even number
             assert (self.width % 2) == 0
@@ -120,7 +119,6 @@ class Garnet(Generator):
             wiring = GlobalSignalWiring.ParallelMeso
 
 
-            from global_controller.global_controller_magma import GlobalController
             self.global_controller = GlobalController(addr_width=config_addr_width,
                                                       data_width=config_data_width,
                                                       axi_addr_width=axi_addr_width,
@@ -208,7 +206,6 @@ class Garnet(Generator):
 
         if not interconnect_only:
             from gemstone.common.jtag_type import JTAGType
-            from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
@@ -799,7 +796,6 @@ def main():
                              params=glb_params,
                              output_folder=os.path.join(garnet_home, "global_buffer/header"))
 
-            from systemRDL.util import gen_rdl_header
             gen_rdl_header(top_name="glb",
                            rdl_file=os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl"),
                            output_folder=os.path.join(garnet_home, "global_buffer/header"))
