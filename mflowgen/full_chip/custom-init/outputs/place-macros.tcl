@@ -179,21 +179,24 @@ foreach_in_collection sram $srams {
   # snap the sram to the grid, and place it
   set sram_x_loc_snap [snap_to_grid $sram_loc_x $hori_pitch]
   set sram_y_loc_snap [snap_to_grid $sram_loc_y $vert_pitch]
-  # placeinstance $sram_name $sram_x_loc_snap $sram_y_loc_snap -fixed
+  placeinstance $sram_name $sram_x_loc_snap $sram_y_loc_snap -fixed
 
   # add halo/routeblk to the sram
   set halo_left   $tech_pitch_x
   set halo_bottom $tech_pitch_y 
   set halo_right  $tech_pitch_x 
   set halo_top    [expr $tech_pitch_y + $vert_pitch]
-  # addHaloToBlock $halo_left $halo_bottom $halo_right $halo_top -snapToSite $sram_name
+  addHaloToBlock $halo_left $halo_bottom $halo_right $halo_top -snapToSite $sram_name
   
   # add route block to the sram
   set sram_route_block_llx [snap_to_grid [expr $sram_llx - $halo_left]    $hori_pitch]
   set sram_route_block_lly [snap_to_grid [expr $sram_lly - $halo_bottom]  $vert_pitch]
   set sram_route_block_urx [snap_to_grid [expr $sram_urx + $halo_right]   $hori_pitch]
   set sram_route_block_ury [snap_to_grid [expr $sram_ury + $halo_top]     $vert_pitch]
-  createRouteBlk -layer {m1 m2 m3 m4} -box "$sram_route_block_llx $sram_route_block_lly $sram_route_block_urx $sram_route_block_ury"
+  # for some unknown reason, this route block will be moved to the origin and block others...
+  # disable it for now, investigate later
+  # createRouteBlk -layer {m1 m2 m3 m4} -box "$sram_route_block_llx $sram_route_block_lly $sram_route_block_urx $sram_route_block_ury"
+  echo "$sram_route_block_llx $sram_route_block_lly $sram_route_block_urx $sram_route_block_ury"
 
   # advance the sram location
   set sram_loc_x [expr $sram_loc_x + $sram_width + $sram_gap]
