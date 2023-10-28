@@ -118,7 +118,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     print(f'--- FOO2a {args.use_sim_sram}')
     print(f'--- FOO3a {use_sim_sram}')
 
-    if False:
+    if True:
         add_reg                   = check_arg(args, add_reg,                   'add_reg')
         mem_ratio                 = check_arg(args, mem_ratio,                 'mem_ratio')
         reg_addr_width            = check_arg(args, reg_addr_width,            'reg_addr_width')
@@ -169,10 +169,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     print(f'--- FOO2 {args.use_sim_sram}')
     print(f'--- FOO3 {use_sim_sram}')
 
-#     print(args.__dict__)
-#     assert use_sim_sram == args.use_sim_sram
+    #     print(args.__dict__) # FAILS if no args i.e. when called from pytests
+    #     assert use_sim_sram == args.use_sim_sram
 
-    replace_w_args(locals(), [
+
+
+    vars = [
+
         'add_reg',
         'mem_ratio',
         'reg_addr_width',
@@ -211,7 +214,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         'dac_exp',
         'dual_port',
         'rf', 
-    ])
+    ]
+    # replace_w_args(locals(), vars)
 
     print(f'--- FOO2a {args.use_sim_sram}')
     print(f'--- FOO3a {use_sim_sram}')
