@@ -52,8 +52,8 @@ set_debug_mode(False)
 
 class Garnet(Generator):
     def __init__(self, args, 
-                 width, 
-                 height, 
+                 # width, 
+                 # height, 
                  # add_pd, 
                  # interconnect_only: bool = False,
                  # use_sim_sram: bool = True,
@@ -93,6 +93,8 @@ class Garnet(Generator):
                  # dual_port: bool = False, # Instead, init arg w action="store_true"
                  # rf: bool = False         # Instead, init arg w action="store_true"
                  ):
+        width             = args.width
+        height            = args.height
         interconnect_only = args.interconnect_only
         glb_params        = args.glb_params
         super().__init__()
@@ -778,8 +780,8 @@ def main():
     args.add_pd = not args.no_pd
 
     garnet = Garnet(args,
-                    width=args.width,
-                    height=args.height,
+                    # width=args.width,
+                    # height=args.height,
                     # glb_params=glb_params,
                     # add_pd=not args.no_pd,
                     # mem_ratio=args.mem_ratio,
