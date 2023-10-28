@@ -19,7 +19,7 @@ import magma
 # from global_buffer.global_buffer_main import gen_param_header
 
 # from systemRDL.util import gen_rdl_header
-# from global_controller.global_controller_magma import GlobalController
+from global_controller.global_controller_magma import GlobalController
 # from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 # from canal.global_signal import GlobalSignalWiring
 # from mini_mapper import map_app, get_total_cycle_from_app
@@ -120,7 +120,6 @@ class Garnet(Generator):
             wiring = GlobalSignalWiring.ParallelMeso
 
 
-            from global_controller.global_controller_magma import GlobalController
             self.global_controller = GlobalController(addr_width=config_addr_width,
                                                       data_width=config_data_width,
                                                       axi_addr_width=axi_addr_width,
