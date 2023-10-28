@@ -40,10 +40,10 @@ import archipelago
 import archipelago.power
 import archipelago.io
 import math
-from collections import defaultdict
+# from collections import defaultdict
 
-from peak_gen.peak_wrapper import wrapped_peak_class
-from peak_gen.arch import read_arch
+# from peak_gen.peak_wrapper import wrapped_peak_class
+# from peak_gen.arch import read_arch
 
 import metamapper.coreir_util as cutil
 from metamapper.node import Nodes
@@ -551,6 +551,8 @@ class Garnet(Generator):
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
     def fix_pond_flush_bug(self, placement, routing):
+        from collections import defaultdict
+
         # This is a fix for the Onyx pond hardware, in future chips we can remove this
         pond_locs = []
         for node, (x, y) in placement.items():
@@ -744,6 +746,8 @@ def main():
 
     pe_fc = lassen_fc
     if args.pe:
+        from peak_gen.peak_wrapper import wrapped_peak_class
+        from peak_gen.arch import read_arch
         arch = read_arch(args.pe)
         pe_fc = wrapped_peak_class(arch, debug=True)
 
