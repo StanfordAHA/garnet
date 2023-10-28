@@ -13,10 +13,11 @@ import magma
 # from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
 # from gemstone.generator.generator import Generator, set_debug_mode
 
-from global_buffer.io_placement import place_io_blk
-from global_buffer.design.global_buffer import GlobalBufferMagma
-from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
-from global_buffer.global_buffer_main import gen_param_header
+# from global_buffer.io_placement import place_io_blk
+# from global_buffer.design.global_buffer import GlobalBufferMagma
+# from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
+# from global_buffer.global_buffer_main import gen_param_header
+
 from systemRDL.util import gen_rdl_header
 from global_controller.global_controller_magma import GlobalController
 from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
@@ -48,6 +49,7 @@ from mapper.netlist_util import create_netlist_info, print_netlist_info
 from metamapper.coreir_mapper import Mapper
 
 # set the debug mode to false to speed up construction
+from gemstone.generator.generator import set_debug_mode
 set_debug_mode(False)
 
 
@@ -124,6 +126,7 @@ class Garnet(Generator):
                                                       block_axi_addr_width=glb_params.axi_addr_width,
                                                       group_size=glb_params.num_cols_per_group)
 
+            from global_buffer.design.global_buffer import GlobalBufferMagma
             self.global_buffer = GlobalBufferMagma(glb_params)
 
         else:
@@ -519,6 +522,7 @@ class Garnet(Generator):
         if unconstrained_io:
             fixed_io = None
         else:
+            from global_buffer.io_placement import place_io_blk
             fixed_io = place_io_blk(id_to_name, app_dir)
 
         placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
@@ -729,6 +733,8 @@ def main():
     if args.pe:
         arch = read_arch(args.pe)
         pe_fc = wrapped_peak_class(arch, debug=True)
+
+    from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
     glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
                                           num_cgra_cols=args.width,
                                           # NOTE: We assume num_prr is same as num_glb_tiles
@@ -781,6 +787,8 @@ def main():
             garnet_home = os.getenv('GARNET_HOME')
             if not garnet_home:
                 garnet_home = os.path.dirname(os.path.abspath(__file__))
+
+            from global_buffer.global_buffer_main import gen_param_header
             gen_param_header(top_name="global_buffer_param",
                              params=glb_params,
                              output_folder=os.path.join(garnet_home, "global_buffer/header"))
