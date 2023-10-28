@@ -20,6 +20,24 @@ class SRAM(Generator):
             self.WTSEL = self.input("WTSEL", 2)
 
             self.add_always(self.tsmc_ff)
+        elif process == "INTEL":
+            self.clk = self.clock("clk")
+            self.wen = self.input("wen", 1)
+            self.ren = self.input("ren", 1)
+            self.adr = self.input("adr", self.num_words.bit_length() - 1)
+            self.din = self.input("din", self.word_size)
+            self.q = self.output("q", self.word_size)
+            self.wbeb = self.input("wbeb", self.word_size)
+            self.fwen = self.input("fwen", 1)
+            self.clkbyp = self.input("clkbyp", 1)
+            self.mcen = self.input("mcen", 1)
+            self.mc = self.input("mc", 3)
+            self.wpulseen = self.input("wpulseen", 1)
+            self.wpulse = self.input("wpulse", 2)
+            self.wa = self.input("wa", 2)
+
+            self.add_always(self.intel_ff)
+
         elif process == "GF":
             self.CLK = self.clock("CLK")
             self.CEN = self.input("CEN", 1)
@@ -61,3 +79,12 @@ class SRAM(Generator):
                 for i in range(64):
                     if self.BW[i]:
                         self.data_array[self.A][i] = self.D[i]
+
+    @always_ff((posedge, "clk"))
+    def intel_ff(self):
+        if self.wen == 1:
+            for i in range(64):
+                if ~self.wbeb[i]:
+                    self.data_array[self.adr][i] = self.din[i]
+        elif self.ren == 1:
+            self.q = self.data_array[self.adr]
