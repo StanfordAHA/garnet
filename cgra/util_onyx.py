@@ -64,9 +64,61 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
         width += 1
     return width, height
 
+def create_cgra_w_args(width, height, io_sides,
+                       args,
+                       reg_addr_width=None,
+                       config_data_width=None,
+                       tile_id_width=None,
+                       # num_tracks=num_tracks,
+                       add_pd=None,
+                       # amber_pond=amber_pond,
+                       add_pond=None,
+                       # pond_area_opt=pond_area_opt,
+                       # pond_area_opt_share=pond_area_opt_share,
+                       # pond_area_opt_dual_config=pond_area_opt_dual_config,
+                       # use_io_valid=use_io_valid,
+                       # use_sim_sram=args.use_sim_sram,
+                       # harden_flush=harden_flush,
+                       global_signal_wiring=None,
+                       # pipeline_config_interval=args.pipeline_config_interval,
+                       mem_ratio=None,
+                       # tile_layout_option=tile_layout_option,
+                       # standalone=standalone,
+                       pe_fc=None,
+                       # ready_valid=ready_valid,
+                       scgra=None,
+                       scgra_combined=None,
+                       switchbox_type=None,
+                       # pipeline_regs_density=pipeline_regs_density,
+                       # port_conn_option=port_conn_option,
+                       # mem_width=mem_width,
+                       # mem_depth=mem_depth,
+                       # mem_input_ports=mem_input_ports,
+                       # mem_output_ports=mem_output_ports,
+                       # macro_width=macro_width,
+                       # dac_exp=dac_exp,
+                       # dual_port=dual_port,
+                       # rf=rf,
+                       )
+
+    return create_cgra(width, height, io_sides,
+                       reg_addr_width=reg_addr_width,
+                       config_data_width=config_data_width,
+                       tile_id_width=tile_id_width,
+                       add_pd=add_pd,
+                       add_pond=add_pond,
+                       global_signal_wiring=global_signal_wiring,
+                       mem_ratio=mem_ratio,
+                       pe_fc=pe_fc,
+                       scgra=scgra,
+                       scgra_combined=scgra_combined,
+                       switchbox_type=switchbox_type,
+                       )
+
+
 
 def create_cgra(width: int, height: int, io_sides: IOSide,
-                args={},
+                # args={},
                 add_reg: bool = True,
                 mem_ratio: Tuple[int, int] = (1, 4),
                 reg_addr_width: int = 8,
@@ -111,139 +163,139 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 perf_debug: bool = False,
                 tech_map='Intel'):
 
-    def check_arg(args, v, vname):
-        try:    return args.__dict__[vname]
-        except: return v
-
-    # NOTE All refs to args.<foo> will FAIL on pytest path
-    try:
-        print(f'--- FOO2a {args.use_sim_sram}')
-        print(f'--- FOO3a {use_sim_sram}')
-
-        # tile_max = mem_ratio[-1]
-        # TypeError: 'int' object is not subscriptable
-        print(f'--- KOO1 {args.mem_ratio}')
-        print(f'--- KOO1 {mem_ratio}')
-
-
-
-
-
-    except: pass
-
-
-
-
-
-
-    if True:
-        add_reg                   = check_arg(args, add_reg,                   'add_reg')
-        mem_ratio                 = check_arg(args, mem_ratio,                 'mem_ratio')
-        reg_addr_width            = check_arg(args, reg_addr_width,            'reg_addr_width')
-        config_data_width         = check_arg(args, config_data_width,         'config_data_width')
-        tile_id_width             = check_arg(args, tile_id_width,             'tile_id_width')
-        num_tracks                = check_arg(args, num_tracks,                'num_tracks')
-        add_pd                    = check_arg(args, add_pd,                    'add_pd')
-        use_sim_sram              = check_arg(args, use_sim_sram,              'use_sim_sram')
-        hi_lo_tile_id             = check_arg(args, hi_lo_tile_id,             'hi_lo_tile_id')
-        pass_through_clk          = check_arg(args, pass_through_clk,          'pass_through_clk')
-        tile_layout_option        = check_arg(args, tile_layout_option,        'tile_layout_option')
-        global_signal_wiring      = check_arg(args, global_signal_wiring,      'global_signal_wiring')
-        pipeline_config_interval  = check_arg(args, pipeline_config_interval,  'pipeline_config_interval')
-        standalone                = check_arg(args, standalone,                'standalone')
-        amber_pond                = check_arg(args, amber_pond,                'amber_pond')
-        add_pond                  = check_arg(args, add_pond,                  'add_pond')
-        pond_area_opt             = check_arg(args, pond_area_opt,             'pond_area_opt')
-        pond_area_opt_share       = check_arg(args, pond_area_opt_share,       'pond_area_opt_share')
-        pond_area_opt_dual_config = check_arg(args, pond_area_opt_dual_config, 'pond_area_opt_dual_config')
-        harden_flush              = check_arg(args, harden_flush,              'harden_flush')
-        use_io_valid              = check_arg(args, use_io_valid,              'use_io_valid')
-        switchbox_type            = check_arg(args, switchbox_type,            'switchbox_type')
-        pipeline_regs_density     = check_arg(args, pipeline_regs_density,     'pipeline_regs_density')
-        port_conn_option          = check_arg(args, port_conn_option,          'port_conn_option')
-        port_conn_override        = check_arg(args, port_conn_override,        'port_conn_override')
-        altcore                   = check_arg(args, altcore,                   'altcore')
-        pe_fc                     = check_arg(args, pe_fc,                     'pe_fc')
-        ready_valid               = check_arg(args, ready_valid,               'ready_valid')
-        scgra                     = check_arg(args, scgra,                     'scgra')
-        scgra_combined            = check_arg(args, scgra_combined,            'scgra_combined')
-        mem_width                 = check_arg(args, mem_width,                 'mem_width')
-        mem_depth                 = check_arg(args, mem_depth,                 'mem_depth')
-        mem_input_ports           = check_arg(args, mem_input_ports,           'mem_input_ports')
-        mem_output_ports          = check_arg(args, mem_output_ports,          'mem_output_ports')
-        macro_width               = check_arg(args, macro_width,               'macro_width')
-        dac_exp                   = check_arg(args, dac_exp,                   'dac_exp')
-        dual_port                 = check_arg(args, dual_port,                 'dual_port')
-        rf                        = check_arg(args, rf,                        'rf')
-
-
-    # For garnet.py refactor. Allow option for args to come in via "args" parm.
-    def replace_w_args(locals, vars):
-        for v in vars:
-            try: locals[v] = locals['args'].__dict__[v]
-            except: pass
-
-    # NOTE All refs to args.<foo> will FAIL on pytest path
-    try:
-        print(f'--- FOO1 {args.__dict__}')
-        print(f'--- FOO2 {args.use_sim_sram}')
-        print(f'--- FOO3 {use_sim_sram}')
-    except:
-        pass
-
-    #     print(args.__dict__) # FAILS if no args i.e. when called from pytests
-    #     assert use_sim_sram == args.use_sim_sram
-
-
-
-    vars = [
-
-        'add_reg',
-        'mem_ratio',
-        'reg_addr_width',
-        'config_data_width',
-        'tile_id_width',
-        'num_tracks',
-        'add_pd',
-        'use_sim_sram',
-        'hi_lo_tile_id',
-        'pass_through_clk',
-        'tile_layout_option',
-        'global_signal_wiring',
-        'pipeline_config_interval',
-        'standalone',
-        'amber_pond',
-        'add_pond',
-        'pond_area_opt',
-        'pond_area_opt_share',
-        'pond_area_opt_dual_config',
-        'harden_flush',
-        'use_io_valid',
-        'switchbox_type',
-        'pipeline_regs_density',
-        'port_conn_option',
-        'port_conn_override',
-        'altcore',
-        'pe_fc',
-        'ready_valid',
-        'scgra',
-        'scgra_combined',
-        'mem_width',
-        'mem_depth',
-        'mem_input_ports',
-        'mem_output_ports',
-        'macro_width',
-        'dac_exp',
-        'dual_port',
-        'rf', 
-    ]
-    # replace_w_args(locals(), vars)
-
-    # NOTE All refs to args.<foo> will FAIL on pytest path
-    try:
-        print(f'--- FOO2a {args.use_sim_sram}')
-        print(f'--- FOO3a {use_sim_sram}')
-    except: pass
+#     def check_arg(args, v, vname):
+#         try:    return args.__dict__[vname]
+#         except: return v
+# 
+#     # NOTE All refs to args.<foo> will FAIL on pytest path
+#     try:
+#         print(f'--- FOO2a {args.use_sim_sram}')
+#         print(f'--- FOO3a {use_sim_sram}')
+# 
+#         # tile_max = mem_ratio[-1]
+#         # TypeError: 'int' object is not subscriptable
+#         print(f'--- KOO1 {args.mem_ratio}')
+#         print(f'--- KOO1 {mem_ratio}')
+# 
+# 
+# 
+# 
+# 
+#     except: pass
+# 
+# 
+# 
+# 
+# 
+# 
+#     if True:
+#         add_reg                   = check_arg(args, add_reg,                   'add_reg')
+#         mem_ratio                 = check_arg(args, mem_ratio,                 'mem_ratio')
+#         reg_addr_width            = check_arg(args, reg_addr_width,            'reg_addr_width')
+#         config_data_width         = check_arg(args, config_data_width,         'config_data_width')
+#         tile_id_width             = check_arg(args, tile_id_width,             'tile_id_width')
+#         num_tracks                = check_arg(args, num_tracks,                'num_tracks')
+#         add_pd                    = check_arg(args, add_pd,                    'add_pd')
+#         use_sim_sram              = check_arg(args, use_sim_sram,              'use_sim_sram')
+#         hi_lo_tile_id             = check_arg(args, hi_lo_tile_id,             'hi_lo_tile_id')
+#         pass_through_clk          = check_arg(args, pass_through_clk,          'pass_through_clk')
+#         tile_layout_option        = check_arg(args, tile_layout_option,        'tile_layout_option')
+#         global_signal_wiring      = check_arg(args, global_signal_wiring,      'global_signal_wiring')
+#         pipeline_config_interval  = check_arg(args, pipeline_config_interval,  'pipeline_config_interval')
+#         standalone                = check_arg(args, standalone,                'standalone')
+#         amber_pond                = check_arg(args, amber_pond,                'amber_pond')
+#         add_pond                  = check_arg(args, add_pond,                  'add_pond')
+#         pond_area_opt             = check_arg(args, pond_area_opt,             'pond_area_opt')
+#         pond_area_opt_share       = check_arg(args, pond_area_opt_share,       'pond_area_opt_share')
+#         pond_area_opt_dual_config = check_arg(args, pond_area_opt_dual_config, 'pond_area_opt_dual_config')
+#         harden_flush              = check_arg(args, harden_flush,              'harden_flush')
+#         use_io_valid              = check_arg(args, use_io_valid,              'use_io_valid')
+#         switchbox_type            = check_arg(args, switchbox_type,            'switchbox_type')
+#         pipeline_regs_density     = check_arg(args, pipeline_regs_density,     'pipeline_regs_density')
+#         port_conn_option          = check_arg(args, port_conn_option,          'port_conn_option')
+#         port_conn_override        = check_arg(args, port_conn_override,        'port_conn_override')
+#         altcore                   = check_arg(args, altcore,                   'altcore')
+#         pe_fc                     = check_arg(args, pe_fc,                     'pe_fc')
+#         ready_valid               = check_arg(args, ready_valid,               'ready_valid')
+#         scgra                     = check_arg(args, scgra,                     'scgra')
+#         scgra_combined            = check_arg(args, scgra_combined,            'scgra_combined')
+#         mem_width                 = check_arg(args, mem_width,                 'mem_width')
+#         mem_depth                 = check_arg(args, mem_depth,                 'mem_depth')
+#         mem_input_ports           = check_arg(args, mem_input_ports,           'mem_input_ports')
+#         mem_output_ports          = check_arg(args, mem_output_ports,          'mem_output_ports')
+#         macro_width               = check_arg(args, macro_width,               'macro_width')
+#         dac_exp                   = check_arg(args, dac_exp,                   'dac_exp')
+#         dual_port                 = check_arg(args, dual_port,                 'dual_port')
+#         rf                        = check_arg(args, rf,                        'rf')
+# 
+# 
+#     # For garnet.py refactor. Allow option for args to come in via "args" parm.
+#     def replace_w_args(locals, vars):
+#         for v in vars:
+#             try: locals[v] = locals['args'].__dict__[v]
+#             except: pass
+# 
+#     # NOTE All refs to args.<foo> will FAIL on pytest path
+#     try:
+#         print(f'--- FOO1 {args.__dict__}')
+#         print(f'--- FOO2 {args.use_sim_sram}')
+#         print(f'--- FOO3 {use_sim_sram}')
+#     except:
+#         pass
+# 
+#     #     print(args.__dict__) # FAILS if no args i.e. when called from pytests
+#     #     assert use_sim_sram == args.use_sim_sram
+# 
+# 
+# 
+#     vars = [
+# 
+#         'add_reg',
+#         'mem_ratio',
+#         'reg_addr_width',
+#         'config_data_width',
+#         'tile_id_width',
+#         'num_tracks',
+#         'add_pd',
+#         'use_sim_sram',
+#         'hi_lo_tile_id',
+#         'pass_through_clk',
+#         'tile_layout_option',
+#         'global_signal_wiring',
+#         'pipeline_config_interval',
+#         'standalone',
+#         'amber_pond',
+#         'add_pond',
+#         'pond_area_opt',
+#         'pond_area_opt_share',
+#         'pond_area_opt_dual_config',
+#         'harden_flush',
+#         'use_io_valid',
+#         'switchbox_type',
+#         'pipeline_regs_density',
+#         'port_conn_option',
+#         'port_conn_override',
+#         'altcore',
+#         'pe_fc',
+#         'ready_valid',
+#         'scgra',
+#         'scgra_combined',
+#         'mem_width',
+#         'mem_depth',
+#         'mem_input_ports',
+#         'mem_output_ports',
+#         'macro_width',
+#         'dac_exp',
+#         'dual_port',
+#         'rf', 
+#     ]
+#     # replace_w_args(locals(), vars)
+# 
+#     # NOTE All refs to args.<foo> will FAIL on pytest path
+#     try:
+#         print(f'--- FOO2a {args.use_sim_sram}')
+#         print(f'--- FOO3a {use_sim_sram}')
+#     except: pass
 
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]

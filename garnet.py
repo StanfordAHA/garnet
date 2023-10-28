@@ -171,7 +171,7 @@ class Garnet(Generator):
 
         save_mem_ratio = args.mem_ratio
         args.mem_ratio = (1, args.mem_ratio)
-        interconnect = create_cgra(width, height, io_side,
+        interconnect = create_cgra_w_args(width, height, io_side,
                                    args,
                                    reg_addr_width=config_addr_reg_width,
                                    config_data_width=config_data_width,
