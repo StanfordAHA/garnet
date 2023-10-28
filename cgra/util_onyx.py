@@ -115,8 +115,12 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         try:    return args.__dict__[vname]
         except: return v
 
-    print(f'--- FOO2a {args.use_sim_sram}')
-    print(f'--- FOO3a {use_sim_sram}')
+    # NOTE All refs to args.<foo> will FAIL on pytest path
+    try:
+        print(f'--- FOO2a {args.use_sim_sram}')
+        print(f'--- FOO3a {use_sim_sram}')
+    except: pass
+
 
     if True:
         add_reg                   = check_arg(args, add_reg,                   'add_reg')
@@ -165,9 +169,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             try: locals[v] = locals['args'].__dict__[v]
             except: pass
 
-    print(f'--- FOO1 {args.__dict__}')
-    print(f'--- FOO2 {args.use_sim_sram}')
-    print(f'--- FOO3 {use_sim_sram}')
+    # NOTE All refs to args.<foo> will FAIL on pytest path
+    try:
+        print(f'--- FOO1 {args.__dict__}')
+        print(f'--- FOO2 {args.use_sim_sram}')
+        print(f'--- FOO3 {use_sim_sram}')
+    except:
+        pass
 
     #     print(args.__dict__) # FAILS if no args i.e. when called from pytests
     #     assert use_sim_sram == args.use_sim_sram
@@ -217,10 +225,11 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     ]
     # replace_w_args(locals(), vars)
 
-    print(f'--- FOO2a {args.use_sim_sram}')
-    print(f'--- FOO3a {use_sim_sram}')
-
-
+    # NOTE All refs to args.<foo> will FAIL on pytest path
+    try:
+        print(f'--- FOO2a {args.use_sim_sram}')
+        print(f'--- FOO3a {use_sim_sram}')
+    except: pass
 
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
