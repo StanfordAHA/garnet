@@ -194,7 +194,7 @@ class Garnet(Generator):
                                    mem_ratio=(1, args.mem_ratio),
                                    # tile_layout_option=tile_layout_option,
                                    # standalone=standalone,
-                                   pe_fc=pe_fc,
+                                   # pe_fc=pe_fc,
                                    # ready_valid=ready_valid,
 
                                    # These three are tricky, leave them for now...
@@ -771,6 +771,8 @@ def main():
                                           axi_data_width=32,
                                           config_port_pipeline=args.config_port_pipeline)
 
+    
+    args.pe_fc = pe_fc
     garnet = Garnet(args, width=args.width, height=args.height,
                     glb_params=glb_params,
                     add_pd=not args.no_pd,
@@ -791,8 +793,7 @@ def main():
                     # interconnect_only=args.interconnect_only,
                     # use_sim_sram=args.use_sim_sram,
                     # standalone=args.standalone,
-#     garnet = Garnet(args, width=args.width, height=args.height,
-                    pe_fc=pe_fc,
+                    # pe_fc=pe_fc,
                     # ready_valid=args.ready_valid,
                     # scgra=args.sparse_cgra,
                     # scgra_combined=args.sparse_cgra_combined,
