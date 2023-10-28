@@ -263,7 +263,10 @@ def construct():
   init.extend_inputs( custom_init.all_outputs() )
   init.extend_inputs( init_fc.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-  cts.extend_inputs( custom_cts.all_outputs() )
+
+  # TODO: Disable custom CTS for now
+  #       Understand it and turn it back up later
+  # cts.extend_inputs( custom_cts.all_outputs() )
 
   synth.extend_inputs( soc_rtl.all_outputs() )
   synth.extend_inputs( read_design.all_outputs() )
@@ -421,8 +424,11 @@ def construct():
   g.connect_by_name( cts,            postcts_hold   )
   g.connect_by_name( postcts_hold,   route          )
   g.connect_by_name( route,          postroute      )
-  g.connect_by_name( postroute,      postroute_hold )
-  g.connect_by_name( postroute_hold, signoff        )
+
+  # faster results for signoff
+  g.connect_by_name( postroute,      signoff          )
+  # g.connect_by_name( postroute,      postroute_hold )
+  # g.connect_by_name( postroute_hold, signoff        )
 
   # Merge guardring oasis into design
   g.connect_by_name( merge_gdr,      fill           )
@@ -486,8 +492,8 @@ def construct():
   # Power node order manipulation
   order = power.get_param('order')
   # Move endcap/welltap insertion to end of power step to improve runtime
-  order.append( 'add-endcaps-welltaps.tcl' )
-  # order.insert(0, 'add-endcaps-welltaps.tcl' )
+  # order.append( 'add-endcaps-welltaps.tcl' )
+  order.insert(0, 'add-endcaps-welltaps.tcl' )
   power.update_params( { 'order': order } )
 
   # Add pre-route plugin to insert skip_routing commands
@@ -505,7 +511,7 @@ def construct():
   merge_gdr.update_params( guardring_params )
 
   # Check the DRC at early stage of P&R
-  early_drc_check, early_drc_check_type = False, "power"
+  early_drc_check, early_drc_check_type = True, "power"
   early_drc_check_type = "power"
   if early_drc_check:
     if early_drc_check_type == "init":
