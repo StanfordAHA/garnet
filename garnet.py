@@ -54,7 +54,7 @@ class Garnet(Generator):
     def __init__(self, args, 
                  width, 
                  height, 
-                 add_pd, 
+                 # add_pd, 
                  # interconnect_only: bool = False,
                  # use_sim_sram: bool = True,
                  # standalone: bool = False,
@@ -74,9 +74,8 @@ class Garnet(Generator):
                  # harden_flush: bool = True,
                  # pipeline_config_interval: int = 8,
 
-                 # These are not part of args array
-                 glb_params: GlobalBufferParams = GlobalBufferParams(),
-                 pe_fc=lassen_fc,
+                 # glb_params: GlobalBufferParams = GlobalBufferParams(),
+                 # pe_fc=lassen_fc,
 
                  # ready_valid: bool = False, # parser overrides False default w True default...right?
                  # scgra: bool = False,
@@ -180,7 +179,7 @@ class Garnet(Generator):
                                    config_data_width=config_data_width,
                                    tile_id_width=tile_id_width,
                                    # num_tracks=num_tracks,
-                                   add_pd=add_pd,
+                                   # add_pd=add_pd,
                                    # amber_pond=amber_pond,
                                    # add_pond=not args.no_pond,
                                    # pond_area_opt=pond_area_opt,
@@ -772,10 +771,16 @@ def main():
                                           config_port_pipeline=args.config_port_pipeline)
 
     
+    # Prep args for Garnet call
     args.pe_fc = pe_fc
-    garnet = Garnet(args, width=args.width, height=args.height,
-                    glb_params=glb_params,
-                    add_pd=not args.no_pd,
+    args.glb_params = glb_params
+    args.add_pd = not args.no_pd
+
+    garnet = Garnet(args,
+                    width=args.width,
+                    height=args.height,
+                    # glb_params=glb_params,
+                    # add_pd=not args.no_pd,
                     # mem_ratio=args.mem_ratio,
                     # num_tracks=args.num_tracks,
                     # tile_layout_option=args.tile_layout_option,
