@@ -99,7 +99,7 @@ def create_cgra_w_args(width, height, io_sides,
                        # dac_exp=dac_exp,
                        # dual_port=dual_port,
                        # rf=rf,
-                       )
+                       ):
 
     return create_cgra(width, height, io_sides,
                        reg_addr_width=reg_addr_width,
