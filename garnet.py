@@ -20,8 +20,8 @@ import magma
 
 from systemRDL.util import gen_rdl_header
 from global_controller.global_controller_magma import GlobalController
-from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
-from canal.global_signal import GlobalSignalWiring
+# from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
+# from canal.global_signal import GlobalSignalWiring
 # from mini_mapper import map_app, get_total_cycle_from_app
 # from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
 # from cgra import create_cgra
@@ -107,6 +107,7 @@ class Garnet(Generator):
 
 # class Garnet(Generator):
 
+        from canal.global_signal import GlobalSignalWiring
         if not interconnect_only:
             # width must be even number
             assert (self.width % 2) == 0
@@ -206,6 +207,7 @@ class Garnet(Generator):
 
         if not interconnect_only:
             from gemstone.common.jtag_type import JTAGType
+            from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
