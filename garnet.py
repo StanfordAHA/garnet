@@ -172,7 +172,7 @@ class Garnet(Generator):
 
         save_mem_ratio = args.mem_ratio
         args.mem_ratio = (1, args.mem_ratio)
-        printf(f'--- FOO calling create_cgra_w_args()')
+        print(f'--- FOO calling create_cgra_w_args()')
         interconnect = create_cgra_w_args(width, height, io_side,
                                    args,
                                    reg_addr_width=config_addr_reg_width,
@@ -193,10 +193,9 @@ class Garnet(Generator):
                                    # harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
                                    # pipeline_config_interval=args.pipeline_config_interval,
-                                   # mem_ratio=(1, args.mem_ratio),
+                                   mem_ratio=(1, args.mem_ratio),
                                    # tile_layout_option=tile_layout_option,
                                    # standalone=standalone,
-#         interconnect = create_cgra(width, height, io_side,
                                    pe_fc=pe_fc,
                                    # ready_valid=ready_valid,
 

@@ -64,44 +64,34 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
         width += 1
     return width, height
 
-def create_cgra_w_args(width, height, io_sides,
-                       args,
-                       reg_addr_width=None,
-                       config_data_width=None,
-                       tile_id_width=None,
-                       # num_tracks=num_tracks,
-                       add_pd=None,
-                       # amber_pond=amber_pond,
-                       add_pond=None,
-                       # pond_area_opt=pond_area_opt,
-                       # pond_area_opt_share=pond_area_opt_share,
-                       # pond_area_opt_dual_config=pond_area_opt_dual_config,
-                       # use_io_valid=use_io_valid,
-                       # use_sim_sram=args.use_sim_sram,
-                       # harden_flush=harden_flush,
-                       global_signal_wiring=None,
-                       # pipeline_config_interval=args.pipeline_config_interval,
-                       mem_ratio=None,
-                       # tile_layout_option=tile_layout_option,
-                       # standalone=standalone,
-                       pe_fc=None,
-                       # ready_valid=ready_valid,
-                       scgra=None,
-                       scgra_combined=None,
-                       switchbox_type=None,
-                       # pipeline_regs_density=pipeline_regs_density,
-                       # port_conn_option=port_conn_option,
-                       # mem_width=mem_width,
-                       # mem_depth=mem_depth,
-                       # mem_input_ports=mem_input_ports,
-                       # mem_output_ports=mem_output_ports,
-                       # macro_width=macro_width,
-                       # dac_exp=dac_exp,
-                       # dual_port=dual_port,
-                       # rf=rf,
-                       ):
+# This (create_cgra_w_args) is ugly but could maybe be temporary. The
+# problem is that garnet.py can use its existing "args" to pass most
+# of the parameters to create_cgra(), but the many pytests in
+# $GARNET_REPO/tests call with custom parms. I don't feel like
+# refactoring the pytests ATM so for now we have garnet.py calling
+# create_cgra_w_args(), which greatly simplifies garnet.py BTW, and
+# then we also have the legacy create_cgra() call with fully
+# elaborated parms for the pytests.
 
+# This needs to match the arg list in the garnet.py call
+# "interconnect = create_cgra_w_args(..."
+def create_cgra_w_args(
+        width, height, io_sides,
+        args,
+        reg_addr_width=None,
+        config_data_width=None,
+        tile_id_width=None,
+        add_pd=None,
+        add_pond=None,
+        global_signal_wiring=None,
+        mem_ratio=None,
+        pe_fc=None,
+        scgra=None,
+        scgra_combined=None,
+        switchbox_type=None,
+):
     return create_cgra(width, height, io_sides,
+                       # add_reg
                        reg_addr_width=reg_addr_width,
                        config_data_width=config_data_width,
                        tile_id_width=tile_id_width,
@@ -113,53 +103,74 @@ def create_cgra_w_args(width, height, io_sides,
                        scgra=scgra,
                        scgra_combined=scgra_combined,
                        switchbox_type=switchbox_type,
+
+                       num_tracks=args.num_tracks,
+                       amber_pond=args.amber_pond,
+                       pond_area_opt=args.pond_area_opt,
+                       pond_area_opt_share=args.pond_area_opt_share,
+                       pond_area_opt_dual_config=args.pond_area_opt_dual_config,
+                       use_io_valid=args.use_io_valid,
+                       use_sim_sram=args.args.use_sim_sram,
+                       harden_flush=args.harden_flush,
+                       pipeline_config_interval=args.pipeline_config_interval,
+                       tile_layout_option=args.tile_layout_option,
+                       standalone=args.standalone,
+                       ready_valid=args.ready_valid,
+                       pipeline_regs_density=args.pipeline_regs_density,
+                       port_conn_option=args.port_conn_option,
+                       mem_width=args.mem_width,
+                       mem_depth=args.mem_depth,
+                       mem_input_ports=args.mem_input_ports,
+                       mem_output_ports=args.mem_output_ports,
+                       macro_width=args.macro_width,
+                       dac_exp=args.dac_exp,
+                       dual_port=args.dual_port,
+                       rf=args.rf,
                        )
 
-
-
+# 10/2023 rearranged arg ordering to match call from garnet.py
 def create_cgra(width: int, height: int, io_sides: IOSide,
-                # args={},
-                add_reg: bool = True,
-                mem_ratio: Tuple[int, int] = (1, 4),
                 reg_addr_width: int = 8,
                 config_data_width: int = 32,
                 tile_id_width: int = 16,
                 num_tracks: int = 5,
                 add_pd: bool = True,
-                use_sim_sram: bool = True,
-                hi_lo_tile_id: bool = True,
-                pass_through_clk: bool = True,
-                tile_layout_option: int = 0,  # 0: column-based, 1: row-based
-                global_signal_wiring: GlobalSignalWiring =
-                GlobalSignalWiring.Meso,
-                pipeline_config_interval: int = 8,
-                standalone: bool = False,
-                amber_pond: bool = False,
                 add_pond: bool = False,
+                global_signal_wiring: GlobalSignalWiring = GlobalSignalWiring.Meso,
+                mem_ratio: Tuple[int, int] = (1, 4),
+                pe_fc=lassen_fc,
+                scgra: bool = True,
+                scgra_combined: bool = True,
+                switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
+                amber_pond: bool = False,
                 pond_area_opt: bool = True,
                 pond_area_opt_share: bool = False,
                 pond_area_opt_dual_config: bool = True,
-                harden_flush: bool = True,
                 use_io_valid: bool = True,
-                switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
+                use_sim_sram: bool = True,
+                harden_flush: bool = True,
+                pipeline_config_interval: int = 8,
+                tile_layout_option: int = 0,  # 0: column-based, 1: row-based
+                standalone: bool = False,
+                ready_valid: bool = True,
                 pipeline_regs_density: list = None,
                 port_conn_option: list = None,
-                port_conn_override: Dict[str,
-                                         List[Tuple[SwitchBoxSide,
-                                                    SwitchBoxIO]]] = None,
-                altcore=None,
-                pe_fc=lassen_fc,
-                ready_valid: bool = True,
-                scgra: bool = True,
-                scgra_combined: bool = True,
                 mem_width: int = 64,
                 mem_depth: int = 512,
                 mem_input_ports: int = 2,
                 mem_output_ports: int = 2,
                 macro_width: int = 32,
-                dac_exp: bool = False,    # Can optionally come in via "args"
-                dual_port: bool = False,   # Can optionally come in via "args"
-                rf: bool = False,          # Can optionally come in via "args"
+                dac_exp: bool = False,
+                dual_port: bool = False,
+                rf: bool = False,
+
+                add_reg: bool = True,
+                port_conn_override: Dict[str,
+                                         List[Tuple[SwitchBoxSide,
+                                                    SwitchBoxIO]]] = None,
+                hi_lo_tile_id: bool = True,
+                pass_through_clk: bool = True,
+                altcore=None,
                 perf_debug: bool = False,
                 tech_map='Intel'):
 
