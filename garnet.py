@@ -18,18 +18,24 @@ import magma
 # from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
 # from global_buffer.global_buffer_main import gen_param_header
 
+# If I move this it breaks. Dunno why.
 from systemRDL.util import gen_rdl_header
+
 # from global_controller.global_controller_magma import GlobalController
 # from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
 # from canal.global_signal import GlobalSignalWiring
 # from mini_mapper import map_app, get_total_cycle_from_app
 # from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
 # from cgra import create_cgra
+
+# This is actually used more than once!
 from cgra import compress_config_data
 
 import json
-from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
-from passes.interconnect_port_pass import stall_port_pass, config_port_pass
+
+# from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
+# from passes.interconnect_port_pass import stall_port_pass, config_port_pass
+
 import archipelago
 import archipelago.power
 import archipelago.io
@@ -193,6 +199,7 @@ class Garnet(Generator):
 
         self.interconnect = interconnect
 
+        from passes.interconnect_port_pass import stall_port_pass, config_port_pass
         # make multiple stall ports
         stall_port_pass(self.interconnect, port_name="stall", port_width=1, col_offset=1)
         # make multiple flush ports
@@ -876,6 +883,8 @@ def main():
         for c_id, bitstream in result.items():
             filename = os.path.join("temp", f"{c_id}.bs")
             write_out_bitstream(filename, bitstream)
+
+    from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
     if args.dump_config_reg:
         ic = garnet.interconnect
         ic_reg = get_interconnect_regs(ic)
