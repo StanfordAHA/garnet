@@ -32,4 +32,10 @@ class ClkGate(Generator):
                            TE=const(0, 1),
                            Z=self.gclk)
         else:
-            raise Exception("process should be either 'TSMC' or 'GF'")
+            self.add_child(f"CG_CELL",
+                           CG(self._params),
+                           E=self.enable,
+                           CLK=self.clk,
+                           TE=const(0, 1),
+                           Z=self.gclk)
+                        
