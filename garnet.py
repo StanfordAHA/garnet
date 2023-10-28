@@ -34,7 +34,7 @@ from cgra import compress_config_data
 import json
 
 # from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
-# from passes.interconnect_port_pass import stall_port_pass, config_port_pass
+from passes.interconnect_port_pass import stall_port_pass, config_port_pass
 
 import archipelago
 import archipelago.power
@@ -199,7 +199,6 @@ class Garnet(Generator):
 
         self.interconnect = interconnect
 
-        from passes.interconnect_port_pass import stall_port_pass, config_port_pass
         # make multiple stall ports
         stall_port_pass(self.interconnect, port_name="stall", port_width=1, col_offset=1)
         # make multiple flush ports
