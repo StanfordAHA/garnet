@@ -97,6 +97,8 @@ class Garnet(Generator):
         height            = args.height
         interconnect_only = args.interconnect_only
         glb_params        = args.glb_params
+        pe_fc             = args.pe_fc
+        
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
