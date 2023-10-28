@@ -119,7 +119,21 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     try:
         print(f'--- FOO2a {args.use_sim_sram}')
         print(f'--- FOO3a {use_sim_sram}')
+
+        # tile_max = mem_ratio[-1]
+        # TypeError: 'int' object is not subscriptable
+        print(f'--- KOO1 {args.mem_ratio}')
+        print(f'--- KOO1 {mem_ratio}')
+
+
+
+
+
     except: pass
+
+
+
+
 
 
     if True:

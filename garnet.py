@@ -168,6 +168,9 @@ class Garnet(Generator):
         }
 
         print(f"FOOO {args.use_sim_sram}")
+
+        save_mem_ratio = args.mem_ratio
+        args.mem_ratio = (1, args.mem_ratio)
         interconnect = create_cgra(width, height, io_side,
                                    args,
                                    reg_addr_width=config_addr_reg_width,
@@ -188,7 +191,7 @@ class Garnet(Generator):
                                    # harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
                                    # pipeline_config_interval=args.pipeline_config_interval,
-                                   mem_ratio=(1, args.mem_ratio),
+                                   # mem_ratio=(1, args.mem_ratio),
                                    # tile_layout_option=tile_layout_option,
                                    # standalone=standalone,
 #         interconnect = create_cgra(width, height, io_side,
@@ -211,6 +214,9 @@ class Garnet(Generator):
                                    # dual_port=dual_port, # Now uses args to find rf
                                    # rf=rf                # Now uses args to find rf
                                    )
+        save_mem_ratio = args.mem_ratio
+        args.mem_ratio = save_mem_ratio
+
 
         self.interconnect = interconnect
 
