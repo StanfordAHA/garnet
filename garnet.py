@@ -39,7 +39,7 @@ import json
 import archipelago
 import archipelago.power
 import archipelago.io
-import math
+# import math
 # from collections import defaultdict
 
 # from peak_gen.peak_wrapper import wrapped_peak_class
@@ -121,6 +121,7 @@ class Garnet(Generator):
             # Bank should be larger than or equal to 1KB
             assert glb_params.bank_addr_width >= 10
 
+            import math
             glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
                 math.ceil(math.log(glb_params.banks_per_tile, 2))
             wiring = GlobalSignalWiring.ParallelMeso
