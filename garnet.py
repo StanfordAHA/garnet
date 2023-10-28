@@ -181,10 +181,7 @@ class Garnet(Generator):
                                    # num_tracks=num_tracks,
                                    add_pd=add_pd,
                                    # amber_pond=amber_pond,
-
-                                   # This one is tricky, leave it alone for now
-                                   add_pond=not args.no_pond,
-
+                                   # add_pond=not args.no_pond,
                                    # pond_area_opt=pond_area_opt,
                                    # pond_area_opt_share=pond_area_opt_share,
                                    # pond_area_opt_dual_config=pond_area_opt_dual_config,
@@ -700,7 +697,10 @@ def main():
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--amber-pond", action="store_true")
-    parser.add_argument("--no-pond", action="store_true")
+
+    # parser.add_argument("--no-pond", action="store_true")
+    parser.add_argument("--no-pond", dest="add_pond", action="store_false")
+
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--compact", action="store_true")
     parser.add_argument("--use_sim_sram", action="store_true")
@@ -723,9 +723,15 @@ def main():
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
     parser.add_argument("--sparse-cgra", action="store_true")
     parser.add_argument("--sparse-cgra-combined", action="store_true")
-    parser.add_argument("--no-pond-area-opt", action="store_true")
+
+    # parser.add_argument("--no-pond-area-opt", action="store_true")
+    parser.add_argument("--no-pond-area-opt", dest="pond_area_opt", action="store_false")
+
     parser.add_argument("--pond-area-opt-share", action="store_true")
-    parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
+
+    # parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
+    parser.add_argument("--no-pond-area-opt-dual-config", dest="pond_area_opt_dual_config", action="store_false")
+
     parser.add_argument("--sb-option", type=str, default="Imran")
     parser.add_argument("--pipeline-regs-density", nargs="+", type=int, default=None)
     parser.add_argument("--port-conn-option", nargs="+", type=int, default=None)
