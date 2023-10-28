@@ -93,7 +93,7 @@ deselect_obj -all
 
 # now connect parallel m1 and m2 layers with a via1 aligned to m1 tracks
 setViaGenMode -reset
-setViaGenMode -ignore_DRC true
+# setViaGenMode -ignore_DRC true
 editPowerVia \
     -bottom_layer m1 \
     -top_layer m2 \
@@ -108,25 +108,31 @@ editPowerVia \
 set prev_layer m2
 set i 0
 foreach layer { m3 m4 m5 m6 m7 m8 gmz} {
+
     # configure via gen
     setViaGenMode -reset
     setViaGenMode -viarule_preference default
-    setViaGenMode -ignore_DRC true
+    # setViaGenMode -ignore_DRC true
+
     # configure stripe gen
     setAddStripeMode -reset
+    # setAddStripeMode -ignore_DRC true
     setAddStripeMode -stacked_via_bottom_layer $prev_layer \
                      -stacked_via_top_layer    $layer
+    
     # determine stripe direction
     if { $layer == "m3" || $layer == "m5" || $layer == "m7" || $layer == "gmz"} {
         set stripe_direction vertical
     } else {
         set stripe_direction horizontal
     }
+
     # determine stripe parameters
     set stripe_width          [lindex $ADK_M3_TO_M8_STRIPE_WIDTH_LIST $i]
     set stripe_offset         [lindex $ADK_M3_TO_M8_STRIPE_OFSET_LIST $i]
     set stripe_spacing        [lindex $ADK_M3_TO_M8_STRIPE_SPACE_LIST $i]
     set stripe_interset_pitch [expr 2 * ($stripe_width + $stripe_spacing)]
+
     # create the stripes
     addStripe \
         -nets                {VSS VDD} \
@@ -140,6 +146,7 @@ foreach layer { m3 m4 m5 m6 m7 m8 gmz} {
     # update previous metal layer
     set prev_layer $layer
     set i [expr $i + 1]
+
 }
 
 #-------------------------------------------------------------------------
@@ -159,8 +166,8 @@ set pwr_area_urx [expr [dbGet top.fPlan.box_urx] - $hori_pitch * 1310]
 set pwr_area_ury [expr [dbGet top.fPlan.box_ury] - $vert_pitch * 216]
 
 setViaGenMode -reset
-setViaGenMode -ignore_DRC true
-setAddStripeMode -ignore_DRC true
+# setViaGenMode -ignore_DRC true
+# setAddStripeMode -ignore_DRC true
 setAddStripeMode -stacked_via_bottom_layer gmz \
                  -stacked_via_top_layer    gm0
 
@@ -189,8 +196,8 @@ set pwr_area_ury [expr [dbGet top.fPlan.box_ury] - $pwr_area_lly]
 setAddStripeMode -stacked_via_bottom_layer gm0 \
                  -stacked_via_top_layer    gmb
 
-setViaGenMode -ignore_DRC true
-setAddStripeMode -ignore_DRC true
+# setViaGenMode -ignore_DRC true
+# setAddStripeMode -ignore_DRC true
 addStripe \
         -nets                {VSS VDD} \
         -layer               gmb \
