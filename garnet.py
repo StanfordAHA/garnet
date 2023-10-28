@@ -18,13 +18,15 @@ import magma
 # from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
 # from global_buffer.global_buffer_main import gen_param_header
 
-from systemRDL.util import gen_rdl_header
-from global_controller.global_controller_magma import GlobalController
-from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
-from canal.global_signal import GlobalSignalWiring
-from mini_mapper import map_app, get_total_cycle_from_app
-from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
-from cgra import create_cgra_w_args
+# from systemRDL.util import gen_rdl_header
+# from global_controller.global_controller_magma import GlobalController
+# from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
+# from canal.global_signal import GlobalSignalWiring
+# from mini_mapper import map_app, get_total_cycle_from_app
+# from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
+# from cgra import create_cgra
+from cgra import compress_config_data
+
 import json
 from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
 from passes.interconnect_port_pass import stall_port_pass, config_port_pass
@@ -105,6 +107,7 @@ class Garnet(Generator):
 
 # class Garnet(Generator):
 
+        from canal.global_signal import GlobalSignalWiring
         if not interconnect_only:
             # width must be even number
             assert (self.width % 2) == 0
@@ -115,6 +118,9 @@ class Garnet(Generator):
             glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
                 math.ceil(math.log(glb_params.banks_per_tile, 2))
             wiring = GlobalSignalWiring.ParallelMeso
+
+
+            from global_controller.global_controller_magma import GlobalController
             self.global_controller = GlobalController(addr_width=config_addr_width,
                                                       data_width=config_data_width,
                                                       axi_addr_width=axi_addr_width,
@@ -141,10 +147,7 @@ class Garnet(Generator):
 
         print(f"--- FOOO {args.use_sim_sram}")
 
-#         save_mem_ratio = args.mem_ratio
-#         args.mem_ratio = (1, args.mem_ratio)
-
-        print(f'--- FOO calling create_cgra_w_args()')
+        from cgra import create_cgra_w_args
         interconnect = create_cgra_w_args(width, height, io_side,
                                    args,
                                    reg_addr_width=config_addr_reg_width,
@@ -205,6 +208,7 @@ class Garnet(Generator):
 
         if not interconnect_only:
             from gemstone.common.jtag_type import JTAGType
+            from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
@@ -250,6 +254,7 @@ class Garnet(Generator):
             # Top -> Interconnect clock port connection
             self.wire(self.ports.clk_in, self.interconnect.ports.clk)
 
+            from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
             glc_interconnect_wiring(self)
@@ -286,6 +291,7 @@ class Garnet(Generator):
                 self.add_ports(flush=magma.In(magma.Bits[self.width // 4]))
                 self.wire(self.ports.flush, self.interconnect.ports.flush)
 
+    from mini_mapper import map_app
     def map(self, halide_src):
         return map_app(halide_src, retiming=True)
 
@@ -792,6 +798,8 @@ def main():
             gen_param_header(top_name="global_buffer_param",
                              params=glb_params,
                              output_folder=os.path.join(garnet_home, "global_buffer/header"))
+
+            from systemRDL.util import gen_rdl_header
             gen_rdl_header(top_name="glb",
                            rdl_file=os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl"),
                            output_folder=os.path.join(garnet_home, "global_buffer/header"))
@@ -842,7 +850,10 @@ def main():
             for en_port in en:
                 if en_port in inputs:
                     inputs.remove(en_port)
+
+        from mini_mapper import get_total_cycle_from_app
         total_cycle = get_total_cycle_from_app(args.app)
+
         if len(outputs) > 1:
             outputs.remove(valid)
         config = {
