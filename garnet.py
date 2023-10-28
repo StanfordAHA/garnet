@@ -6,11 +6,13 @@ if os.getenv('WHICH_SOC') == "amber":
 
 import argparse
 import magma
-from canal.util import IOSide, SwitchBoxType
-from gemstone.common.configurable import ConfigurationType
-from gemstone.common.jtag_type import JTAGType
-from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
-from gemstone.generator.generator import Generator, set_debug_mode
+
+# from canal.util import IOSide, SwitchBoxType
+# from gemstone.common.configurable import ConfigurationType
+# from gemstone.common.jtag_type import JTAGType
+# from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
+# from gemstone.generator.generator import Generator, set_debug_mode
+
 from global_buffer.io_placement import place_io_blk
 from global_buffer.design.global_buffer import GlobalBufferMagma
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
@@ -49,6 +51,7 @@ from metamapper.coreir_mapper import Mapper
 set_debug_mode(False)
 
 
+from gemstone.generator.generator import Generator
 class Garnet(Generator):
     def __init__(self, args):
 
@@ -90,6 +93,7 @@ class Garnet(Generator):
         self.pipeline_config_interval = args.pipeline_config_interval
 
         # only north side has IO
+        from canal.util import IOSide
         if args.standalone:
             io_side = IOSide.None_
         else:
@@ -125,6 +129,7 @@ class Garnet(Generator):
         else:
             wiring = GlobalSignalWiring.Meso
 
+        from canal.util import SwitchBoxType
         sb_type_dict = {
             "Imran": SwitchBoxType.Imran,
             "Disjoint": SwitchBoxType.Disjoint,
@@ -196,6 +201,7 @@ class Garnet(Generator):
             self.inter_core_connections[bw] = interconnect.inter_core_connection
 
         if not interconnect_only:
+            from gemstone.common.jtag_type import JTAGType
             self.add_ports(
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
@@ -250,6 +256,7 @@ class Garnet(Generator):
                 self.add_port(name, self.interconnect.ports[name].type())
                 self.wire(self.ports[name], self.interconnect.ports[name])
 
+            from gemstone.common.configurable import ConfigurationType
             self.add_ports(
                 clk=magma.In(magma.Clock),
                 reset=magma.In(magma.AsyncReset),
@@ -740,43 +747,7 @@ def main():
     args.glb_params = glb_params
     args.add_pd = not args.no_pd
 
-    garnet = Garnet(args,
-                    # width=args.width,
-                    # height=args.height,
-                    # glb_params=glb_params,
-                    # add_pd=not args.no_pd,
-                    # mem_ratio=args.mem_ratio,
-                    # num_tracks=args.num_tracks,
-                    # tile_layout_option=args.tile_layout_option,
-                    # pipeline_config_interval=args.pipeline_config_interval,
-                    # amber_pond=args.amber_pond,
-                    # add_pond=not args.no_pond,
-                    # pond_area_opt=not args.no_pond_area_opt,
-                    # pond_area_opt_share=args.pond_area_opt_share,
-                    # pond_area_opt_dual_config=not args.no_pond_area_opt_dual_config,
-
-                    # harden_flush=not args.no_harden_flush,
-                    # harden_flush=args.harden_flush,
-
-                    # use_io_valid=args.use_io_valid,
-                    # interconnect_only=args.interconnect_only,
-                    # use_sim_sram=args.use_sim_sram,
-                    # standalone=args.standalone,
-                    # pe_fc=pe_fc,
-                    # ready_valid=args.ready_valid,
-                    # scgra=args.sparse_cgra,
-                    # scgra_combined=args.sparse_cgra_combined,
-                    # sb_option=args.sb_option,
-                    # pipeline_regs_density=args.pipeline_regs_density,
-                    # port_conn_option=args.port_conn_option,
-                    # config_port_pipeline=args.config_port_pipeline,
-                    # mem_width=args.mem_width,
-                    # mem_depth=args.mem_depth,
-                    # macro_width=args.macro_width,
-                    # dac_exp=args.dac_exp,      # Now uses args to find rf
-                    # dual_port=args.dual_port,  # Now uses args to find rf
-                    # rf=rf                      # Now uses args to find rf
-                    )
+    garnet = Garnet(args)
 
     if args.verilog:
         garnet_circ = garnet.circuit()
@@ -786,6 +757,7 @@ def main():
                       inline=False)
 
         # copy in cell definitions
+        from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
         files = AOIMuxWrapper.get_sv_files()
         with open("garnet.v", "a") as garnet_v:
             for filename in files:
