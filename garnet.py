@@ -94,6 +94,7 @@ class Garnet(Generator):
                  # rf: bool = False         # Instead, init arg w action="store_true"
                  ):
         interconnect_only = args.interconnect_only
+        glb_params        = args.glb_params
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
