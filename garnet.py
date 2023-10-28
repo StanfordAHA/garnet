@@ -170,8 +170,9 @@ class Garnet(Generator):
 
         print(f"--- FOOO {args.use_sim_sram}")
 
-        save_mem_ratio = args.mem_ratio
-        args.mem_ratio = (1, args.mem_ratio)
+#         save_mem_ratio = args.mem_ratio
+#         args.mem_ratio = (1, args.mem_ratio)
+
         print(f'--- FOO calling create_cgra_w_args()')
         interconnect = create_cgra_w_args(width, height, io_side,
                                    args,
@@ -212,8 +213,8 @@ class Garnet(Generator):
                                    # dual_port=dual_port, # Now uses args to find rf
                                    # rf=rf                # Now uses args to find rf
                                    )
-        save_mem_ratio = args.mem_ratio
-        args.mem_ratio = save_mem_ratio
+#         save_mem_ratio = args.mem_ratio
+#         args.mem_ratio = save_mem_ratio
 
 
         self.interconnect = interconnect
