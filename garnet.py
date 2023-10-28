@@ -25,7 +25,6 @@ from cgra import create_cgra_w_args
 import json
 from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
 from passes.interconnect_port_pass import stall_port_pass, config_port_pass
-import os
 import archipelago
 import archipelago.power
 import archipelago.io
@@ -51,48 +50,8 @@ set_debug_mode(False)
 
 
 class Garnet(Generator):
-    def __init__(self, args, 
-                 # width, 
-                 # height, 
-                 # add_pd, 
-                 # interconnect_only: bool = False,
-                 # use_sim_sram: bool = True,
-                 # standalone: bool = False,
-                 # mem_ratio: int = 4,
-                 # num_tracks: int = 5,
-                 # tile_layout_option: int = 0,
-                 # amber_pond: bool = False,
-                 # add_pond: bool = True,
+    def __init__(self, args):
 
-                 # Huh these three all say default False but
-                 # options parser guarantees that default is actually TRUE !
-                 # pond_area_opt: bool = False,
-                 # pond_area_opt_share: bool = False,
-                 # pond_area_opt_dual_config: bool = False,
-
-                 # use_io_valid: bool = False,
-                 # harden_flush: bool = True,
-                 # pipeline_config_interval: int = 8,
-
-                 # glb_params: GlobalBufferParams = GlobalBufferParams(),
-                 # pe_fc=lassen_fc,
-
-                 # ready_valid: bool = False, # parser overrides False default w True default...right?
-                 # scgra: bool = False,
-                 # scgra_combined: bool = True,
-                 # sb_option: str = "Imran",
-                 # pipeline_regs_density: list = None,
-                 # port_conn_option: list = None,
-                 # config_port_pipeline: bool = True,
-                 # mem_width: int = 64,
-                 # mem_depth: int = 512,
-                 # mem_input_ports: int = 2,
-                 # mem_output_ports: int = 2,
-                 # macro_width: int = 32,   # Instead, init arg w default=32
-                 # dac_exp: bool = False,   # Instead, init arg w action="store_true"
-                 # dual_port: bool = False, # Instead, init arg w action="store_true"
-                 # rf: bool = False         # Instead, init arg w action="store_true"
-                 ):
         width             = args.width
         height            = args.height
         interconnect_only = args.interconnect_only
