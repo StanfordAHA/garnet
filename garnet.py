@@ -614,7 +614,8 @@ def write_out_bitstream(filename, bitstream):
         f.write("\n".join(bs))
 
 
-def main():
+def parse_args():
+
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
@@ -678,6 +679,11 @@ def main():
     parser.add_argument("--dac-exp", action="store_true")
     parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
+
+    return args
+
+def main():
+    args = parse_args()
 
     if not args.interconnect_only:
         assert args.width % 2 == 0 and args.width >= 4
