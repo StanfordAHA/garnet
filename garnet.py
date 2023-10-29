@@ -103,6 +103,7 @@ class Garnet(Generator):
 
         from cgra import create_cgra_w_args
         args.config_data_width = config_data_width
+        print(f'--- FOO-xero sb_option = {args.sb_option}')
         interconnect = create_cgra_w_args(width, height, io_side,
                                    args,
                                    # reg_addr_width      = args.config_addr_reg_width,

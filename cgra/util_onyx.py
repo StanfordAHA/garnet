@@ -1,6 +1,7 @@
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
 from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring,\
     apply_global_fanout_wiring, apply_global_parallel_meso_wiring
+# from canal.util import SwitchBoxType
 from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
 from canal.interconnect import Interconnect
@@ -96,14 +97,14 @@ def create_cgra_w_args(
     scgra                = args.sparse_cgra
     scgra_combined       = args.sparse_cgra_combined
 
-    from canal.util import SwitchBoxType
     sb_type_dict = {
         "Imran": SwitchBoxType.Imran,
         "Disjoint": SwitchBoxType.Disjoint,
         "Wilton": SwitchBoxType.Wilton
     }
     switchbox_type = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
-
+    print(f'--- FOO sb_option = {args.sb_option}')
+    print(f'--- FOO switchbox_type = {switchbox_type}')
 
     return create_cgra(
         width, height, io_sides,
