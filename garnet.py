@@ -95,7 +95,7 @@ class Garnet(Generator):
 
         # Can we do this here?
         if not args.interconnect_only:
-            assert False # but is it tested ever?
+            # assert False # but is it tested ever? Failed pytest in 3m7s
             self.build_glb()  # Builds self.{global_controller, global_buffer}
 
         # GLB ports (or not)
