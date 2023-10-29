@@ -620,8 +620,8 @@ def main():
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--amber-pond", action="store_true")
 
-    # parser.add_argument("--no-pond", action="store_true")
-    parser.add_argument("--no-pond", dest="add_pond", action="store_false")
+    parser.add_argument("--no-pond", action="store_true")
+    # parser.add_argument("--no-pond", dest="add_pond", action="store_false")
 
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--compact", action="store_true")
@@ -646,13 +646,13 @@ def main():
     parser.add_argument("--sparse-cgra", action="store_true")
     parser.add_argument("--sparse-cgra-combined", action="store_true")
 
-    # parser.add_argument("--no-pond-area-opt", action="store_true")
-    parser.add_argument("--no-pond-area-opt", dest="pond_area_opt", action="store_false")
+    parser.add_argument("--no-pond-area-opt", action="store_true")
+    # parser.add_argument("--no-pond-area-opt", dest="pond_area_opt", action="store_false")
 
     parser.add_argument("--pond-area-opt-share", action="store_true")
 
-    # parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
-    parser.add_argument("--no-pond-area-opt-dual-config", dest="pond_area_opt_dual_config", action="store_false")
+    parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
+    # parser.add_argument("--no-pond-area-opt-dual-config", dest="pond_area_opt_dual_config", action="store_false")
 
     parser.add_argument("--sb-option", type=str, default="Imran")
     parser.add_argument("--pipeline-regs-density", nargs="+", type=int, default=None)
