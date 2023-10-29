@@ -629,10 +629,7 @@ def parse_args():
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--amber-pond", action="store_true")
-
     parser.add_argument("--no-pond", action="store_true")
-    # parser.add_argument("--no-pond", dest="add_pond", action="store_false")
-
     parser.add_argument("--interconnect-only", action="store_true")
     parser.add_argument("--compact", action="store_true")
     parser.add_argument("--use_sim_sram", action="store_true")
@@ -655,15 +652,9 @@ def parse_args():
     parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
     parser.add_argument("--sparse-cgra", action="store_true")
     parser.add_argument("--sparse-cgra-combined", action="store_true")
-
     parser.add_argument("--no-pond-area-opt", action="store_true")
-    # parser.add_argument("--no-pond-area-opt", dest="pond_area_opt", action="store_false")
-
     parser.add_argument("--pond-area-opt-share", action="store_true")
-
     parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
-    # parser.add_argument("--no-pond-area-opt-dual-config", dest="pond_area_opt_dual_config", action="store_false")
-
     parser.add_argument("--sb-option", type=str, default="Imran")
     parser.add_argument("--pipeline-regs-density", nargs="+", type=int, default=None)
     parser.add_argument("--port-conn-option", nargs="+", type=int, default=None)
@@ -677,9 +668,10 @@ def parse_args():
     parser.add_argument("--dual-port", action="store_true")
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
-    parser.set_defaults(config_port_pipeline=True)
-    args = parser.parse_args()
 
+    parser.set_defaults(config_port_pipeline=True)
+
+    args = parser.parse_args()
     return args
 
 def main():
