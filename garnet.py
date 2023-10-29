@@ -98,6 +98,7 @@ class Garnet(Generator):
         self.amber_pond = amber_pond
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
+        self.ready_valid = ready_valid
 
         tile_id_width = 16
         config_addr_reg_width = 8
