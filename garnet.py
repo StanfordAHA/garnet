@@ -676,41 +676,8 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def main():
-    args = parse_args()
+ def build_verilog(args, garnet):
 
-    if not args.interconnect_only:
-        assert args.width % 2 == 0 and args.width >= 4
-    if args.standalone and not args.interconnect_only:
-        raise Exception("--standalone must be specified with "
-                        "--interconnect-only as well")
-    from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
-    args.glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
-                                          num_cgra_cols=args.width,
-                                          # NOTE: We assume num_prr is same as num_glb_tiles
-                                          num_prr=args.width // 2,
-                                          glb_tile_mem_size=args.glb_tile_mem_size,
-                                          bank_data_width=64,
-                                          cfg_addr_width=32,
-                                          cfg_data_width=32,
-                                          cgra_axi_addr_width=13,
-                                          axi_data_width=32,
-                                          config_port_pipeline=args.config_port_pipeline)
-
-    args.pe_fc = lassen_fc
-    if args.pe:
-        from peak_gen.peak_wrapper import wrapped_peak_class
-        from peak_gen.arch import read_arch
-        arch = read_arch(args.pe)
-        args.pe_fc = wrapped_peak_class(arch, debug=True)
-
-    # Prep args for Garnet call
-    # args.glb_params = glb_params
-    # args.add_pd = not args.no_pd
-
-    garnet = Garnet(args)
-
-    if args.verilog:
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
                       coreir_libs={"float_CW"},
@@ -724,6 +691,7 @@ def main():
             for filename in files:
                 with open(filename) as f:
                     garnet_v.write(f.read())
+
         if args.sparse_cgra:
             # Cat the PE together...
             # files_cat = ['garnet.v', 'garnet_PE.v']
@@ -754,6 +722,41 @@ def main():
             gen_rdl_header(top_name="glc",
                            rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                            output_folder=os.path.join(garnet_home, "global_controller/header"))
+
+def main():
+    args = parse_args()
+
+    if not args.interconnect_only:
+        assert args.width % 2 == 0 and args.width >= 4
+    if args.standalone and not args.interconnect_only:
+        raise Exception("--standalone must be specified with "
+                        "--interconnect-only as well")
+    args.pe_fc = lassen_fc
+    if args.pe:
+        from peak_gen.peak_wrapper import wrapped_peak_class
+        from peak_gen.arch import read_arch
+        arch = read_arch(args.pe)
+        args.pe_fc = wrapped_peak_class(arch, debug=True)
+
+    from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
+    args.glb_params = gen_global_buffer_params(
+        num_glb_tiles=args.width // 2,
+        num_cgra_cols=args.width,
+        # NOTE: We assume num_prr is same as num_glb_tiles
+        num_prr=args.width // 2,
+        glb_tile_mem_size=args.glb_tile_mem_size,
+        bank_data_width=64,
+        cfg_addr_width=32,
+        cfg_data_width=32,
+        cgra_axi_addr_width=13,
+        axi_data_width=32,
+        config_port_pipeline=args.config_port_pipeline,
+    )
+
+    # BUILD GARNET
+    garnet = Garnet(args)
+
+    if args.verilog: build_verilog(args, garnet)
 
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
