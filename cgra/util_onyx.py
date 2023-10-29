@@ -78,16 +78,19 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
 def create_cgra_w_args(
         width, height, io_sides,
         args,
-        reg_addr_width=None,
+        # reg_addr_width=None,
         config_data_width=None,
-        tile_id_width=None,
-        global_signal_wiring=None,
+        # tile_id_width=None,
+        # global_signal_wiring=None,
         mem_ratio=None,
         scgra=None,
         scgra_combined=None,
         switchbox_type=None,
 ):
     
+    reg_addr_width       = args.config_addr_reg_width
+    tile_id_width        = args.tile_id_width
+    global_signal_wiring = args.global_signal_wiring
     return create_cgra(
         width, height, io_sides,
         reg_addr_width=reg_addr_width,

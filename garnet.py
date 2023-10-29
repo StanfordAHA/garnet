@@ -49,8 +49,8 @@ class Garnet(Generator):
         # axi_data_width must be same as cgra config_data_width
         assert axi_data_width == config_data_width
 
-        tile_id_width = 16
-        config_addr_reg_width = 8
+        args.tile_id_width = 16
+        args.config_addr_reg_width = 8
 
         # size
         self.width = width
@@ -81,7 +81,7 @@ class Garnet(Generator):
             import math
             glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
                 math.ceil(math.log(glb_params.banks_per_tile, 2))
-            wiring = GlobalSignalWiring.ParallelMeso
+            args.wiring = GlobalSignalWiring.ParallelMeso
 
             from global_controller.global_controller_magma import GlobalController
             self.global_controller = GlobalController(addr_width=config_addr_width,
@@ -99,7 +99,7 @@ class Garnet(Generator):
             self.global_buffer = GlobalBufferMagma(glb_params)
 
         else:
-            wiring = GlobalSignalWiring.Meso
+            args.wiring = GlobalSignalWiring.Meso
 
         from canal.util import SwitchBoxType
         sb_type_dict = {
@@ -111,14 +111,14 @@ class Garnet(Generator):
         from cgra import create_cgra_w_args
         interconnect = create_cgra_w_args(width, height, io_side,
                                    args,
-                                   reg_addr_width=config_addr_reg_width,
-                                   config_data_width=config_data_width,
-                                   tile_id_width=tile_id_width,
-                                   global_signal_wiring=wiring,
-                                   mem_ratio=(1, args.mem_ratio),
-                                   scgra=args.sparse_cgra,
-                                   scgra_combined=args.sparse_cgra_combined,
-                                   switchbox_type=sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
+                                   # reg_addr_width      = args.config_addr_reg_width,
+                                   config_data_width     = config_data_width,
+                                   # tile_id_width       = tile_id_width,
+                                   # global_signal_wiring  = args.wiring,
+                                   mem_ratio           = (1, args.mem_ratio),
+                                   scgra               = args.sparse_cgra,
+                                   scgra_combined      = args.sparse_cgra_combined,
+                                   switchbox_type      = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
                                    )
 
         self.interconnect = interconnect
