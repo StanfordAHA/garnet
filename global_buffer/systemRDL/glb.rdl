@@ -1,0 +1,560 @@
+addrmap glb{
+	name = "glb";
+	addressing = compact;
+	default regwidth = 32;
+	default sw = rw;
+	default hw = r;
+	reg {
+		name = "data_network_ctrl";
+		field {
+			name = "connected";
+		} connected[1] = 0;
+
+	} data_network_ctrl;
+
+	reg {
+		name = "data_network_latency";
+		field {
+			name = "value";
+		} value[6] = 0;
+
+	} data_network_latency;
+
+	reg {
+		name = "pcfg_network_ctrl";
+		field {
+			name = "connected";
+		} connected[1] = 0;
+
+	} pcfg_network_ctrl;
+
+	reg {
+		name = "pcfg_network_latency";
+		field {
+			name = "value";
+		} value[6] = 0;
+
+	} pcfg_network_latency;
+
+	reg {
+		name = "st_dma_ctrl";
+		field {
+			name = "mode";
+		} mode[2] = 0;
+
+		field {
+			name = "valid_mode";
+		} valid_mode[2] = 0;
+
+		field {
+			name = "data_mux";
+		} data_mux[2] = 0;
+
+		field {
+			name = "num_repeat";
+		} num_repeat[1] = 0;
+
+	} st_dma_ctrl;
+
+	reg {
+		name = "st_dma_num_blocks";
+		field {
+			name = "value";
+		} value[32] = 0;
+
+	} st_dma_num_blocks;
+
+	regfile {
+		name = "st_dma_header_0";
+		reg {
+			name = "dim";
+			field {
+				name = "dim";
+			} dim[4] = 0;
+
+		} dim;
+
+		reg {
+			name = "start_addr";
+			field {
+				name = "start_addr";
+			} start_addr[18] = 0;
+
+		} start_addr;
+
+		reg {
+			name = "cycle_start_addr";
+			field {
+				name = "cycle_start_addr";
+			} cycle_start_addr[16] = 0;
+
+		} cycle_start_addr;
+
+		reg {
+			name = "range_0";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_0;
+
+		reg {
+			name = "stride_0";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_0;
+
+		reg {
+			name = "cycle_stride_0";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_0;
+
+		reg {
+			name = "range_1";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_1;
+
+		reg {
+			name = "stride_1";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_1;
+
+		reg {
+			name = "cycle_stride_1";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_1;
+
+		reg {
+			name = "range_2";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_2;
+
+		reg {
+			name = "stride_2";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_2;
+
+		reg {
+			name = "cycle_stride_2";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_2;
+
+		reg {
+			name = "range_3";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_3;
+
+		reg {
+			name = "stride_3";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_3;
+
+		reg {
+			name = "cycle_stride_3";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_3;
+
+		reg {
+			name = "range_4";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_4;
+
+		reg {
+			name = "stride_4";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_4;
+
+		reg {
+			name = "cycle_stride_4";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_4;
+
+		reg {
+			name = "range_5";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_5;
+
+		reg {
+			name = "stride_5";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_5;
+
+		reg {
+			name = "cycle_stride_5";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_5;
+
+		reg {
+			name = "range_6";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_6;
+
+		reg {
+			name = "stride_6";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_6;
+
+		reg {
+			name = "cycle_stride_6";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_6;
+
+	} st_dma_header_0;
+
+	reg {
+		name = "ld_dma_ctrl";
+		field {
+			name = "mode";
+		} mode[2] = 0;
+
+		field {
+			name = "valid_mode";
+		} valid_mode[2] = 0;
+
+		field {
+			name = "flush_mode";
+		} flush_mode[1] = 0;
+
+		field {
+			name = "data_mux";
+		} data_mux[2] = 0;
+
+		field {
+			name = "num_repeat";
+		} num_repeat[1] = 0;
+
+	} ld_dma_ctrl;
+
+	regfile {
+		name = "ld_dma_header_0";
+		reg {
+			name = "dim";
+			field {
+				name = "dim";
+			} dim[4] = 0;
+
+		} dim;
+
+		reg {
+			name = "start_addr";
+			field {
+				name = "start_addr";
+			} start_addr[18] = 0;
+
+		} start_addr;
+
+		reg {
+			name = "cycle_start_addr";
+			field {
+				name = "cycle_start_addr";
+			} cycle_start_addr[16] = 0;
+
+		} cycle_start_addr;
+
+		reg {
+			name = "range_0";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_0;
+
+		reg {
+			name = "stride_0";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_0;
+
+		reg {
+			name = "cycle_stride_0";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_0;
+
+		reg {
+			name = "range_1";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_1;
+
+		reg {
+			name = "stride_1";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_1;
+
+		reg {
+			name = "cycle_stride_1";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_1;
+
+		reg {
+			name = "range_2";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_2;
+
+		reg {
+			name = "stride_2";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_2;
+
+		reg {
+			name = "cycle_stride_2";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_2;
+
+		reg {
+			name = "range_3";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_3;
+
+		reg {
+			name = "stride_3";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_3;
+
+		reg {
+			name = "cycle_stride_3";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_3;
+
+		reg {
+			name = "range_4";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_4;
+
+		reg {
+			name = "stride_4";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_4;
+
+		reg {
+			name = "cycle_stride_4";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_4;
+
+		reg {
+			name = "range_5";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_5;
+
+		reg {
+			name = "stride_5";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_5;
+
+		reg {
+			name = "cycle_stride_5";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_5;
+
+		reg {
+			name = "range_6";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_6;
+
+		reg {
+			name = "stride_6";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_6;
+
+		reg {
+			name = "cycle_stride_6";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_6;
+
+		reg {
+			name = "range_7";
+			field {
+				name = "range";
+			} range[32] = 0;
+
+		} range_7;
+
+		reg {
+			name = "stride_7";
+			field {
+				name = "stride";
+			} stride[19] = 0;
+
+		} stride_7;
+
+		reg {
+			name = "cycle_stride_7";
+			field {
+				name = "cycle_stride";
+			} cycle_stride[16] = 0;
+
+		} cycle_stride_7;
+
+	} ld_dma_header_0;
+
+	reg {
+		name = "pcfg_dma_ctrl";
+		field {
+			name = "mode";
+		} mode[1] = 0;
+
+		field {
+			name = "relocation_value";
+		} relocation_value[16] = 0;
+
+		field {
+			name = "relocation_is_msb";
+		} relocation_is_msb[1] = 0;
+
+	} pcfg_dma_ctrl;
+
+	regfile {
+		name = "pcfg_dma_header";
+		reg {
+			name = "start_addr";
+			field {
+				name = "start_addr";
+			} start_addr[18] = 0;
+
+		} start_addr;
+
+		reg {
+			name = "num_cfg";
+			field {
+				name = "num_cfg";
+			} num_cfg[15] = 0;
+
+		} num_cfg;
+
+	} pcfg_dma_header;
+
+	reg {
+		name = "pcfg_broadcast_mux";
+		field {
+			name = "west";
+		} west[2] = 0;
+
+		field {
+			name = "east";
+		} east[2] = 0;
+
+		field {
+			name = "south";
+		} south[2] = 0;
+
+	} pcfg_broadcast_mux;
+
+};
+

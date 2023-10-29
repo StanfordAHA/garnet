@@ -1,0 +1,762 @@
+
+Warning-[LINX_KRNL] Unsupported Linux kernel
+  Linux kernel '5.4.0-166-generic' is not supported.
+  Supported versions are 2.4* or 2.6*.
+
+Command: vcs -sverilog -timescale=1ps/1ps -full64 -ldflags -Wl,--no-as-needed -CFLAGS \
+-m64 -top top +vcs+lic+wait +vcs+initreg+random +overlap +v2k -l vcs.log +define+CLK_PERIOD=1ns \
++nospecify /aha/garnet/tests/test_app//../../global_buffer/header/global_buffer_param.svh \
+/aha/garnet/tests/test_app//../../global_buffer/header/glb.svh /aha/garnet/tests/test_app//../../global_controller/header/glc.svh \
+/aha/garnet/tests/test_app//../../garnet.v /aha/garnet/tests/test_app//../../global_buffer/systemRDL/output/glb_pio.sv \
+/aha/garnet/tests/test_app//../../global_buffer/systemRDL/output/glb_jrdl_decode.sv \
+/aha/garnet/tests/test_app//../../global_buffer/systemRDL/output/glb_jrdl_logic.sv \
+/aha/garnet/tests/test_app//../../global_controller/systemRDL/output/glc_pio.sv /aha/garnet/tests/test_app//../../global_controller/systemRDL/output/glc_jrdl_decode.sv \
+/aha/garnet/tests/test_app//../../global_controller/systemRDL/output/glc_jrdl_logic.sv \
+/aha/garnet/tests/test_app//../../genesis_verif/cfg_and_dbg_unq1.sv /aha/garnet/tests/test_app//../../genesis_verif/flop_unq1.sv \
+/aha/garnet/tests/test_app//../../genesis_verif/flop_unq2.sv /aha/garnet/tests/test_app//../../genesis_verif/flop_unq3.sv \
+/aha/garnet/tests/test_app//../../genesis_verif/glc_axi_addrmap.sv /aha/garnet/tests/test_app//../../genesis_verif/glc_axi_ctrl.sv \
+/aha/garnet/tests/test_app//../../genesis_verif/glc_jtag_ctrl.sv /aha/garnet/tests/test_app//../../genesis_verif/global_controller.sv \
+/aha/garnet/tests/test_app//../../genesis_verif/jtag.sv /aha/garnet/tests/test_app//../../genesis_verif/tap_unq1.sv \
+-F tb/tb_cgra.f -y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/ \
+-y /cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CWTECH/ \
++libext+.v+.sv
+*** Using c compiler gcc instead of cc ...
+                         Chronologic VCS (TM)
+       Version S-2021.09-SP1_Full64 -- Fri Jan 19 16:06:25 2024
+
+                    Copyright (c) 1991 - 2021 Synopsys, Inc.
+   This software and the associated documentation are proprietary to Synopsys,
+ Inc. This software may only be used in accordance with the terms and conditions
+ of a written license agreement with Synopsys, Inc. All other use, reproduction,
+   or distribution of this software is strictly prohibited.  Licensed Products
+     communicate with Synopsys servers for the purpose of providing software
+    updates, detecting software piracy and verifying that customers are using
+    Licensed Products in conformity with the applicable License Key for such
+  Licensed Products. Synopsys will use information gathered in connection with
+    this process to deliver software updates and pursue software pirates and
+                                   infringers.
+
+ Inclusivity & Diversity - Visit SolvNetPlus to read the "Synopsys Statement on
+            Inclusivity and Diversity" (Refer to article 000036315 at
+                        https://solvnetplus.synopsys.com)
+
+Parsing design file '/aha/garnet/tests/test_app//../../global_buffer/header/global_buffer_param.svh'
+Parsing design file '/aha/garnet/tests/test_app//../../global_buffer/header/glb.svh'
+Parsing design file '/aha/garnet/tests/test_app//../../global_controller/header/glc.svh'
+Parsing design file '/aha/garnet/tests/test_app//../../garnet.v'
+Parsing design file '/aha/garnet/tests/test_app//../../global_buffer/systemRDL/output/glb_pio.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../global_buffer/systemRDL/output/glb_jrdl_decode.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../global_buffer/systemRDL/output/glb_jrdl_logic.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../global_controller/systemRDL/output/glc_pio.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../global_controller/systemRDL/output/glc_jrdl_decode.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../global_controller/systemRDL/output/glc_jrdl_logic.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../genesis_verif/cfg_and_dbg_unq1.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../genesis_verif/flop_unq1.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../genesis_verif/flop_unq2.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../genesis_verif/flop_unq3.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../genesis_verif/glc_axi_addrmap.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../genesis_verif/glc_axi_ctrl.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../genesis_verif/glc_jtag_ctrl.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../genesis_verif/global_controller.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../genesis_verif/jtag.sv'
+Parsing design file '/aha/garnet/tests/test_app//../../genesis_verif/tap_unq1.sv'
+Parsing design file 'tb/top.sv'
+Parsing design file 'tb/axil_ifc.sv'
+Parsing design file 'tb/proc_ifc.sv'
+Parsing design file 'tb/kernel.sv'
+Parsing design file 'tb/proc_driver.sv'
+Parsing design file 'tb/axil_driver.sv'
+Parsing design file 'tb/environment.sv'
+Parsing design file 'tb/garnet_test.sv'
+Parsing library directory file '/cad/cadence/GENUS_19.10.000_lnx86/share/synth/lib/chipware/sim/verilog/CW/CW_tap.v'
+Top Level Modules:
+       top
+TimeScale is 1 ps / 1 ps
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 15816
+io_core, "reg_fifo_depth_2_w_1_afd_1_iocore_nof f2io_2_io2glb_1( .clk (clk),  .clk_en (clk_en),  .data_in (f2io_1),  .flush (flush),  .pop (io2glb_1_ready),  .push (f2io_1_valid),  .rst_n (rst_n),  .data_out (f2io_2_io2glb_1_data_out),  .empty (f2io_2_io2glb_1_empty),  .full (f2io_2_io2glb_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 15829
+io_core, "reg_fifo_depth_2_w_1_afd_1_iocore_nof glb2io_2_io2f_1( .clk (gclk),  .clk_en (clk_en),  .data_in (glb2io_1),  .flush (flush),  .pop (io2f_1_ready),  .push (glb2io_1_valid),  .rst_n (rst_n),  .data_out (io2f_1),  .empty (glb2io_2_io2f_1_empty),  .full (glb2io_2_io2f_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 15842
+io_core, "reg_fifo_depth_2_w_17_afd_1_iocore_nof f2io_2_io2glb_17( .clk (clk),  .clk_en (clk_en),  .data_in (f2io_17),  .flush (flush),  .pop (io2glb_17_ready),  .push (f2io_17_valid),  .rst_n (rst_n),  .data_out (f2io_2_io2glb_17_data_out),  .empty (f2io_2_io2glb_17_empty),  .full (f2io_2_io2glb_17_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 15855
+io_core, "reg_fifo_depth_2_w_17_afd_1_iocore_nof glb2io_2_io2f_17( .clk (gclk),  .clk_en (clk_en),  .data_in (glb2io_17),  .flush (flush),  .pop (io2f_17_ready),  .push (glb2io_17_valid),  .rst_n (rst_n),  .data_out (io2f_17),  .empty (glb2io_2_io2f_17_empty),  .full (glb2io_2_io2f_17_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28958
+intersect_unit, "reg_fifo_depth_0_w_17_afd_2 coord_in_fifo_0( .clk (gclk),  .clk_en (clk_en),  .data_in (coord_in_0),  .flush (flush),  .pop (pop_fifo[0]),  .push (coord_in_0_valid),  .rst_n (rst_n),  .data_out (coord_in_0_fifo_in),  .empty (coord_in_fifo_0_empty),  .full (coord_in_fifo_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28971
+intersect_unit, "reg_fifo_depth_0_w_17_afd_2 pos_in_fifo_0( .clk (gclk),  .clk_en (clk_en),  .data_in (pos_in_0),  .flush (flush),  .pop (pop_fifo[0]),  .push (pos_in_0_valid),  .rst_n (rst_n),  .data_out (pos_in_0_fifo_in),  .empty (pos_in_fifo_0_empty),  .full (pos_in_fifo_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28984
+intersect_unit, "reg_fifo_depth_0_w_17_afd_2 coord_in_fifo_1( .clk (gclk),  .clk_en (clk_en),  .data_in (coord_in_1),  .flush (flush),  .pop (pop_fifo[1]),  .push (coord_in_1_valid),  .rst_n (rst_n),  .data_out (coord_in_1_fifo_in),  .empty (coord_in_fifo_1_empty),  .full (coord_in_fifo_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28997
+intersect_unit, "reg_fifo_depth_0_w_17_afd_2 pos_in_fifo_1( .clk (gclk),  .clk_en (clk_en),  .data_in (pos_in_1),  .flush (flush),  .pop (pop_fifo[1]),  .push (pos_in_1_valid),  .rst_n (rst_n),  .data_out (pos_in_1_fifo_in),  .empty (pos_in_fifo_1_empty),  .full (pos_in_fifo_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 29010
+intersect_unit, "reg_fifo_depth_0_w_17_afd_2 coordinate_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (coord_fifo_in_packed),  .flush (flush),  .pop (coord_out_ready),  .push (fifo_push),  .rst_n (rst_n),  .data_out (coord_fifo_out_packed),  .empty (coordinate_fifo_empty),  .full (coordinate_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 29023
+intersect_unit, "reg_fifo_depth_0_w_17_afd_2 pos0_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (pos0_fifo_in_packed),  .flush (flush),  .pop (pos_out_0_ready),  .push (fifo_push),  .rst_n (rst_n),  .data_out (pos0_fifo_out_packed),  .empty (pos0_fifo_empty),  .full (pos0_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 29036
+intersect_unit, "reg_fifo_depth_0_w_17_afd_2 pos1_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (pos1_fifo_in_packed),  .flush (flush),  .pop (pos_out_1_ready),  .push (fifo_push),  .rst_n (rst_n),  .data_out (pos1_fifo_out_packed),  .empty (pos1_fifo_empty),  .full (pos1_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28117
+crddrop, "reg_fifo_depth_0_w_17_afd_2 base_infifo( .clk (gclk),  .clk_en (clk_en),  .data_in (base_infifo_in_packed),  .flush (flush),  .pop (base_infifo_true_pop),  .push (cmrg_coord_in_0_valid),  .rst_n (rst_n),  .data_out (base_infifo_out_packed),  .empty (base_infifo_empty),  .full (base_infifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28130
+crddrop, "reg_fifo_depth_0_w_17_afd_2 proc_infifo( .clk (gclk),  .clk_en (clk_en),  .data_in (proc_infifo_in_packed),  .flush (flush),  .pop (cmrg_fifo_pop[1]),  .push (cmrg_coord_in_1_valid),  .rst_n (rst_n),  .data_out (proc_infifo_out_packed),  .empty (proc_infifo_empty),  .full (proc_infifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28143
+crddrop, "reg_fifo_depth_0_w_17_afd_2 base_outfifo( .clk (gclk),  .clk_en (clk_en),  .data_in (base_outfifo_in_packed),  .flush (flush),  .pop (cmrg_coord_out_0_ready),  .push (cmrg_fifo_push[0]),  .rst_n (rst_n),  .data_out (base_outfifo_out_packed),  .empty (base_outfifo_empty),  .full (base_outfifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28156
+crddrop, "reg_fifo_depth_0_w_17_afd_2 proc_outfifo( .clk (gclk),  .clk_en (clk_en),  .data_in (proc_outfifo_in_packed),  .flush (flush),  .pop (cmrg_coord_out_1_ready),  .push (cmrg_fifo_push[1]),  .rst_n (rst_n),  .data_out (proc_outfifo_out_packed),  .empty (proc_outfifo_empty),  .full (proc_outfifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28478
+crdhold, "reg_fifo_depth_0_w_17_afd_2 base_infifo( .clk (gclk),  .clk_en (clk_en),  .data_in (base_infifo_in_packed),  .flush (flush),  .pop (cmrg_fifo_pop[0]),  .push (cmrg_coord_in_0_valid),  .rst_n (rst_n),  .data_out (base_infifo_out_packed),  .empty (base_infifo_empty),  .full (base_infifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28491
+crdhold, "reg_fifo_depth_0_w_17_afd_2 proc_infifo( .clk (gclk),  .clk_en (clk_en),  .data_in (proc_infifo_in_packed),  .flush (flush),  .pop (cmrg_fifo_pop[1]),  .push (cmrg_coord_in_1_valid),  .rst_n (rst_n),  .data_out (proc_infifo_out_packed),  .empty (proc_infifo_empty),  .full (proc_infifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28504
+crdhold, "reg_fifo_depth_0_w_17_afd_2 base_outfifo( .clk (gclk),  .clk_en (clk_en),  .data_in (base_outfifo_in_packed),  .flush (flush),  .pop (cmrg_coord_out_0_ready),  .push (cmrg_fifo_push[0]),  .rst_n (rst_n),  .data_out (base_outfifo_out_packed),  .empty (base_outfifo_empty),  .full (base_outfifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 28517
+crdhold, "reg_fifo_depth_0_w_17_afd_2 proc_outfifo( .clk (gclk),  .clk_en (clk_en),  .data_in (proc_outfifo_in_packed),  .flush (flush),  .pop (cmrg_coord_out_1_ready),  .push (cmrg_fifo_push[1]),  .rst_n (rst_n),  .data_out (proc_outfifo_out_packed),  .empty (proc_outfifo_empty),  .full (proc_outfifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 27479
+Repeat, "reg_fifo_depth_0_w_17_afd_2 repsig_in_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (repsig_data_in),  .flush (flush),  .pop (repsig_fifo_pop),  .push (repsig_data_in_valid),  .rst_n (rst_n),  .data_out (repsig_in_fifo_data_out),  .empty (repsig_in_fifo_empty),  .full (repsig_in_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 27492
+Repeat, "reg_fifo_depth_2_w_17_afd_2 proc_in_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (proc_in_fifo_data_in),  .flush (flush),  .pop (proc_fifo_pop),  .push (proc_fifo_push),  .rst_n (rst_n),  .data_out (proc_in_fifo_data_out),  .empty (proc_in_fifo_empty),  .full (proc_in_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 27505
+Repeat, "reg_fifo_depth_0_w_17_afd_2 ref_out_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (ref_out_fifo_data_in),  .flush (flush),  .pop (ref_data_out_ready),  .push (ref_fifo_push),  .rst_n (rst_n),  .data_out (ref_data_out),  .empty (ref_out_fifo_empty),  .full (ref_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 27678
+RepeatSignalGenerator, "reg_fifo_depth_0_w_17_afd_2 base_in_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (base_data_in),  .flush (flush),  .pop (base_fifo_pop),  .push (base_data_in_valid),  .rst_n (rst_n),  .data_out (base_in_fifo_data_out),  .empty (base_in_fifo_empty),  .full (base_in_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 27691
+RepeatSignalGenerator, "reg_fifo_depth_0_w_17_afd_2 repsig_out_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (repsig_out_fifo_data_in),  .flush (flush),  .pop (repsig_data_out_ready),  .push (repsig_fifo_push),  .rst_n (rst_n),  .data_out (repsig_data_out),  .empty (repsig_out_fifo_empty),  .full (repsig_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 29494
+reg_cr, "reg_fifo_depth_0_w_17_afd_2 input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (infifo_in_packed),  .flush (flush),  .pop (infifo_pop),  .push (infifo_push),  .rst_n (rst_n),  .data_out (infifo_out_packed),  .empty (input_fifo_empty),  .full (input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 29507
+reg_cr, "reg_fifo_depth_0_w_17_afd_2 output_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (outfifo_in_packed),  .flush (flush),  .pop (outfifo_pop),  .push (outfifo_push),  .rst_n (rst_n),  .data_out (outfifo_out_packed),  .empty (output_fifo_empty),  .full (outfifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 27176
+PE_onyx, "reg_fifo_depth_0_w_17_afd_2 input_fifo_0( .clk (gclk),  .clk_en (clk_en),  .data_in (infifo_in_packed[0]),  .flush (flush),  .pop (infifo_pop[0]),  .push (infifo_push_0),  .rst_n (rst_n),  .data_out (input_fifo_0_data_out),  .empty (input_fifo_0_empty),  .full (input_fifo_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 27189
+PE_onyx, "reg_fifo_depth_0_w_17_afd_2 input_fifo_1( .clk (gclk),  .clk_en (clk_en),  .data_in (infifo_in_packed[1]),  .flush (flush),  .pop (infifo_pop[1]),  .push (infifo_push_1),  .rst_n (rst_n),  .data_out (input_fifo_1_data_out),  .empty (input_fifo_1_empty),  .full (input_fifo_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 27202
+PE_onyx, "reg_fifo_depth_0_w_17_afd_2 input_fifo_2( .clk (gclk),  .clk_en (clk_en),  .data_in (infifo_in_packed[2]),  .flush (flush),  .pop (infifo_pop[2]),  .push (infifo_push_2),  .rst_n (rst_n),  .data_out (input_fifo_2_data_out),  .empty (input_fifo_2_empty),  .full (input_fifo_2_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 27215
+PE_onyx, "reg_fifo_depth_2_w_17_afd_2 output_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (outfifo_in_packed),  .flush (flush),  .pop (outfifo_pop),  .push (outfifo_push),  .rst_n (rst_n),  .data_out (outfifo_out_packed),  .empty (output_fifo_empty),  .full (outfifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 26865
+PE_inner, "reg_fifo_depth_2_w_17_afd_2 input_width_17_num_0_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (PE_input_width_17_num_0),  .flush (flush),  .pop (input_width_17_num_0_fifo_out_ready),  .push (PE_input_width_17_num_0_valid),  .rst_n (rst_n),  .data_out (input_width_17_num_0_fifo_out),  .empty (input_width_17_num_0_input_fifo_empty),  .full (input_width_17_num_0_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 26878
+PE_inner, "reg_fifo_depth_2_w_17_afd_2 input_width_17_num_1_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (PE_input_width_17_num_1),  .flush (flush),  .pop (input_width_17_num_1_fifo_out_ready),  .push (PE_input_width_17_num_1_valid),  .rst_n (rst_n),  .data_out (input_width_17_num_1_fifo_out),  .empty (input_width_17_num_1_input_fifo_empty),  .full (input_width_17_num_1_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 26891
+PE_inner, "reg_fifo_depth_2_w_17_afd_2 input_width_17_num_2_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (PE_input_width_17_num_2),  .flush (flush),  .pop (input_width_17_num_2_fifo_out_ready),  .push (PE_input_width_17_num_2_valid),  .rst_n (rst_n),  .data_out (input_width_17_num_2_fifo_out),  .empty (input_width_17_num_2_input_fifo_empty),  .full (input_width_17_num_2_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 26904
+PE_inner, "reg_fifo_depth_2_w_17_afd_2 input_width_17_num_3_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (PE_input_width_17_num_3),  .flush (flush),  .pop (input_width_17_num_3_fifo_out_ready),  .push (PE_input_width_17_num_3_valid),  .rst_n (rst_n),  .data_out (input_width_17_num_3_fifo_out),  .empty (input_width_17_num_3_input_fifo_empty),  .full (input_width_17_num_3_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 26917
+PE_inner, "reg_fifo_depth_2_w_17_afd_2 output_width_17_num_0_output_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (output_width_17_num_0_fifo_in),  .flush (flush),  .pop (PE_output_width_17_num_0_ready),  .push (output_width_17_num_0_fifo_in_valid),  .rst_n (rst_n),  .data_out (output_width_17_num_0_output_fifo_data_out),  .empty (output_width_17_num_0_output_fifo_empty),  .full (output_width_17_num_0_output_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 26930
+PE_inner, "reg_fifo_depth_2_w_17_afd_2 output_width_17_num_1_output_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (output_width_17_num_1_fifo_in),  .flush (flush),  .pop (PE_output_width_17_num_1_ready),  .push (output_width_17_num_1_fifo_in_valid),  .rst_n (rst_n),  .data_out (output_width_17_num_1_output_fifo_data_out),  .empty (output_width_17_num_1_output_fifo_empty),  .full (output_width_17_num_1_output_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 26943
+PE_inner, "reg_fifo_depth_2_w_17_afd_2 output_width_17_num_2_output_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (output_width_17_num_2_fifo_in),  .flush (flush),  .pop (PE_output_width_17_num_2_ready),  .push (output_width_17_num_2_fifo_in_valid),  .rst_n (rst_n),  .data_out (output_width_17_num_2_output_fifo_data_out),  .empty (output_width_17_num_2_output_fifo_empty),  .full (output_width_17_num_2_output_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 26008
+strg_ub_thin_PondTop, "addr_gen_4_5_dual_config_2 in2regfile_0_addr_gen( .clk (clk),  .clk_en (clk_en),  .flush (flush),  .mux_sel (in2regfile_0_for_loop_mux_sel_out),  .mux_sel_msb_init (in2regfile_0_addr_gen_mux_sel_msb_init),  .restart (in2regfile_0_for_loop_restart),  .rst_n (rst_n),  .starting_addr (in2regfile_0_addr_gen_starting_addr),  .starting_addr2 (in2regfile_0_addr_gen_starting_addr2),  .step (write),  .strides (in2regfile_0_addr_gen_strides),  .strides2 (in2regfile_0_addr_gen_strides2),  .addr_out (write_addr));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 26061
+strg_ub_thin_PondTop, "addr_gen_4_5_dual_config_2 regfile2out_0_addr_gen( .clk (clk),  .clk_en (clk_en),  .flush (flush),  .mux_sel (regfile2out_0_for_loop_mux_sel_out),  .mux_sel_msb_init (regfile2out_0_addr_gen_mux_sel_msb_init),  .restart (regfile2out_0_for_loop_restart),  .rst_n (rst_n),  .starting_addr (regfile2out_0_addr_gen_starting_addr),  .starting_addr2 (regfile2out_0_addr_gen_starting_addr2),  .step (read),  .strides (regfile2out_0_addr_gen_strides),  .strides2 (regfile2out_0_addr_gen_strides2),  .addr_out (read_addr));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38348
+scanner_pipe, "reg_fifo_depth_2_w_17_afd_2 input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (fifo_us_in_packed),  .flush (flush),  .pop (pop_infifo),  .push (us_fifo_push),  .rst_n (rst_n),  .data_out (input_fifo_data_out),  .empty (input_fifo_empty),  .full (fifo_us_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38361
+scanner_pipe, "reg_fifo_depth_2_w_17_afd_2 rd_rsp_fifo_0( .clk (gclk),  .clk_en (clk_en),  .data_in (rd_rsp_data_in_0),  .flush (flush),  .pop (1'b1),  .push (rd_rsp_data_in_0_valid),  .rst_n (rst_n),  .data_out (rd_rsp_fifo_0_out_data),  .empty (rd_rsp_fifo_0_empty),  .full (rd_rsp_fifo_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38374
+scanner_pipe, "reg_fifo_depth_2_w_17_afd_2 rd_rsp_fifo_1( .clk (gclk),  .clk_en (clk_en),  .data_in (rd_rsp_data_in_1),  .flush (flush),  .pop (1'b1),  .push (rd_rsp_data_in_1_valid),  .rst_n (rst_n),  .data_out (rd_rsp_fifo_1_out_data),  .empty (rd_rsp_fifo_1_empty),  .full (rd_rsp_fifo_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38407
+scanner_pipe, "reg_fifo_depth_2_w_17_afd_2 addr_out_fifo_0( .clk (gclk),  .clk_en (clk_en),  .data_in (addr_out_fifo_0_data_in),  .flush (flush),  .pop (addr_out_0_ready),  .push (addr_out_fifo_0_push),  .rst_n (rst_n),  .data_out (addr_out_0),  .empty (addr_out_fifo_0_empty),  .full (addr_out_fifo_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38420
+scanner_pipe, "reg_fifo_depth_2_w_17_afd_2 addr_out_fifo_1( .clk (gclk),  .clk_en (clk_en),  .data_in (addr_out_fifo_1_data_in),  .flush (flush),  .pop (addr_out_1_ready),  .push (addr_out_fifo_1_push),  .rst_n (rst_n),  .data_out (addr_out_1),  .empty (addr_out_fifo_1_empty),  .full (addr_out_fifo_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38433
+scanner_pipe, "reg_fifo_depth_2_w_17_afd_2 op_out_fifo_0( .clk (gclk),  .clk_en (clk_en),  .data_in (op_out_fifo_0_data_in),  .flush (flush),  .pop (op_out_0_ready),  .push (op_out_fifo_0_push),  .rst_n (rst_n),  .data_out (op_out_0),  .empty (op_out_fifo_0_empty),  .full (op_out_fifo_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38446
+scanner_pipe, "reg_fifo_depth_2_w_17_afd_2 op_out_fifo_1( .clk (gclk),  .clk_en (clk_en),  .data_in (op_out_fifo_1_data_in),  .flush (flush),  .pop (op_out_1_ready),  .push (op_out_fifo_1_push),  .rst_n (rst_n),  .data_out (op_out_1),  .empty (op_out_fifo_1_empty),  .full (op_out_fifo_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38459
+scanner_pipe, "reservation_fifo_depth_8_w_17_num_per_2 seg_res_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in_0 (rd_rsp_fifo_0_out_data),  .data_in_1 (rd_rsp_fifo_0_out_data),  .fill_data_in (seg_res_fifo_fill_data_in),  .flush (flush),  .pop (seg_res_fifo_pop_0),  .push_alloc (seg_res_fifo_push_alloc_0),  .push_fill (seg_res_fifo_push_fill_0),  .push_reserve (seg_res_fifo_push_reserve_0),  .rst_n (rst_n),  .data_out_0 (seg_res_fifo_data_out_0),  .data_out_1 (seg_res_fifo_data_out_1),  .full (seg_res_fifo_full),  .valid (seg_res_fifo_valid));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38477
+scanner_pipe, "reservation_fifo_depth_32_w_17_num_per_1 crd_res_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in_0 (crd_res_fifo_data_in_0),  .fill_data_in (crd_res_fifo_fill_data_in),  .flush (flush),  .pop (crd_res_fifo_pop),  .push_alloc (crd_res_fifo_push_alloc_0),  .push_fill (crd_res_fifo_push_fill_0),  .push_reserve (crd_res_fifo_push_reserve_0),  .rst_n (rst_n),  .data_out_0 (crd_res_fifo_data_out),  .full (crd_res_fifo_full),  .valid (crd_res_fifo_valid));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38493
+scanner_pipe, "reg_fifo_depth_0_w_17_afd_2 coordinate_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (coord_fifo_in_packed),  .flush (flush),  .pop (coord_out_ready),  .push (coord_fifo_push),  .rst_n (rst_n),  .data_out (coord_fifo_out_packed),  .empty (coordinate_fifo_empty),  .full (coordinate_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38506
+scanner_pipe, "reg_fifo_depth_0_w_17_afd_2 pos_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (pos_fifo_in_packed),  .flush (flush),  .pop (pos_out_ready),  .push (pos_out_fifo_push),  .rst_n (rst_n),  .data_out (pos_fifo_out_packed),  .empty (pos_fifo_empty),  .full (pos_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 38519
+scanner_pipe, "reg_fifo_depth_0_w_17_afd_2 block_rd_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (crd_res_fifo_data_out),  .flush (flush),  .pop (block_rd_out_ready),  .push (block_rd_fifo_push),  .rst_n (rst_n),  .data_out (block_rd_out),  .empty (block_rd_fifo_empty),  .full (block_rd_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33781
+buffet_like_16, "reg_fifo_depth_2_w_17_afd_2 wr_data_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (wr_data),  .flush (flush),  .pop (wr_data_fifo_pop),  .push (wr_data_valid),  .rst_n (rst_n),  .data_out (wr_data_fifo_data_out),  .empty (wr_data_fifo_empty),  .full (wr_data_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33794
+buffet_like_16, "reg_fifo_depth_2_w_16_afd_2 wr_addr_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (wr_addr[0][15:0]),  .flush (flush),  .pop (wr_addr_fifo_pop),  .push (wr_addr_valid),  .rst_n (rst_n),  .data_out (wr_addr_fifo_out_data),  .empty (wr_addr_fifo_empty),  .full (wr_addr_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33807
+buffet_like_16, "reg_fifo_depth_2_w_16_afd_2 wr_ID_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (wr_ID[0][15:0]),  .flush (flush),  .pop (wr_ID_fifo_pop),  .push (wr_ID_valid),  .rst_n (rst_n),  .data_out (wr_ID_fifo_out_data),  .empty (wr_ID_fifo_empty),  .full (wr_ID_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33820
+buffet_like_16, "reg_fifo_depth_2_w_16_afd_2 rd_op_fifo_0( .clk (gclk),  .clk_en (clk_en),  .data_in (rd_op_0[0][15:0]),  .flush (flush),  .pop (rd_op_fifo_pop_0),  .push (rd_op_0_valid),  .rst_n (rst_n),  .data_out (rd_op_fifo_out_op_0),  .empty (rd_op_fifo_0_empty),  .full (rd_op_fifo_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33833
+buffet_like_16, "reg_fifo_depth_2_w_16_afd_2 rd_op_fifo_1( .clk (gclk),  .clk_en (clk_en),  .data_in (rd_op_1[0][15:0]),  .flush (flush),  .pop (rd_op_fifo_pop_1),  .push (rd_op_1_valid),  .rst_n (rst_n),  .data_out (rd_op_fifo_out_op_1),  .empty (rd_op_fifo_1_empty),  .full (rd_op_fifo_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33846
+buffet_like_16, "reg_fifo_depth_2_w_16_afd_2 rd_addr_fifo_0( .clk (gclk),  .clk_en (clk_en),  .data_in (rd_addr_0[0][15:0]),  .flush (flush),  .pop (rd_addr_fifo_pop_0),  .push (rd_addr_0_valid),  .rst_n (rst_n),  .data_out (rd_addr_fifo_out_addr_0),  .empty (rd_addr_fifo_0_empty),  .full (rd_addr_fifo_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33859
+buffet_like_16, "reg_fifo_depth_2_w_16_afd_2 rd_addr_fifo_1( .clk (gclk),  .clk_en (clk_en),  .data_in (rd_addr_1[0][15:0]),  .flush (flush),  .pop (rd_addr_fifo_pop_1),  .push (rd_addr_1_valid),  .rst_n (rst_n),  .data_out (rd_addr_fifo_out_addr_1),  .empty (rd_addr_fifo_1_empty),  .full (rd_addr_fifo_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33872
+buffet_like_16, "reg_fifo_depth_2_w_17_afd_0 rd_rsp_fifo_0( .clk (gclk),  .clk_en (clk_en),  .data_in (rd_rsp_fifo_0_in_data),  .flush (flush),  .pop (rd_rsp_data_0_ready),  .push (rd_rsp_fifo_0_push),  .rst_n (rst_n),  .almost_full (rd_rsp_fifo_0_almost_full),  .data_out (rd_rsp_data_0),  .empty (rd_rsp_fifo_0_empty),  .full (rd_rsp_fifo_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33886
+buffet_like_16, "reg_fifo_depth_2_w_17_afd_0 rd_rsp_fifo_1( .clk (gclk),  .clk_en (clk_en),  .data_in (rd_rsp_fifo_1_in_data),  .flush (flush),  .pop (rd_rsp_data_1_ready),  .push (rd_rsp_fifo_1_push),  .rst_n (rst_n),  .almost_full (rd_rsp_fifo_1_almost_full),  .data_out (rd_rsp_data_1),  .empty (rd_rsp_fifo_1_empty),  .full (rd_rsp_fifo_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33900
+buffet_like_16, "reg_fifo_depth_2_w_32_afd_2 blk_fifo_0( .clk (gclk),  .clk_en (clk_en),  .data_in (blk_fifo_0_data_in),  .flush (flush),  .pop (pop_blk[0]),  .push (push_blk[0]),  .rst_n (rst_n),  .data_out (blk_fifo_0_data_out),  .empty (blk_fifo_0_empty),  .full (blk_fifo_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 33913
+buffet_like_16, "reg_fifo_depth_2_w_32_afd_2 blk_fifo_1( .clk (gclk),  .clk_en (clk_en),  .data_in (blk_fifo_1_data_in),  .flush (flush),  .pop (pop_blk[1]),  .push (push_blk[1]),  .rst_n (rst_n),  .data_out (blk_fifo_1_data_out),  .empty (blk_fifo_1_empty),  .full (blk_fifo_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 42027
+write_scanner, "reg_fifo_depth_2_w_17_afd_2 data_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (data_infifo_in_packed),  .flush (flush),  .pop (infifo_pop[0]),  .push (data_in_valid),  .rst_n (rst_n),  .data_out (data_infifo_out_packed),  .empty (data_input_fifo_empty),  .full (data_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 42040
+write_scanner, "reg_fifo_depth_0_w_17_afd_2 addr_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (addr_infifo_in_packed),  .flush (flush),  .pop (infifo_pop[1]),  .push (addr_in_valid),  .rst_n (rst_n),  .data_out (addr_infifo_out_packed),  .empty (addr_input_fifo_empty),  .full (addr_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 42053
+write_scanner, "reg_fifo_depth_0_w_16_afd_2 block_wr_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (block_wr_in[15:0]),  .flush (flush),  .pop (pop_block_wr),  .push (block_wr_in_valid),  .rst_n (rst_n),  .data_out (block_wr_input_fifo_data_out),  .empty (block_wr_input_fifo_empty),  .full (block_wr_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 42066
+write_scanner, "reg_fifo_depth_2_w_17_afd_2 data_out_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (data_out_fifo_data_in),  .flush (flush),  .pop (data_out_ready),  .push (data_out_fifo_push),  .rst_n (rst_n),  .data_out (data_out),  .empty (data_out_fifo_empty),  .full (data_out_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 42079
+write_scanner, "reg_fifo_depth_2_w_17_afd_2 addr_out_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (addr_out_fifo_data_in),  .flush (flush),  .pop (addr_out_ready),  .push (addr_out_fifo_push),  .rst_n (rst_n),  .data_out (addr_out),  .empty (addr_out_fifo_empty),  .full (addr_out_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 42092
+write_scanner, "reg_fifo_depth_2_w_17_afd_2 ID_out_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (ID_out_fifo_data_in),  .flush (flush),  .pop (ID_out_ready),  .push (ID_out_fifo_push),  .rst_n (rst_n),  .data_out (ID_out),  .empty (ID_out_fifo_empty),  .full (ID_out_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 39939
+strg_ub_sram_tb_shared, "sched_gen_6_16_delay_addr_10_4 output_sched_gen_0( .clk (clk),  .clk_en (clk_en),  .cycle_count (cycle_count),  .enable (output_sched_gen_0_enable),  .finished (loops_buf2out_autovec_read_0_restart),  .flush (flush),  .mux_sel (loops_buf2out_autovec_read_0_mux_sel_out),  .rst_n (rst_n),  .sched_addr_gen_delay (output_sched_gen_0_sched_addr_gen_delay),  .sched_addr_gen_starting_addr (output_sched_gen_0_sched_addr_gen_starting_addr),  .sched_addr_gen_strides_0 (output_sched_gen_0_sched_addr_gen_strides_0),  .sched_addr_gen_strides_1 (output_sched_gen_0_sched_addr_gen_strides_1),  .sched_addr_gen_strides_2 (output_sched_gen_0_sched_addr_gen_strides_2),  .sched_addr_gen_strides_3 (output_sched_gen_0_sched_addr_gen_strides_3),  .sched_addr_gen_strides_4 (out ... "
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 39972
+strg_ub_sram_tb_shared, "sched_gen_6_16_delay_addr_10_4 output_sched_gen_1( .clk (clk),  .clk_en (clk_en),  .cycle_count (cycle_count),  .enable (output_sched_gen_1_enable),  .finished (loops_buf2out_autovec_read_1_restart),  .flush (flush),  .mux_sel (loops_buf2out_autovec_read_1_mux_sel_out),  .rst_n (rst_n),  .sched_addr_gen_delay (output_sched_gen_1_sched_addr_gen_delay),  .sched_addr_gen_starting_addr (output_sched_gen_1_sched_addr_gen_starting_addr),  .sched_addr_gen_strides_0 (output_sched_gen_1_sched_addr_gen_strides_0),  .sched_addr_gen_strides_1 (output_sched_gen_1_sched_addr_gen_strides_1),  .sched_addr_gen_strides_2 (output_sched_gen_1_sched_addr_gen_strides_2),  .sched_addr_gen_strides_3 (output_sched_gen_1_sched_addr_gen_strides_3),  .sched_addr_gen_strides_4 (out ... "
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 40670
+strg_ub_vec, "strg_ub_sram_only sram_only( .agg_data_out (agg_only_agg_data_out),  .agg_read (agg_sram_shared_agg_read_out),  .clk (clk),  .clk_en (clk_en),  .cycle_count (cycle_count),  .flush (flush),  .loops_sram2tb_mux_sel (sram_only_loops_sram2tb_mux_sel),  .loops_sram2tb_restart (sram_only_loops_sram2tb_restart),  .output_addr_gen_0_starting_addr (sram_only_output_addr_gen_0_starting_addr),  .output_addr_gen_0_strides_0 (sram_only_output_addr_gen_0_strides_0),  .output_addr_gen_0_strides_1 (sram_only_output_addr_gen_0_strides_1),  .output_addr_gen_0_strides_2 (sram_only_output_addr_gen_0_strides_2),  .output_addr_gen_0_strides_3 (sram_only_output_addr_gen_0_strides_3),  .output_addr_gen_0_strides_4 (sram_only_output_addr_gen_0_strides_4),  .output_addr_gen_0_st ... "
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 31500
+MemCore_inner, "reg_fifo_depth_2_w_17_afd_2 input_width_17_num_0_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (MEM_input_width_17_num_0),  .flush (flush),  .pop (input_width_17_num_0_fifo_out_ready),  .push (MEM_input_width_17_num_0_valid),  .rst_n (rst_n),  .data_out (input_width_17_num_0_fifo_out),  .empty (input_width_17_num_0_input_fifo_empty),  .full (input_width_17_num_0_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 31513
+MemCore_inner, "reg_fifo_depth_2_w_17_afd_2 input_width_17_num_1_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (MEM_input_width_17_num_1),  .flush (flush),  .pop (input_width_17_num_1_fifo_out_ready),  .push (MEM_input_width_17_num_1_valid),  .rst_n (rst_n),  .data_out (input_width_17_num_1_fifo_out),  .empty (input_width_17_num_1_input_fifo_empty),  .full (input_width_17_num_1_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 31526
+MemCore_inner, "reg_fifo_depth_2_w_17_afd_2 input_width_17_num_2_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (MEM_input_width_17_num_2),  .flush (flush),  .pop (input_width_17_num_2_fifo_out_ready),  .push (MEM_input_width_17_num_2_valid),  .rst_n (rst_n),  .data_out (input_width_17_num_2_fifo_out),  .empty (input_width_17_num_2_input_fifo_empty),  .full (input_width_17_num_2_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 31539
+MemCore_inner, "reg_fifo_depth_2_w_17_afd_2 input_width_17_num_3_input_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (MEM_input_width_17_num_3),  .flush (flush),  .pop (input_width_17_num_3_fifo_out_ready),  .push (MEM_input_width_17_num_3_valid),  .rst_n (rst_n),  .data_out (input_width_17_num_3_fifo_out),  .empty (input_width_17_num_3_input_fifo_empty),  .full (input_width_17_num_3_input_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 31552
+MemCore_inner, "reg_fifo_depth_2_w_17_afd_2 output_width_17_num_0_output_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (output_width_17_num_0_fifo_in),  .flush (flush),  .pop (MEM_output_width_17_num_0_ready),  .push (output_width_17_num_0_fifo_in_valid),  .rst_n (rst_n),  .data_out (output_width_17_num_0_output_fifo_data_out),  .empty (output_width_17_num_0_output_fifo_empty),  .full (output_width_17_num_0_output_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 31565
+MemCore_inner, "reg_fifo_depth_2_w_17_afd_2 output_width_17_num_1_output_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (output_width_17_num_1_fifo_in),  .flush (flush),  .pop (MEM_output_width_17_num_1_ready),  .push (output_width_17_num_1_fifo_in_valid),  .rst_n (rst_n),  .data_out (output_width_17_num_1_output_fifo_data_out),  .empty (output_width_17_num_1_output_fifo_empty),  .full (output_width_17_num_1_output_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 31578
+MemCore_inner, "reg_fifo_depth_2_w_17_afd_2 output_width_17_num_2_output_fifo( .clk (gclk),  .clk_en (clk_en),  .data_in (output_width_17_num_2_fifo_in),  .flush (flush),  .pop (MEM_output_width_17_num_2_ready),  .push (output_width_17_num_2_fifo_in_valid),  .rst_n (rst_n),  .data_out (output_width_17_num_2_output_fifo_data_out),  .empty (output_width_17_num_2_output_fifo_empty),  .full (output_width_17_num_2_output_fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 20026
+glb_store_dma, "reg_fifo_d_4_w_16 #(.data_width(16'h0010)) data_f2g_fifo( .almost_empty_diff (2'h2),  .almost_full_diff (2'h2),  .clk (clk),  .clk_en (rv_mode_on),  .data_in (data_cgra2fifo),  .flush (st_dma_start_pulse_r),  .pop (fifo_pop),  .push (fifo_push),  .reset (reset),  .almost_full (fifo_almost_full),  .data_out (data_fifo2dma),  .empty (fifo_empty),  .full (fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 18045
+glb_load_dma, "reg_fifo_d_19_w_16 #(.data_width(16'h0010)) data_g2f_fifo( .almost_empty_diff (5'h02),  .almost_full_diff (fifo_almost_full_diff),  .clk (clk),  .clk_en (1'b1),  .data_in (data_dma2fifo),  .flush (ld_dma_start_pulse_r),  .pop (fifo_pop),  .push (fifo_push),  .reset (reset),  .almost_full (fifo_almost_full),  .data_out (data_fifo2cgra),  .empty (fifo_empty),  .full (fifo_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 18063
+glb_load_dma, "reg_fifo_d_2_w_16 #(.data_width(16'h0010)) data_g2f_skid_0( .almost_empty_diff (1'b0),  .almost_full_diff (1'b0),  .clk (clk),  .clk_en (1'b1),  .data_in (skid_in[0]),  .flush (ld_dma_start_pulse_r),  .pop (skid_pop[0]),  .push (skid_push[0]),  .reset (reset),  .data_out (data_g2f_skid_0_data_out),  .empty (data_g2f_skid_0_empty),  .full (data_g2f_skid_0_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[TFIPC] Too few instance port connections
+/aha/garnet/tests/test_app//../../garnet.v, 18080
+glb_load_dma, "reg_fifo_d_2_w_16 #(.data_width(16'h0010)) data_g2f_skid_1( .almost_empty_diff (1'b0),  .almost_full_diff (1'b0),  .clk (clk),  .clk_en (1'b1),  .data_in (skid_in[1]),  .flush (ld_dma_start_pulse_r),  .pop (skid_pop[1]),  .push (skid_push[1]),  .reset (reset),  .data_out (data_g2f_skid_1_data_out),  .empty (data_g2f_skid_1_empty),  .full (data_g2f_skid_1_full));"
+  The above instance has fewer port connections than the module definition.
+  Please use '+lint=TFIPC-L' to print out detailed information of unconnected 
+  ports.
+
+
+Warning-[PCWM-W] Port connection width mismatch
+/aha/garnet/tests/test_app//../../garnet.v, 27228
+"PEGEN_PE onyxpeintf( .ASYNCRESET (onyxpeintf_ASYNCRESET),  .CLK (gclk),  .bit0 (bit0),  .bit1 (bit1),  .bit2 (bit2),  .clk_en (clk_en),  .data0 (onyxpeintf_data0),  .data1 (onyxpeintf_data1),  .data2 (onyxpeintf_data2),  .inst (onyxpeintf_inst),  .O0 (pe_output),  .O1 (res_p),  .O2 (onyxpeintf_O2),  .O3 (onyxpeintf_O3),  .O4 (onyxpeintf_O4));"
+  The following 84-bit expression is connected to 82-bit port "inst" of module
+  "PEGEN_PE", instance "onyxpeintf".
+  Expression: onyxpeintf_inst
+  Instantiated module defined at: 
+  "/aha/garnet/tests/test_app//../../garnet.v", 81647
+  Use +lint=PCWM for more details.
+
+Notice: Ports coerced to inout, use -notice for details
+Starting vcs inline pass...
+
+175 modules and 0 UDP read.
+	However, due to incremental compilation, no re-compilation is necessary.
+make[1]: Entering directory '/aha/garnet/tests/test_app/csrc'
+rm -f _cuarc*.so _csrc*.so pre_vcsobj_*.so share_vcsobj_*.so
+ld -shared  -Bsymbolic   -o .//../simv.daidir//_cuarc0.so objs/amcQw_d.o 
+rm -f _cuarc0.so
+if [ -x ../simv ]; then chmod a-x ../simv; fi
+g++  -o ../simv   -no-pie    -Wl,--no-as-needed -rdynamic  -Wl,-rpath='$ORIGIN'/simv.daidir \
+-Wl,-rpath=./simv.daidir -Wl,-rpath=/cad/synopsys/vcs/S-2021.09-SP1/linux64/lib -L/cad/synopsys/vcs/S-2021.09-SP1/linux64/lib \
+-Wl,-rpath-link=./ -Wl,--no-as-needed     _107072_archive_1.so _prev_archive_1.so \
+_cuarc0.so  SIM_l.o       rmapats_mop.o rmapats.o rmar.o rmar_nd.o  rmar_llvm_0_1.o \
+rmar_llvm_0_0.o           -lvirsim -lerrorinf -lsnpsmalloc -lvfs    -lvcsnew -lsimprofile \
+-luclinative /cad/synopsys/vcs/S-2021.09-SP1/linux64/lib/vcs_tls.o   -Wl,-whole-archive \
+-lvcsucli    -Wl,-no-whole-archive       ./../simv.daidir/vc_hdrs.o    /cad/synopsys/vcs/S-2021.09-SP1/linux64/lib/vcs_save_restore_new.o \
+-ldl  -lc -lm -lpthread -ldl 
+../simv up to date
+make[1]: Leaving directory '/aha/garnet/tests/test_app/csrc'
+CPU time: 4.052 seconds to compile + .794 seconds to elab + .261 seconds to link

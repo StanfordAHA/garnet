@@ -3,7 +3,7 @@
     "modules":{
       "PE":{
         "type":["Record",[
-          ["inst",["Array",84,"BitIn"]],
+          ["inst",["Array",82,"BitIn"]],
           ["data0",["Array",16,"BitIn"]],
           ["data1",["Array",16,"BitIn"]],
           ["data2",["Array",16,"BitIn"]],

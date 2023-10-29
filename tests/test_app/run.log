@@ -1,0 +1,73 @@
+Command: /aha/garnet/tests/test_app/./simv -lca -l run.log +vcs+initmem+0 +vcs+initreg+0 -sv_lib libcgra -exitstatus -ucli -i dump_fsdb.tcl +APP0=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
+Chronologic VCS simulator copyright 1991-2021
+Contains Synopsys proprietary information.
+Compiler version S-2021.09-SP1_Full64; Runtime version S-2021.09-SP1_Full64;  Jan 19 16:06 2024
+ucli% if { $::env(WAVEFORM) != "0" } {
+  dump -file cgra.fsdb -type FSDB
+  dump -add top -fsdb_opt +mda+packedmda+struct
+} elseif { $::env(WAVEFORM_GLB_ONLY) != "0" } {
+  dump -file global_buffer.fsdb -type FSDB
+  dump -add "top.dut.global_buffer*" -fsdb_opt +mda+packedmda+struct
+}
+ucli% if { $::env(SAIF) == "0" } {
+  run
+  exit
+} else {
+  stop -change top.test.test_toggle
+  run
+  power -gate_level on mda sv
+  power top.dut
+  power -enable
+  run
+  power -disable
+  power -report run.saif 1e-15 top.dut
+  run
+  exit
+}
+Monitor initialization success
+[APP0-pointwise]Initilizing the APP Done
+[APP0-pointwise] Parsing the metadata done
+[APP0-pointwise] num_inputs: 1
+[APP0-pointwise] num_outputs: 1
+[APP0-pointwise] num_groups: 1
+Reading input data /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise/bin/hw_input_stencil.raw
+Parse input_0 data Done
+input_0 has 1 input blocks
+Start mapping kernel 0
+[APP0-pointwise] glb mapping success
+Mapping kernel 0 Succeed
+Turn on interrupt enable registers
+[APP0-pointwise] write bitstream to glb start at 61.50 ns
+[APP0-pointwise] write bitstream to glb end at 119.50 ns
+[APP0-pointwise] It takes 58.00 ns time to write the bitstream to glb.
+[APP0-pointwise] glb configuration start at 119.50 ns
+[APP0-pointwise] glb configuration end at 527.50 ns
+Stall CGRA with stall mask 0000000f
+[APP0-pointwise] fast configuration start at 545.50 ns
+PCFG interrupt from tile 0
+PCFG interrupt clear
+[APP0-pointwise] fast configuration end at 631.50 ns
+[APP0-pointwise] It takes 86.00 ns time to do parallel configuration.
+[APP0-pointwise] write input_0_block_0 to glb start at 641.50 ns
+[APP0-pointwise] write input_0_block_0 to glb end at 1675.50 ns
+[APP0-pointwise] It takes 1034.00 ns time to write 8192 Byte data to glb.
+Unstall CGRA with stall mask 000f
+[APP0-pointwise] kernel start at 1693.50 ns
+STRM_G2F interrupt from tile 0
+STRM_G2F interrupt clear
+[APP0-pointwise] GLB-to-CGRA streaming done at 5825.50 ns
+STRM_F2G interrupt from tile 0
+[APP0-pointwise] kernel end at 5835.50 ns
+[APP0-pointwise] It takes 4142.00 ns total time to run kernel.
+[APP0-pointwise] The size of output is 8192 Byte.
+[APP0-pointwise] The initial latency is 10.00 ns.
+[APP0-pointwise] The throughput is 0.002 (GB/s).
+STRM_F2G interrupt clear
+[APP0-pointwise] read output_0_block_0 from glb start
+[APP0-pointwise] read output_0_block_0 from glb end
+APP0-pointwise passed
+$finish at simulation time           6926.50 ns
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 6926500 ps
+CPU Time:      0.540 seconds;       Data structure size:  28.8Mb
+Fri Jan 19 16:06:31 2024

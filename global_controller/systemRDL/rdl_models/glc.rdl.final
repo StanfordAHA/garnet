@@ -1,0 +1,893 @@
+// ========================================================================
+// Perl Embedding
+// ========================================================================
+
+
+// ========================================================================
+// Address map
+// ========================================================================
+addrmap glc {
+    name = "glc";
+    desc = "Global Controller Register Space";
+
+    default regwidth = 32;
+    default accesswidth = 32;
+    addressing = compact;
+    default littleendian;
+    default lsb0;
+    default sharedextbus;
+
+    default sw = rw;
+    default hw = r;
+
+    // ========================================================================
+    // Global Controller Registers
+    // ========================================================================
+
+    reg test_r {
+        name = "Test Register";
+        desc = "Test register to check if AXI-LITE is working";            
+        field { hw = na; } value[31:0] = 0x0;
+    };
+
+    reg global_reset_r {
+        name = "Global Reset Counter";
+        desc = "Number of cycles to hold global reset signal";
+        field { hw = rw; we; } cnt[31:0] = 0x0;
+    };
+
+    reg cgra_stall_r {
+        name = "CGRA stall";
+        desc = "control each column";
+        field {} stall[32] = 0x0;
+    };
+
+    reg glb_stall_r {
+        name = "GLB Stall";
+        desc = "control each glb tile";
+        field {} stall[16] = 0x0;
+    };
+
+    reg crossbar_sel_r {
+        name = "GLB flush crossbar";
+        desc = "control flush signal crossbar";
+        field {} sel[32] = 0x0;
+    };
+
+    reg glb_clk_en_r {
+        name = "GLB clock enable";
+        desc = "control each glb tile";
+        field {} clk_en[16] = 0x0;
+    };
+
+    reg stream_start_pulse_r {
+        name = "Stream Start";
+        desc = "Start data streaming from glb tile";
+        
+        field {singlepulse;} g2f_glb_tile_0 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_1 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_2 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_3 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_4 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_5 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_6 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_7 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_8 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_9 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_10 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_11 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_12 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_13 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_14 = 0x0;
+        
+        field {singlepulse;} g2f_glb_tile_15 = 0x0;
+        
+
+        
+        field {singlepulse;} f2g_glb_tile_0 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_1 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_2 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_3 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_4 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_5 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_6 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_7 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_8 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_9 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_10 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_11 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_12 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_13 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_14 = 0x0;
+        
+        field {singlepulse;} f2g_glb_tile_15 = 0x0;
+        
+    };
+
+    reg pc_start_pulse_r {
+        name = "Parallel Config Start";
+        desc = "Start bitstream streaming from glb tile";
+        
+        field {singlepulse;} glb_tile_0 = 0x0;
+        
+        field {singlepulse;} glb_tile_1 = 0x0;
+        
+        field {singlepulse;} glb_tile_2 = 0x0;
+        
+        field {singlepulse;} glb_tile_3 = 0x0;
+        
+        field {singlepulse;} glb_tile_4 = 0x0;
+        
+        field {singlepulse;} glb_tile_5 = 0x0;
+        
+        field {singlepulse;} glb_tile_6 = 0x0;
+        
+        field {singlepulse;} glb_tile_7 = 0x0;
+        
+        field {singlepulse;} glb_tile_8 = 0x0;
+        
+        field {singlepulse;} glb_tile_9 = 0x0;
+        
+        field {singlepulse;} glb_tile_10 = 0x0;
+        
+        field {singlepulse;} glb_tile_11 = 0x0;
+        
+        field {singlepulse;} glb_tile_12 = 0x0;
+        
+        field {singlepulse;} glb_tile_13 = 0x0;
+        
+        field {singlepulse;} glb_tile_14 = 0x0;
+        
+        field {singlepulse;} glb_tile_15 = 0x0;
+        
+    };
+
+    // ========================================================================
+    // Block Level Interrupt Status Register
+    // ========================================================================
+    reg strm_f2g_isr_r {
+        name = "Stream From CGRA to GLB Interrupt Status Register";
+        desc = "Data stream from cgra to glb interrupt status register for each glb tile";
+
+		default hw = na;
+        default sw = rw; // Software can clear
+        default woclr; // Clear is via writing a 1
+
+        
+        field { 
+			desc = "glb_tile_0 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_0[0:0] = 0x0;
+        
+        field { 
+			desc = "glb_tile_1 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_1[1:1] = 0x0;
+        
+        field { 
+			desc = "glb_tile_2 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_2[2:2] = 0x0;
+        
+        field { 
+			desc = "glb_tile_3 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_3[3:3] = 0x0;
+        
+        field { 
+			desc = "glb_tile_4 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_4[4:4] = 0x0;
+        
+        field { 
+			desc = "glb_tile_5 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_5[5:5] = 0x0;
+        
+        field { 
+			desc = "glb_tile_6 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_6[6:6] = 0x0;
+        
+        field { 
+			desc = "glb_tile_7 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_7[7:7] = 0x0;
+        
+        field { 
+			desc = "glb_tile_8 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_8[8:8] = 0x0;
+        
+        field { 
+			desc = "glb_tile_9 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_9[9:9] = 0x0;
+        
+        field { 
+			desc = "glb_tile_10 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_10[10:10] = 0x0;
+        
+        field { 
+			desc = "glb_tile_11 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_11[11:11] = 0x0;
+        
+        field { 
+			desc = "glb_tile_12 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_12[12:12] = 0x0;
+        
+        field { 
+			desc = "glb_tile_13 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_13[13:13] = 0x0;
+        
+        field { 
+			desc = "glb_tile_14 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_14[14:14] = 0x0;
+        
+        field { 
+			desc = "glb_tile_15 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_15[15:15] = 0x0;
+        
+    };
+
+    reg strm_g2f_isr_r {
+        name = "Stream From GLB to CGRA Interrupt Status Register";
+        desc = "Data stream from glb to cgra interrupt status register for each glb tile";
+
+		default hw = na;
+        default sw = rw; // Software can clear
+        default woclr; // Clear is via writing a 1
+
+        
+        field { 
+			desc = "glb_tile_0 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_0[0:0] = 0x0;
+        
+        field { 
+			desc = "glb_tile_1 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_1[1:1] = 0x0;
+        
+        field { 
+			desc = "glb_tile_2 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_2[2:2] = 0x0;
+        
+        field { 
+			desc = "glb_tile_3 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_3[3:3] = 0x0;
+        
+        field { 
+			desc = "glb_tile_4 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_4[4:4] = 0x0;
+        
+        field { 
+			desc = "glb_tile_5 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_5[5:5] = 0x0;
+        
+        field { 
+			desc = "glb_tile_6 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_6[6:6] = 0x0;
+        
+        field { 
+			desc = "glb_tile_7 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_7[7:7] = 0x0;
+        
+        field { 
+			desc = "glb_tile_8 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_8[8:8] = 0x0;
+        
+        field { 
+			desc = "glb_tile_9 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_9[9:9] = 0x0;
+        
+        field { 
+			desc = "glb_tile_10 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_10[10:10] = 0x0;
+        
+        field { 
+			desc = "glb_tile_11 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_11[11:11] = 0x0;
+        
+        field { 
+			desc = "glb_tile_12 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_12[12:12] = 0x0;
+        
+        field { 
+			desc = "glb_tile_13 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_13[13:13] = 0x0;
+        
+        field { 
+			desc = "glb_tile_14 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_14[14:14] = 0x0;
+        
+        field { 
+			desc = "glb_tile_15 data stream from glb to cgra interrupt";
+			level intr;
+		} tile_15[15:15] = 0x0;
+        
+    };
+
+    reg par_cfg_g2f_isr_r {
+        name = "Parallel Configuration From CGRA to GLB Interrupt Status Register";
+        desc = "Parallel configuration stream from cgra to glb interrupt status register for each glb tile";
+
+		default hw = na;
+        default sw = rw; // Software can clear
+        default woclr; // Clear is via writing a 1
+
+        
+        field { 
+			desc = "glb_tile_0 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_0[0:0] = 0x0;
+        
+        field { 
+			desc = "glb_tile_1 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_1[1:1] = 0x0;
+        
+        field { 
+			desc = "glb_tile_2 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_2[2:2] = 0x0;
+        
+        field { 
+			desc = "glb_tile_3 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_3[3:3] = 0x0;
+        
+        field { 
+			desc = "glb_tile_4 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_4[4:4] = 0x0;
+        
+        field { 
+			desc = "glb_tile_5 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_5[5:5] = 0x0;
+        
+        field { 
+			desc = "glb_tile_6 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_6[6:6] = 0x0;
+        
+        field { 
+			desc = "glb_tile_7 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_7[7:7] = 0x0;
+        
+        field { 
+			desc = "glb_tile_8 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_8[8:8] = 0x0;
+        
+        field { 
+			desc = "glb_tile_9 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_9[9:9] = 0x0;
+        
+        field { 
+			desc = "glb_tile_10 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_10[10:10] = 0x0;
+        
+        field { 
+			desc = "glb_tile_11 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_11[11:11] = 0x0;
+        
+        field { 
+			desc = "glb_tile_12 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_12[12:12] = 0x0;
+        
+        field { 
+			desc = "glb_tile_13 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_13[13:13] = 0x0;
+        
+        field { 
+			desc = "glb_tile_14 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_14[14:14] = 0x0;
+        
+        field { 
+			desc = "glb_tile_15 data stream from cgra to glb interrupt";
+			level intr;
+		} tile_15[15:15] = 0x0;
+        
+    };
+
+    // ========================================================================
+    // Block Level Interrupt Enable Register
+    // ========================================================================
+    reg strm_f2g_ier_r {
+        name = "Stream From CGRA to GLB Interrupt Enable Register";
+        desc = "Data stream from cgra to glb interrupt enable register for each glb tile";
+
+		default hw = na;
+        default sw = rw;
+
+        
+        field { 
+			desc = "glb_tile_0 data stream from cgra to glb interrupt enable reg";
+		} tile_0[0:0] = 0x0;
+        
+        field { 
+			desc = "glb_tile_1 data stream from cgra to glb interrupt enable reg";
+		} tile_1[1:1] = 0x0;
+        
+        field { 
+			desc = "glb_tile_2 data stream from cgra to glb interrupt enable reg";
+		} tile_2[2:2] = 0x0;
+        
+        field { 
+			desc = "glb_tile_3 data stream from cgra to glb interrupt enable reg";
+		} tile_3[3:3] = 0x0;
+        
+        field { 
+			desc = "glb_tile_4 data stream from cgra to glb interrupt enable reg";
+		} tile_4[4:4] = 0x0;
+        
+        field { 
+			desc = "glb_tile_5 data stream from cgra to glb interrupt enable reg";
+		} tile_5[5:5] = 0x0;
+        
+        field { 
+			desc = "glb_tile_6 data stream from cgra to glb interrupt enable reg";
+		} tile_6[6:6] = 0x0;
+        
+        field { 
+			desc = "glb_tile_7 data stream from cgra to glb interrupt enable reg";
+		} tile_7[7:7] = 0x0;
+        
+        field { 
+			desc = "glb_tile_8 data stream from cgra to glb interrupt enable reg";
+		} tile_8[8:8] = 0x0;
+        
+        field { 
+			desc = "glb_tile_9 data stream from cgra to glb interrupt enable reg";
+		} tile_9[9:9] = 0x0;
+        
+        field { 
+			desc = "glb_tile_10 data stream from cgra to glb interrupt enable reg";
+		} tile_10[10:10] = 0x0;
+        
+        field { 
+			desc = "glb_tile_11 data stream from cgra to glb interrupt enable reg";
+		} tile_11[11:11] = 0x0;
+        
+        field { 
+			desc = "glb_tile_12 data stream from cgra to glb interrupt enable reg";
+		} tile_12[12:12] = 0x0;
+        
+        field { 
+			desc = "glb_tile_13 data stream from cgra to glb interrupt enable reg";
+		} tile_13[13:13] = 0x0;
+        
+        field { 
+			desc = "glb_tile_14 data stream from cgra to glb interrupt enable reg";
+		} tile_14[14:14] = 0x0;
+        
+        field { 
+			desc = "glb_tile_15 data stream from cgra to glb interrupt enable reg";
+		} tile_15[15:15] = 0x0;
+        
+    };
+
+    reg strm_g2f_ier_r {
+        name = "Stream From GLB to CGRA Interrupt Enable Register";
+        desc = "Data stream from glb to cgra interrupt enable register for each glb tile";
+
+		default hw = na;
+        default sw = rw;
+
+        
+        field { 
+			desc = "glb_tile_0 data stream from glb to cgra interrupt enable reg";
+		} tile_0[0:0] = 0x0;
+        
+        field { 
+			desc = "glb_tile_1 data stream from glb to cgra interrupt enable reg";
+		} tile_1[1:1] = 0x0;
+        
+        field { 
+			desc = "glb_tile_2 data stream from glb to cgra interrupt enable reg";
+		} tile_2[2:2] = 0x0;
+        
+        field { 
+			desc = "glb_tile_3 data stream from glb to cgra interrupt enable reg";
+		} tile_3[3:3] = 0x0;
+        
+        field { 
+			desc = "glb_tile_4 data stream from glb to cgra interrupt enable reg";
+		} tile_4[4:4] = 0x0;
+        
+        field { 
+			desc = "glb_tile_5 data stream from glb to cgra interrupt enable reg";
+		} tile_5[5:5] = 0x0;
+        
+        field { 
+			desc = "glb_tile_6 data stream from glb to cgra interrupt enable reg";
+		} tile_6[6:6] = 0x0;
+        
+        field { 
+			desc = "glb_tile_7 data stream from glb to cgra interrupt enable reg";
+		} tile_7[7:7] = 0x0;
+        
+        field { 
+			desc = "glb_tile_8 data stream from glb to cgra interrupt enable reg";
+		} tile_8[8:8] = 0x0;
+        
+        field { 
+			desc = "glb_tile_9 data stream from glb to cgra interrupt enable reg";
+		} tile_9[9:9] = 0x0;
+        
+        field { 
+			desc = "glb_tile_10 data stream from glb to cgra interrupt enable reg";
+		} tile_10[10:10] = 0x0;
+        
+        field { 
+			desc = "glb_tile_11 data stream from glb to cgra interrupt enable reg";
+		} tile_11[11:11] = 0x0;
+        
+        field { 
+			desc = "glb_tile_12 data stream from glb to cgra interrupt enable reg";
+		} tile_12[12:12] = 0x0;
+        
+        field { 
+			desc = "glb_tile_13 data stream from glb to cgra interrupt enable reg";
+		} tile_13[13:13] = 0x0;
+        
+        field { 
+			desc = "glb_tile_14 data stream from glb to cgra interrupt enable reg";
+		} tile_14[14:14] = 0x0;
+        
+        field { 
+			desc = "glb_tile_15 data stream from glb to cgra interrupt enable reg";
+		} tile_15[15:15] = 0x0;
+        
+    };
+
+    reg par_cfg_g2f_ier_r {
+        name = "Parallel Configuration From CGRA to GLB Interrupt Enable Register";
+        desc = "Parallel configuration stream from cgra to glb interrupt enable register for each glb tile";
+
+		default hw = na;
+        default sw = rw;
+
+        
+        field { 
+			desc = "glb_tile_0 data stream from cgra to glb interrupt enable reg";
+		} tile_0[0:0] = 0x0;
+        
+        field { 
+			desc = "glb_tile_1 data stream from cgra to glb interrupt enable reg";
+		} tile_1[1:1] = 0x0;
+        
+        field { 
+			desc = "glb_tile_2 data stream from cgra to glb interrupt enable reg";
+		} tile_2[2:2] = 0x0;
+        
+        field { 
+			desc = "glb_tile_3 data stream from cgra to glb interrupt enable reg";
+		} tile_3[3:3] = 0x0;
+        
+        field { 
+			desc = "glb_tile_4 data stream from cgra to glb interrupt enable reg";
+		} tile_4[4:4] = 0x0;
+        
+        field { 
+			desc = "glb_tile_5 data stream from cgra to glb interrupt enable reg";
+		} tile_5[5:5] = 0x0;
+        
+        field { 
+			desc = "glb_tile_6 data stream from cgra to glb interrupt enable reg";
+		} tile_6[6:6] = 0x0;
+        
+        field { 
+			desc = "glb_tile_7 data stream from cgra to glb interrupt enable reg";
+		} tile_7[7:7] = 0x0;
+        
+        field { 
+			desc = "glb_tile_8 data stream from cgra to glb interrupt enable reg";
+		} tile_8[8:8] = 0x0;
+        
+        field { 
+			desc = "glb_tile_9 data stream from cgra to glb interrupt enable reg";
+		} tile_9[9:9] = 0x0;
+        
+        field { 
+			desc = "glb_tile_10 data stream from cgra to glb interrupt enable reg";
+		} tile_10[10:10] = 0x0;
+        
+        field { 
+			desc = "glb_tile_11 data stream from cgra to glb interrupt enable reg";
+		} tile_11[11:11] = 0x0;
+        
+        field { 
+			desc = "glb_tile_12 data stream from cgra to glb interrupt enable reg";
+		} tile_12[12:12] = 0x0;
+        
+        field { 
+			desc = "glb_tile_13 data stream from cgra to glb interrupt enable reg";
+		} tile_13[13:13] = 0x0;
+        
+        field { 
+			desc = "glb_tile_14 data stream from cgra to glb interrupt enable reg";
+		} tile_14[14:14] = 0x0;
+        
+        field { 
+			desc = "glb_tile_15 data stream from cgra to glb interrupt enable reg";
+		} tile_15[15:15] = 0x0;
+        
+    };
+
+    // ========================================================================
+    // Global Interrupt Status Register
+    // ========================================================================
+    reg global_isr_r {
+        name = "Global Interrupt Status Register";
+        desc = "This register contains the status of the three lower block interrupts.
+                Also an interrupt signal (interrupt) is generated which is the 'OR'
+                of the three block interrupts. Three blocks are 'data_strm_glb_to_cgra',
+                'data_strm_cgra_to_glb', and 'parallel_config_glb_to_cgra'";
+
+        default nonsticky intr;
+		default hw = w;
+        default sw = r; // Software can just read this. It clears the block interrupt to
+
+        field { 
+			desc = "Interrupt status register of data streaming from cgra to glb";
+			level intr;
+		} strm_f2g[0:0] = 0x0;
+
+        field { 
+			desc = "Interrupt status register of data streaming from glb to cgra";
+			level intr;
+		} strm_g2f[1:1] = 0x0;
+
+        field { 
+			desc = "Interrupt status register of bitstream streaming from glb to cgra";
+			level intr;
+		} par_cfg_g2f[2:2] = 0x0;
+
+    };
+
+    // ========================================================================
+    // Global Interrupt Enable Register
+    // ========================================================================
+    reg global_ier_r {
+        name = "Global Interrupt Enable Register";
+        desc = "Configurable register used in order to enable the corresponding interrupts
+                found in Global Interrupt Status Register";
+		default hw = na;
+        default sw = rw;
+
+        field { 
+			desc = "Interrupt enable register of data streaming from cgra to glb";
+		} strm_f2g[0:0] = 0x0;
+
+        field { 
+			desc = "Interrupt enable register of data streaming from glb to cgra";
+		} strm_g2f[1:1] = 0x0;
+
+        field { 
+			desc = "Interrupt enable register of bitstream streaming from glb to cgra";
+		} par_cfg_g2f[2:2] = 0x0;
+    };
+
+    // ========================================================================
+    // CGRA Configuration Registers and Register File
+    // ========================================================================
+
+    reg addr_r {
+        name = "CGRA Configuration Address Register";
+        desc = "CGRA configuration address register used to write or read CGRA tile
+                configuration registers";
+        field { 
+			desc = "Address register";
+		} addr[31:0] = 0x0;
+
+    };
+
+    reg wr_data_r {
+        name = "CGRA Configuration Data Register";
+        desc = "CGRA configuration data register used to write CGRA tile
+                configuration registers";
+        field { 
+			desc = "Write data register";
+		} data[31:0] = 0x0;
+    };
+
+    reg rd_data_r {
+        name = "CGRA Configuration Data Register";
+        desc = "CGRA configuration data register used to write CGRA tile
+                configuration registers";
+        field { 
+            hw = rw; we;
+            sw = r;
+			desc = "Read data register";
+		} data[31:0] = 0x0;
+    };
+
+    reg write_r {
+        name = "CGRA Configuration Write Enable Register";
+        desc = "The number of cycles CGRA configuration write enable is asserted.
+                This register is used to write CGRA tile configuration registers";
+        field { 
+            hw = rw; we; ored;
+			desc = "Write register";
+		} cnt[31:0] = 0x0;
+    };
+
+    reg read_r {
+        name = "CGRA Configuration Read Enable Register";
+        desc = "The number of cycles CGRA configuration read enable is asserted.
+                This register is used to read CGRA tile configuration registers";
+        field { 
+            hw = rw; we; ored;
+			desc = "Read register";
+		} cnt[31:0] = 0x0;
+    };
+
+    regfile cgra_config_rf {
+        name = "CGRA Configuration Register File";
+        desc = "Registers needed to read/write CGRA tile configuration registers";
+        addr_r      addr;
+        wr_data_r   wr_data;
+        write_r     write;
+        read_r      read;
+        rd_data_r   rd_data;
+    };
+    
+    // ========================================================================
+    // Register Instantiation and Connection
+    // ========================================================================
+    test_r                  test;
+    global_reset_r          global_reset;
+    cgra_stall_r            cgra_stall;
+    glb_clk_en_r            glb_clk_en_master;
+    glb_clk_en_r            glb_clk_en_bank_master;
+    glb_stall_r             glb_pcfg_broadcast_stall;
+    stream_start_pulse_r    stream_start_pulse;
+    pc_start_pulse_r        pc_start_pulse;
+
+    strm_f2g_ier_r          strm_f2g_ier;
+    strm_g2f_ier_r          strm_g2f_ier;
+    par_cfg_g2f_ier_r       par_cfg_g2f_ier;
+    global_ier_r            global_ier;
+
+    strm_f2g_isr_r          strm_f2g_isr;
+    strm_g2f_isr_r          strm_g2f_isr;
+    par_cfg_g2f_isr_r       par_cfg_g2f_isr;
+    global_isr_r            global_isr;
+
+    // connect interrupt enable to interrupt status register
+    
+    strm_f2g_isr.tile_0->enable = strm_f2g_ier.tile_0;
+    strm_g2f_isr.tile_0->enable = strm_g2f_ier.tile_0;
+    par_cfg_g2f_isr.tile_0->enable = par_cfg_g2f_ier.tile_0;
+    
+    strm_f2g_isr.tile_1->enable = strm_f2g_ier.tile_1;
+    strm_g2f_isr.tile_1->enable = strm_g2f_ier.tile_1;
+    par_cfg_g2f_isr.tile_1->enable = par_cfg_g2f_ier.tile_1;
+    
+    strm_f2g_isr.tile_2->enable = strm_f2g_ier.tile_2;
+    strm_g2f_isr.tile_2->enable = strm_g2f_ier.tile_2;
+    par_cfg_g2f_isr.tile_2->enable = par_cfg_g2f_ier.tile_2;
+    
+    strm_f2g_isr.tile_3->enable = strm_f2g_ier.tile_3;
+    strm_g2f_isr.tile_3->enable = strm_g2f_ier.tile_3;
+    par_cfg_g2f_isr.tile_3->enable = par_cfg_g2f_ier.tile_3;
+    
+    strm_f2g_isr.tile_4->enable = strm_f2g_ier.tile_4;
+    strm_g2f_isr.tile_4->enable = strm_g2f_ier.tile_4;
+    par_cfg_g2f_isr.tile_4->enable = par_cfg_g2f_ier.tile_4;
+    
+    strm_f2g_isr.tile_5->enable = strm_f2g_ier.tile_5;
+    strm_g2f_isr.tile_5->enable = strm_g2f_ier.tile_5;
+    par_cfg_g2f_isr.tile_5->enable = par_cfg_g2f_ier.tile_5;
+    
+    strm_f2g_isr.tile_6->enable = strm_f2g_ier.tile_6;
+    strm_g2f_isr.tile_6->enable = strm_g2f_ier.tile_6;
+    par_cfg_g2f_isr.tile_6->enable = par_cfg_g2f_ier.tile_6;
+    
+    strm_f2g_isr.tile_7->enable = strm_f2g_ier.tile_7;
+    strm_g2f_isr.tile_7->enable = strm_g2f_ier.tile_7;
+    par_cfg_g2f_isr.tile_7->enable = par_cfg_g2f_ier.tile_7;
+    
+    strm_f2g_isr.tile_8->enable = strm_f2g_ier.tile_8;
+    strm_g2f_isr.tile_8->enable = strm_g2f_ier.tile_8;
+    par_cfg_g2f_isr.tile_8->enable = par_cfg_g2f_ier.tile_8;
+    
+    strm_f2g_isr.tile_9->enable = strm_f2g_ier.tile_9;
+    strm_g2f_isr.tile_9->enable = strm_g2f_ier.tile_9;
+    par_cfg_g2f_isr.tile_9->enable = par_cfg_g2f_ier.tile_9;
+    
+    strm_f2g_isr.tile_10->enable = strm_f2g_ier.tile_10;
+    strm_g2f_isr.tile_10->enable = strm_g2f_ier.tile_10;
+    par_cfg_g2f_isr.tile_10->enable = par_cfg_g2f_ier.tile_10;
+    
+    strm_f2g_isr.tile_11->enable = strm_f2g_ier.tile_11;
+    strm_g2f_isr.tile_11->enable = strm_g2f_ier.tile_11;
+    par_cfg_g2f_isr.tile_11->enable = par_cfg_g2f_ier.tile_11;
+    
+    strm_f2g_isr.tile_12->enable = strm_f2g_ier.tile_12;
+    strm_g2f_isr.tile_12->enable = strm_g2f_ier.tile_12;
+    par_cfg_g2f_isr.tile_12->enable = par_cfg_g2f_ier.tile_12;
+    
+    strm_f2g_isr.tile_13->enable = strm_f2g_ier.tile_13;
+    strm_g2f_isr.tile_13->enable = strm_g2f_ier.tile_13;
+    par_cfg_g2f_isr.tile_13->enable = par_cfg_g2f_ier.tile_13;
+    
+    strm_f2g_isr.tile_14->enable = strm_f2g_ier.tile_14;
+    strm_g2f_isr.tile_14->enable = strm_g2f_ier.tile_14;
+    par_cfg_g2f_isr.tile_14->enable = par_cfg_g2f_ier.tile_14;
+    
+    strm_f2g_isr.tile_15->enable = strm_f2g_ier.tile_15;
+    strm_g2f_isr.tile_15->enable = strm_g2f_ier.tile_15;
+    par_cfg_g2f_isr.tile_15->enable = par_cfg_g2f_ier.tile_15;
+    
+    global_isr.strm_f2g->enable = global_ier.strm_f2g;
+    global_isr.strm_g2f->enable = global_ier.strm_g2f;
+    global_isr.par_cfg_g2f->enable = global_ier.par_cfg_g2f;
+
+    // Connect block level interrupt to global level interrupt
+    global_isr.strm_f2g->next = strm_f2g_isr->intr;
+    global_isr.strm_g2f->next = strm_g2f_isr->intr;
+    global_isr.par_cfg_g2f->next = par_cfg_g2f_isr->intr;
+
+    // cgra configuration register file
+    cgra_config_rf          cgra_config;
+    crossbar_sel_r          glb_flush_crossbar;
+};
+
