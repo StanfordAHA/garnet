@@ -45,16 +45,22 @@ import archipelago.io
 # from peak_gen.peak_wrapper import wrapped_peak_class
 # from peak_gen.arch import read_arch
 
-import metamapper.coreir_util as cutil
-from metamapper.node import Nodes
-from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
-from metamapper import CoreIRContext
-from metamapper.irs.coreir import gen_CoreIRNodes
-from metamapper.io_tiles import IO_fc, BitIO_fc
+# import metamapper.coreir_util as cutil
+
+# not used??
+# from metamapper.node import Nodes
+# from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
+
+# from metamapper import CoreIRContext
+# from metamapper.irs.coreir import gen_CoreIRNodes
+# from metamapper.io_tiles import IO_fc, BitIO_fc
+# import metamapper.peak_util as putil
+
 from lassen.sim import PE_fc as lassen_fc
-import metamapper.peak_util as putil
 from mapper.netlist_util import create_netlist_info, print_netlist_info
-from metamapper.coreir_mapper import Mapper
+
+# Not used??
+# from metamapper.coreir_mapper import Mapper
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -403,6 +409,13 @@ class Garnet(Generator):
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves):
+
+        import metamapper.coreir_util as cutil
+        from metamapper import CoreIRContext
+        from metamapper.irs.coreir import gen_CoreIRNodes
+        from metamapper.io_tiles import IO_fc, BitIO_fc
+        import metamapper.peak_util as putil
+
         app_dir = os.path.dirname(app)
 
         if self.pe_fc == lassen_fc:
