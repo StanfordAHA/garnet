@@ -42,19 +42,7 @@ steps:
 - label: "Gold RTL: Amber 1m"
   soft_fail: true
   commands:
-  - '
-     exit_status=0;
-     docker pull $$IMAGE; container=$$CONTAINER-amber;
-     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
-     function dexec { docker exec $$container /bin/bash -c "$$*"; };
-     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
-     dexec "/aha/garnet/bin/rtl-goldcheck.sh amber" || exit_status=13;
-     docker cp $$container:/aha/garnet/design.v /tmp/amber-4x2.v;
-     docker image prune -f -a;
-     docker kill $$container || echo cannot kill container;
-     ./bin/rtl-goldfetch.sh `hostname` amber;
-     exit $$exit_status;
-    '
+  - 'bin/rtl-goldcheck.sh --use-docker $$IMAGE $$CONTAINER amber'
 
 - label: "Gold RTL: Onyx 1m"
 
@@ -62,19 +50,8 @@ steps:
   # soft_fail: true
 
   commands:
-  - '
-     exit_status=0;
-     docker pull $$IMAGE; container=$$CONTAINER-onyx;
-     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
-     function dexec { docker exec $$container /bin/bash -c "$$*"; };
-     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
-     dexec "/aha/garnet/bin/rtl-goldcheck.sh onyx" || exit_status=13;
-     docker cp $$container:/aha/garnet/design.v /tmp/onyx-4x2.v;
-     docker image prune -f -a;
-     docker kill $$container || echo cannot kill container;
-     ./bin/rtl-goldfetch.sh `hostname` onyx;
-     exit $$exit_status;
-    '
+  - 'bin/rtl-goldcheck.sh --use-docker $$IMAGE $$CONTAINER onyx'
+
 - wait: { continue_on_failure: true }
 
 # ##############################################################################
