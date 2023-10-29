@@ -108,7 +108,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 dual_port: bool = False,
                 rf: bool = False,
                 perf_debug: bool = False,
-                tech_map='intel'):
+                tech_map='Intel'):
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
     bit_widths = [1, 17]
@@ -116,10 +116,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     fifo_depth = 2
 
-    if tech_map == 'intel':
-        tm = Intel_Tech_Map(depth=mem_depth, width=macro_width)
-    else:
-        tm = GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port)
+    # if tech_map == 'intel':
+    #     tm = Intel_Tech_Map(depth=mem_depth, width=macro_width)
+    # else:
+    #     tm = GF_Tech_Map(depth=mem_depth, width=macro_width, dual_port=dual_port)
+
+    assert tech_map in ['Intel', 'GF', 'TSMC']
+    tm = tech_map
 
     if scgra is True:
         pe_prefix = "PEGEN_"
@@ -147,8 +150,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                       'pipelined': pipeline_scanner}),
                        (BuffetCore, {'local_mems': True,
                                      'physical_mem': physical_sram,
-                                     'fifo_depth': fifo_depth,
-                                     'tech_map': tm}),
+                                     'fifo_depth': fifo_depth,}),
+                                    #  'tech_map': tm}),
                        (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
                        (WriteScannerCore, {'fifo_depth': fifo_depth}),
                        (RepeatCore, {'fifo_depth': fifo_depth}),
@@ -224,7 +227,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                     mem_depth=mem_depth)
             fiber_access = FiberAccess(data_width=16,
                                        local_memory=False,
-                                       tech_map=tm,
+                                    #    tech_map=tm,
                                        defer_fifos=True,
                                        add_flush=False,
                                        use_pipelined_scanner=pipeline_scanner,
@@ -233,7 +236,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                        perf_debug=perf_debug)
             buffet = BuffetLike(data_width=16,
                                 mem_depth=mem_depth, local_memory=False,
-                                tech_map=tm,
+                                # tech_map=tm,
                                 defer_fifos=True,
                                 optimize_wide=True,
                                 add_flush=False,
@@ -321,7 +324,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
             altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': tm,
+                                           'tech_map_name': tm,
                                            'pnr_tag': "p",
                                            'name': "PE",
                                            'mem_width': mem_width,
@@ -332,7 +335,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                            'rf': rf}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': tm,
+                                           'tech_map_name': tm,
                                            'pnr_tag': "p",
                                            'mem_width': mem_width,
                                            'mem_depth': mem_depth,
@@ -343,7 +346,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                            'rf': rf}),
                        (CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': tm,
+                                           'tech_map_name': tm,
                                            'pnr_tag': "p",
                                            'mem_width': mem_width,
                                            'mem_depth': mem_depth,
@@ -354,7 +357,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                            'rf': rf}),
                        (CoreCombinerCore, {'controllers_list': controllers,
                                            'use_sim_sram': not physical_sram,
-                                           'tech_map': tm,
+                                           'tech_map_name': tm,
                                            'pnr_tag': "m",
                                            'mem_width': mem_width,
                                            'mem_depth': mem_depth,
