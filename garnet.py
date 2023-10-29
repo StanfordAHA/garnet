@@ -6,63 +6,14 @@ if os.getenv('WHICH_SOC') == "amber":
 
 import argparse
 import magma
-
-# from canal.util import IOSide, SwitchBoxType
-# from gemstone.common.configurable import ConfigurationType
-# from gemstone.common.jtag_type import JTAGType
-# from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
-# from gemstone.generator.generator import Generator, set_debug_mode
-
-# from global_buffer.io_placement import place_io_blk
-# from global_buffer.design.global_buffer import GlobalBufferMagma
-# from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
-# from global_buffer.global_buffer_main import gen_param_header
-
-# If I move this it breaks. Dunno why.
-from systemRDL.util import gen_rdl_header
-
-# from global_controller.global_controller_magma import GlobalController
-# from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
-# from canal.global_signal import GlobalSignalWiring
-# from mini_mapper import map_app, get_total_cycle_from_app
-# from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
-# from cgra import create_cgra
-
-# This is actually used more than once!
+from systemRDL.util import gen_rdl_header # If I move this it breaks. Dunno why.
 from cgra import compress_config_data
-
 import json
-
-# from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
-# from passes.interconnect_port_pass import stall_port_pass, config_port_pass
-
 import archipelago
 import archipelago.power
 import archipelago.io
-# import math
-# from collections import defaultdict
-
-# from peak_gen.peak_wrapper import wrapped_peak_class
-# from peak_gen.arch import read_arch
-
-# import metamapper.coreir_util as cutil
-
-# not used??
-# from metamapper.node import Nodes
-# from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
-
-# from metamapper import CoreIRContext
-# from metamapper.irs.coreir import gen_CoreIRNodes
-# from metamapper.io_tiles import IO_fc, BitIO_fc
-# import metamapper.peak_util as putil
-
-# Used at least twice...
 from lassen.sim import PE_fc as lassen_fc
-
-# from mapper.netlist_util import create_netlist_info, print_netlist_info
-
-# Not used??
-# from metamapper.coreir_mapper import Mapper
+# from metamapper.coreir_mapper import Mapper # Not used??
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -119,8 +70,6 @@ class Garnet(Generator):
 
         self.pe_fc = pe_fc
 
-# class Garnet(Generator):
-
         from canal.global_signal import GlobalSignalWiring
         if not interconnect_only:
             # width must be even number
@@ -133,7 +82,6 @@ class Garnet(Generator):
             glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
                 math.ceil(math.log(glb_params.banks_per_tile, 2))
             wiring = GlobalSignalWiring.ParallelMeso
-
 
             from global_controller.global_controller_magma import GlobalController
             self.global_controller = GlobalController(addr_width=config_addr_width,
@@ -160,51 +108,18 @@ class Garnet(Generator):
             "Wilton": SwitchBoxType.Wilton
         }
 
-        print(f"--- FOOO {args.use_sim_sram}")
-
         from cgra import create_cgra_w_args
         interconnect = create_cgra_w_args(width, height, io_side,
                                    args,
                                    reg_addr_width=config_addr_reg_width,
                                    config_data_width=config_data_width,
                                    tile_id_width=tile_id_width,
-                                   # num_tracks=num_tracks,
-                                   # add_pd=add_pd,
-                                   # amber_pond=amber_pond,
-                                   # add_pond=not args.no_pond,
-                                   # pond_area_opt=pond_area_opt,
-                                   # pond_area_opt_share=pond_area_opt_share,
-                                   # pond_area_opt_dual_config=pond_area_opt_dual_config,
-                                   # use_io_valid=use_io_valid,
-                                   # use_sim_sram=args.use_sim_sram,
-                                   # harden_flush=harden_flush,
                                    global_signal_wiring=wiring,
-                                   # pipeline_config_interval=args.pipeline_config_interval,
                                    mem_ratio=(1, args.mem_ratio),
-                                   # tile_layout_option=tile_layout_option,
-                                   # standalone=standalone,
-                                   # pe_fc=pe_fc,
-                                   # ready_valid=ready_valid,
-
-                                   # These three are tricky, leave them for now...
                                    scgra=args.sparse_cgra,
                                    scgra_combined=args.sparse_cgra_combined,
                                    switchbox_type=sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
-
-                                   # pipeline_regs_density=pipeline_regs_density,
-                                   # port_conn_option=port_conn_option,
-                                   # mem_width=mem_width,
-                                   # mem_depth=mem_depth,
-                                   # mem_input_ports=mem_input_ports,
-                                   # mem_output_ports=mem_output_ports,
-                                   # macro_width=macro_width,         # Now uses args to find rf
-                                   # dac_exp=dac_exp,     # Now uses args to find rf
-                                   # dual_port=dual_port, # Now uses args to find rf
-                                   # rf=rf                # Now uses args to find rf
                                    )
-#         save_mem_ratio = args.mem_ratio
-#         args.mem_ratio = save_mem_ratio
-
 
         self.interconnect = interconnect
 
