@@ -137,7 +137,43 @@ class Garnet(Generator):
         for bw, interconnect in self.interconnect._Interconnect__graphs.items():
             self.inter_core_connections[bw] = interconnect.inter_core_connection
 
+        print(f'--- IC {interconnect_only}')
         if not interconnect_only:
+            build_glb(self)
+        else:
+            # lift all the interconnect ports up
+            for name in self.interconnect.interface():
+                self.add_port(name, self.interconnect.ports[name].type())
+                self.wire(self.ports[name], self.interconnect.ports[name])
+
+            from gemstone.common.configurable import ConfigurationType
+            self.add_ports(
+                clk=magma.In(magma.Clock),
+                reset=magma.In(magma.AsyncReset),
+                config=magma.In(magma.Array[width,
+                                ConfigurationType(config_data_width,
+                                                  config_data_width)]),
+                stall=magma.In(
+                    magma.Bits[self.width * self.interconnect.stall_signal_width]),
+                read_config_data=magma.Out(magma.Bits[config_data_width])
+            )
+
+            self.wire(self.ports.clk, self.interconnect.ports.clk)
+            self.wire(self.ports.reset, self.interconnect.ports.reset)
+
+            self.wire(self.ports.config,
+                      self.interconnect.ports.config)
+            self.wire(self.ports.stall,
+                      self.interconnect.ports.stall)
+
+            self.wire(self.interconnect.ports.read_config_data,
+                      self.ports.read_config_data)
+
+            if harden_flush:
+                self.add_ports(flush=magma.In(magma.Bits[self.width // 4]))
+                self.wire(self.ports.flush, self.interconnect.ports.flush)
+
+    def build_glb(self):
             from gemstone.common.jtag_type import JTAGType
             from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
@@ -189,38 +225,7 @@ class Garnet(Generator):
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
             glc_interconnect_wiring(self)
-        else:
-            # lift all the interconnect ports up
-            for name in self.interconnect.interface():
-                self.add_port(name, self.interconnect.ports[name].type())
-                self.wire(self.ports[name], self.interconnect.ports[name])
 
-            from gemstone.common.configurable import ConfigurationType
-            self.add_ports(
-                clk=magma.In(magma.Clock),
-                reset=magma.In(magma.AsyncReset),
-                config=magma.In(magma.Array[width,
-                                ConfigurationType(config_data_width,
-                                                  config_data_width)]),
-                stall=magma.In(
-                    magma.Bits[self.width * self.interconnect.stall_signal_width]),
-                read_config_data=magma.Out(magma.Bits[config_data_width])
-            )
-
-            self.wire(self.ports.clk, self.interconnect.ports.clk)
-            self.wire(self.ports.reset, self.interconnect.ports.reset)
-
-            self.wire(self.ports.config,
-                      self.interconnect.ports.config)
-            self.wire(self.ports.stall,
-                      self.interconnect.ports.stall)
-
-            self.wire(self.interconnect.ports.read_config_data,
-                      self.ports.read_config_data)
-
-            if harden_flush:
-                self.add_ports(flush=magma.In(magma.Bits[self.width // 4]))
-                self.wire(self.ports.flush, self.interconnect.ports.flush)
 
     from mini_mapper import map_app
     def map(self, halide_src):
