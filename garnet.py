@@ -623,11 +623,10 @@ def parse_args():
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument('--pipeline_config_interval', type=int, default=8)
     parser.add_argument('--glb_tile_mem_size', type=int, default=256)
-    parser.add_argument("--input-app", type=str, default="", dest="app")
-    parser.add_argument("--input-file", type=str, default="", dest="input")
+    parser.add_argument("--input-app",   type=str, default="", dest="app")
+    parser.add_argument("--input-file",  type=str, default="", dest="input")
     parser.add_argument("--output-file", type=str, default="", dest="output")
-    parser.add_argument("--gold-file", type=str, default="",
-                        dest="gold")
+    parser.add_argument("--gold-file",   type=str, default="", dest="gold")
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--amber-pond", action="store_true")
@@ -765,13 +764,19 @@ def main():
     # the code was origially (i.e. her in main())
     if args.verilog: build_verilog(args, garnet)
 
-    if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
-            and len(args.output) > 0 and not args.virtualize:
+    # PNR
 
-        # place and route
+    app_specified = len(args.app)    > 0 and \
+                    len(args.input)  > 0 and \
+                    len(args.gold)   > 0 and \
+                    len(args.output) > 0
 
-        placement, routing, id_to_name, instance_to_instr, \
-            netlist, bus = garnet.place_and_route(
+    do_pnr = app_specified and not args.virtualize
+
+    if do_pnr:
+#         placement, routing, id_to_name, instance_to_instr, \
+#             netlist, bus = garnet.place_and_route(
+        PNR = garnet.place_and_route(
                 args.app, 
                 unconstrained_io=(args.unconstrained_io or args.generate_bitstream_only),
                 compact=args.compact,
@@ -794,8 +799,9 @@ def main():
             )
 
             # Wow. What? Wow.
-            placement, routing, id_to_name, instance_to_instr, \
-                netlist, bus = garnet.place_and_route(
+#             placement, routing, id_to_name, instance_to_instr, \
+#                 netlist, bus = garnet.place_and_route(
+            PNR = garnet.place_and_route(
                     args.app,
                     unconstrained_io=True,
                     compact=args.compact,
@@ -803,6 +809,10 @@ def main():
                     pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
                     input_broadcast_branch_factor=args.input_broadcast_branch_factor,
                     input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+
+        
+            # What are these vars? Are they never used?
+            placement, routing, id_to_name, instance_to_instr, netlist, bus = PNR
 
         bitstream, (inputs, outputs, reset, valid,
                     en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,
