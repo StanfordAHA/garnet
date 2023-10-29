@@ -706,7 +706,7 @@ def parse_args():
 
     return args
 
- def build_verilog(args, garnet):
+def build_verilog(args, garnet):
 
         garnet_circ = garnet.circuit()
         magma.compile("garnet", garnet_circ, output="coreir-verilog",
@@ -759,14 +759,22 @@ def main():
     # BUILD GARNET
     garnet = Garnet(args)
 
+    # FIXME OR could/should maybe do garnet.build_verilog(args), also
+    # see "def place_and_route"/garnet.place_and_route(...)
+    # For now, leaving it OUTSIDE the Garnet class b/c that's where
+    # the code was origially (i.e. her in main())
     if args.verilog: build_verilog(args, garnet)
 
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
 
+        # place and route
+
         placement, routing, id_to_name, instance_to_instr, \
             netlist, bus = garnet.place_and_route(
-                args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact,
+                args.app, 
+                unconstrained_io=(args.unconstrained_io or args.generate_bitstream_only),
+                compact=args.compact,
                 load_only=args.generate_bitstream_only,
                 pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
                 input_broadcast_branch_factor=args.input_broadcast_branch_factor,
@@ -785,9 +793,12 @@ def main():
                 cwd=cwd
             )
 
+            # Wow. What? Wow.
             placement, routing, id_to_name, instance_to_instr, \
                 netlist, bus = garnet.place_and_route(
-                    args.app, True, compact=args.compact,
+                    args.app,
+                    unconstrained_io=True,
+                    compact=args.compact,
                     load_only=True,
                     pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
                     input_broadcast_branch_factor=args.input_broadcast_branch_factor,
