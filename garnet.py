@@ -101,22 +101,13 @@ class Garnet(Generator):
         else:
             args.wiring = GlobalSignalWiring.Meso
 
+        # BUILD THE CGRA
+
         from cgra import create_cgra_w_args
         args.config_data_width = config_data_width
-        print(f'--- FOO-xero sb_option = {args.sb_option}')
-        interconnect = create_cgra_w_args(width, height, io_side,
-                                   args,
-                                   # reg_addr_width      = args.config_addr_reg_width,
-                                   # config_data_width     = config_data_width,
-                                   # tile_id_width       = tile_id_width,
-                                   # global_signal_wiring  = args.wiring,
-                                   # mem_ratio           = (1, args.mem_ratio),
-                                   # scgra               = args.sparse_cgra,
-                                   # cgra_combined      = args.sparse_cgra_combined,
-                                   # switchbox_type      = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
-                                   )
+        self.interconnect = create_cgra_w_args(width, height, io_side, args)
 
-        self.interconnect = interconnect
+        # Add stall, flush, and configuration ports
 
         from passes.interconnect_port_pass import stall_port_pass, config_port_pass
         # make multiple stall ports
@@ -128,19 +119,23 @@ class Garnet(Generator):
         # make multiple configuration ports
         config_port_pass(self.interconnect, pipeline=args.config_port_pipeline)
 
+        # Core connections
+
         self.inter_core_connections = {}
         for bw, interconnect in self.interconnect._Interconnect__graphs.items():
             self.inter_core_connections[bw] = interconnect.inter_core_connection
 
+        # GLB ports (or not)
+
         print(f'--- IC {interconnect_only}')
         if not interconnect_only:
-            self.build_glb(glb_params, axi_addr_width, axi_data_width)
+            self.build_glb_ports(glb_params, axi_addr_width, axi_data_width)
         else:
             self.lift_ports(width, config_data_width, harden_flush)
 
 
 
-    def build_glb(self, glb_params, axi_addr_width, axi_data_width):
+    def build_glb_ports(self, glb_params, axi_addr_width, axi_data_width):
             from gemstone.common.jtag_type import JTAGType
             from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(

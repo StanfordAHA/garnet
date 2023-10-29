@@ -65,29 +65,15 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
         width += 1
     return width, height
 
-# This (create_cgra_w_args) is ugly but could maybe be temporary. The
-# problem is that garnet.py can use its existing "args" to pass most
-# of the parameters to create_cgra(), but the many pytests in
-# $GARNET_REPO/tests call with custom parms. I don't feel like
-# refactoring the pytests ATM so for now we have garnet.py calling
-# create_cgra_w_args(), which greatly simplifies garnet.py BTW, and
-# then we also have the legacy create_cgra() call with fully
-# elaborated parms for the pytests.
+# This (create_cgra_w_args) is ugly but could maybe be temporary. The problem is
+# that garnet.py can use its existing "args" to pass most of the parameters to
+# create_cgra(), but the many pytests in $GARNET_REPO/tests call with custom parms.
+# I don't feel like refactoring the pytests ATM so for now we have garnet.py calling
+# create_cgra_w_args(), which greatly simplifies garnet.py BTW, and then we also
+# have the legacy create_cgra() call with fully elaborated parms for the pytests.
 
-# This needs to match the arg list in the garnet.py call
-# "interconnect = create_cgra_w_args(..."
-def create_cgra_w_args(
-        width, height, io_sides,
-        args,
-        # reg_addr_width=None,
-        # config_data_width=None,
-        # tile_id_width=None,
-        # global_signal_wiring=None,
-        # mem_ratio=None,
-        # scgra=None,
-        # scgra_combined=None,
-        # switchbox_type=None,
-):
+# Called from garnet.py (only!)
+def create_cgra_w_args(width, height, io_sides, args):
     
     reg_addr_width       = args.config_addr_reg_width
     config_data_width    = args.config_data_width
@@ -103,9 +89,6 @@ def create_cgra_w_args(
         "Wilton": SwitchBoxType.Wilton
     }
     switchbox_type = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type")
-    print(f'--- FOO sb_option = {args.sb_option}')
-    print(f'--- FOO switchbox_type = {switchbox_type}')
-    assert switchbox_type == SwitchBoxType.Imran
 
     return create_cgra(
         width, height, io_sides,
