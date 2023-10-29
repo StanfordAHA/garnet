@@ -34,8 +34,13 @@ if [ "$1" == "--use-docker" ]; then
 
     exit_status=0;
     docker pull $IMAGE; container=$CONTAINER-amber;
+    echo '--- FOO1'
+    docker ps
+    echo '--- FOO2'
     docker ps |& grep $container || \
         docker run -id --name $container --rm -v /cad:/cad $IMAGE bash;
+    echo '--- FOO3'
+
     function dexec { docker exec $container /bin/bash -c "$*"; };
     dexec "rm -rf /aha/garnet"; docker cp . $container:/aha/garnet;
     dexec "/aha/garnet/bin/rtl-goldcheck.sh amber" || exit_status=13;
