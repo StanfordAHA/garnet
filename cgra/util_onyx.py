@@ -116,7 +116,7 @@ def create_cgra_w_args(
         mem_ratio=mem_ratio,
         scgra=scgra,
         scgra_combined=scgra_combined,
-        switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
+        switchbox_type=switchbox_type,
 
         # Passed via "args"
         num_tracks                = args.num_tracks,
