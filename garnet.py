@@ -101,13 +101,6 @@ class Garnet(Generator):
         else:
             args.wiring = GlobalSignalWiring.Meso
 
-        from canal.util import SwitchBoxType
-        sb_type_dict = {
-            "Imran": SwitchBoxType.Imran,
-            "Disjoint": SwitchBoxType.Disjoint,
-            "Wilton": SwitchBoxType.Wilton
-        }
-
         from cgra import create_cgra_w_args
         interconnect = create_cgra_w_args(width, height, io_side,
                                    args,
@@ -115,10 +108,10 @@ class Garnet(Generator):
                                    config_data_width     = config_data_width,
                                    # tile_id_width       = tile_id_width,
                                    # global_signal_wiring  = args.wiring,
-                                   mem_ratio           = (1, args.mem_ratio),
-                                   scgra               = args.sparse_cgra,
-                                   scgra_combined      = args.sparse_cgra_combined,
-                                   switchbox_type      = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
+                                   # mem_ratio           = (1, args.mem_ratio),
+                                   # scgra               = args.sparse_cgra,
+                                   # cgra_combined      = args.sparse_cgra_combined,
+                                   # switchbox_type      = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
                                    )
 
         self.interconnect = interconnect
