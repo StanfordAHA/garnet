@@ -814,9 +814,11 @@ def main():
             # What are these vars? Are they never used?
             placement, routing, id_to_name, instance_to_instr, netlist, bus = PNR
 
-        bitstream, (inputs, outputs, reset, valid,
-                    en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,
-                                                           netlist, bus, compact=args.compact)
+        bitstream, irved_tuple = garnet.generate_bitstream(
+            args.app, placement, routing, id_to_name, instance_to_instr,
+            netlist, bus, compact=args.compact
+        )
+        (inputs, outputs, reset, valid, en, delay) = irved_tuple
 
         # write out the config file
         if len(inputs) > 1:
