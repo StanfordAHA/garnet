@@ -56,8 +56,10 @@ import archipelago.io
 # from metamapper.io_tiles import IO_fc, BitIO_fc
 # import metamapper.peak_util as putil
 
+# Used at least twice...
 from lassen.sim import PE_fc as lassen_fc
-from mapper.netlist_util import create_netlist_info, print_netlist_info
+
+# from mapper.netlist_util import create_netlist_info, print_netlist_info
 
 # Not used??
 # from metamapper.coreir_mapper import Mapper
@@ -415,6 +417,7 @@ class Garnet(Generator):
         from metamapper.irs.coreir import gen_CoreIRNodes
         from metamapper.io_tiles import IO_fc, BitIO_fc
         import metamapper.peak_util as putil
+        from mapper.netlist_util import create_netlist_info, print_netlist_info
 
         app_dir = os.path.dirname(app)
 
