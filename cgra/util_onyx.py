@@ -102,7 +102,7 @@ def create_cgra_w_args(
         "Disjoint": SwitchBoxType.Disjoint,
         "Wilton": SwitchBoxType.Wilton
     }
-    switchbox_type = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
+    switchbox_type = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type")
     print(f'--- FOO sb_option = {args.sb_option}')
     print(f'--- FOO switchbox_type = {switchbox_type}')
     assert switchbox_type == SwitchBoxType.Imran
