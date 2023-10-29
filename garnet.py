@@ -58,9 +58,6 @@ class Garnet(Generator):
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
-        if not args.interconnect_only:
-            self.build_glb()  # Builds self.{global_controller, global_buffer}
-
 # moved to create_cgra()
 #             args.wiring = GlobalSignalWiring.ParallelMeso
 #         else:
@@ -95,6 +92,11 @@ class Garnet(Generator):
         self.inter_core_connections = {}
         for bw, interconnect in self.interconnect._Interconnect__graphs.items():
             self.inter_core_connections[bw] = interconnect.inter_core_connection
+
+        # Can we do this here?
+        if not args.interconnect_only:
+            assert False # but is it tested ever?
+            self.build_glb()  # Builds self.{global_controller, global_buffer}
 
         # GLB ports (or not)
 
