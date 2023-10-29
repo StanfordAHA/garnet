@@ -107,7 +107,7 @@ def create_cgra_w_args(width, height, io_sides, args):
 
         # Passed via "args"
         num_tracks                = args.num_tracks,
-        add_pd                    = args.add_pd,
+        add_pd                    = not args.no_pd,
         amber_pond                = args.amber_pond,
         add_pond                  = not args.no_pond,
         pond_area_opt             = not args.no_pond_area_opt,

@@ -27,6 +27,8 @@ class Garnet(Generator):
     def __init__(self, args):
         super().__init__()
 
+        # args.add_pd = not args.no_pd
+
         # Check consistency of @standalone and @interconnect_only parameters. If
         # @standalone is True, then interconnect_only must also be True.
         if args.standalone:
@@ -682,16 +684,8 @@ def main():
     if args.standalone and not args.interconnect_only:
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")
-
-    pe_fc = lassen_fc
-    if args.pe:
-        from peak_gen.peak_wrapper import wrapped_peak_class
-        from peak_gen.arch import read_arch
-        arch = read_arch(args.pe)
-        pe_fc = wrapped_peak_class(arch, debug=True)
-
     from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
-    glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
+    args.glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
                                           num_cgra_cols=args.width,
                                           # NOTE: We assume num_prr is same as num_glb_tiles
                                           num_prr=args.width // 2,
@@ -703,11 +697,16 @@ def main():
                                           axi_data_width=32,
                                           config_port_pipeline=args.config_port_pipeline)
 
-    
+    args.pe_fc = lassen_fc
+    if args.pe:
+        from peak_gen.peak_wrapper import wrapped_peak_class
+        from peak_gen.arch import read_arch
+        arch = read_arch(args.pe)
+        args.pe_fc = wrapped_peak_class(arch, debug=True)
+
     # Prep args for Garnet call
-    args.pe_fc = pe_fc
-    args.glb_params = glb_params
-    args.add_pd = not args.no_pd
+    # args.glb_params = glb_params
+    # args.add_pd = not args.no_pd
 
     garnet = Garnet(args)
 
@@ -746,7 +745,7 @@ def main():
 
             from global_buffer.global_buffer_main import gen_param_header
             gen_param_header(top_name="global_buffer_param",
-                             params=glb_params,
+                             params=args.glb_params,
                              output_folder=os.path.join(garnet_home, "global_buffer/header"))
 
             gen_rdl_header(top_name="glb",
