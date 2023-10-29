@@ -14,7 +14,7 @@ import archipelago.power
 import archipelago.io
 from lassen.sim import PE_fc as lassen_fc
 # from metamapper.coreir_mapper import Mapper # Not used??
-from canal.global_signal import GlobalSignalWiring
+# from canal.global_signal import GlobalSignalWiring
 
 
 # set the debug mode to false to speed up construction
@@ -25,13 +25,6 @@ set_debug_mode(False)
 from gemstone.generator.generator import Generator
 class Garnet(Generator):
     def __init__(self, args):
-
-        width             = args.width
-        height            = args.height
-        interconnect_only = args.interconnect_only
-        glb_params        = args.glb_params
-        pe_fc             = args.pe_fc
-        
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -40,11 +33,9 @@ class Garnet(Generator):
             assert interconnect_only
 
         # configuration parameters
-        self.glb_params = glb_params
+        self.glb_params = args.glb_params
         self.config_addr_width = 32
         self.config_data_width = 32
-        # self.config_addr_width = config_addr_width
-        # self.config_data_width = config_data_width
 
         self.amber_pond = args.amber_pond
 
@@ -52,34 +43,36 @@ class Garnet(Generator):
         args.config_addr_reg_width = 8
 
         # size
-        self.width = width
-        self.height = height
+        self.width = args.width
+        self.height = args.height
 
-        # FIXME why have both harden_flush and self.harden_flush??
-        harden_flush = args.harden_flush
-        self.harden_flush = harden_flush
+        self.harden_flush = args.harden_flush
         self.pipeline_config_interval = args.pipeline_config_interval
 
         # only north side has IO
         from canal.util import IOSide
-        if args.standalone:
-            io_side = IOSide.None_
-        else:
-            io_side = IOSide.North
+        if args.standalone: io_side = IOSide.None_
+        else:               io_side = IOSide.North
 
         self.pe_fc = pe_fc
 
-#         # axi_data_width must be same as cgra config_data_width
-#         axi_addr_width = self.glb_params.cgra_axi_addr_width
-#         axi_data_width = self.glb_params.axi_data_width
-#         assert axi_data_width == self.config_data_width
+        # Build GLB unless interconnect_only (CGRA-only) requested
 
-        if not interconnect_only:
-            self.build_glb()
-            args.wiring = GlobalSignalWiring.ParallelMeso
-        else:
-            args.wiring = GlobalSignalWiring.Meso
+        if not args.interconnect_only:
+            self.build_glb()  # Builds self.{global_controller, global_buffer}
 
+# moved to create_cgra()
+#             args.wiring = GlobalSignalWiring.ParallelMeso
+#         else:
+#             args.wiring = GlobalSignalWiring.Meso
+
+        width             = args.width
+        height            = args.height
+        interconnect_only = args.interconnect_only
+
+        # glb_params        = args.glb_params
+        # pe_fc             = args.pe_fc
+        
         # BUILD THE CGRA
 
         from cgra import create_cgra_w_args
@@ -92,9 +85,9 @@ class Garnet(Generator):
         # make multiple stall ports
         stall_port_pass(self.interconnect, port_name="stall", port_width=1, col_offset=1)
         # make multiple flush ports
-        if harden_flush:
+        if self.harden_flush:
             stall_port_pass(self.interconnect, port_name="flush", port_width=1,
-                            col_offset=glb_params.num_cols_per_group, pipeline=True)
+                            col_offset=args.glb_params.num_cols_per_group, pipeline=True)
         # make multiple configuration ports
         config_port_pass(self.interconnect, pipeline=args.config_port_pipeline)
 
@@ -109,9 +102,9 @@ class Garnet(Generator):
         print(f'--- IC {interconnect_only}')
         if not interconnect_only:
             # self.build_glb_ports(glb_params, axi_addr_width, axi_data_width)
-            self.build_glb_ports(glb_params)
+            self.build_glb_ports(args.glb_params)
         else:
-            self.lift_ports(width, self.config_data_width, harden_flush)
+            self.lift_ports(self.width, self.config_data_width, self.harden_flush)
 
 
     def build_glb(self):
