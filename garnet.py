@@ -674,6 +674,36 @@ def parse_args():
     parser.set_defaults(config_port_pipeline=True)
 
     args = parser.parse_args()
+
+    # A little up-front arg processing
+
+    if not args.interconnect_only:
+        assert args.width % 2 == 0 and args.width >= 4
+    if args.standalone and not args.interconnect_only:
+        raise Exception("--standalone must be specified with "
+                        "--interconnect-only as well")
+    args.pe_fc = lassen_fc
+    if args.pe:
+        from peak_gen.peak_wrapper import wrapped_peak_class
+        from peak_gen.arch import read_arch
+        arch = read_arch(args.pe)
+        args.pe_fc = wrapped_peak_class(arch, debug=True)
+
+    from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
+    args.glb_params = gen_global_buffer_params(
+        num_glb_tiles=args.width // 2,
+        num_cgra_cols=args.width,
+        # NOTE: We assume num_prr is same as num_glb_tiles
+        num_prr=args.width // 2,
+        glb_tile_mem_size=args.glb_tile_mem_size,
+        bank_data_width=64,
+        cfg_addr_width=32,
+        cfg_data_width=32,
+        cgra_axi_addr_width=13,
+        axi_data_width=32,
+        config_port_pipeline=args.config_port_pipeline,
+    )
+
     return args
 
  def build_verilog(args, garnet):
@@ -725,33 +755,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-
-    if not args.interconnect_only:
-        assert args.width % 2 == 0 and args.width >= 4
-    if args.standalone and not args.interconnect_only:
-        raise Exception("--standalone must be specified with "
-                        "--interconnect-only as well")
-    args.pe_fc = lassen_fc
-    if args.pe:
-        from peak_gen.peak_wrapper import wrapped_peak_class
-        from peak_gen.arch import read_arch
-        arch = read_arch(args.pe)
-        args.pe_fc = wrapped_peak_class(arch, debug=True)
-
-    from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
-    args.glb_params = gen_global_buffer_params(
-        num_glb_tiles=args.width // 2,
-        num_cgra_cols=args.width,
-        # NOTE: We assume num_prr is same as num_glb_tiles
-        num_prr=args.width // 2,
-        glb_tile_mem_size=args.glb_tile_mem_size,
-        bank_data_width=64,
-        cfg_addr_width=32,
-        cfg_data_width=32,
-        cgra_axi_addr_width=13,
-        axi_data_width=32,
-        config_port_pipeline=args.config_port_pipeline,
-    )
 
     # BUILD GARNET
     garnet = Garnet(args)
