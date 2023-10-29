@@ -105,6 +105,7 @@ def create_cgra_w_args(
     switchbox_type = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
     print(f'--- FOO sb_option = {args.sb_option}')
     print(f'--- FOO switchbox_type = {switchbox_type}')
+    assert switchbox_type == SwitchBoxType.Imran
 
     return create_cgra(
         width, height, io_sides,
@@ -115,7 +116,7 @@ def create_cgra_w_args(
         mem_ratio=mem_ratio,
         scgra=scgra,
         scgra_combined=scgra_combined,
-        switchbox_type=switchbox_type,
+        switchbox_type: SwitchBoxType = SwitchBoxType.Imran,
 
         # Passed via "args"
         num_tracks                = args.num_tracks,
@@ -193,6 +194,8 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 altcore=None,
                 perf_debug: bool = False,
                 tech_map='Intel'):
+
+    assert switchbox_type == SwitchBoxType.Imran
 
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
