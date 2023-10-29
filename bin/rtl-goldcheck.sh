@@ -29,6 +29,7 @@ EXAMPLE
 
 # E.g. "rtl-goldcheck.sh --use-docker stanfordaha/garnet:latest gold-check-7333 amber"
 if [ "$1" == "--use-docker" ]; then
+    set -x
     IMAGE=$2; CONTAINER=$3; SOC=$4
 
     exit_status=0;
