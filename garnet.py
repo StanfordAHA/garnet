@@ -75,7 +75,7 @@ class Garnet(Generator):
 #         assert axi_data_width == self.config_data_width
 
         if not interconnect_only:
-            build_glb()
+            self.build_glb()
             args.wiring = GlobalSignalWiring.ParallelMeso
         else:
             args.wiring = GlobalSignalWiring.Meso
