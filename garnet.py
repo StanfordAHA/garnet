@@ -139,7 +139,7 @@ class Garnet(Generator):
 
         print(f'--- IC {interconnect_only}')
         if not interconnect_only:
-            self.build_glb()
+            self.build_glb(glb_params, axi_addr_width, axi_data_width)
         else:
             # lift all the interconnect ports up
             for name in self.interconnect.interface():
@@ -173,7 +173,7 @@ class Garnet(Generator):
                 self.add_ports(flush=magma.In(magma.Bits[self.width // 4]))
                 self.wire(self.ports.flush, self.interconnect.ports.flush)
 
-    def build_glb(self):
+    def build_glb(self, glb_params, axi_addr_width, axi_data_width):
             from gemstone.common.jtag_type import JTAGType
             from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
