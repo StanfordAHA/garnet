@@ -78,16 +78,32 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
 def create_cgra_w_args(
         width, height, io_sides,
         args,
-        reg_addr_width=None,
+        # reg_addr_width=None,
         config_data_width=None,
-        tile_id_width=None,
-        global_signal_wiring=None,
-        mem_ratio=None,
-        scgra=None,
-        scgra_combined=None,
-        switchbox_type=None,
+        # tile_id_width=None,
+        # global_signal_wiring=None,
+        # mem_ratio=None,
+        # scgra=None,
+        # scgra_combined=None,
+        # switchbox_type=None,
 ):
     
+    reg_addr_width       = args.config_addr_reg_width
+    tile_id_width        = args.tile_id_width
+    global_signal_wiring = args.global_signal_wiring
+    mem_ratio            = (1, args.mem_ratio)
+    scgra                = args.sparse_cgra
+    scgra_combined       = args.sparse_cgra_combined
+
+    from canal.util import SwitchBoxType
+    sb_type_dict = {
+        "Imran": SwitchBoxType.Imran,
+        "Disjoint": SwitchBoxType.Disjoint,
+        "Wilton": SwitchBoxType.Wilton
+    }
+    switchbox_type = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type"),
+
+
     return create_cgra(
         width, height, io_sides,
         reg_addr_width=reg_addr_width,
