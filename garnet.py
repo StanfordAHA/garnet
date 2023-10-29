@@ -58,17 +58,14 @@ class Garnet(Generator):
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
-# moved to create_cgra()
-#             args.wiring = GlobalSignalWiring.ParallelMeso
-#         else:
-#             args.wiring = GlobalSignalWiring.Meso
+        # Tried moving this down to other interconnect_only clause;
+        # pytests passed but RTL was different :(
+        if not args.interconnect_only:
+            self.build_glb()  # Builds self.{global_controller, global_buffer}
 
         width             = args.width
         height            = args.height
 
-        # glb_params        = args.glb_params
-        # pe_fc             = args.pe_fc
-        
         # BUILD THE CGRA
 
         from cgra import create_cgra_w_args
@@ -93,18 +90,11 @@ class Garnet(Generator):
         for bw, interconnect in self.interconnect._Interconnect__graphs.items():
             self.inter_core_connections[bw] = interconnect.inter_core_connection
 
-#         # Can we do this here?
-#         if not args.interconnect_only:
-#             # assert False # but is it tested ever? Failed pytest in 3m7s
-
-        # GLB (or not)
+        # GLB ports (or not)
 
         # interconnect_only = args.interconnect_only
         print(f'--- IC {args.interconnect_only}')
         if not args.interconnect_only:
-            # yes pytests do test this path and it passed
-            # self.build_glb_ports(glb_params, axi_addr_width, axi_data_width)
-            self.build_glb()  # Builds self.{global_controller, global_buffer}
             self.build_glb_ports(args.glb_params)
         else:
             self.lift_ports(self.width, self.config_data_width, self.harden_flush)
