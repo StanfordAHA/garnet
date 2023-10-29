@@ -93,17 +93,18 @@ class Garnet(Generator):
         for bw, interconnect in self.interconnect._Interconnect__graphs.items():
             self.inter_core_connections[bw] = interconnect.inter_core_connection
 
-        # Can we do this here?
-        if not args.interconnect_only:
-            # assert False # but is it tested ever? Failed pytest in 3m7s
-            self.build_glb()  # Builds self.{global_controller, global_buffer}
+#         # Can we do this here?
+#         if not args.interconnect_only:
+#             # assert False # but is it tested ever? Failed pytest in 3m7s
 
-        # GLB ports (or not)
+        # GLB (or not)
 
         # interconnect_only = args.interconnect_only
         print(f'--- IC {args.interconnect_only}')
         if not args.interconnect_only:
+            # yes pytests do test this path and it passed
             # self.build_glb_ports(glb_params, axi_addr_width, axi_data_width)
+            self.build_glb()  # Builds self.{global_controller, global_buffer}
             self.build_glb_ports(args.glb_params)
         else:
             self.lift_ports(self.width, self.config_data_width, self.harden_flush)
