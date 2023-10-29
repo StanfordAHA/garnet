@@ -31,23 +31,20 @@ EXAMPLE
 if [ "$1" == "--use-docker" ]; then
     set -x
     IMAGE=$2; CONTAINER=$3; SOC=$4
-
     exit_status=0;
-    docker pull $IMAGE; container=$CONTAINER-amber;
-    echo '--- FOO1'
-    docker ps
-    echo '--- FOO2'
-    docker ps |& grep $container || \
-        docker run -id --name $container --rm -v /cad:/cad $IMAGE bash;
-    echo '--- FOO3'
+    docker pull $IMAGE; container=$CONTAINER-${SOC};
 
+    # If it's already running...KILL IT
+    docker ps |& grep $container && docker kill -f $container
+
+    docker run -id --name $container --rm -v /cad:/cad $IMAGE bash;
     function dexec { docker exec $container /bin/bash -c "$*"; };
     dexec "rm -rf /aha/garnet"; docker cp . $container:/aha/garnet;
-    dexec "/aha/garnet/bin/rtl-goldcheck.sh amber" || exit_status=13;
-    docker cp $container:/aha/garnet/design.v /tmp/amber-4x2.v;
+    dexec "/aha/garnet/bin/rtl-goldcheck.sh ${SOC}" || exit_status=13;
+    docker cp $container:/aha/garnet/design.v /tmp/${SOC}-4x2.v;
     docker image prune -f -a;
     docker kill $container || echo cannot kill container;
-    ./bin/rtl-goldfetch.sh `hostname` amber;
+    ./bin/rtl-goldfetch.sh `hostname` ${SOC};
     exit $exit_status;
 fi
 
