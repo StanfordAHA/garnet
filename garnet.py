@@ -139,7 +139,7 @@ class Garnet(Generator):
 
         print(f'--- IC {interconnect_only}')
         if not interconnect_only:
-            Garnet.build_glb(self)
+            self.build_glb()
         else:
             # lift all the interconnect ports up
             for name in self.interconnect.interface():
