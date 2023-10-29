@@ -102,10 +102,11 @@ class Garnet(Generator):
             args.wiring = GlobalSignalWiring.Meso
 
         from cgra import create_cgra_w_args
+        args.config_data_width = config_data_width
         interconnect = create_cgra_w_args(width, height, io_side,
                                    args,
                                    # reg_addr_width      = args.config_addr_reg_width,
-                                   config_data_width     = config_data_width,
+                                   # config_data_width     = config_data_width,
                                    # tile_id_width       = tile_id_width,
                                    # global_signal_wiring  = args.wiring,
                                    # mem_ratio           = (1, args.mem_ratio),

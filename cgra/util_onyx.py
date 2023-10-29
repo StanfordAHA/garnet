@@ -79,7 +79,7 @@ def create_cgra_w_args(
         width, height, io_sides,
         args,
         # reg_addr_width=None,
-        config_data_width=None,
+        # config_data_width=None,
         # tile_id_width=None,
         # global_signal_wiring=None,
         # mem_ratio=None,
@@ -89,8 +89,9 @@ def create_cgra_w_args(
 ):
     
     reg_addr_width       = args.config_addr_reg_width
+    config_data_width    = args.config_data_width
     tile_id_width        = args.tile_id_width
-    global_signal_wiring = args.global_signal_wiring
+    global_signal_wiring = args.wiring
     mem_ratio            = (1, args.mem_ratio)
     scgra                = args.sparse_cgra
     scgra_combined       = args.sparse_cgra_combined
