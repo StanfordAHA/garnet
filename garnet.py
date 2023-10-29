@@ -14,6 +14,8 @@ import archipelago.power
 import archipelago.io
 from lassen.sim import PE_fc as lassen_fc
 # from metamapper.coreir_mapper import Mapper # Not used??
+from canal.global_signal import GlobalSignalWiring
+
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -39,15 +41,12 @@ class Garnet(Generator):
 
         # configuration parameters
         self.glb_params = glb_params
-        config_addr_width = 32
-        config_data_width = 32
-        self.config_addr_width = config_addr_width
-        self.config_data_width = config_data_width
-        axi_addr_width = self.glb_params.cgra_axi_addr_width
-        axi_data_width = self.glb_params.axi_data_width
+        self.config_addr_width = 32
+        self.config_data_width = 32
+        # self.config_addr_width = config_addr_width
+        # self.config_data_width = config_data_width
+
         self.amber_pond = args.amber_pond
-        # axi_data_width must be same as cgra config_data_width
-        assert axi_data_width == config_data_width
 
         args.tile_id_width = 16
         args.config_addr_reg_width = 8
@@ -70,41 +69,21 @@ class Garnet(Generator):
 
         self.pe_fc = pe_fc
 
-        from canal.global_signal import GlobalSignalWiring
+#         # axi_data_width must be same as cgra config_data_width
+#         axi_addr_width = self.glb_params.cgra_axi_addr_width
+#         axi_data_width = self.glb_params.axi_data_width
+#         assert axi_data_width == self.config_data_width
+
         if not interconnect_only:
-            # width must be even number
-            assert (self.width % 2) == 0
-
-            # Bank should be larger than or equal to 1KB
-            assert glb_params.bank_addr_width >= 10
-
-            import math
-            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
-                math.ceil(math.log(glb_params.banks_per_tile, 2))
+            build_glb()
             args.wiring = GlobalSignalWiring.ParallelMeso
-
-            from global_controller.global_controller_magma import GlobalController
-            self.global_controller = GlobalController(addr_width=config_addr_width,
-                                                      data_width=config_data_width,
-                                                      axi_addr_width=axi_addr_width,
-                                                      axi_data_width=axi_data_width,
-                                                      num_glb_tiles=glb_params.num_glb_tiles,
-                                                      cgra_width=glb_params.num_cgra_cols,
-                                                      glb_addr_width=glb_params.glb_addr_width,
-                                                      glb_tile_mem_size=glb_tile_mem_size,
-                                                      block_axi_addr_width=glb_params.axi_addr_width,
-                                                      group_size=glb_params.num_cols_per_group)
-
-            from global_buffer.design.global_buffer import GlobalBufferMagma
-            self.global_buffer = GlobalBufferMagma(glb_params)
-
         else:
             args.wiring = GlobalSignalWiring.Meso
 
         # BUILD THE CGRA
 
         from cgra import create_cgra_w_args
-        args.config_data_width = config_data_width
+        args.config_data_width = self.config_data_width
         self.interconnect = create_cgra_w_args(width, height, io_side, args)
 
         # Add stall, flush, and configuration ports
@@ -129,13 +108,55 @@ class Garnet(Generator):
 
         print(f'--- IC {interconnect_only}')
         if not interconnect_only:
-            self.build_glb_ports(glb_params, axi_addr_width, axi_data_width)
+            # self.build_glb_ports(glb_params, axi_addr_width, axi_data_width)
+            self.build_glb_ports(glb_params)
         else:
-            self.lift_ports(width, config_data_width, harden_flush)
+            self.lift_ports(width, self.config_data_width, harden_flush)
+
+
+    def build_glb(self):
+            import math
+            from global_controller.global_controller_magma import GlobalController
+            from global_buffer.design.global_buffer import GlobalBufferMagma
+
+            glb_params = self.glb_params
+
+            # axi_data_width must be same as cgra config_data_width
+            axi_addr_width = self.glb_params.cgra_axi_addr_width
+            axi_data_width = self.glb_params.axi_data_width
+            assert axi_data_width == self.config_data_width
+
+            # width must be even number
+            assert (self.width % 2) == 0
+
+            # Bank should be larger than or equal to 1KB
+            assert glb_params.bank_addr_width >= 10
+
+            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
+                math.ceil(math.log(glb_params.banks_per_tile, 2))
+
+            self.global_controller = GlobalController(addr_width=self.config_addr_width,
+                                                      data_width=self.config_data_width,
+                                                      axi_addr_width=axi_addr_width,
+                                                      axi_data_width=axi_data_width,
+                                                      num_glb_tiles=glb_params.num_glb_tiles,
+                                                      cgra_width=glb_params.num_cgra_cols,
+                                                      glb_addr_width=glb_params.glb_addr_width,
+                                                      glb_tile_mem_size=glb_tile_mem_size,
+                                                      block_axi_addr_width=glb_params.axi_addr_width,
+                                                      group_size=glb_params.num_cols_per_group)
+
+            self.global_buffer = GlobalBufferMagma(glb_params)
 
 
 
-    def build_glb_ports(self, glb_params, axi_addr_width, axi_data_width):
+    def build_glb_ports(self, glb_params):
+
+            # axi_data_width must be same as cgra config_data_width
+            axi_addr_width = self.glb_params.cgra_axi_addr_width
+            axi_data_width = self.glb_params.axi_data_width
+            assert axi_data_width == self.config_data_width
+
             from gemstone.common.jtag_type import JTAGType
             from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
