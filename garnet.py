@@ -198,7 +198,7 @@ class Garnet(Generator):
             glb_interconnect_wiring(self)
             glc_interconnect_wiring(self)
 
-        def lift_ports(self, width, config_data_width, harden_flush):
+    def lift_ports(self, width, config_data_width, harden_flush):
             # lift all the interconnect ports up
             for name in self.interconnect.interface():
                 self.add_port(name, self.interconnect.ports[name].type())
