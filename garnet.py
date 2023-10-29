@@ -46,6 +46,7 @@ class Garnet(Generator):
         self.width = args.width
         self.height = args.height
 
+        self.pe_fc = args.pe_fc
         self.harden_flush = args.harden_flush
         self.pipeline_config_interval = args.pipeline_config_interval
 
@@ -54,7 +55,6 @@ class Garnet(Generator):
         if args.standalone: io_side = IOSide.None_
         else:               io_side = IOSide.North
 
-        self.pe_fc = pe_fc
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
@@ -68,7 +68,6 @@ class Garnet(Generator):
 
         width             = args.width
         height            = args.height
-        interconnect_only = args.interconnect_only
 
         # glb_params        = args.glb_params
         # pe_fc             = args.pe_fc
@@ -99,8 +98,9 @@ class Garnet(Generator):
 
         # GLB ports (or not)
 
-        print(f'--- IC {interconnect_only}')
-        if not interconnect_only:
+        # interconnect_only = args.interconnect_only
+        print(f'--- IC {args.interconnect_only}')
+        if not args.interconnect_only:
             # self.build_glb_ports(glb_params, axi_addr_width, axi_data_width)
             self.build_glb_ports(args.glb_params)
         else:
