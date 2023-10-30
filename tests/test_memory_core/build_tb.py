@@ -1085,6 +1085,9 @@ class SparseTBBuilder(m.Generator2):
                 new_node_type = ComputeNode
                 # core_tag = "fake_pe"
                 core_tag = "alu"
+                kwargs = {
+                    "op": node.get_attributes()['label'].strip('"')
+                }
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
             elif hw_node_type == f"{HWNodeType.RepSigGen}" or hw_node_type == HWNodeType.RepSigGen:
@@ -1567,11 +1570,10 @@ def write_glb_file(file_list, out_dir, out_name):
                 # hexified = str(hex(int(l)))[2:]
                 # Convert to positive
                 temp_tkn = int(float(l.strip()))
-                if temp_tkn < 0:
-                    temp_tkn = temp_tkn * -1
+                # Supports negative values now
                 if temp_tkn >= (2 ** 16):
                     temp_tkn = temp_tkn - (((temp_tkn // (2 ** 16)) * (2 ** 16)))
-                output_lines.append(f"{temp_tkn:04X}\n")
+                output_lines.append(f"{hex(temp_tkn & 0xFFFF)[2:].zfill(4)}\n")
     out_path = f"{out_dir}/{out_name}"
     with open(out_path, "w+") as curr_file:
         curr_file.writelines(output_lines)
@@ -1928,7 +1930,37 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # exit()
         output_format = "CSF"
         output_name = "x"
-    elif 'matmul_ijk.gv' in app_name:
+    elif 'matmul_ijk' in app_name and "relu" in app_name:
+        # PASSES
+        # to glb
+        # combined
+        # piped
+
+        if 'B' not in cached_inputs:
+            b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                               sparsity=0.2)
+        #else:
+        #    b_mat = cached_inputs['B']
+        #    b_shape = b_mat.shape
+        #    shapes_[0] = b_shape[0]
+        #    shapes_[1] = b_shape[1]
+        # c_mat = c_matrix.get_matrix()
+        if 'C' not in cached_inputs:
+            c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                               sparsity=0.2)
+        #else:
+        #    c_mat = cached_inputs['C']
+
+        #ret_outputs['B'] = b_mat
+        #ret_outputs['C'] = c_mat
+        # First transpose c_mat        
+        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
+        output_format = "CSF"
+        output_name = "X"
+    elif 'matmul_ijk' in app_name:
         # PASSES
         # to glb
         # combined
