@@ -674,6 +674,10 @@ def parse_args():
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
 
+    # Daemon
+    parser.add_argument('--daemon', default=None,
+        type=str, choices = ['help','launch-daemon', 'use-daemon', 'kill'])
+
     parser.set_defaults(config_port_pipeline=True)
 
     args = parser.parse_args()
