@@ -469,11 +469,14 @@ class Garnet(Generator):
     def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False,
                         pipeline_input_broadcasts=False, input_broadcast_branch_factor=4,
                         input_broadcast_max_leaves=16):
-        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src,
-                                                                        load_only,
-                                                                        pipeline_input_broadcasts,
-                                                                        input_broadcast_branch_factor,
-                                                                        input_broadcast_max_leaves)
+
+        id_to_name, instance_to_instr, netlist, bus = \
+            self.load_netlist(halide_src,
+                              load_only,
+                              pipeline_input_broadcasts,
+                              input_broadcast_branch_factor,
+                              input_broadcast_max_leaves)
+
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
@@ -481,15 +484,16 @@ class Garnet(Generator):
             from global_buffer.io_placement import place_io_blk
             fixed_io = place_io_blk(id_to_name, app_dir)
 
-        placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
-                                                         load_only=load_only,
-                                                         cwd=app_dir,
-                                                         id_to_name=id_to_name,
-                                                         fixed_pos=fixed_io,
-                                                         compact=compact,
-                                                         harden_flush=self.harden_flush,
-                                                         pipeline_config_interval=self.pipeline_config_interval,
-                                                         pes_with_packed_ponds=self.pes_with_packed_ponds)
+        placement, routing, id_to_name = \
+            archipelago.pnr(self.interconnect, (netlist, bus),
+                            load_only=load_only,
+                            cwd=app_dir,
+                            id_to_name=id_to_name,
+                            fixed_pos=fixed_io,
+                            compact=compact,
+                            harden_flush=self.harden_flush,
+                            pipeline_config_interval=self.pipeline_config_interval,
+                            pes_with_packed_ponds=self.pes_with_packed_ponds)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
@@ -752,6 +756,20 @@ def build_verilog(args, garnet):
                            rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                            output_folder=os.path.join(garnet_home, "global_controller/header"))
 
+def reschedule_pipelined_app(app):
+
+            # Calling clockwork for rescheduling pipelined app
+            import subprocess
+            import copy
+            cwd = os.path.dirname(app) + "/.."
+            cmd = ["make", "-C", str(cwd), "reschedule_mem"] 
+            env = copy.deepcopy(os.environ)
+            subprocess.check_call(
+                cmd,
+                env=env,
+                cwd=cwd
+            )
+
 def main():
     args = parse_args()
 
@@ -774,8 +792,6 @@ def main():
     do_pnr = app_specified and not args.virtualize
 
     if do_pnr:
-#         placement, routing, id_to_name, instance_to_instr, \
-#             netlist, bus = garnet.place_and_route(
         PNR = garnet.place_and_route(
                 args.app, 
                 unconstrained_io=(args.unconstrained_io or args.generate_bitstream_only),
@@ -786,17 +802,7 @@ def main():
                 input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
         if args.pipeline_pnr and not args.generate_bitstream_only:
-            # Calling clockwork for rescheduling pipelined app
-            import subprocess
-            import copy
-            cwd = os.path.dirname(args.app) + "/.."
-            cmd = ["make", "-C", str(cwd), "reschedule_mem"] 
-            env = copy.deepcopy(os.environ)
-            subprocess.check_call(
-                cmd,
-                env=env,
-                cwd=cwd
-            )
+            reschedule_pipelined_app(app)
 
             # Wow. What? Wow.
 #             placement, routing, id_to_name, instance_to_instr, \
