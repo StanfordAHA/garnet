@@ -16,6 +16,7 @@ from lassen.sim import PE_fc as lassen_fc
 # from metamapper.coreir_mapper import Mapper # Not used??
 # from canal.global_signal import GlobalSignalWiring
 
+from util.daemon import GarnetDaemon
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -674,9 +675,8 @@ def parse_args():
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
 
-    # Daemon
-    parser.add_argument('--daemon', default=None,
-        type=str, choices = ['help','launch-daemon', 'use-daemon', 'kill'])
+    # Daemon choices are maybe ['help','launch', 'use-daemon', 'kill']
+    parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
 
     parser.set_defaults(config_port_pipeline=True)
 
@@ -843,7 +843,10 @@ def pnr_wrapper(garnet, args, unconstrained_io, load_only):
                 input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
 def main():
+
     args = parse_args()
+    GarnetDaemon.check_for_daemon(args)
+
 
     # BUILD GARNET
     garnet = Garnet(args)
