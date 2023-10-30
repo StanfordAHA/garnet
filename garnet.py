@@ -756,6 +756,61 @@ def build_verilog(args, garnet):
                            rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                            output_folder=os.path.join(garnet_home, "global_controller/header"))
 
+def pnr(garnet, args, app):
+
+        PNR = pnr_wrapper(garnet, args, 
+            unconstrained_io = (args.unconstrained_io or args.generate_bitstream_only), 
+            load_only        = args.generate_bitstream_only
+        )
+        if args.pipeline_pnr and not args.generate_bitstream_only:
+            reschedule_pipelined_app(app)
+            PNR = pnr_wrapper(
+                garnet, args,
+                unconstrained_io = True, 
+                load_only        = True
+            )
+            # What are these vars? Are they never used?
+            placement, routing, id_to_name, instance_to_instr, netlist, bus = PNR
+
+        # FIXME can we replace placement..bus w/PNR and/or rename to priinb_tuple or some such
+        bitstream, irved_tuple = garnet.generate_bitstream(
+            args.app, 
+            placement, routing, id_to_name, instance_to_instr, netlist, bus,
+            compact=args.compact
+        )
+        (inputs, outputs, reset, valid, en, delay) = irved_tuple
+
+        # write out the config file
+        # Remove reset and en_port signals for some reason??
+        if len(inputs) > 1:     # FIXME why/when would len(inputs) be <= 1 ??
+            if reset in inputs: inputs.remove(reset)
+            for en_port in en:
+                if en_port in inputs: inputs.remove(en_port)
+
+        from mini_mapper import get_total_cycle_from_app
+        total_cycle = get_total_cycle_from_app(args.app)
+
+        if len(outputs) > 1:
+            outputs.remove(valid)
+        config = {
+            "input_filename": args.input,
+            "bitstream": args.output,
+            "gold_filename": args.gold,
+            "output_port_name": outputs,
+            "input_port_name": inputs,
+            "valid_port_name": valid,
+            "reset_port_name": reset,
+            "en_port_name": en,
+            "delay": delay,
+            "total_cycle": total_cycle
+        }
+        with open(f"{args.output}.json", "w+") as f:
+            json.dump(config, f)
+        write_out_bitstream(args.output, bitstream)
+
+
+
+
 def reschedule_pipelined_app(app):
 
             # Calling clockwork for rescheduling pipelined app
@@ -802,54 +857,10 @@ def main():
     do_pnr = app_specified and not args.virtualize
 
     if do_pnr:
-        PNR = pnr_wrapper(garnet, args, 
-            unconstrained_io = (args.unconstrained_io or args.generate_bitstream_only), 
-            load_only        = args.generate_bitstream_only
-        )
-        if args.pipeline_pnr and not args.generate_bitstream_only:
-            reschedule_pipelined_app(app)
-            PNR = pnr_wrapper(
-                garnet, args,
-                unconstrained_io = True, 
-                load_only        = True
-            )
-            # What are these vars? Are they never used?
-            placement, routing, id_to_name, instance_to_instr, netlist, bus = PNR
+        pnr(garnet, args, app)
+        
 
-        bitstream, irved_tuple = garnet.generate_bitstream(
-            args.app, placement, routing, id_to_name, instance_to_instr,
-            netlist, bus, compact=args.compact
-        )
-        (inputs, outputs, reset, valid, en, delay) = irved_tuple
 
-        # write out the config file
-        if len(inputs) > 1:
-            if reset in inputs:
-                inputs.remove(reset)
-            for en_port in en:
-                if en_port in inputs:
-                    inputs.remove(en_port)
-
-        from mini_mapper import get_total_cycle_from_app
-        total_cycle = get_total_cycle_from_app(args.app)
-
-        if len(outputs) > 1:
-            outputs.remove(valid)
-        config = {
-            "input_filename": args.input,
-            "bitstream": args.output,
-            "gold_filename": args.gold,
-            "output_port_name": outputs,
-            "input_port_name": inputs,
-            "valid_port_name": valid,
-            "reset_port_name": reset,
-            "en_port_name": en,
-            "delay": delay,
-            "total_cycle": total_cycle
-        }
-        with open(f"{args.output}.json", "w+") as f:
-            json.dump(config, f)
-        write_out_bitstream(args.output, bitstream)
     elif args.virtualize and len(args.app) > 0:
         group_size = args.virtualize_group_size
         result = garnet.compile_virtualize(args.app, group_size)
