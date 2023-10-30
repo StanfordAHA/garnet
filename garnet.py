@@ -756,6 +756,9 @@ def build_verilog(args, garnet):
                            rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                            output_folder=os.path.join(garnet_home, "global_controller/header"))
 
+# FIXME/TODO send pnr, pnr_wrapper etc. to util/garnetPNR or some such
+# e.g. "import util.pnr then call util.pnr.{pnr,pnr_wrapper} etc. maybe
+
 def pnr(garnet, args, app):
 
         PNR = pnr_wrapper(garnet, args, 
@@ -845,7 +848,8 @@ def main():
     # see "def place_and_route"/garnet.place_and_route(...)
     # For now, leaving it OUTSIDE the Garnet class b/c that's where
     # the code was origially (i.e. her in main())
-    if args.verilog: build_verilog(args, garnet)
+    if args.verilog:
+        build_verilog(args, garnet)
 
     # PNR
 
@@ -858,8 +862,6 @@ def main():
 
     if do_pnr:
         pnr(garnet, args, app)
-        
-
 
     elif args.virtualize and len(args.app) > 0:
         group_size = args.virtualize_group_size
