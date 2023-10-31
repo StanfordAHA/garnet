@@ -7,7 +7,7 @@ if os.getenv('WHICH_SOC') == "amber":
 import argparse
 import magma
 from systemRDL.util import gen_rdl_header # If I move this it breaks. Dunno why.
-from cgra import compress_config_data
+from cgra import create_cgra, compress_config_data
 import json
 import archipelago
 import archipelago.power
