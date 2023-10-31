@@ -758,6 +758,7 @@ def parse_args():
 
 def main():
     args = parse_args()
+    glb_params=args.glb_params
     garnet = Garnet(width=args.width, height=args.height,
                     glb_params=glb_params,
                     add_pd=not args.no_pd,
