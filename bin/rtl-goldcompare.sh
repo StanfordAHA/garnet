@@ -22,7 +22,7 @@ EXAMPLES
 function vcompare {
     cat $1 |
     sed 's/_O._value_O/_Ox_value_O/g' | # Treat all zeroes as equivalent
-    sed 's/clk_gate_unq/clk_gate'     | # Treat clk_gate_unq same as clk_gate :(
+    sed 's/clk_gate_unq/clk_gate/'    | # Treat clk_gate_unq same as clk_gate :(
     sed 's/,$//'           | # No trailing commas
     sed 's/unq[0-9*]/unq/' | # Canonicalize unq's
     sed '/^\s*$/d'         | # No blank lines
