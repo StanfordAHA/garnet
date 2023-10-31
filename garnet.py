@@ -794,7 +794,7 @@ def build_verilog(args, garnet):
 
             from global_buffer.global_buffer_main import gen_param_header
             gen_param_header(top_name="global_buffer_param",
-                             params=glb_params,
+                             params=args.glb_params,
                              output_folder=os.path.join(garnet_home, "global_buffer/header"))
             gen_rdl_header(top_name="glb",
                            rdl_file=os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl"),
