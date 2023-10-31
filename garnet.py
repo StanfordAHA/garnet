@@ -159,7 +159,6 @@ class Garnet(Generator):
         # GLB ports (or not)
 
         # interconnect_only = args.interconnect_only
-        print(f'--- IC {args.interconnect_only}')
         if not args.interconnect_only:
             self.build_glb_ports(args.glb_params)
         else:
