@@ -65,11 +65,7 @@ class Garnet(Generator):
         config_data_width = 32
         self.config_addr_width = config_addr_width
         self.config_data_width = config_data_width
-        axi_addr_width = self.glb_params.cgra_axi_addr_width
-        axi_data_width = self.glb_params.axi_data_width
         self.amber_pond = amber_pond
-        # axi_data_width must be same as cgra config_data_width
-        assert axi_data_width == config_data_width
 
         tile_id_width = 16
         config_addr_reg_width = 8
@@ -90,21 +86,20 @@ class Garnet(Generator):
 
         self.pe_fc = pe_fc
 
-        from canal.global_signal import GlobalSignalWiring
-        if not interconnect_only:
-            wiring = GlobalSignalWiring.ParallelMeso
-        else:
-            wiring = GlobalSignalWiring.Meso
-
         if not interconnect_only:
             self.build_glb()  # Builds self.{global_controller, global_buffer}
-
 
         sb_type_dict = {
             "Imran": SwitchBoxType.Imran,
             "Disjoint": SwitchBoxType.Disjoint,
             "Wilton": SwitchBoxType.Wilton
         }
+
+        from canal.global_signal import GlobalSignalWiring
+        if not interconnect_only:
+            wiring = GlobalSignalWiring.ParallelMeso
+        else:
+            wiring = GlobalSignalWiring.Meso
 
         interconnect = create_cgra(width, height, io_side,
                                    reg_addr_width=config_addr_reg_width,
@@ -158,57 +153,7 @@ class Garnet(Generator):
             self.inter_core_connections[bw] = interconnect.inter_core_connection
 
         if not interconnect_only:
-            from gemstone.common.jtag_type import JTAGType
-            from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
-            self.add_ports(
-                jtag=JTAGType,
-                clk_in=magma.In(magma.Clock),
-                reset_in=magma.In(magma.AsyncReset),
-                proc_packet=ProcPacketIfc(
-                    glb_params.glb_addr_width, glb_params.bank_data_width).slave,
-                axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
-                interrupt=magma.Out(magma.Bit),
-                cgra_running_clk_out=magma.Out(magma.Clock),
-            )
-
-            # top <-> global controller ports connection
-            self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
-            self.wire(self.ports.reset_in,
-                      self.global_controller.ports.reset_in)
-            self.wire(self.ports.jtag, self.global_controller.ports.jtag)
-            self.wire(self.ports.axi4_slave,
-                      self.global_controller.ports.axi4_slave)
-            self.wire(self.ports.interrupt,
-                      self.global_controller.ports.interrupt)
-            self.wire(self.ports.cgra_running_clk_out,
-                      self.global_controller.ports.clk_out)
-
-            # top <-> global buffer ports connection
-            self.wire(self.ports.clk_in, self.global_buffer.ports.clk)
-            self.wire(self.ports.proc_packet.wr_en,
-                      self.global_buffer.ports.proc_wr_en[0])
-            self.wire(self.ports.proc_packet.wr_strb,
-                      self.global_buffer.ports.proc_wr_strb)
-            self.wire(self.ports.proc_packet.wr_addr,
-                      self.global_buffer.ports.proc_wr_addr)
-            self.wire(self.ports.proc_packet.wr_data,
-                      self.global_buffer.ports.proc_wr_data)
-            self.wire(self.ports.proc_packet.rd_en,
-                      self.global_buffer.ports.proc_rd_en[0])
-            self.wire(self.ports.proc_packet.rd_addr,
-                      self.global_buffer.ports.proc_rd_addr)
-            self.wire(self.ports.proc_packet.rd_data,
-                      self.global_buffer.ports.proc_rd_data)
-            self.wire(self.ports.proc_packet.rd_data_valid,
-                      self.global_buffer.ports.proc_rd_data_valid[0])
-
-            # Top -> Interconnect clock port connection
-            self.wire(self.ports.clk_in, self.interconnect.ports.clk)
-
-            from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
-            glb_glc_wiring(self)
-            glb_interconnect_wiring(self)
-            glc_interconnect_wiring(self)
+            self.build_glb_ports(args.glb_params)
         else:
             # lift all the interconnect ports up
             for name in self.interconnect.interface():
@@ -275,6 +220,73 @@ class Garnet(Generator):
                                                       group_size=glb_params.num_cols_per_group)
 
             self.global_buffer = GlobalBufferMagma(glb_params)
+
+    def build_glb_ports(self, glb_params):
+
+            # axi_data_width must be same as cgra config_data_width
+            axi_addr_width = self.glb_params.cgra_axi_addr_width
+            axi_data_width = self.glb_params.axi_data_width
+            assert axi_data_width == self.config_data_width
+
+            from gemstone.common.jtag_type import JTAGType
+            from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
+            self.add_ports(
+                jtag=JTAGType,
+                clk_in=magma.In(magma.Clock),
+                reset_in=magma.In(magma.AsyncReset),
+                proc_packet=ProcPacketIfc(
+                    glb_params.glb_addr_width, glb_params.bank_data_width).slave,
+                axi4_slave=AXI4LiteIfc(axi_addr_width, axi_data_width).slave,
+                interrupt=magma.Out(magma.Bit),
+                cgra_running_clk_out=magma.Out(magma.Clock),
+            )
+
+            # top <-> global controller ports connection
+            self.wire(self.ports.clk_in, self.global_controller.ports.clk_in)
+            self.wire(self.ports.reset_in,
+                      self.global_controller.ports.reset_in)
+            self.wire(self.ports.jtag, self.global_controller.ports.jtag)
+            self.wire(self.ports.axi4_slave,
+                      self.global_controller.ports.axi4_slave)
+            self.wire(self.ports.interrupt,
+                      self.global_controller.ports.interrupt)
+            self.wire(self.ports.cgra_running_clk_out,
+                      self.global_controller.ports.clk_out)
+
+            # top <-> global buffer ports connection
+            self.wire(self.ports.clk_in, self.global_buffer.ports.clk)
+            self.wire(self.ports.proc_packet.wr_en,
+                      self.global_buffer.ports.proc_wr_en[0])
+            self.wire(self.ports.proc_packet.wr_strb,
+                      self.global_buffer.ports.proc_wr_strb)
+            self.wire(self.ports.proc_packet.wr_addr,
+                      self.global_buffer.ports.proc_wr_addr)
+            self.wire(self.ports.proc_packet.wr_data,
+                      self.global_buffer.ports.proc_wr_data)
+            self.wire(self.ports.proc_packet.rd_en,
+                      self.global_buffer.ports.proc_rd_en[0])
+            self.wire(self.ports.proc_packet.rd_addr,
+                      self.global_buffer.ports.proc_rd_addr)
+            self.wire(self.ports.proc_packet.rd_data,
+                      self.global_buffer.ports.proc_rd_data)
+            self.wire(self.ports.proc_packet.rd_data_valid,
+                      self.global_buffer.ports.proc_rd_data_valid[0])
+
+            # Top -> Interconnect clock port connection
+            self.wire(self.ports.clk_in, self.interconnect.ports.clk)
+
+            from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
+            glb_glc_wiring(self)
+            glb_interconnect_wiring(self)
+            glc_interconnect_wiring(self)
+
+
+
+
+
+
+
+
 
     from mini_mapper import map_app
     def map(self, halide_src):
