@@ -6,49 +6,22 @@ if os.getenv('WHICH_SOC') == "amber":
 
 import argparse
 import magma
-from canal.util import IOSide, SwitchBoxType
-from gemstone.common.configurable import ConfigurationType
-from gemstone.common.jtag_type import JTAGType
-from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
-from gemstone.generator.generator import Generator, set_debug_mode
-from global_buffer.io_placement import place_io_blk
-from global_buffer.design.global_buffer import GlobalBufferMagma
-from global_buffer.design.global_buffer_parameter import GlobalBufferParams, gen_global_buffer_params
-from global_buffer.global_buffer_main import gen_param_header
-from systemRDL.util import gen_rdl_header
-from global_controller.global_controller_magma import GlobalController
-from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
-from canal.global_signal import GlobalSignalWiring
-from mini_mapper import map_app, get_total_cycle_from_app
-from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring, create_cgra, compress_config_data
+from systemRDL.util import gen_rdl_header # If I move this it breaks. Dunno why.
+from cgra import compress_config_data
 import json
-from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
-from passes.interconnect_port_pass import stall_port_pass, config_port_pass
-import os
 import archipelago
 import archipelago.power
 import archipelago.io
-import math
-from collections import defaultdict
-
-from peak_gen.peak_wrapper import wrapped_peak_class
-from peak_gen.arch import read_arch
-
-import metamapper.coreir_util as cutil
-from metamapper.node import Nodes
-from metamapper.common_passes import VerifyNodes, print_dag, gen_dag_img
-from metamapper import CoreIRContext
-from metamapper.irs.coreir import gen_CoreIRNodes
-from metamapper.io_tiles import IO_fc, BitIO_fc
 from lassen.sim import PE_fc as lassen_fc
-import metamapper.peak_util as putil
-from mapper.netlist_util import create_netlist_info, print_netlist_info
-from metamapper.coreir_mapper import Mapper
+# from metamapper.coreir_mapper import Mapper # Not used??
+
+from util.daemon import GarnetDaemon
 
 # set the debug mode to false to speed up construction
+from gemstone.generator.generator import set_debug_mode
 set_debug_mode(False)
 
-
+from gemstone.generator.generator import Generator
 class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
                  use_sim_sram: bool = True, standalone: bool = False,
@@ -118,30 +91,7 @@ class Garnet(Generator):
         self.pe_fc = pe_fc
 
         if not interconnect_only:
-            # width must be even number
-            assert (self.width % 2) == 0
-
-            # Bank should be larger than or equal to 1KB
-            assert glb_params.bank_addr_width >= 10
-
-            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
-                math.ceil(math.log(glb_params.banks_per_tile, 2))
-            wiring = GlobalSignalWiring.ParallelMeso
-            self.global_controller = GlobalController(addr_width=config_addr_width,
-                                                      data_width=config_data_width,
-                                                      axi_addr_width=axi_addr_width,
-                                                      axi_data_width=axi_data_width,
-                                                      num_glb_tiles=glb_params.num_glb_tiles,
-                                                      cgra_width=glb_params.num_cgra_cols,
-                                                      glb_addr_width=glb_params.glb_addr_width,
-                                                      glb_tile_mem_size=glb_tile_mem_size,
-                                                      block_axi_addr_width=glb_params.axi_addr_width,
-                                                      group_size=glb_params.num_cols_per_group)
-
-            self.global_buffer = GlobalBufferMagma(glb_params)
-
-        else:
-            wiring = GlobalSignalWiring.Meso
+            self.build_glb()  # Builds self.{global_controller, global_buffer}
 
         sb_type_dict = {
             "Imran": SwitchBoxType.Imran,
@@ -199,7 +149,61 @@ class Garnet(Generator):
         for bw, interconnect in self.interconnect._Interconnect__graphs.items():
             self.inter_core_connections[bw] = interconnect.inter_core_connection
 
-        if not interconnect_only:
+        # GLB ports (or not)
+
+        # interconnect_only = args.interconnect_only
+        print(f'--- IC {args.interconnect_only}')
+        if not args.interconnect_only:
+            self.build_glb_ports(args.glb_params)
+        else:
+            self.lift_ports(self.width, self.config_data_width, self.harden_flush)
+
+
+    def build_glb(self):
+            import math
+            from global_controller.global_controller_magma import GlobalController
+            from global_buffer.design.global_buffer import GlobalBufferMagma
+
+            glb_params = self.glb_params
+
+            # axi_data_width must be same as cgra config_data_width
+            axi_addr_width = self.glb_params.cgra_axi_addr_width
+            axi_data_width = self.glb_params.axi_data_width
+            assert axi_data_width == self.config_data_width
+
+            # width must be even number
+            assert (self.width % 2) == 0
+
+            # Bank should be larger than or equal to 1KB
+            assert glb_params.bank_addr_width >= 10
+
+            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
+                math.ceil(math.log(glb_params.banks_per_tile, 2))
+
+            self.global_controller = GlobalController(addr_width=self.config_addr_width,
+                                                      data_width=self.config_data_width,
+                                                      axi_addr_width=axi_addr_width,
+                                                      axi_data_width=axi_data_width,
+                                                      num_glb_tiles=glb_params.num_glb_tiles,
+                                                      cgra_width=glb_params.num_cgra_cols,
+                                                      glb_addr_width=glb_params.glb_addr_width,
+                                                      glb_tile_mem_size=glb_tile_mem_size,
+                                                      block_axi_addr_width=glb_params.axi_addr_width,
+                                                      group_size=glb_params.num_cols_per_group)
+
+            self.global_buffer = GlobalBufferMagma(glb_params)
+
+
+
+    def build_glb_ports(self, glb_params):
+
+            # axi_data_width must be same as cgra config_data_width
+            axi_addr_width = self.glb_params.cgra_axi_addr_width
+            axi_data_width = self.glb_params.axi_data_width
+            assert axi_data_width == self.config_data_width
+
+            from gemstone.common.jtag_type import JTAGType
+            from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
                 jtag=JTAGType,
                 clk_in=magma.In(magma.Clock),
@@ -245,15 +249,18 @@ class Garnet(Generator):
             # Top -> Interconnect clock port connection
             self.wire(self.ports.clk_in, self.interconnect.ports.clk)
 
+            from cgra import glb_glc_wiring, glb_interconnect_wiring, glc_interconnect_wiring
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
             glc_interconnect_wiring(self)
-        else:
+
+    def lift_ports(self, width, config_data_width, harden_flush):
             # lift all the interconnect ports up
             for name in self.interconnect.interface():
                 self.add_port(name, self.interconnect.ports[name].type())
                 self.wire(self.ports[name], self.interconnect.ports[name])
 
+            from gemstone.common.configurable import ConfigurationType
             self.add_ports(
                 clk=magma.In(magma.Clock),
                 reset=magma.In(magma.AsyncReset),
@@ -280,6 +287,7 @@ class Garnet(Generator):
                 self.add_ports(flush=magma.In(magma.Bits[self.width // 4]))
                 self.wire(self.ports.flush, self.interconnect.ports.flush)
 
+    from mini_mapper import map_app
     def map(self, halide_src):
         return map_app(halide_src, retiming=True)
 
@@ -383,6 +391,14 @@ class Garnet(Generator):
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves):
+
+        import metamapper.coreir_util as cutil
+        from metamapper import CoreIRContext
+        from metamapper.irs.coreir import gen_CoreIRNodes
+        from metamapper.io_tiles import IO_fc, BitIO_fc
+        import metamapper.peak_util as putil
+        from mapper.netlist_util import create_netlist_info, print_netlist_info
+
         app_dir = os.path.dirname(app)
 
         if self.pe_fc == lassen_fc:
@@ -507,30 +523,37 @@ class Garnet(Generator):
     def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False,
                         pipeline_input_broadcasts=False, input_broadcast_branch_factor=4,
                         input_broadcast_max_leaves=16):
-        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src,
-                                                                        load_only,
-                                                                        pipeline_input_broadcasts,
-                                                                        input_broadcast_branch_factor,
-                                                                        input_broadcast_max_leaves)
+
+        id_to_name, instance_to_instr, netlist, bus = \
+            self.load_netlist(halide_src,
+                              load_only,
+                              pipeline_input_broadcasts,
+                              input_broadcast_branch_factor,
+                              input_broadcast_max_leaves)
+
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
         else:
+            from global_buffer.io_placement import place_io_blk
             fixed_io = place_io_blk(id_to_name, app_dir)
 
-        placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
-                                                         load_only=load_only,
-                                                         cwd=app_dir,
-                                                         id_to_name=id_to_name,
-                                                         fixed_pos=fixed_io,
-                                                         compact=compact,
-                                                         harden_flush=self.harden_flush,
-                                                         pipeline_config_interval=self.pipeline_config_interval,
-                                                         pes_with_packed_ponds=self.pes_with_packed_ponds)
+        placement, routing, id_to_name = \
+            archipelago.pnr(self.interconnect, (netlist, bus),
+                            load_only=load_only,
+                            cwd=app_dir,
+                            id_to_name=id_to_name,
+                            fixed_pos=fixed_io,
+                            compact=compact,
+                            harden_flush=self.harden_flush,
+                            pipeline_config_interval=self.pipeline_config_interval,
+                            pes_with_packed_ponds=self.pes_with_packed_ponds)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
     def fix_pond_flush_bug(self, placement, routing):
+        from collections import defaultdict
+
         # This is a fix for the Onyx pond hardware, in future chips we can remove this
         pond_locs = []
         for node, (x, y) in placement.items():
@@ -715,8 +738,12 @@ def main():
 
     pe_fc = lassen_fc
     if args.pe:
+        from peak_gen.peak_wrapper import wrapped_peak_class
+        from peak_gen.arch import read_arch
         arch = read_arch(args.pe)
         pe_fc = wrapped_peak_class(arch, debug=True)
+
+    from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
     glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
                                           num_cgra_cols=args.width,
                                           # NOTE: We assume num_prr is same as num_glb_tiles
@@ -769,6 +796,7 @@ def main():
                       inline=False)
 
         # copy in cell definitions
+        from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
         files = AOIMuxWrapper.get_sv_files()
         with open("garnet.v", "a") as garnet_v:
             for filename in files:
@@ -792,6 +820,8 @@ def main():
             garnet_home = os.getenv('GARNET_HOME')
             if not garnet_home:
                 garnet_home = os.path.dirname(os.path.abspath(__file__))
+
+            from global_buffer.global_buffer_main import gen_param_header
             gen_param_header(top_name="global_buffer_param",
                              params=glb_params,
                              output_folder=os.path.join(garnet_home, "global_buffer/header"))
@@ -845,6 +875,8 @@ def main():
             for en_port in en:
                 if en_port in inputs:
                     inputs.remove(en_port)
+
+        from mini_mapper import get_total_cycle_from_app
         total_cycle = get_total_cycle_from_app(args.app)
         if len(outputs) > 1:
             outputs.remove(valid)
@@ -869,6 +901,8 @@ def main():
         for c_id, bitstream in result.items():
             filename = os.path.join("temp", f"{c_id}.bs")
             write_out_bitstream(filename, bitstream)
+
+    from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
     if args.dump_config_reg:
         ic = garnet.interconnect
         ic_reg = get_interconnect_regs(ic)
