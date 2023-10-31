@@ -81,6 +81,8 @@ class Garnet(Generator):
         self.harden_flush = harden_flush
         self.pipeline_config_interval = pipeline_config_interval
 
+        from canal.util import IOSide, SwitchBoxType
+
         # only north side has IO
         if standalone:
             io_side = IOSide.None_
