@@ -52,6 +52,7 @@ commands:
 parameters:
   design_name: design
   intel_database_name: intel_database_name
+  nthreads: 16
 
 #-------------------------------------------------------------------------
 # Assertions
