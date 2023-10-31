@@ -174,6 +174,7 @@ def construct():
   tile_array        = Subgraph( this_dir + '/../tile_array',        'tile_array'        )
   glb_top           = Subgraph( this_dir + '/../glb_top',           'glb_top'           )
   global_controller = Subgraph( this_dir + '/../global_controller', 'global_controller' )
+  intel_usp_tapeout_flow = Subgraph( this_dir + '/../intel-usp-tapeout-flow', 'intel-usp-tapeout-flow' )
 
   # CGRA simulation
   cgra_rtl_sim_compile  = Step( this_dir + '/cgra_rtl_sim_compile' )
@@ -312,6 +313,7 @@ def construct():
   g.add_step( lvs               )
   g.add_step( custom_lvs        )
   g.add_step( debugcalibre      )
+  g.add_step( intel_usp_tapeout_flow )
 
   # App test nodes
   g.add_step( cgra_rtl_sim_compile )
@@ -528,6 +530,9 @@ def construct():
       g.connect_by_name( power, merge_gdr )
   else:
     g.connect_by_name( signoff,    merge_gdr      )
+  
+  # connect tapeout
+  g.connect(signoff.o("design-merged.oas"), intel_usp_tapeout_flow.i("design.oas"))
 
   return g
 

@@ -1,0 +1,51 @@
+#=========================================================================
+# merge-die-ring
+#=========================================================================
+# Author : Po-Han Chen
+# Date   : Oct 30, 2023
+#
+
+name: merge-die-ring
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - adk
+  - design.oas
+
+outputs:
+  - design.oas
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - echo | calibredrv ./scripts/merge-die-ring.tcl
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: design
+  input_oasis_parent: ./inputs/design.oas
+  input_oasis_child: ./inputs/adk/die_ring.oas
+  output_oasis: ./outputs/design.oas
+  child_oasis_loc_x: 0
+  child_oasis_loc_y: 0
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+preconditions:
+
+  - assert Tool( 'calibredrv' )
+  - assert File( 'inputs/adk' )
+  - assert File( 'inputs/design.oas' )
+
+postconditions:
+  - assert File( 'outputs/design.oas' )

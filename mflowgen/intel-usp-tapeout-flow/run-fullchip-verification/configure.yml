@@ -1,0 +1,58 @@
+#=========================================================================
+# run-fullchip-verification
+#=========================================================================
+# Author : Po-Han Chen
+# Date   : Oct 30, 2023
+#
+
+name: run-fullchip-verification
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - adk
+  - final_v.oas
+  - final.oas
+
+# outputs:
+#   - a bunch of reports should go here
+
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  # sanity XOR check
+  - source ./inputs/adk/run-icv-fullchip-lvl-xor.sh
+  # perform verification on the final database
+  - source ./inputs/adk/run-icv-fullchip-drc-drcd.sh
+  - source ./inputs/adk/run-icv-fullchip-drc-lu.sh
+  - source ./inputs/adk/run-icv-fullchip-antenna.sh
+  - source ./inputs/adk/run-icv-fullchip-collat.sh
+  - source ./inputs/adk/run-icv-fullchip-drc-fullchip.sh
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: design
+  intel_database_name: intel_database_name
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+preconditions:
+
+  - assert Tool( 'icv' )
+  - assert Tool( 'icv_lvl' )
+  - assert File( 'inputs/adk' )
+  - assert File( 'inputs/final_v.oas' )
+  - assert File( 'inputs/final.oas' )
+
+# postconditions:
+#   - assert File( 'outputs/design-merged.oas' )

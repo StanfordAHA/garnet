@@ -1,0 +1,50 @@
+#=========================================================================
+# perform-fill
+#=========================================================================
+# Author : Po-Han Chen
+# Date   : Oct 30, 2023
+#
+
+name: perform-fill
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - adk
+  - design.oas
+
+outputs:
+  - design.oas
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - source ./inputs/adk/run-calibre-fill.sh
+  - mv design.oas outputs/design.oas
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: design
+  fill_input_path: ./inputs/design.oas
+  fill_input_type: OASIS
+  fill_output_name: design.oas
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+preconditions:
+
+  - assert Tool( 'calibre' )
+  - assert File( 'inputs/adk' )
+  - assert File( 'inputs/design.oas' )
+
+postconditions:
+  - assert File( 'outputs/design.oas' )
