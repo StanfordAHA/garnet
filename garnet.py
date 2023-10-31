@@ -758,6 +758,52 @@ def parse_args():
 
     return args
 
+def build_verilog(args, garnet):
+        garnet_circ = garnet.circuit()
+        magma.compile("garnet", garnet_circ, output="coreir-verilog",
+                      coreir_libs={"float_CW"},
+                      passes=["rungenerators", "inline_single_instances", "clock_gate"],
+                      inline=False)
+
+        # copy in cell definitions
+        from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
+        files = AOIMuxWrapper.get_sv_files()
+        with open("garnet.v", "a") as garnet_v:
+            for filename in files:
+                with open(filename) as f:
+                    garnet_v.write(f.read())
+
+        if args.sparse_cgra:
+            # Cat the PE together...
+            # files_cat = ['garnet.v', 'garnet_PE.v']
+            lines_garnet = None
+            lines_pe = None
+            with open('garnet.v', 'r') as gfd:
+                lines_garnet = gfd.readlines()
+            with open('garnet_PE.v', 'r') as gfd:
+                lines_pe = gfd.readlines()
+            with open('garnet.v', 'w+') as gfd:
+                gfd.writelines(lines_garnet)
+                gfd.writelines(lines_pe)
+
+        garnet.create_stub()
+        if not args.interconnect_only:
+            garnet_home = os.getenv('GARNET_HOME')
+            if not garnet_home:
+                garnet_home = os.path.dirname(os.path.abspath(__file__))
+
+            from global_buffer.global_buffer_main import gen_param_header
+            gen_param_header(top_name="global_buffer_param",
+                             params=glb_params,
+                             output_folder=os.path.join(garnet_home, "global_buffer/header"))
+            gen_rdl_header(top_name="glb",
+                           rdl_file=os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl"),
+                           output_folder=os.path.join(garnet_home, "global_buffer/header"))
+            gen_rdl_header(top_name="glc",
+                           rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
+                           output_folder=os.path.join(garnet_home, "global_controller/header"))
+
+
 def main():
     args = parse_args()
 
@@ -796,48 +842,7 @@ def main():
                     rf=args.rf)
 
     if args.verilog:
-        garnet_circ = garnet.circuit()
-        magma.compile("garnet", garnet_circ, output="coreir-verilog",
-                      coreir_libs={"float_CW"},
-                      passes=["rungenerators", "inline_single_instances", "clock_gate"],
-                      inline=False)
-
-        # copy in cell definitions
-        from gemstone.common.mux_wrapper_aoi import AOIMuxWrapper
-        files = AOIMuxWrapper.get_sv_files()
-        with open("garnet.v", "a") as garnet_v:
-            for filename in files:
-                with open(filename) as f:
-                    garnet_v.write(f.read())
-        if args.sparse_cgra:
-            # Cat the PE together...
-            # files_cat = ['garnet.v', 'garnet_PE.v']
-            lines_garnet = None
-            lines_pe = None
-            with open('garnet.v', 'r') as gfd:
-                lines_garnet = gfd.readlines()
-            with open('garnet_PE.v', 'r') as gfd:
-                lines_pe = gfd.readlines()
-            with open('garnet.v', 'w+') as gfd:
-                gfd.writelines(lines_garnet)
-                gfd.writelines(lines_pe)
-
-        garnet.create_stub()
-        if not args.interconnect_only:
-            garnet_home = os.getenv('GARNET_HOME')
-            if not garnet_home:
-                garnet_home = os.path.dirname(os.path.abspath(__file__))
-
-            from global_buffer.global_buffer_main import gen_param_header
-            gen_param_header(top_name="global_buffer_param",
-                             params=glb_params,
-                             output_folder=os.path.join(garnet_home, "global_buffer/header"))
-            gen_rdl_header(top_name="glb",
-                           rdl_file=os.path.join(garnet_home, "global_buffer/systemRDL/glb.rdl"),
-                           output_folder=os.path.join(garnet_home, "global_buffer/header"))
-            gen_rdl_header(top_name="glc",
-                           rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
-                           output_folder=os.path.join(garnet_home, "global_controller/header"))
+        build_verilog(args, garnet)
 
     if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
             and len(args.output) > 0 and not args.virtualize:
