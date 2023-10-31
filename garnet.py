@@ -734,20 +734,16 @@ def parse_args():
     if args.standalone and not args.interconnect_only:
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")
-    pe_fc = lassen_fc
+
+    args.pe_fc = lassen_fc
     if args.pe:
         from peak_gen.peak_wrapper import wrapped_peak_class
         from peak_gen.arch import read_arch
         arch = read_arch(args.pe)
-        pe_fc = wrapped_peak_class(arch, debug=True)
-
-    return args
-
-def main():
-    args = parse_args()
+        args.pe_fc = wrapped_peak_class(arch, debug=True)
 
     from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
-    glb_params = gen_global_buffer_params(
+    args.glb_params = gen_global_buffer_params(
         num_glb_tiles=args.width // 2,
         num_cgra_cols=args.width,
         # NOTE: We assume num_prr is same as num_glb_tiles
@@ -760,6 +756,13 @@ def main():
         axi_data_width=32,
         config_port_pipeline=args.config_port_pipeline)
 
+    return args
+
+def main():
+    args = parse_args()
+
+    pe_fc = args.pe_fc
+    glb_params = args.glb_params
     garnet = Garnet(width=args.width, height=args.height,
                     glb_params=glb_params,
                     add_pd=not args.no_pd,
