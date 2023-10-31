@@ -82,7 +82,6 @@ class Garnet(Generator):
         self.pipeline_config_interval = pipeline_config_interval
 
         from canal.util import IOSide, SwitchBoxType
-
         # only north side has IO
         if standalone:
             io_side = IOSide.None_
@@ -91,10 +90,33 @@ class Garnet(Generator):
 
         self.pe_fc = pe_fc
 
+        import math
+        from global_controller.global_controller_magma import GlobalController
+        from global_buffer.design.global_buffer import GlobalBufferMagma
         from canal.global_signal import GlobalSignalWiring
         if not interconnect_only:
-            self.build_glb()  # Builds self.{global_controller, global_buffer}
+            # width must be even number
+            assert (self.width % 2) == 0
+
+            # Bank should be larger than or equal to 1KB
+            assert glb_params.bank_addr_width >= 10
+
+            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
+                math.ceil(math.log(glb_params.banks_per_tile, 2))
             wiring = GlobalSignalWiring.ParallelMeso
+            self.global_controller = GlobalController(addr_width=config_addr_width,
+                                                      data_width=config_data_width,
+                                                      axi_addr_width=axi_addr_width,
+                                                      axi_data_width=axi_data_width,
+                                                      num_glb_tiles=glb_params.num_glb_tiles,
+                                                      cgra_width=glb_params.num_cgra_cols,
+                                                      glb_addr_width=glb_params.glb_addr_width,
+                                                      glb_tile_mem_size=glb_tile_mem_size,
+                                                      block_axi_addr_width=glb_params.axi_addr_width,
+                                                      group_size=glb_params.num_cols_per_group)
+
+            self.global_buffer = GlobalBufferMagma(glb_params)
+
         else:
             wiring = GlobalSignalWiring.Meso
 
@@ -142,7 +164,6 @@ class Garnet(Generator):
         self.interconnect = interconnect
 
         from passes.interconnect_port_pass import stall_port_pass, config_port_pass
-
         # make multiple stall ports
         stall_port_pass(self.interconnect, port_name="stall", port_width=1, col_offset=1)
         # make multiple flush ports
@@ -156,58 +177,7 @@ class Garnet(Generator):
         for bw, interconnect in self.interconnect._Interconnect__graphs.items():
             self.inter_core_connections[bw] = interconnect.inter_core_connection
 
-        # GLB ports (or not)
-
-        # interconnect_only = args.interconnect_only
-        if not args.interconnect_only:
-            self.build_glb_ports(args.glb_params)
-        else:
-            self.lift_ports(self.width, self.config_data_width, self.harden_flush)
-
-
-    def build_glb(self):
-            import math
-            from global_controller.global_controller_magma import GlobalController
-            from global_buffer.design.global_buffer import GlobalBufferMagma
-
-            glb_params = self.glb_params
-
-            # axi_data_width must be same as cgra config_data_width
-            axi_addr_width = self.glb_params.cgra_axi_addr_width
-            axi_data_width = self.glb_params.axi_data_width
-            assert axi_data_width == self.config_data_width
-
-            # width must be even number
-            assert (self.width % 2) == 0
-
-            # Bank should be larger than or equal to 1KB
-            assert glb_params.bank_addr_width >= 10
-
-            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
-                math.ceil(math.log(glb_params.banks_per_tile, 2))
-
-            self.global_controller = GlobalController(addr_width=self.config_addr_width,
-                                                      data_width=self.config_data_width,
-                                                      axi_addr_width=axi_addr_width,
-                                                      axi_data_width=axi_data_width,
-                                                      num_glb_tiles=glb_params.num_glb_tiles,
-                                                      cgra_width=glb_params.num_cgra_cols,
-                                                      glb_addr_width=glb_params.glb_addr_width,
-                                                      glb_tile_mem_size=glb_tile_mem_size,
-                                                      block_axi_addr_width=glb_params.axi_addr_width,
-                                                      group_size=glb_params.num_cols_per_group)
-
-            self.global_buffer = GlobalBufferMagma(glb_params)
-
-
-
-    def build_glb_ports(self, glb_params):
-
-            # axi_data_width must be same as cgra config_data_width
-            axi_addr_width = self.glb_params.cgra_axi_addr_width
-            axi_data_width = self.glb_params.axi_data_width
-            assert axi_data_width == self.config_data_width
-
+        if not interconnect_only:
             from gemstone.common.jtag_type import JTAGType
             from cgra.ifc_struct import AXI4LiteIfc, ProcPacketIfc
             self.add_ports(
@@ -259,8 +229,7 @@ class Garnet(Generator):
             glb_glc_wiring(self)
             glb_interconnect_wiring(self)
             glc_interconnect_wiring(self)
-
-    def lift_ports(self, width, config_data_width, harden_flush):
+        else:
             # lift all the interconnect ports up
             for name in self.interconnect.interface():
                 self.add_port(name, self.interconnect.ports[name].type())
@@ -529,14 +498,11 @@ class Garnet(Generator):
     def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False,
                         pipeline_input_broadcasts=False, input_broadcast_branch_factor=4,
                         input_broadcast_max_leaves=16):
-
-        id_to_name, instance_to_instr, netlist, bus = \
-            self.load_netlist(halide_src,
-                              load_only,
-                              pipeline_input_broadcasts,
-                              input_broadcast_branch_factor,
-                              input_broadcast_max_leaves)
-
+        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src,
+                                                                        load_only,
+                                                                        pipeline_input_broadcasts,
+                                                                        input_broadcast_branch_factor,
+                                                                        input_broadcast_max_leaves)
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
@@ -544,16 +510,15 @@ class Garnet(Generator):
             from global_buffer.io_placement import place_io_blk
             fixed_io = place_io_blk(id_to_name, app_dir)
 
-        placement, routing, id_to_name = \
-            archipelago.pnr(self.interconnect, (netlist, bus),
-                            load_only=load_only,
-                            cwd=app_dir,
-                            id_to_name=id_to_name,
-                            fixed_pos=fixed_io,
-                            compact=compact,
-                            harden_flush=self.harden_flush,
-                            pipeline_config_interval=self.pipeline_config_interval,
-                            pes_with_packed_ponds=self.pes_with_packed_ponds)
+        placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
+                                                         load_only=load_only,
+                                                         cwd=app_dir,
+                                                         id_to_name=id_to_name,
+                                                         fixed_pos=fixed_io,
+                                                         compact=compact,
+                                                         harden_flush=self.harden_flush,
+                                                         pipeline_config_interval=self.pipeline_config_interval,
+                                                         pes_with_packed_ponds=self.pes_with_packed_ponds)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
