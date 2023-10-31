@@ -90,35 +90,15 @@ class Garnet(Generator):
 
         self.pe_fc = pe_fc
 
-        import math
-        from global_controller.global_controller_magma import GlobalController
-        from global_buffer.design.global_buffer import GlobalBufferMagma
         from canal.global_signal import GlobalSignalWiring
         if not interconnect_only:
-            # width must be even number
-            assert (self.width % 2) == 0
-
-            # Bank should be larger than or equal to 1KB
-            assert glb_params.bank_addr_width >= 10
-
-            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
-                math.ceil(math.log(glb_params.banks_per_tile, 2))
             wiring = GlobalSignalWiring.ParallelMeso
-            self.global_controller = GlobalController(addr_width=config_addr_width,
-                                                      data_width=config_data_width,
-                                                      axi_addr_width=axi_addr_width,
-                                                      axi_data_width=axi_data_width,
-                                                      num_glb_tiles=glb_params.num_glb_tiles,
-                                                      cgra_width=glb_params.num_cgra_cols,
-                                                      glb_addr_width=glb_params.glb_addr_width,
-                                                      glb_tile_mem_size=glb_tile_mem_size,
-                                                      block_axi_addr_width=glb_params.axi_addr_width,
-                                                      group_size=glb_params.num_cols_per_group)
-
-            self.global_buffer = GlobalBufferMagma(glb_params)
-
         else:
             wiring = GlobalSignalWiring.Meso
+
+        if not interconnect_only:
+            self.build_glb()  # Builds self.{global_controller, global_buffer}
+
 
         sb_type_dict = {
             "Imran": SwitchBoxType.Imran,
@@ -261,6 +241,40 @@ class Garnet(Generator):
             if harden_flush:
                 self.add_ports(flush=magma.In(magma.Bits[self.width // 4]))
                 self.wire(self.ports.flush, self.interconnect.ports.flush)
+
+    def build_glb(self):
+            import math
+            from global_controller.global_controller_magma import GlobalController
+            from global_buffer.design.global_buffer import GlobalBufferMagma
+
+            glb_params = self.glb_params
+
+            # axi_data_width must be same as cgra config_data_width
+            axi_addr_width = self.glb_params.cgra_axi_addr_width
+            axi_data_width = self.glb_params.axi_data_width
+            assert axi_data_width == self.config_data_width
+
+            # width must be even number
+            assert (self.width % 2) == 0
+
+            # Bank should be larger than or equal to 1KB
+            assert glb_params.bank_addr_width >= 10
+
+            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
+                math.ceil(math.log(glb_params.banks_per_tile, 2))
+
+            self.global_controller = GlobalController(addr_width=self.config_addr_width,
+                                                      data_width=self.config_data_width,
+                                                      axi_addr_width=axi_addr_width,
+                                                      axi_data_width=axi_data_width,
+                                                      num_glb_tiles=glb_params.num_glb_tiles,
+                                                      cgra_width=glb_params.num_cgra_cols,
+                                                      glb_addr_width=glb_params.glb_addr_width,
+                                                      glb_tile_mem_size=glb_tile_mem_size,
+                                                      block_axi_addr_width=glb_params.axi_addr_width,
+                                                      group_size=glb_params.num_cols_per_group)
+
+            self.global_buffer = GlobalBufferMagma(glb_params)
 
     from mini_mapper import map_app
     def map(self, halide_src):
