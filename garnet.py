@@ -20,6 +20,7 @@ from gemstone.generator.generator import set_debug_mode
 set_debug_mode(False)
 
 from gemstone.generator.generator import Generator
+from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 class Garnet(Generator):
     def __init__(self, width, height, add_pd, interconnect_only: bool = False,
                  use_sim_sram: bool = True, standalone: bool = False,
