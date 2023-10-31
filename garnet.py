@@ -13,7 +13,6 @@ import archipelago
 import archipelago.power
 import archipelago.io
 from lassen.sim import PE_fc as lassen_fc
-# from metamapper.coreir_mapper import Mapper # Not used??
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
