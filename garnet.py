@@ -191,7 +191,7 @@ class Garnet(Generator):
             block_axi_addr_width=glb_params.axi_addr_width,
             group_size=glb_params.num_cols_per_group)
 
-            self.global_buffer = GlobalBufferMagma(glb_params)
+        self.global_buffer = GlobalBufferMagma(glb_params)
 
     def build_glb_ports(self, glb_params):
 
