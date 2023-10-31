@@ -734,7 +734,6 @@ def parse_args():
     if args.standalone and not args.interconnect_only:
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")
-
     args.pe_fc = lassen_fc
     if args.pe:
         from peak_gen.peak_wrapper import wrapped_peak_class
@@ -803,10 +802,90 @@ def build_verilog(args, garnet):
                            rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                            output_folder=os.path.join(garnet_home, "global_controller/header"))
 
+# FIXME/TODO send pnr, pnr_wrapper etc. to util/garnetPNR or some such
+# e.g. "import util.pnr then call util.pnr.{pnr,pnr_wrapper} etc. maybe
+
+def pnr(garnet, args, app):
+
+        PNR = pnr_wrapper(garnet, args, 
+            unconstrained_io = (args.unconstrained_io or args.generate_bitstream_only), 
+            load_only        = args.generate_bitstream_only
+        )
+        if args.pipeline_pnr and not args.generate_bitstream_only:
+            reschedule_pipelined_app(app)
+            PNR = pnr_wrapper(
+                garnet, args,
+                unconstrained_io = True, 
+                load_only        = True
+            )
+            # What are these vars? Are they never used?
+            placement, routing, id_to_name, instance_to_instr, netlist, bus = PNR
+
+        # FIXME can we replace placement..bus w/PNR and/or rename to priinb_tuple or some such
+        bitstream, iorved_tuple = garnet.generate_bitstream(
+            args.app, 
+            placement, routing, id_to_name, instance_to_instr, netlist, bus,
+            compact=args.compact
+        )
+        (inputs, outputs, reset, valid, en, delay) = iorved_tuple
+
+        # write out the config file
+        # Remove reset and en_port signals for some reason??
+        if len(inputs) > 1:     # FIXME why/when would len(inputs) be <= 1 ??
+            if reset in inputs: inputs.remove(reset)
+            for en_port in en:
+                if en_port in inputs: inputs.remove(en_port)
+
+        from mini_mapper import get_total_cycle_from_app
+        total_cycle = get_total_cycle_from_app(args.app)
+
+        if len(outputs) > 1:
+            outputs.remove(valid)
+        config = {
+            "input_filename": args.input,
+            "bitstream": args.output,
+            "gold_filename": args.gold,
+            "output_port_name": outputs,
+            "input_port_name": inputs,
+            "valid_port_name": valid,
+            "reset_port_name": reset,
+            "en_port_name": en,
+            "delay": delay,
+            "total_cycle": total_cycle
+        }
+        with open(f"{args.output}.json", "w+") as f:
+            json.dump(config, f)
+        write_out_bitstream(args.output, bitstream)
+
+
+
+
+def reschedule_pipelined_app(app):
+
+            # Calling clockwork for rescheduling pipelined app
+            import subprocess
+            import copy
+            cwd = os.path.dirname(app) + "/.."
+            cmd = ["make", "-C", str(cwd), "reschedule_mem"] 
+            env = copy.deepcopy(os.environ)
+            subprocess.check_call(
+                cmd,
+                env=env,
+                cwd=cwd
+            )
+
+def pnr_wrapper(garnet, args, unconstrained_io, load_only):
+    return garnet.place_and_route(
+                args.app, 
+                unconstrained_io=unconstrained_io,
+                compact=args.compact,
+                load_only=load_only,
+                pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
+                input_broadcast_branch_factor=args.input_broadcast_branch_factor,
+                input_broadcast_max_leaves=args.input_broadcast_max_leaves)
 
 def main():
     args = parse_args()
-
     pe_fc = args.pe_fc
     glb_params = args.glb_params
     garnet = Garnet(width=args.width, height=args.height,
@@ -841,72 +920,25 @@ def main():
                     dual_port=args.dual_port,
                     rf=args.rf)
 
+    # FIXME OR could/should maybe do garnet.build_verilog(args), also
+    # see "def place_and_route"/garnet.place_and_route(...)
+    # For now, leaving it OUTSIDE the Garnet class b/c that's where
+    # the code was origially (i.e. her in main())
     if args.verilog:
         build_verilog(args, garnet)
 
-    if len(args.app) > 0 and len(args.input) > 0 and len(args.gold) > 0 \
-            and len(args.output) > 0 and not args.virtualize:
+    # PNR
 
-        placement, routing, id_to_name, instance_to_instr, \
-            netlist, bus = garnet.place_and_route(
-                args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact,
-                load_only=args.generate_bitstream_only,
-                pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
-                input_broadcast_branch_factor=args.input_broadcast_branch_factor,
-                input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+    app_specified = len(args.app)    > 0 and \
+                    len(args.input)  > 0 and \
+                    len(args.gold)   > 0 and \
+                    len(args.output) > 0
 
-        if args.pipeline_pnr and not args.generate_bitstream_only:
-            # Calling clockwork for rescheduling pipelined app
-            import subprocess
-            import copy
-            cwd = os.path.dirname(args.app) + "/.."
-            cmd = ["make", "-C", str(cwd), "reschedule_mem"] 
-            env = copy.deepcopy(os.environ)
-            subprocess.check_call(
-                cmd,
-                env=env,
-                cwd=cwd
-            )
+    do_pnr = app_specified and not args.virtualize
 
-            placement, routing, id_to_name, instance_to_instr, \
-                netlist, bus = garnet.place_and_route(
-                    args.app, True, compact=args.compact,
-                    load_only=True,
-                    pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
-                    input_broadcast_branch_factor=args.input_broadcast_branch_factor,
-                    input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+    if do_pnr:
+        pnr(garnet, args, app)
 
-        bitstream, (inputs, outputs, reset, valid,
-                    en, delay) = garnet.generate_bitstream(args.app, placement, routing, id_to_name, instance_to_instr,
-                                                           netlist, bus, compact=args.compact)
-
-        # write out the config file
-        if len(inputs) > 1:
-            if reset in inputs:
-                inputs.remove(reset)
-            for en_port in en:
-                if en_port in inputs:
-                    inputs.remove(en_port)
-
-        from mini_mapper import get_total_cycle_from_app
-        total_cycle = get_total_cycle_from_app(args.app)
-        if len(outputs) > 1:
-            outputs.remove(valid)
-        config = {
-            "input_filename": args.input,
-            "bitstream": args.output,
-            "gold_filename": args.gold,
-            "output_port_name": outputs,
-            "input_port_name": inputs,
-            "valid_port_name": valid,
-            "reset_port_name": reset,
-            "en_port_name": en,
-            "delay": delay,
-            "total_cycle": total_cycle
-        }
-        with open(f"{args.output}.json", "w+") as f:
-            json.dump(config, f)
-        write_out_bitstream(args.output, bitstream)
     elif args.virtualize and len(args.app) > 0:
         group_size = args.virtualize_group_size
         result = garnet.compile_virtualize(args.app, group_size)
