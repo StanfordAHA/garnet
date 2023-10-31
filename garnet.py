@@ -93,6 +93,9 @@ class Garnet(Generator):
 
         if not interconnect_only:
             self.build_glb()  # Builds self.{global_controller, global_buffer}
+            wiring = GlobalSignalWiring.ParallelMeso
+        else:
+            wiring = GlobalSignalWiring.Meso
 
         sb_type_dict = {
             "Imran": SwitchBoxType.Imran,
