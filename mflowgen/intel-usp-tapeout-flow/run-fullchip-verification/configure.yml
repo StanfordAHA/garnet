@@ -16,9 +16,13 @@ inputs:
   - final_v.oas
   - final.oas
 
-# outputs:
-#   - a bunch of reports should go here
-
+outputs:
+  - final_xor.ERRORS
+  - final_drcd.ERRORS
+  - final_lu.ERRORS
+  - final_antenna.ERRORS
+  - final_collat.ERRORS
+  - final_fullchip.ERRORS
 
 #-------------------------------------------------------------------------
 # Commands
@@ -33,6 +37,13 @@ commands:
   - source ./inputs/adk/run-icv-fullchip-antenna.sh
   - source ./inputs/adk/run-icv-fullchip-collat.sh
   - source ./inputs/adk/run-icv-fullchip-drc-fullchip.sh
+  # generate reports
+  - cat ./verify_lvl-xor/*.LVL_ERRORS          > ./outputs/final_xor.ERRORS
+  - ln -s ../verify_drc-drcd/*.LAYOUT_ERRORS     ./outputs/final_drcd.ERRORS
+  - ln -s ../verify_drc-lu/*.LAYOUT_ERRORS       ./outputs/final_lu.ERRORS
+  - ln -s ../verify_antenna/*.LAYOUT_ERRORS      ./outputs/final_antenna.ERRORS
+  - ln -s ../verify_collat/*.LAYOUT_ERRORS       ./outputs/final_collat.ERRORS
+  - ln -s ../verify_drc-fullchip/*.LAYOUT_ERRORS ./outputs/final_fullchip.ERRORS
 
 #-------------------------------------------------------------------------
 # Parameters
@@ -54,5 +65,11 @@ preconditions:
   - assert File( 'inputs/final_v.oas' )
   - assert File( 'inputs/final.oas' )
 
-# postconditions:
-#   - assert File( 'outputs/design-merged.oas' )
+postconditions:
+  - assert File( 'outputs/design-merged.oas'     )
+  - assert File( 'outputs/final_xor.ERRORS'      )
+  - assert File( 'outputs/final_drcd.ERRORS'     )
+  - assert File( 'outputs/final_lu.ERRORS'       )
+  - assert File( 'outputs/final_antenna.ERRORS'  )
+  - assert File( 'outputs/final_collat.ERRORS'   )
+  - assert File( 'outputs/final_fullchip.ERRORS' )
