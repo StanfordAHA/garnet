@@ -24,6 +24,34 @@ EXAMPLE
 "
 [ "$1" == "--help" ] && echo "$HELP" && exit
 
+##############################################################################
+# Helper function to set up docker container
+
+# E.g. "rtl-goldcheck.sh --use-docker stanfordaha/garnet:latest gold-check-7333 amber"
+if [ "$1" == "--use-docker" ]; then
+    set -x
+    IMAGE=$2; CONTAINER=$3; SOC=$4
+    exit_status=0;
+    docker pull $IMAGE; container=$CONTAINER-${SOC};
+
+    # If it's already running...KILL IT
+    docker ps |& grep $container && docker kill -f $container
+
+    docker run -id --name $container --rm -v /cad:/cad $IMAGE bash;
+    function dexec { docker exec $container /bin/bash -c "$*"; };
+    dexec "rm -rf /aha/garnet"; docker cp . $container:/aha/garnet;
+    dexec "/aha/garnet/bin/rtl-goldcheck.sh ${SOC}" || exit_status=13;
+    docker cp $container:/aha/garnet/design.v /tmp/${SOC}-4x2.v;
+    docker image prune -f -a;
+    docker kill $container || echo cannot kill container;
+    ./bin/rtl-goldfetch.sh `hostname` ${SOC};
+    exit $exit_status;
+fi
+
+
+
+
+
 ########################################################################
 # Script is designed to work from inside a docker container
 
@@ -67,7 +95,7 @@ else echo "$HELP" && exit 13; fi
 
 
 ########################################################################
-echo '--- RTL test BEGIN ($1)' `date`
+echo "--- RTL test BEGIN ($1)' `date`"
 echo "WHICH_SOC: $WHICH_SOC"
 echo "FLAGS: $flags"
 
@@ -137,6 +165,8 @@ if [ "$ndiffs" != "0" ]; then
     printf "Test FAILED with $ndiffs diffs\n\n"
     printf "Top 40 diffs:"
     $vcompare $f1 $f2 | head -40
+    printf "\ndiff $f1 $f2"
+    printf "Test FAILED with $ndiffs diffs\n"
     exit 13
 fi
 
