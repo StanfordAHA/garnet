@@ -10,10 +10,18 @@ set L [ layout create ./inputs/design.oas \
 # rename the top cell
 $L cellname [$L topcell] $env(intel_database_name)_v
 
+# create a new top cell
+$L create cell $env(intel_database_name)
+
+# instantiate the original poly-vertical cell, and rotate it to poly-horizontal
+# Intel requires the database to be rotated 90 degrees clockwise
+# Calibredrv ang option is counter-clockwise, so it should be 270
+$L create ref $env(intel_database_name) $env(intel_database_name)_v 0 0 0 270 1
+
 # Assert the top cell name is correct
 set topcell [$L topcell]
-if { "$topcell" != "$env(intel_database_name)_v" } {
-    error "Assertion failed: The top cell should be $env(intel_database_name)_v, but it is $topcell"
+if {$topcell != $env(intel_database_name)} {
+    error "Assertion failed: The top cell should be $env(intel_database_name), but it is $topcell"
 }
 
 # get the bbox
@@ -37,7 +45,7 @@ $L create polygon $topcell $boundary_layer $bbox_llx $bbox_lly $bbox_urx $bbox_u
 # move the origin back to (0, 0)
 $L modify origin $topcell $bbox_llx $bbox_lly
 
-# output the oasis
-set out_file ./outputs/$env(intel_database_name)_v.oas
+# write out the new database
+set out_file ./outputs/$env(intel_database_name).oas
 puts "Writing out the oasis file to: $out_file"
 $L oasisout $out_file
