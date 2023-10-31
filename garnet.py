@@ -742,18 +742,22 @@ def parse_args():
         pe_fc = wrapped_peak_class(arch, debug=True)
 
     from global_buffer.design.global_buffer_parameter import gen_global_buffer_params
-    glb_params = gen_global_buffer_params(num_glb_tiles=args.width // 2,
-                                          num_cgra_cols=args.width,
-                                          # NOTE: We assume num_prr is same as num_glb_tiles
-                                          num_prr=args.width // 2,
-                                          glb_tile_mem_size=args.glb_tile_mem_size,
-                                          bank_data_width=64,
-                                          cfg_addr_width=32,
-                                          cfg_data_width=32,
-                                          cgra_axi_addr_width=13,
-                                          axi_data_width=32,
-                                          config_port_pipeline=args.config_port_pipeline)
+    glb_params = gen_global_buffer_params(
+        num_glb_tiles=args.width // 2,
+        num_cgra_cols=args.width,
+        # NOTE: We assume num_prr is same as num_glb_tiles
+        num_prr=args.width // 2,
+        glb_tile_mem_size=args.glb_tile_mem_size,
+        bank_data_width=64,
+        cfg_addr_width=32,
+        cfg_data_width=32,
+        cgra_axi_addr_width=13,
+        axi_data_width=32,
+        config_port_pipeline=args.config_port_pipeline)
+    return args
 
+def main():
+    args = parse_args()
     garnet = Garnet(width=args.width, height=args.height,
                     glb_params=glb_params,
                     add_pd=not args.no_pd,
