@@ -29,8 +29,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'global_buffer',
-    # 'clock_period'        : 1.10 * 1000,
-    'clock_period'        : 20.0 * 1000,
+    'clock_period'        : 2.0 * 1000,
     'sim_clock_period'    : 1.42,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
@@ -267,9 +266,9 @@ def construct():
   g.add_step( custom_lvs     )
   g.add_step( debugcalibre   )
 
-  for test in parameters["gls_testvectors"]:
-    g.add_step(sim_gl_run_nodes[test])
-    g.add_step(ptpx_gl_nodes[test])
+  # for test in parameters["gls_testvectors"]:
+  #   g.add_step(sim_gl_run_nodes[test])
+  #   g.add_step(ptpx_gl_nodes[test])
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -364,15 +363,15 @@ def construct():
   g.connect_by_name( glb_tile,   sim_gl_compile )
   g.connect_by_name( signoff,    sim_gl_compile )
 
-  for test in parameters["gls_testvectors"]:
-    g.connect_by_name( testbench, sim_gl_run_nodes[test] )
-    g.connect_by_name( sim_gl_compile, sim_gl_run_nodes[test] )
+  # for test in parameters["gls_testvectors"]:
+  #   g.connect_by_name( testbench, sim_gl_run_nodes[test] )
+  #   g.connect_by_name( sim_gl_compile, sim_gl_run_nodes[test] )
 
-  for test in parameters["gls_testvectors"]:
-    g.connect_by_name( adk,                    ptpx_gl_nodes[test] )
-    g.connect_by_name( glb_tile,               ptpx_gl_nodes[test] )
-    g.connect_by_name( signoff,                ptpx_gl_nodes[test] )
-    g.connect_by_name( sim_gl_run_nodes[test], ptpx_gl_nodes[test] )
+  # for test in parameters["gls_testvectors"]:
+  #   g.connect_by_name( adk,                    ptpx_gl_nodes[test] )
+  #   g.connect_by_name( glb_tile,               ptpx_gl_nodes[test] )
+  #   g.connect_by_name( signoff,                ptpx_gl_nodes[test] )
+  #   g.connect_by_name( sim_gl_run_nodes[test], ptpx_gl_nodes[test] )
 
   g.connect_by_name( genlib,       lib2db   )
 

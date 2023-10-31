@@ -24,10 +24,10 @@ set core_margin_r $tech_pitch_x
 set core_margin_l $tech_pitch_x
 
 # Margins between glb tiles and core edge
-set tile_margin_t [expr 20 * $tech_pitch_y]
-set tile_margin_b [expr 40 * $tech_pitch_y]
-set tile_margin_l [expr 49 * $tech_pitch_x]
-set tile_margin_r [expr 49 * $tech_pitch_x]
+set tile_margin_t [expr 60 * $tech_pitch_y]
+set tile_margin_b [expr 20 * $tech_pitch_y]
+set tile_margin_l [expr 68 * $tech_pitch_x]
+set tile_margin_r [expr 20 * $tech_pitch_x]
 
 set tiles [get_cells *glb_tile*]
 set tile_width [dbGet [dbGet -p top.insts.name *glb_tile* -i 0].cell.size_x]
