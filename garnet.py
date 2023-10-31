@@ -91,6 +91,7 @@ class Garnet(Generator):
 
         self.pe_fc = pe_fc
 
+        from canal.global_signal import GlobalSignalWiring
         if not interconnect_only:
             self.build_glb()  # Builds self.{global_controller, global_buffer}
             wiring = GlobalSignalWiring.ParallelMeso
