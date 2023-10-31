@@ -64,6 +64,74 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
         width += 1
     return width, height
 
+# This (create_cgra_w_args) is ugly but could maybe be temporary. The problem is
+# that garnet.py can use its existing "args" to pass most of the parameters to
+# create_cgra(), but the many pytests in $GARNET_REPO/tests call with custom parms.
+# I don't feel like refactoring the pytests ATM so for now we have garnet.py calling
+# create_cgra_w_args(), which greatly simplifies garnet.py BTW, and then we also
+# have the legacy create_cgra() call with fully elaborated parms for the pytests.
+
+# Called from garnet.py (only!)
+def create_cgra_w_args(width, height, io_sides, args):
+    
+    reg_addr_width       = args.config_addr_reg_width
+    config_data_width    = args.config_data_width
+    tile_id_width        = args.tile_id_width
+    mem_ratio            = (1, args.mem_ratio)
+    scgra                = args.sparse_cgra
+    scgra_combined       = args.sparse_cgra_combined
+
+    # global_signal_wiring = args.wiring
+    if not args.interconnect_only:
+        global_signal_wiring = GlobalSignalWiring.ParallelMeso
+    else:
+        global_signal_wiring = GlobalSignalWiring.Meso
+
+    sb_type_dict = {
+        "Imran": SwitchBoxType.Imran,
+        "Disjoint": SwitchBoxType.Disjoint,
+        "Wilton": SwitchBoxType.Wilton
+    }
+    switchbox_type = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type")
+
+    return create_cgra(
+        width, height, io_sides,
+        reg_addr_width=reg_addr_width,
+        config_data_width=config_data_width,
+        tile_id_width=tile_id_width,
+        global_signal_wiring=global_signal_wiring,
+        mem_ratio=mem_ratio,
+        scgra=scgra,
+        scgra_combined=scgra_combined,
+        switchbox_type=switchbox_type,
+
+        # Passed via "args"
+        num_tracks                = args.num_tracks,
+        add_pd                    = not args.no_pd,
+        amber_pond                = args.amber_pond,
+        add_pond                  = not args.no_pond,
+        pond_area_opt             = not args.no_pond_area_opt,
+        pond_area_opt_share       = args.pond_area_opt_share,
+        pond_area_opt_dual_config = not args.no_pond_area_opt_dual_config,
+        use_io_valid              = args.use_io_valid,
+        use_sim_sram              = args.use_sim_sram,
+        harden_flush              = args.harden_flush,
+        pipeline_config_interval  = args.pipeline_config_interval,
+        tile_layout_option        = args.tile_layout_option,
+        standalone                = args.standalone,
+        pe_fc                     = args.pe_fc,
+        ready_valid               = args.ready_valid,
+        pipeline_regs_density     = args.pipeline_regs_density,
+        port_conn_option          = args.port_conn_option,
+        mem_width                 = args.mem_width,
+        mem_depth                 = args.mem_depth,
+        mem_input_ports           = args.mem_input_ports,
+        mem_output_ports          = args.mem_output_ports,
+        macro_width               = args.macro_width,
+        dac_exp                   = args.dac_exp,
+        dual_port                 = args.dual_port,
+        rf                        = args.rf,
+    )
 
 def create_cgra(width: int, height: int, io_sides: IOSide,
                 add_reg: bool = True,
@@ -77,8 +145,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
                 tile_layout_option: int = 0,  # 0: column-based, 1: row-based
-                global_signal_wiring: GlobalSignalWiring =
-                GlobalSignalWiring.Meso,
+                global_signal_wiring: GlobalSignalWiring = GlobalSignalWiring.Meso,
                 pipeline_config_interval: int = 8,
                 standalone: bool = False,
                 amber_pond: bool = False,
@@ -109,6 +176,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 rf: bool = False,
                 perf_debug: bool = False,
                 tech_map='Intel'):
+
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
     bit_widths = [1, 17]
