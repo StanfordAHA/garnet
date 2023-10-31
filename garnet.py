@@ -153,7 +153,7 @@ class Garnet(Generator):
             self.inter_core_connections[bw] = interconnect.inter_core_connection
 
         if not interconnect_only:
-            self.build_glb_ports(args.glb_params)
+            self.build_glb_ports(glb_params)
         else:
             # lift all the interconnect ports up
             for name in self.interconnect.interface():
