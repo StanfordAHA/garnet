@@ -134,7 +134,6 @@ def construct():
   g.add_output( 'glb_top_tt.lib',           genlib.o('design.lib')                  )
   g.add_output( 'glb_top_tt.db',            lib2db.o('design.db')                   )
   g.add_output( 'glb_top.lef',              signoff.o('design.lef')                 )
-  g.add_output( 'glb_top.gds',              signoff.o('design-merged.gds')          )
   g.add_output( 'glb_top.oas',              signoff.o('design-merged.oas')          )
   g.add_output( 'glb_top.sdf',              signoff.o('design.sdf')                 )
   g.add_output( 'glb_top.vcs.v',            signoff.o('design.vcs.v')               )
@@ -209,10 +208,9 @@ def construct():
   for step in tile_steps:
     step.extend_inputs( ['glb_tile_tt.lib', 'glb_tile.lef'] )
 
-  # Need the glb_tile gds to merge into the final layout
+  # Need the glb_tile oasis to merge into the final layout
 
   signoff.extend_inputs( ['glb_tile.oas'] )
-  signoff.extend_inputs( ['glb_tile.gds'] )
 
   # Need glb_tile lvs.v file for LVS
 

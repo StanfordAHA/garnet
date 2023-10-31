@@ -179,10 +179,8 @@ def construct():
   vcs_sim.extend_inputs( ['Tile_PE.vcs.v', 'Tile_PE.sdf'] )
   vcs_sim.extend_inputs( ['Tile_MemCore.vcs.v', 'Tile_MemCore.sdf'] )
 
-  # Need the cgra tile OASIS's to merge into the final layout
+  # Need the cgra tile OASIS to merge into the final layout
 
-  signoff.extend_inputs( ['Tile_PE.gds'] )
-  signoff.extend_inputs( ['Tile_MemCore.gds'] )
   signoff.extend_inputs( ['Tile_PE.oas'] )
   signoff.extend_inputs( ['Tile_MemCore.oas'] )
 
@@ -211,7 +209,6 @@ def construct():
   g.add_output( 'tile_array.lef',              signoff.o('design.lef')            )
   g.add_output( 'tile_array.vcs.v',            signoff.o('design.vcs.v')          )
   g.add_output( 'tile_array.sdf',              signoff.o('design.sdf')            )
-  g.add_output( 'tile_array.gds',              signoff.o('design-merged.gds')     )
   g.add_output( 'tile_array.oas',              signoff.o('design-merged.oas')     )
   g.add_output( 'tile_array.lvs.v',            lvs.o('design_merged.lvs.v')       )
   g.add_output( 'tile_array.vcs.pg.v',         signoff.o('design.vcs.pg.v')       )

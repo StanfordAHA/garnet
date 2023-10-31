@@ -124,8 +124,7 @@ def construct():
   for step in sram_steps:
     step.extend_inputs( ['sram-typical.lib', 'sram-bc.lib', 'sram-wc.lib', 'sram.lef'] )
 
-  # Need the sram gds/oasis to merge into the final layout
-  signoff.extend_inputs( ['sram.gds'] )
+  # Need the sram oasis to merge into the final layout
   signoff.extend_inputs( ['sram.oas'] )
 
   # Need SRAM spice file for LVS
@@ -155,7 +154,6 @@ def construct():
   g.add_output( 'Tile_MemCore_tt.lib',      genlibdb.o('design.lib')           )
   g.add_output( 'Tile_MemCore_tt.db',       genlibdb.o('design.db')            )
   g.add_output( 'Tile_MemCore.lef',         signoff.o('design.lef')            )
-  g.add_output( 'Tile_MemCore.gds',         signoff.o('design-merged.gds')     )
   g.add_output( 'Tile_MemCore.oas',         signoff.o('design-merged.oas')     )
   g.add_output( 'Tile_MemCore.sdf',         signoff.o('design.sdf')            )
   g.add_output( 'Tile_MemCore.vcs.v',       signoff.o('design.vcs.v')          )
