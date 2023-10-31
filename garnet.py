@@ -520,11 +520,14 @@ class Garnet(Generator):
     def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False,
                         pipeline_input_broadcasts=False, input_broadcast_branch_factor=4,
                         input_broadcast_max_leaves=16):
-        id_to_name, instance_to_instr, netlist, bus = self.load_netlist(halide_src,
-                                                                        load_only,
-                                                                        pipeline_input_broadcasts,
-                                                                        input_broadcast_branch_factor,
-                                                                        input_broadcast_max_leaves)
+
+        id_to_name, instance_to_instr, netlist, bus = \
+            self.load_netlist(halide_src,
+                              load_only,
+                              pipeline_input_broadcasts,
+                              input_broadcast_branch_factor,
+                              input_broadcast_max_leaves)
+
         app_dir = os.path.dirname(halide_src)
         if unconstrained_io:
             fixed_io = None
@@ -532,15 +535,16 @@ class Garnet(Generator):
             from global_buffer.io_placement import place_io_blk
             fixed_io = place_io_blk(id_to_name, app_dir)
 
-        placement, routing, id_to_name = archipelago.pnr(self.interconnect, (netlist, bus),
-                                                         load_only=load_only,
-                                                         cwd=app_dir,
-                                                         id_to_name=id_to_name,
-                                                         fixed_pos=fixed_io,
-                                                         compact=compact,
-                                                         harden_flush=self.harden_flush,
-                                                         pipeline_config_interval=self.pipeline_config_interval,
-                                                         pes_with_packed_ponds=self.pes_with_packed_ponds)
+        placement, routing, id_to_name = \
+            archipelago.pnr(self.interconnect, (netlist, bus),
+                            load_only=load_only,
+                            cwd=app_dir,
+                            id_to_name=id_to_name,
+                            fixed_pos=fixed_io,
+                            compact=compact,
+                            harden_flush=self.harden_flush,
+                            pipeline_config_interval=self.pipeline_config_interval,
+                            pes_with_packed_ponds=self.pes_with_packed_ponds)
 
         return placement, routing, id_to_name, instance_to_instr, netlist, bus
 
@@ -667,17 +671,19 @@ def write_out_bitstream(filename, bitstream):
         f.write("\n".join(bs))
 
 
-def main():
+def parse_args():
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument('--pipeline_config_interval', type=int, default=8)
     parser.add_argument('--glb_tile_mem_size', type=int, default=256)
+
+    # PNR / bitstream generation pathnames
     parser.add_argument("--input-app", type=str, default="", dest="app")
     parser.add_argument("--input-file", type=str, default="", dest="input")
     parser.add_argument("--output-file", type=str, default="", dest="output")
-    parser.add_argument("--gold-file", type=str, default="",
-                        dest="gold")
+    parser.add_argument("--gold-file", type=str, default="", dest="gold")
+
     parser.add_argument("-v", "--verilog", action="store_true")
     parser.add_argument("--no-pd", "--no-power-domain", action="store_true")
     parser.add_argument("--amber-pond", action="store_true")
@@ -728,7 +734,6 @@ def main():
     if args.standalone and not args.interconnect_only:
         raise Exception("--standalone must be specified with "
                         "--interconnect-only as well")
-
     pe_fc = lassen_fc
     if args.pe:
         from peak_gen.peak_wrapper import wrapped_peak_class
