@@ -2022,17 +2022,31 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.transpose(output_matrix)
         output_format = "CSF"
         output_name = "X"
+    elif 'masked_broadcast.gv' in app_name and 'trans' in app_name:
+        B_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.5)
+        c_mat = get_tensor(input_name='c', shapes=[shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
+                           sparsity=0.0)
+        assert c_mat.shape[0] == B_mat.shape[0]
+        # broadcasting
+        output_matrix = numpy.zeros((shapes_[0], shapes_[0]))
+        for i in range(0, output_matrix.shape[0]):
+            for j in range(0, output_matrix.shape[1]):
+                if B_mat[i][j] != 0:   
+                    output_matrix[i][j] = c_mat[i]
+        output_format = "CSF"
+        output_name = "X"
     elif 'masked_broadcast.gv' in app_name:
         B_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=sparsities_[0])
+                           sparsity=0.5)
         c_mat = get_tensor(input_name='c', shapes=[shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
-                           sparsity=sparsities_[1])
+                           sparsity=0.0)
         assert c_mat.shape[0] == B_mat.shape[0]
         # broadcasting
-        print(B_mat)
-        print(c_mat)
         output_matrix = numpy.zeros((shapes_[0], shapes_[0]))
         for i in range(0, output_matrix.shape[0]):
             for j in range(0, output_matrix.shape[1]):
