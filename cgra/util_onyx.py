@@ -113,11 +113,10 @@ def get_cc_args(width, height, io_sides, garnet_args):
     args.pond_area_opt_dual_config = not args.no_pond_area_opt_dual_config,
 
     # Get rid of args that create_cgra does not want, else will get TypeError
-
     import inspect
-    expected = inspect.getfullargspec(create_cgra).args
+    cc_expected_parms = inspect.getfullargspec(create_cgra).args
     for a in list(args.__dict__):
-        if a not in expected: del args.__dict__[a]
+        if a not in cc_expected_parms: del args.__dict__[a]
 
     return args
 
@@ -129,7 +128,7 @@ def create_cgra_w_args(width, height, io_sides, garnet_args):
 
     cc_args = get_cc_args(width, height, io_sides, garnet_args)
 
-    return create_cgra(**cc_args)
+    return create_cgra(**cc_args.__dict__)
 
 #     reg_addr_width       = args.config_addr_reg_width
 #     config_data_width    = args.config_data_width

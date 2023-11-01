@@ -61,7 +61,19 @@ class Garnet(Generator):
         from cgra import create_cgra_w_args
         width  = args.width; height = args.height
         args.config_data_width = self.config_data_width
-        self.interconnect = create_cgra_w_args(width, height, io_side, args)
+
+
+        if True: 
+            self.interconnect = create_cgra_w_args(width, height, io_side, args)
+
+        else:
+            cc_args = cgra.get_cc_args(width, height, io_sides, args)
+            self.interconnect = create_cgra(**cc_args.__dict__)
+
+
+
+
+
 
         # Add stall, flush, and configuration ports
 
