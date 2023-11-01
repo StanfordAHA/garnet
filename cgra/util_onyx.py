@@ -71,67 +71,123 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
 # create_cgra_w_args(), which greatly simplifies garnet.py BTW, and then we also
 # have the legacy create_cgra() call with fully elaborated parms for the pytests.
 
-# Called from garnet.py (only!)
-def create_cgra_w_args(width, height, io_sides, args):
-    
-    reg_addr_width       = args.config_addr_reg_width
-    config_data_width    = args.config_data_width
-    tile_id_width        = args.tile_id_width
-    mem_ratio            = (1, args.mem_ratio)
-    scgra                = args.sparse_cgra
-    scgra_combined       = args.sparse_cgra_combined
+def get_cc_args(width, height, io_sides, garnet_args):
+    '''
+    Transform garnet_args into a dict of params suitable for calling create_cgra().
+    Example:
+        cc_args = get_cc_args(garnet_args)
+        create_cgra(**cc_args)
+    '''
 
-    # global_signal_wiring = args.wiring
+    # from argparse import Namespace (is this needed?)
+    args = garnet_args
+
+    # Manually set required (non-keyword) parameters
+    args.width = width
+    args.height = height
+    args.io_sides = io_sides
+
+    # Derive cc_args from relevant garnet_args
+    args.reg_addr_width       = args.config_addr_reg_width
+    args.config_data_width    = args.config_data_width
+    args.tile_id_width        = args.tile_id_width
+    args.mem_ratio            = (1, args.mem_ratio)
+    args.scgra                = args.sparse_cgra
+    args.scgra_combined       = args.sparse_cgra_combined
+
     if not args.interconnect_only:
-        global_signal_wiring = GlobalSignalWiring.ParallelMeso
+        args.global_signal_wiring = GlobalSignalWiring.ParallelMeso
     else:
-        global_signal_wiring = GlobalSignalWiring.Meso
+        args.global_signal_wiring = GlobalSignalWiring.Meso
 
-    sb_type_dict = {
-        "Imran": SwitchBoxType.Imran,
+    switchbox_type = {
+        "Imran":    SwitchBoxType.Imran,
         "Disjoint": SwitchBoxType.Disjoint,
-        "Wilton": SwitchBoxType.Wilton
-    }
-    switchbox_type = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type")
-
-    return create_cgra(
-        width, height, io_sides,
-        reg_addr_width=reg_addr_width,
-        config_data_width=config_data_width,
-        tile_id_width=tile_id_width,
-        global_signal_wiring=global_signal_wiring,
-        mem_ratio=mem_ratio,
-        scgra=scgra,
-        scgra_combined=scgra_combined,
-        switchbox_type=switchbox_type,
-
-        # Passed via "args"
-        num_tracks                = args.num_tracks,
-        add_pd                    = not args.no_pd,
-        amber_pond                = args.amber_pond,
-        add_pond                  = not args.no_pond,
-        pond_area_opt             = not args.no_pond_area_opt,
-        pond_area_opt_share       = args.pond_area_opt_share,
-        pond_area_opt_dual_config = not args.no_pond_area_opt_dual_config,
-        use_io_valid              = args.use_io_valid,
-        use_sim_sram              = args.use_sim_sram,
-        harden_flush              = args.harden_flush,
-        pipeline_config_interval  = args.pipeline_config_interval,
-        tile_layout_option        = args.tile_layout_option,
-        standalone                = args.standalone,
-        pe_fc                     = args.pe_fc,
-        ready_valid               = args.ready_valid,
-        pipeline_regs_density     = args.pipeline_regs_density,
-        port_conn_option          = args.port_conn_option,
-        mem_width                 = args.mem_width,
-        mem_depth                 = args.mem_depth,
-        mem_input_ports           = args.mem_input_ports,
-        mem_output_ports          = args.mem_output_ports,
-        macro_width               = args.macro_width,
-        dac_exp                   = args.dac_exp,
-        dual_port                 = args.dual_port,
-        rf                        = args.rf,
+        "Wilton":   SwitchBoxType.Wilton
+    }.get(
+        args.sb_option, "Invalid Switchbox Type"
     )
+    args.add_pd                    = not args.no_pd,
+    args.add_pond                  = not args.no_pond,
+    args.pond_area_opt             = not args.no_pond_area_opt,
+    args.pond_area_opt_dual_config = not args.no_pond_area_opt_dual_config,
+
+    # Get rid of args that create_cgra does not want, else will get TypeError
+
+    import inspect
+    expected = inspect.getfullargspec(create_cgra).args
+    for a in list(args):
+        if a not in expected: del args[a]
+
+    return args
+
+
+# Called from garnet.py (only!)
+def create_cgra_w_args(width, height, io_sides, garnet_args):
+    
+    cc_args = get_cc_args(width, height, io_sides, garnet_args)
+
+    return create_cgra(**cc_args)
+
+#     reg_addr_width       = args.config_addr_reg_width
+#     config_data_width    = args.config_data_width
+#     tile_id_width        = args.tile_id_width
+#     mem_ratio            = (1, args.mem_ratio)
+#     scgra                = args.sparse_cgra
+#     scgra_combined       = args.sparse_cgra_combined
+# 
+#     # global_signal_wiring = args.wiring
+#     if not args.interconnect_only:
+#         global_signal_wiring = GlobalSignalWiring.ParallelMeso
+#     else:
+#         global_signal_wiring = GlobalSignalWiring.Meso
+# 
+#     sb_type_dict = {
+#         "Imran": SwitchBoxType.Imran,
+#         "Disjoint": SwitchBoxType.Disjoint,
+#         "Wilton": SwitchBoxType.Wilton
+#     }
+#     switchbox_type = sb_type_dict.get(args.sb_option, "Invalid Switchbox Type")
+# 
+# 
+#     return create_cgra(
+#         width, height, io_sides,
+#         reg_addr_width=reg_addr_width,
+#         config_data_width=config_data_width,
+#         tile_id_width=tile_id_width,
+#         global_signal_wiring=global_signal_wiring,
+#         mem_ratio=mem_ratio,
+#         scgra=scgra,
+#         scgra_combined=scgra_combined,
+#         switchbox_type=switchbox_type,
+# 
+#         # Passed via "args"
+#         num_tracks                = args.num_tracks,
+#         add_pd                    = not args.no_pd,
+#         amber_pond                = args.amber_pond,
+#         add_pond                  = not args.no_pond,
+#         pond_area_opt             = not args.no_pond_area_opt,
+#         pond_area_opt_share       = args.pond_area_opt_share,
+#         pond_area_opt_dual_config = not args.no_pond_area_opt_dual_config,
+#         use_io_valid              = args.use_io_valid,
+#         use_sim_sram              = args.use_sim_sram,
+#         harden_flush              = args.harden_flush,
+#         pipeline_config_interval  = args.pipeline_config_interval,
+#         tile_layout_option        = args.tile_layout_option,
+#         standalone                = args.standalone,
+#         pe_fc                     = args.pe_fc,
+#         ready_valid               = args.ready_valid,
+#         pipeline_regs_density     = args.pipeline_regs_density,
+#         port_conn_option          = args.port_conn_option,
+#         mem_width                 = args.mem_width,
+#         mem_depth                 = args.mem_depth,
+#         mem_input_ports           = args.mem_input_ports,
+#         mem_output_ports          = args.mem_output_ports,
+#         macro_width               = args.macro_width,
+#         dac_exp                   = args.dac_exp,
+#         dual_port                 = args.dual_port,
+#         rf                        = args.rf,
+#     )
 
 def create_cgra(width: int, height: int, io_sides: IOSide,
                 add_reg: bool = True,
