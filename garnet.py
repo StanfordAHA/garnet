@@ -124,8 +124,8 @@ class Garnet(Generator):
             # Bank should be larger than or equal to 1KB
             assert glb_params.bank_addr_width >= 10
 
-            glb_tile_mem_size = 2 ** (glb_params.bank_addr_width - 10) + \
-                math.ceil(math.log(glb_params.banks_per_tile, 2))
+            glb_tile_mem_size = 2 ** ((glb_params.bank_addr_width - 10) + \
+                math.ceil(math.log(glb_params.banks_per_tile, 2)))
             wiring = GlobalSignalWiring.ParallelMeso
             self.global_controller = GlobalController(addr_width=config_addr_width,
                                                       data_width=config_data_width,
