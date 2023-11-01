@@ -1930,37 +1930,22 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # exit()
         output_format = "CSF"
         output_name = "x"
-    elif 'matmul_ijk' in app_name and "relu" in app_name:
-        # PASSES
-        # to glb
-        # combined
-        # piped
-
-        if 'B' not in cached_inputs:
-            b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                               sparsity=0.2)
-        #else:
-        #    b_mat = cached_inputs['B']
-        #    b_shape = b_mat.shape
-        #    shapes_[0] = b_shape[0]
-        #    shapes_[1] = b_shape[1]
-        # c_mat = c_matrix.get_matrix()
-        if 'C' not in cached_inputs:
-            c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                               sparsity=0.2)
-        #else:
-        #    c_mat = cached_inputs['C']
-
-        #ret_outputs['B'] = b_mat
-        #ret_outputs['C'] = c_mat
-        # First transpose c_mat        
+    elif "spmm_ijk_crddrop.gv" in app_name:
+        # matrix b is completely dense
+        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.0, format='UNC')
+        c_mat = get_tensor(input_name='C', shapes=[shapes_[3], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=sparsities_[0])
+        input_dims['B'] = tuple(b_mat.shape)
+        #input_dims['C'] = tuple(c_mat.shape)
+        # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
-        output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
+        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "X"
-    elif 'matmul_ijk' in app_name:
+    elif 'matmul_ijk.gv' in app_name:
         # PASSES
         # to glb
         # combined
