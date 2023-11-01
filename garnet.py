@@ -21,6 +21,7 @@ set_debug_mode(False)
 from gemstone.generator.generator import Generator
 class Garnet(Generator):
     def __init__(self, args):
+        print("--- Garnet.__init__()")
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If

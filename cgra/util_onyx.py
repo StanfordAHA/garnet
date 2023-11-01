@@ -79,8 +79,8 @@ def get_cc_args(width, height, io_sides, garnet_args):
         create_cgra(**cc_args)
     '''
 
-    # from argparse import Namespace (is this needed?)
-    args = garnet_args
+    from argparse import Namespace
+    args = Namespace(**vars(garnet_args))
 
     # Manually set required (non-keyword) parameters
     args.width = width
@@ -124,7 +124,7 @@ def get_cc_args(width, height, io_sides, garnet_args):
 # Called from garnet.py (only!)
 def create_cgra_w_args(width, height, io_sides, garnet_args):
     
-    print("--- TMPDEV")
+    print("--- create_cgra()")
 
     cc_args = get_cc_args(width, height, io_sides, garnet_args)
 
