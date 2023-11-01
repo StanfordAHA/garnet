@@ -59,7 +59,7 @@ class Garnet(Generator):
             self.build_glb()  # Builds self.{global_controller, global_buffer}
 
         print("--- BUILD THE CGRA")
-        from cgra.util import get_cc_args
+        from cgra.util import get_cc_args, create_cgra
         width  = args.width; height = args.height
         args.config_data_width = self.config_data_width
         cc_args = get_cc_args(width, height, io_side, args)
