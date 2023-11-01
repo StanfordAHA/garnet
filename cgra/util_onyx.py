@@ -116,8 +116,8 @@ def get_cc_args(width, height, io_sides, garnet_args):
 
     import inspect
     expected = inspect.getfullargspec(create_cgra).args
-    for a in list(args):
-        if a not in expected: del args[a]
+    for a in list(args.__dict__):
+        if a not in expected: del args.__dict__[a]
 
     return args
 
@@ -125,6 +125,8 @@ def get_cc_args(width, height, io_sides, garnet_args):
 # Called from garnet.py (only!)
 def create_cgra_w_args(width, height, io_sides, garnet_args):
     
+    print("--- TMPDEV")
+
     cc_args = get_cc_args(width, height, io_sides, garnet_args)
 
     return create_cgra(**cc_args)
