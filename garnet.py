@@ -663,8 +663,6 @@ def parse_args():
     parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
 
-    # A little up-front arg processing
-
     if not args.interconnect_only:
         assert args.width % 2 == 0 and args.width >= 4
     if args.standalone and not args.interconnect_only:
@@ -689,8 +687,8 @@ def parse_args():
         cfg_data_width=32,
         cgra_axi_addr_width=13,
         axi_data_width=32,
-        config_port_pipeline=args.config_port_pipeline,
-    )
+        config_port_pipeline=args.config_port_pipeline)
+
     return args
 
 def build_verilog(args, garnet):
@@ -758,7 +756,7 @@ def pnr(garnet, args, app):
         placement, routing, id_to_name, instance_to_instr, netlist, bus = pnr_result
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
-        args.app, 
+        args.app,
         placement, routing, id_to_name, instance_to_instr, netlist, bus,
         compact=args.compact
     )

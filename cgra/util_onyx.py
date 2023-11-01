@@ -64,13 +64,6 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
         width += 1
     return width, height
 
-# This (create_cgra_w_args) is ugly but could maybe be temporary. The problem is
-# that garnet.py can use its existing "args" to pass most of the parameters to
-# create_cgra(), but the many pytests in $GARNET_REPO/tests call with custom parms.
-# I don't feel like refactoring the pytests ATM so for now we have garnet.py calling
-# create_cgra_w_args(), which greatly simplifies garnet.py BTW, and then we also
-# have the legacy create_cgra() call with fully elaborated parms for the pytests.
-
 def get_cc_args(width, height, io_sides, garnet_args):
     '''
     Transform garnet_args into a dict of params suitable for calling create_cgra().
