@@ -1085,9 +1085,6 @@ class SparseTBBuilder(m.Generator2):
                 new_node_type = ComputeNode
                 # core_tag = "fake_pe"
                 core_tag = "alu"
-                kwargs = {
-                    "op": node.get_attributes()['label'].strip('"')
-                }
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
             elif hw_node_type == f"{HWNodeType.RepSigGen}" or hw_node_type == HWNodeType.RepSigGen:
