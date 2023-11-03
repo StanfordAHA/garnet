@@ -41,7 +41,7 @@ def construct():
     'num_words'           : 512,
     'word_size'           : 32,
     'mux_size'            : 4,
-    'partial_write'       : False,
+    'partial_write'       : 0,
     # Hold target slack
     'setup_target_slack'  : 0,
     'hold_target_slack'   : 0.015,
@@ -71,7 +71,6 @@ def construct():
 
   # Custom steps
   rtl                  = Step( this_dir + '/../common/rtl'                          )
-  #rtl                  = Step( this_dir + '/../common/rtl-cache'                    )
   genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints'  )
   constraints          = Step( this_dir + '/constraints'                            )
   custom_init          = Step( this_dir + '/custom-init'                            )
@@ -328,6 +327,7 @@ def construct():
     'insert-input-antenna-diodes.tcl',
     'make-path-groups.tcl',
     'additional-path-groups.tcl',
+    'dont-touch.tcl',
     # 'sram-hold-false-path.tcl', # somehow it has problem
     'reporting.tcl'
   ] } )

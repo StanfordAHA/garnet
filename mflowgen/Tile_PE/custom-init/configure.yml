@@ -19,3 +19,4 @@ outputs:
   - add-tracks.tcl
   - insert-input-antenna-diodes.tcl
   - create-special-grid.tcl
+  - dont-touch.tcl

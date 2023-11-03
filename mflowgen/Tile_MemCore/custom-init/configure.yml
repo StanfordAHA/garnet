@@ -21,3 +21,4 @@ outputs:
   - create-special-grid.tcl
   - sram-hold-false-path.tcl
   - place-dic-cells.tcl
+  - dont-touch.tcl

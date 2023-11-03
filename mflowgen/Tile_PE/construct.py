@@ -314,6 +314,7 @@ def construct():
     'create-special-grid.tcl',
     'make-path-groups.tcl',
     'additional-path-groups.tcl',
+    'dont-touch.tcl',
     'reporting.tcl'
   ] } )
 
