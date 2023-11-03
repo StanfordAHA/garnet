@@ -834,7 +834,7 @@ def main():
     do_pnr = app_specified and not args.virtualize
 
     if do_pnr:
-        pnr(garnet, args, app)
+        pnr(garnet, args, args.app)
 
     elif args.virtualize and len(args.app) > 0:
         group_size = args.virtualize_group_size
