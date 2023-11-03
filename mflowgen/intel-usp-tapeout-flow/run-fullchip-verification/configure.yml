@@ -38,12 +38,12 @@ commands:
   - source ./inputs/adk/run-icv-fullchip-collat.sh
   - source ./inputs/adk/run-icv-fullchip-drc-fullchip.sh
   # generate reports
-  - cat ./verify_lvl-xor/*.LVL_ERRORS          > ./outputs/final_xor.ERRORS
-  - ln -s ../verify_drc-drcd/*.LAYOUT_ERRORS     ./outputs/final_drcd.ERRORS
-  - ln -s ../verify_drc-lu/*.LAYOUT_ERRORS       ./outputs/final_lu.ERRORS
-  - ln -s ../verify_antenna/*.LAYOUT_ERRORS      ./outputs/final_antenna.ERRORS
-  - ln -s ../verify_collat/*.LAYOUT_ERRORS       ./outputs/final_collat.ERRORS
-  - ln -s ../verify_drc-fullchip/*.LAYOUT_ERRORS ./outputs/final_fullchip.ERRORS
+  - cat ./verify_lvl-xor/*.LVL_ERRORS                                > ./outputs/final_xor.ERRORS
+  - ln -s ../verify_drc-drcd/{intel_database_name}_v.LAYOUT_ERRORS     ./outputs/final_drcd.ERRORS
+  - ln -s ../verify_drc-lu/{intel_database_name}_v.LAYOUT_ERRORS       ./outputs/final_lu.ERRORS
+  - ln -s ../verify_antenna/{intel_database_name}_v.LAYOUT_ERRORS      ./outputs/final_antenna.ERRORS
+  - ln -s ../verify_collat/{intel_database_name}_v.LAYOUT_ERRORS       ./outputs/final_collat.ERRORS
+  - ln -s ../verify_drc-fullchip/{intel_database_name}.LAYOUT_ERRORS   ./outputs/final_fullchip.ERRORS
 
 #-------------------------------------------------------------------------
 # Parameters
@@ -67,7 +67,6 @@ preconditions:
   - assert File( 'inputs/final.oas' )
 
 postconditions:
-  - assert File( 'outputs/design-merged.oas'     )
   - assert File( 'outputs/final_xor.ERRORS'      )
   - assert File( 'outputs/final_drcd.ERRORS'     )
   - assert File( 'outputs/final_lu.ERRORS'       )
