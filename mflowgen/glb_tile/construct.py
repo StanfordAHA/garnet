@@ -45,7 +45,7 @@ def construct():
     'word_size'          : 64,
     'mux_size'           : 4,
     'num_subarrays'      : 2,
-    'partial_write'      : True,
+    'partial_write'      : 1,
     # hold target slack
     'hold_target_slack'  : 0.03,
     'setup_target_slack' : 0.00,
