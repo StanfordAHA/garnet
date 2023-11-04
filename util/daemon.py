@@ -1,171 +1,195 @@
-import os
-import sys
+import os, sys, signal, subprocess
 import json
-import subprocess
 from argparse import Namespace
+
+# FIXME/TODO CONSIDER:
+# when you use 'self', and you change the class name, all is copacetic
+# when you use 'g=GarnetDaemon'...whuh oh!  oh boy! nooooo
+
+
+# FIXME/TODO double-check README etc.
+# FIXME/TODO should probably have a cleanup() method that deletes tmp files etc.
+# called from kill() maybe
+
+README='''
+PUBLIC contents
+  help()    - daemon help (garnet_specific)
+  status()  - print status of existing daemon, if any
+  run()     - launch daemon and/or watch for updates
+  kill()    - send KILL to daemon pid
+
+PRIVATE contents
+  pid             - daemon's process id
+  filenames       - files where daemon stores its state (pid, state0, reload)
+  do_cmd(cmd)     - executes cmd, returns status e.g. "do_cmd('ls -ld /tmp')
+  register_pid()  - save current process id to path "fn"
+  save_args(args) - save args object to "reload" file as json dump
+  load_args()     - load and return args from "reload" file
+  sigstop()       - kill -STOP <self>
+  sigkill()       - kill -KILL <self>
+
+SAMPLE USAGE
+
+  def garnet.main(args):
+      if args.daemon == "use_daemon": daemon.reload()
+      elif args.daemon == "status":   daemon.status()
+      elif args.daemon == "kill":     daemon.kill()
+      garnet = create_cgra(...)
+      while True:
+        if args.do_verilog: do_verlog()
+        if args.do_pnr: do_pnr()
+        if not args.daemon: break
+        args = daemon.run(args)
+
+# WHERE
+# 
+#   def kill_daemon(): < kill -9 pid >
+#   def use_daemon(args):
+#       < save args >
+#       < send CONT to daemon pid >
+#       < exit() >
+# 
+#   def daemon.run(args):
+#       < assert LAUNCH or USE >
+#       < if LAUNCH: save state >
+#       < wait >
+#       < Can only continue if args.daemon == USE, right? >
+#       < assert USE >
+#       < load new state >
+'''
+
 
 GarnetDaemon_HELP = '''
 DESCRIPTION:
-    garnet.py can run as a daemon to save you time when generating bitstreams
-    for multiple apps using the same garnet circuit. Use the "launch" command
-    to build a circuit and keep state in the background. The "use-daemon" command
-    reuses the background state to more quickly do pnr and bitstream generation.
+  garnet.py can run as a daemon to save you time when generating bitstreams
+  for multiple apps using the same garnet circuit. Use the "launch" command
+  to build a circuit and keep state in the background. The "use-daemon" command
+  reuses the background state to more quickly do pnr and bitstream generation.
 
-      --daemon launch     -> process args and launch a daemon
-      --daemon use-daemon -> use existing daemon to process 
-      --daemon kill       -> kill the daemon
+      --daemon launch -> process args and launch a daemon
+      --daemon use    -> use existing daemon to process 
+      --daemon kill   -> kill the daemon
 
 EXAMPLE:
     garnet.py --width 4 --height 2 --daemon launch
-    garnet.py <app1-args> --daemon use-daemon
-    garnet.py <app2-args> --daemon use-daemon
+    garnet.py <app1-args> --daemon use
+    garnet.py <app2-args> --daemon use
     garnet.py --daemon kill
 
-NOTE! 'use-daemon' width and height must match 'launch-daemon'!!!
+NOTE! 'daemon.use' width and height must match 'daemon.launch'!!!
 '''
 
 class GarnetDaemon:
+
+    # "PRIVATE" variables but this is the only indication because underbars are ugly
+
     pid = 0
     choices = ['help','launch', 'use-daemon', 'kill']
     filenames = {
         "pid"    : "/tmp/garnet-daemon-pid",    # Process ID of daemon
         "state0" : "/tmp/garnet-daemon-state0", # Original state (args) of daemon
         "reload" : "/tmp/garnet-daemon-reload", # Desired new state (args)
-        "tty"    : "/tmp/garnet-daemon-tty",    # Desired new tty
     }
 
-    def do_cmd(cmd):
-        'Executes <cmd>, returns True or False according to whether command succeeded'
-        return subprocess.run(cmd.split()).returncode == 0
+    # PUBLIC methods
 
-    def status(dbg=1):
-        g = GarnetDaemon
-        pid = g.pid
-        if dbg: print(f'Checking status of process {pid}')
+    def help():
+        print(GarnetDaemon_HELP)
+        return GarnetDaemon_HELP
+
+    def status():
+        g = GarnetDaemon; pid = g.pid
+        print(f'--- Checking status of process {pid}')
+        state0_file = g.filenames["state0"]
         cmd = f'test -d /proc/{pid}'
-        pid_exists = g.do_cmd( f'test -d /proc/{pid}' )
-        if pid_exists:
+        if g.do_cmd( f'test -d /proc/{pid}' ):
             print(f'- found running daemon {pid}')
-
-            f = g.filenames["state0"]
-            state0_exists = g.do_cmd( f'test -f {f}' )
-            if not state0_exists:
+            if not g.do_cmd( f'test -f {state0_file}' ):
                 print(f'- WARNING: daemon state corrupted: suggest you do "kill {pid}"')
                 return
-            args0 = g.load_args(g.filenames['state0'])
-            print(f'- found daemon {pid} original state args =\n  {args0}')
+            state0_args = g.load_args(state0_file)
+            print(f'- found daemon {pid} w launch-state args =\n  {state0_args}')
         else:
             print("- no daemon found")
 
+    def run(args):
+        'daemon.run()     - launch daemon and/or watch for updates'
+        g = GarnetDaemon
+
+        # Check that command is LAUNCH or USE
+        command = args.daemon
+        assert command == "launch" or command == "use"
+
+        # On launch, save state and STOP
+        if command == "launch":
+            g.register_pid()
+            g.save_args(args)
+            assert g.pid == os.getpid()  # Should only be stopping SELF
+            g.sigstop(g.pid)             # Stop and wait
+        
+        # On CONTinue, reload state and return
+        args = g.load_args(); assert args.daemon == "use"  # Right? RIGHT???
+        return args
+
+    def kill(dbg=1):
+        'KILL the daemon'
+        g = GarnetDaemon
+        g.sigkill(g.pid)
+
+    # "PRIVATE" methods but this is the only indication because underbars are ugly
 
 
-    # TODO
-    def save_my_pid(filename, dbg=1):
-        'Save pid to indicated filename'
+    def do_cmd(cmd):
+        'Executes <cmd>, returns True or False according to whether command succeeded'
+        # return subprocess.run(cmd.split(), shell=True).returncode == 0
+        return subprocess.run(cmd, shell=True).returncode == 0
+
+    def register_pid(fname=None, dbg=1):
+        'Save (my) pid to pid-save file'
         g = GarnetDaemon
         g.pid = os.getpid()
-        if dbg: print(f'found pid={g.pid}; saving to {filename}')
-        with open(filename, 'w') as f:
-            f.write(f'{g.pid}\n')
-        f.close()
+        if not fname: fname = g.filenames['pid']
+        if dbg: print(f'- found pid={g.pid}; saving to {fname}')
+        with open(fname, 'w') as f: f.write(f'{g.pid}\n')
         if dbg: print(f'I am Damon the daemon, my pid is {g.pid}')
 
-    def save_my_args(args, filename, dbg=1):
-        'Save current state (args) to indicated filename'
+    def retrieve_pid(fname=None, dbg=1):
+        'Get pid from pid-save file'
+        if not fname: fname = GarnetDaemon.filenames['pid']
+        with open(fname, 'r') as f: pid = f.read().strip()
+        if dbg: print(f'- retrieved pid "{pid}" from "{fname}"')
+        return pid
+
+    def save_args(args, fname=None, dbg=1):
+        'Save current state (args) to arg-save (reload) file'
+
+        # Save args as a sorted dict
         argdic = vars(args)
         sorted_argdic=dict(sorted(argdic.items()))
-        f = open(filename, 'w')
-        json.dump(sorted_argdic, f)
-        f.close()
-        if dbg: print(f'- Saved args to {filename}')
+
+        if not fname: fname = GarnetDaemon.filenames['reload']
+        with open(fname, 'w') as f: json.dump(sorted_argdic, f)
+        if dbg: print(f'- saved    args  to  {fname}')
         
-    def load_args(filename, dbg=1):
-        'Load state (args) from indicated filename'
-        f = open(filename, 'r')
-        args_dict = json.load(f)
-        f.close()
-        if dbg: print(f'- Restored args from {filename}')
+    def load_args(fname=None, dbg=1):
+        'Load state (args) from save-args (reload) file'
+        if not fname: fname = GarnetDaemon.filenames['reload']
+        with open(fname, 'r') as f: args_dict = json.load(f)
+        if dbg: print(f'- restored args from {fname}')
         return Namespace(**args_dict)
 
-    def save_my_tty(filename, dbg=1):
-        'Save tty path to <filename> arg'
-        rval = subprocess.run(['tty'], capture_output=True)
-        tty = rval.stdout.decode()
-        with open(filename, 'w') as f: f.write(tty)
-        f.close()
+    # Stop, but do not kill, pid. Can continue again w "sigcont"
+    def sigstop(pid, dbg=1): os.kill(pid, signal.SIGSTOP)
 
-    def load_tty(filename, dbg=1):
-        'Redirect stdout/err to tty indicated in <filename> arg'
-        f = open(filename, 'r'); tty = f.read().strip(); f.close()
-        term = open(tty, 'w')  # E.g. tty = '/dev/pts/8'
-        sys.stdout = term; sys.stderr = term
-
-    def sigstop(dbg=1):
-        'Stop and wait'
-        g = GarnetDaemon
-        assert g.pid == os.getpid()
-        if dbg: print(f'Stop and wait: kill -STOP {str(g.pid)}')
-
-    def restart(dbg=1):
-        
-#         rval = subprocess.run(["kill", "-STOP", str(g.pid)])
-#         ttypath="/dev/pts/75"
-#         term = open(ttypath, 'w')
-#         sys.stdout = term
-#         sys.stderr = term
-
-        print("i was gone but now am back")
-
-    def launch_daemon(args, dbg=1):
-        g = GarnetDaemon
-        g.save_my_pid(g.filenames["pid"])
-        g.save_my_args(args, g.filenames["state0"])
-
-    def stop_and_wait_for_cont(): pass
-    def read_new_args(): pass
-    def kill_daemon():
-        # TODO delete filename['pid']
-        exit()
-
-    def check_for_daemon(args):
-        g = GarnetDaemon
-
-        if args.daemon == "help":
-            print(GarnetDaemon_HELP)
-            exit()
-
-        elif args.daemon == "launch":
-            # Save pid and initial state (args)
-            is_daemon = True
-            launch_daemon(args)
-            return is_daemon
-
-        elif args.daemon == "use-daemon":
-            # TODO verify that width and height match---or maybe do thatin the daemon---or BOTH
-            save_my_args(args, filenames["reload"])
-            send_cont_signal_to_daemon()
-            exit()             
-
-    def read_state_and_continue(arg_filename, tty_filename, dbg=1):
-        # TODO error/warning if file no exist
-        args = load_args(arg_filename)
-        load_tty(tty_filename)
+    def sigcont(pid, dbg=1): os.kill(pid, signal.SIGCONT)
 
 
-    def wait(dbg=1):
-        g = GarnetDaemon
-        if dbg: print("Stop and wait for someone to send a SIGCONT signal")
-        g.sigstop()
+#         cmd = f'kill -STOP {str(g.pid)}'
+#         if dbg: print(f'Stop and wait: {cmd}')
+#         g.do_cmd(cmd)
 
-        
-#         # Continue on receipt of SIGCONT
-#         args = g.read_state_and_continue()
-#         return args
+    # Using TERM instead of KILL b/c a meme shamed me into it
+    def sigkill(pid): os.kill(pid, signal.SIGTERM)
 
-
-#         args = read_new_args
-#         if args.daemon == "kill":
-#             kill_daemon()
-#             exit()
-#         else:
-#             return args
+##############################################################################
+# TESTING, see test_daemon.py
