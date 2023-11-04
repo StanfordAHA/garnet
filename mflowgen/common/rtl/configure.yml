@@ -47,6 +47,7 @@ parameters:
 
 postconditions:
   - assert File( 'outputs/design.v' )        # must exist
+  - assert File( 'outputs/header' )
 
   # Uniquified tiles means something bad has happened
   - assert 'Tile_PE_unq'      not in File( 'outputs/design.v' )

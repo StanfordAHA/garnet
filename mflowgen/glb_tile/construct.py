@@ -298,18 +298,18 @@ def construct():
   init.update_params( { 'order': [
     'pre-init.tcl',
     'main.tcl',
-    'innovus-pnr-config.tcl',
     'dont-use.tcl',
+    'innovus-pnr-config.tcl',
     'quality-of-life.tcl',
     'floorplan.tcl',
     'pin-assignments.tcl',
     'create-rows.tcl',
-    # 'add-tracks.tcl',
-    # 'create-boundary-blockage.tcl',
+    'add-tracks.tcl',
     'add-endcaps-welltaps.tcl',
     'insert-input-antenna-diodes.tcl',
     'create-special-grid.tcl',
     'make-path-groups.tcl',
+    # 'create-boundary-blockage.tcl',
     # 'sram-hold-false-path.tcl',
     'reporting.tcl'
   ] } )

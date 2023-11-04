@@ -98,7 +98,13 @@ def construct():
   g.add_input('design.oas', node_merge_die_ring.i('design.oas'))
 
   # Subgraph Outputs
-  g.add_output('final.oas', node_create_final_database.o('final.oas'))
+  g.add_output('final.oas'            , node_create_final_database.o('final.oas'))
+  g.add_output('final_xor.ERRORS'     , node_run_fullchip_verification.o('final_xor.ERRORS'))
+  g.add_output('final_drcd.ERRORS'    , node_run_fullchip_verification.o('final_drcd.ERRORS'))
+  g.add_output('final_lu.ERRORS'      , node_run_fullchip_verification.o('final_lu.ERRORS'))
+  g.add_output('final_antenna.ERRORS' , node_run_fullchip_verification.o('final_antenna.ERRORS'))
+  g.add_output('final_collat.ERRORS'  , node_run_fullchip_verification.o('final_collat.ERRORS'))
+  g.add_output('final_fullchip.ERRORS', node_run_fullchip_verification.o('final_fullchip.ERRORS'))
 
   #-----------------------------------------------------------------------
   # Parameterize

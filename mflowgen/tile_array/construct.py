@@ -202,6 +202,7 @@ def construct():
   
   # Inputs
   g.add_input( 'design.v', rtl.i('design.v') )
+  g.add_input( 'header'  , rtl.i('header')   )
 
   # Outputs
   g.add_output( 'tile_array_tt.lib',           pt_genlibdb.o('design.lib')        )

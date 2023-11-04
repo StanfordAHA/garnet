@@ -313,8 +313,9 @@ def construct():
   init.update_params( { 'order': [
     'pre-init.tcl',
     'main.tcl',
-    'innovus-pnr-config.tcl',
+    'dont-touch.tcl',
     'dont-use.tcl',
+    'innovus-pnr-config.tcl',
     'quality-of-life.tcl',
     'floorplan.tcl',
     'pin-assignments.tcl',
@@ -327,7 +328,6 @@ def construct():
     'insert-input-antenna-diodes.tcl',
     'make-path-groups.tcl',
     'additional-path-groups.tcl',
-    'dont-touch.tcl',
     # 'sram-hold-false-path.tcl', # somehow it has problem
     'reporting.tcl'
   ] } )

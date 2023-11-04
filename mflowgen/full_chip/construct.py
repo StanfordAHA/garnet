@@ -13,29 +13,6 @@ from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
-def sr_override_parms(parmdict):
-  '''
-  # A mechanism whereby e.g. buildkite can alter parms at the last minute
-  # by way of environmental variables e.g. for faster postroute_hold step
-  # could do something like
-  #    export MFLOWGEN_PARM_OVERRIDE_hold_target_slack=0.6
-  #    mflowgen run --design $$GARNET_HOME/mflowgen/full_chip
-  #    make cadence-innovus-postroute_hold
-'''
-  import os
-  for e in os.environ:
-    # e.g. e="MFLOWGEN_PARM_OVERRIDE_hold_target_slack"
-    if e[0:22]=="MFLOWGEN_PARM_OVERRIDE":
-      parm=e[23:99];     # e.g. parm="hold_target_slack"
-      print(f'+++ FOUND MFLOWGEN PARAMETER OVERRIDE "{parm}={os.environ[e]}"')
-      print(f'BEFOR: parmdict["hold_target_slack"]={parmdict["hold_target_slack"]}')
-      parmdict[parm]=os.environ[e]
-  print(f'AFTER: parmdict["hold_target_slack"]={parmdict["hold_target_slack"]}')
-
-
-  return(parmdict)
-
-
 def construct():
 
   g = Graph()
@@ -51,12 +28,12 @@ def construct():
   parameters = {
     'construct_path'           : __file__,
     'design_name'              : 'GarnetSOC_pad_frame',
-    'clock_period'             : 10.0*1000,
+    'clock_period'             : 1.5*1000,
     'adk'                      : adk_name,
     'adk_view'                 : adk_view,
     'adk_stdcell'              : 'b15_7t_108pp',
     # Synthesis
-    'flatten_effort'           : 0,
+    'flatten_effort'           : 3,
     'topographical'            : True,
     # RTL Generation
     'array_width'              : 28,
@@ -65,10 +42,9 @@ def construct():
     'interconnect_only'        : False,
     'use_local_garnet'         : False,
     # glb tile memory size (unit: KB)
-    # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
-    'glb_tile_mem_size'        : 128,   # 256*16 => 4M global buffer
+    'glb_tile_mem_size'        : 128,
     # Power Domains
-    'PWR_AWARE'                : True,
+    'PWR_AWARE'                : False,
     # Include Garnet?
     'soc_only'                 : True,
     # Include SoC core? (use 0 for false, 1 for true)
@@ -87,7 +63,8 @@ def construct():
     'cgra_apps'                : ["tests/conv_1_2", "tests/conv_2_1"]
   }
 
-  sram_1_params = {
+  # Four 32KB SRAM macros connected to the NIC400 bus
+  params_sram_nic = {
     # SRAM macros
     'num_words'         : 4096,
     'word_size'         : 64,
@@ -95,19 +72,15 @@ def construct():
     'partial_write'     : 1,
   }
 
-  sram_2_params = {
+  # One logical 128KB memory connected directly to the CPU
+  # Due to the max word size limitation in this technology
+  # We stack four 32KB SRAMs to implement this 128KB memory
+  params_sram_cpu = {
     # SRAM macros
     'num_words'         : 8192,
     'word_size'         : 32,
     'mux_size'          : 8,
     'partial_write'     : 1,
-  }
-
-  guardring_params = {
-    # Merging guardring into OASIS
-    'child_oas' : 'inputs/adk/guardring.oas',
-    'coord_x'   : '0',
-    'coord_y'   : '0'
   }
 
   init_order = [
@@ -120,26 +93,12 @@ def construct():
       'floorplan.tcl',
       'create-rows.tcl',
       'add-tracks.tcl',
-      # 'add-endcaps-welltaps.tcl', # move the well tap insertion after power planning to save time
       'place-dic-cells-tma2.tcl',
-      # 'alignment-cells.tcl',
       # 'gen-bumps.tcl', # TODO: turn-off for TMA2
       # 'route-bumps.tcl', # TODO: turn-off for TMA2
       'place-macros.tcl',
       'create-special-grid.tcl',
-      'io-fillers.tcl',
-      # 'create-boundary-blockage.tcl',
-  ]
-
-  drc_rule_decks = [
-    # "antenna",
-    # "collat",
-    "drc-drcd",
-    # "drc-lu",
-    # "drc-denall",
-    # "drc-cden-lden-collat",
-    # "drc-fullchip",
-    # "tapein"
+      'io-fillers.tcl'
   ]
   
   #-----------------------------------------------------------------------
@@ -153,33 +112,30 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  rtl            = Step( this_dir + '/../common/rtl'                        )
-  soc_rtl        = Step( this_dir + '/../common/soc-rtl-v2'                 )
-  gen_sram       = Step( this_dir + '/../common/gen_sram_macro'             )
-  constraints    = Step( this_dir + '/constraints'                          )
-  read_design    = Step( this_dir + '/../common/fc-custom-read-design'      )
-  custom_init    = Step( this_dir + '/custom-init'                          )
-  custom_lvs     = Step( this_dir + '/custom-lvs-rules'                     )
-  custom_power   = Step( this_dir + '/../common/custom-power-chip'          )
-  custom_cts     = Step( this_dir + '/custom-cts'                           )
-  init_fc        = Step( this_dir + '/../common/init-fullchip'              )
-  io_file        = Step( this_dir + '/io_file'                              )
-  pre_route      = Step( this_dir + '/pre-route'                            )
-  netlist_fixing = Step( this_dir + '/../common/fc-netlist-fixing'          )
-  fill           = Step( this_dir + '/../common/intel16-mentor-calibre-fill')
-  drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc'   )
-  lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'   )
+  rtl            = Step( f'{this_dir}/../common/rtl'                   )
+  soc_rtl        = Step( f'{this_dir}/../common/soc-rtl-v2'            )
+  gen_sram_nic   = Step( f'{this_dir}/../common/gen_sram_macro'        )
+  gen_sram_cpu   = Step( f'{this_dir}/../common/gen_sram_macro'        )
+  read_design    = Step( f'{this_dir}/../common/fc-custom-read-design' )
+  custom_power   = Step( f'{this_dir}/../common/custom-power-chip'     )
+  init_fc        = Step( f'{this_dir}/../common/init-fullchip'         )
+  constraints    = Step( f'{this_dir}/constraints'                     )
+  custom_init    = Step( f'{this_dir}/custom-init'                     )
+  custom_cts     = Step( f'{this_dir}/custom-cts'                      )
+  io_file        = Step( f'{this_dir}/io_file'                         )
+  # Rename the SRAM generation nodes
+  gen_sram_nic.set_name( 'gen_sram_macro_nic' )
+  gen_sram_cpu.set_name( 'gen_sram_macro_cpu' )
 
   # Block-level designs
-  tile_array        = Subgraph( this_dir + '/../tile_array',        'tile_array'        )
-  glb_top           = Subgraph( this_dir + '/../glb_top',           'glb_top'           )
-  global_controller = Subgraph( this_dir + '/../global_controller', 'global_controller' )
-  intel_usp_tapeout_flow = Subgraph( this_dir + '/../intel-usp-tapeout-flow', 'intel-usp-tapeout-flow' )
+  tile_array   = Subgraph(f'{this_dir}/../tile_array',             'tile_array')
+  glb_top      = Subgraph(f'{this_dir}/../glb_top',                'glb_top')
+  tapeout_flow = Subgraph(f'{this_dir}/../intel-usp-tapeout-flow', 'tapeout-flow')
 
   # CGRA simulation
-  cgra_rtl_sim_compile  = Step( this_dir + '/cgra_rtl_sim_compile' )
-  cgra_rtl_sim_run      = Step( this_dir + '/cgra_rtl_sim_run'     )
-  cgra_sim_build        = Step( this_dir + '/cgra_sim_build'       )
+  cgra_rtl_sim_compile  = Step( f'{this_dir}/cgra_rtl_sim_compile' )
+  cgra_rtl_sim_run      = Step( f'{this_dir}/cgra_rtl_sim_run'     )
+  cgra_sim_build        = Step( f'{this_dir}/cgra_sim_build'       )
   # cgra_gl_sim_compile   = Step( this_dir + '/cgra_gl_sim_compile'  )
   # cgra_gl_sim_run       = Step( this_dir + '/cgra_gl_sim_run'      )
   # cgra_gl_ptpx          = Step( this_dir + '/cgra_gl_ptpx'         )
@@ -187,8 +143,8 @@ def construct():
   # cgra_gl_sim_verdict   = Step( this_dir + '/cgra_gl_sim_verdict'  )
 
   # Default steps
-  info           = Step( 'info',                             default=True )
   synth          = Step( 'cadence-genus-synthesis',          default=True )
+  info           = Step( 'info',                             default=True )
   iflow          = Step( 'cadence-innovus-flowsetup',        default=True )
   init           = Step( 'cadence-innovus-init',             default=True )
   power          = Step( 'cadence-innovus-power',            default=True )
@@ -200,65 +156,39 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',   default=True )
   signoff        = Step( 'cadence-innovus-signoff',          default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',       default=True )
-  merge_gdr      = Step( 'mentor-calibre-oasismerge-child',  default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',    default=True )
 
-  # Send in the clones
-
-  # Second sram_node because soc has 2 types of srams
-  gen_sram_2 = gen_sram.clone()
-  gen_sram_2.set_name( 'gen_sram_macro_2' )
-
-  # Add cgra tile macro inputs to downstream nodes
-  # synth.extend_inputs( ['tile_array-typical.lib', 'tile_array.lef'] )
-  # synth.extend_inputs( ['glb_top-typical.lib', 'glb_top.lef'] )
-  # synth.extend_inputs( ['global_controller-typical.lib', 'global_controller.lef'] )
-  synth.extend_inputs( ['sram-typical.lib', 'sram.lef'] )
-  synth.extend_inputs( ['sram_2-typical.lib', 'sram_2.lef'] )
-
-  pt_signoff.extend_inputs( ['tile_array-typical.db'] )
-  pt_signoff.extend_inputs( ['glb_top-typical.db'] )
-  pt_signoff.extend_inputs( ['global_controller-typical.db'] )
-  pt_signoff.extend_inputs( ['sram-typical.db'] )
-  pt_signoff.extend_inputs( ['sram_2-typical.db'] )
-  pt_signoff.extend_inputs( ['sram-bc.db'] )
-  pt_signoff.extend_inputs( ['sram_2-bc.db'] )
-
-  route.extend_inputs( ['pre-route.tcl'] )
-  signoff.extend_inputs( netlist_fixing.all_outputs() )
-
   # These steps need timing info for cgra tiles
-  hier_steps = \
-    [ iflow, init, power, place, cts, postcts_hold,
-      route, postroute, signoff]
-
+  hier_steps = [
+    synth,
+    iflow,
+    init,
+    power,
+    place,
+    cts,
+    postcts_hold,
+    route,
+    postroute,
+    postroute_hold,
+    signoff
+  ]
   for step in hier_steps:
-    step.extend_inputs( ['tile_array-typical.lib', 'tile_array.lef'] )
-    step.extend_inputs( ['glb_top-typical.lib', 'glb_top.lef'] )
-    step.extend_inputs( ['global_controller-typical.lib', 'global_controller.lef'] )
-    step.extend_inputs( ['sram-typical.lib', 'sram-bc.lib', 'sram.lef'] )
-    step.extend_inputs( ['sram_2-typical.lib', 'sram_2-bc.lib', 'sram_2.lef'] )
+    step.extend_inputs( ['tile_array-typical.lib', 'tile_array-bc.lib', 'tile_array.lef'] )
+    step.extend_inputs( ['glb_top-typical.lib',    'glb_top-bc.lib',    'glb_top.lef'] )
+    step.extend_inputs( ['sram_nic-typical.lib',   'sram_nic-bc.lib',   'sram_nic.lef'] )
+    step.extend_inputs( ['sram_cpu-typical.lib',   'sram_cpu-bc.lib',   'sram_cpu.lef'] )
+  
+  # PTPX Signoff needs .db files only
+  pt_signoff.extend_inputs( ['tile_array-typical.db', 'tile_array-bc.db'] )
+  pt_signoff.extend_inputs( ['glb_top-typical.db',    'glb_top-bc.db'] )
+  pt_signoff.extend_inputs( ['sram_nic-typical.db',   'sram_nic-bc.db'] )
+  pt_signoff.extend_inputs( ['sram_cpu-typical.db',   'sram_cpu-bc.db'] )
 
   # Need all block oasis's to merge into the final layout
-  oasismerge_nodes = [signoff, power]
-  for node in oasismerge_nodes:
-      node.extend_inputs( ['tile_array.oas'] )
-      node.extend_inputs( ['glb_top.oas'] )
-      node.extend_inputs( ['global_controller.oas'] )
-      node.extend_inputs( ['sram.oas'] )
-      node.extend_inputs( ['sram_2.oas'] )
-
-  # Need extracted spice files for both tile types to do LVS
-  lvs.extend_inputs( ['tile_array.lvs.v'] )
-  lvs.extend_inputs( ['tile_array.sram.spi'] )
-  lvs.extend_inputs( ['glb_top.lvs.v'] )
-  
-  lvs.extend_inputs( ['glb_top.sram.spi'] )
-  lvs.extend_inputs( ['global_controller.lvs.v'] )
-  lvs.extend_inputs( ['sram.spi'] )
-  lvs.extend_inputs( ['sram_2.spi'] )
-  lvs.extend_inputs( ['ring_oscillator.lvs.v'] )
-  lvs.extend_inputs( ['adk_lvs2'] )
+  signoff.extend_inputs( ['tile_array.oas'] )
+  signoff.extend_inputs( ['glb_top.oas'] )
+  signoff.extend_inputs( ['sram_nic.oas'] )
+  signoff.extend_inputs( ['sram_cpu.oas'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
   init.extend_inputs( custom_init.all_outputs() )
@@ -273,10 +203,6 @@ def construct():
   synth.extend_inputs( read_design.all_outputs() )
   synth.extend_inputs( ["cons_scripts"] )
 
-  if parameters['interconnect_only'] is False and parameters['soc_only'] is False:
-    rtl.extend_outputs( ['header'] )
-    rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
-
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -284,10 +210,10 @@ def construct():
   g.add_step( info              )
   g.add_step( rtl               )
   g.add_step( soc_rtl           )
-  g.add_step( gen_sram          )
+  g.add_step( gen_sram_nic      )
+  g.add_step( gen_sram_cpu      )
   g.add_step( tile_array        )
   g.add_step( glb_top           )
-  g.add_step( global_controller )
   g.add_step( constraints       )
   g.add_step( read_design       )
   g.add_step( synth             )
@@ -301,29 +227,19 @@ def construct():
   g.add_step( place             )
   g.add_step( cts               )
   g.add_step( postcts_hold      )
-  g.add_step( pre_route         )
   g.add_step( route             )
   g.add_step( postroute         )
   g.add_step( postroute_hold    )
-  g.add_step( netlist_fixing    )
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
-  g.add_step( fill              )
-  g.add_step( drc               )
-  g.add_step( lvs               )
-  g.add_step( custom_lvs        )
   g.add_step( debugcalibre      )
-  g.add_step( intel_usp_tapeout_flow )
+  g.add_step( tapeout_flow      )
 
   # App test nodes
   g.add_step( cgra_rtl_sim_compile )
   g.add_step( cgra_sim_build       )
   g.add_step( cgra_rtl_sim_run     )
-  # g.add_step( cgra_gl_sim_compile )
-  g.add_step( gen_sram_2        )
   g.add_step( custom_cts        )
-  g.add_step( merge_gdr         ) 
-
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -331,7 +247,8 @@ def construct():
 
   # Connect by name
 
-  g.connect_by_name( adk,      gen_sram       )
+  g.connect_by_name( adk,      gen_sram_nic   )
+  g.connect_by_name( adk,      gen_sram_cpu   )
   g.connect_by_name( adk,      synth          )
   g.connect_by_name( adk,      iflow          )
   g.connect_by_name( adk,      init           )
@@ -343,10 +260,6 @@ def construct():
   g.connect_by_name( adk,      postroute      )
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
-  g.connect_by_name( adk,      fill           )
-  g.connect_by_name( adk,      drc            )
-  g.connect_by_name( adk,      gen_sram_2     )
-  g.connect_by_name( adk,      merge_gdr      )
   # Connect RTL verification nodes
   g.connect_by_name( rtl, cgra_rtl_sim_compile )
   g.connect_by_name( cgra_sim_build, cgra_rtl_sim_run )
@@ -358,7 +271,7 @@ def construct():
   # All of the blocks within this hierarchical design
   # Skip these if we're doing soc_only
   if parameters['soc_only'] == False:
-      blocks = [tile_array, glb_top, global_controller]
+      blocks = [tile_array, glb_top]
       for block in blocks:
           g.connect_by_name( block, synth          )
           g.connect_by_name( block, iflow          )
@@ -376,8 +289,6 @@ def construct():
       g.connect_by_name( rtl, tile_array )
       # glb_top can use rtl from rtl node
       g.connect_by_name( rtl, glb_top )
-      # global_controller can use rtl from rtl node
-      g.connect_by_name( rtl, global_controller )
 
   g.connect_by_name( rtl,          synth          )
   g.connect_by_name( soc_rtl,      synth          )
@@ -399,22 +310,21 @@ def construct():
   g.connect_by_name( iflow,        postroute_hold )
   g.connect_by_name( iflow,        signoff        )
   g.connect_by_name( custom_init,  init           )
-  g.connect_by_name( custom_lvs,   lvs            )
   g.connect_by_name( custom_power, power          )
   g.connect_by_name( custom_cts,   cts            )
 
   # Connect gen_sram_macro node(s) to all downstream nodes that need them
-  # TODO: Temporarily removed for TMA, recover me later
   sram_nodes = [synth, iflow, init, power, place, cts, postcts_hold,
-                route, postroute, postroute_hold, signoff, pt_signoff,
-                drc, lvs]
+                route, postroute, postroute_hold, signoff, pt_signoff]
   for node in sram_nodes:
-    g.connect_by_name( gen_sram, node )
-    if which_soc == 'onyx-intel16':
-      for sram_output in gen_sram_2.all_outputs():
-          node_input = sram_output.replace('sram', 'sram_2')
-          if node_input in node.all_inputs():
-              g.connect(gen_sram_2.o(sram_output), node.i(node_input))
+    for sram_output in gen_sram_nic.all_outputs():
+      node_input = sram_output.replace('sram', 'sram_nic')
+      if node_input in node.all_inputs():
+        g.connect(gen_sram_nic.o(sram_output), node.i(node_input))
+    for sram_output in gen_sram_cpu.all_outputs():
+      node_input = sram_output.replace('sram', 'sram_cpu')
+      if node_input in node.all_inputs():
+        g.connect(gen_sram_cpu.o(sram_output), node.i(node_input))
 
   # Full chip floorplan stuff
   g.connect_by_name( io_file, init_fc )
@@ -426,18 +336,8 @@ def construct():
   g.connect_by_name( cts,            postcts_hold   )
   g.connect_by_name( postcts_hold,   route          )
   g.connect_by_name( route,          postroute      )
-
-  # faster results for signoff
-  g.connect_by_name( postroute,      signoff          )
-  # g.connect_by_name( postroute,      postroute_hold )
-  # g.connect_by_name( postroute_hold, signoff        )
-
-  # Merge guardring oasis into design
-  g.connect_by_name( merge_gdr,      fill           )
-  g.connect_by_name( fill,           drc            )
-  # g.connect_by_name( merge_gdr,      drc            )
-
-  g.connect_by_name( fill,           lvs            )
+  g.connect_by_name( postroute,      postroute_hold )
+  g.connect_by_name( postroute_hold, signoff        )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
@@ -447,22 +347,17 @@ def construct():
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
 
-  g.connect_by_name( pre_route, route )
-  g.connect_by_name( netlist_fixing, signoff )
-
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
 
   # Allow user to override parms with env in a limited sort of way
-  parameters = sr_override_parms( parameters )
-  print(f'parameters["hold_target_slack"]={parameters["hold_target_slack"]}')
   g.update_params( parameters )
 
   # Provide different parameter set to second sram node, so it can actually 
   # generate a different sram
-  gen_sram.update_params( sram_1_params )
-  gen_sram_2.update_params( sram_2_params )
+  gen_sram_nic.update_params( params_sram_nic )
+  gen_sram_cpu.update_params( params_sram_cpu )
 
   # Since we are adding an additional input script to the generic Innovus
   # steps, we modify the order parameter for that node which determines
@@ -476,7 +371,6 @@ def construct():
   init.update_params({'soc_only': parameters['soc_only']}, True)
 
   init.update_params( {'order': init_order } )
-  drc.update_params( {'rule_decks': drc_rule_decks } )
 
   # glb_top parameters update
   glb_top.update_params({'array_width': parameters['array_width']}, True)
@@ -494,45 +388,11 @@ def construct():
   # Power node order manipulation
   order = power.get_param('order')
   # Move endcap/welltap insertion to end of power step to improve runtime
-  # order.append( 'add-endcaps-welltaps.tcl' )
   order.insert(0, 'add-endcaps-welltaps.tcl' )
   power.update_params( { 'order': order } )
-
-  # Add pre-route plugin to insert skip_routing commands
-  order = route.get_param('order')
-  order.insert( 0, 'pre-route.tcl' )
-  route.update_params( { 'order': order } )
-
-  # Signoff order additions
-  order = signoff.get_param('order')
-  # Add netlist-fixing script before we save new netlist
-  index = order.index( 'generate-results.tcl' )
-  order.insert( index, 'netlist-fixing.tcl' )
-  signoff.update_params( { 'order': order } )
-
-  merge_gdr.update_params( guardring_params )
-
-  # Check the DRC at early stage of P&R
-  early_drc_check, early_drc_check_type = True, "power"
-  early_drc_check_type = "power"
-  if early_drc_check:
-    if early_drc_check_type == "init":
-      init_order.append('innovus-foundation-flow/custom-scripts/stream-out.tcl')
-      init.extend_outputs(["design-merged.oas"])
-      init.extend_commands(["ln -sf ../results/design-merged.oas design-merged.oas"])
-      g.connect_by_name( init, merge_gdr )
-    elif early_drc_check_type == "power":
-      power_order = power.get_param('order')
-      power_order.append( 'innovus-foundation-flow/custom-scripts/stream-out.tcl' )
-      power.update_params( { 'order': power_order } )
-      power.extend_outputs(["design-merged.oas"])
-      power.extend_commands(["ln -sf ../results/design-merged.oas design-merged.oas"])
-      g.connect_by_name( power, merge_gdr )
-  else:
-    g.connect_by_name( signoff,    merge_gdr      )
   
   # connect tapeout
-  g.connect(signoff.o("design-merged.oas"), intel_usp_tapeout_flow.i("design.oas"))
+  g.connect(signoff.o("design-merged.oas"), tapeout_flow.i("design.oas"))
 
   return g
 
