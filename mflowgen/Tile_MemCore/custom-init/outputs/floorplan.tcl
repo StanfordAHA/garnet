@@ -18,7 +18,7 @@ set core_margin_right  $tech_pitch_x
 set core_margin_top    $tech_pitch_y
 
 set core_width  [expr 392 * $tech_pitch_x - $core_margin_left - $core_margin_right]
-set core_height [expr 300 * $tech_pitch_y - $core_margin_top - $core_margin_bottom]
+set core_height [expr 290 * $tech_pitch_y - $core_margin_top - $core_margin_bottom]
 
 #-------------------------------------------------------------------------
 # Floorplan
