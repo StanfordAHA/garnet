@@ -15,7 +15,7 @@
 # Preserve the RMUXes so that we can easily constrain them later
 set rmux_cells [get_cells -hier -regexp .*RMUX_.*_sel_(inst0|value)]
 set_dont_touch $rmux_cells true
-set_dont_touch [get_nets -of_objects [get_pins -of_objects $rmux_cells -filter name=~O*]] true
+set_dont_touch_network [get_pins -of_objects $rmux_cells -filter name=~O*]
 
 # TODO: Do we also need to preserve the logic for empty_n and fifo_en?
 #       Now it seems fine, but we may need to check it later.
