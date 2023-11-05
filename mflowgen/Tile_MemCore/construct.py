@@ -29,7 +29,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
-    'clock_period'        : 1.10*1000,
+    'clock_period'        : 1.4*1000,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     'adk_stdcell'         : 'b15_7t_108pp',
@@ -82,7 +82,6 @@ def construct():
   custom_power         = Step( this_dir + '/../common/custom-power-leaf'            )
   testbench            = Step( this_dir + '/../common/testbench'                    )
   application          = Step( this_dir + '/../common/application'                  )
-  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
 
   post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'          )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
@@ -102,10 +101,12 @@ def construct():
   postroute_hold       = Step( 'cadence-innovus-postroute_hold',       default=True )
   signoff              = Step( 'cadence-innovus-signoff',              default=True )
   pt_signoff           = Step( 'synopsys-pt-timing-signoff',           default=True )
-  genlibdb             = Step( 'synopsys-ptpx-genlibdb',               default=True )
+  genlibdb_tt          = Step( 'synopsys-ptpx-genlibdb',               default=True )
+  genlibdb_ff          = Step( 'synopsys-ptpx-genlibdb',               default=True )
   debugcalibre         = Step( 'cadence-innovus-debug-calibre',        default=True )
 
-
+  genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
+  genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
 
   # Extra DC input
   synth.extend_inputs(["common.tcl"])
@@ -113,8 +114,9 @@ def construct():
 
   # Add sram macro inputs to downstream nodes
   synth.extend_inputs(      ['sram-typical.lib', 'sram-bc.lib', 'sram-wc.lib', 'sram.lef'] )
-  pt_signoff.extend_inputs( ['sram-typical.db',  'sram-bc.db',  'sram-wc.db'] )
-  genlibdb.extend_inputs(   ['sram-typical.db', 'sram-bc.db', 'sram-wc.db'] )
+  pt_signoff.extend_inputs( ['sram-typical.db',  'sram-bc.db'] )
+  genlibdb_tt.extend_inputs(['sram-typical.db'] )
+  genlibdb_ff.extend_inputs(['sram-bc.db'] )
 
 
   # These steps need timing and lef info for srams
@@ -134,7 +136,8 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
 
   # Add extra input edges to genlibdb for loop-breaking constraints
-  genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
+  genlibdb_tt.extend_inputs( genlibdb_constraints.all_outputs() )
+  genlibdb_ff.extend_inputs( genlibdb_constraints.all_outputs() )
   synth.extend_inputs( custom_genus_scripts.all_outputs() )
   iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
 
@@ -150,25 +153,27 @@ def construct():
   # Inputs
   g.add_input( 'design.v', rtl.i('design.v') )
   # Outputs
-  g.add_output( 'Tile_MemCore_tt.lib',      genlibdb.o('design.lib')           )
-  g.add_output( 'Tile_MemCore_tt.db',       genlibdb.o('design.db')            )
-  g.add_output( 'Tile_MemCore.lef',         signoff.o('design.lef')            )
-  g.add_output( 'Tile_MemCore.oas',         signoff.o('design-merged.oas')     )
-  g.add_output( 'Tile_MemCore.sdf',         signoff.o('design.sdf')            )
-  g.add_output( 'Tile_MemCore.vcs.v',       signoff.o('design.vcs.v')          )
-  g.add_output( 'Tile_MemCore.vcs.pg.v',    signoff.o('design.vcs.pg.v')       )
-  g.add_output( 'Tile_MemCore.spef.gz',     signoff.o('design.rcbest.spef.gz') )
-  g.add_output( 'Tile_MemCore.pt.sdc',      signoff.o('design.pt.sdc')         )
-  g.add_output( 'Tile_MemCore.lvs.v',       lvs.o('design_merged.lvs.v')       )
-  g.add_output( 'sram.spi',                 gen_sram.o('sram.spi')             )
-  g.add_output( 'sram.v',                   gen_sram.o('sram.v')               )
-  #g.add_output( 'sram_pwr.v',               gen_sram.o('sram_pwr.v')           )
-  g.add_output( 'sram_bc.db',               gen_sram.o('sram-bc.db')           )
-  g.add_output( 'sram_bc.lib',              gen_sram.o('sram-bc.lib')          )
-  g.add_output( 'sram_wc.db',               gen_sram.o('sram-wc.db')           )
-  g.add_output( 'sram_wc.lib',              gen_sram.o('sram-wc.lib')          )
-  g.add_output( 'sram_typical.db',          gen_sram.o('sram-typical.db')      )
-  g.add_output( 'sram_typical.lib',         gen_sram.o('sram-typical.lib')     )
+  g.add_output( 'Tile_MemCore-typical.lib',      genlibdb_tt.o('design.lib')       )
+  g.add_output( 'Tile_MemCore-typical.db',       genlibdb_tt.o('design.db')        )
+  g.add_output( 'Tile_MemCore-bc.lib',           genlibdb_ff.o('design.lib')       )
+  g.add_output( 'Tile_MemCore-bc.db',            genlibdb_ff.o('design.db')        )
+  g.add_output( 'Tile_MemCore.lef',              signoff.o('design.lef')           )
+  g.add_output( 'Tile_MemCore.oas',              signoff.o('design-merged.oas')    )
+  g.add_output( 'Tile_MemCore.sdf',              signoff.o('design.sdf')           )
+  g.add_output( 'Tile_MemCore.vcs.v',            signoff.o('design.vcs.v')         )
+  g.add_output( 'Tile_MemCore.vcs.pg.v',         signoff.o('design.vcs.pg.v')      )
+  g.add_output( 'Tile_MemCore.spef.gz',          signoff.o('design.spef.gz')       )
+  g.add_output( 'Tile_MemCore.rcbest.spef.gz',   signoff.o('design.rcbest.spef.gz'))
+  g.add_output( 'Tile_MemCore.pt.sdc',           signoff.o('design.pt.sdc')        )
+  g.add_output( 'Tile_MemCore.lvs.v',            lvs.o('design_merged.lvs.v')      )
+  g.add_output( 'Tile_MemCore_sram.spi',         gen_sram.o('sram.spi')            )
+  g.add_output( 'Tile_MemCore_sram.v',           gen_sram.o('sram.v')              )
+  g.add_output( 'Tile_MemCore_sram-bc.db',       gen_sram.o('sram-bc.db')          )
+  g.add_output( 'Tile_MemCore_sram-bc.lib',      gen_sram.o('sram-bc.lib')         )
+  g.add_output( 'Tile_MemCore_sram-wc.db',       gen_sram.o('sram-wc.db')          )
+  g.add_output( 'Tile_MemCore_sram-wc.lib',      gen_sram.o('sram-wc.lib')         )
+  g.add_output( 'Tile_MemCore_sram-typical.db',  gen_sram.o('sram-typical.db')     )
+  g.add_output( 'Tile_MemCore_sram-typical.lib', gen_sram.o('sram-typical.lib')    )
 
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )
@@ -200,8 +205,8 @@ def construct():
   g.add_step( signoff              )
   g.add_step( pt_signoff           )
   g.add_step( genlibdb_constraints )
-  g.add_step( genlibdb             )
-  g.add_step( lib2db               )
+  g.add_step( genlibdb_tt          )
+  g.add_step( genlibdb_ff          )
   g.add_step( drc                  )
   g.add_step( lvs                  )
   g.add_step( custom_lvs           )
@@ -239,7 +244,8 @@ def construct():
   g.connect_by_name( gen_sram,             postroute      )
   g.connect_by_name( gen_sram,             postroute_hold )
   g.connect_by_name( gen_sram,             signoff        )
-  g.connect_by_name( gen_sram,             genlibdb       )
+  g.connect_by_name( gen_sram,             genlibdb_tt    )
+  g.connect_by_name( gen_sram,             genlibdb_ff    )
   g.connect_by_name( gen_sram,             pt_signoff     )
   g.connect_by_name( gen_sram,             drc            )
   g.connect_by_name( gen_sram,             lvs            )
@@ -274,10 +280,12 @@ def construct():
   g.connect_by_name( postroute_hold,       signoff        )
   g.connect_by_name( signoff,              drc            )
   g.connect_by_name( signoff,              lvs            )
-  g.connect_by_name( signoff,              genlibdb       )
-  g.connect_by_name( adk,                  genlibdb       )
-  g.connect_by_name( genlibdb_constraints, genlibdb       )
-  g.connect_by_name( genlibdb,             lib2db         )
+  g.connect_by_name( signoff,              genlibdb_tt    )
+  g.connect_by_name( signoff,              genlibdb_ff    )
+  g.connect_by_name( adk,                  genlibdb_tt    )
+  g.connect_by_name( adk,                  genlibdb_ff    )
+  g.connect_by_name( genlibdb_constraints, genlibdb_tt    )
+  g.connect_by_name( genlibdb_constraints, genlibdb_ff    )
   g.connect_by_name( adk,                  pt_signoff     )
   g.connect_by_name( signoff,              pt_signoff     )
   g.connect_by_name( application,          testbench      )
@@ -291,7 +299,10 @@ def construct():
   g.connect_by_name( iflow,                debugcalibre   )
   g.connect_by_name( signoff,              debugcalibre   )
   g.connect_by_name( custom_cts,           cts            )
-  g.connect_by_name( iflow,                genlibdb       )
+
+  # Connect spef to genlibdb
+  g.connect( signoff.o( 'design.spef.gz' ),        genlibdb_tt.i( 'design.spef.gz' ) )
+  g.connect( signoff.o( 'design.rcbest.spef.gz' ), genlibdb_ff.i( 'design.spef.gz' ) )
 
   #-----------------------------------------------------------------------
   # Parameterize
@@ -345,17 +356,21 @@ def construct():
   ]
   drc.update_params( {'rule_decks': drc_rule_decks } )
 
-  # Adding new input for genlibdb node to run
-  # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)
-  order = genlibdb.get_param('order') # get the default script run order
-  extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
-  order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
-  genlibdb.update_params( { 'order': order } )
-  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
-  # very long and is not necessary
-  order = genlibdb.get_param('order')
-  order.remove( 'write-interface-timing.tcl' )
-  genlibdb.update_params( { 'order': order } )
+  # genlibdb parameters
+  genlibdb_order = [
+    'read_design.tcl',
+    'genlibdb-constraints.tcl',
+    'extract_model.tcl'
+  ]
+  genlibdb_tt.update_params({
+    'corner': 'typical',
+    'order': genlibdb_order
+  })
+  genlibdb_ff.update_params({
+    'corner': 'bc',
+    'order': genlibdb_order
+  })
+
   return g
 
 if __name__ == '__main__':

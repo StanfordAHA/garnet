@@ -30,7 +30,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_PE',
-    'clock_period'        : 1.1*1000,
+    'clock_period'        : 1.4*1000,
     'core_density_target' : 0.6,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
@@ -77,7 +77,6 @@ def construct():
   custom_dc_scripts    = Step( this_dir + '/custom-dc-scripts'                      )
   testbench            = Step( this_dir + '/../common/testbench'                    )
   application          = Step( this_dir + '/../common/application'                  )
-  lib2db               = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
   post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'          )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'     )
@@ -96,8 +95,12 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff        = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb       = Step( 'synopsys-ptpx-genlibdb',        default=True )
+  genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb',        default=True )
+  genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb',        default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre', default=True )
+
+  genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
+  genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
 
   # Add custom timing scripts
   custom_timing_steps = [ synth, postcts_hold, signoff ] # connects to these
@@ -107,7 +110,8 @@ def construct():
   # Add extra input edges to innovus steps that need custom tweaks
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
-  genlibdb.extend_inputs( genlibdb_constraints.all_outputs() )
+  genlibdb_tt.extend_inputs( genlibdb_constraints.all_outputs() )
+  genlibdb_ff.extend_inputs( genlibdb_constraints.all_outputs() )
   synth.extend_inputs( custom_genus_scripts.all_outputs() )
   iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
 
@@ -130,16 +134,19 @@ def construct():
   # Inputs
   g.add_input( 'design.v', rtl.i('design.v') )
   # Outputs
-  g.add_output( 'Tile_PE_tt.lib',      genlibdb.o('design.lib')           )
-  g.add_output( 'Tile_PE_tt.db',       genlibdb.o('design.db')            )
-  g.add_output( 'Tile_PE.lef',         signoff.o('design.lef')            )
-  g.add_output( 'Tile_PE.oas',         signoff.o('design-merged.oas')     )
-  g.add_output( 'Tile_PE.sdf',         signoff.o('design.sdf')            )
-  g.add_output( 'Tile_PE.vcs.v',       signoff.o('design.vcs.v')          )
-  g.add_output( 'Tile_PE.vcs.pg.v',    signoff.o('design.vcs.pg.v')       )
-  g.add_output( 'Tile_PE.spef.gz',     signoff.o('design.rcbest.spef.gz') )
-  g.add_output( 'Tile_PE.pt.sdc',      signoff.o('design.pt.sdc')         )
-  g.add_output( 'Tile_PE.lvs.v',       lvs.o('design_merged.lvs.v')       )
+  g.add_output( 'Tile_PE-typical.lib',    genlibdb_tt.o('design.lib')       )
+  g.add_output( 'Tile_PE-typical.db',     genlibdb_tt.o('design.db')        )
+  g.add_output( 'Tile_PE-bc.lib',         genlibdb_ff.o('design.lib')       )
+  g.add_output( 'Tile_PE-bc.db',          genlibdb_ff.o('design.db')        )
+  g.add_output( 'Tile_PE.lef',            signoff.o('design.lef')           )
+  g.add_output( 'Tile_PE.oas',            signoff.o('design-merged.oas')    )
+  g.add_output( 'Tile_PE.sdf',            signoff.o('design.sdf')           )
+  g.add_output( 'Tile_PE.vcs.v',          signoff.o('design.vcs.v')         )
+  g.add_output( 'Tile_PE.vcs.pg.v',       signoff.o('design.vcs.pg.v')      )
+  g.add_output( 'Tile_PE.spef.gz',        signoff.o('design.spef.gz')       )
+  g.add_output( 'Tile_PE.rcbest.spef.gz', signoff.o('design.rcbest.spef.gz'))
+  g.add_output( 'Tile_PE.pt.sdc',         signoff.o('design.pt.sdc')        )
+  g.add_output( 'Tile_PE.lvs.v',          lvs.o('design_merged.lvs.v')      )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -167,8 +174,8 @@ def construct():
   g.add_step( signoff                  )
   g.add_step( pt_signoff               )
   g.add_step( genlibdb_constraints     )
-  g.add_step( genlibdb                 )
-  g.add_step( lib2db                   )
+  g.add_step( genlibdb_tt              )
+  g.add_step( genlibdb_ff              )
   g.add_step( drc                      )
   g.add_step( lvs                      )
   g.add_step( debugcalibre             )
@@ -251,12 +258,13 @@ def construct():
     g.connect_by_name( signoff,               drc                )
     g.connect_by_name( signoff,               lvs                )
 
-  g.connect_by_name( signoff,               genlibdb             )
-  g.connect_by_name( adk,                   genlibdb             )
-  g.connect_by_name( genlibdb_constraints,  genlibdb             )
+  g.connect_by_name( signoff,               genlibdb_tt             )
+  g.connect_by_name( signoff,               genlibdb_ff             )
+  g.connect_by_name( adk,                   genlibdb_tt             )
+  g.connect_by_name( adk,                   genlibdb_ff             )
+  g.connect_by_name( genlibdb_constraints,  genlibdb_tt             )
+  g.connect_by_name( genlibdb_constraints,  genlibdb_ff             )
   
-  g.connect_by_name( genlibdb,              lib2db               )
-
   g.connect_by_name( adk,                   pt_signoff           )
   g.connect_by_name( signoff,               pt_signoff           )
 
@@ -276,8 +284,9 @@ def construct():
   g.add_step(        custom_cts               )
   g.connect_by_name( custom_cts,   cts        )
 
-  # Need this because gf12/intel16 uses innovus for lib generation
-  g.connect_by_name( iflow,    genlibdb       )
+  # Connect spef to genlibdb
+  g.connect( signoff.o( 'design.spef.gz' ),        genlibdb_tt.i( 'design.spef.gz' ) )
+  g.connect( signoff.o( 'design.rcbest.spef.gz' ), genlibdb_ff.i( 'design.spef.gz' ) )
 
   #-----------------------------------------------------------------------
   # Parameterize
@@ -331,18 +340,20 @@ def construct():
   ]
   drc.update_params( {'rule_decks': drc_rule_decks } )
 
-  # Adding new input for genlibdb node to run
-  # gf12 uses synopsys-ptpx for genlib (default is cadence-genus)
-  order = genlibdb.get_param('order') # get the default script run order
-  extraction_idx = order.index( 'extract_model.tcl' ) # find extract_model.tcl
-  order.insert( extraction_idx, 'genlibdb-constraints.tcl' ) # add here
-  genlibdb.update_params( { 'order': order } )
-
-  # genlibdb -- Remove 'report-interface-timing.tcl' beacuse it takes
-  # very long and is not necessary
-  order = genlibdb.get_param('order')
-  order.remove( 'write-interface-timing.tcl' )
-  genlibdb.update_params( { 'order': order } )
+  # genlibdb parameters
+  genlibdb_order = [
+    'read_design.tcl',
+    'genlibdb-constraints.tcl',
+    'extract_model.tcl'
+  ]
+  genlibdb_tt.update_params({
+    'corner': 'typical',
+    'order': genlibdb_order
+  })
+  genlibdb_ff.update_params({
+    'corner': 'bc',
+    'order': genlibdb_order
+  })
       
   return g
 

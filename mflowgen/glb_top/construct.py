@@ -103,9 +103,9 @@ def construct():
   custom_init       = Step( this_dir + '/custom-init'                            )
   custom_lvs        = Step( this_dir + '/custom-lvs-rules'                       )
   custom_power      = Step( this_dir + '/../common/custom-power-hierarchical'    )
-  genlib            = Step( this_dir + '/../common/cadence-innovus-genlib'       )
-  lib2db            = Step( this_dir + '/../common/synopsys-dc-lib2db'           )
   custom_cts        = Step( this_dir + '/custom-cts'                             )
+  drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
+  lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
 
   # Default steps
 
@@ -122,32 +122,38 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
-  drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
-  lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
+  genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb',          default=True )
+  genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb',          default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
+
+  genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
+  genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
   
   # Inputs
   g.add_input( 'design.v', rtl.i('design.v') )
   g.add_input( 'header'  , rtl.i('header')   )
 
   # Outputs
-  g.add_output( 'glb_top_tt.lib',           genlib.o('design.lib')                  )
-  g.add_output( 'glb_top_tt.db',            lib2db.o('design.db')                   )
+  g.add_output( 'glb_top-typical.lib',      genlibdb_tt.o('design.lib')             )
+  g.add_output( 'glb_top-typical.db',       genlibdb_tt.o('design.db')              )
+  g.add_output( 'glb_top-bc.lib',           genlibdb_ff.o('design.lib')             )
+  g.add_output( 'glb_top-bc.db',            genlibdb_ff.o('design.db')              )
   g.add_output( 'glb_top.lef',              signoff.o('design.lef')                 )
   g.add_output( 'glb_top.oas',              signoff.o('design-merged.oas')          )
   g.add_output( 'glb_top.sdf',              signoff.o('design.sdf')                 )
   g.add_output( 'glb_top.vcs.v',            signoff.o('design.vcs.v')               )
   g.add_output( 'glb_top.vcs.pg.v',         signoff.o('design.vcs.pg.v')            )
   g.add_output( 'glb_top.spef.gz',          signoff.o('design.spef.gz')             )
+  g.add_output( 'glb_top.rcbest.spef.gz',   signoff.o('design.rcbest.spef.gz')      )
   g.add_output( 'glb_top.lvs.v',            lvs.o('design_merged.lvs.v')            )
-  g.add_output( 'glb_top.sram.spi',         glb_tile.o('glb_tile_sram.spi')         )
-  g.add_output( 'glb_top.sram.v',           glb_tile.o('glb_tile_sram.v')           )
-  g.add_output( 'glb_top.sram_wc.db',       glb_tile.o('glb_tile_sram_wc.db')       )
-  g.add_output( 'glb_top.sram_wc.lib',      glb_tile.o('glb_tile_sram_wc.lib')      )
-  g.add_output( 'glb_top.sram_bc.db',       glb_tile.o('glb_tile_sram_bc.db')       )
-  g.add_output( 'glb_top.sram_bc.lib',      glb_tile.o('glb_tile_sram_bc.lib')      )
-  g.add_output( 'glb_top.sram_typical.db',  glb_tile.o('glb_tile_sram_typical.db')  )
-  g.add_output( 'glb_top.sram_typical.lib', glb_tile.o('glb_tile_sram_typical.lib') )
+  g.add_output( 'glb_top_sram.spi',         glb_tile.o('glb_tile_sram.spi')         )
+  g.add_output( 'glb_top_sram.v',           glb_tile.o('glb_tile_sram.v')           )
+  g.add_output( 'glb_top_sram-bc.db',       glb_tile.o('glb_tile_sram-bc.db')       )
+  g.add_output( 'glb_top_sram-bc.lib',      glb_tile.o('glb_tile_sram-bc.lib')      )
+  g.add_output( 'glb_top_sram-wc.db',       glb_tile.o('glb_tile_sram-wc.db')       )
+  g.add_output( 'glb_top_sram-wc.lib',      glb_tile.o('glb_tile_sram-wc.lib')      )
+  g.add_output( 'glb_top_sram-typical.db',  glb_tile.o('glb_tile_sram-typical.db')  )
+  g.add_output( 'glb_top_sram-typical.lib', glb_tile.o('glb_tile_sram-typical.lib') )
 
   if parameters['tool'] == 'VCS':
     sim_compile.extend_outputs(['simv', 'simv.daidir'])
@@ -197,16 +203,17 @@ def construct():
 
   # Add glb_tile macro inputs to downstream nodes
 
-  pt_signoff.extend_inputs( ['glb_tile_tt.db'] )
-  genlib.extend_inputs( ['glb_tile_tt.db'] )
+  pt_signoff.extend_inputs( ['glb_tile-typical.db', 'glb_tile-bc.db'] )
+  genlibdb_tt.extend_inputs( ['glb_tile-typical.db'] )
+  genlibdb_ff.extend_inputs( ['glb_tile-bc.db'] )
 
   # These steps need timing info for glb_tiles
   tile_steps = \
     [ synth, iflow, init, power, place, cts, postcts_hold,
-      route, postroute, postroute_hold, signoff, genlib ]
+      route, postroute, postroute_hold, signoff ]
 
   for step in tile_steps:
-    step.extend_inputs( ['glb_tile_tt.lib', 'glb_tile.lef'] )
+    step.extend_inputs( ['glb_tile-typical.lib', 'glb_tile-bc.lib', 'glb_tile.lef'] )
 
   # Need the glb_tile oasis to merge into the final layout
 
@@ -257,8 +264,8 @@ def construct():
   g.add_step( postroute_hold )
   g.add_step( signoff        )
   g.add_step( pt_signoff     )
-  g.add_step( genlib         )
-  g.add_step( lib2db         )
+  g.add_step( genlibdb_tt    )
+  g.add_step( genlibdb_ff    )
   g.add_step( drc            )
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
@@ -287,7 +294,8 @@ def construct():
   g.connect_by_name( adk,      signoff        )
   g.connect_by_name( adk,      drc            )
   g.connect_by_name( adk,      lvs            )
-  g.connect_by_name( adk,      genlib         )
+  g.connect_by_name( adk,      genlibdb_tt    )
+  g.connect_by_name( adk,      genlibdb_ff    )
 
   g.connect_by_name( glb_tile,      synth        )
   g.connect_by_name( glb_tile,      iflow        )
@@ -301,7 +309,8 @@ def construct():
   g.connect_by_name( glb_tile,      postroute_hold )
   g.connect_by_name( glb_tile,      signoff      )
   g.connect_by_name( glb_tile,      pt_signoff   )
-  g.connect_by_name( glb_tile,      genlib       )
+  g.connect_by_name( glb_tile,      genlibdb_tt  )
+  g.connect_by_name( glb_tile,      genlibdb_ff  )
   g.connect_by_name( glb_tile,      drc          )
   g.connect_by_name( glb_tile,      lvs          )
 
@@ -331,7 +340,7 @@ def construct():
   g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff      )
-  g.connect_by_name( iflow,    genlib       )
+
 
   g.connect_by_name( custom_init,  init     )
   g.connect_by_name( custom_power, power    )
@@ -352,8 +361,8 @@ def construct():
   g.connect_by_name( adk,          pt_signoff     )
   g.connect_by_name( signoff,      pt_signoff     )
 
-  g.connect_by_name( adk,          genlib     )
-  g.connect_by_name( signoff,      genlib     )
+  g.connect_by_name( signoff,      genlibdb_tt     )
+  g.connect_by_name( signoff,      genlibdb_ff     )
 
   g.connect_by_name( rtl,        sim_gl_compile )
   g.connect_by_name( testbench,  sim_gl_compile )
@@ -370,8 +379,6 @@ def construct():
   #   g.connect_by_name( glb_tile,               ptpx_gl_nodes[test] )
   #   g.connect_by_name( signoff,                ptpx_gl_nodes[test] )
   #   g.connect_by_name( sim_gl_run_nodes[test], ptpx_gl_nodes[test] )
-
-  g.connect_by_name( genlib,       lib2db   )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
@@ -416,6 +423,20 @@ def construct():
     # "tapein"
   ]
   drc.update_params( {'rule_decks': drc_rule_decks } )
+
+  # genlibdb parameters
+  genlibdb_order = [
+    'read_design.tcl',
+    'extract_model.tcl'
+  ]
+  genlibdb_tt.update_params({
+    'corner': 'typical',
+    'order': genlibdb_order
+  })
+  genlibdb_ff.update_params({
+    'corner': 'bc',
+    'order': genlibdb_order
+  })
 
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )

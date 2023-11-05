@@ -115,19 +115,27 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold', default=True )
   signoff        = Step( 'cadence-innovus-signoff',        default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',     default=True )
-  pt_genlibdb    = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb',         default=True )
+  genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb',         default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',  default=True )
   vcs_sim        = Step( 'synopsys-vcs-sim',               default=True )
   drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
   lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
 
+  genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
+  genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
+
   # Add cgra tile macro inputs to downstream nodes
-  synth.extend_inputs( ['Tile_PE_tt.lib', 'Tile_PE.lef'] )
-  synth.extend_inputs( ['Tile_MemCore_tt.lib', 'Tile_MemCore.lef'] )
-  pt_signoff.extend_inputs( ['Tile_PE_tt.db'] )
-  pt_signoff.extend_inputs( ['Tile_MemCore_tt.db'] )
-  pt_genlibdb.extend_inputs( ['Tile_PE_tt.db'] )
-  pt_genlibdb.extend_inputs( ['Tile_MemCore_tt.db'] )
+  synth.extend_inputs( ['Tile_PE-typical.lib', 'Tile_PE.lef'] )
+  synth.extend_inputs( ['Tile_MemCore-typical.lib', 'Tile_MemCore.lef'] )
+  pt_signoff.extend_inputs( ['Tile_PE-typical.db'] )
+  pt_signoff.extend_inputs( ['Tile_MemCore-typical.db'] )
+  pt_signoff.extend_inputs( ['Tile_PE-bc.db'] )
+  pt_signoff.extend_inputs( ['Tile_MemCore-bc.db'] )
+  genlibdb_tt.extend_inputs( ['Tile_PE-typical.db'] )
+  genlibdb_tt.extend_inputs( ['Tile_MemCore-typical.db'] )
+  genlibdb_ff.extend_inputs( ['Tile_PE-bc.db'] )
+  genlibdb_ff.extend_inputs( ['Tile_MemCore-bc.db'] )
 
   e2e_apps = ["tests/conv_3_3", "apps/cascade", "apps/harris_auto", "apps/resnet_i1_o1_mem", "apps/resnet_i1_o1_pond"]
 
@@ -171,8 +179,8 @@ def construct():
       route, postroute, signoff ]
 
   for step in tile_steps:
-    step.extend_inputs( ['Tile_PE_tt.lib', 'Tile_PE.lef'] )
-    step.extend_inputs( ['Tile_MemCore_tt.lib', 'Tile_MemCore.lef'] )
+    step.extend_inputs( ['Tile_PE-typical.lib', 'Tile_PE-bc.lib', 'Tile_PE.lef'] )
+    step.extend_inputs( ['Tile_MemCore-typical.lib', 'Tile_MemCore-bc.lib', 'Tile_MemCore.lef'] )
 
   # Need the netlist and SDF files for gate-level sim
 
@@ -205,8 +213,10 @@ def construct():
   g.add_input( 'header'  , rtl.i('header')   )
 
   # Outputs
-  g.add_output( 'tile_array_tt.lib',           pt_genlibdb.o('design.lib')        )
-  g.add_output( 'tile_array_tt.db',            pt_genlibdb.o('design.db')         )
+  g.add_output( 'tile_array-typical.lib',      genlibdb_tt.o('design.lib')        )
+  g.add_output( 'tile_array-typical.db',       genlibdb_tt.o('design.db')         )
+  g.add_output( 'tile_array-bc.lib',           genlibdb_ff.o('design.lib')        )
+  g.add_output( 'tile_array-bc.db',            genlibdb_ff.o('design.db')         )
   g.add_output( 'tile_array.lef',              signoff.o('design.lef')            )
   g.add_output( 'tile_array.vcs.v',            signoff.o('design.vcs.v')          )
   g.add_output( 'tile_array.sdf',              signoff.o('design.sdf')            )
@@ -214,14 +224,14 @@ def construct():
   g.add_output( 'tile_array.lvs.v',            lvs.o('design_merged.lvs.v')       )
   g.add_output( 'tile_array.vcs.pg.v',         signoff.o('design.vcs.pg.v')       )
   g.add_output( 'tile_array.spef.gz',          signoff.o('design.spef.gz')        )
-  g.add_output( 'tile_array.sram.spi',         Tile_MemCore.o('sram.spi')         )
-  g.add_output( 'tile_array.sram.v',           Tile_MemCore.o('sram.v')           )
-  g.add_output( 'tile_array.sram_bc.db',       Tile_MemCore.o('sram_bc.db')       )
-  g.add_output( 'tile_array.sram_bc.lib',      Tile_MemCore.o('sram_bc.lib')      )
-  g.add_output( 'tile_array.sram_wc.db',       Tile_MemCore.o('sram_wc.db')       )
-  g.add_output( 'tile_array.sram_wc.lib',      Tile_MemCore.o('sram_wc.lib')      )
-  g.add_output( 'tile_array.sram_typical.db',  Tile_MemCore.o('sram_typical.db')  )
-  g.add_output( 'tile_array.sram_typical.lib', Tile_MemCore.o('sram_typical.lib') )
+  g.add_output( 'tile_array_sram.spi',         Tile_MemCore.o('Tile_MemCore_sram.spi')         )
+  g.add_output( 'tile_array_sram.v',           Tile_MemCore.o('Tile_MemCore_sram.v')           )
+  g.add_output( 'tile_array_sram-bc.db',       Tile_MemCore.o('Tile_MemCore_sram-bc.db')       )
+  g.add_output( 'tile_array_sram-bc.lib',      Tile_MemCore.o('Tile_MemCore_sram-bc.lib')      )
+  g.add_output( 'tile_array_sram-wc.db',       Tile_MemCore.o('Tile_MemCore_sram-wc.db')       )
+  g.add_output( 'tile_array_sram-wc.lib',      Tile_MemCore.o('Tile_MemCore_sram-wc.lib')      )
+  g.add_output( 'tile_array_sram-typical.db',  Tile_MemCore.o('Tile_MemCore_sram-typical.db')  )
+  g.add_output( 'tile_array_sram-typical.lib', Tile_MemCore.o('Tile_MemCore_sram-typical.lib') )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -253,7 +263,8 @@ def construct():
   g.add_step( gls_args       )
   g.add_step( testbench      )
   g.add_step( vcs_sim        )
-  g.add_step( pt_genlibdb    )
+  g.add_step( genlibdb_tt    )
+  g.add_step( genlibdb_ff    )
 
   if use_e2e:
     for app in e2e_apps:
@@ -318,7 +329,8 @@ def construct():
       g.connect_by_name( Tile_MemCore,      drc            )
       g.connect_by_name( Tile_MemCore,      lvs            )
       g.connect_by_name( Tile_MemCore,      vcs_sim        )
-      g.connect_by_name( Tile_MemCore,      pt_genlibdb    )
+      g.connect_by_name( Tile_MemCore,      genlibdb_tt    )
+      g.connect_by_name( Tile_MemCore,      genlibdb_ff    )
 
   # inputs to Tile_PE
   g.connect_by_name( rtl, Tile_PE )
@@ -337,7 +349,8 @@ def construct():
   g.connect_by_name( Tile_PE,      pt_signoff     )
   g.connect_by_name( Tile_PE,      drc            )
   g.connect_by_name( Tile_PE,      lvs            )
-  g.connect_by_name( Tile_PE,      pt_genlibdb    )
+  g.connect_by_name( Tile_PE,      genlibdb_tt    )
+  g.connect_by_name( Tile_PE,      genlibdb_ff    )
 
   g.connect_by_name( rtl,            synth        )
   g.connect_by_name( rtl,            synth        )
@@ -377,8 +390,10 @@ def construct():
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
 
-  g.connect_by_name( adk,          pt_genlibdb )
-  g.connect_by_name( signoff,      pt_genlibdb )
+  g.connect_by_name( adk,          genlibdb_tt )
+  g.connect_by_name( adk,          genlibdb_ff )
+  g.connect_by_name( signoff,      genlibdb_tt )
+  g.connect_by_name( signoff,      genlibdb_ff )
 
   g.connect_by_name( adk,      debugcalibre )
   g.connect_by_name( synth,    debugcalibre )
@@ -410,12 +425,19 @@ def construct():
   # steps, we modify the order parameter for that node which determines
   # which scripts get run and when they get run.
 
-  # pt_genlibdb -- Remove 'write-interface-timing.tcl' because it takes
-  # very long and is not necessary
-  # if which_soc == "onyx":
-  order = pt_genlibdb.get_param('order')
-  order.remove( 'write-interface-timing.tcl' )
-  pt_genlibdb.update_params( { 'order': order } )
+  # genlibdb parameters
+  genlibdb_order = [
+    'read_design.tcl',
+    'extract_model.tcl'
+  ]
+  genlibdb_tt.update_params({
+    'corner': 'typical',
+    'order': genlibdb_order
+  })
+  genlibdb_ff.update_params({
+    'corner': 'bc',
+    'order': genlibdb_order
+  })
 
   # init -- update custom order
   init.update_params( { 'order': init_order } )
