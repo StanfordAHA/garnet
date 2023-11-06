@@ -17,11 +17,6 @@ env:
   IMAGE     : stanfordaha/garnet:latest
   CONTAINER : gold-check-${BUILDKITE_BUILD_NUMBER}
 
-  # ($FAIL|$UPLOAD): Inserts a "fail" bubble in the buildkite pipeline log
-  FAIL_ONYX   : 'echo steps : [ { label : ":x: ONYX_FAILED :x:" ,  command : exit } ]'
-  FAIL_AMBER  : 'echo steps : [ { label : ":x: AMBER_FAILED :x:" , command : exit } ]'
-  UPLOAD : 'buildkite-agent pipeline upload'
-
   # For normal operation leave off build_dir flag to save disk space
   BDIR: .
 
@@ -35,32 +30,20 @@ env:
 
 steps:
 
-##############################################################################
-# Two quick RTL checks
+#####################################################################################
+# Two quick RTL checks. Set soft fail so RTL failure does not fail integration tests.
 
-- label: "Gold RTL: Amber 1m"
-  commands:
-  - '
-     docker pull $$IMAGE; container=$$CONTAINER-amber;
-     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
-     function dexec { docker exec $$container /bin/bash -c "$$*"; };
-     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
-     dexec "/aha/garnet/bin/rtl-goldcheck.sh amber" || $$FAIL_AMBER | $$UPLOAD;
-     docker image prune -f -a;
-     docker kill $$container || echo cannot kill container;
-    '
+# Turning off amber because I think it has lost its way completely at this point...
+# - label: "Gold RTL: Amber 1m"
+#   soft_fail: true
+#   commands:
+#   - 'bin/rtl-goldcheck.sh --use-docker $$IMAGE $$CONTAINER amber'
 
 - label: "Gold RTL: Onyx 1m"
+  soft_fail: true
   commands:
-  - '
-     docker pull $$IMAGE; container=$$CONTAINER-onyx;
-     docker run -id --name $$container --rm -v /cad:/cad $$IMAGE bash;
-     function dexec { docker exec $$container /bin/bash -c "$$*"; };
-     dexec "rm -rf /aha/garnet"; docker cp . $$container:/aha/garnet;
-     dexec "/aha/garnet/bin/rtl-goldcheck.sh onyx" || $$FAIL_ONYX | $$UPLOAD;
-     docker image prune -f -a;
-     docker kill $$container || echo cannot kill container;
-    '
+  - 'bin/rtl-goldcheck.sh --use-docker $$IMAGE $$CONTAINER onyx'
+
 - wait: { continue_on_failure: true }
 
 ##############################################################################
