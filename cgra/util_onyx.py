@@ -64,6 +64,59 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
         width += 1
     return width, height
 
+def get_cc_args(width, height, io_sides, garnet_args):
+    '''
+    Transform garnet_args into a dict of params suitable for calling create_cgra().
+    Example:
+        cc_args = get_cc_args(garnet_args)
+        create_cgra(**cc_args)
+    '''
+
+    from argparse import Namespace
+    args = Namespace(**vars(garnet_args))
+
+    # Manually set required (non-keyword) parameters
+    args.width = width
+    args.height = height
+    args.io_sides = io_sides
+
+    # Derive cc_args from relevant garnet_args
+    args.reg_addr_width       = args.config_addr_reg_width
+    args.config_data_width    = args.config_data_width
+    args.tile_id_width        = args.tile_id_width
+    args.mem_ratio            = (1, args.mem_ratio)
+    args.scgra                = args.sparse_cgra
+    args.scgra_combined       = args.sparse_cgra_combined
+
+    if not args.interconnect_only:
+        args.global_signal_wiring = GlobalSignalWiring.ParallelMeso
+    else:
+        args.global_signal_wiring = GlobalSignalWiring.Meso
+
+    switchbox_type = {
+        "Imran":    SwitchBoxType.Imran,
+        "Disjoint": SwitchBoxType.Disjoint,
+        "Wilton":   SwitchBoxType.Wilton
+    }.get(
+        args.sb_option, "Invalid Switchbox Type"
+    )
+    args.add_pd                    = not args.no_pd,
+    args.add_pond                  = not args.no_pond,
+    args.pond_area_opt             = not args.no_pond_area_opt,
+    args.pond_area_opt_dual_config = not args.no_pond_area_opt_dual_config,
+
+    # Get rid of args that create_cgra does not want, else will get TypeError
+    import inspect
+    cc_expected_parms = inspect.getfullargspec(create_cgra).args
+    for a in list(args.__dict__):
+        if a not in cc_expected_parms: del args.__dict__[a]
+
+    return args
+
+# def create_cgra_w_args(width, height, io_sides, garnet_args):
+#     print("--- create_cgra()")
+#     cc_args = get_cc_args(width, height, io_sides, garnet_args)
+#     return create_cgra(**cc_args.__dict__)
 
 def create_cgra(width: int, height: int, io_sides: IOSide,
                 add_reg: bool = True,
@@ -77,8 +130,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 hi_lo_tile_id: bool = True,
                 pass_through_clk: bool = True,
                 tile_layout_option: int = 0,  # 0: column-based, 1: row-based
-                global_signal_wiring: GlobalSignalWiring =
-                GlobalSignalWiring.Meso,
+                global_signal_wiring: GlobalSignalWiring = GlobalSignalWiring.Meso,
                 pipeline_config_interval: int = 8,
                 standalone: bool = False,
                 amber_pond: bool = False,
@@ -109,6 +161,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                 rf: bool = False,
                 perf_debug: bool = False,
                 tech_map='Intel'):
+
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
     bit_widths = [1, 17]
