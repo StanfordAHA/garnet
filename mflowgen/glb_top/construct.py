@@ -29,11 +29,12 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'global_buffer',
-    'clock_period'        : 2.0 * 1000,
+    'clock_period'        : 1.5 * 1000,
     'sim_clock_period'    : 1.42,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     'adk_stdcell'         : 'b15_7t_108pp',
+    'adk_libmodel'        : 'ccslnt',
     # Synthesis
     'flatten_effort'      : 3,
     'topographical'       : True,
@@ -94,18 +95,19 @@ def construct():
 
   # Custom steps
   
-  rtl               = Step( this_dir + '/../common/rtl'                          )
-  testbench         = Step( this_dir + '/testbench'                              )
-  sim_compile       = Step( this_dir + '/sim-compile'                            )
-  sim_run           = Step( this_dir + '/sim-run'                                )
-  sim_gl_compile    = Step( this_dir + '/sim-gl-compile'                         )
-  constraints       = Step( this_dir + '/constraints'                            )
-  custom_init       = Step( this_dir + '/custom-init'                            )
-  custom_lvs        = Step( this_dir + '/custom-lvs-rules'                       )
-  custom_power      = Step( this_dir + '/../common/custom-power-hierarchical'    )
-  custom_cts        = Step( this_dir + '/custom-cts'                             )
-  drc            = Step( this_dir + '/../common/intel16-synopsys-icv-drc' )
-  lvs            = Step( this_dir + '/../common/intel16-synopsys-icv-lvs' )
+  rtl                  = Step( this_dir + '/../common/rtl'                       )
+  testbench            = Step( this_dir + '/testbench'                           )
+  sim_compile          = Step( this_dir + '/sim-compile'                         )
+  sim_run              = Step( this_dir + '/sim-run'                             )
+  sim_gl_compile       = Step( this_dir + '/sim-gl-compile'                      )
+  constraints          = Step( this_dir + '/constraints'                         )
+  custom_init          = Step( this_dir + '/custom-init'                         )
+  custom_lvs           = Step( this_dir + '/custom-lvs-rules'                    )
+  custom_power         = Step( this_dir + '/../common/custom-power-hierarchical' )
+  custom_cts           = Step( this_dir + '/custom-cts'                          )
+  drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'  )
+  lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'  )
+  custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'      )
 
   # Default steps
 
@@ -237,6 +239,11 @@ def construct():
   power.extend_inputs( custom_power.all_outputs() )
   cts.extend_inputs( custom_cts.all_outputs() )
 
+  # SDC hack for the genlibdb and pt_signoff steps
+  genlibdb_tt.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  genlibdb_ff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  pt_signoff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -256,7 +263,7 @@ def construct():
   g.add_step( power          )
   g.add_step( custom_power   )
   g.add_step( place          )
-  g.add_step( custom_cts   )
+  g.add_step( custom_cts     )
   g.add_step( cts            )
   g.add_step( postcts_hold   )
   g.add_step( route          )
@@ -270,6 +277,7 @@ def construct():
   g.add_step( lvs            )
   g.add_step( custom_lvs     )
   g.add_step( debugcalibre   )
+  g.add_step( custom_hack_sdc_unit )
 
   # for test in parameters["gls_testvectors"]:
   #   g.add_step(sim_gl_run_nodes[test])
@@ -387,6 +395,11 @@ def construct():
   g.connect_by_name( drc,      debugcalibre )
   g.connect_by_name( lvs,      debugcalibre )
 
+  # SDC hack for the genlibdb and pt_signoff steps
+  g.connect_by_name( custom_hack_sdc_unit, genlibdb_tt )
+  g.connect_by_name( custom_hack_sdc_unit, genlibdb_ff )
+  g.connect_by_name( custom_hack_sdc_unit, pt_signoff )
+
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -403,10 +416,6 @@ def construct():
   # pin assignment parameters update
   init.update_params( { 'array_width': parameters['array_width'] }, allow_new=True )
   init.update_params( { 'num_glb_tiles': parameters['num_glb_tiles'] }, allow_new=True )
-
-  # Change nthreads
-  synth.update_params( { 'nthreads': 4 } )
-  iflow.update_params( { 'nthreads': 4 } )
 
   # init -- update custom order
   init.update_params( { 'order': init_order } )
@@ -437,6 +446,21 @@ def construct():
     'corner': 'bc',
     'order': genlibdb_order
   })
+
+  # Add SDC unit hack before genlibdb and pt_signoff
+  sdc_hack_command = "python inputs/hack_sdc_unit.py inputs/design.pt.sdc"
+
+  # The SDC file generated by Innovus contains -library flag to explicitly
+  # specify which library to use for the cell. However, we will change the
+  # target library for different corners and that makes the SDC commands
+  # fail to find the cell. We should remove the -library flag and let the
+  # tool find the cell from the target library (default behavior).
+  sdc_filter_command = "sed -i 's/-library [^ ]* //g' inputs/design.pt.sdc"
+
+  # add the commands to the steps
+  genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
 
   # Increase hold slack on postroute_hold step
   postroute_hold.update_params( { 'hold_target_slack': parameters['hold_target_slack'] }, allow_new=True  )

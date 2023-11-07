@@ -25,16 +25,16 @@ def construct():
   adk_view = 'multivt'
 
   read_hdl_defines = 'INTEL16'
-  add_fill_before_drc_lvs_check = False
 
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_PE',
-    'clock_period'        : 1.4*1000,
+    'clock_period'        : 1.4 * 1000,
     'core_density_target' : 0.6,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     'adk_stdcell'         : 'b15_7t_108pp',
+    'adk_libmodel'        : 'ccslnt',
     # Synthesis
     'flatten_effort'      : 3,
     'topographical'       : True,
@@ -80,6 +80,7 @@ def construct():
   post_pnr_power       = Step( this_dir + '/../common/tile-post-pnr-power'          )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'     )
+  custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'         )
 
   # Default steps
   info           = Step( 'info',                          default=True )
@@ -124,6 +125,11 @@ def construct():
   power.extend_inputs( ["sdc"] )
   place.extend_inputs( ["sdc"] )
   cts.extend_inputs( ["sdc"] )
+
+  # SDC hack for the genlibdb and pt_signoff steps
+  genlibdb_tt.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  genlibdb_ff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  pt_signoff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
 
   order = synth.get_param( 'order' )
   order.append( 'copy_sdc.tcl' )
@@ -182,6 +188,7 @@ def construct():
   g.add_step( application              )
   g.add_step( testbench                )
   g.add_step( post_pnr_power           )
+  g.add_step( custom_hack_sdc_unit     )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -243,27 +250,15 @@ def construct():
   g.connect_by_name( route,                 postroute            )
   g.connect_by_name( postroute,             postroute_hold       )
   g.connect_by_name( postroute_hold,        signoff              )
+  g.connect_by_name( signoff,               drc                  )
+  g.connect_by_name( signoff,               lvs                  )
 
-  if add_fill_before_drc_lvs_check:
-    # setup fill node
-    fill = Step( this_dir + '/../common/intel16-mentor-calibre-fill')
-    g.add_step( fill )
-    g.connect_by_name( adk,                   fill               )
-    g.connect_by_name( signoff,               fill               )
-    # connect fill node to drc/lvs
-    g.connect_by_name( fill,                  drc                )
-    g.connect_by_name( fill,                  lvs                )
-  else:
-    # connect signoff to drc/lvs
-    g.connect_by_name( signoff,               drc                )
-    g.connect_by_name( signoff,               lvs                )
-
-  g.connect_by_name( signoff,               genlibdb_tt             )
-  g.connect_by_name( signoff,               genlibdb_ff             )
-  g.connect_by_name( adk,                   genlibdb_tt             )
-  g.connect_by_name( adk,                   genlibdb_ff             )
-  g.connect_by_name( genlibdb_constraints,  genlibdb_tt             )
-  g.connect_by_name( genlibdb_constraints,  genlibdb_ff             )
+  g.connect_by_name( signoff,               genlibdb_tt          )
+  g.connect_by_name( signoff,               genlibdb_ff          )
+  g.connect_by_name( adk,                   genlibdb_tt          )
+  g.connect_by_name( adk,                   genlibdb_ff          )
+  g.connect_by_name( genlibdb_constraints,  genlibdb_tt          )
+  g.connect_by_name( genlibdb_constraints,  genlibdb_ff          )
   
   g.connect_by_name( adk,                   pt_signoff           )
   g.connect_by_name( signoff,               pt_signoff           )
@@ -283,6 +278,11 @@ def construct():
   cts.extend_inputs( custom_cts.all_outputs() )
   g.add_step(        custom_cts               )
   g.connect_by_name( custom_cts,   cts        )
+
+  # SDC hack for the genlibdb and pt_signoff steps
+  g.connect_by_name( custom_hack_sdc_unit, genlibdb_tt )
+  g.connect_by_name( custom_hack_sdc_unit, genlibdb_ff )
+  g.connect_by_name( custom_hack_sdc_unit, pt_signoff )
 
   # Connect spef to genlibdb
   g.connect( signoff.o( 'design.spef.gz' ),        genlibdb_tt.i( 'design.spef.gz' ) )
@@ -310,14 +310,14 @@ def construct():
   init.update_params( { 'order': [
     'pre-init.tcl',
     'main.tcl',
-    'dont-touch.tcl',
+    # 'dont-touch.tcl',
     'dont-use.tcl',
     'innovus-pnr-config.tcl',
     'quality-of-life.tcl',
     'floorplan.tcl',
     'pin-assignments.tcl',
     'create-rows.tcl',
-    # 'add-tracks.tcl', # maybe this is the root cause for the DRCs?
+    'add-tracks.tcl',
     # 'create-boundary-blockage.tcl',
     'add-endcaps-welltaps.tcl',
     'insert-input-antenna-diodes.tcl',
@@ -333,7 +333,7 @@ def construct():
     "collat",
     "drc-drcd",
     "drc-lu",
-    "drc-denall"
+    # "drc-denall"
     # "drc-cden-lden-collat",
     # "drc-fullchip",
     # "tapein"
@@ -354,7 +354,22 @@ def construct():
     'corner': 'bc',
     'order': genlibdb_order
   })
-      
+  
+  # Add SDC unit hack before genlibdb and pt_signoff
+  sdc_hack_command = "python inputs/hack_sdc_unit.py inputs/design.pt.sdc"
+
+  # The SDC file generated by Innovus contains -library flag to explicitly
+  # specify which library to use for the cell. However, we will change the
+  # target library for different corners and that makes the SDC commands
+  # fail to find the cell. We should remove the -library flag and let the
+  # tool find the cell from the target library (default behavior).
+  sdc_filter_command = "sed -i 's/-library [^ ]* //g' inputs/design.pt.sdc"
+
+  # add the commands to the steps
+  genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+
   return g
 
 if __name__ == '__main__':
