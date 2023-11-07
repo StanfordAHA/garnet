@@ -32,6 +32,7 @@ def construct():
     'adk'                      : adk_name,
     'adk_view'                 : adk_view,
     'adk_stdcell'              : 'b15_7t_108pp',
+    'adk_libmodel'             : 'nldm',
     # Synthesis
     'flatten_effort'           : 3,
     'topographical'            : True,
@@ -98,6 +99,7 @@ def construct():
       # 'route-bumps.tcl', # TODO: turn-off for TMA2
       'place-macros.tcl',
       'create-special-grid.tcl',
+      'carve-out-special-grid-fullchip.tcl',
       'io-fillers.tcl'
   ]
   
