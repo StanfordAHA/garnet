@@ -216,9 +216,19 @@ if [ "$use_container" == True ]; then
          #   1. the lake change has been merged into lake master
          #   2. aha master has been updated to point to the new lake master
          #   3. the docker image has been updated to point to the new aha master
-         cd /aha/lake
-         git checkout 72626e4205773ddb0f1414499b3245387e1ad2fb
-         cd /aha
+         #  cd /aha/lake
+         #  git checkout 72626e4205773ddb0f1414499b3245387e1ad2fb
+         #  cd /aha
+
+         # Michael RTL Hack
+         # Revert to old aha commit to get around RTL bug:
+         # we shouldn't have to do this after Michael's RTL fix has been merged
+         # cd /aha
+         # git checkout 27a9d29f17a515bb1227560e272aa3290bd595d1
+         # git config --global --add safe.directory /aha/garnet
+         # git submodule update
+
+         git log > /aha/git_log_sanity.txt
 
          if [ $interconnect_only == True ]; then
            echo --- INTERCONNECT_ONLY: aha garnet $flags
@@ -283,6 +293,8 @@ if [ "$use_container" == True ]; then
       # See whassup with docker atm
       docker ps
       docker images --digests
+
+      docker cp $container_name:/aha/git_log_sanity.txt ..
 
       # Kill the container
       if docker kill $container_name; then
