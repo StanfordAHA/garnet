@@ -13,4 +13,4 @@
 # These SB_IN to SB_OUT combinational paths
 # create a loop in the tile_array level
 # (dangerous: only disable these during libdb generation)
-set_false_path -from [get_ports *SB_IN* -filter {direction == in}] -to [get_ports *SB_OUT* -filter {direction == out}]
+set_false_path -from [get_ports SB* -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
