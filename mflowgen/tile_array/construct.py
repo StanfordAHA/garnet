@@ -33,7 +33,7 @@ def construct():
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     'adk_stdcell'       : 'b15_7t_108pp',
-    'adk_libmodel'      : 'ccslnt',
+    'adk_libmodel'      : 'nldm',
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : True,
