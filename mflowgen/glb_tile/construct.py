@@ -32,7 +32,7 @@ def construct():
     'adk'                : adk_name,
     'adk_view'           : adk_view,
     'adk_stdcell'        : 'b15_7t_108pp',
-    'adk_libmodel'       : 'ccslnt',
+    'adk_libmodel'       : 'nldm',
     # Synthesis
     'flatten_effort'     : 3,
     'topographical'      : True,
@@ -77,6 +77,7 @@ def construct():
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'     )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'     )
   custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'         )
+  custom_hack_lef_ante = Step( this_dir + '/../common/custom-hack-lef-antenna'      )
   # calibre_drc        = Step( this_dir + '/../common/intel16-mentor-calibre-drc'   )
   # calibre_lvs        = Step( this_dir + '/../common/intel16-mentor-calibre-lvs'   )
 
@@ -171,6 +172,9 @@ def construct():
   genlibdb_ff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
   pt_signoff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
 
+  # LEF antenna hack
+  adk.extend_inputs( custom_hack_lef_ante.all_outputs() )
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -202,6 +206,7 @@ def construct():
   g.add_step( debugcalibre         )
   g.add_step( custom_flowgen_setup )
   g.add_step( custom_hack_sdc_unit )
+  g.add_step( custom_hack_lef_ante )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -286,6 +291,9 @@ def construct():
   g.connect_by_name( custom_hack_sdc_unit, genlibdb_tt )
   g.connect_by_name( custom_hack_sdc_unit, genlibdb_ff )
   g.connect_by_name( custom_hack_sdc_unit, pt_signoff )
+
+  # LEF antenna hack
+  g.connect_by_name( custom_hack_lef_ante, adk )
 
   #-----------------------------------------------------------------------
   # Parameterize
@@ -381,6 +389,11 @@ def construct():
   genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
   genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
   pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+
+  # hack the antenna ratio in the tech lef file
+  lef_hack_scale_factor = 0.8
+  lef_hack_command = f"python inputs/hack_lef_antenna.py outputs/adk/rtk-tech.lef {lef_hack_scale_factor:.2f}"
+  adk.extend_commands( [lef_hack_command] )
 
   return g
 
