@@ -64,6 +64,7 @@ from lake.top.tech_maps import GF_Tech_Map
 from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
 from lassen.sim import PE_fc
+from lassen.utils import float2bfbin
 from peak import family
 from lake.modules.scanner_pipe import ScannerPipe
 import tempfile
@@ -1569,11 +1570,16 @@ def write_glb_file(file_list, out_dir, out_name):
                 # Get rid of 0x for readmemh compatibility
                 # hexified = str(hex(int(l)))[2:]
                 # Convert to positive
-                temp_tkn = int(float(l.strip()))
-                # Supports negative values now
-                if temp_tkn >= (2 ** 16):
-                    temp_tkn = temp_tkn - (((temp_tkn // (2 ** 16)) * (2 ** 16)))
-                output_lines.append(f"{hex(temp_tkn & 0xFFFF)[2:].zfill(4)}\n")
+                if "." not in l.strip():
+                    # no decimal point, it is an integer
+                    temp_tkn = int(l.strip())
+                    if temp_tkn >= (2 ** 16):
+                        temp_tkn = temp_tkn - (((temp_tkn // (2 ** 16)) * (2 ** 16)))
+                    output_lines.append(f"{hex(temp_tkn & 0xFFFF)[2:].zfill(4)}\n")
+                else:
+                    # contains decimal point, should be interpreted as bfloat16
+                    tmp_tkn = float(l.strip())
+                    output_lines.append(f"{hex(int(float2bfbin(tmp_tkn), 2))[2:].zfill(4)}\n")
     out_path = f"{out_dir}/{out_name}"
     with open(out_path, "w+") as curr_file:
         curr_file.writelines(output_lines)
@@ -1940,21 +1946,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
             b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                                dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                                sparsity=0.2)
-        #else:
-        #    b_mat = cached_inputs['B']
-        #    b_shape = b_mat.shape
-        #    shapes_[0] = b_shape[0]
-        #    shapes_[1] = b_shape[1]
-        # c_mat = c_matrix.get_matrix()
         if 'C' not in cached_inputs:
             c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                                dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                                sparsity=0.2)
-        #else:
-        #    c_mat = cached_inputs['C']
-
-        #ret_outputs['B'] = b_mat
-        #ret_outputs['C'] = c_mat
         # First transpose c_mat        
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
@@ -2797,7 +2792,6 @@ if __name__ == "__main__":
                                                                                                        clean=clean,
                                                                                                        suffix=f"_{i}",
                                                                                                        cached_inputs=cached_inputs)
-
                     if 'B' in ret_outputs and 'B' not in cached_inputs:
                         cached_inputs['B'] = ret_outputs['B']
 
@@ -2867,10 +2861,6 @@ if __name__ == "__main__":
 
                     for i in range(unroll):
                         out_mats[i].dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir, suffix=f"_{i}")
-
-                    # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
-                    #     numpy.save(goldout_, out_mat.get_matrix())
-                    # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
                         numpy.save(f"{full_test_glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
                         numpy.save(f"{glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
 
