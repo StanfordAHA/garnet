@@ -20,7 +20,7 @@ from DagVisitor import Visitor, Transformer
 from peak.mapper.utils import Unbound
 from lassen.sim import PE_fc as lassen_fc
 from mapper.netlist_graph import Node, NetlistGraph
-
+import pulp
 
 class CreateBuses(Visitor):
     def __init__(self, inst_info):
@@ -809,7 +809,8 @@ class FixInputsOutputAndPipeline(Visitor):
                         )
 
             # -----------------MEM-to-PE Paths Pipelining-------------------- #
-            elif "input_cgra_stencil" in io_child.iname:
+            elif False:
+            #elif "input_cgra_stencil" in io_child.iname:
                 new_node = new_children[0].select("data_out_0")
                 if "MEM2PE_REG_CHAIN" in os.environ:
                     if self.pipeline_inputs:
@@ -821,7 +822,8 @@ class FixInputsOutputAndPipeline(Visitor):
                             False,
                         )
             # output MEM to accumulation PE pipelining
-            elif "ub_output_cgra_stencil" in io_child.iname and "add_pipelined" in self.sinks[node][0].iname:
+            elif False:
+            #elif "ub_output_cgra_stencil" in io_child.iname and "add_pipelined" in self.sinks[node][0].iname:
                 new_node = new_children[0].select("data_out_0")
                 if "MEM2PE_REG_CHAIN" in os.environ:
                     if self.pipeline_inputs:
@@ -905,9 +907,84 @@ class PackRegsIntoPonds(Visitor):
     def __init__(self, sinks):
         self.sinks = sinks
 
+    def find_pe(self, node, num_regs, reg_skip_list):
+        if node.node_name == "global.PE":
+            return node, num_regs, reg_skip_list
+
+        if node not in self.sinks:
+            return None, None, None
+        assert len(self.sinks[node]) == 1
+        new_node = self.sinks[node][0]
+        if new_node.node_name == "Register":
+            reg_skip_list.append(new_node)
+            if not isinstance(node, Sink):
+                num_regs += 1
+        return self.find_pe(new_node, num_regs, reg_skip_list)
+
+    def find_packing(self, dag):
+        connections_to_nodes = {}
+        connections = []
+        ponds = []
+        pes = []
+
+        for pond in dag.sources:
+            if pond.node_name == "cgralib.Pond":
+                ponds.append(pond.iname)
+                for pond_sink in self.sinks[pond]:
+                    assert pond_sink.node_name == "Select", breakpoint()
+                    pe_node, num_regs, reg_skip_list = self.find_pe(pond_sink, 0, [])
+                    if pe_node is not None:
+                        if pe_node.iname not in pes:
+                            pes.append(pe_node.iname)
+
+                        connections.append((pond.iname, pe_node.iname))
+                    else:
+                        connections.append((pond.iname, f"other_{len(connections)}"))
+                    
+                    conn = connections[-1]
+                    connections_to_nodes[f"{conn[0]}_{conn[1]}"] = pond_sink
+
+
+        model = pulp.LpProblem('linear_programming', pulp.LpMaximize)
+
+        pulp_vars = []
+        for conn in connections:
+            name = conn[0] + '_' + conn[1]
+            pulp_var = pulp.LpVariable(name, lowBound = 0, cat = 'Binary')
+            pulp_vars.append(pulp_var)
+
+            model += pulp_var
+
+            if conn[1] not in pes:
+                model += pulp_var == 0
+
+        for pond in ponds:
+            connections_from_ponds = len([conn for conn in connections if conn[0] == pond])
+            if connections_from_ponds == 2:
+                model += pulp.lpSum([var for var in pulp_vars if pond in var.name]) == 1
+
+        for pe in pes:
+            model += pulp.lpSum([var for var in pulp_vars if pe in var.name]) <= 1
+
+        model += pulp.lpSum([var for var in pulp_vars])
+        model.solve(pulp.PULP_CBC_CMD(msg=0))
+
+        pond_node_to_port = {}
+        
+        for var in pulp_vars:
+            if var.value() == 1.0:
+                # Port 0
+                pond_node_to_port[connections_to_nodes[var.name]] = 0
+            else:
+                # Port 1
+                pond_node_to_port[connections_to_nodes[var.name]] = 1
+
+        return pond_node_to_port
+
     def doit(self, dag: Dag):
+        self.optimal_packing = self.find_packing(dag)
+        self.swap_pond_ports = []
         self.skip_reg_nodes = []
-        self.swap_pond_ports = set()
         self.pe_to_pond_conns = {}
         self.pond_reg_skipped = {}
         self.node_map = {}
@@ -935,19 +1012,6 @@ class PackRegsIntoPonds(Visitor):
             self.swap_pond_ports
         )
 
-    def find_pe(self, node, num_regs, reg_skip_list):
-        if node.node_name == "global.PE":
-            return node, num_regs, reg_skip_list
-
-        if node not in self.sinks:
-            return None, None, None
-        assert len(self.sinks[node]) == 1
-        new_node = self.sinks[node][0]
-        if new_node.node_name == "Register":
-            reg_skip_list.append(new_node)
-            if not isinstance(node, Sink):
-                num_regs += 1
-        return self.find_pe(new_node, num_regs, reg_skip_list)
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
@@ -956,24 +1020,20 @@ class PackRegsIntoPonds(Visitor):
 
         n_node = node
 
-        if (
-            node.node_name == "Select"
-            and node.child.node_name == "cgralib.Pond"
-            and not isinstance(node.child, Sink)
-            and node.field == "data_out_pond_0"
-        ):
+        if node in self.optimal_packing:
+            pond_port = f"data_out_pond_{self.optimal_packing[node]}"
             pe_node, num_regs, reg_skip_list = self.find_pe(node, 0, [])
-            if pe_node is None:
-                n_node = node.child.select("data_out_pond_1")
-                self.swap_pond_ports.add(n_node.child.iname)
-            elif pe_node not in self.pe_to_pond_conns:
+            
+            if pond_port == "data_out_pond_0":
+                # packing in the same tile
                 self.pe_to_pond_conns[pe_node] = node
-                self.pond_reg_skipped[node.child.iname] = num_regs
                 self.skip_reg_nodes += reg_skip_list
-            else:
-                # Multiple ponds are connecting to one PE using the data_out_pond_0 port
-                n_node = node.child.select("data_out_pond_1")
-                self.swap_pond_ports.add(n_node.child.iname)
+                self.pond_reg_skipped[node.child.iname] = num_regs
+
+            n_node = node.child.select(pond_port)
+
+            if pond_port != node.field:
+                self.swap_pond_ports.append(n_node.child.iname)
 
         if n_node in self.pe_to_pond_conns:
             new_children = []
@@ -1089,16 +1149,25 @@ def create_netlist_info(
     info["id_to_metadata"] = {}
     for node, md in node_to_metadata.items():
         info["id_to_metadata"][nodes_to_ids[node]] = md
+        if node in swap_pond_ports:
+            print(f"swapping ports for {nodes_to_ids[node]}")
+            new_config = {}
+            new_config["in2regfile_0"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["in2regfile_0"]
+
+            if "in2regfile_1" in info["id_to_metadata"][nodes_to_ids[node]]["config"]:
+                new_config["in2regfile_1"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["in2regfile_1"]
+
+            new_config["regfile2out_1"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"]
+            
+            if "regfile2out_1" in info["id_to_metadata"][nodes_to_ids[node]]["config"]:
+                new_config["regfile2out_0"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_1"]  
+
+            info["id_to_metadata"][nodes_to_ids[node]]["config"] = new_config
+        
         if node in pond_reg_skipped:
             info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"][
                 "cycle_starting_addr"
             ][0] += pond_reg_skipped[node]
-        elif node in swap_pond_ports:
-            assert "regfile2out_1" not in info["id_to_metadata"][nodes_to_ids[node]]["config"]
-            new_config = {}
-            new_config["in2regfile_0"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["in2regfile_0"]
-            new_config["regfile2out_1"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"]
-            info["id_to_metadata"][nodes_to_ids[node]]["config"] = new_config
 
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
     info["id_to_instrs"] = {
