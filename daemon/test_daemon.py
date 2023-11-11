@@ -265,9 +265,9 @@ def test_help():
 # Unit tests (optional)
 
 # Okay to use comprehensive test(s) for these, for now
-def test_initial_check(): announce('todo')
-def test_loop():          announce('todo')
-def test_use():           announce('todo')
+def test_initial_check(): announce('later')
+def test_loop():          announce('later')
+def test_use():           announce('later')
 
 def test_kill(dbg=1):
     if announce_unit(): return
@@ -292,8 +292,8 @@ def test_daemon_exists():
     announce(': sufficiently covered by other tests already')
 
 # TODO
-def test_status():      announce('todo')
-def test_save_state0(): announce('todo')
+def test_status():      announce('later')
+def test_save_state0(): announce('later')
 
 def test_save_args(): announce(': see test_arg_save_and_restore()')
 def test_load_args(): announce(': see test_arg_save_and_restore()')
@@ -309,11 +309,11 @@ def test_arg_save_and_restore():
     assert args == new_args
 
 # TODO
-def test_daemon_wait(): announce('todo')
-def test_die_if_daemon_exists(): announce('todo')
-def test_check_for_orphans(): announce('todo')
-def test_all_daemon_processes_except(): announce('todo')
-def test_args_match_or_die(): announce('todo')
+def test_daemon_wait(): announce('later')
+def test_die_if_daemon_exists(): announce('later')
+def test_check_for_orphans(): announce('later')
+def test_all_daemon_processes_except(): announce('later')
+def test_args_match_or_die(): announce('later')
 
 def test_do_cmd():
     if announce_unit(): return
@@ -374,9 +374,6 @@ def test_sigkill():
     # See if its dead
     assert poke_it_and_see_if_its_dead(pid)
 
-# TODO purge skip_test()!
-def skip_test(): announce('todo')
-
 # TODO should do this, maybe, and not as a unit test, maybe
 def test_grid_size(): announce('todo')
 def test_retrieve_pid(): announce(': see test_pid_save_restore()')
@@ -421,7 +418,7 @@ def announce(msg=''):
     caller = callerframe[1][3]
     print('\n========================================================================')
     print(f"--- TEST: {caller}(){msg}")
-    if msg == 'todo':
+    if msg == 'todo' or msg == 'later':
         print('- TODO do not yet have a test for this'); return True
     
 def announce_unit(msg=''):
