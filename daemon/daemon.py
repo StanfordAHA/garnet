@@ -74,7 +74,7 @@ class GarnetDaemon:
     def loop(args, dbg=1):
         '''Launch daemon and/or watch for updates'''
         gd = GarnetDaemon; command = args.daemon
-        print('daemon.py/loop(): in the loop. command={command}')
+        print(f'- daemon.py/loop(): in the loop. command={command}')
         assert command == "launch" or command == "use", \
             f'Found command "{command}", should have been "launch" or "use"'
 
@@ -84,7 +84,7 @@ class GarnetDaemon:
             gs = gd.grid_size(args)    # E.g. "4x2"
             print(f'\n--- LAUNCHING {gs} DAEMON {pid}')
             gd.save_state0(args)
-            print(f'\nDAEMON STOPS and waits...\n')
+            print(f'- DAEMON STOPS and waits...\n')
             sys.stdout.flush()
 
         # Stop and wait for CONT signal from client
@@ -158,7 +158,7 @@ class GarnetDaemon:
 
             # Make sure grid sizes match, at least!
             state0_args = gd.load_args(state0_file)
-            grid_size = gd.grid_size(args)
+            grid_size = gd.grid_size(state0_args)
             print(f'- found {grid_size} daemon {pid} w launch-state args = {state0_args.__dict__}')
             gd.args_match_or_die(state0_args, args)
             return True
@@ -325,7 +325,9 @@ class GarnetDaemon:
 
         if not pid: pid = GarnetDaemon.retrieve_pid()
         
-        print(f'\nstopping final {pid}\n\n', flush=True)
+        # print(f'\nstopping final {pid}\n\n', flush=True)
+        # VERY IMPORTANT: job can hang forever is do not do this final flush!!!
+        sys.stdout.flush(); sys.stderr.flush()
         os.kill(int(pid), signal.SIGSTOP)
 
     # Send a "CONTinue" signal to a process
