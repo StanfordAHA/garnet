@@ -17,12 +17,6 @@ env:
   IMAGE     : stanfordaha/garnet:latest
   CONTAINER : gold-check-${BUILDKITE_BUILD_NUMBER}
 
-  # (see buildkite/emojis)
-  # ($FAIL|$UPLOAD): Inserts a "fail" bubble in the buildkite pipeline log
-  FAIL_ONYX   : 'echo steps : [ { label : ":warning: ONYX_FAILED" ,   command : exit } ]'
-  FAIL_AMBER  : 'echo steps : [ { label : ":warning: AMBER_FAILED" , command : exit } ]'
-  UPLOAD : 'buildkite-agent pipeline upload'
-
   # For normal operation leave off build_dir flag to save disk space
   BDIR: .
 
@@ -39,10 +33,11 @@ steps:
 #####################################################################################
 # Two quick RTL checks. Set soft fail so RTL failure does not fail integration tests.
 
-- label: "Gold RTL: Amber 1m"
-  soft_fail: true
-  commands:
-  - 'bin/rtl-goldcheck.sh --use-docker $$IMAGE $$CONTAINER amber'
+# Turning off amber because I think it has lost its way completely at this point...
+# - label: "Gold RTL: Amber 1m"
+#   soft_fail: true
+#   commands:
+#   - 'bin/rtl-goldcheck.sh --use-docker $$IMAGE $$CONTAINER amber'
 
 - label: "Gold RTL: Onyx 1m"
 
