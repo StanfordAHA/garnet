@@ -7,6 +7,9 @@ import time
 # TODO run complete pytest, speed up the slow pauses
 # TODO make sure everyone has the appropriate announce()
 
+def min_sleep():
+    import time; time.sleep(1)
+
 
 # Don't need unit tests if comprehensive tests are good.
 # But yes do turn them on for comprehensive/interactive testing.
@@ -112,7 +115,6 @@ def my_test_daemon():
 #    test_kill_launch_kill_status_klks()  # A test that failed once upon a time
 #    test_double_launch()
 #    test_incompatible_daemon()
-#    TODO: more?
 
 def kill_existing_daemon():
     print(f"Kill existing daemon (p.stdout should say 'already dead')"); sys.stdout.flush()
@@ -127,7 +129,8 @@ def launch_daemon_and_verify(daemon=DAEMON):
     print(f'Launch a daemon', flush=True)
     p = subprocess.Popen(f'{DAEMON} launch'.split()); pid0 = p.pid
     print(f'- wait two seconds', flush=True)
-    time.sleep(2)
+    min_sleep()
+    # time.sleep(2)
     pid1 = verify_daemon_running(); assert pid0 == pid1
     # TODO look for e.g. 'Built 7x13' ? Merge w force_launch below?
     return pid0
@@ -135,14 +138,11 @@ def launch_daemon_and_verify(daemon=DAEMON):
 def force_launch_and_capture(capture_file):
     cmd=f'{DAEMON} force |& tee {capture_file}'
     p1 = subprocess.Popen(['bash', '-c', cmd])
-    time.sleep(1)
+    min_sleep()
 
     print('\nAPRES LAUNCH')
-    print('------------------------------------------------------------------------')
-    with open(capture_file, 'r') as f: daemon_out = f.read()
-    print(daemon_out)
-    print('\n------------------------------------------------------------------------')
-    sys.stdout.flush()
+    daemon_out = print_file_contents_w_prefix('DAEMON: ', capture_file)
+
     assert 'Built 7x13' in daemon_out
     print('\nFirst assertion PASSED')
 
@@ -178,7 +178,8 @@ def test_double_launch():  # kill-launch-launch-kill
     print('Attempting to launch a second daemon, should get an error message')
     p = subprocess.Popen(f'{DAEMON} launch'.split(), stderr=subprocess.PIPE, text=True)
     # time.sleep(10)
-    time.sleep(2)
+    # time.sleep(2)
+    min_sleep()
     # First verify that process died on its own:
     status = p.poll()
     assert status, 'Oops second daemon should have errored out by now'
@@ -200,7 +201,8 @@ def test_force_launch():
     
     # Wait a bit, then see if the new daemon is running
     # time.sleep(10)
-    time.sleep(2)
+    # time.sleep(2)
+    min_sleep()
     pid2 = verify_daemon_running()
     print(f'Checking first (dead) daemon {pid1} not same as new daemon {pid2}...')
     assert int(pid2) != int(pid1)
@@ -211,6 +213,13 @@ def test_force_launch():
 #   use --animal owl, look for 'continuing with 7x13' AND 'using animal: owl' AND NOT 'Built' 
 #   use --animal ostrich, osprey, octopus, etc.
 
+def print_file_contents_w_prefix(prefix, filename):
+    with open(filename, 'r') as f: file_contents = f.read()
+    lines = prefix + f'\n{prefix}' .join(file_contents.split('\n'))
+    print(lines)
+    sys.stdout.flush()
+    return file_contents
+
 def test_daemon_use():
     # from subprocess import Popen, PIPE
     announce()
@@ -218,16 +227,12 @@ def test_daemon_use():
     force_launch_and_capture(tmpfile)
 
     p2 = subprocess.run(f'{DAEMON} use --animal foxy'.split(), text=True, capture_output=True)
-    print('\nSLEEP 2\n')
     sys.stdout.flush()
-    time.sleep(2)
+    min_sleep()
 
     print('\nWAKEUP and flush')
-    print('------------------------------------------------------------------------')
-    with open(tmpfile, 'r') as f: daemon_out = f.read()
-    print(daemon_out)
-    print('\n------------------------------------------------------------------------')
-    sys.stdout.flush()
+    daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile)
+
     os.remove(tmpfile)
     assert 'using animal: foxy' in daemon_out
     print('\nSecond assertion PASSED')
@@ -248,7 +253,10 @@ def test_incompatible_daemon():
     print(p2.stderr)
     assert "ERROR: Daemon uses" in p2.stderr
     print('\nSLEEP 2\n')
-    sys.stdout.flush(); time.sleep(2)
+    sys.stdout.flush()
+    # time.sleep(2)
+    min_sleep()
+
 
     print('\nKILL the daemon\n')
     subprocess.run(f'{DAEMON} kill'.split())
@@ -291,7 +299,6 @@ def test_kill(dbg=1):
 def test_daemon_exists():
     announce(': sufficiently covered by other tests already')
 
-# TODO
 def test_status():      announce('later')
 def test_save_state0(): announce('later')
 
@@ -308,7 +315,6 @@ def test_arg_save_and_restore():
     print(f'- reloaded args: {new_args.__dict__}')
     assert args == new_args
 
-# TODO
 def test_daemon_wait(): announce('later')
 def test_die_if_daemon_exists(): announce('later')
 def test_check_for_orphans(): announce('later')
@@ -320,7 +326,6 @@ def test_do_cmd():
     assert     GarnetDaemon.do_cmd("exit 0")
     assert not GarnetDaemon.do_cmd("exit 13")
 
-# TODO check all unit tests for announce_unit or whatever
 def test_sigstop():
     if announce_unit(msg=": start writing dots to a file"): return
 
@@ -387,10 +392,6 @@ def test_pid_save_and_restore():
     os.remove(tmpfile)
     assert int(os.getpid()) == int(pid), f'My pid ({mypid} != retrieved pid {pid})'
 
-# TODO still not cleaning up after daemons: see ls /tmp/garnet-daemon-* {pid,state0,reload}
-# - 'daemon kill' should delete these, yes? and
-# - and 'daemon status' should issue warnings?
-
 ########################################################################
 # Helper functions
 
@@ -417,17 +418,17 @@ def announce(msg=''):
     callerframe = inspect.getouterframes(curframe, 2)
     caller = callerframe[1][3]
     print('\n========================================================================')
-    print(f"--- TEST: {caller}(){msg}")
     if msg == 'todo' or msg == 'later':
-        print('- TODO do not yet have a test for this'); return True
+        msg = '- TODO do not yet have a test for this'
+    print(f"--- TEST: {caller}(){msg}")
+    sys.stdout.flush()
     
-def announce_unit(msg=''):
-    announce(msg)
-    if SKIP_UNIT_TESTS:
-        print('- skipping unit tests'); return True
-    else:
-        return False
-
+# def announce_unit(msg=''):
+#     announce(msg)
+#     if SKIP_UNIT_TESTS:
+#         print('- skipping unit tests'); return True
+#     else:
+#         return False
 
 # Return True if we are supposed to skip this test
 def announce_unit(msg=''):

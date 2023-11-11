@@ -2,6 +2,10 @@ import os, sys, signal, subprocess
 import json
 from argparse import Namespace
 
+# TODO still not cleaning up after daemons: see ls /tmp/garnet-daemon-* {pid,state0,reload}
+# - 'daemon kill' should delete these, yes? and
+# - and 'daemon status' should issue warnings?
+
 # FIXME/TODO CONSIDER:
 # when you use 'self', and you change the class name, all is copacetic
 # when you use 'g=GarnetDaemon'...whuh oh!  oh boy! nooooo
