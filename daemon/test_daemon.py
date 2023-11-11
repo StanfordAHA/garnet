@@ -3,16 +3,13 @@ from argparse import Namespace
 from daemon import GarnetDaemon
 import time
 
-# TODO run complete pytest, clean up the messy output
-# TODO run complete pytest, speed up the slow pauses
-# TODO make sure everyone has the appropriate announce()
-
 def min_sleep():
     import time; time.sleep(1)
 
 
 # Don't need unit tests if comprehensive tests are good.
 # But yes do turn them on for comprehensive/interactive testing.
+# Not much difference either, way, at this point, really...may as well not skip...
 SKIP_UNIT_TESTS = True
 SKIP_UNIT_TESTS = False
 
@@ -273,9 +270,9 @@ def test_help():
 # Unit tests (optional)
 
 # Okay to use comprehensive test(s) for these, for now
-def test_initial_check(): announce('later')
-def test_loop():          announce('later')
-def test_use():           announce('later')
+def test_initial_check(): announce_unit('later')
+def test_loop():          announce_unit('later')
+def test_use():           announce_unit('later')
 
 def test_kill(dbg=1):
     if announce_unit(): return
@@ -297,13 +294,13 @@ def test_kill(dbg=1):
     assert poke_it_and_see_if_its_dead(pid)
 
 def test_daemon_exists():
-    announce(': sufficiently covered by other tests already')
+    announce_unit(': sufficiently covered by other tests already')
 
-def test_status():      announce('later')
-def test_save_state0(): announce('later')
+def test_status():      announce_unit('later')
+def test_save_state0(): announce_unit('later')
 
-def test_save_args(): announce(': see test_arg_save_and_restore()')
-def test_load_args(): announce(': see test_arg_save_and_restore()')
+def test_save_args(): announce_unit(': see test_arg_save_and_restore()')
+def test_load_args(): announce_unit(': see test_arg_save_and_restore()')
 def test_arg_save_and_restore():
     if announce_unit(): return
     args = Namespace( foo='bar', bar='baz' )
@@ -315,11 +312,11 @@ def test_arg_save_and_restore():
     print(f'- reloaded args: {new_args.__dict__}')
     assert args == new_args
 
-def test_daemon_wait(): announce('later')
-def test_die_if_daemon_exists(): announce('later')
-def test_check_for_orphans(): announce('later')
-def test_all_daemon_processes_except(): announce('later')
-def test_args_match_or_die(): announce('later')
+def test_daemon_wait(): announce_unit('later')
+def test_die_if_daemon_exists(): announce_unit('later')
+def test_check_for_orphans(): announce_unit('later')
+def test_all_daemon_processes_except(): announce_unit('later')
+def test_args_match_or_die(): announce_unit('later')
 
 def test_do_cmd():
     if announce_unit(): return
@@ -362,7 +359,7 @@ def test_sigstop():
     p.terminate()
     subprocess.run([ "bash", "-c", "/bin/rm -f /tmp/test_sigstop*"])
 
-def test_sigcont(): announce(msg=": see test_sigstop()")
+def test_sigcont(): announce_unit(msg=": see test_sigstop()")
 
 def test_sigkill():
     if announce_unit(): return
@@ -381,9 +378,7 @@ def test_sigkill():
 
 # TODO should do this, maybe, and not as a unit test, maybe
 def test_grid_size(): announce('todo')
-def test_retrieve_pid(): announce(': see test_pid_save_restore()')
 
-def test_register_pid(): announce(': see test_pid_save_restore()')
 def test_pid_save_and_restore():
     if announce_unit(): return
     tmpfile = f'/tmp/GarnetDaemon.test_pid_save_and_restore.{int(time.time())}'
@@ -391,6 +386,9 @@ def test_pid_save_and_restore():
     pid = GarnetDaemon.retrieve_pid(fname=tmpfile, dbg=1)
     os.remove(tmpfile)
     assert int(os.getpid()) == int(pid), f'My pid ({mypid} != retrieved pid {pid})'
+
+def test_retrieve_pid(): announce_unit(': see test_pid_save_restore()')
+def test_register_pid(): announce_unit(': see test_pid_save_restore()')
 
 ########################################################################
 # Helper functions
@@ -423,13 +421,6 @@ def announce(msg=''):
     print(f"--- TEST: {caller}(){msg}")
     sys.stdout.flush()
     
-# def announce_unit(msg=''):
-#     announce(msg)
-#     if SKIP_UNIT_TESTS:
-#         print('- skipping unit tests'); return True
-#     else:
-#         return False
-
 # Return True if we are supposed to skip this test
 def announce_unit(msg=''):
     announce(msg)
@@ -444,3 +435,9 @@ def announce_unit(msg=''):
 if __name__ == "__main__":
     if len( sys.argv ) > 1: my_test_daemon()
 
+# DONE
+# - run complete pytest, clean up the messy output
+# - run complete pytest, speed up the slow pauses
+# - make sure everyone has the appropriate announce()
+# - run with skip-test FALSE
+# - run with skip-tests TRUE
