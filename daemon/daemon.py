@@ -46,6 +46,8 @@ class GarnetDaemon:
     fn_state0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
     fn_reload = "/tmp/garnet-daemon-reload" # Desired new state (args)
 
+    saved_glb_params = None
+
     # "PUBLIC" methods: initial_check(), loop()
 
     def initial_check(args):
@@ -180,6 +182,12 @@ class GarnetDaemon:
     def save_args(args, fname=None, dbg=0):
         'Save current state (args) to arg-save (reload) file'
 
+        # Oops well maybe that's okay
+        try:
+            GarnetDaemon.saved_glb_params = args.GlobalBufferParams
+            args.GlobalBufferParams = "SORRY cannot save/restore GlobalBufferParams!"
+        except: pass
+
         # Save args as a sorted dict
         argdic = vars(args)
         sorted_argdic=dict(sorted(argdic.items()))
@@ -193,6 +201,13 @@ class GarnetDaemon:
         if not fname: fname = GarnetDaemon.fn_reload
         with open(fname, 'r') as f: args_dict = json.load(f)
         new_args = Namespace(**args_dict)
+
+        # Oops well maybe that's okay
+        try:
+            # assert args.GlobalBufferParams == "SORRY cannot save/restore GlobalBufferParams!"
+            new_args.GlobalBufferParams = GarnetDaemon.saved_glb_params
+        except: pass
+
         if dbg: print(f'- restored args {new_args} from {fname}')
         return new_args
 
