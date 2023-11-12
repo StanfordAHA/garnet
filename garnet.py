@@ -822,45 +822,58 @@ def pnr_wrapper(garnet, args, unconstrained_io, load_only):
 
 def main():
     args = parse_args()
-    GarnetDaemon.check_for_daemon(args)
+    GarnetDaemon.initial_check(args)
+        # "launch" => ERROR if daemon exists already else continue
+        # "force"  => kill existing daemon, then continue
+        # "status" => echo daemon status and exit
+        # "use"    => send args to daemon and exit
+        # "kill"   => kill existing daemon and exit
+        # "help"   => echo help and exit
 
     # BUILD GARNET
     garnet = Garnet(args)
 
-    # FIXME OR could/should maybe do garnet.build_verilog(args), also
-    # see "def place_and_route"/garnet.place_and_route(...)
-    # For now, leaving it OUTSIDE the Garnet class b/c that's where
-    # the code was origially (i.e. her in main())
-    if args.verilog:
-        build_verilog(args, garnet)
+    while True:
 
-    # PNR
+        # VERILOG
+        if args.verilog: build_verilog(args, garnet)
 
-    app_specified = len(args.app)    > 0 and \
-                    len(args.input)  > 0 and \
-                    len(args.gold)   > 0 and \
-                    len(args.output) > 0
+        # PNR
+        app_specified = len(args.app)    > 0 and \
+                        len(args.input)  > 0 and \
+                        len(args.gold)   > 0 and \
+                        len(args.output) > 0
 
-    do_pnr = app_specified and not args.virtualize
+        do_pnr = app_specified and not args.virtualize
 
-    # FIXME how is args.app not redundant/unnecessary below?
-    if do_pnr:
-        pnr(garnet, args, args.app)
+        if do_pnr:
+            # FIXME how is args.app not redundant/unnecessary here?
+            pnr(garnet, args, args.app)
 
-    elif args.virtualize and len(args.app) > 0:
-        group_size = args.virtualize_group_size
-        result = garnet.compile_virtualize(args.app, group_size)
-        for c_id, bitstream in result.items():
-            filename = os.path.join("temp", f"{c_id}.bs")
-            write_out_bitstream(filename, bitstream)
+        # BITSTREAM
+        elif args.virtualize and len(args.app) > 0:
+            group_size = args.virtualize_group_size
+            result = garnet.compile_virtualize(args.app, group_size)
+            for c_id, bitstream in result.items():
+                filename = os.path.join("temp", f"{c_id}.bs")
+                write_out_bitstream(filename, bitstream)
 
-    from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
-    if args.dump_config_reg:
-        ic = garnet.interconnect
-        ic_reg = get_interconnect_regs(ic)
-        core_reg = get_core_registers(ic)
-        with open("config.json", "w+") as f:
-            json.dump(ic_reg + core_reg, f)
+        # WRITE REGS TO CONFIG.JSON
+        from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
+        if args.dump_config_reg:
+            ic = garnet.interconnect
+            ic_reg = get_interconnect_regs(ic)
+            core_reg = get_core_registers(ic)
+            with open("config.json", "w+") as f:
+                json.dump(ic_reg + core_reg, f)
+
+        # DAEMON
+        if args.daemon:
+            print('\nLOOPING')  # WAIT for a client to send new args for processing
+            args = GarnetDaemon.loop(args)
+            print(f'- loaded new args {args} i guess?')
+        else:
+            break
 
 if __name__ == "__main__":
     main()

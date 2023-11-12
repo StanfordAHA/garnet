@@ -81,22 +81,21 @@ def my_test_daemon():
     parser.add_argument('--animal', type=str, default='mousie')
     args = parser.parse_args()
 
-    # FIXME still need force-launch and test, yes?
     GarnetDaemon.initial_check(args)
-        # "launch"       => ERROR if daemon exists already else continue
-        # "force-launch" => kill existing daemon, then continue
-        # "status"       => echo daemon status and exit
-        # "use"          => send args to daemon and exit
-        # "kill"         => kill existing daemon and exit
-        # "help"         => echo help and exit
+        # "launch" => ERROR if daemon exists already else continue
+        # "force"  => kill existing daemon, then continue
+        # "status" => echo daemon status and exit
+        # "use"    => send args to daemon and exit
+        # "kill"   => kill existing daemon and exit
+        # "help"   => echo help and exit
 
     # Build CGRA (stub)
     grid_size = GarnetDaemon.grid_size(args)
     garnet_ckt = f"{grid_size} garnet circuit number {os.getpid()}"
     print(f'\nBuilt {garnet_ckt}')
 
+    # Daemonology; TODO this could be a separate method call
     while True:
-        print(f'- using animal: {args.animal}')
         if not args.daemon: break
 
         # WAIT for a client to send new args for processing
