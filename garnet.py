@@ -16,7 +16,7 @@ from lassen.sim import PE_fc as lassen_fc
 # from metamapper.coreir_mapper import Mapper # Not used??
 # from canal.global_signal import GlobalSignalWiring
 
-from util.daemon import GarnetDaemon
+from daemon.daemon import GarnetDaemon
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
