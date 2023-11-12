@@ -1,9 +1,11 @@
 #!/bin/bash
-set -x
 
 sq="'"
 HELP='
 # --- starting in kiwi ---
+xterm -bg pink -fg black &
+
+# --- now in pink xterm ---
 function docker-launch {
   image=$1; container=$2; docker pull $image
   docker run -id --name $container --rm $image bash
@@ -15,15 +17,36 @@ docker-launch $image $container
 
 # --- in docker now ---
 source /aha/bin/activate
-alias time='$sq'/usr/bin/time -f "\t%E real,\t%U user,\t%S sys"'$sq'
 (cd garnet; git fetch origin; git checkout origin/refactor)
-garnet/daemon/daemon-test.sh
+garnet/daemon/daemon-test.sh |& tee dtest-log.txt | less
+
+# --- other useful things ---
+docker cp /usr/bin/vim.tiny $container:/usr/bin
+
+dtest_kiwi=/nobackup/steveri/github/garnet/daemon/daemon-test.sh
+dtest_docker=$container:/aha/garnet/daemon/daemon-test.sh
+docker cp $dtest_kiwi $dtest_docker
 '
+
+# alias time='/usr/bin/time -f "\t%E real,\t%U user,\t%S sys"'
+
 
 if [ "$1" == "--help" ]; then
     echo "$HELP"; exit
 fi
-exit
+
+set -x
+
+app=apps/pointwise
+dtop=/aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/design_top.json
+
+if test -f $dtop; then
+    echo found app $app
+else
+    echo $app not ready yet, must map now
+    aha map ${app} --chain |& tee map-pointwise.log
+fi
+
 
 
 w=4; h=$((w/2))
@@ -31,7 +54,6 @@ w=4; h=$((w/2))
 # FLAGS1
 flags1="--width $w --height $h --verilog --use_sim_sram --rv --sparse-cgra --sparse-cgra-combined"
 echo flags1=$flags1 | fold -sw 120
-
 
 # FLAGS2
 args_app=apps/pointwise
@@ -55,10 +77,11 @@ flags2+=" --rv --sparse-cgra --sparse-cgra-combined --pipeline-pnr"
 
 echo flags2=$flags2 | fold -sw 120
 
+export TIME="\t%E real,\t%U user,\t%S sys"
 
 log=flags1-${w}x${h}.log
-time aha garnet $flags1 >& $log
+\time aha garnet $flags1 >& $log
 
 
 log=flags2-${w}x${h}.log
-time aha garnet $flags2 >& $log &
+\time aha garnet $flags2 >& $log &
