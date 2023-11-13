@@ -42,7 +42,7 @@ class GarnetDaemon:
     choices = [ 'help','launch', 'use', 'kill', 'status', 'force', 'force-launch' ]
 
     # Disk storage for persistent daemon state
-    fn_pid    = "/tmp/garnet-daemon-pid"    # Process ID of daemon
+    fn_pid    = "/tmp/garnet-daemon-status" # Daemon pid, jobnum, jobstatus
     fn_state0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
     fn_reload = "/tmp/garnet-daemon-reload" # Desired new state (args)
 
