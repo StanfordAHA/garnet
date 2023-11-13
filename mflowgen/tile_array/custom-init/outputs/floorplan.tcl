@@ -150,16 +150,16 @@ addHaloToBlock -allMacro [expr $horiz_pitch * 3] [expr $vert_pitch * 2] [expr $h
 # Create a blockage for PG vias around the grid since vias too close to the grid edges can block
 # connections from pins on the edges to tie cells.
 # left
-createRouteBlk -box [expr $tiles_llx - $horiz_pitch * 15] $tiles_lly $tiles_llx \
+createRouteBlk -box [expr $tiles_llx - $horiz_pitch * 7] $tiles_lly $tiles_llx \
                     $tiles_ury -pgnetonly -cutLayer all
 # top
 createRouteBlk -box $tiles_llx $tiles_ury $tiles_urx \
-                    [expr $tiles_ury + 2 * $vert_pitch] -pgnetonly -cutLayer all
+                    [expr $tiles_ury + $vert_pitch] -pgnetonly -cutLayer all
 # right 
-createRouteBlk -box $tiles_urx $tiles_lly [expr $tiles_urx + $horiz_pitch * 15] \
+createRouteBlk -box $tiles_urx $tiles_lly [expr $tiles_urx + $horiz_pitch * 7] \
                     $tiles_ury -pgnetonly -cutLayer all
 # bottom
-createRouteBlk -box $tiles_llx [expr $tiles_lly - 2 * $vert_pitch] $tiles_urx \
+createRouteBlk -box $tiles_llx [expr $tiles_lly - $vert_pitch] $tiles_urx \
                     $tiles_lly -pgnetonly -cutLayer all
 
 # Manually connect all of the tile_id pins
@@ -168,12 +168,10 @@ selectPin *tile_id*
 set tile_id_pin [dbGet selected -i 0]
 # Figure out which layer the tile_id pins are on
 set connection_layer [dbGet $tile_id_pin.layer.name]
-# Make the connection between tie and tile id pins 2x the min width for that layer
-# Here, we are determining the width of metal to use for connecting tile id pins
-# to their corresonding hi/lo tile output pins. 2x the min width is a
-# reasonable choice, and will be less than the depth of the id pin. 
-# Using 1 x minWidth wires casued a metal geometry DRC.
-set connection_width [expr 2 * [dbGet $tile_id_pin.layer.minWidth]]
+# Make the connection between tie and tile id pins
+# Intel has a set of legal width for the wrong way metal
+# Somehow wrongwayMinWidth returns 0, so we use wrongwayWidth instead
+set connection_width [lindex [dbGet $tile_id_pin.layer.wrongwayWidth] 0]
 # Iterate over all tiles
 for {set row $min_row} {$row <= $max_row} {incr row} {
   for {set col $min_col} {$col <= $max_col} {incr col} {
