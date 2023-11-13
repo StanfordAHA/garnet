@@ -1,5 +1,63 @@
 #!/bin/bash
 
+# CUT'N'PASTE REGION
+
+# FLAGS1 / DAEMON LAUNCH
+flags1="--width 28 --height 16 --verilog --use_sim_sram --rv --sparse-cgra --sparse-cgra-combined"
+echo flags1=$flags1 | fold -sw 120
+
+# DAEMON LAUNCH
+export TIME="\t%E real,\t%U user,\t%S sys"
+\time aha garnet $flags1 --daemon launch >& launch-log &
+tail -f launch-log &
+alias j=jobs
+jobs  # <kill tail job maybe>
+
+# MAP
+aha map apps/pointwise --chain >& map.log &
+tail -f map.log &
+jobs  # <kill tail job maybe>
+
+# FLAGS2
+ext=png; 
+args_app="apps/pointwise"
+args_app_name=`expr $args_app : '.*/\(.*\)'`
+app_dir=/aha/Halide-to-Hardware/apps/hardware_benchmarks/${args_app}
+flags2="--no-pd --interconnect-only"
+flags2+=" --input-app ${app_dir}/bin/design_top.json"
+flags2+=" --input-file ${app_dir}/bin/input${ext}"
+flags2+=" --output-file ${app_dir}/bin/${args_app_name}.bs"
+flags2+=" --gold-file ${app_dir}/bin/gold${ext}"
+flags2+=" --input-broadcast-branch-factor 2"
+flags2+=" --input-broadcast-max-leaves 16"
+flags2+=" --rv --sparse-cgra --sparse-cgra-combined --pipeline-pnr"
+flags2+=" --width 28 --height 16"
+echo flags2=$flags2 | fold -sw 120
+
+# DAEMON USE
+tail -f launch-log &
+export TIME="\t%E real,\t%U user,\t%S sys"
+\time aha garnet $flags2 --daemon use |& tee use.log
+jobs  # <kill tail job maybe>
+
+# TEST
+module load base; module load vcs
+aha test apps/pointwise |& tee test.log
+
+# Unable to find /aha/Halide-to-Hardware/apps/hardware_benchmarks/pointwise/bin/design_meta.json
+
+ls /aha/Halide-to-Hardware/apps/hardware_benchmarks/pointwise/bin/
+
+
+cp ./bin/map_result/pointwise/pointwise_to_metamapper.json ./bin/design_top.json
+make: Leaving directory '/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise'
+
+ls /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
+
+
+
+
+
 sq="'"
 HELP='
 # --- starting in kiwi ---
@@ -46,6 +104,25 @@ else
     echo $app not ready yet, must map now
     aha map ${app} --chain |& tee map-pointwise.log
 fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
