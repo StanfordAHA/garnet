@@ -8,7 +8,7 @@ xterm -bg pink -fg black &
 # --- now in pink xterm ---
 function docker-launch {
   image=$1; container=$2; docker pull $image
-  docker run -id --name $container --rm $image bash
+  docker run -id --name $container --rm -v /cad:/cad $image bash
   docker exec -ti $container  /bin/bash
 }
 image=stanfordaha/garnet:latest

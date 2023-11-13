@@ -47,11 +47,18 @@ class GarnetDaemon:
     fn_reload = "/tmp/garnet-daemon-reload" # Desired new state (args)
 
     saved_glb_params = None
+    saved_pe_fc = None
 
     # "PUBLIC" methods: initial_check(), loop()
 
     def initial_check(args):
         '''Process command found in <args>.daemon'''
+
+        for a in vars(args).items():
+            print(f'arg {a} has type {type(a)}')
+
+
+
         if args.daemon == None: return
 
         elif args.daemon == "help":
@@ -91,7 +98,7 @@ class GarnetDaemon:
             print(f'\n--- LAUNCHING {gs} DAEMON {pid}')
             gd.save_state0(args)
             print(f'- DAEMON STOPS and waits...\n')
-            sys.stdout.flush()
+            sys.stdout.flush(); sys.stderr.flush()
 
         # Stop and wait for CONT signal from client
         gd.sigstop()
@@ -183,14 +190,27 @@ class GarnetDaemon:
         'Save current state (args) to arg-save (reload) file'
 
         # Oops well maybe that's okay
+        print(f'resetting glb params arg', flush=True)
         try:
-            GarnetDaemon.saved_glb_params = args.GlobalBufferParams
-            args.GlobalBufferParams = "SORRY cannot save/restore GlobalBufferParams!"
+            print(f'TRYING', flush=True)
+            for a in vars(args).items():
+                print(f'arg {a} has type {type(a)}')
+            GarnetDaemon.saved_glb_params = args.glb_params
+            args.glb_params = "SORRY cannot save/restore GlobalBufferParams!"
+            GarnetDaemon.saved_pe_fc = args.pe_fc
+            args.pe_fc = "SORRY cannot save/restore pe_fc of type <family_closure)!"
+            for a in vars(args).items():
+                print(f'arg {a} has type {type(a)}')
         except: pass
 
         # Save args as a sorted dict
         argdic = vars(args)
         sorted_argdic=dict(sorted(argdic.items()))
+        print(f'ARGDIC')
+        for a in sorted(argdic):
+            print(f'found arg {a} with type {type(a)}')
+       
+
 
         if not fname: fname = GarnetDaemon.fn_reload
         with open(fname, 'w') as f: json.dump(sorted_argdic, f)
@@ -204,8 +224,10 @@ class GarnetDaemon:
 
         # Oops well maybe that's okay
         try:
+            print(f'restore args.{glb_params,pe_fc}')
             # assert args.GlobalBufferParams == "SORRY cannot save/restore GlobalBufferParams!"
-            new_args.GlobalBufferParams = GarnetDaemon.saved_glb_params
+            new_args.glb_params = GarnetDaemon.saved_glb_params
+            new_args.pe_fc = GarnetDaemon.saved_pe_fc
         except: pass
 
         if dbg: print(f'- restored args {new_args} from {fname}')
@@ -264,7 +286,7 @@ class GarnetDaemon:
                 print(f'WARNING found orphan daemon {p}, you should kill it!')
 
             # print(f'--------------------------------------------------------')
-            pidsstring_list = list(map(str, orphan_pids))
+            pidstring_list = list(map(str, orphan_pids))
             pidstring = " ".join(pidstring_list)
             print(f'ps      {pidstring}')
             print(f'kill -9 {pidstring}')

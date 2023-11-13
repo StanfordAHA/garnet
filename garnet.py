@@ -696,6 +696,9 @@ def parse_args():
         axi_data_width=32,
         config_port_pipeline=args.config_port_pipeline)
 
+    for a in vars(args).items():
+        print(f'arg {a} has type {type(a)}')
+
     return args
 
 def build_verilog(args, garnet):
