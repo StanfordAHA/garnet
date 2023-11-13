@@ -182,7 +182,7 @@ class GarnetDaemon:
     #     def load_args()
 
     def save_state0(args, dbg=0):
-        GarnetDaemon.register_pid()
+        GarnetDaemon.put_status(pid=os.getpid(), jobno=0, jobstatus='started')
         GarnetDaemon.save_args(args, fname=GarnetDaemon.fn_state0)
 
     def save_args(args, fname=None, dbg=0):
@@ -384,23 +384,29 @@ class GarnetDaemon:
         assert 'height' in args, f"No height specified for {who}"
         return f'{args.width}x{args.height}'
 
-    def register_pid(fname=None, dbg=0):
-        'Write pid to pid-save file'
-        pid = os.getpid()
+    def put_status(pid, jobno, jobstatus, fname=None):
+        "Save daemon status as dict {'pid':pid, 'job':jobno, 'status':jobstatus}"
         if not fname: fname = GarnetDaemon.fn_status
-        with open(fname, 'w') as f: f.write(str(pid) + '\n')
-        if dbg: print(f'- wrote pid {pid} to file {fname}')
-
-    def retrieve_pid(fname=None, dbg=0):
-        'Get pid from pid-save file'
+        status = { 'pid' : pid, 'job' : jobno, 'status' : jobstatus }
+        with open(fname, 'w') as f: json.dump(status, f, indent=4); f.write('\n')
+        
+    def get_status(fname=None):
+        "Get daemon status as dict {'pid':pid, 'job':jobno, 'status':jobstatus}"
         if not fname: fname = GarnetDaemon.fn_status
         try:
-            with open(fname, 'r') as f: pid = int(f.read().strip())
-            if dbg: print(f'- got pid {pid} from file {fname}')
-            return pid
+            with open(fname, 'r') as f: status = json.load(f)
+            # print(f'1 status={status}')
+            return status
         except:
-            print(f'WARNING could not read from daemon pid file {fname}')
+            print(f'WARNING could not read from daemon status file {fname}')
             return None
+        
+    def retrieve_pid(fname=None, dbg=0):
+        'Get pid from status file'
+        status = GarnetDaemon.get_status(fname)
+        # print(f'2 status={status}')
+        if status: return int(status['pid'])
+        else:      return None
 
     def cleanup(dbg=0):
         'If daemon is dead, delete files from /tmp, else return False'

@@ -288,9 +288,8 @@ def test_kill(dbg=1):
     p = subprocess.Popen("sleep 500".split()); pid = p.pid
 
     # Register it as though it were the daemon
-    fname = GarnetDaemon.fn_status
-    with open(fname, 'w') as f: f.write(f'{pid}\n')
-    print(f'- wrote pid {pid} to file "{fname}" maybe')
+    GarnetDaemon.put_status(pid, 0, 'started')
+    print(f'- wrote pid {pid} to status file maybe')
 
     # Check that it's still running
     print(f"- ps {pid}")
@@ -386,16 +385,20 @@ def test_sigkill():
 # TODO should do this, maybe, and not as a unit test, maybe
 def test_grid_size(): announce('todo')
 
-def test_pid_save_and_restore():
+def test_status_save_and_restore():
     if announce_unit(): return
-    tmpfile = f'/tmp/GarnetDaemon.test_pid_save_and_restore.{int(time.time())}'
-    GarnetDaemon.register_pid(fname=tmpfile, dbg=1)
+    tmpfile = f'/tmp/GarnetDaemon.test_status_save_and_restore.{int(time.time())}'
+    # Save status
+    (pid,jobno,stat) = (os.getpid(), 0, 'started')
+    GarnetDaemon.put_status(pid, jobno, stat, fname=tmpfile)
+    # Retrieve pid and check against os.getpid() why not
     pid = GarnetDaemon.retrieve_pid(fname=tmpfile, dbg=1)
     os.remove(tmpfile)
     assert int(os.getpid()) == int(pid), f'My pid ({mypid} != retrieved pid {pid})'
 
-def test_retrieve_pid(): announce_unit(': see test_pid_save_restore()')
-def test_register_pid(): announce_unit(': see test_pid_save_restore()')
+def test_retrieve_pid(): announce_unit(' - see test_status_save_restore()')
+def test_put_status():   announce_unit(' - see test_status_save_restore()')
+def test_get_status():   announce_unit(' - TODO')
 
 def test_cleanup(): announce_unit(': TBD')
 
@@ -414,35 +417,25 @@ def poke_it_and_see_if_its_dead(pid):
         print(f'Process {pid} no longer exists. Success!')
         return True
 
-def skip_unit_tests():
-    if SKIP_UNIT_TESTS:
-        print('- skipping unit tests'); return True
-    else:               return False
-
 def announce(msg=''):
     import inspect
-    curframe    = inspect.currentframe()
-    callerframe = inspect.getouterframes(curframe, 2)
-    caller = callerframe[1][3]
-    print('\n========================================================================')
-    if msg == 'todo' or msg == 'later':
-        msg = '- TODO do not yet have a test for this'
-    print(f"--- TEST: {caller}(){msg}")
-    sys.stdout.flush()
+    curframe = inspect.currentframe(); print_header(curframe, msg)
     
 # Return True if we are supposed to skip this test
 def announce_unit(msg=''):
     import inspect
-    curframe    = inspect.currentframe()
+    curframe = inspect.currentframe(); print_header(curframe, msg)
+    if SKIP_UNIT_TESTS: print('- skipping unit tests')
+    return SKIP_UNIT_TESTS
+
+def print_header(curframe, msg):
+    import inspect
     callerframe = inspect.getouterframes(curframe, 2)
     caller = callerframe[1][3]
     print('\n========================================================================')
-    if msg == 'todo' or msg == 'later':
-        msg = '- TODO do not yet have a test for this'
+    if msg == 'todo' or msg == 'later': msg = ' - TODO'
     print(f"--- TEST: {caller}(){msg}")
     sys.stdout.flush()
-    if SKIP_UNIT_TESTS: print('- skipping unit tests')
-    return SKIP_UNIT_TESTS
 
 
 ########################################################################
