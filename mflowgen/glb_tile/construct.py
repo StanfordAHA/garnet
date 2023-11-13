@@ -331,7 +331,7 @@ def construct():
     'insert-input-antenna-diodes.tcl',
     'create-special-grid.tcl',
     'make-path-groups.tcl',
-    # 'create-boundary-blockage.tcl',
+    'create-boundary-blockage.tcl',
     # 'sram-hold-false-path.tcl',
     'reporting.tcl'
   ] } )
@@ -391,7 +391,7 @@ def construct():
   pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
 
   # hack the antenna ratio in the tech lef file
-  lef_hack_scale_factor = 0.8
+  lef_hack_scale_factor = 0.98
   lef_hack_command = f"python inputs/hack_lef_antenna.py outputs/adk/rtk-tech.lef {lef_hack_scale_factor:.2f}"
   adk.extend_commands( [lef_hack_command] )
 

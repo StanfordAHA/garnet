@@ -76,7 +76,7 @@ def construct():
     'add-endcaps-welltaps.tcl',
     'pin-assignments.tcl',
     'add-tracks.tcl',
-    # 'create-boundary-blockage.tcl',
+    'create-boundary-blockage.tcl',
     'insert-input-antenna-diodes.tcl',
     'create-special-grid.tcl',
     'make-path-groups.tcl',

@@ -29,7 +29,7 @@ def construct():
   parameters = {
     'construct_path'      : __file__,
     'design_name'         : 'Tile_MemCore',
-    'clock_period'        : 1.4 * 1000,
+    'clock_period'        : 1.1 * 1000,
     'adk'                 : adk_name,
     'adk_view'            : adk_view,
     'adk_stdcell'         : 'b15_7t_108pp',
@@ -345,7 +345,7 @@ def construct():
     'pin-assignments.tcl',
     'create-rows.tcl',
     'add-tracks.tcl',
-    # 'create-boundary-blockage.tcl',
+    'create-boundary-blockage.tcl',
     'place-dic-cells.tcl',
     'create-special-grid.tcl',
     'add-endcaps-welltaps.tcl',
@@ -394,10 +394,14 @@ def construct():
   # tool find the cell from the target library (default behavior).
   sdc_filter_command = "sed -i 's/-library [^ ]* //g' inputs/design.pt.sdc"
 
+  # adding propagaed_clock command in the sdc file
+  sdc_pclock_command = 'echo "\nset_propagated_clock [all_clocks]\n" >> inputs/design.pt.sdc' 
+
   # add the commands to the steps
-  genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
-  genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
-  pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command, sdc_pclock_command] )
+  genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command, sdc_pclock_command] )
+  pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command, sdc_pclock_command] )
+
 
   return g
 

@@ -77,8 +77,8 @@ def construct():
     'add-endcaps-welltaps.tcl',
     'pin-assignments.tcl',
     'add-tracks.tcl',
-    # 'create-boundary-blockage.tcl',
-    # 'insert-input-antenna-diodes.tcl',
+    'create-boundary-blockage.tcl',
+    'insert-input-antenna-diodes.tcl',
     'create-special-grid.tcl',
     'make-path-groups.tcl',
     'dont-touch.tcl',
@@ -201,7 +201,7 @@ def construct():
   
   # Need sram spice file for LVS
 
-  lvs.extend_inputs( ['sram.spi'] )
+  lvs.extend_inputs( ['Tile_MemCore_sram.spi'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
 

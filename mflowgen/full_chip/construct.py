@@ -28,7 +28,7 @@ def construct():
   parameters = {
     'construct_path'           : __file__,
     'design_name'              : 'GarnetSOC_pad_frame',
-    'clock_period'             : 1.5*1000,
+    'clock_period'             : 1.6 * 1000,
     'adk'                      : adk_name,
     'adk_view'                 : adk_view,
     'adk_stdcell'              : 'b15_7t_108pp',
@@ -47,7 +47,7 @@ def construct():
     # Power Domains
     'PWR_AWARE'                : False,
     # Include Garnet?
-    'soc_only'                 : True,
+    'soc_only'                 : False,
     # Include SoC core? (use 0 for false, 1 for true)
     'include_core'             : 1,
     # Low Effort flow
