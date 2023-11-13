@@ -288,7 +288,7 @@ def test_kill(dbg=1):
     p = subprocess.Popen("sleep 500".split()); pid = p.pid
 
     # Register it as though it were the daemon
-    fname = GarnetDaemon.fn_pid
+    fname = GarnetDaemon.fn_status
     with open(fname, 'w') as f: f.write(f'{pid}\n')
     print(f'- wrote pid {pid} to file "{fname}" maybe')
 

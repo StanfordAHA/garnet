@@ -45,10 +45,10 @@ class GarnetDaemon:
 # bookmark
     # TODO these are globals, sort of, should be all caps, maybe
     # TODO fn_pid => fn_status throughout
-    fn_pid    = "/tmp/garnet-daemon-status" # Daemon pid, jobnum, jobstatus
+    fn_status = "/tmp/garnet-daemon-status" # Daemon pid, jobnum, jobstatus
     fn_state0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
     fn_reload = "/tmp/garnet-daemon-reload" # Desired new state (args)
-    DAEMONFILES = [ fn_pid, fn_state0, fn_reload ]
+    DAEMONFILES = [ fn_status, fn_state0, fn_reload ]
 
     # This is where we save unsaveable args :(
     saved_glb_params = None
@@ -387,13 +387,13 @@ class GarnetDaemon:
     def register_pid(fname=None, dbg=0):
         'Write pid to pid-save file'
         pid = os.getpid()
-        if not fname: fname = GarnetDaemon.fn_pid
+        if not fname: fname = GarnetDaemon.fn_status
         with open(fname, 'w') as f: f.write(str(pid) + '\n')
         if dbg: print(f'- wrote pid {pid} to file {fname}')
 
     def retrieve_pid(fname=None, dbg=0):
         'Get pid from pid-save file'
-        if not fname: fname = GarnetDaemon.fn_pid
+        if not fname: fname = GarnetDaemon.fn_status
         try:
             with open(fname, 'r') as f: pid = int(f.read().strip())
             if dbg: print(f'- got pid {pid} from file {fname}')
