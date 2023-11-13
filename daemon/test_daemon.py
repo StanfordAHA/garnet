@@ -96,6 +96,7 @@ def my_test_daemon():
 
     # Daemonology; TODO this could be a separate method call
     while True:
+        print(f'- using animal: {args.animal}')
         if not args.daemon: break
 
         # WAIT for a client to send new args for processing
@@ -115,13 +116,14 @@ def my_test_daemon():
 def kill_existing_daemon():
     print(f"Kill existing daemon (p.stdout should say 'already dead')"); sys.stdout.flush()
     p = subprocess.run(f'{DAEMON} kill'.split())
+    verify_no_daemon()
 
 def kill_running_daemon():
     print("Kill the daemon (p.stdout should NOT say 'already dead')"); sys.stdout.flush()
     p = subprocess.run(f'{DAEMON} kill'.split()); sys.stdout.flush()
 
 def launch_daemon_and_verify(daemon=DAEMON):
-    kill_existing_daemon(); verify_no_daemon()
+    kill_existing_daemon()
     print(f'Launch a daemon', flush=True)
     p = subprocess.Popen(f'{DAEMON} launch'.split()); pid0 = p.pid
     print(f'- wait two seconds', flush=True)
@@ -144,9 +146,10 @@ def force_launch_and_capture(capture_file):
 
 
 def verify_no_daemon():
-    print(f'Check daemon status, should be "no daemon found"'); sys.stdout.flush()
-    p = subprocess.run(f'{DAEMON} status'.split(), text=True, capture_output=True)
-    print(p.stdout); assert('no daemon found') in p.stdout
+    print(f'Clean up from previous daemon(s)')
+    if not GarnetDaemon.cleanup():
+        dpid = GarnetDaemon.retrieve_pid()
+        assert False, f'\nERROR found existing daemon {dpid}'
 
 def verify_daemon_running():
     print('Check daemon status, should be "found running daemon"'); sys.stdout.flush()
@@ -165,6 +168,7 @@ def test_daemon_launch():  # kill-launch-kill
     'Launch daemon, see if it is running; kill the daemon, see if it is dead'
     announce()
     launch_daemon_and_verify()
+    kill_existing_daemon()
 
 def test_double_launch():  # kill-launch-launch-kill
     'Should complain if try to launch a second daemon when one is already running'
@@ -185,6 +189,7 @@ def test_double_launch():  # kill-launch-launch-kill
             print(f'Successfully found double-launch error "{line.strip()}"'); break
 
     # Note because it did not use 'nohup', first daemon will die when pytest ends and that's okay.
+    kill_existing_daemon()
 
 def test_force_launch():
     'If daemon already exists, --force-launch should kill it without erroring out.'
@@ -203,6 +208,8 @@ def test_force_launch():
     print(f'Checking first (dead) daemon {pid1} not same as new daemon {pid2}...')
     assert int(pid2) != int(pid1)
     print('...okay!')
+    kill_existing_daemon()
+
 
 # test_daemon_use()
 #   launch, look for 'Built 7x13' and NOT 'continuing with'
@@ -226,15 +233,16 @@ def test_daemon_use():
     sys.stdout.flush()
     min_sleep()
 
+    print('\nKILL the daemon\n')
+    subprocess.run(f'{DAEMON} kill'.split())
+
     print('\nWAKEUP and flush')
     daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile)
-
     os.remove(tmpfile)
+
     assert 'using animal: foxy' in daemon_out
     print('\nSecond assertion PASSED')
 
-    print('\nKILL the daemon\n')
-    subprocess.run(f'{DAEMON} kill'.split())
 
 def test_incompatible_daemon():
     'launch a 7x13 daemon; use a 3x5 daemon; check for error'
@@ -389,6 +397,8 @@ def test_pid_save_and_restore():
 def test_retrieve_pid(): announce_unit(': see test_pid_save_restore()')
 def test_register_pid(): announce_unit(': see test_pid_save_restore()')
 
+def test_cleanup(): announce_unit(': TBD')
+
 ########################################################################
 # Helper functions
 
@@ -422,7 +432,15 @@ def announce(msg=''):
     
 # Return True if we are supposed to skip this test
 def announce_unit(msg=''):
-    announce(msg)
+    import inspect
+    curframe    = inspect.currentframe()
+    callerframe = inspect.getouterframes(curframe, 2)
+    caller = callerframe[1][3]
+    print('\n========================================================================')
+    if msg == 'todo' or msg == 'later':
+        msg = '- TODO do not yet have a test for this'
+    print(f"--- TEST: {caller}(){msg}")
+    sys.stdout.flush()
     if SKIP_UNIT_TESTS: print('- skipping unit tests')
     return SKIP_UNIT_TESTS
 

@@ -1,4 +1,4 @@
-import os, sys, signal, subprocess
+import os, sys, signal, subprocess, psutil
 import json
 from argparse import Namespace
 
@@ -42,9 +42,13 @@ class GarnetDaemon:
     choices = [ 'help','launch', 'use', 'kill', 'status', 'force', 'force-launch' ]
 
     # Disk storage for persistent daemon state
+# bookmark
+    # TODO these are globals, sort of, should be all caps, maybe
+    # TODO fn_pid => fn_status throughout
     fn_pid    = "/tmp/garnet-daemon-status" # Daemon pid, jobnum, jobstatus
     fn_state0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
     fn_reload = "/tmp/garnet-daemon-reload" # Desired new state (args)
+    DAEMONFILES = [ fn_pid, fn_state0, fn_reload ]
 
     # This is where we save unsaveable args :(
     saved_glb_params = None
@@ -130,7 +134,6 @@ class GarnetDaemon:
             print(f'- daemon is already dead')
 
     def daemon_exists(pid=None):
-        import psutil
         if not pid: pid = GarnetDaemon.retrieve_pid()
         process_exists = f'test -d /proc/{pid}'
         if not GarnetDaemon.do_cmd(process_exists): return False
@@ -284,7 +287,6 @@ class GarnetDaemon:
 
     def all_daemon_processes_except(*args):
         '''Return a list of all daemon processes except those listed in args'''
-        import psutil
         # Find all processes with args "--daemon" and "launch"
         def match(pid):
             try:    cmdline = psutil.Process(pid).cmdline()
@@ -393,12 +395,22 @@ class GarnetDaemon:
         'Get pid from pid-save file'
         if not fname: fname = GarnetDaemon.fn_pid
         try:
-            with open(fname, 'r') as f: pid = f.read().strip()
+            with open(fname, 'r') as f: pid = int(f.read().strip())
             if dbg: print(f'- got pid {pid} from file {fname}')
             return pid
         except:
             print(f'WARNING could not read from daemon pid file {fname}')
             return None
+
+    def cleanup(dbg=0):
+        'If daemon is dead, delete files from /tmp, else return False'
+        if GarnetDaemon.daemon_exists():
+            print(f'WARNING Daemon not dead, not cleaning /tmp files')
+            return False
+        for f in GarnetDaemon.DAEMONFILES:
+            try: os.remove(f)
+            except OSError: pass
+        return True
 
 ##############################################################################
 # TESTING, see test_daemon.py
