@@ -85,8 +85,15 @@ for {set i 0} {$i < [llength $tile_id]} {incr i} {
   }
 }
 
-editPin -pin $id_ports -start [list 0 [expr {$height - 14}]] -end [list 0 [expr {$height - 5}]] -side LEFT -spreadType RANGE -spreadDirection clockwise -layer $tile_id_layer
-
+editPin \
+    -pin $id_ports \
+    -start [list 0 [expr {$height - 14}]] \
+    -end [list 0 [expr {$height - 5}]] \
+    -side LEFT \
+    -spreadType RANGE \
+    -spreadDirection clockwise \
+    -layer $tile_id_layer \
+    -pinDepth 0.2
 
 # Add blockage in area near tile_id pins so we can route these at the top level
 set tile_id_y_coords [get_property [get_ports {*tile_id* hi* lo*}] y_coordinate]
@@ -98,6 +105,11 @@ set tile_id_max_x [dbGet [dbGet selected -i 0].pins.allShapes.shapes.rect_urx]
 deselectAll
 
 createRouteBlk -name tile_id_rb -layer $tile_id_layer -box [list 0 $tile_id_min_y $tile_id_max_x $tile_id_max_y]
+
+# create pg net only blockage to prevent stripe/tile_id being too close
+set margin_left [dbGet top.fPlan.core2Left]
+createRouteBlk -name tile_id_rb_pg -layer $tile_id_layer -pgnetonly -box [list 0 $tile_id_min_y $margin_left $tile_id_max_y]
+
 #create route blockage on other side of tile aligned with tile id pins
 set horiz_pitch [dbGet top.fPlan.coreSite.size_x]
 createRouteBlk -name tile_id_oppo -layer $tile_id_layer -box [list [expr $width - (5 * $horiz_pitch)] $tile_id_min_y $width $tile_id_max_y]
