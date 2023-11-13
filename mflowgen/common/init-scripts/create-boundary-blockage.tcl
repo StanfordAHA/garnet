@@ -17,15 +17,10 @@ set core_box_lly [dbGet top.fPlan.coreBox_lly]
 set core_box_urx [dbGet top.fPlan.coreBox_urx]
 set core_box_ury [dbGet top.fPlan.coreBox_ury]
 
-# TODO: Switch this between full and core
-# set box_llx 0
-# set box_lly 0
-# set box_urx $fp_width
-# set box_ury $fp_height
-set box_llx $core_box_llx
-set box_lly $core_box_lly
-set box_urx $core_box_urx
-set box_ury $core_box_ury
+set box_llx 0
+set box_lly 0
+set box_urx $fp_width
+set box_ury $fp_height
 
 # get the white space width
 set ws_left   [expr $pitch_x * $ADK_WHITE_SPACE_FACTOR_HORI]
@@ -41,10 +36,10 @@ set pblk_left   "$box_llx                  $box_lly                [expr $box_ll
 set pblk_right  "[expr $box_urx-$ws_right] $box_lly                $box_urx                   $box_ury"
 
 # Put the placement blockage to form white space
-createPlaceBlockage \
-    -boxList [list $pblk_bottom $pblk_top $pblk_left $pblk_right] \
-    -name boundary_ws \
-    -type hard
+# createPlaceBlockage \
+#     -boxList [list $pblk_bottom $pblk_top $pblk_left $pblk_right] \
+#     -name boundary_ws \
+#     -type hard
 
 # create route blockage
 set blkg_layer "m1 m2 m3 m4 m5 m6 m7 m8"
