@@ -46,6 +46,7 @@ class GarnetDaemon:
     fn_state0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
     fn_reload = "/tmp/garnet-daemon-reload" # Desired new state (args)
 
+    # This is where we save unsaveable args :(
     saved_glb_params = None
     saved_pe_fc = None
 
@@ -53,11 +54,6 @@ class GarnetDaemon:
 
     def initial_check(args):
         '''Process command found in <args>.daemon'''
-
-        for a in vars(args).items():
-            print(f'arg {a} has type {type(a)}')
-
-
 
         if args.daemon == None: return
 
@@ -193,24 +189,17 @@ class GarnetDaemon:
         print(f'resetting glb params arg', flush=True)
         try:
             print(f'TRYING', flush=True)
-            for a in vars(args).items():
-                print(f'arg {a} has type {type(a)}')
+            # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
             GarnetDaemon.saved_glb_params = args.glb_params
             args.glb_params = "SORRY cannot save/restore GlobalBufferParams!"
             GarnetDaemon.saved_pe_fc = args.pe_fc
             args.pe_fc = "SORRY cannot save/restore pe_fc of type <family_closure)!"
-            for a in vars(args).items():
-                print(f'arg {a} has type {type(a)}')
         except: pass
 
         # Save args as a sorted dict
         argdic = vars(args)
         sorted_argdic=dict(sorted(argdic.items()))
         print(f'ARGDIC')
-        for a in sorted(argdic):
-            print(f'found arg {a} with type {type(a)}')
-       
-
 
         if not fname: fname = GarnetDaemon.fn_reload
         with open(fname, 'w') as f: json.dump(sorted_argdic, f)
