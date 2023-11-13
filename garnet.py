@@ -17,6 +17,7 @@ import metamapper.peak_util as putil
 from mapper.netlist_util import create_netlist_info, print_netlist_info
 from metamapper.coreir_mapper import Mapper
 from metamapper.map_design_top import map_design_top
+from metamapper.node import Nodes
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -31,7 +32,7 @@ class Garnet(Generator):
         # Check consistency of @standalone and @interconnect_only parameters. If
         # @standalone is True, then interconnect_only must also be True.
         if args.standalone:
-            assert interconnect_only
+            assert args.interconnect_only
 
         # configuration parameters
         self.glb_params = args.glb_params
