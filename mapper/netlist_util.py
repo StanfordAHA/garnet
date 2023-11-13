@@ -20,6 +20,7 @@ from DagVisitor import Visitor, Transformer
 from peak.mapper.utils import Unbound
 from lassen.sim import PE_fc as lassen_fc
 from mapper.netlist_graph import Node, NetlistGraph
+import pythunder
 import pulp
 
 class CreateBuses(Visitor):
@@ -1101,15 +1102,8 @@ def create_netlist_info(
 ):
 
     if load_only:
-        id_to_name_filename = os.path.join(app_dir, f"design.id_to_name")
-        if os.path.isfile(id_to_name_filename):
-            fin = open(id_to_name_filename, "r")
-            lines = fin.readlines()
-
-            id_to_name = {}
-
-            for line in lines:
-                id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
+        packed_file = os.path.join(app_dir, "design.packed")
+        id_to_name = pythunder.io.load_id_to_name(packed_file)
 
     sinks = PipelineBroadcastHelper().doit(dag)
     fdag = FixInputsOutputAndPipeline(
