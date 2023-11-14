@@ -116,50 +116,6 @@ def my_test_daemon():
 #    test_double_launch()
 #    test_incompatible_daemon()
 
-def kill_existing_daemon():
-    print(f"Kill existing daemon (p.stdout should say 'already dead')"); sys.stdout.flush()
-    p = subprocess.run(f'{DAEMON} kill'.split())
-    GarnetDaemon.cleanup()
-
-def kill_running_daemon():
-    print("Kill the daemon (p.stdout should NOT say 'already dead')"); sys.stdout.flush()
-    p = subprocess.run(f'{DAEMON} kill'.split()); sys.stdout.flush()
-
-def launch_daemon_and_verify(daemon=DAEMON):
-    kill_existing_daemon()
-    print(f'Launch a daemon', flush=True)
-    p = subprocess.Popen(f'{DAEMON} launch'.split()); pid0 = p.pid
-    print(f'- wait two seconds', flush=True)
-    min_sleep()
-    # time.sleep(2)
-    pid1 = verify_daemon_running(); assert pid0 == pid1
-    # TODO look for e.g. 'Built 7x13' ? Merge w force_launch below?
-    return pid0
-
-def force_launch_and_capture(capture_file):
-    cmd=f'{DAEMON} force |& tee {capture_file}'
-    p1 = subprocess.Popen(['bash', '-c', cmd])
-    min_sleep()
-
-    print('\nAPRES LAUNCH')
-    daemon_out = print_file_contents_w_prefix('DAEMON: ', capture_file)
-
-    assert 'Built 7x13' in daemon_out
-    print('\nFirst assertion PASSED')
-
-def verify_daemon_running():
-    print('Check daemon status, should be "found running daemon"'); sys.stdout.flush()
-    p = subprocess.run(f'{DAEMON} status'.split(), text=True, capture_output=True)
-    print(p.stdout); assert('found running daemon') in p.stdout
-
-    # Extra credit: return pid of running daemon
-    import re
-    pid = re.search(r'found running daemon ([0-9]+)', p.stdout).group(1)
-    return int(pid)
-
-########################################################################
-# TESTS
-
 def test_daemon_launch():  # kill-launch-kill
     'Launch daemon, see if it is running; kill the daemon, see if it is dead'
     announce()
@@ -206,18 +162,17 @@ def test_force_launch():
     print('...okay!')
     kill_existing_daemon()
 
-
-# test_daemon_use()
-#   launch, look for 'Built 7x13' and NOT 'continuing with'
-#   use --animal owl, look for 'continuing with 7x13' AND 'using animal: owl' AND NOT 'Built' 
-#   use --animal ostrich, osprey, octopus, etc.
-
 def print_file_contents_w_prefix(prefix, filename):
     with open(filename, 'r') as f: file_contents = f.read()
     lines = prefix + f'\n{prefix}' .join(file_contents.split('\n'))
     print(lines)
     sys.stdout.flush()
     return file_contents
+
+# test_daemon_use()
+#   launch, look for 'Built 7x13' and NOT 'continuing with'
+#   use --animal owl, look for 'continuing with 7x13' AND 'using animal: owl' AND NOT 'Built' 
+#   use --animal ostrich, osprey, octopus, etc.
 
 def test_daemon_use():
     # from subprocess import Popen, PIPE
@@ -407,6 +362,47 @@ def test_cleanup(): announce_unit(': TBD')
 
 ########################################################################
 # Helper functions
+
+def kill_existing_daemon():
+    print(f"Kill existing daemon (p.stdout should say 'already dead')"); sys.stdout.flush()
+    p = subprocess.run(f'{DAEMON} kill'.split())
+    GarnetDaemon.cleanup()
+
+def kill_running_daemon():
+    print("Kill the daemon (p.stdout should NOT say 'already dead')"); sys.stdout.flush()
+    p = subprocess.run(f'{DAEMON} kill'.split()); sys.stdout.flush()
+
+def launch_daemon_and_verify(daemon=DAEMON):
+    kill_existing_daemon()
+    print(f'Launch a daemon', flush=True)
+    p = subprocess.Popen(f'{DAEMON} launch'.split()); pid0 = p.pid
+    print(f'- wait two seconds', flush=True)
+    min_sleep()
+    # time.sleep(2)
+    pid1 = verify_daemon_running(); assert pid0 == pid1
+    # TODO look for e.g. 'Built 7x13' ? Merge w force_launch below?
+    return pid0
+
+def force_launch_and_capture(capture_file):
+    cmd=f'{DAEMON} force |& tee {capture_file}'
+    p1 = subprocess.Popen(['bash', '-c', cmd])
+    min_sleep()
+
+    print('\nAPRES LAUNCH')
+    daemon_out = print_file_contents_w_prefix('DAEMON: ', capture_file)
+
+    assert 'Built 7x13' in daemon_out
+    print('\nFirst assertion PASSED')
+
+def verify_daemon_running():
+    print('Check daemon status, should be "found running daemon"'); sys.stdout.flush()
+    p = subprocess.run(f'{DAEMON} status'.split(), text=True, capture_output=True)
+    print(p.stdout); assert('found running daemon') in p.stdout
+
+    # Extra credit: return pid of running daemon
+    import re
+    pid = re.search(r'found running daemon ([0-9]+)', p.stdout).group(1)
+    return int(pid)
 
 # Used by test_kill, test_sigkill
 def poke_it_and_see_if_its_dead(pid):
