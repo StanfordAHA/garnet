@@ -39,16 +39,21 @@ NOTE! 'daemon.use' width and height must match 'daemon.launch'!!!
 class GarnetDaemon:
 
     # Permissible daemon commands
+    # TODO these are constants, sort of, should be all caps, maybe
     choices = [ 'help','launch', 'use', 'kill', 'status', 'force', 'force-launch' ]
 
     # Disk storage for persistent daemon state
 # bookmark
-    # TODO these are globals, sort of, should be all caps, maybe
+    # TODO these are constants, sort of, should be all caps, maybe
     # TODO fn_pid => fn_status throughout
     fn_status = "/tmp/garnet-daemon-status" # Daemon pid, jobnum, jobstatus
     fn_state0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
     fn_reload = "/tmp/garnet-daemon-reload" # Desired new state (args)
     DAEMONFILES = [ fn_status, fn_state0, fn_reload ]
+
+    # 'jobno' increments each time a new "--daemon use" is requested
+    jobno =  0          
+    pid = os.getpid()
 
     # This is where we save unsaveable args :(
     saved_glb_params = None
@@ -76,13 +81,12 @@ class GarnetDaemon:
 
         elif args.daemon == "launch":
             GarnetDaemon.die_if_daemon_exists()
+            GarnetDaemon.put_status('started')
 
         elif args.daemon == "force-launch" or args.daemon == "force":
             print(f'- hello here i am forcing a launch')
             GarnetDaemon.kill(dbg=1)
             args.daemon = "launch"   # is this bad?
-
-
 
     def loop(args, dbg=1):
         '''Launch daemon and/or watch for updates'''
@@ -100,11 +104,13 @@ class GarnetDaemon:
             print(f'- DAEMON STOPS and waits...\n')
             sys.stdout.flush(); sys.stderr.flush()
 
-        # Stop and wait for CONT signal from client
+        # Register status; stop and wait for CONT signal from client
+        GarnetDaemon.put_status('completed')
         gd.sigstop()
 
-        # On CONT, load new args from 'reload' file
+        # On CONT, register status and load new args from 'reload' file
         print(f'\n\n--- DAEMON RESUMES')
+        GarnetDaemon.put_status('started')
         return gd.load_args()
 
     # ------------------------------------------------------------------------
@@ -182,7 +188,6 @@ class GarnetDaemon:
     #     def load_args()
 
     def save_state0(args, dbg=0):
-        GarnetDaemon.put_status(pid=os.getpid(), jobno=0, jobstatus='started')
         GarnetDaemon.save_args(args, fname=GarnetDaemon.fn_state0)
 
     def save_args(args, fname=None, dbg=0):
@@ -384,10 +389,15 @@ class GarnetDaemon:
         assert 'height' in args, f"No height specified for {who}"
         return f'{args.width}x{args.height}'
 
-    def put_status(pid, jobno, jobstatus, fname=None):
+    def put_status(jobstatus, pid=None, fname=None):
         "Save daemon status as dict {'pid':pid, 'job':jobno, 'status':jobstatus}"
+        if not pid: pid = os.getpid()
         if not fname: fname = GarnetDaemon.fn_status
-        status = { 'pid' : pid, 'job' : jobno, 'status' : jobstatus }
+        if jobstatus == 'started': GarnetDaemon.jobno += 1
+        status = {
+            'pid'    : pid, 
+            'job'    : GarnetDaemon.jobno, 
+            'status' : jobstatus }
         with open(fname, 'w') as f: json.dump(status, f, indent=4); f.write('\n')
         
     def get_status(fname=None):

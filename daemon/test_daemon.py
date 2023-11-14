@@ -6,6 +6,9 @@ import time
 def min_sleep():
     import time; time.sleep(1)
 
+# bookmark
+# TODO add status checks after launch and use, look for jobno, jobstatus updates
+
 
 # Don't need unit tests if comprehensive tests are good.
 # But yes do turn them on for comprehensive/interactive testing.
@@ -288,7 +291,7 @@ def test_kill(dbg=1):
     p = subprocess.Popen("sleep 500".split()); pid = p.pid
 
     # Register it as though it were the daemon
-    GarnetDaemon.put_status(pid, 0, 'started')
+    GarnetDaemon.put_status('started', pid=pid)
     print(f'- wrote pid {pid} to status file maybe')
 
     # Check that it's still running
@@ -389,8 +392,7 @@ def test_status_save_and_restore():
     if announce_unit(): return
     tmpfile = f'/tmp/GarnetDaemon.test_status_save_and_restore.{int(time.time())}'
     # Save status
-    (pid,jobno,stat) = (os.getpid(), 0, 'started')
-    GarnetDaemon.put_status(pid, jobno, stat, fname=tmpfile)
+    GarnetDaemon.put_status('started', fname=tmpfile)
     # Retrieve pid and check against os.getpid() why not
     pid = GarnetDaemon.retrieve_pid(fname=tmpfile, dbg=1)
     os.remove(tmpfile)
