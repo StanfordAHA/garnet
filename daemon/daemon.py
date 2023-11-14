@@ -52,7 +52,7 @@ class GarnetDaemon:
     DAEMONFILES = [ fn_status, fn_state0, fn_reload ]
 
     # 'jobno' increments each time a new "--daemon use" is requested
-    jobno =  0          
+    jobno = -1         
     pid = os.getpid()
 
     # This is where we save unsaveable args :(
@@ -66,7 +66,12 @@ class GarnetDaemon:
 
         if args.daemon == None: return
 
-        elif args.daemon == "help":
+        if args.daemon == "force-launch" or args.daemon == "force":
+            print(f'- hello here i am forcing a launch')
+            GarnetDaemon.kill(dbg=1)
+            args.daemon = "launch"   # is this bad?
+
+        if args.daemon == "help":
             GarnetDaemon.help(args); exit()
 
         elif args.daemon == "use":
@@ -82,11 +87,6 @@ class GarnetDaemon:
         elif args.daemon == "launch":
             GarnetDaemon.die_if_daemon_exists()
             GarnetDaemon.put_status('started')
-
-        elif args.daemon == "force-launch" or args.daemon == "force":
-            print(f'- hello here i am forcing a launch')
-            GarnetDaemon.kill(dbg=1)
-            args.daemon = "launch"   # is this bad?
 
     def loop(args, dbg=1):
         '''Launch daemon and/or watch for updates'''
@@ -179,6 +179,7 @@ class GarnetDaemon:
             grid_size = gd.grid_size(state0_args)
             print(f'- found {grid_size} daemon {pid} w launch-state args = {state0_args.__dict__}')
             gd.args_match_or_die(state0_args, args)
+            with open(GarnetDaemon.fn_status, 'r') as f: print(f.read())
             return True
 
     # ------------------------------------------------------------------------
@@ -389,7 +390,7 @@ class GarnetDaemon:
         assert 'height' in args, f"No height specified for {who}"
         return f'{args.width}x{args.height}'
 
-    def put_status(jobstatus, pid=None, fname=None):
+    def put_status(jobstatus, pid=None, fname=None, dbg=1):
         "Save daemon status as dict {'pid':pid, 'job':jobno, 'status':jobstatus}"
         if not pid: pid = os.getpid()
         if not fname: fname = GarnetDaemon.fn_status
@@ -399,6 +400,9 @@ class GarnetDaemon:
             'job'    : GarnetDaemon.jobno, 
             'status' : jobstatus }
         with open(fname, 'w') as f: json.dump(status, f, indent=4); f.write('\n')
+        if dbg:
+            print(f'Wrote to status file:')
+            with open(fname, 'r') as f: print(f.read())
         
     def get_status(fname=None):
         "Get daemon status as dict {'pid':pid, 'job':jobno, 'status':jobstatus}"
