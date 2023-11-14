@@ -45,11 +45,12 @@ class GarnetDaemon:
     # Disk storage for persistent daemon state
 # bookmark
     # TODO these are constants, sort of, should be all caps, maybe
-    # TODO fn_pid => fn_status throughout
-    fn_status = "/tmp/garnet-daemon-status" # Daemon pid, jobnum, jobstatus
-    fn_state0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
-    fn_reload = "/tmp/garnet-daemon-reload" # Desired new state (args)
-    DAEMONFILES = [ fn_status, fn_state0, fn_reload ]
+    # TODO FN_PID => FN_STATUS throughout
+    FN_PID    = "/tmp/garnet-daemon-pid"    # Daemon pid
+    FN_STATUS = "/tmp/garnet-daemon-status" # Daemon status: started, completed, or waiting
+    FN_STATE0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
+    FN_RELOAD = "/tmp/garnet-daemon-reload" # Desired new state (args)
+    DAEMONFILES = [ FN_PID, FN_STATUS, FN_STATE0, FN_RELOAD ]
 
     # 'jobno' increments each time a new "--daemon use" is requested
     jobno = -1         
@@ -157,7 +158,7 @@ class GarnetDaemon:
         pid = GarnetDaemon.retrieve_pid()
         if dbg: print(f'- checking status of process {pid}')
 
-        state0_file = gd.fn_state0
+        state0_file = gd.FN_STATE0
         cmd = f'test -d /proc/{pid}'
 
 #         see_if_daemon_exists = f'test -d /proc/{pid}'
@@ -179,7 +180,7 @@ class GarnetDaemon:
             grid_size = gd.grid_size(state0_args)
             print(f'- found {grid_size} daemon {pid} w launch-state args = {state0_args.__dict__}')
             gd.args_match_or_die(state0_args, args)
-            with open(GarnetDaemon.fn_status, 'r') as f: print(f.read())
+            with open(GarnetDaemon.FN_STATUS, 'r') as f: print(f.read())
             return True
 
     # ------------------------------------------------------------------------
@@ -189,7 +190,7 @@ class GarnetDaemon:
     #     def load_args()
 
     def save_state0(args, dbg=0):
-        GarnetDaemon.save_args(args, fname=GarnetDaemon.fn_state0)
+        GarnetDaemon.save_args(args, fname=GarnetDaemon.FN_STATE0)
 
     def save_args(args, fname=None, dbg=0):
         'Save current state (args) to arg-save (reload) file'
@@ -210,13 +211,13 @@ class GarnetDaemon:
         sorted_argdic=dict(sorted(argdic.items()))
         print(f'ARGDIC')
 
-        if not fname: fname = GarnetDaemon.fn_reload
+        if not fname: fname = GarnetDaemon.FN_RELOAD
         with open(fname, 'w') as f: json.dump(sorted_argdic, f)
         if dbg: print(f'- saved args {args} to {fname}')
         
     def load_args(fname=None, dbg=0):
         'Load state (args) from save-args (reload) file'
-        if not fname: fname = GarnetDaemon.fn_reload
+        if not fname: fname = GarnetDaemon.FN_RELOAD
         with open(fname, 'r') as f: args_dict = json.load(f)
         new_args = Namespace(**args_dict)
 
@@ -257,7 +258,7 @@ class GarnetDaemon:
         if GarnetDaemon.daemon_exists():
             g = GarnetDaemon
             # g.status(None, match_or_die=False)
-            state0_args = g.load_args(g.fn_state0)
+            state0_args = g.load_args(g.FN_STATE0)
             gs = g.grid_size(state0_args)
             pid = g.retrieve_pid()
             errmsg  = f'**********************************************************************\n'
@@ -393,7 +394,7 @@ class GarnetDaemon:
     def put_status(jobstatus, pid=None, fname=None, dbg=1):
         "Save daemon status as dict {'pid':pid, 'job':jobno, 'status':jobstatus}"
         if not pid: pid = os.getpid()
-        if not fname: fname = GarnetDaemon.fn_status
+        if not fname: fname = GarnetDaemon.FN_STATUS
         if jobstatus == 'started': GarnetDaemon.jobno += 1
         status = {
             'pid'    : pid, 
@@ -406,7 +407,7 @@ class GarnetDaemon:
         
     def get_status(fname=None):
         "Get daemon status as dict {'pid':pid, 'job':jobno, 'status':jobstatus}"
-        if not fname: fname = GarnetDaemon.fn_status
+        if not fname: fname = GarnetDaemon.FN_STATUS
         try:
             with open(fname, 'r') as f: status = json.load(f)
             # print(f'1 status={status}')
