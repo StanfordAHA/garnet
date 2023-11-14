@@ -119,7 +119,7 @@ def my_test_daemon():
 def kill_existing_daemon():
     print(f"Kill existing daemon (p.stdout should say 'already dead')"); sys.stdout.flush()
     p = subprocess.run(f'{DAEMON} kill'.split())
-    verify_no_daemon()
+    GarnetDaemon.cleanup()
 
 def kill_running_daemon():
     print("Kill the daemon (p.stdout should NOT say 'already dead')"); sys.stdout.flush()
@@ -146,13 +146,6 @@ def force_launch_and_capture(capture_file):
 
     assert 'Built 7x13' in daemon_out
     print('\nFirst assertion PASSED')
-
-
-def verify_no_daemon():
-    print(f'Clean up from previous daemon(s)')
-    if not GarnetDaemon.cleanup():
-        dpid = GarnetDaemon.retrieve_pid()
-        assert False, f'\nERROR found existing daemon {dpid}'
 
 def verify_daemon_running():
     print('Check daemon status, should be "found running daemon"'); sys.stdout.flush()
@@ -195,13 +188,13 @@ def test_double_launch():  # kill-launch-launch-kill
     kill_existing_daemon()
 
 def test_force_launch():
-    'If daemon already exists, --force-launch should kill it without erroring out.'
+    'If daemon already exists, --force should kill it without erroring out.'
     announce(); daemon = DAEMON
     pid1 = launch_daemon_and_verify()
 
 
     print(f'Force-launch a second daemon, it should kill the first one'); sys.stdout.flush()
-    p = subprocess.Popen(f'{DAEMON} force-launch'.split())
+    p = subprocess.Popen(f'{DAEMON} force'.split())
     
     # Wait a bit, then see if the new daemon is running
     # time.sleep(10)
@@ -291,8 +284,8 @@ def test_kill(dbg=1):
     p = subprocess.Popen("sleep 500".split()); pid = p.pid
 
     # Register it as though it were the daemon
-    GarnetDaemon.put_status('started', pid=pid)
-    print(f'- wrote pid {pid} to status file maybe')
+    GarnetDaemon.register_pid(pid)
+    print(f'- wrote pid {pid} to pid-save file maybe')
 
     # Check that it's still running
     print(f"- ps {pid}")
@@ -388,19 +381,27 @@ def test_sigkill():
 # TODO should do this, maybe, and not as a unit test, maybe
 def test_grid_size(): announce('todo')
 
+def test_pid_save_and_restore():
+    if announce_unit(): return
+    tmpfile = f'/tmp/GarnetDaemon.test_pid_save_and_restore.{int(time.time())}'
+    GarnetDaemon.register_pid(fname=tmpfile, dbg=1)
+    pid = GarnetDaemon.retrieve_pid(fname=tmpfile, dbg=1)
+    os.remove(tmpfile); mypid = os.getpid()
+    assert mypid == pid, f'My pid ({mypid} != retrieved pid {pid})'
+
 def test_status_save_and_restore():
     if announce_unit(): return
     tmpfile = f'/tmp/GarnetDaemon.test_status_save_and_restore.{int(time.time())}'
-    # Save status
-    GarnetDaemon.put_status('started', fname=tmpfile)
-    # Retrieve pid and check against os.getpid() why not
-    pid = GarnetDaemon.retrieve_pid(fname=tmpfile, dbg=1)
+    s1 = 'waiting'
+    GarnetDaemon.put_status(s1, fname=tmpfile)
+    s2 = GarnetDaemon.get_status(fname=tmpfile)
     os.remove(tmpfile)
-    assert int(os.getpid()) == int(pid), f'My pid ({mypid} != retrieved pid {pid})'
+    assert s1 == s2, f'Loaded status {s1} != retrieved status {s2})'
 
-def test_retrieve_pid(): announce_unit(' - see test_status_save_restore()')
+def test_register_pid(): announce_unit(' - see test_pid_save_restore()')
+def test_retrieve_pid(): announce_unit(' - see test_pid_save_restore()')
 def test_put_status():   announce_unit(' - see test_status_save_restore()')
-def test_get_status():   announce_unit(' - TODO')
+def test_get_status():   announce_unit(' - see test_status_save_restore()')
 
 def test_cleanup(): announce_unit(': TBD')
 
