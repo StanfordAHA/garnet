@@ -46,7 +46,7 @@ class GarnetDaemon:
 
     # Disk storage for persistent daemon state
     FN_PID    = "/tmp/garnet-daemon-pid"    # Daemon pid
-    FN_STATUS = "/tmp/garnet-daemon-status" # Daemon status: busy, completed, or waiting
+    FN_STATUS = "/tmp/garnet-daemon-status" # Daemon status: 'busy' or 'ready'
     FN_STATE0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
     FN_RELOAD = "/tmp/garnet-daemon-reload" # Desired new state (args)
     DAEMONFILES = [ FN_PID, FN_STATUS, FN_STATE0, FN_RELOAD ]
@@ -84,12 +84,18 @@ class GarnetDaemon:
             GarnetDaemon.status(args); exit()
 
         elif args.daemon == "launch":
-            GarnetDaemon.die_if_daemon_exists()
-            GarnetDaemon.register_pid()
-            GarnetDaemon.put_status('busy')
+            GarnetDaemon.launch(args)
 
         elif args.daemon == "reset":
             GarnetDaemon.put_status('waiting'); exit()
+
+    def launch(args):
+        gd = GarnetDaemon
+        gd.die_if_daemon_exists()
+        gd.register_pid(); gs = gd.grid_size(args)    # E.g. "4x2"
+        print(f'\n--- LAUNCHING {gs} DAEMON {gd.PID}')
+        gd.put_status('busy')
+        gd.save_state0(args)
 
     def loop(args, dbg=1):
         '''Launch daemon and/or watch for updates'''
@@ -100,14 +106,11 @@ class GarnetDaemon:
 
         # On launch, save pid and initial state in "state0" file
         if command == "launch":
-            gs = gd.grid_size(args)    # E.g. "4x2"
-            print(f'\n--- LAUNCHING {gs} DAEMON {GarnetDaemon.PID}')
-            gd.save_state0(args)
             print(f'- DAEMON STOPS and waits...\n')
             sys.stdout.flush(); sys.stderr.flush()
 
         # Register status; stop and wait for CONT signal from client
-        GarnetDaemon.put_status('completed')
+        GarnetDaemon.put_status('ready')
         gd.sigstop()
 
         # On CONT, register status and load new args from 'reload' file
@@ -127,7 +130,6 @@ class GarnetDaemon:
         return GarnetDaemon_HELP
 
     def use(args):
-        print("hello here i am using", flush=True)
         GarnetDaemon.daemon_wait(args) # Wait for daemon to exist
         GarnetDaemon.save_args(args)   # Save args where the daemon will find them
         GarnetDaemon.sigcont()         # Tell daemon to CONTinue
@@ -165,7 +167,7 @@ class GarnetDaemon:
             print("- no daemon found")
             for f in gd.DAEMONFILES: 
                 if os.path.exists(f): print(f'WARNING found daemon file {f}')
-            return False
+            return 'dead'
 
         print(f'- found running daemon {pid}')
 
@@ -182,8 +184,9 @@ class GarnetDaemon:
         print(f'- found {grid_size} daemon {pid} w launch-state args = {state0_args.__dict__}')
         gd.args_match_or_die(state0_args, args)
         with open(GarnetDaemon.FN_STATUS, 'r') as f:
-            print('- daemon_status: ' + f.read())
-        return True
+            status = f.read()
+            print('- daemon_status: ' + status)
+        return status
 
     # ------------------------------------------------------------------------
     # "Private" methods for saving and restoring daemon state
@@ -243,7 +246,7 @@ class GarnetDaemon:
     #     def args_match_or_die(daemon_args, client_args):
 
     def daemon_wait(args, dbg=1):
-        '''Check daemon status, do not continue until/unless daemon exists'''
+        '''Check daemon status, do not continue until/unless daemon exists AND IS READY'''
         import time
         wait = 2; max = 5 * 60;   # Give up after five minutes
         while not GarnetDaemon.status(args):
@@ -277,10 +280,14 @@ class GarnetDaemon:
         # Get all daemon processes EXCEPT:
         # - exclude "official" daemon
         # - exclude self because we might be in the process of launching
-        pdaemon = GarnetDaemon.retrieve_pid(); pself = os.getpid()
-        orphan_pids = GarnetDaemon.all_daemon_processes_except(pdaemon,pself)
-        if orphan_pids == []:
-            return False  # No orphans found
+        # Why lambda? So it won't complain if element not found omg
+        orphan_pids = GarnetDaemon.all_daemon_procs()
+        def mydel(group, x):
+            if x in group: group.remove(x)
+        mydel(orphan_pids, GarnetDaemon.retrieve_pid() ) # "official" daemon is not orphan
+        mydel(orphan_pids, GarnetDaemon.PID            )  # self is not orphan
+
+        if orphan_pids == []: return False  # No orphans found
 
         print(f'********************************************************')
         for p in orphan_pids:
@@ -294,16 +301,14 @@ class GarnetDaemon:
         print(f'********************************************************')
         return True  # Found orphans
 
-    def all_daemon_processes_except(*args):
-        '''Return a list of all daemon processes except those listed in args'''
-        # Find all processes with args "--daemon" and "launch"
+    def all_daemon_procs():
+        '''Return a list of all daemon processes'''
+        # Look for  procs w args "--daemon" AND "launch"
         def match(pid):
             try:    cmdline = psutil.Process(pid).cmdline()
             except: return False
             return  ("--daemon" in cmdline) and ("launch" in cmdline)
         daemon_pids = list(filter( lambda pid: match(pid), psutil.pids() ))
-        for pid in args:
-            if pid in daemon_pids: daemon_pids.remove(pid)
         return daemon_pids
         
 
@@ -394,12 +399,12 @@ class GarnetDaemon:
         return f'{args.width}x{args.height}'
 
     def put_status(jobstatus, pid=None, fname=None, dbg=1):
-        "Save daemon status e.g. 'busy', 'completed', 'waiting'"
+        "Save daemon status e.g. 'busy' or 'ready'"
         if not fname: fname = GarnetDaemon.FN_STATUS
         with open(fname, 'w') as f: f.write(jobstatus)
         
     def get_status(fname=None):
-        "Get daemon status e.g. 'busy', 'completed', 'waiting'"
+        "Get daemon status e.g. 'busy' or 'ready'"
         if not fname: fname = GarnetDaemon.FN_STATUS
         try:
             with open(fname, 'r') as f: status = f.read()
@@ -416,7 +421,7 @@ class GarnetDaemon:
         with open(fname, 'w') as f: f.write(str(pid) + '\n')
         if dbg: print(f'- wrote pid {pid} to file {fname}')
 
-    def retrieve_pid(fname=None, dbg=1):
+    def retrieve_pid(fname=None, dbg=0):
         'Get pid from pid-save file'
         if not fname: fname = GarnetDaemon.FN_PID
         if not os.path.exists(fname):

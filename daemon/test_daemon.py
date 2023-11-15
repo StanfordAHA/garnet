@@ -82,6 +82,7 @@ def my_test_daemon():
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
     parser.add_argument('--animal', type=str, default='mousie')
+    parser.add_argument('--buildtime', type=int, default=0)
     args = parser.parse_args()
 
     GarnetDaemon.initial_check(args)
@@ -95,6 +96,10 @@ def my_test_daemon():
     # Build CGRA (stub)
     grid_size = GarnetDaemon.grid_size(args)
     garnet_ckt = f"{grid_size} garnet circuit number {os.getpid()}"
+    import time
+    print(f'\nPretend like it takes {args.buildtime} seconds to build the circuit')
+    print(f'- waiting {args.buildtime} seconds...')
+    time.sleep(args.buildtime)
     print(f'\nBuilt {garnet_ckt}')
 
     # Daemonology; TODO this could be a separate method call
@@ -115,6 +120,33 @@ def my_test_daemon():
 #    test_kill_launch_kill_status_klks()  # A test that failed once upon a time
 #    test_double_launch()
 #    test_incompatible_daemon()
+
+# bookmark
+
+
+def test_slow_test():
+    assert expect(f'{DAEMON} kill', '')
+    assert expect(f'{DAEMON} status', 'no daemon found')
+
+    # Launch a slow daemon, takes 12 seconds to finish its task
+    p = subprocess.Popen(f'{DAEMON} launch --buildtime 12'.split())
+    assert expect(f'{DAEMON} status', 'daemon_status: busy')
+
+    # Try to use too quickly, should complain
+#     assert expect(f'{DAEMON} use --animal: canary', '
+
+
+#     assert expect(f'{DAEMON} launch --buildtime 12 & # 'waiting 12 seconds'
+
+
+# assert expect(f'{DAEMON} launch --buildtime 12 & # 'waiting 12 seconds'
+# assert expect(f'{DAEMON} status   # 'daemon_status: busy'
+# # Built 4x2 garnet circuit number 1121830
+# # - using animal: mousie
+# # - DAEMON STOPS and waits...
+# assert expect(f'{DAEMON} status   # 'daemon_status: completed'
+# assert expect(f'{DAEMON} use --animal: canary
+
 
 def test_daemon_launch():  # kill-launch-kill
     'Launch daemon, see if it is running; kill the daemon, see if it is dead'
@@ -246,6 +278,7 @@ def test_help():
 def test_initial_check(): announce_unit('later')
 def test_loop():          announce_unit('later')
 def test_use():           announce_unit('later')
+def test_launch():        announce_unit('later')
 
 def test_kill(dbg=1):
     if announce_unit(): return
@@ -287,7 +320,8 @@ def test_arg_save_and_restore():
 def test_daemon_wait(): announce_unit('later')
 def test_die_if_daemon_exists(): announce_unit('later')
 def test_check_for_orphans(): announce_unit('later')
-def test_all_daemon_processes_except(): announce_unit('later')
+# def test_all_daemon_processes_except(): announce_unit('later')
+def test_all_daemon_procs():  announce_unit('later')
 def test_args_match_or_die(): announce_unit('later')
 
 def test_do_cmd():
@@ -382,8 +416,8 @@ def expect(cmd, expect):
     '''Run <cmd> and display output. Return True if output contains <spect> string'''
     # TODO for extra credit maybe <expect> could be a regex omg
     p = subprocess.run(
-        cmd.split(), 
-        capture_output=True, text=True, stderr=subprocess.STDOUT)
+        cmd.split(), text=True, 
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     print(p.stdout); return expect in p.stdout
 
 def kill_existing_daemon():
