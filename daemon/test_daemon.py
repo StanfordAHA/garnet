@@ -378,13 +378,21 @@ def test_cleanup(): announce_unit(': TBD')
 ########################################################################
 # Helper functions
 
+def expect(cmd, expect):
+    '''Run <cmd> and display output. Return True if output contains <spect> string'''
+    # TODO for extra credit maybe <expect> could be a regex omg
+    p = subprocess.run(
+        cmd.split(), 
+        capture_output=True, text=True, stderr=subprocess.STDOUT)
+    print(p.stdout); return expect in p.stdout
+
 def kill_existing_daemon():
-    print(f"Kill existing daemon (p.stdout should say 'already dead')"); sys.stdout.flush()
+    print(f"Kill existing daemon (p.stdout should say 'already dead')",flush=True)
     p = subprocess.run(f'{DAEMON} kill'.split())
     GarnetDaemon.cleanup()
 
 def kill_running_daemon():
-    print("Kill the daemon (p.stdout should NOT say 'already dead')"); sys.stdout.flush()
+    print("Kill the daemon (p.stdout should NOT say 'already dead')", flush=True)
     p = subprocess.run(f'{DAEMON} kill'.split()); sys.stdout.flush()
 
 def launch_daemon_and_verify(daemon=DAEMON):
