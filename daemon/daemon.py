@@ -144,7 +144,7 @@ class GarnetDaemon:
         GarnetDaemon.cleanup()
 
     def daemon_exists(pid=None):
-        if not pid: pid = GarnetDaemon.retrieve_pid()
+        if not pid: pid = GarnetDaemon.retrieve_pid(dbg=0)
         process_exists = f'test -d /proc/{pid}'
         if not GarnetDaemon.do_cmd(process_exists): return False
         pstatus = psutil.Process(pid).status()
@@ -416,16 +416,16 @@ class GarnetDaemon:
         with open(fname, 'w') as f: f.write(str(pid) + '\n')
         if dbg: print(f'- wrote pid {pid} to file {fname}')
 
-    def retrieve_pid(fname=None, dbg=0):
+    def retrieve_pid(fname=None, dbg=1):
         'Get pid from pid-save file'
         if not fname: fname = GarnetDaemon.FN_PID
-        try:
+        if not os.path.exists(fname):
+            if dbg: print(f'- could not find daemon pid file {fname}')
+            return None
+        else:
             with open(fname, 'r') as f: pid = int(f.read().strip())
             if dbg: print(f'- got pid {pid} from file {fname}')
             return pid
-        except:
-            print(f'WARNING could not read from daemon pid file {fname}')
-            return None
 
     def cleanup(dbg=0):
         'If daemon is dead, delete files from /tmp, else ERROR'
