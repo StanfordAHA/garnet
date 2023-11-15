@@ -94,10 +94,11 @@ def construct():
       'floorplan.tcl',
       'create-rows.tcl',
       'add-tracks.tcl',
-      'place-dic-cells-tma2.tcl',
+      # 'place-dic-cells-tma2.tcl',
       # 'gen-bumps.tcl', # TODO: turn-off for TMA2
       # 'route-bumps.tcl', # TODO: turn-off for TMA2
       'place-macros.tcl',
+      'add-welltaps-for-pad-latchup.tcl',
       'create-special-grid.tcl',
       'carve-out-special-grid-fullchip.tcl',
       'io-fillers.tcl'
