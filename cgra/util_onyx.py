@@ -48,6 +48,7 @@ from lake.modules.stencil_valid import StencilValid
 from lake.modules.buffet_like import BuffetLike
 from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
+from lake.top.reduce_pe_cluster import ReducePECluster
 from lassen.sim import PE_fc
 import magma as m
 from peak import family
@@ -287,14 +288,13 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                defer_fifos=True,
                                add_flush=False,
                                perf_debug=perf_debug)
-            onyxpe = OnyxPE(data_width=16,
-                            fifo_depth=fifo_depth,
-                            defer_fifos=True,
-                            ext_pe_prefix=pe_prefix,
-                            pe_ro=True,
-                            do_config_lift=False,
-                            add_flush=False,
-                            perf_debug=perf_debug)
+            reduce_pe_cluster = ReducePECluster(data_width=16,
+                                                fifo_depth=fifo_depth,
+                                                defer_fifo=True,
+                                                add_flush=False,
+                                                perf_debug=perf_debug,
+                                                pe_prefix=pe_prefix,
+                                                do_lift_config=False)
             repeat = Repeat(data_width=16,
                             fifo_depth=fifo_depth,
                             defer_fifos=True,
@@ -306,21 +306,14 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                         defer_fifos=True,
                                         add_flush=False,
                                         perf_debug=perf_debug)
-            regcr = Reg(data_width=16,
-                        fifo_depth=fifo_depth,
-                        defer_fifos=True,
-                        add_flush=False,
-                        perf_debug=perf_debug)
-
             controllers_2 = []
 
             controllers_2.append(isect)
             controllers_2.append(crd_drop)
             controllers_2.append(crd_hold)
-            controllers_2.append(onyxpe)
             controllers_2.append(repeat)
             controllers_2.append(rsg)
-            controllers_2.append(regcr)
+            controllers_2.append(reduce_pe_cluster)
 
             altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
