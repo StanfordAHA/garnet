@@ -140,6 +140,8 @@ class GarnetDaemon:
             GarnetDaemon.sigkill()
         else:
             print(f'- daemon is already dead')
+        print(f'- cleanup (delete /tmp files associated w daemon)')
+        GarnetDaemon.cleanup()
 
     def daemon_exists(pid=None):
         if not pid: pid = GarnetDaemon.retrieve_pid()
@@ -161,13 +163,15 @@ class GarnetDaemon:
 
         if not GarnetDaemon.daemon_exists():
             print("- no daemon found")
+            for f in gd.DAEMONFILES: 
+                if os.path.exists(f): print(f'WARNING found daemon file {f}')
             return False
 
         print(f'- found running daemon {pid}')
 
         state0_file = gd.FN_STATE0
 
-        if not gd.do_cmd(f'test -f {state0_file}')
+        if not gd.do_cmd(f'test -f {state0_file}'):
             print(f'- WARNING: cannot find daemon state file "{state0_file}"')
             print(f'- WARNING: daemon state corrupted: suggest you do "kill {pid}"')
             return
@@ -273,22 +277,22 @@ class GarnetDaemon:
         # Get all daemon processes EXCEPT:
         # - exclude "official" daemon
         # - exclude self because we might be in the process of launching
-        pdaemon = int(GarnetDaemon.retrieve_pid()); pself = os.getpid()
+        pdaemon = GarnetDaemon.retrieve_pid(); pself = os.getpid()
         orphan_pids = GarnetDaemon.all_daemon_processes_except(pdaemon,pself)
         if orphan_pids == []:
             return False  # No orphans found
-        else:
-            print(f'********************************************************')
-            for p in orphan_pids:
-                print(f'WARNING found orphan daemon {p}, you should kill it!')
 
-            # print(f'--------------------------------------------------------')
-            pidstring_list = list(map(str, orphan_pids))
-            pidstring = " ".join(pidstring_list)
-            print(f'ps      {pidstring}')
-            print(f'kill -9 {pidstring}')
-            print(f'********************************************************')
-            return True  # Found orphans
+        print(f'********************************************************')
+        for p in orphan_pids:
+            print(f'WARNING found orphan daemon {p}, you should kill it!')
+
+        # print(f'--------------------------------------------------------')
+        pidstring_list = list(map(str, orphan_pids))
+        pidstring = " ".join(pidstring_list)
+        print(f'ps      {pidstring}')
+        print(f'kill -9 {pidstring}')
+        print(f'********************************************************')
+        return True  # Found orphans
 
     def all_daemon_processes_except(*args):
         '''Return a list of all daemon processes except those listed in args'''
