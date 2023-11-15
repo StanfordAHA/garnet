@@ -17,10 +17,10 @@ set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set tech_pitch_x [expr 5 * $hori_pitch]
 set tech_pitch_y [expr 1 * $vert_pitch]
 
-set place_tile_array 0
-set place_glb_top 0
 # set place_tile_array [expr !$::env(soc_only)]
 # set place_glb_top [expr !$::env(soc_only)]
+set place_tile_array 1
+set place_glb_top 1
 
 ##############################################################################
 ###                        Placing Tile Array                              ###
@@ -59,42 +59,111 @@ if { $place_tile_array } {
   set ic_width [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_x]
   set ic_height [dbGet [dbGet -p top.insts.name $interconnect_name -i 0].cell.size_y]
 
-  set ic_y_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $ic_height)/10.] $pmesh_bot_pitch]
-  set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)/2.] $pmesh_top_pitch]
-    
+  # set ic_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $ic_width)/2.] $pmesh_top_pitch]
+  # set ic_y_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizey] - $ic_height)/10.] $pmesh_bot_pitch]
+  set ic_x_loc [snap_to_grid 96.984 $tech_pitch_x] 
+  set ic_y_loc [snap_to_grid 89.46 $tech_pitch_y] 
+  
   placeinstance $interconnect_name $ic_x_loc $ic_y_loc -fixed
-  addHaloToBlock [expr $hori_pitch * 15] $vert_pitch [expr $hori_pitch * 21] $vert_pitch $interconnect_name -snapToSite
+  # addHaloToBlock [expr $hori_pitch * 15] $vert_pitch [expr $hori_pitch * 21] $vert_pitch $interconnect_name -snapToSite
+  addHaloToBlock \
+      [expr $tech_pitch_x * 1] \
+      [expr $tech_pitch_y * 2] \
+      [expr $tech_pitch_x * 1] \
+      [expr $tech_pitch_y * 2] \
+      $interconnect_name \
+      -snapToSite
 
-  # Prevent power vias from blocking pins on interconnect (all pins on top edge)
-  set ic_ury [expr $ic_y_loc + $ic_height]
-  set ic_urx [expr $ic_x_loc + $ic_width]
-  set thickness [expr 10 * $vert_pitch]
+  # top/bottom routing blockage (signal: all except m5)
+  set ic_rblk_left   [expr $tech_pitch_x * 0.5]
+  set ic_rblk_right  [expr $tech_pitch_x * 0.5]
+  set ic_rblk_top    [expr $tech_pitch_y * 1]
+  set ic_rblk_bottom [expr $tech_pitch_y * 1]
+  set ic_rblk_llx [expr $ic_x_loc]
+  set ic_rblk_lly [expr $ic_y_loc - $ic_rblk_bottom]
+  set ic_rblk_urx [expr $ic_x_loc + $ic_width]
+  set ic_rblk_ury [expr $ic_y_loc + $ic_height + $ic_rblk_top]
   createRouteBlk \
-    -name ic_top_pg_via_blk \
-    -cutLayer {4 5 6 7 8 9 10 11 12} \
-    -pgnetonly \
-    -box $ic_x_loc $ic_ury $ic_urx [expr $ic_ury + $thickness]
+      -name ic_route_block_top_bottom_sig \
+      -layer {m1 m2 m3 m4 m6 m7 m8}  \
+      -box "$ic_rblk_llx $ic_rblk_lly $ic_rblk_urx $ic_rblk_ury" \
+      -exceptpgnet
+  
+  # top/bottom routing blockage (power, all)
+  set ic_rblk_left   [expr $tech_pitch_x * 1]
+  set ic_rblk_right  [expr $tech_pitch_x * 1]
+  set ic_rblk_top    [expr $tech_pitch_y * 2]
+  set ic_rblk_bottom [expr $tech_pitch_y * 2]
+  set ic_rblk_llx [expr $ic_x_loc]
+  set ic_rblk_lly [expr $ic_y_loc - $ic_rblk_bottom]
+  set ic_rblk_urx [expr $ic_x_loc + $ic_width]
+  set ic_rblk_ury [expr $ic_y_loc + $ic_height + $ic_rblk_top]
+  createRouteBlk \
+      -name ic_route_block_top_bottom_pwr \
+      -layer {m1 m2 m3 m4 m5 m6 m7 m8}  \
+      -box "$ic_rblk_llx $ic_rblk_lly $ic_rblk_urx $ic_rblk_ury" \
+      -pgnetonly
+  
+  # left/right routing blockage (signal: all except m6)
+  set ic_rblk_left   [expr $tech_pitch_x * 0.5]
+  set ic_rblk_right  [expr $tech_pitch_x * 0.5]
+  set ic_rblk_top    [expr $tech_pitch_y * 1]
+  set ic_rblk_bottom [expr $tech_pitch_y * 1]
+  set ic_rblk_llx [expr $ic_x_loc - $ic_rblk_left]
+  set ic_rblk_lly [expr $ic_y_loc]
+  set ic_rblk_urx [expr $ic_x_loc + $ic_width + $ic_rblk_right]
+  set ic_rblk_ury [expr $ic_y_loc + $ic_height]
+  createRouteBlk \
+      -name ic_route_block_left_right_sig \
+      -layer {m1 m2 m3 m4 m5 m7 m8}  \
+      -box "$ic_rblk_llx $ic_rblk_lly $ic_rblk_urx $ic_rblk_ury" \
+      -exceptpgnet
+  
+  # top/bottom routing blockage (power, all)
+  set ic_rblk_left   [expr $tech_pitch_x * 1]
+  set ic_rblk_right  [expr $tech_pitch_x * 1]
+  set ic_rblk_top    [expr $tech_pitch_y * 2]
+  set ic_rblk_bottom [expr $tech_pitch_y * 2]
+  set ic_rblk_llx [expr $ic_x_loc - $ic_rblk_left]
+  set ic_rblk_lly [expr $ic_y_loc]
+  set ic_rblk_urx [expr $ic_x_loc + $ic_width + $ic_rblk_right]
+  set ic_rblk_ury [expr $ic_y_loc + $ic_height]
+  createRouteBlk \
+      -name ic_route_block_left_right_pwr \
+      -layer {m1 m2 m3 m4 m5 m6 m7 m8}  \
+      -box "$ic_rblk_llx $ic_rblk_lly $ic_rblk_urx $ic_rblk_ury" \
+      -pgnetonly
 
-  # Prevent vias to PMESH_BOT_LAYER stripes over IC
-  createRouteBlk \
-    -name ic_pmesh_bot_via \
-    -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1] \
-    -pgnetonly \
-    -box $ic_x_loc $ic_y_loc $ic_urx $ic_ury
+  # # Prevent power vias from blocking pins on interconnect (all pins on top edge)
+  # set ic_ury [expr $ic_y_loc + $ic_height]
+  # set ic_urx [expr $ic_x_loc + $ic_width]
+  # set thickness [expr 10 * $vert_pitch]
+  # createRouteBlk \
+  #   -name ic_top_pg_via_blk \
+  #   -cutLayer {4 5 6 7 8 9 10 11 12} \
+  #   -pgnetonly \
+  #   -box $ic_x_loc $ic_ury $ic_urx [expr $ic_ury + $thickness]
+
+  # # Prevent vias to PMESH_BOT_LAYER stripes over IC
+  # createRouteBlk \
+  #   -name ic_pmesh_bot_via \
+  #   -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1] \
+  #   -pgnetonly \
+  #   -box $ic_x_loc $ic_y_loc $ic_urx $ic_ury
   
-  # Prevent PMESH_BOT_LAYER stripes over IC
-  createRouteBlk \
-    -name ic_pmesh_bot \
-    -layer $ADK_POWER_MESH_BOT_LAYER \
-    -pgnetonly \
-    -box [expr $ic_x_loc + (8*$hori_pitch)] $ic_y_loc [expr $ic_urx - (8*$hori_pitch)] $ic_ury
+  # # Prevent PMESH_BOT_LAYER stripes over IC
+  # createRouteBlk \
+  #   -name ic_pmesh_bot \
+  #   -layer $ADK_POWER_MESH_BOT_LAYER \
+  #   -pgnetonly \
+  #   -box [expr $ic_x_loc + (8*$hori_pitch)] $ic_y_loc [expr $ic_urx - (8*$hori_pitch)] $ic_ury
   
-  # Prevent PMESH_TOP_LAYER stripes over IC
-  createRouteBlk \
-    -name ic_pmesh_top \
-    -layer $ADK_POWER_MESH_TOP_LAYER \
-    -pgnetonly \
-    -box $ic_x_loc [expr $ic_y_loc + (2*$vert_pitch)] $ic_urx [expr $ic_ury - (2*$vert_pitch)]
+  # # Prevent PMESH_TOP_LAYER stripes over IC
+  # createRouteBlk \
+  #   -name ic_pmesh_top \
+  #   -layer $ADK_POWER_MESH_TOP_LAYER \
+  #   -pgnetonly \
+  #   -box $ic_x_loc [expr $ic_y_loc + (2*$vert_pitch)] $ic_urx [expr $ic_ury - (2*$vert_pitch)]
 }
 
 ##############################################################################
@@ -107,49 +176,118 @@ if { $place_glb_top } {
   set glb_width [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_x]
   set glb_height [dbGet [dbGet -p top.insts.name $glb_name -i 0].cell.size_y]
 
-  set glb_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glb_y_dist)] $pmesh_bot_pitch]
-  set glb_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $glb_width)/2.] $pmesh_top_pitch]
-  
+  # set glb_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $glb_width)/2.] $pmesh_top_pitch]
+  # set glb_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glb_y_dist)] $pmesh_bot_pitch]
+  set glb_x_loc [snap_to_grid 88.344 $tech_pitch_x]
+  set glb_y_loc [snap_to_grid 3133.62 $tech_pitch_y]
+
   # Place GLB
   placeinstance $glb_name $glb_x_loc $glb_y_loc -fixed
-  addHaloToBlock [expr $hori_pitch * 15] $vert_pitch [expr $hori_pitch * 3] $vert_pitch $glb_name -snapToSite
+  # addHaloToBlock [expr $hori_pitch * 15] $vert_pitch [expr $hori_pitch * 3] $vert_pitch $glb_name -snapToSite
+  addHaloToBlock \
+      [expr $tech_pitch_x * 1] \
+      [expr $tech_pitch_y * 2] \
+      [expr $tech_pitch_x * 1] \
+      [expr $tech_pitch_y * 2] \
+      $glb_name \
+      -snapToSite
   
-  # Prevent power vias from blocking pins on GLB (pins on bottom and left edges)
-  set glb_ury [expr $glb_y_loc + $glb_height]
-  set glb_urx [expr $glb_x_loc + $glb_width]
-  set thickness [expr 10 * $vert_pitch]
+  # top/bottom routing blockage (signal: all except m5)
+  set glb_rblk_left   [expr $tech_pitch_x * 0.5]
+  set glb_rblk_right  [expr $tech_pitch_x * 0.5]
+  set glb_rblk_top    [expr $tech_pitch_y * 1]
+  set glb_rblk_bottom [expr $tech_pitch_y * 1]
+  set glb_rblk_llx [expr $glb_x_loc]
+  set glb_rblk_lly [expr $glb_y_loc - $glb_rblk_bottom]
+  set glb_rblk_urx [expr $glb_x_loc + $glb_width]
+  set glb_rblk_ury [expr $glb_y_loc + $glb_height + $glb_rblk_top]
   createRouteBlk \
-    -name glb_top_pg_via_blk \
-    -cutLayer {4 5 6 7 8 9 10 11 12} \
-    -pgnetonly \
-    -box $glb_x_loc $glb_y_loc $glb_urx [expr $glb_y_loc - $thickness]
+      -name glb_route_block_top_bottom_sig \
+      -layer {m1 m2 m3 m4 m6 m7 m8}  \
+      -box "$glb_rblk_llx $glb_rblk_lly $glb_rblk_urx $glb_rblk_ury" \
+      -exceptpgnet
   
+  # top/bottom routing blockage (power, all)
+  set glb_rblk_left   [expr $tech_pitch_x * 1]
+  set glb_rblk_right  [expr $tech_pitch_x * 1]
+  set glb_rblk_top    [expr $tech_pitch_y * 2]
+  set glb_rblk_bottom [expr $tech_pitch_y * 2]
+  set glb_rblk_llx [expr $glb_x_loc]
+  set glb_rblk_lly [expr $glb_y_loc - $glb_rblk_bottom]
+  set glb_rblk_urx [expr $glb_x_loc + $glb_width]
+  set glb_rblk_ury [expr $glb_y_loc + $glb_height + $glb_rblk_top]
   createRouteBlk \
-    -name glb_left_pg_via_blk \
-    -cutLayer {4 5 6 7 8 9 10 11 12} \
-    -pgnetonly \
-    -box [expr $glb_x_loc - $thickness] $glb_y_loc $glb_x_loc $glb_ury
+      -name glb_route_block_top_bottom_pwr \
+      -layer {m1 m2 m3 m4 m5 m6 m7 m8}  \
+      -box "$glb_rblk_llx $glb_rblk_lly $glb_rblk_urx $glb_rblk_ury" \
+      -pgnetonly
   
-  # Prevent vias to PMESH_BOT_LAYER stripes over GLB
+  # left/right routing blockage (signal: all except m6)
+  set glb_rblk_left   [expr $tech_pitch_x * 0.5]
+  set glb_rblk_right  [expr $tech_pitch_x * 0.5]
+  set glb_rblk_top    [expr $tech_pitch_y * 1]
+  set glb_rblk_bottom [expr $tech_pitch_y * 1]
+  set glb_rblk_llx [expr $glb_x_loc - $glb_rblk_left]
+  set glb_rblk_lly [expr $glb_y_loc]
+  set glb_rblk_urx [expr $glb_x_loc + $glb_width + $glb_rblk_right]
+  set glb_rblk_ury [expr $glb_y_loc + $glb_height]
   createRouteBlk \
-    -name glb_pmesh_bot_via \
-    -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
-    -pgnetonly \
-    -box $glb_x_loc $glb_y_loc $glb_urx $glb_ury
+      -name glb_route_block_left_right_sig \
+      -layer {m1 m2 m3 m4 m5 m7 m8}  \
+      -box "$glb_rblk_llx $glb_rblk_lly $glb_rblk_urx $glb_rblk_ury" \
+      -exceptpgnet
   
-  # Prevent PMESH_BOT_LAYER stripes over GLB
+  # top/bottom routing blockage (power, all)
+  set glb_rblk_left   [expr $tech_pitch_x * 1]
+  set glb_rblk_right  [expr $tech_pitch_x * 1]
+  set glb_rblk_top    [expr $tech_pitch_y * 2]
+  set glb_rblk_bottom [expr $tech_pitch_y * 2]
+  set glb_rblk_llx [expr $glb_x_loc - $glb_rblk_left]
+  set glb_rblk_lly [expr $glb_y_loc]
+  set glb_rblk_urx [expr $glb_x_loc + $glb_width + $glb_rblk_right]
+  set glb_rblk_ury [expr $glb_y_loc + $glb_height]
   createRouteBlk \
-    -name glb_pmesh_bot \
-    -layer $ADK_POWER_MESH_BOT_LAYER \
-    -pgnetonly \
-    -box [expr $glb_x_loc + (8*$hori_pitch)] $glb_y_loc [expr $glb_urx - (8*$hori_pitch)] $glb_ury
+      -name glb_route_block_left_right_pwr \
+      -layer {m1 m2 m3 m4 m5 m6 m7 m8}  \
+      -box "$glb_rblk_llx $glb_rblk_lly $glb_rblk_urx $glb_rblk_ury" \
+      -pgnetonly
   
-  # Prevent PMESH_TOP_LAYER stripes over GLB
-  createRouteBlk \
-    -name glb_pmesh_top \
-    -layer $ADK_POWER_MESH_TOP_LAYER \
-    -pgnetonly \
-    -box $glb_x_loc [expr $glb_y_loc + (2*$vert_pitch)] $glb_urx [expr $glb_ury - (2*$vert_pitch)]
+  # # Prevent power vias from blocking pins on GLB (pins on bottom and left edges)
+  # set glb_ury [expr $glb_y_loc + $glb_height]
+  # set glb_urx [expr $glb_x_loc + $glb_width]
+  # set thickness [expr 10 * $vert_pitch]
+  # createRouteBlk \
+  #   -name glb_top_pg_via_blk \
+  #   -cutLayer {4 5 6 7 8 9 10 11 12} \
+  #   -pgnetonly \
+  #   -box $glb_x_loc $glb_y_loc $glb_urx [expr $glb_y_loc - $thickness]
+  
+  # createRouteBlk \
+  #   -name glb_left_pg_via_blk \
+  #   -cutLayer {4 5 6 7 8 9 10 11 12} \
+  #   -pgnetonly \
+  #   -box [expr $glb_x_loc - $thickness] $glb_y_loc $glb_x_loc $glb_ury
+  
+  # # Prevent vias to PMESH_BOT_LAYER stripes over GLB
+  # createRouteBlk \
+  #   -name glb_pmesh_bot_via \
+  #   -cutLayer [expr $ADK_POWER_MESH_BOT_LAYER + 1]\
+  #   -pgnetonly \
+  #   -box $glb_x_loc $glb_y_loc $glb_urx $glb_ury
+  
+  # # Prevent PMESH_BOT_LAYER stripes over GLB
+  # createRouteBlk \
+  #   -name glb_pmesh_bot \
+  #   -layer $ADK_POWER_MESH_BOT_LAYER \
+  #   -pgnetonly \
+  #   -box [expr $glb_x_loc + (8*$hori_pitch)] $glb_y_loc [expr $glb_urx - (8*$hori_pitch)] $glb_ury
+  
+  # # Prevent PMESH_TOP_LAYER stripes over GLB
+  # createRouteBlk \
+  #   -name glb_pmesh_top \
+  #   -layer $ADK_POWER_MESH_TOP_LAYER \
+  #   -pgnetonly \
+  #   -box $glb_x_loc [expr $glb_y_loc + (2*$vert_pitch)] $glb_urx [expr $glb_ury - (2*$vert_pitch)]
 }
 
 ##############################################################################
@@ -160,22 +298,18 @@ set sram_name [get_property [index_collection $srams 0] hierarchical_name]
 set sram_width [dbGet [dbGet -p top.insts.name $sram_name -i 0].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name $sram_name -i 0].cell.size_y]
 set num_of_srams 8
-# TODO: should use dbGet to get this number:
-set core_width 3780.432
+set core_width [dbGet top.fPlan.coreBox_sizex]
 set sram_gap [expr ($core_width - ($num_of_srams * $sram_width)) / ($num_of_srams + 1)]
-set sram_loc_x [expr $sram_gap + 72.144]
-set sram_loc_y [snap_to_grid 3701 $vert_pitch]
+set sram_loc_x [expr $sram_gap + [dbGet top.fPlan.coreBox_llx]]
+set sram_loc_y [expr [dbGet top.fPlan.coreBox_ury] - 69.12 - $sram_height]
+set sram_loc_y [snap_to_grid $sram_loc_y $vert_pitch]
 
 foreach_in_collection sram $srams {
 
   # get sram properties
   set sram_name [get_property $sram full_name]
   set sram_obj [dbGet -p top.insts.name $sram_name]
-  set sram_llx [dbGet $sram_obj.box_llx]
-  set sram_lly [dbGet $sram_obj.box_lly]
-  set sram_urx [dbGet $sram_obj.box_urx]
-  set sram_ury [dbGet $sram_obj.box_ury]
-
+  
   # snap the sram to the grid, and place it
   set sram_x_loc_snap [snap_to_grid $sram_loc_x $hori_pitch]
   set sram_y_loc_snap [snap_to_grid $sram_loc_y $vert_pitch]
@@ -189,6 +323,10 @@ foreach_in_collection sram $srams {
   addHaloToBlock $halo_left $halo_bottom $halo_right $halo_top -snapToSite $sram_name
   
   # add route block to the sram
+  set sram_llx [dbGet $sram_obj.box_llx]
+  set sram_lly [dbGet $sram_obj.box_lly]
+  set sram_urx [dbGet $sram_obj.box_urx]
+  set sram_ury [dbGet $sram_obj.box_ury]
   set sram_route_block_llx [snap_to_grid [expr $sram_llx - $halo_left]    $hori_pitch]
   set sram_route_block_lly [snap_to_grid [expr $sram_lly - $halo_bottom]  $vert_pitch]
   set sram_route_block_urx [snap_to_grid [expr $sram_urx + $halo_right]   $hori_pitch]
