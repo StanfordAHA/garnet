@@ -54,13 +54,13 @@ set output_load                     $ADK_TYPICAL_ON_CHIP_LOAD
 # Max capacitance
 # -----------------------------------------------------------------------------
 
-set max_capacitance                 1.00
+set max_capacitance                 [expr 1.00 * 1000]
 
 # -----------------------------------------------------------------------------
 # Transition time targets
 # -----------------------------------------------------------------------------
 
-set max_transition                  100
+set max_transition                  [expr 0.100 * 1000]
 
 # Clock transition requirement
 set max_clock_transition            [expr $max_transition /2.0 ]

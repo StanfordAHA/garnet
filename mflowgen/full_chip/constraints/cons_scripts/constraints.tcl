@@ -41,7 +41,7 @@ source -echo -verbose inputs/cons_scripts/clocks_except_soc.tcl
 # ------------------------------------------------------------------------------
 # Constraints for paths between CGRA, GLB, GLC
 # ------------------------------------------------------------------------------
-# source -echo -verbose inputs/cons_scripts/garnet_constraints.tcl
+source -echo -verbose inputs/cons_scripts/garnet_constraints.tcl
 
 # ------------------------------------------------------------------------------
 # Set Design Context
