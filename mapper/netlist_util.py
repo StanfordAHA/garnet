@@ -23,6 +23,7 @@ from mapper.netlist_graph import Node, NetlistGraph
 import pythunder
 import pulp
 
+
 class CreateBuses(Visitor):
     def __init__(self, inst_info):
         self.inst_info = inst_info
@@ -189,14 +190,23 @@ class CreateMetaData(Visitor):
         if hasattr(node, "_metadata_"):
             self.node_to_md[node.iname] = node._metadata_
 
+
 class CreateIDs(Visitor):
     def __init__(self, inst_info):
         self.inst_info = inst_info
 
     def doit(self, dag: IODag):
-        self.i = 0
+        self.tile_types = set()
+        self.node_to_type = {}
         self.node_to_id = {}
         self.run(dag)
+        for tile_type in self.tile_types:
+            nodes = [k for k, v in self.node_to_type.items() if v == tile_type]
+            nodes.sort()
+
+            for idx, node in enumerate(nodes):
+                self.node_to_id[node] = f"{tile_type}{idx}"
+
         return self.node_to_id
 
     def visit_Source(self, node):
@@ -207,24 +217,26 @@ class CreateIDs(Visitor):
         child = list(node.children())[0]
 
         if "io16" in node.iname:
-            id = f"I{self.i}"
+            id = f"I"
         else:
-            id = f"i{self.i}"
-        self.i += 1
-        self.node_to_id[node.iname] = id
+            id = f"i"
+        self.node_to_type[node.iname] = id
+        self.tile_types.add("I")
+        self.tile_types.add("i")
 
     def visit_Select(self, node):
         Visitor.generic_visit(self, node)
         child = list(node.children())[0]
         if isinstance(child, Input):
             if node.type == Bit:
-                id = f"i{self.i}"
+                id = f"i"
             elif node.type == BitVector[16]:
-                id = f"I{self.i}"
+                id = f"I"
             else:
                 raise NotImplementedError(f"{node}, {node.type}")
-            self.i += 1
-            self.node_to_id[child.iname] = id
+            self.node_to_type[child.iname] = id
+            self.tile_types.add("I")
+            self.tile_types.add("i")
 
     def visit_Combine(self, node):
         Visitor.generic_visit(self, node)
@@ -238,21 +250,21 @@ class CreateIDs(Visitor):
     def visit_RegisterSink(self, node):
         Visitor.generic_visit(self, node)
         if node.type == Bit:
-            id = f"r{self.i}"
+            id = f"r"
         elif node.type == BitVector[16]:
-            id = f"r{self.i}"
+            id = f"r"
         else:
             raise NotImplementedError(f"{node}, {node.type}")
-        self.node_to_id[node.iname] = id
-        self.i += 1
+        self.node_to_type[node.iname] = id
+        self.tile_types.add("r")
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if node.node_name not in self.inst_info:
             raise ValueError(f"Need info for {node.node_name}")
-        id = f"{self.inst_info[node.node_name]}{self.i}"
-        self.node_to_id[node.iname] = id
-        self.i += 1
+        id = f"{self.inst_info[node.node_name]}"
+        self.node_to_type[node.iname] = id
+        self.tile_types.add(f"{self.inst_info[node.node_name]}")
 
 
 def p(msg, adt):
@@ -527,7 +539,6 @@ class FixInputsOutputAndPipeline(Visitor):
         bit,
         min_stages=1,
     ):
-        
         if bit:
             register_source = BitRegisterSource
             register_sink = BitRegisterSink
@@ -621,8 +632,14 @@ class FixInputsOutputAndPipeline(Visitor):
             register_source = RegisterSource
             register_sink = RegisterSink
 
-        print("Creating register chain for:", new_io_node.iname, "with", len(sinks), "sinks")
-        
+        print(
+            "Creating register chain for:",
+            new_io_node.iname,
+            "with",
+            len(sinks),
+            "sinks",
+        )
+
         # reorder MEM/Pond sinks based on the bank index for better PnR
         sinks_order_dict = {}
         for _ in range(len(sinks)):
@@ -652,11 +669,13 @@ class FixInputsOutputAndPipeline(Visitor):
         for _ in range(min_stages):
             if _ == 0:
                 new_reg_sink = register_sink(
-                    new_select_node, iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                    new_select_node,
+                    iname=new_io_node.iname + "$reg" + str(self.added_regs),
                 )
             else:
                 new_reg_sink = register_sink(
-                    new_reg_source, iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                    new_reg_source,
+                    iname=new_io_node.iname + "$reg" + str(self.added_regs),
                 )
             new_reg_source = register_source(
                 iname=new_io_node.iname + "$reg" + str(self.added_regs)
@@ -671,11 +690,10 @@ class FixInputsOutputAndPipeline(Visitor):
         for sinks_reg in itr_sinks:
             prev_reg_source = chain_source
             for idx, sink in enumerate(sinks_reg):
-
                 if idx and idx % chain_branch_factor == 0:
                     new_reg_sink = register_sink(
                         prev_reg_source,
-                        iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                        iname=new_io_node.iname + "$reg" + str(self.added_regs),
                     )
                     new_reg_source = register_source(
                         iname=new_io_node.iname + "$reg" + str(self.added_regs)
@@ -691,7 +709,7 @@ class FixInputsOutputAndPipeline(Visitor):
                     for _ in range(regs_branch_added):
                         new_reg_sink = register_sink(
                             prev_reg_source,
-                            iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                            iname=new_io_node.iname + "$reg" + str(self.added_regs),
                         )
                         new_reg_source = register_source(
                             iname=new_io_node.iname + "$reg" + str(self.added_regs)
@@ -722,7 +740,7 @@ class FixInputsOutputAndPipeline(Visitor):
         old_select_node,
         sinks,
         bit,
-        chain_branch_factor = 2,
+        chain_branch_factor=2,
     ):
         if bit:
             register_source = BitRegisterSource
@@ -731,7 +749,13 @@ class FixInputsOutputAndPipeline(Visitor):
             register_source = RegisterSource
             register_sink = RegisterSink
 
-        print("Creating register chain for:", new_io_node.iname, "with", len(sinks), "sinks")
+        print(
+            "Creating register chain for:",
+            new_io_node.iname,
+            "with",
+            len(sinks),
+            "sinks",
+        )
 
         # reorder the PE sinks for PnR
         sinks_order_dict = {}
@@ -743,12 +767,12 @@ class FixInputsOutputAndPipeline(Visitor):
         sorted_sinks_order_dict = dict(sorted_sinks_order_dict)
         sinks_seq = list(sorted_sinks_order_dict.keys())
         sinks = []
-        for _ in range(len(sinks_seq)//2):
+        for _ in range(len(sinks_seq) // 2):
             sinks.append(sinks_seq[_])
-            sinks.append(sinks_seq[_ + len(sinks_seq)//2])
+            sinks.append(sinks_seq[_ + len(sinks_seq) // 2])
         if len(sinks_seq) % 2 == 1:
-            sinks.append(sinks_seq[len(sinks_seq)//2])
-        half = len(sinks)//2
+            sinks.append(sinks_seq[len(sinks_seq) // 2])
+        half = len(sinks) // 2
         (sinks_left, sinks_right) = (sinks[:half][::-1], sinks[half:])
 
         for sinks_reg in [sinks_left, sinks_right]:
@@ -757,7 +781,7 @@ class FixInputsOutputAndPipeline(Visitor):
                 if idx % chain_branch_factor == 0:
                     new_reg_sink = register_sink(
                         prev_reg_source,
-                        iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                        iname=new_io_node.iname + "$reg" + str(self.added_regs),
                     )
                     new_reg_source = register_source(
                         iname=new_io_node.iname + "$reg" + str(self.added_regs)
@@ -777,7 +801,7 @@ class FixInputsOutputAndPipeline(Visitor):
                     reg_index = children_temp.index(old_select_node)
                     children_temp[reg_index] = new_reg_source
                     sink.set_children(*children_temp)
-    
+
     def visit_Select(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if not (
@@ -811,7 +835,7 @@ class FixInputsOutputAndPipeline(Visitor):
 
             # -----------------MEM-to-PE Paths Pipelining-------------------- #
             elif False:
-            #elif "input_cgra_stencil" in io_child.iname:
+                # elif "input_cgra_stencil" in io_child.iname:
                 new_node = new_children[0].select("data_out_0")
                 if "MEM2PE_REG_CHAIN" in os.environ:
                     if self.pipeline_inputs:
@@ -824,7 +848,7 @@ class FixInputsOutputAndPipeline(Visitor):
                         )
             # output MEM to accumulation PE pipelining
             elif False:
-            #elif "ub_output_cgra_stencil" in io_child.iname and "add_pipelined" in self.sinks[node][0].iname:
+                # elif "ub_output_cgra_stencil" in io_child.iname and "add_pipelined" in self.sinks[node][0].iname:
                 new_node = new_children[0].select("data_out_0")
                 if "MEM2PE_REG_CHAIN" in os.environ:
                     if self.pipeline_inputs:
@@ -932,7 +956,7 @@ class PackRegsIntoPonds(Visitor):
             if pond.node_name == "cgralib.Pond":
                 ponds.append(pond.iname)
                 for pond_sink in self.sinks[pond]:
-                    assert pond_sink.node_name == "Select", breakpoint()
+                    assert pond_sink.node_name == "Select"
                     pe_node, num_regs, reg_skip_list = self.find_pe(pond_sink, 0, [])
                     if pe_node is not None:
                         if pe_node.iname not in pes:
@@ -941,17 +965,16 @@ class PackRegsIntoPonds(Visitor):
                         connections.append((pond.iname, pe_node.iname))
                     else:
                         connections.append((pond.iname, f"other_{len(connections)}"))
-                    
+
                     conn = connections[-1]
                     connections_to_nodes[f"{conn[0]}_{conn[1]}"] = pond_sink
 
-
-        model = pulp.LpProblem('linear_programming', pulp.LpMaximize)
+        model = pulp.LpProblem("linear_programming", pulp.LpMaximize)
 
         pulp_vars = []
         for conn in connections:
-            name = conn[0] + '_' + conn[1]
-            pulp_var = pulp.LpVariable(name, lowBound = 0, cat = 'Binary')
+            name = conn[0] + "_" + conn[1]
+            pulp_var = pulp.LpVariable(name, lowBound=0, cat="Binary")
             pulp_vars.append(pulp_var)
 
             model += pulp_var
@@ -960,7 +983,9 @@ class PackRegsIntoPonds(Visitor):
                 model += pulp_var == 0
 
         for pond in ponds:
-            connections_from_ponds = len([conn for conn in connections if conn[0] == pond])
+            connections_from_ponds = len(
+                [conn for conn in connections if conn[0] == pond]
+            )
             if connections_from_ponds == 2:
                 model += pulp.lpSum([var for var in pulp_vars if pond in var.name]) == 1
 
@@ -971,7 +996,7 @@ class PackRegsIntoPonds(Visitor):
         model.solve(pulp.PULP_CBC_CMD(msg=0))
 
         pond_node_to_port = {}
-        
+
         for var in pulp_vars:
             if var.value() == 1.0:
                 # Port 0
@@ -1010,9 +1035,8 @@ class PackRegsIntoPonds(Visitor):
                 sinks=real_sinks,
             ),
             self.pond_reg_skipped,
-            self.swap_pond_ports
+            self.swap_pond_ports,
         )
-
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
@@ -1024,7 +1048,7 @@ class PackRegsIntoPonds(Visitor):
         if node in self.optimal_packing:
             pond_port = f"data_out_pond_{self.optimal_packing[node]}"
             pe_node, num_regs, reg_skip_list = self.find_pe(node, 0, [])
-            
+
             if pond_port == "data_out_pond_0":
                 # packing in the same tile
                 self.pe_to_pond_conns[pe_node] = node
@@ -1100,7 +1124,6 @@ def create_netlist_info(
     input_broadcast_branch_factor=4,
     input_broadcast_max_leaves=16,
 ):
-
     if load_only:
         packed_file = os.path.join(app_dir, "design.packed")
         id_to_name = pythunder.io.load_id_to_name(packed_file)
@@ -1148,18 +1171,26 @@ def create_netlist_info(
         if node in swap_pond_ports:
             print(f"swapping ports for {nodes_to_ids[node]}")
             new_config = {}
-            new_config["in2regfile_0"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["in2regfile_0"]
+            new_config["in2regfile_0"] = info["id_to_metadata"][nodes_to_ids[node]][
+                "config"
+            ]["in2regfile_0"]
 
             if "in2regfile_1" in info["id_to_metadata"][nodes_to_ids[node]]["config"]:
-                new_config["in2regfile_1"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["in2regfile_1"]
+                new_config["in2regfile_1"] = info["id_to_metadata"][nodes_to_ids[node]][
+                    "config"
+                ]["in2regfile_1"]
 
-            new_config["regfile2out_1"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"]
-            
+            new_config["regfile2out_1"] = info["id_to_metadata"][nodes_to_ids[node]][
+                "config"
+            ]["regfile2out_0"]
+
             if "regfile2out_1" in info["id_to_metadata"][nodes_to_ids[node]]["config"]:
-                new_config["regfile2out_0"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_1"]  
+                new_config["regfile2out_0"] = info["id_to_metadata"][
+                    nodes_to_ids[node]
+                ]["config"]["regfile2out_1"]
 
             info["id_to_metadata"][nodes_to_ids[node]]["config"] = new_config
-        
+
         if node in pond_reg_skipped:
             info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"][
                 "cycle_starting_addr"
@@ -1171,8 +1202,8 @@ def create_netlist_info(
     }
 
     info["instance_to_instrs"] = {
-        node: nodes_to_instrs[node]
-        for node, id in nodes_to_ids.items()
+        info["id_to_name"][id]: instr
+        for id, instr in info["id_to_instrs"].items()
         if ("p" in id or "m" in id or "I" in id or "i" in id)
     }
     for node, md in node_to_metadata.items():
@@ -1182,6 +1213,7 @@ def create_netlist_info(
     bus_info, netlist = CreateBuses(node_info).doit(pdag)
     info["buses"] = bus_info
     info["netlist"] = {}
+
     for bid, ports in netlist.items():
         info["netlist"][bid] = [
             (nodes_to_ids[node.iname], field) for node, field in ports
@@ -1192,15 +1224,15 @@ def create_netlist_info(
 
     if "MANUAL_PLACER" in os.environ:
         graph = NetlistGraph(info)
-        graph.get_in_ub_latency(app_dir = app_dir)
-        graph.get_compute_kernel_latency(app_dir = app_dir)
-        
+        graph.get_in_ub_latency(app_dir=app_dir)
+        graph.get_compute_kernel_latency(app_dir=app_dir)
+
         # remove mem reg in conn for manual placement
         graph.remove_mem_reg_tree()
         # graph.generate_tile_conn(app_dir = app_dir)
 
         # manual placement
-        graph.manualy_place_resnet(app_dir = app_dir)
+        graph.manualy_place_resnet(app_dir=app_dir)
 
     CountTiles().doit(pdag)
 
