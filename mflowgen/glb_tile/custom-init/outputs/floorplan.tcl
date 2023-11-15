@@ -20,7 +20,7 @@ set core_margin_bottom $tech_pitch_y
 set core_margin_right  $tech_pitch_x
 set core_margin_top    $tech_pitch_y
 
-set core_width  [expr 490 * $tech_pitch_x - $core_margin_left - $core_margin_right]
+set core_width  [expr 487 * $tech_pitch_x - $core_margin_left - $core_margin_right]
 set core_height [expr 900 * $tech_pitch_y - $core_margin_top - $core_margin_bottom]
 
 #-------------------------------------------------------------------------
