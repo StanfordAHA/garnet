@@ -194,7 +194,7 @@ class NetlistGraph:
                 for kernel_port, d1 in latency_dict.items():
                     if "input_cgra_stencil" in kernel_port:
                         for port_num, d2 in d1.items():
-                            pe_id = d2["pe_port"][0]
+                            pe_id = d2["pe_port"][0][0]
                             for node in self.pe_nodes:
                                 if pe_id in node.node_id:
                                     pe_node = node
@@ -204,7 +204,7 @@ class NetlistGraph:
                                         d2["latency"] = self.count_input_latencies(mem_node, pe_node)
                     elif "in2_output_cgra_stencil" in kernel_port:
                         for port_num, d2 in d1.items():
-                            pe_id = d2["pe_port"][0]
+                            pe_id = d2["pe_port"][0][0]
                             for node in self.pe_nodes:
                                 if pe_id in node.node_id:
                                     pe_node = node
