@@ -18,4 +18,5 @@ outputs:
   - create-special-grid.tcl
   - place-dic-cells-tma2.tcl
   - carve-out-special-grid-fullchip.tcl
+  - add-welltaps-for-pad-latchup.tcl
   # - insert-input-antenna-diodes.tcl

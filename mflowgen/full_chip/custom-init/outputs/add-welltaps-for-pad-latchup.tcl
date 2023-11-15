@@ -1,0 +1,1 @@
+../../../common/init-scripts/add-welltaps-for-pad-latchup.tcl
