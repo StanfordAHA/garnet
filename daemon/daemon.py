@@ -42,11 +42,11 @@ class GarnetDaemon:
 
     # Permissible daemon commands
     # TODO these are constants, sort of, should be all caps, maybe
-    choices = [ 'help','launch', 'use', 'kill', 'status', 'force' ]
+    choices = [ 'help','launch', 'use', 'kill', 'status', 'force', 'reset' ]
 
     # Disk storage for persistent daemon state
     FN_PID    = "/tmp/garnet-daemon-pid"    # Daemon pid
-    FN_STATUS = "/tmp/garnet-daemon-status" # Daemon status: started, completed, or waiting
+    FN_STATUS = "/tmp/garnet-daemon-status" # Daemon status: busy, completed, or waiting
     FN_STATE0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
     FN_RELOAD = "/tmp/garnet-daemon-reload" # Desired new state (args)
     DAEMONFILES = [ FN_PID, FN_STATUS, FN_STATE0, FN_RELOAD ]
@@ -86,7 +86,10 @@ class GarnetDaemon:
         elif args.daemon == "launch":
             GarnetDaemon.die_if_daemon_exists()
             GarnetDaemon.register_pid()
-            GarnetDaemon.put_status('started')
+            GarnetDaemon.put_status('busy')
+
+        elif args.daemon == "reset":
+            GarnetDaemon.put_status('waiting'); exit()
 
     def loop(args, dbg=1):
         '''Launch daemon and/or watch for updates'''
@@ -109,7 +112,7 @@ class GarnetDaemon:
 
         # On CONT, register status and load new args from 'reload' file
         print(f'\n\n--- DAEMON RESUMES')
-        GarnetDaemon.put_status('started')
+        GarnetDaemon.put_status('busy')
         return gd.load_args()
 
     # ------------------------------------------------------------------------
@@ -156,29 +159,27 @@ class GarnetDaemon:
         pid = GarnetDaemon.retrieve_pid()
         if dbg: print(f'- checking status of process {pid}')
 
-        state0_file = gd.FN_STATE0
-        cmd = f'test -d /proc/{pid}'
-
         if not GarnetDaemon.daemon_exists():
             print("- no daemon found")
             return False
-        else:
-            print(f'- found running daemon {pid}')
 
-            see_if_state0_exists = f'test -f {state0_file}'
-            if not gd.do_cmd(see_if_state0_exists):
-                print(f'- WARNING: cannot find daemon state file "{state0_file}"')
-                print(f'- WARNING: daemon state corrupted: suggest you do "kill {pid}"')
-                return
+        print(f'- found running daemon {pid}')
 
-            # Make sure grid sizes match, at least!
-            state0_args = gd.load_args(state0_file)
-            grid_size = gd.grid_size(state0_args)
-            print(f'- found {grid_size} daemon {pid} w launch-state args = {state0_args.__dict__}')
-            gd.args_match_or_die(state0_args, args)
-            with open(GarnetDaemon.FN_STATUS, 'r') as f:
-                print('- daemon_status: ' + f.read())
-            return True
+        state0_file = gd.FN_STATE0
+
+        if not gd.do_cmd(f'test -f {state0_file}')
+            print(f'- WARNING: cannot find daemon state file "{state0_file}"')
+            print(f'- WARNING: daemon state corrupted: suggest you do "kill {pid}"')
+            return
+
+        # Make sure grid sizes match, at least!
+        state0_args = gd.load_args(state0_file)
+        grid_size = gd.grid_size(state0_args)
+        print(f'- found {grid_size} daemon {pid} w launch-state args = {state0_args.__dict__}')
+        gd.args_match_or_die(state0_args, args)
+        with open(GarnetDaemon.FN_STATUS, 'r') as f:
+            print('- daemon_status: ' + f.read())
+        return True
 
     # ------------------------------------------------------------------------
     # "Private" methods for saving and restoring daemon state
@@ -389,12 +390,12 @@ class GarnetDaemon:
         return f'{args.width}x{args.height}'
 
     def put_status(jobstatus, pid=None, fname=None, dbg=1):
-        "Save daemon status e.g. 'started', 'completed', 'waiting'"
+        "Save daemon status e.g. 'busy', 'completed', 'waiting'"
         if not fname: fname = GarnetDaemon.FN_STATUS
         with open(fname, 'w') as f: f.write(jobstatus)
         
     def get_status(fname=None):
-        "Get daemon status e.g. 'started', 'completed', 'waiting'"
+        "Get daemon status e.g. 'busy', 'completed', 'waiting'"
         if not fname: fname = GarnetDaemon.FN_STATUS
         try:
             with open(fname, 'r') as f: status = f.read()

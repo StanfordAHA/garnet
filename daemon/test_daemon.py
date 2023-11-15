@@ -195,6 +195,21 @@ def test_daemon_use():
     print('\nSecond assertion PASSED')
 
 
+# bookmark
+# TODO launch daemon that waits a minute after launch
+# Use reset mechanism to synchronize
+
+def test_reset():
+    # from subprocess import Popen, PIPE
+    announce()
+    tmpfile = f'GarnetDaemon.test_daemon_use.{int(time.time())}'
+    force_launch_and_capture(tmpfile)
+
+    p = subprocess.run(  ['bash','-c', f'{DAEMON} status | grep "daemon_status: completed"' ] )
+
+
+
+
 def test_incompatible_daemon():
     'launch a 7x13 daemon; use a 3x5 daemon; check for error'
     announce()
