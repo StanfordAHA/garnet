@@ -107,16 +107,18 @@ editPowerVia \
 #-------------------------------------------------------------------------
 set prev_layer m2
 set i 0
-foreach layer { m3 m4 m5 m6 m7 m8 gmz} {
+foreach layer { m3 m4 m5 m6 m7 m8 gmz } {
 
     # configure via gen
     setViaGenMode -reset
-    setViaGenMode -viarule_preference default
-    # setViaGenMode -ignore_DRC true
+    # setViaGenMode -viarule_preference default
+    setViaGenMode -viarule_preference predefined
+    setViaGenMode -preferred_vias_only open
+    setViaGenMode -ignore_DRC false
 
     # configure stripe gen
     setAddStripeMode -reset
-    # setAddStripeMode -ignore_DRC true
+    setAddStripeMode -ignore_DRC false
     setAddStripeMode -stacked_via_bottom_layer $prev_layer \
                      -stacked_via_top_layer    $layer
     
