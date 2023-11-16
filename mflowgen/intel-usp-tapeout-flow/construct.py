@@ -84,8 +84,9 @@ def construct():
   g.connect_by_name( adk, node_run_fullchip_verification )
 
   g.connect_by_name( node_merge_die_ring,        node_merge_tic_before_fill     )
-  g.connect_by_name( node_merge_tic_before_fill, node_put_kor                   )
-  g.connect_by_name( node_put_kor,               node_perform_fill              )
+  # g.connect_by_name( node_merge_tic_before_fill, node_put_kor                   )
+  # g.connect_by_name( node_put_kor,               node_perform_fill              )
+  g.connect_by_name( node_merge_tic_before_fill, node_perform_fill              )
   g.connect_by_name( node_perform_fill,          node_merge_tic_after_fill      )
   g.connect_by_name( node_merge_tic_after_fill,  node_create_final_database     )
   g.connect_by_name( node_create_final_database, node_run_fullchip_verification )
