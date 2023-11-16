@@ -75,8 +75,8 @@ if { $place_tile_array } {
       -snapToSite
 
   # top/bottom routing blockage (signal: all except m5)
-  set ic_rblk_left   [expr $tech_pitch_x * 0.5]
-  set ic_rblk_right  [expr $tech_pitch_x * 0.5]
+  set ic_rblk_left   [expr $tech_pitch_x * 0.5 - 0.1]
+  set ic_rblk_right  [expr $tech_pitch_x * 0.5 - 0.1]
   set ic_rblk_top    [expr $tech_pitch_y * 1]
   set ic_rblk_bottom [expr $tech_pitch_y * 1]
   set ic_rblk_llx [expr $ic_x_loc]
@@ -105,8 +105,8 @@ if { $place_tile_array } {
       -pgnetonly
   
   # left/right routing blockage (signal: all except m6)
-  set ic_rblk_left   [expr $tech_pitch_x * 0.5]
-  set ic_rblk_right  [expr $tech_pitch_x * 0.5]
+  set ic_rblk_left   [expr $tech_pitch_x * 0.5 - 0.1]
+  set ic_rblk_right  [expr $tech_pitch_x * 0.5 - 0.1]
   set ic_rblk_top    [expr $tech_pitch_y * 1]
   set ic_rblk_bottom [expr $tech_pitch_y * 1]
   set ic_rblk_llx [expr $ic_x_loc - $ic_rblk_left]
@@ -178,7 +178,7 @@ if { $place_glb_top } {
 
   # set glb_x_loc [snap_to_grid [expr ([dbGet top.fPlan.box_sizex] - $glb_width)/2.] $pmesh_top_pitch]
   # set glb_y_loc [snap_to_grid [expr $ic_y_loc + $ic_height + ($vert_pitch * $ic2glb_y_dist)] $pmesh_bot_pitch]
-  set glb_x_loc [snap_to_grid 88.344 $tech_pitch_x]
+  set glb_x_loc [snap_to_grid 100.224 $tech_pitch_x]
   set glb_y_loc [snap_to_grid 3133.62 $tech_pitch_y]
 
   # Place GLB
@@ -193,8 +193,8 @@ if { $place_glb_top } {
       -snapToSite
   
   # top/bottom routing blockage (signal: all except m5)
-  set glb_rblk_left   [expr $tech_pitch_x * 0.5]
-  set glb_rblk_right  [expr $tech_pitch_x * 0.5]
+  set glb_rblk_left   [expr $tech_pitch_x * 0.5 - 0.1]
+  set glb_rblk_right  [expr $tech_pitch_x * 0.5 - 0.1]
   set glb_rblk_top    [expr $tech_pitch_y * 1]
   set glb_rblk_bottom [expr $tech_pitch_y * 1]
   set glb_rblk_llx [expr $glb_x_loc]
@@ -223,8 +223,8 @@ if { $place_glb_top } {
       -pgnetonly
   
   # left/right routing blockage (signal: all except m6)
-  set glb_rblk_left   [expr $tech_pitch_x * 0.5]
-  set glb_rblk_right  [expr $tech_pitch_x * 0.5]
+  set glb_rblk_left   [expr $tech_pitch_x * 0.5 - 0.1]
+  set glb_rblk_right  [expr $tech_pitch_x * 0.5 - 0.1]
   set glb_rblk_top    [expr $tech_pitch_y * 1]
   set glb_rblk_bottom [expr $tech_pitch_y * 1]
   set glb_rblk_llx [expr $glb_x_loc - $glb_rblk_left]
