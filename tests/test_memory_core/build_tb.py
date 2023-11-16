@@ -1055,7 +1055,10 @@ class SparseTBBuilder(m.Generator2):
 
             elif hw_node_type == f"{HWNodeType.Reduce}":
                 new_node_type = ReduceNode
-                core_tag = "reduce"
+                # Both pe and reduce sit in reduce_pe_cluster
+                # Give them the same core tag so reduce_pe_cluster.get_bitstream is called 
+                # for both pe and reduce
+                core_tag = "alu"
             elif hw_node_type == f"{HWNodeType.Lookup}":
                 new_node_type = LookupNode
                 core_tag = "lookup"
