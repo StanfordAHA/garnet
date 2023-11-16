@@ -125,20 +125,29 @@ def my_test_daemon():
 
 
 def test_slow_test():
-    assert expect(f'{DAEMON} kill', '')
-    assert expect(f'{DAEMON} status', 'no daemon found')
+    announce()
+    tmpfile = f'GarnetDaemon.test_slow_test.{int(time.time())}'
+    force_launch_and_capture(tmpfile)
+
+    os.remove(tmpfile)
+
+
+    expect(f'{DAEMON} kill', '')
+    expect(f'{DAEMON} status', 'no daemon found')
 
     # Launch a slow daemon, takes 12 seconds to finish its task
     p = subprocess.Popen(f'{DAEMON} launch --buildtime 12'.split())
-    assert expect(f'{DAEMON} status', 'daemon_status: busy')
+    expect(f'{DAEMON} status', 'daemon_status: busy')
 
-    # Try to use too quickly, should complain
-#     assert expect(f'{DAEMON} use --animal: canary', '
+    # Use the daemon, should wait for 'ready', then go
+    expect(f'{DAEMON} use --animal sloth', 'using animal: sloth')
+    expect(f'{DAEMON} status', 'daemon_status: ready')
+
+    # Use daemon again, should finish instantly
+    expect(f'{DAEMON} use --animal slow-loris', 'using animal: slow-loris')
 
 
 #     assert expect(f'{DAEMON} launch --buildtime 12 & # 'waiting 12 seconds'
-
-
 # assert expect(f'{DAEMON} launch --buildtime 12 & # 'waiting 12 seconds'
 # assert expect(f'{DAEMON} status   # 'daemon_status: busy'
 # # Built 4x2 garnet circuit number 1121830
@@ -200,6 +209,56 @@ def print_file_contents_w_prefix(prefix, filename):
     print(lines)
     sys.stdout.flush()
     return file_contents
+
+# These method names are terrible!
+def print_file_contents_w_prefix_new(prefix, filename, first_read=False):
+    '''
+    Print everything new in <filename> since last invocation;
+    put <prefix> in front of each line of output
+    '''
+#     global FILE_INDEX  # Wait are all-camps globals or constants :(
+#     if first_read: FILE_INDEX = 0
+#     
+#     with open(filename, 'r') as f: file_contents = f.read()
+#     lines = file_contents.split('\n')
+# 
+#     # Cut out the first n lines, where n=FILE_INDEX
+#     del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
+
+    reset_catnew()
+    lines = catnew(filename)
+    print_w_prefix(lines)
+#     formatted_contents = prefix + f'\n{prefix}' .join(lines)
+#     print(formatted_contents)
+#     sys.stdout.flush()
+#     return 
+
+def print_w_prefix(prefix, lines):
+    formatted_contents = prefix + f'\n{prefix}' .join(lines)
+    print(formatted_contents)
+    sys.stdout.flush()
+    return 
+
+
+def catnew_reset():
+    global FILE_INDEX; FILE_INDEX = 0
+
+def catnew(filename, first_read=False):
+    'cat everything in file since last newcat() call'
+    with open(filename, 'r') as f: file_contents = f.read()
+    lines = file_contents.split('\n')
+
+    # Cut out the first n lines, where n=FILE_INDEX; update FILE_INDEX
+    global FILE_INDEX; del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
+    return lines
+
+
+
+
+
+
+
+
 
 # test_daemon_use()
 #   launch, look for 'Built 7x13' and NOT 'continuing with'
