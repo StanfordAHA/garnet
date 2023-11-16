@@ -90,10 +90,10 @@ if { $place_tile_array } {
       -exceptpgnet
   
   # top/bottom routing blockage (power, all)
-  set ic_rblk_left   [expr $tech_pitch_x * 1]
-  set ic_rblk_right  [expr $tech_pitch_x * 1]
-  set ic_rblk_top    [expr $tech_pitch_y * 2]
-  set ic_rblk_bottom [expr $tech_pitch_y * 2]
+  set ic_rblk_left   [expr $tech_pitch_x * 1 - 0.04]
+  set ic_rblk_right  [expr $tech_pitch_x * 1 - 0.04]
+  set ic_rblk_top    [expr $tech_pitch_y * 2 - 0.08]
+  set ic_rblk_bottom [expr $tech_pitch_y * 2 - 0.08]
   set ic_rblk_llx [expr $ic_x_loc]
   set ic_rblk_lly [expr $ic_y_loc - $ic_rblk_bottom]
   set ic_rblk_urx [expr $ic_x_loc + $ic_width]
@@ -119,11 +119,11 @@ if { $place_tile_array } {
       -box "$ic_rblk_llx $ic_rblk_lly $ic_rblk_urx $ic_rblk_ury" \
       -exceptpgnet
   
-  # top/bottom routing blockage (power, all)
-  set ic_rblk_left   [expr $tech_pitch_x * 1]
-  set ic_rblk_right  [expr $tech_pitch_x * 1]
-  set ic_rblk_top    [expr $tech_pitch_y * 2]
-  set ic_rblk_bottom [expr $tech_pitch_y * 2]
+  # left/right routing blockage (power, all)
+  set ic_rblk_left   [expr $tech_pitch_x * 1 - 0.04]
+  set ic_rblk_right  [expr $tech_pitch_x * 1 - 0.04]
+  set ic_rblk_top    [expr $tech_pitch_y * 2 - 0.08]
+  set ic_rblk_bottom [expr $tech_pitch_y * 2 - 0.08]
   set ic_rblk_llx [expr $ic_x_loc - $ic_rblk_left]
   set ic_rblk_lly [expr $ic_y_loc]
   set ic_rblk_urx [expr $ic_x_loc + $ic_width + $ic_rblk_right]
@@ -208,10 +208,10 @@ if { $place_glb_top } {
       -exceptpgnet
   
   # top/bottom routing blockage (power, all)
-  set glb_rblk_left   [expr $tech_pitch_x * 1]
-  set glb_rblk_right  [expr $tech_pitch_x * 1]
-  set glb_rblk_top    [expr $tech_pitch_y * 2]
-  set glb_rblk_bottom [expr $tech_pitch_y * 2]
+  set glb_rblk_left   [expr $tech_pitch_x * 1 - 0.04]
+  set glb_rblk_right  [expr $tech_pitch_x * 1 - 0.04]
+  set glb_rblk_top    [expr $tech_pitch_y * 2 - 0.08]
+  set glb_rblk_bottom [expr $tech_pitch_y * 2 - 0.08]
   set glb_rblk_llx [expr $glb_x_loc]
   set glb_rblk_lly [expr $glb_y_loc - $glb_rblk_bottom]
   set glb_rblk_urx [expr $glb_x_loc + $glb_width]
@@ -237,11 +237,11 @@ if { $place_glb_top } {
       -box "$glb_rblk_llx $glb_rblk_lly $glb_rblk_urx $glb_rblk_ury" \
       -exceptpgnet
   
-  # top/bottom routing blockage (power, all)
-  set glb_rblk_left   [expr $tech_pitch_x * 1]
-  set glb_rblk_right  [expr $tech_pitch_x * 1]
-  set glb_rblk_top    [expr $tech_pitch_y * 2]
-  set glb_rblk_bottom [expr $tech_pitch_y * 2]
+  # left/right routing blockage (power, all)
+  set glb_rblk_left   [expr $tech_pitch_x * 1 - 0.04]
+  set glb_rblk_right  [expr $tech_pitch_x * 1 - 0.04]
+  set glb_rblk_top    [expr $tech_pitch_y * 2 - 0.08]
+  set glb_rblk_bottom [expr $tech_pitch_y * 2 - 0.08]
   set glb_rblk_llx [expr $glb_x_loc - $glb_rblk_left]
   set glb_rblk_lly [expr $glb_y_loc]
   set glb_rblk_urx [expr $glb_x_loc + $glb_width + $glb_rblk_right]
@@ -303,6 +303,7 @@ set sram_gap [expr ($core_width - ($num_of_srams * $sram_width)) / ($num_of_sram
 set sram_loc_x [expr $sram_gap + [dbGet top.fPlan.coreBox_llx]]
 set sram_loc_y [expr [dbGet top.fPlan.coreBox_ury] - 69.12 - $sram_height]
 set sram_loc_y [snap_to_grid $sram_loc_y $vert_pitch]
+set sram_loc_y [expr $sram_loc_y - $vert_pitch]
 
 foreach_in_collection sram $srams {
 
