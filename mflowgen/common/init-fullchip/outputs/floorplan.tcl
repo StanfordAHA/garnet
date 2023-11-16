@@ -85,5 +85,9 @@ createRouteBlk \
     -layer {m1 m2 m3 m4 m6 m7 m8} \
     -box "$rbox_llx $rbox_lly $rbox_urx $rbox_ury"
 
+foreach_in_collection x [get_nets pad_*] {
+  setAttribute -net [get_property $x full_name] -skip_routing true
+}
+
 # check_floorplan
 checkFPlan
