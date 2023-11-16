@@ -136,13 +136,16 @@ class GarnetDaemon:
         exit()                         # Kill yourself, daemon will take it from here...
 
     def kill(dbg=1):
+        import time
         if GarnetDaemon.daemon_exists():
             pid = GarnetDaemon.retrieve_pid()  # FIXME there are way too many retrive_pid calls!!!
             if dbg: print(f'- found daemon pid {pid}, killing it now')
             GarnetDaemon.sigkill()
+            time.sleep(1) # Maybe wait a second to let it die
         else:
             print(f'- daemon is already dead')
-        print(f'- cleanup (delete /tmp files associated w daemon)')
+
+        print(f'- cleanup on aisle "/tmp"')
         GarnetDaemon.cleanup()
 
     def daemon_exists(pid=None):
@@ -169,6 +172,7 @@ class GarnetDaemon:
                 if os.path.exists(f): print(f'WARNING found daemon file {f}')
             return 'dead'
 
+        # Don't 'if dbg' this, pytest needs it
         print(f'- found running daemon {pid}')
 
         state0_file = gd.FN_STATE0
@@ -181,7 +185,7 @@ class GarnetDaemon:
         # Make sure grid sizes match, at least!
         state0_args = gd.load_args(state0_file)
         grid_size = gd.grid_size(state0_args)
-        print(f'- found {grid_size} daemon {pid} w launch-state args = {state0_args.__dict__}')
+        if dbg: print(f'- found {grid_size} daemon {pid} w launch-state args = {state0_args.__dict__}')
         gd.args_match_or_die(state0_args, args)
         with open(GarnetDaemon.FN_STATUS, 'r') as f:
             status = f.read()
@@ -201,9 +205,8 @@ class GarnetDaemon:
         'Save current state (args) to arg-save (reload) file'
 
         # Oops well maybe that's okay
-        print(f'resetting glb params arg', flush=True)
+        # print(f'resetting glb params arg', flush=True)
         try:
-            print(f'TRYING', flush=True)
             # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
             GarnetDaemon.saved_glb_params = args.glb_params
             args.glb_params = "SORRY cannot save/restore GlobalBufferParams!"
@@ -214,7 +217,6 @@ class GarnetDaemon:
         # Save args as a sorted dict
         argdic = vars(args)
         sorted_argdic=dict(sorted(argdic.items()))
-        print(f'ARGDIC')
 
         if not fname: fname = GarnetDaemon.FN_RELOAD
         with open(fname, 'w') as f: json.dump(sorted_argdic, f)
@@ -245,18 +247,19 @@ class GarnetDaemon:
     #     def all_daemon_processes_except(*args):
     #     def args_match_or_die(daemon_args, client_args):
 
-    def daemon_wait(args, dbg=1):
+    def daemon_wait(args):
         '''Check daemon status, do not continue until/unless daemon exists AND IS READY'''
         import time
         wait = 2; max = 5 * 60;   # Give up after five minutes
-        while not GarnetDaemon.status(args):
-            print(f'WARNING Cannot find daemon (yet); will wait {wait} seconds and retry')
+        while GarnetDaemon.status(args) != 'ready':
+            print(f'WARNING Daemon busy, will wait {wait} seconds and retry\n')
             time.sleep(wait); wait = wait + wait
             if wait > max:
                 sys.stderr.write('ERROR Timeout waiting for daemon. Did you gorget to launch it?\n')
                 exit(13)
                 break
-        if dbg: print(f'daemon_wait(): found the daemon')
+        print('\n--- DAEMON READY, continuing...')
+        # if dbg: print(f'daemon_wait(): found the daemon')
 
     def die_if_daemon_exists():
         '''If existing daemon is found, issue an error message and die'''
@@ -379,7 +382,7 @@ class GarnetDaemon:
     # Send a "CONTinue" signal to a process
     def sigcont(pid=None, dbg=1):
         if not pid: pid = GarnetDaemon.retrieve_pid()
-        print(f'sending CONT to {pid}')
+        if dbg: print(f'- sending CONT to {pid}', flush=True)
         os.kill(int(pid), signal.SIGCONT)
 
     # TERM did not work, using KILL instead.

@@ -255,8 +255,7 @@ def test_incompatible_daemon():
     print(p2.stderr)
     assert "ERROR: Daemon uses" in p2.stderr
     print('\nSLEEP 2\n')
-    sys.stdout.flush()
-    # time.sleep(2)
+    sys.stdout.flush(); sys.stderr.flush()
     min_sleep()
 
 
@@ -444,6 +443,7 @@ def force_launch_and_capture(capture_file):
     cmd=f'{DAEMON} force |& tee {capture_file}'
     p1 = subprocess.Popen(['bash', '-c', cmd])
     min_sleep()
+    time.sleep(2)
 
     print('\nAPRES LAUNCH')
     daemon_out = print_file_contents_w_prefix('DAEMON: ', capture_file)
