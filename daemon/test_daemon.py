@@ -169,7 +169,7 @@ def test_slow_test():
     print(f'--- STATUS')
     expect(f'{DAEMON} status', 'daemon_status: busy')
 
-    print(f'--- SLOTH');      try_animal('sloth', tmpfile)
+    print(f'--- SLOTH');      try_animal('sloth',      tmpfile)
     print(f'--- SLOW LORIS'); try_animal('slow-loris', tmpfile)
 
     expect(f'{DAEMON} kill', 'killing it now')
@@ -188,24 +188,25 @@ def print_file_contents_w_prefix(prefix, filename):
     Print everything new in <filename> since last invocation;
     put <prefix> in front of each line of output
     '''
-#     global FILE_INDEX  # Wait are all-camps globals or constants :(
-#     if first_read: FILE_INDEX = 0
-#     
-#     with open(filename, 'r') as f: file_contents = f.read()
-#     lines = file_contents.split('\n')
-# 
-#     # Cut out the first n lines, where n=FILE_INDEX
-#     del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
-
-    catnew_reset(); text = catnew(filename)
-    print(f'got text={text}', flush=True)
+    text = catnew(filename, reset=True)
+#     print(f'got text={\n{text}\n}', flush=True)
     print_w_prefix(prefix, text)
     return text
 
-#     formatted_contents = prefix + f'\n{prefix}' .join(lines)
-#     print(formatted_contents)
-#     sys.stdout.flush()
-#     return 
+def catnew_reset():
+    global FILE_INDEX; FILE_INDEX = 0
+
+def catnew(filename, reset=False):
+    'cat everything in file since last newcat() call'
+    global FILE_INDEX
+    if reset: FILE_INDEX = 0
+
+    with open(filename, 'r') as f: file_contents = f.read()
+    lines = file_contents.split('\n')
+
+    # Cut out the first n lines, where n=FILE_INDEX; update FILE_INDEX
+    del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
+    return '\n'.join(lines)
 
 def print_w_prefix(prefix, text):
     lines = text.split('\n')
@@ -215,17 +216,26 @@ def print_w_prefix(prefix, text):
     return 
 
 
-def catnew_reset():
-    global FILE_INDEX; FILE_INDEX = 0
 
-def catnew(filename, first_read=False):
-    'cat everything in file since last newcat() call'
-    with open(filename, 'r') as f: file_contents = f.read()
-    lines = file_contents.split('\n')
+#     global FILE_INDEX  # Wait are all-camps globals or constants :(
+#     if first_read: FILE_INDEX = 0
+#     
+#     with open(filename, 'r') as f: file_contents = f.read()
+#     lines = file_contents.split('\n')
+# 
+#     # Cut out the first n lines, where n=FILE_INDEX
+#     del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
 
-    # Cut out the first n lines, where n=FILE_INDEX; update FILE_INDEX
-    global FILE_INDEX; del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
-    return '\n'.join(lines)
+#     formatted_contents = prefix + f'\n{prefix}' .join(lines)
+#     print(formatted_contents)
+#     sys.stdout.flush()
+#     return 
+
+
+
+
+
+
 
 
 
@@ -257,7 +267,10 @@ def test_daemon_use():
     subprocess.run(f'{DAEMON} kill'.split())
 
     print('\nWAKEUP and flush')
-    daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile); os.remove(tmpfile)
+    # daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile); 
+    daemon_out = catnew(tmpfile, reset=True)
+    print_w_prefix('DAEMON: ', daemon_out)
+    os.remove(tmpfile)
     assert 'using animal: foxy' in daemon_out
     print('\nSecond assertion PASSED')
     # FIXME/TODO where is first assertion? what's going on here?
@@ -452,6 +465,7 @@ def test_wait_stage(): announce_unit(': TBD')
 def try_animal(animal, tmpfile):
     assert expect(f'{DAEMON} use --animal {animal}', 'sending CONT')
     print('sending out the {animal}', flush=True)
+    time.sleep(2)    # Give it a second to process, dude
     daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile)
     assert f'using animal: {animal}' in daemon_out
 
