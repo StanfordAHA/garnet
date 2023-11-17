@@ -130,44 +130,14 @@ def test_slow_test():
     expect(f'{DAEMON} status', 'no daemon found')
 
     # Launch a slow daemon, takes 12 seconds to finish its task
-    pforce = force_launch_and_capture(tmpfile, cmd='force --buildtime 12')
+    force_launch_and_capture(tmpfile, cmd='force --buildtime 12')
     expect(f'{DAEMON} status', 'daemon_status: busy')
 
-    assert expect(f'{DAEMON} use --animal sloth', 'sending CONT')
-    print('sending out the sloth', flush=True)
+    try_animal('sloth', tmpfile)
+    try_animal('slow-loris', tmpfile)
 
-    # assert expect(f'{DAEMON} use --animal sloth', 'using animal: sloth')
-    daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile)
-    assert 'using animal: sloth' in daemon_out
-
-
-
-    expect(f'{DAEMON} status', 'daemon_status: ready')
-
-    expect(f'{DAEMON} kill', '')
-
-#     pforce.kill()
-
-# bookmark/todo
-#     # Use daemon again, should finish instantly
-#     expect(f'{DAEMON} use --animal slow-loris', 'using animal: slow-loris')
-
-# bookmark/todo
-#     os.remove(tmpfile)
-
-
-
-
-
-#     assert expect(f'{DAEMON} launch --buildtime 12 & # 'waiting 12 seconds'
-# assert expect(f'{DAEMON} launch --buildtime 12 & # 'waiting 12 seconds'
-# assert expect(f'{DAEMON} status   # 'daemon_status: busy'
-# # Built 4x2 garnet circuit number 1121830
-# # - using animal: mousie
-# # - DAEMON STOPS and waits...
-# assert expect(f'{DAEMON} status   # 'daemon_status: completed'
-# assert expect(f'{DAEMON} use --animal: canary
-
+    expect(f'{DAEMON} kill', 'killing it now')
+    os.remove(tmpfile)
 
 def test_daemon_launch():  # kill-launch-kill
     'Launch daemon, see if it is running; kill the daemon, see if it is dead'
@@ -487,6 +457,12 @@ def test_cleanup(): announce_unit(': TBD')
 
 ########################################################################
 # Helper functions
+
+def try_animal(animal, tmpfile):
+    assert expect(f'{DAEMON} use --animal {animal}', 'sending CONT')
+    print('sending out the {animal}', flush=True)
+    daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile)
+    assert f'using animal: {animal}' in daemon_out
 
 def expect(cmd, expect):
     '''Run <cmd> and display output. Return True if output contains <spect> string'''
