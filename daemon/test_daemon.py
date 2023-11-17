@@ -110,34 +110,10 @@ def my_test_daemon():
 
     exit()
 
-#bookmark
 ########################################################################
 # Comprehensive full-system tests using prototype daemon
-#    test_daemon_launch()                 # kill-status-launch-wait-status-kill-status
-#    test_kill_launch_kill_status_klks()  # A test that failed once upon a time
-#    test_double_launch()
-#    test_incompatible_daemon()
 
 # bookmark
-def test_slow_test():
-    announce()
-    tmpfile = f'GarnetDaemon.test_slow_test.{int(time.time())}'
-
-    expect(f'{DAEMON} kill', '')
-    expect(f'{DAEMON} status', 'no daemon found')
-
-    # Launch a slow daemon, takes 12 seconds to finish its task
-    force_launch_and_capture(tmpfile, cmd='force --buildtime 12')
-
-    print(f'--- STATUS')
-    expect(f'{DAEMON} status', 'daemon_status: busy')
-
-    print(f'--- SLOTH');      try_animal('sloth', tmpfile)
-    print(f'--- SLOW LORIS'); try_animal('slow-loris', tmpfile)
-
-    expect(f'{DAEMON} kill', 'killing it now')
-    os.remove(tmpfile)
-
 def test_daemon_launch():  # kill-launch-kill
     'Launch daemon, see if it is running; kill the daemon, see if it is dead'
     announce()
@@ -179,6 +155,26 @@ def test_force_launch():
     assert int(pid2) != int(pid1)
     print('...okay!')
     kill_existing_daemon()
+
+def test_slow_test():
+    'Test daemon-wait mechanism for too-early "daemon use" attempts'
+    announce()
+    tmpfile = f'GarnetDaemon.test_slow_test.{int(time.time())}'
+
+    expect(f'{DAEMON} kill', '')
+    expect(f'{DAEMON} status', 'no daemon found')
+
+    # Launch a slow daemon, takes 12 seconds to finish its task
+    force_launch_and_capture(tmpfile, cmd='force --buildtime 12')
+
+    print(f'--- STATUS')
+    expect(f'{DAEMON} status', 'daemon_status: busy')
+
+    print(f'--- SLOTH');      try_animal('sloth', tmpfile)
+    print(f'--- SLOW LORIS'); try_animal('slow-loris', tmpfile)
+
+    expect(f'{DAEMON} kill', 'killing it now')
+    os.remove(tmpfile)
 
 def print_file_contents_w_prefix(prefix, filename):
     with open(filename, 'r') as f: file_contents = f.read()
