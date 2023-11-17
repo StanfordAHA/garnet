@@ -34,6 +34,7 @@ jobs:
         docker pull stanfordaha/garnet:latest
         docker run -d -it --name CONTAINER stanfordaha/garnet:latest bash
         docker exec CONTAINER /bin/bash -c "rm -rf /aha/garnet"
+        docker exec CONTAINER /bin/bash -c "source /aha/bin/activate; pip install psutil"
         docker cp ../garnet CONTAINER:/aha/garnet
 
     - name: Run tests ⚙️
