@@ -113,7 +113,6 @@ def my_test_daemon():
 ########################################################################
 # Comprehensive full-system tests using prototype daemon
 
-# bookmark
 def test_daemon_launch():  # kill-launch-kill
     'Launch daemon, see if it is running; kill the daemon, see if it is dead'
     announce()
@@ -144,7 +143,6 @@ def test_force_launch():
     announce(); daemon = DAEMON
     pid1 = launch_daemon_and_verify()
 
-
     print(f'Force-launch a second daemon, it should kill the first one'); sys.stdout.flush()
     p = subprocess.Popen(f'{DAEMON} force'.split())
     
@@ -156,6 +154,7 @@ def test_force_launch():
     print('...okay!')
     kill_existing_daemon()
 
+# bookmark
 def test_slow_test():
     'Test daemon-wait mechanism for too-early "daemon use" attempts'
     announce()
@@ -176,7 +175,7 @@ def test_slow_test():
     expect(f'{DAEMON} kill', 'killing it now')
     os.remove(tmpfile)
 
-def print_file_contents_w_prefix(prefix, filename):
+def print_file_contents_w_prefix_old(prefix, filename):
     with open(filename, 'r') as f: file_contents = f.read()
     lines = prefix + f'\n{prefix}' .join(file_contents.split('\n'))
     print(lines)
@@ -184,7 +183,7 @@ def print_file_contents_w_prefix(prefix, filename):
     return file_contents
 
 # These method names are terrible!
-def print_file_contents_w_prefix_new(prefix, filename):
+def print_file_contents_w_prefix(prefix, filename):
     '''
     Print everything new in <filename> since last invocation;
     put <prefix> in front of each line of output
