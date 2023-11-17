@@ -156,7 +156,7 @@ class GarnetDaemon:
         if pstatus == 'zombie': return False
         return pid
 
-    def status(args, dbg=0):
+    def status(args, verbose=True, dbg=0):
         gd = GarnetDaemon;
         if dbg: print(f'\n--- STATUS: daemon status requested')
 
@@ -167,13 +167,13 @@ class GarnetDaemon:
         if dbg: print(f'- checking status of process {pid}')
 
         if not GarnetDaemon.daemon_exists():
-            print("- no daemon found")
+            if verbose: print("- no daemon found")
             for f in gd.DAEMONFILES: 
                 if os.path.exists(f): print(f'WARNING found daemon file {f}')
             return 'dead'
 
         # Don't 'if dbg' this, pytest needs it
-        print(f'- found running daemon {pid}')
+        if verbose: print(f'- found running daemon {pid}')
 
         state0_file = gd.FN_STATE0
 
@@ -189,7 +189,7 @@ class GarnetDaemon:
         gd.args_match_or_die(state0_args, args)
         with open(GarnetDaemon.FN_STATUS, 'r') as f:
             status = f.read()
-            print('- daemon_status: ' + status)
+            if verbose: print('- daemon_status: ' + status)
         return status
 
     # ------------------------------------------------------------------------
@@ -247,19 +247,55 @@ class GarnetDaemon:
     #     def all_daemon_processes_except(*args):
     #     def args_match_or_die(daemon_args, client_args):
 
+    def wait_stage(args, inc, ntries):
+        'Check daemon once every <inc> seconds, timeout after <max> tries'
+        import time
+        sys.stdout.write('Waiting'); sys.stdout.flush()
+        for i in range(ntries):
+            time.sleep(inc)
+            sys.stdout.write('.'); sys.stdout.flush()
+            status = GarnetDaemon.status(args, verbose=False)
+            if status == 'ready': print('', flush=True)
+            if status == 'ready': return True
+        print('', flush=True)
+        return False
+
     def daemon_wait(args):
         '''Check daemon status, do not continue until/unless daemon exists AND IS READY'''
-        import time
-        wait = 2; max = 5 * 60;   # Give up after five minutes
-        while GarnetDaemon.status(args) != 'ready':
-            print(f'WARNING Daemon busy, will wait {wait} seconds and retry\n', flush=True)
-            time.sleep(wait); wait = wait + wait
-            if wait > max:
-                sys.stderr.write('ERROR Timeout waiting for daemon. Did you forget to launch it?\n')
-                exit(13)
-                break
+
+        while True:
+            if GarnetDaemon.status(args) == 'ready': break
+
+            print(f'- daemon busy, will retry once per second for twenty seconds')
+            if GarnetDaemon.wait_stage(args, 1, 5): break
+            if GarnetDaemon.wait_stage(args, 1, 5): break
+            if GarnetDaemon.wait_stage(args, 1, 5): break
+            if GarnetDaemon.wait_stage(args, 1, 5): break
+
+            print(f'- daemon still busy, will do twenty more tries @ 2 sec each')
+            if GarnetDaemon.wait_stage(args, 2, 10): break
+            if GarnetDaemon.wait_stage(args, 2, 10): break
+
+            print(f'- 20 tries @ one minute per try:')  # Total 21 min wait
+            if GarnetDaemon.wait_stage(args, 60, 10): break
+            if GarnetDaemon.wait_stage(args, 60, 10): break
+
+            print(f'- 20 tries @ two minutes per try:') # Total 1 hr wait
+            if GarnetDaemon.wait_stage(args, 120, 10): break
+            if GarnetDaemon.wait_stage(args, 120, 10): break
+
+            print(f'- 12 tries @ 5 min / try"') # Total 2 hr wait
+            if GarnetDaemon.wait_stage(args, 300, 4): break
+            if GarnetDaemon.wait_stage(args, 300, 4): break
+            if GarnetDaemon.wait_stage(args, 300, 4): break
+
+            # sys.stderr.write('ERROR Timeout waiting for daemon. Did you forget to launch it?\n')
+            sys.stderr.write('ERROR Timeout after two hours waiting for daemon.\n')
+            sys.stderr.write('Maybe try again later.\n')
+            exit(13)
+            break
+
         print('\n--- DAEMON READY, continuing...')
-        # if dbg: print(f'daemon_wait(): found the daemon')
 
     def die_if_daemon_exists():
         '''If existing daemon is found, issue an error message and die'''

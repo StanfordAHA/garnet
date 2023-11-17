@@ -3,20 +3,16 @@ from argparse import Namespace
 from daemon import GarnetDaemon
 import time
 
-def min_sleep():
-    import time; time.sleep(1)
-
-# bookmark
-# TODO add status checks after launch and use, look for jobno, jobstatus updates
-
+def min_sleep(): time.sleep(1)
 
 # Don't need unit tests if comprehensive tests are good.
 # But yes do turn them on for comprehensive/interactive testing.
 # Not much difference either, way, at this point, really...may as well not skip...
+# TODO separate test_daemon.py, test_units.py?
 SKIP_UNIT_TESTS = True
 SKIP_UNIT_TESTS = False
 
-# Useful globals (is this bad?)
+# Useful globals
 MYPATH = os.path.realpath(__file__)  # E.g. "/aha/garnet/daemon/test_daemon.py"
 MYDIR = os.path.dirname(MYPATH)
 
@@ -25,11 +21,9 @@ DAEMON7x13 = DAEMON(7,13)
 DAEMON3x5  = DAEMON(3, 5)
 DAEMON = DAEMON(7,13) # This is the default? Really?? Good for testing maybe i dunno.
 
-
 # How to: interactive pytest run with full stdout::
 #   pytest --capture=no --noconftest --color=no daemon/test_daemon.py
 
-# Test of tests: for each method in daemon.py, there should be a test here in test_daemon.py
 def test_tests(dbg=0):
     '''For each func def "f" in daemon.py, verify there exists "test_f" in test_daemon.py'''
     announce()
@@ -68,7 +62,6 @@ def test_tests(dbg=0):
 #     alias daemon="python3 $GARNET/util/test_daemon.py --daemon"
 #     daemon launch     # launches 4x2 daemon i guess
 #     daemon use        # uses 4x2 daemon i guess
-#     daemon use        # uses 4x2 daemon i guess
 #     daemon kill       # kills the daemon
 #     daemon launch --width 7 --height 13   # launches 7x13 daemon
 #     etc.
@@ -76,6 +69,7 @@ def test_tests(dbg=0):
 
 def my_test_daemon():
     # announce() NO! not a test omg
+
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--width',  type=int, default=4)
@@ -93,28 +87,30 @@ def my_test_daemon():
         # "kill"   => kill existing daemon and exit
         # "help"   => echo help and exit
 
-    # Build CGRA (stub)
+    # Build CGRA/animal (stub)
     grid_size = GarnetDaemon.grid_size(args)
     garnet_ckt = f"{grid_size} garnet circuit number {os.getpid()}"
-    import time
     print(f'\nPretend like it takes {args.buildtime} seconds to build the circuit')
     print(f'- waiting {args.buildtime} seconds...', flush=True)
     time.sleep(args.buildtime)
-    print(f'\nBuilt {garnet_ckt}')
+    print(f'\nBuilt {garnet_ckt} animal {args.animal}')
+    print(f'- using animal: {args.animal}')
 
     # Daemonology; TODO this could be a separate method call
     while True:
-        print(f'- using animal: {args.animal}')
-        print(f'- gonna build a: {args.animal} grid')
         if not args.daemon: break
 
         # WAIT for a client to send new args for processing
         print('\nLOOPING')
         args = GarnetDaemon.loop(args)
         print(f'- loaded new args {args} i guess?')
+        print(f'- gonna build a: {args.animal} grid')
+        print(f' -updated/used the grid')
+        print(f'- using animal: {args.animal}')
 
     exit()
 
+#bookmark
 ########################################################################
 # Comprehensive full-system tests using prototype daemon
 #    test_daemon_launch()                 # kill-status-launch-wait-status-kill-status
@@ -452,7 +448,8 @@ def test_retrieve_pid(): announce_unit(' - see test_pid_save_restore()')
 def test_put_status():   announce_unit(' - see test_status_save_restore()')
 def test_get_status():   announce_unit(' - see test_status_save_restore()')
 
-def test_cleanup(): announce_unit(': TBD')
+def test_cleanup():    announce_unit(': TBD')
+def test_wait_stage(): announce_unit(': TBD')
 
 ########################################################################
 # Helper functions
@@ -466,7 +463,6 @@ def try_animal(animal, tmpfile):
 def expect(cmd, expect):
     '''Run <cmd> and display output. Return True if output contains <spect> string'''
     # TODO for extra credit maybe <expect> could be a regex omg
-    print(f'expect() pre-run', flush=True)
     p = subprocess.Popen(
         cmd.split(), text=True, 
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -477,7 +473,6 @@ def expect(cmd, expect):
         sys.stdout.write(out); sys.stdout.flush()
         if expect in out: found = True
 
-    print(f'expect() post-run', flush=True)
     return found
 
 def kill_existing_daemon():
