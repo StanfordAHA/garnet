@@ -105,6 +105,7 @@ def my_test_daemon():
     # Daemonology; TODO this could be a separate method call
     while True:
         print(f'- using animal: {args.animal}')
+        print(f'- gonna build a: {args.animal} grid')
         if not args.daemon: break
 
         # WAIT for a client to send new args for processing
@@ -131,10 +132,12 @@ def test_slow_test():
 
     # Launch a slow daemon, takes 12 seconds to finish its task
     force_launch_and_capture(tmpfile, cmd='force --buildtime 12')
+
+    print(f'--- STATUS')
     expect(f'{DAEMON} status', 'daemon_status: busy')
 
-    try_animal('sloth', tmpfile)
-    try_animal('slow-loris', tmpfile)
+    print(f'--- SLOTH');      try_animal('sloth', tmpfile)
+    print(f'--- SLOW LORIS'); try_animal('slow-loris', tmpfile)
 
     expect(f'{DAEMON} kill', 'killing it now')
     os.remove(tmpfile)
@@ -152,8 +155,6 @@ def test_double_launch():  # kill-launch-launch-kill
 
     print('Attempting to launch a second daemon, should get an error message')
     p = subprocess.Popen(f'{DAEMON} launch'.split(), stderr=subprocess.PIPE, text=True)
-    # time.sleep(10)
-    # time.sleep(2)
     min_sleep()
     # First verify that process died on its own:
     status = p.poll()
@@ -176,8 +177,6 @@ def test_force_launch():
     p = subprocess.Popen(f'{DAEMON} force'.split())
     
     # Wait a bit, then see if the new daemon is running
-    # time.sleep(10)
-    # time.sleep(2)
     min_sleep()
     pid2 = verify_daemon_running()
     print(f'Checking first (dead) daemon {pid1} not same as new daemon {pid2}...')
@@ -467,19 +466,19 @@ def try_animal(animal, tmpfile):
 def expect(cmd, expect):
     '''Run <cmd> and display output. Return True if output contains <spect> string'''
     # TODO for extra credit maybe <expect> could be a regex omg
-    p = subprocess.run(
+    print(f'expect() pre-run', flush=True)
+    p = subprocess.Popen(
         cmd.split(), text=True, 
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-    import time; time.sleep(2)
+    found = False
+    while p.poll() is None:
+        out = p.stdout.readline()
+        sys.stdout.write(out); sys.stdout.flush()
+        if expect in out: found = True
 
-    print(p.stdout); return expect in p.stdout
-
-    sys.stdin.flush(); sys.stdout.flush(); sys.stderr.flush(); 
-    print(p.stdout); assert expect in p.stdout
-
-
-
+    print(f'expect() post-run', flush=True)
+    return found
 
 def kill_existing_daemon():
     print(f"Kill existing daemon (p.stdout should say 'already dead')",flush=True)
@@ -496,7 +495,6 @@ def launch_daemon_and_verify(daemon=DAEMON):
     p = subprocess.Popen(f'{DAEMON} launch'.split()); pid0 = p.pid
     print(f'- wait two seconds', flush=True)
     min_sleep()
-    # time.sleep(2)
     pid1 = verify_daemon_running(); assert pid0 == pid1
     # TODO look for e.g. 'Built 7x13' ? Merge w force_launch below?
     return pid0
@@ -511,8 +509,9 @@ def verify_successful_build(capture_file):
 def force_launch_and_capture(capture_file, cmd='force'):
     cmd=f'{DAEMON} {cmd} |& tee {capture_file}'
     p1 = subprocess.Popen(['bash', '-c', cmd])
+
     min_sleep()
-    time.sleep(2)
+    time.sleep(2) # try it without for awhile # NOPE it really needs to stay apparently
     return p1
 
 

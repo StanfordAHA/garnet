@@ -252,10 +252,10 @@ class GarnetDaemon:
         import time
         wait = 2; max = 5 * 60;   # Give up after five minutes
         while GarnetDaemon.status(args) != 'ready':
-            print(f'WARNING Daemon busy, will wait {wait} seconds and retry\n')
+            print(f'WARNING Daemon busy, will wait {wait} seconds and retry\n', flush=True)
             time.sleep(wait); wait = wait + wait
             if wait > max:
-                sys.stderr.write('ERROR Timeout waiting for daemon. Did you gorget to launch it?\n')
+                sys.stderr.write('ERROR Timeout waiting for daemon. Did you forget to launch it?\n')
                 exit(13)
                 break
         print('\n--- DAEMON READY, continuing...')
