@@ -169,6 +169,7 @@ def test_slow_test():
     print(f'--- STATUS')
     expect(f'{DAEMON} status', 'daemon_status: busy')
 
+    catnew_reset()
     print(f'--- SLOTH');      try_animal('sloth',      tmpfile)
     print(f'--- SLOW LORIS'); try_animal('slow-loris', tmpfile)
 
@@ -183,9 +184,10 @@ def test_slow_test():
 def test_daemon_use():
     # from subprocess import Popen, PIPE
     announce()
+    catnew_reset()
     tmpfile = f'GarnetDaemon.test_daemon_use.{int(time.time())}'
     force_launch_and_capture(tmpfile)
-    verify_successful_build(tmpfile)
+    verify_successful_build(tmpfile)  # (calls catnew)
 
     # TODO maybe use expect() instead???
 
@@ -197,8 +199,7 @@ def test_daemon_use():
     subprocess.run(f'{DAEMON} kill'.split())
 
     print('\nWAKEUP and flush')
-    # daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile); 
-    daemon_out = catnew(tmpfile, reset=True)
+    daemon_out = catnew(tmpfile)
     print_w_prefix('DAEMON: ', daemon_out)
     os.remove(tmpfile)
     assert 'using animal: foxy' in daemon_out
@@ -392,36 +393,18 @@ def test_wait_stage(): announce_unit(': TBD')
 ########################################################################
 # Helper functions
 
-def print_file_contents_w_prefix_old(prefix, filename):
-    with open(filename, 'r') as f: file_contents = f.read()
-    lines = prefix + f'\n{prefix}' .join(file_contents.split('\n'))
-    print(lines)
-    sys.stdout.flush()
-    return file_contents
-
-# These method names are terrible!
-def print_file_contents_w_prefix(prefix, filename):
-    '''
-    Print everything new in <filename> since last invocation;
-    put <prefix> in front of each line of output
-    '''
-    text = catnew(filename, reset=True)
-#     print(f'got text={\n{text}\n}', flush=True)
-    print_w_prefix(prefix, text)
-    return text
-
 def catnew_reset():
     global FILE_INDEX; FILE_INDEX = 0
 
 def catnew(filename, reset=False):
     'cat everything in file since last newcat() call'
-    global FILE_INDEX
-    if reset: FILE_INDEX = 0
+    if reset: catnew_reset()
 
     with open(filename, 'r') as f: file_contents = f.read()
     lines = file_contents.split('\n')
 
     # Cut out the first n lines, where n=FILE_INDEX; update FILE_INDEX
+    global FILE_INDEX
     del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
     return '\n'.join(lines)
 
@@ -432,41 +415,15 @@ def print_w_prefix(prefix, text):
     sys.stdout.flush()
     return 
 
-
-
-#     global FILE_INDEX  # Wait are all-camps globals or constants :(
-#     if first_read: FILE_INDEX = 0
-#     
-#     with open(filename, 'r') as f: file_contents = f.read()
-#     lines = file_contents.split('\n')
-# 
-#     # Cut out the first n lines, where n=FILE_INDEX
-#     del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
-
-#     formatted_contents = prefix + f'\n{prefix}' .join(lines)
-#     print(formatted_contents)
-#     sys.stdout.flush()
-#     return 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def try_animal(animal, tmpfile):
     assert expect(f'{DAEMON} use --animal {animal}', 'sending CONT')
-    print('sending out the {animal}', flush=True)
+    print(f'- sacrificing {animal} to daemon', flush=True)
     time.sleep(2)    # Give it a second to process, dude
-    daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile)
+
+    daemon_out = catnew(tmpfile, reset=False)
+    print_w_prefix('DAEMON: ', daemon_out)
+
+
     assert f'using animal: {animal}' in daemon_out
 
 def expect(cmd, expect):
@@ -505,7 +462,9 @@ def launch_daemon_and_verify(daemon=DAEMON):
 
 def verify_successful_build(capture_file):
     print('\nAPRES LAUNCH')
-    daemon_out = print_file_contents_w_prefix('DAEMON: ', capture_file)
+
+    daemon_out = catnew(capture_file, reset=True)
+    print_w_prefix('DAEMON: ', daemon_out)
 
     assert 'Built 7x13' in daemon_out
     print('\nFirst assertion PASSED')
