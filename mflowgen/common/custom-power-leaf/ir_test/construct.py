@@ -46,6 +46,7 @@ def construct(**kwargs):
   # ADK step
 
   # Custom steps
+  checker   = Step( this_dir + '/checker' )
 
   # Default steps
   static_pa = Step( 'cadence-voltus-static-power-analysis', default=True )
@@ -67,7 +68,7 @@ def construct(**kwargs):
                static_ra.i( 'adk' ) \
              )
 
-  g.add_output( 'static_rail_analysis_results', static_ra.o( 'static_rail_analysis_results' ) )
+  g.add_output( 'result', checker.o( 'result' ) )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -75,6 +76,7 @@ def construct(**kwargs):
 
   g.add_step( static_pa )
   g.add_step( static_ra )
+  g.add_step( checker   )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
@@ -82,7 +84,7 @@ def construct(**kwargs):
 
   # Connect by name
   g.connect_by_name( static_pa, static_ra )
-
+  g.connect_by_name( static_ra, checker   )
 
   #-----------------------------------------------------------------------
   # Parameterize
