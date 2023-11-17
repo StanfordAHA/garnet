@@ -122,8 +122,6 @@ def my_test_daemon():
 #    test_incompatible_daemon()
 
 # bookmark
-
-
 def test_slow_test():
     announce()
     tmpfile = f'GarnetDaemon.test_slow_test.{int(time.time())}'
@@ -132,14 +130,11 @@ def test_slow_test():
     expect(f'{DAEMON} status', 'no daemon found')
 
     # Launch a slow daemon, takes 12 seconds to finish its task
-    force_launch_and_capture(tmpfile, cmd='force --buildtime 12')
+    pforce = force_launch_and_capture(tmpfile, cmd='force --buildtime 12')
     expect(f'{DAEMON} status', 'daemon_status: busy')
 
     assert expect(f'{DAEMON} use --animal sloth', 'sending CONT')
     print('sending out the sloth', flush=True)
-
-# bookmark/todo get rid of this omg
-    time.sleep(10)
 
     # assert expect(f'{DAEMON} use --animal sloth', 'using animal: sloth')
     daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile)
@@ -148,6 +143,10 @@ def test_slow_test():
 
 
     expect(f'{DAEMON} status', 'daemon_status: ready')
+
+    expect(f'{DAEMON} kill', '')
+
+#     pforce.kill()
 
 # bookmark/todo
 #     # Use daemon again, should finish instantly
@@ -286,6 +285,7 @@ def test_daemon_use():
     announce()
     tmpfile = f'GarnetDaemon.test_daemon_use.{int(time.time())}'
     force_launch_and_capture(tmpfile)
+    verify_successful_build(tmpfile)
 
     # TODO maybe use expect() instead???
 
@@ -312,6 +312,7 @@ def test_reset():
     announce()
     tmpfile = f'GarnetDaemon.test_daemon_use.{int(time.time())}'
     force_launch_and_capture(tmpfile)
+    verify_successful_build(tmpfile)
 
     p = subprocess.run(  ['bash','-c', f'{DAEMON} status | grep "daemon_status: completed"' ] )
 
@@ -323,6 +324,7 @@ def test_incompatible_daemon():
     announce()
     tmpfile = f'GarnetDaemon.test_incompatigle_daemon.{int(time.time())}'
     force_launch_and_capture(tmpfile)
+    verify_successful_build(tmpfile)
     os.remove(tmpfile)
 
     p2 = subprocess.run(f'{DAEMON3x5} use --animal zebra'.split(), text=True, capture_output=True)
@@ -523,17 +525,20 @@ def launch_daemon_and_verify(daemon=DAEMON):
     # TODO look for e.g. 'Built 7x13' ? Merge w force_launch below?
     return pid0
 
-def force_launch_and_capture(capture_file, cmd='force'):
-    cmd=f'{DAEMON} force |& tee {capture_file}'
-    p1 = subprocess.Popen(['bash', '-c', cmd])
-    min_sleep()
-    time.sleep(2)
-
+def verify_successful_build(capture_file):
     print('\nAPRES LAUNCH')
     daemon_out = print_file_contents_w_prefix('DAEMON: ', capture_file)
 
     assert 'Built 7x13' in daemon_out
     print('\nFirst assertion PASSED')
+
+def force_launch_and_capture(capture_file, cmd='force'):
+    cmd=f'{DAEMON} {cmd} |& tee {capture_file}'
+    p1 = subprocess.Popen(['bash', '-c', cmd])
+    min_sleep()
+    time.sleep(2)
+    return p1
+
 
 def verify_daemon_running():
     print('Check daemon status, should be "found running daemon"'); sys.stdout.flush()
