@@ -1019,7 +1019,14 @@ class SparseTBBuilder(m.Generator2):
                         dim_size = self.input_sizes[tensor][int(mode)]
                     else:
                         dim_size = None
-                    index = node.get_attributes()['index'].strip('"')
+                    if 'vector_reduce_mode' in node.get_attributes():
+                        is_in_vr_mode = node.get_attributes()['vector_reduce_mode'].strip('"')
+                        if is_in_vr_mode == "true":
+                            index = None
+                        else:
+                            index = node.get_attributes()['index'].strip('"')
+                    else: 
+                        index = node.get_attributes()['index'].strip('"')
                     format = node.get_attributes()['format'].strip('"')
                 else:
                     mode = None
@@ -1976,14 +1983,31 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "X"
     # elif 'matmul_ikj.gv' in app_name:
-    elif 'matmul_ikj' in app_name:
+    # MO: new ikj test 
+    elif 'matmul_ikj.gv' in app_name:
 
-        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=sparsities_[0])
-        c_mat = get_tensor(input_name='C', shapes=[shapes_[1], shapes_[2]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=sparsities_[1])
+        #b_mat = get_tensor(input_name='B', shapes=[30, 36], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        #                  dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+        #                  sparsity=0.3)
+        #c_mat = get_tensor(input_name='C', shapes=[36, 15], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        #                  dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+        #                  sparsity=0.7)
+        if 'B' not in cached_inputs:
+            b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                               sparsity=sparsities_[0])
+        else:
+            b_mat = cached_inputs['B']
+            b_shape = b_mat.shape
+            shapes_[0] = b_shape[0]
+            shapes_[1] = b_shape[1]
+        # c_mat = c_matrix.get_matrix()
+        if 'C' not in cached_inputs:
+            c_mat = get_tensor(input_name='C', shapes=[shapes_[1], shapes_[2]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                               sparsity=sparsities_[1])
+        else:
+            c_mat = cached_inputs['C']
 
         # First transpose c_mat
         # c_mat_trans = numpy.transpose(c_mat)
@@ -1991,6 +2015,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # output_matrix = numpy.transpose(output_matrix)
         output_format = "CSF"
         output_name = "X"
+        print("test matrices")
         print(b_mat)
         print(c_mat)
         print(output_matrix)
@@ -2238,6 +2263,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+        print("test matrices")
+        print(b_mat)
+        print(c_mat)
+        print(output_matrix)
         output_format = "CSF"
         output_name = "x"
     elif 'vec_elemmul.gv' in app_name:
