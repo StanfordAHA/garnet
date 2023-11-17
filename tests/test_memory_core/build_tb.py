@@ -1984,7 +1984,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_name = "X"
     # elif 'matmul_ikj.gv' in app_name:
     # MO: new ikj test 
-    elif 'matmul_ikj_hand_BLACKBOX.gv' in app_name:
+    elif 'matmul_ikj.gv' in app_name:
 
         #b_mat = get_tensor(input_name='B', shapes=[30, 36], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
         #                  dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
@@ -2263,6 +2263,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+        print("test matrices")
+        print(b_mat)
+        print(c_mat)
+        print(output_matrix)
         output_format = "CSF"
         output_name = "x"
     elif 'vec_elemmul.gv' in app_name:
