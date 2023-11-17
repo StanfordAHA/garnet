@@ -98,7 +98,7 @@ def my_test_daemon():
     garnet_ckt = f"{grid_size} garnet circuit number {os.getpid()}"
     import time
     print(f'\nPretend like it takes {args.buildtime} seconds to build the circuit')
-    print(f'- waiting {args.buildtime} seconds...')
+    print(f'- waiting {args.buildtime} seconds...', flush=True)
     time.sleep(args.buildtime)
     print(f'\nBuilt {garnet_ckt}')
 
@@ -127,24 +127,37 @@ def my_test_daemon():
 def test_slow_test():
     announce()
     tmpfile = f'GarnetDaemon.test_slow_test.{int(time.time())}'
-    force_launch_and_capture(tmpfile)
-
-    os.remove(tmpfile)
-
 
     expect(f'{DAEMON} kill', '')
     expect(f'{DAEMON} status', 'no daemon found')
 
     # Launch a slow daemon, takes 12 seconds to finish its task
-    p = subprocess.Popen(f'{DAEMON} launch --buildtime 12'.split())
+    force_launch_and_capture(tmpfile, cmd='force --buildtime 12')
     expect(f'{DAEMON} status', 'daemon_status: busy')
 
-    # Use the daemon, should wait for 'ready', then go
-    expect(f'{DAEMON} use --animal sloth', 'using animal: sloth')
+    assert expect(f'{DAEMON} use --animal sloth', 'sending CONT')
+    print('sending out the sloth', flush=True)
+
+# bookmark/todo get rid of this omg
+    time.sleep(10)
+
+    # assert expect(f'{DAEMON} use --animal sloth', 'using animal: sloth')
+    daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile)
+    assert 'using animal: sloth' in daemon_out
+
+
+
     expect(f'{DAEMON} status', 'daemon_status: ready')
 
-    # Use daemon again, should finish instantly
-    expect(f'{DAEMON} use --animal slow-loris', 'using animal: slow-loris')
+# bookmark/todo
+#     # Use daemon again, should finish instantly
+#     expect(f'{DAEMON} use --animal slow-loris', 'using animal: slow-loris')
+
+# bookmark/todo
+#     os.remove(tmpfile)
+
+
+
 
 
 #     assert expect(f'{DAEMON} launch --buildtime 12 & # 'waiting 12 seconds'
@@ -211,7 +224,7 @@ def print_file_contents_w_prefix(prefix, filename):
     return file_contents
 
 # These method names are terrible!
-def print_file_contents_w_prefix_new(prefix, filename, first_read=False):
+def print_file_contents_w_prefix_new(prefix, filename):
     '''
     Print everything new in <filename> since last invocation;
     put <prefix> in front of each line of output
@@ -225,15 +238,18 @@ def print_file_contents_w_prefix_new(prefix, filename, first_read=False):
 #     # Cut out the first n lines, where n=FILE_INDEX
 #     del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
 
-    reset_catnew()
-    lines = catnew(filename)
-    print_w_prefix(lines)
+    catnew_reset(); text = catnew(filename)
+    print(f'got text={text}', flush=True)
+    print_w_prefix(prefix, text)
+    return text
+
 #     formatted_contents = prefix + f'\n{prefix}' .join(lines)
 #     print(formatted_contents)
 #     sys.stdout.flush()
 #     return 
 
-def print_w_prefix(prefix, lines):
+def print_w_prefix(prefix, text):
+    lines = text.split('\n')
     formatted_contents = prefix + f'\n{prefix}' .join(lines)
     print(formatted_contents)
     sys.stdout.flush()
@@ -250,7 +266,7 @@ def catnew(filename, first_read=False):
 
     # Cut out the first n lines, where n=FILE_INDEX; update FILE_INDEX
     global FILE_INDEX; del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
-    return lines
+    return '\n'.join(lines)
 
 
 
@@ -271,6 +287,8 @@ def test_daemon_use():
     tmpfile = f'GarnetDaemon.test_daemon_use.{int(time.time())}'
     force_launch_and_capture(tmpfile)
 
+    # TODO maybe use expect() instead???
+
     p2 = subprocess.run(f'{DAEMON} use --animal foxy'.split(), text=True, capture_output=True)
     sys.stdout.flush()
     min_sleep()
@@ -279,11 +297,10 @@ def test_daemon_use():
     subprocess.run(f'{DAEMON} kill'.split())
 
     print('\nWAKEUP and flush')
-    daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile)
-    os.remove(tmpfile)
-
+    daemon_out = print_file_contents_w_prefix('DAEMON: ', tmpfile); os.remove(tmpfile)
     assert 'using animal: foxy' in daemon_out
     print('\nSecond assertion PASSED')
+    # FIXME/TODO where is first assertion? what's going on here?
 
 
 # bookmark
@@ -313,8 +330,7 @@ def test_incompatible_daemon():
     print(p2.stdout) # FIXME/ERROR pt.stdout says "found 3x5 daemon"
     print(p2.stderr)
     assert "ERROR: Daemon uses" in p2.stderr
-    print('\nSLEEP 2\n')
-    sys.stdout.flush(); sys.stderr.flush()
+    sys.stdout.flush()
     min_sleep()
 
 
@@ -476,7 +492,16 @@ def expect(cmd, expect):
     p = subprocess.run(
         cmd.split(), text=True, 
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    import time; time.sleep(2)
+
     print(p.stdout); return expect in p.stdout
+
+    sys.stdin.flush(); sys.stdout.flush(); sys.stderr.flush(); 
+    print(p.stdout); assert expect in p.stdout
+
+
+
 
 def kill_existing_daemon():
     print(f"Kill existing daemon (p.stdout should say 'already dead')",flush=True)
@@ -498,7 +523,7 @@ def launch_daemon_and_verify(daemon=DAEMON):
     # TODO look for e.g. 'Built 7x13' ? Merge w force_launch below?
     return pid0
 
-def force_launch_and_capture(capture_file):
+def force_launch_and_capture(capture_file, cmd='force'):
     cmd=f'{DAEMON} force |& tee {capture_file}'
     p1 = subprocess.Popen(['bash', '-c', cmd])
     min_sleep()
