@@ -119,6 +119,12 @@ class GarnetDaemon:
         GarnetDaemon.put_status('ready')
         gd.sigstop()
 
+        # Okay but how do we now who sent the CONT and if it's legit?
+        # Answer: require client set status='load-and-go' before sending CONT
+        while GarnetDaemon.get_status() != 'load-and-go':
+            print(f'WARNING got CONT signal but "load-and-go" not set. Re-stopping...')
+            gd.sigstop()
+
         # On CONT, register status and load new args from 'reload' file
         print(f'\n\n--- DAEMON RESUMES')
         GarnetDaemon.put_status('busy')
@@ -432,6 +438,9 @@ class GarnetDaemon:
 
     # Send a "CONTinue" signal to a process
     def sigcont(pid=None, dbg=1):
+        # Tell daemon that it's okay to process this particular CONT
+        GarnetDaemon.put_status('load-and-go')
+
         if not pid: pid = GarnetDaemon.retrieve_pid()
         if dbg: print(f'- sending CONT to {pid}', flush=True)
         os.kill(int(pid), signal.SIGCONT)
