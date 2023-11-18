@@ -1,5 +1,51 @@
 #!/bin/bash
 
+sq="'"
+HELP='
+# --- starting in kiwi ---
+xterm -bg pink -fg black &
+
+# --- now in pink xterm ---
+function docker-launch {
+  image=$1; container=$2; docker pull $image
+  docker run -id --name $container --rm -v /cad:/cad $image bash
+  docker exec -ti $container  /bin/bash
+}
+image=stanfordaha/garnet:latest
+container=deleteme
+docker-launch $image $container
+
+# --- in docker now ---
+source /aha/bin/activate
+(cd garnet; git fetch origin; git checkout origin/refactor)
+garnet/daemon/daemon-test.sh |& tee dtest-log.txt | less
+
+# --- other useful things ---
+docker cp /usr/bin/vim.tiny $container:/usr/bin
+
+dtest_kiwi=/nobackup/steveri/github/garnet/daemon/daemon-test.sh
+dtest_docker=$container:/aha/garnet/daemon/daemon-test.sh
+docker cp $dtest_kiwi $dtest_docker
+'
+
+# alias time='/usr/bin/time -f "\t%E real,\t%U user,\t%S sys"'
+
+if [ "$1" == "--help" ]; then
+    echo "$HELP"; exit
+fi
+
+set -x
+
+app=apps/pointwise
+dtop=/aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/design_top.json
+
+if test -f $dtop; then
+    echo found app $app
+else
+    echo $app not ready yet, must map now
+    aha map ${app} --chain |& tee map-pointwise.log
+fi
+
 # CUT'N'PASTE REGION
 
 # FLAGS1 / DAEMON LAUNCH
@@ -58,52 +104,6 @@ ls /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
 
 
 
-sq="'"
-HELP='
-# --- starting in kiwi ---
-xterm -bg pink -fg black &
-
-# --- now in pink xterm ---
-function docker-launch {
-  image=$1; container=$2; docker pull $image
-  docker run -id --name $container --rm -v /cad:/cad $image bash
-  docker exec -ti $container  /bin/bash
-}
-image=stanfordaha/garnet:latest
-container=deleteme
-docker-launch $image $container
-
-# --- in docker now ---
-source /aha/bin/activate
-(cd garnet; git fetch origin; git checkout origin/refactor)
-garnet/daemon/daemon-test.sh |& tee dtest-log.txt | less
-
-# --- other useful things ---
-docker cp /usr/bin/vim.tiny $container:/usr/bin
-
-dtest_kiwi=/nobackup/steveri/github/garnet/daemon/daemon-test.sh
-dtest_docker=$container:/aha/garnet/daemon/daemon-test.sh
-docker cp $dtest_kiwi $dtest_docker
-'
-
-# alias time='/usr/bin/time -f "\t%E real,\t%U user,\t%S sys"'
-
-
-if [ "$1" == "--help" ]; then
-    echo "$HELP"; exit
-fi
-
-set -x
-
-app=apps/pointwise
-dtop=/aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}/bin/design_top.json
-
-if test -f $dtop; then
-    echo found app $app
-else
-    echo $app not ready yet, must map now
-    aha map ${app} --chain |& tee map-pointwise.log
-fi
 
 
 
