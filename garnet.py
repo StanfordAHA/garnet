@@ -18,6 +18,13 @@ from lassen.sim import PE_fc as lassen_fc
 
 from daemon.daemon import GarnetDaemon
 
+# FIXME disperse this to where it needs to be...
+import metamapper.peak_util as putil
+from mapper.netlist_util import create_netlist_info, print_netlist_info
+from metamapper.coreir_mapper import Mapper
+from metamapper.map_design_top import map_design_top
+from metamapper.node import Nodes
+
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
 set_debug_mode(False)
@@ -25,12 +32,13 @@ set_debug_mode(False)
 from gemstone.generator.generator import Generator
 class Garnet(Generator):
     def __init__(self, args):
+        print("--- Garnet.__init__()")
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
         # @standalone is True, then interconnect_only must also be True.
         if args.standalone:
-            assert interconnect_only
+            assert args.interconnect_only
 
         # configuration parameters
         self.glb_params = args.glb_params
@@ -353,31 +361,54 @@ class Garnet(Generator):
         cutil.load_libs(["cgralib", "commonlib", "float"])
         c.run_passes(["flatten"])
 
-        nodes = gen_CoreIRNodes(16)
+        all_nodes = gen_CoreIRNodes(16)
+        arch_nodes = Nodes("Arch")
 
         putil.load_and_link_peak(
-            nodes,
+            arch_nodes,
             pe_header,
             {"global.PE": self.pe_fc},
         )
 
         putil.load_and_link_peak(
-            nodes,
+            arch_nodes,
             io_header,
             {"global.IO": IO_fc},
         )
 
         putil.load_and_link_peak(
-            nodes,
+            arch_nodes,
             bit_io_header,
             {"global.BitIO": BitIO_fc},
         )
+        
+        putil.load_and_link_peak(
+            all_nodes,
+            pe_header,
+            {"global.PE": self.pe_fc},
+        )
 
-        dag = cutil.coreir_to_dag(nodes, cmod)
-        tile_info = {"global.PE": self.pe_fc, "cgralib.Mem": nodes.peak_nodes["cgralib.Mem"],
-                     "global.IO": IO_fc, "global.BitIO": BitIO_fc, "cgralib.Pond": nodes.peak_nodes["cgralib.Pond"]}
+        putil.load_and_link_peak(
+            all_nodes,
+            io_header,
+            {"global.IO": IO_fc},
+        )
+
+        putil.load_and_link_peak(
+            all_nodes,
+            bit_io_header,
+            {"global.BitIO": BitIO_fc},
+        )
+        
+
+        dag = cutil.coreir_to_dag(all_nodes, cmod)
+        arch_nodes._node_names.add("cgralib.Mem")
+        arch_nodes._node_names.add("cgralib.Pond")
+        mapped_dag = map_design_top(app_dir, arch_nodes, dag)
+        tile_info = {"global.PE": self.pe_fc, "cgralib.Mem": all_nodes.peak_nodes["cgralib.Mem"],
+                     "global.IO": IO_fc, "global.BitIO": BitIO_fc, "cgralib.Pond": all_nodes.peak_nodes["cgralib.Pond"]}
         netlist_info = create_netlist_info(app_dir,
-                                           dag,
+                                           mapped_dag,
                                            tile_info,
                                            load_only,
                                            self.harden_flush,
@@ -386,6 +417,9 @@ class Garnet(Generator):
                                            input_broadcast_branch_factor,
                                            input_broadcast_max_leaves)
 
+
+        # Remapping all of the ports in the application to generic ports that exist in the hardware
+        # Seems really brittle, we should probably do this in a better way
         mem_remap = None
         pe_remap = None
         
@@ -409,7 +443,7 @@ class Garnet(Generator):
                     # get mode...
                     metadata = netlist_info['id_to_metadata'][tag_]
                     mode = "UB"
-                    if 'stencil_valid' in metadata["config"]:
+                    if 'stencil_valid' in metadata["config"] and "stencil_valid" in pin_:
                         mode = 'stencil_valid'
                     elif 'mode' in metadata and metadata['mode'] == 'sram':
                         mode = 'ROM'
@@ -422,31 +456,37 @@ class Garnet(Generator):
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
                     pin_remap = mem_remap[mode][pin_]
+
                     connections_list[idx] = (tag_, pin_remap)
                 elif tag_[0] == 'p':
                     pin_remap = pe_remap['alu'][pin_]
                     connections_list[idx] = (tag_, pin_remap)
             netlist_info['netlist'][netlist_id] = connections_list
 
+        # I guess we are hardcoding these for now
+        pond_remap = {}
+        pond_remap["data_in_pond_0"] = "PondTop_input_width_17_num_0"
+        pond_remap["data_out_pond_0"] = "PondTop_output_width_17_num_0"
+        pond_remap["data_in_pond_1"] = "PondTop_input_width_17_num_1"
+        pond_remap["data_out_pond_1"] = "PondTop_output_width_17_num_1"
+
         if not self.amber_pond:
-            # temporally remapping of port names for the new Pond
             for name, mapping in netlist_info["netlist"].items():
                 for i in range(len(mapping)):
                     (inst_name, port_name) = mapping[i]
-                    if "data_in_pond_0" in port_name:
-                        mapping[i] = (inst_name, "PondTop_input_width_17_num_0")
-                    if "data_out_pond_0" in port_name:
-                        mapping[i] = (inst_name, "PondTop_output_width_17_num_0")
-                    if "data_in_pond_1" in port_name:
-                        mapping[i] = (inst_name, "PondTop_input_width_17_num_1")
-                    if "data_out_pond_1" in port_name:
-                        mapping[i] = (inst_name, "PondTop_output_width_17_num_1")
+                    if port_name in pond_remap:
+                        mapping[i] = (inst_name, pond_remap[port_name])
 
 
         self.pack_ponds(netlist_info)
 
+        all_remaps = {}
+        all_remaps['pe'] = pe_remap['alu']
+        all_remaps['pond'] = pond_remap
+        all_remaps['mem'] = mem_remap
+
         port_remap_fout = open(app_dir + "/design.port_remap", "w")
-        port_remap_fout.write(json.dumps(pe_remap['alu']))
+        port_remap_fout.write(json.dumps(all_remaps))
         port_remap_fout.close()
         
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
