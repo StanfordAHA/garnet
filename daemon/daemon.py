@@ -122,7 +122,7 @@ class GarnetDaemon:
         # Okay but how do we now who sent the CONT and if it's legit?
         # Answer: require client set status='load-and-go' before sending CONT
         while GarnetDaemon.get_status() != 'load-and-go':
-            print(f'WARNING got CONT signal but "load-and-go" not set. Re-stopping...')
+            print(f'\nWARNING got CONT signal but "load-and-go" not set. Re-stopping...')
             gd.sigstop()
 
         # On CONT, register status and load new args from 'reload' file
@@ -226,7 +226,8 @@ class GarnetDaemon:
 
             GarnetDaemon.saved_pe_fc = args.pe_fc
             args.pe_fc = "SORRY cannot save/restore pe_fc of type <family_closure)!"
-        except: pass
+        except:
+            print(f'WARNING could not save glb_params and/or pe_fc')
 
         # Save args as a sorted dict
         argdic = vars(args)
@@ -240,7 +241,8 @@ class GarnetDaemon:
         try:
             args.glb_params = GarnetDaemon.saved_glb_params
             args.pe_fc      = GarnetDaemon.saved_pe_fc
-        except: pass
+        except:
+            print(f'WARNING could not restore glb_params and/or pe_fc')
 
 
     def load_args(fname=None, dbg=0):
