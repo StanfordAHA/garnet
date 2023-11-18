@@ -18,10 +18,19 @@ docker-launch $image $container
 # --- in docker now ---
 source /aha/bin/activate
 (cd garnet; git fetch origin; git checkout origin/refactor)
-garnet/daemon/daemon-test.sh |& tee dtest-log.txt | less
+# garnet/daemon/daemon-test.sh |& tee dtest-log.txt | less
+# see CUT'N'PASTE region below
+
 
 # --- other useful things ---
 docker cp /usr/bin/vim.tiny $container:/usr/bin
+
+GARNET=/nobackup/steveri/github/garnet
+f=garnet.py
+f=daemon/daemon.py
+docker cp $GARNET/$f $container:/aha/garnet/$f
+
+
 
 dtest_kiwi=/nobackup/steveri/github/garnet/daemon/daemon-test.sh
 dtest_docker=$container:/aha/garnet/daemon/daemon-test.sh
@@ -60,7 +69,7 @@ alias j=jobs
 jobs  # <kill tail job maybe>
 
 # MAP
-aha map apps/pointwise --chain >& map.log &
+aha map apps/pointwise --chain |& tee map.log
 tail -f map.log &
 jobs  # <kill tail job maybe>
 
