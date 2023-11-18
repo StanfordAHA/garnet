@@ -99,6 +99,14 @@ jobs  # <kill tail job maybe>
 module load base; module load vcs
 aha test apps/pointwise |& tee test.log
 
+# NO-DAEMON, garnet master
+(cd garnet; git fetch origin; git checkout origin/master)
+\time aha garnet $flags1 |& tee flags1.log       # (time=?)
+aha map ${app} --chain |& tee map-pointwise.log
+\time aha garnet $flags2 |& tee flags2.log       # (time=?)
+
+
+
 # Unable to find /aha/Halide-to-Hardware/apps/hardware_benchmarks/pointwise/bin/design_meta.json
 
 ls /aha/Halide-to-Hardware/apps/hardware_benchmarks/pointwise/bin/
