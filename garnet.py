@@ -664,7 +664,7 @@ def parse_args():
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
 
-    # Daemon choices are maybe ['help','launch', 'use', 'kill', 'force']
+    # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
 
     parser.set_defaults(config_port_pipeline=True)
@@ -870,13 +870,13 @@ def main():
             with open("config.json", "w+") as f:
                 json.dump(ic_reg + core_reg, f)
 
+        # NO DAEMON
+        if not args.daemon: break  # No daemon requested
+
         # DAEMON
-        if args.daemon:
-            print('\nLOOPING')  # WAIT for a client to send new args for processing
-            args = GarnetDaemon.loop(args)
-            print(f'- loaded new args {args} i guess?')
-        else:
-            break
+        print('\nLOOPING')  # WAIT for a client to send new args for processing
+        args = GarnetDaemon.loop(args)
+        print(f'- loaded new args {args} i guess?')
 
 if __name__ == "__main__":
     main()

@@ -209,6 +209,7 @@ def test_daemon_use():
 
 # bookmark
 # TODO launch daemon that waits a minute after launch
+# FIXME we don't have a reset anymore, what is this test about?
 # Use reset mechanism to synchronize
 
 def test_reset():

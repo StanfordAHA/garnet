@@ -42,7 +42,7 @@ class GarnetDaemon:
 
     # Permissible daemon commands
     # TODO these are constants, sort of, should be all caps, maybe
-    choices = [ 'help','launch', 'use', 'kill', 'status', 'force', 'reset' ]
+    choices = [ 'help','launch', 'use', 'kill', 'status', 'force' ]
 
     # Disk storage for persistent daemon state
     FN_PID    = "/tmp/garnet-daemon-pid"    # Daemon pid
@@ -86,8 +86,8 @@ class GarnetDaemon:
         elif args.daemon == "launch":
             GarnetDaemon.launch(args)
 
-        elif args.daemon == "reset":
-            GarnetDaemon.put_status('waiting'); exit()
+#         elif args.daemon == "reset":
+#             GarnetDaemon.put_status('waiting'); exit()
 
     def launch(args):
         gd = GarnetDaemon
