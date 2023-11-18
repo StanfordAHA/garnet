@@ -1,4 +1,10 @@
-import os, sys, signal, subprocess, psutil
+import os, sys, signal, subprocess
+try:
+    import psutil
+except:
+    subprocess.run('pip install psutil'.split())
+    import psutil
+
 import json
 from argparse import Namespace
 
@@ -206,10 +212,12 @@ class GarnetDaemon:
 
         # Oops well maybe that's okay
         # print(f'resetting glb params arg', flush=True)
+        # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
+        # try/except because these args do not exist in pytest trials...
         try:
-            # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
             GarnetDaemon.saved_glb_params = args.glb_params
             args.glb_params = "SORRY cannot save/restore GlobalBufferParams!"
+
             GarnetDaemon.saved_pe_fc = args.pe_fc
             args.pe_fc = "SORRY cannot save/restore pe_fc of type <family_closure)!"
         except: pass
@@ -222,6 +230,13 @@ class GarnetDaemon:
         with open(fname, 'w') as f: json.dump(sorted_argdic, f)
         if dbg: print(f'- saved args {args} to {fname}')
         
+        # try/except because these args do not exist in pytest trials...
+        try:
+            args.glb_params = GarnetDaemon.saved_glb_params
+            args.pe_fc      = GarnetDaemon.saved_pe_fc
+        except: pass
+
+
     def load_args(fname=None, dbg=0):
         'Load state (args) from save-args (reload) file'
         if not fname: fname = GarnetDaemon.FN_RELOAD
