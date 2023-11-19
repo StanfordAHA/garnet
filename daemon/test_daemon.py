@@ -221,9 +221,6 @@ def test_reset():
 
     p = subprocess.run(  ['bash','-c', f'{DAEMON} status | grep "daemon_status: completed"' ] )
 
-
-
-
 def test_incompatible_daemon():
     'launch a 7x13 daemon; use a 3x5 daemon; check for error'
     announce()
@@ -232,13 +229,21 @@ def test_incompatible_daemon():
     verify_successful_build(tmpfile)
     os.remove(tmpfile)
 
+    # status check should *not* err out for size difference!
+    p1 = subprocess.run(f'{DAEMON3x5} status'.split(), text=True, capture_output=True)
+    print(p1.stdout); print(p1.stderr)
+    assert "ERROR: Daemon uses" not in p1.stderr
+    print('Second assertion PASSED')
+    sys.stdout.flush(); min_sleep()
+
     p2 = subprocess.run(f'{DAEMON3x5} use --animal zebra'.split(), text=True, capture_output=True)
     # p2 = subprocess.run(f'{DAEMON3x5} use --animal zebra'.split())
     print(p2.stdout) # FIXME/ERROR pt.stdout says "found 3x5 daemon"
+                     # Eh? what's wrong with that??
     print(p2.stderr)
     assert "ERROR: Daemon uses" in p2.stderr
-    sys.stdout.flush()
-    min_sleep()
+    print('Third assertion PASSED (task failed successfully)')
+    sys.stdout.flush(); min_sleep()
 
 
     print('\nKILL the daemon\n')

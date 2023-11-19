@@ -142,10 +142,11 @@ class GarnetDaemon:
         return GarnetDaemon_HELP
 
     def use(args):
-        GarnetDaemon.daemon_wait(args) # Wait for daemon to exist
-        GarnetDaemon.save_args(args)   # Save args where the daemon will find them
-        GarnetDaemon.sigcont()         # Tell daemon to CONTinue
-        exit()                         # Kill yourself, daemon will take it from here...
+        GarnetDaemon.daemon_wait(args)       # Wait for daemon to exist
+        GarnetDaemon.save_args(args)         # Save args where the daemon will find them
+        GarnetDaemon.args_match_or_die(args) # Grid size must match!!! (todo combine w/sigcont?)
+        GarnetDaemon.sigcont()               # Tell daemon to CONTinue
+        exit()                               # Kill yourself, daemon will take it from here...
 
     def kill(dbg=1):
         import time
@@ -194,11 +195,10 @@ class GarnetDaemon:
             print(f'- WARNING: daemon state corrupted: suggest you do "kill {pid}"')
             return
 
-        # Make sure grid sizes match, at least!
         state0_args = gd.load_args(state0_file)
         grid_size = gd.grid_size(state0_args)
-        if dbg: print(f'- found {grid_size} daemon {pid} w launch-state args = {state0_args.__dict__}')
-        gd.args_match_or_die(state0_args, args)
+        if verbose: print(f'- found running {grid_size} daemon {pid}')
+
         with open(GarnetDaemon.FN_STATUS, 'r') as f:
             status = f.read()
             if verbose: print('- daemon_status: ' + status)
@@ -374,9 +374,11 @@ class GarnetDaemon:
         return daemon_pids
         
 
-    def args_match_or_die(daemon_args, client_args):
+    def args_match_or_die(client_args):
         '''Daemon and client args must match exactly, else ERR and DIE'''
         gd = GarnetDaemon
+        daemon_args = gd.load_args(GarnetDaemon.FN_STATE0)
+
         dgrid = gd.grid_size(daemon_args, 'daemon')
         cgrid = gd.grid_size(client_args, 'client')
         if dgrid != cgrid:
