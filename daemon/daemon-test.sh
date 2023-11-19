@@ -24,6 +24,7 @@ source /aha/bin/activate
 
 # --- other useful things ---
 docker cp /usr/bin/vim.tiny $container:/usr/bin
+alias vim=vim.tiny
 
 GARNET=/nobackup/steveri/github/garnet
 f=garnet.py

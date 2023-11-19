@@ -172,9 +172,9 @@ def test_slow_test():
     catnew_reset()
     print(f'--- SLOTH');      try_animal('sloth',      tmpfile)
     print(f'--- SLOW LORIS'); try_animal('slow-loris', tmpfile)
+    os.remove(tmpfile)
 
     expect(f'{DAEMON} kill', 'killing it now')
-    os.remove(tmpfile)
 
 # test_daemon_use()
 #   launch, look for 'Built 7x13' and NOT 'continuing with'
@@ -224,7 +224,7 @@ def test_reset():
 def test_incompatible_daemon():
     'launch a 7x13 daemon; use a 3x5 daemon; check for error'
     announce()
-    tmpfile = f'GarnetDaemon.test_incompatigle_daemon.{int(time.time())}'
+    tmpfile = f'GarnetDaemon.test_incompatible_daemon.{int(time.time())}'
     force_launch_and_capture(tmpfile)
     verify_successful_build(tmpfile)
     os.remove(tmpfile)
