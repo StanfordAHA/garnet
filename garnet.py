@@ -704,7 +704,7 @@ def parse_args():
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
 
-    # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status']
+    # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
 
     parser.set_defaults(config_port_pipeline=True)

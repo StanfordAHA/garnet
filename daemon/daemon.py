@@ -48,7 +48,7 @@ class GarnetDaemon:
 
     # Permissible daemon commands
     # TODO these are constants, sort of, should be all caps, maybe
-    choices = [ 'help','launch', 'use', 'kill', 'status', 'force' ]
+    choices = [ 'help','launch', 'use', 'kill', 'status', 'force', 'wait' ]
 
     # Disk storage for persistent daemon state
     FN_PID    = "/tmp/garnet-daemon-pid"    # Daemon pid
@@ -92,8 +92,8 @@ class GarnetDaemon:
         elif args.daemon == "launch":
             GarnetDaemon.launch(args)
 
-#         elif args.daemon == "reset":
-#             GarnetDaemon.put_status('waiting'); exit()
+        elif args.daemon == "wait":
+            GarnetDaemon.daemon_wait(args); exit()
 
     def launch(args):
         gd = GarnetDaemon
@@ -273,7 +273,7 @@ class GarnetDaemon:
     def wait_stage(args, inc, ntries):
         'Check daemon once every <inc> seconds, timeout after <max> tries'
         import time
-        sys.stdout.write('Waiting'); sys.stdout.flush()
+        sys.stdout.write(f'- wait{ntries} '); sys.stdout.flush()
         for i in range(ntries):
             time.sleep(inc)
             sys.stdout.write('.'); sys.stdout.flush()
