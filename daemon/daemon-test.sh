@@ -52,7 +52,7 @@ if test -f $dtop; then
     echo found app $app
 else
     echo $app not ready yet, must map now
-    aha map ${app} --chain |& tee map-pointwise.log
+    aha map ${app} --chain |& tee map-$(basename app).log
 fi
 
 # CUT'N'PASTE REGION
@@ -63,15 +63,35 @@ echo flags1=$flags1 | fold -sw 120
 
 # DAEMON LAUNCH
 export TIME="\t%E real,\t%U user,\t%S sys"
+jobs  # <kill tail job maybe>
 \time aha garnet $flags1 --daemon launch >& launch-log &
 tail -f launch-log &
 alias j=jobs
 jobs  # <kill tail job maybe>
 
+# DAEMON WAIT
+function wait_for_deamon_ready {
+    [ "$1" ] && timeout=$1 || timeout=10
+
+    # unset DONE; while [ ! "$DONE" ]; do echo no done yet; DONE=4; done
+    unset DONE; while [ ! "$DONE" ]; do
+        size="--width 28 --height 16"
+        python /aha/garnet/garnet.py --daemon status $size |& grep 'daemon_status: busy' || DONE=true
+        echo "Daemon busy; waiting $timeout seconds..."
+        sleep $timeout
+    done
+    python /aha/garnet/garnet.py --daemon status $size |& grep 'daemon_status: '
+}
+wait_for_deamon_ready 10
+
 # MAP
 aha map apps/pointwise --chain |& tee map.log
 tail -f map.log &
 jobs  # <kill tail job maybe>
+
+# # PNR?
+# aha pnr apps/pointwise --width 28 --height 16
+
 
 # FLAGS2
 ext=png; 
@@ -92,18 +112,33 @@ echo flags2=$flags2 | fold -sw 120
 # DAEMON USE
 tail -f launch-log &
 export TIME="\t%E real,\t%U user,\t%S sys"
-\time aha garnet $flags2 --daemon use |& tee use.log
+\time aha garnet $flags2 --daemon use |& tee use.log  # 0:03.18 real,   3.49 user,      3.85 sys
+
 jobs  # <kill tail job maybe>
 
+# PNR
+
+# Unable to find /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise/bin/design_meta.json
+pwdir=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise
+ls -l $pwdir/bin/design_meta.json  # cannot access
+aha pnr apps/pointwise --width 28 --height 16 |& tee pnr.log
+ls -l $pwdir/bin/design_meta.json  # exists
+
+
 # TEST
+which vcs
 module load base; module load vcs
 aha test apps/pointwise |& tee test.log
+# APP0-pointwise passed
+
+
 
 # NO-DAEMON, garnet master
 (cd garnet; git fetch origin; git checkout origin/master)
-\time aha garnet $flags1 |& tee flags1.log       # (time=?)
+\time aha garnet $flags1 |& tee flags1.log       # 10:47 real, 643 user, 13 sys
 aha map ${app} --chain |& tee map-pointwise.log
-\time aha garnet $flags2 |& tee flags2.log       # (time=?)
+\time aha garnet $flags2 |& tee flags2.log       #  2:20 real, 136 user,  8 sys
+
 
 
 
