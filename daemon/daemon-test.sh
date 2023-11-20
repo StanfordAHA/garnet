@@ -24,7 +24,10 @@ docker-launch $image $container
 # --- in docker now ---
 source /aha/bin/activate
 (cd garnet; git fetch origin; git checkout origin/refactor)
-# garnet/daemon/daemon-test.sh |& tee dtest-log.txt | less
+# garnet/daemon/daemon-test.sh |& tee dtest-log.txt | less -r
+garnet/daemon/daemon-test.sh >& dtest-log.txt &
+tail -f dtest-log.txt | less -r
+
 # see CUT`N`PASTE region below
 
 # ------------------------------------------------------------------------
@@ -126,8 +129,10 @@ test -e $dmj && echo found json file || echo "NO JSON FILE (yet)"
 
 # POINTWISE TEST
 t_start=`date +%s`
-which vcs || module load base
-which vcs || module load vcs
+if not which vcs; then
+  . /cad/modules/tcl/init/bash
+    module load base; module load vcs
+fi
 aha test apps/pointwise |& tee test.log
 t_test=$(( `date +%s` - $t_start ))
 echo "Pointwise test took $t_test seconds"
