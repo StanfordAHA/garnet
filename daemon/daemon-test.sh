@@ -129,7 +129,7 @@ test -e $dmj && echo found json file || echo "NO JSON FILE (yet)"
 
 # POINTWISE TEST
 t_start=`date +%s`
-if not which vcs; then
+if ! which vcs; then
   . /cad/modules/tcl/init/bash
     module load base; module load vcs
 fi
