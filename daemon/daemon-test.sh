@@ -1,6 +1,10 @@
 #!/bin/bash
 
 HELP='
+# ------------------------------------------------------------------------
+# 1. How to launch a docker session from kiwi
+# in a separate window with a pink background:
+
 # --- starting in kiwi ---
 xterm -bg pink -fg black &
 
@@ -14,11 +18,17 @@ image=stanfordaha/garnet:latest
 container=deleteme
 docker-launch $image $container
 
+# ------------------------------------------------------------------------
+# 2. How to run the daemon test from inside docker
+
 # --- in docker now ---
 source /aha/bin/activate
 (cd garnet; git fetch origin; git checkout origin/refactor)
 # garnet/daemon/daemon-test.sh |& tee dtest-log.txt | less
 # see CUT`N`PASTE region below
+
+# ------------------------------------------------------------------------
+# 3. How to transfer files from kiwi to docker etc.
 
 # --- other useful things ---
 docker cp /usr/bin/vim.tiny $container:/usr/bin
@@ -32,10 +42,6 @@ f=daemon/daemon.py
 if [ "$1" == "--help" ]; then echo "$HELP"; exit; fi
 
 echo "--- BEGIN DAEMON_TEST.SH"
-
-# So. Whatta we want to do?
-# Some kinda before-and-after
-# Look to regress for guidance maybe
 
 ##############################################################################
 # Garnet build 4610:
@@ -75,29 +81,69 @@ function get_flags2 {
 flags2=`get_flags2 apps/pointwise`
 echo flags2=$flags2 | fold -sw 120
 
+# This relies heavily no globals, so WILL NOT WORK TO RUN IN A SUBSHELL!!!
+function set_time_delta {
+    TNOW=`date +%s`
+    [ "$TPREV" ] || TPREV=$TNOW
+    [ "$1" == "--reset" ] && return
+    TDELTA=$(($TNOW - $TPREV))
+    TPREV=$TNOW
+}
+
 ##############################################################################
-# GARNET BUILD, NO DAEMON
-t0=`date +%s`; aha garnet $flags1 |& tee garnet_nodaemon.log; t1=`date +%s`  # 1700417018
-t_garnet_nodaemon=$(($t1 - $t0))
-echo "Initial garnet build took $t_garnet_nodaemon seconds"
+# GARNET BUILD & LAUNCH DAEMON
 
-# POINTWISE MAP
+# aha garnet --daemon kill
+# t0=`date +%s`; aha garnet $flags1 --daemon launch |& tee garnet.log; t1=`date +%s`
+# t_garnet=$(($t1 - $t0))
+# echo "Initial garnet build took $t_garnet seconds"
+
+aha garnet --daemon kill
+set_time_delta --reset
+
+aha garnet $flags1 --daemon launch |& sed 's/^/DAEMON: /' | tee garnet.log
+aha garnet --daemon wait
+set_time_delta; t_garnet=$TDELTA
+echo "Initial garnet build took $t_garnet seconds"
+
+# MAP ("COMPILE")
 app=apps/pointwise
-t0=`date +%s`; aha map ${app} --chain |& tee pointwise_map.log; t1=`date +%s`
-t_pointwise_map=$(($t1 - $t0))
-echo "Pointwise map took $t_pointwise_map seconds"
 
-# TODO INSERT POINTWISE COMPILE W/DAEMON HERE
+# t0=`date +%s`; aha map ${app} --chain |& tee map.log; t1=`date +%s`
+# t_map=$(($t1 - $t0))
+# echo "Pointwise map took $t_map seconds"
 
-# POINTWISE PNR, NO DAEMON
+
+aha map ${app} --chain |& tee map.log
+t_map=$TDELTA
+echo "Pointwise map took $t_map seconds"
+
+
+# PNR ("MAP"), using daemon
 app=apps/pointwise
 flags2=`get_flags2 $app`; echo flags2=$flags2 | fold -sw 120
-#
-# bookmark
-#
-t0=`date +%s`; aha garnet $flags2 |& tee pointwise_pnr.log; t1=`date +%s`
-t_pointwise_pnr=$(($t1 - $t0))
-echo "No-daemon pointwise compile took $t_pointwise_pnr seconds"
+aha garnet $flags2 --daemon use |& tee pnr.log
+aha garnet daemon --wait
+t_pnr_daemon=$TDELTA
+echo "Pointwise x/daemon compile took $t_pnr_daemon seconds"
+
+# PNR ("MAP"), no daemon
+app=apps/pointwise
+flags2=`get_flags2 $app`; echo flags2=$flags2 | fold -sw 120
+aha garnet $flags2 |& tee pnr.log
+aha garnet daemon --wait
+t_pnr_no_daemon=$TDELTA
+echo "Pointwise x/daemon compile took $t_pnr_no_daemon seconds"
+
+# # POINTWISE PNR, NO DAEMON
+# app=apps/pointwise
+# flags2=`get_flags2 $app`; echo flags2=$flags2 | fold -sw 120
+# #
+# # bookmark
+# #
+# t0=`date +%s`; aha garnet $flags2 |& tee pnr.log; t1=`date +%s`
+# t_pnr=$(($t1 - $t0))
+# echo "No-daemon pointwise compile took $t_pnr seconds"
 
 # Unable to find /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise/bin/design_meta.json
 j=/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise/bin/design_meta.json
@@ -109,19 +155,16 @@ cd /aha
 
 test -e $j && echo found json file || echo "NO JSON FILE (yet)"
 
-
-
-
 # # POINTWISE PNR
 # app=apps/pointwise
-# t0=`date +%s`; aha pnr $app --width 28 --height 16 |& tee pointwise_pnr.log; t1=`date +%s`
+# t0=`date +%s`; aha pnr $app --width 28 --height 16 |& tee pnr.log; t1=`date +%s`
 # #
 # # --- bookmark ---------------------------------------------------------------
 # #
-# t_pointwise_pnr=$(($t1 - $t0))
-# echo "No-daemon pointwise pnr took $t_pointwise_pnr seconds"
+# t_pnr=$(($t1 - $t0))
+# echo "No-daemon pointwise pnr took $t_pnr seconds"
 
-# cp ./bin/map_result/pointwise/pointwise_to_metamapper.json ./bin/design_top.json
+# cp ./bin/map_result/pointwise/to_metamapper.json ./bin/design_top.json
 
 # Unable to find /aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise/bin/design_meta.json
 
@@ -129,21 +172,24 @@ test -e $j && echo found json file || echo "NO JSON FILE (yet)"
 # POINTWISE TEST
 which vcs || module load base
 which vcs || module load vcs
-t0=`date +%s`; aha test apps/pointwise |& tee pointwise_test.log; t1=`date +%s`
-t_pointwise_test=$(($t1 - $t0))
-echo "Pointwise test took $t_pointwise_test seconds"
 
-t_pointwise=$(($t_pointwise_map + $t_pointwise_pnr + $t_pointwise_test))
+# t0=`date +%s`; aha test apps/pointwise |& tee test.log; t1=`date +%s`
+# t_test=$(($t1 - $t0))
+aha test apps/pointwise |& tee test.log
+t_test=$TDELTA
+echo "Pointwise test took $t_test seconds"
 
-t_pointwise_pnr=$t_pointwise_compile
+t_pointwise=$(($t_map + $t_pnr + $t_test))
+
+t_pnr=$t_compile
 # SUMMARY
 
 fmt="%-35s %4d seconds\n"
 printf "$fmt" "Initial garnet build"  $t_garnet;\
 printf "%s  %s\n" "---------------------------------" "-----------";\
-printf "$fmt" "Pointwise 'compile' (map)"  $t_pointwise_map;\
-printf "$fmt" "No-daemon pointwise 'compile' (pnr)"  $t_pointwise_pnr;\
-printf "$fmt" "Pointwise test"  $t_pointwise_test;\
+printf "$fmt" "Pointwise 'compile' (map)"  $t_map;\
+printf "$fmt" "No-daemon pointwise 'compile' (pnr)"  $t_pnr;\
+printf "$fmt" "Pointwise test"  $t_test;\
 printf "$fmt" "Pointwise total"  $t_pointwise
 
 # Initial garnet build                 665 seconds
@@ -158,7 +204,7 @@ printf "$fmt" "Pointwise total"  $t_pointwise
 printf "%s\n" "STEP                 TOTAL  COMPILE    MAP     TEST " ;\
 printf "%s\n" "-------------------  -----  -------  -------  ------" ;\
 printf "%-19s  %5d\n" garnet $t_garnet ;\
-printf "%-19s  %5d  %5d    %5d   %5d\n" $app $t_pointwise $t_pointwise_map $t_pointwise_pnr $t_pointwise_test
+printf "%-19s  %5d  %5d    %5d   %5d\n" $app $t_pointwise $t_map $t_pnr $t_test
 
 # STEP                 TOTAL  COMPILE    MAP     TEST 
 # -------------------  -----  -------  -------  ------
@@ -175,9 +221,9 @@ printf "%-19s  %5d  %5d    %5d   %5d\n" $app $t_pointwise $t_pointwise_map $t_po
 
 # SUMMARY
 echo "Initial garnet build took $t_garnet seconds";\
-echo "Pointwise map took $t_pointwise_map seconds";\
-echo "No-daemon pointwise compile (pnr) took $t_pointwise_pnr seconds";\
-echo "Pointwise test took $t_pointwise_test seconds"
+echo "Pointwise map took $t_map seconds";\
+echo "No-daemon pointwise compile (pnr) took $t_pnr seconds";\
+echo "Pointwise test took $t_test seconds"
 
 
 # Initial garnet build               665 seconds
@@ -408,4 +454,16 @@ log=flags2-${w}x${h}.log
 \time aha garnet $flags2 >& $log &
 
 # alias time='/usr/bin/time -f "\t%E real,\t%U user,\t%S sys"'
+
+##############################################################################
+# OLD
+exit
+
+
+do_step \
+    "Initial garnet build" \
+    "aha garnet $flags1 --daemon launch" \
+    garnet.log
+t_garnet=STEPTIME
+
 
