@@ -373,10 +373,12 @@ class GarnetDaemon:
     def all_daemon_procs():
         '''Return a list of all daemon processes'''
         # Look for  procs w args "--daemon" AND "launch"
+        # AND "garnet.py" b/c do not want false positive when
+        # "aha garnet --deamon launch" spawns "garnet.py --daemon launch"
         def match(pid):
             try:    cmdline = psutil.Process(pid).cmdline()
             except: return False
-            return  ("--daemon" in cmdline) and ("launch" in cmdline)
+            return  ("--daemon" in cmdline) and ("launch" in cmdline) and ("garnet.py" in cmdline)
         daemon_pids = list(filter( lambda pid: match(pid), psutil.pids() ))
         return daemon_pids
         
