@@ -1,4 +1,6 @@
 import os, sys, signal, subprocess
+import time
+
 try:
     import psutil
 except:
@@ -63,6 +65,9 @@ class GarnetDaemon:
     # This is where we save unsaveable args :(
     saved_glb_params = None
     saved_pe_fc = None
+
+    # Limit orphan checks to ONCE per session
+    did_orphan_already=False
 
     # "PUBLIC" methods: initial_check(), loop()
 
@@ -149,7 +154,6 @@ class GarnetDaemon:
         exit()                               # Kill yourself, daemon will take it from here...
 
     def kill(dbg=1):
-        import time
         if GarnetDaemon.daemon_exists():
             pid = GarnetDaemon.retrieve_pid()  # FIXME there are way too many retrive_pid calls!!!
             if dbg: print(f'- found daemon pid {pid}, killing it now')
@@ -272,7 +276,6 @@ class GarnetDaemon:
 
     def wait_stage(args, inc, ntries):
         'Check daemon once every <inc> seconds, timeout after <max> tries'
-        import time
         sys.stdout.write(f'- wait{ntries} '); sys.stdout.flush()
         for i in range(ntries):
             time.sleep(inc)
@@ -285,7 +288,7 @@ class GarnetDaemon:
 
     def daemon_wait(args):
         '''Check daemon status, do not continue until/unless daemon exists AND IS READY'''
-
+        time.sleep(2)
         while True:
             if GarnetDaemon.status(args) == 'ready': break
 
@@ -339,6 +342,10 @@ class GarnetDaemon:
     def check_for_orphans():
         '''Looks for orphan daemon processes, issues warnings recommending kill'''
 
+        # Only need to check for orphans ONCE per session 
+        if GarnetDaemon.did_orphan_already: return True
+        GarnetDaemon.did_orphan_already = True
+
         # Get all daemon processes EXCEPT:
         # - exclude "official" daemon
         # - exclude self because we might be in the process of launching
@@ -373,7 +380,6 @@ class GarnetDaemon:
         daemon_pids = list(filter( lambda pid: match(pid), psutil.pids() ))
         return daemon_pids
         
-
     def args_match_or_die(client_args):
         '''Daemon and client args must match exactly, else ERR and DIE'''
         gd = GarnetDaemon
