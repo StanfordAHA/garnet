@@ -140,6 +140,7 @@ for app in $apps; do
     set -x
     cd /aha/Halide-to-Hardware/apps/hardware_benchmarks/$app
     make clean 
+    cd /aha
 )
 
 # MAP ("COMPILE")
@@ -151,14 +152,14 @@ echo "Pointwise map took $t_map seconds"
 # PNR ("MAP"), no daemon
 t_start=`date +%s`
 # aha garnet $flags2 |& tee pnr_no_daemon.log
-aha pnr $app -width 28 --height 16 |& tee pnr_no_daemon.log
+aha pnr $app --width 28 --height 16 |& tee pnr_no_daemon.log
 t_pnr_no_daemon=$(( `date +%s` - $t_start ))
 echo "No-daemon pointwise compile took $t_pnr_no_daemon seconds"
 
 # PNR ("MAP"), using daemon
 t_start=`date +%s`
 # aha garnet $flags2 --daemon use |& tee pnr_daemon.log
-aha pnr $app -width 28 --height 16 --daemon use |& tee pnr_daemon.log
+aha pnr $app --width 28 --height 16 --daemon use |& tee pnr_daemon.log
 aha garnet --daemon wait
 t_pnr_daemon=$(( `date +%s` - $t_start ))
 echo "Pointwise w/daemon compile took $t_pnr_daemon seconds"
