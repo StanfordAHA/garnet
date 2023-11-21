@@ -61,13 +61,17 @@ class GarnetDaemon:
 
     # Convenient place to save pid instead of doing 'os.getpid()' all the time
     PID = os.getpid()
+    
+    # Convenient place to save args instead of passing them around via method calls (dangerous?)
+    args = None
 
     # This is where we save unsaveable args :(
     saved_glb_params = None
     saved_pe_fc = None
 
-    # Limit orphan checks to ONCE per session
+    # Limit orphan checks to ONCE per session etc.
     did_orphan_already=False
+    already_found_files=False
 
     # "PUBLIC" methods: initial_check(), loop()
 
@@ -98,7 +102,7 @@ class GarnetDaemon:
             GarnetDaemon.launch(args)
 
         elif args.daemon == "wait":
-            GarnetDaemon.daemon_wait(args); exit()
+            GarnetDaemon.wait_daemon(args); exit()
 
     def launch(args):
         gd = GarnetDaemon
@@ -141,13 +145,14 @@ class GarnetDaemon:
     #   def use(args)
     #   def kill(dbg=1)
     #   def status(args)
+    #   def wait_daemon(args):
 
     def help():
         print(GarnetDaemon_HELP)
         return GarnetDaemon_HELP
 
     def use(args):
-        GarnetDaemon.daemon_wait(args)       # Wait for daemon to exist
+        GarnetDaemon.wait_daemon(args)       # Wait for daemon to exist
         GarnetDaemon.save_args(args)         # Save args where the daemon will find them
         GarnetDaemon.args_match_or_die(args) # Grid size must match!!! (todo combine w/sigcont?)
         GarnetDaemon.sigcont()               # Tell daemon to CONTinue
@@ -185,6 +190,10 @@ class GarnetDaemon:
 
         if not GarnetDaemon.daemon_exists():
             if verbose: print("- no daemon found")
+
+            # Do this once per session only
+            if    gd.already_found_files: return 'dead'
+            else: gd.already_found_files = True
             for f in gd.DAEMONFILES: 
                 if os.path.exists(f): print(f'WARNING found daemon file {f}')
             return 'dead'
@@ -207,6 +216,39 @@ class GarnetDaemon:
             status = f.read()
             if verbose: print('- daemon_status: ' + status)
         return status
+
+    def wait_daemon(args):
+        '''Check daemon status, do not continue until/unless daemon exists AND IS READY'''
+        gd = GarnetDaemon; gd.args = args
+        time.sleep(2)
+        while True:
+            if GarnetDaemon.status(args) == 'ready': break
+
+            # Each set of waits is broken down into groups b/c of stdout tees and lesses and flushes and such
+
+            print(f'- daemon busy, will retry once per second for twenty seconds')
+            print(f'- (in four groups of five seconds each)')
+            if gd.check_daemon(20,   1, ngroups=4): break
+
+            print(f'- daemon still busy, will do twenty more tries @ 2 sec each')
+            if gd.check_daemon(20,   2, ngroups=4): break
+
+            print(f'- 20 tries @ one minute per try:')  # Total 21 min wait
+            if gd.check_daemon(20,  60, ngroups=4): break
+
+            print(f'- 20 tries @ two minutes per try:') # Total 1 hr wait
+            if gd.check_daemon(20, 120, ngroups=2): break
+
+            print(f'- 12 tries @ 5 min / try"') # Total 2 hr wait
+            if gd.check_daemon(12, 300, ngroups=3): break
+
+            # sys.stderr.write('ERROR Timeout waiting for daemon. Did you forget to launch it?\n')
+            sys.stderr.write('ERROR Timeout after two hours waiting for daemon.\n')
+            sys.stderr.write('Maybe try again later.\n')
+            exit(13)
+            break
+
+        print('\n--- DAEMON READY, continuing...')
 
     # ------------------------------------------------------------------------
     # "Private" methods for saving and restoring daemon state
@@ -268,60 +310,28 @@ class GarnetDaemon:
 
     # ------------------------------------------------------------------------
     # "Private" methods for interfacing with the daemon
-    #     def daemon_wait(args):
     #     def die_if_daemon_exists():
     #     def check_for_orphans():
     #     def all_daemon_processes_except(*args):
     #     def args_match_or_die(daemon_args, client_args):
 
-    def wait_stage(args, inc, ntries):
-        'Check daemon once every <inc> seconds, timeout after <max> tries'
+    def wait_stage(wait_secs, ntries):
+        'Check daemon once every <wait_secs> seconds, timeout after <max> tries'
         sys.stdout.write(f'- wait{ntries} '); sys.stdout.flush()
         for i in range(ntries):
-            time.sleep(inc)
+            time.sleep(wait_secs)
             sys.stdout.write('.'); sys.stdout.flush()
-            status = GarnetDaemon.status(args, verbose=False)
+            status = GarnetDaemon.status(GarnetDaemon.args, verbose=False)
             if status == 'ready': print('', flush=True)
             if status == 'ready': return True
         print('', flush=True)
         return False
 
-    def daemon_wait(args):
-        '''Check daemon status, do not continue until/unless daemon exists AND IS READY'''
-        time.sleep(2)
-        while True:
-            if GarnetDaemon.status(args) == 'ready': break
-
-            print(f'- daemon busy, will retry once per second for twenty seconds')
-            if GarnetDaemon.wait_stage(args, 1, 5): break
-            if GarnetDaemon.wait_stage(args, 1, 5): break
-            if GarnetDaemon.wait_stage(args, 1, 5): break
-            if GarnetDaemon.wait_stage(args, 1, 5): break
-
-            print(f'- daemon still busy, will do twenty more tries @ 2 sec each')
-            if GarnetDaemon.wait_stage(args, 2, 10): break
-            if GarnetDaemon.wait_stage(args, 2, 10): break
-
-            print(f'- 20 tries @ one minute per try:')  # Total 21 min wait
-            if GarnetDaemon.wait_stage(args, 60, 10): break
-            if GarnetDaemon.wait_stage(args, 60, 10): break
-
-            print(f'- 20 tries @ two minutes per try:') # Total 1 hr wait
-            if GarnetDaemon.wait_stage(args, 120, 10): break
-            if GarnetDaemon.wait_stage(args, 120, 10): break
-
-            print(f'- 12 tries @ 5 min / try"') # Total 2 hr wait
-            if GarnetDaemon.wait_stage(args, 300, 4): break
-            if GarnetDaemon.wait_stage(args, 300, 4): break
-            if GarnetDaemon.wait_stage(args, 300, 4): break
-
-            # sys.stderr.write('ERROR Timeout waiting for daemon. Did you forget to launch it?\n')
-            sys.stderr.write('ERROR Timeout after two hours waiting for daemon.\n')
-            sys.stderr.write('Maybe try again later.\n')
-            exit(13)
-            break
-
-        print('\n--- DAEMON READY, continuing...')
+    def check_daemon(ntries, secs_per_try, ngroups=1):
+        tries_per_group = int(ntries/ngroups)
+        for g in range(ngroups):
+            if GarnetDaemon.wait_stage(secs_per_try, tries_per_group): return True
+        return False
 
     def die_if_daemon_exists():
         '''If existing daemon is found, issue an error message and die'''
