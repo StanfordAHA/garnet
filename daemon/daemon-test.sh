@@ -86,10 +86,24 @@ echo flags2=$flags2 | fold -sw 120
 
 ##############################################################################
 # BEGIN BUILD & RUN
-app=apps/pointwise
 flags2=`get_flags2 $app`; echo flags2=$flags2 | fold -sw 120
 
 aha garnet --daemon kill
+
+app=apps/pointwise
+apps='
+    apps/pointwise
+    tests/ushift
+    tests/arith
+    tests/absolute
+    tests/scomp
+    tests/ucomp
+    tests/uminmax
+    tests/rom
+    tests/conv_1_2
+    tests/conv_2_1
+    conv5_1
+'
 
 # GARNET BUILD & LAUNCH DAEMON
 t_start=`date +%s`
@@ -98,11 +112,25 @@ aha garnet --daemon wait
 t_garnet=$(( `date +%s` - $t_start ))
 echo "Initial garnet build took $t_garnet seconds"
 
+(
+    printf "%s\n" "Step                 Total(d)    Compile(d)   Map(d)     Test(d) " ;
+    printf "%s\n" "------------------- ----------   ----------  --------   ---------" ;
+    printf "%-19s %4s %-6s\n" garnet $t_garnet "($t_garnet)" ;
+) >& tmp.stats
+
+for app in $apps; do
+
 # MAP ("COMPILE")
 t_start=`date +%s`
 aha map ${app} --chain |& tee map.log
 t_map=$(( `date +%s` - $t_start ))
 echo "Pointwise map took $t_map seconds"
+
+# PNR ("MAP"), no daemon
+t_start=`date +%s`
+aha garnet $flags2 |& tee pnr_no_daemon.log
+t_pnr_no_daemon=$(( `date +%s` - $t_start ))
+echo "No-daemon pointwise compile took $t_pnr_no_daemon seconds"
 
 # PNR ("MAP"), using daemon
 t_start=`date +%s`
@@ -110,12 +138,6 @@ aha garnet $flags2 --daemon use |& tee pnr_daemon.log
 aha garnet --daemon wait
 t_pnr_daemon=$(( `date +%s` - $t_start ))
 echo "Pointwise w/daemon compile took $t_pnr_daemon seconds"
-
-# PNR ("MAP"), no daemon
-t_start=`date +%s`
-aha garnet $flags2 |& tee pnr_no_daemon.log
-t_pnr_no_daemon=$(( `date +%s` - $t_start ))
-echo "No-daemon pointwise compile took $t_pnr_no_daemon seconds"
 
 # PARSE DESIGN_META (create design_meta.json for test)
 app_dir=/aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}
@@ -168,12 +190,23 @@ printf "$fmt" "Pointwise total, no daemon"  $t_total_no_daemon
 # garnet               640 (640) 
 # apps/pointwise       204 (137)    60 (60)    135 (68)      9 (9)   
 
-printf "%s\n" "Step                 Total(d)    Compile(d)   Map(d)     Test(d) " ;\
-printf "%s\n" "------------------- ----------   ----------  --------   ---------" ;\
-printf "%-19s %4s %-6s\n" garnet $t_garnet "($t_garnet)" ;\
+# printf "%s\n" "Step                 Total(d)    Compile(d)   Map(d)     Test(d) " ;\
+# printf "%s\n" "------------------- ----------   ----------  --------   ---------" ;\
+# printf "%-19s %4s %-6s\n" garnet $t_garnet "($t_garnet)" ;\
+# printf "%-19s %4s %-6s %4s %-6s %4s %-6s %4s %-6s\n" \
+#        $app \
+#        $t_total_no_daemon "($t_total_daemon)" \
+#        $t_map             "($t_map)" \
+#        $t_pnr_no_daemon   "($t_pnr_daemon)" \
+#        $t_test            "($t_test)"
+
 printf "%-19s %4s %-6s %4s %-6s %4s %-6s %4s %-6s\n" \
        $app \
        $t_total_no_daemon "($t_total_daemon)" \
        $t_map             "($t_map)" \
        $t_pnr_no_daemon   "($t_pnr_daemon)" \
-       $t_test            "($t_test)"
+       $t_test            "($t_test)" \
+       >> tmp.stats
+cat tmp.stats
+
+done
