@@ -10,9 +10,6 @@ from lake.top.core_combiner import CoreCombiner
 from lake.modules.intersect import Intersect
 from lake.modules.scanner import Scanner
 from lake.top.tech_maps import GF_Tech_Map
-from lassen.utils import float2bfbin
-from lassen.tlut import tlut
-from lassen.mem.sim import depth
 import kratos as kts
 import os
 
@@ -148,8 +145,6 @@ class CoreCombinerCore(LakeCoreBase):
         self.runtime_mode = runtime_mode
 
     def get_config_bitstream(self, config_tuple):
-        print(config_tuple)
-        print(isinstance(config_tuple, dict))
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
@@ -255,20 +250,6 @@ class CoreCombinerCore(LakeCoreBase):
 
         for name, v in configs_cc:
             configs = [self.get_config_data(name, v)] + configs
-            # Preload memory in sparse mode
-            if not isinstance(configs, dict) and isinstance(configs, tuple) and "init" in config_kwargs:
-                if config_kwargs["init"] == "exp":
-                    TLUT = tlut()
-                    preload_content = [TLUT.exp_lut(i) for i in range(0, 128)]+[TLUT.exp_lut(i) for i in range(-128, 0)]+[0x0000]*(depth - 256)
-                else: 
-                    NotImplementedError
-                for addr, data in enumerate(preload_content):
-                    # 4 16-bit data construct a word in memory 
-                    addr = addr >> 2
-                    feat_addr = addr // 256 + 1
-                    # And also transform this based on memory depth
-                    addr = (addr % 256)
-                    configs.append((addr, feat_addr, data))
         return configs
 
     def pnr_info(self):
