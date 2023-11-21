@@ -890,6 +890,14 @@ def main():
             # ELSE parent (daemon) WAITs for a client to send new args for processing
             print('\nLOOPING')
             args = GarnetDaemon.loop(args, dbg=1)
+
+            argdic = vars(args)
+            sorted_argdic=dict(sorted(argdic.items()))
+            import json
+            print(f"- loaded args {json.dumps(sorted_argdic, indent=4)}")
+
+
+
             continue
 
         # Forked child process does the work, then exits

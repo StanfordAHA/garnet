@@ -137,7 +137,7 @@ class GarnetDaemon:
         # On CONT, register status and load new args from 'reload' file
         print(f'\n\n--- DAEMON RESUMES')
         GarnetDaemon.put_status('busy')
-        return gd.load_args()
+        return gd.load_args(dbg=1)
 
     # ------------------------------------------------------------------------
     # "Private" methods for processing individual daemon commands:
@@ -305,7 +305,7 @@ class GarnetDaemon:
         except: pass
 
         if dbg: print(f'- restored args {new_args} from {fname}')
-        if dbg: print("- loaded args {json.dumps(args_dict, indent=4))}")
+        if dbg: print(f"- loaded args {json.dumps(args_dict, indent=4)}")
         return new_args
 
     # ------------------------------------------------------------------------
