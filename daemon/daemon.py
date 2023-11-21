@@ -223,7 +223,6 @@ class GarnetDaemon:
         time.sleep(2)
         while True:
             if GarnetDaemon.status(args) == 'ready': break
-
             # Each set of waits is broken down into groups b/c of stdout tees and lesses and flushes and such
 
             print(f'- daemon busy, will retry once per second for twenty seconds')
@@ -328,6 +327,8 @@ class GarnetDaemon:
         return False
 
     def check_daemon(ntries, secs_per_try, ngroups=1):
+        errmsg = f'\nERROR there is no daemon, did you forget to launch it?'
+        assert GarnetDaemon.daemon_exists(), errmsg
         tries_per_group = int(ntries/ngroups)
         for g in range(ngroups):
             if GarnetDaemon.wait_stage(secs_per_try, tries_per_group): return True
