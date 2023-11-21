@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e # exit if something fails
 
 HELP='
 # ------------------------------------------------------------------------
@@ -36,6 +37,7 @@ tail -f dtest-log.txt | less -r
 # --- other useful things ---
 docker cp /usr/bin/vim.tiny $container:/usr/bin
 alias vim=vim.tiny
+alias j=jobs
 
 GARNET=/nobackup/steveri/github/garnet
 f=garnet.py
@@ -62,31 +64,34 @@ echo "--- BEGIN DAEMON_TEST.SH"
 flags1="--width 28 --height 16 --verilog --use_sim_sram --rv --sparse-cgra --sparse-cgra-combined"
 echo flags1=$flags1 | fold -sw 120
 
-# FLAGS2
-function get_flags2 {
-    args_app=$1
-    ext=.pgm
-    args_app_name=`expr $args_app : '.*/\(.*\)'`
-    app_dir=/aha/Halide-to-Hardware/apps/hardware_benchmarks/${args_app}
-    test -e $app_dir/bin/input.pgm && ext=.pgm
-    flags2="--no-pd --interconnect-only"
-    flags2+=" --input-app ${app_dir}/bin/design_top.json"
-    flags2+=" --input-file ${app_dir}/bin/input${ext}"
-    flags2+=" --output-file ${app_dir}/bin/${args_app_name}.bs"
-    flags2+=" --gold-file ${app_dir}/bin/gold${ext}"
-    flags2+=" --input-broadcast-branch-factor 2"
-    flags2+=" --input-broadcast-max-leaves 16"
-    flags2+=" --rv --sparse-cgra --sparse-cgra-combined --pipeline-pnr"
-    flags2+=" --width 28 --height 16"
-    # echo flags2=$flags2 | fold -sw 120
-    echo $flags2
-}
-flags2=`get_flags2 apps/pointwise`
-echo flags2=$flags2 | fold -sw 120
+# Using 'aha pnr' instead maybe?
+# # FLAGS2
+# function get_flags2 {
+#     args_app=$1
+#     ext=.pgm
+#     args_app_name=`expr $args_app : '.*/\(.*\)'`
+#     app_dir=/aha/Halide-to-Hardware/apps/hardware_benchmarks/${args_app}
+#     test -e $app_dir/bin/input.pgm && ext=.pgm
+#     flags2="--no-pd --interconnect-only"
+#     flags2+=" --input-app ${app_dir}/bin/design_top.json"
+#     flags2+=" --input-file ${app_dir}/bin/input${ext}"
+#     flags2+=" --output-file ${app_dir}/bin/${args_app_name}.bs"
+#     flags2+=" --gold-file ${app_dir}/bin/gold${ext}"
+#     flags2+=" --input-broadcast-branch-factor 2"
+#     flags2+=" --input-broadcast-max-leaves 16"
+#     flags2+=" --rv --sparse-cgra --sparse-cgra-combined --pipeline-pnr"
+#     flags2+=" --width 28 --height 16"
+#     # echo flags2=$flags2 | fold -sw 120
+#     echo $flags2
+# }
+# flags2=`get_flags2 apps/pointwise`
+# echo flags2=$flags2 | fold -sw 120
 
 ##############################################################################
 # BEGIN BUILD & RUN
-flags2=`get_flags2 $app`; echo flags2=$flags2 | fold -sw 120
+
+# Using 'aha pnr' instead maybe?
+# flags2=`get_flags2 $app`; echo flags2=$flags2 | fold -sw 120
 
 aha garnet --daemon kill
 
@@ -102,8 +107,14 @@ apps='
     tests/rom
     tests/conv_1_2
     tests/conv_2_1
-    conv5_1
 '
+# Don't rightly know how to do conv5 yet...
+#     conv5_1 
+#         resnet_tests = ["conv5_1"]
+#     for test in glb_tests:
+#         t0, t1, t2 = test_dense_app(test, width, height, env_parameters=str(args.env_parameters))
+#     for test in resnet_tests:
+#         t0, t1, t2 = test_dense_app("apps/resnet_output_stationary", width, height, layer=test, env_parameters=str(args.env_parameters))
 
 # GARNET BUILD & LAUNCH DAEMON
 t_start=`date +%s`
@@ -120,6 +131,17 @@ echo "Initial garnet build took $t_garnet seconds"
 
 for app in $apps; do
 
+# Using 'aha pnr' instead maybe?
+# flags2=`get_flags2 $app`
+# echo flags2=$flags2 | fold -sw 120
+
+# bookmark NEW STUFF
+(
+    set -x
+    cd /aha/Halide-to-Hardware/apps/hardware_benchmarks/$app
+    make clean 
+)
+
 # MAP ("COMPILE")
 t_start=`date +%s`
 aha map ${app} --chain |& tee map.log
@@ -128,13 +150,15 @@ echo "Pointwise map took $t_map seconds"
 
 # PNR ("MAP"), no daemon
 t_start=`date +%s`
-aha garnet $flags2 |& tee pnr_no_daemon.log
+# aha garnet $flags2 |& tee pnr_no_daemon.log
+aha pnr $app -width 28 --height 16 |& tee pnr_no_daemon.log
 t_pnr_no_daemon=$(( `date +%s` - $t_start ))
 echo "No-daemon pointwise compile took $t_pnr_no_daemon seconds"
 
 # PNR ("MAP"), using daemon
 t_start=`date +%s`
-aha garnet $flags2 --daemon use |& tee pnr_daemon.log
+# aha garnet $flags2 --daemon use |& tee pnr_daemon.log
+aha pnr $app -width 28 --height 16 --daemon use |& tee pnr_daemon.log
 aha garnet --daemon wait
 t_pnr_daemon=$(( `date +%s` - $t_start ))
 echo "Pointwise w/daemon compile took $t_pnr_daemon seconds"
