@@ -889,7 +889,7 @@ def main():
 
             # ELSE parent (daemon) WAITs for a client to send new args for processing
             print('\nLOOPING')
-            args = GarnetDaemon.loop(args)
+            args = GarnetDaemon.loop(args, dbg=1)
             continue
 
         # Forked child process does the work, then exits

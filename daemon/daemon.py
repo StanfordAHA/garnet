@@ -305,6 +305,7 @@ class GarnetDaemon:
         except: pass
 
         if dbg: print(f'- restored args {new_args} from {fname}')
+        if dbg: print("- loaded args {json.dumps(args_dict, indent=4))}")
         return new_args
 
     # ------------------------------------------------------------------------
