@@ -39,7 +39,7 @@ tail -f dtest.log
 docker cp /usr/bin/vim.tiny $container:/usr/bin
 alias vim=vim.tiny
 alias j=jobs
-alias h='history|tail'
+alias h="history|tail"
 
 GARNET=/nobackup/steveri/github/garnet
 f=garnet.py
