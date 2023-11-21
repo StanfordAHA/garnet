@@ -874,7 +874,25 @@ def main():
     # BUILD GARNET
     garnet = Garnet(args)
 
+    # USE GARNET
     while True:
+
+        # Fork a child to do the work, wait for it to finish, then continue
+        childpid = os.fork() # Fork a child
+        if childpid > 0:
+            pid, status = os.waitpid(childpid, 0) # Wait for child to finish
+            print(f'Child process {childpid} finished with exit status {status}')
+            assert pid == childpid # Right???
+
+            # IF we're not running as a daemon, we're done.
+            if not args.daemon: break
+
+            # ELSE parent (daemon) WAITs for a client to send new args for processing
+            print('\nLOOPING')
+            args = GarnetDaemon.loop(args)
+            continue
+
+        # Forked child process does the work, then exits
 
         # VERILOG
         if args.verilog: build_verilog(args, garnet)
@@ -886,7 +904,6 @@ def main():
                         len(args.output) > 0
 
         do_pnr = app_specified and not args.virtualize
-
         if do_pnr:
             # FIXME how is args.app not redundant/unnecessary here?
             pnr(garnet, args, args.app)
@@ -908,13 +925,8 @@ def main():
             with open("config.json", "w+") as f:
                 json.dump(ic_reg + core_reg, f)
 
-        # NO DAEMON
-        if not args.daemon: break  # No daemon requested
-
-        # DAEMON
-        print('\nLOOPING')  # WAIT for a client to send new args for processing
-        args = GarnetDaemon.loop(args)
-        print(f'- loaded new args {args} i guess?')
+        # CHILD IS DONE
+        exit()
 
 if __name__ == "__main__":
     main()
