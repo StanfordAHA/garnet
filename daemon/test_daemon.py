@@ -98,20 +98,21 @@ def mydaemon():
 
     # Daemonology; TODO this could be a separate method call
     while True:
-        if not args.daemon: break
-
-        # WAIT for a client to send new args for processing
-        print('\nLOOPING')
-        args = GarnetDaemon.loop(args)
-
-        childpid = os.fork()
+        childpid = os.fork() # Fork a child
         if childpid > 0:
-            pid, status = os.waitpid(childpid, 0)
+            pid, status = os.waitpid(childpid, 0) # Wait for child to finish
             print(f'Child process {childpid} finished with exit status {status}')
             assert pid == childpid # Right???
+
+            # IF we're not running as a daemon, we're done here.
+            if not args.daemon: break
+
+            # ELSE parent (daemon) WAITs for a client to send new args for processing
+            print('\nLOOPING')
+            args = GarnetDaemon.loop(args)
             continue
 
-        # Child process does this
+        # Forked child process does the work, then exits
         print(f'- loaded new args {args} i guess?')
         print(f'- gonna build a: {args.animal} grid')
         print(f' -updated/used the grid')
