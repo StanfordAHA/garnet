@@ -67,7 +67,7 @@ def test_tests(dbg=0):
 #     etc.
 # (Also see 'def __main()' far below.)
 
-def my_test_daemon():
+def mydaemon():
     # announce() NO! not a test omg
 
     import argparse
@@ -103,10 +103,20 @@ def my_test_daemon():
         # WAIT for a client to send new args for processing
         print('\nLOOPING')
         args = GarnetDaemon.loop(args)
+
+        childpid = os.fork()
+        if childpid > 0:
+            pid, status = os.waitpid(childpid, 0)
+            print(f'Child process {childpid} finished with exit status {status}')
+            assert pid == childpid # Right???
+            continue
+
+        # Child process does this
         print(f'- loaded new args {args} i guess?')
         print(f'- gonna build a: {args.animal} grid')
         print(f' -updated/used the grid')
         print(f'- using animal: {args.animal}')
+        exit() # Or should it be 'break'?
 
     exit()
 
@@ -296,14 +306,16 @@ def test_arg_save_and_restore():
     if announce_unit(): return
     args = Namespace( foo='bar', bar='baz' )
     tmpfile = f'/tmp/GarnetDaemon.test_arg_save_and_restore.{int(time.time())}'
+    orig_args_dict = (args.__dict__).copy() # save_args adds e.g. args.pe_fc=None
     GarnetDaemon.save_args(args, tmpfile, dbg=1)  # Save to tmpfile
     new_args = GarnetDaemon.load_args(tmpfile)    # Load from tmpfile
+    new_args_dict = new_args.__dict__
     os.remove(tmpfile)
-    print(f'- original args: {args.__dict__}')
-    print(f'- reloaded args: {new_args.__dict__}')
-    assert args == new_args
+    print(f'- original args: {orig_args_dict}')
+    print(f'- reloaded args: { new_args_dict}')
+    assert orig_args_dict == new_args_dict
 
-def test_daemon_wait(): announce_unit('later')
+def test_wait_daemon(): announce_unit('later')
 def test_die_if_daemon_exists(): announce_unit('later')
 def test_check_for_orphans(): announce_unit('later')
 # def test_all_daemon_processes_except(): announce_unit('later')
@@ -395,6 +407,7 @@ def test_get_status():   announce_unit(' - see test_status_save_restore()')
 
 def test_cleanup():    announce_unit(': TBD')
 def test_wait_stage(): announce_unit(': TBD')
+def test_check_daemon(): announce_unit(': TBD')
 
 ########################################################################
 # Helper functions
@@ -532,7 +545,7 @@ def print_header(curframe, msg):
 
 # Run the proto daemon if this script called with args e.g. "--daemon launch"
 if __name__ == "__main__":
-    if len( sys.argv ) > 1: my_test_daemon()
+    if len( sys.argv ) > 1: mydaemon()
 
 # DONE
 # - run complete pytest, clean up the messy output
