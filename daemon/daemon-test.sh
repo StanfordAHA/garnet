@@ -25,9 +25,10 @@ docker-launch $image $container
 # --- in docker now ---
 source /aha/bin/activate
 (cd garnet; git fetch origin; git checkout origin/refactor)
-# garnet/daemon/daemon-test.sh |& tee dtest-log.txt | less -r
-garnet/daemon/daemon-test.sh >& dtest-log.txt &
-tail -f dtest-log.txt | less -r
+# garnet/daemon/daemon-test.sh |& tee dtest.log | less -r
+garnet/daemon/daemon-test.sh >& dtest.log &
+tail -f dtest.log | less -r
+tail -f dtest.log
 
 # see CUT`N`PASTE region below
 
@@ -38,11 +39,13 @@ tail -f dtest-log.txt | less -r
 docker cp /usr/bin/vim.tiny $container:/usr/bin
 alias vim=vim.tiny
 alias j=jobs
+alias h='history|tail'
 
 GARNET=/nobackup/steveri/github/garnet
 f=garnet.py
 docker cp $GARNET/$f $container:/aha/garnet/$f
 f=daemon/daemon.py
+f=daemon/daemon-test.sh
 '
 if [ "$1" == "--help" ]; then echo "$HELP"; exit; fi
 
@@ -117,6 +120,7 @@ apps='
 #         t0, t1, t2 = test_dense_app("apps/resnet_output_stationary", width, height, layer=test, env_parameters=str(args.env_parameters))
 
 # GARNET BUILD & LAUNCH DAEMON
+echo "--- BEGIN BUILD & LAUNCH DAEMON"
 t_start=`date +%s`
 aha garnet $flags1 --daemon launch |& sed 's/^/DAEMON: /' | tee garnet.log &
 aha garnet --daemon wait
@@ -130,6 +134,8 @@ echo "Initial garnet build took $t_garnet seconds"
 ) >& tmp.stats
 
 for app in $apps; do
+    ap=`basename $app`; echo $ap
+    echo "--- BEGIN TEST $ap"
 
 # Using 'aha pnr' instead maybe?
 # flags2=`get_flags2 $app`
@@ -143,36 +149,43 @@ for app in $apps; do
     cd /aha
 )
 
+echo "--- BEGIN MAP $ap"
 # MAP ("COMPILE")
 t_start=`date +%s`
 aha map ${app} --chain |& tee map.log
 t_map=$(( `date +%s` - $t_start ))
-echo "Pointwise map took $t_map seconds"
+echo "'$ap' map took $t_map seconds"
 
+set -x
+echo "--- BEGIN PNR $ap, no daemon"
 # PNR ("MAP"), no daemon
 t_start=`date +%s`
 # aha garnet $flags2 |& tee pnr_no_daemon.log
 aha pnr $app --width 28 --height 16 |& tee pnr_no_daemon.log
 t_pnr_no_daemon=$(( `date +%s` - $t_start ))
-echo "No-daemon pointwise compile took $t_pnr_no_daemon seconds"
+echo "No-daemon '$ap' pnr took $t_pnr_no_daemon seconds"
 
+echo "--- BEGIN PNR $ap, using daemon"
 # PNR ("MAP"), using daemon
 t_start=`date +%s`
 # aha garnet $flags2 --daemon use |& tee pnr_daemon.log
 aha pnr $app --width 28 --height 16 --daemon use |& tee pnr_daemon.log
 aha garnet --daemon wait
 t_pnr_daemon=$(( `date +%s` - $t_start ))
-echo "Pointwise w/daemon compile took $t_pnr_daemon seconds"
+echo "'$ap' w/daemon pnr took $t_pnr_daemon seconds"
+set +x
 
-# PARSE DESIGN_META (create design_meta.json for test)
-app_dir=/aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}
-dmj=${app_dir}/bin/design_meta.json
-test -e $dmj && echo found json file || echo "NO JSON FILE (yet)"
-cd $app_dir
-  pdm=/aha/Halide-to-Hardware/apps/hardware_benchmarks/hw_support/parse_design_meta.py
-  python $pdm bin/design_meta_halide.json --top bin/design_top.json --place bin/design.place
-cd /aha
-test -e $dmj && echo found json file || echo "NO JSON FILE (yet)"
+# # TODO probably don't need this now that we are using "aha pnr"
+# # PARSE DESIGN_META (create design_meta.json for test)
+# echo "--- BEGIN DESIGN PARSE $ap, using daemon"
+# app_dir=/aha/Halide-to-Hardware/apps/hardware_benchmarks/${app}
+# dmj=${app_dir}/bin/design_meta.json
+# test -e $dmj && echo found json file || echo "NO JSON FILE (yet)"
+# cd $app_dir
+#   pdm=/aha/Halide-to-Hardware/apps/hardware_benchmarks/hw_support/parse_design_meta.py
+#   python $pdm bin/design_meta_halide.json --top bin/design_top.json --place bin/design.place
+# cd /aha
+# test -e $dmj && echo found json file || echo "NO JSON FILE (yet)"
 
 # POINTWISE TEST
 t_start=`date +%s`
@@ -182,18 +195,19 @@ if ! which vcs; then
 fi
 aha test apps/pointwise |& tee test.log
 t_test=$(( `date +%s` - $t_start ))
-echo "Pointwise test took $t_test seconds"
+echo "'$ap' test took $t_test seconds"
 
+echo "--- BEGIN SUMMARY 1 $ap"
 # SUMMARY 1
 # 
 # Initial garnet build                   640 seconds
 # ---------------------------------  -----------
-# Pointwise 'compile' (map)               60 seconds
-# Pointwise 'compile' (pnr) w/o daemon   135 seconds
-# Pointwise 'compile' (pnr) w/ daemon     68 seconds
-# Pointwise test                           9 seconds
-# Pointwise total, daemon                137 seconds
-# Pointwise total, no daemon             204 seconds
+# pointwise 'compile' (map)               60 seconds
+# pointwise 'compile' (pnr) w/o daemon   135 seconds
+# pointwise 'compile' (pnr) w/ daemon     68 seconds
+# pointwise test                           9 seconds
+# pointwise total, daemon                137 seconds
+# pointwise total, no daemon             204 seconds
 
 t_total_daemon=$((   $t_map + $t_pnr_daemon    + $t_test))
 t_total_no_daemon=$(($t_map + $t_pnr_no_daemon + $t_test))
@@ -201,13 +215,14 @@ t_total_no_daemon=$(($t_map + $t_pnr_no_daemon + $t_test))
 fmt="%-37s %4d seconds\n"
 printf "$fmt" "Initial garnet build"  $t_garnet;\
 printf "%s  %s\n" "---------------------------------" "-----------";\
-printf "$fmt" "Pointwise 'compile' (map)"  $t_map;\
-printf "$fmt" "Pointwise 'compile' (pnr) w/o daemon"  $t_pnr_no_daemon;\
-printf "$fmt" "Pointwise 'compile' (pnr) w/ daemon"  $t_pnr_daemon;\
-printf "$fmt" "Pointwise test"  $t_test;\
-printf "$fmt" "Pointwise total, daemon"  $t_total_daemon; \
-printf "$fmt" "Pointwise total, no daemon"  $t_total_no_daemon
+printf "$fmt" "$ap 'compile' (map)"  $t_map;\
+printf "$fmt" "$ap 'compile' (pnr) w/o daemon"  $t_pnr_no_daemon;\
+printf "$fmt" "$ap 'compile' (pnr) w/ daemon"  $t_pnr_daemon;\
+printf "$fmt" "$ap test"  $t_test;\
+printf "$fmt" "$ap total, daemon"  $t_total_daemon; \
+printf "$fmt" "$ap total, no daemon"  $t_total_no_daemon
 
+echo "--- BEGIN SUMMARY 2 $ap"
 # SUMMARY 2
 # 
 # Step                 Total(d)    Compile(d)   Map(d)     Test(d) 
