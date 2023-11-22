@@ -36,3 +36,14 @@ if {[string length $Mem_core_cell] == 0} {
     puts "\[genlibdb-constraints.tcl\] Setting paths through MEM core ($MEM_core_name) to be false paths."
     set_false_path -through $Mem_core_cell
 }
+
+# We don't want to analyze other inputs to SB_OUT
+set_false_path -from [get_ports *config_config_addr*  -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
+set_false_path -from [get_ports *config_config_data*  -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
+set_false_path -from [get_ports *config_read*         -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
+set_false_path -from [get_ports *config_write*        -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
+set_false_path -from [get_ports *flush*               -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
+set_false_path -from [get_ports *read_config_data_in* -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
+set_false_path -from [get_ports *reset*               -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
+set_false_path -from [get_ports *stall*               -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
+set_false_path -from [get_ports *tile_id*             -filter {direction == in}] -to [get_ports SB* -filter {direction == out}]
