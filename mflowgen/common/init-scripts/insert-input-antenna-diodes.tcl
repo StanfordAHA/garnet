@@ -32,3 +32,7 @@ foreach pin $top_input_pins_except_clk {
 refinePlace
 dbSet [dbGet -p top.insts.name "IN_PORT_DIODE_*"].pStatus fixed
 
+# Disable timing analysis for the diode cells
+set_interactive_constraint_modes [all_constraint_modes]
+set_false_path -to [get_pins -hier *IN_PORT_DIODE_*/$ADK_ANTENNA_CELL_PIN]
+set_interactive_constraint_modes {}
