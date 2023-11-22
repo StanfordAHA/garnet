@@ -20,11 +20,6 @@ create_clock -name master_clk -period ${cgra_master_clk_period} [get_ports $port
 
 create_generated_clock -name m_clk_0 \
     -source [get_ports $port_names(master_clk)] \
-    -divide_by 1 \
-    [get_pins IOPAD_left_MASTER_CLK_0/outi]
-
-create_generated_clock -name m_clk_0 \
-    -source [get_ports $port_names(master_clk)] \
     -divide_by $cgra_clk_div_factor \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_master_clock_switch/CLK_OUT]
 
