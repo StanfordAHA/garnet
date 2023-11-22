@@ -881,7 +881,7 @@ def main():
         childpid = os.fork() # Fork a child
         if childpid > 0:
             pid, status = os.waitpid(childpid, 0) # Wait for child to finish
-            print(f'Child process {childpid} finished with exit status {status}')
+            print(f'Child process {childpid} finished with exit status {status}', flush=True)
             assert pid == childpid # Right???
 
             # IF we're not running as a daemon, we're done.
@@ -913,6 +913,7 @@ def main():
 
         do_pnr = app_specified and not args.virtualize
         if do_pnr:
+            print("--- BEGIN pnr inside garnet", flush=True)
             # FIXME how is args.app not redundant/unnecessary here?
             pnr(garnet, args, args.app)
 

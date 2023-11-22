@@ -121,8 +121,13 @@ class GarnetDaemon:
 
         # On launch, save pid and initial state in "state0" file
         if command == "launch":
+            GarnetDaemon.save_the_unsaveable(args)
             print(f'- DAEMON STOPS and waits...\n')
-            sys.stdout.flush(); sys.stderr.flush()
+            sys.stdout.flush(); sys.stderr.flush(); sys.stdin.flush()
+
+        # Okay but somebody is going to send a CONT as soon as they see "READY" right?
+        # what if the CONT shows up BEFORE the stop?
+
 
         # Register status; stop and wait for CONT signal from client
         GarnetDaemon.put_status('ready')
@@ -257,6 +262,21 @@ class GarnetDaemon:
 
     def save_state0(args, dbg=0):
         GarnetDaemon.save_args(args, fname=GarnetDaemon.FN_STATE0)
+
+    def save_the_unsaveable(args):
+        # Oops well maybe that's okay
+        # print(f'resetting glb params arg', flush=True)
+        # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
+        # try/except because these args do not exist in pytest trials...
+        try:
+            GarnetDaemon.saved_glb_params = args.glb_params
+            args.glb_params = "SORRY cannot save/restore GlobalBufferParams!"
+
+            GarnetDaemon.saved_pe_fc = args.pe_fc
+            args.pe_fc = "SORRY cannot save/restore pe_fc of type <family_closure)!"
+        except:
+            print(f'WARNING could not save glb_params and/or pe_fc')
+
 
     def save_args(args, fname=None, dbg=0):
         'Save current state (args) to arg-save (reload) file'
@@ -459,6 +479,12 @@ class GarnetDaemon:
         # VERY IMPORTANT: job can hang forever is do not do this final flush!!!
         sys.stdout.flush(); sys.stderr.flush()
         os.kill(int(pid), signal.SIGSTOP)
+        # Okay but hold on suppose it takes a second to actually STOP!!???
+        import time
+        time.sleep(10)
+
+
+
 
     # Send a "CONTinue" signal to a process
     def sigcont(pid=None, dbg=1):
