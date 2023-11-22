@@ -192,7 +192,7 @@ if { $place_glb_top } {
       $glb_name \
       -snapToSite
   
-  # top/bottom routing blockage (signal: all except m5)
+  # top/bottom routing blockage (signal: all except m5, m7)
   set glb_rblk_left   [expr $tech_pitch_x * 0.5 - 0.1]
   set glb_rblk_right  [expr $tech_pitch_x * 0.5 - 0.1]
   set glb_rblk_top    [expr $tech_pitch_y * 1]
@@ -203,7 +203,7 @@ if { $place_glb_top } {
   set glb_rblk_ury [expr $glb_y_loc + $glb_height + $glb_rblk_top]
   createRouteBlk \
       -name glb_route_block_top_bottom_sig \
-      -layer {m1 m2 m3 m4 m6 m7 m8}  \
+      -layer {m1 m2 m3 m4 m6 m8}  \
       -box "$glb_rblk_llx $glb_rblk_lly $glb_rblk_urx $glb_rblk_ury" \
       -exceptpgnet
   
