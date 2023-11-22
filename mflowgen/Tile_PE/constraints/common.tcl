@@ -102,18 +102,18 @@ set_output_delay -clock ${clock_name} ${pt_o_delay} ${pt_read_data_outputs}
 #=========================================================================
 # -- pt_clk
 set min_delay_pt_clk [expr ${pt_i_delay} + ${pt_o_delay} + 0]
-set max_delay_pt_clk [expr ${pt_i_delay} + ${pt_o_delay} + 50]
+set max_delay_pt_clk [expr ${pt_i_delay} + ${pt_o_delay} + 45]
 set_min_delay -from ${pt_clk_in} -to ${pt_clk_out} ${min_delay_pt_clk}
 set_max_delay -from ${pt_clk_in} -to ${pt_clk_out} ${max_delay_pt_clk}
 
 # -- pt_general
-set min_delay_pt_general [expr ${max_delay_pt_clk} + 0]
-set max_delay_pt_general [expr ${max_delay_pt_clk} + 30]
+set min_delay_pt_general [expr ${max_delay_pt_clk} + 10]
+set max_delay_pt_general [expr ${max_delay_pt_clk} + 40]
 set_min_delay -to ${pt_outputs} ${min_delay_pt_general}
 set_max_delay -to ${pt_outputs} ${max_delay_pt_general}
 
 # -- pt_read_config
-set min_delay_pt_rd_cfg [expr ${max_delay_pt_clk} + 0]
+set min_delay_pt_rd_cfg [expr ${max_delay_pt_clk} + 10]
 set max_delay_pt_rd_cfg [expr ${pt_i_delay} + ${pt_o_delay} + 300]
 # read_config_data can come from (1) internal regs or (2) passthrough inputs
 # For (1), the min delay is 50ps
