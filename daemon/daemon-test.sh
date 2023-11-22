@@ -42,10 +42,9 @@ alias j=jobs
 alias h="history|tail"
 
 GARNET=/nobackup/steveri/github/garnet
-f=garnet.py
-docker cp $GARNET/$f $container:/aha/garnet/$f
-f=daemon/daemon.py
-f=daemon/daemon-test.sh
+f=garnet.py; docker cp $GARNET/$f $container:/aha/garnet/$f
+f=daemon/daemon.py; docker cp $GARNET/$f $container:/aha/garnet/$f
+f=daemon/daemon-test.sh; docker cp $GARNET/$f $container:/aha/garnet/$f
 '
 if [ "$1" == "--help" ]; then echo "$HELP"; exit; fi
 
@@ -187,13 +186,13 @@ set +x
 # cd /aha
 # test -e $dmj && echo found json file || echo "NO JSON FILE (yet)"
 
-# POINTWISE TEST
+# TEST
 t_start=`date +%s`
 if ! which vcs; then
   . /cad/modules/tcl/init/bash
     module load base; module load vcs
 fi
-aha test apps/pointwise |& tee test.log
+aha test $app |& tee test.log
 t_test=$(( `date +%s` - $t_start ))
 echo "'$ap' test took $t_test seconds"
 
