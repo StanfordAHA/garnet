@@ -95,12 +95,12 @@ def construct():
   postroute_hold    = Step( 'cadence-innovus-postroute_hold',default=True )
   signoff           = Step( 'cadence-innovus-signoff',       default=True )
   pt_signoff        = Step( 'synopsys-pt-timing-signoff',    default=True )
-  genlibdb_tt       = Step( 'synopsys-ptpx-genlibdb',        default=True )
-  genlibdb_ff       = Step( 'synopsys-ptpx-genlibdb',        default=True )
   debugcalibre      = Step( 'cadence-innovus-debug-calibre', default=True )
 
-  genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
-  genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
+  genlibdb_tt       = Step( this_dir + '/../common/cadence-innovus-genlib')
+  genlibdb_ff       = Step( this_dir + '/../common/cadence-innovus-genlib')
+  genlibdb_tt.set_name( 'cadence-innovus-genlibdb-tt' )
+  genlibdb_ff.set_name( 'cadence-innovus-genlibdb-ff' )
 
   # Add (dummy) parameters to the default innovus init step
 
@@ -168,8 +168,8 @@ def construct():
   rtl.extend_postconditions( ["assert File( 'outputs/header' ) "] )
 
   # SDC hack for the genlibdb and pt_signoff steps
-  genlibdb_tt.extend_inputs( custom_hack_sdc_unit.all_outputs() )
-  genlibdb_ff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  # genlibdb_tt.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  # genlibdb_ff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
   pt_signoff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
 
   # LEF antenna hack
@@ -263,6 +263,8 @@ def construct():
   g.connect_by_name( iflow,                postroute_hold )
   g.connect_by_name( iflow,                postroute      )
   g.connect_by_name( iflow,                signoff        )
+  g.connect_by_name( iflow,                genlibdb_tt    )
+  g.connect_by_name( iflow,                genlibdb_ff    )
   g.connect_by_name( custom_init,          init           )
   g.connect_by_name( custom_power,         power          )
   g.connect_by_name( init,                 power          )
@@ -284,12 +286,12 @@ def construct():
   g.connect_by_name( signoff,              debugcalibre   )
 
   # Connect spef to genlibdb
-  g.connect( signoff.o( 'design.spef.gz' ),        genlibdb_tt.i( 'design.spef.gz' ) )
-  g.connect( signoff.o( 'design.rcbest.spef.gz' ), genlibdb_ff.i( 'design.spef.gz' ) )
+  # g.connect( signoff.o( 'design.spef.gz' ),        genlibdb_tt.i( 'design.spef.gz' ) )
+  # g.connect( signoff.o( 'design.rcbest.spef.gz' ), genlibdb_ff.i( 'design.spef.gz' ) )
 
   # SDC hack for the genlibdb and pt_signoff steps
-  g.connect_by_name( custom_hack_sdc_unit, genlibdb_tt )
-  g.connect_by_name( custom_hack_sdc_unit, genlibdb_ff )
+  # g.connect_by_name( custom_hack_sdc_unit, genlibdb_tt )
+  # g.connect_by_name( custom_hack_sdc_unit, genlibdb_ff )
   g.connect_by_name( custom_hack_sdc_unit, pt_signoff )
 
   # LEF antenna hack
@@ -362,18 +364,20 @@ def construct():
   # cts.update_params( { 'useful_skew_ccopt_effort': 'extreme' }, allow_new=True )
   
   # genlibdb parameters
-  genlibdb_order = [
-    'read_design.tcl',
-    'extract_model.tcl'
-  ]
-  genlibdb_tt.update_params({
-    'corner': 'typical',
-    'order': genlibdb_order
-  })
-  genlibdb_ff.update_params({
-    'corner': 'bc',
-    'order': genlibdb_order
-  })
+  # genlibdb_order = [
+  #   'read_design.tcl',
+  #   'extract_model.tcl'
+  # ]
+  # genlibdb_tt.update_params({
+  #   'corner': 'typical',
+  #   'order': genlibdb_order
+  # })
+  # genlibdb_ff.update_params({
+  #   'corner': 'bc',
+  #   'order': genlibdb_order
+  # })
+  genlibdb_tt.update_params({'corner': 'typical'})
+  genlibdb_ff.update_params({'corner': 'bc'})
 
   # Add SDC unit hack before genlibdb and pt_signoff
   sdc_hack_command = "python inputs/hack_sdc_unit.py inputs/design.pt.sdc"
@@ -386,14 +390,23 @@ def construct():
   sdc_filter_command = "sed -i 's/-library [^ ]* //g' inputs/design.pt.sdc"
 
   # add the commands to the steps
-  genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
-  genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  # genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  # genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
   pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
 
   # hack the antenna ratio in the tech lef file
   lef_hack_scale_factor = 0.98
   lef_hack_command = f"python inputs/hack_lef_antenna.py outputs/adk/rtk-tech.lef {lef_hack_scale_factor:.2f}"
   adk.extend_commands( [lef_hack_command] )
+
+  # hack the sdc before init step to set false path to diodes
+  # init_order = init.get_param( 'order' )
+  # if 'insert-input-antenna-diodes.tcl' in init_order:
+  #   diode_hack_commands = []
+  #   diode_hack_commands.append('find -L inputs -name "*.sdc" -not -name ".*" -not -name "*timingderate*" -print0 | while IFS= read -r -d "" file; do')
+  #   diode_hack_commands.append('    echo "set_false_path -to [get_pins -hier *IN_PORT_DIODE_*/\$ADK_ANTENNA_CELL_PIN]" >> $file')
+  #   diode_hack_commands.append('done')
+  #   init.pre_extend_commands( diode_hack_commands )
 
   return g
 
