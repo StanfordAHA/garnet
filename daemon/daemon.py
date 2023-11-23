@@ -142,7 +142,14 @@ class GarnetDaemon:
         # On CONT, register status and load new args from 'reload' file
         print(f'\n\n--- DAEMON RESUMES')
         GarnetDaemon.put_status('busy')
-        return gd.load_args(dbg=1)
+
+        new_args = gd.load_args(dbg=1)
+        new = new_args.__dict__; old = args.__dict__
+        # print(f'Before merge: new_args[app]={new["app"]}, old_args[app]={old["app"]}')
+        # Update old dict with new info
+        old.update(new)
+        # print(f'After merge:  new_args[app]={new["app"]}, old_args[app]={old["app"]}')
+        return Namespace(**old)
 
     # ------------------------------------------------------------------------
     # "Private" methods for processing individual daemon commands:
