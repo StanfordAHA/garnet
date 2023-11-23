@@ -97,8 +97,9 @@ echo flags1=$flags1 | fold -sw 120
 
 aha garnet --daemon kill
 
-app=apps/pointwise
+apps/pointwise
 apps='
+    apps/pointwise
     apps/pointwise
     tests/ushift
     tests/arith
@@ -118,11 +119,30 @@ apps='
 #     for test in resnet_tests:
 #         t0, t1, t2 = test_dense_app("apps/resnet_output_stationary", width, height, layer=test, env_parameters=str(args.env_parameters))
 
-# GARNET BUILD & LAUNCH DAEMON
-echo "--- BEGIN BUILD & LAUNCH DAEMON"
+
+echo '--- BEGIN PNR.PY REPLACE'
+set -x
+ls -l /aha/garnet/daemon/pnr.py /aha/aha/util/pnr.py
+cp /aha/aha/util/pnr.py /aha/aha/util/pnr.py.orig
+cp /aha/garnet/daemon/pnr.py /aha/aha/util/pnr.py
+ls -l /aha/garnet/daemon/pnr.py /aha/aha/util/pnr.py
+set +x
+
+# (For now) do not use garnet-build for daemon (yet)
+# # GARNET BUILD & LAUNCH DAEMON
+# echo "--- BEGIN BUILD & LAUNCH DAEMON"
+# t_start=`date +%s`
+# # aha garnet $flags1 --daemon launch |& sed 's/^/DAEMON: /' | tee daemon.log &
+# nobuf='stdbuf -oL -eL'
+# $nobuf aha garnet $flags1 --daemon launch |& $nobuf sed 's/^/DAEMON: /' | $nobuf tee daemon.log &
+# aha garnet --daemon wait
+# t_garnet=$(( `date +%s` - $t_start ))
+# echo "Initial garnet build took $t_garnet seconds"
+
+# GARNET BUILD & LAUNCH
+echo "--- BEGIN GARNET VERILOG BUILD"
 t_start=`date +%s`
-aha garnet $flags1 --daemon launch |& sed 's/^/DAEMON: /' | tee garnet.log &
-aha garnet --daemon wait
+aha garnet $flags1 |& tee garnet.log &
 t_garnet=$(( `date +%s` - $t_start ))
 echo "Initial garnet build took $t_garnet seconds"
 
@@ -132,15 +152,19 @@ echo "Initial garnet build took $t_garnet seconds"
     printf "%-19s %4s %-6s\n" garnet $t_garnet "($t_garnet)" ;
 ) >& tmp.stats
 
+app=apps/pointwise
+app=tests/ushift
+
+DAEMON_LAUNCHED=
 for app in $apps; do
     ap=`basename $app`; echo $ap
-    echo "--- BEGIN TEST $ap"
+    echo "--- BEGIN $ap"
 
 # Using 'aha pnr' instead maybe?
 # flags2=`get_flags2 $app`
 # echo flags2=$flags2 | fold -sw 120
 
-# bookmark NEW STUFF
+# bookmark NEW STUFF / # FIXME maybe don't need this no more
 (
     set -x
     cd /aha/Halide-to-Hardware/apps/hardware_benchmarks/$app
@@ -155,7 +179,6 @@ aha map ${app} --chain |& tee map.log
 t_map=$(( `date +%s` - $t_start ))
 echo "'$ap' map took $t_map seconds"
 
-set -x
 echo "--- BEGIN PNR $ap, no daemon"
 # PNR ("MAP"), no daemon
 t_start=`date +%s`
@@ -164,15 +187,29 @@ aha pnr $app --width 28 --height 16 |& tee pnr_no_daemon.log
 t_pnr_no_daemon=$(( `date +%s` - $t_start ))
 echo "No-daemon '$ap' pnr took $t_pnr_no_daemon seconds"
 
+
+# First time through, launch the daemon; aftwerwards *use* the daemon
+[ "$DAEMON_LAUNCHED" ] && daemon_cmd="use" || daemon_cmd="launch"; echo $daemon_cmd
+
 echo "--- BEGIN PNR $ap, using daemon"
 # PNR ("MAP"), using daemon
 t_start=`date +%s`
-# aha garnet $flags2 --daemon use |& tee pnr_daemon.log
-aha pnr $app --width 28 --height 16 --daemon use |& tee pnr_daemon.log
+if ! [ "$DAEMON_LAUNCHED" ]; then
+    nobuf='stdbuf -oL -eL'
+    echo aha pnr $app --width 28 --height 16 --daemon launch
+    $nobuf aha pnr $app --width 28 --height 16 --daemon launch \
+        |& $nobuf sed 's/^/DAEMON: /' \
+        |  $nobuf tee pnr_launch.log &
+    DAEMON_LAUNCHED=True
+else
+    echo aha pnr $app --width 28 --height 16 --daemon use
+    $nobuf aha pnr $app --width 28 --height 16 --daemon use \
+        |& $nobuf tee pnr_launch.log &
+fi
+sleep 2 # BUG/FIXME should not need this
 aha garnet --daemon wait
 t_pnr_daemon=$(( `date +%s` - $t_start ))
 echo "'$ap' w/daemon pnr took $t_pnr_daemon seconds"
-set +x
 
 # # TODO probably don't need this now that we are using "aha pnr"
 # # PARSE DESIGN_META (create design_meta.json for test)
