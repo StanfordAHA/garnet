@@ -63,6 +63,7 @@ echo "--- BEGIN DAEMON_TEST.SH"
 # Duplicate this table with and without daemon
 
 # FLAGS1
+flags1="--width  4 --height  2 --verilog --use_sim_sram --rv --sparse-cgra --sparse-cgra-combined"
 flags1="--width 28 --height 16 --verilog --use_sim_sram --rv --sparse-cgra --sparse-cgra-combined"
 echo flags1=$flags1 | fold -sw 120
 
@@ -141,7 +142,7 @@ set +x
 # GARNET BUILD & LAUNCH
 echo "--- BEGIN GARNET VERILOG BUILD"
 t_start=`date +%s`
-aha garnet $flags1 |& tee garnet.log &
+aha garnet $flags1 |& tee garnet.log
 t_garnet=$(( `date +%s` - $t_start ))
 echo "Initial garnet build took $t_garnet seconds"
 
