@@ -97,7 +97,6 @@ echo flags1=$flags1 | fold -sw 120
 
 aha garnet --daemon kill
 
-apps/pointwise
 apps='
     apps/pointwise
     apps/pointwise
