@@ -48,6 +48,7 @@ class Garnet(Generator):
 
         args.tile_id_width = 16
         args.config_addr_reg_width = 8
+        args.config_data_width = self.config_data_width
 
         # size
         self.width = args.width
@@ -72,7 +73,6 @@ class Garnet(Generator):
         print("--- BUILD THE CGRA")
         from cgra.util import get_cc_args, create_cgra
         width  = args.width; height = args.height
-        args.config_data_width = self.config_data_width
         cc_args = get_cc_args(width, height, io_side, args)
         self.interconnect = create_cgra(**cc_args.__dict__)
 
@@ -874,9 +874,15 @@ def main():
     # BUILD GARNET
     garnet = Garnet(args)
 
-    # USE GARNET
-    while True:
+    # VERILOG
+    if args.verilog:
+        print("--- BEGIN verilog inside garnet", flush=True)
+        build_verilog(args, garnet)
 
+    # USE GARNET
+    import json # for debugging, maybe temporary
+    while True:
+      if args.daemon:
         # Fork a child to do the work, wait for it to finish, then continue
         childpid = os.fork() # Fork a child
         if childpid > 0:
@@ -884,32 +890,39 @@ def main():
             print(f'Child process {childpid} finished with exit status {status}', flush=True)
             assert pid == childpid # Right???
 
-            # IF we're not running as a daemon, we're done.
-            if not args.daemon: break
-
-            # ELSE parent (daemon) WAITs for a client to send new args for processing
             print('\nLOOPING')
+            print(f'Before merge: args.app={args.app}')
             args = GarnetDaemon.loop(args, dbg=1)
 
+            # PRINT DEBUG INFO
+            print(f'After merge:  args.app={args.app}')
             argdic = vars(args)
             sorted_argdic=dict(sorted(argdic.items()))
-            import json
-            print(f"- loaded args {json.dumps(sorted_argdic, indent=4)}")
-
-
+            sorted_argdic['glb_params'] = "<unserializable obj>" # Cannot serialize glb_params or pe_fc
+            sorted_argdic['pe_fc']      = "<unserializable obj>"
+            print(f"- loaded args (garnet) = {json.dumps(sorted_argdic, indent=4)}")
 
             continue
 
         # Forked child process does the work, then exits
 
-        # VERILOG
-        if args.verilog: build_verilog(args, garnet)
+        # FIXME Verilog should be here probably, Right?
+        #         # VERILOG
+        #         if args.verilog:
+        #             print("--- BEGIN verilog inside garnet", flush=True)
+        #             build_verilog(args, garnet)
 
         # PNR
         app_specified = len(args.app)    > 0 and \
                         len(args.input)  > 0 and \
                         len(args.gold)   > 0 and \
                         len(args.output) > 0
+
+        argdic = vars(args)
+        sorted_argdic=dict(sorted(argdic.items()))
+        sorted_argdic['glb_params'] = "UKNOWN"
+        sorted_argdic['pe_fc'] = "UKNOWN"
+        print(f"--- BEGIN pre-pnr/bs args {json.dumps(sorted_argdic, indent=4)}")
 
         do_pnr = app_specified and not args.virtualize
         if do_pnr:
@@ -919,15 +932,22 @@ def main():
 
         # BITSTREAM
         elif args.virtualize and len(args.app) > 0:
+            print("--- BEGIN bitstream inside garnet", flush=True)
             group_size = args.virtualize_group_size
             result = garnet.compile_virtualize(args.app, group_size)
             for c_id, bitstream in result.items():
                 filename = os.path.join("temp", f"{c_id}.bs")
                 write_out_bitstream(filename, bitstream)
 
+        # argdic = vars(args)
+        # sorted_argdic=dict(sorted(argdic.items()))
+        # sorted_argdic['glb_params'] = "UKNOWN"; sorted_argdic['pe_fc'] = "UKNOWN"
+        # print(f"--- BEGIN pre-dump-config args {json.dumps(sorted_argdic, indent=4)}")
+
         # WRITE REGS TO CONFIG.JSON
         from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
         if args.dump_config_reg:
+            print("--- BEGIN dump-config inside garnet", flush=True)
             ic = garnet.interconnect
             ic_reg = get_interconnect_regs(ic)
             core_reg = get_core_registers(ic)
