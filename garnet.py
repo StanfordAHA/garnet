@@ -740,6 +740,7 @@ def parse_args():
     return args
 
 def build_verilog(args, garnet):
+    print('--- BEGIN build_verilog 743', flush=True)
     garnet_circ = garnet.circuit()
     magma.compile("garnet", garnet_circ, output="coreir-verilog",
                   coreir_libs={"float_CW"},
@@ -767,8 +768,11 @@ def build_verilog(args, garnet):
             gfd.writelines(lines_garnet)
             gfd.writelines(lines_pe)
 
+    print('--- BEGIN build_verilog 771', flush=True)
     garnet.create_stub()
+    print('--- BEGIN build_verilog 773', flush=True)
     if not args.interconnect_only:
+        print('--- BEGIN build_verilog 775', flush=True)
         garnet_home = os.getenv('GARNET_HOME')
         if not garnet_home:
             garnet_home = os.path.dirname(os.path.abspath(__file__))
@@ -783,6 +787,10 @@ def build_verilog(args, garnet):
         gen_rdl_header(top_name="glc",
                        rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
+
+        print('--- BEGIN build_verilog 791', flush=True)
+
+    print('--- BEGIN build_verilog 793', flush=True)
 
 # FIXME/TODO send pnr, pnr_wrapper etc. to util/garnetPNR or some such
 # e.g. "import util.pnr then call util.pnr.{pnr,pnr_wrapper} etc. maybe
@@ -878,14 +886,20 @@ def main():
     if args.verilog:
         print("--- BEGIN verilog inside garnet", flush=True)
         build_verilog(args, garnet)
+        print("--- DONE verilog inside garnet", flush=True)
+    print("--- continuing", flush=True)
+    print(f"args.daemon={args.daemon}", flush=True)
 
     # USE GARNET
     import json # for debugging, maybe temporary
     while True:
-      if args.daemon:
-        # Fork a child to do the work, wait for it to finish, then continue
-        childpid = os.fork() # Fork a child
-        if childpid > 0:
+        print('--- BEGIN LOOPING')
+        if args.daemon:
+          print('--- BEGIN ARGS.DAEMON')
+          # Fork a child to do the work, wait for it to finish, then continue
+          childpid = os.fork() # Fork a child
+          if childpid > 0:
+            print('--- BEGIN CHILDPID > 0')
             pid, status = os.waitpid(childpid, 0) # Wait for child to finish
             print(f'Child process {childpid} finished with exit status {status}', flush=True)
             assert pid == childpid # Right???
@@ -911,6 +925,8 @@ def main():
         #         if args.verilog:
         #             print("--- BEGIN verilog inside garnet", flush=True)
         #             build_verilog(args, garnet)
+
+        print("--- BEGIN check for PNR", flush=True)
 
         # PNR
         app_specified = len(args.app)    > 0 and \
@@ -944,6 +960,8 @@ def main():
         # sorted_argdic['glb_params'] = "UKNOWN"; sorted_argdic['pe_fc'] = "UKNOWN"
         # print(f"--- BEGIN pre-dump-config args {json.dumps(sorted_argdic, indent=4)}")
 
+        print("--- BEGIN check for dump-config", flush=True)
+
         # WRITE REGS TO CONFIG.JSON
         from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
         if args.dump_config_reg:
@@ -955,6 +973,7 @@ def main():
                 json.dump(ic_reg + core_reg, f)
 
         # CHILD IS DONE
+        print("--- BEGIN GARNET EXIT", flush=True)
         exit()
 
 if __name__ == "__main__":
