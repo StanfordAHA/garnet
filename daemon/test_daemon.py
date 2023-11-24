@@ -205,6 +205,7 @@ def test_daemon_use():
     p2 = subprocess.run(f'{DAEMON} use --animal foxy'.split(), text=True, capture_output=True)
     sys.stdout.flush()
     min_sleep()
+    p3 = subprocess.run(f'{DAEMON} wait'.split(), text=True, capture_output=True)
 
     print('\nKILL the daemon\n')
     subprocess.run(f'{DAEMON} kill'.split())
@@ -410,6 +411,8 @@ def test_cleanup():    announce_unit(': TBD')
 def test_wait_stage(): announce_unit(': TBD')
 def test_check_daemon(): announce_unit(': TBD')
 
+def test_save_the_unsaveable():    announce_unit(': TBD')
+
 ########################################################################
 # Helper functions
 
@@ -440,6 +443,9 @@ def try_animal(animal, tmpfile):
     print(f'- sacrificing {animal} to daemon', flush=True)
     time.sleep(2)    # Give it a second to process, dude
 
+    # Wait for daemon to finish using the animal
+    p = subprocess.run(f'{DAEMON} wait'.split())
+
     daemon_out = catnew(tmpfile, reset=False)
     print_w_prefix('DAEMON: ', daemon_out)
 
@@ -449,16 +455,13 @@ def try_animal(animal, tmpfile):
 def expect(cmd, expect):
     '''Run <cmd> and display output. Return True if output contains <spect> string'''
     # TODO for extra credit maybe <expect> could be a regex omg
-    p = subprocess.Popen(
+    # print('launching expect process')
+    p = subprocess.run(
         cmd.split(), text=True, 
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     found = False
-    while p.poll() is None:
-        out = p.stdout.readline()
-        sys.stdout.write(out); sys.stdout.flush()
-        if expect in out: found = True
-
+    if expect in p.stdout: found = True
     return found
 
 def kill_existing_daemon():
