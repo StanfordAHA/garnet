@@ -204,7 +204,7 @@ if ! [ "$DAEMON_LAUNCHED" ]; then
 else
     echo aha pnr $app --width 28 --height 16 --daemon use
     $nobuf aha pnr $app --width 28 --height 16 --daemon use \
-        |& $nobuf tee pnr_launch.log &
+        |& $nobuf tee pnr_use.log &
 fi
 sleep 2 # BUG/FIXME should not need this
 aha garnet --daemon wait
