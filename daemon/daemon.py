@@ -369,15 +369,6 @@ class GarnetDaemon:
             if GarnetDaemon.wait_stage(sec_per_dot, dots_per_line): return True
         return False
 
-    def check_daemon_old(ntries, secs_per_try, ngroups=1):
-        print('yoo hoo this is check_daemon', flush=True)
-        errmsg = f'\nERROR there is no daemon, did you forget to launch it?'
-        assert GarnetDaemon.daemon_exists(), errmsg
-        tries_per_group = int(ntries/ngroups)
-        for g in range(ngroups):
-            if GarnetDaemon.wait_stage(secs_per_try, tries_per_group): return True
-        return False
-
     def die_if_daemon_exists():
         '''If existing daemon is found, issue an error message and die'''
         if GarnetDaemon.daemon_exists():
