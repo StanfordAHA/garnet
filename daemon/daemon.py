@@ -235,23 +235,57 @@ class GarnetDaemon:
         time.sleep(2)
         while True:
             if GarnetDaemon.status(args) == 'ready': break
+
+            # Timeout after 2 hours or 7200 seconds, yes?
             # Each set of waits is broken down into groups b/c of stdout tees and lesses and flushes and such
 
-            print(f'- daemon busy, will retry once per second for twenty seconds')
-            print(f'- (in four groups of five seconds each)')
-            if gd.check_daemon(20,   1, ngroups=4): break
+#             print(f'- daemon busy, will do 1 sec/retry for 100 seconds')
+#             # 300 tries, 1 sec/try, 5 groups (1 minute/line)
+#             if gd.check_daemon(300,   1, ngroups=5): break  # 5 min @ 1 sec/dot
+# 
+#             if gd.check_daemon(1200,  2, ngroups=40): break # 20 min @ 2 sec/dot
 
-            print(f'- daemon still busy, will do twenty more tries @ 2 sec each')
-            if gd.check_daemon(20,   2, ngroups=4): break
+            print(f'- daemon busy    0 sec so far, will do  1 sec/retry for  360 seconds') #  6 min
+            if gd.check_daemon(sec_per_dot=1, nsec=360, dots_per_line=30); break           # 12 lines
+            # ---------------------------------------------------------------------------------------
 
-            print(f'- 20 tries @ one minute per try:')  # Total 21 min wait
-            if gd.check_daemon(20,  60, ngroups=4): break
+            print(f'- daemon busy  360 sec so far, will do  4 sec/retry for 1440 seconds') # 24 min
+            if gd.check_daemon(sec_per_dot=4, nsec=1440, dots_per_line=30); break          # 12 lines
+            # ---------------------------------------------------------------------------------------
 
-            print(f'- 20 tries @ two minutes per try:') # Total 1 hr wait
-            if gd.check_daemon(20, 120, ngroups=2): break
 
-            print(f'- 12 tries @ 5 min / try"') # Total 2 hr wait
-            if gd.check_daemon(12, 300, ngroups=3): break
+            print(f'- daemon busy 1800 sec so far, will do 20 sec/retry for 1800 seconds') # 30 min
+            if gd.check_daemon(sec_per_dot=20, nsec=1800, dots_per_line=10); break         #  9 lines?
+            # ---------------------------------------------------------------------------------------
+
+            print(f'- daemon busy 3600 sec so far, will do 60 sec/retry for 3600 seconds') # 60 min
+            if gd.check_daemon(sec_per_dot=60, nsec=3600, dots_per_line=10); break         # 6 lines?
+
+
+
+
+
+
+#             print(f'- daemon busy, will retry once per 4-secs for twenty minutes')
+#             if gd.check_daemon(2400,  4, ngroups=40): break # 40 min @ 4 sec/dot
+# 
+# #             # Each set of waits is broken down into groups b/c of stdout tees and lesses and flushes and such
+# # 
+# #             print(f'- daemon busy, will retry once per second for twenty seconds')
+# #             print(f'- (in four groups of five seconds each)')
+# #             if gd.check_daemon(20,   1, ngroups=4): break
+# # 
+# #             print(f'- daemon still busy, will do twenty more tries @ 2 sec each')
+# #             if gd.check_daemon(20,   2, ngroups=4): break
+# # 
+# #             print(f'- 20 tries @ one minute per try:')  # Total 21 min wait
+# #             if gd.check_daemon(20,  60, ngroups=4): break
+# # 
+# #             print(f'- 20 tries @ two minutes per try:') # Total 1 hr wait
+# #             if gd.check_daemon(20, 120, ngroups=2): break
+# 
+#             print(f'- 12 tries @ 5 min / try"') # Total 2 hr wait
+#             if gd.check_daemon(12, 300, ngroups=3): break
 
             # sys.stderr.write('ERROR Timeout waiting for daemon. Did you forget to launch it?\n')
             sys.stderr.write('ERROR Timeout after two hours waiting for daemon.\n')
@@ -354,13 +388,24 @@ class GarnetDaemon:
         print('', flush=True)
         return False
 
-    def check_daemon(ntries, secs_per_try, ngroups=1):
+    def check_daemon(sec_per_dot, nsec, dots_per_line):
         errmsg = f'\nERROR there is no daemon, did you forget to launch it?'
         assert GarnetDaemon.daemon_exists(), errmsg
-        tries_per_group = int(ntries/ngroups)
-        for g in range(ngroups):
-            if GarnetDaemon.wait_stage(secs_per_try, tries_per_group): return True
+        # -----------------------------------------------------------------------
+        total_dots = int(nsec / secs_per_dot)
+        nlines     = int(total_dots / dots_per_line)
+        # -----------------------------------------------------------------------
+        for g in range(nlines):
+            if GarnetDaemon.wait_stage(sec_per_dot, dots_per_line): return True
         return False
+
+#     def check_daemon(ntries, secs_per_try, ngroups=1):
+#         errmsg = f'\nERROR there is no daemon, did you forget to launch it?'
+#         assert GarnetDaemon.daemon_exists(), errmsg
+#         tries_per_group = int(ntries/ngroups)
+#         for g in range(ngroups):
+#             if GarnetDaemon.wait_stage(secs_per_try, tries_per_group): return True
+#         return False
 
     def die_if_daemon_exists():
         '''If existing daemon is found, issue an error message and die'''
