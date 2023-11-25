@@ -1,6 +1,7 @@
 import os, sys, signal, subprocess
 import time
 
+# Docker does not have psutil (yet)
 try:
     import psutil
 except:
@@ -9,10 +10,6 @@ except:
 
 import json
 from argparse import Namespace
-
-# TODO still not cleaning up after daemons: see ls /tmp/garnet-daemon-* {pid,state0,reload}
-# - 'daemon kill' should delete these, yes? and
-# - and 'daemon status' should issue warnings?
 
 # FIXME/TODO CONSIDER:
 # when you use 'self', and you change the class name, all is copacetic
@@ -42,14 +39,13 @@ EXAMPLE:
     garnet.py --daemon kill
 
 NOTE! 'daemon.use' width and height must match 'daemon.launch'!!!
-'''
 
-# See README.txt for more info
+See README.txt for more info
+'''
 
 class GarnetDaemon:
 
     # Permissible daemon commands
-    # TODO these are constants, sort of, should be all caps, maybe
     choices = [ 'help','launch', 'use', 'kill', 'status', 'force', 'wait' ]
 
     # Disk storage for persistent daemon state
@@ -104,14 +100,6 @@ class GarnetDaemon:
         elif args.daemon == "wait":
             GarnetDaemon.wait_daemon(args); exit()
 
-    def launch(args):
-        gd = GarnetDaemon
-        gd.die_if_daemon_exists()
-        gd.register_pid(); gs = gd.grid_size(args)    # E.g. "4x2"
-        print(f'\n--- LAUNCHING {gs} DAEMON {gd.PID}')
-        gd.put_status('busy')
-        gd.save_state0(args)
-
     def loop(args, dbg=1):
         '''Launch daemon and/or watch for updates'''
         gd = GarnetDaemon; command = args.daemon
@@ -154,15 +142,23 @@ class GarnetDaemon:
 
     # ------------------------------------------------------------------------
     # "Private" methods for processing individual daemon commands:
-    #   def help()
-    #   def use(args)
-    #   def kill(dbg=1)
-    #   def status(args)
-    #   def wait_daemon(args):
+    #   help()
+    #   launch(args)
+    #   use(args)
+    #   kill(dbg)
+    #   status(args, verbose, dbg)
+    #   wait_daemon(args)
+
+    def launch(args):
+        gd = GarnetDaemon
+        gd.die_if_daemon_exists()
+        gd.register_pid(); gs = gd.grid_size(args)    # E.g. "4x2"
+        print(f'\n--- LAUNCHING {gs} DAEMON {gd.PID}')
+        gd.put_status('busy')
+        gd.save_state0(args)
 
     def help():
-        print(GarnetDaemon_HELP)
-        return GarnetDaemon_HELP
+        print(GarnetDaemon_HELP); return GarnetDaemon_HELP
 
     def use(args):
         GarnetDaemon.wait_daemon(args)       # Wait for daemon to exist
@@ -183,25 +179,17 @@ class GarnetDaemon:
         print(f'- cleanup on aisle "/tmp"')
         GarnetDaemon.cleanup()
 
-    def daemon_exists(pid=None):
-        if not pid: pid = GarnetDaemon.retrieve_pid(dbg=0)
-        process_exists = f'test -d /proc/{pid}'
-        if not GarnetDaemon.do_cmd(process_exists): return False
-        pstatus = psutil.Process(pid).status()
-        if pstatus == 'zombie': return False
-        return pid
-
     def status(args, verbose=True, dbg=0):
-        gd = GarnetDaemon;
         if dbg: print(f'\n--- STATUS: daemon status requested')
+        gd = GarnetDaemon;
 
         if dbg: print(f'- checking for orphans')
-        GarnetDaemon.check_for_orphans()
+        gd.check_for_orphans()
 
-        pid = GarnetDaemon.retrieve_pid()
+        pid = gd.retrieve_pid()
         if dbg: print(f'- checking status of process {pid}')
 
-        if not GarnetDaemon.daemon_exists():
+        if not gd.daemon_exists():
             if verbose: print("- no daemon found")
 
             # Do this once per session only
@@ -214,8 +202,8 @@ class GarnetDaemon:
         # Don't 'if dbg' this, pytest needs it
         if verbose: print(f'- found running daemon {pid}')
 
+        # Use initial-launch info in state0 file for more info about daemon
         state0_file = gd.FN_STATE0
-
         if not gd.do_cmd(f'test -f {state0_file}'):
             print(f'- WARNING: cannot find daemon state file "{state0_file}"')
             print(f'- WARNING: daemon state corrupted: suggest you do "kill {pid}"')
@@ -225,7 +213,8 @@ class GarnetDaemon:
         grid_size = gd.grid_size(state0_args)
         if verbose: print(f'- found running {grid_size} daemon {pid}')
 
-        with open(GarnetDaemon.FN_STATUS, 'r') as f:
+        # Read status e.g. 'ready' or 'busy'
+        with open(gd.FN_STATUS, 'r') as f:
             status = f.read()
             if verbose: print('- daemon_status: ' + status)
         return status
@@ -273,36 +262,24 @@ class GarnetDaemon:
     def save_state0(args, dbg=0):
         GarnetDaemon.save_args(args, fname=GarnetDaemon.FN_STATE0)
 
+    # Cannot save glb_params or pe_fc to a file, must find some other way...
     def save_the_unsaveable(args):
-        # Oops well maybe that's okay
-        # print(f'resetting glb params arg', flush=True)
         # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
         # try/except because these args do not exist in pytest trials...
         try:
+            # Save glb_param and pe_fc_param and pe_fc locally, save replacement error-string to file 
             GarnetDaemon.saved_glb_params = args.glb_params
+            GarnetDaemon.saved_pe_fc      = args.pe_fc
             args.glb_params = "SORRY cannot save/restore GlobalBufferParams!"
-
-            GarnetDaemon.saved_pe_fc = args.pe_fc
-            args.pe_fc = "SORRY cannot save/restore pe_fc of type <family_closure)!"
+            args.pe_fc =      "SORRY cannot save/restore pe_fc of type <family_closure)!"
         except:
             print(f'WARNING could not save glb_params and/or pe_fc')
-
 
     def save_args(args, fname=None, dbg=0):
         'Save current state (args) to arg-save (reload) file'
 
-        # Oops well maybe that's okay
-        # print(f'resetting glb params arg', flush=True)
-        # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
-        # try/except because these args do not exist in pytest trials...
-        try:
-            GarnetDaemon.saved_glb_params = args.glb_params
-            args.glb_params = "SORRY cannot save/restore GlobalBufferParams!"
-
-            GarnetDaemon.saved_pe_fc = args.pe_fc
-            args.pe_fc = "SORRY cannot save/restore pe_fc of type <family_closure)!"
-        except:
-            print(f'WARNING could not save glb_params and/or pe_fc')
+        # Cannot save glb_param and pe_fc to a file b/c they are "unserializable"
+        save_the_unsaveable(args)
 
         # Save args as a sorted dict
         argdic = vars(args)
@@ -312,6 +289,7 @@ class GarnetDaemon:
         with open(fname, 'w') as f: json.dump(sorted_argdic, f)
         if dbg: print(f'- saved args {args} to {fname}')
         
+        # Restore "unsaveable" args
         # try/except because these args do not exist in pytest trials...
         try:
             args.glb_params = GarnetDaemon.saved_glb_params
@@ -319,19 +297,18 @@ class GarnetDaemon:
         except:
             print(f'WARNING could not restore glb_params and/or pe_fc')
 
-
     def load_args(fname=None, dbg=0):
         'Load state (args) from save-args (reload) file'
         if not fname: fname = GarnetDaemon.FN_RELOAD
         with open(fname, 'r') as f: args_dict = json.load(f)
         new_args = Namespace(**args_dict)
 
-        # Oops well maybe that's okay
+        # Restore "unsaveable" args
         try:
             print(f'restore args.{glb_params,pe_fc}')
             # assert args.GlobalBufferParams == "SORRY cannot save/restore GlobalBufferParams!"
             new_args.glb_params = GarnetDaemon.saved_glb_params
-            new_args.pe_fc = GarnetDaemon.saved_pe_fc
+            new_args.pe_fc      = GarnetDaemon.saved_pe_fc
         except: pass
 
         if dbg: print(f'- restored args {new_args} from {fname}')
@@ -340,35 +317,21 @@ class GarnetDaemon:
 
     # ------------------------------------------------------------------------
     # "Private" methods for interfacing with the daemon
-    #     def die_if_daemon_exists():
-    #     def check_for_orphans():
-    #     def all_daemon_processes_except(*args):
-    #     def args_match_or_die(daemon_args, client_args):
+    #     daemon_exists(pid)
+    #     die_if_daemon_exists()
+    #     check_for_orphans()
+    #     wait_stage()         # helper function for wait_daemon() )
+    #     check_daemon()       # helper function for wait_daemon() )
+    #     all_daemon_procs():
+    #     args_match_or_die(daemon_args, client_args)
 
-    def wait_stage(wait_secs, ntries):
-        'Check daemon once every <wait_secs> seconds, timeout after <max> tries'
-        sys.stdout.write(f'- wait{ntries} '); sys.stdout.flush()
-        for i in range(ntries):
-            time.sleep(wait_secs)
-            sys.stdout.write('.'); sys.stdout.flush()
-            status = GarnetDaemon.status(GarnetDaemon.args, verbose=False)
-            if status == 'ready': print('', flush=True)
-            if status == 'ready': return True
-        print('', flush=True)
-        return False
-
-    def check_daemon(sec_per_dot, nsec, dots_per_line):
-        print('yoo hoo this is check_daemon_new', flush=True)
-        errmsg = f'\nERROR there is no daemon, did you forget to launch it?'
-        assert GarnetDaemon.daemon_exists(), errmsg
-        # -----------------------------------------------------------------------
-        total_dots = int(nsec / sec_per_dot)
-        nlines     = int(total_dots / dots_per_line)
-        # -----------------------------------------------------------------------
-        print(f'nlines={nlines}, sec_per_dot={sec_per_dot}, dots_per_line={dots_per_line}', flush=True)
-        for g in range(nlines):
-            if GarnetDaemon.wait_stage(sec_per_dot, dots_per_line): return True
-        return False
+    def daemon_exists(pid=None):
+        if not pid: pid = GarnetDaemon.retrieve_pid(dbg=0)
+        process_exists = f'test -d /proc/{pid}'
+        if not GarnetDaemon.do_cmd(process_exists): return False
+        pstatus = psutil.Process(pid).status()
+        if pstatus == 'zombie': return False
+        return pid
 
     def die_if_daemon_exists():
         '''If existing daemon is found, issue an error message and die'''
@@ -417,6 +380,33 @@ class GarnetDaemon:
         print(f'********************************************************')
         return True  # Found orphans
 
+    # Helper function for "wait_daemon()"
+    def wait_stage(wait_secs, ntries):
+        'Check daemon once every <wait_secs> seconds, timeout after <max> tries'
+        sys.stdout.write(f'- wait{ntries} '); sys.stdout.flush()
+        for i in range(ntries):
+            time.sleep(wait_secs)
+            sys.stdout.write('.'); sys.stdout.flush()
+            status = GarnetDaemon.status(GarnetDaemon.args, verbose=False)
+            if status == 'ready': print('', flush=True)
+            if status == 'ready': return True
+        print('', flush=True)
+        return False
+
+    # Helper function for "wait_daemon()"
+    def check_daemon(sec_per_dot, nsec, dots_per_line):
+        print('yoo hoo this is check_daemon_new', flush=True)
+        errmsg = f'\nERROR there is no daemon, did you forget to launch it?'
+        assert GarnetDaemon.daemon_exists(), errmsg
+        # -----------------------------------------------------------------------
+        total_dots = int(nsec / sec_per_dot)
+        nlines     = int(total_dots / dots_per_line)
+        # -----------------------------------------------------------------------
+        print(f'nlines={nlines}, sec_per_dot={sec_per_dot}, dots_per_line={dots_per_line}', flush=True)
+        for g in range(nlines):
+            if GarnetDaemon.wait_stage(sec_per_dot, dots_per_line): return True
+        return False
+
     def all_daemon_procs():
         '''Return a list of all daemon processes'''
         # Look for  procs w args "--daemon" AND "launch"
@@ -456,14 +446,12 @@ class GarnetDaemon:
     # Stop, but do not kill, pid. Can continue again w "sigcont"
     def sigstop(pid=None, dbg=1):
         if not pid: pid = GarnetDaemon.retrieve_pid()
-        
+
         # print(f'\nstopping final {pid}\n\n', flush=True)
-        # VERY IMPORTANT: job can hang forever is do not do this final flush!!!
+        # VERY IMPORTANT: job can hang forever if do not do this final flush!!!
         sys.stdout.flush(); sys.stderr.flush()
         os.kill(int(pid), signal.SIGSTOP)
         # Okay but hold on suppose it takes a second to actually STOP!!???
-        import time
-#         time.sleep(10)
         time.sleep(1)
 
     # Send a "CONTinue" signal to a process
@@ -482,8 +470,11 @@ class GarnetDaemon:
 
     # ------------------------------------------------------------------------
     # Misc utilites: retrieve daemon info
-    #   def grid_size(args, who='daemon'):
-    #   def retrieve_pid(fname=None, dbg=1):
+    #   grid_size(args, who='daemon'):
+    #   retrieve_pid(fname=None, dbg=1):
+    #   register_pid(fname=None, dbg=1):
+    #   put_status(jobstatus, pid, fname, dbg)
+    #   get_status(fname)
 
     # Returns e.g. "4x2" if args request 4x2 grid
     def grid_size(args, who='daemon'):
@@ -491,22 +482,6 @@ class GarnetDaemon:
         assert 'height' in args, f"No height specified for {who}"
         return f'{args.width}x{args.height}'
 
-    def put_status(jobstatus, pid=None, fname=None, dbg=1):
-        "Save daemon status e.g. 'busy' or 'ready'"
-        if not fname: fname = GarnetDaemon.FN_STATUS
-        with open(fname, 'w') as f: f.write(jobstatus)
-        
-    def get_status(fname=None):
-        "Get daemon status e.g. 'busy' or 'ready'"
-        if not fname: fname = GarnetDaemon.FN_STATUS
-        try:
-            with open(fname, 'r') as f: status = f.read()
-            # print(f'1 status={status}')
-            return status
-        except:
-            print(f'WARNING could not read from daemon status file {fname}')
-            return None
-        
     def register_pid(pid=None, fname=None, dbg=0):
         'Write pid to pid-save file'
         if not pid:   pid = GarnetDaemon.PID
@@ -524,6 +499,25 @@ class GarnetDaemon:
             with open(fname, 'r') as f: pid = int(f.read().strip())
             if dbg: print(f'- got pid {pid} from file {fname}')
             return pid
+
+    def put_status(jobstatus, pid=None, fname=None, dbg=1):
+        "Save daemon status e.g. 'busy' or 'ready'"
+        if not fname: fname = GarnetDaemon.FN_STATUS
+        with open(fname, 'w') as f: f.write(jobstatus)
+        
+    def get_status(fname=None):
+        "Get daemon status e.g. 'busy' or 'ready'"
+        if not fname: fname = GarnetDaemon.FN_STATUS
+        try:
+            with open(fname, 'r') as f: status = f.read()
+            # print(f'1 status={status}')
+            return status
+        except:
+            print(f'WARNING could not read from daemon status file {fname}')
+            return None
+        
+    # ------------------------------------------------------------------------
+    # Misc utilites: cleanup
 
     def cleanup(dbg=0):
         'If daemon is dead, delete files from /tmp, else ERROR'
