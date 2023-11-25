@@ -160,22 +160,23 @@ for app in $apps; do
     ap=`basename $app`; echo $ap
     echo "--- BEGIN $ap"
 
-# Using 'aha pnr' instead maybe?
-# flags2=`get_flags2 $app`
-# echo flags2=$flags2 | fold -sw 120
+    layer=""
+    if [ "$app" == "conv5_1" ]; then
+        layer="--layer $app"
+        app=apps/resnet_output_stationary
+    fi
 
-# bookmark NEW STUFF / # FIXME maybe don't need this no more
-(
-    set -x
-    cd /aha/Halide-to-Hardware/apps/hardware_benchmarks/$app
-    make clean 
-    cd /aha
-)
+# Using 'aha pnr' instead maybe?
+# flags2=`get_flags2 $app`; echo flags2=$flags2 | fold -sw 120
+
+app_path=/aha/Halide-to-Hardware/apps/hardware_benchmarks/$app
+cd $app_path; make clean; cd /aha
+
 
 echo "--- BEGIN MAP $ap"
 # MAP ("COMPILE")
 t_start=`date +%s`
-aha map ${app} --chain |& tee map.log
+aha map $app --chain $layer |& tee map.log
 t_map=$(( `date +%s` - $t_start ))
 echo "'$ap' map took $t_map seconds"
 
@@ -183,7 +184,7 @@ echo "--- BEGIN PNR $ap, no daemon"
 # PNR ("MAP"), no daemon
 t_start=`date +%s`
 # aha garnet $flags2 |& tee pnr_no_daemon.log
-aha pnr $app --width 28 --height 16 |& tee pnr_no_daemon.log
+aha pnr $app --width 28 --height 16 $layer |& tee pnr_no_daemon.log
 t_pnr_no_daemon=$(( `date +%s` - $t_start ))
 echo "No-daemon '$ap' pnr took $t_pnr_no_daemon seconds"
 
@@ -196,14 +197,14 @@ echo "--- BEGIN PNR $ap, using daemon"
 t_start=`date +%s`
 if ! [ "$DAEMON_LAUNCHED" ]; then
     nobuf='stdbuf -oL -eL'
-    echo aha pnr $app --width 28 --height 16 --daemon launch
-    $nobuf aha pnr $app --width 28 --height 16 --daemon launch \
+    echo aha pnr $app --width 28 --height 16 $layer --daemon launch
+    $nobuf aha pnr $app --width 28 --height 16 $layer --daemon launch \
         |& $nobuf sed 's/^/DAEMON: /' \
         |  $nobuf tee pnr_launch.log &
     DAEMON_LAUNCHED=True
 else
-    echo aha pnr $app --width 28 --height 16 --daemon use
-    $nobuf aha pnr $app --width 28 --height 16 --daemon use \
+    echo aha pnr $app --width 28 --height 1 $layer6 --daemon use
+    $nobuf aha pnr $app --width 28 --height 16 $layer --daemon use \
         |& $nobuf tee pnr_use.log &
 fi
 sleep 2 # BUG/FIXME should not need this
