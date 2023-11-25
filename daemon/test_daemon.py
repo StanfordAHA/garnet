@@ -5,24 +5,22 @@ import time
 
 def min_sleep(): time.sleep(1)
 
-# Don't need unit tests if comprehensive tests are good.
-# But yes do turn them on for comprehensive/interactive testing.
-# Not much difference either, way, at this point, really...may as well not skip...
+# Can optionally skip unit tests
 # TODO separate test_daemon.py, test_units.py?
 SKIP_UNIT_TESTS = True
 SKIP_UNIT_TESTS = False
 
 # Useful globals
 MYPATH = os.path.realpath(__file__)  # E.g. "/aha/garnet/daemon/test_daemon.py"
-MYDIR = os.path.dirname(MYPATH)
+MYDIR  = os.path.dirname(MYPATH)
 
 def DAEMON(w=4,h=2): return f'python3 {MYPATH} --width {w} --height {h} --daemon'
 DAEMON7x13 = DAEMON(7,13)
 DAEMON3x5  = DAEMON(3, 5)
-DAEMON = DAEMON(7,13) # This is the default? Really?? Good for testing maybe i dunno.
+DAEMON     = DAEMON(7,13) # This is the default? Really?? Good for testing maybe i dunno.
 
 # How to: interactive pytest run with full stdout::
-#   pytest --capture=no --noconftest --color=no daemon/test_daemon.py
+#     pytest --capture=no --noconftest --color=no daemon/test_daemon.py
 
 def test_tests(dbg=0):
     '''For each func def "f" in daemon.py, verify there exists "test_f" in test_daemon.py'''
@@ -65,6 +63,7 @@ def test_tests(dbg=0):
 #     daemon kill       # kills the daemon
 #     daemon launch --width 7 --height 13   # launches 7x13 daemon
 #     etc.
+# Can use --animal arg to test arg save/reload
 # (Also see 'def __main()' far below.)
 
 def mydaemon():
@@ -126,14 +125,12 @@ def mydaemon():
 
 def test_daemon_launch():  # kill-launch-kill
     'Launch daemon, see if it is running; kill the daemon, see if it is dead'
-    announce()
-    launch_daemon_and_verify()
+    announce(); launch_daemon_and_verify()
     kill_existing_daemon()
 
 def test_double_launch():  # kill-launch-launch-kill
     'Should complain if try to launch a second daemon when one is already running'
-    announce()
-    launch_daemon_and_verify()    # Launch first daemon
+    announce(); launch_daemon_and_verify()    # Launch first daemon
 
     print('Attempting to launch a second daemon, should get an error message')
     p = subprocess.Popen(f'{DAEMON} launch'.split(), stderr=subprocess.PIPE, text=True)
@@ -165,11 +162,10 @@ def test_force_launch():
     print('...okay!')
     kill_existing_daemon()
 
-# bookmark
 def test_slow_test():
     'Test daemon-wait mechanism for too-early "daemon use" attempts'
     announce()
-    tmpfile = f'GarnetDaemon.test_slow_test.{int(time.time())}'
+    tmpfile = f'deleteme-GarnetDaemon.test_slow_test.{int(time.time())}'
 
     expect(f'{DAEMON} kill', '')
     expect(f'{DAEMON} status', 'no daemon found')
@@ -189,16 +185,16 @@ def test_slow_test():
 
 # test_daemon_use()
 #   launch, look for 'Built 7x13' and NOT 'continuing with'
-#   use --animal owl, look for 'continuing with 7x13' AND 'using animal: owl' AND NOT 'Built' 
-#   use --animal ostrich, osprey, octopus, etc.
+#   use --animal foxy, look for 'continuing with 7x13' AND 'using animal: foxy' AND NOT 'Built'
 
 def test_daemon_use():
     # from subprocess import Popen, PIPE
     announce()
     catnew_reset()
-    tmpfile = f'GarnetDaemon.test_daemon_use.{int(time.time())}'
+    tmpfile = f'deleteme-GarnetDaemon.test_daemon_use.{int(time.time())}'
     force_launch_and_capture(tmpfile)
     verify_successful_build(tmpfile)  # (calls catnew)
+    print('\nFirst assertion PASSED')
 
     # TODO maybe use expect() instead???
 
@@ -218,27 +214,13 @@ def test_daemon_use():
     print('\nSecond assertion PASSED')
     # FIXME/TODO where is first assertion? what's going on here?
 
-
-# bookmark
-# TODO launch daemon that waits a minute after launch
-# FIXME we don't have a reset anymore, what is this test about?
-# Use reset mechanism to synchronize
-
-def test_reset():
-    # from subprocess import Popen, PIPE
-    announce()
-    tmpfile = f'GarnetDaemon.test_daemon_use.{int(time.time())}'
-    force_launch_and_capture(tmpfile)
-    verify_successful_build(tmpfile)
-
-    p = subprocess.run(  ['bash','-c', f'{DAEMON} status | grep "daemon_status: completed"' ] )
-
 def test_incompatible_daemon():
-    'launch a 7x13 daemon; use a 3x5 daemon; check for error'
+    'Launch a 7x13 daemon; try to use a 3x5 daemon; verify error'
     announce()
-    tmpfile = f'GarnetDaemon.test_incompatible_daemon.{int(time.time())}'
+    tmpfile = f'deleteme-GarnetDaemon.test_incompatible_daemon.{int(time.time())}'
     force_launch_and_capture(tmpfile)
     verify_successful_build(tmpfile)
+    print('\nFirst assertion PASSED')
     os.remove(tmpfile)
 
     # status check should *not* err out for size difference!
@@ -257,9 +239,7 @@ def test_incompatible_daemon():
     print('Third assertion PASSED (task failed successfully)')
     sys.stdout.flush(); min_sleep()
 
-
-    print('\nKILL the daemon\n')
-    subprocess.run(f'{DAEMON} kill'.split())
+    print('\nKILL the daemon\n'); subprocess.run(f'{DAEMON} kill'.split())
 
 def test_help():
     announce()
@@ -304,10 +284,11 @@ def test_save_state0(): announce_unit('later')
 
 def test_save_args(): announce_unit(': see test_arg_save_and_restore()')
 def test_load_args(): announce_unit(': see test_arg_save_and_restore()')
+
 def test_arg_save_and_restore():
     if announce_unit(): return
     args = Namespace( foo='bar', bar='baz' )
-    tmpfile = f'/tmp/GarnetDaemon.test_arg_save_and_restore.{int(time.time())}'
+    tmpfile = f'/tmp/deleteme-GarnetDaemon.test_arg_save_and_restore.{int(time.time())}'
     orig_args_dict = (args.__dict__).copy() # save_args adds e.g. args.pe_fc=None
     GarnetDaemon.save_args(args, tmpfile, dbg=1)  # Save to tmpfile
     new_args = GarnetDaemon.load_args(tmpfile)    # Load from tmpfile
@@ -317,12 +298,11 @@ def test_arg_save_and_restore():
     print(f'- reloaded args: { new_args_dict}')
     assert orig_args_dict == new_args_dict
 
-def test_wait_daemon(): announce_unit('later')
 def test_die_if_daemon_exists(): announce_unit('later')
 def test_check_for_orphans(): announce_unit('later')
-# def test_all_daemon_processes_except(): announce_unit('later')
-def test_all_daemon_procs():  announce_unit('later')
 def test_args_match_or_die(): announce_unit('later')
+def test_all_daemon_procs():  announce_unit('later')
+def test_wait_daemon(): announce_unit('later')
 
 def test_do_cmd():
     if announce_unit(): return
@@ -387,7 +367,7 @@ def test_grid_size(): announce('todo')
 
 def test_pid_save_and_restore():
     if announce_unit(): return
-    tmpfile = f'/tmp/GarnetDaemon.test_pid_save_and_restore.{int(time.time())}'
+    tmpfile = f'/tmp/deleteme-GarnetDaemon.test_pid_save_and_restore.{int(time.time())}'
     GarnetDaemon.register_pid(fname=tmpfile, dbg=1)
     pid = GarnetDaemon.retrieve_pid(fname=tmpfile, dbg=1)
     os.remove(tmpfile); mypid = os.getpid()
@@ -395,7 +375,7 @@ def test_pid_save_and_restore():
 
 def test_status_save_and_restore():
     if announce_unit(): return
-    tmpfile = f'/tmp/GarnetDaemon.test_status_save_and_restore.{int(time.time())}'
+    tmpfile = f'/tmp/deleteme-GarnetDaemon.test_status_save_and_restore.{int(time.time())}'
     s1 = 'waiting'
     GarnetDaemon.put_status(s1, fname=tmpfile)
     s2 = GarnetDaemon.get_status(fname=tmpfile)
@@ -407,8 +387,8 @@ def test_retrieve_pid(): announce_unit(' - see test_pid_save_restore()')
 def test_put_status():   announce_unit(' - see test_status_save_restore()')
 def test_get_status():   announce_unit(' - see test_status_save_restore()')
 
-def test_cleanup():    announce_unit(': TBD')
-def test_wait_stage(): announce_unit(': TBD')
+def test_cleanup():      announce_unit(': TBD')
+def test_wait_stage():   announce_unit(': TBD')
 def test_check_daemon(): announce_unit(': TBD')
 
 def test_save_the_unsaveable():    announce_unit(': TBD')
@@ -446,9 +426,9 @@ def try_animal(animal, tmpfile):
     # Wait for daemon to finish using the animal
     p = subprocess.run(f'{DAEMON} wait'.split())
 
+    # Show what happened since last time daemon was used
     daemon_out = catnew(tmpfile, reset=False)
     print_w_prefix('DAEMON: ', daemon_out)
-
 
     assert f'using animal: {animal}' in daemon_out
 
@@ -485,21 +465,16 @@ def launch_daemon_and_verify(daemon=DAEMON):
 
 def verify_successful_build(capture_file):
     print('\nAPRES LAUNCH')
-
     daemon_out = catnew(capture_file, reset=True)
     print_w_prefix('DAEMON: ', daemon_out)
-
     assert 'Built 7x13' in daemon_out
-    print('\nFirst assertion PASSED')
 
 def force_launch_and_capture(capture_file, cmd='force'):
     cmd=f'{DAEMON} {cmd} |& tee {capture_file}'
     p1 = subprocess.Popen(['bash', '-c', cmd])
-
     min_sleep()
     time.sleep(2) # try it without for awhile # NOPE it really needs to stay apparently
     return p1
-
 
 def verify_daemon_running():
     print('Check daemon status, should be "found running daemon"'); sys.stdout.flush()
@@ -544,16 +519,8 @@ def print_header(curframe, msg):
     sys.stdout.flush()
 
 
-########################################################################
-# main()
-
-# Run the proto daemon if this script called with args e.g. "--daemon launch"
+#########################################################################
+# main(): run proto daemon if script called w args e.g. "--daemon launch"
 if __name__ == "__main__":
     if len( sys.argv ) > 1: mydaemon()
 
-# DONE
-# - run complete pytest, clean up the messy output
-# - run complete pytest, speed up the slow pauses
-# - make sure everyone has the appropriate announce()
-# - run with skip-test FALSE
-# - run with skip-tests TRUE
