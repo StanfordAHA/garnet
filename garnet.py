@@ -13,17 +13,12 @@ import archipelago
 import archipelago.power
 import archipelago.io
 from lassen.sim import PE_fc as lassen_fc
-# from metamapper.coreir_mapper import Mapper # Not used??
-# from canal.global_signal import GlobalSignalWiring
 
 from daemon.daemon import GarnetDaemon
 
-# FIXME disperse this to where it needs to be...
-import metamapper.peak_util as putil
-from mapper.netlist_util import create_netlist_info, print_netlist_info
-from metamapper.coreir_mapper import Mapper
-from metamapper.map_design_top import map_design_top
-from metamapper.node import Nodes
+# Not used?
+# from metamapper.coreir_mapper import Mapper
+# from metamapper.map_design_top import map_design_top
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -340,6 +335,7 @@ class Garnet(Generator):
         from metamapper.io_tiles import IO_fc, BitIO_fc
         import metamapper.peak_util as putil
         from mapper.netlist_util import create_netlist_info, print_netlist_info
+        from metamapper.node import Nodes
 
         app_dir = os.path.dirname(app)
 
@@ -740,7 +736,6 @@ def parse_args():
     return args
 
 def build_verilog(args, garnet):
-    print('--- BEGIN build_verilog 743', flush=True)
     garnet_circ = garnet.circuit()
     magma.compile("garnet", garnet_circ, output="coreir-verilog",
                   coreir_libs={"float_CW"},
@@ -768,11 +763,8 @@ def build_verilog(args, garnet):
             gfd.writelines(lines_garnet)
             gfd.writelines(lines_pe)
 
-    print('--- BEGIN build_verilog 771', flush=True)
     garnet.create_stub()
-    print('--- BEGIN build_verilog 773', flush=True)
     if not args.interconnect_only:
-        print('--- BEGIN build_verilog 775', flush=True)
         garnet_home = os.getenv('GARNET_HOME')
         if not garnet_home:
             garnet_home = os.path.dirname(os.path.abspath(__file__))
@@ -787,10 +779,6 @@ def build_verilog(args, garnet):
         gen_rdl_header(top_name="glc",
                        rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
-
-        print('--- BEGIN build_verilog 791', flush=True)
-
-    print('--- BEGIN build_verilog 793', flush=True)
 
 # FIXME/TODO send pnr, pnr_wrapper etc. to util/garnetPNR or some such
 # e.g. "import util.pnr then call util.pnr.{pnr,pnr_wrapper} etc. maybe
@@ -878,55 +866,45 @@ def main():
         # "use"    => send args to daemon and exit
         # "kill"   => kill existing daemon and exit
         # "help"   => echo help and exit
+        # "wait"   => wait for "daemon ready"
 
-    # BUILD GARNET
+    print('--- garnet.py BEGIN GARNET CIRCUIT BUILD (magma)')
     garnet = Garnet(args)
 
     # VERILOG
+    # FIXME verilog could be inside loop (below). Should verilog be inside loop?
     if args.verilog:
-        print("--- BEGIN verilog inside garnet", flush=True)
+        print('--- garnet.py BEGIN GARNET VERILOG BUILD')
         build_verilog(args, garnet)
-        print("--- DONE verilog inside garnet", flush=True)
-    print("--- continuing", flush=True)
-    print(f"args.daemon={args.daemon}", flush=True)
+
+    # print(f"args.daemon={args.daemon}", flush=True)
 
     # USE GARNET
     import json # for debugging, maybe temporary
+    print('--- garnet.py BEGIN LOOPING')
     while True:
-        print('--- BEGIN LOOPING')
+        DEBUG = False
         if args.daemon:
-          print('--- BEGIN ARGS.DAEMON')
-          # Fork a child to do the work, wait for it to finish, then continue
-          childpid = os.fork() # Fork a child
-          if childpid > 0:
-            print('--- BEGIN CHILDPID > 0')
-            pid, status = os.waitpid(childpid, 0) # Wait for child to finish
-            print(f'Child process {childpid} finished with exit status {status}', flush=True)
-            assert pid == childpid # Right???
+            print('--- garnet.py BEGIN DAEMON')
+            # Fork a child to do the work, wait for it to finish, then continue
+            childpid = os.fork() # Fork a child
+            if childpid > 0:
+                # Only parent does this part
+                pid, status = os.waitpid(childpid, 0) # Wait for child to finish
+                print(f'Child process {childpid} finished with exit status {status}', flush=True)
+                assert pid == childpid # Right???
+                #
+                # Parent halts here and waits for further instructions
+                args = GarnetDaemon.loop(args, dbg=1)
+                continue # Parent loops back
 
-            print('\nLOOPING')
-            print(f'Before merge: args.app={args.app}')
-            args = GarnetDaemon.loop(args, dbg=1)
+            # Child falls through to next line below
 
-            # PRINT DEBUG INFO
-            print(f'After merge:  args.app={args.app}')
-            argdic = vars(args)
-            sorted_argdic=dict(sorted(argdic.items()))
-            sorted_argdic['glb_params'] = "<unserializable obj>" # Cannot serialize glb_params or pe_fc
-            sorted_argdic['pe_fc']      = "<unserializable obj>"
-            print(f"- loaded args (garnet) = {json.dumps(sorted_argdic, indent=4)}")
-
-            continue
-
-        # Forked child process does the work, then exits
+        # Anything from here down is done by forked child (if using daemon)
 
         # FIXME Verilog should be here probably, Right?
-        #         # VERILOG
-        #         if args.verilog:
-        #             print("--- BEGIN verilog inside garnet", flush=True)
-        #             build_verilog(args, garnet)
 
-        print("--- BEGIN check for PNR", flush=True)
+        print("--- garnet.py BEGIN check for PNR", flush=True)
 
         # PNR
         app_specified = len(args.app)    > 0 and \

@@ -128,7 +128,6 @@ class GarnetDaemon:
         # Okay but somebody is going to send a CONT as soon as they see "READY" right?
         # what if the CONT shows up BEFORE the stop?
 
-
         # Register status; stop and wait for CONT signal from client
         GarnetDaemon.put_status('ready')
         gd.sigstop()
@@ -143,12 +142,14 @@ class GarnetDaemon:
         print(f'\n\n--- DAEMON RESUMES')
         GarnetDaemon.put_status('busy')
 
-        new_args = gd.load_args(dbg=1)
-        new = new_args.__dict__; old = args.__dict__
-        # print(f'Before merge: new_args[app]={new["app"]}, old_args[app]={old["app"]}')
-        # Update old dict with new info
+        # Fetch new args, use them to update old args
+        new_args = gd.load_args(dbg=0)
+        old = args.__dict__; new = new_args.__dict__
         old.update(new)
-        # print(f'After merge:  new_args[app]={new["app"]}, old_args[app]={old["app"]}')
+
+        if dbg: s = dict(sorted(new.items()))
+        if dbg: print(f"- loaded args {json.dumps(s, indent=4)}")
+
         return Namespace(**old)
 
     # ------------------------------------------------------------------------
