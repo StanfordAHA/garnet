@@ -279,7 +279,7 @@ class GarnetDaemon:
         'Save current state (args) to arg-save (reload) file'
 
         # Cannot save glb_param and pe_fc to a file b/c they are "unserializable"
-        save_the_unsaveable(args)
+        GarnetDaemon.save_the_unsaveable(args)
 
         # Save args as a sorted dict
         argdic = vars(args)
