@@ -110,6 +110,7 @@ apps='
     tests/rom
     tests/conv_1_2
     tests/conv_2_1
+    conv5_1
 '
 # Don't rightly know how to do conv5 yet...
 #     conv5_1 
@@ -278,7 +279,7 @@ echo "--- BEGIN SUMMARY 2 $ap"
 #        $t_test            "($t_test)"
 
 printf "%-19s %4s %-6s %4s %-6s %4s %-6s %4s %-6s\n" \
-       $app \
+       $ap \
        $t_total_no_daemon "($t_total_daemon)" \
        $t_map             "($t_map)" \
        $t_pnr_no_daemon   "($t_pnr_daemon)" \
