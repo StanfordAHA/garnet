@@ -933,13 +933,6 @@ def main():
                 filename = os.path.join("temp", f"{c_id}.bs")
                 write_out_bitstream(filename, bitstream)
 
-        # argdic = vars(args)
-        # sorted_argdic=dict(sorted(argdic.items()))
-        # sorted_argdic['glb_params'] = "UKNOWN"; sorted_argdic['pe_fc'] = "UKNOWN"
-        # print(f"--- BEGIN pre-dump-config args {json.dumps(sorted_argdic, indent=4)}")
-
-        print("--- BEGIN check for dump-config", flush=True)
-
         # WRITE REGS TO CONFIG.JSON
         from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
         if args.dump_config_reg:
@@ -951,7 +944,7 @@ def main():
                 json.dump(ic_reg + core_reg, f)
 
         # CHILD IS DONE
-        print("--- BEGIN GARNET EXIT", flush=True)
+        print("--- garnet.py DONE", flush=True)
         exit()
 
 if __name__ == "__main__":
