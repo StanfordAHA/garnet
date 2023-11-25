@@ -454,39 +454,6 @@ class GarnetDaemon:
 
     # Stop, but do not kill, pid. Can continue again w "sigcont"
     def sigstop(pid=None, dbg=1):
-
-
-#         import getpipes    # FIXME need a better name than "getpipes" :(
-#         procs = getpipes.find_proc_stop_order()
-#         if dbg:
-#             print(f'\nI think I found the procs to STOP, in this order:')
-#             print(f'  {procs}')
-#             sys.stdout.flush()
-#         
-# # Oops one of theseis the pytest program maybe?
-# #      [2530480, 2530481, 2530484]
-# # 
-# #  % ps
-# #     PID TTY          TIME CMD
-# #   25833 pts/2    00:00:03 bash
-# # 2530481 pts/2    00:00:00 tee
-# # 2530484 pts/2    00:00:00 python3
-# # 2530733 pts/2    00:00:00 ps
-# 
-#         procs.remove(min(procs))
-#         print(f'\nOops no, take out pytest, new order is maybe:\n')
-#         print(f'  {procs}')
-#         sys.stdout.flush()
-#         
-#         subprocess.run('ps -o pid,stat,tty,comm'.split()); sys.stdout.flush()
-# 
-# #         for p in procs:
-# #             print(f'Want to stop: {p}\n\n', flush=True)
-# # 
-# #             print(f'\nstopping {p}\n\n', flush=True)
-# #             os.kill(p, signal.SIGSTOP)
-# #         return
-
         if not pid: pid = GarnetDaemon.retrieve_pid()
         
         # print(f'\nstopping final {pid}\n\n', flush=True)
@@ -495,10 +462,8 @@ class GarnetDaemon:
         os.kill(int(pid), signal.SIGSTOP)
         # Okay but hold on suppose it takes a second to actually STOP!!???
         import time
-        time.sleep(10)
-
-
-
+#         time.sleep(10)
+        time.sleep(1)
 
     # Send a "CONTinue" signal to a process
     def sigcont(pid=None, dbg=1):
