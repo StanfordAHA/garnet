@@ -161,20 +161,31 @@ proc assign_signals_to_bumps { bump_types } {
     deselect_bump
 
     # Assign all VCC bumps
-    # deselect_bump
-    # select_bump -bumps [bumps_of_type $bump_types "V"]
+    deselect_bump
+    select_bump -bumps [bumps_of_type $bump_types "V"]
+    deselect_bump -area {680 900 3260 3150}
     # assignPGBumps -selected -nets VDD
+    assignSigToBump -selected -net VDD
+    ## Maybe we want to use multi-to-multi mapping
+    ## -multiBumpToMultiPad -maxDistance 800
+    # assignBump -selected -pgnet "VDD" -pgonly
 
     # Assign all VCCIO bumps
-    # deselect_bump
-    # select_bump -bumps [bumps_of_type $bump_types "o"]
+    deselect_bump
+    select_bump -bumps [bumps_of_type $bump_types "o"]
     # assignPGBumps -selected -nets VDDPST
+    assignSigToBump -selected -net VDDPST
+    # assignBump -selected -pgnet "VDDPST" -pgonly
 
     # Assign all IOVSS bumps
-    # deselect_bump
-    # select_bump -bumps [bumps_of_type $bump_types "g"]
+    deselect_bump
+    select_bump -bumps [bumps_of_type $bump_types "g"]
     # select_bump -bumps [bumps_of_type $bump_types "G"]
     # assignPGBumps -selected -nets VSS
+    assignSigToBump -selected -net VSS
+    # assignBump -selected -pgnet "VSS" -pgonly
+
+    deselect_bump
 }
 
 proc unassign_problematic_bumps {} {
@@ -202,6 +213,12 @@ proc unassign_problematic_bumps {} {
     unassignBump -selected
 }
 
+# connect power and ground
+globalNetConnect VDDPST -type pgpin -pin vccio -inst *
+globalNetConnect VDD    -type pgpin -pin vcc   -inst *
+globalNetConnect VSS    -type pgpin -pin vssp  -inst *
+globalNetConnect VSS    -type pgpin -pin vssb  -inst *
+
 gen_bumps $ADK_BUMP_CELL
 assign_signals_to_bumps $bump_types
-unassign_problematic_bumps 
+# unassign_problematic_bumps 

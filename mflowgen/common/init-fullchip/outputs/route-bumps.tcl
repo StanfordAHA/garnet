@@ -1,47 +1,141 @@
 proc route_bumps_main {} {
-    # 0. power ring info
-    set pwr_ring_layer_obj     [dbGet -p head.layers.name gm0]
-    set pwr_ring_width         [dbGet $pwr_ring_layer_obj.maxWidth]
-    set pwr_ring_spacing       [expr 2 * [dbGet $pwr_ring_layer_obj.minSpacing]]
-    set pwr_ring_offset_top    40.0
-    set pwr_ring_offset_bottom 40.0
-    set pwr_ring_offset_left   44.0
-    set pwr_ring_offset_right  44.0
-    set pwr_ring_info          [list $pwr_ring_width \
-                                     $pwr_ring_spacing \
-                                     $pwr_ring_offset_top \
-                                     $pwr_ring_offset_bottom \
-                                     $pwr_ring_offset_left \
-                                     $pwr_ring_offset_right]
+    # --- Power ring info
+    # set pwr_ring_layer_obj     [dbGet -p head.layers.name gm0]
+    # set pwr_ring_width         [dbGet $pwr_ring_layer_obj.maxWidth]
+    # set pwr_ring_spacing       [expr 2 * [dbGet $pwr_ring_layer_obj.minSpacing]]
+    # set pwr_ring_offset_top    -0.1
+    # set pwr_ring_offset_bottom -0.1
+    # set pwr_ring_offset_left   -0.1
+    # set pwr_ring_offset_right  -0.1
+    # set pwr_ring_info          [list $pwr_ring_width \
+    #                                  $pwr_ring_spacing \
+    #                                  $pwr_ring_offset_top \
+    #                                  $pwr_ring_offset_bottom \
+    #                                  $pwr_ring_offset_left \
+    #                                  $pwr_ring_offset_right]
 
-
-
-    # 0. disable nanoroute/viagen mode first
+    # --- Disable nanoroute/viagen mode first
+    #     (Deprecated: The router setting is now moved to later stage)
     # setNanoRouteMode -reset
     # setViaGenMode -reset
 
-    # 1. add routing guide
-    add_signal_route_blockage_on_pads $pwr_ring_info
+    # --- Add routing blockage as a guide
+    #     (Deprecated: Use hacked LEF to create ports instead)
+    # add_signal_route_blockage_on_pads $pwr_ring_info
 
-    # 2. route signal bumps
-    # route_signal_bumps
+    # --- Create power ring
+    # add_power_rings $pwr_ring_info
 
-    # 3. create power ring
-    add_power_rings $pwr_ring_info
+    # --- Route signals from pads to bumps
+    route_signal_bumps
 
-    # 4. connect pads to ring with stripes
-    add_stripes_from_pads_to_rings $pwr_ring_info
+    # --- Connect pads to power ring with stripes
+    # add_stripes_from_pads_to_rings $pwr_ring_info
+    # add_stripes_to_pads
 
-    # 4.1 Some stripes may be blocked by the snacky signal routes
-    #     There is no good solution at this point
-    #     So just trim the dangling stripes
+    # --- Delete dangling stripes if there is any
+    #     (Deprecated: there shouldn't be any dangling stripes
+    #      if we add the stripes first and then route the signals)
     # editTrim 
 
-    # 5. route power bumps
+    # --- Route power from bumps to power ring
+    # add_cell_obs -cell supply/gpio cell -layer gmb -rects "block all except boundary"
     # route_power_bumps
+    # elete_cell_obs -cell supply/gpio cell -layer gmb
 
-    # 6. remove the temporary obstruction in the IO pads
-    # delete route blockage
+    # --- I hate flip chip, nothing works
+    #     Have to to manaual route here
+    manual_power_route
+}
+
+proc manual_power_route {} {
+    uiSetTool addWire
+
+    # VSS Wire
+    setEditMode -type special
+    setEditMode -nets VSS
+    setEditMode -shape None
+    setEditMode -layer_horizontal gmb
+    setEditMode -layer_vertical gmb
+    setEditMode -width_horizontal 8
+    setEditMode -width_vertical 8
+    setEditMode -spacing_vertical 1
+    setEditMode -spacing_horizontal 1
+    setEditMode -allow_45_degree 1
+    # segment 1
+    editAddRoute 250.897 3920.88
+    editAddRoute 204.327 3923.14
+    editAddRoute 212.465 4065.11
+    editCommitRoute 212.465 4065.11
+    # segment 2
+    editAddRoute 172.078 3535.29
+    editAddRoute 174.323 3568.11
+    editAddRoute 22.8415 3562.5
+    editCommitRoute 22.8415 3562.5
+    # segment 3
+    editAddRoute 642.307 410.634
+    editAddRoute 679.125 406.45
+    editAddRoute 679.513 20.1955
+    editCommitRoute 679.513 20.1955
+    # segment 4
+    editAddRoute 3681.68 948.753
+    editAddRoute 3686.27 911.612
+    editAddRoute 3902.22 908.549
+    editCommitRoute 3902.22 908.549
+
+    # VDDPST wire
+    setEditMode -nets VDDPST
+    # segment 1
+    editAddRoute 403.588 3607.8
+    editAddRoute 412.412 3733.35
+    editAddRoute 429.829 3736.84
+    editAddRoute 431.919 3793.96
+    editAddRoute 366.432 3794.66
+    editAddRoute 373.343 3877.39
+    editAddRoute 314.524 3952.61
+    editAddRoute 301.024 4065.42
+    editCommitRoute 301.024 4065.42
+    # segment 2
+    editAddRoute 485.127 3061.53
+    editAddRoute 483.655 3094.91
+    editAddRoute 23.291 3085.09
+    editCommitRoute 23.291 3085.09
+    # segment 3
+    editAddRoute 717.389 488.065
+    editAddRoute 768.891 477.335
+    editAddRoute 788.92 19.5285
+    editCommitRoute 788.92 19.5285
+    # segment 4
+    editAddRoute 3447.2 1189.35
+    editAddRoute 3455.97 1155.58
+    editAddRoute 3901.57 1145.93
+    editCommitRoute 3901.57 1145.93
+
+    # VDD Wire
+    setEditMode -nets VDD
+    # segment 1
+    editAddRoute 640.767 3214.18
+    editAddRoute 651.749 3336
+    editAddRoute 528.524 3337.48
+    editAddRoute 524.07 3741.3
+    editAddRoute 366.699 3923.91
+    editAddRoute 377.091 4064.96
+    editCommitRoute 377.091 4064.96
+    # segment 2
+    editAddRoute 640.834 3062.13
+    editAddRoute 641.279 3028.32
+    editAddRoute 22.5245 3018.98
+    editCommitRoute 22.5245 3018.98
+    # segment 3
+    editAddRoute 1107.48 871.563
+    editAddRoute 1072.95 862.954
+    editAddRoute 1084.39 20.837
+    editCommitRoute 1084.39 20.837
+    # segment 4
+    editAddRoute 3292.15 1033.57
+    editAddRoute 3295.98 993.126
+    editAddRoute 3901.48 987.115
+    editCommitRoute 3901.48 987.115
 }
 
 proc add_signal_route_blockage_on_pads { ring_info } {
@@ -171,36 +265,40 @@ proc route_signal_bumps {} {
     # fcroute configuration (manhattan, 45DegreeRoute)
     setFlipChipMode -reset
     setFlipChipMode -layerChangeTopLayer                  gmb
-    setFlipChipMode -layerChangeBotLayer                  gm0
-    setFlipChipMode -routeWidth                           4.00
-    setFlipChipMode -route_style                          manhattan
+    setFlipChipMode -layerChangeBotLayer                  gmb
+    setFlipChipMode -routeWidth                           3.99
+    setFlipChipMode -route_style                          45DegreeRoute
     setViaGenMode   -invoke_verifyGeometry                false
-    # setFlipChipMode -connectPowerCellToBump             true
-    setFlipChipMode -honor_bump_connect_target_constraint true
+    setFlipChipMode -connectPowerCellToBump               false
+    setFlipChipMode -honor_bump_connect_target_constraint false
     setFlipChipMode -ignore_pad_type_check                true
     # setFlipChipMode -prevent_via_under_bump             true
-    setFlipChipMode -lower_layer_prevent_45_routing       true
-    setFlipChipMode -allow_layer_change                   true
+    # setFlipChipMode -lower_layer_prevent_45_routing       true
+    # setFlipChipMode -allow_layer_change                   true
     setSrouteMode   -allowWrongWayRoute                   true
 
-    # select a portion of the signal bumps
-    set bump_select_regions {}
-    # only do routes in top/bottom for now
-    lappend bump_select_regions {0 0 4000 500}
-    lappend bump_select_regions {100 3680 3800 4000}
-    lappend bump_select_regions {0 330 420 3800}
-    lappend bump_select_regions {3500 330 4000 3500}
-    foreach region $bump_select_regions {
-        select_bumps_within $region signal
-        set bump_route_area [get_bump_region]
-        fcroute \
-            -type signal \
-            -incremental \
-            -selected_bump \
-            -area $bump_route_area \
-            -connectInsideArea \
-            -verbose
-    }
+    # # select a portion of the signal bumps
+    # set bump_select_regions {}
+    # # only do routes in top/bottom for now
+    # lappend bump_select_regions {0 0 4000 500}
+    # lappend bump_select_regions {100 3680 3800 4000}
+    # lappend bump_select_regions {0 330 420 3800}
+    # lappend bump_select_regions {3500 330 4000 3500}
+    # foreach region $bump_select_regions {
+    #     select_bumps_within $region signal
+    #     set bump_route_area [get_bump_region]
+    #     fcroute \
+    #         -type signal \
+    #         -incremental \
+    #         -selected_bump \
+    #         -area $bump_route_area \
+    #         -connectInsideArea \
+    #         -verbose
+    # }
+    fcroute \
+         -type signal \
+         -incremental \
+         -extraConfig /sim/pohan/garnet/mflowgen/common/init-fullchip/outputs/fcroute-extra-config.cfg
     fillNotch
 }
 
@@ -217,18 +315,22 @@ proc add_power_rings { ring_info } {
     set ring_offset_right  [lindex $ring_info 5]
 
     # Create the rings
-    # Note that we are creating rings inside the core, so we need to make the offset negative values
-    # TODO: Do we need to snap the ring wires to the grid?
-    #       -snap_wire_center_to_grid None | Grid | Half_Grid | Either
     addRing \
-        -nets {VSS VDDPST VDD} \
+        -nets {VSS VDD VDDPST} \
         -layer $ring_layer \
         -width $ring_width \
         -spacing $ring_spacing \
-        -offset "top -$ring_offset_top bottom -$ring_offset_bottom left -$ring_offset_left right -$ring_offset_right"
+        -offset "top $ring_offset_top bottom $ring_offset_bottom left $ring_offset_left right $ring_offset_right"
 }
 
 proc add_stripes_from_pads_to_rings { ring_info } {
+
+    # Configure stripe adding mode
+    setAddStripeMode                           -reset
+    setAddStripeMode -ignore_DRC               true
+    setAddStripeMode -stacked_via_bottom_layer gm0
+    setAddStripeMode -stacked_via_top_layer    gmb
+
     # Add power stripes to connect the power rails
     # in the pads to the power ring:
     set vert_pitch [dbGet top.fPlan.coreSite.size_y]
@@ -240,12 +342,14 @@ proc add_stripes_from_pads_to_rings { ring_info } {
     # but here we need to compute the offset relative to the pads
     # and there is a small pitch gap between the pads and the core box
     # (this is defined in the floorplan.tcl)
-    set ring_offset_top    [expr [lindex $ring_info 2] + 2 * $vert_pitch]
-    set ring_offset_bottom [expr [lindex $ring_info 3] + 2 * $vert_pitch]
-    set ring_offset_left   [expr [lindex $ring_info 4] + 8 * $hori_pitch]
-    set ring_offset_right  [expr [lindex $ring_info 5] + 8 * $hori_pitch]
-    foreach side {top bottom left right} {
+    set ring_offset_top    [expr [lindex $ring_info 2] + 8.820]
+    set ring_offset_bottom [expr [lindex $ring_info 3] + 8.820]
+    set ring_offset_left   [expr [lindex $ring_info 4] + 7.344]
+    set ring_offset_right  [expr [lindex $ring_info 5] + 7.344]
+    # top bottom left right
+    foreach side { top bottom left right } {
         set pad_objs [dbGet -p top.insts.name IOPAD_$side*]
+        # set pad_objs [dbGet -p top.insts.name IOPAD_bottom_TLX_FWD_PAYLOAD_TDATA_HI_0]
         foreach pad_obj $pad_objs {
             set pad_inst_name [dbGet $pad_obj.name]
             set pad_cell_name [dbGet $pad_obj.cell.name]
@@ -253,8 +357,9 @@ proc add_stripes_from_pads_to_rings { ring_info } {
             set pad_lly [dbGet $pad_obj.box_lly]
             set pad_urx [dbGet $pad_obj.box_urx]
             set pad_ury [dbGet $pad_obj.box_ury]
+            set pad_orient [dbGet $pad_obj.orient]
             set i 0
-            foreach pwr_io { vss* vccio vcc } {
+            foreach port { vssp pad vcc vccio } {
                 set sbox_llx $pad_llx
                 set sbox_lly $pad_lly
                 set sbox_urx $pad_urx
@@ -276,44 +381,235 @@ proc add_stripes_from_pads_to_rings { ring_info } {
                     set stripe_direction "horizontal"
                     set pad_length [dbGet $pad_obj.box_sizey]
                 }
+                # dont need extend if we are doing signal pad
+                if {$port eq "pad"} {
+                    set sbox_llx $pad_llx
+                    set sbox_lly $pad_lly
+                    set sbox_urx $pad_urx
+                    set sbox_ury $pad_ury
+                }
+                # pad orientation
+                if { $side eq "top" || ($side eq "left" && $pad_orient eq "R0") || ($side eq "right" && $pad_orient eq "MY") } {
+                    set reverse 0
+                } else {
+                    set reverse 1
+                }
                 # compute the stripe width and offset
                 if {[string match "*SUPPLY*" $pad_inst_name]} {
                     # SUPPLY pad
-                    if {$pwr_io eq "vss*"} {
-                        set stripe_net VSS
-                    } elseif {$pwr_io eq "vccio"} {
-                        set stripe_net VDDPST
-                    } elseif {$pwr_io eq "vcc"} {
-                        set stripe_net VDD
+                    if {$port eq "pad"} {
+                        # supply pad will not have signal pad
+                        continue
                     }
-                    # based on i, compute the offset
-                    set stripe_width 12.0
                     set space [expr ($pad_length - $stripe_width*3) / 2]
-                    set stripe_offset [expr $i*($space + $stripe_width)]
+                    # compute the offset
+                    if { $reverse == 1 } {
+                        if {$port eq "vssp"} {
+                            set stripe_net VSS
+                            set stripe_width 12.0
+                            set stripe_offset [expr 0 * (12.0 + $space)]
+                        } elseif {$port eq "vcc"} {
+                            set stripe_net VDD
+                            set stripe_width 12.0
+                            set stripe_offset [expr 1 * (12.0 + $space)]
+                        } elseif {$port eq "vccio"} {
+                            set stripe_net VDDPST
+                            set stripe_width 12.0
+                            set stripe_offset [expr 2 * (12.0 + $space)]
+                        }
+                    } else {
+                        if {$port eq "vccio"} {
+                            set stripe_net VSS
+                            set stripe_width 12.0
+                            set stripe_offset [expr 0 * (12.0 + $space)]
+                        } elseif {$port eq "vcc"} {
+                            set stripe_net VDD
+                            set stripe_width 12.0
+                            set stripe_offset [expr 1 * (12.0 + $space)]
+                        } elseif {$port eq "vssp"} {
+                            set stripe_net VDDPST
+                            set stripe_width 12.0
+                            set stripe_offset [expr 2 * (12.0 + $space)]
+                        }
+                    }
                 } else {
                     # SIGNAL pad
-                    set param_vss_stripe_width 8.0
-                    set param_vcc_stripe_width 12.0
-                    if {$side eq "top" || $side eq "bottom"} {
-                        set param_space 1.3
-                    } elseif {$side eq "left" || $side eq "right"} {
-                        set param_space 2.47
-                    }
-                    if {$pwr_io eq "vss*"} {
-                        set stripe_net VSS
-                        set stripe_width 8.0
-                        set stripe_offset 0
-                    } elseif {$pwr_io eq "vccio"} {
-                        set stripe_net VDDPST
-                        set stripe_width 8.0
-                        set stripe_offset [expr $param_vss_stripe_width + $param_space]
-                    } elseif {$pwr_io eq "vcc"} {
-                        set stripe_net VDD
-                        set stripe_width 12.0
-                        set stripe_offset [expr $pad_length - $param_vcc_stripe_width]
+                    set param_pwr_stripe_width 12.0
+                    set param_pad_stripe_width 3.99
+                    set space [expr ($pad_length - 3 * $param_pwr_stripe_width - $param_pad_stripe_width) / 3.0]
+                    # compute the offset
+                    if { $reverse == 0 } {
+                        if {$port eq "vssp"} {
+                            set stripe_net VSS
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 0 * ($param_pwr_stripe_width + $space)]
+                        } elseif {$port eq "pad"} {
+                            set term_obj [dbGet -p $pad_obj.instTerms.name *$port]
+                            set stripe_net [dbGet $term_obj.net.name]
+                            set stripe_width $param_pad_stripe_width
+                            set stripe_offset [expr 1 * ($param_pwr_stripe_width + $space)]
+                        } elseif {$port eq "vcc"} {
+                            set stripe_net VDD
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 1 * ($param_pwr_stripe_width + $space) + ($param_pad_stripe_width + $space)]
+                        } elseif {$port eq "vccio"} {
+                            set stripe_net VDDPST
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 2 * ($param_pwr_stripe_width + $space) + ($param_pad_stripe_width + $space)]
+                        }
+                    } else {
+                        if {$port eq "vccio"} {
+                            set stripe_net VDDPST
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 0 * ($param_pwr_stripe_width + $space)]
+                        } elseif {$port eq "vcc"} {
+                            set stripe_net VDD
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 1 * ($param_pwr_stripe_width + $space)]
+                        } elseif {$port eq "pad"} {
+                            set term_obj [dbGet -p $pad_obj.instTerms.name *$port]
+                            set stripe_net [lindex [dbGet $term_obj.net.name] 0]
+                            set stripe_width $param_pad_stripe_width
+                            set stripe_offset [expr 2 * ($param_pwr_stripe_width + $space)]
+                        } elseif {$port eq "vssp"} {
+                            set stripe_net VSS
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 2 * ($param_pwr_stripe_width + $space) + ($param_pad_stripe_width + $space)]
+                        }
                     }
                 }
                 
+                if {$port != "pad"} {
+                    # add the stripe
+                    addStripe \
+                        -area "$sbox_llx $sbox_lly $sbox_urx $sbox_ury" \
+                        -direction $stripe_direction \
+                        -layer gmb \
+                        -nets $stripe_net \
+                        -width $stripe_width \
+                        -start_offset $stripe_offset \
+                        -number_of_sets 1
+                    # advance i
+                    incr i
+                }
+            }
+        }
+    }
+}
+
+proc add_stripes_to_pads {} {
+
+    # Configure stripe adding mode
+    setAddStripeMode                           -reset
+    setAddStripeMode -ignore_DRC               false
+    setAddStripeMode -stacked_via_bottom_layer gm0
+    setAddStripeMode -stacked_via_top_layer    gmb
+
+    # Add power stripes to connect the power rails
+    # in the pads to the power ring:
+    set vert_pitch [dbGet top.fPlan.coreSite.size_y]
+    set hori_pitch [dbGet top.fPlan.coreSite.size_x]
+
+    # top bottom left right
+    foreach side { top bottom left right } {
+        set pad_objs [dbGet -p top.insts.name IOPAD_$side*]
+        foreach pad_obj $pad_objs {
+            set pad_inst_name [dbGet $pad_obj.name]
+            set pad_cell_name [dbGet $pad_obj.cell.name]
+            set pad_llx [dbGet $pad_obj.box_llx]
+            set pad_lly [dbGet $pad_obj.box_lly]
+            set pad_urx [dbGet $pad_obj.box_urx]
+            set pad_ury [dbGet $pad_obj.box_ury]
+            set pad_orient [dbGet $pad_obj.orient]
+            set i 0
+            foreach port { vssp vcc vccio } {
+                set sbox_llx $pad_llx
+                set sbox_lly $pad_lly
+                set sbox_urx $pad_urx
+                set sbox_ury $pad_ury
+                if {$side eq "top"} {
+                    set stripe_direction "vertical"
+                    set pad_length [dbGet $pad_obj.box_sizex]
+                } elseif {$side eq "bottom"} {
+                    set stripe_direction "vertical"
+                    set pad_length [dbGet $pad_obj.box_sizex]
+                } elseif {$side eq "left"} {
+                    set stripe_direction "horizontal"
+                    set pad_length [dbGet $pad_obj.box_sizey]
+                } elseif {$side eq "right"} {
+                    set stripe_direction "horizontal"
+                    set pad_length [dbGet $pad_obj.box_sizey]
+                }
+                # pad orientation
+                if { $side eq "top" || ($side eq "left" && $pad_orient eq "R0") || ($side eq "right" && $pad_orient eq "MY") } {
+                    set reverse 0
+                } else {
+                    set reverse 1
+                }
+                # compute the stripe width and offset
+                set stripe_width 8.0
+                if {[string match "*SUPPLY*" $pad_inst_name]} {
+                    set space [expr ($pad_length - $stripe_width*3) / 2]
+                    # compute the offset
+                    if { $reverse == 1 } {
+                        if {$port eq "vssp"} {
+                            set stripe_net VSS
+                            set stripe_offset [expr 0 * (8.0 + $space)]
+                        } elseif {$port eq "vcc"} {
+                            set stripe_net VDD
+                            set stripe_offset [expr 1 * (8.0 + $space)]
+                        } elseif {$port eq "vccio"} {
+                            set stripe_net VDDPST
+                            set stripe_offset [expr 2 * (8.0 + $space)]
+                        }
+                    } else {
+                        if {$port eq "vccio"} {
+                            set stripe_net VSS
+                            set stripe_offset [expr 0 * (8.0 + $space)]
+                        } elseif {$port eq "vcc"} {
+                            set stripe_net VDD
+                            set stripe_offset [expr 1 * (8.0 + $space)]
+                        } elseif {$port eq "vssp"} {
+                            set stripe_net VDDPST
+                            set stripe_offset [expr 2 * (8.0 + $space)]
+                        }
+                    }
+                } else {
+                    # SIGNAL pad
+                    set param_pwr_stripe_width 8.0
+                    set param_pad_stripe_width 3.99
+                    set space [expr ($pad_length - 3 * $param_pwr_stripe_width - $param_pad_stripe_width) / 3.0]
+                    # compute the offset
+                    if { $reverse == 0 } {
+                        if {$port eq "vssp"} {
+                            set stripe_net VSS
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 0 * ($param_pwr_stripe_width + $space)]
+                        } elseif {$port eq "vcc"} {
+                            set stripe_net VDD
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 1 * ($param_pwr_stripe_width + $space) + ($param_pad_stripe_width + $space)]
+                        } elseif {$port eq "vccio"} {
+                            set stripe_net VDDPST
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 2 * ($param_pwr_stripe_width + $space) + ($param_pad_stripe_width + $space)]
+                        }
+                    } else {
+                        if {$port eq "vccio"} {
+                            set stripe_net VDDPST
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 0 * ($param_pwr_stripe_width + $space)]
+                        } elseif {$port eq "vcc"} {
+                            set stripe_net VDD
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 1 * ($param_pwr_stripe_width + $space)]
+                        } elseif {$port eq "vssp"} {
+                            set stripe_net VSS
+                            set stripe_width $param_pwr_stripe_width
+                            set stripe_offset [expr 2 * ($param_pwr_stripe_width + $space) + ($param_pad_stripe_width + $space)]
+                        }
+                    }
+                }
                 # add the stripe
                 addStripe \
                     -area "$sbox_llx $sbox_lly $sbox_urx $sbox_ury" \
@@ -323,8 +619,6 @@ proc add_stripes_from_pads_to_rings { ring_info } {
                     -width $stripe_width \
                     -start_offset $stripe_offset \
                     -number_of_sets 1
-                # advanced to the next power net
-                incr i
             }
         }
     }
@@ -335,59 +629,45 @@ proc route_power_bumps {} {
     # fcroute configuration
     setFlipChipMode -reset
     setFlipChipMode -layerChangeTopLayer                  gmb
-    setFlipChipMode -layerChangeBotLayer                  gm0
-    setFlipChipMode -routeWidth                           4.00
-    setFlipChipMode -route_style                          45DegreeRoute
-    setFlipChipMode -honor_bump_connect_target_constraint true
+    setFlipChipMode -layerChangeBotLayer                  gmb
+    setFlipChipMode -routeWidth                           8.0
+    setFlipChipMode -route_style                          manhattan
+    setFlipChipMode -connectPowerCellToBump               true
+    setFlipChipMode -honor_bump_connect_target_constraint false
     setFlipChipMode -ignore_pad_type_check                true
-    setFlipChipMode -lower_layer_prevent_45_routing       true
-    setFlipChipMode -allow_layer_change                   true
+    # setFlipChipMode -drop_via_on_all_geometries           true
+    # setFlipChipMode -multi_pad_routing_style              star
+    # setFlipChipMode -multipleConnection                   multiPadsToBump
+    # setFlipChipMode -lower_layer_prevent_45_routing       true
+    # setFlipChipMode -allow_layer_change                   true
     setSrouteMode   -allowWrongWayRoute                   true
 
     # route power bumps to ring
-    deselect_bump
-    select_bump -area {380 370 3630 520} -type ground
-    select_bump -area {380 370 3630 520} -type power
-    deselect_bump -floating
-    set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
-    set xmax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.x]]
-    set ymin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.y]]
-    set ymax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.y]]
-    set xmin [expr $xmin - 100]
-    set xmax [expr $xmax + 100]
-    set ymin [expr $ymin - 1000]
-    set ymax [expr $ymax + 100]
+    # deselect_bump
+    # select_bump -area {380 370 3630 520} -type ground
+    # select_bump -area {380 370 3630 520} -type power
+    # deselect_bump -floating
+    # set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
+    # set xmax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.x]]
+    # set ymin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.y]]
+    # set ymax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.y]]
+    # set xmin [expr $xmin - 100]
+    # set xmax [expr $xmax + 100]
+    # set ymin [expr $ymin - 1000]
+    # set ymax [expr $ymax + 100]
     fcroute \
-        -type power \
+        -type signal \
         -incremental \
-        -selected_bump \
-        -area "$xmin $ymin $xmax $ymax" \
-        -extraConfig inputs/fcroute-extra-config.cfg \
+        -nets {VDD VSS VDDPST} \
         -verbose
     
-    # route power bumps to ring
-    deselect_bump
-    select_bump -area {300 3550 3650 3700} -type ground
-    select_bump -area {300 3550 3650 3700} -type power
-    deselect_bump -floating
-    set xmin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.x]]
-    set xmax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.x]]
-    set ymin [tcl::mathfunc::min {*}[get_db selected .bbox.ll.y]]
-    set ymax [tcl::mathfunc::max {*}[get_db selected .bbox.ur.y]]
-    set xmin [expr $xmin - 100]
-    set xmax [expr $xmax + 100]
-    set ymin [expr $ymin - 100]
-    set ymax [expr $ymax + 1000]
-    fcroute \
-        -type power \
-        -incremental \
-        -selected_bump \
-        -area "$xmin $ymin $xmax $ymax" \
-        -connectInsideArea \
-        -extraConfig inputs/fcroute-extra-config.cfg \
-        -verbose
-
     fillNotch
 }
 
+# add_cell_obs -cell spacer_2lego_n1 -layer gmb -rects "0 0 2.16 47.88"
+# add_cell_obs -cell spacer_2lego_e1 -layer gmb -rects "0 0 45.36 2.52"
+
 route_bumps_main
+
+# delete_cell_obs -cell spacer_2lego_n1 -layer gmb
+# delete_cell_obs -cell spacer_2lego_e1 -layer gmb
