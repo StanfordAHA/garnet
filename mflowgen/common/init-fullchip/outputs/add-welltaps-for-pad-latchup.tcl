@@ -25,14 +25,14 @@ foreach side {left right} {
 
             if {$side == "left"} {
                 set welltap_area_llx $core_llx
-                set welltap_area_lly $pad_lly
+                set welltap_area_lly [expr $pad_lly - 0.63]
                 set welltap_area_urx [expr $pad_urx + $ADK_LU_AFFECT_RANGE]
-                set welltap_area_ury $pad_ury
+                set welltap_area_ury [expr $pad_ury + 0.63]
             } else {
                 set welltap_area_llx [expr $pad_llx - $ADK_LU_AFFECT_RANGE]
-                set welltap_area_lly $pad_lly
+                set welltap_area_lly [expr $pad_lly - 0.63]
                 set welltap_area_urx $core_urx
-                set welltap_area_ury $pad_ury
+                set welltap_area_ury [expr $pad_ury + 0.63]
             }
 
             addWellTap -prefix LU_TAP_2H \
