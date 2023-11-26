@@ -1850,7 +1850,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
                            sparsity=0.9)
 
-        # breakpoint()
         ret_outputs['B'] = b_mat
         ret_outputs['C'] = c_mat
         ret_outputs['D'] = d_mat
@@ -1978,10 +1977,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         input_dims['C'] = tuple(c_mat.shape)
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
-        print(b_mat)
-        print(c_mat)
-        print(numpy.matmul(b_mat, c_mat_trans))
-        breakpoint()
         output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
         output_format = "CSF"
         output_name = "X"
