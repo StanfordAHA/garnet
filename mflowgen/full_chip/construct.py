@@ -87,21 +87,21 @@ def construct():
   init_order = [
       'pre-init.tcl',
       'main.tcl',
-      'innovus-pnr-config.tcl',
       'dont-use.tcl',
       'quality-of-life.tcl',
       'stylus-compatibility-procs.tcl',
       'floorplan.tcl',
+      'io-fillers.tcl',
       'create-rows.tcl',
       'add-tracks.tcl',
       # 'place-dic-cells-tma2.tcl',
-      # 'gen-bumps.tcl', # TODO: turn-off for TMA2
-      # 'route-bumps.tcl', # TODO: turn-off for TMA2
+      'gen-bumps.tcl',
+      'route-bumps.tcl',
+      'innovus-pnr-config.tcl',
       'place-macros.tcl',
       'add-welltaps-for-pad-latchup.tcl',
       'create-special-grid.tcl',
-      'carve-out-special-grid-fullchip.tcl',
-      'io-fillers.tcl'
+      'carve-out-special-grid-fullchip.tcl'
   ]
   
   #-----------------------------------------------------------------------
