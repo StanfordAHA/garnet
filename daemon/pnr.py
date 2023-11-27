@@ -17,8 +17,8 @@ def add_subparser(subparser):
 
 
 def subprocess_call_log(cmd, cwd, env=None, log=False, log_file_path="log.log", do_cmd=subprocess.check_call):
-    if do_cmd == subprocess.check_call: print('--- PNR/scl: check_call')
-    elif do_cmd == subprocess.Popen:    print('--- PNR/scl: POPEN')
+    if do_cmd == subprocess.check_call: print('--- PNR/scl: check_call (run) garnet.py')
+    elif do_cmd == subprocess.Popen:    print('--- PNR/scl: Popen (background) garnet.py')
     if log:
         print("[log] Command  : {}".format(" ".join(cmd)))
         print("[log] Log Path : {}".format(log_file_path), end="  ...", flush=True)
@@ -118,9 +118,9 @@ def dispatch(args, extra_args=None):
 
     # When running as daemon, must use non-blocking "Popen" and not "check_call"
     if '--daemon' in extra_args and not 'use' in extra_args:
-        print('--- PNR: POPEN');      do_cmd = subprocess.Popen
+        do_cmd = subprocess.Popen
     else:
-        print('--- PNR: CHECK_CALL'); do_cmd = subprocess.check_call
+        do_cmd = subprocess.check_call
 
     subprocess_call_log (
         cmd=[sys.executable, "garnet.py"] + map_args + extra_args,
