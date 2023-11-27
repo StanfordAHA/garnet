@@ -16,6 +16,7 @@ function docker-launch {
 }
 image=stanfordaha/garnet:latest
 container=deleteme
+docker kill $container
 docker-launch $image $container
 
 # ------------------------------------------------------------------------
