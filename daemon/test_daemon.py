@@ -247,7 +247,7 @@ def test_help():
     print('------------------------------------------------------------------------')
     print("VISUAL CHECK: DOES THIS LOOK RIGHT TO YOU?")
     print('------------------------------------------------------------------------')
-    GarnetDaemon.help()
+    subprocess.run(f'{DAEMON} help'.split())
 
 ########################################################################
 # Unit tests (optional)

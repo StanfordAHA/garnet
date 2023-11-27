@@ -27,20 +27,24 @@ DESCRIPTION:
   reuses the background state to more quickly do pnr and bitstream generation.
 
       --daemon launch -> process args and launch a daemon
-      --daemon use    -> use existing daemon to process 
+      --daemon use    -> use existing daemon to process args
+      --daemon wait   -> wait for daemon to finish processing args
       --daemon kill   -> kill the daemon
       --daemon status -> print daemon status and exit
       --daemon force  -> same as kill + launch
 
 EXAMPLE:
-    garnet.py --width 4 --height 2 --daemon launch
-    garnet.py <app1-args> --daemon use
-    garnet.py <app2-args> --daemon use
+    garnet.py --daemon kill
+    garnet.py --width 28 --height 16 --verilog ...
+    garnet.py <app1-pnr-args> --daemon launch
+    garnet.py <app2-pnr-args> --daemon use
+    garnet.py <app3-pnr-args> --daemon use
+    garnet.py <app4-pnr-args> --daemon use
+    ...
     garnet.py --daemon kill
 
 NOTE! 'daemon.use' width and height must match 'daemon.launch'!!!
-
-See README.txt for more info
+NOTE 2: cannot use the same daemon for verilog *and* pnr (not sure why).
 '''
 
 class GarnetDaemon:
@@ -82,7 +86,7 @@ class GarnetDaemon:
             args.daemon = "launch"
 
         if args.daemon == "help":
-            GarnetDaemon.help(args); exit()
+            GarnetDaemon.help(); exit()
 
         elif args.daemon == "use":
             print("hello here i am doing a 'daemon use'", flush=True)

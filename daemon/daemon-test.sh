@@ -175,13 +175,13 @@ if ! [ "$DAEMON_LAUNCHED" ]; then
     $nobuf aha pnr $app --width 28 --height 16 $layer --daemon launch \
         |& $nobuf sed 's/^/DAEMON: /' \
         |  $nobuf tee pnr_launch.log &
+        DAEMON_LAUNCHED=True
 else
     echo   aha pnr $app --width 28 --height 1 $layer6 --daemon use
     $nobuf aha pnr $app --width 28 --height 16 $layer --daemon use \
         |& $nobuf tee pnr_use.log &
 fi
-DAEMON_LAUNCHED=True
-sleep 2 # BUG/FIXME should not need this
+# sleep 2 # BUG/FIXME should not need this
 aha garnet --daemon wait
 t_pnr_daemon=$(( `date +%s` - $t_start ))
 echo "'$ap' w/daemon pnr took $t_pnr_daemon seconds"
