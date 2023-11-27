@@ -1,8 +1,13 @@
 INTRODUCTION - PNR using garnet daemon
 
-Previously, PNR for an app required two stages: 1) build the (garnet) circuit and 2) place/route the app onto the circuit. A second PNR, for a second app, would go through the same two stages, even when/if the garnet circuit produced is the same for both apps.
+Previously, PNR for an app required two stages: 1) build the (garnet)
+circuit and 2) place/route the app onto the circuit. A second PNR, for
+a second app, would go through the same two stages, even when/if the
+garnet circuit produced is the same for both apps.
 
-This new daemon-based PNR builds the garnet circuit just *once*, then runs in the background, waiting to use the circuit for one or more requesting apps to do their PNR.
+This new daemon-based PNR builds the garnet circuit just *once*, then
+runs in the background, waiting to use the circuit for one or more
+requesting apps to do their PNR.
 ```
     % aha pnr app1 --daemon launch
         => 100 sec to build garnet circuit
@@ -16,7 +21,9 @@ This new daemon-based PNR builds the garnet circuit just *once*, then runs in th
     % aha pnr app4 --daemon use ...
 ```
 
-Below are before-and-after timings for our "daily" regression tests (with after-daemon times in parens). The daemon reduces total runtime by about one third, from 2972 seconds (50 min) down to 2080 seconds (35 min).
+Below are before-and-after timings for our "daily" regression tests (with
+after-daemon times in parens). The daemon reduces total runtime by about 
+one third, from 2972 seconds (50 min) down to 2080 seconds (35 min).
 
 Step                Total  (d)     Map  (d)    PNR   (d)    Test (d)
 ------------------- -----------   ---------   ----------   ---------
@@ -36,7 +43,9 @@ tests/conv_2_1       195  (117)    41  (41)    128  (50)    26  (26)
 TOTAL               2972 (2080)   461 (461)   1542 (650)   260 (260)
 
 
-PNR makes use of a version of `garnet.py` enhanced with daemon capabilities by way of the "GarnetDaemon" class in `daemon.py`. I.e. when you do
+PNR makes use of a version of `garnet.py` enhanced with daemon
+capabilities by way of the "GarnetDaemon" class in `daemon.py`.
+I.e. when you do
 ```
     aha pnr my-app --width 28 --height 16 --daemon launch
 ```
@@ -54,15 +63,17 @@ the `aha pnr` wrapper does something like
          --width 28 --height 16 &
 ```
 
-You can use '--daemon help' to find the latest info about how to use the daemon.
+You can use `--daemon help` to find the latest info about how to use the daemon.
 ```
     % garnet.py --daemon help
 
     DESCRIPTION:
-      garnet.py can run as a daemon to save you time when generating bitstreams
-      for multiple apps using the same garnet circuit. Use the "launch" command
-      to build a circuit and keep state in the background. The "use-daemon" command
-      reuses the background state to more quickly do pnr and bitstream generation.
+
+      garnet.py can run as a daemon to save you time when generating
+      bitstreams for multiple apps using the same garnet circuit. Use
+      the "launch" command to build a circuit and keep state in the
+      background. The "use-daemon" command reuses the background state
+      to more quickly do pnr and bitstream generation.
 
           --daemon launch -> process args and launch a daemon
           --daemon use    -> use existing daemon to process args

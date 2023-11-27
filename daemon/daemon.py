@@ -21,10 +21,12 @@ from argparse import Namespace
 
 GarnetDaemon_HELP = '''
 DESCRIPTION:
-  garnet.py can run as a daemon to save you time when generating bitstreams
-  for multiple apps using the same garnet circuit. Use the "launch" command
-  to build a circuit and keep state in the background. The "use-daemon" command
-  reuses the background state to more quickly do pnr and bitstream generation.
+
+  garnet.py can run as a daemon to save you time when generating
+  bitstreams for multiple apps using the same garnet circuit. Use
+  the "launch" command to build a circuit and keep state in the
+  background. The "use-daemon" command reuses the background state
+  to more quickly do pnr and bitstream generation.
 
       --daemon launch -> process args and launch a daemon
       --daemon use    -> use existing daemon to process args
