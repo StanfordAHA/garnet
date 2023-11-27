@@ -1,4 +1,11 @@
-INTRODUCTION - PNR using garnet daemon
+==== GARNET DAEMON
+
+The GarnetDaemon class enables daemon capability for a python program,
+tailored specifically for our `garnet.py` chip builder. In particular, we 
+can use a daemon-enabled `garnet.py` to save time when using `garnet.py`
+to do PNR for multiple applications mapped onto the same Garnet build.
+
+==== PNR USING GARNET DAEMON
 
 Previously, PNR for an app required two stages: 1) build the (garnet)
 circuit and 2) place/route the app onto the circuit. A second PNR, for
