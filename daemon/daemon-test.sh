@@ -154,6 +154,7 @@ aha map $app --chain $layer |& tee map.log
 t_map=$(( `date +%s` - $t_start ))
 echo "'$ap' map took $t_map seconds"
 
+
 echo "--- (daemon-test.sh) PNR $ap, no daemon"
 # PNR ("MAP"), no daemon
 t_start=`date +%s`
@@ -162,23 +163,22 @@ aha pnr $app --width 28 --height 16 $layer |& tee pnr_no_daemon.log
 t_pnr_no_daemon=$(( `date +%s` - $t_start ))
 echo "No-daemon '$ap' pnr took $t_pnr_no_daemon seconds"
 
-echo "--- (daemon-test.sh) PNR $ap, using daemon"
 # Using 'aha pnr' instead of flags2 maybe?
 # flags2=`get_flags2 $app`; echo flags2=$flags2 | fold -sw 120
-# 
+
+echo "--- (daemon-test.sh) PNR $ap, using daemon"
 # PNR ("MAP"), using daemon
-# 
 # First time through, launch the daemon; aftwerwards *use* the daemon
 t_start=`date +%s`; nobuf='stdbuf -oL -eL'
 if ! [ "$DAEMON_LAUNCHED" ]; then
-    echo   aha pnr $app --width 28 --height 16 $layer --daemon launch
-    $nobuf aha pnr $app --width 28 --height 16 $layer --daemon launch \
+    echo   aha pnr $app --width 28 --height 16 $layer --daemon auto
+    $nobuf aha pnr $app --width 28 --height 16 $layer --daemon auto \
         |& $nobuf sed 's/^/DAEMON: /' \
         |  $nobuf tee pnr_launch.log &
         DAEMON_LAUNCHED=True
 else
-    echo   aha pnr $app --width 28 --height 1 $layer6 --daemon use
-    $nobuf aha pnr $app --width 28 --height 16 $layer --daemon use \
+    echo   aha pnr $app --width 28 --height 1 $layer6 --daemon auto
+    $nobuf aha pnr $app --width 28 --height 16 $layer --daemon auto \
         |& $nobuf tee pnr_use.log &
 fi
 # sleep 2 # BUG/FIXME should not need this

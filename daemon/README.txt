@@ -84,6 +84,7 @@ You can use `--daemon help` to find the latest info about how to use the daemon.
 
           --daemon launch -> process args and launch a daemon
           --daemon use    -> use existing daemon to process args
+          --daemon auto   -> "launch" if no daemon yet, else "use"
           --daemon wait   -> wait for daemon to finish processing args
           --daemon kill   -> kill the daemon
           --daemon status -> print daemon status and exit

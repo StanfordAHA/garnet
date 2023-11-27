@@ -30,6 +30,7 @@ DESCRIPTION:
 
       --daemon launch -> process args and launch a daemon
       --daemon use    -> use existing daemon to process args
+      --daemon auto   -> "launch" if no daemon yet, else "use"
       --daemon wait   -> wait for daemon to finish processing args
       --daemon kill   -> kill the daemon
       --daemon status -> print daemon status and exit
@@ -52,7 +53,7 @@ NOTE 2: cannot use the same daemon for verilog *and* pnr (not sure why).
 class GarnetDaemon:
 
     # Permissible daemon commands
-    choices = [ 'help','launch', 'use', 'kill', 'status', 'force', 'wait' ]
+    choices = [ 'help','launch', 'use', 'auto', 'kill', 'status', 'force', 'wait' ]
 
     # Disk storage for persistent daemon state
     FN_PID    = "/tmp/garnet-daemon-pid"    # Daemon pid
@@ -86,6 +87,11 @@ class GarnetDaemon:
             print(f'- hello here i am forcing a launch')
             GarnetDaemon.kill(dbg=1)
             args.daemon = "launch"
+
+        if args.daemon == "auto":
+            print(f'- hello here i am doing a auto')
+            args.daemon = "launch"
+            if GarnetDaemon.daemon_exists(): args.daemon = "use"
 
         if args.daemon == "help":
             GarnetDaemon.help(); exit()

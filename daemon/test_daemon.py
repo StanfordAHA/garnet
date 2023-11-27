@@ -214,6 +214,39 @@ def test_daemon_use():
     print('\nSecond assertion PASSED')
     # FIXME/TODO where is first assertion? what's going on here?
 
+def test_daemon_auto():
+    'Same as test_daemon_use except "auto" instead'
+    announce()
+    catnew_reset()
+
+    print('\nKILL any existing daemon\n')
+    subprocess.run(f'{DAEMON} kill'.split())
+
+    tmpfile = f'deleteme-GarnetDaemon.test_daemon_auto.{int(time.time())}'
+    force_launch_and_capture(tmpfile, cmd='auto')
+    verify_successful_build(tmpfile)  # (calls catnew)
+    print('\nFirst assertion PASSED')
+
+    p2 = subprocess.run(f'{DAEMON} auto --animal foxy'.split(), text=True, capture_output=True)
+    sys.stdout.flush()
+    min_sleep()
+    p3 = subprocess.run(f'{DAEMON} wait'.split(), text=True, capture_output=True)
+
+    print('\nKILL the daemon\n')
+    subprocess.run(f'{DAEMON} kill'.split())
+
+    print('\nWAKEUP and flush')
+    daemon_out = catnew(tmpfile)
+    print_w_prefix('DAEMON: ', daemon_out)
+    os.remove(tmpfile)
+    assert 'using animal: foxy' in daemon_out
+    print('\nSecond assertion PASSED')
+    # FIXME/TODO where is first assertion? what's going on here?
+
+
+
+
+
 def test_incompatible_daemon():
     'Launch a 7x13 daemon; try to use a 3x5 daemon; verify error'
     announce()
