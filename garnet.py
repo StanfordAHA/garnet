@@ -32,7 +32,6 @@ set_debug_mode(False)
 from gemstone.generator.generator import Generator
 class Garnet(Generator):
     def __init__(self, args):
-        print("--- Garnet.__init__()")
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -70,7 +69,7 @@ class Garnet(Generator):
         if not args.interconnect_only:
             self.build_glb()  # Builds self.{global_controller, global_buffer}
 
-        print("--- BUILD THE CGRA")
+        print("- BUILD THE CGRA")
         from cgra.util import get_cc_args, create_cgra
         width  = args.width; height = args.height
         cc_args = get_cc_args(width, height, io_side, args)
@@ -740,7 +739,6 @@ def parse_args():
     return args
 
 def build_verilog(args, garnet):
-    print('--- BEGIN build_verilog 743', flush=True)
     garnet_circ = garnet.circuit()
     magma.compile("garnet", garnet_circ, output="coreir-verilog",
                   coreir_libs={"float_CW"},
@@ -768,11 +766,8 @@ def build_verilog(args, garnet):
             gfd.writelines(lines_garnet)
             gfd.writelines(lines_pe)
 
-    print('--- BEGIN build_verilog 771', flush=True)
     garnet.create_stub()
-    print('--- BEGIN build_verilog 773', flush=True)
     if not args.interconnect_only:
-        print('--- BEGIN build_verilog 775', flush=True)
         garnet_home = os.getenv('GARNET_HOME')
         if not garnet_home:
             garnet_home = os.path.dirname(os.path.abspath(__file__))
@@ -787,10 +782,6 @@ def build_verilog(args, garnet):
         gen_rdl_header(top_name="glc",
                        rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
-
-        print('--- BEGIN build_verilog 791', flush=True)
-
-    print('--- BEGIN build_verilog 793', flush=True)
 
 # FIXME/TODO send pnr, pnr_wrapper etc. to util/garnetPNR or some such
 # e.g. "import util.pnr then call util.pnr.{pnr,pnr_wrapper} etc. maybe
@@ -878,55 +869,48 @@ def main():
         # "use"    => send args to daemon and exit
         # "kill"   => kill existing daemon and exit
         # "help"   => echo help and exit
+        # "wait"   => wait for "daemon ready"
 
-    # BUILD GARNET
+    print(f'--- garnet.py -{args.app}- BEGIN GARNET CIRCUIT BUILD (magma)')
     garnet = Garnet(args)
 
     # VERILOG
+    # FIXME verilog could be inside loop (below). Should verilog be inside loop?
     if args.verilog:
-        print("--- BEGIN verilog inside garnet", flush=True)
+        print('--- garnet.py BEGIN GARNET VERILOG BUILD')
         build_verilog(args, garnet)
-        print("--- DONE verilog inside garnet", flush=True)
-    print("--- continuing", flush=True)
+
     print(f"args.daemon={args.daemon}", flush=True)
 
     # USE GARNET
     import json # for debugging, maybe temporary
     while True:
-        print('--- BEGIN LOOPING')
+        print('- CHECK FOR DAEMON')
         if args.daemon:
-          print('--- BEGIN ARGS.DAEMON')
-          # Fork a child to do the work, wait for it to finish, then continue
-          childpid = os.fork() # Fork a child
-          if childpid > 0:
-            print('--- BEGIN CHILDPID > 0')
-            pid, status = os.waitpid(childpid, 0) # Wait for child to finish
-            print(f'Child process {childpid} finished with exit status {status}', flush=True)
-            assert pid == childpid # Right???
-
-            print('\nLOOPING')
-            print(f'Before merge: args.app={args.app}')
-            args = GarnetDaemon.loop(args, dbg=1)
-
-            # PRINT DEBUG INFO
-            print(f'After merge:  args.app={args.app}')
-            argdic = vars(args)
-            sorted_argdic=dict(sorted(argdic.items()))
-            sorted_argdic['glb_params'] = "<unserializable obj>" # Cannot serialize glb_params or pe_fc
-            sorted_argdic['pe_fc']      = "<unserializable obj>"
-            print(f"- loaded args (garnet) = {json.dumps(sorted_argdic, indent=4)}")
-
-            continue
+            print('- BEGIN ARGS.DAEMON')
+            # Fork a child to do the work, wait for it to finish, then continue
+            childpid = os.fork() # Fork a child
+            if childpid > 0:
+                # Only parent does this part
+                print('- BEGIN CHILDPID > 0')
+                pid, status = os.waitpid(childpid, 0) # Wait for child to finish
+                print(f'Child process {childpid} finished with exit status {status}', flush=True)
+                assert pid == childpid # Right???
+                print('\nDAEMON (parent) STOPS AND AWAITS FURTHER INSTRUCTION')
+                args = GarnetDaemon.loop(args, dbg=1) # Parent halts here and waits for further instructions
+                continue # Parent loops back
+            print('\nDAEMON (child) DOES THE WORK')
+            # Child falls through to next line below
 
         # Forked child process does the work, then exits
 
         # FIXME Verilog should be here probably, Right?
         #         # VERILOG
         #         if args.verilog:
-        #             print("--- BEGIN verilog inside garnet", flush=True)
+        #             print("- BEGIN verilog inside garnet", flush=True)
         #             build_verilog(args, garnet)
 
-        print("--- BEGIN check for PNR", flush=True)
+        print("- BEGIN check for PNR", flush=True)
 
         # PNR
         app_specified = len(args.app)    > 0 and \
@@ -938,34 +922,29 @@ def main():
         sorted_argdic=dict(sorted(argdic.items()))
         sorted_argdic['glb_params'] = "UKNOWN"
         sorted_argdic['pe_fc'] = "UKNOWN"
-        print(f"--- BEGIN pre-pnr/bs args {json.dumps(sorted_argdic, indent=4)}")
+        print(f"- BEGIN pre-pnr/bs args {json.dumps(sorted_argdic, indent=4)}")
 
         do_pnr = app_specified and not args.virtualize
         if do_pnr:
-            print("--- BEGIN pnr inside garnet", flush=True)
+            print("- BEGIN pnr inside garnet", flush=True)
             # FIXME how is args.app not redundant/unnecessary here?
             pnr(garnet, args, args.app)
 
         # BITSTREAM
         elif args.virtualize and len(args.app) > 0:
-            print("--- BEGIN bitstream inside garnet", flush=True)
+            print("- BEGIN bitstream inside garnet", flush=True)
             group_size = args.virtualize_group_size
             result = garnet.compile_virtualize(args.app, group_size)
             for c_id, bitstream in result.items():
                 filename = os.path.join("temp", f"{c_id}.bs")
                 write_out_bitstream(filename, bitstream)
 
-        # argdic = vars(args)
-        # sorted_argdic=dict(sorted(argdic.items()))
-        # sorted_argdic['glb_params'] = "UKNOWN"; sorted_argdic['pe_fc'] = "UKNOWN"
-        # print(f"--- BEGIN pre-dump-config args {json.dumps(sorted_argdic, indent=4)}")
-
-        print("--- BEGIN check for dump-config", flush=True)
+        print("- BEGIN check for dump-config", flush=True)
 
         # WRITE REGS TO CONFIG.JSON
         from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
         if args.dump_config_reg:
-            print("--- BEGIN dump-config inside garnet", flush=True)
+            print("- BEGIN dump-config inside garnet", flush=True)
             ic = garnet.interconnect
             ic_reg = get_interconnect_regs(ic)
             core_reg = get_core_registers(ic)
@@ -973,7 +952,7 @@ def main():
                 json.dump(ic_reg + core_reg, f)
 
         # CHILD IS DONE
-        print("--- BEGIN GARNET EXIT", flush=True)
+        print("- GARNET EXIT", flush=True)
         exit()
 
 if __name__ == "__main__":

@@ -247,4 +247,3 @@ prefix `Test` will be considered tests.
 magma ecosystem) with abstractions for testing hardware.  See the 
 [README](https://github.com/leonardt/fault#fault) for example usage and links to
 documentation.
-
