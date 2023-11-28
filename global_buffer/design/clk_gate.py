@@ -17,32 +17,32 @@ class ClkGate(Generator):
     # GF cell 'SC7P5T_CKGPRELATNX1_SSC14R' has ports CLK, Z
 
     def add_clk_gate_cell(self):
-        #if self._params.process == "TSMC":
-        #    self.add_child(f"CG_CELL",
-        #                   CG(self._params),
-        #                   E=self.enable,
-        #                   CP=self.clk,
-        #                   TE=const(0, 1),
-        #                   Q=self.gclk)
-        #elif self._params.process == "GF":
-        #    self.add_child(f"CG_CELL",
-        #                   CG(self._params),
-        #                   E=self.enable,
-        #                   CLK=self.clk,
-        #                   TE=const(0, 1),
-        #                   Z=self.gclk)
-        #elif self._params.process == "INTEL":
-        self.add_child(f"CG_CELL",
-                       CG(self._params),
-                       E=self.enable,
-                       CLK=self.clk,
-                       TE=const(0, 1),
-                       Z=self.gclk)
-        #else:
-        #    self.add_child(f"CG_CELL",
-        #                   CG(self._params),
-        #                   E=self.enable,
-        #                   CLK=self.clk,
-        #                   TE=const(0, 1),
-        #                   Z=self.gclk)
+        if self._params.process == "TSMC":
+            self.add_child(f"CG_CELL",
+                           CG(self._params),
+                           E=self.enable,
+                           CP=self.clk,
+                           TE=const(0, 1),
+                           Q=self.gclk)
+        elif self._params.process == "GF":
+            self.add_child(f"CG_CELL",
+                           CG(self._params),
+                           E=self.enable,
+                           CLK=self.clk,
+                           TE=const(0, 1),
+                           Z=self.gclk)
+        elif self._params.process == "INTEL":
+            self.add_child(f"CG_CELL",
+                           CG(self._params),
+                           E=self.enable,
+                           CLK=self.clk,
+                           TE=const(0, 1),
+                           Z=self.gclk)
+        else:
+            self.add_child(f"CG_CELL",
+                           CG(self._params),
+                           E=self.enable,
+                           CLK=self.clk,
+                           TE=const(0, 1),
+                           Z=self.gclk)
                         
