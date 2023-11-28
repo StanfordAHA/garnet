@@ -30,14 +30,14 @@ class CG(Generator):
 
         elif _params.process == "INTEL":
             super().__init__(_params.intel_icg_name)
-            self.E = self.input("en", 1)
-            self.CLK = self.clock("clk")
-            self.TE = self.input("te", 1)
-            self.Z = self.output("clkout", 1)
+            self.en = self.input("en", 1)
+            self.clk = self.clock("clk")
+            self.te = self.input("te", 1)
+            self.clkout = self.output("clkout", 1)
 
             self.enable_latch = self.var("enable_latch", 1)
             self.add_always(self.clk_en_latch)
-            self.wire(self.Z, (self.CLK & self.enable_latch))
+            self.wire(self.clkout, (self.clk & self.enable_latch))
 
         else:
             super().__init__("clk_gate")
