@@ -46,3 +46,4 @@ hwtypes
 -e git+https://github.com/Kuree/archipelago.git@pipeline-hard-flush#egg=archipelago
 systemrdl-compiler
 peakrdl-html
+pulp

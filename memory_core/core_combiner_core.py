@@ -220,7 +220,12 @@ class CoreCombinerCore(LakeCoreBase):
             config_kwargs = {
                 'mode': 'alu',
                 'use_dense': True,
-                'op': int(config_tuple)
+                'op': int(config_tuple),
+                # pe in dense mode always accept inputs that are external 
+                # to the cluster
+                'pe_in_external': 1,
+                # only configure pe within the cluster
+                'pe_only': True
             }
             instr = config_kwargs
             config_pre = self.dut.get_bitstream(instr)

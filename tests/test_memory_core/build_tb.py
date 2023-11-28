@@ -1020,7 +1020,14 @@ class SparseTBBuilder(m.Generator2):
                         dim_size = self.input_sizes[tensor][int(mode)]
                     else:
                         dim_size = None
-                    index = node.get_attributes()['index'].strip('"')
+                    if 'vector_reduce_mode' in node.get_attributes():
+                        is_in_vr_mode = node.get_attributes()['vector_reduce_mode'].strip('"')
+                        if is_in_vr_mode == "true":
+                            index = None
+                        else:
+                            index = node.get_attributes()['index'].strip('"')
+                    else: 
+                        index = node.get_attributes()['index'].strip('"')
                     format = node.get_attributes()['format'].strip('"')
                 else:
                     mode = None
@@ -1049,7 +1056,10 @@ class SparseTBBuilder(m.Generator2):
 
             elif hw_node_type == f"{HWNodeType.Reduce}":
                 new_node_type = ReduceNode
-                core_tag = "reduce"
+                # Both pe and reduce sit in reduce_pe_cluster
+                # Give them the same core tag so reduce_pe_cluster.get_bitstream is called 
+                # for both pe and reduce
+                core_tag = "alu"
             elif hw_node_type == f"{HWNodeType.Lookup}":
                 new_node_type = LookupNode
                 core_tag = "lookup"
@@ -1086,9 +1096,6 @@ class SparseTBBuilder(m.Generator2):
                 new_node_type = ComputeNode
                 # core_tag = "fake_pe"
                 core_tag = "alu"
-                kwargs = {
-                    "op": node.get_attributes()['label'].strip('"')
-                }
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
             elif hw_node_type == f"{HWNodeType.RepSigGen}" or hw_node_type == HWNodeType.RepSigGen:
@@ -1936,26 +1943,22 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # exit()
         output_format = "CSF"
         output_name = "x"
-    elif 'matmul_ijk' in app_name and "relu" in app_name:
-        # PASSES
-        # to glb
-        # combined
-        # piped
-
-        if 'B' not in cached_inputs:
-            b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                               sparsity=0.2)
-        if 'C' not in cached_inputs:
-            c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                               sparsity=0.2)
-        # First transpose c_mat        
+    elif "spmm_ijk_crddrop.gv" in app_name:
+        # matrix b is completely dense
+        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.0, format='UNC')
+        c_mat = get_tensor(input_name='C', shapes=[shapes_[3], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=sparsities_[0])
+        input_dims['B'] = tuple(b_mat.shape)
+        #input_dims['C'] = tuple(c_mat.shape)
+        # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
-        output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
+        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "X"
-    elif 'matmul_ijk' in app_name:
+    elif 'matmul_ijk.gv' in app_name:
         # PASSES
         # to glb
         # combined
@@ -1986,14 +1989,31 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "X"
     # elif 'matmul_ikj.gv' in app_name:
-    elif 'matmul_ikj' in app_name:
+    # MO: new ikj test 
+    elif 'matmul_ikj.gv' in app_name:
 
-        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=sparsities_[0])
-        c_mat = get_tensor(input_name='C', shapes=[shapes_[1], shapes_[2]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=sparsities_[1])
+        #b_mat = get_tensor(input_name='B', shapes=[30, 36], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        #                  dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+        #                  sparsity=0.3)
+        #c_mat = get_tensor(input_name='C', shapes=[36, 15], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        #                  dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+        #                  sparsity=0.7)
+        if 'B' not in cached_inputs:
+            b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                               sparsity=sparsities_[0])
+        else:
+            b_mat = cached_inputs['B']
+            b_shape = b_mat.shape
+            shapes_[0] = b_shape[0]
+            shapes_[1] = b_shape[1]
+        # c_mat = c_matrix.get_matrix()
+        if 'C' not in cached_inputs:
+            c_mat = get_tensor(input_name='C', shapes=[shapes_[1], shapes_[2]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                               sparsity=sparsities_[1])
+        else:
+            c_mat = cached_inputs['C']
 
         # First transpose c_mat
         # c_mat_trans = numpy.transpose(c_mat)
@@ -2001,10 +2021,36 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # output_matrix = numpy.transpose(output_matrix)
         output_format = "CSF"
         output_name = "X"
+        print("test matrices")
         print(b_mat)
         print(c_mat)
         print(output_matrix)
         # exit()
+    elif 'matmul_ijk_crddrop.gv' in app_name:
+        if 'B' not in cached_inputs:
+            b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                               sparsity=sparsities_[0])
+        else:
+            b_mat = cached_inputs['B']
+            b_shape = b_mat.shape
+            shapes_[0] = b_shape[0]
+            shapes_[1] = b_shape[1]
+        # c_mat = c_matrix.get_matrix()
+        if 'C' not in cached_inputs:
+            c_mat = get_tensor(input_name='C', shapes=[shapes_[2], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                               dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                               sparsity=sparsities_[1])
+        else:
+            c_mat = cached_inputs['C']
+
+        ret_outputs['B'] = b_mat
+        ret_outputs['C'] = c_mat
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "X"
     elif 'matmul_jik.gv' in app_name:
         # PASSED
         # to glb
@@ -2022,6 +2068,38 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         c_mat_trans = numpy.transpose(c_mat)
         output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
         output_matrix = numpy.transpose(output_matrix)
+        output_format = "CSF"
+        output_name = "X"
+    elif 'masked_broadcast.gv' in app_name and 'trans' in app_name:
+        B_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.5)
+        c_mat = get_tensor(input_name='c', shapes=[shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
+                           sparsity=0.0)
+        assert c_mat.shape[0] == B_mat.shape[0]
+        # broadcasting
+        output_matrix = numpy.zeros((shapes_[0], shapes_[0]))
+        for i in range(0, output_matrix.shape[0]):
+            for j in range(0, output_matrix.shape[1]):
+                if B_mat[i][j] != 0:   
+                    output_matrix[i][j] = c_mat[i]
+        output_format = "CSF"
+        output_name = "X"
+    elif 'masked_broadcast.gv' in app_name:
+        B_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump= matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.5)
+        c_mat = get_tensor(input_name='c', shapes=[shapes_[0]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'], 
+                           sparsity=0.0)
+        assert c_mat.shape[0] == B_mat.shape[0]
+        # broadcasting
+        output_matrix = numpy.zeros((shapes_[0], shapes_[0]))
+        for i in range(0, output_matrix.shape[0]):
+            for j in range(0, output_matrix.shape[1]):
+                if B_mat[i][j] != 0:   
+                    output_matrix[i][j] = c_mat[j]
         output_format = "CSF"
         output_name = "X"
     elif 'matmul_jki.gv' in app_name:
@@ -2191,6 +2269,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
+        print("test matrices")
+        print(b_mat)
+        print(c_mat)
+        print(output_matrix)
         output_format = "CSF"
         output_name = "x"
     elif 'vec_elemmul.gv' in app_name:
