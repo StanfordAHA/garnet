@@ -871,13 +871,18 @@ def main():
         # "help"   => echo help and exit
         # "wait"   => wait for "daemon ready"
 
-    print(f'--- garnet.py -{args.app}- BEGIN GARNET CIRCUIT BUILD (magma)')
+    # app="/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise/bin/design_top.json"
+    app=args.app
+    app=app.replace('/bin/design_top.json','')
+    app=app.replace('/aha/Halide-to-Hardware/apps/hardware_benchmarks/','')
+
+    print(f'--- garnet.py GARNET BUILD ({app})')
     garnet = Garnet(args)
 
     # VERILOG
     # FIXME verilog could be inside loop (below). Should verilog be inside loop?
     if args.verilog:
-        print('--- garnet.py BEGIN GARNET VERILOG BUILD')
+        print('--- garnet.py GARNET VERILOG')
         build_verilog(args, garnet)
 
     print(f"args.daemon={args.daemon}", flush=True)
@@ -892,7 +897,7 @@ def main():
             childpid = os.fork() # Fork a child
             if childpid > 0:
                 # Only parent does this part
-                print('- BEGIN CHILDPID > 0')
+                print('- BEGIN CHILDPID > 0 (parent) looping')
                 pid, status = os.waitpid(childpid, 0) # Wait for child to finish
                 print(f'Child process {childpid} finished with exit status {status}', flush=True)
                 assert pid == childpid # Right???
@@ -905,12 +910,6 @@ def main():
         # Forked child process does the work, then exits
 
         # FIXME Verilog should be here probably, Right?
-        #         # VERILOG
-        #         if args.verilog:
-        #             print("- BEGIN verilog inside garnet", flush=True)
-        #             build_verilog(args, garnet)
-
-        print("- BEGIN check for PNR", flush=True)
 
         # PNR
         app_specified = len(args.app)    > 0 and \
@@ -926,25 +925,23 @@ def main():
 
         do_pnr = app_specified and not args.virtualize
         if do_pnr:
-            print("- BEGIN pnr inside garnet", flush=True)
+            print(f"--- - garnet.py PNR ({app})", flush=True)
             # FIXME how is args.app not redundant/unnecessary here?
             pnr(garnet, args, args.app)
 
         # BITSTREAM
         elif args.virtualize and len(args.app) > 0:
-            print("- BEGIN bitstream inside garnet", flush=True)
+            print(f"--- - garnet.py BITSTREAM ({app})", flush=True)
             group_size = args.virtualize_group_size
             result = garnet.compile_virtualize(args.app, group_size)
             for c_id, bitstream in result.items():
                 filename = os.path.join("temp", f"{c_id}.bs")
                 write_out_bitstream(filename, bitstream)
 
-        print("- BEGIN check for dump-config", flush=True)
-
         # WRITE REGS TO CONFIG.JSON
         from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
         if args.dump_config_reg:
-            print("- BEGIN dump-config inside garnet", flush=True)
+            print(f"--- - garnet.py DUMP_CONFIG ({app})", flush=True)
             ic = garnet.interconnect
             ic_reg = get_interconnect_regs(ic)
             core_reg = get_core_registers(ic)
@@ -952,7 +949,7 @@ def main():
                 json.dump(ic_reg + core_reg, f)
 
         # CHILD IS DONE
-        print("- GARNET EXIT", flush=True)
+        print("- garnet.py DONE", flush=True)
         exit()
 
 if __name__ == "__main__":
