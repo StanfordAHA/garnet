@@ -13,17 +13,10 @@ import archipelago
 import archipelago.power
 import archipelago.io
 from lassen.sim import PE_fc as lassen_fc
-# from metamapper.coreir_mapper import Mapper # Not used??
-# from canal.global_signal import GlobalSignalWiring
 
 from daemon.daemon import GarnetDaemon
 
-# FIXME disperse this to where it needs to be...
-import metamapper.peak_util as putil
-from mapper.netlist_util import create_netlist_info, print_netlist_info
-from metamapper.coreir_mapper import Mapper
-from metamapper.map_design_top import map_design_top
-from metamapper.node import Nodes
+# from metamapper.coreir_mapper import Mapper # not used?
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -339,6 +332,7 @@ class Garnet(Generator):
         from metamapper.io_tiles import IO_fc, BitIO_fc
         import metamapper.peak_util as putil
         from mapper.netlist_util import create_netlist_info, print_netlist_info
+        from metamapper.node import Nodes
 
         app_dir = os.path.dirname(app)
 
