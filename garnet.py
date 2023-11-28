@@ -16,8 +16,6 @@ from lassen.sim import PE_fc as lassen_fc
 
 from daemon.daemon import GarnetDaemon
 
-# from metamapper.coreir_mapper import Mapper # not used?
-
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
 set_debug_mode(False)
@@ -326,13 +324,16 @@ class Garnet(Generator):
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves):
 
+        import metamapper.peak_util as putil
+        from mapper.netlist_util import create_netlist_info, print_netlist_info
+        from metamapper.coreir_mapper import Mapper # not used?
+        from metamapper.map_design_top import map_design_top
+        from metamapper.node import Nodes
+
         import metamapper.coreir_util as cutil
         from metamapper import CoreIRContext
         from metamapper.irs.coreir import gen_CoreIRNodes
         from metamapper.io_tiles import IO_fc, BitIO_fc
-        import metamapper.peak_util as putil
-        from mapper.netlist_util import create_netlist_info, print_netlist_info
-        from metamapper.node import Nodes
 
         app_dir = os.path.dirname(app)
 
@@ -870,13 +871,13 @@ def main():
     app=app.replace('/bin/design_top.json','')
     app=app.replace('/aha/Halide-to-Hardware/apps/hardware_benchmarks/','')
 
-    print(f'--- garnet.py GARNET BUILD ({app})')
+    print(f'--- GARNET-BUILD ({app})')
     garnet = Garnet(args)
 
     # VERILOG
     # FIXME verilog could be inside loop (below). Should verilog be inside loop?
     if args.verilog:
-        print('--- garnet.py GARNET VERILOG')
+        print('--- GARNET VERILOG')
         build_verilog(args, garnet)
 
     print(f"args.daemon={args.daemon}", flush=True)
@@ -919,13 +920,13 @@ def main():
 
         do_pnr = app_specified and not args.virtualize
         if do_pnr:
-            print(f"--- - garnet.py PNR ({app})", flush=True)
+            print(f"--- GARNET-PNR   ({app})", flush=True)
             # FIXME how is args.app not redundant/unnecessary here?
             pnr(garnet, args, args.app)
 
         # BITSTREAM
         elif args.virtualize and len(args.app) > 0:
-            print(f"--- - garnet.py BITSTREAM ({app})", flush=True)
+            print(f"--- GARNET-BITSTREAM ({app})", flush=True)
             group_size = args.virtualize_group_size
             result = garnet.compile_virtualize(args.app, group_size)
             for c_id, bitstream in result.items():
@@ -935,7 +936,7 @@ def main():
         # WRITE REGS TO CONFIG.JSON
         from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
         if args.dump_config_reg:
-            print(f"--- - garnet.py DUMP_CONFIG ({app})", flush=True)
+            print(f"--- GARNET-DUMP-CONFIG ({app})", flush=True)
             ic = garnet.interconnect
             ic_reg = get_interconnect_regs(ic)
             core_reg = get_core_registers(ic)
