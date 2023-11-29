@@ -51,5 +51,5 @@ class CG(Generator):
 
     @always_latch
     def clk_en_latch(self):
-        if (~self.CLK):
-            self.enable_latch = self.E
+        if (~self.clk):
+            self.enable_latch = self.en
