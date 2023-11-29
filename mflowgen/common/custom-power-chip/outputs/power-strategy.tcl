@@ -453,6 +453,20 @@ editAddRoute 1330.9 4062.25
 editCommitRoute 1330.9 4062.25
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VSS
+editAddRoute 1265.48 3686.71
+editAddRoute 1324.95 3697.12
+editAddRoute 1345.27 3716.94
+editAddRoute 1357.66 3947.4
+editAddRoute 1353.69 3957.8
+editAddRoute 1357.66 4015.29
+editCommitRoute 1357.66 4015.29
+setEditMode -create_crossover_vias 1
+editAddRoute 1351.22 4013.81
+editAddRoute 1357.66 4063.86
+editCommitRoute 1357.66 4063.86
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VDDPST
 editAddRoute 1340.86 3612.75
 editAddRoute 1339.07 3648.66
@@ -517,6 +531,20 @@ editAddRoute 1642.77 4064.06
 editCommitRoute 1642.77 4064.06
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VSS
+editAddRoute 1733.53 3686
+editAddRoute 1734.53 3784.13
+editAddRoute 1744.44 3809.9
+editAddRoute 1739.48 3877.8
+editAddRoute 1706.28 3923.89
+editAddRoute 1711.23 4015.57
+editCommitRoute 1711.23 4015.57
+setEditMode -create_crossover_vias 1
+editAddRoute 1708.26 4014.58
+editAddRoute 1715.2 4063.65
+editCommitRoute 1715.2 4063.65
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VDDPST
 editAddRoute 1651.15 3608.58
 editAddRoute 1654.74 3662.45
@@ -540,6 +568,20 @@ setEditMode -create_crossover_vias 1
 editAddRoute 1777.98 4011.39
 editAddRoute 1782.17 4061.67
 editCommitRoute 1782.17 4061.67
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDDPST
+editAddRoute 1809.59 3608.35
+editAddRoute 1800.26 3719.13
+editAddRoute 1793.27 3739.54
+editAddRoute 1794.43 3853.24
+editAddRoute 1827.67 3885.89
+editAddRoute 1837.58 4013.58
+editCommitRoute 1837.58 4013.58
+setEditMode -create_crossover_vias 1
+editAddRoute 1827.57 4011.85
+editAddRoute 1832.14 4039.85
+editCommitRoute 1832.14 4039.85
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VSS
@@ -720,6 +762,20 @@ editAddRoute 2623.51 4061.99
 editCommitRoute 2623.51 4061.99
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VDDPST
+editAddRoute 2590.89 3608.19
+editAddRoute 2596.24 3689.1
+editAddRoute 2686.26 3787.69
+editAddRoute 2685.19 3868.06
+editAddRoute 2647.15 3912
+editAddRoute 2649.29 4014.88
+editCommitRoute 2649.29 4014.88
+setEditMode -create_crossover_vias 1
+editAddRoute 2645.54 4013.81
+editAddRoute 2650.36 4061.49
+editCommitRoute 2650.36 4061.49
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VSS
 editAddRoute 2666.2 3685.28
 editAddRoute 2665.66 3721.49
@@ -825,6 +881,19 @@ editAddRoute 3158.17 4012.9
 editAddRoute 3162.7 4062.26
 editCommitRoute 3162.7 4062.26
 setEditMode -create_crossover_vias 0
+
+setEditMode -nets VSS
+uiSetTool addWire
+editAddRoute 3132.65 3682.35
+editAddRoute 3136.81 3795.2
+editAddRoute 3151.74 3810.47
+editAddRoute 3156.61 3855.61
+editAddRoute 3171.53 3878.18
+editAddRoute 3181.26 4014.98
+editCommitRoute 3181.26 4014.98
+editAddRoute 3174.66 4012.9
+editAddRoute 3179.52 4063.59
+editCommitRoute 3179.52 4063.59
 
 setEditMode -nets VDD
 editAddRoute 3133.77 3220.87
@@ -936,6 +1005,20 @@ editCommitRoute 371.17 21.7895
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VDDPST
+editAddRoute 406.449 481.765
+editAddRoute 389.883 481.329
+editAddRoute 369.829 455.608
+editAddRoute 365.034 317.41
+editAddRoute 375.06 300.408
+editAddRoute 389.011 70.311
+editCommitRoute 389.011 70.311
+setEditMode -create_crossover_vias 1
+editAddRoute 384.216 74.6705
+editAddRoute 385.524 22.7915
+editCommitRoute 385.524 22.7915
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDDPST
 editAddRoute 404.606 482.159
 editAddRoute 405.74 393.096
 editAddRoute 423.894 364.165
@@ -998,6 +1081,7 @@ editAddRoute 644.376 320.334
 editAddRoute 668.775 286.289
 editAddRoute 681.259 70.103
 editCommitRoute 681.259 70.103
+setEditMode -create_crossover_vias 1
 editAddRoute 669.677 75.3725
 editAddRoute 670.105 20.8025
 editCommitRoute 670.105 20.8025
@@ -1037,6 +1121,7 @@ editAddRoute 800.487 341.639
 editAddRoute 855.527 285.465
 editAddRoute 864.038 70.4135
 editCommitRoute 864.038 70.4135
+setEditMode -create_crossover_vias 1
 editAddRoute 854.019 74.54
 editAddRoute 857.014 21.2535
 editCommitRoute 857.014 21.2535
@@ -1052,6 +1137,20 @@ setEditMode -create_crossover_vias 1
 editAddRoute 910.163 81.094
 editAddRoute 910.163 23.232
 editCommitRoute 910.163 23.232
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VSS
+editAddRoute 953.072 405.553
+editAddRoute 955.234 293.993
+editAddRoute 969.071 272.805
+editAddRoute 963.018 169.029
+editAddRoute 928.425 124.923
+editAddRoute 933.614 69.4025
+editCommitRoute 933.614 69.4025
+setEditMode -create_crossover_vias 1
+editAddRoute 927.56 75.456
+editAddRoute 929.722 20.973
+editCommitRoute 929.722 20.973
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VDD
@@ -1119,6 +1218,20 @@ setEditMode -create_crossover_vias 1
 editAddRoute 1221.03 83.9305
 editAddRoute 1222.73 22.6645
 editCommitRoute 1222.73 22.6645
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VSS
+editAddRoute 1264.55 404.942
+editAddRoute 1264.92 291.371
+editAddRoute 1278.89 274.096
+editAddRoute 1265.29 155.012
+editAddRoute 1240.66 116.787
+editAddRoute 1242.87 69.7405
+editCommitRoute 1242.87 69.7405
+setEditMode -create_crossover_vias 1
+editAddRoute 1241.4 74.372
+editAddRoute 1241.4 22.1805
+editCommitRoute 1241.4 22.1805
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VDD
@@ -1526,6 +1639,18 @@ editAddRoute 3044.64 23.8535
 editCommitRoute 3044.64 23.8535
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VSS
+editAddRoute 2981.09 405.31
+editAddRoute 2982.97 368.139
+editAddRoute 3064.84 275.916
+editAddRoute 3077.08 69.356
+editCommitRoute 3077.08 69.356
+setEditMode -create_crossover_vias 1
+editAddRoute 3070.02 74.5315
+editAddRoute 3071.43 20.892
+editCommitRoute 3071.43 20.892
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VDDPST
 editAddRoute 3054.01 481.324
 editAddRoute 3054.32 374.17
@@ -1635,9 +1760,16 @@ editCommitRoute 3565.27 20.537
 setEditMode -create_crossover_vias 0
 
 # LEFT (top to bottom)
-# delete leftmost VSS so we can access VDD bumps
-#selectWire 552.7920 852.6600 564.7920 3232.2600 11 VSS
-#deleteSelectedFromFPlan
+# Draw long VDD wire
+setEditMode -nets VDD
+editAddRoute 638.565 3217.44
+editAddRoute 606.538 3215.4
+editAddRoute 585.413 3242.66
+editAddRoute 564.97 3254.92
+editAddRoute 536.69 3253.9
+editAddRoute 518.631 3233.8
+editAddRoute 522.039 851.417
+editCommitRoute 522.039 851.417
 
 setEditMode -nets VSS
 editAddRoute 324.667 3680.5
@@ -1662,6 +1794,19 @@ setEditMode -create_crossover_vias 1
 editAddRoute 73.3135 3562.22
 editAddRoute 23.642 3557.53
 editCommitRoute 23.642 3557.53
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VSS
+uiSetTool addWire
+editAddRoute 329.93 3530.62
+editAddRoute 115.772 3527.57
+editAddRoute 95.4245 3545.37
+editAddRoute 69.8595 3544.64
+editCommitRoute 69.8595 3544.64
+setEditMode -create_crossover_vias 1
+editAddRoute 72.5455 3545.02
+editAddRoute 23.623 3542.14
+editCommitRoute 23.623 3542.14
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VSS
@@ -1740,16 +1885,28 @@ editAddRoute 23.6235 3082.05
 editCommitRoute 23.6235 3082.05
 setEditMode -create_crossover_vias 0
 
-setEditMode -nets VDDPST
-editAddRoute 482.388 3058.34
-editAddRoute 483.389 3032.96
-editAddRoute 464.692 3020.28
-editAddRoute 70.0345 3013.26
-editCommitRoute 70.0345 3013.26
+setEditMode -nets VDD
+editAddRoute 517.95 3013.83
+editAddRoute 146.565 3019.96
+editAddRoute 123.056 3038.02
+editAddRoute 70.585 3039.38
+editCommitRoute 70.585 3039.38
 setEditMode -create_crossover_vias 1
-editAddRoute 74.041 3015.93
-editAddRoute 24.2915 3014.93
-editCommitRoute 24.2915 3014.93
+editAddRoute 75.0145 3037.34
+editAddRoute 28.336 3035.98
+editCommitRoute 28.336 3035.98
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VSS
+editAddRoute 251.852 2982.77
+editAddRoute 141.591 2979.74
+editAddRoute 103.109 3018.66
+editAddRoute 69.8145 3018.66
+editCommitRoute 69.8145 3018.66
+setEditMode -create_crossover_vias 1
+editAddRoute 75.003 3019.09
+editAddRoute 23.9805 3015.2
+editCommitRoute 23.9805 3015.2
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VDDPST
@@ -1790,16 +1947,14 @@ editAddRoute 23.29 2776.94
 editCommitRoute 23.29 2776.94
 setEditMode -create_crossover_vias 0
 
-setEditMode -nets VSS
-editAddRoute 246.328 2668.76
-editAddRoute 247.998 2692.13
-editAddRoute 227.964 2711.83
-editAddRoute 70.702 2718.17
-editCommitRoute 70.702 2718.17
+setEditMode -nets VDD
+editAddRoute 518.291 2712.36
+editAddRoute 70.585 2716.45
+editCommitRoute 70.585 2716.45
 setEditMode -create_crossover_vias 1
-editAddRoute 74.709 2710.83
-editAddRoute 23.6235 2712.16
-editCommitRoute 23.6235 2712.16
+editAddRoute 75.3555 2712.02
+editAddRoute 23.9065 2709.98
+editCommitRoute 23.9065 2709.98
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VSS
@@ -1852,6 +2007,18 @@ setEditMode -create_crossover_vias 1
 editAddRoute 74.041 2406.45
 editAddRoute 23.9575 2405.45
 editCommitRoute 23.9575 2405.45
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDD
+editAddRoute 518.631 2395.63
+editAddRoute 303.297 2379.95
+editAddRoute 294.438 2387.11
+editAddRoute 69.904 2382.68
+editCommitRoute 69.904 2382.68
+setEditMode -create_crossover_vias 1
+editAddRoute 74.333 2385.75
+editAddRoute 23.566 2385.41
+editCommitRoute 23.566 2385.41
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VSS
@@ -1916,6 +2083,18 @@ editAddRoute 23.6235 2004.38
 editCommitRoute 23.6235 2004.38
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VDD
+editAddRoute 518.631 1931.63
+editAddRoute 441.629 1933
+editAddRoute 388.476 1995.35
+editAddRoute 69.2225 1995.35
+editCommitRoute 69.2225 1995.35
+setEditMode -create_crossover_vias 1
+editAddRoute 74.333 1995.01
+editAddRoute 23.566 1992.62
+editCommitRoute 23.566 1992.62
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VSS
 editAddRoute 246.996 1889.53
 editAddRoute 246.996 1912.23
@@ -1954,6 +2133,20 @@ editAddRoute 23.9575 1779.61
 editCommitRoute 23.9575 1779.61
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VDD
+editAddRoute 518.291 1764.27
+editAddRoute 310.452 1758.14
+editAddRoute 305 1759.84
+editAddRoute 200.059 1758.82
+editAddRoute 138.048 1696.47
+editAddRoute 69.563 1693.06
+editCommitRoute 69.563 1693.06
+setEditMode -create_crossover_vias 1
+editAddRoute 74.674 1696.47
+editAddRoute 24.588 1695.45
+editCommitRoute 24.588 1695.45
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VSS
 editAddRoute 246.662 1731.53
 editAddRoute 247.663 1700.48
@@ -1990,6 +2183,18 @@ setEditMode -create_crossover_vias 1
 editAddRoute 74.375 1525.79
 editAddRoute 23.29 1525.12
 editCommitRoute 23.29 1525.12
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDD
+editAddRoute 517.95 1526.38
+editAddRoute 270.928 1524.68
+editAddRoute 211.643 1471.87
+editAddRoute 69.904 1467.1
+editCommitRoute 69.904 1467.1
+setEditMode -create_crossover_vias 1
+editAddRoute 75.3555 1467.1
+editAddRoute 23.566 1466.42
+editCommitRoute 23.566 1466.42
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VDDPST
@@ -2053,6 +2258,18 @@ setEditMode -create_crossover_vias 1
 editAddRoute 73.0395 1146.42
 editAddRoute 22.956 1142.75
 editCommitRoute 22.956 1142.75
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDD
+editAddRoute 518.291 1129.51
+editAddRoute 197.333 1133.6
+editAddRoute 143.499 1067.5
+editAddRoute 69.904 1068.18
+editCommitRoute 69.904 1068.18
+setEditMode -create_crossover_vias 1
+editAddRoute 75.3555 1067.5
+editAddRoute 25.2695 1067.16
+editCommitRoute 25.2695 1067.16
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VSS
@@ -2133,6 +2350,20 @@ editAddRoute 24.9595 682.251
 editCommitRoute 24.9595 682.251
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VDD
+editAddRoute 607.219 684.736
+editAddRoute 310.111 685.077
+editAddRoute 290.69 667.019
+editAddRoute 202.103 662.59
+editAddRoute 141.796 605.689
+editAddRoute 69.2225 601.26
+editCommitRoute 69.2225 601.26
+setEditMode -create_crossover_vias 1
+editAddRoute 73.311 605.008
+editAddRoute 42.3055 600.579
+editCommitRoute 42.3055 600.579
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VSS
 editAddRoute 169.2 558.111
 editAddRoute 169.534 533.07
@@ -2174,6 +2405,16 @@ editCommitRoute 24.2915 361.184
 setEditMode -create_crossover_vias 0
 
 # RIGHT (top to bottom)
+# Create VDD stripe to the left
+setEditMode -nets VDD
+editAddRoute 3289.97 3217.07
+editAddRoute 3315.11 3216.37
+editAddRoute 3343.76 3241.87
+editAddRoute 3394.76 3244.66
+editAddRoute 3402.44 3228.24
+editAddRoute 3415.72 941.666
+editCommitRoute 3415.72 941.666
+
 setEditMode -nets VSS
 editAddRoute 3678.91 3918.03
 editAddRoute 3681.85 3888.62
@@ -2226,6 +2467,21 @@ editAddRoute 3900.9 3566.01
 editCommitRoute 3900.9 3566.01
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VSS
+editAddRoute 3681.37 3450.63
+editAddRoute 3775.48 3450.3
+editAddRoute 3797.19 3463.47
+editAddRoute 3804.43 3474
+editAddRoute 3820.56 3476.3
+editAddRoute 3842.28 3503.28
+editAddRoute 3854.78 3503.94
+editCommitRoute 3854.78 3503.94
+setEditMode -create_crossover_vias 1
+editAddRoute 3854.78 3502.3
+editAddRoute 3902.16 3503.61
+editCommitRoute 3902.16 3503.61
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VDDPST
 editAddRoute 3443.33 3373.04
 editAddRoute 3445.91 3397.66
@@ -2263,6 +2519,18 @@ setEditMode -create_crossover_vias 1
 editAddRoute 3855.33 3255.43
 editAddRoute 3901.27 3260.57
 editCommitRoute 3901.27 3260.57
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDD
+editAddRoute 3411.52 3183.53
+editAddRoute 3668.27 3175.85
+editAddRoute 3672.81 3188.07
+editAddRoute 3855.5 3188.07
+editCommitRoute 3855.5 3188.07
+setEditMode -create_crossover_vias 1
+editAddRoute 3854.1 3188.07
+editAddRoute 3899.16 3188.07
+editCommitRoute 3899.16 3188.07
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VSS
@@ -2339,6 +2607,18 @@ editAddRoute 3899.8 2788.81
 editCommitRoute 3899.8 2788.81
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VDD
+editAddRoute 3412.57 2704.56
+editAddRoute 3640.67 2709.8
+editAddRoute 3709.14 2767.09
+editAddRoute 3855.5 2767.43
+editCommitRoute 3855.5 2767.43
+setEditMode -create_crossover_vias 1
+editAddRoute 3855.15 2772.33
+editAddRoute 3900.56 2772.68
+editCommitRoute 3900.56 2772.68
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VSS
 editAddRoute 3677.82 2667.53
 editAddRoute 3679.65 2696.56
@@ -2411,6 +2691,18 @@ editAddRoute 3901.27 2318.3
 editCommitRoute 3901.27 2318.3
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VDD
+editAddRoute 3412.57 2239.35
+editAddRoute 3641.02 2251.58
+editAddRoute 3705.99 2296.29
+editAddRoute 3855.85 2302.22
+editCommitRoute 3855.85 2302.22
+setEditMode -create_crossover_vias 1
+editAddRoute 3854.45 2303.97
+editAddRoute 3900.91 2304.32
+editCommitRoute 3900.91 2304.32
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VSS
 editAddRoute 3678.18 2199.52
 editAddRoute 3678.55 2226.35
@@ -2445,6 +2737,18 @@ setEditMode -create_crossover_vias 1
 editAddRoute 3855.33 2005.83
 editAddRoute 3899.44 2005.83
 editCommitRoute 3899.44 2005.83
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDD
+editAddRoute 3412.57 1931.33
+editAddRoute 3626 1926.44
+editAddRoute 3687.48 1983.38
+editAddRoute 3855.85 1985.47
+editCommitRoute 3855.85 1985.47
+setEditMode -create_crossover_vias 1
+editAddRoute 3855.5 1992.46
+editAddRoute 3900.21 1993.16
+editCommitRoute 3900.21 1993.16
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VSS
@@ -2519,6 +2823,17 @@ editAddRoute 3900.91 1527.16
 editCommitRoute 3900.91 1527.16
 setEditMode -create_crossover_vias 0
 
+editAddRoute 3411.18 1535.63
+editAddRoute 3632.64 1537.03
+editAddRoute 3698.66 1476.95
+editAddRoute 3856.2 1467.52
+editCommitRoute 3856.2 1467.52
+setEditMode -create_crossover_vias 1
+editAddRoute 3853.75 1469.61
+editAddRoute 3900.56 1468.91
+editCommitRoute 3900.56 1468.91
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VDDPST
 editAddRoute 3444.07 1495.92
 editAddRoute 3446.64 1469.09
@@ -2567,6 +2882,18 @@ editAddRoute 3900.17 1211.46
 editCommitRoute 3900.17 1211.46
 setEditMode -create_crossover_vias 0
 
+setEditMode -nets VDD
+editAddRoute 3412.92 1225.38
+editAddRoute 3628.1 1219.79
+editAddRoute 3697.61 1156.21
+editAddRoute 3856.2 1152.02
+editCommitRoute 3856.2 1152.02
+setEditMode -create_crossover_vias 1
+editAddRoute 3854.45 1155.86
+editAddRoute 3900.91 1154.81
+editCommitRoute 3900.91 1154.81
+setEditMode -create_crossover_vias 0
+
 setEditMode -nets VDDPST
 editAddRoute 3444.44 1185.29
 editAddRoute 3447.74 1157.36
@@ -2613,6 +2940,20 @@ setEditMode -create_crossover_vias 1
 editAddRoute 3854.6 910.378
 editAddRoute 3900.91 910.01
 editCommitRoute 3900.91 910.01
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDD
+editAddRoute 3412.92 948.303
+editAddRoute 3413.27 919.311
+editAddRoute 3422.7 911.277
+editAddRoute 3516.67 901.146
+editAddRoute 3577.1 849.099
+editAddRoute 3856.89 842.462
+editCommitRoute 3856.89 842.462
+setEditMode -create_crossover_vias 1
+editAddRoute 3854.8 845.257
+editAddRoute 3900.91 844.558
+editCommitRoute 3900.91 844.558
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VDDPST
@@ -2667,14 +3008,15 @@ editCommitRoute 3882.16 600.846
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VSS
-editAddRoute 3775.21 556.448
-editAddRoute 3792.12 545.423
-editAddRoute 3855.33 541.747
-editCommitRoute 3855.33 541.747
+editAddRoute 3603.18 561.084
+editAddRoute 3812.46 565.688
+editAddRoute 3829.62 548.11
+editAddRoute 3856.82 538.902
+editCommitRoute 3856.82 538.902
 setEditMode -create_crossover_vias 1
-editAddRoute 3853.86 540.645
-editAddRoute 3900.54 541.747
-editCommitRoute 3900.54 541.747
+editAddRoute 3856.82 541.831
+editAddRoute 3901.61 542.25
+editCommitRoute 3901.61 542.25
 setEditMode -create_crossover_vias 0
 
 setEditMode -nets VDDPST
@@ -2726,3 +3068,152 @@ editAddRoute 3854.6 365.408
 editAddRoute 3902.38 365.04
 editCommitRoute 3902.38 365.04
 setEditMode -create_crossover_vias 0
+
+# Extra wires to connect all bumps
+
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VSS
+editAddRoute 173.763 3685.77
+editAddRoute 325.352 3682.21
+editCommitRoute 325.352 3682.21
+
+setEditMode -nets VDDPST
+editAddRoute 96.442 3608.45
+editAddRoute 97.4595 3561.65
+editCommitRoute 97.4595 3561.65
+
+setEditMode -nets VSS
+editAddRoute 251.592 3608.45
+editAddRoute 254.136 3641.51
+editCommitRoute 254.136 3641.51
+
+setEditMode -nets VDDPST
+setEditMode -create_crossover_vias 0
+editAddRoute 486.098 3529.09
+editAddRoute 484.063 3569.28
+editAddRoute 514.585 3600.82
+editAddRoute 561.893 3602.85
+editCommitRoute 561.893 3602.85
+
+setEditMode -nets VDDPST
+editAddRoute 94.212 482.098
+editAddRoute 93.8995 436.798
+editCommitRoute 93.8995 436.798
+
+setEditMode -nets VSS
+editAddRoute 171.376 560.512
+editAddRoute 325.706 559.574
+editCommitRoute 325.706 559.574
+editAddRoute 250.728 482.098
+editAddRoute 249.791 559.263
+editCommitRoute 249.791 559.263
+
+setEditMode -nets VSS
+uiSetTool addWire
+editAddRoute 3288.04 403.577
+editAddRoute 3280.1 490.714
+editAddRoute 3248.59 521.085
+editAddRoute 3169.4 524.207
+editAddRoute 3139.03 493.269
+editAddRoute 3137.61 387.399
+editCommitRoute 3137.61 387.399
+
+setEditMode -nets VSS
+editAddRoute 3760.26 405.472
+editAddRoute 3598.72 404.115
+editCommitRoute 3598.72 404.115
+editAddRoute 3682.88 328.091
+editAddRoute 3679.72 404.115
+editCommitRoute 3679.72 404.115
+
+setEditMode -nets VDDPST
+editAddRoute 3838.55 482.853
+editAddRoute 3837.65 529.009
+editCommitRoute 3837.65 529.009
+
+setEditMode -nets VDDPST
+editAddRoute 3448.32 561.503
+editAddRoute 3450.41 725.992
+editCommitRoute 3450.41 725.992
+
+setEditMode -nets VSS
+editAddRoute 3603.21 3684.86
+editAddRoute 3442.63 3681.57
+editCommitRoute 3442.63 3681.57
+
+setEditMode -nets VSS
+editAddRoute 3602.47 3528.5
+editAddRoute 3759.64 3529.28
+editCommitRoute 3759.64 3529.28
+editAddRoute 3681.44 3607.48
+editAddRoute 3680.67 3527.34
+editCommitRoute 3680.67 3527.34
+
+setEditMode -nets VDDPST
+editAddRoute 3838.23 3607.48
+editAddRoute 3838.23 3655.09
+editCommitRoute 3838.23 3655.09
+editAddRoute 3447.23 3528.89
+editAddRoute 3448 3574.57
+editAddRoute 3475.1 3605.15
+editAddRoute 3523.49 3605.93
+editCommitRoute 3523.49 3605.93
+
+setEditMode -nets VSS
+editAddRoute 170.675 403.74
+editAddRoute 326.159 406.327
+editCommitRoute 326.159 406.327
+editAddRoute 249.322 326.127
+editAddRoute 248.805 403.998
+editCommitRoute 248.805 403.998
+
+setEditMode -nets VSS
+editAddRoute 250.823 638.987
+editAddRoute 322.861 638.566
+editAddRoute 358.247 667.634
+editAddRoute 429.863 661.736
+editAddRoute 455.139 634.354
+editAddRoute 456.402 595.597
+editAddRoute 429.863 564.423
+editAddRoute 322.861 558.947
+editCommitRoute 322.861 558.947
+
+setEditMode -net VSS
+editAddRoute 252.021 171.863
+editAddRoute 373.942 169.386
+editCommitRoute 373.942 169.386
+
+setEditMode -nets VSS
+editAddRoute 1888.43 405
+editAddRoute 2040.25 401.08
+editCommitRoute 2040.25 401.08
+
+setEditMode -nets VDDPST
+editAddRoute 3366.77 3607.7
+editAddRoute 3371.63 3560.14
+editAddRoute 3401.84 3528.89
+editAddRoute 3446.98 3525.41
+editCommitRoute 3446.98 3525.41
+
+setEditMode -nets VDDPST
+editAddRoute 558.746 481.581
+editAddRoute 563.091 531.683
+editAddRoute 543.976 551.087
+editAddRoute 478.236 556.3
+editCommitRoute 478.236 556.3
+
+setEditMode -nets VDDPST
+editAddRoute 407.413 483.726
+editAddRoute 407.813 505.371
+editCommitRoute 407.813 505.371
+
+setEditMode -nets VDDPST
+editAddRoute 481.834 3211.79
+editAddRoute 483.538 3055.4
+editCommitRoute 483.538 3055.4
+
+setEditMode -nets VDDPST
+editAddRoute 90.501 481.743
+editAddRoute 93.762 436.589
+editCommitRoute 93.762 436.589
