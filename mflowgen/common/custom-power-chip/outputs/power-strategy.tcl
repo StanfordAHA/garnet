@@ -891,9 +891,11 @@ editAddRoute 3156.61 3855.61
 editAddRoute 3171.53 3878.18
 editAddRoute 3181.26 4014.98
 editCommitRoute 3181.26 4014.98
+setEditMode -create_crossover_vias 1
 editAddRoute 3174.66 4012.9
 editAddRoute 3179.52 4063.59
 editCommitRoute 3179.52 4063.59
+setEditMode -create_crossover_vias 0
 
 setEditMode -nets VDD
 editAddRoute 3133.77 3220.87
@@ -3217,3 +3219,42 @@ setEditMode -nets VDDPST
 editAddRoute 90.501 481.743
 editAddRoute 93.762 436.589
 editCommitRoute 93.762 436.589
+
+# More power routing to reduce latchup
+setEditMode -nets VDD
+editAddRoute 607.286 302.118
+editAddRoute 633.586 297.288
+editAddRoute 656.129 280.649
+editAddRoute 648.615 217.851
+editAddRoute 619.631 177.059
+editAddRoute 623.925 69.712
+editCommitRoute 623.925 69.712
+setEditMode -create_crossover_vias 1
+editAddRoute 618.558 79.373
+editAddRoute 619.631 21.9425
+editCommitRoute 619.631 21.9425
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDD
+editAddRoute 608.36 443.816
+editAddRoute 660.423 441.669
+editAddRoute 672.231 425.031
+editAddRoute 686.723 416.442
+editAddRoute 693.163 70.2485
+editCommitRoute 693.163 70.2485
+setEditMode -create_crossover_vias 1
+editAddRoute 691.016 76.6895
+editAddRoute 692.09 26.236
+editCommitRoute 692.09 26.236
+setEditMode -create_crossover_vias 0
+
+# Connect VSS together to make LVS happy
+setEditMode -nets VSS
+editAddRoute 717.591 3137.2
+editAddRoute 694.324 3139.48
+editAddRoute 683.375 3156.82
+editAddRoute 666.951 3651.46
+editAddRoute 675.163 3661.49
+editAddRoute 664.669 3679.74
+editAddRoute 635.014 3677.46
+editCommitRoute 635.014 3677.46

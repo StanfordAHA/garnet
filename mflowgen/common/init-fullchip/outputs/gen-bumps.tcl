@@ -180,10 +180,14 @@ proc assign_signals_to_bumps { bump_types } {
     # Assign all IOVSS bumps
     deselect_bump
     select_bump -bumps [bumps_of_type $bump_types "g"]
-    # select_bump -bumps [bumps_of_type $bump_types "G"]
     # assignPGBumps -selected -nets VSS
     assignSigToBump -selected -net VSS
     # assignBump -selected -pgnet "VSS" -pgonly
+
+    # Assign VSS bumps so IO can connect
+    deselect_bump
+    select_bump -bumps [bumps_of_type $bump_types "G"]
+    assignSigToBump -selected -net VSS
 
     deselect_bump
 }
