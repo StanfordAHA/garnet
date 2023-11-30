@@ -18,6 +18,7 @@ inputs:
 outputs:
   - final.oas
   - final_v.oas
+  - final_h.oas
 
 #-------------------------------------------------------------------------
 # Commands
@@ -26,8 +27,11 @@ outputs:
 commands:
   - echo | calibredrv ./scripts/create-poly-hori-database.tcl
   - echo | calibredrv ./scripts/create-poly-vert-database.tcl
+  - source inputs/adk/run-icv-fullchip-tapein.sh
+  - cp verify_tapein/{intel_database_name}.oas outputs/{intel_database_name}.oas
   - cd outputs
   - ln -s {intel_database_name}_v.oas final_v.oas
+  - ln -s {intel_database_name}_h.oas final_h.oas
   - ln -s {intel_database_name}.oas final.oas
   - tar -czvf {intel_database_name}.tar.gz {intel_database_name}.oas
   - cd ..
@@ -53,3 +57,4 @@ preconditions:
 postconditions:
   - assert File( 'outputs/final.oas' )
   - assert File( 'outputs/final_v.oas' )
+  - assert File( 'outputs/final_h.oas' )

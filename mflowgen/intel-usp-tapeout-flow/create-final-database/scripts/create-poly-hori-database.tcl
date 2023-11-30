@@ -46,6 +46,6 @@ $L create polygon $topcell $boundary_layer $bbox_llx $bbox_lly $bbox_urx $bbox_u
 $L modify origin $topcell $bbox_llx $bbox_lly
 
 # write out the new database
-set out_file ./outputs/$env(intel_database_name).oas
+set out_file ./outputs/$env(intel_database_name)_h.oas
 puts "Writing out the oasis file to: $out_file"
 $L oasisout $out_file
