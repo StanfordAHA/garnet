@@ -28,6 +28,17 @@ class CG(Generator):
             self.add_always(self.clk_en_latch)
             self.wire(self.Z, (self.CLK & self.enable_latch))
 
+        elif _params.process == "INTEL":
+            super().__init__(_params.intel_icg_name)
+            self.en = self.input("en", 1)
+            self.clk = self.clock("clk")
+            self.te = self.input("te", 1)
+            self.clkout = self.output("clkout", 1)
+
+            self.enable_latch = self.var("enable_latch", 1)
+            self.add_always(self.clk_en_latch)
+            self.wire(self.clkout, (self.clk & self.enable_latch))
+
         else:
             super().__init__("clk_gate")
             self.E = self.input("E", 1)
@@ -39,6 +50,7 @@ class CG(Generator):
             self.wire(self.Z, (self.CLK & self.enable_latch))
 
     @always_latch
+    # TODO fix this so it works with all techs
     def clk_en_latch(self):
-        if (~self.CLK):
-            self.enable_latch = self.E
+        if (~self.clk):
+            self.enable_latch = self.en

@@ -102,14 +102,14 @@ set_output_delay -clock ${clock_name} ${pt_o_delay} ${pt_read_data_outputs}
 #=========================================================================
 # -- pt_clk
 set min_delay_pt_clk [expr ${pt_i_delay} + ${pt_o_delay} + 0]
-set max_delay_pt_clk [expr ${pt_i_delay} + ${pt_o_delay} + 45]
+set max_delay_pt_clk [expr ${pt_i_delay} + ${pt_o_delay} + 30]
 # set_min_delay -from ${pt_clk_in} -to ${pt_clk_out} ${min_delay_pt_clk}
 # set_max_delay -from ${pt_clk_in} -to ${pt_clk_out} ${max_delay_pt_clk}
 set_false_path -from ${pt_clk_in} -to ${pt_clk_out}
 
 # -- pt_general
-set min_delay_pt_general [expr ${max_delay_pt_clk} + 10]
-set max_delay_pt_general [expr ${max_delay_pt_clk} + 40]
+set min_delay_pt_general [expr ${max_delay_pt_clk} + 2]
+set max_delay_pt_general [expr ${max_delay_pt_clk} + 30]
 set_min_delay -to ${pt_outputs} ${min_delay_pt_general}
 set_max_delay -to ${pt_outputs} ${max_delay_pt_general}
 

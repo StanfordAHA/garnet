@@ -31,6 +31,13 @@ class ClkGate(Generator):
                            CLK=self.clk,
                            TE=const(0, 1),
                            Z=self.gclk)
+        elif self._params.process == "INTEL":
+            self.add_child(f"CG_CELL",
+                           CG(self._params),
+                           en=self.enable,
+                           clk=self.clk,
+                           te=const(0, 1),
+                           clkout=self.gclk)
         else:
             self.add_child(f"CG_CELL",
                            CG(self._params),
