@@ -101,6 +101,7 @@ def construct():
   custom_cts     = Step( this_dir + '/custom-cts-overrides'                   )
   gls_args       = Step( this_dir + '/gls_args'                               )
   testbench      = Step( this_dir + '/testbench'                              )
+  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'             )
   custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'   )
 
   # Default steps
@@ -130,6 +131,7 @@ def construct():
   # Add cgra tile macro inputs to downstream nodes
   synth.extend_inputs( ['Tile_PE-typical.lib', 'Tile_PE.lef'] )
   synth.extend_inputs( ['Tile_MemCore-typical.lib', 'Tile_MemCore.lef'] )
+  iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
   pt_signoff.extend_inputs( ['Tile_PE-typical.db'] )
   pt_signoff.extend_inputs( ['Tile_MemCore-typical.db'] )
   pt_signoff.extend_inputs( ['Tile_PE-bc.db'] )
@@ -250,6 +252,7 @@ def construct():
   g.add_step( Tile_PE        )
   g.add_step( constraints    )
   g.add_step( synth          )
+  g.add_step( custom_flowgen_setup )
   g.add_step( iflow          )
   g.add_step( init           )
   g.add_step( custom_init    )
@@ -369,7 +372,8 @@ def construct():
   g.connect_by_name( synth,       power        )
   g.connect_by_name( synth,       place        )
   g.connect_by_name( synth,       cts          )
-
+  
+  g.connect_by_name( custom_flowgen_setup,  iflow )
   g.connect_by_name( iflow,    init           )
   g.connect_by_name( iflow,    power          )
   g.connect_by_name( iflow,    place          )

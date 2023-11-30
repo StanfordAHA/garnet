@@ -126,6 +126,8 @@ def construct():
   custom_init    = Step( f'{this_dir}/custom-init'                     )
   custom_cts     = Step( f'{this_dir}/custom-cts'                      )
   io_file        = Step( f'{this_dir}/io_file'                         )
+  lvs            = Step( f'{this_dir}/../common/intel16-synopsys-icv-lvs' )
+  custom_flowgen_setup = Step( f'{this_dir}/custom-flowgen-setup'      )
   # Rename the SRAM generation nodes
   gen_sram_nic.set_name( 'gen_sram_macro_nic' )
   gen_sram_cpu.set_name( 'gen_sram_macro_cpu' )
@@ -194,6 +196,7 @@ def construct():
   signoff.extend_inputs( ['sram_cpu.oas'] )
 
   # Add extra input edges to innovus steps that need custom tweaks
+  iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
   init.extend_inputs( custom_init.all_outputs() )
   init.extend_inputs( init_fc.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
@@ -205,6 +208,16 @@ def construct():
   synth.extend_inputs( soc_rtl.all_outputs() )
   synth.extend_inputs( read_design.all_outputs() )
   synth.extend_inputs( ["cons_scripts"] )
+
+  # Need LVS verilog files for both tile types to do LVS
+
+  lvs.extend_inputs( ['tile_array.lvs.v'] )
+  lvs.extend_inputs( ['glb_top.lvs.v'] )
+
+  # Need sram spice file for LVS
+
+  lvs.extend_inputs( ['glb_top_sram.spi'] )
+  lvs.extend_inputs( ['tile_array_sram.spi'] )
 
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
@@ -220,6 +233,7 @@ def construct():
   g.add_step( constraints       )
   g.add_step( read_design       )
   g.add_step( synth             )
+  g.add_step( custom_flowgen_setup )
   g.add_step( iflow             )
   g.add_step( init              )
   g.add_step( init_fc           )
@@ -236,6 +250,7 @@ def construct():
   g.add_step( signoff           )
   g.add_step( pt_signoff        )
   g.add_step( debugcalibre      )
+  g.add_step( lvs               )
   g.add_step( tapeout_flow      )
 
   # App test nodes
@@ -263,6 +278,7 @@ def construct():
   g.connect_by_name( adk,      postroute      )
   g.connect_by_name( adk,      postroute_hold )
   g.connect_by_name( adk,      signoff        )
+  g.connect_by_name( adk,      lvs            )
   # Connect RTL verification nodes
   g.connect_by_name( rtl, cgra_rtl_sim_compile )
   g.connect_by_name( cgra_sim_build, cgra_rtl_sim_run )
@@ -288,6 +304,7 @@ def construct():
           g.connect_by_name( block, postroute_hold )
           g.connect_by_name( block, signoff        )
           g.connect_by_name( block, pt_signoff     )
+          g.connect_by_name( block, lvs            )
       # Tile_array can use rtl from rtl node
       g.connect_by_name( rtl, tile_array )
       # glb_top can use rtl from rtl node
@@ -303,6 +320,7 @@ def construct():
   g.connect_by_name( synth,        power          )
   g.connect_by_name( synth,        place          )
   g.connect_by_name( synth,        cts            )
+  g.connect_by_name( custom_flowgen_setup,  iflow )
   g.connect_by_name( iflow,        init           )
   g.connect_by_name( iflow,        power          )
   g.connect_by_name( iflow,        place          )
@@ -328,6 +346,11 @@ def construct():
       node_input = sram_output.replace('sram', 'sram_cpu')
       if node_input in node.all_inputs():
         g.connect(gen_sram_cpu.o(sram_output), node.i(node_input))
+  
+  # Connect SRAMs to LVS nodes
+  lvs.extend_inputs( ['sram_nic.spi', 'sram_cpu.spi'] )
+  g.connect(gen_sram_nic.o('sram.spi'), lvs.i('sram_nic.spi'))
+  g.connect(gen_sram_cpu.o('sram.spi'), lvs.i('sram_cpu.spi'))
 
   # Full chip floorplan stuff
   g.connect_by_name( io_file, init_fc )
@@ -349,6 +372,7 @@ def construct():
   g.connect_by_name( synth,    debugcalibre )
   g.connect_by_name( iflow,    debugcalibre )
   g.connect_by_name( signoff,  debugcalibre )
+  g.connect_by_name( signoff,  lvs          )
 
   #-----------------------------------------------------------------------
   # Parameterize

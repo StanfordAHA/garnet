@@ -105,6 +105,7 @@ def construct():
   custom_lvs           = Step( this_dir + '/custom-lvs-rules'                    )
   custom_power         = Step( this_dir + '/../common/custom-power-hierarchical' )
   custom_cts           = Step( this_dir + '/custom-cts'                          )
+  custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'                )
   drc                  = Step( this_dir + '/../common/intel16-synopsys-icv-drc'  )
   lvs                  = Step( this_dir + '/../common/intel16-synopsys-icv-lvs'  )
   custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'      )
@@ -124,12 +125,17 @@ def construct():
   postroute_hold = Step( 'cadence-innovus-postroute_hold',  default=True )
   signoff        = Step( 'cadence-innovus-signoff',         default=True )
   pt_signoff     = Step( 'synopsys-pt-timing-signoff',      default=True )
-  genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb',          default=True )
-  genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb',          default=True )
   debugcalibre   = Step( 'cadence-innovus-debug-calibre',   default=True )
 
-  genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
-  genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
+
+  # genlibdb_tt    = Step( 'synopsys-ptpx-genlibdb',          default=True )
+  # genlibdb_ff    = Step( 'synopsys-ptpx-genlibdb',          default=True )
+  # genlibdb_tt.set_name( 'synopsys-ptpx-genlibdb-tt' )
+  # genlibdb_ff.set_name( 'synopsys-ptpx-genlibdb-ff' )
+  genlibdb_tt       = Step( this_dir + '/../common/cadence-innovus-genlib')
+  genlibdb_ff       = Step( this_dir + '/../common/cadence-innovus-genlib')
+  genlibdb_tt.set_name( 'cadence-innovus-genlibdb-tt' )
+  genlibdb_ff.set_name( 'cadence-innovus-genlibdb-ff' )
   
   # Inputs
   g.add_input( 'design.v', rtl.i('design.v') )
@@ -234,14 +240,14 @@ def construct():
   xlist = synth.set_postconditions( xlist )
 
   # Add extra input edges to innovus steps that need custom tweaks
-
+  iflow.extend_inputs( custom_flowgen_setup.all_outputs() )
   init.extend_inputs( custom_init.all_outputs() )
   power.extend_inputs( custom_power.all_outputs() )
   cts.extend_inputs( custom_cts.all_outputs() )
 
   # SDC hack for the genlibdb and pt_signoff steps
-  genlibdb_tt.extend_inputs( custom_hack_sdc_unit.all_outputs() )
-  genlibdb_ff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  # genlibdb_tt.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+  # genlibdb_ff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
   pt_signoff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
 
   #-----------------------------------------------------------------------
@@ -257,6 +263,7 @@ def construct():
   g.add_step( glb_tile       )
   g.add_step( constraints    )
   g.add_step( synth          )
+  g.add_step( custom_flowgen_setup )
   g.add_step( iflow          )
   g.add_step( init           )
   g.add_step( custom_init    )
@@ -338,7 +345,8 @@ def construct():
   g.connect_by_name( synth,       power        )
   g.connect_by_name( synth,       place        )
   g.connect_by_name( synth,       cts          )
-
+  
+  g.connect_by_name( custom_flowgen_setup,  iflow )
   g.connect_by_name( iflow,    init         )
   g.connect_by_name( iflow,    power        )
   g.connect_by_name( iflow,    place        )
@@ -348,6 +356,8 @@ def construct():
   g.connect_by_name( iflow,    postroute    )
   g.connect_by_name( iflow,    postroute_hold )
   g.connect_by_name( iflow,    signoff      )
+  g.connect_by_name( iflow,    genlibdb_tt    )
+  g.connect_by_name( iflow,    genlibdb_ff    )
 
 
   g.connect_by_name( custom_init,  init     )
@@ -396,8 +406,8 @@ def construct():
   g.connect_by_name( lvs,      debugcalibre )
 
   # SDC hack for the genlibdb and pt_signoff steps
-  g.connect_by_name( custom_hack_sdc_unit, genlibdb_tt )
-  g.connect_by_name( custom_hack_sdc_unit, genlibdb_ff )
+  # g.connect_by_name( custom_hack_sdc_unit, genlibdb_tt )
+  # g.connect_by_name( custom_hack_sdc_unit, genlibdb_ff )
   g.connect_by_name( custom_hack_sdc_unit, pt_signoff )
 
   #-----------------------------------------------------------------------
@@ -434,18 +444,20 @@ def construct():
   drc.update_params( {'rule_decks': drc_rule_decks } )
 
   # genlibdb parameters
-  genlibdb_order = [
-    'read_design.tcl',
-    'extract_model.tcl'
-  ]
-  genlibdb_tt.update_params({
-    'corner': 'typical',
-    'order': genlibdb_order
-  })
-  genlibdb_ff.update_params({
-    'corner': 'bc',
-    'order': genlibdb_order
-  })
+  # genlibdb_order = [
+  #   'read_design.tcl',
+  #   'extract_model.tcl'
+  # ]
+  # genlibdb_tt.update_params({
+  #   'corner': 'typical',
+  #   'order': genlibdb_order
+  # })
+  # genlibdb_ff.update_params({
+  #   'corner': 'bc',
+  #   'order': genlibdb_order
+  # })
+  genlibdb_tt.update_params({'corner': 'typical'})
+  genlibdb_ff.update_params({'corner': 'bc'})
 
   # Add SDC unit hack before genlibdb and pt_signoff
   sdc_hack_command = "python inputs/hack_sdc_unit.py inputs/design.pt.sdc"
@@ -458,8 +470,8 @@ def construct():
   sdc_filter_command = "sed -i 's/-library [^ ]* //g' inputs/design.pt.sdc"
 
   # add the commands to the steps
-  genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
-  genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  # genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+  # genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
   pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
 
   # Increase hold slack on postroute_hold step
