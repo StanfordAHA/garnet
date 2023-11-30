@@ -3222,20 +3222,6 @@ editCommitRoute 93.762 436.589
 
 # More power routing to reduce latchup
 setEditMode -nets VDD
-editAddRoute 607.286 302.118
-editAddRoute 633.586 297.288
-editAddRoute 656.129 280.649
-editAddRoute 648.615 217.851
-editAddRoute 619.631 177.059
-editAddRoute 623.925 69.712
-editCommitRoute 623.925 69.712
-setEditMode -create_crossover_vias 1
-editAddRoute 618.558 79.373
-editAddRoute 619.631 21.9425
-editCommitRoute 619.631 21.9425
-setEditMode -create_crossover_vias 0
-
-setEditMode -nets VDD
 editAddRoute 608.36 443.816
 editAddRoute 660.423 441.669
 editAddRoute 672.231 425.031
