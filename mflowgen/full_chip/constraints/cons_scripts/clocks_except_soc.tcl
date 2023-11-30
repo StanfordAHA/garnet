@@ -18,12 +18,7 @@ set_clock_groups -asynchronous -group {dp_jtag_clk} -group {dap_clk sys_clk cpu_
 # ------------------------------------------------------------------------------
 
 # set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk cgra_fclk global_controller_clk}
-#set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk cgra_fclk}
-set glb_clks [get_property [get_clocks *glb_tile_gen*/gclk*] name]
-set cgra_clks $glb_clks
-lappend cgra_clks cgra_gclk
-lappend cgra_clks cgra_fclk
-set_clock_groups -asynchronous -group {cgra_jtag_clk} -group $cgra_clks
+set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk cgra_fclk}
 
 # ------------------------------------------------------------------------------
 # Trace Clock and CPU Clock
