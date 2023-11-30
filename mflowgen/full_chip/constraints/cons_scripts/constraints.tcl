@@ -47,7 +47,3 @@ source -echo -verbose inputs/cons_scripts/garnet_constraints.tcl
 # Set Design Context
 # ------------------------------------------------------------------------------
 source -echo -verbose inputs/cons_scripts/design_context.tcl
-
-# TODO: Delete me after TMA
-set_input_delay  -clock [get_clocks m_clk_0] 0.0 [remove_from_collection [all_inputs]  $port_names(master_clk)]
-set_output_delay -clock [get_clocks m_clk_0] 0.0 [all_outputs]
