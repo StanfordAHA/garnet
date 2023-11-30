@@ -50,6 +50,7 @@ class CG(Generator):
             self.wire(self.Z, (self.CLK & self.enable_latch))
 
     @always_latch
+    # TODO fix this so it works with all techs
     def clk_en_latch(self):
         if (~self.clk):
             self.enable_latch = self.en
