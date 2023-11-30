@@ -23,6 +23,9 @@ outputs:
 #-------------------------------------------------------------------------
 
 commands:
+  - source merge_tic.sh
+  - mv inputs/design-merged.oas inputs/design-merged.oas.bak
+  - mv inputs/design-remerged.oas inputs/design-merged.oas
   - python3 v2sp.py
   # The following step is a temporary hot fix for PDK103
   - source inputs/adk/fix-pdk103-lvs-sram.sh
