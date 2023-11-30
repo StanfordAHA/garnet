@@ -62,29 +62,31 @@ def hack_antenna_ratio_definition_in_layer(lef_str, layer='m8', scale_factor=0.8
 
 def main():
     # check input arguments
-    if len(sys.argv) != 3:
-        print("Usage: python hack_lef_antenna.py <lef_path> <scale_factor>")
+    if len(sys.argv) != 4:
+        print("Usage: python hack_lef_antenna.py <lef_path> <layer> <scale_factor>")
         exit(1)
     else:
         lef_path = sys.argv[1]
-        scale_factor = float(sys.argv[2])
+        layer = sys.argv[2]
+        scale_factor = float(sys.argv[3])
 
     # read in the LEF file as string
     with open(lef_path, 'r') as lef_file:
         lef_str = lef_file.read()
         # create a backup of the original LEF file
-        with open(lef_path + ".bak", 'w') as lef_file_bak:
-            lef_file_bak.write(lef_str)
+        backup_path = lef_path + ".bak"
+        if not os.path.isfile(backup_path):
+            with open(backup_path, 'w') as lef_file_bak:
+                lef_file_bak.write(lef_str)
 
-    # Perform hack on m7 and m8 layers
-    lef_str = hack_antenna_ratio_definition_in_layer(lef_str=lef_str, layer='m7', scale_factor=scale_factor)
-    lef_str = hack_antenna_ratio_definition_in_layer(lef_str=lef_str, layer='m8', scale_factor=scale_factor)
+    # Perform hack
+    lef_str = hack_antenna_ratio_definition_in_layer(lef_str=lef_str, layer=layer, scale_factor=scale_factor)
 
     # remove the old file
-    if os.path.islink(lef_path):
+    if os.path.islink(lef_path) or os.path.isfile(lef_path):
         os.unlink(lef_path)
     else:
-        print(f"[hack_lef_antenna.py] Error: {lef_path} is not a symlink")
+        print(f"[hack_lef_antenna.py] Error: {lef_path} is not a symlink nor a file")
         exit(1)
     
     # Write the file out

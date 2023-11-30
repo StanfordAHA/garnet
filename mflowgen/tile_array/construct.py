@@ -103,6 +103,7 @@ def construct():
   testbench      = Step( this_dir + '/testbench'                              )
   custom_flowgen_setup = Step( this_dir + '/custom-flowgen-setup'             )
   custom_hack_sdc_unit = Step( this_dir + '/../common/custom-hack-sdc-unit'   )
+  custom_hack_lef_ante = Step( this_dir + '/../common/custom-hack-lef-antenna')
 
   # Default steps
   info           = Step( 'info',                           default=True )
@@ -216,6 +217,9 @@ def construct():
   genlibdb_tt.extend_inputs( custom_hack_sdc_unit.all_outputs() )
   genlibdb_ff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
   pt_signoff.extend_inputs( custom_hack_sdc_unit.all_outputs() )
+
+  # LEF antenna hack
+  adk.extend_inputs( custom_hack_lef_ante.all_outputs() )
   
   # Inputs
   g.add_input( 'design.v', rtl.i('design.v') )
@@ -276,6 +280,7 @@ def construct():
   g.add_step( genlibdb_tt    )
   g.add_step( genlibdb_ff    )
   g.add_step( custom_hack_sdc_unit )
+  g.add_step( custom_hack_lef_ante )
 
   if use_e2e:
     for app in e2e_apps:
@@ -425,6 +430,9 @@ def construct():
   g.connect_by_name( custom_hack_sdc_unit, genlibdb_ff )
   g.connect_by_name( custom_hack_sdc_unit, pt_signoff )
 
+  # LEF antenna hack
+  g.connect_by_name( custom_hack_lef_ante, adk )
+
   #-----------------------------------------------------------------------
   # Parameterize
   #-----------------------------------------------------------------------
@@ -470,6 +478,13 @@ def construct():
   genlibdb_tt.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
   genlibdb_ff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
   pt_signoff.pre_extend_commands( [sdc_hack_command, sdc_filter_command] )
+
+  # hack the antenna ratio in the tech lef file
+  lef_hack_scale_factor = 0.98
+  lef_hack_commands = []
+  lef_hack_commands.append(f"python inputs/hack_lef_antenna.py outputs/adk/rtk-tech.lef m1 {lef_hack_scale_factor:.2f}")
+  lef_hack_commands.append(f"python inputs/hack_lef_antenna.py outputs/adk/rtk-tech.lef m2 {lef_hack_scale_factor:.2f}")
+  adk.extend_commands( lef_hack_commands )
 
   # init -- update custom order
   init.update_params( { 'order': init_order } )

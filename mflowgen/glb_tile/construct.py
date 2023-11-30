@@ -396,8 +396,10 @@ def construct():
 
   # hack the antenna ratio in the tech lef file
   lef_hack_scale_factor = 0.98
-  lef_hack_command = f"python inputs/hack_lef_antenna.py outputs/adk/rtk-tech.lef {lef_hack_scale_factor:.2f}"
-  adk.extend_commands( [lef_hack_command] )
+  lef_hack_commands = []
+  lef_hack_commands.append(f"python inputs/hack_lef_antenna.py outputs/adk/rtk-tech.lef m7 {lef_hack_scale_factor:.2f}")
+  lef_hack_commands.append(f"python inputs/hack_lef_antenna.py outputs/adk/rtk-tech.lef m8 {lef_hack_scale_factor:.2f}")
+  adk.extend_commands( lef_hack_commands )
 
   # hack the sdc before init step to set false path to diodes
   # init_order = init.get_param( 'order' )
