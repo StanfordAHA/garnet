@@ -34,7 +34,7 @@ def construct():
     'adk_stdcell'              : 'b15_7t_108pp',
     'adk_libmodel'             : 'nldm',
     # Synthesis
-    'flatten_effort'           : 3,
+    'flatten_effort'           : 0,
     'topographical'            : True,
     # RTL Generation
     'array_width'              : 28,
