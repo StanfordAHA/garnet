@@ -37,8 +37,8 @@ create_generated_clock -name cgra_gclk \
     -add \
     [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_cgra_gclk/Q]
 
-## CGRA Clock from global controller
-# create_generated_clock -name global_controller_clk \
-#     -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_cgra_gclk/Q] \
-#     -divide_by 1 \
-#     [get_pins -hier *global_controller_inst0/clk_out]
+# CGRA Clock from global controller
+create_generated_clock -name global_controller_clk \
+    -source [get_pins core/u_aha_platform_ctrl/u_clock_controller/u_cgra_gclk/Q] \
+    -divide_by 1 \
+    [get_pins -hier *global_controller_inst0/clk_out]

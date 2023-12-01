@@ -17,8 +17,19 @@ set_clock_groups -asynchronous -group {dp_jtag_clk} -group {dap_clk sys_clk cpu_
 # CGRA JTAG and Functional Clock
 # ------------------------------------------------------------------------------
 
+# original constraint
 # set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk cgra_fclk global_controller_clk}
-set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk cgra_fclk}
+
+# TMA2 constraint
+# set_clock_groups -asynchronous -group {cgra_jtag_clk} -group {cgra_gclk cgra_fclk}
+
+# glb fix constraint
+set glb_clks [get_property [get_clocks *glb_tile_gen*/gclk*] name]
+set cgra_clks $glb_clks
+lappend cgra_clks cgra_gclk
+lappend cgra_clks cgra_fclk
+lappend cgra_clks global_controller_clk
+set_clock_groups -asynchronous -group {cgra_jtag_clk} -group $cgra_clks
 
 # ------------------------------------------------------------------------------
 # Trace Clock and CPU Clock

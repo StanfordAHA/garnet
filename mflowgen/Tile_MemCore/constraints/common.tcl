@@ -202,6 +202,18 @@ if { $WHICH_SOC == "amber" } {
     set_false_path -from [get_ports config_* -filter direction==in] -through [get_pins $sb_reg_path]
 }
 
+set_false_path -hold -through [get_property [get_pins -hierarchical */fwen]      full_name]
+set_false_path -hold -through [get_property [get_pins -hierarchical */clkbyp]    full_name]
+set_false_path -hold -through [get_property [get_pins -hierarchical */mcen]      full_name]
+set_false_path -hold -through [get_property [get_pins -hierarchical */mc[0]]     full_name]
+set_false_path -hold -through [get_property [get_pins -hierarchical */mc[1]]     full_name]
+set_false_path -hold -through [get_property [get_pins -hierarchical */mc[2]]     full_name]
+set_false_path -hold -through [get_property [get_pins -hierarchical */wpulseen]  full_name]
+set_false_path -hold -through [get_property [get_pins -hierarchical */wpulse[0]] full_name]
+set_false_path -hold -through [get_property [get_pins -hierarchical */wpulse[1]] full_name]
+set_false_path -hold -through [get_property [get_pins -hierarchical */wa[0]]     full_name]
+set_false_path -hold -through [get_property [get_pins -hierarchical */wa[1]]     full_name]
+
 #=========================================================================
 # Dont Touch (for later constraints)
 #=========================================================================
