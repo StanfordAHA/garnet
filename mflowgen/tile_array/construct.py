@@ -29,11 +29,11 @@ def construct():
   parameters = {
     'construct_path'    : __file__,
     'design_name'       : 'Interconnect',
-    'clock_period'      : 1.5 * 1000,
+    'clock_period'      : 1.1 * 1000,
     'adk'               : adk_name,
     'adk_view'          : adk_view,
     'adk_stdcell'       : 'b15_7t_108pp',
-    'adk_libmodel'      : 'nldm',
+    'adk_libmodel'      : 'ccslnt',
     # Synthesis
     'flatten_effort'    : 3,
     'topographical'     : True,

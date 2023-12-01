@@ -28,13 +28,13 @@ def construct():
   parameters = {
     'construct_path'           : __file__,
     'design_name'              : 'GarnetSOC_pad_frame',
-    'clock_period'             : 1.6 * 1000,
+    'clock_period'             : 1.1 * 1000,
     'adk'                      : adk_name,
     'adk_view'                 : adk_view,
     'adk_stdcell'              : 'b15_7t_108pp',
-    'adk_libmodel'             : 'nldm',
+    'adk_libmodel'             : 'ccslnt',
     # Synthesis
-    'flatten_effort'           : 3,
+    'flatten_effort'           : 0,
     'topographical'            : True,
     # RTL Generation
     'array_width'              : 28,
@@ -115,19 +115,20 @@ def construct():
   adk = g.get_adk_step()
 
   # Custom steps
-  rtl            = Step( f'{this_dir}/../common/rtl'                   )
-  soc_rtl        = Step( f'{this_dir}/../common/soc-rtl-v2'            )
-  gen_sram_nic   = Step( f'{this_dir}/../common/gen_sram_macro'        )
-  gen_sram_cpu   = Step( f'{this_dir}/../common/gen_sram_macro'        )
-  read_design    = Step( f'{this_dir}/../common/fc-custom-read-design' )
-  custom_power   = Step( f'{this_dir}/../common/custom-power-chip'     )
-  init_fc        = Step( f'{this_dir}/../common/init-fullchip'         )
-  constraints    = Step( f'{this_dir}/constraints'                     )
-  custom_init    = Step( f'{this_dir}/custom-init'                     )
-  custom_cts     = Step( f'{this_dir}/custom-cts'                      )
-  io_file        = Step( f'{this_dir}/io_file'                         )
-  lvs            = Step( f'{this_dir}/../common/intel16-synopsys-icv-lvs' )
-  custom_flowgen_setup = Step( f'{this_dir}/custom-flowgen-setup'      )
+  rtl                  = Step( f'{this_dir}/../common/rtl'                      )
+  soc_rtl              = Step( f'{this_dir}/../common/soc-rtl-v2'               )
+  gen_sram_nic         = Step( f'{this_dir}/../common/gen_sram_macro'           )
+  gen_sram_cpu         = Step( f'{this_dir}/../common/gen_sram_macro'           )
+  read_design          = Step( f'{this_dir}/../common/fc-custom-read-design'    )
+  custom_power         = Step( f'{this_dir}/../common/custom-power-chip'        )
+  init_fc              = Step( f'{this_dir}/../common/init-fullchip'            )
+  constraints          = Step( f'{this_dir}/constraints'                        )
+  custom_init          = Step( f'{this_dir}/custom-init'                        )
+  custom_cts           = Step( f'{this_dir}/custom-cts'                         )
+  io_file              = Step( f'{this_dir}/io_file'                            )
+  lvs                  = Step( f'{this_dir}/../common/intel16-synopsys-icv-lvs' )
+  custom_flowgen_setup = Step( f'{this_dir}/custom-flowgen-setup'               )
+  custom_signoff       = Step( f'{this_dir}/custom-signoff'                     )
   # Rename the SRAM generation nodes
   gen_sram_nic.set_name( 'gen_sram_macro_nic' )
   gen_sram_cpu.set_name( 'gen_sram_macro_cpu' )
@@ -219,6 +220,9 @@ def construct():
   lvs.extend_inputs( ['glb_top_sram.spi'] )
   lvs.extend_inputs( ['tile_array_sram.spi'] )
 
+  # signoff extend inputs
+  signoff.extend_inputs( custom_signoff.all_outputs() )
+
   #-----------------------------------------------------------------------
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
@@ -234,6 +238,7 @@ def construct():
   g.add_step( read_design       )
   g.add_step( synth             )
   g.add_step( custom_flowgen_setup )
+  g.add_step( custom_signoff    )
   g.add_step( iflow             )
   g.add_step( init              )
   g.add_step( init_fc           )
@@ -364,6 +369,7 @@ def construct():
   g.connect_by_name( route,          postroute      )
   g.connect_by_name( postroute,      postroute_hold )
   g.connect_by_name( postroute_hold, signoff        )
+  g.connect_by_name( custom_signoff, signoff        )
 
   g.connect_by_name( adk,          pt_signoff   )
   g.connect_by_name( signoff,      pt_signoff   )
@@ -417,6 +423,11 @@ def construct():
   # Move endcap/welltap insertion to end of power step to improve runtime
   order.insert(0, 'add-endcaps-welltaps.tcl' )
   power.update_params( { 'order': order } )
+
+  # add custom signoff create physical pin script
+  order = signoff.get_param('order')
+  order.insert(0, 'create-physical-pin.tcl' )
+  signoff.update_params( { 'order': order } )
   
   # connect tapeout
   g.connect(signoff.o("design-merged.oas"), tapeout_flow.i("design.oas"))

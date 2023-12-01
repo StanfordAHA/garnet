@@ -28,7 +28,7 @@ def construct():
     'adk_view'            : 'multivt',
     'adk_stdcell'         : 'b15_7t_108pp',
     'design_name'         : 'GarnetSOC_pad_frame',
-    'intel_database_name' : '8su216a_tma2_0a',
+    'intel_database_name' : '8su216a_d4t1_0a',
     'nthreads'            : 16
   }
 
