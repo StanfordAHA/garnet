@@ -54,7 +54,8 @@ def construct():
     'sdf'                 : True,
     'saif'                : False,
     'waveform'            : True,
-    'drc_env_setup'       : 'drcenv-block.sh'
+    'drc_env_setup'       : 'drcenv-block.sh',
+    'useful_skew'         : False
   }
 
   #-----------------------------------------------------------------------
