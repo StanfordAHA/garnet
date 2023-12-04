@@ -30,14 +30,14 @@ set_multicycle_path -setup 13 -to [get_pins -hier global_buffer/flush_crossbar_s
 set_multicycle_path -hold 12 -to [get_pins -hier global_buffer/flush_crossbar_sel*]
 
 # Relax tile array and glb reset, stall
-set_multicycle_path -setup 2 -through [get_pins -hier global_buffer/reset]
-set_multicycle_path -hold 1 -through [get_pins -hier global_buffer/reset]
+set_multicycle_path -setup 3 -through [get_pins -hier global_buffer/reset]
+set_multicycle_path -hold 2 -through [get_pins -hier global_buffer/reset]
 
-set_multicycle_path -setup 2 -through [get_pins -hier Interconnect_inst0/reset]
-set_multicycle_path -hold 1 -through [get_pins -hier Interconnect_inst0/reset]
+set_multicycle_path -setup 3 -through [get_pins -hier Interconnect_inst0/reset]
+set_multicycle_path -hold 2 -through [get_pins -hier Interconnect_inst0/reset]
 
-set_multicycle_path -setup 2 -through [get_pins -hier Interconnect_inst0/stall*]
-set_multicycle_path -hold 1 -through [get_pins -hier Interconnect_inst0/stall*]
+set_multicycle_path -setup 3 -through [get_pins -hier Interconnect_inst0/stall*]
+set_multicycle_path -hold 2 -through [get_pins -hier Interconnect_inst0/stall*]
 
 set_false_path -from [get_pins -hier *global_controller*/clk_in*] -to [get_pins -hier *global_controller*/tck*]
 set_false_path -from [get_pins -hier *global_controller*/tck*]    -to [get_pins -hier *global_controller*/clk_in*]
