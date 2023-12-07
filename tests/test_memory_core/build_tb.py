@@ -1988,12 +1988,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
                            sparsity=0.0, format='UNC')
         # First transpose c_mat
-        print(b_mat)
-        print(c_mat)
         input_dims['c'] = tuple(c_mat.shape)
         output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.int16, casting='unsafe')
-        print(output_matrix)
-        breakpoint()
         output_format = "CSF"
         output_name = "x"
     elif 'spmv' in app_name and "relu" in app_name:
@@ -2003,12 +1999,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         c_mat = get_tensor(input_name='c', shapes=[shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['c'],
                            sparsity=0.0, format='UNC')
-        print(b_mat)
-        print(c_mat)
         input_dims['c'] = tuple(c_mat.shape)
         output_matrix = numpy.maximum(0,(numpy.matmul(b_mat, c_mat, dtype=numpy.int16, casting='unsafe')))
-        print(output_matrix)
-        breakpoint()
         output_format = "CSF"
         output_name = "x"
     elif 'matmul_ijk.gv' in app_name:
