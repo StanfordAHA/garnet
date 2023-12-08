@@ -109,7 +109,7 @@ def dispatch(args, extra_args=None):
         "--gold-file",
         str(app_dir / f"bin/gold{ext}"),
         "--input-broadcast-branch-factor", "2",
-        "--input-broadcast-max-leaves", "16",
+        "--input-broadcast-max-leaves", "4",
         "--rv",
         "--sparse-cgra",
         "--sparse-cgra-combined",
@@ -130,6 +130,11 @@ def dispatch(args, extra_args=None):
         env=env,
         do_cmd=do_cmd,
     )
+
+    # FIXME might need a brief sleep here to prevent
+    # wait (below) from getting a "ready" too soon, get it?
+    # BETTER figure out how to prevent a race condition?
+    # does load-and-go supposed to do that???
 
     # When running as a daemon, this will tell us when the PNR is done
     if '--daemon' in extra_args:
