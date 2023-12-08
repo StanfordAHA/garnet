@@ -177,11 +177,46 @@ class GarnetDaemon:
         print(GarnetDaemon_HELP); return GarnetDaemon_HELP
 
     def use(args):
-        GarnetDaemon.wait_daemon(args)       # Wait for daemon to exist
-        GarnetDaemon.save_args(args)         # Save args where the daemon will find them
-        GarnetDaemon.args_match_or_die(args) # Grid size must match!!! (todo combine w/sigcont?)
-        GarnetDaemon.sigcont()               # Tell daemon to CONTinue
-        exit()                               # Kill yourself, daemon will take it from here...
+
+#         GarnetDaemon.wait_daemon(args)       # Wait for daemon to exist
+#         GarnetDaemon.save_args(args)         # Save args where the daemon will find them
+#         GarnetDaemon.args_match_or_die(args) # Grid size must match!!! (todo combine w/sigcont?)
+#         GarnetDaemon.sigcont()               # Tell daemon to CONTinue
+#         exit()                               # Kill yourself, daemon will take it from here...
+
+
+        DBG=1
+        gd = GarnetDaemon
+        if DBG: print('--- DAEMON USE; wait for daemon ready')
+        prev = gd.wait_daemon(args)       # Wait for daemon to exist
+
+        if DBG: print(f'- DAEMON READY, last job was #{prev}')
+        gd.save_args(args)                # Save args where the daemon will find them
+        gd.args_match_or_die(args)        # Grid size must match!!! (todo combine w/sigcont?)
+        gd.sigcont()                      # Tell daemon to CONTinue
+
+        if DBG: print(f'- DAEMON POKED; wait for daemon ready again')
+        next = gd.wait_daemon(args, prev) # Wait to complete next_job > prev_job
+        assert next == (prev + 1)         # Verify that job num incremented correctly and we didn't skip a job or anything
+        exit()
+
+        # Update wait_daemon(args, jobno=-1)
+        # => wait for status 'done <n>' where <n> > jobno
+        # => return <n>
+
+        # inestaed fo sgicont, above, do something like
+        # find prev jobnum e.g. 'done 14'
+        # send the cont signal
+        # wait for 'done 15'
+        # exit
+
+        # prevjobnum = GarnetDaemon.wait_daemon(args, -1)
+        # GarnetDaemon.sigcont()
+        # newjobnum = GarnetDaemon.wait_daemon(args, prevjobnum+1)
+        # assert newjobnum == prevjobnum+1
+
+
+
 
     def kill(dbg=1):
         if GarnetDaemon.daemon_exists():
@@ -235,8 +270,9 @@ class GarnetDaemon:
             if verbose: print('- daemon_status: ' + status)
         return status
 
-    def wait_daemon(args):
+    def wait_daemon(args, prev_job=-1):
         '''Check daemon status, do not continue until/unless daemon exists AND IS READY'''
+        print(f'\n--- DAEMON WAIT - wait for daemon to finish job > {prev_job}')
         gd = GarnetDaemon; gd.args = args
         time.sleep(2)
         while True:
@@ -266,9 +302,18 @@ class GarnetDaemon:
             sys.stderr.write('ERROR Timeout after two hours waiting for daemon.\n')
             sys.stderr.write('Maybe try again later.\n')
             exit(13)
-            break
+
+        s = GarnetDaemon.status(args)  # E.g. s = 'done 3'
+        done_job = int(s[5:])          # E.g. done_job = 3
+        print(f'- want DONE signal from job > {prev_job}')
+        print(f'- found DONE signal for job {done_job}')
+        if done_job <= prev_job:
+            print(f'- KEEP WAITING (recurse on wait_daemon())')
+            return wait_daemon(args, prev_job)
 
         print('\n--- DAEMON READY, continuing...')
+        return done_job
+
 
     # ------------------------------------------------------------------------
     # "Private" methods for saving and restoring daemon state
