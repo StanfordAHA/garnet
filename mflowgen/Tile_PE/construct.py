@@ -135,12 +135,8 @@ def construct():
   power_domains = None
   pwr_aware_gls = None
   if pwr_aware:
-      if adk_name == 'tsmc16':
-        power_domains = Step( this_dir + '/../common/power-domains-amber' )
-        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' ) # this will soon follow maybe
-      else:
-        power_domains = Step( this_dir + '/../common/power-domains' )
-        pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
+    power_domains = Step( this_dir + '/../common/power-domains' )
+    pwr_aware_gls = Step( this_dir + '/../common/pwr-aware-gls' )
 
   # Default steps
   info         = Step( 'info',                          default=True )
@@ -235,6 +231,23 @@ def construct():
 
   # Add short_fix script(s) to list of available postroute scripts
   postroute.extend_inputs( short_fix.all_outputs() )
+
+  # Add graph inputs and outputs so this can be used in hierarchical flows
+
+  # Inputs
+  g.add_input( 'design.v', rtl.i('design.v') )
+
+  # Outputs
+  g.add_output( 'Tile_PE_tt.lib',      genlibdb.o('design.lib')       )
+  g.add_output( 'Tile_PE_tt.db',       genlibdb.o('design.db')        )
+  g.add_output( 'Tile_PE.lef',         signoff.o('design.lef')        )
+  g.add_output( 'Tile_PE.gds',         signoff.o('design-merged.gds') )
+  g.add_output( 'Tile_PE.sdf',         signoff.o('design.sdf')        )
+  g.add_output( 'Tile_PE.vcs.v',       signoff.o('design.vcs.v')      )
+  g.add_output( 'Tile_PE.vcs.pg.v',    signoff.o('design.vcs.pg.v')   )
+  g.add_output( 'Tile_PE.spef.gz',     signoff.o('design.spef.gz')    )
+  g.add_output( 'Tile_PE.pt.sdc',      signoff.o('design.pt.sdc')     )
+  g.add_output( 'Tile_PE.lvs.v',       lvs.o('design_merged.lvs.v')   )
 
   # TSMC needs streamout *without* the (new) default -uniquify flag
   # This python method finds 'stream-out.tcl' and strips out that flag.

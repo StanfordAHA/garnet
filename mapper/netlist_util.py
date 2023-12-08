@@ -20,6 +20,8 @@ from DagVisitor import Visitor, Transformer
 from peak.mapper.utils import Unbound
 from lassen.sim import PE_fc as lassen_fc
 from mapper.netlist_graph import Node, NetlistGraph
+import pythunder
+import pulp
 
 
 class CreateBuses(Visitor):
@@ -188,14 +190,23 @@ class CreateMetaData(Visitor):
         if hasattr(node, "_metadata_"):
             self.node_to_md[node.iname] = node._metadata_
 
+
 class CreateIDs(Visitor):
     def __init__(self, inst_info):
         self.inst_info = inst_info
 
     def doit(self, dag: IODag):
-        self.i = 0
+        self.tile_types = set()
+        self.node_to_type = {}
         self.node_to_id = {}
         self.run(dag)
+        for tile_type in self.tile_types:
+            nodes = [k for k, v in self.node_to_type.items() if v == tile_type]
+            nodes.sort()
+
+            for idx, node in enumerate(nodes):
+                self.node_to_id[node] = f"{tile_type}{idx}"
+
         return self.node_to_id
 
     def visit_Source(self, node):
@@ -206,24 +217,26 @@ class CreateIDs(Visitor):
         child = list(node.children())[0]
 
         if "io16" in node.iname:
-            id = f"I{self.i}"
+            id = f"I"
         else:
-            id = f"i{self.i}"
-        self.i += 1
-        self.node_to_id[node.iname] = id
+            id = f"i"
+        self.node_to_type[node.iname] = id
+        self.tile_types.add("I")
+        self.tile_types.add("i")
 
     def visit_Select(self, node):
         Visitor.generic_visit(self, node)
         child = list(node.children())[0]
         if isinstance(child, Input):
             if node.type == Bit:
-                id = f"i{self.i}"
+                id = f"i"
             elif node.type == BitVector[16]:
-                id = f"I{self.i}"
+                id = f"I"
             else:
                 raise NotImplementedError(f"{node}, {node.type}")
-            self.i += 1
-            self.node_to_id[child.iname] = id
+            self.node_to_type[child.iname] = id
+            self.tile_types.add("I")
+            self.tile_types.add("i")
 
     def visit_Combine(self, node):
         Visitor.generic_visit(self, node)
@@ -237,21 +250,21 @@ class CreateIDs(Visitor):
     def visit_RegisterSink(self, node):
         Visitor.generic_visit(self, node)
         if node.type == Bit:
-            id = f"r{self.i}"
+            id = f"r"
         elif node.type == BitVector[16]:
-            id = f"r{self.i}"
+            id = f"r"
         else:
             raise NotImplementedError(f"{node}, {node.type}")
-        self.node_to_id[node.iname] = id
-        self.i += 1
+        self.node_to_type[node.iname] = id
+        self.tile_types.add("r")
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if node.node_name not in self.inst_info:
             raise ValueError(f"Need info for {node.node_name}")
-        id = f"{self.inst_info[node.node_name]}{self.i}"
-        self.node_to_id[node.iname] = id
-        self.i += 1
+        id = f"{self.inst_info[node.node_name]}"
+        self.node_to_type[node.iname] = id
+        self.tile_types.add(f"{self.inst_info[node.node_name]}")
 
 
 def p(msg, adt):
@@ -526,7 +539,6 @@ class FixInputsOutputAndPipeline(Visitor):
         bit,
         min_stages=1,
     ):
-
         if bit:
             register_source = BitRegisterSource
             register_sink = BitRegisterSink
@@ -620,61 +632,68 @@ class FixInputsOutputAndPipeline(Visitor):
             register_source = RegisterSource
             register_sink = RegisterSink
 
-        print("Creating register chain for:", new_io_node.iname, "with", len(sinks), "sinks")
-        
-        # reorder pond sinks for PnR
+        print(
+            "Creating register chain for:",
+            new_io_node.iname,
+            "with",
+            len(sinks),
+            "sinks",
+        )
+
+        # reorder MEM/Pond sinks based on the bank index for better PnR
+        sinks_order_dict = {}
+        for _ in range(len(sinks)):
+            sink_node = sinks[_]
+            reg_idx = int(re.search(r"BANK_(\d+)_", sink_node.iname).group(1))
+            sinks_order_dict.update({sink_node: reg_idx})
+        sorted_sinks_order_dict = sorted(sinks_order_dict.items(), key=lambda x: x[1])
+        sorted_sinks_order_dict = dict(sorted_sinks_order_dict)
+        sinks_seq = list(sorted_sinks_order_dict.keys())
+        # control reg density of kernel broadcast
         if "io16in_kernel_host_stencil" in new_io_node.iname:
-            sinks_order_dict = {}
-            for _ in range(len(sinks)):
-                sink_node = sinks[_]
-                reg_idx = int(re.search(r"BANK_(\d+)_", sink_node.iname).group(1))
-                sinks_order_dict.update({sink_node: reg_idx})
-            sorted_sinks_order_dict = sorted(sinks_order_dict.items(), key=lambda x: x[1])
-            sorted_sinks_order_dict = dict(sorted_sinks_order_dict)
-            sinks_seq = list(sorted_sinks_order_dict.keys())
+            min_stages = 1
+            chain_branch_factor = 2
+            regs_branch_added = 0
             half = len(sinks) // 2
             sinks = sinks_seq[:half] + sinks_seq[half:][::-1]
-        
-        # use more input regs for input broadcast paths
+        # control reg density of input broadcast
         if "io16in_input_host_stencil" in new_io_node.iname:
-            min_stages = 4
+            min_stages = 6
+            chain_branch_factor = 1
+            regs_branch_added = 1
+            sinks = sinks_seq
 
         itr_sinks = [sinks]
 
-        if min_stages > 1:
-            for _ in range(min_stages - 1):
-                if _ == 0:
-                    new_reg_sink = register_sink(
-                        new_select_node, iname=new_io_node.iname + "$reg" + str(self.added_regs)
-                    )
-                else:
-                    new_reg_sink = register_sink(
-                        new_reg_source, iname=new_io_node.iname + "$reg" + str(self.added_regs)
-                    )
-                new_reg_source = register_source(
-                    iname=new_io_node.iname + "$reg" + str(self.added_regs)
+        assert min_stages >= 1, "min_stages of reg chain must be >= 1"
+        for _ in range(min_stages):
+            if _ == 0:
+                new_reg_sink = register_sink(
+                    new_select_node,
+                    iname=new_io_node.iname + "$reg" + str(self.added_regs),
                 )
-                self.added_regs += 1
-                self.dag_sources.append(new_reg_source)
-                self.dag_sinks.append(new_reg_sink)
-                self.node_map[new_reg_source] = new_reg_source
-                self.node_map[new_reg_sink] = new_reg_sink
-
-        self.added_regs += 1
-        self.dag_sources.append(new_reg_source)
-        self.dag_sinks.append(new_reg_sink)
-        self.node_map[new_reg_source] = new_reg_source
-        self.node_map[new_reg_sink] = new_reg_sink
+            else:
+                new_reg_sink = register_sink(
+                    new_reg_source,
+                    iname=new_io_node.iname + "$reg" + str(self.added_regs),
+                )
+            new_reg_source = register_source(
+                iname=new_io_node.iname + "$reg" + str(self.added_regs)
+            )
+            self.added_regs += 1
+            self.dag_sources.append(new_reg_source)
+            self.dag_sinks.append(new_reg_sink)
+            self.node_map[new_reg_source] = new_reg_source
+            self.node_map[new_reg_sink] = new_reg_sink
 
         chain_source = new_reg_source
         for sinks_reg in itr_sinks:
             prev_reg_source = chain_source
             for idx, sink in enumerate(sinks_reg):
-
-                if idx % chain_branch_factor == 0:
+                if idx and idx % chain_branch_factor == 0:
                     new_reg_sink = register_sink(
                         prev_reg_source,
-                        iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                        iname=new_io_node.iname + "$reg" + str(self.added_regs),
                     )
                     new_reg_source = register_source(
                         iname=new_io_node.iname + "$reg" + str(self.added_regs)
@@ -684,6 +703,24 @@ class FixInputsOutputAndPipeline(Visitor):
                     self.dag_sinks.append(new_reg_sink)
                     self.node_map[new_reg_source] = new_reg_source
                     self.node_map[new_reg_sink] = new_reg_sink
+                    prev_reg_source = new_reg_source
+
+                    # Add branch registers
+                    for _ in range(regs_branch_added):
+                        new_reg_sink = register_sink(
+                            prev_reg_source,
+                            iname=new_io_node.iname + "$reg" + str(self.added_regs),
+                        )
+                        new_reg_source = register_source(
+                            iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                        )
+                        self.added_regs += 1
+                        self.dag_sources.append(new_reg_source)
+                        self.dag_sinks.append(new_reg_sink)
+                        self.node_map[new_reg_source] = new_reg_source
+                        self.node_map[new_reg_sink] = new_reg_sink
+                        prev_reg_source = new_reg_source
+
                     children_temp = list(sink.children())
                     reg_index = children_temp.index(old_select_node)
                     children_temp[reg_index] = new_reg_source
@@ -703,7 +740,7 @@ class FixInputsOutputAndPipeline(Visitor):
         old_select_node,
         sinks,
         bit,
-        chain_branch_factor = 2,
+        chain_branch_factor=2,
     ):
         if bit:
             register_source = BitRegisterSource
@@ -712,7 +749,13 @@ class FixInputsOutputAndPipeline(Visitor):
             register_source = RegisterSource
             register_sink = RegisterSink
 
-        print("Creating register chain for:", new_io_node.iname, "with", len(sinks), "sinks")
+        print(
+            "Creating register chain for:",
+            new_io_node.iname,
+            "with",
+            len(sinks),
+            "sinks",
+        )
 
         # reorder the PE sinks for PnR
         sinks_order_dict = {}
@@ -724,12 +767,12 @@ class FixInputsOutputAndPipeline(Visitor):
         sorted_sinks_order_dict = dict(sorted_sinks_order_dict)
         sinks_seq = list(sorted_sinks_order_dict.keys())
         sinks = []
-        for _ in range(len(sinks_seq)//2):
+        for _ in range(len(sinks_seq) // 2):
             sinks.append(sinks_seq[_])
-            sinks.append(sinks_seq[_ + len(sinks_seq)//2])
+            sinks.append(sinks_seq[_ + len(sinks_seq) // 2])
         if len(sinks_seq) % 2 == 1:
-            sinks.append(sinks_seq[len(sinks_seq)//2])
-        half = len(sinks)//2
+            sinks.append(sinks_seq[len(sinks_seq) // 2])
+        half = len(sinks) // 2
         (sinks_left, sinks_right) = (sinks[:half][::-1], sinks[half:])
 
         for sinks_reg in [sinks_left, sinks_right]:
@@ -738,7 +781,7 @@ class FixInputsOutputAndPipeline(Visitor):
                 if idx % chain_branch_factor == 0:
                     new_reg_sink = register_sink(
                         prev_reg_source,
-                        iname=new_io_node.iname + "$reg" + str(self.added_regs)
+                        iname=new_io_node.iname + "$reg" + str(self.added_regs),
                     )
                     new_reg_source = register_source(
                         iname=new_io_node.iname + "$reg" + str(self.added_regs)
@@ -758,7 +801,7 @@ class FixInputsOutputAndPipeline(Visitor):
                     reg_index = children_temp.index(old_select_node)
                     children_temp[reg_index] = new_reg_source
                     sink.set_children(*children_temp)
-    
+
     def visit_Select(self, node: DagNode):
         Visitor.generic_visit(self, node)
         if not (
@@ -791,7 +834,21 @@ class FixInputsOutputAndPipeline(Visitor):
                         )
 
             # -----------------MEM-to-PE Paths Pipelining-------------------- #
-            elif "input_cgra_stencil" in io_child.iname:
+            elif False:
+                # elif "input_cgra_stencil" in io_child.iname:
+                new_node = new_children[0].select("data_out_0")
+                if "MEM2PE_REG_CHAIN" in os.environ:
+                    if self.pipeline_inputs:
+                        self.create_register_chain_MEM2PE(
+                            io_child,
+                            new_node,
+                            node,
+                            self.sinks[node],
+                            False,
+                        )
+            # output MEM to accumulation PE pipelining
+            elif False:
+                # elif "ub_output_cgra_stencil" in io_child.iname and "add_pipelined" in self.sinks[node][0].iname:
                 new_node = new_children[0].select("data_out_0")
                 if "MEM2PE_REG_CHAIN" in os.environ:
                     if self.pipeline_inputs:
@@ -875,9 +932,85 @@ class PackRegsIntoPonds(Visitor):
     def __init__(self, sinks):
         self.sinks = sinks
 
+    def find_pe(self, node, num_regs, reg_skip_list):
+        if node.node_name == "global.PE":
+            return node, num_regs, reg_skip_list
+
+        if node not in self.sinks:
+            return None, None, None
+        assert len(self.sinks[node]) == 1
+        new_node = self.sinks[node][0]
+        if new_node.node_name == "Register":
+            reg_skip_list.append(new_node)
+            if not isinstance(node, Sink):
+                num_regs += 1
+        return self.find_pe(new_node, num_regs, reg_skip_list)
+
+    def find_packing(self, dag):
+        connections_to_nodes = {}
+        connections = []
+        ponds = []
+        pes = []
+
+        for pond in dag.sources:
+            if pond.node_name == "cgralib.Pond":
+                ponds.append(pond.iname)
+                for pond_sink in self.sinks[pond]:
+                    assert pond_sink.node_name == "Select"
+                    pe_node, num_regs, reg_skip_list = self.find_pe(pond_sink, 0, [])
+                    if pe_node is not None:
+                        if pe_node.iname not in pes:
+                            pes.append(pe_node.iname)
+
+                        connections.append((pond.iname, pe_node.iname))
+                    else:
+                        connections.append((pond.iname, f"other_{len(connections)}"))
+
+                    conn = connections[-1]
+                    connections_to_nodes[f"{conn[0]}_{conn[1]}"] = pond_sink
+
+        model = pulp.LpProblem("linear_programming", pulp.LpMaximize)
+
+        pulp_vars = []
+        for conn in connections:
+            name = conn[0] + "_" + conn[1]
+            pulp_var = pulp.LpVariable(name, lowBound=0, cat="Binary")
+            pulp_vars.append(pulp_var)
+
+            model += pulp_var
+
+            if conn[1] not in pes:
+                model += pulp_var == 0
+
+        for pond in ponds:
+            connections_from_ponds = len(
+                [conn for conn in connections if conn[0] == pond]
+            )
+            if connections_from_ponds == 2:
+                model += pulp.lpSum([var for var in pulp_vars if pond in var.name]) == 1
+
+        for pe in pes:
+            model += pulp.lpSum([var for var in pulp_vars if pe in var.name]) <= 1
+
+        model += pulp.lpSum([var for var in pulp_vars])
+        model.solve(pulp.PULP_CBC_CMD(msg=0))
+
+        pond_node_to_port = {}
+
+        for var in pulp_vars:
+            if var.value() == 1.0:
+                # Port 0
+                pond_node_to_port[connections_to_nodes[var.name]] = 0
+            else:
+                # Port 1
+                pond_node_to_port[connections_to_nodes[var.name]] = 1
+
+        return pond_node_to_port
+
     def doit(self, dag: Dag):
+        self.optimal_packing = self.find_packing(dag)
+        self.swap_pond_ports = []
         self.skip_reg_nodes = []
-        self.swap_pond_ports = set()
         self.pe_to_pond_conns = {}
         self.pond_reg_skipped = {}
         self.node_map = {}
@@ -902,21 +1035,8 @@ class PackRegsIntoPonds(Visitor):
                 sinks=real_sinks,
             ),
             self.pond_reg_skipped,
-            self.swap_pond_ports
+            self.swap_pond_ports,
         )
-
-    def find_pe(self, node, num_regs, reg_skip_list):
-        if node.node_name == "global.PE":
-            return node, num_regs, reg_skip_list
-
-        assert node in self.sinks
-        assert len(self.sinks[node]) == 1
-        new_node = self.sinks[node][0]
-        if new_node.node_name == "Register":
-            reg_skip_list.append(new_node)
-            if not isinstance(node, Sink):
-                num_regs += 1
-        return self.find_pe(new_node, num_regs, reg_skip_list)
 
     def generic_visit(self, node: DagNode):
         Visitor.generic_visit(self, node)
@@ -925,21 +1045,20 @@ class PackRegsIntoPonds(Visitor):
 
         n_node = node
 
-        if (
-            node.node_name == "Select"
-            and node.child.node_name == "cgralib.Pond"
-            and not isinstance(node.child, Sink)
-            and node.field == "data_out_pond_0"
-        ):
+        if node in self.optimal_packing:
+            pond_port = f"data_out_pond_{self.optimal_packing[node]}"
             pe_node, num_regs, reg_skip_list = self.find_pe(node, 0, [])
-            if pe_node not in self.pe_to_pond_conns:
+
+            if pond_port == "data_out_pond_0":
+                # packing in the same tile
                 self.pe_to_pond_conns[pe_node] = node
-                self.pond_reg_skipped[node.child.iname] = num_regs
                 self.skip_reg_nodes += reg_skip_list
-            else:
-                # Multiple ponds are connecting to one PE using the data_out_pond_0 port
-                n_node = node.child.select("data_out_pond_1")
-                self.swap_pond_ports.add(n_node.child.iname)
+                self.pond_reg_skipped[node.child.iname] = num_regs
+
+            n_node = node.child.select(pond_port)
+
+            if pond_port != node.field:
+                self.swap_pond_ports.append(n_node.child.iname)
 
         if n_node in self.pe_to_pond_conns:
             new_children = []
@@ -1005,17 +1124,9 @@ def create_netlist_info(
     input_broadcast_branch_factor=4,
     input_broadcast_max_leaves=16,
 ):
-
     if load_only:
-        id_to_name_filename = os.path.join(app_dir, f"design.id_to_name")
-        if os.path.isfile(id_to_name_filename):
-            fin = open(id_to_name_filename, "r")
-            lines = fin.readlines()
-
-            id_to_name = {}
-
-            for line in lines:
-                id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
+        packed_file = os.path.join(app_dir, "design.packed")
+        id_to_name = pythunder.io.load_id_to_name(packed_file)
 
     sinks = PipelineBroadcastHelper().doit(dag)
     fdag = FixInputsOutputAndPipeline(
@@ -1046,25 +1157,44 @@ def create_netlist_info(
     nodes_to_ids = CreateIDs(node_info).doit(pdag)
 
     if load_only:
-        name_to_id = {name: id_ for id_, name in id_to_name.items()}
+        names_to_ids = {name: id_ for id_, name in id_to_name.items()}
+    else:
+        names_to_ids = nodes_to_ids
 
     info = {}
-    info["id_to_name"] = {id: node for node, id in nodes_to_ids.items()}
+    info["id_to_name"] = {id: node for node, id in names_to_ids.items()}
 
     node_to_metadata = CreateMetaData().doit(pdag)
     info["id_to_metadata"] = {}
     for node, md in node_to_metadata.items():
         info["id_to_metadata"][nodes_to_ids[node]] = md
+        if node in swap_pond_ports:
+            print(f"swapping ports for {nodes_to_ids[node]}")
+            new_config = {}
+            new_config["in2regfile_0"] = info["id_to_metadata"][nodes_to_ids[node]][
+                "config"
+            ]["in2regfile_0"]
+
+            if "in2regfile_1" in info["id_to_metadata"][nodes_to_ids[node]]["config"]:
+                new_config["in2regfile_1"] = info["id_to_metadata"][nodes_to_ids[node]][
+                    "config"
+                ]["in2regfile_1"]
+
+            new_config["regfile2out_1"] = info["id_to_metadata"][nodes_to_ids[node]][
+                "config"
+            ]["regfile2out_0"]
+
+            if "regfile2out_1" in info["id_to_metadata"][nodes_to_ids[node]]["config"]:
+                new_config["regfile2out_0"] = info["id_to_metadata"][
+                    nodes_to_ids[node]
+                ]["config"]["regfile2out_1"]
+
+            info["id_to_metadata"][nodes_to_ids[node]]["config"] = new_config
+
         if node in pond_reg_skipped:
             info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"][
                 "cycle_starting_addr"
             ][0] += pond_reg_skipped[node]
-        elif node in swap_pond_ports:
-            assert "regfile2out_1" not in info["id_to_metadata"][nodes_to_ids[node]]["config"]
-            new_config = {}
-            new_config["in2regfile_0"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["in2regfile_0"]
-            new_config["regfile2out_1"] = info["id_to_metadata"][nodes_to_ids[node]]["config"]["regfile2out_0"]
-            info["id_to_metadata"][nodes_to_ids[node]]["config"] = new_config
 
     nodes_to_instrs = CreateInstrs(node_info).doit(pdag)
     info["id_to_instrs"] = {
@@ -1072,8 +1202,8 @@ def create_netlist_info(
     }
 
     info["instance_to_instrs"] = {
-        node: nodes_to_instrs[node]
-        for node, id in nodes_to_ids.items()
+        info["id_to_name"][id]: instr
+        for id, instr in info["id_to_instrs"].items()
         if ("p" in id or "m" in id or "I" in id or "i" in id)
     }
     for node, md in node_to_metadata.items():
@@ -1083,6 +1213,7 @@ def create_netlist_info(
     bus_info, netlist = CreateBuses(node_info).doit(pdag)
     info["buses"] = bus_info
     info["netlist"] = {}
+
     for bid, ports in netlist.items():
         info["netlist"][bid] = [
             (nodes_to_ids[node.iname], field) for node, field in ports
@@ -1093,14 +1224,15 @@ def create_netlist_info(
 
     if "MANUAL_PLACER" in os.environ:
         graph = NetlistGraph(info)
-        graph.get_in_ub_latency(app_dir = app_dir)
-        graph.get_compute_kernel_latency(app_dir = app_dir)
-        
+        graph.get_in_ub_latency(app_dir=app_dir)
+        graph.get_compute_kernel_latency(app_dir=app_dir)
+
         # remove mem reg in conn for manual placement
         graph.remove_mem_reg_tree()
+        # graph.generate_tile_conn(app_dir = app_dir)
 
         # manual placement
-        graph.manualy_place_resnet(app_dir = app_dir)
+        graph.manualy_place_resnet(app_dir=app_dir)
 
     CountTiles().doit(pdag)
 

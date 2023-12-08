@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# This script only used for Tile_PE build.
+
+# This script was developed for the amber build, has never been vetted for onyx.
+if [ "$WHICH_SOC" == "amber" ]; then
+    echo '--- check-pdcr-address.sh: Amber-only PowerDomainConfigReg correctness check'
+else
+    echo '--- check-pdcr-address.sh: Skip amber-only PowerDomainConfigReg correctness check'
+    exit
+fi
+
 # In mflowgen steps "synthesis" or "init" (floorplan), check to see
 # that PowerDomainConfigReg address in verilog matches param file.
 # 
@@ -37,8 +47,9 @@ function find_verilog_number {
 # Find feature number for PowerDomainConfigReg, according to param file.
 function find_param_number {
     # Expecting to see something like
-    # "set pe_power_domain_config_reg_addr 13"
-    cat $1 | awk '/^set pe_power_domain_config_reg_addr/{print $3; exit}'
+    # if { $WHICH_SOC == "amber" } { set pe_power_domain_config_reg_addr 13 }
+    search_file=inputs/upf_Tile_PE.tcl
+    cat $search_file | awk '/amber.*set pe_power_domain_config_reg_addr/{print $(NF-1); exit}'
 }
 
 ########################################################################
@@ -47,7 +58,7 @@ function find_param_number {
 # Parameter file should match verilog, else we complain and try to fix it.
 
 vn=`find_verilog_number inputs/design.v`
-pn=`find_param_number inputs/pe-pd-params.tcl`
+pn=`find_param_number`
 
 echo ""
 echo "Verilog says PowerDomainConfigReg has feature number $vn"

@@ -246,9 +246,10 @@ fi
 
 ########################################################################
 # Clean up debris in /sim/tmp
-echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
-[ "$USER" != "buildkite-agent" ] && $garnet/mflowgen/bin/cleanup-buildkite.sh
-
+if [ "$USER" != "buildkite-agent" ]; then
+     echo "Sourcing $garnet/mflowgen/bin/cleanup-buildkite.sh..."
+     $garnet/mflowgen/bin/cleanup-buildkite.sh
+fi
 
 ########################################################################
 # Build environment and check requirements
@@ -331,7 +332,7 @@ echo "AFTER:  OA_HOME=$OA_HOME"
 echo ""
 
 # Okay let's check and see what we got.
-echo "--- REQUIREMENTS CHECK"; echo ""
+echo "--- REQUIREMENTS CHECK, sourcing $garnet/bin/requirements_check.sh"; echo ""
 
 # Maybe don't need to check python libs and eggs no more...?
 # $garnet/bin/requirements_check.sh -v --debug
