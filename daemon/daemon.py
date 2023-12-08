@@ -275,7 +275,7 @@ class GarnetDaemon:
         if prev_job == -1:
             print(f'\n--- DAEMON WAIT - wait for daemon ready', flush=True)
         else:
-            print(f'\n--- DAEMON WAIT - wait for daemon to finish job > {prev_job}', flush=True)
+            print(f'\n--- DAEMON WAIT - wait for daemon to finish jobs 0..{prev_job}', flush=True)
 
         gd = GarnetDaemon; gd.args = args
         time.sleep(2)

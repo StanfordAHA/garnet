@@ -199,9 +199,6 @@ def test_daemon_use():
     # TODO maybe use expect() instead???
 
     p2 = subprocess.run(f'{DAEMON} use --animal foxy'.split(), text=True, capture_output=True)
-    sys.stdout.flush()
-    min_sleep()
-    p3 = subprocess.run(f'{DAEMON} wait'.split(), text=True, capture_output=True)
 
     print('\nKILL the daemon\n')
     subprocess.run(f'{DAEMON} kill'.split())
@@ -454,10 +451,6 @@ def print_w_prefix(prefix, text):
 def try_animal(animal, tmpfile):
     assert expect(f'{DAEMON} use --animal {animal}', 'sending CONT')
     print(f'- sacrificing {animal} to daemon', flush=True)
-    time.sleep(2)    # Give it a second to process, dude
-
-    # Wait for daemon to finish using the animal
-    p = subprocess.run(f'{DAEMON} wait'.split())
 
     # Show what happened since last time daemon was used
     daemon_out = catnew(tmpfile, reset=False)
@@ -473,9 +466,16 @@ def expect(cmd, expect):
         cmd.split(), text=True, 
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-    found = False
-    if expect in p.stdout: found = True
-    return found
+    # Print stdout
+    print(f'({cmd}) ')
+    prefix='    '
+    print((prefix+p.stdout).replace('\n',f'\n{prefix}'), flush=True)
+    print('', flush=True)
+
+    # Did we get what we expected?
+    if expect in p.stdout: return True
+    else:                  return False
+
 
 def kill_existing_daemon():
     print(f"Kill existing daemon (p.stdout should say 'already dead')",flush=True)
