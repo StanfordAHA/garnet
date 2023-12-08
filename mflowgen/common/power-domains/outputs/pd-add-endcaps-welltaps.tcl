@@ -45,6 +45,7 @@ if {[expr {$ADK_END_CAP_CELL == ""} && {$ADK_WELL_TAP_CELL == ""}]} {
 
 # Only add taps in core area if ADK specifies an AON tap cell
 if {[info exists ADK_AON_TAP_CELL] && [expr {$ADK_AON_TAP_CELL ne ""}]} {
+   # NOT AMBER (amber adk.tcl does not set ADK_AON_TAP_CELL)
    set aon_tap_cell $ADK_AON_TAP_CELL
    set tap_width [dbGet [dbGetCellByName $aon_tap_cell].size_x]
    set tap_interval $horiz_tap_pitch

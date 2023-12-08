@@ -3,8 +3,13 @@ name: rtl
 commands:
   - bash gen_rtl.sh
 
+inputs:
+  - design.v
+  - header
+
 outputs:
   - design.v
+  - header
 
 parameters:
   array_width: 4
