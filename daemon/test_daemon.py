@@ -476,7 +476,6 @@ def expect(cmd, expect):
     if expect in p.stdout: return True
     else:                  return False
 
-
 def kill_existing_daemon():
     print(f"Kill existing daemon (p.stdout should say 'already dead')",flush=True)
     p = subprocess.run(f'{DAEMON} kill'.split())

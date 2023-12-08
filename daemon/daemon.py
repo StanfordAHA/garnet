@@ -169,85 +169,58 @@ class GarnetDaemon:
         gd = GarnetDaemon
         gd.die_if_daemon_exists()
         gd.register_pid(); gs = gd.grid_size(args)    # E.g. "4x2"
-        print(f'\n--- LAUNCHING {gs} DAEMON {gd.PID}')
+        print(f'\n--- LAUNCHING {gs} DAEMON {gd.PID}', flush=True)
         gd.put_status('busy 0'); assert GarnetDaemon.jobnum == 0
         gd.save_state0(args)
 
     def help():
         print(GarnetDaemon_HELP); return GarnetDaemon_HELP
 
-    def use(args):
-
-#         GarnetDaemon.wait_daemon(args)       # Wait for daemon to exist
-#         GarnetDaemon.save_args(args)         # Save args where the daemon will find them
-#         GarnetDaemon.args_match_or_die(args) # Grid size must match!!! (todo combine w/sigcont?)
-#         GarnetDaemon.sigcont()               # Tell daemon to CONTinue
-#         exit()                               # Kill yourself, daemon will take it from here...
-
-
-        DBG=1
+    def use(args, DBG=1):
         gd = GarnetDaemon
-        if DBG: print('--- DAEMON USE; wait for daemon ready')
+        if DBG: print('--- DAEMON USE; wait for daemon ready', flush=True)
         prev = gd.wait_daemon(args)       # Wait for daemon to exist
 
-        if DBG: print(f'- DAEMON READY, last job was #{prev}')
+        if DBG: print(f'- DAEMON READY, last job was #{prev}', flush=True)
         gd.save_args(args)                # Save args where the daemon will find them
         gd.args_match_or_die(args)        # Grid size must match!!! (todo combine w/sigcont?)
         gd.sigcont()                      # Tell daemon to CONTinue
 
-        if DBG: print(f'- DAEMON POKED; wait for daemon ready again')
+        if DBG: print(f'- DAEMON POKED; wait for daemon ready again', flush=True)
         next = gd.wait_daemon(args, prev) # Wait to complete next_job > prev_job
         assert next == (prev + 1)         # Verify that job num incremented correctly and we didn't skip a job or anything
         exit()
 
-        # Update wait_daemon(args, jobno=-1)
-        # => wait for status 'done <n>' where <n> > jobno
-        # => return <n>
-
-        # inestaed fo sgicont, above, do something like
-        # find prev jobnum e.g. 'done 14'
-        # send the cont signal
-        # wait for 'done 15'
-        # exit
-
-        # prevjobnum = GarnetDaemon.wait_daemon(args, -1)
-        # GarnetDaemon.sigcont()
-        # newjobnum = GarnetDaemon.wait_daemon(args, prevjobnum+1)
-        # assert newjobnum == prevjobnum+1
-
-
-
-
     def kill(dbg=1):
         if GarnetDaemon.daemon_exists():
             pid = GarnetDaemon.retrieve_pid()  # FIXME there are way too many retrive_pid calls!!!
-            if dbg: print(f'- found daemon pid {pid}, killing it now')
+            if dbg: print(f'- found daemon pid {pid}, killing it now', flush=True)
             GarnetDaemon.sigkill()
             time.sleep(1) # Maybe wait a second to let it die
         else:
-            print(f'- daemon is already dead')
+            print(f'- daemon is already dead', flush=True)
 
-        print(f'- cleanup on aisle "/tmp"')
+        print(f'- cleanup on aisle "/tmp"', flush=True)
         GarnetDaemon.cleanup()
 
     def status(args, verbose=True, dbg=0):
-        if dbg: print(f'\n--- STATUS: daemon status requested')
+        if dbg: print(f'\n--- STATUS: daemon status requested', flush=True)
         gd = GarnetDaemon;
 
-        if dbg: print(f'- checking for orphans')
+        if dbg: print(f'- checking for orphans', flush=True)
         gd.check_for_orphans()
 
         pid = gd.retrieve_pid()
-        if dbg: print(f'- checking status of process {pid}')
+        if dbg: print(f'- checking status of process {pid}', flush=True)
 
         if not gd.daemon_exists():
-            if verbose: print("- no daemon found")
+            if verbose: print("- no daemon found", flush=True)
 
             # Do this once per session only
             if    gd.already_found_files: return 'dead'
             else: gd.already_found_files = True
             for f in gd.DAEMONFILES: 
-                if os.path.exists(f): print(f'WARNING found daemon file {f}')
+                if os.path.exists(f): print(f'WARNING found daemon file {f}', flush=True)
             return 'dead'
 
         # Don't 'if dbg' this, pytest needs it
@@ -258,6 +231,7 @@ class GarnetDaemon:
         if not gd.do_cmd(f'test -f {state0_file}'):
             print(f'- WARNING: cannot find daemon state file "{state0_file}"')
             print(f'- WARNING: daemon state corrupted: suggest you do "kill {pid}"')
+            sys.stdout.flush()
             return
 
         state0_args = gd.load_args(state0_file)
@@ -312,10 +286,10 @@ class GarnetDaemon:
         print(f'- want DONE signal from job > {prev_job}')
         print(f'- found DONE signal for job {done_job}')
         if done_job <= prev_job:
-            print(f'- KEEP WAITING (recurse on wait_daemon())')
+            print(f'- KEEP WAITING (recurse on wait_daemon())', flush=True)
             return wait_daemon(args, prev_job)
 
-        print('\n--- DAEMON READY, continuing...')
+        print('\n--- DAEMON READY, continuing...', flush=True)
         return done_job
 
 
