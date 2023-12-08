@@ -52,12 +52,14 @@ NOTE 2: cannot use the same daemon for verilog *and* pnr (not sure why).
 
 class GarnetDaemon:
 
+    jobnum = 0 # increment after each job completion
+
     # Permissible daemon commands
     choices = [ 'help','launch', 'use', 'auto', 'kill', 'status', 'force', 'wait' ]
 
     # Disk storage for persistent daemon state
     FN_PID    = "/tmp/garnet-daemon-pid"    # Daemon pid
-    FN_STATUS = "/tmp/garnet-daemon-status" # Daemon status: 'busy' or 'ready'
+    FN_STATUS = "/tmp/garnet-daemon-status" # Daemon status: 'busy 1' => 'done 1' => 'busy 2'
     FN_STATE0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
     FN_RELOAD = "/tmp/garnet-daemon-reload" # Desired new state (args)
     DAEMONFILES = [ FN_PID, FN_STATUS, FN_STATE0, FN_RELOAD ]
@@ -129,7 +131,8 @@ class GarnetDaemon:
         # what if the CONT shows up BEFORE the stop?
 
         # Register status; stop and wait for CONT signal from client
-        GarnetDaemon.put_status('ready')
+        # GarnetDaemon.put_status('ready')
+        GarnetDaemon.put_status(f'done {GarnetDaemon.jobnum}')
         gd.sigstop()
 
         # Okay but how do we now who sent the CONT and if it's legit?
@@ -140,7 +143,8 @@ class GarnetDaemon:
 
         # On CONT, register status and load new args from 'reload' file
         print(f'\n\n--- DAEMON RESUMES')
-        GarnetDaemon.put_status('busy')
+        # GarnetDaemon.put_status('busy')
+        GarnetDaemon.jobnum+=1; GarnetDaemon.put_status(f'busy {GarnetDaemon.jobnum}')
 
         # Fetch new args, use them to update old args
         new_args = gd.load_args(dbg=0)
@@ -166,7 +170,7 @@ class GarnetDaemon:
         gd.die_if_daemon_exists()
         gd.register_pid(); gs = gd.grid_size(args)    # E.g. "4x2"
         print(f'\n--- LAUNCHING {gs} DAEMON {gd.PID}')
-        gd.put_status('busy')
+        gd.put_status('busy 0'); assert GarnetDaemon.jobnum == 0
         gd.save_state0(args)
 
     def help():
@@ -236,7 +240,8 @@ class GarnetDaemon:
         gd = GarnetDaemon; gd.args = args
         time.sleep(2)
         while True:
-            if GarnetDaemon.status(args) == 'ready': break
+            # if GarnetDaemon.status(args) == 'ready': break
+            if 'done' in GarnetDaemon.status(args): break
 
             # Timeout after 2 hours or 7200 seconds, yes?
             # Each set of waits is broken down into groups b/c of stdout tees and lesses and flushes and such
@@ -400,8 +405,13 @@ class GarnetDaemon:
             time.sleep(wait_secs)
             sys.stdout.write('.'); sys.stdout.flush()
             status = GarnetDaemon.status(GarnetDaemon.args, verbose=False)
-            if status == 'ready': print('', flush=True)
-            if status == 'ready': return True
+
+            # if status == 'ready': print('', flush=True)
+            # if status == 'ready': return True
+
+            if 'done' in status: print('', flush=True)
+            if 'done' in status: return True
+
         print('', flush=True)
         return False
 
@@ -513,12 +523,12 @@ class GarnetDaemon:
             return pid
 
     def put_status(jobstatus, pid=None, fname=None, dbg=1):
-        "Save daemon status e.g. 'busy' or 'ready'"
+        "Save daemon status e.g. 'done 3' or 'busy 4'"
         if not fname: fname = GarnetDaemon.FN_STATUS
         with open(fname, 'w') as f: f.write(jobstatus)
         
     def get_status(fname=None):
-        "Get daemon status e.g. 'busy' or 'ready'"
+        "Get daemon status e.g. 'done 3' or 'busy 4'"
         if not fname: fname = GarnetDaemon.FN_STATUS
         try:
             with open(fname, 'r') as f: status = f.read()
