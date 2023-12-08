@@ -272,7 +272,11 @@ class GarnetDaemon:
 
     def wait_daemon(args, prev_job=-1):
         '''Check daemon status, do not continue until/unless daemon exists AND IS READY'''
-        print(f'\n--- DAEMON WAIT - wait for daemon to finish job > {prev_job}')
+        if prev_job == -1:
+            print(f'\n--- DAEMON WAIT - wait for daemon ready', flush=True)
+        else:
+            print(f'\n--- DAEMON WAIT - wait for daemon to finish job > {prev_job}', flush=True)
+
         gd = GarnetDaemon; gd.args = args
         time.sleep(2)
         while True:
