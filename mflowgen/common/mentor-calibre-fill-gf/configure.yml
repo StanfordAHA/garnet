@@ -7,6 +7,8 @@
 
 name: mentor-calibre-fill-gf
 
+attach_point_tags: FILL
+
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
@@ -59,5 +61,15 @@ preconditions:
 postconditions:
 
   - assert File( 'outputs/fill.gds' )
+
+#-------------------------------------------------------------------------
+# Tests
+#-------------------------------------------------------------------------
+
+tests:
+  - description: density_checks
+    test_graph: fill_test_gf
+    attach_points:
+      - FILL
 
 
