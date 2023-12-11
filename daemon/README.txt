@@ -1,9 +1,9 @@
 ==== GARNET DAEMON
 
-The GarnetDaemon class enables daemon capability for a python program,
-tailored specifically for our `garnet.py` chip builder. In particular, we 
-can use a daemon-enabled `garnet.py` to save time when using `garnet.py`
-to do PNR for multiple applications mapped onto the same Garnet build.
+The GarnetDaemon class enables daemon capability, tailored
+specifically for `garnet.py`. In particular, daemon-enhanced
+`garnet.py` can save time when doing PNR for multiple applications
+mapped onto the same Garnet build.
 
 ==== PNR USING GARNET DAEMON
 
@@ -50,9 +50,8 @@ tests/conv_2_1       195  (117)    41  (41)    128  (50)    26  (26)
 TOTAL               2972 (2080)   461 (461)   1542 (650)   260 (260)
 
 
-PNR makes use of a version of `garnet.py` enhanced with daemon
-capabilities by way of the "GarnetDaemon" class in `daemon.py`.
-I.e. when you do
+In the above table, PNR uses `garnet.py` enhanced using the
+"GarnetDaemon" class in `daemon.py`.  I.e. when you do
 ```
     aha pnr my-app --width 28 --height 16 --daemon launch
 ```
@@ -72,7 +71,7 @@ the `aha pnr` wrapper does something like
 
 You can use `--daemon help` to find the latest info about how to use the daemon.
 ```
-    % garnet.py --daemon help
+    % python garnet.py --daemon help
 
     DESCRIPTION:
 
