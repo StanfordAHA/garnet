@@ -866,16 +866,18 @@ def main():
         # "help"   => echo help and exit
         # "wait"   => wait for "daemon ready"
 
-    # app="/aha/Halide-to-Hardware/apps/hardware_benchmarks/apps/pointwise/bin/design_top.json"
+    # BEFORE: app="/aha/Halide-to-Hardware/.../apps/pointwise/bin/design_top.json"
+    # AFTER:  app="apps/pointwise" (simpler for printing)
     app=args.app
     app=app.replace('/bin/design_top.json','')
     app=app.replace('/aha/Halide-to-Hardware/apps/hardware_benchmarks/','')
-
     print(f'--- GARNET-BUILD ({app})')
+
+    # BUILD GARNET
     garnet = Garnet(args)
 
     # VERILOG
-    # FIXME verilog could be inside loop (below). Should verilog be inside loop?
+    # FIXME verilog could be inside daemon loop (below). Right?
     if args.verilog:
         print('--- GARNET VERILOG')
         build_verilog(args, garnet)
