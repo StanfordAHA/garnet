@@ -176,7 +176,7 @@ class GarnetDaemon:
     def help():
         print(GarnetDaemon_HELP); return GarnetDaemon_HELP
 
-    def use(args, DBG=1):
+    def use(args, DBG=0):
         gd = GarnetDaemon
         if DBG: print('--- DAEMON USE; wait for daemon ready', flush=True)
         prev = gd.wait_daemon(args)       # Wait for daemon to exist
@@ -244,10 +244,10 @@ class GarnetDaemon:
             if verbose: print('- daemon_status: ' + status)
         return status
 
-    def wait_daemon(args, prev_job=-1):
+    def wait_daemon(args, prev_job=-1, DBG=0):
         '''Check daemon status, do not continue until/unless daemon exists AND IS READY'''
         if prev_job == -1:
-            print(f'\n--- DAEMON WAIT - wait for daemon ready', flush=True)
+            if DBG: print(f'\n--- DAEMON WAIT - wait for daemon ready', flush=True)
         else:
             print(f'\n--- DAEMON WAIT - wait for daemon to finish jobs 0..{prev_job}', flush=True)
 
@@ -289,7 +289,7 @@ class GarnetDaemon:
             print(f'- KEEP WAITING (recurse on wait_daemon())', flush=True)
             return wait_daemon(args, prev_job)
 
-        print('\n--- DAEMON READY, continuing...', flush=True)
+        if DBG: print('\n--- DAEMON READY, continuing...', flush=True)
         return done_job
 
 
