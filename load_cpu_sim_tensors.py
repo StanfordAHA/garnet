@@ -62,5 +62,5 @@ datasets = [
 for datum_name in datasets:
     command1 = f"mkdir SPARSE_TESTS/MAT_TMP_DIR/{datum_name}/"
     subprocess.run(command1, shell=True)
-    command = f"cp SUITESPARSE_TNS_LATEST/SUITESPARSE_FORMATTED/{datum_name}/{app_name}/* SPARSE_TESTS/MAT_TMP_DIR/{datum_name}"
+    command = f"cp SUITESPARSE_FORMATTED/{datum_name}/{app_name}/* SPARSE_TESTS/MAT_TMP_DIR/{datum_name}"
     subprocess.run(command, shell=True)
