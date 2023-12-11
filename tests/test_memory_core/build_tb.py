@@ -3127,7 +3127,7 @@ if __name__ == "__main__":
                                                                                                        zero_input=zero_input,
                                                                                                        tensor_orderings=mode_map,
                                                                                                        clean=clean,
-                                                                                                       suffix=f"_{i}",
+                                                                                                       suffix=f"",
                                                                                                        cached_inputs=cached_inputs)
 
                     if 'B' in ret_outputs and 'B' not in cached_inputs:
