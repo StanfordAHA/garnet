@@ -866,12 +866,15 @@ def main():
         # "help"   => echo help and exit
         # "wait"   => wait for "daemon ready"
 
-    # BEFORE: app="/aha/Halide-to-Hardware/.../apps/pointwise/bin/design_top.json"
-    # AFTER:  app="apps/pointwise" (simpler for printing)
-    app=args.app
-    app=app.replace('/bin/design_top.json','')
-    app=app.replace('/aha/Halide-to-Hardware/apps/hardware_benchmarks/','')
-    print(f'--- GARNET-BUILD ({app})')
+    def app_name(app):
+        # BEFORE: app="/aha/Halide-to-Hardware/.../apps/pointwise/bin/design_top.json"
+        # AFTER:  app="apps/pointwise" (simpler for printing)
+        app=args.app
+        app=app.replace('/bin/design_top.json','')
+        app=app.replace('/aha/Halide-to-Hardware/apps/hardware_benchmarks/','')
+        return app
+
+    print(f'--- GARNET-BUILD ({app_name(args.app)})')
 
     # BUILD GARNET
     garnet = Garnet(args)
@@ -897,6 +900,7 @@ def main():
                 print('- BEGIN CHILDPID > 0 (parent) looping')
                 pid, status = os.waitpid(childpid, 0) # Wait for child to finish
                 print(f'Child process {childpid} finished with exit status {status}', flush=True)
+                assert status == 0, f'--- ERROR child process {childpid} finished with exit status {status}\n'
                 assert pid == childpid # Right???
                 print('\nDAEMON (parent) STOPS AND AWAITS FURTHER INSTRUCTION')
                 args = GarnetDaemon.loop(args, dbg=1) # Parent halts here and waits for further instructions
@@ -922,13 +926,13 @@ def main():
 
         do_pnr = app_specified and not args.virtualize
         if do_pnr:
-            print(f"--- GARNET-PNR   ({app})", flush=True)
+            print(f"--- GARNET-PNR   ({app_name(args.app)})", flush=True)
             # FIXME how is args.app not redundant/unnecessary here?
             pnr(garnet, args, args.app)
 
         # BITSTREAM
         elif args.virtualize and len(args.app) > 0:
-            print(f"--- GARNET-BITSTREAM ({app})", flush=True)
+            print(f"--- GARNET-BITSTREAM ({app_name(args.app)})", flush=True)
             group_size = args.virtualize_group_size
             result = garnet.compile_virtualize(args.app, group_size)
             for c_id, bitstream in result.items():
@@ -938,7 +942,7 @@ def main():
         # WRITE REGS TO CONFIG.JSON
         from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
         if args.dump_config_reg:
-            print(f"--- GARNET-DUMP-CONFIG ({app})", flush=True)
+            print(f"--- GARNET-DUMP-CONFIG ({app_name(args.app)})", flush=True)
             ic = garnet.interconnect
             ic_reg = get_interconnect_regs(ic)
             core_reg = get_core_registers(ic)
