@@ -432,8 +432,8 @@ class GarnetDaemon:
             # if status == 'ready': print('', flush=True)
             # if status == 'ready': return True
 
-            if 'no daemon found' in status:
-                assert False, '--- ERROR no daemon has died'
+            if 'dead' in status:
+                assert False, '--- ERROR daemon is dead, viva daemon!'
 
             if 'done' in status: print('', flush=True)
             if 'done' in status: return True
