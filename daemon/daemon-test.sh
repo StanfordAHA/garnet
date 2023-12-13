@@ -110,6 +110,28 @@ apps='
     conv5_1
 '
 
+# apps='
+#     apps/pointwise
+#     apps/pointwise
+#     tests/ushift
+#     tests/arith
+#     tests/absolute
+#     tests/scomp
+#     tests/ucomp
+#     tests/uminmax
+#     tests/rom
+#     tests/conv_1_2
+#     tests/conv_2_1
+#     conv5_1
+# '
+
+apps='
+    apps/pointwise
+    conv3_1
+'
+
+
+
 # (For now) must replace non-daemon-capable pnr.py with my version
 echo '--- (daemon-test.sh) PNR.PY REPLACE'
 set -x
@@ -137,6 +159,10 @@ for app in $apps; do
 
     layer=""
     if [ "$app" == "conv5_1" ]; then
+        layer="--layer $app"
+        app=apps/resnet_output_stationary
+    fi
+    if [ "$app" == "conv3_1" ]; then
         layer="--layer $app"
         app=apps/resnet_output_stationary
     fi
