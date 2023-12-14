@@ -64,14 +64,16 @@ from lake.top.tech_maps import GF_Tech_Map
 from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
 from lassen.sim import PE_fc
-from lassen.utils import float2bfbin
+from lassen.utils import float2bfbin, bfbin2float
 from peak import family
 from lake.modules.scanner_pipe import ScannerPipe
 import tempfile
 import time
 import gemstone
 import torch
-from sparse_app_mappings import get_tensor
+from sparse_app_mappings import get_tensor, get_lut_tensor
+from lassen.stdlib import *
+from peak.family import PyFamily
 
 
 class SparseTBBuilder(m.Generator2):
@@ -1696,7 +1698,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "X"
-    elif 'mat_elemadd' in app_name and 'relu' in app_name:
+    elif 'mat_elemadd_relu.gv' in app_name:
         b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                            sparsity=0.0)
@@ -1705,6 +1707,29 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.0)
 
         output_matrix = numpy.maximum(0, numpy.add(b_mat, c_mat, dtype=numpy.int16, casting='unsafe'))
+        output_format = "CSF"
+        output_name = "X"
+    elif 'mat_elemadd_leakyrelu_exp.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=sparsities_[0], use_fp=True)
+        c_mat = get_tensor(input_name='C', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=sparsities_[1], use_fp=True)
+        exp_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='exp')
+        output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.float32, casting='unsafe')
+        output_matrix = numpy.maximum(b_mat, 
+                                      numpy.multiply(b_mat, 0.2, dtype=numpy.float32, casting='unsafe'), 
+                                      dtype=numpy.float32, casting='unsafe')
+        FExp = fpops.FExp_fc(PyFamily())
+        exp = FExp()
+        for idx, val in numpy.ndenumerate(output_matrix):
+            if val == 0.0:
+                continue
+            val = float2bfbin(val)
+            op = Data(int(val, 2))
+            result = exp(op)
+            output_matrix[idx] = bfbin2float("{:016b}".format(int(result)))
         output_format = "CSF"
         output_name = "X"
     elif 'mat_elemadd3.gv' in app_name:
