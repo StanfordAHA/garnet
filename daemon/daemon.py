@@ -321,6 +321,9 @@ class GarnetDaemon:
         # Cannot save glb_param and pe_fc to a file b/c they are "unserializable"
         GarnetDaemon.save_the_unsaveable(args)
 
+        # Let's save the environment too why not
+        args.ENV = dict(os.environ)
+
         # Save args as a sorted dict
         argdic = vars(args)
         sorted_argdic=dict(sorted(argdic.items()))
@@ -350,6 +353,21 @@ class GarnetDaemon:
             new_args.glb_params = GarnetDaemon.saved_glb_params
             new_args.pe_fc      = GarnetDaemon.saved_pe_fc
         except: pass
+
+        # Update env vars I guess. Is this the best place to do this?
+        for i in new_args.ENV:
+            # print(i, new_args.ENV[i])
+            newval = new_args.ENV[i]
+            if i not in os.environ:
+                print(f'- daemon.py load_args(): env var "{i}" :: "" => "{newval}"')
+                os.environ[i] = newval
+            else:
+                oldval = os.environ[i]
+                if oldval != newval:
+                    print(f'- daemon.py load_args() env var "{i}" :: "{oldval}" => "{newval}"')
+                os.environ[i] = newval
+
+
 
         if dbg: print(f'- restored args {new_args} from {fname}')
         if dbg: print(f"- loaded args {json.dumps(args_dict, indent=4)}")
@@ -443,7 +461,6 @@ class GarnetDaemon:
 
     # Helper function for "wait_daemon()"
     def check_daemon(sec_per_dot, nsec, dots_per_line):
-        print('yoo hoo this is check_daemon_new', flush=True)
         errmsg = f'\nERROR there is no daemon, did you forget to launch it?'
         assert GarnetDaemon.daemon_exists(), errmsg
         # -----------------------------------------------------------------------
