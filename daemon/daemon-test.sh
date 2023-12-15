@@ -100,6 +100,8 @@ apps='
     apps/pointwise
     tests/ushift
     tests/arith
+    conv1
+    conv3_1
     tests/absolute
     tests/scomp
     tests/ucomp
@@ -107,8 +109,6 @@ apps='
     tests/rom
     tests/conv_1_2
     tests/conv_2_1
-    conv1
-    conv3_1
 '
 
 # (For now) must replace non-daemon-capable pnr.py with my version
