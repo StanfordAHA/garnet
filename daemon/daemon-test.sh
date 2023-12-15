@@ -107,30 +107,9 @@ apps='
     tests/rom
     tests/conv_1_2
     tests/conv_2_1
-    conv5_1
-'
-
-# apps='
-#     apps/pointwise
-#     apps/pointwise
-#     tests/ushift
-#     tests/arith
-#     tests/absolute
-#     tests/scomp
-#     tests/ucomp
-#     tests/uminmax
-#     tests/rom
-#     tests/conv_1_2
-#     tests/conv_2_1
-#     conv5_1
-# '
-
-apps='
-    apps/pointwise
+    conv1
     conv3_1
 '
-
-
 
 # (For now) must replace non-daemon-capable pnr.py with my version
 echo '--- (daemon-test.sh) PNR.PY REPLACE'
@@ -156,13 +135,8 @@ DAEMON_LAUNCHED=
 for app in $apps; do
     ap=`basename $app`; echo $ap
     echo "--- (daemon-test.sh) $ap"
-
     layer=""
-    if [ "$app" == "conv5_1" ]; then
-        layer="--layer $app"
-        app=apps/resnet_output_stationary
-    fi
-    if [ "$app" == "conv3_1" ]; then
+    if expr $app : conv > /dev/null; then 
         layer="--layer $app"
         app=apps/resnet_output_stationary
     fi
@@ -198,18 +172,30 @@ echo "--- (daemon-test.sh) PNR $ap, using daemon"
 # First time through, launch the daemon; aftwerwards *use* the daemon
 t_start=`date +%s`; nobuf='stdbuf -oL -eL'
 if ! [ "$DAEMON_LAUNCHED" ]; then
+    echo '--- daemon-test.sh LAUNCHING A NEW DAEMON maybe'
     echo   aha pnr $app --width 28 --height 16 $layer --daemon auto
     $nobuf aha pnr $app --width 28 --height 16 $layer --daemon auto \
         |& $nobuf sed 's/^/DAEMON: /' \
         |  $nobuf tee pnr_launch.log &
-        DAEMON_LAUNCHED=True
+
+    # Wait (up to) a couple minutes for daemon to launch
+    echo '--- daemon-test.sh WAITING FOR NEW DAEMON maybe'
+    i=120; while test $((i--)) -gt 0; do
+             echo -n .; grep LAUNCHING pnr_launch.log && break
+             sleep 1
+          done
+    if ! grep LAUNCHING pnr_launch.log; then
+        echo 'ooh somethings ripped'; exit 13
+    fi
+    DAEMON_LAUNCHED=True
 else
-    echo   aha pnr $app --width 28 --height 1 $layer6 --daemon auto
+    echo '--- USE EXISTING DAEMON maybe'
+    echo   aha pnr $app --width 28 --height 16 $layer --daemon auto
     $nobuf aha pnr $app --width 28 --height 16 $layer --daemon auto \
-        |& $nobuf tee pnr_use.log &
+        |& $nobuf tee pnr_use.log
 fi
-# sleep 2 # BUG/FIXME should not need this
-aha garnet --daemon wait
+
+aha garnet --daemon wait  # Note, this dies if daemon not launched yet
 t_pnr_daemon=$(( `date +%s` - $t_start ))
 echo "'$ap' w/daemon pnr took $t_pnr_daemon seconds"
 
