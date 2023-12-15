@@ -151,6 +151,16 @@ class GarnetDaemon:
         old = args.__dict__; new = new_args.__dict__
         old.update(new)
 
+        # Update env vars! To match client env. Client should have packed them in 'args.ENV'
+        assert new['ENV'] == old['ENV']
+        new_env = new['ENV']
+        for i in new_env:
+            newval = new_env[i]
+            oldval = os.environ[i]  if i in os.environ else "NULL"
+            if oldval != newval:
+                print(f'- daemon.py load_args() env var "{i}" :: "{oldval}" => "{newval}"', flush=True)
+                os.environ[i] = newval
+
         if dbg: s = dict(sorted(new.items()))
         if dbg: print(f"- loaded args {json.dumps(s, indent=4)}")
 
@@ -353,21 +363,6 @@ class GarnetDaemon:
             new_args.glb_params = GarnetDaemon.saved_glb_params
             new_args.pe_fc      = GarnetDaemon.saved_pe_fc
         except: pass
-
-        # Update env vars I guess. Is this the best place to do this?
-        for i in new_args.ENV:
-            # print(i, new_args.ENV[i])
-            newval = new_args.ENV[i]
-            if i not in os.environ:
-                print(f'- daemon.py load_args(): env var "{i}" :: "" => "{newval}"')
-                os.environ[i] = newval
-            else:
-                oldval = os.environ[i]
-                if oldval != newval:
-                    print(f'- daemon.py load_args() env var "{i}" :: "{oldval}" => "{newval}"')
-                os.environ[i] = newval
-
-
 
         if dbg: print(f'- restored args {new_args} from {fname}')
         if dbg: print(f"- loaded args {json.dumps(args_dict, indent=4)}")
