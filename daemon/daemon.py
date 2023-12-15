@@ -151,15 +151,27 @@ class GarnetDaemon:
         old = args.__dict__; new = new_args.__dict__
         old.update(new)
 
-        # Update env vars! To match client env. Client should have packed them in 'args.ENV'
+        # REWRITE env vars! To match client env. Client should have packed them in 'args.ENV'
         assert new['ENV'] == old['ENV']
         new_env = new['ENV']
+
+        # Remove daemon env vars that do not appear in the new (client) list
+        for i in dict(os.environ):
+            if i not in new_env:
+                oldval = os.environ.pop(i); newval = "DELETED"
+                print(f'- daemon.py load_args env["{i}"]="{newval}" (was "{oldval}")', flush=True)
+
+        # Update daemon env vars that changed in the new (client) list
         for i in new_env:
             newval = new_env[i]
             oldval = os.environ[i]  if i in os.environ else "NULL"
             if oldval != newval:
                 print(f'- daemon.py load_args env["{i}"]="{newval}" (was "{oldval}")', flush=True)
                 os.environ[i] = newval
+
+#         # REWRITE env vars! To match client env. Client should have packed them in 'args.ENV'
+#         assert new['ENV'] == old['ENV'] # because we just updated them. now set os.environ to match
+#         os.environ.clear() # scary!
 
         if dbg: s = dict(sorted(new.items()))
         if dbg: print(f"- loaded args {json.dumps(s, indent=4)}")
