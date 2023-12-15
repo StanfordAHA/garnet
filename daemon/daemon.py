@@ -158,7 +158,7 @@ class GarnetDaemon:
             newval = new_env[i]
             oldval = os.environ[i]  if i in os.environ else "NULL"
             if oldval != newval:
-                print(f'- daemon.py load_args() env var "{i}" :: "{oldval}" => "{newval}"', flush=True)
+                print(f'- daemon.py load_args env["{i}"]="{newval}" (was "{oldval}")', flush=True)
                 os.environ[i] = newval
 
         if dbg: s = dict(sorted(new.items()))
