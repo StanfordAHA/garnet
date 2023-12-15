@@ -918,11 +918,17 @@ def main():
                         len(args.gold)   > 0 and \
                         len(args.output) > 0
 
+        # DEBUG info: args
         argdic = vars(args)
         sorted_argdic=dict(sorted(argdic.items()))
         sorted_argdic['glb_params'] = "UKNOWN"
         sorted_argdic['pe_fc'] = "UKNOWN"
         print(f"- BEGIN pre-pnr/bs args {json.dumps(sorted_argdic, indent=4)}")
+
+        # DEBUG info: env
+        envdic = dict(os.environ)
+        sorted_envdic=dict(sorted(envdic.items()))
+        print(f"- BEGIN pre-pnr/bs env {json.dumps(sorted_envdic, indent=4)}")
 
         do_pnr = app_specified and not args.virtualize
         if do_pnr:
