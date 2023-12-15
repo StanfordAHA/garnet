@@ -16,7 +16,9 @@ def add_subparser(subparser):
     parser.set_defaults(dispatch=dispatch)
 
 
-def subprocess_call_log(cmd, cwd, env=None, log=False, log_file_path="log.log", do_cmd=subprocess.check_call):
+def subprocess_call_log(cmd, cwd, env=None, log=False, log_file_path="log.log",
+                        do_cmd=subprocess.check_call):
+    '''Can set e.g. do_cmd=Popen to run job in background'''
     # if do_cmd == subprocess.check_call: print('--- PNR/scl: check_call (run) garnet.py')
     # elif do_cmd == subprocess.Popen:    print('--- PNR/scl: Popen (background) garnet.py')
     if log:
@@ -116,19 +118,18 @@ def dispatch(args, extra_args=None):
         "--pipeline-pnr"
     ]
 
-    # When running as daemon, must use non-blocking "Popen" and not "check_call"
-    # if '--daemon' in extra_args and not 'use' in extra_args:
-
-    launch_daemon = False
+    need_daemon = False
     do_cmd = subprocess.check_call
     if '--daemon' in extra_args:
+
+        # Do a '--daemon status' to see if daemon exists yet
         cmd = [sys.executable, "garnet.py", "--daemon", "status"]
         p = subprocess.run(cmd, text=True, cwd=args.aha_dir / "garnet",
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # print(f"--- daemon status returned: {p.stdout}", flush=True)
 
-        launch_daemon = 'no daemon found' in p.stdout
-        if launch_daemon:
+        # When running as daemon, must use non-blocking "Popen" and not "check_call"
+        need_daemon = 'no daemon found' in p.stdout
+        if need_daemon:
             print(f"--- found no daemon, setting do_cmd to Popen", flush=True)
             do_cmd = subprocess.Popen
         else:
@@ -143,8 +144,8 @@ def dispatch(args, extra_args=None):
         do_cmd=do_cmd,
     )
 
-    # When launching a new daemon, this will tell us when the PNR is done
-    if launch_daemon:
+    # Daemon runs in the background; need this to tell us when the PNR is done
+    if need_daemon:
         print(f'--- BEGIN LAUNCHED NEW DAEMON in pnr; waiting now...')
         subprocess.run([sys.executable, 'garnet.py', '--daemon', 'wait'], cwd='/aha/garnet')
 
