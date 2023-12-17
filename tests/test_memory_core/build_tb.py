@@ -2020,7 +2020,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.0, format='UNC')
         # First transpose c_mat
         input_dims['c'] = tuple(c_mat.shape)
-        output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.int16, casting='unsafe')
+        output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "x"
     elif 'spmv' in app_name and "relu" in app_name:
@@ -2179,7 +2179,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.0)
         assert c_mat.shape[0] == B_mat.shape[0]
         # broadcasting
-        output_matrix = numpy.zeros((shapes_[0], shapes_[0]))
+        output_matrix = numpy.zeros((shapes_[0], shapes_[0]), dtype=numpy.uint16)
         for i in range(0, output_matrix.shape[0]):
             for j in range(0, output_matrix.shape[1]):
                 if B_mat[i][j] != 0:   
@@ -2195,7 +2195,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.0)
         assert c_mat.shape[0] == B_mat.shape[0]
         # broadcasting
-        output_matrix = numpy.zeros((shapes_[0], shapes_[0]))
+        output_matrix = numpy.zeros((shapes_[0], shapes_[0]), dtype=numpy.uint16)
         for i in range(0, output_matrix.shape[0]):
             for j in range(0, output_matrix.shape[1]):
                 if B_mat[i][j] != 0:   
