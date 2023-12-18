@@ -1744,16 +1744,12 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         #     sparsity_use = 1.0
         # else:
         #     sparsity_use = 0.7
-
         b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                            sparsity=sparsities_[0])
         c_mat = get_tensor(input_name='C', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['C'],
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                            sparsity=sparsities_[1])
-
-        if(b_mat.shape == (12,5)):
-            print("\n\nrel3 example")
 
         print("\nCMAT SHAPE IS: ", c_mat.shape)
         print("\nBMAT SHAPE IS: ", b_mat.shape)
@@ -1797,34 +1793,34 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         vec_ordering = ((1, (0, 's')),)
         print(vec_ordering)
 
-        # b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=False, tmp_dir=matrix_tmp_dir,
-        #                    dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
-        #                    sparsity=0)
-        # C_mat = get_tensor(input_name='C', shapes=[shape_, shape_], give_tensor=False, tmp_dir=matrix_tmp_dir,
-        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-        #                    sparsity=sparsities_[0])
-        # d_mat = get_tensor(input_name='d', shapes=[shape_], give_tensor=False, tmp_dir=matrix_tmp_dir,
-        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
-        #                    sparsity=sparsities_[1])
-        # e_mat = get_tensor(input_name='e', shapes=[1], give_tensor=False, tmp_dir=matrix_tmp_dir,
-        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
-        #                    sparsity=0)
-        # f_mat = get_tensor(input_name='f', shapes=[shape_], give_tensor=False, tmp_dir=matrix_tmp_dir,
-        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
-        #                    sparsity=sparsities_[2])
-
-
-        C_mat = get_tensor(input_name='C', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['C'],
+        b_mat = get_tensor(input_name='b', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['b'],
                            sparsity=0)
-        d_mat = get_tensor(input_name='d', shapes=[shape_, shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
+        C_mat = get_tensor(input_name='C', shapes=[shape_, shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
                            sparsity=sparsities_[0])
-        f_mat = get_tensor(input_name='f', shapes=[shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
+        d_mat = get_tensor(input_name='d', shapes=[shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['d'],
                            sparsity=sparsities_[1])
-        e_mat = 2
-        b_mat = 2
+        e_mat = get_tensor(input_name='e', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['e'],
+                           sparsity=0)
+        f_mat = get_tensor(input_name='f', shapes=[shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['f'],
+                           sparsity=sparsities_[2])
+
+
+        # C_mat = get_tensor(input_name='C', shapes=[1], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['C'],
+        #                    sparsity=0)
+        # d_mat = get_tensor(input_name='d', shapes=[shape_, shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
+        #                    sparsity=sparsities_[0])
+        # f_mat = get_tensor(input_name='f', shapes=[shape_], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        #                    dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=vec_ordering,
+        #                    sparsity=sparsities_[1])
+        # e_mat = 2
+        # b_mat = 2
 
         # print("b_mat shape: ", b_mat.shape)
         print("c_mat shape: ", C_mat.shape)
