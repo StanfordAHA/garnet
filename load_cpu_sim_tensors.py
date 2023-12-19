@@ -63,6 +63,9 @@ datasets = [
 
 for datum_name in datasets:
     # check if dir exists
+    mat_tmp_dir = f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/"
+    if not os.path.exists(mat_tmp_dir):
+        os.mkdir(mat_tmp_dir)
     load_folder = f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{datum_name}/"
     if not os.path.exists(load_folder):
         os.mkdir(load_folder)
