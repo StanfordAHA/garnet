@@ -13,11 +13,8 @@ import archipelago
 import archipelago.power
 import archipelago.io
 from lassen.sim import PE_fc as lassen_fc
-import metamapper.peak_util as putil
-from mapper.netlist_util import create_netlist_info, print_netlist_info
-from metamapper.coreir_mapper import Mapper
-from metamapper.map_design_top import map_design_top
-from metamapper.node import Nodes
+
+from daemon.daemon import GarnetDaemon
 
 # set the debug mode to false to speed up construction
 from gemstone.generator.generator import set_debug_mode
@@ -26,7 +23,6 @@ set_debug_mode(False)
 from gemstone.generator.generator import Generator
 class Garnet(Generator):
     def __init__(self, args):
-        print("--- Garnet.__init__()")
         super().__init__()
 
         # Check consistency of @standalone and @interconnect_only parameters. If
@@ -42,6 +38,7 @@ class Garnet(Generator):
 
         args.tile_id_width = 16
         args.config_addr_reg_width = 8
+        args.config_data_width = self.config_data_width
 
         # size
         self.width = args.width
@@ -63,10 +60,9 @@ class Garnet(Generator):
         if not args.interconnect_only:
             self.build_glb()  # Builds self.{global_controller, global_buffer}
 
-        print("--- BUILD THE CGRA")
+        print("- BUILD THE CGRA")
         from cgra.util import get_cc_args, create_cgra
         width  = args.width; height = args.height
-        args.config_data_width = self.config_data_width
         cc_args = get_cc_args(width, height, io_side, args)
         self.interconnect = create_cgra(**cc_args.__dict__)
 
@@ -328,12 +324,16 @@ class Garnet(Generator):
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves):
 
+        import metamapper.peak_util as putil
+        from mapper.netlist_util import create_netlist_info, print_netlist_info
+        from metamapper.coreir_mapper import Mapper # not used?
+        from metamapper.map_design_top import map_design_top
+        from metamapper.node import Nodes
+
         import metamapper.coreir_util as cutil
         from metamapper import CoreIRContext
         from metamapper.irs.coreir import gen_CoreIRNodes
         from metamapper.io_tiles import IO_fc, BitIO_fc
-        import metamapper.peak_util as putil
-        from mapper.netlist_util import create_netlist_info, print_netlist_info
 
         app_dir = os.path.dirname(app)
 
@@ -697,6 +697,10 @@ def parse_args():
     parser.add_argument("--dual-port", action="store_true")
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
+
+    # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
+    parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
+
     parser.set_defaults(config_port_pipeline=True)
     args = parser.parse_args()
 
@@ -726,6 +730,7 @@ def parse_args():
         axi_data_width=32,
         config_port_pipeline=args.config_port_pipeline)
 
+    # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
     return args
 
 def build_verilog(args, garnet):
@@ -852,41 +857,107 @@ def pnr_wrapper(garnet, args, unconstrained_io, load_only):
 
 def main():
     args = parse_args()
+    GarnetDaemon.initial_check(args)
+        # "launch" => ERROR if daemon exists already else continue
+        # "force"  => kill existing daemon, then continue
+        # "status" => echo daemon status and exit
+        # "use"    => send args to daemon and exit
+        # "kill"   => kill existing daemon and exit
+        # "help"   => echo help and exit
+        # "wait"   => wait for "daemon ready"
+
+    def app_name(app):
+        # BEFORE: app="/aha/Halide-to-Hardware/.../apps/pointwise/bin/design_top.json"
+        # AFTER:  app="apps/pointwise" (simpler for printing)
+        app=args.app
+        app=app.replace('/bin/design_top.json','')
+        app=app.replace('/aha/Halide-to-Hardware/apps/hardware_benchmarks/','')
+        return app
+
+    print(f'--- GARNET-BUILD ({app_name(args.app)})')
+
+    # BUILD GARNET
     garnet = Garnet(args)
 
-    # FIXME OR could/should maybe do garnet.build_verilog(args), also
-    # see "def place_and_route"/garnet.place_and_route(...)
-    # For now, leaving it OUTSIDE the Garnet class b/c that's where
-    # the code was origially (i.e. her in main())
+    # VERILOG
+    # FIXME verilog could be inside daemon loop (below). Right?
     if args.verilog:
+        print('--- GARNET VERILOG')
         build_verilog(args, garnet)
 
-    # PNR
+    print(f"args.daemon={args.daemon}", flush=True)
 
-    app_specified = len(args.app)    > 0 and \
-                    len(args.input)  > 0 and \
-                    len(args.gold)   > 0 and \
-                    len(args.output) > 0
+    # USE GARNET
+    import json # for debugging, maybe temporary
+    while True:
+        print('- CHECK FOR DAEMON')
+        if args.daemon:
+            print('- BEGIN ARGS.DAEMON')
+            # Fork a child to do the work, wait for it to finish, then continue
+            childpid = os.fork() # Fork a child
+            if childpid > 0:
+                # Only parent does this part
+                print('- BEGIN CHILDPID > 0 (parent) looping')
+                pid, status = os.waitpid(childpid, 0) # Wait for child to finish
+                print(f'Child process {childpid} finished with exit status {status}', flush=True)
+                assert status == 0, f'--- ERROR child process {childpid} finished with exit status {status}\n'
+                assert pid == childpid # Right???
+                print('\nDAEMON (parent) STOPS AND AWAITS FURTHER INSTRUCTION')
+                args = GarnetDaemon.loop(args, dbg=1) # Parent halts here and waits for further instructions
+                continue # Parent loops back
+            print('\nDAEMON (child) DOES THE WORK')
+            # Child falls through to next line below
 
-    do_pnr = app_specified and not args.virtualize
+        # Forked child process does the work, then exits
 
-    if do_pnr:
-        pnr(garnet, args, args.app)
+        # FIXME Verilog should be here probably, Right?
 
-    elif args.virtualize and len(args.app) > 0:
-        group_size = args.virtualize_group_size
-        result = garnet.compile_virtualize(args.app, group_size)
-        for c_id, bitstream in result.items():
-            filename = os.path.join("temp", f"{c_id}.bs")
-            write_out_bitstream(filename, bitstream)
+        # PNR
+        app_specified = len(args.app)    > 0 and \
+                        len(args.input)  > 0 and \
+                        len(args.gold)   > 0 and \
+                        len(args.output) > 0
 
-    from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
-    if args.dump_config_reg:
-        ic = garnet.interconnect
-        ic_reg = get_interconnect_regs(ic)
-        core_reg = get_core_registers(ic)
-        with open("config.json", "w+") as f:
-            json.dump(ic_reg + core_reg, f)
+        # DEBUG info: args
+        argdic = vars(args)
+        sorted_argdic=dict(sorted(argdic.items()))
+        sorted_argdic['glb_params'] = "UKNOWN"
+        sorted_argdic['pe_fc'] = "UKNOWN"
+        print(f"- BEGIN pre-pnr/bs args {json.dumps(sorted_argdic, indent=4)}")
+
+        # DEBUG info: env
+        envdic = dict(os.environ)
+        sorted_envdic=dict(sorted(envdic.items()))
+        print(f"- BEGIN pre-pnr/bs env {json.dumps(sorted_envdic, indent=4)}")
+
+        do_pnr = app_specified and not args.virtualize
+        if do_pnr:
+            print(f"--- GARNET-PNR   ({app_name(args.app)})", flush=True)
+            # FIXME how is args.app not redundant/unnecessary here?
+            pnr(garnet, args, args.app)
+
+        # BITSTREAM
+        elif args.virtualize and len(args.app) > 0:
+            print(f"--- GARNET-BITSTREAM ({app_name(args.app)})", flush=True)
+            group_size = args.virtualize_group_size
+            result = garnet.compile_virtualize(args.app, group_size)
+            for c_id, bitstream in result.items():
+                filename = os.path.join("temp", f"{c_id}.bs")
+                write_out_bitstream(filename, bitstream)
+
+        # WRITE REGS TO CONFIG.JSON
+        from passes.collateral_pass.config_register import get_interconnect_regs, get_core_registers
+        if args.dump_config_reg:
+            print(f"--- GARNET-DUMP-CONFIG ({app_name(args.app)})", flush=True)
+            ic = garnet.interconnect
+            ic_reg = get_interconnect_regs(ic)
+            core_reg = get_core_registers(ic)
+            with open("config.json", "w+") as f:
+                json.dump(ic_reg + core_reg, f)
+
+        # CHILD IS DONE
+        print("- garnet.py DONE", flush=True)
+        exit()
 
 if __name__ == "__main__":
     main()
