@@ -1,9 +1,55 @@
 #!/bin/bash
 
-#########################################################################
-# FYI THIS SCRIPT IS NO LONGER USED MAYBE. INSTEAD, WE USE THE VCOMPARE #
-# FUNCTION DEFINED INTERNALLY IN $AHA_REPO/aha/bin/rtl-goldcheck.sh     #
-#########################################################################
+# ALSO SEE ../../aha/aha/bin/rtl-goldcheck.sh
+
+
+# Looks like maybe goldcheck is used here:
+# # PWD=/nobackup/steveri/github/garnet
+# % grep -r goldcheck .buildkite/
+# .buildkite/pipelines/aha-flow-pipeline.yml:  key: "goldcheck-amber"
+# .buildkite/pipelines/aha-flow-pipeline.yml:  - set -x; /aha/aha/bin/rtl-goldcheck.sh amber
+# .buildkite/pipelines/aha-flow-pipeline.yml:  - "goldcheck-amber"
+# .buildkite/pipelines/pmg.yml:#   - 'bin/rtl-goldcheck.sh --use-docker $$IMAGE $$CONTAINER amber'
+# .buildkite/pipelines/pmg.yml:  - 'bin/rtl-goldcheck.sh --use-docker $$IMAGE $$CONTAINER onyx'
+# 
+# So what's the plan?
+# - unite the two goldchecks
+# - add to $AHA version:
+#     don't use this one, use the garnet version instead
+#     redirecting to garnet version...(exec garnet/bin/whatevs)
+# 
+# 
+# 
+# 
+# To fix lalr, need a clean branch
+# A possible way forward:
+# - leave goldcompare alone for now / undo changes in lalr branch
+# - LATER: confine all the goldcompare stuff to garnet
+# 
+# 
+# 
+# To clean branch need to fix $GARNET/bin/rtl-goldcompare.sh
+# All the gold compare stuff should be in garnet repo.
+# Because garnet repo can exist apart from aha repo, but not vice versa.
+# Where even does aha use goldcheck??? Nowheres!!
+# 
+#     # PWD=/nobackup/steveri/github/aha
+#     % git branch
+#     * regress-daemon
+#     % grep -r goldcheck *
+#     <nada>
+# 
+#     # PWD=/nobackup/steveri/github/aha
+#     % git checkout master
+#     % git pull
+#     <nada>
+# 
+# So where does garnet repo use goldcheck?
+# 
+# # PWD=/nobackup/steveri/github/garnet
+# % git branch
+# * lalr
+# % grep -r goldcheck *
 
 cmd=$0; HELP="
 DESCRIPTION
@@ -18,11 +64,6 @@ EXAMPLES
 
 f1=$1; f2=$2
 
-#########################################################################
-# FYI THIS SCRIPT IS NO LONGER USED MAYBE. INSTEAD, WE USE THE VCOMPARE #
-# FUNCTION DEFINED INTERNALLY IN $AHA_REPO/aha/bin/rtl-goldcheck.sh     #
-#########################################################################
-
 # Need 'sed s/unq...' to handle the case where both designs are
 # exactly the same but different "unq" suffixes e.g.
 #     < Register_unq3 Register_inst0 (
@@ -30,11 +71,6 @@ f1=$1; f2=$2
 #
 # Need 's/_O._value_O/...' because generator seems e.g. to randomly assign
 # the equivalent values 'PE_onyx_inst_onyxpeintf_O3_value_O' and '...O4_value_O' :(
-
-#########################################################################
-# FYI THIS SCRIPT IS NO LONGER USED MAYBE. INSTEAD, WE USE THE VCOMPARE #
-# FUNCTION DEFINED INTERNALLY IN $AHA_REPO/aha/bin/rtl-goldcheck.sh     #
-#########################################################################
 
 function vcompare {
     cat $1 |
@@ -52,8 +88,3 @@ printf "\n"
 
 echo "diff $f1 $f2"
 diff -Bb -I Date <(vcompare $f1) <(vcompare $f2)
-
-#########################################################################
-# FYI THIS SCRIPT IS NO LONGER USED MAYBE. INSTEAD, WE USE THE VCOMPARE #
-# FUNCTION DEFINED INTERNALLY IN $AHA_REPO/aha/bin/rtl-goldcheck.sh     #
-#########################################################################
