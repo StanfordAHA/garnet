@@ -29,15 +29,14 @@ class PowerDomainConfigReg(Configurable):
         assert turn_off in {0, 1, True, False}
         return [0, int(turn_off)]
 
+def add_power_domain(interconnect: Interconnect):
 
-__AND_GATE = magma.DefineFromVerilog("""
+    __AND_GATE = magma.DefineFromVerilog("""
 module and_cell(input A, input B, output Z);
 AN_CELL inst(.A1(A), .A2(B), .Z(Z));
 endmodule
 """)[0]
 
-
-def add_power_domain(interconnect: Interconnect):
     # add features first
     for (x, y) in interconnect.tile_circuits:
         tile = interconnect.tile_circuits[(x, y)]
