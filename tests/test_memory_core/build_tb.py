@@ -2677,7 +2677,7 @@ if __name__ == "__main__":
     parser.add_argument('--compile_tb', action="store_true")
     parser.add_argument('--perf_debug', action="store_true")
     parser.add_argument('--unroll', type=int, default=1)
-    parser.add_argument('--suitesparse_data', type=str, default=None, nargs='+')
+    parser.add_argument('--suitesparse_data_tile_pairs', type=str, default=None, nargs='+')
 
     args = parser.parse_args()
     bespoke = args.bespoke
@@ -2716,7 +2716,7 @@ if __name__ == "__main__":
     compile_tb = args.compile_tb
     perf_debug = args.perf_debug
     unroll = args.unroll
-    suitesparse_data = args.suitesparse_data
+    suitesparse_data_tile_pairs = args.suitesparse_data_tile_pairs
 
     if do_comparison:
 
@@ -2932,7 +2932,7 @@ if __name__ == "__main__":
             use_seeds = seeds
 
             if give_tensor:
-                use_seeds = suitesparse_data
+                use_seeds = suitesparse_data_tile_pairs
                 #use_seeds = os.listdir(tensor_locs)
                 #use_seeds = [dir_ for dir_ in use_seeds if os.path.isdir(os.path.join(tensor_locs, dir_))]
 
@@ -2950,25 +2950,34 @@ if __name__ == "__main__":
                 if not give_tensor:
                     numpy.random.seed(seed)
                     random.seed(seed)
+                else:
+                    seed = seed.split("MAT_TMP_DIR/")[1]
+                    seed_sam_graph_name = seed.split("-")[0]
+                    #print(f"SEED SAM GRAPH NAME: {seed_sam_graph_name}")
+                    #print(f"SAM GRAPH NAME: {sam_graph_name}")
+                    if seed_sam_graph_name != sam_graph_name:
+                        continue
 
                 output_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.output_dir, "OUTPUT_DIR")
                 input_dir = prep_test_dir(f"{base_dir}/{sam_graph_name}_{seed}", args.input_dir, "INPUT_DIR")
                 if give_tensor:
                     # BEGIN LOAD_CPU_SIM_TENSOR CODE
-                    print("Here is the suitesparse data")
-                    print(suitesparse_data)
-                    # check if dir exists
-                    tmp_mat_tmp_dir = f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/"
-                    if not os.path.exists(tmp_mat_tmp_dir):
-                        os.mkdir(tmp_mat_tmp_dir)
-                    load_folder = f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{seed}/"
-                    if not os.path.exists(load_folder):
-                        os.mkdir(load_folder)
-                    copy_folder = f"/aha/garnet/SUITESPARSE_FORMATTED/{seed}/{sam_graph_name}/"
-                    if not os.path.exists(copy_folder):
-                        os.mkdir(copy_folder)
-                    command = "cp " + copy_folder + "* " + load_folder
-                    subprocess.call(command, shell=True)
+                    #command = "python3 /aha/garnet/copy_formatted.py " + sam_graph_name + " " + seed
+                    #subprocess.call(command, shell=True)
+                    # print("Here is the suitesparse data")
+                    # print(suitesparse_data_tile_pairs)
+                    # # check if dir exists
+                    # tmp_mat_tmp_dir = f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/"
+                    # if not os.path.exists(tmp_mat_tmp_dir):
+                    #     os.mkdir(tmp_mat_tmp_dir)
+                    # load_folder = f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{seed}/"
+                    # if not os.path.exists(load_folder):
+                    #     os.mkdir(load_folder)
+                    # copy_folder = f"/aha/garnet/SUITESPARSE_FORMATTED/{seed}/{sam_graph_name}/"
+                    # if not os.path.exists(copy_folder):
+                    #     os.mkdir(copy_folder)
+                    # command = "cp " + copy_folder + "* " + load_folder
+                    # subprocess.call(command, shell=True)
                     # END LOAD_CPU_SIM_TENSOR CODE
                     matrix_tmp_dir = os.path.join(tensor_locs, seed)
                 elif mtx_tmp_dir is not None:

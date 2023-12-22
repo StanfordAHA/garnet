@@ -57,19 +57,17 @@ b_loc_seen = set()
 c_loc_seen = set()
 d_loc_seen = set()
 
-if not os.path.exists("SPARSE_TESTS/MAT_TMP_DIR"):
-    os.mkdir("SPARSE_TESTS/MAT_TMP_DIR")
 
-exit_status = os.system(f"rm -rf SPARSE_TESTS/{app_name}*")
-exit_status = os.system(f"rm -rf SPARSE_TESTS/{app_name}_crddrop*")
+exit_status = os.system(f"rm -rf /aha/garnet/SPARSE_TESTS/{app_name}*")
+exit_status = os.system(f"rm -rf /aha/garnet/SPARSE_TESTS/{app_name}_crddrop*")
 
 if os.WEXITSTATUS(exit_status) != 0:
-    raise RuntimeError(f"Command 'rm -rf SPARSE_TESTS/{app_name}*' returned non-zero exit status {os.WEXITSTATUS(exit_status)}.")
+    raise RuntimeError(f"Command 'rm -rf /aha/garnet/SPARSE_TESTS/{app_name}*' returned non-zero exit status {os.WEXITSTATUS(exit_status)}.")
 
-exit_status = os.system(f"rm -rf SPARSE_TESTS/MAT_TMP_DIR/tile*")
+exit_status = os.system(f"rm -rf /aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/tile*")
 
 if os.WEXITSTATUS(exit_status) != 0:
-    raise RuntimeError(f"Command 'rm -rf SPARSE_TESTS/{app_name}*' returned non-zero exit status {os.WEXITSTATUS(exit_status)}.")
+    raise RuntimeError(f"Command 'rm -rf /aha/garnet/SPARSE_TESTS/{app_name}*' returned non-zero exit status {os.WEXITSTATUS(exit_status)}.")
 
 tile = 0
 
@@ -84,12 +82,12 @@ def find_tensor(tensor_list, tile_id):
             return temp
     return None
 
-os.chdir("SPARSE_TESTS")
+#os.chdir("SPARSE_TESTS")
 
 if app_name == "matmul_ijk" and mode_ns == False:
     for b in b_tensors:
         for c in c_tensors:
-            tile_str = "tile" + str(tile)
+            tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
             # b_loc = b[-7:]
             # c_loc = c[-7:]
             b_loc = b.split("_")
@@ -109,28 +107,28 @@ if app_name == "matmul_ijk" and mode_ns == False:
 
                 tiles_accumulation[b_loc[2]].append(tile_str)
 
-                if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                    os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+                if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                    os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
                 
-                shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-                shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+                shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
-                shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-                shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+                shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
 
-                shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+                shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
 
-                shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+                shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-                shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-                shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-                shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-                shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+                shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
                 tile = tile + 1
 
@@ -143,7 +141,7 @@ if app_name == "matmul_ijk" and mode_ns == True:
             if "seg" in b or "seg" in c:
                 continue
 
-            tile_str = "tile" + str(tile)
+            tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
             b_loc = b.split("_")
             c_loc = c.split("_")
             
@@ -154,12 +152,12 @@ if app_name == "matmul_ijk" and mode_ns == True:
 
             if(b_loc[1] == c_loc[1]):
                 tiles_accumulation[tile] = [b_loc, c_loc]
-                if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                    os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+                if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                    os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
 
                 #only crds, copy mode 0
-                shutil.copy(f"{b}", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-                shutil.copy(f"{c}", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                shutil.copy(f"{b}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                shutil.copy(f"{c}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
 
                 b_seg_id = f"seg_{b_loc[0]}_{b_loc[1]}"
                 c_seg_id = f"seg_{c_loc[0]}_{c_loc[1]}"
@@ -167,8 +165,8 @@ if app_name == "matmul_ijk" and mode_ns == True:
                 b_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_mode_2_{b_seg_id}"
                 c_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_mode_2_{c_seg_id}"
 
-                shutil.copy(f"{b_seg_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
-                shutil.copy(f"{c_seg_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                shutil.copy(f"{b_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+                shutil.copy(f"{c_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
                 # mode 1
                 b_crd_id = f"crd_{b_loc[0]}_{b_loc[1]}"
@@ -177,14 +175,14 @@ if app_name == "matmul_ijk" and mode_ns == True:
                 b_crd_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_mode_3_{b_crd_id}"
                 c_crd_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_mode_3_{c_crd_id}"
 
-                shutil.copy(f"{b_crd_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-                shutil.copy(f"{c_crd_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                shutil.copy(f"{b_crd_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                shutil.copy(f"{c_crd_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
 
                 b_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_mode_3_{b_seg_id}"
                 c_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_mode_3_{c_seg_id}"
 
-                shutil.copy(f"{b_seg_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
-                shutil.copy(f"{c_seg_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                shutil.copy(f"{b_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+                shutil.copy(f"{c_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
                 #vals
                 b_vals_id = f"vals_{b_loc[0]}_{b_loc[1]}"
@@ -193,13 +191,13 @@ if app_name == "matmul_ijk" and mode_ns == True:
                 b_vals_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_{b_vals_id}"
                 c_vals_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_{c_vals_id}"
 
-                shutil.copy(f"{b_vals_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
-                shutil.copy(f"{c_vals_file}", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                shutil.copy(f"{b_vals_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+                shutil.copy(f"{c_vals_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
                 #shape
-                with open(f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape", "w") as f:
+                with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape", "w") as f:
                     f.write("120\n30\n")
-                with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape", "w") as f:
+                with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape", "w") as f:
                     f.write("30\n120\n")
 
                 tile = tile + 1
@@ -207,7 +205,7 @@ if app_name == "matmul_ijk" and mode_ns == True:
 elif app_name == "mat_elemadd" or app_name == "mat_elemmul":
     for b in b_tensors:
         for c in c_tensors:
-            tile_str = "tile" + str(tile)
+            tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
             # b_loc = b[-7:]
             # c_loc = c[-7:]
             # b_loc = b_loc.split("_")
@@ -223,42 +221,42 @@ elif app_name == "mat_elemadd" or app_name == "mat_elemmul":
 
             if(b_loc == c_loc):
                 print(b, c)
-                if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                    os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
-                shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-                shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+                if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                    os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
+                shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
-                shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-                shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+                shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
 
-                shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+                shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
 
-                shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+                shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-                shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-                shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-                shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-                shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+                shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
                 # subprocess.call(["aha",
                 #     "regress",
                 #     "fast"],
                 #     text=True)
 
-                # shutil.copy("/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/output_gold.npy", "/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin")
-                # shutil.copytree("/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin", f"/aha/garnet/SPARSE_TESTS/{tile_str}")
+                # shutil.copy("/aha/garnet//aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/output_gold.npy", "/aha/garnet//aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin")
+                # shutil.copytree("/aha/garnet//aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin", f"/aha/garnet//aha/garnet/SPARSE_TESTS/{tile_str}")
                 tile = tile + 1
                 # print("we are on tile ", tile)
 elif app_name == "mat_mattransmul":
     for b in b_tensors:
         for c in c_vec_tensors:
             for d in d_vec_tensors:
-                tile_str = "tile" + str(tile)
+                tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
                 b_loc = b[-7:]
                 c_loc = c[-3:]
                 d_loc = d[-3:]
@@ -276,41 +274,41 @@ elif app_name == "mat_mattransmul":
                     print("C is: ", c)
                     print("d is: ", d)
                     print(f"\n ----- TILE {tile} ----- \n")
-                    if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                        os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+                    if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                        os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
                         
-                    shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-                    shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                    shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                    shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                    shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-                    shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                    shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                    shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                    shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                    shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-                    shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+                    shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-                    shutil.copy(f"{c}/c1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_crd")
-                    shutil.copy(f"{c}/c1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_seg")
+                    shutil.copy(f"{c}/c1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_crd")
+                    shutil.copy(f"{c}/c1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_seg")
 
-                    shutil.copy(f"{c}/c0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_crd")
-                    shutil.copy(f"{c}/c0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_seg")
+                    shutil.copy(f"{c}/c0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_crd")
+                    shutil.copy(f"{c}/c0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_seg")
 
-                    shutil.copy(f"{d}/d1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_1_crd")
-                    shutil.copy(f"{d}/d1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_1_seg")
+                    shutil.copy(f"{d}/d1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_1_crd")
+                    shutil.copy(f"{d}/d1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_1_seg")
 
-                    shutil.copy(f"{d}/d0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_crd")
-                    shutil.copy(f"{d}/d0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_seg")
+                    shutil.copy(f"{d}/d0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_crd")
+                    shutil.copy(f"{d}/d0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_seg")
 
-                    shutil.copy(f"{c}/c_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals")
-                    shutil.copy(f"{c}/c_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_shape")
+                    shutil.copy(f"{c}/c_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals")
+                    shutil.copy(f"{c}/c_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_shape")
 
-                    shutil.copy(f"{d}/d_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_vals")
-                    shutil.copy(f"{d}/d_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_shape")
+                    shutil.copy(f"{d}/d_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_vals")
+                    shutil.copy(f"{d}/d_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_shape")
 
-                    with open(f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals", 'w') as file:
+                    with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals", 'w') as file:
                         file.write(str(const_val))
                     
-                    with open(f"./MAT_TMP_DIR/{tile_str}/tensor_e_mode_vals", 'w') as file:
+                    with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_e_mode_vals", 'w') as file:
                         file.write(str(const_val))
                     
                     tile = tile + 1
@@ -323,56 +321,56 @@ elif app_name == "mat_mattransmul":
                     print("d is: ", d)
                     print(f"\n ----- TILE D-unpaired {tile} ----- \n")
 
-                    if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                        os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+                    if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                        os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
                         
-                    shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-                    shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                    shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                    shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                    shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-                    shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                    shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                    shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                    shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                    shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
                     # clear out C vals
-                    with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r+') as file:
+                    with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r+') as file:
                         contents = file.read()
                         contents = contents.replace(contents, str(0))
                         file.seek(0)
                         file.write(contents)
 
-                    shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+                    shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-                    shutil.copy(f"{c}/c1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_crd")
-                    shutil.copy(f"{c}/c1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_seg")
+                    shutil.copy(f"{c}/c1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_crd")
+                    shutil.copy(f"{c}/c1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_seg")
 
-                    shutil.copy(f"{c}/c0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_crd")
-                    shutil.copy(f"{c}/c0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_seg")
+                    shutil.copy(f"{c}/c0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_crd")
+                    shutil.copy(f"{c}/c0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_seg")
 
-                    shutil.copy(f"{d}/d1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_1_crd")
-                    shutil.copy(f"{d}/d1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_1_seg")
+                    shutil.copy(f"{d}/d1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_1_crd")
+                    shutil.copy(f"{d}/d1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_1_seg")
 
-                    shutil.copy(f"{d}/d0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_crd")
-                    shutil.copy(f"{d}/d0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_seg")
+                    shutil.copy(f"{d}/d0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_crd")
+                    shutil.copy(f"{d}/d0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_seg")
 
-                    shutil.copy(f"{c}/c_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals")
+                    shutil.copy(f"{c}/c_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals")
 
                     # clear out d vals
-                    with open(f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals", 'r+') as file:
+                    with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals", 'r+') as file:
                         contents = file.read()
                         contents = contents.replace(contents, str(0))
                         file.seek(0)
                         file.write(contents)
 
-                    shutil.copy(f"{c}/c_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_shape")
+                    shutil.copy(f"{c}/c_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_shape")
 
-                    shutil.copy(f"{d}/d_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_vals")
-                    shutil.copy(f"{d}/d_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_shape")
+                    shutil.copy(f"{d}/d_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_vals")
+                    shutil.copy(f"{d}/d_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_shape")
 
-                    with open(f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals", 'w') as file:
+                    with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals", 'w') as file:
                         file.write(str(const_val))
                     
-                    with open(f"./MAT_TMP_DIR/{tile_str}/tensor_e_mode_vals", 'w') as file:
+                    with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_e_mode_vals", 'w') as file:
                         file.write(str(const_val))
 
                     tile = tile + 1
@@ -380,7 +378,7 @@ elif app_name == "mat_mattransmul":
 elif app_name == "mat_vecmul_ij":
     for b in b_tensors:
         for c in c_vec_tensors:
-            tile_str = "tile" + str(tile)
+            tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
             # b_loc = b[-7:]
             # c_loc = c[-3:]
 
@@ -399,34 +397,34 @@ elif app_name == "mat_vecmul_ij":
             # if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1] and b_loc[0] == d_loc[0] and b_loc[2] == d_loc[1]):
             if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[1]):
                 print(b,c)
-                if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                    os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+                if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                    os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
                     
-                shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-                shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+                shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
-                shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-                shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+                shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
 
-                shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+                shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
 
-                shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+                shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-                # shutil.copy(f"{c}/c1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_c_mode_1_crd")
-                # shutil.copy(f"{c}/c1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_c_mode_1_seg")
+                # shutil.copy(f"{c}/c1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_c_mode_1_crd")
+                # shutil.copy(f"{c}/c1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_c_mode_1_seg")
 
-                shutil.copy(f"{c}/c1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_c_mode_0_crd")
-                shutil.copy(f"{c}/c1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_c_mode_0_seg")
+                shutil.copy(f"{c}/c1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_c_mode_0_crd")
+                shutil.copy(f"{c}/c1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_c_mode_0_seg")
 
-                shutil.copy(f"{c}/c_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_c_mode_vals")
-                shutil.copy(f"{c}/c_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_c_mode_shape")
+                shutil.copy(f"{c}/c_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_c_mode_vals")
+                shutil.copy(f"{c}/c_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_c_mode_shape")
 
                 tile = tile + 1
 elif app_name == "mat_residual":
     for b in b_vec_tensors:
         for c in c_tensors:
             for d in d_vec_tensors:
-                tile_str = "tile" + str(tile)
+                tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
                 b_loc = b[-3:]
                 c_loc = c[-7:]
                 d_loc = d[-3:]
@@ -440,81 +438,81 @@ elif app_name == "mat_residual":
                     print(b, c, d)
                     b_loc_paired.append(b_loc)
                     
-                    if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                        os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+                    if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                        os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
                         
-                    shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-                    shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                    shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                    shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                    shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-                    shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                    shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                    shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                    shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                    shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-                    shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+                    shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-                    shutil.copy(f"{b}/b1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_1_crd")
-                    shutil.copy(f"{b}/b1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_1_seg")
+                    shutil.copy(f"{b}/b1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_1_crd")
+                    shutil.copy(f"{b}/b1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_1_seg")
 
-                    shutil.copy(f"{b}/b0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_0_crd")
-                    shutil.copy(f"{b}/b0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_0_seg")
+                    shutil.copy(f"{b}/b0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_0_crd")
+                    shutil.copy(f"{b}/b0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_0_seg")
 
-                    shutil.copy(f"{d}/d1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_crd")
-                    shutil.copy(f"{d}/d1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_seg")
+                    shutil.copy(f"{d}/d1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_crd")
+                    shutil.copy(f"{d}/d1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_seg")
 
-                    shutil.copy(f"{d}/d0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_crd")
-                    shutil.copy(f"{d}/d0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_seg")
+                    shutil.copy(f"{d}/d0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_crd")
+                    shutil.copy(f"{d}/d0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_seg")
 
-                    shutil.copy(f"{b}/b_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals")
-                    shutil.copy(f"{b}/b_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_shape")
+                    shutil.copy(f"{b}/b_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals")
+                    shutil.copy(f"{b}/b_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_shape")
 
-                    shutil.copy(f"{d}/d_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals")
-                    shutil.copy(f"{d}/d_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_shape")
+                    shutil.copy(f"{d}/d_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals")
+                    shutil.copy(f"{d}/d_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_shape")
 
                     tile = tile + 1
                 elif b_loc not in b_loc_paired:
                     b_loc_paired.append(b_loc)
                     
-                    if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                        os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+                    if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                        os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
                         
-                    shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-                    shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                    shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                    shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                    shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-                    shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                    shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                    shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                    shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                    shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
                     # clear out C vals
-                    with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r+') as file:
+                    with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r+') as file:
                         contents = file.read()
                         contents = contents.replace(contents, str(0))
                         file.seek(0)
                         file.write(contents)
 
-                    shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+                    shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-                    shutil.copy(f"{b}/b1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_1_crd")
-                    shutil.copy(f"{b}/b1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_1_seg")
+                    shutil.copy(f"{b}/b1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_1_crd")
+                    shutil.copy(f"{b}/b1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_1_seg")
 
-                    shutil.copy(f"{b}/b0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_0_crd")
-                    shutil.copy(f"{b}/b0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_0_seg")
+                    shutil.copy(f"{b}/b0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_0_crd")
+                    shutil.copy(f"{b}/b0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_0_seg")
 
-                    shutil.copy(f"{d}/d1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_crd")
-                    shutil.copy(f"{d}/d1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_seg")
+                    shutil.copy(f"{d}/d1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_crd")
+                    shutil.copy(f"{d}/d1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_1_seg")
 
-                    shutil.copy(f"{d}/d0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_crd")
-                    shutil.copy(f"{d}/d0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_seg")
+                    shutil.copy(f"{d}/d0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_crd")
+                    shutil.copy(f"{d}/d0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_0_seg")
 
-                    shutil.copy(f"{b}/b_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals")
-                    shutil.copy(f"{b}/b_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_b_mode_shape")
+                    shutil.copy(f"{b}/b_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_vals")
+                    shutil.copy(f"{b}/b_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_b_mode_shape")
 
-                    shutil.copy(f"{d}/d_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals")
-                    shutil.copy(f"{d}/d_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_shape")
+                    shutil.copy(f"{d}/d_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals")
+                    shutil.copy(f"{d}/d_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_shape")
 
                     # clear out d vals
-                    with open(f"./MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals", 'r+') as file:
+                    with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_d_mode_vals", 'r+') as file:
                         contents = file.read()
                         contents = contents.replace(contents, str(0))
                         file.seek(0)
@@ -539,53 +537,53 @@ elif app_name == "mat_mask_tri":
                 continue
 
             for d in d_tensors:
-                tile_str = "tile" + str(tile)
+                tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
                 d_loc = d.split("_")
                 index = d_loc.index("tile")
                 d_loc = d_loc[index+1:]
 
                 if(c_loc[1] == d_loc[0] and c_loc[3] == d_loc[2] and b_loc[1] == d_loc[1] and b_loc[3] == d_loc[3] and b_loc[0] == c_loc[0] and b_loc[2] == c_loc[2]):
                     print(b, c, d)
-                    if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                        os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+                    if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                        os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
 
-                    shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-                    shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+                    shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                    shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
-                    shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-                    shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+                    shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                    shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
 
-                    shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+                    shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
 
-                    shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+                    shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-                    shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-                    shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                    shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                    shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                    shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-                    shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                    shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                    shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                    shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                    shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-                    shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+                    shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-                    shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
-                    shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+                    shutil.copy(f"{d}/D0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+                    shutil.copy(f"{d}/D0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
 
-                    shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
-                    shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+                    shutil.copy(f"{d}/D1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+                    shutil.copy(f"{d}/D1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
 
-                    shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+                    shutil.copy(f"{d}/D_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
 
-                    shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+                    shutil.copy(f"{d}/D_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
 
                     # subprocess.call(["aha",
                     #     "regress",
                     #     "fast"],
                     #     text=True)
 
-                    # shutil.copy("/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/output_gold.npy", "/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin")
-                    # shutil.copytree("/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin", f"/aha/garnet/SPARSE_TESTS/{tile_str}")
+                    # shutil.copy("/aha/garnet//aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/output_gold.npy", "/aha/garnet//aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin")
+                    # shutil.copytree("/aha/garnet//aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin", f"/aha/garnet//aha/garnet/SPARSE_TESTS/{tile_str}")
                     tile = tile + 1
 elif app_name == "mat_vecmul_iter":
     for b in b_tensors:
@@ -624,7 +622,7 @@ elif app_name == "mat_vecmul_iter":
                         continue
 
                     for f in f_vec_tensors:
-                        tile_str = "tile" + str(tile)
+                        tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
                         f_loc = f.split("_")
                         index = f_loc.index("tile")
                         f_loc = f_loc[index+1:]
@@ -632,61 +630,61 @@ elif app_name == "mat_vecmul_iter":
                         # check m coord 
                         if (d_loc[1] == e_loc[0] and d_loc[3] == e_loc[2] and c_loc[1] == d_loc[0] and c_loc[3] == d_loc[2] and b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2] and e_loc[1] == f_loc[0] and e_loc[3] == f_loc[1]):
                             print(b, c, d, e, f)
-                            if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                                os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+                            if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                                os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
 
-                            shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-                            shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+                            shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                            shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
-                            shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-                            shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+                            shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                            shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
 
-                            shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+                            shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
 
-                            shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+                            shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-                            shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-                            shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                            shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                            shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                            shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-                            shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                            shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                            shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                            shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                            shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-                            shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+                            shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-                            shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
-                            shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+                            shutil.copy(f"{d}/D0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+                            shutil.copy(f"{d}/D0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
 
-                            shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
-                            shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+                            shutil.copy(f"{d}/D1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+                            shutil.copy(f"{d}/D1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
 
-                            shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+                            shutil.copy(f"{d}/D_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
 
-                            shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+                            shutil.copy(f"{d}/D_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
 
-                            shutil.copy(f"{e}/E0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_0_crd")
-                            shutil.copy(f"{e}/E0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_0_seg")
+                            shutil.copy(f"{e}/E0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_E_mode_0_crd")
+                            shutil.copy(f"{e}/E0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_E_mode_0_seg")
 
-                            shutil.copy(f"{e}/E1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_1_crd")
-                            shutil.copy(f"{e}/E1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_1_seg")
+                            shutil.copy(f"{e}/E1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_E_mode_1_crd")
+                            shutil.copy(f"{e}/E1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_E_mode_1_seg")
 
-                            shutil.copy(f"{e}/E_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_vals")
+                            shutil.copy(f"{e}/E_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_E_mode_vals")
 
-                            shutil.copy(f"{e}/E_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_E_mode_shape")
+                            shutil.copy(f"{e}/E_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_E_mode_shape")
 
-                            shutil.copy(f"{f}/f1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_crd")
-                            shutil.copy(f"{f}/f1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_seg")
+                            shutil.copy(f"{f}/f1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_crd")
+                            shutil.copy(f"{f}/f1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_0_seg")
 
-                            shutil.copy(f"{f}/f_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_vals")
-                            shutil.copy(f"{f}/f_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_f_mode_shape")
+                            shutil.copy(f"{f}/f_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_vals")
+                            shutil.copy(f"{f}/f_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_f_mode_shape")
                             
                             tile = tile + 1
 elif app_name == "mat_sddmm":
     for b in b_tensors:
         for c in c_tensors:
             for d in d_tensors:
-                tile_str = "tile" + str(tile)
+                tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
 
                 b_loc = b[-7:]
                 c_loc = c[-7:]
@@ -701,38 +699,38 @@ elif app_name == "mat_sddmm":
                 #matmul rule for C and D, elemmul rule for B and CD
                 if(c_loc[1] == d_loc[1] and c_loc[3] == d_loc[3] and b_loc[0] == c_loc[0] and b_loc[2] == c_loc[2] and b_loc[1] == d_loc[0] and b_loc[3] == d_loc[2]):
                     print(b, c, d)
-                    if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                        os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+                    if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                        os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
                     
-                    shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-                    shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+                    shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                    shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
-                    shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-                    shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+                    shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                    shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
 
-                    shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+                    shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
 
-                    shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+                    shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-                    shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-                    shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                    shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                    shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                    shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-                    shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                    shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                    shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                    shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                    shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-                    shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+                    shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-                    shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
-                    shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+                    shutil.copy(f"{d}/D0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+                    shutil.copy(f"{d}/D0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
 
-                    shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
-                    shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+                    shutil.copy(f"{d}/D1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+                    shutil.copy(f"{d}/D1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
 
-                    shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+                    shutil.copy(f"{d}/D_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
 
-                    shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+                    shutil.copy(f"{d}/D_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
 
                     tile = tile + 1
 
@@ -755,7 +753,7 @@ elif app_name == "mat_elemadd3":
                 continue
 
             for d in d_tensors:
-                tile_str = "tile" + str(tile)
+                tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
                 d_loc = d.split("_")
 
 
@@ -766,45 +764,45 @@ elif app_name == "mat_elemadd3":
             
                 if(b_loc == c_loc and b_loc == d_loc):
                     print(b, c, d)
-                    if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-                        os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
-                    shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-                    shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+                    if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                        os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
+                    shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                    shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
-                    shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-                    shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+                    shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                    shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
 
-                    shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+                    shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
 
-                    shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+                    shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-                    shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-                    shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+                    shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                    shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-                    shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-                    shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+                    shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                    shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-                    shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+                    shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-                    shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+                    shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-                    shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
-                    shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+                    shutil.copy(f"{d}/D0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+                    shutil.copy(f"{d}/D0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
 
-                    shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
-                    shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+                    shutil.copy(f"{d}/D1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+                    shutil.copy(f"{d}/D1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
 
-                    shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+                    shutil.copy(f"{d}/D_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
 
-                    shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+                    shutil.copy(f"{d}/D_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
 
                     # subprocess.call(["aha",
                     #     "regress",
                     #     "fast"],
                     #     text=True)
 
-                    # shutil.copy("/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/output_gold.npy", "/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin")
-                    # shutil.copytree("/aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin", f"/aha/garnet/SPARSE_TESTS/{tile_str}")
+                    # shutil.copy("/aha/garnet//aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/output_gold.npy", "/aha/garnet//aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin")
+                    # shutil.copytree("/aha/garnet//aha/garnet/SPARSE_TESTS/GLB_DIR/matmul_ijk_combined_seed_tile1/bin", f"/aha/garnet//aha/garnet/SPARSE_TESTS/{tile_str}")
                     tile = tile + 1
                     # print("we are on tile ", tile)
 
@@ -833,47 +831,47 @@ if app_name == "mat_elemadd3":
         
         # go to tile file in MAT_TMP_DIR. create empty D
         
-        tile_str = "tile" + str(tile)
+        tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
 
-        if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-            os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+        if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+            os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
         
         c = c_tensors[0]
-        shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-        shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+        shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+        shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
-        shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-        shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+        shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+        shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
 
-        shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+        shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
 
-        shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+        shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-        shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-        shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+        shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+        shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-        shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-        shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+        shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+        shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-        shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+        shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-        shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+        shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-        shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
-        shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+        shutil.copy(f"{d}/D0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+        shutil.copy(f"{d}/D0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
 
-        shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
-        shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+        shutil.copy(f"{d}/D1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+        shutil.copy(f"{d}/D1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
 
-        shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+        shutil.copy(f"{d}/D_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
 
-        shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+        shutil.copy(f"{d}/D_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
 
         #write ones to vals
         lines = []
-        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r') as file:
+        with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r') as file:
             lines = file.readlines()
-        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'w') as file:
+        with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'w') as file:
             file.writelines(['0\n']*len(lines))
         
         tile = tile+1
@@ -889,49 +887,49 @@ if app_name == "mat_elemadd3":
         
         # go to tile file in MAT_TMP_DIR. create empty B
         
-        tile_str = "tile" + str(tile)
+        tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
 
-        if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-            os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+        if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+            os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
 
         b = b_tensors[0]
         
-        shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-        shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+        shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+        shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
-        shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-        shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+        shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+        shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
 
-        shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+        shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
 
-        shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+        shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-        shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-        shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+        shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+        shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-        shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-        shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+        shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+        shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-        shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+        shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-        shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+        shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-        shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
-        shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+        shutil.copy(f"{d}/D0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+        shutil.copy(f"{d}/D0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
 
-        shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
-        shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+        shutil.copy(f"{d}/D1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+        shutil.copy(f"{d}/D1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
 
-        shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+        shutil.copy(f"{d}/D_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
 
-        shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+        shutil.copy(f"{d}/D_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
 
 
         #write ones to vals
         lines = []
-        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals", 'r') as file:
+        with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals", 'r') as file:
             lines = file.readlines()
-        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals", 'w') as file:
+        with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals", 'w') as file:
             file.writelines(['0\n']*len(lines))
         
         tile = tile+1
@@ -947,49 +945,49 @@ if app_name == "mat_elemadd3":
         
         # go to tile file in MAT_TMP_DIR. create empty B
         
-        tile_str = "tile" + str(tile)
+        tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
 
-        if not os.path.exists(f"./MAT_TMP_DIR/{tile_str}"):
-            os.mkdir(f"./MAT_TMP_DIR/{tile_str}")
+        if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+            os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
 
         c = c_tensors[0]
         
-        shutil.copy(f"{b}/B0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
-        shutil.copy(f"{b}/B0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+        shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+        shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
 
-        shutil.copy(f"{b}/B1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
-        shutil.copy(f"{b}/B1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+        shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+        shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
 
-        shutil.copy(f"{b}/B_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+        shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
 
-        shutil.copy(f"{b}/B_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+        shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
 
-        shutil.copy(f"{c}/C0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
-        shutil.copy(f"{c}/C0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+        shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+        shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
 
-        shutil.copy(f"{c}/C1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
-        shutil.copy(f"{c}/C1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+        shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+        shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
-        shutil.copy(f"{c}/C_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+        shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
 
-        shutil.copy(f"{c}/C_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+        shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
 
-        shutil.copy(f"{d}/D0_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
-        shutil.copy(f"{d}/D0_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
+        shutil.copy(f"{d}/D0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_crd")
+        shutil.copy(f"{d}/D0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_0_seg")
 
-        shutil.copy(f"{d}/D1_crd.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
-        shutil.copy(f"{d}/D1_seg.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
+        shutil.copy(f"{d}/D1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_crd")
+        shutil.copy(f"{d}/D1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_1_seg")
 
-        shutil.copy(f"{d}/D_vals.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
+        shutil.copy(f"{d}/D_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_vals")
 
-        shutil.copy(f"{d}/D_shape.txt", f"./MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
+        shutil.copy(f"{d}/D_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_D_mode_shape")
 
 
         #write ones to vals
         lines = []
-        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r') as file:
+        with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'r') as file:
             lines = file.readlines()
-        with open(f"./MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'w') as file:
+        with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals", 'w') as file:
             file.writelines(['0\n']*len(lines))
         
         tile = tile+1
