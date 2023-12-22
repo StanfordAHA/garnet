@@ -132,6 +132,54 @@ if app_name == "matmul_ijk" and mode_ns == False:
 
                 tile = tile + 1
 
+if app_name == "matmul_ikj" and mode_ns == False:
+    for b in b_tensors:
+        for c in c_tensors:
+            tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
+            # b_loc = b[-7:]
+            # c_loc = c[-7:]
+            b_loc = b.split("_")
+            c_loc = c.split("_")
+
+            index = b_loc.index("tile")
+            b_loc = b_loc[index+1:]
+
+            index = c_loc.index("tile")
+            c_loc = c_loc[index+1:]
+
+            if(b_loc[1] == c_loc[0] and b_loc[3] == c_loc[2]):
+                print(b, c)
+
+                if b_loc[2] not in tiles_accumulation:
+                    tiles_accumulation[b_loc[2]] = []
+
+                tiles_accumulation[b_loc[2]].append(tile_str)
+
+                if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                    os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
+                
+                shutil.copy(f"{b}/B0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                shutil.copy(f"{b}/B0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+
+                shutil.copy(f"{b}/B1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                shutil.copy(f"{b}/B1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+
+                shutil.copy(f"{b}/B_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+
+                shutil.copy(f"{b}/B_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape")
+
+                shutil.copy(f"{c}/C0_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+                shutil.copy(f"{c}/C0_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+
+                shutil.copy(f"{c}/C1_crd.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+                shutil.copy(f"{c}/C1_seg.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
+
+                shutil.copy(f"{c}/C_vals.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+
+                shutil.copy(f"{c}/C_shape.txt", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape")
+
+                tile = tile + 1
+
 
 if app_name == "matmul_ijk" and mode_ns == True:
     for b in b_ns_tensors:
@@ -183,6 +231,75 @@ if app_name == "matmul_ijk" and mode_ns == True:
 
                 shutil.copy(f"{b_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
                 shutil.copy(f"{c_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+
+                #vals
+                b_vals_id = f"vals_{b_loc[0]}_{b_loc[1]}"
+                c_vals_id = f"vals_{c_loc[0]}_{c_loc[1]}"
+
+                b_vals_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_{b_vals_id}"
+                c_vals_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_{c_vals_id}"
+
+                shutil.copy(f"{b_vals_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_vals")
+                shutil.copy(f"{c_vals_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_vals")
+
+                #shape
+                with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_shape", "w") as f:
+                    f.write("120\n30\n")
+                with open(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_shape", "w") as f:
+                    f.write("30\n120\n")
+
+                tile = tile + 1
+
+if app_name == "matmul_ikj" and mode_ns == True:
+    for b in b_ns_tensors:
+        for c in c_ns_tensors:
+            # mode 2 == mode 0, mode 3 == mode 1
+
+            if "seg" in b or "seg" in c:
+                continue
+
+            tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
+            b_loc = b.split("_")
+            c_loc = c.split("_")
+            
+            b_loc = b_loc[-2:]
+            c_loc = c_loc[-2:]
+
+            # breakpoint()
+
+            if(b_loc[1] == c_loc[1]):
+                tiles_accumulation[tile] = [b_loc, c_loc]
+                if not os.path.exists(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}"):
+                    os.mkdir(f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}")
+
+                #only crds, copy mode 0
+                shutil.copy(f"{b}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_crd")
+                shutil.copy(f"{c}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_crd")
+
+                b_seg_id = f"seg_{b_loc[0]}_{b_loc[1]}"
+                c_seg_id = f"seg_{c_loc[0]}_{c_loc[1]}"
+
+                b_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_mode_2_{b_seg_id}"
+                c_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_mode_2_{c_seg_id}"
+
+                shutil.copy(f"{b_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_0_seg")
+                shutil.copy(f"{c_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_0_seg")
+
+                # mode 1
+                b_crd_id = f"crd_{b_loc[0]}_{b_loc[1]}"
+                c_crd_id = f"crd_{c_loc[0]}_{c_loc[1]}"
+
+                b_crd_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_mode_3_{b_crd_id}"
+                c_crd_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_mode_3_{c_crd_id}"
+
+                shutil.copy(f"{b_crd_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_crd")
+                shutil.copy(f"{c_crd_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_crd")
+
+                b_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_B_mode_3_{b_seg_id}"
+                c_seg_file = f"/aha/garnet/tiles_{app_name}_{test}_ns/tensor_C_mode_3_{c_seg_id}"
+
+                shutil.copy(f"{b_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_B_mode_1_seg")
+                shutil.copy(f"{c_seg_file}", f"/aha/garnet/SPARSE_TESTS/MAT_TMP_DIR/{tile_str}/tensor_C_mode_1_seg")
 
                 #vals
                 b_vals_id = f"vals_{b_loc[0]}_{b_loc[1]}"
