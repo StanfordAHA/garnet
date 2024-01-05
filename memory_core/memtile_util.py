@@ -766,7 +766,7 @@ class NetlistBuilder():
         if len(self._config_data) > 0:
             print("Clearing config data - it was previously not empty")
             self._config_data = []
-        self._config_data += self._interconnect.get_route_bitstream(self._routing)
+        self._config_data += self._interconnect.get_route_bitstream(self._routing, use_fifo=True)
         return self._config_data
 
     def get_config_data(self):
