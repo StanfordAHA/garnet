@@ -6,40 +6,38 @@ import glob
 import sys
 
 import generate_linker
+import generate_app
+
+# python3 generate_sweep.py <app_name> <data> 
 
 #PARAMS
 app_name = sys.argv[1]
-# app_name = "matmul_ijk"
-# data = "bcsstm26"
 data = sys.argv[2]
-# data = "rand_large_tensor3"
-# data = "qiulp"
-# data = "adder_dcop_30"
-# with open("small50_matrices_sample.txt", "r") as file:
-#     data = file.readlines()
-# data = [line.strip() for line in data]
-# print(data)
+
 generate_linker_flag = False
 ### 
+
+empty_local = f"rm -rf ../tiles_chip_test"
+print(empty_local)
+os.system(empty_local)
 
 empty_local = f"rm -rf tiles_chip_test"
 print(empty_local)
 os.system(empty_local)
 
-os.chdir("SPARSE_TESTS")
+os.chdir("../SPARSE_TESTS")
 rm_tiles = "rm -rf tile*"
 os.system(rm_tiles)
 
-os.system(f"python3 generate_tile_files.py {app_name}")
-os.chdir("..")
+os.system(f"python3 generate_tile_files.py {app_name} {data}")
+os.chdir("../codegen")
 
 num_tile_dirs = glob.glob("tiles_chip_test/tile*")
 num_tile = len(num_tile_dirs)
 
 print("There are " + str(num_tile) + " tiles")
 
-run_generate_script = f"python3 generate_app.py {num_tile} {app_name} sparse tile0"
-os.system(run_generate_script)
+generate_app.gen_app(num_tile, app_name, "sparse", ["tile0"])
 
 files = ["input_script.h", "script.h", "reg_write.h", "unrolling.h"]
 
