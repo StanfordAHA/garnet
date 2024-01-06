@@ -64,13 +64,16 @@ from lake.top.tech_maps import GF_Tech_Map
 from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
 from lassen.sim import PE_fc
+from lassen.utils import float2bfbin, bfbin2float
 from peak import family
 from lake.modules.scanner_pipe import ScannerPipe
 import tempfile
 import time
 import gemstone
 import torch
-from sparse_app_mappings import get_tensor
+from sparse_app_mappings import get_tensor, get_lut_tensor
+from lassen.stdlib import *
+from peak.family import PyFamily
 
 
 class SparseTBBuilder(m.Generator2):
@@ -1579,11 +1582,16 @@ def write_glb_file(file_list, out_dir, out_name):
                 # Get rid of 0x for readmemh compatibility
                 # hexified = str(hex(int(l)))[2:]
                 # Convert to positive
-                temp_tkn = int(float(l.strip()))
-                # Supports negative values now
-                if temp_tkn >= (2 ** 16):
-                    temp_tkn = temp_tkn - (((temp_tkn // (2 ** 16)) * (2 ** 16)))
-                output_lines.append(f"{hex(temp_tkn & 0xFFFF)[2:].zfill(4)}\n")
+                if "." not in l.strip():
+                    # no decimal point, it is an integer
+                    temp_tkn = int(l.strip())
+                    if temp_tkn >= (2 ** 16):
+                        temp_tkn = temp_tkn - (((temp_tkn // (2 ** 16)) * (2 ** 16)))
+                    output_lines.append(f"{hex(temp_tkn & 0xFFFF)[2:].zfill(4)}\n")
+                else:
+                    # contains decimal point, should be interpreted as bfloat16
+                    tmp_tkn = float(l.strip())
+                    output_lines.append(f"{hex(int(float2bfbin(tmp_tkn), 2))[2:].zfill(4)}\n")
     out_path = f"{out_dir}/{out_name}"
     with open(out_path, "w+") as curr_file:
         curr_file.writelines(output_lines)
@@ -1690,7 +1698,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "X"
-    elif 'mat_elemadd' in app_name and 'relu' in app_name:
+    elif 'mat_elemadd_relu.gv' in app_name:
         b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
                            sparsity=0.0)
@@ -1699,6 +1707,29 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.0)
 
         output_matrix = numpy.maximum(0, numpy.add(b_mat, c_mat, dtype=numpy.int16, casting='unsafe'))
+        output_format = "CSF"
+        output_name = "X"
+    elif 'mat_elemadd_leakyrelu_exp.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=sparsities_[0], use_fp=True)
+        c_mat = get_tensor(input_name='C', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=sparsities_[1], use_fp=True)
+        exp_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='exp')
+        output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.float32, casting='unsafe')
+        output_matrix = numpy.maximum(b_mat, 
+                                      numpy.multiply(b_mat, 0.2, dtype=numpy.float32, casting='unsafe'), 
+                                      dtype=numpy.float32, casting='unsafe')
+        FExp = fpops.FExp_fc(PyFamily())
+        exp = FExp()
+        for idx, val in numpy.ndenumerate(output_matrix):
+            if val == 0.0:
+                continue
+            val = float2bfbin(val)
+            op = Data(int(val, 2))
+            result = exp(op)
+            output_matrix[idx] = bfbin2float("{:016b}".format(int(result)))
         output_format = "CSF"
         output_name = "X"
     elif 'mat_elemadd3.gv' in app_name:
@@ -1989,7 +2020,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.0, format='UNC')
         # First transpose c_mat
         input_dims['c'] = tuple(c_mat.shape)
-        output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.int16, casting='unsafe')
+        output_matrix = numpy.matmul(b_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
         output_format = "CSF"
         output_name = "x"
     elif 'spmv' in app_name and "relu" in app_name:
@@ -2148,7 +2179,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.0)
         assert c_mat.shape[0] == B_mat.shape[0]
         # broadcasting
-        output_matrix = numpy.zeros((shapes_[0], shapes_[0]))
+        output_matrix = numpy.zeros((shapes_[0], shapes_[0]), dtype=numpy.uint16)
         for i in range(0, output_matrix.shape[0]):
             for j in range(0, output_matrix.shape[1]):
                 if B_mat[i][j] != 0:   
@@ -2164,7 +2195,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.0)
         assert c_mat.shape[0] == B_mat.shape[0]
         # broadcasting
-        output_matrix = numpy.zeros((shapes_[0], shapes_[0]))
+        output_matrix = numpy.zeros((shapes_[0], shapes_[0]), dtype=numpy.uint16)
         for i in range(0, output_matrix.shape[0]):
             for j in range(0, output_matrix.shape[1]):
                 if B_mat[i][j] != 0:   
@@ -2943,7 +2974,6 @@ if __name__ == "__main__":
                                                                                                        clean=clean,
                                                                                                        suffix=f"_{i}",
                                                                                                        cached_inputs=cached_inputs)
-
                     if 'B' in ret_outputs and 'B' not in cached_inputs:
                         cached_inputs['B'] = ret_outputs['B']
 
@@ -3013,10 +3043,6 @@ if __name__ == "__main__":
 
                     for i in range(unroll):
                         out_mats[i].dump_outputs(glb_override=True, glb_dump_dir=full_test_glb_dir, suffix=f"_{i}")
-
-                    # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
-                    #     numpy.save(goldout_, out_mat.get_matrix())
-                    # with open(f"{full_test_glb_dir}/output_gold", "wb+") as goldout_:
                         numpy.save(f"{full_test_glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
                         numpy.save(f"{glb_dir}/output_gold_{i}.npy", out_mats[i].get_matrix())
 
