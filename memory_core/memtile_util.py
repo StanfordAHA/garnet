@@ -1,5 +1,9 @@
 import os
-from gemstone.common.testers import BasicTester
+
+# from gemstone.common.testers import BasicTester
+# 'testers' sends trash to stdout on import :(
+# ...so let's only load later on demand
+
 from canal.util import IOSide
 import magma
 import mantle
@@ -920,6 +924,7 @@ class NetlistBuilder():
             print(f"TIME:\tic_circuit\t{after_time - before_time}")
 
     def get_tester(self):
+        from gemstone.common.testers import BasicTester
         assert self._interconnect is not None, "Need to define the interconnect first..."
         # self._circuit = self._interconnect.circuit()
         self._tester = BasicTester(self._circuit, self._circuit.clk, self._circuit.reset)

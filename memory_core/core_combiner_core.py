@@ -145,7 +145,6 @@ class CoreCombinerCore(LakeCoreBase):
         self.runtime_mode = runtime_mode
 
     def get_config_bitstream(self, config_tuple):
-
         # print(self.runtime_mode)
         # assert self.runtime_mode is not None
         configs = []
