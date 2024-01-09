@@ -1527,11 +1527,11 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
         print("tensor desc str: ", tensor_desc_str)
         print("file number: ", file_number)
         print("glb dir: ", glb_dir)
-        assert os.path.exists(f"{glb_dir}/{tensor_desc_str}")
+        assert os.path.exists(f"{glb_dir}/{tensor_desc_str}_{file_number}")
         # ret = os.remove(matrices_in + "/" + filename)
 
-        os.system(f"xxd -r -p {glb_dir}/{tensor_desc_str} > {glb_dir}/bin/{tensor_desc_str}.raw")
-        with open(f"{glb_dir}/{tensor_desc_str}") as tmp_fp:
+        os.system(f"xxd -r -p {glb_dir}/{tensor_desc_str}_{file_number} > {glb_dir}/bin/{tensor_desc_str}.raw")
+        with open(f"{glb_dir}/{tensor_desc_str}_{file_number}") as tmp_fp:
             num_lines = len(tmp_fp.readlines())
         # num_lines = os.system(f"wc -l {matrices_in}/{filename}")
         output_glb_tiles[idx_] = (core, core_placement, tensor_desc_str, num_lines, num_blocks, file_number)
@@ -2266,7 +2266,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.0)
         assert c_mat.shape[0] == B_mat.shape[0]
         # broadcasting
-        output_matrix = numpy.zeros(10, 10), dtype=numpy.uint16)
+        output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
         for i in range(0, output_matrix.shape[0]):
             for j in range(0, output_matrix.shape[1]):
                 if B_mat[i][j] != 0:   
@@ -2282,7 +2282,7 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.0)
         assert c_mat.shape[0] == B_mat.shape[0]
         # broadcasting
-        output_matrix = numpy.zeros(10, 10), dtype=numpy.uint16)
+        output_matrix = numpy.zeros((10, 10), dtype=numpy.uint16)
         for i in range(0, output_matrix.shape[0]):
             for j in range(0, output_matrix.shape[1]):
                 if B_mat[i][j] != 0:   
