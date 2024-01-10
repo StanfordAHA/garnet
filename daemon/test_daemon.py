@@ -317,7 +317,7 @@ def test_load_args(): announce_unit(': see test_arg_save_and_restore()')
 
 def test_arg_save_and_restore():
     if announce_unit(): return
-    args = Namespace( foo='bar', bar='baz' )
+    args = Namespace( ENV=dict(os.environ), foo='bar', bar='baz' )
     tmpfile = f'/tmp/deleteme-GarnetDaemon.test_arg_save_and_restore.{int(time.time())}'
     orig_args_dict = (args.__dict__).copy() # save_args adds e.g. args.pe_fc=None
     GarnetDaemon.save_args(args, tmpfile, dbg=1)  # Save to tmpfile
