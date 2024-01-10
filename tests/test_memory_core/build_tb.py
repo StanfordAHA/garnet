@@ -1698,10 +1698,10 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
     elif 'mat_elemadd_leakyrelu_exp.gv' in app_name:
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=sparsities_[0], use_fp=True)
+                           sparsity=0.8, use_fp=True)
         c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=sparsities_[1], use_fp=True)
+                           sparsity=0.9, use_fp=True)
         exp_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='exp')
         output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.float32, casting='unsafe')
         output_matrix = numpy.maximum(b_mat, 
