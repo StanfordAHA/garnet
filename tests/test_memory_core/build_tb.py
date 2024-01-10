@@ -1586,7 +1586,8 @@ def write_glb_file(file_list, out_dir, out_name, give_tensor=None):
                 # Convert to positive
                 if "." not in l.strip() or give_tensor:
                     # no decimal point, it is an integer
-                    temp_tkn = int(l.strip())
+                    # suitesparse has data in floats so conv to float first then int
+                    temp_tkn = int(float(l.strip()))
                     if temp_tkn >= (2 ** 16):
                         temp_tkn = temp_tkn - (((temp_tkn // (2 ** 16)) * (2 ** 16)))
                     output_lines.append(f"{hex(temp_tkn & 0xFFFF)[2:].zfill(4)}\n")
