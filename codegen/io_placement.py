@@ -20,12 +20,6 @@ def unrolling(inputs, outputs, input_place_list, output_place_list, extent_dict,
         input_name_str = input_name_str.replace(".raw", "")
         input_str = ", ".join([str(elem) for elem in input_place_list[idx]])
 
-        if("matmul_ijk" in app_name):
-            if ("mode_0" in input_name_str and "tensor_C" in input_name_str):
-                input_name_str = input_name_str.replace("mode_0", "mode_1")
-            elif ("mode_1" in input_name_str and "tensor_C" in input_name_str):
-                input_name_str = input_name_str.replace("mode_1", "mode_0")
-
         f_str = f'''
         int {input_name_str}_unroll = {len(input_place_list[idx])};
         int {input_name_str}_unroll_array[{len(input_place_list[idx])}] = {{{input_str}}};

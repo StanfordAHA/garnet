@@ -22,6 +22,8 @@ def parse_gold(app_name, data):
     for gold in name_list:
         gold_list.append(np.load(f"tiles_chip_test/{gold}/output_gold_0.npy"))
     
+    f.write("#define AHASOC_CGRA_DATA_BASE    (0x20400000UL)  /*!< (CGRA DATA ) Base Address */\n")
+
     for idx, gold in enumerate(gold_list):
         if(not np.any(gold)):
             counter += 1

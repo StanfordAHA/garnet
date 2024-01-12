@@ -76,5 +76,7 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
     # io placement and extents
     io_placement.unrolling(inputs, outputs, input_order, output_order, extent_dict, name_list, dense, app_name)
 
+    return inputs, outputs, input_order, output_order
+
 if __name__ == "main":
     gen_app(num_tiles, app_name, type_of_app, name_list)
