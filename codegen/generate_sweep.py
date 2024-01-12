@@ -1,4 +1,3 @@
-# import paramiko
 import os
 import glob
 import sys
@@ -7,6 +6,7 @@ import shutil
 import generate_linker
 import generate_app
 import parse_gold
+import generate_main
 
 # python3 generate_sweep.py <app_name> <data> 
 
@@ -32,19 +32,43 @@ for i in range(num_tiles):
     shutil.copytree(f"../SPARSE_TESTS/{app_name}_{app_name}-{data}_tile{i}/GLB_DIR/{app_name}_combined_seed_{app_name}-{data}_tile{i}/bin", f"tiles_chip_test/tile{i}")
 
 # combine tiles and generate C code
-generate_app.gen_app(num_tiles, app_name, "sparse", ["tile0"])
+tile_list = []
+for tile in range(num_tiles):
+    tile_list.append(f"tile{tile}")
+inputs, outputs, input_order, output_order = generate_app.gen_app(num_tiles, app_name, "sparse", tile_list)
+print(inputs, outputs, input_order, output_order)
+
+# string replace reg_write.h for chip
+reg_write = "reg_write.h"
+with open(reg_write, 'r') as file:
+    content = file.read()
+
+# Replace glb_reg_write command for chip testing
+modified_content = content.replace("glb_reg_write", "HAL_Cgra_Glb_WriteReg")
+with open(reg_write, 'w') as file:
+    file.write(modified_content)
+
+# generate linker 
+# inputs should be in order
+if generate_linker_flag == True:
+    generate_linker.generate_linker("sections.ld", app_name, inputs)
+
+generate_main.generate_main(f"{app_name}_{data}", inputs, outputs)
 
 # copy c code to dot_h_files
-files = ["input_script.h", "script.h", "reg_write.h", "unrolling.h"]
-if not os.path.exists(f"dot_h_files/{app_name}/{data}"):
+if os.path.exists(f"dot_h_files/{app_name}/{data}"):
+    shutil.rmtree(f"dot_h_files/{app_name}/{data}")
     os.makedirs(f"dot_h_files/{app_name}/{data}")
+else:
+    os.makedirs(f"dot_h_files/{app_name}/{data}")
+files = ["input_script.h", "script.h", "reg_write.h", "unrolling.h"]
 for file in files:
     shutil.copy(file, f"dot_h_files/{app_name}/{data}/{app_name}_{data}_{file}")
+files = ["main.c", "sections.ld"]
+for file in files:
+    shutil.copy(file, f"dot_h_files/{app_name}/{data}/{file}")
 
 # can we gold check?
 if num_tiles <= 75:
     parse_gold.parse_gold(app_name, data)
 
-# generate linker 
-if generate_linker_flag == True:
-    generate_linker.generate_linker("sections.ld", app_name)

@@ -31,13 +31,15 @@ def first_half_of_body(f):
 __STACK_SIZE = 1024;
 __HEAP_SIZE = 2048;
 
-ENTRY(_start)"""
+ENTRY(_start)SECTIONS
+{
+
+"""
     f.write(string)
 
 
 def bottom_half_of_body(f):
     string = """
-
 .isr_vectors : ALIGN(4)
 {
     __vectors_start = ABSOLUTE(.);
@@ -232,73 +234,31 @@ libgcc.a ( * )
 }"""
     f.write(string)
 
-# TODO automate this
-def write_sections(f, app_name):
-    if "mat" in app_name:
-        #matrix app
-        if "matmul" in app_name:
-            string = """SECTIONS
-{
+def generate_data_location_content(data_list):
+    result = ""
+    increment = 0x00000
+    base_location = 0x20400000
 
-.data_at_specific_location 0x20400000 : {
-    *(.app_tensor_B_mode_0_data)
-    KEEP(*(.app_tensor_B_mode_0_data))
-}
-.data_at_specific_location 0x20440000 : {
-    *(.app_tensor_C_mode_1_data)
-    KEEP(*(.app_tensor_C_mode_1_data))
-}
-.data_at_specific_location 0x20480000 : {
-    *(.app_tensor_B_mode_1_data)
-    KEEP(*(.app_tensor_B_mode_1_data))
-}
-.data_at_specific_location 0x204C0000 : {
-    *(.app_tensor_C_mode_0_data)
-    KEEP(*(.app_tensor_C_mode_0_data))
-}
-.data_at_specific_location 0x20500000 : {
-    *(.app_tensor_B_mode_vals_data)
-    KEEP(*(.app_tensor_B_mode_vals_data))
-}
-.data_at_specific_location 0x20540000 : {
-    *(.app_tensor_C_mode_vals_data)
-    KEEP(*(.app_tensor_C_mode_vals_data))
-}"""
-        else:
-            string = """SECTIONS
-{
+    for data_name in data_list:
+        current_location = hex(base_location + increment)[2:]
+        result += f".data_at_specific_location 0x{current_location} : {{\n"
+        result += f"    *(.app_{data_name}_data)\n"
+        result += f"    KEEP(*(.app_{data_name}_data))\n"
+        result += "}\n"
+        increment += 0x40000
 
-.data_at_specific_location 0x20400000 : {
-    *(.app_tensor_B_mode_0_data)
-    KEEP(*(.app_tensor_B_mode_0_data))
-}
-.data_at_specific_location 0x20440000 : {
-    *(.app_tensor_B_mode_1_data)
-    KEEP(*(.app_tensor_B_mode_1_data))
-}
-.data_at_specific_location 0x20480000 : {
-    *(.app_tensor_C_mode_1_data)
-    KEEP(*(.app_tensor_C_mode_1_data))
-}
-.data_at_specific_location 0x204C0000 : {
-    *(.app_tensor_C_mode_0_data)
-    KEEP(*(.app_tensor_C_mode_0_data))
-}
-.data_at_specific_location 0x20500000 : {
-    *(.app_tensor_B_mode_vals_data)
-    KEEP(*(.app_tensor_B_mode_vals_data))
-}
-.data_at_specific_location 0x20540000 : {
-    *(.app_tensor_C_mode_vals_data)
-    KEEP(*(.app_tensor_C_mode_vals_data))
-}"""
+    return result
+
+def write_sections(f, app_name, input_list):
+    input_list = [input.strip(".raw") for input in input_list]
+    string = generate_data_location_content(input_list)
     f.write(string)
 
-def generate_linker(linker_name, app_name):
+def generate_linker(linker_name, app_name, input_list):
     f = open(linker_name, "w")
 
     first_half_of_body(f)
-    write_sections(f, app_name)
+    write_sections(f, app_name, input_list)
     bottom_half_of_body(f)
 
     f.close()
