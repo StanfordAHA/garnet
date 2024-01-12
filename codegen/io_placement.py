@@ -143,7 +143,7 @@ def unrolling(inputs, outputs, input_place_list, output_place_list, extent_dict,
       f.write("}\n\n")
 
     else:
-        print("no gold")
+        print("generate sparse gold elsewhere")
         #parse_gold.parse_gold(f, name_list)
       
 

@@ -7,17 +7,6 @@ import raw_to_h_16
 import bs_to_h
 import meta
 
-# num_tiles = int(sys.argv[1])
-# app_name = sys.argv[2]
-
-# name_list = sys.argv[4:]
-# name_list = []
-# # name_list.append(f"tile0") 
-# for i in range(num_tiles):
-#     name_list.append(f"tile{i}")
-# print(name_list)
-# # path = "tiles_chip_test/" + name_list[0] + "/"
-# path = name_list[0]
 
 def gen_app(num_tiles, app_name, type_of_app, name_list):
     import json
@@ -36,17 +25,17 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
         data_file_str = "./"
 
     # Get input/output file name information, io order and bitstream from first tile
-    inputs, outputs, input_order, output_order, bitstream_name = meta.meta_scrape("tiles_chip_test/" + name_list[0] + "/design_meta.json")
+    inputs, outputs, input_order, output_order, bitstream_name = meta.meta_scrape(f"tiles_chip_test/{name_list[0]}/design_meta.json")
 
     # bitstream is same for every tile
     path = name_list[0]
-    print("path + bitstream_name: ", path + bitstream_name)
-    bs_to_h.convert_bs("tiles_chip_test/" + name_list[0] + "/" + bitstream_name, "tiles_chip_test/" + name_list[0] + "/")
+    first_tile_path = f"tiles_chip_test/{name_list[0]}/"
+
+    bs_to_h.convert_bs(f"{first_tile_path}{bitstream_name}", f"tiles_chip_test/{name_list[0]}/")
 
     # copy reg_write and script into base folder
-    right_path = "tiles_chip_test/" + name_list[0] + "/"
-    # shutil.copy(f"{right_path}reg_write.h", "./")
-    shutil.copy(f"{right_path}script.h", "./")
+    shutil.copy(f"{first_tile_path}reg_write.h", "./")
+    shutil.copy(f"{first_tile_path}script.h", "./")
 
 
     # need to generate image input/output per tile
@@ -72,7 +61,7 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
 
 
     for name in name_list:
-        meta_file_name = "tiles_chip_test/" + name + "/design_meta.json"
+        meta_file_name = f"tiles_chip_test/{name}/design_meta.json"
         f = open(meta_file_name)
         meta = json.load(f)
 

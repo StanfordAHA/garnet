@@ -1,12 +1,12 @@
 # import paramiko
-import getpass
 import os
-import pexpect
 import glob
 import sys
+import shutil
 
 import generate_linker
 import generate_app
+import parse_gold
 
 # python3 generate_sweep.py <app_name> <data> 
 
@@ -14,46 +14,37 @@ import generate_app
 app_name = sys.argv[1]
 data = sys.argv[2]
 
-generate_linker_flag = False
-### 
+generate_linker_flag = True
 
-empty_local = f"rm -rf ../tiles_chip_test"
-print(empty_local)
-os.system(empty_local)
+# remove previously generated tiles
+if os.path.exists("tiles_chip_test"):
+    shutil.rmtree("tiles_chip_test")
 
-empty_local = f"rm -rf tiles_chip_test"
-print(empty_local)
-os.system(empty_local)
+# find tiles
+tiles = glob.glob(f"../SPARSE_TESTS/{app_name}_{app_name}-{data}_tile*")
+print(tiles)
+num_tiles = len(tiles)
+print("there are ", num_tiles, "tiles")
 
-os.chdir("../SPARSE_TESTS")
-rm_tiles = "rm -rf tile*"
-os.system(rm_tiles)
+# copy tiles to tiles_chip_test
+for i in range(num_tiles):
+    shutil.copy(f"../SPARSE_TESTS/{app_name}_{app_name}-{data}_tile{i}/GLB_DIR/{app_name}_combined_seed_{app_name}-{data}_tile{i}/output_gold_0.npy", f"../SPARSE_TESTS/{app_name}_{app_name}-{data}_tile{i}/GLB_DIR/{app_name}_combined_seed_{app_name}-{data}_tile{i}/bin")
+    shutil.copytree(f"../SPARSE_TESTS/{app_name}_{app_name}-{data}_tile{i}/GLB_DIR/{app_name}_combined_seed_{app_name}-{data}_tile{i}/bin", f"tiles_chip_test/tile{i}")
 
-os.system(f"python3 generate_tile_files.py {app_name} {data}")
-os.chdir("../codegen")
+# combine tiles and generate C code
+generate_app.gen_app(num_tiles, app_name, "sparse", ["tile0"])
 
-num_tile_dirs = glob.glob("tiles_chip_test/tile*")
-num_tile = len(num_tile_dirs)
-
-print("There are " + str(num_tile) + " tiles")
-
-generate_app.gen_app(num_tile, app_name, "sparse", ["tile0"])
-
+# copy c code to dot_h_files
 files = ["input_script.h", "script.h", "reg_write.h", "unrolling.h"]
-
 if not os.path.exists(f"dot_h_files/{app_name}/{data}"):
     os.makedirs(f"dot_h_files/{app_name}/{data}")
-
 for file in files:
-    cp_to_my_workspace = f"cp {file} dot_h_files/{app_name}/{data}/{app_name}_{data}_{file}"
-    print(cp_to_my_workspace)
-    os.system(cp_to_my_workspace)
+    shutil.copy(file, f"dot_h_files/{app_name}/{data}/{app_name}_{data}_{file}")
 
-if num_tile <= 75:
-    print("we can do automated gold check")
-    parse_gold = f"python3 parse_gold.py {app_name} {data}"
-    print(parse_gold)
-    os.system(parse_gold)
+# can we gold check?
+if num_tiles <= 75:
+    parse_gold.parse_gold(app_name, data)
 
+# generate linker 
 if generate_linker_flag == True:
     generate_linker.generate_linker("sections.ld", app_name)
