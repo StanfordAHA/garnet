@@ -71,6 +71,7 @@ struct KernelInfo {
     // index to the inputs, need to multiply by 2
     int reset_port;
 
+    char bin_dir[BUFFER_SIZE];
     char coreir_filename[BUFFER_SIZE];
     char bitstream_filename[BUFFER_SIZE];
     char placement_filename[BUFFER_SIZE];
