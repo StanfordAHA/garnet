@@ -84,7 +84,7 @@ def find_tensor(tensor_list, tile_id):
 
 #os.chdir("SPARSE_TESTS")
 
-if app_name == "matmul_ijk" and mode_ns == False:
+if "matmul_ijk" in app_name and mode_ns == False:
     for b in b_tensors:
         for c in c_tensors:
             tile_str = str(app_name) + "-" + str(test) + "_tile" + str(tile)
