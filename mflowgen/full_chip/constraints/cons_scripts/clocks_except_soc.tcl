@@ -172,3 +172,8 @@ set_clock_groups -asynchronous -group {tlx_fwd_fclk tlx_fwd_gclk} -group {sys_cl
 # XGCD and NIC
 # ------------------------------------------------------------------------------
 # set_clock_groups -asynchronous -group $xgcd_div8_clk -group {nic_clk}
+
+set_clock_groups -name hack_1 -asynchronous -group [get_clocks cgra_jtag_clk] -group [get_clocks nic_clk]
+set_clock_groups -name hack_2 -asynchronous -group [get_clocks cgra_jtag_clk] -group [get_clocks cpu_clk]
+set_clock_groups -name hack_3 -asynchronous -group [get_clocks cgra_jtag_clk] -group [get_clocks sys_clk]
+set_clock_groups -name hack_4 -asynchronous -group [get_clocks cpu_clk] -group [get_clocks trace_clkin]
