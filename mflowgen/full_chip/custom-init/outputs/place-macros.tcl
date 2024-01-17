@@ -21,6 +21,7 @@ set tech_pitch_y [expr 1 * $vert_pitch]
 # set place_glb_top [expr !$::env(soc_only)]
 set place_tile_array 1
 set place_glb_top 1
+set place_diff_clk_rcvr 0
 
 ##############################################################################
 ###                        Placing Tile Array                              ###
@@ -293,18 +294,25 @@ if { $place_glb_top } {
 ##############################################################################
 ###                         Placing SoC SRAMs                              ###
 ##############################################################################
+set dclk [get_cells -hier -filter {ref_lib_cell_name==diffclock_rx_1v2}]
+set dclk_name [get_property $dclk hierarchical_name]
+set dclk_width [dbGet [dbGet -p top.insts.name $dclk_name -i 0].cell.size_x]
+set dclk_height [dbGet [dbGet -p top.insts.name $dclk_name -i 0].cell.size_y]
+
 set srams [get_cells -hier -filter {is_memory_cell==true}]
 set sram_name [get_property [index_collection $srams 0] hierarchical_name]
 set sram_width [dbGet [dbGet -p top.insts.name $sram_name -i 0].cell.size_x]
 set sram_height [dbGet [dbGet -p top.insts.name $sram_name -i 0].cell.size_y]
 set num_of_srams 8
 set core_width [dbGet top.fPlan.coreBox_sizex]
-set sram_gap [expr ($core_width - ($num_of_srams * $sram_width)) / ($num_of_srams + 1)]
+# set sram_gap [expr ($core_width - ($num_of_srams * $sram_width)) / ($num_of_srams + 1)]
+set sram_gap [expr ($core_width - ($num_of_srams * $sram_width) - $dclk_width) / ($num_of_srams + 2)]
 set sram_loc_x [expr $sram_gap + [dbGet top.fPlan.coreBox_llx]]
 set sram_loc_y [expr [dbGet top.fPlan.coreBox_ury] - 69.12 - $sram_height]
 set sram_loc_y [snap_to_grid $sram_loc_y $vert_pitch]
 set sram_loc_y [expr $sram_loc_y - $vert_pitch]
 
+set s 0
 foreach_in_collection sram $srams {
 
   # get sram properties
@@ -339,8 +347,133 @@ foreach_in_collection sram $srams {
 
   # advance the sram location
   set sram_loc_x [expr $sram_loc_x + $sram_width + $sram_gap]
-
+  if { $s == 3 } {
+    set dclk [get_cells -hier -filter {ref_lib_cell_name==diffclock_rx_1v2}]
+    set dclk_name [get_property $dclk hierarchical_name]
+    set dclk_width [dbGet [dbGet -p top.insts.name $dclk_name -i 0].cell.size_x]
+    set dclk_height [dbGet [dbGet -p top.insts.name $dclk_name -i 0].cell.size_y]
+    set dclk_x_loc [snap_to_grid [expr $sram_loc_x - 10] $tech_pitch_x]
+    set dclk_y_loc [snap_to_grid 3764 $tech_pitch_y]
+    placeinstance $dclk_name $dclk_x_loc $dclk_y_loc -fixed
+    addHaloToBlock \
+        [expr $tech_pitch_x * 4] \
+        [expr $tech_pitch_y * 8] \
+        [expr $tech_pitch_x * 4] \
+        [expr $tech_pitch_y * 2] \
+        $dclk_name \
+        -snapToSite
+    set dclk_rblk_left   [expr $tech_pitch_x * 4]
+    set dclk_rblk_right  [expr $tech_pitch_x * 4]
+    set dclk_rblk_top    [expr $tech_pitch_y * 2]
+    set dclk_rblk_bottom [expr $tech_pitch_y * 8]
+    set dclk_rblk_llx [expr $dclk_x_loc - $dclk_rblk_left]
+    set dclk_rblk_lly [expr $dclk_y_loc - $dclk_rblk_bottom]
+    set dclk_rblk_urx [expr $dclk_x_loc + $dclk_width + $dclk_rblk_right]
+    set dclk_rblk_ury [expr $dclk_y_loc + $dclk_height + $dclk_rblk_top]
+    createRouteBlk \
+        -name dclk_route_block_pwr \
+        -layer {m1 m2 m3 m4 m5 m6 m7 m8 gmz gm0 gmb}  \
+        -box "$dclk_rblk_llx $dclk_rblk_lly $dclk_rblk_urx $dclk_rblk_ury" \
+        -pgnetonly
+    createRouteBlk \
+        -name dclk_route_block_sig \
+        -layer {gmb}  \
+        -box "$dclk_rblk_llx $dclk_rblk_lly $dclk_rblk_urx $dclk_rblk_ury" \
+        -exceptpgnet
+    createRouteBlk \
+        -name dclk_route_block_sigall_except_m6 \
+        -layer {m1 m2 m3 m4 m5 m7 m8 gmz gm0}  \
+        -box "$dclk_rblk_llx $dclk_rblk_lly $dclk_rblk_urx $dclk_rblk_ury" \
+        -exceptpgnet
+    set sram_loc_x [expr $sram_loc_x + $dclk_width + $sram_gap]
+  }
+  incr s
 }
+
+##############################################################################
+###                  Placing Differential Clock Receiver                   ###
+##############################################################################
+if { $place_diff_clk_rcvr } {
+    
+    set dclk [get_cells -hier -filter {ref_lib_cell_name==diffclock_rx_1v2}]
+    set dclk_name [get_property $dclk hierarchical_name]
+    set dclk_width [dbGet [dbGet -p top.insts.name $dclk_name -i 0].cell.size_x]
+    set dclk_height [dbGet [dbGet -p top.insts.name $dclk_name -i 0].cell.size_y]
+
+    set dclk_x_loc [snap_to_grid 1906.429 $tech_pitch_x] 
+    set dclk_y_loc [snap_to_grid 3810.521 $tech_pitch_y] 
+  
+    # placeinstance $dclk_name $dclk_x_loc $dclk_y_loc -fixed
+
+    # addHaloToBlock \
+    #     [expr $tech_pitch_x * 1] \
+    #     [expr $tech_pitch_y * 8] \
+    #     [expr $tech_pitch_x * 1] \
+    #     [expr $tech_pitch_y * 2] \
+    #     $dclk_name \
+    #     -snapToSite
+
+    # # top/bottom routing blockage (signal: all except m5)
+    # set dclk_rblk_left   [expr $tech_pitch_x * 0.5 - 0.1]
+    # set dclk_rblk_right  [expr $tech_pitch_x * 0.5 - 0.1]
+    # set dclk_rblk_top    [expr $tech_pitch_y * 1]
+    # set dclk_rblk_bottom [expr $tech_pitch_y * 1]
+    # set dclk_rblk_llx [expr $dclk_x_loc]
+    # set dclk_rblk_lly [expr $dclk_y_loc - $dclk_rblk_bottom]
+    # set dclk_rblk_urx [expr $dclk_x_loc + $dclk_width]
+    # set dclk_rblk_ury [expr $dclk_y_loc + $dclk_height + $dclk_rblk_top]
+    # createRouteBlk \
+    #     -name dclk_route_block_top_bottom_sig \
+    #     -layer {m1 m2 m3 m4 m6 m7 m8}  \
+    #     -box "$dclk_rblk_llx $dclk_rblk_lly $dclk_rblk_urx $dclk_rblk_ury" \
+    #     -exceptpgnet
+    
+    # # top/bottom routing blockage (power, all)
+    # set dclk_rblk_left   [expr $tech_pitch_x * 1 - 0.04]
+    # set dclk_rblk_right  [expr $tech_pitch_x * 1 - 0.04]
+    # set dclk_rblk_top    [expr $tech_pitch_y * 2 - 0.08]
+    # set dclk_rblk_bottom [expr $tech_pitch_y * 2 - 0.08]
+    # set dclk_rblk_llx [expr $dclk_x_loc]
+    # set dclk_rblk_lly [expr $dclk_y_loc - $dclk_rblk_bottom]
+    # set dclk_rblk_urx [expr $dclk_x_loc + $dclk_width]
+    # set dclk_rblk_ury [expr $dclk_y_loc + $dclk_height + $dclk_rblk_top]
+    # createRouteBlk \
+    #     -name dclk_route_block_top_bottom_pwr \
+    #     -layer {m1 m2 m3 m4 m5 m6 m7 m8}  \
+    #     -box "$dclk_rblk_llx $dclk_rblk_lly $dclk_rblk_urx $dclk_rblk_ury" \
+    #     -pgnetonly
+    
+    # # left/right routing blockage (signal: all except m6)
+    # set dclk_rblk_left   [expr $tech_pitch_x * 0.5 - 0.1]
+    # set dclk_rblk_right  [expr $tech_pitch_x * 0.5 - 0.1]
+    # set dclk_rblk_top    [expr $tech_pitch_y * 1]
+    # set dclk_rblk_bottom [expr $tech_pitch_y * 1]
+    # set dclk_rblk_llx [expr $dclk_x_loc - $dclk_rblk_left]
+    # set dclk_rblk_lly [expr $dclk_y_loc]
+    # set dclk_rblk_urx [expr $dclk_x_loc + $dclk_width + $dclk_rblk_right]
+    # set dclk_rblk_ury [expr $dclk_y_loc + $dclk_height]
+    # createRouteBlk \
+    #     -name dclk_route_block_left_right_sig \
+    #     -layer {m1 m2 m3 m4 m5 m7 m8}  \
+    #     -box "$dclk_rblk_llx $dclk_rblk_lly $dclk_rblk_urx $dclk_rblk_ury" \
+    #     -exceptpgnet
+    
+    # # left/right routing blockage (power, all)
+    # set dclk_rblk_left   [expr $tech_pitch_x * 1 - 0.04]
+    # set dclk_rblk_right  [expr $tech_pitch_x * 1 - 0.04]
+    # set dclk_rblk_top    [expr $tech_pitch_y * 2 - 0.08]
+    # set dclk_rblk_bottom [expr $tech_pitch_y * 2 - 0.08]
+    # set dclk_rblk_llx [expr $dclk_x_loc - $dclk_rblk_left]
+    # set dclk_rblk_lly [expr $dclk_y_loc]
+    # set dclk_rblk_urx [expr $dclk_x_loc + $dclk_width + $dclk_rblk_right]
+    # set dclk_rblk_ury [expr $dclk_y_loc + $dclk_height]
+    # createRouteBlk \
+    #     -name dclk_route_block_left_right_pwr \
+    #     -layer {m1 m2 m3 m4 m5 m6 m7 m8}  \
+    #     -box "$dclk_rblk_llx $dclk_rblk_lly $dclk_rblk_urx $dclk_rblk_ury" \
+    #     -pgnetonly
+}
+
 
 # Unplace any standard cells that got placed during init. Not sure why they're
 # being placed, but they make power stripe generation take forever.

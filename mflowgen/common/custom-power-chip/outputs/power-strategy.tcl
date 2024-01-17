@@ -122,11 +122,6 @@ set core_llx [dbGet top.fPlan.coreBox_llx]
 set core_lly [dbGet top.fPlan.coreBox_lly]
 set core_urx [dbGet top.fPlan.coreBox_urx]
 set core_ury [dbGet top.fPlan.coreBox_ury]
-createRouteBlk \
-    -name RDL_BLOCKAGE_TEMP \
-    -cutLayer gv0 \
-    -box "$core_llx $core_lly $core_urx $core_ury"
-
 
 set vert_pitch [dbGet top.fPlan.coreSite.size_y]
 set hori_pitch [dbGet top.fPlan.coreSite.size_x]
@@ -157,7 +152,6 @@ addStripe \
 #-------------------------------------------------------------------------
 # RDL Power Mesh (gmb)
 #-------------------------------------------------------------------------
-deleteRouteBlk -name RDL_BLOCKAGE_TEMP
 
 set pwr_gmb_width [dbGet [dbGet -p head.layers.name gmb].maxWidth]
 set pwr_gmb_offset 0
@@ -189,9 +183,148 @@ addStripe \
         -set_to_set_distance $pwr_gmb_interset_pitch
 
 #-------------------------------------------------------------------------
+# Differential Clock Receiver Power Mesh
+#-------------------------------------------------------------------------
+set dclk        [get_cells -hier -filter {ref_lib_cell_name==diffclock_rx_1v2}]
+set dclk_name   [get_property $dclk hierarchical_name]
+set dclk_width  [dbGet [dbGet -p top.insts.name $dclk_name -i 0].cell.size_x]
+set dclk_height [dbGet [dbGet -p top.insts.name $dclk_name -i 0].cell.size_y]
+set dclk_x_loc  [dbGet [dbGet -p top.insts.name $dclk_name -i 0].box_llx]
+set dclk_y_loc  [dbGet [dbGet -p top.insts.name $dclk_name -i 0].box_lly]
+# Remove the Routing Blockage
+deleteRouteBlk -name dclk_route_block_pwr
+# Create gmz stripes over the block (until vss guard stripe)
+set gmz_width 0.54
+set gmz_space [expr $gmz_width * 4]
+# configure via gen
+setViaGenMode -reset
+setViaGenMode -viarule_preference predefined
+setViaGenMode -preferred_vias_only open
+setViaGenMode -ignore_DRC false
+# configure stripe gen
+setAddStripeMode -reset
+setAddStripeMode -ignore_DRC false
+setAddStripeMode -stacked_via_bottom_layer m8 \
+                 -stacked_via_top_layer    gmz
+# left
+set dclk_box_llx [expr $dclk_x_loc]
+set dclk_box_lly [expr $dclk_y_loc]
+set dclk_box_urx [expr $dclk_x_loc + 80]
+set dclk_box_ury [expr $dclk_y_loc + $dclk_height]
+addStripe \
+        -nets                {VSS VDD VDDPST} \
+        -layer               gmz \
+        -direction           vertical \
+        -area                "$dclk_box_llx $dclk_box_lly $dclk_box_urx $dclk_box_ury" \
+        -width               $gmz_width \
+        -spacing             $gmz_space \
+        -set_to_set_distance [expr ($gmz_width + $gmz_space) * 3]
+# right
+set dclk_box_llx [expr $dclk_x_loc + 115]
+set dclk_box_lly [expr $dclk_y_loc]
+set dclk_box_urx [expr $dclk_x_loc + $dclk_width]
+set dclk_box_ury [expr $dclk_y_loc + $dclk_height]
+addStripe \
+        -nets                {VSS VDD VDDPST} \
+        -layer               gmz \
+        -direction           vertical \
+        -area                "$dclk_box_llx $dclk_box_lly $dclk_box_urx $dclk_box_ury" \
+        -width               $gmz_width \
+        -spacing             $gmz_space \
+        -set_to_set_distance [expr ($gmz_width + $gmz_space) * 3]
+
+# middle VSS guard stripes
+set gmz_space [expr $gmz_width * 10]
+set dclk_box_llx [expr $dclk_x_loc + 82]
+set dclk_box_lly [expr $dclk_y_loc]
+set dclk_box_urx [expr $dclk_x_loc + 113]
+set dclk_box_ury [expr $dclk_y_loc + $dclk_height]
+addStripe \
+        -nets                {VSS} \
+        -layer               gmz \
+        -direction           vertical \
+        -area                "$dclk_box_llx $dclk_box_lly $dclk_box_urx $dclk_box_ury" \
+        -width               $gmz_width \
+        -spacing             $gmz_space \
+        -set_to_set_distance [expr ($gmz_width + $gmz_space) * 1]
+
+# Create gm0 stripes over the block
+set dclk_box_llx [expr $dclk_x_loc]
+set dclk_box_lly [expr $dclk_y_loc]
+set dclk_box_urx [expr $dclk_x_loc + $dclk_width]
+set dclk_box_ury [expr $dclk_y_loc + $dclk_height]
+set pwr_gm0_width   2.0
+set pwr_gm0_spacing 4.0
+set pwr_gm0_offset  [expr $pwr_gm0_spacing + 0.5 * $pwr_gm0_width]
+set pwr_gm0_interset_pitch [expr 3 * ($pwr_gm0_width + $pwr_gm0_spacing)]
+# configure via gen
+setViaGenMode -reset
+setViaGenMode -viarule_preference default
+setViaGenMode -ignore_DRC false
+# configure stripe gen
+setAddStripeMode -reset
+setAddStripeMode -ignore_DRC false
+setAddStripeMode -stacked_via_bottom_layer gmz \
+                 -stacked_via_top_layer    gm0
+addStripe \
+        -nets                {VSS VDD VDDPST} \
+        -layer               gm0 \
+        -direction           horizontal \
+        -area                "$dclk_box_llx $dclk_box_lly $dclk_box_urx $dclk_box_ury" \
+        -width               $pwr_gm0_width \
+        -start_offset        $pwr_gm0_offset \
+        -spacing             $pwr_gm0_spacing \
+        -set_to_set_distance $pwr_gm0_interset_pitch
+
+#-------------------------------------------------------------------------
 # Manually route power from bumps to pads
 #-------------------------------------------------------------------------
+deleteRouteBlk -name dclk_route_block_pwr
+deleteRouteBlk -name dclk_route_block_sig
+
 uiSetTool addWire
+
+#--- start of differential clock inn/inp routing
+setEditMode -type special
+setEditMode -shape None
+setEditMode -layer_horizontal gm0
+setEditMode -layer_vertical gmz
+setEditMode -width_horizontal 2
+setEditMode -width_vertical 0.54
+setEditMode -spacing_vertical 1
+setEditMode -spacing_horizontal 1
+setEditMode -allow_45_degree 1
+setEditMode -create_via_on_pin 1
+setEditMode -create_crossover_vias 1
+
+setEditMode -nets pad_diffclkrx_inp
+editAddRoute 1965 3896
+editAddRoute 1965 3763
+editAddRoute 1873.84 3763
+editCommitRoute 1873.84 3763
+
+setEditMode -nets pad_diffclkrx_inn
+editAddRoute 1977 3896
+editAddRoute 1977 3763
+editAddRoute 2031.1 3763
+editCommitRoute 2031.1 3763
+
+setEditMode -layer_horizontal gmb
+setEditMode -layer_vertical gmb
+setEditMode -width_horizontal 4
+setEditMode -width_vertical 4
+
+setEditMode -nets pad_diffclkrx_inp
+editAddRoute 1885.1 3835.79
+editAddRoute 1887.48 3762.85
+editCommitRoute 1887.48 3762.85
+
+setEditMode -nets pad_diffclkrx_inn
+editAddRoute 2042.17 3843.94
+editAddRoute 2026.42 3838.88
+editAddRoute 2033.03 3762.67
+editCommitRoute 2033.03 3762.67
+#--- end of differential clock inn/inp routing
 
 setEditMode -type special
 setEditMode -shape None
@@ -204,6 +337,102 @@ setEditMode -spacing_horizontal 1
 setEditMode -allow_45_degree 1
 setEditMode -create_via_on_pin 1
 
+setEditMode -nets VDDPST
+setEditMode -create_crossover_vias 0
+editAddRoute 1811.84 3608.17
+editAddRoute 1788.64 3606.63
+editAddRoute 1808.96 3860.03
+editAddRoute 1821.69 3889.75
+editAddRoute 1834.43 3930.26
+editAddRoute 1853.83 3963
+editAddRoute 1864.75 4014.55
+editCommitRoute 1864.75 4014.55
+setEditMode -create_crossover_vias 1
+editAddRoute 1856.31 4012.98
+editAddRoute 1859.62 4064.46
+editCommitRoute 1859.62 4064.46
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDDPST
+setEditMode -look_down_layers 1
+editAddRoute 1808.36 3612.44
+editAddRoute 1861.94 3612.44
+editAddRoute 1875.33 3711.84
+editAddRoute 1900.71 3713.95
+editAddRoute 1919.04 3761.89
+editCommitRoute 1919.04 3761.89
+setEditMode -create_crossover_vias 1
+editAddRoute 1902.72 3759.43
+editAddRoute 1916.34 3961.45
+editCommitRoute 1916.34 3961.45
+setEditMode -create_crossover_vias 0
+editAddRoute 1903.09 3958.14
+editAddRoute 1904.56 3969.55
+editAddRoute 1935.47 3986.11
+editAddRoute 1977.06 4004.07
+editAddRoute 1978.9 4013.27
+editCommitRoute 1978.9 4013.27
+setEditMode -create_crossover_vias 1
+editAddRoute 1980.74 4013.27
+editAddRoute 1985.15 4065.15
+editCommitRoute 1985.15 4065.15
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VSS
+setEditMode -create_crossover_vias 0
+editAddRoute 1883.83 3686.02
+editAddRoute 1920.71 3685.63
+editAddRoute 1931.31 3764.1
+editCommitRoute 1931.31 3764.1
+setEditMode -create_crossover_vias 1
+editAddRoute 1924.25 3763.31
+editAddRoute 1944.26 3961.68
+editCommitRoute 1944.26 3961.68
+setEditMode -create_crossover_vias 0
+editAddRoute 1923.85 3958.55
+editAddRoute 1927.78 3969.92
+editAddRoute 1943.47 3986.4
+editAddRoute 1996.44 3994.64
+editAddRoute 1999.58 4013.87
+editCommitRoute 1999.58 4013.87
+setEditMode -create_crossover_vias 1
+editAddRoute 1999.97 4013.87
+editAddRoute 2005.85 4064.87
+editCommitRoute 2005.85 4064.87
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VDD
+setEditMode -create_crossover_vias 0
+editAddRoute 1886.11 3230.49
+editAddRoute 1898.2 3263.98
+editAddRoute 2018.14 3347.21
+editAddRoute 2021 3759.38
+editCommitRoute 2021 3759.38
+setEditMode -create_crossover_vias 1
+editAddRoute 2019.59 3758.74
+editAddRoute 2020.92 3961.39
+editCommitRoute 2020.92 3961.39
+setEditMode -create_crossover_vias 0
+editAddRoute 2019.72 3961.34
+editAddRoute 2019.48 4012.67
+editCommitRoute 2019.48 4012.67
+setEditMode -create_crossover_vias 1
+editAddRoute 2020.2 4011.94
+editAddRoute 2006.71 4010.98
+editAddRoute 2007.43 4029.05
+editCommitRoute 2007.43 4029.05
+setEditMode -create_crossover_vias 0
+
+setEditMode -nets VSS
+setEditMode -create_crossover_vias 0
+editAddRoute 2044.59 3688.12
+editAddRoute 2061.84 3688.12
+editAddRoute 2078.45 4013.97
+editCommitRoute 2078.45 4013.97
+setEditMode -create_crossover_vias 1
+editAddRoute 2062.7 4010.95
+editAddRoute 2065.82 4064.05
+editCommitRoute 2065.82 4064.05
 setEditMode -create_crossover_vias 0
 
 # TOP (left to right)
@@ -570,62 +799,62 @@ editAddRoute 1782.17 4061.67
 editCommitRoute 1782.17 4061.67
 setEditMode -create_crossover_vias 0
 
-setEditMode -nets VDDPST
-editAddRoute 1809.59 3608.35
-editAddRoute 1800.26 3719.13
-editAddRoute 1793.27 3739.54
-editAddRoute 1794.43 3853.24
-editAddRoute 1827.67 3885.89
-editAddRoute 1837.58 4013.58
-editCommitRoute 1837.58 4013.58
-setEditMode -create_crossover_vias 1
-editAddRoute 1827.57 4011.85
-editAddRoute 1832.14 4039.85
-editCommitRoute 1832.14 4039.85
-setEditMode -create_crossover_vias 0
+# setEditMode -nets VDDPST
+# editAddRoute 1809.59 3608.35
+# editAddRoute 1800.26 3719.13
+# editAddRoute 1793.27 3739.54
+# editAddRoute 1794.43 3853.24
+# editAddRoute 1827.67 3885.89
+# editAddRoute 1837.58 4013.58
+# editCommitRoute 1837.58 4013.58
+# setEditMode -create_crossover_vias 1
+# editAddRoute 1827.57 4011.85
+# editAddRoute 1832.14 4039.85
+# editCommitRoute 1832.14 4039.85
+# setEditMode -create_crossover_vias 0
 
-setEditMode -nets VSS
-editAddRoute 1885.22 3684.92
-editAddRoute 1885.22 3738.34
-editAddRoute 1872.5 3763.77
-editAddRoute 1870.97 3872.14
-editAddRoute 1903.03 3921.49
-editAddRoute 1915.74 3932.17
-editAddRoute 1920.83 4013.06
-editCommitRoute 1920.83 4013.06
-setEditMode -create_crossover_vias 1
-editAddRoute 1920.83 4013.06
-editAddRoute 1921.85 4063.43
-editCommitRoute 1921.85 4063.43
-setEditMode -create_crossover_vias 0
+# setEditMode -nets VSS
+# editAddRoute 1885.22 3684.92
+# editAddRoute 1885.22 3738.34
+# editAddRoute 1872.5 3763.77
+# editAddRoute 1870.97 3872.14
+# editAddRoute 1903.03 3921.49
+# editAddRoute 1915.74 3932.17
+# editAddRoute 1920.83 4013.06
+# editCommitRoute 1920.83 4013.06
+# setEditMode -create_crossover_vias 1
+# editAddRoute 1920.83 4013.06
+# editAddRoute 1921.85 4063.43
+# editCommitRoute 1921.85 4063.43
+# setEditMode -create_crossover_vias 0
 
-setEditMode -nets VDD
-editAddRoute 1885.89 3216.52
-editAddRoute 1892.88 3251.49
-editAddRoute 1940.57 3301.08
-editAddRoute 1970.45 3840.14
-editAddRoute 1951.38 3863.66
-editAddRoute 1968.54 4013.08
-editCommitRoute 1968.54 4013.08
-setEditMode -create_crossover_vias 1
-editAddRoute 1967.91 4012.44
-editAddRoute 1971.72 4062.67
-editCommitRoute 1971.72 4062.67
-setEditMode -create_crossover_vias 0
+# setEditMode -nets VDD
+# editAddRoute 1885.89 3216.52
+# editAddRoute 1892.88 3251.49
+# editAddRoute 1940.57 3301.08
+# editAddRoute 1970.45 3840.14
+# editAddRoute 1951.38 3863.66
+# editAddRoute 1968.54 4013.08
+# editCommitRoute 1968.54 4013.08
+# setEditMode -create_crossover_vias 1
+# editAddRoute 1967.91 4012.44
+# editAddRoute 1971.72 4062.67
+# editCommitRoute 1971.72 4062.67
+# setEditMode -create_crossover_vias 0
 
-setEditMode -nets VSS
-editAddRoute 2042.33 3688.82
-editAddRoute 2045.04 3722.33
-editAddRoute 2058.55 3738
-editAddRoute 2066.11 3860.14
-editAddRoute 2040.17 3900.14
-editAddRoute 2027.2 4014.71
-editCommitRoute 2027.2 4014.71
-setEditMode -create_crossover_vias 1
-editAddRoute 2021.26 4012.55
-editAddRoute 2027.2 4063.89
-editCommitRoute 2027.2 4063.89
-setEditMode -create_crossover_vias 0
+# setEditMode -nets VSS
+# editAddRoute 2042.33 3688.82
+# editAddRoute 2045.04 3722.33
+# editAddRoute 2058.55 3738
+# editAddRoute 2066.11 3860.14
+# editAddRoute 2040.17 3900.14
+# editAddRoute 2027.2 4014.71
+# editCommitRoute 2027.2 4014.71
+# setEditMode -create_crossover_vias 1
+# editAddRoute 2021.26 4012.55
+# editAddRoute 2027.2 4063.89
+# editCommitRoute 2027.2 4063.89
+# setEditMode -create_crossover_vias 0
 
 setEditMode -nets VDD
 editAddRoute 2040.63 3218.21

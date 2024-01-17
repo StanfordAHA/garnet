@@ -55,6 +55,7 @@ def construct():
     'soc_only'                 : False,
     # Include SoC core? (use 0 for false, 1 for true)
     'include_core'             : 1,
+    'include_diff_clock_rx'    : 1,
     # Low Effort flow
     'express_flow'             : False,
     'skip_verify_connectivity' : True,
@@ -99,11 +100,10 @@ def construct():
       'io-fillers.tcl',
       'create-rows.tcl',
       'add-tracks.tcl',
-      # 'place-dic-cells-tma2.tcl',
+      'place-macros.tcl',
       'gen-bumps.tcl',
       'route-bumps.tcl',
       'innovus-pnr-config.tcl',
-      'place-macros.tcl',
       'add-welltaps-for-pad-latchup.tcl',
       'create-special-grid.tcl',
       'carve-out-special-grid-fullchip.tcl'

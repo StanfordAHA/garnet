@@ -26,3 +26,4 @@ commands:
 
 parameters:
   include_core: 1
+  include_diff_clock_rx: 1

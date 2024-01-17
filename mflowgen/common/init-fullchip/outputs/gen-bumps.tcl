@@ -157,7 +157,19 @@ proc assign_signals_to_bumps { bump_types } {
     deselect_bump -bumps "Bump_73.3.24"
     deselect_bump -bumps "Bump_73.3.24"
     deselect_bump -bumps "Bump_50.3.1"
+    select_bump -bumps "Bump_1238.51.13"
+    select_bump -bumps "Bump_1237.51.12"
+    deselect_bump -bumps "Bump_1188.49.12"
+    deselect_bump -bumps "Bump_1189.49.13"
     assignBump -selected -exclude_pgnet {VDD VSS VDDPST}
+    deselect_bump
+
+    select_bump -bumps "Bump_1188.49.12"
+    assignSigToBump -selected -net pad_diffclkrx_inp
+    deselect_bump
+
+    select_bump -bumps "Bump_1189.49.13"
+    assignSigToBump -selected -net pad_diffclkrx_inn
     deselect_bump
 
     # Assign all VCC bumps
@@ -222,6 +234,13 @@ globalNetConnect VDDPST -type pgpin -pin vccio -inst *
 globalNetConnect VDD    -type pgpin -pin vcc   -inst *
 globalNetConnect VSS    -type pgpin -pin vssp  -inst *
 globalNetConnect VSS    -type pgpin -pin vssb  -inst *
+
+# differential clock receiver power ports
+globalNetConnect VDDPST -type pgpin -pin vccldo_hv    -inst *
+globalNetConnect VDD    -type pgpin -pin vnnaon_nom   -inst *
+globalNetConnect VDD    -type pgpin -pin vccdig_nom   -inst *
+globalNetConnect VDD    -type pgpin -pin vccdist_nom  -inst *
+globalNetConnect VSS    -type pgpin -pin vss          -inst *
 
 gen_bumps $ADK_BUMP_CELL
 assign_signals_to_bumps $bump_types

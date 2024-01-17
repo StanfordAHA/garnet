@@ -56,3 +56,6 @@ set_false_path -hold -through [get_property [get_pins -hierarchical */wa[1]]    
 
 set icg_hack_cells [get_cells -hier -regexp .*u_icg_hack]
 set_dont_touch $icg_hack_cells true
+
+set_dont_touch [get_nets pad_diffclkrx_inn]
+set_dont_touch [get_nets pad_diffclkrx_inp]
