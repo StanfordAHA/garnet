@@ -1705,8 +1705,8 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            sparsity=0.9, use_fp=True)
         exp_mat = get_lut_tensor(dump=matrix_tmp_dir, suffix=suffix, clean=False, func='exp')
         output_matrix = numpy.add(b_mat, c_mat, dtype=numpy.float32, casting='unsafe')
-        output_matrix = numpy.maximum(b_mat, 
-                                      numpy.multiply(b_mat, 0.2, dtype=numpy.float32, casting='unsafe'), 
+        output_matrix = numpy.maximum(output_matrix, 
+                                      numpy.multiply(output_matrix, 0.2, dtype=numpy.float32, casting='unsafe'), 
                                       dtype=numpy.float32, casting='unsafe')
         FExp = fpops.FExp_fc(PyFamily())
         exp = FExp()
