@@ -108,20 +108,20 @@ the `aha pnr` wrapper does something like
 ==== DAEMON PYTESTS
 
 * need python version 3
-    source /nobackup/steveri/github/smart-components/env/bin/activate
-    python --version
-        Python 3.8.10
+    $ source /nobackup/steveri/github/smart-components/env/bin/activate
+    $ python --version
+    Python 3.8.10
 
 * to turn off the annoying color:
-    alias pytest='pytest --color=no'
+    $ alias pytest='pytest --color=no'
 
 * run all tests in summary mode
-    cd $GARNET
-    pytest --noconftest daemon/test_daemon.py
+    $ cd $GARNET
+    $ pytest --noconftest daemon/test_daemon.py
 
 * run all tests and show full output
-    cd $GARNET
-    pytest --capture=no --noconftest daemon/test_daemon.py
+    $ cd $GARNET
+    $ pytest --noconftest --capture=no daemon/test_daemon.py
 
-* run a single test
-    pytest daemon/test_daemon.py -k <testname>
+* run a single test e.g. "test_double_launch"
+    $ pytest --noconftest daemon/test_daemon.py -k double
