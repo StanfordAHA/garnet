@@ -24,7 +24,7 @@ docker-launch $image $container
 
 # --- in docker now ---
 source /aha/bin/activate
-(cd garnet; git fetch origin; git checkout origin/refactor)
+# (cd garnet; git fetch origin; git checkout origin/refactor)
 garnet/daemon/daemon-test.sh >& dtest.log &
 tail -f dtest.log
 
@@ -110,15 +110,6 @@ apps='
     tests/conv_1_2
     tests/conv_2_1
 '
-
-# (For now) must replace non-daemon-capable pnr.py with my version
-echo '--- (daemon-test.sh) PNR.PY REPLACE'
-set -x
-ls -l /aha/garnet/daemon/pnr.py /aha/aha/util/pnr.py
-cp /aha/aha/util/pnr.py /aha/aha/util/pnr.py.orig
-cp /aha/garnet/daemon/pnr.py /aha/aha/util/pnr.py
-ls -l /aha/garnet/daemon/pnr.py /aha/aha/util/pnr.py
-set +x
 
 echo "--- (daemon-test.sh) GARNET VERILOG BUILD"
 t_start=`date +%s`
