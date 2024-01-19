@@ -24,10 +24,10 @@ fi
 
 DO_AF=True
 if [ "$DO_AF" == True ]; then
-    echo '--- AUTOFLAKE\n'
+    echo '--- AUTOFLAKE'
 
     # Install if needed
-    which autoflake || echo pip install autoflake
+    which autoflake || pip install autoflake
 
     # Prevent unwanted logfile escape sequences
     filter='s/^---/ ---/;s/^+++/ +++/'
@@ -44,10 +44,10 @@ fi
 DO_F8err=True
 if [ "$DO_F8err" == True ]; then
     # Install if needed
-    which flake8 || echo pip install flake8
+    which flake8 || pip install flake8
 
     # ERRORS
-    echo '--- FLAKE8 ERRORS\n'
+    echo '--- FLAKE8 ERRORS'
 
     awkscript='
       { got_input=1 }
@@ -72,7 +72,7 @@ fi
 
 # WARNINGS
 
-echo '--- FLAKE8 WARNINGS\n'
+echo '--- FLAKE8 WARNINGS'
 cat <<EOF
 
 NOTE to address warnings locally, do e.g.
