@@ -1099,7 +1099,8 @@ class SparseTBBuilder(m.Generator2):
                 # core_tag = "fake_pe"
                 core_tag = "alu"
                 kwargs = {
-                    "op": node.get_attributes()['label'].strip('"')
+                    "op": node.get_attributes()['label'].strip('"'),
+                    "sam_graph_node_id": node.get_name()
                 }
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
@@ -2369,10 +2370,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
-        print("test matrices")
-        print(b_mat)
-        print(c_mat)
-        print(output_matrix)
         output_format = "CSF"
         output_name = "x"
     elif 'vec_elemmul.gv' in app_name:
