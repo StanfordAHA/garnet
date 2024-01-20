@@ -787,6 +787,14 @@ def pnr(garnet, args, app):
         unconstrained_io = (args.unconstrained_io or args.generate_bitstream_only), 
         load_only        = args.generate_bitstream_only
     )
+    # generate vars for bitstream generation only
+    placement, routing, id_to_name, instance_to_instr, \
+            netlist, bus = garnet.place_and_route(
+                args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact,
+                load_only=args.generate_bitstream_only,
+                pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
+                input_broadcast_branch_factor=args.input_broadcast_branch_factor,
+                input_broadcast_max_leaves=args.input_broadcast_max_leaves)
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
         pnr_result = pnr_wrapper(
