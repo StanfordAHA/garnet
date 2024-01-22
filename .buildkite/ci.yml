@@ -77,21 +77,20 @@ steps:
   commands:
   - docker kill $CONTAINER || true
   - .buildkite/bin/docker-clean.sh
-  - docker container prune --force --filter "until=24h" --filter=label='description=garnet' || true
-  - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true
+#   - docker container prune --force --filter "until=24h" --filter=label='description=garnet' || true
+#   - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true
 
 
-docker ps
-
-docker ps | grep deleteme | grep 'months ago'
-docker ps | grep deleteme | grep 'months ago' | awk '{print $1}' | xargs docker kill
-
-docker ps | grep deleteme | grep 'weeks ago'
-docker ps | grep deleteme | grep 'weeks ago'  | awk '{print $1}' | xargs docker kill
-
-docker ps | grep deleteme | grep 'days ago'
-docker ps | grep deleteme | grep 'days ago'   | awk '{print $1}' | xargs docker kill
-
-docker ps | grep deleteme | egrep '[456789] hours ago'
-docker ps | grep deleteme | egrep '[456789] hours ago' | awk '{print $1}' | xargs docker kill
-
+# docker ps
+# 
+# docker ps | grep deleteme | grep 'months ago'
+# docker ps | grep deleteme | grep 'months ago' | awk '{print $1}' | xargs docker kill
+# 
+# docker ps | grep deleteme | grep 'weeks ago'
+# docker ps | grep deleteme | grep 'weeks ago'  | awk '{print $1}' | xargs docker kill
+# 
+# docker ps | grep deleteme | grep 'days ago'
+# docker ps | grep deleteme | grep 'days ago'   | awk '{print $1}' | xargs docker kill
+# 
+# docker ps | grep deleteme | egrep '[456789] hours ago'
+# docker ps | grep deleteme | egrep '[456789] hours ago' | awk '{print $1}' | xargs docker kill
