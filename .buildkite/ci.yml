@@ -48,25 +48,25 @@ steps:
 - wait: { continue_on_failure: true }
 
 
-- label: ":wrench: Aha regressions"
-  agents:
-    docker: "true"
-  commands:
-
-  # In case prior step failed to clean up correctly
-  - docker ps
-  - docker kill $CONTAINER || true
-  - docker ps
-
-  - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
-  - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
-  - docker cp . $CONTAINER:/aha/garnet
-  - docker exec $CONTAINER /bin/bash -c "
-      source /aha/bin/activate;
-      source /cad/modules/tcl/init/sh;
-      module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
-      pwd; aha regress pr;
-    "
+# - label: ":wrench: Aha regressions"
+#   agents:
+#     docker: "true"
+#   commands:
+# 
+#   # In case prior step failed to clean up correctly
+#   - docker ps
+#   - docker kill $CONTAINER || true
+#   - docker ps
+# 
+#   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
+#   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
+#   - docker cp . $CONTAINER:/aha/garnet
+#   - docker exec $CONTAINER /bin/bash -c "
+#       source /aha/bin/activate;
+#       source /cad/modules/tcl/init/sh;
+#       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
+#       pwd; aha regress pr;
+#     "
 
 # ALWAYS clean up regardless of test success or failure
 - wait: { continue_on_failure: true }
@@ -77,20 +77,3 @@ steps:
   commands:
   - docker kill $CONTAINER || true
   - .buildkite/bin/docker-clean.sh
-#   - docker container prune --force --filter "until=24h" --filter=label='description=garnet' || true
-#   - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true
-
-
-# docker ps
-# 
-# docker ps | grep deleteme | grep 'months ago'
-# docker ps | grep deleteme | grep 'months ago' | awk '{print $1}' | xargs docker kill
-# 
-# docker ps | grep deleteme | grep 'weeks ago'
-# docker ps | grep deleteme | grep 'weeks ago'  | awk '{print $1}' | xargs docker kill
-# 
-# docker ps | grep deleteme | grep 'days ago'
-# docker ps | grep deleteme | grep 'days ago'   | awk '{print $1}' | xargs docker kill
-# 
-# docker ps | grep deleteme | egrep '[456789] hours ago'
-# docker ps | grep deleteme | egrep '[456789] hours ago' | awk '{print $1}' | xargs docker kill
