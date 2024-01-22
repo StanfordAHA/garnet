@@ -25,11 +25,17 @@ steps:
   # Replace default garnet with dev branch
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
   - docker cp . $CONTAINER:/aha/garnet
+  - docker exec $CONTAINER /bin/bash -c "
+      git config --global --add safe.directory /aha/garnet"
+
+  - docker exec $CONTAINER /bin/bash -c "cd /aha/garnet; git branch"
+  - docker exec $CONTAINER /bin/bash -c "cat -n /aha/garnet/bin/lint.sh"
+
 
   # Run the lint
   - docker exec $CONTAINER /bin/bash -c "
       source /aha/bin/activate;
-      cd garnet; ./bin/lint.sh
+      cd /aha/garnet; ./bin/lint.sh
     "
 - wait: { continue_on_failure: true }
 
