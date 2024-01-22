@@ -34,7 +34,7 @@ echo $files
 DO_AF=True
 if [ "$DO_AF" == True ]; then
 
-    echo '--- INFO: Autoflake finds redundant and unnecessary import requests'
+    echo '--- Autoflake finds redundant and unnecessary import requests'
 
     # Install if needed
     echo '--- - AUTOFLAKE INSTALL'
@@ -56,14 +56,14 @@ fi
 DO_F8err=True
 if [ "$DO_F8err" == True ]; then
 
-    echo '--- INFO: Flake8 finds python style violations'
+    echo '--- Flake8 finds python style violations'
 
     # Install if needed
     echo '--- - FLAKE8 INSTALL'
     which flake8 >& /dev/null || pip install flake8
 
     # ERRORS
-    echo '+++ - FLAKE8 ERRORS'
+    echo '--- - FLAKE8 ERRORS'
 
     awkscript='
       { got_input=1 }
@@ -141,57 +141,20 @@ To run flake8 locally do e.g.
 EOF
 fi    
 
+
+cat <<EOF
+
+----------------------------------------------------
+NOTE: To skip flake tests for a given python line,
+can add '# noqa' at the end, e.g.
+```
+    if name == "main": garnet_amber.main()   # noqa
+```
+EOF
+
+
 if [ "$FAIL" ]; then
     exit 13
 else
     echo "No errors found, hooray!"
 fi
-
-
-##############################################################################
-# OLD
-
-# Note it is MUCH faster to do files all at once vs. in a for loop
-# for f in $files; do
-#     printf '\n---\n'
-#     nwarns=`flake8 $f | wc -l`
-#     printf "%-24s %8d\n" $f $nwarns
-
-cat <<EOF | filter
-SPARSE_TESTS/copy_formatted.py:3:1: F401 'subprocess' imported but unused
-SPARSE_TESTS/copy_formatted.py:32:11: F541 f-string is missing placeholders
-SPARSE_TESTS/generate_tile_files.py:3:1: F401 'subprocess' imported but unused
-accumulation.py:7:1: F401 'sam.onyx.generate_matrices.MatrixGenerator' imported but unused
-cgra/__init__.py:1:1: F401 '.util.create_cgra' imported but unused
-cgra/__init__.py:1:1: F401 '.util.compress_config_data' imported but unused
-cgra/__init__.py:2:1: F401 '.wiring.glb_glc_wiring' imported but unused
-cgra/__init__.py:2:1: F401 '.wiring.glb_interconnect_wiring' imported but unused
-EOF
-# exit
-
-echo 'foooooooooooooooooooooooo'
-# set -x
-
-# flake8 --select=F $files | filter | tee /dev/tty | grep foo
-# exit
-
-
-exit
-
-
-flake8 --select=F $files | filter | tee /dev/tty | grep -s F || F8_FAIL=False
-exit
-
-flake8 --select=F $files | filter | tee /dev/stdout | grep -s F || F8_FAIL=False
-exit
-
-
-
-F8_FAIL=True
-for f in $files; do
-    echo $f
-    flake8 --select=F $f | grep . || F8_FAIL=False
-    printf '\n'
-done
-
-exit
