@@ -31,6 +31,7 @@ steps:
       source /aha/bin/activate;
       cd garnet; ./bin/lint.sh
     "
+- wait: { continue_on_failure: true }
 
 
 - label: ":wrench: Aha regressions"
