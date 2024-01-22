@@ -6,18 +6,27 @@ function which() { type $*; }
 
 
 
-LOCAL_TEST=
-LOCAL_TEST=True
+# LOCAL_TEST=
+# LOCAL_TEST=True
 
 # Gather the python files
-[ "$LOCAL_TEST" ] && cd /nobackup/steveri/github/garnet
-files=`git ls-tree -r HEAD --name-only | egrep 'py$' | sort`
+# [ "$LOCAL_TEST" ] && cd /nobackup/steveri/github/garnet
+# files=`git ls-tree -r HEAD --name-only | egrep 'py$' | sort`
 
+set -x
 # Fire up a venv if needed
-if [ "$LOCAL_TEST" ]; then
-  python -c 'import sys; print(sys.prefix)'
+if [ `hostname` == kiwi ]; then
+  cd /nobackup/steveri/github/garnet
+  # python -c 'import sys; print(sys.prefix)' ?? returns "/nobackup/steveri/github/smart-components/env"
   which activate || source /nobackup/steveri/github/smart-components/env/bin/activate
+else
+  cd /aha/garnet
 fi
+
+# Gather the python files
+files=`git ls-tree -r HEAD --name-only | egrep 'py$' | sort`
+echo $files
+
 
 ########################################################################
 # AUTOFLAKE
@@ -27,7 +36,7 @@ if [ "$DO_AF" == True ]; then
     echo '--- AUTOFLAKE'
 
     # Install if needed
-    which autoflake || pip install autoflake
+    which autoflake >& /dev/null || pip install autoflake
 
     # Prevent unwanted logfile escape sequences
     filter='s/^---/ ---/;s/^+++/ +++/'
@@ -44,7 +53,7 @@ fi
 DO_F8err=True
 if [ "$DO_F8err" == True ]; then
     # Install if needed
-    which flake8 || pip install flake8
+    which flake8 >& /dev/null || pip install flake8
 
     # ERRORS
     echo '--- FLAKE8 ERRORS'
