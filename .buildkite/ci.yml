@@ -20,7 +20,7 @@ steps:
   commands:
 
   # Fire up the container
-  - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
+  - docker run -id --name $CONTAINER --rm bash
 
   # Replace default garnet with dev branch
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
