@@ -1100,7 +1100,8 @@ class SparseTBBuilder(m.Generator2):
                 core_tag = "alu"
                 kwargs = {
                     "op": node.get_attributes()['label'].strip('"'),
-                    "sam_graph_node_id": node.get_name()
+                    "sam_graph_node_id": node.get_name(),
+                    "mapped_coreir_dir": self.collat_dir
                 }
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
@@ -3052,7 +3053,7 @@ if __name__ == "__main__":
                     # sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
                     #                   use_fa=use_fiber_access, unroll=unroll)
                     sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
-                                      use_fa=use_fiber_access, unroll=unroll)
+                                      use_fa=use_fiber_access, unroll=unroll, collat_dir=collat_dir)
                     sdgs[sam_graph] = sdg
                 else:
                     print("REUSE SDG")
