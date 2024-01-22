@@ -41,6 +41,10 @@ steps:
       source /aha/bin/activate;
       cd /aha/garnet; ./bin/lint.sh
     "
+
+  # Clean up
+  - docker kill $CONTAINER || true
+
 - wait: { continue_on_failure: true }
 
 
@@ -48,6 +52,10 @@ steps:
   agents:
     docker: "true"
   commands:
+
+  # In case prior step failed to clean up correctly
+  - docker kill $CONTAINER || true
+
   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
   - docker cp . $CONTAINER:/aha/garnet
