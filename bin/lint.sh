@@ -56,7 +56,7 @@ fi
 DO_F8err=True
 if [ "$DO_F8err" == True ]; then
 
-    echo '--- FLAKE8 FINDS PYTHON STYLE VIOLATIONS"
+    echo '--- FLAKE8 FINDS PYTHON STYLE VIOLATIONS'
 
     # Install if needed
     echo '--- FLAKE8 INSTALL'
