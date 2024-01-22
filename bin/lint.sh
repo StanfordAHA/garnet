@@ -13,7 +13,7 @@ function which() { type $*; }
 # [ "$LOCAL_TEST" ] && cd /nobackup/steveri/github/garnet
 # files=`git ls-tree -r HEAD --name-only | egrep 'py$' | sort`
 
-set -x
+# set -x
 # Fire up a venv if needed
 if [ `hostname` == kiwi ]; then
   cd /nobackup/steveri/github/garnet
@@ -33,14 +33,17 @@ echo $files
 
 DO_AF=True
 if [ "$DO_AF" == True ]; then
-    echo '--- AUTOFLAKE'
+
+    echo '--- AUTOFLAKE FINDS REDUNDANT AND UNNECESSARY IMPORT REQUESTS'
 
     # Install if needed
+    echo '--- AUTOFLAKE INSTALL'
     which autoflake >& /dev/null || pip install autoflake
 
     # Prevent unwanted logfile escape sequences
     filter='s/^---/ ---/;s/^+++/ +++/'
 
+    echo '--- AUTOFLAKE RUN'
     AF_FAIL=True
     autoflake --remove-duplicate-keys $files | sed "$filter" | grep . || AF_FAIL=
 
@@ -52,7 +55,11 @@ fi
 
 DO_F8err=True
 if [ "$DO_F8err" == True ]; then
+
+    echo '--- FLAKE8 FINDS PYTHON STYLE VIOLATIONS"
+
     # Install if needed
+    echo '--- FLAKE8 INSTALL'
     which flake8 >& /dev/null || pip install flake8
 
     # ERRORS
