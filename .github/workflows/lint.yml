@@ -1,5 +1,12 @@
 name: lint
 
+on:
+  # Every push
+  push:
+
+  # When requested manually
+  workflow_dispatch:
+
 steps:
 - uses: actions/checkout@v4
 - uses: actions/setup-python@v5
