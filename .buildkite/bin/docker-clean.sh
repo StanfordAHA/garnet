@@ -6,15 +6,16 @@ function dps() {
         | sed 's/    //' \
         | sed 's/                        \([^ ]*\)$/    \1/'
 }
-echo '+++ BEFORE'; dps
+echo '+++ BEFORE'; dps; printf '\n'
 
 
 function deldocks() {
   pat="$1"
   # echo '------------------------------------------------------------------------'
   dps | grep deleteme | egrep "$pat" || return
-  echo '------------------------------------------------------------------------'
+  # echo '------------------------------------------------------------------------'
   docker ps | grep deleteme | egrep "$pat" | awk '{print $1}' | xargs echo docker kill
+  printf '\n'
   # docker ps | grep deleteme | egrep "$pat" | awk '{print $1}' | xargs echo docker kill
 }
 
@@ -29,6 +30,8 @@ deldocks 'days ago'
 
 echo '+++ HOURS'
 deldocks '[456789] hours ago'
+
+echo '+++ AFTER'; dps; printf '\n'
 
 # docker ps | grep deleteme | grep 'months ago'
 # docker ps | grep deleteme | grep 'months ago' | awk '{print $1}' | xargs docker kill
