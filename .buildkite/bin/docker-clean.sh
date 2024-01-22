@@ -13,10 +13,10 @@ function deldocks() {
   pat="$1"
   # echo '------------------------------------------------------------------------'
   dps | grep deleteme | egrep "$pat" || return
-  # echo '------------------------------------------------------------------------'
+  echo '---'
   docker ps | grep deleteme | egrep "$pat" | awk '{print $1}' | xargs echo docker kill
+  docker ps | grep deleteme | egrep "$pat" | awk '{print $1}' | xargs docker kill
   printf '\n'
-  # docker ps | grep deleteme | egrep "$pat" | awk '{print $1}' | xargs echo docker kill
 }
 
 echo '+++ MONTHS'
@@ -35,12 +35,3 @@ echo '+++ AFTER'; dps; printf '\n'
 
 # docker ps | grep deleteme | grep 'months ago'
 # docker ps | grep deleteme | grep 'months ago' | awk '{print $1}' | xargs docker kill
-# 
-# docker ps | grep deleteme | grep 'weeks ago'
-# docker ps | grep deleteme | grep 'weeks ago'  | awk '{print $1}' | xargs docker kill
-# 
-# docker ps | grep deleteme | grep 'days ago'
-# docker ps | grep deleteme | grep 'days ago'   | awk '{print $1}' | xargs docker kill
-# 
-# docker ps | grep deleteme | egrep '[456789] hours ago'
-# docker ps | grep deleteme | egrep '[456789] hours ago' | awk '{print $1}' | xargs docker kill
