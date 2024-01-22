@@ -15,8 +15,23 @@ steps:
 # For now at least; set soft_fail so failing lint does not fail pipeline
 - label: "Lint"
   soft_fail: true
+  agents:
+    docker: "true"
   commands:
-  - .buildkite/bin/lint.sh
+
+  # Fire up the container
+  - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
+
+  # Replace default garnet with dev branch
+  - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
+  - docker cp . $CONTAINER:/aha/garnet
+
+  # Run the lint
+  - docker exec $CONTAINER /bin/bash -c "
+      source /aha/bin/activate;
+      cd garnet; ./bin/lint.sh
+    "
+
 
 - label: ":wrench: Aha regressions"
   agents:
@@ -26,7 +41,6 @@ steps:
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
   - docker cp . $CONTAINER:/aha/garnet
   - docker exec $CONTAINER /bin/bash -c "
-      echo foobarbaz;
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
