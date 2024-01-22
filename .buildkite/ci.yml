@@ -40,27 +40,27 @@ steps:
 - wait: { continue_on_failure: true }
 
 
-# - label: ":wrench: Aha regressions"
-#   agents:
-#     docker: "true"
-#   commands:
-#   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
-#   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
-#   - docker cp . $CONTAINER:/aha/garnet
-#   - docker exec $CONTAINER /bin/bash -c "
-#       source /aha/bin/activate;
-#       source /cad/modules/tcl/init/sh;
-#       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
-#       pwd; aha regress pr;
-#     "
-# 
-# # ALWAYS clean up regardless of test success or failure
-# - wait: { continue_on_failure: true }
-# 
-# - label: "Delete container"
-#   agents:
-#     docker: "true"
-#   commands:
-#   - docker kill $CONTAINER || true
-#   - docker container prune --force --filter "until=24h" --filter=label='description=garnet' || true
-#   - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true
+- label: ":wrench: Aha regressions"
+  agents:
+    docker: "true"
+  commands:
+  - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
+  - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
+  - docker cp . $CONTAINER:/aha/garnet
+  - docker exec $CONTAINER /bin/bash -c "
+      source /aha/bin/activate;
+      source /cad/modules/tcl/init/sh;
+      module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
+      pwd; aha regress pr;
+    "
+
+# ALWAYS clean up regardless of test success or failure
+- wait: { continue_on_failure: true }
+
+- label: "Delete container"
+  agents:
+    docker: "true"
+  commands:
+  - docker kill $CONTAINER || true
+  - docker container prune --force --filter "until=24h" --filter=label='description=garnet' || true
+  - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true
