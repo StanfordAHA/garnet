@@ -12,11 +12,15 @@ steps:
 
 - wait
 
-# For now at least; set soft_fail so failing lint does not fail pipeline
+# Lint step: check all python files for syntax consistency.
 - label: "Lint"
+
+  # For now at least; set soft_fail so failing lint does not fail pipeline
   soft_fail: true
+
   agents:
     docker: "true"
+
   commands:
 
   # Fire up the container
