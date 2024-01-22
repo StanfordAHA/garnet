@@ -1,14 +1,21 @@
 #!/bin/bash
 
-echo '+++ BEFORE'
-docker ps
+# More compact version of "docker ps"
+function dps() {
+    docker ps \
+        | sed 's/    //' \
+        | sed 's/                        \([^ ]*\)$/    \1/'
+}
+echo '+++ BEFORE'; dps
+
 
 function deldocks() {
   pat="$1"
-  echo '------------------------------------------------------------------------'
-  docker ps | grep deleteme | egrep "$pat"
+  # echo '------------------------------------------------------------------------'
+  dps | grep deleteme | egrep "$pat" || return
   echo '------------------------------------------------------------------------'
   docker ps | grep deleteme | egrep "$pat" | awk '{print $1}' | xargs echo docker kill
+  # docker ps | grep deleteme | egrep "$pat" | awk '{print $1}' | xargs echo docker kill
 }
 
 echo '+++ MONTHS'
@@ -19,6 +26,8 @@ deldocks 'weeks ago'
 
 echo '+++ DAYS'
 deldocks 'days ago'
+
+echo '+++ HOURS'
 deldocks '[456789] hours ago'
 
 # docker ps | grep deleteme | grep 'months ago'
