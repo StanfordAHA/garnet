@@ -34,16 +34,16 @@ echo $files
 DO_AF=True
 if [ "$DO_AF" == True ]; then
 
-    echo '--- AUTOFLAKE FINDS REDUNDANT AND UNNECESSARY IMPORT REQUESTS'
+    echo '--- INFO: Autoflake finds redundant and unnecessary import requests'
 
     # Install if needed
-    echo '--- AUTOFLAKE INSTALL'
+    echo '--- - AUTOFLAKE INSTALL'
     which autoflake >& /dev/null || pip install autoflake
 
     # Prevent unwanted logfile escape sequences
     filter='s/^---/ ---/;s/^+++/ +++/'
 
-    echo '--- AUTOFLAKE RUN'
+    echo '--- - AUTOFLAKE ERRORS'
     AF_FAIL=True
     autoflake --remove-duplicate-keys $files | sed "$filter" | grep . || AF_FAIL=
 
@@ -56,14 +56,14 @@ fi
 DO_F8err=True
 if [ "$DO_F8err" == True ]; then
 
-    echo '--- FLAKE8 FINDS PYTHON STYLE VIOLATIONS'
+    echo '--- INFO: Flake8 finds python style violations'
 
     # Install if needed
-    echo '--- FLAKE8 INSTALL'
+    echo '--- - FLAKE8 INSTALL'
     which flake8 >& /dev/null || pip install flake8
 
     # ERRORS
-    echo '--- FLAKE8 ERRORS'
+    echo '+++ - FLAKE8 ERRORS'
 
     awkscript='
       { got_input=1 }
@@ -88,7 +88,7 @@ fi
 
 # WARNINGS
 
-echo '--- FLAKE8 WARNINGS'
+echo '--- - FLAKE8 WARNINGS'
 cat <<EOF
 
 NOTE to address warnings locally, do e.g.
@@ -108,7 +108,7 @@ awkscript='
     #    { print; fname = $1 }
     # END { if (got_input) exit(13) }
 '
-flake8 $files | awk -F ":" "$awkscript"
+flake8 $files | awk -F ":" "$awkscript" | sort -b -k2,2rn
 
 ########################################################################
 # Process failures
@@ -119,12 +119,11 @@ if [ "$AF_FAIL" ]; then
     FAIL=True
     cat <<EOF
 
-ERROR found autoflake errors, see above for details.
-
+----------------------------------------------------
+ERROR: Found autoflake errors, see above for details.
 To run autoflake locally do e.g.
     pip install autoflake
     autoflake --remove-duplicate-keys <filename>.py
-
 EOF
 fi    
 
@@ -132,8 +131,8 @@ if [ "$F8_FAIL" ]; then
     FAIL=True
     cat <<EOF
 
-ERROR found flake8 errors, see above for details.
-
+----------------------------------------------------
+ERROR: Found flake8 errors, see above for details.
 To run flake8 locally do e.g.
     pip install flake8
     flake8 --select=F <filename>.py
