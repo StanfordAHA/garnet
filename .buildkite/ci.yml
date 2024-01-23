@@ -57,7 +57,7 @@ steps:
   - docker ps
   - docker kill $CONTAINER || true
   # Sometimes it takes a second to die...
-  - sleep 20
+  - sleep 10
   - docker ps
 
   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
@@ -78,4 +78,5 @@ steps:
     docker: "true"
   commands:
   - docker kill $CONTAINER || true
-  - .buildkite/bin/docker-clean.sh
+  - .buildkite/bin/docker-clean.sh || true
+  - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true
