@@ -108,8 +108,8 @@ class NetlistGraph:
                 ub_latency[node_ub_name][ub_bank_id] = {"bank": int(ub_bank_id), "latency": ub_bank_latency}
         if "IO2MEM_REG_CHAIN" in os.environ:
             with open(app_dir + "/ub_latency.json", "w") as f:
-                f.write(json.dumps(ub_latency, indent=4))
-    
+                f.write(json.dumps(ub_latency, indent=4))    
+
     def count_reg_sources(self, node):
         num_reg_sources = 0
         for source_node in node.sources:
