@@ -45,9 +45,7 @@ def unrolling(inputs, outputs, input_place_list, output_place_list, extent_dict,
         input_name_str = input_name.replace("hw_", "")
         input_name_str = input_name_str.replace(".raw", "")
         f_str = f'''
-        for (int i = 0; i < {input_name_str}_unroll; i++) {{
-          write_glb_memory(0x40000 * ({input_name_str}_unroll_array[i]), (uint16_t * ) app_{input_name_str}_data, app_{input_name_str}_data_size / {input_name_str}_unroll, i, {input_name_str}_unroll);
-        }}
+          write_glb_memory(0x40000 * ({input_name_str}_unroll_array[0]), (uint16_t * ) app_{input_name_str}_data, app_{input_name_str}_data_size / {input_name_str}_unroll, 0, {input_name_str}_unroll);
         '''
         f.write(dedent(f_str))
         checkpoint = checkpoint + len(input_place_list[idx])
@@ -67,36 +65,28 @@ def unrolling(inputs, outputs, input_place_list, output_place_list, extent_dict,
     f.write(f"int stream_pulse_g2f = {hex(stream_pulse_g2f)};\n")
     f.write(f"int stream_pulse_f2g = {hex(stream_pulse_f2g)};\n\n")
 
-    f.write("static void update_glb_pointer_start_addr(int k){")
+    f.write("static void update_glb_pointer_inputs(int k){")
+    f.write("  int sum;")
     for idx, input_name in enumerate(inputs):
         input_name_str = input_name.replace("hw_", "")
         input_name_str = input_name_str.replace(".raw", "")
         f_str = f'''        
-        for (int i = 0; i < {input_name_str}_unroll; i++) {{
-          int sum = 0;
+          sum = 0;
           if (k == 0) {{
             sum = {input_name_str}_extents[k]*2;
           }} else {{
             sum = {input_name_str}_extents[k]*2 + {input_name_str}_extents[k-1]*2;
             {input_name_str}_extents[k] = sum/2;
           }}
-        HAL_Cgra_Glb_WriteReg(0x100 * ({input_name_str}_unroll_array[i]) + GLB_LD_DMA_HEADER_0_START_ADDR_R, 0x40000 * ({input_name_str}_unroll_array[i]) + sum);
-        }}
+        HAL_Cgra_Glb_WriteReg(0x100 * ({input_name_str}_unroll_array[0]) + GLB_LD_DMA_HEADER_0_START_ADDR_R, 0x40000 * ({input_name_str}_unroll_array[0]) + sum);
         '''
         f.write(dedent(f_str))
 
-    f.write("}\n\n")
-
-    f.write("\n")
-
-    f.write("static void update_glb_pointer_extent(int k){")
     for idx, input_name in enumerate(inputs):
         input_name_str = input_name.replace("hw_", "")
         input_name_str = input_name_str.replace(".raw", "")
         f_str = f'''
-        for (int i = 0; i < {input_name_str}_unroll; i++) {{
-          HAL_Cgra_Glb_WriteReg(0x100 * ({input_name_str}_unroll_array[i]) + GLB_LD_DMA_HEADER_0_RANGE_0_R, {input_name_str}_extents[k]-2);
-        }}
+          HAL_Cgra_Glb_WriteReg(0x100 * ({input_name_str}_unroll_array[0]) + GLB_LD_DMA_HEADER_0_RANGE_0_R, {input_name_str}_extents[k+1]-2);
         '''
         f.write(dedent(f_str))
 

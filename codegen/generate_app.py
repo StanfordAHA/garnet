@@ -1,6 +1,7 @@
 import sys
 import shutil
 import json
+import os
 
 import io_placement
 import raw_to_h_16
@@ -50,6 +51,10 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
                     file = "tiles_chip_test/" + file
                     with open(file, "rb") as partial:
                         shutil.copyfileobj(partial, output)
+                    # length = (1024*2 - os.path.getsize(file)) / 2
+                    # for i in range(int(length)):
+                    #     output.write(b'\x00\x00')
+
             input_paths = []
 
 

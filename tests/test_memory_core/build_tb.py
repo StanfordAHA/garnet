@@ -2341,10 +2341,41 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
                            sparsity=0.8)
 
+        # "X(i,j)=B(i,k,l)*C(j,k)*D(j,l) -f=X:ss -f=B:sss -f=C:ss -f=D:ss" 
+        output_matrix = numpy.einsum("ikl,jk,jl->ij", b_mat, c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+
+        output_format = "CSF"
+        output_name = "X"
+    elif 'tensor3_mttkrp_unfused1.gv' in app_name:
+
+
+        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=0.9)
+
+        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                            sparsity=0.8)
+
         c_mat_trans = numpy.transpose(c_mat)
         d_mat_trans = numpy.transpose(d_mat)
-        output_matrix = numpy.einsum("ikl,lj,kj->ij", b_mat, d_mat_trans, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
-        # output_matrix = numpy.einsum("ikl,jl,jk->ij", b_mat, d_mat, c_mat, dtype=numpy.uint16, casting='unsafe')
+        # "T(j,k,l)=C(j,k)*D(j,l) -f=T:sss -f=C:ss -f=D:ss" 
+        output_matrix = numpy.einsum("jk,jl->jkl", c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "X"
+    elif 'tensor3_mttkrp_unfused2.gv' in app_name:
+
+
+        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
+                            sparsity=0.9)
+
+        t_mat = get_tensor(input_name='T', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['T'],
+                            sparsity=0.8)
+
+        # "X(i,j)=B(i,k,l)*T(j,k,l) -f=X:ss -f=B:sss -f=T:sss" 
+        output_matrix = numpy.einsum("ikl,jkl->ij", b_mat, t_mat, dtype=numpy.uint16, casting='unsafe')
 
         output_format = "CSF"
         output_name = "X"
