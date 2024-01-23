@@ -2140,6 +2140,33 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.maximum(0, (numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe')))
         output_format = "CSF"
         output_name = "X"
+    
+    elif "concat_matmul.gv" in app_name:
+        # matrix b is completely dense
+        b_mat = get_tensor(input_name='B', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                            sparsity=sparsities_[0])  
+        c_mat = get_tensor(input_name='C', shapes=[shapes_[3], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                            sparsity=sparsities_[0])
+        d_mat = get_tensor(input_name='D', shapes=[shapes_[0], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                            sparsity=sparsities_[0])
+        e_mat = get_tensor(input_name='E', shapes=[shapes_[3], shapes_[1]], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['E'],
+                            sparsity=sparsities_[0])
+        input_dims['B'] = tuple(b_mat.shape)
+        input_dims['C'] = tuple(c_mat.shape)
+        input_dims['D'] = tuple(d_mat.shape)
+        input_dims['E'] = tuple(e_mat.shape)
+
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        e_mat_trans = numpy.transpose(e_mat)
+        output_matrix = numpy.add(numpy.matmul(b_mat, c_mat_trans, dtype=numpy.int16, casting='unsafe'), numpy.matmul(d_mat, e_mat_trans, dtype=numpy.int16, casting='unsafe'), dtype=numpy.int16, casting='unsafe') 
+        output_format = "CSF"
+        output_name = "X"
+
     elif "spmv.gv" in app_name:
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
