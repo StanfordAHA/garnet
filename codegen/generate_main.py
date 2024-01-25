@@ -132,7 +132,8 @@ int main(int argc, char* argv[])
     HAL_Cgra_Glc_WriteReg(GLC_STRM_G2F_ISR_R, stream_pulse_g2f);
 
     // Update Input Pointers
-    update_glb_pointer_inputs(run);
+    update_glb_pointer_start_addr(run);
+    update_glb_pointer_extent(run+1);
 
     // Wait for outputs to all fill in
     while(HAL_Cgra_Glc_ReadReg(GLC_STRM_F2G_ISR_R) != stream_pulse_f2g){{

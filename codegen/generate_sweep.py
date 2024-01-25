@@ -69,6 +69,6 @@ for file in files:
     shutil.copy(file, f"dot_h_files/{app_name}/{data}/{file}")
 
 # can we gold check?
-if num_tiles <= 75:
-    parse_gold.parse_gold(app_name, data)
+#if num_tiles <= 75:
+#    parse_gold.parse_gold(app_name, data)
 
