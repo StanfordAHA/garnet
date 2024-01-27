@@ -40,6 +40,7 @@ class Garnet(Generator):
         args.config_addr_reg_width = 8
         args.config_data_width = self.config_data_width
 
+        self.ready_valid = args.sparse_cgra
         # size
         self.width = args.width
         self.height = args.height
@@ -271,7 +272,12 @@ class Garnet(Generator):
 
         for blk_id in inputs:
             x, y = placement[blk_id]
-            bit_width = 17 if blk_id[0] == "I" else 1
+            if blk_id[0] == "I":
+                bit_width = 1
+            elif self.ready_valid:
+                bit_width = 17
+            else:
+                bit_width = 16
             #bit_width = 16 if blk_id[0] == "I" else 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
@@ -287,7 +293,12 @@ class Garnet(Generator):
         for blk_id in outputs:
             x, y = placement[blk_id]
             #bit_width = 16 if blk_id[0] == "I" else 1
-            bit_width = 17 if blk_id[0] == "I" else 1
+            if blk_id[0] == "I":
+                bit_width = 1
+            elif self.ready_valid:
+                bit_width = 17
+            else:
+                bit_width = 16
             name = f"io2glb_{bit_width}_X{x:02X}_Y{y:02X}"
             output_interface.append(name)
             assert name in self.interconnect.interface()
@@ -394,7 +405,6 @@ class Garnet(Generator):
             {"global.BitIO": BitIO_fc},
         )
         
-
         dag = cutil.coreir_to_dag(all_nodes, cmod)
         arch_nodes._node_names.add("cgralib.Mem")
         arch_nodes._node_names.add("cgralib.Pond")
@@ -409,7 +419,8 @@ class Garnet(Generator):
                                            1 + self.height // self.pipeline_config_interval,
                                            pipeline_input_broadcasts,
                                            input_broadcast_branch_factor,
-                                           input_broadcast_max_leaves)
+                                           input_broadcast_max_leaves,
+                                           self.ready_valid)
 
 
         # Remapping all of the ports in the application to generic ports that exist in the hardware
@@ -458,11 +469,18 @@ class Garnet(Generator):
             netlist_info['netlist'][netlist_id] = connections_list
 
         # I guess we are hardcoding these for now
+        #breakpoint()
         pond_remap = {}
-        pond_remap["data_in_pond_0"] = "PondTop_input_width_17_num_0"
-        pond_remap["data_out_pond_0"] = "PondTop_output_width_17_num_0"
-        pond_remap["data_in_pond_1"] = "PondTop_input_width_17_num_1"
-        pond_remap["data_out_pond_1"] = "PondTop_output_width_17_num_1"
+        #if args.sparse_cgra:
+        # pond_remap["data_in_pond_0"] = "PondTop_input_width_17_num_0"
+        # pond_remap["data_out_pond_0"] = "PondTop_output_width_17_num_0"
+        # pond_remap["data_in_pond_1"] = "PondTop_input_width_17_num_1"
+        # pond_remap["data_out_pond_1"] = "PondTop_output_width_17_num_1"
+
+        pond_remap["data_in_pond_0"] = "PondTop_input_width_16_num_0"
+        pond_remap["data_out_pond_0"] = "PondTop_output_width_16_num_0"
+        pond_remap["data_in_pond_1"] = "PondTop_input_width_16_num_1"
+        pond_remap["data_out_pond_1"] = "PondTop_output_width_16_num_1"
 
         if not self.amber_pond:
             for name, mapping in netlist_info["netlist"].items():
@@ -470,7 +488,6 @@ class Garnet(Generator):
                     (inst_name, port_name) = mapping[i]
                     if port_name in pond_remap:
                         mapping[i] = (inst_name, pond_remap[port_name])
-
 
         self.pack_ponds(netlist_info)
 
@@ -678,9 +695,10 @@ def parse_args():
     parser.add_argument('--mem-ratio', type=int, default=4)
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
-    parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
+    #parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
+    #parser.add_argument("--dense-only", "--dense-only", action="store_true", dest="dense_only")
     parser.add_argument("--sparse-cgra", action="store_true")
-    parser.add_argument("--sparse-cgra-combined", action="store_true")
+    #parser.add_argument("--sparse-cgra-combined", action="store_true")
     parser.add_argument("--no-pond-area-opt", action="store_true")
     parser.add_argument("--pond-area-opt-share", action="store_true")
     parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
@@ -697,6 +715,8 @@ def parse_args():
     parser.add_argument("--dual-port", action="store_true")
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
+
+    #breakpoint()
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -748,18 +768,18 @@ def build_verilog(args, garnet):
             with open(filename) as f:
                 garnet_v.write(f.read())
 
-    if args.sparse_cgra:
-        # Cat the PE together...
-        # files_cat = ['garnet.v', 'garnet_PE.v']
-        lines_garnet = None
-        lines_pe = None
-        with open('garnet.v', 'r') as gfd:
-            lines_garnet = gfd.readlines()
-        with open('garnet_PE.v', 'r') as gfd:
-            lines_pe = gfd.readlines()
-        with open('garnet.v', 'w+') as gfd:
-            gfd.writelines(lines_garnet)
-            gfd.writelines(lines_pe)
+    #if args.sparse_cgra:
+    # Cat the PE together...
+    # files_cat = ['garnet.v', 'garnet_PE.v']
+    lines_garnet = None
+    lines_pe = None
+    with open('garnet.v', 'r') as gfd:
+        lines_garnet = gfd.readlines()
+    with open('garnet_PE.v', 'r') as gfd:
+        lines_pe = gfd.readlines()
+    with open('garnet.v', 'w+') as gfd:
+        gfd.writelines(lines_garnet)
+        gfd.writelines(lines_pe)
 
     garnet.create_stub()
     if not args.interconnect_only:
@@ -865,6 +885,7 @@ def pnr_wrapper(garnet, args, unconstrained_io, load_only):
 
 def main():
     args = parse_args()
+    #breakpoint()
     GarnetDaemon.initial_check(args)
         # "launch" => ERROR if daemon exists already else continue
         # "force"  => kill existing daemon, then continue
@@ -928,6 +949,7 @@ def main():
 
         # DEBUG info: args
         argdic = vars(args)
+        #breakpoint()
         sorted_argdic=dict(sorted(argdic.items()))
         sorted_argdic['glb_params'] = "UKNOWN"
         sorted_argdic['pe_fc'] = "UKNOWN"

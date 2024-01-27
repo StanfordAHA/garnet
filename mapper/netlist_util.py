@@ -25,14 +25,16 @@ import pulp
 
 
 class CreateBuses(Visitor):
-    def __init__(self, inst_info):
+    def __init__(self, inst_info, ready_valid=True):
         self.inst_info = inst_info
+        self.ready_valid=ready_valid
 
     def doit(self, dag):
         self.i = 1
         self.bid_to_width = {}
         self.node_to_bid = {}
         self.netlist = defaultdict(lambda: [])
+        #breakpoint()
         self.run(dag)
         # Filter bid_to_width to contain only whats in self.netlist
         buses = {bid: w for bid, w in self.bid_to_width.items() if bid in self.netlist}
@@ -45,8 +47,9 @@ class CreateBuses(Visitor):
             self.i += 1
             return bid
         elif adt == BitVector[16]:
+            #breakpoint()
             bid = f"e{self.i}"
-            self.bid_to_width[bid] = 17
+            self.bid_to_width[bid] = 17 if self.ready_valid else 16
             self.i += 1
             return bid
         elif issubclass(adt, BitVector):
@@ -64,6 +67,7 @@ class CreateBuses(Visitor):
             raise NotImplementedError(f"{adt}")
 
     def visit_Source(self, node):
+        #breakpoint()
         bid = self.create_buses(node.type)
         self.node_to_bid[node] = bid
 
@@ -81,6 +85,7 @@ class CreateBuses(Visitor):
         self.netlist[bid].append((child, node.field))
 
     def visit_RegisterSource(self, node):
+        #breakpoint()
         bid = self.create_buses(node.type)
         self.node_to_bid[node] = bid
         self.netlist[bid].append((node, "reg"))
@@ -103,6 +108,7 @@ class CreateBuses(Visitor):
             assert child_bid in self.netlist
             self.netlist[child_bid].append((node, field))
         if not isinstance(node, Sink):
+            #breakpoint()
             bid = self.create_buses(node.type)
             self.node_to_bid[node] = bid
 
@@ -118,12 +124,13 @@ class CreateBuses(Visitor):
         self.node_to_bid[node] = bids
 
     def visit_Output(self, node: Output):
+        ##breakpoint()
         Visitor.generic_visit(self, node)
         child_bid = self.node_to_bid[node.child]
         if node.child.type == Bit:
             port = "f2io_1"
         else:
-            port = "f2io_17"
+            port = "f2io_17" if self.ready_valid else "f2io_16"
         self.netlist[child_bid].append((node, port))
 
 
@@ -295,7 +302,8 @@ def flatten_adt(adt, path=()):
 
 
 class IO_Input_t(Product):
-    io2f_17 = BitVector[16]
+    #io2f_17 = BitVector[16]
+    io2f_16 = BitVector[16]
     io2f_1 = Bit
 
 
@@ -317,7 +325,8 @@ class FlattenIO(Visitor):
         self.node_map = {}
         self.opath_to_type = flatten_adt(output_t)
 
-        isel = lambda t: "io2f_1" if t == Bit else "io2f_17"
+        #isel = lambda t: "io2f_1" if t == Bit else "io2f_17"
+        isel = lambda t: "io2f_1" if t == Bit else "io2f_16"
         real_inputs = [
             Input(type=IO_Input_t, iname="_".join(str(field) for field in path))
             for path in ipath_to_type
@@ -492,8 +501,10 @@ class FixInputsOutputAndPipeline(Visitor):
         max_flush_cycles,
         max_tree_leaves,
         tree_branch_factor,
+        ready_valid=True
     ):
         self.sinks = sinks
+        self.ready_valid = ready_valid
 
         self.pipeline_inputs = pipeline_inputs
 
@@ -813,7 +824,7 @@ class FixInputsOutputAndPipeline(Visitor):
 
             # -----------------IO-to-MEM/Pond Paths Pipelining-------------------- #
             if "io16in" in io_child.iname:
-                new_node = new_children[0].select("io2f_17")
+                new_node = new_children[0].select("io2f_17") if self.ready_valid else new_children[0].select("io2f_16")
                 if self.pipeline_inputs:
                     if "IO2MEM_REG_CHAIN" not in os.environ:
                         self.create_register_tree(
@@ -1123,6 +1134,7 @@ def create_netlist_info(
     pipeline_input_broadcasts=False,
     input_broadcast_branch_factor=4,
     input_broadcast_max_leaves=16,
+    ready_valid=True,
 ):
     if load_only:
         packed_file = os.path.join(app_dir, "design.packed")
@@ -1136,6 +1148,7 @@ def create_netlist_info(
         max_flush_cycles,
         input_broadcast_max_leaves,
         input_broadcast_branch_factor,
+        ready_valid,
     ).doit(dag)
 
     sinks = PipelineBroadcastHelper().doit(fdag)
@@ -1210,7 +1223,7 @@ def create_netlist_info(
         info["instance_to_instrs"][node] = md
 
     node_info = {t: fc.Py.input_t for t, fc in tile_info.items()}
-    bus_info, netlist = CreateBuses(node_info).doit(pdag)
+    bus_info, netlist = CreateBuses(node_info, ready_valid).doit(pdag)
     info["buses"] = bus_info
     info["netlist"] = {}
 

@@ -48,6 +48,7 @@ from lake.modules.stencil_valid import StencilValid
 from lake.modules.buffet_like import BuffetLike
 from lake.top.fiber_access import FiberAccess
 from lake.modules.onyx_pe import OnyxPE
+from lake.modules.onyx_dense_pe import OnyxDensePE
 from lake.top.reduce_pe_cluster import ReducePECluster
 from lassen.sim import PE_fc
 import magma as m
@@ -87,7 +88,6 @@ def get_cc_args(width, height, io_sides, garnet_args):
     args.tile_id_width        = args.tile_id_width
     args.mem_ratio            = (1, args.mem_ratio)
     args.scgra                = args.sparse_cgra
-    args.scgra_combined       = args.sparse_cgra_combined
 
     if not args.interconnect_only:
         args.global_signal_wiring = GlobalSignalWiring.ParallelMeso
@@ -149,9 +149,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                                     SwitchBoxIO]]] = None,
                 altcore=None,
                 pe_fc=lassen_fc,
-                ready_valid: bool = True,
+                #ready_valid: bool = True,
                 scgra: bool = True,
                 scgra_combined: bool = True,
+                dense_only: bool = False,
                 mem_width: int = 64,
                 mem_depth: int = 512,
                 mem_input_ports: int = 2,
@@ -165,6 +166,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     # currently only add 16bit io cores
     # bit_widths = [1, 16, 17]
+    ready_valid = scgra
     if ready_valid:
         bit_widths = [1, 17]
     else:
@@ -181,124 +183,190 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
     assert tech_map in ['Intel', 'GF', 'TSMC']
     tm = tech_map
 
+    # Should this stuff be done no matter what??
+    pe_prefix = "PEGEN_"
+    clk_enable = True
+    physical_sram = not use_sim_sram
+
+    pe_child = PE_fc(family.MagmaFamily())
+    m.compile(f"garnet_PE",
+                pe_child,
+                output="coreir-verilog",
+                coreir_libs={"float_CW"},
+                verilog_prefix=pe_prefix)
+    m.clear_cachedFunctions()
+    m.frontend.coreir_.ResetCoreIR()
+    m.generator.reset_generator_cache()
+    m.logging.flush_all()  # flush all staged logs
+
     if scgra is True:
-        pe_prefix = "PEGEN_"
-        clk_enable = True
-        physical_sram = not use_sim_sram
-
-        pe_child = PE_fc(family.MagmaFamily())
-        m.compile(f"garnet_PE",
-                  pe_child,
-                  output="coreir-verilog",
-                  coreir_libs={"float_CW"},
-                  verilog_prefix=pe_prefix)
-        m.clear_cachedFunctions()
-        m.frontend.coreir_.ResetCoreIR()
-        m.generator.reset_generator_cache()
-        m.logging.flush_all()  # flush all staged logs
-
         pipeline_scanner = True
         use_fiber_access = True
 
-        if not scgra_combined:
+        controllers = []
 
-            altcore = [(ScannerCore, {'fifo_depth': fifo_depth,
-                                      'add_clk_enable': clk_enable,
-                                      'pipelined': pipeline_scanner}),
-                       (BuffetCore, {'local_mems': True,
-                                     'physical_mem': physical_sram,
-                                     'fifo_depth': fifo_depth,}),
-                                    #  'tech_map': tm}),
-                       (OnyxPECore, {'fifo_depth': fifo_depth, 'ext_pe_prefix': pe_prefix}),
-                       (WriteScannerCore, {'fifo_depth': fifo_depth}),
-                       (RepeatCore, {'fifo_depth': fifo_depth}),
-                       (IntersectCore, {'fifo_depth': fifo_depth}),
-                       (CrdDropCore, {'fifo_depth': fifo_depth}),
-                       (CrdHoldCore, {'fifo_depth': fifo_depth}),
-                       (RepeatSignalGeneratorCore, {'passthru': False,
-                                                    'fifo_depth': fifo_depth}),
-                       (RegCore, {'fifo_depth': fifo_depth})]
-
-        else:
-
-            controllers = []
-
-            if pipeline_scanner:
-                scan = ScannerPipe(data_width=16,
-                                   fifo_depth=fifo_depth,
-                                   add_clk_enable=True,
-                                   defer_fifos=True,
-                                   add_flush=False,
-                                   perf_debug=perf_debug)
-            else:
-                scan = Scanner(data_width=16,
-                               fifo_depth=fifo_depth,
-                               defer_fifos=True,
-                               add_flush=False)
-
-            wscan = WriteScanner(data_width=16,
-                                 fifo_depth=fifo_depth,
-                                 defer_fifos=True,
-                                 add_flush=False,
-                                 perf_debug=perf_debug)
-            if dac_exp:
-                if dual_port:
-                    read_delay = 1
-                    if rf:
-                        read_delay = 0
-                    strg_ub = StrgUBThin(
-                        config_mode_str="UB",
-                        data_width=16,  # CGRA Params
-                        mem_width=mem_width,
-                        mem_depth=mem_depth,
-                        input_addr_iterator_support=6,
-                        input_sched_iterator_support=6,
-                        output_addr_iterator_support=6,
-                        output_sched_iterator_support=6,
-                        interconnect_input_ports=mem_input_ports,  # Connection to int
-                        interconnect_output_ports=mem_output_ports,
-                        config_width=16,
-                        read_delay=read_delay,  # Cycle delay in read (SRAM vs Register File)
-                        rw_same_cycle=dual_port,
-                        gen_addr=True,
-                        comply_with_17=True,
-                        area_opt=False,
-                        area_opt_share=False,
-                        area_opt_dual_config=False,
-                        chaining=True,
-                        name_suffix="_DAC",
-                        reduced_id_config_width=16,
-                        delay_width=4,
-                        iterator_support2=2  # assumes that this port has smaller iter_support
-                    )
-                else:
-                    strg_ub = StrgUBVec(data_width=16,
-                                        mem_width=mem_width,
-                                        mem_depth=mem_depth,
-                                        interconnect_input_ports=mem_input_ports,
-                                        interconnect_output_ports=mem_output_ports)
-
-            else:
-                strg_ub = StrgUBVec(data_width=16,
-                                    mem_width=mem_width,
-                                    mem_depth=mem_depth)
-            fiber_access = FiberAccess(data_width=16,
-                                       local_memory=False,
-                                    #    tech_map=tm,
-                                       defer_fifos=True,
-                                       add_flush=False,
-                                       use_pipelined_scanner=pipeline_scanner,
-                                       fifo_depth=fifo_depth,
-                                       buffet_optimize_wide=True,
-                                       perf_debug=perf_debug)
-            buffet = BuffetLike(data_width=16,
-                                mem_depth=mem_depth, local_memory=False,
-                                # tech_map=tm,
+        if pipeline_scanner:
+            scan = ScannerPipe(data_width=16,
+                                fifo_depth=fifo_depth,
+                                add_clk_enable=True,
                                 defer_fifos=True,
-                                optimize_wide=True,
                                 add_flush=False,
-                                fifo_depth=fifo_depth)
-            strg_ram = StrgRAM(data_width=16,
+                                perf_debug=perf_debug)
+        else:
+            scan = Scanner(data_width=16,
+                            fifo_depth=fifo_depth,
+                            defer_fifos=True,
+                            add_flush=False)
+
+        wscan = WriteScanner(data_width=16,
+                                fifo_depth=fifo_depth,
+                                defer_fifos=True,
+                                add_flush=False,
+                                perf_debug=perf_debug)
+        
+        strg_ub = StrgUBVec(data_width=16,
+                            mem_width=mem_width,
+                            mem_depth=mem_depth)
+        
+        fiber_access = FiberAccess(data_width=16,
+                                    local_memory=False,
+                                #    tech_map=tm,
+                                    defer_fifos=True,
+                                    add_flush=False,
+                                    use_pipelined_scanner=pipeline_scanner,
+                                    fifo_depth=fifo_depth,
+                                    buffet_optimize_wide=True,
+                                    perf_debug=perf_debug)
+        buffet = BuffetLike(data_width=16,
+                            mem_depth=mem_depth, local_memory=False,
+                            # tech_map=tm,
+                            defer_fifos=True,
+                            optimize_wide=True,
+                            add_flush=False,
+                            fifo_depth=fifo_depth)
+        strg_ram = StrgRAM(data_width=16,
+                            banks=1,
+                            memory_width=mem_width,
+                            memory_depth=mem_depth,
+                            rw_same_cycle=False,
+                            read_delay=1,
+                            addr_width=16,
+                            prioritize_write=True,
+                            comply_with_17=True)
+
+        stencil_valid = StencilValid()
+
+        if use_fiber_access:
+            controllers.append(fiber_access)
+        else:
+            controllers.append(scan)
+            controllers.append(wscan)
+            controllers.append(buffet)
+
+        controllers.append(strg_ub)
+        controllers.append(strg_ram)
+        controllers.append(stencil_valid)
+
+        isect = Intersect(data_width=16,
+                            use_merger=False,
+                            fifo_depth=fifo_depth,
+                            defer_fifos=True,
+                            add_flush=False,
+                            perf_debug=perf_debug)
+        crd_drop = CrdDrop(data_width=16,
+                            fifo_depth=fifo_depth,
+                            lift_config=True,
+                            defer_fifos=True,
+                            add_flush=False,
+                            perf_debug=perf_debug)
+        crd_hold = CrdHold(data_width=16,
+                            fifo_depth=fifo_depth,
+                            lift_config=True,
+                            defer_fifos=True,
+                            add_flush=False,
+                            perf_debug=perf_debug)
+        reduce_pe_cluster = ReducePECluster(data_width=16,
+                                            fifo_depth=fifo_depth,
+                                            defer_fifo=True,
+                                            add_flush=False,
+                                            perf_debug=perf_debug,
+                                            pe_prefix=pe_prefix,
+                                            do_lift_config=False)
+        repeat = Repeat(data_width=16,
+                        fifo_depth=fifo_depth,
+                        defer_fifos=True,
+                        add_flush=False,
+                        perf_debug=perf_debug)
+        rsg = RepeatSignalGenerator(data_width=16,
+                                    passthru=False,
+                                    fifo_depth=fifo_depth,
+                                    defer_fifos=True,
+                                    add_flush=False,
+                                    perf_debug=perf_debug)
+        controllers_2 = []
+
+        controllers_2.append(isect)
+        controllers_2.append(crd_drop)
+        controllers_2.append(crd_hold)
+        controllers_2.append(repeat)
+        controllers_2.append(rsg)
+        controllers_2.append(reduce_pe_cluster)
+
+        altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
+                                        'use_sim_sram': not physical_sram,
+                                        'tech_map_name': tm,
+                                        'pnr_tag': "p",
+                                        'name': "PE",
+                                        'mem_width': mem_width,
+                                        'mem_depth': mem_depth,
+                                        'input_prefix': "PE_",
+                                        'fifo_depth': fifo_depth,
+                                        'dual_port': dual_port,
+                                        'rf': rf}),
+                    (CoreCombinerCore, {'controllers_list': controllers_2,
+                                        'use_sim_sram': not physical_sram,
+                                        'tech_map_name': tm,
+                                        'pnr_tag': "p",
+                                        'mem_width': mem_width,
+                                        'mem_depth': mem_depth,
+                                        'name': "PE",
+                                        'input_prefix': "PE_",
+                                        'fifo_depth': fifo_depth,
+                                        'dual_port': dual_port,
+                                        'rf': rf}),
+                    (CoreCombinerCore, {'controllers_list': controllers_2,
+                                        'use_sim_sram': not physical_sram,
+                                        'tech_map_name': tm,
+                                        'pnr_tag': "p",
+                                        'mem_width': mem_width,
+                                        'mem_depth': mem_depth,
+                                        'name': "PE",
+                                        'input_prefix': "PE_",
+                                        'fifo_depth': fifo_depth,
+                                        'dual_port': dual_port,
+                                        'rf': rf}),
+                    (CoreCombinerCore, {'controllers_list': controllers,
+                                        'use_sim_sram': not physical_sram,
+                                        'tech_map_name': tm,
+                                        'pnr_tag': "m",
+                                        'mem_width': mem_width,
+                                        'mem_depth': mem_depth,
+                                        'name': "MemCore",
+                                        'input_prefix': "MEM_",
+                                        'fifo_depth': fifo_depth,
+                                        'dual_port': dual_port,
+                                        'rf': rf})]
+
+    # DENSE ONLY CGRA
+    else:
+        controllers_2 = []
+        pe = OnyxDensePE()
+        controllers_2.append(pe)
+        controllers = []
+        strg_ub = StrgUBVec(data_width=16,
+                                    mem_width=mem_width,
+                                    mem_depth=mem_depth, comply_with_17=False)
+        strg_ram = StrgRAM(data_width=16,
                                banks=1,
                                memory_width=mem_width,
                                memory_depth=mem_depth,
@@ -306,78 +374,22 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                read_delay=1,
                                addr_width=16,
                                prioritize_write=True,
-                               comply_with_17=True)
+                               comply_with_17=False)
+        stencil_valid = StencilValid()
+        controllers.append(strg_ub)
+        controllers.append(strg_ram)
+        controllers.append(stencil_valid)
 
-            stencil_valid = StencilValid()
-
-            if dac_exp:
-                controllers.append(strg_ub)
-                controllers.append(strg_ram)
-                controllers.append(stencil_valid)
-            else:
-                if use_fiber_access:
-                    controllers.append(fiber_access)
-                else:
-                    controllers.append(scan)
-                    controllers.append(wscan)
-                    controllers.append(buffet)
-
-                controllers.append(strg_ub)
-                controllers.append(strg_ram)
-                controllers.append(stencil_valid)
-
-            isect = Intersect(data_width=16,
-                              use_merger=False,
-                              fifo_depth=fifo_depth,
-                              defer_fifos=True,
-                              add_flush=False,
-                              perf_debug=perf_debug)
-            crd_drop = CrdDrop(data_width=16,
-                               fifo_depth=fifo_depth,
-                               lift_config=True,
-                               defer_fifos=True,
-                               add_flush=False,
-                               perf_debug=perf_debug)
-            crd_hold = CrdHold(data_width=16,
-                               fifo_depth=fifo_depth,
-                               lift_config=True,
-                               defer_fifos=True,
-                               add_flush=False,
-                               perf_debug=perf_debug)
-            reduce_pe_cluster = ReducePECluster(data_width=16,
-                                                fifo_depth=fifo_depth,
-                                                defer_fifo=True,
-                                                add_flush=False,
-                                                perf_debug=perf_debug,
-                                                pe_prefix=pe_prefix,
-                                                do_lift_config=False)
-            repeat = Repeat(data_width=16,
-                            fifo_depth=fifo_depth,
-                            defer_fifos=True,
-                            add_flush=False,
-                            perf_debug=perf_debug)
-            rsg = RepeatSignalGenerator(data_width=16,
-                                        passthru=False,
-                                        fifo_depth=fifo_depth,
-                                        defer_fifos=True,
-                                        add_flush=False,
-                                        perf_debug=perf_debug)
-            controllers_2 = []
-
-            controllers_2.append(isect)
-            controllers_2.append(crd_drop)
-            controllers_2.append(crd_hold)
-            controllers_2.append(repeat)
-            controllers_2.append(rsg)
-            controllers_2.append(reduce_pe_cluster)
-
-            altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
+        physical_sram = not use_sim_sram
+        
+        altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
                                            'use_sim_sram': not physical_sram,
                                            'tech_map_name': tm,
                                            'pnr_tag': "p",
                                            'name': "PE",
                                            'mem_width': mem_width,
                                            'mem_depth': mem_depth,
+                                           'ready_valid': False,
                                            'input_prefix': "PE_",
                                            'fifo_depth': fifo_depth,
                                            'dual_port': dual_port,
@@ -388,6 +400,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                            'pnr_tag': "p",
                                            'mem_width': mem_width,
                                            'mem_depth': mem_depth,
+                                           'ready_valid': False,
                                            'name': "PE",
                                            'input_prefix': "PE_",
                                            'fifo_depth': fifo_depth,
@@ -399,6 +412,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                            'pnr_tag': "p",
                                            'mem_width': mem_width,
                                            'mem_depth': mem_depth,
+                                           'ready_valid': False,
                                            'name': "PE",
                                            'input_prefix': "PE_",
                                            'fifo_depth': fifo_depth,
@@ -410,14 +424,15 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                            'pnr_tag': "m",
                                            'mem_width': mem_width,
                                            'mem_depth': mem_depth,
+                                           'ready_valid': False,
                                            'name': "MemCore",
                                            'input_prefix': "MEM_",
                                            'fifo_depth': fifo_depth,
                                            'dual_port': dual_port,
                                            'rf': rf})]
 
-        real_pe = True
 
+    #breakpoint()
     # compute the actual size
     width, height = get_actual_size(width, height, io_sides)
     # these values are inclusive
@@ -482,6 +497,7 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                         elif add_pond and altcore[altcore_ind][0] == OnyxPECore:
                             additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
                 else:
+                    breakpoint()
                     if tile_layout_option == 0:
                         use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
                     elif tile_layout_option == 1:
