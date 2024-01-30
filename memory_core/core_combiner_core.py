@@ -111,7 +111,8 @@ class CoreCombinerCore(LakeCoreBase):
                                    rw_same_cycle=self.dual_port,
                                    read_delay=self.read_delay,
                                    fifo_depth=self.fifo_depth,
-                                   tech_map_name=tech_map_name)
+                                   tech_map_name=tech_map_name,
+                                   ready_valid=self.ready_valid)
 
             self.dut = self.CC.dut
 
@@ -240,12 +241,16 @@ class CoreCombinerCore(LakeCoreBase):
             config_pre = self.dut.get_bitstream(instr)
             for name, v in config_pre:
                 configs = [self.get_config_data(name, v)] + configs
-            # config_dense_bypass = [(f"{self.get_port_remap()['alu']['data0']}_dense", 1),
-            #                        (f"{self.get_port_remap()['alu']['data1']}_dense", 1),
-            #                        (f"{self.get_port_remap()['alu']['data2']}_dense", 1),
-            #                        (f"{self.get_port_remap()['alu']['res']}_dense", 1)]
-            # for name, v in config_dense_bypass:
-            #     configs = [self.get_config_data(name, v)] + configs
+            
+            # BEGIN BLOCK COMMENT
+            if self.ready_valid:
+                config_dense_bypass = [(f"{self.get_port_remap()['alu']['data0']}_dense", 1),
+                                       (f"{self.get_port_remap()['alu']['data1']}_dense", 1),
+                                       (f"{self.get_port_remap()['alu']['data2']}_dense", 1),
+                                       (f"{self.get_port_remap()['alu']['res']}_dense", 1)]
+                for name, v in config_dense_bypass:
+                    configs = [self.get_config_data(name, v)] + configs
+            # END BLOCK COMMENT 
             print(configs)
             return configs
         else:

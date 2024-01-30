@@ -302,9 +302,13 @@ def flatten_adt(adt, path=()):
 
 
 class IO_Input_t(Product):
-    #io2f_17 = BitVector[16]
     io2f_16 = BitVector[16]
     io2f_1 = Bit
+
+class IO_Input_t_rv(Product):
+    io2f_17 = BitVector[16]
+    io2f_1 = Bit
+
 
 
 class IO_Output_t(Product):
@@ -325,14 +329,26 @@ class FlattenIO(Visitor):
         self.node_map = {}
         self.opath_to_type = flatten_adt(output_t)
 
-        #isel = lambda t: "io2f_1" if t == Bit else "io2f_17"
-        isel = lambda t: "io2f_1" if t == Bit else "io2f_16"
-        real_inputs = [
-            Input(type=IO_Input_t, iname="_".join(str(field) for field in path))
-            for path in ipath_to_type
-        ]
+        def isel(t, ready_valid):
+            if t == Bit:
+                return "io2f_1"
+            elif ready_valid:
+                return "io2f_17"
+            else:
+                return "io2f_16"
+        #isel = lambda t: "io2f_1" if t == Bit else "io2f_16"
+        if self.ready_valid:
+            real_inputs = [
+                Input(type=IO_Input_t_rv, iname="_".join(str(field) for field in path))
+                for path in ipath_to_type
+            ]
+        else: 
+            real_inputs = [
+                Input(type=IO_Input_t, iname="_".join(str(field) for field in path))
+                for path in ipath_to_type
+            ]
         self.inputs = {
-            path: inode.select(isel(t))
+            path: inode.select(isel(t, self.ready_valid))
             for inode, (path, t) in zip(real_inputs, ipath_to_type.items())
         }
         self.outputs = {}
@@ -923,7 +939,10 @@ class FixInputsOutputAndPipeline(Visitor):
                 new_node.set_children(*new_children)
                 self.outputs.append(new_node)
             else:
-                new_node = Input(type=IO_Input_t, iname=node.iname)
+                if self.ready_valid:
+                    new_node = Input(type=IO_Input_t_rv, iname=node.iname)
+                else:
+                    new_node = Input(type=IO_Input_t, iname=node.iname)
                 self.inputs.append(new_node)
 
             self.node_map[node] = new_node

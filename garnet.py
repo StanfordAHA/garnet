@@ -40,7 +40,7 @@ class Garnet(Generator):
         args.config_addr_reg_width = 8
         args.config_data_width = self.config_data_width
 
-        self.ready_valid = args.sparse_cgra
+        self.ready_valid = args.include_sparse
         # size
         self.width = args.width
         self.height = args.height
@@ -468,19 +468,19 @@ class Garnet(Generator):
                     connections_list[idx] = (tag_, pin_remap)
             netlist_info['netlist'][netlist_id] = connections_list
 
-        # I guess we are hardcoding these for now
-        #breakpoint()
+       
         pond_remap = {}
-        #if args.sparse_cgra:
-        # pond_remap["data_in_pond_0"] = "PondTop_input_width_17_num_0"
-        # pond_remap["data_out_pond_0"] = "PondTop_output_width_17_num_0"
-        # pond_remap["data_in_pond_1"] = "PondTop_input_width_17_num_1"
-        # pond_remap["data_out_pond_1"] = "PondTop_output_width_17_num_1"
+        if self.ready_valid:
+            pond_remap["data_in_pond_0"] = "PondTop_input_width_17_num_0"
+            pond_remap["data_out_pond_0"] = "PondTop_output_width_17_num_0"
+            pond_remap["data_in_pond_1"] = "PondTop_input_width_17_num_1"
+            pond_remap["data_out_pond_1"] = "PondTop_output_width_17_num_1"
 
-        pond_remap["data_in_pond_0"] = "PondTop_input_width_16_num_0"
-        pond_remap["data_out_pond_0"] = "PondTop_output_width_16_num_0"
-        pond_remap["data_in_pond_1"] = "PondTop_input_width_16_num_1"
-        pond_remap["data_out_pond_1"] = "PondTop_output_width_16_num_1"
+        else: 
+            pond_remap["data_in_pond_0"] = "PondTop_input_width_16_num_0"
+            pond_remap["data_out_pond_0"] = "PondTop_output_width_16_num_0"
+            pond_remap["data_in_pond_1"] = "PondTop_input_width_16_num_1"
+            pond_remap["data_out_pond_1"] = "PondTop_output_width_16_num_1"
 
         if not self.amber_pond:
             for name, mapping in netlist_info["netlist"].items():
@@ -507,7 +507,7 @@ class Garnet(Generator):
 
     def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False,
                         pipeline_input_broadcasts=False, input_broadcast_branch_factor=4,
-                        input_broadcast_max_leaves=16):
+                        input_broadcast_max_leaves=16, include_sparse=False):
 
         id_to_name, instance_to_instr, netlist, bus = \
             self.load_netlist(halide_src,
@@ -695,10 +695,7 @@ def parse_args():
     parser.add_argument('--mem-ratio', type=int, default=4)
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
-    #parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
-    #parser.add_argument("--dense-only", "--dense-only", action="store_true", dest="dense_only")
-    parser.add_argument("--sparse-cgra", action="store_true")
-    #parser.add_argument("--sparse-cgra-combined", action="store_true")
+    parser.add_argument("--include-sparse", action="store_true")
     parser.add_argument("--no-pond-area-opt", action="store_true")
     parser.add_argument("--pond-area-opt-share", action="store_true")
     parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
@@ -814,7 +811,7 @@ def pnr(garnet, args, app):
                 load_only=args.generate_bitstream_only,
                 pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
                 input_broadcast_branch_factor=args.input_broadcast_branch_factor,
-                input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+                input_broadcast_max_leaves=args.input_broadcast_max_leaves, include_sparse=args.include_sparse)
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
         pnr_result = pnr_wrapper(
@@ -881,7 +878,7 @@ def pnr_wrapper(garnet, args, unconstrained_io, load_only):
         load_only=load_only,
         pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
         input_broadcast_branch_factor=args.input_broadcast_branch_factor,
-        input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+        input_broadcast_max_leaves=args.input_broadcast_max_leaves, include_sparse=args.include_sparse)
 
 def main():
     args = parse_args()

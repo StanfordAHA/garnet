@@ -87,7 +87,7 @@ def get_cc_args(width, height, io_sides, garnet_args):
     args.config_data_width    = args.config_data_width
     args.tile_id_width        = args.tile_id_width
     args.mem_ratio            = (1, args.mem_ratio)
-    args.scgra                = args.sparse_cgra
+    args.scgra                = args.include_sparse
 
     if not args.interconnect_only:
         args.global_signal_wiring = GlobalSignalWiring.ParallelMeso
