@@ -1,6 +1,3 @@
-import sys
-import os 
-import re
 from textwrap import dedent
 import parse_gold
 
