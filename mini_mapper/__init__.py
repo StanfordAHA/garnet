@@ -9,10 +9,7 @@ from peak.family import PyFamily
 import json
 import os
 import six
-import subprocess
-import tempfile
 from memory_core.memory_mode import MemoryMode as MemoryMode
-import copy
 
 family = PyFamily()
 ALU, Signed = ALU_t, Signed_t

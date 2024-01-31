@@ -1,4 +1,4 @@
-import os, sys, signal, subprocess
+import os, sys, subprocess
 from argparse import Namespace
 from daemon import GarnetDaemon
 import time

@@ -90,7 +90,7 @@ class LakeCoreBase(ConfigurableCore):
         '''
         Allows a mapper to understand which primitives exist in this core...
         '''
-        pass
+        # pass (autoflake flags this as an error if uncommented)
 
     def wrap_lake_core(self):
         # Typedefs for ease

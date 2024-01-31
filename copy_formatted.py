@@ -1,6 +1,5 @@
 import shutil
 import glob
-import subprocess
 import os
 import json
 import sys
