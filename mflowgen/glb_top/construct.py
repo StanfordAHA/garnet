@@ -7,7 +7,6 @@
 #
 
 import os
-import sys
 import pathlib
 
 from mflowgen.components import Graph, Step, Subgraph
