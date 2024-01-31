@@ -203,53 +203,23 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         controllers = []
 
         if pipeline_scanner:
-            scan = ScannerPipe(data_width=16,
-                                fifo_depth=fifo_depth,
-                                add_clk_enable=True,
-                                defer_fifos=True,
-                                add_flush=False,
-                                perf_debug=perf_debug)
+            scan = ScannerPipe(fifo_depth=fifo_depth, add_clk_enable=True, perf_debug=perf_debug)
         else:
-            scan = Scanner(data_width=16,
-                            fifo_depth=fifo_depth,
-                            defer_fifos=True,
-                            add_flush=False)
+            scan = Scanner(fifo_depth=fifo_depth)
 
-        wscan = WriteScanner(data_width=16,
-                                fifo_depth=fifo_depth,
-                                defer_fifos=True,
-                                add_flush=False,
-                                perf_debug=perf_debug)
+        wscan = WriteScanner(fifo_depth=fifo_depth, perf_debug=perf_debug)
         
-        strg_ub = StrgUBVec(data_width=16,
-                            mem_width=mem_width,
-                            mem_depth=mem_depth)
+        strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
         
-        fiber_access = FiberAccess(data_width=16,
-                                    local_memory=False,
-                                #    tech_map=tm,
-                                    defer_fifos=True,
-                                    add_flush=False,
+        fiber_access = FiberAccess(local_memory=False,
                                     use_pipelined_scanner=pipeline_scanner,
                                     fifo_depth=fifo_depth,
                                     buffet_optimize_wide=True,
                                     perf_debug=perf_debug)
-        buffet = BuffetLike(data_width=16,
-                            mem_depth=mem_depth, local_memory=False,
-                            # tech_map=tm,
-                            defer_fifos=True,
-                            optimize_wide=True,
-                            add_flush=False,
-                            fifo_depth=fifo_depth)
-        strg_ram = StrgRAM(data_width=16,
-                            banks=1,
-                            memory_width=mem_width,
-                            memory_depth=mem_depth,
-                            rw_same_cycle=False,
-                            read_delay=1,
-                            addr_width=16,
-                            prioritize_write=True,
-                            comply_with_17=True)
+        
+        buffet = BuffetLike(mem_depth=mem_depth, local_memory=False, optimize_wide=True, fifo_depth=fifo_depth)
+        
+        strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
 
         stencil_valid = StencilValid()
 
@@ -264,47 +234,22 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         controllers.append(strg_ram)
         controllers.append(stencil_valid)
 
-        isect = Intersect(data_width=16,
-                            use_merger=False,
-                            fifo_depth=fifo_depth,
-                            defer_fifos=True,
-                            add_flush=False,
-                            perf_debug=perf_debug)
-        crd_drop = CrdDrop(data_width=16,
-                            fifo_depth=fifo_depth,
-                            lift_config=True,
-                            defer_fifos=True,
-                            add_flush=False,
-                            perf_debug=perf_debug)
-        crd_hold = CrdHold(data_width=16,
-                            fifo_depth=fifo_depth,
-                            lift_config=True,
-                            defer_fifos=True,
-                            add_flush=False,
-                            perf_debug=perf_debug)
-        reduce_pe_cluster = ReducePECluster(data_width=16,
-                                            fifo_depth=fifo_depth,
-                                            defer_fifo=True,
-                                            add_flush=False,
-                                            perf_debug=perf_debug,
-                                            pe_prefix=pe_prefix,
-                                            do_lift_config=False)
-        repeat = Repeat(data_width=16,
-                        fifo_depth=fifo_depth,
-                        defer_fifos=True,
-                        add_flush=False,
-                        perf_debug=perf_debug)
-        rsg = RepeatSignalGenerator(data_width=16,
-                                    passthru=False,
-                                    fifo_depth=fifo_depth,
-                                    defer_fifos=True,
-                                    add_flush=False,
-                                    perf_debug=perf_debug)
+        isect = Intersect(fifo_depth=fifo_depth,perf_debug=perf_debug)
+
+        crd_drop = CrdDrop(fifo_depth=fifo_depth, lift_config=True, perf_debug=perf_debug)
+        
+        #crd_hold = CrdHold( fifo_depth=fifo_depth, lift_config=True, perf_debug=perf_debug)
+        
+        reduce_pe_cluster = ReducePECluster(fifo_depth=fifo_depth,perf_debug=perf_debug, pe_prefix=pe_prefix)
+        
+        repeat = Repeat(fifo_depth=fifo_depth, perf_debug=perf_debug)
+        
+        rsg = RepeatSignalGenerator(passthru=False, fifo_depth=fifo_depth, perf_debug=perf_debug)
         controllers_2 = []
 
         controllers_2.append(isect)
         controllers_2.append(crd_drop)
-        controllers_2.append(crd_hold)
+        #controllers_2.append(crd_hold)
         controllers_2.append(repeat)
         controllers_2.append(rsg)
         controllers_2.append(reduce_pe_cluster)
@@ -359,19 +304,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         controllers_2 = []
         pe = OnyxDensePE()
         controllers_2.append(pe)
+
         controllers = []
-        strg_ub = StrgUBVec(data_width=16,
-                                    mem_width=mem_width,
-                                    mem_depth=mem_depth, comply_with_17=False)
-        strg_ram = StrgRAM(data_width=16,
-                               banks=1,
-                               memory_width=mem_width,
-                               memory_depth=mem_depth,
-                               rw_same_cycle=False,
-                               read_delay=1,
-                               addr_width=16,
-                               prioritize_write=True,
-                               comply_with_17=False)
+        strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=False)
+        strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=False)
         stencil_valid = StencilValid()
         controllers.append(strg_ub)
         controllers.append(strg_ram)
@@ -428,8 +364,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                                            'dual_port': dual_port,
                                            'rf': rf})]
 
-
-    #breakpoint()
     # compute the actual size
     width, height = get_actual_size(width, height, io_sides)
     # these values are inclusive
@@ -494,7 +428,6 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
                         elif add_pond and altcore[altcore_ind][0] == OnyxPECore:
                             additional_core[(x, y)] = PondCore(gate_flush=not harden_flush, ready_valid=ready_valid)
                 else:
-                    breakpoint()
                     if tile_layout_option == 0:
                         use_mem_core = (x - x_min) % tile_max >= mem_tile_ratio
                     elif tile_layout_option == 1:

@@ -713,8 +713,6 @@ def parse_args():
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
 
-    #breakpoint()
-
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
 
@@ -882,7 +880,6 @@ def pnr_wrapper(garnet, args, unconstrained_io, load_only):
 
 def main():
     args = parse_args()
-    #breakpoint()
     GarnetDaemon.initial_check(args)
         # "launch" => ERROR if daemon exists already else continue
         # "force"  => kill existing daemon, then continue
@@ -946,7 +943,6 @@ def main():
 
         # DEBUG info: args
         argdic = vars(args)
-        #breakpoint()
         sorted_argdic=dict(sorted(argdic.items()))
         sorted_argdic['glb_params'] = "UKNOWN"
         sorted_argdic['pe_fc'] = "UKNOWN"
