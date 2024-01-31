@@ -1,5 +1,5 @@
 from canal.cyclone import SwitchBoxSide, SwitchBoxIO
-from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring,\
+from canal.global_signal import GlobalSignalWiring, apply_global_meso_wiring, \
     apply_global_fanout_wiring, apply_global_parallel_meso_wiring
 from canal.util import IOSide, get_array_size, create_uniform_interconnect, \
     SwitchBoxType
@@ -66,6 +66,7 @@ def get_actual_size(width: int, height: int, io_sides: IOSide):
         width += 1
     return width, height
 
+
 def get_cc_args(width, height, io_sides, garnet_args):
     '''
     Transform garnet_args into a dict of params suitable for calling create_cgra().
@@ -83,11 +84,11 @@ def get_cc_args(width, height, io_sides, garnet_args):
     args.io_sides = io_sides
 
     # Derive cc_args from relevant garnet_args
-    args.reg_addr_width       = args.config_addr_reg_width
-    args.config_data_width    = args.config_data_width
-    args.tile_id_width        = args.tile_id_width
-    args.mem_ratio            = (1, args.mem_ratio)
-    args.scgra                = args.include_sparse
+    args.reg_addr_width = args.config_addr_reg_width
+    args.config_data_width = args.config_data_width
+    args.tile_id_width = args.tile_id_width
+    args.mem_ratio = (1, args.mem_ratio)
+    args.scgra = args.include_sparse
 
     if not args.interconnect_only:
         args.global_signal_wiring = GlobalSignalWiring.ParallelMeso
@@ -95,22 +96,23 @@ def get_cc_args(width, height, io_sides, garnet_args):
         args.global_signal_wiring = GlobalSignalWiring.Meso
 
     switchbox_type = {
-        "Imran":    SwitchBoxType.Imran,
+        "Imran": SwitchBoxType.Imran,
         "Disjoint": SwitchBoxType.Disjoint,
-        "Wilton":   SwitchBoxType.Wilton
+        "Wilton": SwitchBoxType.Wilton
     }.get(
         args.sb_option, "Invalid Switchbox Type"
     )
-    args.add_pd                    = not args.no_pd,
-    args.add_pond                  = not args.no_pond,
-    args.pond_area_opt             = not args.no_pond_area_opt,
+    args.add_pd = not args.no_pd,
+    args.add_pond = not args.no_pond,
+    args.pond_area_opt = not args.no_pond_area_opt,
     args.pond_area_opt_dual_config = not args.no_pond_area_opt_dual_config,
 
     # Get rid of args that create_cgra does not want, else will get TypeError
     import inspect
     cc_expected_parms = inspect.getfullargspec(create_cgra).args
     for a in list(args.__dict__):
-        if a not in cc_expected_parms: del args.__dict__[a]
+        if a not in cc_expected_parms:
+            del args.__dict__[a]
 
     return args
 
@@ -118,6 +120,7 @@ def get_cc_args(width, height, io_sides, garnet_args):
 #     print("--- create_cgra()")
 #     cc_args = get_cc_args(width, height, io_sides, garnet_args)
 #     return create_cgra(**cc_args.__dict__)
+
 
 def create_cgra(width: int, height: int, io_sides: IOSide,
                 add_reg: bool = True,
@@ -187,10 +190,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     pe_child = PE_fc(family.MagmaFamily())
     m.compile(f"garnet_PE",
-                pe_child,
-                output="coreir-verilog",
-                coreir_libs={"float_CW"},
-                verilog_prefix=pe_prefix)
+              pe_child,
+              output="coreir-verilog",
+              coreir_libs={"float_CW"},
+              verilog_prefix=pe_prefix)
     m.clear_cachedFunctions()
     m.frontend.coreir_.ResetCoreIR()
     m.generator.reset_generator_cache()
@@ -208,17 +211,17 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             scan = Scanner(fifo_depth=fifo_depth)
 
         wscan = WriteScanner(fifo_depth=fifo_depth, perf_debug=perf_debug)
-        
+
         strg_ub = StrgUBVec(mem_width=mem_width, mem_depth=mem_depth, comply_with_17=True)
-        
+
         fiber_access = FiberAccess(local_memory=False,
-                                    use_pipelined_scanner=pipeline_scanner,
-                                    fifo_depth=fifo_depth,
-                                    buffet_optimize_wide=True,
-                                    perf_debug=perf_debug)
-        
+                                   use_pipelined_scanner=pipeline_scanner,
+                                   fifo_depth=fifo_depth,
+                                   buffet_optimize_wide=True,
+                                   perf_debug=perf_debug)
+
         buffet = BuffetLike(mem_depth=mem_depth, local_memory=False, optimize_wide=True, fifo_depth=fifo_depth)
-        
+
         strg_ram = StrgRAM(memory_width=mem_width, memory_depth=mem_depth, comply_with_17=True)
 
         stencil_valid = StencilValid()
@@ -234,70 +237,70 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         controllers.append(strg_ram)
         controllers.append(stencil_valid)
 
-        isect = Intersect(fifo_depth=fifo_depth,perf_debug=perf_debug)
+        isect = Intersect(fifo_depth=fifo_depth, perf_debug=perf_debug)
 
         crd_drop = CrdDrop(fifo_depth=fifo_depth, lift_config=True, perf_debug=perf_debug)
-        
-        #crd_hold = CrdHold( fifo_depth=fifo_depth, lift_config=True, perf_debug=perf_debug)
-        
-        reduce_pe_cluster = ReducePECluster(fifo_depth=fifo_depth,perf_debug=perf_debug, pe_prefix=pe_prefix)
-        
+
+        # crd_hold = CrdHold( fifo_depth=fifo_depth, lift_config=True, perf_debug=perf_debug)
+
+        reduce_pe_cluster = ReducePECluster(fifo_depth=fifo_depth, perf_debug=perf_debug, pe_prefix=pe_prefix)
+
         repeat = Repeat(fifo_depth=fifo_depth, perf_debug=perf_debug)
-        
+
         rsg = RepeatSignalGenerator(passthru=False, fifo_depth=fifo_depth, perf_debug=perf_debug)
         controllers_2 = []
 
         controllers_2.append(isect)
         controllers_2.append(crd_drop)
-        #controllers_2.append(crd_hold)
+        # controllers_2.append(crd_hold)
         controllers_2.append(repeat)
         controllers_2.append(rsg)
         controllers_2.append(reduce_pe_cluster)
 
         altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
-                                        'use_sim_sram': not physical_sram,
-                                        'tech_map_name': tm,
-                                        'pnr_tag': "p",
-                                        'name': "PE",
-                                        'mem_width': mem_width,
-                                        'mem_depth': mem_depth,
-                                        'input_prefix': "PE_",
-                                        'fifo_depth': fifo_depth,
-                                        'dual_port': dual_port,
-                                        'rf': rf}),
-                    (CoreCombinerCore, {'controllers_list': controllers_2,
-                                        'use_sim_sram': not physical_sram,
-                                        'tech_map_name': tm,
-                                        'pnr_tag': "p",
-                                        'mem_width': mem_width,
-                                        'mem_depth': mem_depth,
-                                        'name': "PE",
-                                        'input_prefix': "PE_",
-                                        'fifo_depth': fifo_depth,
-                                        'dual_port': dual_port,
-                                        'rf': rf}),
-                    (CoreCombinerCore, {'controllers_list': controllers_2,
-                                        'use_sim_sram': not physical_sram,
-                                        'tech_map_name': tm,
-                                        'pnr_tag': "p",
-                                        'mem_width': mem_width,
-                                        'mem_depth': mem_depth,
-                                        'name': "PE",
-                                        'input_prefix': "PE_",
-                                        'fifo_depth': fifo_depth,
-                                        'dual_port': dual_port,
-                                        'rf': rf}),
-                    (CoreCombinerCore, {'controllers_list': controllers,
-                                        'use_sim_sram': not physical_sram,
-                                        'tech_map_name': tm,
-                                        'pnr_tag': "m",
-                                        'mem_width': mem_width,
-                                        'mem_depth': mem_depth,
-                                        'name': "MemCore",
-                                        'input_prefix': "MEM_",
-                                        'fifo_depth': fifo_depth,
-                                        'dual_port': dual_port,
-                                        'rf': rf})]
+                                       'use_sim_sram': not physical_sram,
+                                       'tech_map_name': tm,
+                                       'pnr_tag': "p",
+                                       'name': "PE",
+                                       'mem_width': mem_width,
+                                       'mem_depth': mem_depth,
+                                       'input_prefix': "PE_",
+                                       'fifo_depth': fifo_depth,
+                                       'dual_port': dual_port,
+                                       'rf': rf}),
+                   (CoreCombinerCore, {'controllers_list': controllers_2,
+                                       'use_sim_sram': not physical_sram,
+                                       'tech_map_name': tm,
+                                       'pnr_tag': "p",
+                                       'mem_width': mem_width,
+                                       'mem_depth': mem_depth,
+                                       'name': "PE",
+                                       'input_prefix': "PE_",
+                                       'fifo_depth': fifo_depth,
+                                       'dual_port': dual_port,
+                                       'rf': rf}),
+                   (CoreCombinerCore, {'controllers_list': controllers_2,
+                                       'use_sim_sram': not physical_sram,
+                                       'tech_map_name': tm,
+                                       'pnr_tag': "p",
+                                       'mem_width': mem_width,
+                                       'mem_depth': mem_depth,
+                                       'name': "PE",
+                                       'input_prefix': "PE_",
+                                       'fifo_depth': fifo_depth,
+                                       'dual_port': dual_port,
+                                       'rf': rf}),
+                   (CoreCombinerCore, {'controllers_list': controllers,
+                                       'use_sim_sram': not physical_sram,
+                                       'tech_map_name': tm,
+                                       'pnr_tag': "m",
+                                       'mem_width': mem_width,
+                                       'mem_depth': mem_depth,
+                                       'name': "MemCore",
+                                       'input_prefix': "MEM_",
+                                       'fifo_depth': fifo_depth,
+                                       'dual_port': dual_port,
+                                       'rf': rf})]
 
     # DENSE ONLY CGRA
     else:
@@ -314,55 +317,55 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         controllers.append(stencil_valid)
 
         physical_sram = not use_sim_sram
-        
+
         altcore = [(CoreCombinerCore, {'controllers_list': controllers_2,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map_name': tm,
-                                           'pnr_tag': "p",
-                                           'name': "PE",
-                                           'mem_width': mem_width,
-                                           'mem_depth': mem_depth,
-                                           'ready_valid': False,
-                                           'input_prefix': "PE_",
-                                           'fifo_depth': fifo_depth,
-                                           'dual_port': dual_port,
-                                           'rf': rf}),
-                       (CoreCombinerCore, {'controllers_list': controllers_2,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map_name': tm,
-                                           'pnr_tag': "p",
-                                           'mem_width': mem_width,
-                                           'mem_depth': mem_depth,
-                                           'ready_valid': False,
-                                           'name': "PE",
-                                           'input_prefix': "PE_",
-                                           'fifo_depth': fifo_depth,
-                                           'dual_port': dual_port,
-                                           'rf': rf}),
-                       (CoreCombinerCore, {'controllers_list': controllers_2,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map_name': tm,
-                                           'pnr_tag': "p",
-                                           'mem_width': mem_width,
-                                           'mem_depth': mem_depth,
-                                           'ready_valid': False,
-                                           'name': "PE",
-                                           'input_prefix': "PE_",
-                                           'fifo_depth': fifo_depth,
-                                           'dual_port': dual_port,
-                                           'rf': rf}),
-                       (CoreCombinerCore, {'controllers_list': controllers,
-                                           'use_sim_sram': not physical_sram,
-                                           'tech_map_name': tm,
-                                           'pnr_tag': "m",
-                                           'mem_width': mem_width,
-                                           'mem_depth': mem_depth,
-                                           'ready_valid': False,
-                                           'name': "MemCore",
-                                           'input_prefix': "MEM_",
-                                           'fifo_depth': fifo_depth,
-                                           'dual_port': dual_port,
-                                           'rf': rf})]
+                                       'use_sim_sram': not physical_sram,
+                                       'tech_map_name': tm,
+                                       'pnr_tag': "p",
+                                       'name': "PE",
+                                       'mem_width': mem_width,
+                                       'mem_depth': mem_depth,
+                                       'ready_valid': False,
+                                       'input_prefix': "PE_",
+                                       'fifo_depth': fifo_depth,
+                                       'dual_port': dual_port,
+                                       'rf': rf}),
+                   (CoreCombinerCore, {'controllers_list': controllers_2,
+                                       'use_sim_sram': not physical_sram,
+                                       'tech_map_name': tm,
+                                       'pnr_tag': "p",
+                                       'mem_width': mem_width,
+                                       'mem_depth': mem_depth,
+                                       'ready_valid': False,
+                                       'name': "PE",
+                                       'input_prefix': "PE_",
+                                       'fifo_depth': fifo_depth,
+                                       'dual_port': dual_port,
+                                       'rf': rf}),
+                   (CoreCombinerCore, {'controllers_list': controllers_2,
+                                       'use_sim_sram': not physical_sram,
+                                       'tech_map_name': tm,
+                                       'pnr_tag': "p",
+                                       'mem_width': mem_width,
+                                       'mem_depth': mem_depth,
+                                       'ready_valid': False,
+                                       'name': "PE",
+                                       'input_prefix': "PE_",
+                                       'fifo_depth': fifo_depth,
+                                       'dual_port': dual_port,
+                                       'rf': rf}),
+                   (CoreCombinerCore, {'controllers_list': controllers,
+                                       'use_sim_sram': not physical_sram,
+                                       'tech_map_name': tm,
+                                       'pnr_tag': "m",
+                                       'mem_width': mem_width,
+                                       'mem_depth': mem_depth,
+                                       'ready_valid': False,
+                                       'name': "MemCore",
+                                       'input_prefix': "MEM_",
+                                       'fifo_depth': fifo_depth,
+                                       'dual_port': dual_port,
+                                       'rf': rf})]
 
     # compute the actual size
     width, height = get_actual_size(width, height, io_sides)
@@ -454,10 +457,14 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
         # remap
         if intercore_mapping is not None:
             inter_core_connection_1 = {f"PondTop_output_width_1_num_0": [intercore_mapping["bit0"]]}
-            inter_core_connection_16 = {f"PondTop_output_width_{bit_width_str}_num_0": [intercore_mapping["data0"], intercore_mapping["data1"],
-                                        intercore_mapping["data2"]],
-                                        intercore_mapping["res"]: [f"PondTop_input_width_{bit_width_str}_num_0",
-                                                                   f"PondTop_input_width_{bit_width_str}_num_1"]}
+            inter_core_connection_16 = {
+                f"PondTop_output_width_{bit_width_str}_num_0": [
+                    intercore_mapping["data0"],
+                    intercore_mapping["data1"],
+                    intercore_mapping["data2"]],
+                intercore_mapping["res"]: [
+                    f"PondTop_input_width_{bit_width_str}_num_0",
+                    f"PondTop_input_width_{bit_width_str}_num_1"]}
         else:
             inter_core_connection_1 = {"PondTop_output_width_1_num_0": ["bit0"]}
             inter_core_connection_16 = {f"PondTop_output_width_{bit_width_str}_num_0": ["data0", "data1", "data2"],
