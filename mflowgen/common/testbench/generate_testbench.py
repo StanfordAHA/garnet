@@ -1,4 +1,3 @@
-from random import random
 import numpy as np
 import binascii
 import os

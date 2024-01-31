@@ -7,8 +7,6 @@
 #
 
 import os
-import pathlib
-
 from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
