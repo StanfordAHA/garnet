@@ -1,8 +1,0 @@
-I0	===>	data_in_b_0		===>	X00_Y00
-m1	===>	fiber_access_0		===>	X03_Y04
-m2	===>	fiber_access_1		===>	X03_Y03
-I3	===>	data_out_x_0		===>	X01_Y00
-m4	===>	fiber_access_2		===>	X03_Y02
-I5	===>	data_out_x_vals		===>	X03_Y00
-I6	===>	data_in_b_vals		===>	X02_Y00
-m7	===>	fiber_access_3		===>	X03_Y01
