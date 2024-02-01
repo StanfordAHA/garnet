@@ -39,6 +39,7 @@ class CoreCombinerCore(LakeCoreBase):
                  input_prefix="",
                  dual_port=False,
                  rf=False,
+                 ready_valid=True,
                  mem_width=mem_width_default,
                  mem_depth=512):
 
@@ -52,13 +53,15 @@ class CoreCombinerCore(LakeCoreBase):
 
         self.fw = mem_width // data_width
 
+        self.ready_valid = ready_valid
+
         self.read_delay = 1
         if self.rf:
             self.read_delay = 0
 
         cc_core_name = "CoreCombiner"
 
-        assert controllers_list is not None and len(controllers_list) > 0
+        #assert controllers_list is not None and len(controllers_list) > 0
         for controller in controllers_list:
             cc_core_name += f"_{str(controller)}"
 
@@ -69,7 +72,7 @@ class CoreCombinerCore(LakeCoreBase):
                          config_addr_width=config_addr_width,
                          data_width=data_width,
                          name=cc_core_name,
-                         ready_valid=True)
+                         ready_valid=self.ready_valid)
 
         # Capture everything to the tile object
         self.data_width = data_width
@@ -108,7 +111,8 @@ class CoreCombinerCore(LakeCoreBase):
                                    rw_same_cycle=self.dual_port,
                                    read_delay=self.read_delay,
                                    fifo_depth=self.fifo_depth,
-                                   tech_map_name=tech_map_name)
+                                   tech_map_name=tech_map_name,
+                                   ready_valid=self.ready_valid)
 
             self.dut = self.CC.dut
 
@@ -217,26 +221,36 @@ class CoreCombinerCore(LakeCoreBase):
                 return configs
         elif not isinstance(config_tuple, tuple):
             # It's a PE then...
-            config_kwargs = {
-                'mode': 'alu',
-                'use_dense': True,
-                'op': int(config_tuple),
-                # pe in dense mode always accept inputs that are external 
-                # to the cluster
-                'pe_in_external': 1,
-                # only configure pe within the cluster
-                'pe_only': True
-            }
+            if self.ready_valid:
+                config_kwargs = {
+                    'mode': 'alu',
+                    'use_dense': True,
+                    'op': int(config_tuple),
+                    # pe in dense mode always accept inputs that are external 
+                    # to the cluster
+                    'pe_in_external': 1,
+                    # only configure pe within the cluster
+                    'pe_only': True
+                }
+            else:
+                config_kwargs = {
+                    'mode': 'alu',
+                    'op': int(config_tuple)
+                }
             instr = config_kwargs
             config_pre = self.dut.get_bitstream(instr)
             for name, v in config_pre:
                 configs = [self.get_config_data(name, v)] + configs
-            config_dense_bypass = [(f"{self.get_port_remap()['alu']['data0']}_dense", 1),
-                                   (f"{self.get_port_remap()['alu']['data1']}_dense", 1),
-                                   (f"{self.get_port_remap()['alu']['data2']}_dense", 1),
-                                   (f"{self.get_port_remap()['alu']['res']}_dense", 1)]
-            for name, v in config_dense_bypass:
-                configs = [self.get_config_data(name, v)] + configs
+            
+            # BEGIN BLOCK COMMENT
+            if self.ready_valid:
+                config_dense_bypass = [(f"{self.get_port_remap()['alu']['data0']}_dense", 1),
+                                       (f"{self.get_port_remap()['alu']['data1']}_dense", 1),
+                                       (f"{self.get_port_remap()['alu']['data2']}_dense", 1),
+                                       (f"{self.get_port_remap()['alu']['res']}_dense", 1)]
+                for name, v in config_dense_bypass:
+                    configs = [self.get_config_data(name, v)] + configs
+            # END BLOCK COMMENT 
             print(configs)
             return configs
         else:
