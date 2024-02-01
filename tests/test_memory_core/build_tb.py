@@ -1098,10 +1098,19 @@ class SparseTBBuilder(m.Generator2):
                 new_node_type = ComputeNode
                 # core_tag = "fake_pe"
                 core_tag = "alu"
+                if "is_mapped_from_complex_op" in node.get_attributes():
+                    assert 'original_complex_op_id' in node.get_attributes()
+                    is_mapped_from_complex_op = node.get_attributes()["is_mapped_from_complex_op"]
+                    original_complex_op_id = node.get_attributes()["original_complex_op_id"].strip('"')
+                else:
+                    is_mapped_from_complex_op = False
+                    original_complex_op_id = None
                 kwargs = {
                     "op": node.get_attributes()['label'].strip('"'),
                     "sam_graph_node_id": node.get_name(),
-                    "mapped_coreir_dir": self.collat_dir
+                    "mapped_coreir_dir": self.collat_dir,
+                    "is_mapped_from_complex_op": is_mapped_from_complex_op,
+                    "original_complex_op_id": original_complex_op_id
                 }
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
