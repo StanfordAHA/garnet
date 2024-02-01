@@ -3,7 +3,6 @@ from gemstone.generator.from_magma import FromMagma
 from lake.top.extract_tile_info import *
 import kratos as kts
 from gemstone.generator.from_magma import FromMagma
-from typing import List
 from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
 from lake.modules.io_core import *
