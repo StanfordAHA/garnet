@@ -12,15 +12,58 @@ steps:
 
 - wait
 
+# Lint step: check all python files for syntax consistency.
+- label: "Lint"
+
+  # For now at least; set soft_fail so failing lint does not fail pipeline
+  soft_fail: true
+
+  agents:
+    docker: "true"
+
+  commands:
+
+  # Fire up the container
+  - docker run -id --name $CONTAINER --rm $IMAGE bash
+
+  # Replace default garnet with dev branch
+  - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
+  - docker cp . $CONTAINER:/aha/garnet
+  - docker exec $CONTAINER /bin/bash -c "
+      git config --global --add safe.directory /aha/garnet"
+
+  - docker exec $CONTAINER /bin/bash -c "cd /aha/garnet; git branch"
+  - docker exec $CONTAINER /bin/bash -c "cat -n /aha/garnet/bin/lint.sh"
+
+
+  # Run the lint
+  - docker exec $CONTAINER /bin/bash -c "
+      source /aha/bin/activate;
+      cd /aha/garnet; ./bin/lint.sh
+    "
+
+  # Clean up
+  - docker kill $CONTAINER || true
+
+- wait: { continue_on_failure: true }
+
+
 - label: ":wrench: Aha regressions"
   agents:
     docker: "true"
   commands:
+
+  # In case prior step failed to clean up correctly
+  - docker ps
+  - docker kill $CONTAINER || true
+  # Sometimes it takes a second to die...
+  - sleep 10
+  - docker ps
+
   - docker run -id --name $CONTAINER --rm -v /cad:/cad $IMAGE bash
   - docker exec $CONTAINER /bin/bash -c "rm -rf /aha/garnet"
   - docker cp . $CONTAINER:/aha/garnet
   - docker exec $CONTAINER /bin/bash -c "
-      echo foobarbaz;
       source /aha/bin/activate;
       source /cad/modules/tcl/init/sh;
       module load base incisive xcelium/19.03.003 vcs/Q-2020.03-SP2;
@@ -35,5 +78,5 @@ steps:
     docker: "true"
   commands:
   - docker kill $CONTAINER || true
-  - docker container prune --force --filter "until=24h" --filter=label='description=garnet' || true
+  - .buildkite/bin/docker-clean.sh || true
   - docker image prune -a  --force --filter "until=24h" --filter=label='description=garnet' || true

@@ -108,8 +108,8 @@ class NetlistGraph:
                 ub_latency[node_ub_name][ub_bank_id] = {"bank": int(ub_bank_id), "latency": ub_bank_latency}
         if "IO2MEM_REG_CHAIN" in os.environ:
             with open(app_dir + "/ub_latency.json", "w") as f:
-                f.write(json.dumps(ub_latency, indent=4))
-    
+                f.write(json.dumps(ub_latency, indent=4))    
+
     def count_reg_sources(self, node):
         num_reg_sources = 0
         for source_node in node.sources:
@@ -193,25 +193,23 @@ class NetlistGraph:
             if "hcompute_output_cgra_stencil" in kernel:
                 for kernel_port, d1 in latency_dict.items():
                     if "input_cgra_stencil" in kernel_port:
-                        for port_num, d2 in d1.items():
-                            pe_id = d2["pe_port"][0][0]
-                            for node in self.pe_nodes:
-                                if pe_id in node.node_id:
-                                    pe_node = node
-                            for mem_node in self.mem_nodes:
-                                if "ub_output_cgra_stencil" in mem_node.node_id:
-                                    if self.count_input_latencies(mem_node, pe_node):
-                                        d2["latency"] = self.count_input_latencies(mem_node, pe_node)
+                        pe_id = d1["pe_port"][0][0]
+                        for node in self.pe_nodes:
+                            if pe_id in node.node_id:
+                                pe_node = node
+                        for mem_node in self.mem_nodes:
+                            if "ub_output_cgra_stencil" in mem_node.node_id:
+                                if self.count_input_latencies(mem_node, pe_node):
+                                    d1["latency"] = self.count_input_latencies(mem_node, pe_node)
                     elif "in2_output_cgra_stencil" in kernel_port:
-                        for port_num, d2 in d1.items():
-                            pe_id = d2["pe_port"][0][0]
-                            for node in self.pe_nodes:
-                                if pe_id in node.node_id:
-                                    pe_node = node
-                            for mem_node in self.mem_nodes:
-                                if "ub_output_cgra_stencil" in mem_node.node_id:
-                                    if self.count_input_latencies(mem_node, pe_node):
-                                        d2["latency"] = self.count_input_latencies(mem_node, pe_node)
+                        pe_id = d1["pe_port"][0][0]
+                        for node in self.pe_nodes:
+                            if pe_id in node.node_id:
+                                pe_node = node
+                        for mem_node in self.mem_nodes:
+                            if "ub_output_cgra_stencil" in mem_node.node_id:
+                                if self.count_input_latencies(mem_node, pe_node):
+                                    d1["latency"] = self.count_input_latencies(mem_node, pe_node)
         fout = open(f"{app_dir}/updated_kernel_latencies.json", "w")
         fout.write(json.dumps(kernel_latencies, indent=4))
 
