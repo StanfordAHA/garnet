@@ -2328,17 +2328,39 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_format = "CSF"
         output_name = "x"
     elif 'tensor3_mttkrp.gv' in app_name:
-        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
-                           sparsity=0.8)
 
-        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+
+        b_matrix =  numpy.load("/aha/garnet/b_matrix.npy")
+        b_mat = MatrixGenerator(name="B", tensor=b_matrix, dump_dir=matrix_tmp_dir, clean=False)
+        b_mat.dump_outputs(suffix=suffix)
+
+        c_matrix =  numpy.load("/aha/garnet/c_matrix.npy")
+        c_mat = MatrixGenerator(name="C", tensor=c_matrix, dump_dir=matrix_tmp_dir, clean=False)
+        c_mat.dump_outputs(suffix=suffix)
+
+        d_matrix =  numpy.load("/aha/garnet/d_matrix.npy")
+        d_mat = MatrixGenerator(name="D", tensor=d_matrix, dump_dir=matrix_tmp_dir, clean=False)
+        d_mat.dump_outputs(suffix=suffix)
+
+        b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=True, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=True, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.99)
+
+        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=True, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                           sparsity=0.8)
+                           sparsity=0.01)
 
-        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=True, tmp_dir=matrix_tmp_dir,
                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                           sparsity=0.8)
+                           sparsity=0.01)
+
+        print("b_mat")
+        print(b_mat)
+        print("c_mat")
+        print(c_mat)
+        print("d_mat")
+        print(d_mat)
+
 
         # "X(i,j)=B(i,k,l)*C(j,k)*D(j,l) -f=X:ss -f=B:sss -f=C:ss -f=D:ss" 
         c_mat_trans = numpy.transpose(c_mat)
@@ -2346,42 +2368,64 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = numpy.einsum("ikl,lj,kj->ij", b_mat, d_mat_trans, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
 
 
+        print("output_matrix")
+        print(output_matrix)
+
         output_format = "CSF"
         output_name = "X"
     elif 'tensor3_mttkrp_unfused1.gv' in app_name:
-        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
-                            dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
-                            sparsity=0.9)
+        c_mat = get_tensor(input_name='C', shapes=[10, 10], give_tensor=False, tmp_dir=matrix_tmp_dir,
+                            dump=matrix_tmp_dir, suffix=suffix, clean=True, tensor_ordering=tensor_orderings['C'],
+                            sparsity=0.03)
 
-        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        d_mat = get_tensor(input_name='D', shapes=[10, 10], give_tensor=False, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
-                            sparsity=0.8)
-        
+                            sparsity=0.03)
+
+
         # "T(j,k,l)=C(j,k)*D(j,l) -f=T:sss -f=C:ss -f=D:ss" 
         output_matrix = numpy.einsum("jk,jl->jkl", c_mat, d_mat, dtype=numpy.uint16, casting='unsafe')
         print(output_matrix)
 
+        numpy.save("/aha/garnet/c_matrix.npy", c_mat)
+        numpy.save("/aha/garnet/d_matrix.npy", d_mat)
+        numpy.save("/aha/garnet/t_matrix.npy", output_matrix)
 
-        if numpy.all(output_matrix == 0):
-            print("all zeroes")
-            breakpoint()
 
-        t_mat = MatrixGenerator(name="T", tensor=output_matrix, dump_dir=matrix_tmp_dir, clean=False)
-        t_mat.dump_outputs(suffix=suffix)
+        print("c_mat")
+        print(c_mat)
+        print("d_mat")
+        print(d_mat)
+        print("t_mat")
+        print(output_matrix)
 
+        
         output_format = "CSF"
         output_name = "X"
     elif 'tensor3_mttkrp_unfused2.gv' in app_name:
         b_mat = get_tensor(input_name='B', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
-                            sparsity=0.9)
+                            sparsity=0.995)
 
-        t_mat = get_tensor(input_name='T', shapes=[10, 10, 10], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+        numpy.save("/aha/garnet/b_matrix.npy", b_mat)
+
+        t_matrix =  numpy.load("/aha/garnet/t_matrix.npy")
+        t_mat = MatrixGenerator(name="T", tensor=t_matrix, dump_dir=matrix_tmp_dir, clean=False)
+        t_mat.dump_outputs(suffix=suffix)
+
+        t_mat = get_tensor(input_name='T', shapes=[10, 10, 10], give_tensor=True, tmp_dir=matrix_tmp_dir,
                             dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['T'],
-                            sparsity=0.8)
+                            sparsity=0.1)
 
         # "X(i,j)=B(i,k,l)*T(j,k,l) -f=X:ss -f=B:sss -f=T:sss" 
         output_matrix = numpy.einsum("ikl,jkl->ij", b_mat, t_mat, dtype=numpy.uint16, casting='unsafe')
+
+        print("b_mat")
+        print(b_mat)
+        print("t_mat")
+        print(t_mat)
+        print("output_matrix")
+        print(output_matrix)
 
         output_format = "CSF"
         output_name = "X"

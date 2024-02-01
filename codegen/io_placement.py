@@ -102,6 +102,20 @@ def unrolling(inputs, outputs, input_place_list, output_place_list, extent_dict,
 
     f.write("\n")
 
+    f.close()
+
+    f = open("./extents.h", "w")
+    for idx, input_name in enumerate(inputs):
+        extents = extent_dict[input_name]
+        input_name_str = input_name.replace("hw_", "")
+        input_name_str = input_name_str.replace(".raw", "")
+        input_str = ", ".join([str(elem) for elem in extents])
+        f_str = f'''
+        uint16_t {input_name_str}_extents[{len(extents)}] = {{{input_str}}};
+        '''
+        f.write(dedent(f_str))
+    f.close()
+
 
     if dense: 
       for idx, output_name in enumerate(outputs):
@@ -133,6 +147,9 @@ def unrolling(inputs, outputs, input_place_list, output_place_list, extent_dict,
           f.write(f"}}\n")
       f.write("return err;\n")
       f.write("}\n\n")
+
+    
+
 
     else:
         print("generate sparse gold elsewhere")

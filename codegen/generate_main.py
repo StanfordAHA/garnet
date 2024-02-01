@@ -41,6 +41,8 @@ int main(int argc, char* argv[])
   status = HAL_PtfmCtrl_DisableCG( & PtfmCtl, cgra_mask);
   status = HAL_PtfmCtrl_ClearReset( & PtfmCtl, cgra_mask);
 
+  HAL_Cgra_Glc_WriteReg(GLC_CGRA_STALL_R, 0xFFFF);
+
   trace_printf(\"Config App\\n\");
 
   for (int config = 0; config < app_size; config++){{
