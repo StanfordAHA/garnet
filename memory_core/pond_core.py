@@ -1,13 +1,11 @@
 import os
 import magma
 from gemstone.generator.from_magma import FromMagma
-from typing import List
 from lake.top.pond import Pond
 from lake.top.lake_top import LakeTop
 from lake.top.extract_tile_info import *
 import kratos as kts
 from gemstone.generator.from_magma import FromMagma
-from typing import List
 from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
 

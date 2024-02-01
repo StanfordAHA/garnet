@@ -6,7 +6,6 @@ from canal.interconnect import Interconnect
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from gemstone.common.core import PnRTag
-from typing import List
 from lake.top.lake_top import LakeTop
 from lake.passes.passes import change_sram_port_names
 from lake.utils.sram_macro import SRAMMacroInfo
