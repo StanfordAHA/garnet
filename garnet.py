@@ -799,9 +799,7 @@ def pnr(garnet, args, app):
         load_only        = args.generate_bitstream_only
     )
     # generate vars for bitstream generation only
-
-    # This is the same as pnr_result, which we already just now calculated...? Right?
-
+    # # This (below) is the same as pnr_result, which we already just now calculated...? Right?
     # placement, routing, id_to_name, instance_to_instr, netlist, bus = garnet.place_and_route(
     #             args.app,
     #             args.unconstrained_io or args.generate_bitstream_only,
@@ -810,7 +808,6 @@ def pnr(garnet, args, app):
     #             pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
     #             input_broadcast_branch_factor=args.input_broadcast_branch_factor,
     #             input_broadcast_max_leaves=args.input_broadcast_max_leaves)
-
     placement, routing, id_to_name, instance_to_instr, netlist, bus = pnr_result
 
     if args.pipeline_pnr and not args.generate_bitstream_only:
