@@ -15,6 +15,8 @@ import archipelago
 import archipelago.power
 import archipelago.io
 from lassen.sim import PE_fc as lassen_fc
+from verification.verify_design_top import verify_design_top
+from verification.verify_pnr import verify_pnr
 
 from daemon.daemon import GarnetDaemon
 
@@ -730,6 +732,8 @@ def parse_args():
     parser.add_argument("--dual-port", action="store_true")
     parser.add_argument("--rf", action="store_true")
     parser.add_argument("--dac-exp", action="store_true")
+    parser.add_argument("--verify-design-top", action="store_true")
+    parser.add_argument("--verify-pnr", action="store_true")
 
     # Daemon choices are maybe ['help', 'launch', 'use', 'kill', 'force', 'status', 'wait']
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
@@ -814,6 +818,9 @@ def build_verilog(args, garnet):
 
 def pnr(garnet, args, app):
 
+    if args.verify_design_top:
+        verify_design_top(garnet.interconnect, args.app)
+
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
 
@@ -825,6 +832,9 @@ def pnr(garnet, args, app):
 
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
+
+    if args.verify_pnr:
+        verify_pnr(garnet.interconnect, args.app)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
