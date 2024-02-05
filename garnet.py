@@ -488,9 +488,19 @@ class Garnet(Generator):
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
 
-    def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False,
-                        pipeline_input_broadcasts=False, input_broadcast_branch_factor=4,
-                        input_broadcast_max_leaves=16):
+    def place_and_route(self, args): 
+
+        # place_and_route() used to have a bunch of parameters with defaults
+        # that were in conflict with and overridden by existing higher level
+        # garnet.py args defaults; this rewrite removes that ambiguity...
+
+        halide_src = args.app
+        compact = args.compact
+        load_only = args.pipeline_pnr or args.generate_bitstream_only
+        unconstrained_io = load_only or args.unconstrained_io
+        pipeline_input_broadcasts = not args.no_input_broadcast_pipelining
+        input_broadcast_branch_factor =args.input_broadcast_branch_factor
+        input_broadcast_max_leaves = args.input_broadcast_max_leaves
 
         id_to_name, instance_to_instr, netlist, bus = \
             self.load_netlist(halide_src,
@@ -778,27 +788,16 @@ def build_verilog(args, garnet):
                        rdl_file=os.path.join(garnet_home, "global_controller/systemRDL/rdl_models/glc.rdl.final"),
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
 
-# FIXME/TODO send pnr, pnr_wrapper etc. to util/garnetPNR or some such
-# e.g. "import util.pnr then call util.pnr.{pnr,pnr_wrapper} etc. maybe
-
 def pnr(garnet, args, app):
 
-    UIO = args.pipeline_pnr or args.generate_bitstream_only or args.unconstrained_io
-    LO  = args.pipeline_pnr or args.generate_bitstream_only
-
+    # ?? Why do we not reschedule when generate_bitstream_only() is set?
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
 
+    # FIXME could/should push this function call to body of generate_bitstream()
+    # (result of call is only used by generate_bitstream() I think)
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
-        garnet.place_and_route(
-            args.app,
-            unconstrained_io=UIO,
-            compact=args.compact,
-            load_only=LO,
-            pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
-            input_broadcast_branch_factor=args.input_broadcast_branch_factor,
-            input_broadcast_max_leaves=args.input_broadcast_max_leaves)
-    )
+        garnet.place_and_route(args)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
