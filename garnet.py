@@ -783,41 +783,22 @@ def build_verilog(args, garnet):
 
 def pnr(garnet, args, app):
 
-    def pnr_wrapper(garnet, args, unconstrained_io, load_only):
-        return garnet.place_and_route(
-            args.app,
-            unconstrained_io=unconstrained_io,
-            compact=args.compact,
-            load_only=load_only,
-            pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
-            input_broadcast_branch_factor=args.input_broadcast_branch_factor,
-            input_broadcast_max_leaves=args.input_broadcast_max_leaves)
-
-    # Note pnr_result == (placement, routing, id_to_name, instance_to_instr, netlist, bus)
-    pnr_result = pnr_wrapper(garnet, args, 
-        unconstrained_io = (args.unconstrained_io or args.generate_bitstream_only), 
-        load_only        = args.generate_bitstream_only
-    )
-    # generate vars for bitstream generation only
-    # # This (below) is the same as pnr_result, which we already just now calculated...? Right?
-    # placement, routing, id_to_name, instance_to_instr, netlist, bus = garnet.place_and_route(
-    #             args.app,
-    #             args.unconstrained_io or args.generate_bitstream_only,
-    #             compact=args.compact,
-    #             load_only=args.generate_bitstream_only,
-    #             pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
-    #             input_broadcast_branch_factor=args.input_broadcast_branch_factor,
-    #             input_broadcast_max_leaves=args.input_broadcast_max_leaves)
-    placement, routing, id_to_name, instance_to_instr, netlist, bus = pnr_result
+    UIO = args.pipeline_pnr or args.generate_bitstream_only or args.unconstrained_io
+    LO  = args.pipeline_pnr or args.generate_bitstream_only
 
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
-        pnr_result = pnr_wrapper(
-            garnet, args,
-            unconstrained_io = True, 
-            load_only        = True
-        )
-        placement, routing, id_to_name, instance_to_instr, netlist, bus = pnr_result
+
+    placement, routing, id_to_name, instance_to_instr, netlist, bus = \
+        garnet.place_and_route(
+            args.app,
+            unconstrained_io=UIO,
+            compact=args.compact,
+            load_only=LO,
+            pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
+            input_broadcast_branch_factor=args.input_broadcast_branch_factor,
+            input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+    )
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
