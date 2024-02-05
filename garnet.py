@@ -499,8 +499,8 @@ class Garnet(Generator):
         load_only = args.pipeline_pnr or args.generate_bitstream_only
         unconstrained_io = load_only or args.unconstrained_io
         pipeline_input_broadcasts = not args.no_input_broadcast_pipelining
-        input_broadcast_branch_factor =args.input_broadcast_branch_factor
-        input_broadcast_max_leaves = args.input_broadcast_max_leaves
+        input_broadcast_branch_factor = args.input_broadcast_branch_factor
+        input_broadcast_max_leaves    = args.input_broadcast_max_leaves
 
         id_to_name, instance_to_instr, netlist, bus = \
             self.load_netlist(halide_src,
