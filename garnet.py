@@ -790,7 +790,9 @@ def build_verilog(args, garnet):
 
 def pnr(garnet, args, app):
 
-    # ?? Why do we not reschedule when generate_bitstream_only() is set?
+    # When 'generate_bitstream_only' is set, we do not actually do any NEW pnr;
+    # instead, we load a previously-built pnr result and use that. So
+    # reschedule_pipelined_app() only happens if 'generate_bitstream_only' is False.
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
 
