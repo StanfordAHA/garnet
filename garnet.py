@@ -1,12 +1,14 @@
+from gemstone.generator.generator import Generator
 import os
 if os.getenv('WHICH_SOC') == "amber":
     import garnet_amber
-    if __name__ == "__main__": garnet_amber.main()
+    if __name__ == "__main__":
+        garnet_amber.main()
     exit()
 
 import argparse
 import magma
-from systemRDL.util import gen_rdl_header # If I move this it breaks. Dunno why.
+from systemRDL.util import gen_rdl_header  # If I move this it breaks. Dunno why.
 from cgra import compress_config_data
 import json
 import archipelago
@@ -20,7 +22,7 @@ from daemon.daemon import GarnetDaemon
 from gemstone.generator.generator import set_debug_mode
 set_debug_mode(False)
 
-from gemstone.generator.generator import Generator
+
 class Garnet(Generator):
     def __init__(self, args):
         super().__init__()
@@ -40,6 +42,7 @@ class Garnet(Generator):
         args.config_addr_reg_width = 8
         args.config_data_width = self.config_data_width
 
+        self.ready_valid = args.include_sparse
         # size
         self.width = args.width
         self.height = args.height
@@ -50,8 +53,10 @@ class Garnet(Generator):
 
         # only north side has IO
         from canal.util import IOSide
-        if args.standalone: io_side = IOSide.None_
-        else:               io_side = IOSide.North
+        if args.standalone:
+            io_side = IOSide.None_
+        else:
+            io_side = IOSide.North
 
         # Build GLB unless interconnect_only (CGRA-only) requested
 
@@ -62,7 +67,8 @@ class Garnet(Generator):
 
         print("- BUILD THE CGRA")
         from cgra.util import get_cc_args, create_cgra
-        width  = args.width; height = args.height
+        width = args.width
+        height = args.height
         cc_args = get_cc_args(width, height, io_side, args)
         self.interconnect = create_cgra(**cc_args.__dict__)
 
@@ -91,7 +97,6 @@ class Garnet(Generator):
         else:
             self.lift_ports(self.width, self.config_data_width, self.harden_flush)
 
-
     def build_glb(self):
         import math
         from global_controller.global_controller_magma import GlobalController
@@ -110,8 +115,8 @@ class Garnet(Generator):
         # Bank should be larger than or equal to 1KB
         assert glb_params.bank_addr_width >= 10
 
-        glb_tile_mem_size = 2 ** ((glb_params.bank_addr_width - 10) + \
-             math.ceil(math.log(glb_params.banks_per_tile, 2)))
+        glb_tile_mem_size = 2 ** ((glb_params.bank_addr_width - 10)
+                                  + math.ceil(math.log(glb_params.banks_per_tile, 2)))
 
         self.global_controller = GlobalController(
             addr_width=self.config_addr_width,
@@ -220,6 +225,7 @@ class Garnet(Generator):
             self.wire(self.ports.flush, self.interconnect.ports.flush)
 
     from mini_mapper import map_app
+
     def map(self, halide_src):
         return map_app(halide_src, retiming=True)
 
@@ -271,8 +277,13 @@ class Garnet(Generator):
 
         for blk_id in inputs:
             x, y = placement[blk_id]
-            bit_width = 17 if blk_id[0] == "I" else 1
-            #bit_width = 16 if blk_id[0] == "I" else 1
+            if blk_id[0] == "I":
+                bit_width = 1
+            elif self.ready_valid:
+                bit_width = 17
+            else:
+                bit_width = 16
+            # bit_width = 16 if blk_id[0] == "I" else 1
             name = f"glb2io_{bit_width}_X{x:02X}_Y{y:02X}"
             input_interface.append(name)
             print("WEIRD NAME ASSERTION")
@@ -286,15 +297,20 @@ class Garnet(Generator):
                 en_port_name.append(name)
         for blk_id in outputs:
             x, y = placement[blk_id]
-            #bit_width = 16 if blk_id[0] == "I" else 1
-            bit_width = 17 if blk_id[0] == "I" else 1
+            # bit_width = 16 if blk_id[0] == "I" else 1
+            if blk_id[0] == "I":
+                bit_width = 1
+            elif self.ready_valid:
+                bit_width = 17
+            else:
+                bit_width = 16
             name = f"io2glb_{bit_width}_X{x:02X}_Y{y:02X}"
             output_interface.append(name)
             assert name in self.interconnect.interface()
             blk_name = id_to_name[blk_id]
             if "valid" in blk_name:
                 valid_port_name = name
-        return input_interface, output_interface,\
+        return input_interface, output_interface, \
             (reset_port_name, valid_port_name, en_port_name)
 
     def pack_ponds(self, netlist_info):
@@ -319,14 +335,14 @@ class Garnet(Generator):
                     new_conns.append(conn)
             netlist_info['netlist'][edge_id] = new_conns
 
-        self.pes_with_packed_ponds = {pe:pond for pond,pe in packed_ponds.items()}
+        self.pes_with_packed_ponds = {pe: pond for pond, pe in packed_ponds.items()}
 
     def load_netlist(self, app, load_only, pipeline_input_broadcasts,
                      input_broadcast_branch_factor, input_broadcast_max_leaves):
 
         import metamapper.peak_util as putil
         from mapper.netlist_util import create_netlist_info, print_netlist_info
-        from metamapper.coreir_mapper import Mapper # not used?
+        from metamapper.coreir_mapper import Mapper  # not used?
         from metamapper.map_design_top import map_design_top
         from metamapper.node import Nodes
 
@@ -375,7 +391,7 @@ class Garnet(Generator):
             bit_io_header,
             {"global.BitIO": BitIO_fc},
         )
-        
+
         putil.load_and_link_peak(
             all_nodes,
             pe_header,
@@ -393,7 +409,6 @@ class Garnet(Generator):
             bit_io_header,
             {"global.BitIO": BitIO_fc},
         )
-        
 
         dag = cutil.coreir_to_dag(all_nodes, cmod)
         arch_nodes._node_names.add("cgralib.Mem")
@@ -409,14 +424,14 @@ class Garnet(Generator):
                                            1 + self.height // self.pipeline_config_interval,
                                            pipeline_input_broadcasts,
                                            input_broadcast_branch_factor,
-                                           input_broadcast_max_leaves)
-
+                                           input_broadcast_max_leaves,
+                                           self.ready_valid)
 
         # Remapping all of the ports in the application to generic ports that exist in the hardware
         # Seems really brittle, we should probably do this in a better way
         mem_remap = None
         pe_remap = None
-        
+
         for core_key, core_value in self.interconnect.tile_circuits.items():
             actual_core = core_value.core
             pnr_tag = actual_core.pnr_info()
@@ -446,7 +461,7 @@ class Garnet(Generator):
                             'addr_in_0': 'wr_addr_in',
                             'ren_in_0': 'ren',
                             'data_out_0': 'data_out'
-                                }
+                        }
                         assert pin_ in hack_remap
                         pin_ = hack_remap[pin_]
                     pin_remap = mem_remap[mode][pin_]
@@ -457,12 +472,18 @@ class Garnet(Generator):
                     connections_list[idx] = (tag_, pin_remap)
             netlist_info['netlist'][netlist_id] = connections_list
 
-        # I guess we are hardcoding these for now
         pond_remap = {}
-        pond_remap["data_in_pond_0"] = "PondTop_input_width_17_num_0"
-        pond_remap["data_out_pond_0"] = "PondTop_output_width_17_num_0"
-        pond_remap["data_in_pond_1"] = "PondTop_input_width_17_num_1"
-        pond_remap["data_out_pond_1"] = "PondTop_output_width_17_num_1"
+        if self.ready_valid:
+            pond_remap["data_in_pond_0"] = "PondTop_input_width_17_num_0"
+            pond_remap["data_out_pond_0"] = "PondTop_output_width_17_num_0"
+            pond_remap["data_in_pond_1"] = "PondTop_input_width_17_num_1"
+            pond_remap["data_out_pond_1"] = "PondTop_output_width_17_num_1"
+
+        else:
+            pond_remap["data_in_pond_0"] = "PondTop_input_width_16_num_0"
+            pond_remap["data_out_pond_0"] = "PondTop_output_width_16_num_0"
+            pond_remap["data_in_pond_1"] = "PondTop_input_width_16_num_1"
+            pond_remap["data_out_pond_1"] = "PondTop_output_width_16_num_1"
 
         if not self.amber_pond:
             for name, mapping in netlist_info["netlist"].items():
@@ -470,7 +491,6 @@ class Garnet(Generator):
                     (inst_name, port_name) = mapping[i]
                     if port_name in pond_remap:
                         mapping[i] = (inst_name, pond_remap[port_name])
-
 
         self.pack_ponds(netlist_info)
 
@@ -482,7 +502,7 @@ class Garnet(Generator):
         port_remap_fout = open(app_dir + "/design.port_remap", "w")
         port_remap_fout.write(json.dumps(all_remaps))
         port_remap_fout.close()
-        
+
         print_netlist_info(netlist_info, self.pes_with_packed_ponds, app_dir + "/netlist_info.txt")
 
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
@@ -490,7 +510,7 @@ class Garnet(Generator):
 
     def place_and_route(self, halide_src, unconstrained_io=False, compact=False, load_only=False,
                         pipeline_input_broadcasts=False, input_broadcast_branch_factor=4,
-                        input_broadcast_max_leaves=16):
+                        input_broadcast_max_leaves=16, include_sparse=False):
 
         id_to_name, instance_to_instr, netlist, bus = \
             self.load_netlist(halide_src,
@@ -534,29 +554,29 @@ class Garnet(Generator):
             for segment in route:
                 if "flush" in segment[-1].node_str() and "flush" in segment[-1].node_str() and (segment[-1].x, segment[-1].y) in pond_locs:
                     ponds_with_routed_flush.append((segment[-1].x, segment[-1].y))
-                for node in  segment:
+                for node in segment:
                     if "SB" in str(node) and node.io.value == 0 and node.width == 1 and (node.x, node.y) in pond_locs:
                         pond_to_1bit_routes[(node.x, node.y)].add((node.track, node.side.value))
-                        
+
         bitstream = []
-        for (x,y), nodes in pond_to_1bit_routes.items():
+        for (x, y), nodes in pond_to_1bit_routes.items():
             need_fix = False
             for node in nodes:
-                if node[0] == 0 and node[1] == 3 and (x,y) not in ponds_with_routed_flush:
+                if node[0] == 0 and node[1] == 3 and (x, y) not in ponds_with_routed_flush:
                     need_fix = True
 
             if need_fix:
                 found_fix = False
                 for side in range(4):
                     for track in range(5):
-                        if (side, track+1) not in nodes:
+                        if (side, track + 1) not in nodes:
                             found_fix = True
                             break
                     if found_fix:
                         break
 
                 assert found_fix, f"HW bug at flush CB {x},{y} the pond at this location will flush randomly, you will need to change the place and route result"
-                source_str = ["SB", track+1, x, y, side, 0, 1]
+                source_str = ["SB", track + 1, x, y, side, 0, 1]
                 source_node = self.interconnect.parse_node(source_str)
                 dest_str = ["PORT", "flush", x, y, 1]
                 dest_node = self.interconnect.parse_node(dest_str)
@@ -568,7 +588,7 @@ class Garnet(Generator):
         routing_fix = archipelago.power.reduce_switching(routing, self.interconnect,
                                                          compact=compact)
         routing.update(routing_fix)
-        
+
         bitstream = []
         bitstream += self.interconnect.get_route_bitstream(routing)
         bitstream += self.fix_pond_flush_bug(placement, routing)
@@ -578,7 +598,7 @@ class Garnet(Generator):
         skip_addr = self.interconnect.get_skip_addr()
         bitstream = compress_config_data(bitstream, skip_compression=skip_addr)
         inputs, outputs = self.get_input_output(netlist)
-        input_interface, output_interface,\
+        input_interface, output_interface, \
             (reset, valid, en) = self.get_io_interface(inputs,
                                                        outputs,
                                                        placement,
@@ -678,9 +698,7 @@ def parse_args():
     parser.add_argument('--mem-ratio', type=int, default=4)
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
-    parser.add_argument("--rv", "--ready-valid", action="store_true", dest="ready_valid")
-    parser.add_argument("--sparse-cgra", action="store_true")
-    parser.add_argument("--sparse-cgra-combined", action="store_true")
+    parser.add_argument("--include-sparse", action="store_true")
     parser.add_argument("--no-pond-area-opt", action="store_true")
     parser.add_argument("--pond-area-opt-share", action="store_true")
     parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
@@ -733,6 +751,7 @@ def parse_args():
     # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
     return args
 
+
 def build_verilog(args, garnet):
     garnet_circ = garnet.circuit()
     magma.compile("garnet", garnet_circ, output="coreir-verilog",
@@ -748,18 +767,18 @@ def build_verilog(args, garnet):
             with open(filename) as f:
                 garnet_v.write(f.read())
 
-    if args.sparse_cgra:
-        # Cat the PE together...
-        # files_cat = ['garnet.v', 'garnet_PE.v']
-        lines_garnet = None
-        lines_pe = None
-        with open('garnet.v', 'r') as gfd:
-            lines_garnet = gfd.readlines()
-        with open('garnet_PE.v', 'r') as gfd:
-            lines_pe = gfd.readlines()
-        with open('garnet.v', 'w+') as gfd:
-            gfd.writelines(lines_garnet)
-            gfd.writelines(lines_pe)
+    # if args.sparse_cgra:
+    # Cat the PE together...
+    # files_cat = ['garnet.v', 'garnet_PE.v']
+    lines_garnet = None
+    lines_pe = None
+    with open('garnet.v', 'r') as gfd:
+        lines_garnet = gfd.readlines()
+    with open('garnet_PE.v', 'r') as gfd:
+        lines_pe = gfd.readlines()
+    with open('garnet.v', 'w+') as gfd:
+        gfd.writelines(lines_garnet)
+        gfd.writelines(lines_pe)
 
     garnet.create_stub()
     if not args.interconnect_only:
@@ -781,26 +800,27 @@ def build_verilog(args, garnet):
 # FIXME/TODO send pnr, pnr_wrapper etc. to util/garnetPNR or some such
 # e.g. "import util.pnr then call util.pnr.{pnr,pnr_wrapper} etc. maybe
 
+
 def pnr(garnet, args, app):
     # Note pnr_result == (placement, routing, id_to_name, instance_to_instr, netlist, bus)
-    pnr_result = pnr_wrapper(garnet, args, 
-        unconstrained_io = (args.unconstrained_io or args.generate_bitstream_only), 
-        load_only        = args.generate_bitstream_only
-    )
+    pnr_result = pnr_wrapper(garnet, args,
+                             unconstrained_io=(args.unconstrained_io or args.generate_bitstream_only),
+                             load_only=args.generate_bitstream_only
+                             )
     # generate vars for bitstream generation only
     placement, routing, id_to_name, instance_to_instr, \
-            netlist, bus = garnet.place_and_route(
-                args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact,
-                load_only=args.generate_bitstream_only,
-                pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
-                input_broadcast_branch_factor=args.input_broadcast_branch_factor,
-                input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+        netlist, bus = garnet.place_and_route(
+            args.app, args.unconstrained_io or args.generate_bitstream_only, compact=args.compact,
+            load_only=args.generate_bitstream_only,
+            pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
+            input_broadcast_branch_factor=args.input_broadcast_branch_factor,
+            input_broadcast_max_leaves=args.input_broadcast_max_leaves, include_sparse=args.include_sparse)
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
         pnr_result = pnr_wrapper(
             garnet, args,
-            unconstrained_io = True, 
-            load_only        = True
+            unconstrained_io=True,
+            load_only=True
         )
         # What are these vars? Are they never used?
         placement, routing, id_to_name, instance_to_instr, netlist, bus = pnr_result
@@ -815,9 +835,11 @@ def pnr(garnet, args, app):
     # write out the config file
     # Remove reset and en_port signals for some reason??
     if len(inputs) > 1:     # FIXME why/when would len(inputs) be <= 1 ??
-        if reset in inputs: inputs.remove(reset)
+        if reset in inputs:
+            inputs.remove(reset)
         for en_port in en:
-            if en_port in inputs: inputs.remove(en_port)
+            if en_port in inputs:
+                inputs.remove(en_port)
 
     from mini_mapper import get_total_cycle_from_app
     total_cycle = get_total_cycle_from_app(args.app)
@@ -840,18 +862,20 @@ def pnr(garnet, args, app):
         json.dump(config, f)
     write_out_bitstream(args.output, bitstream)
 
+
 def reschedule_pipelined_app(app):
     # Calling clockwork for rescheduling pipelined app
     import subprocess
     import copy
     cwd = os.path.dirname(app) + "/.."
-    cmd = ["make", "-C", str(cwd), "reschedule_mem"] 
+    cmd = ["make", "-C", str(cwd), "reschedule_mem"]
     env = copy.deepcopy(os.environ)
     subprocess.check_call(
         cmd,
         env=env,
         cwd=cwd
     )
+
 
 def pnr_wrapper(garnet, args, unconstrained_io, load_only):
     return garnet.place_and_route(
@@ -861,25 +885,26 @@ def pnr_wrapper(garnet, args, unconstrained_io, load_only):
         load_only=load_only,
         pipeline_input_broadcasts=not args.no_input_broadcast_pipelining,
         input_broadcast_branch_factor=args.input_broadcast_branch_factor,
-        input_broadcast_max_leaves=args.input_broadcast_max_leaves)
+        input_broadcast_max_leaves=args.input_broadcast_max_leaves, include_sparse=args.include_sparse)
+
 
 def main():
     args = parse_args()
     GarnetDaemon.initial_check(args)
-        # "launch" => ERROR if daemon exists already else continue
-        # "force"  => kill existing daemon, then continue
-        # "status" => echo daemon status and exit
-        # "use"    => send args to daemon and exit
-        # "kill"   => kill existing daemon and exit
-        # "help"   => echo help and exit
-        # "wait"   => wait for "daemon ready"
+    # "launch" => ERROR if daemon exists already else continue
+    # "force"  => kill existing daemon, then continue
+    # "status" => echo daemon status and exit
+    # "use"    => send args to daemon and exit
+    # "kill"   => kill existing daemon and exit
+    # "help"   => echo help and exit
+    # "wait"   => wait for "daemon ready"
 
     def app_name(app):
         # BEFORE: app="/aha/Halide-to-Hardware/.../apps/pointwise/bin/design_top.json"
         # AFTER:  app="apps/pointwise" (simpler for printing)
-        app=args.app
-        app=app.replace('/bin/design_top.json','')
-        app=app.replace('/aha/Halide-to-Hardware/apps/hardware_benchmarks/','')
+        app = args.app
+        app = app.replace('/bin/design_top.json', '')
+        app = app.replace('/aha/Halide-to-Hardware/apps/hardware_benchmarks/', '')
         return app
 
     print(f'--- GARNET-BUILD ({app_name(args.app)})')
@@ -896,23 +921,23 @@ def main():
     print(f"args.daemon={args.daemon}", flush=True)
 
     # USE GARNET
-    import json # for debugging, maybe temporary
+    import json  # for debugging, maybe temporary
     while True:
         print('- CHECK FOR DAEMON')
         if args.daemon:
             print('- BEGIN ARGS.DAEMON')
             # Fork a child to do the work, wait for it to finish, then continue
-            childpid = os.fork() # Fork a child
+            childpid = os.fork()  # Fork a child
             if childpid > 0:
                 # Only parent does this part
                 print('- BEGIN CHILDPID > 0 (parent) looping')
-                pid, status = os.waitpid(childpid, 0) # Wait for child to finish
+                pid, status = os.waitpid(childpid, 0)  # Wait for child to finish
                 print(f'Child process {childpid} finished with exit status {status}', flush=True)
                 assert status == 0, f'--- ERROR child process {childpid} finished with exit status {status}\n'
-                assert pid == childpid # Right???
+                assert pid == childpid  # Right???
                 print('\nDAEMON (parent) STOPS AND AWAITS FURTHER INSTRUCTION')
-                args = GarnetDaemon.loop(args, dbg=1) # Parent halts here and waits for further instructions
-                continue # Parent loops back
+                args = GarnetDaemon.loop(args, dbg=1)  # Parent halts here and waits for further instructions
+                continue  # Parent loops back
             print('\nDAEMON (child) DOES THE WORK')
             # Child falls through to next line below
 
@@ -921,21 +946,21 @@ def main():
         # FIXME Verilog should be here probably, Right?
 
         # PNR
-        app_specified = len(args.app)    > 0 and \
-                        len(args.input)  > 0 and \
-                        len(args.gold)   > 0 and \
-                        len(args.output) > 0
+        app_specified = len(args.app) > 0 and \
+            len(args.input) > 0 and \
+            len(args.gold) > 0 and \
+            len(args.output) > 0
 
         # DEBUG info: args
         argdic = vars(args)
-        sorted_argdic=dict(sorted(argdic.items()))
+        sorted_argdic = dict(sorted(argdic.items()))
         sorted_argdic['glb_params'] = "UKNOWN"
         sorted_argdic['pe_fc'] = "UKNOWN"
         print(f"- BEGIN pre-pnr/bs args {json.dumps(sorted_argdic, indent=4)}")
 
         # DEBUG info: env
         envdic = dict(os.environ)
-        sorted_envdic=dict(sorted(envdic.items()))
+        sorted_envdic = dict(sorted(envdic.items()))
         print(f"- BEGIN pre-pnr/bs env {json.dumps(sorted_envdic, indent=4)}")
 
         do_pnr = app_specified and not args.virtualize
@@ -966,6 +991,7 @@ def main():
         # CHILD IS DONE
         print("- garnet.py DONE", flush=True)
         exit()
+
 
 if __name__ == "__main__":
     main()
