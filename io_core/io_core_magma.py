@@ -133,6 +133,9 @@ class IOCore(IOCoreBase):
     def finalize(self):
         pass
 
+    def get_config_bitstream(self, config_tuple):
+        return []
+
 
 class IOCoreValid(ConfigurableCore, IOCoreBase):
     def __init__(self, config_addr_width=8, config_data_width=32):
