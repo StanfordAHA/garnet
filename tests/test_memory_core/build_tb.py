@@ -2946,7 +2946,6 @@ if __name__ == "__main__":
                                    # Soften the flush...?
                                    harden_flush=harden_flush,
                                    altcore=None,
-                                   ready_valid=True,
                                    add_pond=add_pond,
                                    scgra=True,
                                    perf_debug=perf_debug)
