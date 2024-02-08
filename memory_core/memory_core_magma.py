@@ -171,6 +171,7 @@ class MemCore(LakeCoreBase):
                               num_tiles=self.num_tiles,
                               fifo_mode=self.fifo_mode,
                               add_clk_enable=self.add_clk_enable,
+                              comply_with_17=ready_valid,
                               add_flush=self.add_flush,
                               name=lake_name,
                               gen_addr=self.gen_addr,
