@@ -89,8 +89,7 @@ if [ "$1" == "amber" ]; then
     bash -c 'set -x; source tmp-amber-updates.sh'
 
 elif [ "$1" == "onyx" ]; then
-    # flags="$flags --include-sparse"
-    flags="$flags --rv --sparse-cgra --sparse-cgra-combined"
+    flags="$flags --include-sparse"
 
 else echo "$HELP" && exit 13; fi
 
