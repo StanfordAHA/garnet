@@ -1,8 +1,5 @@
-from random import random
-import math
 import numpy as np
 import binascii
-import struct
 import os
 import csv
 import re

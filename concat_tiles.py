@@ -1,5 +1,4 @@
 import numpy as np
-import os
 import json
 
 def concat_files(file1_path, file2_path, output_file_path):

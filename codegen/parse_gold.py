@@ -2,7 +2,6 @@ import numpy as np
 import os
 import glob
 from textwrap import dedent
-import random
 import sys
 
 def parse_gold(f, name_list):
