@@ -24,7 +24,7 @@ docker-launch $image $container
 
 # --- in docker now ---
 source /aha/bin/activate
-(cd garnet; git fetch origin; git checkout origin/refactor)
+# (cd garnet; git fetch origin; git checkout origin/refactor)
 garnet/daemon/daemon-test.sh >& dtest.log &
 tail -f dtest.log
 
@@ -62,8 +62,8 @@ echo "--- BEGIN DAEMON_TEST.SH"
 # Goal: duplicate the above table with and without daemon
 
 # FLAGS1
-flags1="--width  4 --height  2 --verilog --use_sim_sram --rv --sparse-cgra --sparse-cgra-combined"
-flags1="--width 28 --height 16 --verilog --use_sim_sram --rv --sparse-cgra --sparse-cgra-combined"
+flags1="--width  4 --height  2 --verilog --use_sim_sram --include-sparse"
+flags1="--width 28 --height 16 --verilog --use_sim_sram --include-sparse"
 echo flags1=$flags1 | fold -sw 120
 
 # Using 'aha pnr' instead maybe?
@@ -110,15 +110,6 @@ apps='
     tests/conv_1_2
     tests/conv_2_1
 '
-
-# (For now) must replace non-daemon-capable pnr.py with my version
-echo '--- (daemon-test.sh) PNR.PY REPLACE'
-set -x
-ls -l /aha/garnet/daemon/pnr.py /aha/aha/util/pnr.py
-cp /aha/aha/util/pnr.py /aha/aha/util/pnr.py.orig
-cp /aha/garnet/daemon/pnr.py /aha/aha/util/pnr.py
-ls -l /aha/garnet/daemon/pnr.py /aha/aha/util/pnr.py
-set +x
 
 echo "--- (daemon-test.sh) GARNET VERILOG BUILD"
 t_start=`date +%s`

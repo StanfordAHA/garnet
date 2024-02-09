@@ -5,7 +5,43 @@ specifically for `garnet.py`. In particular, daemon-enhanced
 `garnet.py` can save time when doing PNR for multiple applications
 mapped onto the same Garnet build.
 
-==== PNR USING GARNET DAEMON
+==== GARNET DAEMON HELP
+
+You can use `--daemon help` to find the latest info about how to use the daemon.
+```
+    % python garnet.py --daemon help
+
+    DESCRIPTION:
+
+      garnet.py can run as a daemon to save you time when generating
+      bitstreams for multiple apps using the same garnet circuit. Use
+      the "launch" command to build a circuit and keep state in the
+      background. The "use-daemon" command reuses the background state
+      to more quickly do pnr and bitstream generation.
+
+          --daemon launch -> process args and launch a daemon
+          --daemon use    -> use existing daemon to process args
+          --daemon auto   -> "launch" if no daemon yet, else "use"
+          --daemon wait   -> wait for daemon to finish processing args
+          --daemon kill   -> kill the daemon
+          --daemon status -> print daemon status and exit
+          --daemon force  -> same as kill + launch
+
+    EXAMPLE:
+        garnet.py --daemon kill
+        garnet.py --width 28 --height 16 --verilog ...
+        garnet.py <app1-pnr-args> --daemon launch
+        garnet.py <app2-pnr-args> --daemon use
+        garnet.py <app3-pnr-args> --daemon use
+        garnet.py <app4-pnr-args> --daemon use
+        ...
+        garnet.py --daemon kill
+
+    NOTE! 'daemon.use' width and height must match 'daemon.launch'!!!
+    NOTE 2: cannot use the same daemon for verilog *and* pnr (not sure why).
+```
+
+==== EXPLAINER: PNR USING GARNET DAEMON
 
 Previously, PNR for an app required two stages: 1) build the (garnet)
 circuit and 2) place/route the app onto the circuit. A second PNR, for
@@ -65,40 +101,27 @@ the `aha pnr` wrapper does something like
          --gold-file ${app_dir}/bin/gold${ext}
          --input-broadcast-branch-factor 2
          --input-broadcast-max-leaves 16
-         --rv --sparse-cgra --sparse-cgra-combined --pipeline-pnr
+         --include-sparse --pipeline-pnr
          --width 28 --height 16 &
 ```
 
-You can use `--daemon help` to find the latest info about how to use the daemon.
-```
-    % python garnet.py --daemon help
+==== DAEMON PYTESTS
 
-    DESCRIPTION:
+* need python version 3
+    $ source /nobackup/steveri/github/smart-components/env/bin/activate
+    $ python --version
+    Python 3.8.10
 
-      garnet.py can run as a daemon to save you time when generating
-      bitstreams for multiple apps using the same garnet circuit. Use
-      the "launch" command to build a circuit and keep state in the
-      background. The "use-daemon" command reuses the background state
-      to more quickly do pnr and bitstream generation.
+* to turn off the annoying color:
+    $ alias pytest='pytest --color=no'
 
-          --daemon launch -> process args and launch a daemon
-          --daemon use    -> use existing daemon to process args
-          --daemon auto   -> "launch" if no daemon yet, else "use"
-          --daemon wait   -> wait for daemon to finish processing args
-          --daemon kill   -> kill the daemon
-          --daemon status -> print daemon status and exit
-          --daemon force  -> same as kill + launch
+* run all tests in summary mode
+    $ cd $GARNET
+    $ pytest --noconftest daemon/test_daemon.py
 
-    EXAMPLE:
-        garnet.py --daemon kill
-        garnet.py --width 28 --height 16 --verilog ...
-        garnet.py <app1-pnr-args> --daemon launch
-        garnet.py <app2-pnr-args> --daemon use
-        garnet.py <app3-pnr-args> --daemon use
-        garnet.py <app4-pnr-args> --daemon use
-        ...
-        garnet.py --daemon kill
+* run all tests and show full output
+    $ cd $GARNET
+    $ pytest --noconftest --capture=no daemon/test_daemon.py
 
-    NOTE! 'daemon.use' width and height must match 'daemon.launch'!!!
-    NOTE 2: cannot use the same daemon for verilog *and* pnr (not sure why).
-```
+* run a single test e.g. "test_double_launch"
+    $ pytest --noconftest daemon/test_daemon.py -k double

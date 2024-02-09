@@ -1,13 +1,11 @@
 import os
 import magma
 from gemstone.generator.from_magma import FromMagma
-from typing import List
 from lake.top.pond import Pond
 from lake.top.lake_top import LakeTop
 from lake.top.extract_tile_info import *
 import kratos as kts
 from gemstone.generator.from_magma import FromMagma
-from typing import List
 from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
 
@@ -21,9 +19,6 @@ else:
 
 
 class PondCore(LakeCoreBase):
-
-    if os.getenv('WHICH_SOC') == "amber": ready_valid = False
-    else                                : ready_valid = True
 
     def __init__(self,
                  data_width=16,  # CGRA Params
@@ -41,7 +36,7 @@ class PondCore(LakeCoreBase):
                  amber_pond=False,
                  add_flush=True,
                  gate_flush=True,
-                 ready_valid=ready_valid):
+                 ready_valid=True):
 
         lake_name = "Pond_pond"
 
@@ -72,6 +67,7 @@ class PondCore(LakeCoreBase):
         self.add_clk_enable = add_clk_enable
         self.amber_pond = amber_pond
         self.add_flush = add_flush
+        self.ready_valid = ready_valid
         self.cycle_count_width = cycle_count_width
         self.default_iterator_support = default_iterator_support
         self.default_config_width = kts.clog2(self.mem_depth)
@@ -104,6 +100,7 @@ class PondCore(LakeCoreBase):
                                   area_opt=self.pond_area_opt,
                                   pond_area_opt_share=self.pond_area_opt_share,
                                   pond_area_opt_dual_config=self.pond_area_opt_dual_config,
+                                  comply_with_17=False,
                                   fifo_mode=False,
                                   add_clk_enable=self.add_clk_enable,
                                   add_flush=self.add_flush,
@@ -148,7 +145,7 @@ class PondCore(LakeCoreBase):
                                   enable_ram_mode=False,
                                   stencil_valid=False,
                                   name="PondTop",
-                                  comply_with_17=True,
+                                  comply_with_17=self.ready_valid,
                                   do_config_lift=False)
 
                 # Nonsensical but LakeTop now has its own internal dut

@@ -1,12 +1,9 @@
 import os
 import magma
-import tempfile
-import urllib.request
 from canal.interconnect import Interconnect
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma
 from gemstone.common.core import PnRTag
-from typing import List
 from lake.top.lake_top import LakeTop
 from lake.passes.passes import change_sram_port_names
 from lake.utils.sram_macro import SRAMMacroInfo
@@ -174,6 +171,7 @@ class MemCore(LakeCoreBase):
                               num_tiles=self.num_tiles,
                               fifo_mode=self.fifo_mode,
                               add_clk_enable=self.add_clk_enable,
+                              comply_with_17=ready_valid,
                               add_flush=self.add_flush,
                               name=lake_name,
                               gen_addr=self.gen_addr,

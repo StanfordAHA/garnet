@@ -1,7 +1,3 @@
-import tempfile
-import glob
-import shutil
-import os
 from gemstone.common.testers import BasicTester
 from canal.util import IOSide
 import lassen.asm as asm
