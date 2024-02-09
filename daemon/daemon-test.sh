@@ -62,8 +62,8 @@ echo "--- BEGIN DAEMON_TEST.SH"
 # Goal: duplicate the above table with and without daemon
 
 # FLAGS1
-flags1="--width  4 --height  2 --verilog --use_sim_sram --rv --sparse-cgra --sparse-cgra-combined"
-flags1="--width 28 --height 16 --verilog --use_sim_sram --rv --sparse-cgra --sparse-cgra-combined"
+flags1="--width  4 --height  2 --verilog --use_sim_sram --include-sparse"
+flags1="--width 28 --height 16 --verilog --use_sim_sram --include-sparse"
 echo flags1=$flags1 | fold -sw 120
 
 # Using 'aha pnr' instead maybe?

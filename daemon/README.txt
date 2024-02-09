@@ -101,7 +101,7 @@ the `aha pnr` wrapper does something like
          --gold-file ${app_dir}/bin/gold${ext}
          --input-broadcast-branch-factor 2
          --input-broadcast-max-leaves 16
-         --rv --sparse-cgra --sparse-cgra-combined --pipeline-pnr
+         --include-sparse --pipeline-pnr
          --width 28 --height 16 &
 ```
 
