@@ -1098,8 +1098,19 @@ class SparseTBBuilder(m.Generator2):
                 new_node_type = ComputeNode
                 # core_tag = "fake_pe"
                 core_tag = "alu"
+                if "is_mapped_from_complex_op" in node.get_attributes():
+                    assert 'original_complex_op_id' in node.get_attributes()
+                    is_mapped_from_complex_op = node.get_attributes()["is_mapped_from_complex_op"]
+                    original_complex_op_id = node.get_attributes()["original_complex_op_id"].strip('"')
+                else:
+                    is_mapped_from_complex_op = False
+                    original_complex_op_id = None
                 kwargs = {
-                    "op": node.get_attributes()['label'].strip('"')
+                    "op": node.get_attributes()['label'].strip('"'),
+                    "sam_graph_node_id": node.get_name(),
+                    "mapped_coreir_dir": self.collat_dir,
+                    "is_mapped_from_complex_op": is_mapped_from_complex_op,
+                    "original_complex_op_id": original_complex_op_id
                 }
             # elif hw_node_type == f"{HWNodeType.Broadcast}":
                 # new_node = GLBNode()
@@ -2488,10 +2499,6 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
 
         # First transpose c_mat
         output_matrix = numpy.add(c_mat, b_mat, dtype=numpy.uint16, casting='unsafe')
-        print("test matrices")
-        print(b_mat)
-        print(c_mat)
-        print(output_matrix)
         output_format = "CSF"
         output_name = "x"
     elif 'vec_elemmul.gv' in app_name:
@@ -3085,7 +3092,7 @@ if __name__ == "__main__":
                     # sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
                     #                   use_fa=use_fiber_access, unroll=unroll)
                     sdg = SAMDotGraph(filename=sam_graph, local_mems=True, use_fork=use_fork,
-                                      use_fa=use_fiber_access, unroll=unroll)
+                                      use_fa=use_fiber_access, unroll=unroll, collat_dir=collat_dir)
                     sdgs[sam_graph] = sdg
                 else:
                     print("REUSE SDG")
