@@ -4,7 +4,6 @@
 #=========================================================================
 
 import os
-import sys
 
 from mflowgen.components import Graph, Step
 from shutil import which

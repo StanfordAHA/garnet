@@ -1,7 +1,4 @@
-import sys
 import shutil
-import json
-
 import io_placement
 import raw_to_h_16
 import bs_to_h

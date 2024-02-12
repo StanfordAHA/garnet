@@ -1,8 +1,5 @@
 # script to convert bitstream to h file
 
-import sys
-
-
 def convert_bs(bs_file_name, new_name):
 
     bs_lines = []
