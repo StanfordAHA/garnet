@@ -10,54 +10,68 @@ Once garnet is installed, you can build e.g. a 2x2 CGRA simply by doing
 $ python garnet.py --help
 $ python garnet.py --width 2 --height 2
 ```
-
 For installation instructions, read on.
-If you're using the Kiwi machine, see [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment) for info on getting your python environment setup. 
 
-# Quick Installation
 
-We highly recommend building in a Python virtual environment. The following commands create a virtual environment, clones the garnet repo, uses pip to install dependencies, and then builds a CGRA instance with a 32x16 array dimension.
+# Install and Build
 
+Also see issue https://github.com/StanfordAHA/garnet/issues/1037
+
+#### Boot up a docker image
 ```
-$ git clone git@github.com:StanfordAHA/garnet.git
-$ cd garnet
-$ python3.7 -m venv venv
-$ source venv/bin/activate
-$ pip install -U setuptools
-$ pip install -r requirements.txt
-$ python garnet.py --width 32 --height 16 --verilog
-```
-
-The following installation-related subsections include further directions that may be necessary.
-
-## Install python dependencies
-```
-$ pip install -r requirements.txt  # install python dependencies
-$ pip install pytest
-# Note: If you created a virtualenv, reactivate it to load the new `pytest`
-# binary into your path
-# $ source venv/bin/activate
+git clone https://github.com/StanfordAHA/aha aha
+cd aha
+git submodule init update --recursive
+sudo docker build . -t "garnet:my_image"
+sudo docker exec -it aha_container bash
 ```
 
-## Install SMT Solver
-Replace `--z3` with solver of choice (e.g. `--msat` for mathsat).
+#### Prepare the environment
 ```
-$ pysmt-install --z3  # Agree to license
-$ pysmt-install --env   # Run the commands in the output and add them to your shell configuration file, travis example below
-export PYTHONPATH="/home/travis/.smt_solvers/python-bindings-3.6:${PYTHONPATH}"
-export LD_LIBRARY_PATH="/home/travis/.smt_solvers/python-bindings-3.6:${LD_LIBRARY_PATH}"
-❯ pysmt-install --check # Should see z3 installed and in Python's path
-Installed Solvers:
-  ...
-  z3        True (4.6.0)
-  ...
+# (Inside docker now) activate virtual environment
+
+source /aha/bin/activate
+
+# Assemble RTL-build flags for quick 4x2 build
+
+width=4
+height=$((width/2))
+flags="--width $width --height $height --pipeline_config_interval 8 -v --glb_tile_mem_size 256"
 ```
 
-## Install Genesis2
-You will also need Genesis2. Again, if you're on
-Kiwi, see instructions in [this wiki page](https://github.com/rsetaluri/magma_cgra/wiki/Kiwi-Environment).
-Otherwise, see instructions in the [Genesis2 repo](https://github.com/StanfordVLSI/Genesis2).
+#### Do this to build older "amber" version of the chip
+```
+# (also see aha/bin/rtl-goldcheck.sh)
 
+export WHICH_SOC=amber
+#Update docker to match necessary amber environment
+garnet/mflowgen/common/rtl/gen_rtl.sh -u | tee tmp-amber-updates.sh
+cat tmp-amber-updates.sh
+source tmp-amber-updates.sh
+aha garnet $flags
+```
+
+#### OR do this to build newer "onyx" version of the chip instead
+```
+
+# Note if it does not work, try without the "--include-sparse" flag.
+export WHICH_SOC=onyx
+aha garnet $flags --include-sparse
+```
+
+#### Assemble final design.v
+```
+# Result of "aha garnet" build should now be in 'garnet/garnet.v'
+# Do this final step if you want to build the complete SoC
+
+cd garnet
+cp garnet.v genesis_verif/garnet.v
+cat genesis_verif/* > design.v
+cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
+cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
+cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
+cat global_controller/systemRDL/output/*.sv >> design.v
+```
 
 ## Verify functionality
 We can verify that everything is setup properly by running the test suite using
