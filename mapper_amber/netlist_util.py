@@ -446,7 +446,6 @@ class VerifyUniqueIname(Visitor):
 class PondFlushes(Transformer):
     def __init__(self):
         self.pond_flush_select = None
-        pass
 
     def generic_visit(self, node: DagNode):
         Transformer.generic_visit(self, node)
@@ -469,7 +468,6 @@ class PondFlushes(Transformer):
 class PipelineBroadcastHelper(Visitor):
     def __init__(self):
         self.sinks = {}
-        pass
 
     def doit(self, dag: Dag):
         self.run(dag)

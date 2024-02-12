@@ -1,5 +1,4 @@
 # import paramiko
-import getpass
 import os
 import pexpect
 import glob

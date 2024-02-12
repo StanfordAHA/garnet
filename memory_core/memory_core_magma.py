@@ -1,7 +1,5 @@
 import os
 import magma
-import tempfile
-import urllib.request
 from canal.interconnect import Interconnect
 from gemstone.generator.const import Const
 from gemstone.generator.from_magma import FromMagma

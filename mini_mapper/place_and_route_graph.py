@@ -9,7 +9,7 @@ from graphviz import Digraph
 from pycyclone.io import load_placement
 # parse raw routing result
 from canal.pnr_io import __parse_raw_routing_result
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Set
 
 class Node:
 

@@ -1,5 +1,4 @@
 import pytest
-import tempfile
 from canal.util import IOSide
 from gemstone.common.testers import BasicTester
 import magma
