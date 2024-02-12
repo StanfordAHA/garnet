@@ -15,7 +15,7 @@ For installation instructions, read on.
 
 # Install and Build (also see issue https://github.com/StanfordAHA/garnet/issues/1037)
 
-### Boot up a docker image
+### Boot up a docker image using information from AHA repo
 ```
 git clone https://github.com/StanfordAHA/aha aha
 cd aha
@@ -24,20 +24,18 @@ sudo docker build . -t "garnet:my_image"
 sudo docker exec -it aha_container bash
 ```
 
-### Prepare the environment
+### Prepare the docker environment
 ```
-# (Inside docker now) activate virtual environment
-source /aha/bin/activate
+# (Inside docker now) activate virtual environment and
+# assemble RTL-build flags for quick 4x2 build
 
-# Assemble RTL-build flags for quick 4x2 build
-width=4
-height=$((width/2))
-flags="--width $width --height $height --pipeline_config_interval 8 -v --glb_tile_mem_size 256"
+source /aha/bin/activate
+flags="--width 4 --height 2 --pipeline_config_interval 8 -v --glb_tile_mem_size 256"
 ```
 
 ### Do this to build older "amber" version of the chip
 ```
-# (also see aha/bin/rtl-goldcheck.sh)
+# (Also see aha/bin/rtl-goldcheck.sh)
 export WHICH_SOC=amber
 #Update docker to match necessary amber environment
 garnet/mflowgen/common/rtl/gen_rtl.sh -u | tee tmp-amber-updates.sh
@@ -71,7 +69,12 @@ cat global_controller/systemRDL/output/*.sv >> design.v
 We can verify that everything is setup properly by running the test suite using
 pytest.
 ```
-pytest
+cd /aha; ./garnet/.github/scripts/run_pytest.sh
+```
+(FYI this did not work for me last time I tried it; instead I had to do
+```
+cd /aha/garnet; git checkout master
+cd /aha; ./garnet/.github/scripts/run_pytest.sh
 ```
 
 # Style guide
