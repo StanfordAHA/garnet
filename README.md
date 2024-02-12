@@ -15,43 +15,24 @@ For installation instructions, read on.
 
 # Install and Build (also see issue https://github.com/StanfordAHA/garnet/issues/1037)
 
-### Boot up a docker image using information from AHA repo
+It is theoretically possible to use garnet without the official docker container; but I'm not sure if anyone has done so successfully in recent history! So here's how:
+
+### Use AHA repo to boot up a docker image and container
 ```
 git clone https://github.com/StanfordAHA/aha aha
-cd aha
-git submodule init update --recursive
-sudo docker build . -t "garnet:my_image"
-sudo docker exec -it aha_container bash
+cd aha; git submodule init update --recursive
+docker build . -t aha_image           # May need sudo depending on your setup
+docker exec -it aha_container bash    # May need sudo depending on your setup
 ```
 
-### Prepare the docker environment
+### (Inside docker now) build a 4x2 CGRA `garnet/garnet.v`
 ```
-# (Inside docker now) activate virtual environment and
-# assemble RTL-build flags for quick 4x2 build
-
 source /aha/bin/activate
 flags="--width 4 --height 2 --pipeline_config_interval 8 -v --glb_tile_mem_size 256"
+aha garnet $flags --include-sparse  # "--include-sparse" flag is optional
 ```
 
-### Do this to build older "amber" version of the chip
-```
-# (Also see aha/bin/rtl-goldcheck.sh)
-export WHICH_SOC=amber
-#Update docker to match necessary amber environment
-garnet/mflowgen/common/rtl/gen_rtl.sh -u | tee tmp-amber-updates.sh
-cat tmp-amber-updates.sh
-source tmp-amber-updates.sh
-aha garnet $flags
-```
-
-### OR do this to build newer "onyx" version of the chip instead
-```
-# Can also try without the "--include-sparse" flag.
-export WHICH_SOC=onyx
-aha garnet $flags --include-sparse
-```
-
-### Assemble final design.v
+### (Optional) assemble final `design.v` SoC
 ```
 # Result of "aha garnet" build should now be in 'garnet/garnet.v'
 # Do this final step if you want to build the complete SoC
