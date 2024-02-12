@@ -1,14 +1,14 @@
 [![Build Status](https://travis-ci.com/StanfordAHA/garnet.svg?branch=master)](https://travis-ci.com/StanfordAHA/garnet)
 [![codecov](https://codecov.io/gh/stanfordaha/garnet/branch/master/graph/badge.svg?token=9XcZmGqxyt)](https://codecov.io/gh/stanfordaha/garnet)
 
-The main purpose of this repo is to investigate and experiment with implementing our CGRA using new generator infrastructure. You will find in this repo: the original Genesis2 source for top level modules, functional models, and testing infrastructure. Also, you will find common generator patterns abstracted away to make designing, testing, and programming the CGRA faster.
+This repo lets you investigate and experiment with implementing our CGRA using new generator infrastructure. Here you will find: original Genesis2 source for top level modules, functional models, and testing infrastructure. Also, you will find common generator patterns abstracted away to make designing, testing, and programming the CGRA faster.
 
 # Usage
 
 Once garnet is installed, you can build e.g. a 2x2 CGRA simply by doing
 ```
 $ python garnet.py --help
-$ python garnet.py --width 2 --height 2
+$ python garnet.py --width 4 --height 2
 ```
 For installation instructions, read on.
 
@@ -25,26 +25,13 @@ $ docker build . -t aha_image           # May need sudo depending on your setup
 $ docker exec -it aha_container bash    # May need sudo depending on your setup
 ```
 
-### (Inside docker now) build a 4x2 CGRA `garnet/garnet.v`
+### (Inside docker now) build a 4x2 CGRA `garnet.v`
 ```
 $ source /aha/bin/activate
-$ flags="--width 4 --height 2 --pipeline_config_interval 8 -v --glb_tile_mem_size 256"
-$ aha garnet $flags --include-sparse  # "--include-sparse" flag is optional
+$ cd /aha/garnet
+$ python garnet.py --width 4 --height 2
 ```
 
-### (Optional) assemble final `design.v` SoC
-```
-# Result of "aha garnet" build should now be in 'garnet/garnet.v'
-# Do this final step if you want to build the complete SoC
-
-$ cd garnet
-$ cp garnet.v genesis_verif/garnet.v
-$ cat genesis_verif/* > design.v
-$ cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
-$ cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
-$ cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
-$ cat global_controller/systemRDL/output/*.sv >> design.v
-```
 
 ## Verify functionality
 We can verify that everything is setup properly by running the test suite using
