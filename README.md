@@ -13,11 +13,9 @@ $ python garnet.py --width 2 --height 2
 For installation instructions, read on.
 
 
-# Install and Build
+# Install and Build (also see issue https://github.com/StanfordAHA/garnet/issues/1037)
 
-Also see issue https://github.com/StanfordAHA/garnet/issues/1037
-
-#### Boot up a docker image
+### Boot up a docker image
 ```
 git clone https://github.com/StanfordAHA/aha aha
 cd aha
@@ -26,23 +24,20 @@ sudo docker build . -t "garnet:my_image"
 sudo docker exec -it aha_container bash
 ```
 
-#### Prepare the environment
+### Prepare the environment
 ```
 # (Inside docker now) activate virtual environment
-
 source /aha/bin/activate
 
 # Assemble RTL-build flags for quick 4x2 build
-
 width=4
 height=$((width/2))
 flags="--width $width --height $height --pipeline_config_interval 8 -v --glb_tile_mem_size 256"
 ```
 
-#### Do this to build older "amber" version of the chip
+### Do this to build older "amber" version of the chip
 ```
 # (also see aha/bin/rtl-goldcheck.sh)
-
 export WHICH_SOC=amber
 #Update docker to match necessary amber environment
 garnet/mflowgen/common/rtl/gen_rtl.sh -u | tee tmp-amber-updates.sh
@@ -51,15 +46,14 @@ source tmp-amber-updates.sh
 aha garnet $flags
 ```
 
-#### OR do this to build newer "onyx" version of the chip instead
+### OR do this to build newer "onyx" version of the chip instead
 ```
-
-# Note if it does not work, try without the "--include-sparse" flag.
+# Can also try without the "--include-sparse" flag.
 export WHICH_SOC=onyx
 aha garnet $flags --include-sparse
 ```
 
-#### Assemble final design.v
+### Assemble final design.v
 ```
 # Result of "aha garnet" build should now be in 'garnet/garnet.v'
 # Do this final step if you want to build the complete SoC
