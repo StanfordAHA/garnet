@@ -1,5 +1,5 @@
 from gemstone.generator.generator import Generator
-import os
+import os, sys
 if os.getenv('WHICH_SOC') == "amber":
     import garnet_amber
     if __name__ == "__main__":
@@ -673,6 +673,12 @@ def write_out_bitstream(filename, bitstream):
 
 
 def parse_args():
+
+    # Early-out for deprecated arguments
+    for a in ['--rv', '--sparse-cgra', '--sparse-cgra-combined' ]:
+        assert a not in sys.argv, \
+            f'Command-line arg "{a}" no longer exists, use "--include-sparse" instead'
+
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
