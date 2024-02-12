@@ -39,11 +39,7 @@ pytest.
 ```
 $ cd /aha; ./garnet/.github/scripts/run_pytest.sh
 ```
-(FYI this did not work for me last time I tried it; instead I had to do
-```
-$ cd /aha/garnet; git checkout master
-$ cd /aha; ./garnet/.github/scripts/run_pytest.sh
-```
+(FYI last time I tried this it did not work until I first did `cd /aha/garnet; git checkout master` ...?)
 
 # Style guide
 
