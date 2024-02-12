@@ -15,21 +15,21 @@ For installation instructions, read on.
 
 # Install and Build (also see issue https://github.com/StanfordAHA/garnet/issues/1037)
 
-It is theoretically possible to use garnet without the official docker container; but I'm not sure if anyone has done so successfully in recent history! So here's how:
+  We use a docker environment to build the chip. Here's how:
 
 ### Use AHA repo to boot up a docker image and container
 ```
-git clone https://github.com/StanfordAHA/aha aha
-cd aha; git submodule init update --recursive
-docker build . -t aha_image           # May need sudo depending on your setup
-docker exec -it aha_container bash    # May need sudo depending on your setup
+$ git clone https://github.com/StanfordAHA/aha aha
+$ cd aha; git submodule init update --recursive
+$ docker build . -t aha_image           # May need sudo depending on your setup
+$ docker exec -it aha_container bash    # May need sudo depending on your setup
 ```
 
 ### (Inside docker now) build a 4x2 CGRA `garnet/garnet.v`
 ```
-source /aha/bin/activate
-flags="--width 4 --height 2 --pipeline_config_interval 8 -v --glb_tile_mem_size 256"
-aha garnet $flags --include-sparse  # "--include-sparse" flag is optional
+$ source /aha/bin/activate
+$ flags="--width 4 --height 2 --pipeline_config_interval 8 -v --glb_tile_mem_size 256"
+$ aha garnet $flags --include-sparse  # "--include-sparse" flag is optional
 ```
 
 ### (Optional) assemble final `design.v` SoC
@@ -37,25 +37,25 @@ aha garnet $flags --include-sparse  # "--include-sparse" flag is optional
 # Result of "aha garnet" build should now be in 'garnet/garnet.v'
 # Do this final step if you want to build the complete SoC
 
-cd garnet
-cp garnet.v genesis_verif/garnet.v
-cat genesis_verif/* > design.v
-cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
-cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
-cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
-cat global_controller/systemRDL/output/*.sv >> design.v
+$ cd garnet
+$ cp garnet.v genesis_verif/garnet.v
+$ cat genesis_verif/* > design.v
+$ cat global_buffer/systemRDL/output/glb_pio.sv >> design.v
+$ cat global_buffer/systemRDL/output/glb_jrdl_decode.sv >> design.v
+$ cat global_buffer/systemRDL/output/glb_jrdl_logic.sv >> design.v
+$ cat global_controller/systemRDL/output/*.sv >> design.v
 ```
 
 ## Verify functionality
 We can verify that everything is setup properly by running the test suite using
 pytest.
 ```
-cd /aha; ./garnet/.github/scripts/run_pytest.sh
+$ cd /aha; ./garnet/.github/scripts/run_pytest.sh
 ```
 (FYI this did not work for me last time I tried it; instead I had to do
 ```
-cd /aha/garnet; git checkout master
-cd /aha; ./garnet/.github/scripts/run_pytest.sh
+$ cd /aha/garnet; git checkout master
+$ cd /aha; ./garnet/.github/scripts/run_pytest.sh
 ```
 
 # Style guide
