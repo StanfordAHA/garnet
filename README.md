@@ -29,7 +29,7 @@ $ docker exec -it aha_container bash    # May need sudo depending on your setup
 ```
 $ source /aha/bin/activate
 $ cd /aha/garnet
-$ python garnet.py --width 4 --height 2
+$ python garnet.py --width 4 --height 2 --verilog
 ```
 
 
