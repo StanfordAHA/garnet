@@ -508,7 +508,7 @@ class Garnet(Generator):
         return (netlist_info["id_to_name"], netlist_info["instance_to_instrs"], netlist_info["netlist"],
                 netlist_info["buses"])
 
-    def place_and_route(self, args): 
+    def place_and_route(self, args, load_only=False): 
 
         # place_and_route() used to have a bunch of parameters with defaults
         # that were in conflict with and overridden by existing higher level
@@ -516,7 +516,6 @@ class Garnet(Generator):
 
         halide_src = args.app
         compact = args.compact
-        load_only = args.pipeline_pnr or args.generate_bitstream_only
         unconstrained_io = load_only or args.unconstrained_io
         pipeline_input_broadcasts = not args.no_input_broadcast_pipelining
         input_broadcast_branch_factor = args.input_broadcast_branch_factor
@@ -815,16 +814,17 @@ def build_verilog(args, garnet):
 
 def pnr(garnet, args, app):
 
+    placement, routing, id_to_name, instance_to_instr, netlist, bus = \
+        garnet.place_and_route(args, load_only=args.generate_bitstream_only)
+
     # When 'generate_bitstream_only' is set, we do not actually do any NEW pnr;
     # instead, we load a previously-built pnr result and use that. So
     # reschedule_pipelined_app() only happens if 'generate_bitstream_only' is False.
     if args.pipeline_pnr and not args.generate_bitstream_only:
         reschedule_pipelined_app(app)
 
-    # FIXME could/should push this function call to body of generate_bitstream()
-    # (result of call is only used by generate_bitstream() I think)
-    placement, routing, id_to_name, instance_to_instr, netlist, bus = \
-        garnet.place_and_route(args)
+        placement, routing, id_to_name, instance_to_instr, netlist, bus = \
+            garnet.place_and_route(args, load_only=True)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
