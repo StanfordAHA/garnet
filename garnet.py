@@ -1,4 +1,6 @@
 import os
+from verification.verify_pnr_top import verify_pnr_top
+
 if os.getenv('WHICH_SOC') == "amber":
     import garnet_amber
     if __name__ == "__main__": garnet_amber.main()
@@ -797,6 +799,7 @@ def pnr(garnet, args, app):
         # What are these vars? Are they never used?
         placement, routing, id_to_name, instance_to_instr, netlist, bus = pnr_result
 
+    verify_pnr_top(garnet.interconnect, args.app)
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
         placement, routing, id_to_name, instance_to_instr, netlist, bus,
