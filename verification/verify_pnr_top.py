@@ -186,7 +186,7 @@ def set_inputs(solver, input_symbols_coreir, input_symbols_pnr,
 
 
 def compare_output_array(
-    solver, bvsort16, index, array0, array1, max_index
+    solver, bvsort16, index, array0, array1, max_index, pnr_valid, bvsort1
 ):
     # Create term initialize to true
     term = solver.create_term(
@@ -203,10 +203,10 @@ def compare_output_array(
             solver.create_term(solver.ops.Select, array1, idx_bv)
         )
         ############# DEBUG############
-        t_n = solver.create_term(
-            solver.ops.BVUgt,
-            solver.create_term(solver.ops.Select, array0, idx_bv),
-            solver.create_term(solver.ops.Select, array1, idx_bv)
+        t_n = solver.create_term( # Claim that pnr_valid is low
+            solver.ops.Equal,
+            pnr_valid, 
+            solver.create_term(0, bvsort1)
         )
         ################################
         
@@ -232,7 +232,12 @@ def compare_output_array(
                 term
         )
         ##########################################
-    return term
+    # return term
+    return solver.create_term( # Claim that pnr_valid is low
+            solver.ops.Equal,
+            pnr_valid, 
+            solver.create_term(0, bvsort1)
+        )
 
 
 def create_property_term(
@@ -336,15 +341,22 @@ def create_property_term(
         ) # variable for holding count+1
 
         # if valid and clk low, increment count
+        # solver.fts.assign_next(
+        #     coreir_out_pixel_count,
+        #     solver.create_term(
+        #         solver.ops.Ite, 
+        #         coreir_valid_and_clk_low, 
+        #         coreir_count_plus_one, 
+        #         coreir_out_pixel_count
+        #     ),
+        # )
+
+        ################### DEBUG ########################
         solver.fts.assign_next(
             coreir_out_pixel_count,
-            solver.create_term(
-                solver.ops.Ite, 
-                coreir_valid_and_clk_low, 
-                coreir_count_plus_one, 
-                coreir_out_pixel_count
-            ),
+            coreir_count_plus_one
         )
+        #################################################
 
         # array updated with new output
         coreir_output_array_updated = solver.create_term(
@@ -397,15 +409,23 @@ def create_property_term(
         ) # variable for holding count+1
 
         # if valid and clk low, increment count
+        # solver.fts.assign_next(
+        #     pnr_out_pixel_count,
+        #     solver.create_term(
+        #         solver.ops.Ite, 
+        #         pnr_valid_and_clk_low, 
+        #         pnr_count_plus_one, 
+        #         pnr_out_pixel_count
+        #     ),
+        # )
+
+        ################### DEBUG ########################
         solver.fts.assign_next(
             pnr_out_pixel_count,
-            solver.create_term(
-                solver.ops.Ite, 
-                pnr_valid_and_clk_low, 
-                pnr_count_plus_one, 
-                pnr_out_pixel_count
-            ),
+            pnr_count_plus_one
         )
+        #################################################
+
 
         # array updated with new output
         pnr_output_array_updated = solver.create_term(
@@ -439,7 +459,7 @@ def create_property_term(
         
         # return term
         property_term = compare_output_array(solver, bvsort16, min_out_pixel_count, 
-                            coreir_output_array, pnr_output_array, 20)
+                            coreir_output_array, pnr_output_array, 20, pnr_valid, bvsort1)
         # remember to get actual max size
         return property_term
 
@@ -622,8 +642,9 @@ def verify_pnr_top(interconnect, coreir_file):
     print("BMC time:", time.time() - start)
 
     if res is None or res:
-        print("\n\033[92m" + "Formal check of mapped application passed" + "\033[0m")
+        print("\n\033[92m" + "Formal check of pnr passed" + "\033[0m")
     else:
+        print("\nFormal check of pnr failed")
         print_trace(bmc, mapped_output_datas, mapped_output_valids)
 
     breakpoint()
