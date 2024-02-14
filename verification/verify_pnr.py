@@ -12,6 +12,7 @@ import pono
 from simple_colors import *
 import re
 from tabulate import tabulate
+from .verify_design_top import import_from, print_trace, flatten, set_clk_rst_flush
 
 import copy
 import json
@@ -29,129 +30,8 @@ from archipelago.pnr_graph import (
     TileNode,
     RouteNode,
 )
-from archipelago.visualize import visualize_pnr
 from verified_agile_hardware.solver import Solver, Rewriter
 import smt_switch as ss
-
-
-def create_conv_smt(conv_solver):
-    image_width = 32
-    image_height = 32
-
-    kernel_width = 3
-    kernel_height = 3
-
-    bvsort16 = conv_solver.create_bvsort(16)
-
-    # Create an SMT variable (symbol) for every input pixel
-    in_image_symbols = []
-    for y in range(image_height):
-        in_image_symbols.append([])
-        for x in range(image_width):
-            init_sym = conv_solver.create_fts_state_var(
-                f"init_in_image_{x}_{y}", bvsort16
-            )
-            input_sym = conv_solver.create_fts_state_var(f"in_image_{x}_{y}", bvsort16)
-            in_image_symbols[y].append(input_sym)
-            conv_solver.fts.constrain_init(
-                conv_solver.create_term(conv_solver.ops.Equal, input_sym, init_sym)
-            )
-            conv_solver.fts.assign_next(input_sym, input_sym)
-
-    # Create SMT variable for every kernel value
-    kernel_symbols = []
-    for y in range(kernel_height):
-        kernel_symbols.append([])
-        for x in range(kernel_width):
-            init_sym = conv_solver.create_fts_state_var(
-                f"init_kernel_{x}_{y}", bvsort16
-            )
-            kernel_sym = conv_solver.create_fts_state_var(f"kernel_{x}_{y}", bvsort16)
-            kernel_symbols[y].append(kernel_sym)
-            conv_solver.fts.constrain_init(
-                conv_solver.create_term(conv_solver.ops.Equal, kernel_sym, init_sym)
-            )
-            conv_solver.fts.assign_next(kernel_sym, kernel_sym)
-
-    # Create array of output equations
-    # out_symbols[y][x] is the equation representing the output pixel value at that point
-    out_symbols = []
-    for i_y in range(image_height):
-        out_symbols.append([])
-        for i_x in range(image_width):
-            accum = []
-            for k_y in range(kernel_height):
-                for k_x in range(kernel_width):
-                    if i_y + kernel_height <= len(
-                        in_image_symbols
-                    ) and i_x + kernel_width <= len(in_image_symbols[i_y + k_y]):
-                        accum.append(
-                            conv_solver.create_term(
-                                conv_solver.ops.BVMul,
-                                in_image_symbols[i_y + k_y][i_x + k_x],
-                                kernel_symbols[k_y][k_x],
-                            )
-                        )
-
-            if len(accum) > 1:
-                out_symbols[i_y].append(
-                    conv_solver.create_term(conv_solver.ops.BVAdd, *accum)
-                )
-
-    return in_image_symbols, kernel_symbols, out_symbols
-
-
-def set_clk_rst_flush(solver):
-    for clk in solver.clks:
-        if clk in solver.fts.inputvars:
-            solver.fts.promote_inputvar(clk)
-        solver.fts.constrain_init(
-            solver.create_term(
-                solver.ops.Equal, clk, solver.create_term(1, clk.get_sort())
-            )
-        )
-        ite = solver.create_term(
-            solver.ops.Ite,
-            solver.create_term(
-                solver.ops.Equal, clk, solver.create_term(0, clk.get_sort())
-            ),
-            solver.create_term(1, clk.get_sort()),
-            solver.create_term(0, clk.get_sort()),
-        )
-        solver.fts.assign_next(clk, ite)
-
-    rst_times = [0, 1]
-    for rst in solver.rsts:
-        if rst in solver.fts.inputvars:
-            solver.fts.promote_inputvar(rst)
-        solver.fts.constrain_init(
-            solver.create_term(
-                solver.ops.Equal, rst, solver.create_term(0, rst.get_sort())
-            )
-        )
-        solver.fts_assert_at_times(
-            rst,
-            solver.create_term(0, rst.get_sort()),
-            solver.create_term(1, rst.get_sort()),
-            rst_times,
-        )
-
-    flush_times = [2, 3]
-    for flush in solver.flushes:
-        if flush in solver.fts.inputvars:
-            solver.fts.promote_inputvar(flush)
-        solver.fts.constrain_init(
-            solver.create_term(
-                solver.ops.Equal, flush, solver.create_term(0, flush.get_sort())
-            )
-        )
-        solver.fts_assert_at_times(
-            flush,
-            solver.create_term(1, flush.get_sort()),
-            solver.create_term(0, flush.get_sort()),
-            flush_times,
-        )
-
 
 def set_inputs(solver, input_symbols_coreir, input_symbols_pnr, 
             bvsort16, id_to_name):
@@ -184,6 +64,23 @@ def set_inputs(solver, input_symbols_coreir, input_symbols_pnr,
                 solver.fts.add_invar(solver.create_term(solver.ops.Equal, input_coreir, input_pnr_short))
                 
 
+    for k,v in input_symbols_coreir.items():
+        state_var = solver.create_fts_state_var(k + "_state", v.get_sort())
+        input_var = solver.create_fts_input_var(k + "_input", v.get_sort())
+
+        clk_low = solver.create_term(
+            solver.ops.Equal, solver.clks[0], solver.create_term(0, solver.create_bvsort(1))
+        )
+
+        solver.fts.assign_next(
+            state_var,
+            solver.create_term(
+                solver.ops.Ite, clk_low, input_var, state_var
+            ),
+        )
+
+        solver.fts.add_invar(solver.create_term(solver.ops.Equal, state_var, v))
+
 
 def compare_output_array(
     solver, bvsort16, index, array0, array1, max_index
@@ -203,11 +100,11 @@ def compare_output_array(
             solver.create_term(solver.ops.Select, array1, idx_bv)
         )
         ############# DEBUG############
-        t_n = solver.create_term(
-            solver.ops.BVUgt,
-            solver.create_term(solver.ops.Select, array0, idx_bv),
-            solver.create_term(solver.ops.Select, array1, idx_bv)
-        )
+        # t_n = solver.create_term(
+        #     solver.ops.BVUgt,
+        #     solver.create_term(solver.ops.Select, array0, idx_bv),
+        #     solver.create_term(solver.ops.Select, array1, idx_bv)
+        # )
         ################################
         
         # check if idx is less than index
@@ -215,29 +112,29 @@ def compare_output_array(
                             idx_bv, 
                             index)
         # update term if idx < index
-        # new_term = solver.create_term(solver.ops.And, term, t)
-        # term = solver.create_term(
-        #         solver.ops.Ite, 
-        #         idx_in_range, 
-        #         new_term, 
-        #         term
-        # )
-
-        ################### DEBUG ####################
-        new_term_n = solver.create_term(solver.ops.And, term, t_n)
+        new_term = solver.create_term(solver.ops.And, term, t)
         term = solver.create_term(
                 solver.ops.Ite, 
                 idx_in_range, 
-                new_term_n, 
+                new_term, 
                 term
         )
+
+        ################### DEBUG ####################
+        # new_term_n = solver.create_term(solver.ops.And, term, t_n)
+        # term = solver.create_term(
+        #         solver.ops.Ite, 
+        #         idx_in_range, 
+        #         new_term_n, 
+        #         term
+        # )
         ##########################################
     return term
 
 
 def create_property_term(
     solver, output_symbols_coreir, output_symbols_pnr, 
-    bvsort16, bvsort1, id_to_name
+    bvsort16, bvsort1, id_to_name, num_output_pixels
 ):
     # Pair up coreir outputs with pnr outputs
     # create separate lists for 16-bit and 1-bit outputs
@@ -286,7 +183,10 @@ def create_property_term(
                     print("OUTPUT FORMAT DID NOT MATCH!!!!")
                     breakpoint()
 
-    
+    property_term = solver.create_term(
+        solver.ops.Equal, solver.create_term(0, bvsort1), solver.create_term(0, bvsort1)
+    )
+
     # create an array and counter for each output variable
     for i in range(len(output_pair_16_bit_names)):
         # for each pair of CoreIR & PnR outputs, find the variables and var names
@@ -438,81 +338,14 @@ def create_property_term(
                 pnr_out_pixel_count)
         
         # return term
-        property_term = compare_output_array(solver, bvsort16, min_out_pixel_count, 
-                            coreir_output_array, pnr_output_array, 20)
-        # remember to get actual max size
-        return property_term
+        prop = compare_output_array(solver, bvsort16, min_out_pixel_count, 
+                            coreir_output_array, pnr_output_array, num_output_pixels)
 
+        property_term = solver.create_term(
+            solver.ops.And, property_term, prop
+        )
 
-
-def print_trace(bmc, mapped_output_datas, mapped_output_valids):
-    print("Counterexample found")
-
-    trace_table = []
-
-    trace = ["0step"]
-    trace += list(range(len(bmc.witness())))
-    trace_table.append(trace)
-
-    trace = ["1clock"]
-    t = list(range(len(bmc.witness())))
-    trace += [int(n / 2) for n in t]
-    trace_table.append(trace)
-
-    waveform_signals = [
-        "in.hw_input",
-        "out_count_",
-        "out_symbol_decoder_",
-        "out_symbol_data_eq_",
-        "in_symbol_",
-    ]
-
-    witnesses = bmc.witness()
-    for var, _ in witnesses[0].items():
-        display = False
-        for signal in waveform_signals:
-            if signal in str(var):
-                display = True
-
-        if str(var) in mapped_output_datas or str(var) in mapped_output_valids:
-            display = True
-
-        if "next" in str(var):
-            display = False
-
-        if display:
-            trace = [str(var)]
-            for witness in witnesses:
-                val = witness[var]
-
-                if "bv" in str(val):
-                    val = re.split("bv(\d*)", str(val))[1].strip()
-
-                if "false" in str(val):
-                    trace.append(red("0"))
-                elif "true" in str(val):
-                    trace.append(green("1"))
-                elif int(str(val)) == 0:
-                    trace.append(red(str(val)))
-                else:
-                    trace.append(green(str(val)))
-
-            trace_table.append(trace)
-    trace_table.sort()
-    print(tabulate(trace_table))
-
-
-def load_id_to_name(id_filename):
-    fin = open(id_filename, "r")
-    lines = fin.readlines()
-    id_to_name = {}
-
-
-    for line in lines:
-        id_to_name[line.split(": ")[0]] = line.split(": ")[1].rstrip()
-
-
-    return id_to_name
+    return property_term
 
 
 def verify_pnr(interconnect, coreir_file):
@@ -521,6 +354,14 @@ def verify_pnr(interconnect, coreir_file):
         "design_top.json", "design.port_remap"
     )
     app_dir = os.path.dirname(coreir_file) # coreir_file has mapped dataflow graph
+
+    sys.path.append(os.path.abspath(app_dir))
+
+    create_app = import_from(
+        f"{app_dir.split(os.sep)[-2]}_pono_testbench", "create_app"
+    )
+
+    hw_input_stencil, hw_output_stencil = create_app(Solver())
 
     cmod  = read_coreir(coreir_file)
     nx = coreir_to_nx(cmod) # translate coreir to network x
@@ -533,58 +374,33 @@ def verify_pnr(interconnect, coreir_file):
     solver.file_info = file_info
     solver.app_dir = f"{app_dir}/verification"
 
-    # solver, input_symbols, output_symbols = nx_to_smt(
-    #     nx, interconnect, file_info, app_dir
-    # ) # network x to SMT
     solver, input_symbols_coreir, output_symbols_coreir = nx_to_smt(
         nx, interconnect, solver, app_dir
     ) # network x to SMT
 
     print("NX to SMT done.")
-    
 
     # load PnR results
-    visualize = False
-    sparse = False
     packed_file = coreir_file.replace("design_top.json", "design.packed")
     placement_file = coreir_file.replace("design_top.json", "design.place")
     routing_file = coreir_file.replace("design_top.json", "design.route")
 
-
     netlist, buses = pythunder.io.load_netlist(packed_file)
-
-    
     id_to_name = pythunder.io.load_id_to_name(packed_file)
-    # id_to_name_reversed = {v: k for k, v in id_to_name.items()}
-
 
     placement = load_placement(placement_file)
     routing = load_routing_result(routing_file)
     print("PnR results loaded.")
 
-
-    if "PIPELINED" in os.environ and os.environ["PIPELINED"].isnumeric():
-        pe_latency = int(os.environ["PIPELINED"])
-    else:
-        pe_latency = 1
-
-
-    if "IO_DELAY" in os.environ and os.environ["IO_DELAY"] == "0":
-        io_cycles = 0
-    else:
-        io_cycles = 1
-
     # Construct PnR result graph
     routing_result_graph = construct_graph(
-        placement, routing, id_to_name, netlist, pe_latency, 0, io_cycles, sparse
+        placement, routing, id_to_name, netlist, 1, 0, 1, False
     )
     print("PnR graph created.")
 
     nx_pnr = pnr_to_nx(routing_result_graph, cmod) # translate pnr graph to network x
     # add cmod as parameter
     print("PnR NX generated.")
-
-    coreir_to_pdf(nx_pnr,"/aha/nx_pdf/pnr_graph2")
 
 
     solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
@@ -599,20 +415,18 @@ def verify_pnr(interconnect, coreir_file):
     set_inputs(solver, input_symbols_coreir, input_symbols_pnr, 
             bvsort16, id_to_name)
     
-    # breakpoint()
+    
     property_term = create_property_term(
         solver, 
         output_symbols_coreir, 
         output_symbols_pnr, 
         bvsort16, 
         bvsort1, 
-        id_to_name
+        id_to_name,
+        len(flatten(hw_output_stencil))
     )
 
-
     prop = pono.Property(solver.solver, property_term) # create property
-
-    print(prop.prop)
 
     bmc = pono.Bmc(prop, solver.fts, solver.solver) # run bmc checker
 
@@ -624,6 +438,7 @@ def verify_pnr(interconnect, coreir_file):
     if res is None or res:
         print("\n\033[92m" + "Formal check of mapped application passed" + "\033[0m")
     else:
-        print_trace(bmc, mapped_output_datas, mapped_output_valids)
+        trace_symbols = list(output_symbols_coreir.keys()) + list(output_symbols_pnr.keys()) + list(input_symbols_pnr.keys()) + list(input_symbols_coreir.keys())
+        print_trace(bmc, trace_symbols)
 
     breakpoint()

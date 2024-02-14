@@ -193,7 +193,7 @@ def create_property_term(
     return property_term
 
 
-def print_trace(bmc, mapped_output_datas, mapped_output_valids):
+def print_trace(bmc, symbols):
     print("Counterexample found")
 
     trace_table = []
@@ -208,12 +208,11 @@ def print_trace(bmc, mapped_output_datas, mapped_output_valids):
     trace_table.append(trace)
 
     waveform_signals = [
-        "in.hw_input",
-        "out_count_",
-        "out_symbol_decoder_",
-        "out_symbol_data_eq_",
-        "in_symbol_",
-        "rom_curvea0",
+        # "in.hw_input",
+        # "out_count_",
+        # "out_symbol_decoder_",
+        # "out_symbol_data_eq_",
+        # "in_symbol_",
     ]
 
     witnesses = bmc.witness()
@@ -223,7 +222,7 @@ def print_trace(bmc, mapped_output_datas, mapped_output_valids):
             if signal in str(var) and len(str(var)) < 100:
                 display = True
 
-        if str(var) in mapped_output_datas or str(var) in mapped_output_valids:
+        if str(var) in symbols:
             display = True
 
         if "next" in str(var):
@@ -355,4 +354,4 @@ def verify_design_top(interconnect, coreir_file):
     if res is None or res:
         print("\n\033[92m" + "Formal check of mapped application passed" + "\033[0m")
     else:
-        print_trace(bmc, mapped_output_datas, mapped_output_valids)
+        print_trace(bmc, list(mapped_output_datas.keys()) + list(mapped_output_valids.keys()))
