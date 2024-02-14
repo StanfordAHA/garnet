@@ -1254,18 +1254,20 @@ def create_netlist_info(
     if os.path.isfile(app_dir + "manual.place"):
         os.remove(app_dir + "manual.place")
 
-    graph = NetlistGraph(info)
-    graph.get_glb_kernel_latency(app_dir=app_dir)
-    if "MANUAL_PLACER" in os.environ:
-        graph.get_in_ub_latency(app_dir=app_dir)
-        graph.get_compute_kernel_latency(app_dir=app_dir)
+    # manual placed resnet and PE at glb level needs hardcoded latency calculation
+    if "MANUAL_PLACER" in os.environ or "GLB_LEVEL_PE" in os.environ:
+        graph = NetlistGraph(info)
+        if "GLB_LEVEL_PE" in os.environ: graph.get_glb_kernel_latency(app_dir=app_dir)
+        else:
+            graph.get_in_ub_latency(app_dir=app_dir)
+            graph.get_compute_kernel_latency(app_dir=app_dir)
 
-        # remove mem reg in conn for manual placement
-        graph.remove_mem_reg_tree()
-        # graph.generate_tile_conn(app_dir = app_dir)
+            # remove mem reg in conn for manual placement
+            graph.remove_mem_reg_tree()
+            # graph.generate_tile_conn(app_dir = app_dir)
 
-        # manual placement
-        graph.manualy_place_resnet(app_dir=app_dir)
+            # manual placement
+            graph.manualy_place_resnet(app_dir=app_dir)
 
     CountTiles().doit(pdag)
 
