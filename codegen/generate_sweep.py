@@ -74,7 +74,7 @@ if os.path.exists(f"dot_h_files/{app_name}/{data}"):
     os.makedirs(f"dot_h_files/{app_name}/{data}")
 else:
     os.makedirs(f"dot_h_files/{app_name}/{data}")
-files = ["input_script.h", "script.h", "reg_write.h", "unrolling.h", "extents.h"]
+files = ["input_script.h", "script.h", "reg_write.h", "unrolling.h"]
 for file in files:
     shutil.copy(file, f"dot_h_files/{app_name}/{data}/{app_name}_{data}_{file}")
 files = ["main.c", "sections.ld"]
