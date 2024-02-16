@@ -55,7 +55,7 @@ function filter() { awk -F ':' "$awkscript"; }
     flake8 --select=E $files | filter && EFAIL= || EFAIL=True
     if [ "$EFAIL" ]; then
         EFAIL=`flake8 --select=E $files | wc -l`
-        echo "--- -- Found $EFAIL PEP8 ERRORS"
+        printf "%s ...........................Found %6d %s errors\n" --- $EFAIL E
     fi
 
 ########################################################################
@@ -65,7 +65,7 @@ function filter() { awk -F ':' "$awkscript"; }
     flake8 --select=F $files | filter && FFAIL= || FFAIL=True
     if [ "$FFAIL" ]; then
         FFAIL=`flake8 --select=F $files | wc -l`
-        echo "--- -- Found $FFAIL FLAKE ERRORS"
+        printf "%s ...........................Found %6d %s errors\n" --- $FFAIL F
     fi
 
 ########################################################################
@@ -91,7 +91,7 @@ awkscript='
     #    { print; fname = $1 }
     # END { if (got_input) exit(13) }
 '
-flake8 $files | awk -F ":" "$awkscript" | sort -b -k2,2rn
+flake8 --select=W $files | awk -F ":" "$awkscript" | sort -b -k2,2rn
 
 ########################################################################
 # Process failures
@@ -99,7 +99,7 @@ echo "+++ SUMMARY"
 FAIL=
 
 ########################################################################
-if [ "$AF_FAIL" ]; then; FAIL=True; cat <<EOF
+if [ "$AF_FAIL" ]; then FAIL=True; cat <<EOF
 
 ----------------------------------------------------
 ERROR: Found autoflake errors, see above for details.
