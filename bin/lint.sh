@@ -65,8 +65,6 @@ flake8 --select=F $files | filter && FFAIL= || FFAIL=True
 if [ "$FFAIL" ]; then
     FFAIL=`flake8 --select=F $files | wc -l`
     printf "%s ...........................Found %6d %s errors\n" --- $FFAIL F
-    printf "%s '...........................Found %6d %s errors'\n" --- $FFAIL F
-    printf '%s "...........................Found %6d %s errors"\n' --- $FFAIL F
 fi
 
 ########################################################################
@@ -75,11 +73,11 @@ fi
 echo '--- - FLAKE8 "W" PEP8 WARNINGS'
 cat <<EOF
 
-NOTE to address warnings locally, do e.g.
+  NOTE to address warnings locally, do e.g.
 
-    pip install flake8
-    flake8 <filename>.py
-  
+      pip install flake8
+      flake8 --select=W <filename>.py
+
 EOF
 awkscript='
     # { print }
