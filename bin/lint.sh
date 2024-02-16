@@ -1,24 +1,11 @@
 #!/bin/bash
 
-function which() { type $*; }
-# which activate
-# exit
-
-
-
-# LOCAL_TEST=
-# LOCAL_TEST=True
-
-# Gather the python files
-# [ "$LOCAL_TEST" ] && cd /nobackup/steveri/github/garnet
-# files=`git ls-tree -r HEAD --name-only | egrep 'py$' | sort`
-
-# set -x
-# Fire up a venv if needed
+# Fire up a venv if running locally on kiwi
 if [ `hostname` == kiwi ]; then
   cd /nobackup/steveri/github/garnet
-  # python -c 'import sys; print(sys.prefix)' ?? returns "/nobackup/steveri/github/smart-components/env"
-  which activate || source /nobackup/steveri/github/smart-components/env/bin/activate
+  # python -c 'import sys; print(sys.prefix)' ?? returns ".../smart-components/env"
+  type activate >& /dev/null ||     # "type" fails if activate not in path
+      source /nobackup/steveri/github/smart-components/env/bin/activate
 else
   cd /aha/garnet
 fi
@@ -30,9 +17,6 @@ echo $files
 
 ########################################################################
 # AUTOFLAKE
-
-DO_AF=True
-if [ "$DO_AF" == True ]; then
 
     echo '--- Autoflake finds redundant and unnecessary import requests'
 
@@ -48,47 +32,46 @@ if [ "$DO_AF" == True ]; then
     autoflake --remove-duplicate-keys $files | sed "$filter" | grep . || AF_FAIL=
 
     # autoflake --remove-duplicate-keys codegen/io_placement.py
-fi
+
+# Install if needed
+echo '--- Flake8 finds style problems in python files'
+echo '--- - FLAKE8 INSTALL'
+type flake8 >& /dev/null || pip install flake8
+
+# filter function formats flake8 output for nice log display
+awkscript='
+    { got_input=1 }
+    fname != $1 { print "" }
+    { print; fname = $1 }
+    END { if (got_input) exit(13) }
+'
+function filter() { awk -F ':' "$awkscript"; }
+
 
 ########################################################################
-# FLAKE8
+# FLAKE8 "E" PEP8 ERRORS
 
-DO_F8err=True
-if [ "$DO_F8err" == True ]; then
+    echo '--- - FLAKE8 "E" PEP8 ERRORS'
+    flake8 --select=E $files | filter && EFAIL= || EFAIL=True
+    if [ "$EFAIL" ]; then
+        EFAIL=`flake8 --select=F $files | wc -l`
+        echo "--- -- Found $EFAIL PEP8 ERRORS"
+    fi
 
-    echo '--- Flake8 finds python style violations'
+########################################################################
+# FLAKE8 "F" FLAKE ERRORS
 
-    # Install if needed
-    echo '--- - FLAKE8 INSTALL'
-    which flake8 >& /dev/null || pip install flake8
+    echo '--- - FLAKE8 "F" FLAKE ERRORS'
+    flake8 --select=F $files | filter && FFAIL= || FFAIL=True
+    if [ "$FFAIL" ]; then
+        FFAIL=`flake8 --select=F $files | wc -l`
+        echo "--- -- Found $FFAIL FLAKE ERRORS"
+    fi
 
-    # ERRORS
-    echo '--- - FLAKE8 ERRORS'
+########################################################################
+# FLAKE8 "W" PEP8 WARNINGS
 
-    awkscript='
-      { got_input=1 }
-      fname != $1 { print "" }
-      { print; fname = $1 }
-      END { if (got_input) exit(13) }
-    '
-    function filter() { awk -F ':' "$awkscript"; }
-
-    # Test (garnet.py only)
-    # echo '------------------------------------------------------------------------'
-    # F8_FAIL=False
-    # flake8 --select=F garnet.py | filter || F8_FAIL=True
-    # [ "$F8_FAIL" == True ] && echo FAILED
-    # echo '------------------------------------------------------------------------'
-
-    # Note it is MUCH faster to do files all at once vs. in a for loop
-    F8_FAIL=False
-    flake8 --select=F $files | filter || F8_FAIL=True
-    [ "$F8_FAIL" == True ] && echo FAILED
-fi
-
-# WARNINGS
-
-echo '--- - FLAKE8 WARNINGS'
+echo '--- - FLAKE8 "W" PEP8 WARNINGS'
 cat <<EOF
 
 NOTE to address warnings locally, do e.g.
@@ -115,9 +98,8 @@ flake8 $files | awk -F ":" "$awkscript" | sort -b -k2,2rn
 echo "+++ SUMMARY"
 FAIL=
 
-if [ "$AF_FAIL" ]; then
-    FAIL=True
-    cat <<EOF
+########################################################################
+if [ "$AF_FAIL" ]; then; FAIL=True; cat <<EOF
 
 ----------------------------------------------------
 ERROR: Found autoflake errors, see above for details.
@@ -127,21 +109,28 @@ To run autoflake locally do e.g.
 EOF
 fi    
 
-if [ "$F8_FAIL" ]; then
-    FAIL=True
-    cat <<EOF
+########################################################################
+if [ "$EFAIL" ]; then FAIL=True; cat <<EOF
 
 ----------------------------------------------------
-ERROR: Found flake8 errors, see above for details.
-To run flake8 locally do e.g.
-    pip install flake8
-    flake8 --select=F <filename>.py
-    flake8 <filename>.py
+ERROR: Found $EFAIL pep8 errors, see above for details.
+To find errors locally do e.g. "flake8 --select=E <filename>.py"
+
+EOF
+fi    
+
+########################################################################
+if [ "$FFAIL" ]; then FAIL=True; cat <<EOF
+
+----------------------------------------------------
+ERROR: Found $FFAIL flake8 errors, see above for details.
+To find errors locally do e.g. "flake8 --select=F <filename>.py"
 
 EOF
 fi    
 
 
+########################################################################
 cat <<EOF
 
 ------------------------------------------------------------------------------
@@ -157,3 +146,21 @@ if [ "$FAIL" ]; then
 else
     echo "No errors found, hooray!"
 fi
+
+
+##############################################################################
+# OLD
+
+# which activate
+# exit
+
+
+
+# LOCAL_TEST=
+# LOCAL_TEST=True
+
+# Gather the python files
+# [ "$LOCAL_TEST" ] && cd /nobackup/steveri/github/garnet
+# files=`git ls-tree -r HEAD --name-only | egrep 'py$' | sort`
+
+# set -x
