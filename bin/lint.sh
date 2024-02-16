@@ -65,8 +65,8 @@ flake8 --select=F $files | filter && FFAIL= || FFAIL=True
 if [ "$FFAIL" ]; then
     FFAIL=`flake8 --select=F $files | wc -l`
     printf "%s ...........................Found %6d %s errors\n" --- $FFAIL F
-    printf "'%s ...........................Found %6d %s errors'\n" --- $FFAIL F
-    printf '"%s ...........................Found %6d %s errors"\n' --- $FFAIL F
+    printf "%s '...........................Found %6d %s errors'\n" --- $FFAIL F
+    printf '%s "...........................Found %6d %s errors"\n' --- $FFAIL F
 fi
 
 ########################################################################
