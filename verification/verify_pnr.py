@@ -83,8 +83,10 @@ def set_inputs(solver, input_symbols_coreir, input_symbols_pnr,
 
 
 def compare_output_array(
-    solver, bvsort16, index, array0, array1, max_index
+    solver, bvsort16, index, array0, array1, max_index, pnr_valid, bvsort1
 ):
+    # array0 = coreir outputs
+    # array1 = pnr outputs
     # Create term initialize to true
     term = solver.create_term(
         solver.ops.Equal,
@@ -100,11 +102,11 @@ def compare_output_array(
             solver.create_term(solver.ops.Select, array1, idx_bv)
         )
         ############# DEBUG############
-        # t_n = solver.create_term(
-        #     solver.ops.BVUgt,
-        #     solver.create_term(solver.ops.Select, array0, idx_bv),
-        #     solver.create_term(solver.ops.Select, array1, idx_bv)
-        # )
+        t_n = solver.create_term(
+            solver.ops.BVUle, #BVUle
+            solver.create_term(solver.ops.Select, array0, idx_bv),
+            solver.create_term(solver.ops.Select, array1, idx_bv)
+        )
         ################################
         
         # check if idx is less than index
@@ -112,25 +114,29 @@ def compare_output_array(
                             idx_bv, 
                             index)
         # update term if idx < index
-        new_term = solver.create_term(solver.ops.And, term, t)
-        term = solver.create_term(
-                solver.ops.Ite, 
-                idx_in_range, 
-                new_term, 
-                term
-        )
-
-        ################### DEBUG ####################
-        # new_term_n = solver.create_term(solver.ops.And, term, t_n)
+        # new_term = solver.create_term(solver.ops.And, term, t)
         # term = solver.create_term(
         #         solver.ops.Ite, 
         #         idx_in_range, 
-        #         new_term_n, 
+        #         new_term, 
         #         term
         # )
+
+        ################### DEBUG ####################
+        new_term_n = solver.create_term(solver.ops.And, term, t_n)
+        term = solver.create_term(
+                solver.ops.Ite, 
+                idx_in_range, 
+                new_term_n, 
+                term
+        )
         ##########################################
     return term
-
+    # return solver.create_term( # Claim that pnr_valid is low
+    #         solver.ops.Equal,
+    #         pnr_valid, 
+    #         solver.create_term(0, bvsort1)
+    #     )
 
 def create_property_term(
     solver, output_symbols_coreir, output_symbols_pnr, 
@@ -247,6 +253,7 @@ def create_property_term(
         )
 
         # array updated with new output
+        # ARE WE SURE ABOUT THIS????
         coreir_output_array_updated = solver.create_term(
             solver.ops.Store, 
             coreir_output_array, 
@@ -339,15 +346,16 @@ def create_property_term(
         
         # return term
         prop = compare_output_array(solver, bvsort16, min_out_pixel_count, 
-                            coreir_output_array, pnr_output_array, num_output_pixels)
+                            coreir_output_array, pnr_output_array, num_output_pixels, pnr_valid, bvsort1)
 
         property_term = solver.create_term(
             solver.ops.And, property_term, prop
         )
-
+        breakpoint()
+    
     return property_term
 
-
+ 
 def verify_pnr(interconnect, coreir_file):
     file_info = {}
     file_info["port_remapping"] = coreir_file.replace(
@@ -425,6 +433,7 @@ def verify_pnr(interconnect, coreir_file):
         id_to_name,
         len(flatten(hw_output_stencil))
     )
+    print(len(flatten(hw_output_stencil)))
 
     prop = pono.Property(solver.solver, property_term) # create property
 
@@ -432,13 +441,14 @@ def verify_pnr(interconnect, coreir_file):
 
     print("Running BMC...")
     start = time.time()
-    res = bmc.check_until(100)
+    res = bmc.check_until(20)
     print("BMC time:", time.time() - start)
 
     if res is None or res:
         print("\n\033[92m" + "Formal check of mapped application passed" + "\033[0m")
     else:
-        trace_symbols = list(output_symbols_coreir.keys()) + list(output_symbols_pnr.keys()) + list(input_symbols_pnr.keys()) + list(input_symbols_coreir.keys())
+        trace_symbols = list(output_symbols_coreir.keys()) + list(output_symbols_pnr.keys()) + list(input_symbols_pnr.keys()) + list(input_symbols_coreir.keys()) + \
+                        ["out.hw_output_stencil_op_hcompute_hw_output_stencil_write_0_array","|((_ extract 15 0) I0.f2io_16)_array|","out_count_out.hw_output_stencil_op_hcompute_hw_output_stencil_write_0","out_count_I0.f2io_16"]
         print_trace(bmc, trace_symbols)
 
     breakpoint()
