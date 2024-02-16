@@ -54,7 +54,7 @@ function filter() { awk -F ':' "$awkscript"; }
     echo '--- - FLAKE8 "E" PEP8 ERRORS'
     flake8 --select=E $files | filter && EFAIL= || EFAIL=True
     if [ "$EFAIL" ]; then
-        EFAIL=`flake8 --select=F $files | wc -l`
+        EFAIL=`flake8 --select=E $files | wc -l`
         echo "--- -- Found $EFAIL PEP8 ERRORS"
     fi
 
