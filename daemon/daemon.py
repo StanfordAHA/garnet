@@ -1,4 +1,4 @@
-import os, sys, signal, subprocess
+import os, sys, signal, subprocess    # noqa
 import time
 
 # Docker does not have psutil (yet)
@@ -50,15 +50,16 @@ NOTE! 'daemon.use' width and height must match 'daemon.launch'!!!
 NOTE 2: cannot use the same daemon for verilog *and* pnr (not sure why).
 '''
 
+
 class GarnetDaemon:
 
-    jobnum = 0 # increment after each job completion
+    jobnum = 0  # increment after each job completion
 
     # Permissible daemon commands
-    choices = [ 'help','launch', 'use', 'auto', 'kill', 'status', 'force', 'wait' ]
+    choices = ['help', 'launch', 'use', 'auto', 'kill', 'status', 'force', 'wait']
 
     # Disk storage for persistent daemon state
-    FN_PID    = "/tmp/garnet-daemon-pid"    # Daemon pid
+    FN_PID    = "/tmp/garnet-daemon-pid"    # Daemon pid  # noqa
     FN_STATUS = "/tmp/garnet-daemon-status" # Daemon status: 'busy 1' => 'done 1' => 'busy 2'
     FN_STATE0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
     FN_RELOAD = "/tmp/garnet-daemon-reload" # Desired new state (args)
@@ -66,7 +67,7 @@ class GarnetDaemon:
 
     # Convenient place to save pid instead of doing 'os.getpid()' all the time
     PID = os.getpid()
-    
+
     # Convenient place to save args instead of passing them around via method calls (dangerous?)
     args = None
 
@@ -75,48 +76,53 @@ class GarnetDaemon:
     saved_pe_fc = None
 
     # Limit orphan checks to ONCE per session etc.
-    did_orphan_already=False
-    already_found_files=False
+    did_orphan_already = False
+    already_found_files = False
 
     # "PUBLIC" methods: initial_check(), loop()
 
     def initial_check(args):
         '''Process command found in <args>.daemon'''
 
-        if args.daemon == None: return
+        if args.daemon == None:
+            return
 
         if args.daemon == "force":
+            # Kill old daemon and launch a new one
             print(f'- hello here i am forcing a launch')
             GarnetDaemon.kill(dbg=1)
             args.daemon = "launch"
 
         if args.daemon == "auto":
+            # If daemon exists, use it; else launch a new daemon
             print(f'- hello here i am doing a auto')
             args.daemon = "launch"
-            if GarnetDaemon.daemon_exists(): args.daemon = "use"
+            if GarnetDaemon.daemon_exists():
+                args.daemon = "use"
 
         if args.daemon == "help":
-            GarnetDaemon.help(); exit()
+            GarnetDaemon.help(); exit() # noqa
 
         elif args.daemon == "use":
             print("hello here i am doing a 'daemon use'", flush=True)
-            GarnetDaemon.use(args); exit()
+            GarnetDaemon.use(args); exit() # noqa
 
         elif args.daemon == "kill":
-            GarnetDaemon.kill(dbg=1); exit()
+            GarnetDaemon.kill(dbg=1); exit() # noqa
 
         elif args.daemon == "status":
-            GarnetDaemon.status(args); exit()
+            GarnetDaemon.status(args); exit() # noqa
 
         elif args.daemon == "launch":
             GarnetDaemon.launch(args)
 
         elif args.daemon == "wait":
-            GarnetDaemon.wait_daemon(args); exit()
+            GarnetDaemon.wait_daemon(args); exit() # noqa
 
     def loop(args, dbg=1):
         '''Launch daemon and/or watch for updates'''
-        gd = GarnetDaemon; command = args.daemon
+        gd = GarnetDaemon
+        command = args.daemon
         print(f'- daemon.py/loop(): in the loop. command={command}')
         assert command == "launch" or command == "use", \
             f'Found command "{command}", should have been "launch" or "use"'
@@ -125,7 +131,7 @@ class GarnetDaemon:
         if command == "launch":
             GarnetDaemon.save_the_unsaveable(args)
             print(f'- DAEMON STOPS and waits...\n')
-            sys.stdout.flush(); sys.stderr.flush(); sys.stdin.flush()
+            sys.stdout.flush(); sys.stderr.flush(); sys.stdin.flush()  # noqa
 
         # Okay but somebody is going to send a CONT as soon as they see "READY" right?
         # what if the CONT shows up BEFORE the stop?
@@ -144,11 +150,13 @@ class GarnetDaemon:
         # On CONT, register status and load new args from 'reload' file
         print(f'\n\n--- DAEMON RESUMES')
         # GarnetDaemon.put_status('busy')
-        GarnetDaemon.jobnum+=1; GarnetDaemon.put_status(f'busy {GarnetDaemon.jobnum}')
+        GarnetDaemon.jobnum += 1
+        GarnetDaemon.put_status(f'busy {GarnetDaemon.jobnum}')
 
         # Fetch new args, use them to update old args
         new_args = gd.load_args(dbg=0)
-        old = args.__dict__; new = new_args.__dict__
+        old = args.__dict__
+        new = new_args.__dict__
         old.update(new)
 
         # REWRITE env vars! To match client env. Client should have packed them in 'args.ENV'
@@ -158,23 +166,20 @@ class GarnetDaemon:
         # Remove daemon env vars that do not appear in the new (client) list
         for i in dict(os.environ):
             if i not in new_env:
-                oldval = os.environ.pop(i); newval = "DELETED"
+                oldval = os.environ.pop(i)
+                newval = "DELETED"
                 print(f'- daemon.py load_args env["{i}"]="{newval}" (was "{oldval}")', flush=True)
 
         # Update daemon env vars that changed in the new (client) list
         for i in new_env:
             newval = new_env[i]
-            oldval = os.environ[i]  if i in os.environ else "NULL"
+            oldval = os.environ[i] if i in os.environ else "NULL"
             if oldval != newval:
                 print(f'- daemon.py load_args env["{i}"]="{newval}" (was "{oldval}")', flush=True)
                 os.environ[i] = newval
 
-#         # REWRITE env vars! To match client env. Client should have packed them in 'args.ENV'
-#         assert new['ENV'] == old['ENV'] # because we just updated them. now set os.environ to match
-#         os.environ.clear() # scary!
-
-        if dbg: s = dict(sorted(new.items()))
-        if dbg: print(f"- loaded args {json.dumps(s, indent=4)}")
+        if dbg: s = dict(sorted(new.items()))                     # noqa
+        if dbg: print(f"- loaded args {json.dumps(s, indent=4)}") # noqa
 
         return Namespace(**old)
 
