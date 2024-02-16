@@ -1,37 +1,36 @@
 #!/bin/bash
 
 # Fire up a venv if running locally on kiwi
+# Note python -c 'import sys; print(sys.prefix)' returns ".../smart-components/env" ??
 if [ `hostname` == kiwi ]; then
+  ENV=/nobackup/steveri/github/smart-components/env
+  type activate >& /dev/null || source $ENV/bin/activate
   cd /nobackup/steveri/github/garnet
-  # python -c 'import sys; print(sys.prefix)' ?? returns ".../smart-components/env"
-  type activate >& /dev/null ||     # "type" fails if activate not in path
-      source /nobackup/steveri/github/smart-components/env/bin/activate
 else
   cd /aha/garnet
 fi
 
 # Gather the python files
 files=`git ls-tree -r HEAD --name-only | egrep 'py$' | sort`
-echo $files
-
 
 ########################################################################
 # AUTOFLAKE
 
-    echo '--- Autoflake finds redundant and unnecessary import requests'
+echo '--- Autoflake finds redundant and unnecessary import requests'
 
-    # Install if needed
-    echo '--- - AUTOFLAKE INSTALL'
-    which autoflake >& /dev/null || pip install autoflake
+# Install if needed
+echo '--- - AUTOFLAKE INSTALL'
+which autoflake >& /dev/null || pip install autoflake
 
-    # Prevent unwanted logfile escape sequences
-    filter='s/^---/ ---/;s/^+++/ +++/'
+# Prevent unwanted logfile escape sequences
+filter='s/^---/ ---/;s/^+++/ +++/'
 
-    echo '--- - AUTOFLAKE ERRORS'
-    AF_FAIL=True
-    autoflake --remove-duplicate-keys $files | sed "$filter" | grep . || AF_FAIL=
+echo '--- - AUTOFLAKE ERRORS'
+AF_FAIL=True
+autoflake --remove-duplicate-keys $files | sed "$filter" | grep . || AF_FAIL=
 
-    # autoflake --remove-duplicate-keys codegen/io_placement.py
+########################################################################
+# FLAKE8
 
 # Install if needed
 echo '--- Flake8 finds style problems in python files'
@@ -66,6 +65,8 @@ function filter() { awk -F ':' "$awkscript"; }
     if [ "$FFAIL" ]; then
         FFAIL=`flake8 --select=F $files | wc -l`
         printf "%s ...........................Found %6d %s errors\n" --- $FFAIL F
+        printf "'%s ...........................Found %6d %s errors'\n" --- $FFAIL F
+        printf '"%s ...........................Found %6d %s errors"\n' --- $FFAIL F
     fi
 
 ########################################################################
