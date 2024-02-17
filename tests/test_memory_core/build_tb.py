@@ -1019,7 +1019,9 @@ class SparseTBBuilder(m.Generator2):
                     mode = node.get_attributes()['mode'].strip('"')
                     # May not need to use/have dim size info for a certain tensor
                     if tensor in self.input_sizes:
-                        dim_size = self.input_sizes[tensor][int(mode)]
+                        dim = self.mode_map[tensor][int(mode)][0]
+                        dim_size = self.input_sizes[tensor][dim]
+                        #dim_size = self.input_sizes[tensor][int(mode)]
                     else:
                         dim_size = None
                     if 'vector_reduce_mode' in node.get_attributes():
@@ -2121,6 +2123,61 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = output_matrix.astype(numpy.uint16)
         output_format = "CSF"
         output_name = "x"
+
+    elif "spm_spm_dm_matmul.gv" in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[6, 4], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.6)
+        c_mat = get_tensor(input_name='C', shapes=[4, 5], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=0.6)
+        d_mat = get_tensor(input_name='D', shapes=[7, 5], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                           sparsity=0.0, format='UNC')
+        input_dims['B'] = tuple(b_mat.shape)
+        input_dims['C'] = tuple(c_mat.shape)
+        input_dims['D'] = tuple(d_mat.shape)
+        # First transpose d_mat
+        d_mat_trans = numpy.transpose(d_mat)
+        output_matrix = numpy.matmul(numpy.matmul(b_mat, c_mat, dtype=numpy.int16, casting='unsafe'), d_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "X"
+ 
+    elif "spm_spm_spm_matmul.gv" in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[6, 4], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.6)
+        c_mat = get_tensor(input_name='C', shapes=[4, 5], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=0.6)
+        d_mat = get_tensor(input_name='D', shapes=[7, 5], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['D'],
+                           sparsity=0.6)
+        input_dims['B'] = tuple(b_mat.shape)
+        input_dims['C'] = tuple(c_mat.shape)
+        input_dims['D'] = tuple(d_mat.shape)
+        # First transpose d_mat
+        d_mat_trans = numpy.transpose(d_mat)
+        output_matrix = numpy.matmul(numpy.matmul(b_mat, c_mat, dtype=numpy.int16, casting='unsafe'), d_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "X"
+ 
+    elif "spm_dm_matmul.gv" in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=0.8)
+        c_mat = get_tensor(input_name='C', shapes=[13, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=0.0, format='UNC')
+        input_dims['B'] = tuple(b_mat.shape)
+        input_dims['C'] = tuple(c_mat.shape)
+        # First transpose c_mat
+        c_mat_trans = numpy.transpose(c_mat)
+        output_matrix = numpy.matmul(b_mat, c_mat_trans, dtype=numpy.uint16, casting='unsafe')
+        output_format = "CSF"
+        output_name = "X"
+
+
     elif "spmm_ijk_crddrop.gv" in app_name:
         # matrix b is completely dense
         b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
