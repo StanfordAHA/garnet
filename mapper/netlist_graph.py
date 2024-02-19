@@ -174,7 +174,7 @@ class NetlistGraph:
             path2 = []
             visited3 = set()
             path3 = []
-            if "add_pipelined" in pe_node.node_id:
+            if "add_" in pe_node.node_id and "muladd_" not in pe_node.node_id:
                 latency_pe_to_out_mem = dfs_pe_to_out_mem(pe_node)
                 return latency_out_mem_to_pe + latency_pe_to_out_mem
             else:
