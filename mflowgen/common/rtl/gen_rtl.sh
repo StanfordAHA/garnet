@@ -63,7 +63,7 @@ flags+=" --pipeline_config_interval $pipeline_config_interval"
 flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 
 # sparsity flags for onyx
-[ "$WHICH_SOC" != "amber" ] && flags+=" --include-sparse"
+[ "$WHICH_SOC" == "amber" ] && flags+=" --dense-only"
 
 # Default is power-aware, but can be turned off
 [ "$PWR_AWARE" == False ] && flags+=" --no-pd"
