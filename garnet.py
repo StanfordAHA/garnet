@@ -42,7 +42,7 @@ class Garnet(Generator):
         args.config_addr_reg_width = 8
         args.config_data_width = self.config_data_width
 
-        self.ready_valid = args.include_sparse
+        self.ready_valid = not args.dense_only
         # size
         self.width = args.width
         self.height = args.height
@@ -676,7 +676,7 @@ def parse_args():
     # Early-out for deprecated arguments
     for a in ['--rv', '--sparse-cgra', '--sparse-cgra-combined' ]:
         assert a not in sys.argv, \
-            f'Command-line arg "{a}" no longer exists, use "--include-sparse" instead'
+            f'Command-line arg "{a}" no longer exists, by default the sparse + dense CGRA is generated'
 
     parser = argparse.ArgumentParser(description='Garnet CGRA')
     parser.add_argument('--width', type=int, default=4)
@@ -713,7 +713,7 @@ def parse_args():
     parser.add_argument('--mem-ratio', type=int, default=4)
     parser.add_argument('--num-tracks', type=int, default=5)
     parser.add_argument('--tile-layout-option', type=int, default=0)
-    parser.add_argument("--include-sparse", action="store_true")
+    parser.add_argument("--dense-only", action="store_true")
     parser.add_argument("--no-pond-area-opt", action="store_true")
     parser.add_argument("--pond-area-opt-share", action="store_true")
     parser.add_argument("--no-pond-area-opt-dual-config", action="store_true")
