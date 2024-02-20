@@ -4,7 +4,7 @@ import time
 # Docker does not have psutil (yet)
 try:
     import psutil
-except:
+except Exception:
     subprocess.run('pip install psutil'.split())
     import psutil
 
@@ -59,11 +59,11 @@ class GarnetDaemon:
     choices = ['help', 'launch', 'use', 'auto', 'kill', 'status', 'force', 'wait']
 
     # Disk storage for persistent daemon state
-    FN_PID    = "/tmp/garnet-daemon-pid"    # Daemon pid  # noqa
-    FN_STATUS = "/tmp/garnet-daemon-status" # Daemon status: 'busy 1' => 'done 1' => 'busy 2'
-    FN_STATE0 = "/tmp/garnet-daemon-state0" # Original state (args) of daemon
-    FN_RELOAD = "/tmp/garnet-daemon-reload" # Desired new state (args)
-    DAEMONFILES = [ FN_PID, FN_STATUS, FN_STATE0, FN_RELOAD ]
+    FN_PID    = "/tmp/garnet-daemon-pid"     # Daemon pid  # noqa
+    FN_STATUS = "/tmp/garnet-daemon-status"  # Daemon status: 'busy 1' => 'done 1' => 'busy 2'
+    FN_STATE0 = "/tmp/garnet-daemon-state0"  # Original state (args) of daemon
+    FN_RELOAD = "/tmp/garnet-daemon-reload"  # Desired new state (args)
+    DAEMONFILES = [FN_PID, FN_STATUS, FN_STATE0, FN_RELOAD]
 
     # Convenient place to save pid instead of doing 'os.getpid()' all the time
     PID = os.getpid()
@@ -84,7 +84,7 @@ class GarnetDaemon:
     def initial_check(args):
         '''Process command found in <args>.daemon'''
 
-        if args.daemon == None:
+        if args.daemon is None:
             return
 
         if args.daemon == "force":
@@ -101,23 +101,23 @@ class GarnetDaemon:
                 args.daemon = "use"
 
         if args.daemon == "help":
-            GarnetDaemon.help(); exit() # noqa
+            GarnetDaemon.help(); exit()  # noqa
 
         elif args.daemon == "use":
             print("hello here i am doing a 'daemon use'", flush=True)
-            GarnetDaemon.use(args); exit() # noqa
+            GarnetDaemon.use(args); exit()  # noqa
 
         elif args.daemon == "kill":
-            GarnetDaemon.kill(dbg=1); exit() # noqa
+            GarnetDaemon.kill(dbg=1); exit()  # noqa
 
         elif args.daemon == "status":
-            GarnetDaemon.status(args); exit() # noqa
+            GarnetDaemon.status(args); exit()  # noqa
 
         elif args.daemon == "launch":
             GarnetDaemon.launch(args)
 
         elif args.daemon == "wait":
-            GarnetDaemon.wait_daemon(args); exit() # noqa
+            GarnetDaemon.wait_daemon(args); exit()  # noqa
 
     def loop(args, dbg=1):
         '''Launch daemon and/or watch for updates'''
@@ -195,35 +195,38 @@ class GarnetDaemon:
     def launch(args):
         gd = GarnetDaemon
         gd.die_if_daemon_exists()
-        gd.register_pid(); gs = gd.grid_size(args)    # E.g. "4x2"
+        gd.register_pid()
+        gs = gd.grid_size(args)    # E.g. "4x2"
         print(f'\n--- LAUNCHING {gs} DAEMON {gd.PID}', flush=True)
-        gd.put_status('busy 0'); assert GarnetDaemon.jobnum == 0
+        gd.put_status('busy 0')
+        assert GarnetDaemon.jobnum == 0
         gd.save_state0(args)
 
     def help():
-        print(GarnetDaemon_HELP); return GarnetDaemon_HELP
+        print(GarnetDaemon_HELP)
+        return GarnetDaemon_HELP
 
     def use(args, DBG=0):
         gd = GarnetDaemon
-        if DBG: print('--- DAEMON USE; wait for daemon ready', flush=True)
+        if DBG: print('--- DAEMON USE; wait for daemon ready', flush=True)  # noqa
         prev = gd.wait_daemon(args)       # Wait for daemon to exist
 
-        if DBG: print(f'- DAEMON READY, last job was #{prev}', flush=True)
+        if DBG: print(f'- DAEMON READY, last job was #{prev}', flush=True)  # noqa
         gd.save_args(args)                # Save args where the daemon will find them
         gd.args_match_or_die(args)        # Grid size must match!!! (todo combine w/sigcont?)
         gd.sigcont()                      # Tell daemon to CONTinue
 
-        if DBG: print(f'- DAEMON POKED; wait for daemon ready again', flush=True)
-        next = gd.wait_daemon(args, prev) # Wait to complete next_job > prev_job
-        assert next == (prev + 1)         # Verify that job num incremented correctly and we didn't skip a job or anything
+        if DBG: print(f'- DAEMON POKED; wait for daemon ready again', flush=True)  # noqa
+        next = gd.wait_daemon(args, prev)  # Wait to complete next_job > prev_job
+        assert next == (prev + 1)          # Verify that job num incremented correctly and we didn't skip a job or anything
         exit()
 
     def kill(dbg=1):
         if GarnetDaemon.daemon_exists():
             pid = GarnetDaemon.retrieve_pid()  # FIXME there are way too many retrive_pid calls!!!
-            if dbg: print(f'- found daemon pid {pid}, killing it now', flush=True)
+            if dbg: print(f'- found daemon pid {pid}, killing it now', flush=True)  # noqa
             GarnetDaemon.sigkill()
-            time.sleep(1) # Maybe wait a second to let it die
+            time.sleep(1)  # Maybe wait a second to let it die
         else:
             print(f'- daemon is already dead', flush=True)
 
@@ -231,27 +234,31 @@ class GarnetDaemon:
         GarnetDaemon.cleanup()
 
     def status(args, verbose=True, dbg=0):
-        if dbg: print(f'\n--- STATUS: daemon status requested', flush=True)
-        gd = GarnetDaemon;
+        if dbg: print(f'\n--- STATUS: daemon status requested', flush=True)  # noqa
+        gd = GarnetDaemon
 
-        if dbg: print(f'- checking for orphans', flush=True)
+        if dbg: print(f'- checking for orphans', flush=True)  # noqa
         gd.check_for_orphans()
 
         pid = gd.retrieve_pid()
-        if dbg: print(f'- checking status of process {pid}', flush=True)
+        if dbg: print(f'- checking status of process {pid}', flush=True)  # noqa
 
         if not gd.daemon_exists():
-            if verbose: print("- no daemon found", flush=True)
+            if verbose:
+                print("- no daemon found", flush=True)
 
             # Do this once per session only
-            if    gd.already_found_files: return 'dead'
-            else: gd.already_found_files = True
-            for f in gd.DAEMONFILES: 
-                if os.path.exists(f): print(f'WARNING found daemon file {f}', flush=True)
-            return 'dead'
+            if not gd.already_found_files:
+                gd.already_found_files = True
+                for f in gd.DAEMONFILES:
+                    if os.path.exists(f):
+                        print(f'WARNING found daemon file {f}', flush=True)
+            else:
+                return 'dead'
 
         # Don't 'if dbg' this, pytest needs it
-        if verbose: print(f'- found running daemon {pid}')
+        if verbose:
+            print(f'- found running daemon {pid}')
 
         # Use initial-launch info in state0 file for more info about daemon
         state0_file = gd.FN_STATE0
@@ -263,45 +270,47 @@ class GarnetDaemon:
 
         state0_args = gd.load_args(state0_file)
         grid_size = gd.grid_size(state0_args)
-        if verbose: print(f'- found running {grid_size} daemon {pid}')
+        if verbose:
+            print(f'- found running {grid_size} daemon {pid}')
 
         # Read status e.g. 'ready' or 'busy'
         with open(gd.FN_STATUS, 'r') as f:
             status = f.read()
-            if verbose: print('- daemon_status: ' + status)
+            if verbose:
+                print('- daemon_status: ' + status)
         return status
 
     def wait_daemon(args, prev_job=-1, DBG=0):
         '''Check daemon status, do not continue until/unless daemon exists AND IS READY'''
         if prev_job == -1:
-            if DBG: print(f'\n--- DAEMON WAIT - wait for daemon ready', flush=True)
+            if DBG: print(f'\n--- DAEMON WAIT - wait for daemon ready', flush=True)  # noqa
         else:
             print(f'\n--- DAEMON WAIT - wait for daemon to finish jobs 0..{prev_job}', flush=True)
 
-        gd = GarnetDaemon; gd.args = args
+        gd = GarnetDaemon
+        gd.args = args
         time.sleep(2)
         while True:
             # if GarnetDaemon.status(args) == 'ready': break
-            if 'done' in GarnetDaemon.status(args): break
+            if 'done' in GarnetDaemon.status(args): break  # noqa
 
             # Timeout after 2 hours or 7200 seconds, yes?
             # Each set of waits is broken down into groups b/c of stdout tees and lesses and flushes and such
 
-            print(f'- daemon busy    0 sec so far, will do  1 sec/retry for  360 seconds') #  6 min
-            if gd.check_daemon(sec_per_dot=1, nsec=360, dots_per_line=30): break           # 12 lines
+            print(f'- daemon busy    0 sec so far, will do  1 sec/retry for  360 seconds')  #  6 min   # noqa
+            if gd.check_daemon(sec_per_dot=1, nsec=360, dots_per_line=30): break            # 12 lines # noqa
             # ---------------------------------------------------------------------------------------
 
-            print(f'- daemon busy  360 sec so far, will do  4 sec/retry for 1440 seconds') # 24 min
-            if gd.check_daemon(sec_per_dot=4, nsec=1440, dots_per_line=30): break          # 12 lines
+            print(f'- daemon busy  360 sec so far, will do  4 sec/retry for 1440 seconds')  # 24 min
+            if gd.check_daemon(sec_per_dot=4, nsec=1440, dots_per_line=30): break           # 12 lines # noqa
             # ---------------------------------------------------------------------------------------
 
-
-            print(f'- daemon busy 1800 sec so far, will do 20 sec/retry for 1800 seconds') # 30 min
-            if gd.check_daemon(sec_per_dot=20, nsec=1800, dots_per_line=10): break         #  9 lines?
+            print(f'- daemon busy 1800 sec so far, will do 20 sec/retry for 1800 seconds')  # 30 min
+            if gd.check_daemon(sec_per_dot=20, nsec=1800, dots_per_line=10): break          #  9 lines? # noqa
             # ---------------------------------------------------------------------------------------
 
-            print(f'- daemon busy 3600 sec so far, will do 60 sec/retry for 3600 seconds') # 60 min
-            if gd.check_daemon(sec_per_dot=60, nsec=3600, dots_per_line=10): break         # 6 lines?
+            print(f'- daemon busy 3600 sec so far, will do 60 sec/retry for 3600 seconds')  # 60 min
+            if gd.check_daemon(sec_per_dot=60, nsec=3600, dots_per_line=10): break          # 6 lines?  # noqa
 
             # sys.stderr.write('ERROR Timeout waiting for daemon. Did you forget to launch it?\n')
             sys.stderr.write('ERROR Timeout after two hours waiting for daemon.\n')
@@ -316,9 +325,8 @@ class GarnetDaemon:
             print(f'- KEEP WAITING (recurse on wait_daemon())', flush=True)
             return wait_daemon(args, prev_job)
 
-        if DBG: print('\n--- DAEMON READY, continuing...', flush=True)
+        if DBG: print('\n--- DAEMON READY, continuing...', flush=True)  # noqa
         return done_job
-
 
     # ------------------------------------------------------------------------
     # "Private" methods for saving and restoring daemon state
@@ -334,12 +342,12 @@ class GarnetDaemon:
         # for a in vars(args).items(): print(f'arg {a} has type {type(a)}')
         # try/except because these args do not exist in pytest trials...
         try:
-            # Save glb_param and pe_fc_param and pe_fc locally, save replacement error-string to file 
+            # Save glb_param and pe_fc_param and pe_fc locally, save replacement error-string to file
             GarnetDaemon.saved_glb_params = args.glb_params
-            GarnetDaemon.saved_pe_fc      = args.pe_fc
+            GarnetDaemon.saved_pe_fc = args.pe_fc
             args.glb_params = "SORRY cannot save/restore GlobalBufferParams!"
-            args.pe_fc =      "SORRY cannot save/restore pe_fc of type <family_closure)!"
-        except:
+            args.pe_fc = "SORRY cannot save/restore pe_fc of type <family_closure)!"
+        except Exception:
             print(f'WARNING could not save glb_params and/or pe_fc')
 
     def save_args(args, fname=None, dbg=0):
@@ -353,24 +361,24 @@ class GarnetDaemon:
 
         # Save args as a sorted dict
         argdic = vars(args)
-        sorted_argdic=dict(sorted(argdic.items()))
+        sorted_argdic = dict(sorted(argdic.items()))
 
-        if not fname: fname = GarnetDaemon.FN_RELOAD
-        with open(fname, 'w') as f: json.dump(sorted_argdic, f)
-        if dbg: print(f'- saved args {args} to {fname}')
-        
+        fname = fname or fname = GarnetDaemon.FN_RELOAD
+        with open(fname, 'w') as f: json.dump(sorted_argdic, f)  # noqa
+        if dbg: print(f'- saved args {args} to {fname}')         # noqa
+
         # Restore "unsaveable" args
         # try/except because these args do not exist in pytest trials...
         try:
             args.glb_params = GarnetDaemon.saved_glb_params
-            args.pe_fc      = GarnetDaemon.saved_pe_fc
-        except:
+            args.pe_fc = GarnetDaemon.saved_pe_fc
+        except Exception:
             print(f'WARNING could not restore glb_params and/or pe_fc')
 
     def load_args(fname=None, dbg=0):
         'Load state (args) from save-args (reload) file'
-        if not fname: fname = GarnetDaemon.FN_RELOAD
-        with open(fname, 'r') as f: args_dict = json.load(f)
+        fname = fname or fname = GarnetDaemon.FN_RELOAD
+        with open(fname, 'r') as f: args_dict = json.load(f)    # noqa
         new_args = Namespace(**args_dict)
 
         # Restore "unsaveable" args
@@ -378,11 +386,12 @@ class GarnetDaemon:
             print(f'restore args.{glb_params,pe_fc}')
             # assert args.GlobalBufferParams == "SORRY cannot save/restore GlobalBufferParams!"
             new_args.glb_params = GarnetDaemon.saved_glb_params
-            new_args.pe_fc      = GarnetDaemon.saved_pe_fc
-        except: pass
+            new_args.pe_fc = GarnetDaemon.saved_pe_fc
+        except Exception:
+            pass
 
-        if dbg: print(f'- restored args {new_args} from {fname}')
-        if dbg: print(f"- loaded args {json.dumps(args_dict, indent=4)}")
+        if dbg: print(f'- restored args {new_args} from {fname}')          # noqa
+        if dbg: print(f"- loaded args {json.dumps(args_dict, indent=4)}")  # noqa
         return new_args
 
     # ------------------------------------------------------------------------
@@ -396,11 +405,12 @@ class GarnetDaemon:
     #     args_match_or_die(daemon_args, client_args)
 
     def daemon_exists(pid=None):
-        if not pid: pid = GarnetDaemon.retrieve_pid(dbg=0)
+        pid = pid or GarnetDaemon.retrieve_pid(dbg=0)
         process_exists = f'test -d /proc/{pid}'
-        if not GarnetDaemon.do_cmd(process_exists): return False
-        pstatus = psutil.Process(pid).status()
-        if pstatus == 'zombie': return False
+        if not GarnetDaemon.do_cmd(process_exists):
+            return False
+        elif psutil.Process(pid).status() == 'zombie':
+            return False
         return pid
 
     def die_if_daemon_exists():
@@ -411,19 +421,19 @@ class GarnetDaemon:
             state0_args = g.load_args(g.FN_STATE0)
             gs = g.grid_size(state0_args)
             pid = g.retrieve_pid()
-            errmsg  = f'**********************************************************************\n'
-            errmsg += f'ERROR found existing ({gs}) daemon, pid={pid}\nTo fix:\n'
-            errmsg += f'- kill existing daemon and retry: kill -9 {pid}\n'
-            errmsg += f'- use existing daemon i.e. "--daemon use" instead of "--daemon launch"\n'
-            errmsg += f'- try again but this time use "--daemon force-launch"\n'
-            errmsg += f'**********************************************************************'
+            errmsg  = f'**********************************************************************\n'  # noqa
+            errmsg += f'ERROR found existing ({gs}) daemon, pid={pid}\nTo fix:\n'                  # noqa
+            errmsg += f'- kill existing daemon and retry: kill -9 {pid}\n'                         # noqa
+            errmsg += f'- use existing daemon i.e. "--daemon use" instead of "--daemon launch"\n'  # noqa
+            errmsg += f'- try again but this time use "--daemon force-launch"\n'                   # noqa
+            errmsg += f'**********************************************************************'    # noqa
             assert False, '\n' + errmsg
 
     def check_for_orphans():
         '''Looks for orphan daemon processes, issues warnings recommending kill'''
 
-        # Only need to check for orphans ONCE per session 
-        if GarnetDaemon.did_orphan_already: return True
+        # Only need to check for orphans ONCE per session
+        if GarnetDaemon.did_orphan_already: return True  # noqa
         GarnetDaemon.did_orphan_already = True
 
         # Get all daemon processes EXCEPT:
@@ -431,12 +441,14 @@ class GarnetDaemon:
         # - exclude self because we might be in the process of launching
         # Why lambda? So it won't complain if element not found omg
         orphan_pids = GarnetDaemon.all_daemon_procs()
-        def mydel(group, x):
-            if x in group: group.remove(x)
-        mydel(orphan_pids, GarnetDaemon.retrieve_pid() ) # "official" daemon is not orphan
-        mydel(orphan_pids, GarnetDaemon.PID            )  # self is not orphan
 
-        if orphan_pids == []: return False  # No orphans found
+        def mydel(group, x):                # noqa
+            if x in group: group.remove(x)  # noqa
+
+        mydel(orphan_pids, GarnetDaemon.retrieve_pid() )  # "official" daemon is not orphan  # noqa
+        mydel(orphan_pids, GarnetDaemon.PID            )  # self is not orphan               # noqa
+
+        if orphan_pids == []: return False  # No orphans found  # noqa
 
         print(f'********************************************************')
         for p in orphan_pids:
@@ -453,10 +465,10 @@ class GarnetDaemon:
     # Helper function for "wait_daemon()"
     def wait_stage(wait_secs, ntries):
         'Check daemon once every <wait_secs> seconds, timeout after <max> tries'
-        sys.stdout.write(f'- wait{ntries} '); sys.stdout.flush()
+        sys.stdout.write(f'- wait{ntries} '); sys.stdout.flush()  # noqa
         for i in range(ntries):
             time.sleep(wait_secs)
-            sys.stdout.write('.'); sys.stdout.flush()
+            sys.stdout.write('.'); sys.stdout.flush()  # noqa
             status = GarnetDaemon.status(GarnetDaemon.args, verbose=False)
 
             # if status == 'ready': print('', flush=True)
@@ -465,8 +477,9 @@ class GarnetDaemon:
             if 'dead' in status:
                 assert False, '--- ERROR daemon is dead, viva daemon!'
 
-            if 'done' in status: print('', flush=True)
-            if 'done' in status: return True
+            if 'done' in status:
+                print('', flush=True)
+                return True
 
         print('', flush=True)
         return False
@@ -477,11 +490,11 @@ class GarnetDaemon:
         assert GarnetDaemon.daemon_exists(), errmsg
         # -----------------------------------------------------------------------
         total_dots = int(nsec / sec_per_dot)
-        nlines     = int(total_dots / dots_per_line)
+        nlines = int(total_dots / dots_per_line)
         # -----------------------------------------------------------------------
         print(f'nlines={nlines}, sec_per_dot={sec_per_dot}, dots_per_line={dots_per_line}', flush=True)
         for g in range(nlines):
-            if GarnetDaemon.wait_stage(sec_per_dot, dots_per_line): return True
+            if GarnetDaemon.wait_stage(sec_per_dot, dots_per_line): return True  # noqa
         return False
 
     def all_daemon_procs():
@@ -490,12 +503,12 @@ class GarnetDaemon:
         # AND "garnet.py" b/c do not want false positive when
         # "aha garnet --deamon launch" spawns "garnet.py --daemon launch"
         def match(pid):
-            try:    cmdline = psutil.Process(pid).cmdline()
-            except: return False
-            return  ("--daemon" in cmdline) and ("launch" in cmdline) and ("garnet.py" in cmdline)
-        daemon_pids = list(filter( lambda pid: match(pid), psutil.pids() ))
+            try: cmdline = psutil.Process(pid).cmdline()  # noqa
+            except Exception: return False                # noqa
+            return ("--daemon" in cmdline) and ("launch" in cmdline) and ("garnet.py" in cmdline)
+        daemon_pids = list(filter(lambda pid: match(pid), psutil.pids()))
         return daemon_pids
-        
+
     def args_match_or_die(client_args):
         '''Daemon and client args must match exactly, else ERR and DIE'''
         gd = GarnetDaemon
@@ -506,7 +519,8 @@ class GarnetDaemon:
         if dgrid != cgrid:
             errmsg = f'\n\nERROR: Daemon uses {dgrid} grid; '\
                 + f'must kill and restart daemon if you want {cgrid}\n'
-            sys.stderr.write(errmsg); exit(13)
+            sys.stderr.write(errmsg)
+            exit(13)
 
     # ------------------------------------------------------------------------
     # Misc utilites: wrappers for shell commands
@@ -522,11 +536,11 @@ class GarnetDaemon:
 
     # Stop, but do not kill, pid. Can continue again w "sigcont"
     def sigstop(pid=None, dbg=1):
-        if not pid: pid = GarnetDaemon.retrieve_pid()
+        pid = pid or GarnetDaemon.retrieve_pid()
 
         # print(f'\nstopping final {pid}\n\n', flush=True)
-        # VERY IMPORTANT: job can hang forever if do not do this final flush!!!
-        sys.stdout.flush(); sys.stderr.flush()
+        # VERY IMPORTANT: job can hang forever without this final flush!!!
+        sys.stdout.flush(); sys.stderr.flush()  # noqa
         os.kill(int(pid), signal.SIGSTOP)
         # Okay but hold on suppose it takes a second to actually STOP!!???
         time.sleep(1)
@@ -536,13 +550,14 @@ class GarnetDaemon:
         # Tell daemon that it's okay to process this particular CONT
         GarnetDaemon.put_status('load-and-go')
 
-        if not pid: pid = GarnetDaemon.retrieve_pid()
-        if dbg: print(f'- sending CONT to {pid}', flush=True)
+        pid = pid or GarnetDaemon.retrieve_pid()
+
+        if dbg: print(f'- sending CONT to {pid}', flush=True)  # noqa
         os.kill(int(pid), signal.SIGCONT)
 
     # TERM did not work, using KILL instead.
     def sigkill(pid=None):
-        if not pid: pid = GarnetDaemon.retrieve_pid()
+        pid = pid or GarnetDaemon.retrieve_pid()
         os.kill(int(pid), signal.SIGKILL)
 
     # ------------------------------------------------------------------------
@@ -555,44 +570,44 @@ class GarnetDaemon:
 
     # Returns e.g. "4x2" if args request 4x2 grid
     def grid_size(args, who='daemon'):
-        assert 'width'  in args, f"No width specified for {who}"
+        assert 'width' in args, f"No width specified for {who}"
         assert 'height' in args, f"No height specified for {who}"
         return f'{args.width}x{args.height}'
 
     def register_pid(pid=None, fname=None, dbg=0):
         'Write pid to pid-save file'
-        if not pid:   pid = GarnetDaemon.PID
-        if not fname: fname = GarnetDaemon.FN_PID
-        with open(fname, 'w') as f: f.write(str(pid) + '\n')
-        if dbg: print(f'- wrote pid {pid} to file {fname}')
+        pid = pid or GarnetDaemon.PID
+        fname = fname or GarnetDaemon.FN_PID
+        with open(fname, 'w') as f: f.write(str(pid) + '\n')  # noqa
+        if dbg: print(f'- wrote pid {pid} to file {fname}')   # noqa
 
     def retrieve_pid(fname=None, dbg=0):
         'Get pid from pid-save file'
-        if not fname: fname = GarnetDaemon.FN_PID
+        fname = fname or GarnetDaemon.FN_PID
         if not os.path.exists(fname):
-            if dbg: print(f'- could not find daemon pid file {fname}')
+            if dbg: print(f'- could not find daemon pid file {fname}')  # noqa
             return None
         else:
-            with open(fname, 'r') as f: pid = int(f.read().strip())
-            if dbg: print(f'- got pid {pid} from file {fname}')
+            with open(fname, 'r') as f: pid = int(f.read().strip()) # noqa
+            if dbg: print(f'- got pid {pid} from file {fname}')     # noqa
             return pid
 
     def put_status(jobstatus, pid=None, fname=None, dbg=1):
         "Save daemon status e.g. 'done 3' or 'busy 4'"
-        if not fname: fname = GarnetDaemon.FN_STATUS
-        with open(fname, 'w') as f: f.write(jobstatus)
-        
+        fname = fname or GarnetDaemon.FN_STATUS
+        with open(fname, 'w') as f: f.write(jobstatus)  # noqa
+
     def get_status(fname=None):
         "Get daemon status e.g. 'done 3' or 'busy 4'"
-        if not fname: fname = GarnetDaemon.FN_STATUS
+        fname = fname or GarnetDaemon.FN_STATUS
         try:
-            with open(fname, 'r') as f: status = f.read()
+            with open(fname, 'r') as f: status = f.read()  # noqa
             # print(f'1 status={status}')
             return status
-        except:
+        except Exception:
             print(f'WARNING could not read from daemon status file {fname}')
             return None
-        
+
     # ------------------------------------------------------------------------
     # Misc utilites: cleanup
 
@@ -601,8 +616,8 @@ class GarnetDaemon:
         dpid = GarnetDaemon.daemon_exists()
         assert not dpid, f'\nERROR cannot cleanup, found existing daemon {dpid}'
         for f in GarnetDaemon.DAEMONFILES:
-            try: os.remove(f)
-            except OSError: pass
+            try: os.remove(f)      # noqa
+            except OSError: pass   # noqa
         return True
 
 ##############################################################################
