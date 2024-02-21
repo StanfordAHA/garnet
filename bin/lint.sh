@@ -144,21 +144,3 @@ if [ "$FAIL" ]; then
 else
     echo "No errors found, hooray!"
 fi
-
-
-##############################################################################
-# OLD
-
-# which activate
-# exit
-
-
-
-# LOCAL_TEST=
-# LOCAL_TEST=True
-
-# Gather the python files
-# [ "$LOCAL_TEST" ] && cd /nobackup/steveri/github/garnet
-# files=`git ls-tree -r HEAD --name-only | egrep 'py$' | sort`
-
-# set -x
