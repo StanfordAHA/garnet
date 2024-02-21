@@ -89,13 +89,13 @@ class GarnetDaemon:
 
         if args.daemon == "force":
             # Kill old daemon and launch a new one
-            print(f'- hello here i am forcing a launch')
+            print('- hello here i am forcing a launch')
             GarnetDaemon.kill(dbg=1)
             args.daemon = "launch"
 
         if args.daemon == "auto":
             # If daemon exists, use it; else launch a new daemon
-            print(f'- hello here i am doing a auto')
+            print('- hello here i am doing a auto')
             args.daemon = "launch"
             if GarnetDaemon.daemon_exists():
                 args.daemon = "use"
@@ -130,7 +130,7 @@ class GarnetDaemon:
         # On launch, save pid and initial state in "state0" file
         if command == "launch":
             GarnetDaemon.save_the_unsaveable(args)
-            print(f'- DAEMON STOPS and waits...\n')
+            print('- DAEMON STOPS and waits...\n')
             sys.stdout.flush(); sys.stderr.flush(); sys.stdin.flush()  # noqa
 
         # Okay but somebody is going to send a CONT as soon as they see "READY" right?
@@ -144,11 +144,11 @@ class GarnetDaemon:
         # Okay but how do we now who sent the CONT and if it's legit?
         # Answer: require client set status='load-and-go' before sending CONT
         while GarnetDaemon.get_status() != 'load-and-go':
-            print(f'\nWARNING got CONT signal but "load-and-go" not set. Re-stopping...')
+            print('\nWARNING got CONT signal but "load-and-go" not set. Re-stopping...')
             gd.sigstop()
 
         # On CONT, register status and load new args from 'reload' file
-        print(f'\n\n--- DAEMON RESUMES')
+        print('\n\n--- DAEMON RESUMES')
         # GarnetDaemon.put_status('busy')
         GarnetDaemon.jobnum += 1
         GarnetDaemon.put_status(f'busy {GarnetDaemon.jobnum}')
@@ -228,9 +228,9 @@ class GarnetDaemon:
             GarnetDaemon.sigkill()
             time.sleep(1)  # Maybe wait a second to let it die
         else:
-            print(f'- daemon is already dead', flush=True)
+            print('- daemon is already dead', flush=True)
 
-        print(f'- cleanup on aisle "/tmp"', flush=True)
+        print('- cleanup on aisle "/tmp"', flush=True)
         GarnetDaemon.cleanup()
 
     def status(args, verbose=True, dbg=0):
@@ -297,19 +297,19 @@ class GarnetDaemon:
             # Timeout after 2 hours or 7200 seconds, yes?
             # Each set of waits is broken down into groups b/c of stdout tees and lesses and flushes and such
 
-            print(f'- daemon busy    0 sec so far, will do  1 sec/retry for  360 seconds')  #  6 min   # noqa
+            print('- daemon busy    0 sec so far, will do  1 sec/retry for  360 seconds')  #  6 min   # noqa
             if gd.check_daemon(sec_per_dot=1, nsec=360, dots_per_line=30): break            # 12 lines # noqa
             # ---------------------------------------------------------------------------------------
 
-            print(f'- daemon busy  360 sec so far, will do  4 sec/retry for 1440 seconds')  # 24 min
+            print('- daemon busy  360 sec so far, will do  4 sec/retry for 1440 seconds')  # 24 min
             if gd.check_daemon(sec_per_dot=4, nsec=1440, dots_per_line=30): break           # 12 lines # noqa
             # ---------------------------------------------------------------------------------------
 
-            print(f'- daemon busy 1800 sec so far, will do 20 sec/retry for 1800 seconds')  # 30 min
+            print('- daemon busy 1800 sec so far, will do 20 sec/retry for 1800 seconds')  # 30 min
             if gd.check_daemon(sec_per_dot=20, nsec=1800, dots_per_line=10): break          #  9 lines? # noqa
             # ---------------------------------------------------------------------------------------
 
-            print(f'- daemon busy 3600 sec so far, will do 60 sec/retry for 3600 seconds')  # 60 min
+            print('- daemon busy 3600 sec so far, will do 60 sec/retry for 3600 seconds')  # 60 min
             if gd.check_daemon(sec_per_dot=60, nsec=3600, dots_per_line=10): break          # 6 lines?  # noqa
 
             # sys.stderr.write('ERROR Timeout waiting for daemon. Did you forget to launch it?\n')
@@ -322,8 +322,8 @@ class GarnetDaemon:
         print(f'- want DONE signal from job > {prev_job}')
         print(f'- found DONE signal for job {done_job}')
         if done_job <= prev_job:
-            print(f'- KEEP WAITING (recurse on wait_daemon())', flush=True)
-            return wait_daemon(args, prev_job)
+            print('- KEEP WAITING (recurse on wait_daemon())', flush=True)
+            return GarnetDaemon.wait_daemon(args, prev_job)
 
         if DBG: print('\n--- DAEMON READY, continuing...', flush=True)  # noqa
         return done_job
@@ -348,7 +348,7 @@ class GarnetDaemon:
             args.glb_params = "SORRY cannot save/restore GlobalBufferParams!"
             args.pe_fc = "SORRY cannot save/restore pe_fc of type <family_closure)!"
         except Exception:
-            print(f'WARNING could not save glb_params and/or pe_fc')
+            print('WARNING could not save glb_params and/or pe_fc')
 
     def save_args(args, fname=None, dbg=0):
         'Save current state (args) to arg-save (reload) file'
@@ -363,7 +363,7 @@ class GarnetDaemon:
         argdic = vars(args)
         sorted_argdic = dict(sorted(argdic.items()))
 
-        fname = fname or fname = GarnetDaemon.FN_RELOAD
+        fname = fname or GarnetDaemon.FN_RELOAD
         with open(fname, 'w') as f: json.dump(sorted_argdic, f)  # noqa
         if dbg: print(f'- saved args {args} to {fname}')         # noqa
 
@@ -373,17 +373,17 @@ class GarnetDaemon:
             args.glb_params = GarnetDaemon.saved_glb_params
             args.pe_fc = GarnetDaemon.saved_pe_fc
         except Exception:
-            print(f'WARNING could not restore glb_params and/or pe_fc')
+            print('WARNING could not restore glb_params and/or pe_fc')
 
     def load_args(fname=None, dbg=0):
         'Load state (args) from save-args (reload) file'
-        fname = fname or fname = GarnetDaemon.FN_RELOAD
+        fname = fname or GarnetDaemon.FN_RELOAD
         with open(fname, 'r') as f: args_dict = json.load(f)    # noqa
         new_args = Namespace(**args_dict)
 
         # Restore "unsaveable" args
         try:
-            print(f'restore args.{glb_params,pe_fc}')
+            print('restore args.{glb_params,pe_fc}')
             # assert args.GlobalBufferParams == "SORRY cannot save/restore GlobalBufferParams!"
             new_args.glb_params = GarnetDaemon.saved_glb_params
             new_args.pe_fc = GarnetDaemon.saved_pe_fc
@@ -450,7 +450,7 @@ class GarnetDaemon:
 
         if orphan_pids == []: return False  # No orphans found  # noqa
 
-        print(f'********************************************************')
+        print('********************************************************')
         for p in orphan_pids:
             print(f'WARNING found orphan daemon {p}, you should kill it!')
 
@@ -459,7 +459,7 @@ class GarnetDaemon:
         pidstring = " ".join(pidstring_list)
         print(f'ps      {pidstring}')
         print(f'kill -9 {pidstring}')
-        print(f'********************************************************')
+        print('********************************************************')
         return True  # Found orphans
 
     # Helper function for "wait_daemon()"
@@ -486,7 +486,7 @@ class GarnetDaemon:
 
     # Helper function for "wait_daemon()"
     def check_daemon(sec_per_dot, nsec, dots_per_line):
-        errmsg = f'\nERROR there is no daemon, did you forget to launch it?'
+        errmsg = '\nERROR there is no daemon, did you forget to launch it?'
         assert GarnetDaemon.daemon_exists(), errmsg
         # -----------------------------------------------------------------------
         total_dots = int(nsec / sec_per_dot)
