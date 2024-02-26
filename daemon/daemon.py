@@ -383,15 +383,18 @@ class GarnetDaemon:
 
         # Restore "unsaveable" args
         try:
-            print('restore args.{glb_params,pe_fc}')
+            print(f'restore args.{glb_params,pe_fc}')
             # assert args.GlobalBufferParams == "SORRY cannot save/restore GlobalBufferParams!"
             new_args.glb_params = GarnetDaemon.saved_glb_params
             new_args.pe_fc = GarnetDaemon.saved_pe_fc
         except Exception:
             pass
 
+        # Note json.dumps() must obv happen BEFORE restoring unsavaeable (i.e. unserializable) args
+        # FIXME pytest does not test this atm - 02/2024
         if dbg: print(f'- restored args {new_args} from {fname}')          # noqa
         if dbg: print(f"- loaded args {json.dumps(args_dict, indent=4)}")  # noqa
+
         return new_args
 
     # ------------------------------------------------------------------------
