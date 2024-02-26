@@ -381,20 +381,21 @@ class GarnetDaemon:
         with open(fname, 'r') as f: args_dict = json.load(f)    # noqa
         new_args = Namespace(**args_dict)
 
-        # Restore "unsaveable" args
-        try:
-            print(f'restore args.{glb_params,pe_fc}')
-            # assert args.GlobalBufferParams == "SORRY cannot save/restore GlobalBufferParams!"
-            new_args.glb_params = GarnetDaemon.saved_glb_params
-            new_args.pe_fc = GarnetDaemon.saved_pe_fc
-        except Exception:
-            pass
+        # Note json.dumps() (below) must obv happen BEFORE restoring
+        # unsavaeable (i.e. unserializable) args
 
-        # Note json.dumps() must obv happen BEFORE restoring unsavaeable (i.e. unserializable) args
         # FIXME pytest does not test this atm - 02/2024
-        if dbg: print(f'- restored args {new_args} from {fname}')          # noqa
-        if dbg: print(f"- loaded args {json.dumps(args_dict, indent=4)}")  # noqa
+        if dbg: print(f'- restored args {new_args} from {fname}')    # noqa
 
+        # Restore "unsaveable" args glb_params, pe_fc
+        print('restore args.{glb_params,pe_fc}')
+        if GarnetDaemon.saved_glb_params is not None:
+            new_args.glb_params = GarnetDaemon.saved_glb_params
+
+        if GarnetDaemon.saved_pe_fc is not None:
+            new_args.pe_fc = GarnetDaemon.saved_pe_fc
+
+        if dbg: print(f"- loaded args {json.dumps(args_dict, indent=4)}")  # noqa
         return new_args
 
     # ------------------------------------------------------------------------
