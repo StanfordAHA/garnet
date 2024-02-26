@@ -178,8 +178,11 @@ class GarnetDaemon:
                 print(f'- daemon.py load_args env["{i}"]="{newval}" (was "{oldval}")', flush=True)
                 os.environ[i] = newval
 
-        if dbg: s = dict(sorted(new.items()))                     # noqa
-        if dbg: print(f"- loaded args {json.dumps(s, indent=4)}") # noqa
+        if dbg:
+            s = dict(sorted(new.items()))
+            s['pe_fc'] = "Cannot print pe_fc"
+            s['glb_params'] = "Cannot print glb_params"
+            print(f"- loaded args {json.dumps(s, indent=4)}")
 
         return Namespace(**old)
 
@@ -378,16 +381,15 @@ class GarnetDaemon:
     def load_args(fname=None, dbg=0):
         'Load state (args) from save-args (reload) file'
         fname = fname or GarnetDaemon.FN_RELOAD
+
+        # Note json.dumps() (below) must obv happen BEFORE restoring unsavaeable/unserializable args
         with open(fname, 'r') as f: args_dict = json.load(f)    # noqa
+        if dbg: print(f"- loaded args {json.dumps(args_dict, indent=4)}")  # noqa
+
         new_args = Namespace(**args_dict)
-
-        # Note json.dumps() (below) must obv happen BEFORE restoring
-        # unsavaeable (i.e. unserializable) args
-
-        # FIXME pytest does not test this atm - 02/2024
         if dbg: print(f'- restored args {new_args} from {fname}')    # noqa
 
-        # Restore "unsaveable" args glb_params, pe_fc
+        # Restore "unsaveable" args
         print('restore args.{glb_params,pe_fc}')
         if GarnetDaemon.saved_glb_params is not None:
             new_args.glb_params = GarnetDaemon.saved_glb_params
@@ -395,7 +397,6 @@ class GarnetDaemon:
         if GarnetDaemon.saved_pe_fc is not None:
             new_args.pe_fc = GarnetDaemon.saved_pe_fc
 
-        if dbg: print(f"- loaded args {json.dumps(args_dict, indent=4)}")  # noqa
         return new_args
 
     # ------------------------------------------------------------------------
