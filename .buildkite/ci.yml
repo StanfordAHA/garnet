@@ -31,16 +31,11 @@ steps:
   - docker cp . $CONTAINER:/aha/garnet
   - docker exec $CONTAINER /bin/bash -c "
       git config --global --add safe.directory /aha/garnet"
-
   - docker exec $CONTAINER /bin/bash -c "cd /aha/garnet; git branch"
-  - docker exec $CONTAINER /bin/bash -c "cat -n /aha/garnet/bin/lint.sh"
-
 
   # Run the lint
   - docker exec $CONTAINER /bin/bash -c "
-      source /aha/bin/activate;
-      cd /aha/garnet; ./bin/lint.sh
-    "
+      source /aha/bin/activate; cd /aha/garnet; ./bin/lint.sh"
 
   # Clean up
   - docker kill $CONTAINER || true
