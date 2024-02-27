@@ -62,8 +62,17 @@ flags="--width $array_width --height $array_height"
 flags+=" --pipeline_config_interval $pipeline_config_interval"
 flags+=" -v --glb_tile_mem_size $glb_tile_mem_size"
 
+# [ "$WHICH_SOC" == "amber" ] && flags+=" --dense-only"
+# ------------------------------------------------------------ 
+# garnet.py does this:
+#    if os.getenv('WHICH_SOC') == "amber": garnet_amber.main()
+# ...so even though garnet.py switches changed, garnet_amber.py did not,
+# so we still use the old --include-sparse switch here
+# TODO someone needs to unify garnet.py and garnet_amber.py but not me, not today haha
+
 # sparsity flags for onyx
-[ "$WHICH_SOC" == "amber" ] && flags+=" --dense-only"
+[ "$WHICH_SOC" != "amber" ] && flags+=" --include-sparse"
+
 
 # Default is power-aware, but can be turned off
 [ "$PWR_AWARE" == False ] && flags+=" --no-pd"
