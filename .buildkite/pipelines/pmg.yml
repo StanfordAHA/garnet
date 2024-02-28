@@ -30,6 +30,16 @@ env:
 
 steps:
 
+- label: 'setup'
+  commands:
+  - echo "git pull latest to prevent later collisions"
+  - echo "(each init step will try to do its own git pull latest...)
+  - echo '(assumes all steps use the same host)'
+  - docker pull latest
+- wait
+
+
+
 #####################################################################################
 # Two quick RTL checks. Set soft fail so RTL failure does not fail integration tests.
 

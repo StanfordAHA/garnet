@@ -96,14 +96,6 @@ if [ "$use_container" == True ]; then
       mkdir -p aha; cd aha
       ########################################################################
 
-      # Prune docker images...
-      echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
-      docker image prune -f -a --filter "until=6h" --filter=label='description=garnet' || true
-
-      echo ""; echo "After pruning:"; echo ""
-      docker images; echo ""
-      docker ps    ; echo ""
-
       # Choose a docker image; can set via "rtl_docker_image" parameter
       default_image="stanfordaha/garnet:latest"
 
@@ -144,6 +136,15 @@ if [ "$use_container" == True ]; then
 
       # MAKE SURE the docker container gets killed when this script dies.
       trap "docker kill $container_name" EXIT
+
+      # Prune images *after* starting container (will refuse to kill image w/ active container)
+      echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
+      docker image prune -f -a --filter "until=6h" --filter=label='description=garnet' || true
+
+      echo ""; echo "After pruning:"; echo ""
+      docker images; echo ""
+      docker ps    ; echo ""
+      echo '--- Continuing...'
 
       if [ "$use_local_garnet" == True ]; then
         docker exec $container_name /bin/bash -c "rm -rf /aha/garnet"
