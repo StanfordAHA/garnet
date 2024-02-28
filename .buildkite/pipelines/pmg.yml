@@ -33,8 +33,8 @@ steps:
 - label: 'setup'
   commands:
   - echo "git pull latest to prevent later collisions"
-  - echo "(each init step will try to do its own git pull latest...)
-  - echo '(assumes all steps use the same host)'
+  - echo "(each init step will try to do its own git pull latest...)"
+  - echo "(assumes all steps use the same host)"
   - docker pull latest
 - wait
 
