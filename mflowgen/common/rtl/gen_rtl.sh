@@ -137,13 +137,14 @@ if [ "$use_container" == True ]; then
       # MAKE SURE the docker container gets killed when this script dies.
       trap "docker kill $container_name" EXIT
 
-      # Prune images *after* starting container (will refuse to kill image w/ active container)
-      echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
-      docker image prune -f -a --filter "until=6h" --filter=label='description=garnet' || true
+      # Delete all dangling images created more than 6 hours ago.
+      # Notice that we prune images *after* starting container (pruner
+      # will refuse to kill image w/ active container)
 
-      echo ""; echo "After pruning:"; echo ""
-      docker images; echo ""
-      docker ps    ; echo ""
+      echo '--- gen_rtl docker prune BEGIN' `date +%H:%M`
+      printf "\nBefore pruning:\n\n";  docker images; echo "";  docker ps; echo ""
+      docker image prune -f -a --filter "until=6h" --filter=label='description=garnet' || true
+      printf "\nAfter pruning:\n\n";   docker images; echo "";  docker ps; echo ""
       echo '--- Continuing...'
 
       if [ "$use_local_garnet" == True ]; then
