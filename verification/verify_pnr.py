@@ -32,6 +32,8 @@ from archipelago.pnr_graph import (
 )
 from verified_agile_hardware.solver import Solver, Rewriter
 import smt_switch as ss
+#TO DO: Run on app 
+# change conv_3_3_generator.cpp and process.cpp output pixels
 
 def set_inputs(solver, input_symbols_coreir, input_symbols_pnr, 
             bvsort16, id_to_name):
@@ -82,6 +84,8 @@ def set_inputs(solver, input_symbols_coreir, input_symbols_pnr,
         solver.fts.add_invar(solver.create_term(solver.ops.Equal, state_var, v))
 
 
+
+
 def compare_output_array(
     solver, bvsort16, index, array0, array1, max_index, pnr_valid, bvsort1
 ):
@@ -103,7 +107,7 @@ def compare_output_array(
         )
         ############# DEBUG############
         t_n = solver.create_term(
-            solver.ops.BVUle, #BVUle
+            solver.ops.BVSlt, #BVSle
             solver.create_term(solver.ops.Select, array0, idx_bv),
             solver.create_term(solver.ops.Select, array1, idx_bv)
         )
@@ -351,12 +355,11 @@ def create_property_term(
         property_term = solver.create_term(
             solver.ops.And, property_term, prop
         )
-        breakpoint()
     
     return property_term
 
  
-def verify_pnr(interconnect, coreir_file):
+def verify_pnr(interconnect, coreir_file, instance_to_instr):
     file_info = {}
     file_info["port_remapping"] = coreir_file.replace(
         "design_top.json", "design.port_remap"
@@ -406,10 +409,10 @@ def verify_pnr(interconnect, coreir_file):
     )
     print("PnR graph created.")
 
-    nx_pnr = pnr_to_nx(routing_result_graph, cmod) # translate pnr graph to network x
+    nx_pnr = pnr_to_nx(routing_result_graph, cmod, instance_to_instr) # translate pnr graph to network x
     # add cmod as parameter
     print("PnR NX generated.")
-
+    coreir_to_pdf(nx_pnr,"/aha/nx_pdf/pnr_graph")
 
     solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
         nx_pnr, interconnect, solver, app_dir
@@ -441,14 +444,16 @@ def verify_pnr(interconnect, coreir_file):
 
     print("Running BMC...")
     start = time.time()
-    res = bmc.check_until(20)
+    res = bmc.check_until(200)
     print("BMC time:", time.time() - start)
 
     if res is None or res:
         print("\n\033[92m" + "Formal check of mapped application passed" + "\033[0m")
     else:
         trace_symbols = list(output_symbols_coreir.keys()) + list(output_symbols_pnr.keys()) + list(input_symbols_pnr.keys()) + list(input_symbols_coreir.keys()) + \
-                        ["out.hw_output_stencil_op_hcompute_hw_output_stencil_write_0_array","|((_ extract 15 0) I0.f2io_16)_array|","out_count_out.hw_output_stencil_op_hcompute_hw_output_stencil_write_0","out_count_I0.f2io_16"]
+                        ["out_count_out.hw_output_stencil_op_hcompute_hw_output_stencil_write_0","out_count_I0.f2io_16","p0.PE_input_width_16_num_0","p0.PE_output_width_16_num_0","r0.out"]+\
+                        ["op_hcompute_mult_stencil$inner_compute$mul_i2640_i1341.data0","op_hcompute_mult_stencil$inner_compute$mul_i2640_i1341.O0"]
+        # print_trace(bmc, trace_symbols, ["I0"])
         print_trace(bmc, trace_symbols)
 
     breakpoint()

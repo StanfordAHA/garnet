@@ -834,7 +834,7 @@ def pnr(garnet, args, app):
             garnet.place_and_route(args, load_only=True)
 
     if args.verify_pnr:
-        verify_pnr(garnet.interconnect, args.app)
+        verify_pnr(garnet.interconnect, args.app, instance_to_instr)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,
