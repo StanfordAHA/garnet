@@ -49,7 +49,7 @@ def construct(**kwargs):
   # Add graph inputs and outputs so this can be used in hierarchical flows
 
   # Inputs
-  g.add_input( 'fill.gds', \
+  g.add_input( 'design-merged.gds', \
                drc.i( 'design_merged.gds' )
              )
   g.add_input( 'adk', \
