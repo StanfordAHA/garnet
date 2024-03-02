@@ -2149,14 +2149,9 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
                     c_val = float2bfbin(c_mat_trans[k][j])
                     c_val = Data(int(c_val, 2))
                     partial_prod, _, _ = fpu_func(fpu.FPU_t.FP_mul, b_val, c_val)
-                    print(partial_prod)
                     partial_sum, _, _ = fpu_func(fpu.FPU_t.FP_add, partial_sum, partial_prod)
                 output_matrix[i][j] = bfbin2float("{:016b}".format(int(partial_sum)))
 
-        print("\nBMAT is: \n", b_mat)
-        print("\nCMAT is: \n", c_mat)
-        print("\nCMAT_TRANS is: \n", c_mat_trans)
-        print("\noutput_matrix is: \n", output_matrix)
         output_format = "CSF"
         output_name = "X"
     
