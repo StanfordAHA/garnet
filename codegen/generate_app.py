@@ -1,6 +1,7 @@
 import sys
 import shutil
 import json
+import os
 
 import io_placement
 import raw_to_h_16
@@ -25,13 +26,13 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
         data_file_str = "./"
 
     # Get input/output file name information, io order and bitstream from first tile
-    inputs, outputs, input_order, output_order, bitstream_name = meta.meta_scrape(f"tiles_chip_test/{name_list[0]}/design_meta.json")
+    inputs, outputs, input_order, output_order, bitstream_name = meta.meta_scrape(f"tiles_chip_test/tile0/design_meta.json")
 
     # bitstream is same for every tile
     path = name_list[0]
-    first_tile_path = f"tiles_chip_test/{name_list[0]}/"
+    first_tile_path = f"tiles_chip_test/tile0/"
 
-    bs_to_h.convert_bs(f"{first_tile_path}{bitstream_name}", f"tiles_chip_test/{name_list[0]}/")
+    bs_to_h.convert_bs(f"{first_tile_path}{bitstream_name}", f"tiles_chip_test/tile0/")
 
     # copy reg_write and script into base folder
     shutil.copy(f"{first_tile_path}reg_write.h", "./")
@@ -50,6 +51,10 @@ def gen_app(num_tiles, app_name, type_of_app, name_list):
                     file = "tiles_chip_test/" + file
                     with open(file, "rb") as partial:
                         shutil.copyfileobj(partial, output)
+                    # length = (1024*2 - os.path.getsize(file)) / 2
+                    # for i in range(int(length)):
+                    #     output.write(b'\x00\x00')
+
             input_paths = []
 
 

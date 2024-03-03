@@ -26,13 +26,26 @@ print(tiles)
 num_tiles = len(tiles)
 print("there are ", num_tiles, "tiles")
 
+
+# folder naming
+first_folder_name = f"{app_name}_{app_name}-{data}"
+second_folder_name = f"{app_name}_combined_seed_{app_name}-{data}"
+
+# first_folder_name = "tensor3_mttkrp_0"
+# second_folder_name = "tensor3_mttkrp_combined_seed_0"
+# num_tiles=1
+
 # copy tiles to tiles_chip_test
 for i in range(num_tiles):
-    shutil.copy(f"../SPARSE_TESTS/{app_name}_{app_name}-{data}_tile{i}/GLB_DIR/{app_name}_combined_seed_{app_name}-{data}_tile{i}/output_gold_0.npy", f"../SPARSE_TESTS/{app_name}_{app_name}-{data}_tile{i}/GLB_DIR/{app_name}_combined_seed_{app_name}-{data}_tile{i}/bin")
-    shutil.copytree(f"../SPARSE_TESTS/{app_name}_{app_name}-{data}_tile{i}/GLB_DIR/{app_name}_combined_seed_{app_name}-{data}_tile{i}/bin", f"tiles_chip_test/tile{i}")
+    shutil.copy(f"../SPARSE_TESTS/{first_folder_name}_tile{i}/GLB_DIR/{second_folder_name}_tile{i}/output_gold_0.npy", f"../SPARSE_TESTS/{first_folder_name}_tile{i}/GLB_DIR/{second_folder_name}_tile{i}/bin")
+    shutil.copytree(f"../SPARSE_TESTS/{first_folder_name}_tile{i}/GLB_DIR/{second_folder_name}_tile{i}/bin", f"tiles_chip_test/tile{i}")
+
+# # cut tiles in half
+# half_tiles = num_tiles // 2
 
 # combine tiles and generate C code
 tile_list = []
+# TODO fix this for unroll=2 (use half_tiles and change append list to 2*tile/2*tile+1)
 for tile in range(num_tiles):
     tile_list.append(f"tile{tile}")
 inputs, outputs, input_order, output_order = generate_app.gen_app(num_tiles, app_name, "sparse", tile_list)
@@ -69,6 +82,6 @@ for file in files:
     shutil.copy(file, f"dot_h_files/{app_name}/{data}/{file}")
 
 # can we gold check?
-if num_tiles <= 75:
-    parse_gold.parse_gold(app_name, data)
+#if num_tiles <= 75:
+#    parse_gold.parse_gold(app_name, data)
 
