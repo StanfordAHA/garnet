@@ -1825,6 +1825,100 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         # First transpose c_mat
         # c_mat_trans = numpy.transpose(c_mat)
         # breakpoint()
+        
+        ## Complex App workaround START
+        # it is a brute force way to code
+        intersect_targ = "tensor_B_mode_1_crd"
+        crds_B_j = []
+        with open(f"{matrix_tmp_dir}/{intersect_targ}", "r") as intersect_file:
+            crds_B_j = intersect_file.readlines()
+            intersect_file.close()
+        crds_B_j = [int(crd.strip()) for crd in crds_B_j]
+        crds_B_j = list(set(crds_B_j))
+        crds_B_j.sort()
+
+        intersect_targ = "tensor_C_mode_1_crd"
+        crds_C_k = []
+        with open(f"{matrix_tmp_dir}/{intersect_targ}", "r") as intersect_file:
+            crds_C_k = intersect_file.readlines()
+            intersect_file.close()
+        crds_C_k = [int(crd.strip()) for crd in crds_C_k]
+        # clear the duplicate and sort
+        crds_C_k = list(set(crds_C_k))
+        crds_C_k.sort()
+
+        # recreate D
+        crd_j = "tensor_D_mode_1_crd"
+        seg_j = "tensor_D_mode_1_seg"
+        crds_D_j_nz = []
+        segs_D_j = []
+        with open(f"{matrix_tmp_dir}/{crd_j}", "r") as crd_file:
+            crds_D_j_nz = crd_file.readlines()
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/{seg_j}", "r") as seg_file:
+            segs_D_j = seg_file.readlines()
+            seg_file.close()
+        crds_D_j_nz = [int(crd.strip()) for crd in crds_D_j_nz]
+        segs_D_j = [int(seg.strip()) for seg in segs_D_j]
+        assert segs_D_j[-1] == len(crds_D_j_nz)
+
+        crd_k = "tensor_C_mode_1_crd"
+        seg_k = "tensor_C_mode_1_seg"
+        crds_D_k_nz = []
+        segs_D_k = []
+        with open(f"{matrix_tmp_dir}/{crd_k}", "r") as crd_file:
+            crds_D_k_nz = crd_file.readlines()
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/{seg_k}", "r") as seg_file:
+            segs_D_k = seg_file.readlines()
+            seg_file.close()
+        crds_D_k_nz = [int(crd.strip()) for crd in crds_D_k_nz]
+        segs_D_k = [int(seg.strip()) for seg in segs_D_k]
+        assert segs_D_k[-1] == len(crds_D_k_nz)
+
+        new_d_1_crd = []
+        new_d_1_seg = [0]
+        new_d_0_crd = []
+        new_d_0_seg = [0]
+        new_d_v = []
+        
+        # create the new D from d_mat
+        for j in range(len(d_mat)):
+            if j not in crds_B_j and j not in crds_D_j_nz:
+                continue
+            new_d_1_crd.append(j)
+            if j in crds_B_j and j not in crds_D_j_nz:
+                new_d_0_crd.extend(crds_C_k)
+                new_d_0_seg.append(len(new_d_0_crd))
+                new_d_v.extend([0] * len(crds_C_k))
+            else:
+                for k in range(len(d_mat[0])):
+                    v = d_mat[j][k]
+                    if v != 0 or k in crds_C_k:
+                        new_d_0_crd.append(k)
+                        new_d_v.append(v)
+                new_d_0_seg.append(len(new_d_0_crd))
+        new_d_1_seg.append(len(new_d_1_crd))
+
+        # write the new D
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_1_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in new_d_1_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_1_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in new_d_1_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_0_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in new_d_0_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_0_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in new_d_0_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_vals", "w+") as val_file:
+            val_file.writelines([f"{val}\n" for val in new_d_v])
+            val_file.close()
+
+        ## Complex App workaround END
+
         output_matrix = numpy.zeros([1]) 
         d_mat_trans = numpy.transpose(d_mat)
         output_matrix[0] = numpy.sum(numpy.multiply(numpy.matmul(c_mat, d_mat_trans, dtype=numpy.uint16, casting='unsafe'), b_mat, dtype=numpy.uint16, casting='unsafe'))
@@ -1862,6 +1956,143 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         ret_outputs['E'] = e_mat
         ret_outputs['f'] = f_mat
 
+
+        ## Complex App workaround START
+        b_0_crd = []
+        b_0_seg = [0]
+        b_1_crd = []
+        b_1_seg = [0]
+        b_v = []
+        c_0_crd = []
+        c_0_seg = [0]
+        c_1_crd = []
+        c_1_seg = [0]
+        c_v = []
+        d_0_crd = []
+        d_0_seg = [0]
+        d_1_crd = []
+        d_1_seg = [0]
+        d_v = []
+        e_0_crd = []
+        e_0_seg = [0]
+        e_1_crd = []
+        e_1_seg = [0]
+        e_v = []
+
+        # create the new B from b_mat
+        for i in range(len(b_mat)):
+            b_0_crd.append(i)
+            for j in range(len(b_mat[0])):
+                v = b_mat[i][j]
+                if v != 0 or i == j:
+                    b_1_crd.append(j)
+                    b_v.append(v)
+            b_1_seg.append(len(b_1_crd))
+        b_0_seg.append(len(b_0_crd))
+
+        # create the new C from c_mat
+        for i in range(len(c_mat)):
+            c_0_crd.append(i)
+            for j in range(len(c_mat[0])):
+                v = c_mat[i][j]
+                if v != 0 or i == j:
+                    c_1_crd.append(j)
+                    c_v.append(v)
+            c_1_seg.append(len(c_1_crd))
+        c_0_seg.append(len(c_0_crd))
+
+        # create the new D from d_mat
+        for j in range(len(d_mat)):
+            d_0_crd.append(j)
+            for k in range(len(d_mat[0])):
+                v = d_mat[j][k]
+                if v != 0 or i == j:
+                    d_1_crd.append(k)
+                    d_v.append(v)
+            d_1_seg.append(len(d_1_crd))
+        d_0_seg.append(len(d_0_crd))
+
+        # create the new E from e_mat
+        for k in range(len(e_mat)):
+            e_0_crd.append(k)
+            for j in range(len(e_mat[0])):
+                v = e_mat[k][j]
+                if v != 0 or i == j:
+                    e_1_crd.append(j)
+                    e_v.append(v)
+            e_1_seg.append(len(e_1_crd))
+        e_0_seg.append(len(e_0_crd))
+
+        # write the new B
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_0_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in b_0_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_0_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in b_0_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_1_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in b_1_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_1_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in b_1_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_B_mode_vals", "w+") as val_file:
+            val_file.writelines([f"{val}\n" for val in b_v])
+            val_file.close()
+
+        # write the new C
+        with open(f"{matrix_tmp_dir}/tensor_C_mode_0_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in c_0_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_C_mode_0_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in c_0_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_C_mode_1_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in c_1_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_C_mode_1_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in c_1_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_C_mode_vals", "w+") as val_file:
+            val_file.writelines([f"{val}\n" for val in c_v])
+            val_file.close()
+
+        # write the new D
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_0_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in d_0_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_0_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in d_0_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_1_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in d_1_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_1_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in d_1_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_D_mode_vals", "w+") as val_file:
+            val_file.writelines([f"{val}\n" for val in d_v])
+            val_file.close()
+        
+        # write the new E
+        with open(f"{matrix_tmp_dir}/tensor_E_mode_0_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in e_0_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_E_mode_0_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in e_0_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_E_mode_1_crd", "w+") as crd_file:
+            crd_file.writelines([f"{crd}\n" for crd in e_1_crd])
+            crd_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_E_mode_1_seg", "w+") as seg_file:
+            seg_file.writelines([f"{seg}\n" for seg in e_1_seg])
+            seg_file.close()
+        with open(f"{matrix_tmp_dir}/tensor_E_mode_vals", "w+") as val_file:
+            val_file.writelines([f"{val}\n" for val in e_v])
+            val_file.close()
+
+        ## Complex App workaround END
+        
         # First transpose c_mat
         c_mat_trans = numpy.transpose(c_mat)
         d_mat_trans = numpy.transpose(d_mat)
