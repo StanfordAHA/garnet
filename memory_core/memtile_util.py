@@ -555,26 +555,7 @@ class NetlistBuilder():
         ''' Register the core/primitive with the
             data structure and return unique ID
         '''
-        # self.core_map = {
-        #         "register": "r",
-        #         "io_16": "I",
-        #         "io_1": "i",
-        #         "pe": "p",
-        #         "fake_pe": "f",
-        #         "scanner": "s",
-        #         "intersect": "j",
-        #         "memtile": "m",
-        #         "regcore": "R",
-        #         "lookup": "L"
-        #     }
 
-        # if core not in self.core_map:
-        #     tag = core.pnr_info().tag_name
-        #     # raise CoreMappingUndefinedException
-        # else:
-        #     tag = self.core_map[core]
-
-        cc_core_supported = None
 
         if core == "scanner":
             core = "read_scanner"
@@ -598,27 +579,15 @@ class NetlistBuilder():
                     for mode_ in supported_modes:
                         self.core_to_tag[mode_] = pnr_tag
 
-                # if "CoreCombiner" in core_value.name():
-
-                    # print("Found core combiner...")
-                    # Get supported components
-                    # cc_core_supported = cc_core.get_modes_supported()
-                    # print(f"Modes: {cc_core_supported}")
             self.remapping_built = True
 
-        # print(self.tag_to_core)
-        # print(self.core_to_tag)
-        # exit()
-        prioritize_combiner = True
 
         core_remapping = None
         print_diag = False
 
-        # print(core)
-
         # Choose the core combiner if the resource is in there...
-        # if cc_core_supported is not None and core in cc_core_supported and prioritize_combiner:
-        if core in self.core_to_tag and prioritize_combiner:
+        # if cc_core_supported is not None and core in cc_core_supported:
+        if core in self.core_to_tag:
             tag = self.core_to_tag[core]
             # tag = cc_core.pnr_info().get_tag_name()
             core_remapping = self.tag_to_port_remap[tag][core]
@@ -704,7 +673,6 @@ class NetlistBuilder():
             self.generate_placement()
 
     def add_connection(self, connection, width):
-        # print(connection)
         conn_name = f"e{self._connection_num}"
         self._connection_num += 1
         # Dissect the connection to check if a core is used
