@@ -14,6 +14,8 @@ import json
 import archipelago
 import archipelago.power
 import archipelago.io
+from verification.verify_design_top import verify_design_top
+
 from lassen.sim import PE_fc as lassen_fc
 
 from daemon.daemon import GarnetDaemon
@@ -813,6 +815,8 @@ def build_verilog(args, garnet):
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
 
 def pnr(garnet, args, app):
+
+    verify_design_top(garnet.interconnect, args.app)
 
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
