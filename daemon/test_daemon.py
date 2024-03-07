@@ -147,11 +147,11 @@ def test_double_launch():  # kill-launch-launch-kill
 
 def test_force_launch():
     'If daemon already exists, --force should kill it without erroring out.'
-    announce(); daemon = DAEMON
+    announce()
     pid1 = launch_daemon_and_verify()
 
     print('Force-launch a second daemon, it should kill the first one'); sys.stdout.flush()
-    p = subprocess.Popen(f'{DAEMON} force'.split())
+    subprocess.Popen(f'{DAEMON} force'.split())
     
     # Wait a bit, then see if the new daemon is running
     min_sleep()
@@ -197,7 +197,7 @@ def test_daemon_use():
 
     # TODO maybe use expect() instead???
 
-    p2 = subprocess.run(f'{DAEMON} use --animal foxy'.split(), text=True, capture_output=True)
+    subprocess.run(f'{DAEMON} use --animal foxy'.split(), text=True, capture_output=True)
 
     print('\nKILL the daemon\n')
     subprocess.run(f'{DAEMON} kill'.split())
@@ -223,10 +223,10 @@ def test_daemon_auto():
     verify_successful_build(tmpfile)  # (calls catnew)
     print('\nFirst assertion PASSED')
 
-    p2 = subprocess.run(f'{DAEMON} auto --animal foxy'.split(), text=True, capture_output=True)
+    subprocess.run(f'{DAEMON} auto --animal foxy'.split(), text=True, capture_output=True)
     sys.stdout.flush()
     min_sleep()
-    p3 = subprocess.run(f'{DAEMON} wait'.split(), text=True, capture_output=True)
+    subprocess.run(f'{DAEMON} wait'.split(), text=True, capture_output=True)
 
     print('\nKILL the daemon\n')
     subprocess.run(f'{DAEMON} kill'.split())
@@ -477,12 +477,12 @@ def expect(cmd, expect):
 
 def kill_existing_daemon():
     print("Kill existing daemon (p.stdout should say 'already dead')",flush=True)
-    p = subprocess.run(f'{DAEMON} kill'.split())
+    subprocess.run(f'{DAEMON} kill'.split())
     GarnetDaemon.cleanup()
 
 def kill_running_daemon():
     print("Kill the daemon (p.stdout should NOT say 'already dead')", flush=True)
-    p = subprocess.run(f'{DAEMON} kill'.split()); sys.stdout.flush()
+    subprocess.run(f'{DAEMON} kill'.split()); sys.stdout.flush()
 
 def launch_daemon_and_verify(daemon=DAEMON):
     kill_existing_daemon()
@@ -522,7 +522,7 @@ def poke_it_and_see_if_its_dead(pid):
     try:
         import psutil
         p = psutil.Process(pid)  # Fails if proc gone entirely
-        stat = p.status().status # Fails if proc is a zombie (I guess?)
+        p.status().status # Fails if proc is a zombie (I guess?)
         # Success means failure
         return False
     except:
