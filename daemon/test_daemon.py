@@ -43,7 +43,6 @@ def test_tests(dbg=0):
 
     badstr = ""
     goodstr = ""
-    found_bad = False
     for d in daemon_defs:
         if f"test_{d}" in test_defs:
             goodstr = goodstr + f'    test_{d}()\n'
@@ -114,7 +113,7 @@ def mydaemon():
         # Forked child process does the work, then exits
         print(f'- loaded new args {args} i guess?')
         print(f'- gonna build a: {args.animal} grid')
-        print(f' -updated/used the grid')
+        print( ' -updated/used the grid')
         print(f'- using animal: {args.animal}')
         exit() # Or should it be 'break'?
 
@@ -151,7 +150,7 @@ def test_force_launch():
     announce(); daemon = DAEMON
     pid1 = launch_daemon_and_verify()
 
-    print(f'Force-launch a second daemon, it should kill the first one'); sys.stdout.flush()
+    print('Force-launch a second daemon, it should kill the first one'); sys.stdout.flush()
     p = subprocess.Popen(f'{DAEMON} force'.split())
     
     # Wait a bit, then see if the new daemon is running
@@ -173,12 +172,12 @@ def test_slow_test():
     # Launch a slow daemon, takes 12 seconds to finish its task
     force_launch_and_capture(tmpfile, cmd='force --buildtime 12')
 
-    print(f'--- STATUS')
+    print('--- STATUS')
     expect(f'{DAEMON} status', 'daemon_status: busy')
 
     catnew_reset()
-    print(f'--- SLOTH');      try_animal('sloth',      tmpfile)
-    print(f'--- SLOW LORIS'); try_animal('slow-loris', tmpfile)
+    print('--- SLOTH');      try_animal('sloth',      tmpfile)
+    print('--- SLOW LORIS'); try_animal('slow-loris', tmpfile)
     os.remove(tmpfile)
 
     expect(f'{DAEMON} kill', 'killing it now')
@@ -350,7 +349,7 @@ def test_sigstop():
         f"while [ 1 ]; do echo -n .; sleep 1; done > {tmpfile}"
     ])
     
-    print(f'\n- run for awhile, see how many dots we gots')
+    print('\n- run for awhile, see how many dots we gots')
     time.sleep(2); pid = p.pid
 
     print(f'- stop (but do not kill) dot-writing process {pid}')
@@ -358,20 +357,20 @@ def test_sigstop():
     with open(tmpfile, 'r') as f: dots0 = f.read()
     print(f'- found dots0 "{dots0}"')
     
-    print(f'\nWait awhile, verify that dots did not change')
+    print('\nWait awhile, verify that dots did not change')
     time.sleep(2); GarnetDaemon.sigstop(pid)
     with open(tmpfile, 'r') as f: dots1 = f.read()
     print(f'- found dots1 "{dots1}"')
     assert dots0 == dots1
 
-    print(f'\nRestart the process, run for awhile, verify different dots')
+    print('\nRestart the process, run for awhile, verify different dots')
     GarnetDaemon.sigcont(pid)
     time.sleep(2)
     with open(tmpfile, 'r') as f: dots2 = f.read()
     print(f'- found dots2 "{dots2}"')
     assert dots1 != dots2
 
-    print(f'\nClean up')
+    print('\nClean up')
     p.terminate()
     subprocess.run([ "bash", "-c", "/bin/rm -f /tmp/test_sigstop*"])
 
@@ -477,7 +476,7 @@ def expect(cmd, expect):
     else:                  return False
 
 def kill_existing_daemon():
-    print(f"Kill existing daemon (p.stdout should say 'already dead')",flush=True)
+    print("Kill existing daemon (p.stdout should say 'already dead')",flush=True)
     p = subprocess.run(f'{DAEMON} kill'.split())
     GarnetDaemon.cleanup()
 
@@ -487,9 +486,9 @@ def kill_running_daemon():
 
 def launch_daemon_and_verify(daemon=DAEMON):
     kill_existing_daemon()
-    print(f'Launch a daemon', flush=True)
+    print('Launch a daemon', flush=True)
     p = subprocess.Popen(f'{DAEMON} launch'.split()); pid0 = p.pid
-    print(f'- wait two seconds', flush=True)
+    print('- wait two seconds', flush=True)
     min_sleep()
     pid1 = verify_daemon_running(); assert pid0 == pid1
     # TODO look for e.g. 'Built 7x13' ? Merge w force_launch below?
