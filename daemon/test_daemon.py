@@ -3,9 +3,7 @@ from argparse import Namespace
 from daemon import GarnetDaemon
 import time
 
-
-def min_sleep(): time.sleep(1)
-
+def min_sleep(): time.sleep(1)  # noqa
 
 # Can optionally skip unit tests
 # TODO separate test_daemon.py, test_units.py?
@@ -17,7 +15,7 @@ MYPATH = os.path.realpath(__file__)  # E.g. "/aha/garnet/daemon/test_daemon.py"
 MYDIR  = os.path.dirname(MYPATH)
 
 
-def DAEMON(w=4,h=2): return f'python3 {MYPATH} --width {w} --height {h} --daemon'
+def DAEMON(w=4,h=2): return f'python3 {MYPATH} --width {w} --height {h} --daemon'  # noqa
 DAEMON7x13 = DAEMON(7,13)  # noqa
 DAEMON3x5  = DAEMON(3, 5)  # noqa
 DAEMON     = DAEMON(7,13)  # This is the default? Really?? Good for testing maybe i dunno. # noqa
@@ -409,8 +407,7 @@ def test_sigkill():
 
 
 # TODO should do this, maybe, and not as a unit test, maybe
-def test_grid_size(): announce('todo')
-
+def test_grid_size(): announce('todo')  # noqa
 
 def test_pid_save_and_restore():
     if announce_unit(): return
