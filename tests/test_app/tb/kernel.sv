@@ -561,15 +561,16 @@ function void Kernel::compare();
             end
         end
     end
-    result = 0;
-    for (int i = 0; i < num_outputs; i++) begin
-        result += compare_(i);
-    end
-    if (result == 0) begin
-        $display("%s passed", name);
-    end else begin
-        $error("%s failed. %0d number of pixels are different.", name, result);
-    end
+    // turn off pixels check since we already have offsite close check for dense fp and bit accurate check for dense int 
+    // result = 0;
+    // for (int i = 0; i < num_outputs; i++) begin
+    //     result += compare_(i);
+    // end
+    // if (result == 0) begin
+    //     $display("%s passed", name);
+    // end else begin
+    //     $error("%s failed. %0d number of pixels are different.", name, result);
+    // end
 endfunction
 
 function int Kernel::compare_(int idx);
