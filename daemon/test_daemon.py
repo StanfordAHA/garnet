@@ -1,9 +1,10 @@
-import os, sys, subprocess
+import os, sys, subprocess  # noqa
 from argparse import Namespace
 from daemon import GarnetDaemon
 import time
 
 def min_sleep(): time.sleep(1)  # noqa
+
 
 # Can optionally skip unit tests
 # TODO separate test_daemon.py, test_units.py?
@@ -12,7 +13,7 @@ SKIP_UNIT_TESTS = False
 
 # Useful globals
 MYPATH = os.path.realpath(__file__)  # E.g. "/aha/garnet/daemon/test_daemon.py"
-MYDIR  = os.path.dirname(MYPATH)
+MYDIR = os.path.dirname(MYPATH)
 
 
 def DAEMON(w=4,h=2): return f'python3 {MYPATH} --width {w} --height {h} --daemon'  # noqa
@@ -35,12 +36,12 @@ def test_tests(dbg=0):
 
     find_dfuncs = f"egrep '^    def ' {daemon_home} | sed 's/(.*//' | sed 's/^    def //'"
     daemon_defs = subprocess.run(find_dfuncs, 
-        capture_output=True, text=True, shell=True).stdout.split()
+                                 capture_output=True, text=True, shell=True).stdout.split()
     if dbg: print(f'module defs={daemon_defs}')  # noqa
     
     find_tfuncs = f"egrep '^def ' {MYPATH} | sed 's/(.*//' | sed 's/^def //'"
     test_defs = subprocess.run(find_tfuncs, 
-        capture_output=True, text=True, shell=True).stdout.split()
+                               capture_output=True, text=True, shell=True).stdout.split()
     if dbg: print(f'test defs={test_defs}')  # noqa
 
     badstr = ""
@@ -73,7 +74,7 @@ def mydaemon():
 
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--width',  type=int, default=4)
+    parser.add_argument('--width', type=int, default=4)
     parser.add_argument('--height', type=int, default=2)
     parser.add_argument('--daemon', type=str, choices=GarnetDaemon.choices, default=None)
     parser.add_argument('--animal', type=str, default='mousie')
@@ -81,12 +82,12 @@ def mydaemon():
     args = parser.parse_args()
 
     GarnetDaemon.initial_check(args)
-        # "launch" => ERROR if daemon exists already else continue
-        # "force"  => kill existing daemon, then continue
-        # "status" => echo daemon status and exit
-        # "use"    => send args to daemon and exit
-        # "kill"   => kill existing daemon and exit
-        # "help"   => echo help and exit
+    #     "launch" => ERROR if daemon exists already else continue
+    #     "force"  => kill existing daemon, then continue
+    #     "status" => echo daemon status and exit
+    #     "use"    => send args to daemon and exit
+    #     "kill"   => kill existing daemon and exit
+    #     "help"   => echo help and exit
 
     # Build CGRA/animal (stub)
     grid_size = GarnetDaemon.grid_size(args)
@@ -99,11 +100,11 @@ def mydaemon():
 
     # Daemonology; TODO this could be a separate method call
     while True:
-        childpid = os.fork() # Fork a child
+        childpid = os.fork()  # Fork a child
         if childpid > 0:
-            pid, status = os.waitpid(childpid, 0) # Wait for child to finish
+            pid, status = os.waitpid(childpid, 0)  # Wait for child to finish
             print(f'Child process {childpid} finished with exit status {status}')
-            assert pid == childpid # Right???
+            assert pid == childpid  # Right???
 
             # IF we're not running as a daemon, we're done here.
             if not args.daemon: break  # noqa
@@ -116,9 +117,9 @@ def mydaemon():
         # Forked child process does the work, then exits
         print(f'- loaded new args {args} i guess?')
         print(f'- gonna build a: {args.animal} grid')
-        print( ' -updated/used the grid')
+        print(f' -updated/used the grid')
         print(f'- using animal: {args.animal}')
-        exit() # Or should it be 'break'?
+        exit()  # Or should it be 'break'?
 
     exit()
 
@@ -269,8 +270,8 @@ def test_incompatible_daemon():
 
     p2 = subprocess.run(f'{DAEMON3x5} use --animal zebra'.split(), text=True, capture_output=True)
     # p2 = subprocess.run(f'{DAEMON3x5} use --animal zebra'.split())
-    print(p2.stdout) # FIXME/ERROR pt.stdout says "found 3x5 daemon"
-                     # Eh? what's wrong with that??
+    print(p2.stdout)  # FIXME/ERROR pt.stdout says "found 3x5 daemon"
+    #                 # Eh? what's wrong with that??
     print(p2.stderr)
     assert "ERROR: Daemon uses" in p2.stderr
     print('Third assertion PASSED (task failed successfully)', flush=True)
@@ -330,9 +331,9 @@ def test_kill(dbg=1):
 
 def test_arg_save_and_restore():
     if announce_unit(): return  # noqa
-    args = Namespace( ENV=dict(os.environ), foo='bar', bar='baz' )
+    args = Namespace(ENV=dict(os.environ), foo='bar', bar='baz')
     tmpfile = f'/tmp/deleteme-GarnetDaemon.test_arg_save_and_restore.{int(time.time())}'
-    orig_args_dict = (args.__dict__).copy() # save_args adds e.g. args.pe_fc=None
+    orig_args_dict = (args.__dict__).copy()       # save_args adds e.g. args.pe_fc=None
     GarnetDaemon.save_args(args, tmpfile, dbg=1)  # Save to tmpfile
     new_args = GarnetDaemon.load_args(tmpfile)    # Load from tmpfile
     new_args_dict = new_args.__dict__
@@ -360,7 +361,7 @@ def test_sigstop():
 
     # Start writing dots to a file
     tmpfile = f'/tmp/test_sigstop.{int(time.time())}'
-    subprocess.run([ "bash", "-c", "/bin/rm -f /tmp/test_sigstop*"])
+    subprocess.run(["bash", "-c", "/bin/rm -f /tmp/test_sigstop*"])
     p = subprocess.Popen([
         "bash", "-c", 
         f"while [ 1 ]; do echo -n .; sleep 1; done > {tmpfile}"
@@ -390,7 +391,7 @@ def test_sigstop():
 
     print('\nClean up')
     p.terminate()
-    subprocess.run([ "bash", "-c", "/bin/rm -f /tmp/test_sigstop*"])
+    subprocess.run(["bash", "-c", "/bin/rm -f /tmp/test_sigstop*"])
 
 
 def test_sigcont(): announce_unit(msg=": see test_sigstop()")  # noqa
@@ -400,7 +401,7 @@ def test_sigkill():
     if announce_unit(): return  # noqa
 
     # Give it a 5-min timeout I dunno...so it will eventually die on its own if things go south
-    p = subprocess.Popen([ "bash", "-c", "sleep 600" ])
+    p = subprocess.Popen(["bash", "-c", "sleep 600"])
     print(f'- started sleep process {p.pid}')
     # GarnetDaemon.do_cmd(f'ls -ld /proc/{p.pid}')
 
@@ -414,6 +415,7 @@ def test_sigkill():
 
 # TODO should do this, maybe, and not as a unit test, maybe
 def test_grid_size(): announce('todo')  # noqa
+
 
 def test_pid_save_and_restore():
     if announce_unit(): return  # noqa
@@ -445,6 +447,7 @@ def test_wait_stage():   announce_unit(': TBD')  # noqa
 def test_check_daemon(): announce_unit(': TBD')  # noqa
 
 def test_save_the_unsaveable():    announce_unit(': TBD')  # noqa
+
 
 ########################################################################
 # Helper functions
@@ -539,7 +542,7 @@ def verify_successful_build(capture_file):
 
 
 def force_launch_and_capture(capture_file, cmd='force'):
-    cmd=f'{DAEMON} {cmd} |& tee {capture_file}'
+    cmd = f'{DAEMON} {cmd} |& tee {capture_file}'
     p1 = subprocess.Popen(['bash', '-c', cmd])
     min_sleep()
     time.sleep(2) # try it without for awhile # NOPE it really needs to stay apparently
@@ -566,7 +569,7 @@ def poke_it_and_see_if_its_dead(pid):
         p.status().status # Fails if proc is a zombie (I guess?)
         # Success means failure
         return False
-    except:
+    except Exception:
         print(f'Process {pid} no longer exists. Success!')
         return True
 
