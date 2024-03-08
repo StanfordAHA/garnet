@@ -29,19 +29,19 @@ def test_tests(dbg=0):
     announce()
 
     daemon_home = MYDIR + "/daemon.py"
-    if dbg: print(f'i think i am "{MYPATH}"')
-    if dbg: print(f'i think i am in dir "{MYDIR}"')
-    if dbg: print(f'i think daemon.py is here: "{daemon_home}"')
+    if dbg: print(f'i think i am "{MYPATH}"')                     # noqa
+    if dbg: print(f'i think i am in dir "{MYDIR}"')               # noqa
+    if dbg: print(f'i think daemon.py is here: "{daemon_home}"')  # noqa
 
     find_dfuncs = f"egrep '^    def ' {daemon_home} | sed 's/(.*//' | sed 's/^    def //'"
     daemon_defs = subprocess.run(find_dfuncs, 
         capture_output=True, text=True, shell=True).stdout.split()
-    if dbg: print(f'module defs={daemon_defs}')
+    if dbg: print(f'module defs={daemon_defs}')  # noqa
     
     find_tfuncs = f"egrep '^def ' {MYPATH} | sed 's/(.*//' | sed 's/^def //'"
     test_defs = subprocess.run(find_tfuncs, 
         capture_output=True, text=True, shell=True).stdout.split()
-    if dbg: print(f'test defs={test_defs}')
+    if dbg: print(f'test defs={test_defs}')  # noqa
 
     badstr = ""
     goodstr = ""
@@ -106,7 +106,7 @@ def mydaemon():
             assert pid == childpid # Right???
 
             # IF we're not running as a daemon, we're done here.
-            if not args.daemon: break
+            if not args.daemon: break  # noqa
 
             # ELSE parent (daemon) WAITs for a client to send new args for processing
             print('\nLOOPING')
@@ -128,13 +128,15 @@ def mydaemon():
 
 def test_daemon_launch():  # kill-launch-kill
     'Launch daemon, see if it is running; kill the daemon, see if it is dead'
-    announce(); launch_daemon_and_verify()
+    announce()
+    launch_daemon_and_verify()
     kill_existing_daemon()
 
 
 def test_double_launch():  # kill-launch-launch-kill
     'Should complain if try to launch a second daemon when one is already running'
-    announce(); launch_daemon_and_verify()    # Launch first daemon
+    announce()
+    launch_daemon_and_verify()    # Launch first daemon
 
     print('Attempting to launch a second daemon, should get an error message')
     p = subprocess.Popen(f'{DAEMON} launch'.split(), stderr=subprocess.PIPE, text=True)
@@ -145,7 +147,8 @@ def test_double_launch():  # kill-launch-launch-kill
 
     for line in p.stderr.readlines():
         if 'found existing' in line:
-            print(f'Successfully found double-launch error "{line.strip()}"'); break
+            print(f'Successfully found double-launch error "{line.strip()}"')
+            break
 
     # Note because it did not use 'nohup', first daemon will die when pytest ends and that's okay.
     kill_existing_daemon()
@@ -156,7 +159,7 @@ def test_force_launch():
     announce()
     pid1 = launch_daemon_and_verify()
 
-    print('Force-launch a second daemon, it should kill the first one'); sys.stdout.flush()
+    print('Force-launch a second daemon, it should kill the first one', flush=True)
     subprocess.Popen(f'{DAEMON} force'.split())
     
     # Wait a bit, then see if the new daemon is running
@@ -183,8 +186,8 @@ def test_slow_test():
     expect(f'{DAEMON} status', 'daemon_status: busy')
 
     catnew_reset()
-    print('--- SLOTH');      try_animal('sloth',      tmpfile)
-    print('--- SLOW LORIS'); try_animal('slow-loris', tmpfile)
+    print('--- SLOTH');      try_animal('sloth',      tmpfile)  # noqa
+    print('--- SLOW LORIS'); try_animal('slow-loris', tmpfile)  # noqa
     os.remove(tmpfile)
 
     expect(f'{DAEMON} kill', 'killing it now')
@@ -259,10 +262,10 @@ def test_incompatible_daemon():
 
     # status check should *not* err out for size difference!
     p1 = subprocess.run(f'{DAEMON3x5} status'.split(), text=True, capture_output=True)
-    print(p1.stdout); print(p1.stderr)
+    print(p1.stdout); print(p1.stderr)  # noqa
     assert "ERROR: Daemon uses" not in p1.stderr
-    print('Second assertion PASSED')
-    sys.stdout.flush(); min_sleep()
+    print('Second assertion PASSED', flush=True)
+    min_sleep()
 
     p2 = subprocess.run(f'{DAEMON3x5} use --animal zebra'.split(), text=True, capture_output=True)
     # p2 = subprocess.run(f'{DAEMON3x5} use --animal zebra'.split())
@@ -270,10 +273,11 @@ def test_incompatible_daemon():
                      # Eh? what's wrong with that??
     print(p2.stderr)
     assert "ERROR: Daemon uses" in p2.stderr
-    print('Third assertion PASSED (task failed successfully)')
-    sys.stdout.flush(); min_sleep()
+    print('Third assertion PASSED (task failed successfully)', flush=True)
+    min_sleep()
 
-    print('\nKILL the daemon\n'); subprocess.run(f'{DAEMON} kill'.split())
+    print('\nKILL the daemon\n')
+    subprocess.run(f'{DAEMON} kill'.split())
 
 
 def test_help():
@@ -305,26 +309,27 @@ def test_daemon_exists():
 
 
 def test_kill(dbg=1):
-    if announce_unit(): return
+    if announce_unit(): return  # noqa
 
     # Start a dummy process
-    p = subprocess.Popen("sleep 500".split()); pid = p.pid
+    p = subprocess.Popen("sleep 500".split())
 
     # Register it as though it were the daemon
-    GarnetDaemon.register_pid(pid)
-    print(f'- wrote pid {pid} to pid-save file maybe')
+    GarnetDaemon.register_pid(p.pid)
+    print(f'- wrote pid {p.pid} to pid-save file maybe')
 
     # Check that it's still running
-    print(f"- ps {pid}")
-    exists = subprocess.run(f"ps {pid}", shell=True); assert exists
+    print(f"- ps {p.pid}")
+    exists = subprocess.run(f"ps {p.pid}", shell=True)
+    assert exists
 
     # Kill it maybe, then poke it and see if it's dead
     GarnetDaemon.kill(dbg=1)
-    assert poke_it_and_see_if_its_dead(pid)
+    assert poke_it_and_see_if_its_dead(p.pid)
 
 
 def test_arg_save_and_restore():
-    if announce_unit(): return
+    if announce_unit(): return  # noqa
     args = Namespace( ENV=dict(os.environ), foo='bar', bar='baz' )
     tmpfile = f'/tmp/deleteme-GarnetDaemon.test_arg_save_and_restore.{int(time.time())}'
     orig_args_dict = (args.__dict__).copy() # save_args adds e.g. args.pe_fc=None
@@ -345,13 +350,13 @@ def test_wait_daemon(): announce_unit('later')           # noqa
 
 
 def test_do_cmd():
-    if announce_unit(): return
-    assert     GarnetDaemon.do_cmd("exit 0")
-    assert not GarnetDaemon.do_cmd("exit 13")
+    if announce_unit(): return                 # noqa
+    assert     GarnetDaemon.do_cmd("exit 0")   # noqa
+    assert not GarnetDaemon.do_cmd("exit 13")  # noqa
 
 
 def test_sigstop():
-    if announce_unit(msg=": start writing dots to a file"): return
+    if announce_unit(msg=": start writing dots to a file"): return  # noqa
 
     # Start writing dots to a file
     tmpfile = f'/tmp/test_sigstop.{int(time.time())}'
@@ -362,23 +367,24 @@ def test_sigstop():
     ])
     
     print('\n- run for awhile, see how many dots we gots')
-    time.sleep(2); pid = p.pid
+    time.sleep(2)
 
-    print(f'- stop (but do not kill) dot-writing process {pid}')
-    GarnetDaemon.sigstop(pid)
-    with open(tmpfile, 'r') as f: dots0 = f.read()
+    print(f'- stop (but do not kill) dot-writing process {p.pid}')
+    GarnetDaemon.sigstop(p.pid)
+    with open(tmpfile, 'r') as f: dots0 = f.read()  # noqa
     print(f'- found dots0 "{dots0}"')
     
     print('\nWait awhile, verify that dots did not change')
-    time.sleep(2); GarnetDaemon.sigstop(pid)
-    with open(tmpfile, 'r') as f: dots1 = f.read()
+    time.sleep(2)
+    GarnetDaemon.sigstop(p.pid)
+    with open(tmpfile, 'r') as f: dots1 = f.read()  # noqa
     print(f'- found dots1 "{dots1}"')
     assert dots0 == dots1
 
     print('\nRestart the process, run for awhile, verify different dots')
-    GarnetDaemon.sigcont(pid)
+    GarnetDaemon.sigcont(p.pid)
     time.sleep(2)
-    with open(tmpfile, 'r') as f: dots2 = f.read()
+    with open(tmpfile, 'r') as f: dots2 = f.read()  # noqa
     print(f'- found dots2 "{dots2}"')
     assert dots1 != dots2
 
@@ -391,35 +397,36 @@ def test_sigcont(): announce_unit(msg=": see test_sigstop()")  # noqa
 
 
 def test_sigkill():
-    if announce_unit(): return
+    if announce_unit(): return  # noqa
 
     # Give it a 5-min timeout I dunno...so it will eventually die on its own if things go south
-    p = subprocess.Popen([ "bash", "-c", "sleep 600" ]); pid = p.pid
-    print(f'- started sleep process {pid}')
-    # GarnetDaemon.do_cmd(f'ls -ld /proc/{pid}')
+    p = subprocess.Popen([ "bash", "-c", "sleep 600" ])
+    print(f'- started sleep process {p.pid}')
+    # GarnetDaemon.do_cmd(f'ls -ld /proc/{p.pid}')
 
     # Kill it!
-    print(f'Killing {pid}')
-    GarnetDaemon.sigkill(pid)
+    print(f'Killing {p.pid}')
+    GarnetDaemon.sigkill(p.pid)
 
     # See if its dead
-    assert poke_it_and_see_if_its_dead(pid)
+    assert poke_it_and_see_if_its_dead(p.pid)
 
 
 # TODO should do this, maybe, and not as a unit test, maybe
 def test_grid_size(): announce('todo')  # noqa
 
 def test_pid_save_and_restore():
-    if announce_unit(): return
+    if announce_unit(): return  # noqa
     tmpfile = f'/tmp/deleteme-GarnetDaemon.test_pid_save_and_restore.{int(time.time())}'
     GarnetDaemon.register_pid(fname=tmpfile, dbg=1)
     pid = GarnetDaemon.retrieve_pid(fname=tmpfile, dbg=1)
-    os.remove(tmpfile); mypid = os.getpid()
+    os.remove(tmpfile)
+    mypid = os.getpid()
     assert mypid == pid, f'My pid ({mypid} != retrieved pid {pid})'
 
 
 def test_status_save_and_restore():
-    if announce_unit(): return
+    if announce_unit(): return  # noqa
     tmpfile = f'/tmp/deleteme-GarnetDaemon.test_status_save_and_restore.{int(time.time())}'
     s1 = 'waiting'
     GarnetDaemon.put_status(s1, fname=tmpfile)
@@ -442,21 +449,22 @@ def test_save_the_unsaveable():    announce_unit(': TBD')  # noqa
 ########################################################################
 # Helper functions
 
-
 def catnew_reset():
-    global FILE_INDEX; FILE_INDEX = 0
+    global FILE_INDEX
+    FILE_INDEX = 0
 
 
 def catnew(filename, reset=False):
     'cat everything in file since last newcat() call'
-    if reset: catnew_reset()
+    if reset: catnew_reset()  # noqa
 
-    with open(filename, 'r') as f: file_contents = f.read()
+    with open(filename, 'r') as f: file_contents = f.read()  # noqa
     lines = file_contents.split('\n')
 
     # Cut out the first n lines, where n=FILE_INDEX; update FILE_INDEX
     global FILE_INDEX
-    del lines[:FILE_INDEX]; FILE_INDEX += len(lines)
+    del lines[:FILE_INDEX]
+    FILE_INDEX += len(lines)
     return '\n'.join(lines)
 
 
@@ -494,8 +502,8 @@ def expect(cmd, expect):
     print('', flush=True)
 
     # Did we get what we expected?
-    if expect in p.stdout: return True
-    else:                  return False
+    if expect in p.stdout: return True   # noqa
+    else:                  return False  # noqa
 
 
 def kill_existing_daemon():
@@ -506,16 +514,19 @@ def kill_existing_daemon():
 
 def kill_running_daemon():
     print("Kill the daemon (p.stdout should NOT say 'already dead')", flush=True)
-    subprocess.run(f'{DAEMON} kill'.split()); sys.stdout.flush()
+    subprocess.run(f'{DAEMON} kill'.split())
+    sys.stdout.flush()
 
 
 def launch_daemon_and_verify(daemon=DAEMON):
     kill_existing_daemon()
     print('Launch a daemon', flush=True)
-    p = subprocess.Popen(f'{DAEMON} launch'.split()); pid0 = p.pid
+    p = subprocess.Popen(f'{DAEMON} launch'.split())
+    pid0 = p.pid
     print('- wait two seconds', flush=True)
     min_sleep()
-    pid1 = verify_daemon_running(); assert pid0 == pid1
+    pid1 = verify_daemon_running()
+    assert pid0 == pid1
     # TODO look for e.g. 'Built 7x13' ? Merge w force_launch below?
     return pid0
 
@@ -536,9 +547,10 @@ def force_launch_and_capture(capture_file, cmd='force'):
 
 
 def verify_daemon_running():
-    print('Check daemon status, should be "found running daemon"'); sys.stdout.flush()
+    print('Check daemon status, should be "found running daemon"', flush=True)
     p = subprocess.run(f'{DAEMON} status'.split(), text=True, capture_output=True)
-    print(p.stdout); assert('found running daemon') in p.stdout
+    print(p.stdout)
+    assert('found running daemon') in p.stdout
 
     # Extra credit: return pid of running daemon
     import re
@@ -561,14 +573,17 @@ def poke_it_and_see_if_its_dead(pid):
 
 def announce(msg=''):
     import inspect
-    curframe = inspect.currentframe(); print_header(curframe, msg)
+    curframe = inspect.currentframe()
+    print_header(curframe, msg)
     
 
 def announce_unit(msg=''):
     # Return True if we are supposed to skip this test
     import inspect
-    curframe = inspect.currentframe(); print_header(curframe, msg)
-    if SKIP_UNIT_TESTS: print('- skipping unit tests')
+    curframe = inspect.currentframe()
+    print_header(curframe, msg)
+    if SKIP_UNIT_TESTS:
+        print('- skipping unit tests')
     return SKIP_UNIT_TESTS
 
 
@@ -577,13 +592,13 @@ def print_header(curframe, msg):
     callerframe = inspect.getouterframes(curframe, 2)
     caller = callerframe[1][3]
     print('\n========================================================================')
-    if msg == 'todo' or msg == 'later': msg = ' - TODO'
+    if msg == 'todo' or msg == 'later':
+        msg = ' - TODO'
     print(f"--- TEST: {caller}(){msg}")
     sys.stdout.flush()
 
 
 #########################################################################
-# main(): run proto daemon if script called w args e.g. "--daemon launch"
-if __name__ == "__main__":
-    if len( sys.argv ) > 1: mydaemon()
-
+# main(): run proto daemon if script called w args e.g. "python test_daemon --daemon launch"
+if (__name__ == "__main__") and (len( sys.argv ) > 1):
+    mydaemon()
