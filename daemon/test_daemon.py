@@ -501,7 +501,7 @@ def expect(cmd, expect):
     # Print stdout
     print(f'({cmd}) ')
     prefix = '    '
-    print((prefix+p.stdout).replace('\n',f'\n{prefix}'), flush=True)
+    print((prefix + p.stdout).replace('\n', f'\n{prefix}'), flush=True)
     print('', flush=True)
 
     # Did we get what we expected?
@@ -510,7 +510,7 @@ def expect(cmd, expect):
 
 
 def kill_existing_daemon():
-    print("Kill existing daemon (p.stdout should say 'already dead')",flush=True)
+    print("Kill existing daemon (p.stdout should say 'already dead')", flush=True)
     subprocess.run(f'{DAEMON} kill'.split())
     GarnetDaemon.cleanup()
 
@@ -545,7 +545,7 @@ def force_launch_and_capture(capture_file, cmd='force'):
     cmd = f'{DAEMON} {cmd} |& tee {capture_file}'
     p1 = subprocess.Popen(['bash', '-c', cmd])
     min_sleep()
-    time.sleep(2) # try it without for awhile # NOPE it really needs to stay apparently
+    time.sleep(2)  # try it without for awhile # NOPE it really needs to stay apparently
     return p1
 
 
@@ -553,7 +553,7 @@ def verify_daemon_running():
     print('Check daemon status, should be "found running daemon"', flush=True)
     p = subprocess.run(f'{DAEMON} status'.split(), text=True, capture_output=True)
     print(p.stdout)
-    assert('found running daemon') in p.stdout
+    assert 'found running daemon' in p.stdout
 
     # Extra credit: return pid of running daemon
     import re
@@ -566,7 +566,7 @@ def poke_it_and_see_if_its_dead(pid):
     try:
         import psutil
         p = psutil.Process(pid)  # Fails if proc gone entirely
-        p.status().status # Fails if proc is a zombie (I guess?)
+        p.status().status        # Fails if proc is a zombie (I guess?)
         # Success means failure
         return False
     except Exception:
@@ -603,5 +603,5 @@ def print_header(curframe, msg):
 
 #########################################################################
 # main(): run proto daemon if script called w args e.g. "python test_daemon --daemon launch"
-if (__name__ == "__main__") and (len( sys.argv ) > 1):
+if (__name__ == "__main__") and (len(sys.argv) > 1):
     mydaemon()
