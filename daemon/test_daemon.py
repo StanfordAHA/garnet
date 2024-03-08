@@ -500,7 +500,7 @@ def expect(cmd, expect):
 
     # Print stdout
     print(f'({cmd}) ')
-    prefix='    '
+    prefix = '    '
     print((prefix+p.stdout).replace('\n',f'\n{prefix}'), flush=True)
     print('', flush=True)
 
