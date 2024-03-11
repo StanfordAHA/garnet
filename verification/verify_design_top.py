@@ -76,15 +76,21 @@ def set_clk_rst_flush(solver):
 
 def synchronize_cycle_counts(solver):
 
+    # solver.fts.add_invar(
+    #     solver.create_term(
+    #         solver.ops.And,
+    #         solver.create_term(
+    #             solver.ops.BVSgt, solver.cycle_count, solver.create_term(0, solver.cycle_count.get_sort())
+    #         ),
+    #         solver.create_term(
+    #             solver.ops.BVSlt, solver.cycle_count, solver.create_term(1000, solver.cycle_count.get_sort())
+    #         )
+    #     )
+    # )
+
     solver.fts.add_invar(
         solver.create_term(
-            solver.ops.And,
-            solver.create_term(
-                solver.ops.BVSgt, solver.cycle_count, solver.create_term(0, solver.cycle_count.get_sort())
-            ),
-            solver.create_term(
-                solver.ops.BVSlt, solver.cycle_count, solver.create_term(1000, solver.cycle_count.get_sort())
-            )
+            solver.ops.BVSgt, solver.cycle_count, solver.create_term(0, solver.cycle_count.get_sort())
         )
     )
 
@@ -236,7 +242,7 @@ def create_property_term(
                 solver.ops.And, valid_and_clk_low, solver.create_term(solver.ops.Not, output_dep_on_input)
             )
 
-        halide_pixel_index_var = solver.create_symbol(
+        halide_pixel_index_var = solver.create_fts_state_var(
             f"halide_pixel_index_{str(mapped_output_var_name)}", bvsort16
         )
         # solver.fts.constrain_init(
@@ -272,13 +278,16 @@ def create_property_term(
         # Use stencil valid memtile addr_out - cycle_starting_addr as the index for the output_pixel_array
         assert valid_name in solver.stencil_valid_to_port_controller
         memtile = solver.stencil_valid_to_port_controller[valid_name]
+
+        cycle_starting_addr = solver.stencil_valid_to_cycle_starting_addr[memtile]
+
         for name, term in solver.fts.named_terms.items():
             if "addr_out" in name and memtile in name and not solver.fts.is_next_var(term):
                 addr_out = term
                 break
 
         halide_pixel_index = solver.create_term(
-            solver.ops.BVSub, addr_out, starting_cycle_count
+            solver.ops.BVSub, addr_out, solver.create_term(cycle_starting_addr, addr_out.get_sort())
         )
 
         solver.fts.add_invar(
