@@ -12,3 +12,12 @@ outputs:
   - globalnetconnect.tcl
   - power-strategy-dualmesh.tcl
 
+tests:
+  - description: power-analysis
+    test_graph: ir_test
+    express_mode: no_timing_opt
+    attach_points:
+      - PLACE
+      - CTS
+      - ROUTE
+      - SIGNOFF 
