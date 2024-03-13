@@ -46,7 +46,7 @@ def construct(**kwargs):
   # ADK step
 
   # Custom steps
-  lib_timing_arcs = Step( this_dir + 'synopsys-pt-get-lib-timing-arcs' )
+  lib_timing_arcs = Step( this_dir + '/synopsys-pt-get-lib-timing-arcs' )
   checker         = Step( this_dir + '/checker' )
 
   # Default steps
