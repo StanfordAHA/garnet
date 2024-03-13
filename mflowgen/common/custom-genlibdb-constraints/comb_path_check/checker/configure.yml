@@ -1,26 +1,37 @@
 #=========================================================================
-# Constraints
+# Loopbreaking test checker
 #=========================================================================
 # Author : Alex Carsello
-# Date   : Jan 24, 2020
+# Date   : March 12, 2024
 #
 
-name: custom-genlibdb-constraints
+name: checker
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
+inputs:
+  - lib_timing_arcs
+
 outputs:
-  - genlibdb-constraints.tcl
+  - result
+
 
 #-------------------------------------------------------------------------
-# Tests
+# Commands
 #-------------------------------------------------------------------------
 
-tests:
-  - description: loopbreaking
-    test_graph: comb_path_check
-    express_mode: fp_only
-    attach_points:
-      - GENLIB
+commands:
+  - mkdir -p outputs
+  - python gen_result.py
+
+#-------------------------------------------------------------------------
+# Preconditions and Postconditions
+#-------------------------------------------------------------------------
+
+preconditions:
+  - assert File( 'inputs/lib_timing_arcs' )
+
+postconditions:
+  - assert File( 'outputs/result' )

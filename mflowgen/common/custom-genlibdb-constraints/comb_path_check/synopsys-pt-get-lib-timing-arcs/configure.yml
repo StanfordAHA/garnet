@@ -1,0 +1,36 @@
+#=========================================================================
+# Synopsys PT Lib Timing Arcs
+#=========================================================================
+# Author : Alex Carsello
+# Date   : March 12, 2024
+#
+# Reads in a .lib timing model and generates a report with all timing arcs
+
+name: synopsys-pt-get-lib-timing-arcs
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - design.lib
+
+outputs:
+  - lib_timing_arcs
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - pt_shell -file get-lib-timing-arcs.tcl
+  - mkdir -p outputs && cd outputs
+  - ln -sf ../lib_timing_arcs lib_timing_arcs
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+
