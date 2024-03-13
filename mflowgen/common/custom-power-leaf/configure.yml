@@ -15,7 +15,8 @@ outputs:
 tests:
   - description: power-analysis
     test_graph: ir_test
-    unit_test_graph: GcdUnit 
+    unit_test_graph: GcdUnit
+    express_mode: no_timing_opt
     attach_points:
       - PLACE
       - CTS
