@@ -64,8 +64,7 @@ def construct(**kwargs):
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_step( static_pa )
-  g.add_step( static_ra )
+  g.add_step( lib_timing_arcs )
   g.add_step( checker   )
 
   #-----------------------------------------------------------------------
@@ -73,8 +72,7 @@ def construct(**kwargs):
   #-----------------------------------------------------------------------
 
   # Connect by name
-  g.connect_by_name( static_pa, static_ra )
-  g.connect_by_name( static_ra, checker   )
+  g.connect_by_name( lib_timing_arcs, checker )
 
   #-----------------------------------------------------------------------
   # Parameterize
