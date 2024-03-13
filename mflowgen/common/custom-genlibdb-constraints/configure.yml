@@ -21,6 +21,6 @@ outputs:
 tests:
   - description: loopbreaking
     test_graph: comb_path_check
-    express_mode: fp_only
+    express_mode: low_effort
     attach_points:
       - GENLIB
