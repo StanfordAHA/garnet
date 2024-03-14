@@ -60,63 +60,77 @@ def construct():
         power_drc_rule_deck = 'pegasus-drc-block.rule'
 
     parameters = {
-      'construct_path'    : __file__,
-      'design_name'       : 'GarnetSOC_pad_frame',
-      'clock_period'      : 1.1,
-      'adk'               : adk_name,
-      'adk_view'          : adk_view,
+      'construct_path': __file__,
+      'design_name': 'GarnetSOC_pad_frame',
+      'clock_period': 1.1,
+      'adk': adk_name,
+      'adk_view': adk_view,
+
       # Synthesis
-      'flatten_effort'    : 0,
-      'topographical'     : True,
+      'flatten_effort': 0,
+      'topographical': True,
+
       # RTL Generation
-      'array_width'       : 32,
-      'array_height'      : 16,
-      'num_glb_tiles'     : 16,
-      'interconnect_only' : False,
-      'use_local_garnet'  : False,
+      'array_width': 32,
+      'array_height': 16,
+      'num_glb_tiles': 16,
+      'interconnect_only': False,
+      'use_local_garnet': False,
       # glb tile memory size (unit: KB)
       # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
-      'glb_tile_mem_size' : 256,   # 256*16 => 4M global buffer
+      'glb_tile_mem_size': 256,   # 256*16 => 4M global buffer
+
       # Power Domains
-      'PWR_AWARE'         : True,
+      'PWR_AWARE': True,
+
       # Include Garnet?
-      'soc_only'          : False,
+      'soc_only': False,
+
       # Include SoC core? (use 0 for false, 1 for true)
-      'include_core'      : 1,
+      'include_core': 1,
+
       # Include sealring?
-      'include_sealring'  : False,
+      'include_sealring': False,
+
       # SRAM macros
-      'num_words'         : 4096,
-      'word_size'         : 64,
-      'mux_size'          : 8,
-      'num_subarrays'     : 2,
-      'partial_write'     : True,
+      'num_words': 4096,
+      'word_size': 64,
+      'mux_size': 8,
+      'num_subarrays': 2,
+      'partial_write': True,
+
       # Low Effort flow
-      'express_flow'             : False,
-      'skip_verify_connectivity' : True,
+      'express_flow': False,
+      'skip_verify_connectivity': True,
+
       # Hold fixing
-      'signoff_engine' : True,
-      'hold_target_slack'  : 0.100,
+      'signoff_engine': True,
+      'hold_target_slack': 0.100,
+
       # LVS
       # - need lvs2 because dragonphy uses LVT cells
-      'lvs_extra_spice_include' : 'inputs/adk_lvs2/*.cdl',
-      'lvs_hcells_file'   : 'inputs/adk/hcells.inc',
-      'lvs_connect_names' : '"VDD VSS VDDPST"',
-      'lvs_verify_netlist' : 0,
+      'lvs_extra_spice_include': 'inputs/adk_lvs2/*.cdl',
+      'lvs_hcells_file': 'inputs/adk/hcells.inc',
+      'lvs_connect_names': '"VDD VSS VDDPST"',
+      'lvs_verify_netlist': 0,
+
       # TSMC16 support for LVS - need lvs2 because dragonphy uses LVT cells
-      'adk_view_lvs2'     : 'multivt',
+      'adk_view_lvs2': 'multivt',
+
       # TLX Ports Partitions
-      'TLX_FWD_DATA_LO_WIDTH' : 16,
-      'TLX_REV_DATA_LO_WIDTH' : 45,
+      'TLX_FWD_DATA_LO_WIDTH': 16,
+      'TLX_REV_DATA_LO_WIDTH': 45,
+
       # DRC rule deck
-      'drc_rule_deck'         : drc_rule_deck,
-      'antenna_drc_rule_deck' : antenna_drc_rule_deck,
-      'power_drc_rule_deck'   : power_drc_rule_deck,
-      'nthreads'              : 16,
-      'drc_env_setup'         : 'drcenv-chip.sh',
-      'antenna_drc_env_setup' : 'drcenv-chip-ant.sh',
+      'drc_rule_deck': drc_rule_deck,
+      'antenna_drc_rule_deck': antenna_drc_rule_deck,
+      'power_drc_rule_deck': power_drc_rule_deck,
+      'nthreads': 16,
+      'drc_env_setup': 'drcenv-chip.sh',
+      'antenna_drc_env_setup': 'drcenv-chip-ant.sh',
+
       # Testbench
-      'cgra_apps' : ["tests/conv_1_2", "tests/conv_2_1"]
+      'cgra_apps': ["tests/conv_1_2", "tests/conv_2_1"]
     }
 
     # Note 'lvs_adk_view' not used by amber/tsmc
@@ -127,14 +141,14 @@ def construct():
 
     # TSMC overrides
     if adk_name == 'tsmc16': parameters.update({
-      'clock_period'      : 1.3,
-      'include_sealring'  : True,
-      'num_words'         : 2048,
-      'corner'            : "tt0p8v25c",
+      'clock_period': 1.3,
+      'include_sealring': True,
+      'num_words': 2048,
+      'corner': "tt0p8v25c",
       # Dragonphy
-      'dragonphy_rdl_x'   : '613.565u',
-      'dragonphy_rdl_y'   : '3901.872u',
-      'hold_target_slack'  : 0.060,
+      'dragonphy_rdl_x': '613.565u',
+      'dragonphy_rdl_y': '3901.872u',
+      'hold_target_slack': 0.060,
 
     })
     # OG TSMC did not set drc_env_setup etc.
@@ -147,18 +161,18 @@ def construct():
 
     sram_2_params = {
       # SRAM macros
-      'num_words'         : 32768,
-      'word_size'         : 32,
-      'mux_size'          : 16,
-      'num_subarrays'     : 8,
-      'partial_write'     : True,
+      'num_words': 32768,
+      'word_size': 32,
+      'mux_size': 16,
+      'num_subarrays': 8,
+      'partial_write': True,
     }
 
     guardring_params = {
       # Merging guardring into GDS
-      'child_gds' : 'inputs/adk/guardring.gds',
-      'coord_x'   : '-49.98u',
-      'coord_y'   : '-49.92u'
+      'child_gds': 'inputs/adk/guardring.gds',
+      'coord_x': '-49.98u',
+      'coord_y': '-49.92u'
     }
 
     #-----------------------------------------------------------------------
@@ -696,7 +710,7 @@ def construct():
         gen_sram_2.update_params(sram_2_params)
 
         # LVS adk has separate view parameter
-        lvs_adk.update_params({'adk_view' : parameters['lvs_adk_view']})
+        lvs_adk.update_params({'adk_view': parameters['lvs_adk_view']})
 
     # Since we are adding an additional input script to the generic Innovus
     # steps, we modify the order parameter for that node which determines
@@ -705,8 +719,8 @@ def construct():
     # DC needs these param to set the NO_CGRA macro
     synth.update_params({'soc_only': parameters['soc_only']}, True)
     # DC needs these params to set macros in soc rtl
-    synth.update_params({'TLX_FWD_DATA_LO_WIDTH' : parameters['TLX_FWD_DATA_LO_WIDTH']}, True)
-    synth.update_params({'TLX_REV_DATA_LO_WIDTH' : parameters['TLX_REV_DATA_LO_WIDTH']}, True)
+    synth.update_params({'TLX_FWD_DATA_LO_WIDTH': parameters['TLX_FWD_DATA_LO_WIDTH']}, True)
+    synth.update_params({'TLX_REV_DATA_LO_WIDTH': parameters['TLX_REV_DATA_LO_WIDTH']}, True)
     init.update_params({'soc_only': parameters['soc_only']}, True)
 
     if which_soc == 'amber': init.update_params(
