@@ -128,28 +128,35 @@ def construct():
         pwr_aware_gls = Step(this_dir + '/../common/pwr-aware-gls')
 
     # Default steps
-    info           = Step('info',                           default=True)
-    synth          = Step('cadence-genus-synthesis',        default=True)
-    iflow          = Step('cadence-innovus-flowsetup',      default=True)
-    init           = Step('cadence-innovus-init',           default=True)
-    power          = Step('cadence-innovus-power',          default=True)
-    place          = Step('cadence-innovus-place',          default=True)
-    cts            = Step('cadence-innovus-cts',            default=True)
-    postcts_hold   = Step('cadence-innovus-postcts_hold',   default=True)
-    route          = Step('cadence-innovus-route',          default=True)
-    postroute      = Step('cadence-innovus-postroute',      default=True)
-    postroute_hold = Step('cadence-innovus-postroute_hold', default=True)
-    signoff        = Step('cadence-innovus-signoff',        default=True)
-    pt_signoff     = Step('synopsys-pt-timing-signoff',     default=True)
-    genlibdb       = Step('synopsys-ptpx-genlibdb',         default=True)
+
+    def default_step(step_name):
+        return Step(step_name, default=True)
+
+    # Turn off formatting b/c want these columns to line up
+    # autopep8: off
+    info           = default_step('info')                       # noqa
+    synth          = default_step('cadence-genus-synthesis')    # noqa
+    iflow          = default_step('cadence-innovus-flowsetup')  # noqa
+    init           = default_step('cadence-innovus-init')       # noqa
+    power          = default_step('cadence-innovus-power')      # noqa
+    place          = default_step('cadence-innovus-place')      # noqa
+    cts            = default_step('cadence-innovus-cts')        # noqa
+    postcts_hold   = default_step('cadence-innovus-postcts_hold')    # noqa
+    route          = default_step('cadence-innovus-route')           # noqa
+    postroute      = default_step('cadence-innovus-postroute')       # noqa
+    postroute_hold = default_step('cadence-innovus-postroute_hold')  # noqa
+    signoff        = default_step('cadence-innovus-signoff')         # noqa
+    pt_signoff     = default_step('synopsys-pt-timing-signoff')      # noqa
+    genlibdb       = default_step('synopsys-ptpx-genlibdb')          # noqa
+    # autopep8: on
 
     if which("calibre") is not None:
-        drc            = Step('mentor-calibre-drc',             default=True)
-        lvs            = Step('mentor-calibre-lvs',             default=True)
+        drc = default_step('mentor-calibre-drc')
+        lvs = default_step('mentor-calibre-lvs')
     else:
-        drc            = Step('cadence-pegasus-drc',            default=True)
-        lvs            = Step('cadence-pegasus-lvs',            default=True)
-    debugcalibre   = Step('cadence-innovus-debug-calibre',  default=True)
+        drc = default_step('cadence-pegasus-drc')
+        lvs = default_step('cadence-pegasus-lvs')
+    debugcalibre = default_step('cadence-innovus-debug-calibre')
 
 
     # Extra DC input
@@ -201,22 +208,28 @@ def construct():
     # Inputs
     g.add_input('design.v', rtl.i('design.v'))
 
+    # Turn off formatting b/c want below columns to line up (is this bad?)
+    # autopep8: off
+
     # Outputs
-    g.add_output('Tile_MemCore_tt.lib',      genlibdb.o('design.lib'))
-    g.add_output('Tile_MemCore_tt.db',       genlibdb.o('design.db'))
-    g.add_output('Tile_MemCore.lef',         signoff.o('design.lef'))
-    g.add_output('Tile_MemCore.gds',         signoff.o('design-merged.gds'))
-    g.add_output('Tile_MemCore.sdf',         signoff.o('design.sdf'))
-    g.add_output('Tile_MemCore.vcs.v',       signoff.o('design.vcs.v'))
-    g.add_output('Tile_MemCore.vcs.pg.v',    signoff.o('design.vcs.pg.v'))
-    g.add_output('Tile_MemCore.spef.gz',     signoff.o('design.spef.gz'))
-    g.add_output('Tile_MemCore.pt.sdc',      signoff.o('design.pt.sdc'))
-    g.add_output('Tile_MemCore.lvs.v',       lvs.o('design_merged.lvs.v'))
-    g.add_output('sram.spi',                 gen_sram.o('sram.spi'))
-    g.add_output('sram.v',                   gen_sram.o('sram.v'))
-    g.add_output('sram_pwr.v',               gen_sram.o('sram_pwr.v'))
-    g.add_output('sram_tt.db',               gen_sram.o('sram_tt.db'))
-    g.add_output('sram_tt.lib',              gen_sram.o('sram_tt.lib'))
+    g.add_output('Tile_MemCore_tt.lib',    genlibdb.o('design.lib'))        # noqa
+    g.add_output('Tile_MemCore_tt.db',     genlibdb.o('design.db'))         # noqa
+    g.add_output('Tile_MemCore.lef',       signoff.o('design.lef'))         # noqa
+    g.add_output('Tile_MemCore.gds',       signoff.o('design-merged.gds'))  # noqa
+    g.add_output('Tile_MemCore.sdf',       signoff.o('design.sdf'))         # noqa
+    g.add_output('Tile_MemCore.vcs.v',     signoff.o('design.vcs.v'))       # noqa
+    g.add_output('Tile_MemCore.vcs.pg.v',  signoff.o('design.vcs.pg.v'))    # noqa
+    g.add_output('Tile_MemCore.spef.gz',   signoff.o('design.spef.gz'))     # noqa
+    g.add_output('Tile_MemCore.pt.sdc',    signoff.o('design.pt.sdc'))      # noqa
+    g.add_output('Tile_MemCore.lvs.v',     lvs.o('design_merged.lvs.v'))    # noqa
+
+    g.add_output('sram.spi',               gen_sram.o('sram.spi'))          # noqa
+    g.add_output('sram.v',                 gen_sram.o('sram.v'))            # noqa
+    g.add_output('sram_pwr.v',             gen_sram.o('sram_pwr.v'))        # noqa
+    g.add_output('sram_tt.db',             gen_sram.o('sram_tt.db'))        # noqa
+    g.add_output('sram_tt.lib',            gen_sram.o('sram_tt.lib'))       # noqa
+
+    # autopep8: on
 
     order = synth.get_param('order')
     order.append('copy_sdc.tcl')
@@ -304,130 +317,138 @@ def construct():
 
     # Connect by name
 
-    g.connect_by_name(adk,      gen_sram)
-    g.connect_by_name(adk,      synth)
-    g.connect_by_name(adk,      iflow)
-    g.connect_by_name(adk,      init)
-    g.connect_by_name(adk,      power)
-    g.connect_by_name(adk,      place)
-    g.connect_by_name(adk,      cts)
-    g.connect_by_name(adk,      postcts_hold)
-    g.connect_by_name(adk,      route)
-    g.connect_by_name(adk,      postroute)
-    g.connect_by_name(adk,      postroute_hold)
-    g.connect_by_name(adk,      signoff)
-    g.connect_by_name(adk,      drc)
-    g.connect_by_name(adk,      lvs)
+    g.connect_by_name(adk, gen_sram)
+    g.connect_by_name(adk, synth)
+    g.connect_by_name(adk, iflow)
+    g.connect_by_name(adk, init)
+    g.connect_by_name(adk, power)
+    g.connect_by_name(adk, place)
+    g.connect_by_name(adk, cts)
+    g.connect_by_name(adk, postcts_hold)
+    g.connect_by_name(adk, route)
+    g.connect_by_name(adk, postroute)
+    g.connect_by_name(adk, postroute_hold)
+    g.connect_by_name(adk, signoff)
+    g.connect_by_name(adk, drc)
+    g.connect_by_name(adk, lvs)
 
-    g.connect_by_name(gen_sram,      synth)
-    g.connect_by_name(gen_sram,      iflow)
-    g.connect_by_name(gen_sram,      init)
-    g.connect_by_name(gen_sram,      power)
-    g.connect_by_name(gen_sram,      place)
-    g.connect_by_name(gen_sram,      cts)
-    g.connect_by_name(gen_sram,      postcts_hold)
-    g.connect_by_name(gen_sram,      route)
-    g.connect_by_name(gen_sram,      postroute)
-    g.connect_by_name(gen_sram,      postroute_hold)
-    g.connect_by_name(gen_sram,      signoff)
-    g.connect_by_name(gen_sram,      genlibdb)
-    g.connect_by_name(gen_sram,      pt_signoff)
-    g.connect_by_name(gen_sram,      drc)
-    g.connect_by_name(gen_sram,      lvs)
+    g.connect_by_name(gen_sram, synth)
+    g.connect_by_name(gen_sram, iflow)
+    g.connect_by_name(gen_sram, init)
+    g.connect_by_name(gen_sram, power)
+    g.connect_by_name(gen_sram, place)
+    g.connect_by_name(gen_sram, cts)
+    g.connect_by_name(gen_sram, postcts_hold)
+    g.connect_by_name(gen_sram, route)
+    g.connect_by_name(gen_sram, postroute)
+    g.connect_by_name(gen_sram, postroute_hold)
+    g.connect_by_name(gen_sram, signoff)
+    g.connect_by_name(gen_sram, genlibdb)
+    g.connect_by_name(gen_sram, pt_signoff)
+    g.connect_by_name(gen_sram, drc)
+    g.connect_by_name(gen_sram, lvs)
 
-    g.connect_by_name(rtl,         synth)
+    g.connect_by_name(rtl, synth)
     g.connect_by_name(constraints, synth)
     g.connect_by_name(custom_genus_scripts, synth)
 
-    g.connect_by_name(synth,       iflow)
-    g.connect_by_name(synth,       init)
-    g.connect_by_name(synth,       power)
-    g.connect_by_name(synth,       place)
-    g.connect_by_name(synth,       cts)
+    g.connect_by_name(synth, iflow)
+    g.connect_by_name(synth, init)
+    g.connect_by_name(synth, power)
+    g.connect_by_name(synth, place)
+    g.connect_by_name(synth, cts)
     g.connect_by_name(custom_flowgen_setup, iflow)
 
-    g.connect_by_name(iflow,    init)
-    g.connect_by_name(iflow,    power)
-    g.connect_by_name(iflow,    place)
-    g.connect_by_name(iflow,    cts)
-    g.connect_by_name(iflow,    postcts_hold)
-    g.connect_by_name(iflow,    route)
-    g.connect_by_name(iflow,    postroute)
-    g.connect_by_name(iflow,    postroute_hold)
-    g.connect_by_name(iflow,    signoff)
+    g.connect_by_name(iflow, init)
+    g.connect_by_name(iflow, power)
+    g.connect_by_name(iflow, place)
+    g.connect_by_name(iflow, cts)
+    g.connect_by_name(iflow, postcts_hold)
+    g.connect_by_name(iflow, route)
+    g.connect_by_name(iflow, postroute)
+    g.connect_by_name(iflow, postroute_hold)
+    g.connect_by_name(iflow, signoff)
 
-    g.connect_by_name(custom_init,  init)
+    g.connect_by_name(custom_init, init)
     g.connect_by_name(custom_power, power)
-    g.connect_by_name(custom_lvs,   lvs)
+    g.connect_by_name(custom_lvs, lvs)
 
-    g.connect_by_name(init,           power)
-    g.connect_by_name(power,          place)
-    g.connect_by_name(place,          cts)
-    g.connect_by_name(cts,            postcts_hold)
-    g.connect_by_name(postcts_hold,   route)
-    g.connect_by_name(route,          postroute)
-    g.connect_by_name(postroute,      postroute_hold)
+    g.connect_by_name(init, power)
+    g.connect_by_name(power, place)
+    g.connect_by_name(place, cts)
+    g.connect_by_name(cts, postcts_hold)
+    g.connect_by_name(postcts_hold, route)
+    g.connect_by_name(route, postroute)
+    g.connect_by_name(postroute, postroute_hold)
     g.connect_by_name(postroute_hold, signoff)
-    g.connect_by_name(signoff,        drc)
-    g.connect_by_name(signoff,        lvs)
+    g.connect_by_name(signoff, drc)
+    g.connect_by_name(signoff, lvs)
+
     g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
     g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-    g.connect_by_name(signoff,              genlibdb)
-    g.connect_by_name(adk,                  genlibdb)
+    g.connect_by_name(signoff, genlibdb)
+    g.connect_by_name(adk, genlibdb)
     g.connect_by_name(genlibdb_constraints, genlibdb)
 
-    g.connect_by_name(genlibdb,             lib2db)
+    g.connect_by_name(genlibdb, lib2db)
 
-    g.connect_by_name(adk,          pt_signoff)
-    g.connect_by_name(signoff,      pt_signoff)
+    g.connect_by_name(adk, pt_signoff)
+    g.connect_by_name(signoff, pt_signoff)
 
     g.connect_by_name(application, testbench)
-    if synth_power:
-        g.connect_by_name(application, post_synth_power)
-        g.connect_by_name(gen_sram,    post_synth_power)
-        g.connect_by_name(synth,       post_synth_power)
-        g.connect_by_name(testbench,   post_synth_power)
-    g.connect_by_name(application, post_pnr_power)
-    g.connect_by_name(gen_sram,    post_pnr_power)
-    g.connect_by_name(signoff,     post_pnr_power)
-    g.connect_by_name(pt_signoff,  post_pnr_power)
-    g.connect_by_name(testbench,   post_pnr_power)
 
-    g.connect_by_name(adk,      debugcalibre)
-    g.connect_by_name(synth,    debugcalibre)
-    g.connect_by_name(iflow,    debugcalibre)
-    g.connect_by_name(signoff,  debugcalibre)
-    g.connect_by_name(drc,      debugcalibre)
-    g.connect_by_name(lvs,      debugcalibre)
+    def reverse_connect(node1, node2):
+        g.connect_by_name(node2, node1)
+
+    if synth_power:
+        reverse_connect(post_synth_power, application)
+        reverse_connect(post_synth_power, gen_sram)
+        reverse_connect(post_synth_power, synth)
+        reverse_connect(post_synth_power, testbench)
+
+    reverse_connect(post_pnr_power, application)
+    reverse_connect(post_pnr_power, gen_sram)
+    reverse_connect(post_pnr_power, signoff)
+    reverse_connect(post_pnr_power, pt_signoff)
+    reverse_connect(post_pnr_power, testbench)
+
+    reverse_connect(debugcalibre, adk)
+    reverse_connect(debugcalibre, synth)
+    reverse_connect(debugcalibre, iflow)
+    reverse_connect(debugcalibre, signoff)
+    reverse_connect(debugcalibre, drc)
+    reverse_connect(debugcalibre, lvs)
 
     # Pwr aware steps:
     if pwr_aware:
-        g.connect_by_name(power_domains,        synth)
-        g.connect_by_name(power_domains,        init)
-        g.connect_by_name(power_domains,        power)
-        g.connect_by_name(power_domains,        place)
-        g.connect_by_name(power_domains,        cts)
-        g.connect_by_name(power_domains,        postcts_hold)
-        g.connect_by_name(power_domains,        route)
-        g.connect_by_name(power_domains,        postroute)
-        g.connect_by_name(power_domains,        postroute_hold)
-        g.connect_by_name(power_domains,        signoff)
-        g.connect_by_name(adk,                  pwr_aware_gls)
-        g.connect_by_name(gen_sram,             pwr_aware_gls)
-        g.connect_by_name(signoff,              pwr_aware_gls)
+        g.connect_by_name(power_domains, synth)
+        g.connect_by_name(power_domains, init)
+        g.connect_by_name(power_domains, power)
+        g.connect_by_name(power_domains, place)
+        g.connect_by_name(power_domains, cts)
+        g.connect_by_name(power_domains, postcts_hold)
+        g.connect_by_name(power_domains, route)
+        g.connect_by_name(power_domains, postroute)
+        g.connect_by_name(power_domains, postroute_hold)
+        g.connect_by_name(power_domains, signoff)
+
+        g.connect_by_name(adk, pwr_aware_gls)
+        g.connect_by_name(gen_sram, pwr_aware_gls)
+        g.connect_by_name(signoff, pwr_aware_gls)
         #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
 
     # New step, added for gf12
     if want_drc_pm:
         g.add_step(drc_pm)
-        g.connect_by_name(adk,           drc_pm)
-        g.connect_by_name(gen_sram,      drc_pm)
-        g.connect_by_name(signoff,       drc_pm)
-        g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
-        g.connect_by_name(drc_pm,        debugcalibre)
+        g.connect_by_name(adk, drc_pm)
+        g.connect_by_name(gen_sram, drc_pm)
+        g.connect_by_name(signoff, drc_pm)
 
-    g.connect_by_name(iflow,    genlibdb)
+        g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
+        g.connect_by_name(drc_pm, debugcalibre)
+
+    g.connect_by_name(iflow, genlibdb)
 
     #-----------------------------------------------------------------------
     # Parameterize
