@@ -10,6 +10,7 @@ from mflowgen.components import Graph, Step
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
+
 def construct():
 
     g = Graph()
@@ -32,11 +33,11 @@ def construct():
     if synth_power:
         pwr_aware = False
 
-    want_drc_pm      = True
+    want_drc_pm = True
 
     # TSMC override(s)
     if adk_name == 'tsmc16':
-        adk_view    = 'multicorner-multivt'
+        adk_view = 'multicorner-multivt'
         want_drc_pm = False
 
     if adk_name == 'tsmc16':
@@ -47,45 +48,53 @@ def construct():
         read_hdl_defines = ''
 
     parameters = {
-      'construct_path'      : __file__,
-      'design_name'         : 'Tile_MemCore',
-      'clock_period'        : 1.1,
-      'adk'                 : adk_name,
-      'adk_view'            : adk_view,
-      # Synthesis
-      'flatten_effort'      : 3,
-      'topographical'       : True,
-      'read_hdl_defines'    : read_hdl_defines,
-      # SRAM macros
-      'num_words'           : 512,
-      'word_size'           : 32,
-      'mux_size'            : 4,
-      'partial_write'       : False,
-      # Hold target slack
-      'hold_target_slack'   : 0.030,
-      # Utilization target
-      'core_density_target' : 0.68,
-      # RTL Generation
-      'interconnect_only'   : False,
-      'rtl_docker_image'    : 'default', # Current default is 'stanfordaha/garnet:latest'
-      # Power Domains
-      'PWR_AWARE'         : pwr_aware,
-      # Power analysis
-      "use_sdf"           : False, # uses sdf but not the way it is in xrun node
-      'app_to_run'        : 'tests/conv_3_3',
-      'saif_instance'     : 'testbench/dut',
-      'testbench_name'    : 'testbench',
-      'strip_path'        : 'testbench/dut',
-      'drc_env_setup'     : 'drcenv-block.sh'
+        'construct_path': __file__,
+        'design_name': 'Tile_MemCore',
+        'clock_period': 1.1,
+        'adk': adk_name,
+        'adk_view': adk_view,
+
+        # Synthesis
+        'flatten_effort': 3,
+        'topographical': True,
+        'read_hdl_defines': read_hdl_defines,
+
+        # SRAM macros
+        'num_words': 512,
+        'word_size': 32,
+        'mux_size': 4,
+        'partial_write': False,
+
+        # Hold target slack
+        'hold_target_slack': 0.030,
+
+        # Utilization target
+        'core_density_target': 0.68,
+
+        # RTL Generation
+        'interconnect_only': False,
+        'rtl_docker_image': 'default',  # Current default is 'stanfordaha/garnet:latest'
+
+        # Power Domains
+        'PWR_AWARE': pwr_aware,
+
+        # Power analysis
+        "use_sdf": False,  # uses sdf but not the way it is in xrun node
+        'app_to_run': 'tests/conv_3_3',
+        'saif_instance': 'testbench/dut',
+        'testbench_name': 'testbench',
+        'strip_path': 'testbench/dut',
+        'drc_env_setup': 'drcenv-block.sh'
     }
 
     # TSMC overrides
-    if adk_name == 'tsmc16': parameters.update({
-      'corner'              : "tt0p8v25c",
-      'bc_corner'           : "ffg0p88v125c",
-      'hold_target_slack'   : 0.015,
-      'interconnect_only'   : True,
-    })
+    if adk_name == 'tsmc16':
+        parameters.update({
+            'corner': "tt0p8v25c",
+            'bc_corner': "ffg0p88v125c",
+            'hold_target_slack': 0.015,
+            'interconnect_only': True,
+        })
 
     # -----------------------------------------------------------------------
     # Create nodes
@@ -99,33 +108,39 @@ def construct():
     adk = g.get_adk_step()
 
     # Custom steps
-    rtl                  = Step(this_dir + '/../common/rtl')
-    genlibdb_constraints = Step(this_dir + '/../common/custom-genlibdb-constraints')
-    constraints          = Step(this_dir + '/constraints')
-    custom_init          = Step(this_dir + '/custom-init')
-    custom_genus_scripts = Step(this_dir + '/custom-genus-scripts')
-    custom_flowgen_setup = Step(this_dir + '/custom-flowgen-setup')
+
+    def custom_step(path):
+        return Step(this_dir + path)
+
+    rtl = custom_step('/../common/rtl')
+    constraints = custom_step('/constraints')
+    custom_init = custom_step('/custom-init')
+    custom_genus_scripts = custom_step('/custom-genus-scripts')
+    custom_flowgen_setup = custom_step('/custom-flowgen-setup')
+    genlibdb_constraints = custom_step('/../common/custom-genlibdb-constraints')
+
     if adk_name == 'tsmc16':
-        gen_sram             = Step(this_dir + '/../common/gen_sram_macro_amber')
-        custom_lvs           = Step(this_dir + '/custom-lvs-rules-amber')
-        custom_power         = Step(this_dir + '/../common/custom-power-leaf-amber')
+        gen_sram = custom_step('/../common/gen_sram_macro_amber')
+        custom_lvs = custom_step('/custom-lvs-rules-amber')
+        custom_power = custom_step('/../common/custom-power-leaf-amber')
     else:
-        gen_sram             = Step(this_dir + '/../common/gen_sram_macro')
-        custom_lvs           = Step(this_dir + '/custom-lvs-rules')
-        custom_power         = Step(this_dir + '/../common/custom-power-leaf')
-    testbench            = Step(this_dir + '/../common/testbench')
-    application          = Step(this_dir + '/../common/application')
-    lib2db               = Step(this_dir + '/../common/synopsys-dc-lib2db')
+        gen_sram = custom_step('/../common/gen_sram_macro')
+        custom_lvs = custom_step('/custom-lvs-rules')
+        custom_power = custom_step('/../common/custom-power-leaf')
+
+    testbench = custom_step('/../common/testbench')
+    application = custom_step('/../common/application')
+    lib2db = custom_step('/../common/synopsys-dc-lib2db')
     if want_drc_pm:
-        drc_pm             = Step(this_dir + '/../common/gf-mentor-calibre-drcplus-pm')
+        drc_pm = custom_step('/../common/gf-mentor-calibre-drcplus-pm')
     if synth_power:
-        post_synth_power     = Step(this_dir + '/../common/tile-post-synth-power')
-    post_pnr_power       = Step(this_dir + '/../common/tile-post-pnr-power')
+        post_synth_power = custom_step('/../common/tile-post-synth-power')
+    post_pnr_power = custom_step('/../common/tile-post-pnr-power')
 
     # Power aware setup
     if pwr_aware:
-        power_domains = Step(this_dir + '/../common/power-domains')
-        pwr_aware_gls = Step(this_dir + '/../common/pwr-aware-gls')
+        power_domains = custom_step('/../common/power-domains')
+        pwr_aware_gls = custom_step('/../common/pwr-aware-gls')
 
     # Default steps
 
@@ -134,13 +149,13 @@ def construct():
 
     # Turn off formatting b/c want these columns to line up
     # autopep8: off
-    info           = default_step('info')                       # noqa
-    synth          = default_step('cadence-genus-synthesis')    # noqa
-    iflow          = default_step('cadence-innovus-flowsetup')  # noqa
-    init           = default_step('cadence-innovus-init')       # noqa
-    power          = default_step('cadence-innovus-power')      # noqa
-    place          = default_step('cadence-innovus-place')      # noqa
-    cts            = default_step('cadence-innovus-cts')        # noqa
+    info           = default_step('info')                            # noqa
+    synth          = default_step('cadence-genus-synthesis')         # noqa
+    iflow          = default_step('cadence-innovus-flowsetup')       # noqa
+    init           = default_step('cadence-innovus-init')            # noqa
+    power          = default_step('cadence-innovus-power')           # noqa
+    place          = default_step('cadence-innovus-place')           # noqa
+    cts            = default_step('cadence-innovus-cts')             # noqa
     postcts_hold   = default_step('cadence-innovus-postcts_hold')    # noqa
     route          = default_step('cadence-innovus-route')           # noqa
     postroute      = default_step('cadence-innovus-postroute')       # noqa
@@ -158,22 +173,18 @@ def construct():
         lvs = default_step('cadence-pegasus-lvs')
     debugcalibre = default_step('cadence-innovus-debug-calibre')
 
-
     # Extra DC input
     synth.extend_inputs(["common.tcl"])
     synth.extend_inputs(["simple_common.tcl"])
 
     # Add sram macro inputs to downstream nodes
-
     synth.extend_inputs(['sram_tt.lib', 'sram.lef'])
-
     pt_signoff.extend_inputs(['sram_tt.db'])
     genlibdb.extend_inputs(['sram_tt.lib', 'sram_tt.db'])
 
     # These steps need timing and lef info for srams
-
-    sram_steps = \
-      [iflow, init, power, place, cts, postcts_hold, route, postroute, postroute_hold, signoff]
+    sram_steps = [
+        iflow, init, power, place, cts, postcts_hold, route, postroute, postroute_hold, signoff]
     for step in sram_steps:
         step.extend_inputs(['sram_tt.lib', 'sram_ff.lib', 'sram.lef'])
 
@@ -238,7 +249,8 @@ def construct():
     # TSMC needs streamout *without* the (new) default -uniquify flag
     # This strips off the unwanted flag
     from common.streamout_no_uniquify import streamout_no_uniquify
-    if adk_name == "tsmc16": streamout_no_uniquify(iflow)
+    if adk_name == "tsmc16":
+        streamout_no_uniquify(iflow)
 
     # Power aware setup
     if pwr_aware:
@@ -246,15 +258,26 @@ def construct():
         # Need mem-pd-params so adk.tcl can access parm 'adk_allow_sdf_regs'
         # (mem-pd-params come from already-connected 'power-domains' node)
         synth.extend_inputs([
-          'mem-pd-params.tcl',
-          'designer-interface.tcl', 
-          'upf_Tile_MemCore.tcl', 
-          'mem-constraints.tcl', 
-          'mem-constraints-2.tcl', 
-          'dc-dont-use-constraints.tcl'])
+            'mem-pd-params.tcl',
+            'designer-interface.tcl',
+            'upf_Tile_MemCore.tcl',
+            'mem-constraints.tcl',
+            'mem-constraints-2.tcl',
+            'dc-dont-use-constraints.tcl'])
 
-        init.extend_inputs(['check-clamp-logic-structure.tcl', 'upf_Tile_MemCore.tcl', 'mem-load-upf.tcl', 'dont-touch-constraints.tcl', 'mem-pd-params.tcl', 'pd-aon-floorplan.tcl', 'add-endcaps-welltaps-setup.tcl', 'pd-add-endcaps-welltaps.tcl', 'add-power-switches.tcl'])
-        place.extend_inputs(['check-clamp-logic-structure.tcl', 'place-dont-use-constraints.tcl', 'add-aon-tie-cells.tcl'])
+        init.extend_inputs(['check-clamp-logic-structure.tcl',
+                            'upf_Tile_MemCore.tcl',
+                            'mem-load-upf.tcl',
+                            'dont-touch-constraints.tcl',
+                            'mem-pd-params.tcl',
+                            'pd-aon-floorplan.tcl',
+                            'add-endcaps-welltaps-setup.tcl',
+                            'pd-add-endcaps-welltaps.tcl',
+                            'add-power-switches.tcl'])
+
+        place.extend_inputs(['check-clamp-logic-structure.tcl',
+                             'place-dont-use-constraints.tcl',
+                             'add-aon-tie-cells.tcl'])
 
         # Need mem-pd-params for parm 'vdd_m3_stripe_sparsity'
         # pd-globalnetconnect, mem-pd-params come from 'power-domains' node
@@ -476,10 +499,8 @@ def construct():
         postroute.extend_postconditions(assertion)
         signoff.extend_postconditions(assertion)
 
-
     # Core density target param
     init.update_params({'core_density_target': parameters['core_density_target']}, True)
-
 
     # Disable pwr aware flow
     # init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True )
@@ -491,18 +512,18 @@ def construct():
 
     # init -- Add 'edge-blockages.tcl' after 'pin-assignments.tcl'
 
-    order = init.get_param('order') # get the default script run order
-    path_group_idx = order.index('make-path-groups.tcl') 
+    order = init.get_param('order')  # get the default script run order
+    path_group_idx = order.index('make-path-groups.tcl')
     order.insert(path_group_idx + 1, 'additional-path-groups.tcl')
-    pin_idx = order.index('pin-assignments.tcl') # find pin-assignments.tcl
-    order.insert(pin_idx + 1, 'edge-blockages.tcl') # add here
+    pin_idx = order.index('pin-assignments.tcl')  # find pin-assignments.tcl
+    order.insert(pin_idx + 1, 'edge-blockages.tcl')  # add here
     init.update_params({'order': order})
 
     # Adding new input for genlibdb node to run
 
-    order = genlibdb.get_param('order') # get the default script run order
-    extraction_idx = order.index('extract_model.tcl') # find extract_model.tcl
-    order.insert(extraction_idx, 'genlibdb-constraints.tcl') # add here
+    order = genlibdb.get_param('order')  # get the default script run order
+    extraction_idx = order.index('extract_model.tcl')  # find extract_model.tcl
+    order.insert(extraction_idx, 'genlibdb-constraints.tcl')  # add here
     genlibdb.update_params({'order': order})
 
     # genlibdb -- Remove 'write-interface-timing.tcl' beacuse it takes
@@ -515,13 +536,13 @@ def construct():
     if pwr_aware:
         # init node
         order = init.get_param('order')
-        read_idx = order.index('floorplan.tcl') # find floorplan.tcl
-        order.insert(read_idx + 1, 'mem-load-upf.tcl') # add here
-        order.insert(read_idx + 2, 'mem-pd-params.tcl') # add here
-        order.insert(read_idx + 3, 'pd-aon-floorplan.tcl') # add here
-        order.insert(read_idx + 4, 'add-endcaps-welltaps-setup.tcl') # add here
-        order.insert(read_idx + 5, 'pd-add-endcaps-welltaps.tcl') # add here
-        order.insert(read_idx + 6, 'add-power-switches.tcl') # add here
+        read_idx = order.index('floorplan.tcl')  # find floorplan.tcl
+        order.insert(read_idx + 1, 'mem-load-upf.tcl')                # add here
+        order.insert(read_idx + 2, 'mem-pd-params.tcl')               # add here
+        order.insert(read_idx + 3, 'pd-aon-floorplan.tcl')            # add here
+        order.insert(read_idx + 4, 'add-endcaps-welltaps-setup.tcl')  # add here
+        order.insert(read_idx + 5, 'pd-add-endcaps-welltaps.tcl')     # add here
+        order.insert(read_idx + 6, 'add-power-switches.tcl')          # add here
         order.remove('add-endcaps-welltaps.tcl')
         order.append('check-clamp-logic-structure.tcl')
         init.update_params({'order': order})
@@ -533,14 +554,14 @@ def construct():
 
         # power node
         order = power.get_param('order')
-        order.insert(0, 'pd-globalnetconnect.tcl') # add new pd-globalnetconnect
-        order.remove('globalnetconnect.tcl')         # remove old globalnetconnect
-        order.insert(0, 'mem-pd-params.tcl')       # add params file
+        order.insert(0, 'pd-globalnetconnect.tcl')  # add new pd-globalnetconnect
+        order.remove('globalnetconnect.tcl')        # remove old globalnetconnect
+        order.insert(0, 'mem-pd-params.tcl')        # add params file
         power.update_params({'order': order})
 
         # place node
         order = place.get_param('order')
-        read_idx = order.index('main.tcl') # find main.tcl
+        read_idx = order.index('main.tcl')  # find main.tcl
         order.insert(read_idx + 1, 'add-aon-tie-cells.tcl')
         order.insert(read_idx - 1, 'place-dont-use-constraints.tcl')
         order.append('check-clamp-logic-structure.tcl')
@@ -548,38 +569,38 @@ def construct():
 
         # cts node
         order = cts.get_param('order')
-        order.insert(0, 'conn-aon-cells-vdd.tcl') # add here
+        order.insert(0, 'conn-aon-cells-vdd.tcl')  # add here
         order.append('check-clamp-logic-structure.tcl')
         cts.update_params({'order': order})
 
         # postcts_hold node
         order = postcts_hold.get_param('order')
-        order.insert(0, 'conn-aon-cells-vdd.tcl') # add here
+        order.insert(0, 'conn-aon-cells-vdd.tcl')  # add here
         order.append('check-clamp-logic-structure.tcl')
         postcts_hold.update_params({'order': order})
 
         # route node
         order = route.get_param('order')
-        order.insert(0, 'conn-aon-cells-vdd.tcl') # add here
+        order.insert(0, 'conn-aon-cells-vdd.tcl')  # add here
         order.append('check-clamp-logic-structure.tcl')
         route.update_params({'order': order})
 
         # postroute node
         order = postroute.get_param('order')
-        order.insert(0, 'conn-aon-cells-vdd.tcl') # add here
+        order.insert(0, 'conn-aon-cells-vdd.tcl')  # add here
         order.append('check-clamp-logic-structure.tcl')
         postroute.update_params({'order': order})
 
         # postroute-hold node
         order = postroute_hold.get_param('order')
-        order.insert(0, 'conn-aon-cells-vdd.tcl') # add here
+        order.insert(0, 'conn-aon-cells-vdd.tcl')  # add here
         postroute_hold.update_params({'order': order})
 
         # signoff node
         order = signoff.get_param('order')
-        order.insert(0, 'conn-aon-cells-vdd.tcl') # add here
+        order.insert(0, 'conn-aon-cells-vdd.tcl')  # add here
         order.append('check-clamp-logic-structure.tcl')
-        read_idx = order.index('generate-results.tcl') # find generate_results.tcl
+        read_idx = order.index('generate-results.tcl')  # find generate_results.tcl
 
         order.insert(read_idx + 1, 'pd-generate-lvs-netlist.tcl')
         signoff.update_params({'order': order})
@@ -590,5 +611,3 @@ def construct():
 if __name__ == '__main__':
     g = construct()
 #  g.plot()
-
-
