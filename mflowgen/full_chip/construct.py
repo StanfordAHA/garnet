@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-#=========================================================================
+# =========================================================================
 # construct.py
-#=========================================================================
+# =========================================================================
 # Author :
 # Date   :
 #
@@ -37,9 +37,9 @@ def construct():
 
     g = Graph()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameters
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
     adk_view = 'multivt'
@@ -175,9 +175,9 @@ def construct():
       'coord_y': '-49.92u'
     }
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Create nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     this_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -188,53 +188,53 @@ def construct():
 
     # Custom steps
 
-    rtl            = Step(this_dir + '/../common/rtl')
-    soc_rtl        = Step(this_dir + '/../common/soc-rtl-v2')
+    rtl = Step(this_dir + '/../common/rtl')
+    soc_rtl = Step(this_dir + '/../common/soc-rtl-v2')
 
     if adk_name == "tsmc16":
-        gen_sram       = Step(this_dir + '/../common/gen_sram_macro_amber')
-        constraints    = Step(this_dir + '/constraints_amber')
+        gen_sram = Step(this_dir + '/../common/gen_sram_macro_amber')
+        constraints = Step(this_dir + '/constraints_amber')
     else:
-        gen_sram       = Step(this_dir + '/../common/gen_sram_macro')
-        constraints    = Step(this_dir + '/constraints')
+        gen_sram = Step(this_dir + '/../common/gen_sram_macro')
+        constraints = Step(this_dir + '/constraints')
 
-    read_design    = Step(this_dir + '/../common/fc-custom-read-design')
+    read_design = Step(this_dir + '/../common/fc-custom-read-design')
     if adk_name == 'tsmc16':
-        custom_init          = Step(this_dir + '/custom-init-amber')
-        custom_lvs           = Step(this_dir + '/custom-lvs-rules-amber')
-        custom_power         = Step(this_dir + '/../common/custom-power-chip-amber')
-        init_fc              = Step(this_dir + '/../common/init-fullchip-amber')
+        custom_init = Step(this_dir + '/custom-init-amber')
+        custom_lvs = Step(this_dir + '/custom-lvs-rules-amber')
+        custom_power = Step(this_dir + '/../common/custom-power-chip-amber')
+        init_fc = Step(this_dir + '/../common/init-fullchip-amber')
     else:
-        custom_init          = Step(this_dir + '/custom-init')
-        custom_lvs           = Step(this_dir + '/custom-lvs-rules')
-        custom_power         = Step(this_dir + '/../common/custom-power-chip')
-        custom_cts           = Step(this_dir + '/custom-cts')
-        init_fc              = Step(this_dir + '/../common/init-fullchip')
-    io_file        = Step(this_dir + '/io_file')
-    pre_route      = Step(this_dir + '/pre-route')
-    sealring       = Step(this_dir + '/sealring')
+        custom_init = Step(this_dir + '/custom-init')
+        custom_lvs = Step(this_dir + '/custom-lvs-rules')
+        custom_power = Step(this_dir + '/../common/custom-power-chip')
+        custom_cts = Step(this_dir + '/custom-cts')
+        init_fc = Step(this_dir + '/../common/init-fullchip')
+    io_file = Step(this_dir + '/io_file')
+    pre_route = Step(this_dir + '/pre-route')
+    sealring = Step(this_dir + '/sealring')
     netlist_fixing = Step(this_dir + '/../common/fc-netlist-fixing')
     if which_soc == 'onyx':
-        drc_pm         = Step(this_dir + '/../common/gf-mentor-calibre-drcplus-pm')
-        drc_dp         = Step(this_dir + '/gf-drc-dp')
-        drc_mas        = Step(this_dir + '/../common/gf-mentor-calibre-drc-mas')
+        drc_pm = Step(this_dir + '/../common/gf-mentor-calibre-drcplus-pm')
+        drc_dp = Step(this_dir + '/gf-drc-dp')
+        drc_mas = Step(this_dir + '/../common/gf-mentor-calibre-drc-mas')
 
     # Block-level designs
 
-    tile_array        = Subgraph(this_dir + '/../tile_array', 'tile_array')
-    glb_top           = Subgraph(this_dir + '/../glb_top', 'glb_top')
+    tile_array = Subgraph(this_dir + '/../tile_array', 'tile_array')
+    glb_top = Subgraph(this_dir + '/../glb_top', 'glb_top')
     global_controller = Subgraph(this_dir + '/../global_controller', 'global_controller')
 
     if which_soc == 'amber':
-        dragonphy         = Step(this_dir + '/dragonphy')
+        dragonphy = Step(this_dir + '/dragonphy')
     elif which_soc == 'onyx':
-        xgcd              = Step(this_dir + '/xgcd')
+        xgcd = Step(this_dir + '/xgcd')
 
     # CGRA simulation
 
-    cgra_rtl_sim_compile  = Step(this_dir + '/cgra_rtl_sim_compile')
-    cgra_rtl_sim_run      = Step(this_dir + '/cgra_rtl_sim_run')
-    cgra_sim_build        = Step(this_dir + '/cgra_sim_build')
+    cgra_rtl_sim_compile = Step(this_dir + '/cgra_rtl_sim_compile')
+    cgra_rtl_sim_run = Step(this_dir + '/cgra_rtl_sim_run')
+    cgra_sim_build = Step(this_dir + '/cgra_sim_build')
     # cgra_gl_sim_compile   = Step(this_dir + '/cgra_gl_sim_compile')
     # cgra_gl_sim_run       = Step(this_dir + '/cgra_gl_sim_run')
     # cgra_gl_ptpx          = Step(this_dir + '/cgra_gl_ptpx')
@@ -246,6 +246,8 @@ def construct():
     def default_step(step_name):
         return Step(step_name, default=True)
 
+    # Turn off formatting b/c want these cloumns to line up
+    # autopep8: off
     info           = default_step('info')
     #constraints   = default_step('constraints')
     synth          = default_step('cadence-genus-synthesis')
@@ -260,6 +262,7 @@ def construct():
     postroute_hold = default_step('cadence-innovus-postroute_hold')
     signoff        = default_step('cadence-innovus-signoff')
     pt_signoff     = default_step('synopsys-pt-timing-signoff')
+    # autopep8: on
 
     if which("calibre") is not None:
         drc = default_step('mentor-calibre-drc')
@@ -426,9 +429,9 @@ def construct():
         soc_rtl.pre_extend_commands([cmd2])
         soc_rtl.pre_extend_commands([cmd3])
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     g.add_step(info)
     g.add_step(rtl)
@@ -494,9 +497,9 @@ def construct():
         g.add_step(merge_rdl)
         g.add_step(dragonphy)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add edges
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     # Connect by name
 
@@ -695,9 +698,9 @@ def construct():
 
     # Post-Power DRC
     g.connect(power.o('design-merged.gds'), power_drc.i('design_merged.gds'))
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameterize
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     # Allow user to override parms with env in a limited sort of way
     parameters = sr_override_parms(parameters)
@@ -740,8 +743,8 @@ def construct():
         'main.tcl','quality-of-life.tcl',
         'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
         'alignment-cells.tcl',
-        #'analog-bumps/route-phy-bumps.tcl',
-        #'analog-bumps/bump-connect.tcl',
+        # 'analog-bumps/route-phy-bumps.tcl',
+        # 'analog-bumps/bump-connect.tcl',
         'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
         'place-macros.tcl', 'dont-touch.tcl'
       ]}
