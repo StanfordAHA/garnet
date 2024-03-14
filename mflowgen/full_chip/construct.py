@@ -12,6 +12,7 @@ from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
+
 def sr_override_parms(parmdict):
     '''
     # A mechanism whereby e.g. buildkite can alter parms at the last minute
@@ -24,13 +25,13 @@ def sr_override_parms(parmdict):
     import os
     for e in os.environ:
         # e.g. e="MFLOWGEN_PARM_OVERRIDE_hold_target_slack"
-        if e[0:22]=="MFLOWGEN_PARM_OVERRIDE":
-            parm=e[23:99];     # e.g. parm="hold_target_slack"
+        if e[0:22] == "MFLOWGEN_PARM_OVERRIDE":
+            parm = e[23:99]     # e.g. parm="hold_target_slack"
             print(f'+++ FOUND MFLOWGEN PARAMETER OVERRIDE "{parm}={os.environ[e]}"')
             print(f'BEFOR: parmdict["hold_target_slack"]={parmdict["hold_target_slack"]}')
-            parmdict[parm]=os.environ[e]
+            parmdict[parm] = os.environ[e]
     print(f'AFTER: parmdict["hold_target_slack"]={parmdict["hold_target_slack"]}')
-    return(parmdict)
+    return parmdict
 
 
 def construct():
@@ -60,97 +61,97 @@ def construct():
         power_drc_rule_deck = 'pegasus-drc-block.rule'
 
     parameters = {
-      'construct_path': __file__,
-      'design_name': 'GarnetSOC_pad_frame',
-      'clock_period': 1.1,
-      'adk': adk_name,
-      'adk_view': adk_view,
+        'construct_path': __file__,
+        'design_name': 'GarnetSOC_pad_frame',
+        'clock_period': 1.1,
+        'adk': adk_name,
+        'adk_view': adk_view,
 
-      # Synthesis
-      'flatten_effort': 0,
-      'topographical': True,
+        # Synthesis
+        'flatten_effort': 0,
+        'topographical': True,
 
-      # RTL Generation
-      'array_width': 32,
-      'array_height': 16,
-      'num_glb_tiles': 16,
-      'interconnect_only': False,
-      'use_local_garnet': False,
-      # glb tile memory size (unit: KB)
-      # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
-      'glb_tile_mem_size': 256,   # 256*16 => 4M global buffer
+        # RTL Generation
+        'array_width': 32,
+        'array_height': 16,
+        'num_glb_tiles': 16,
+        'interconnect_only': False,
+        'use_local_garnet': False,
+        # glb tile memory size (unit: KB)
+        # 'glb_tile_mem_size' : 64,  #  64x16 => 1M global buffer
+        'glb_tile_mem_size': 256,   # 256*16 => 4M global buffer
 
-      # Power Domains
-      'PWR_AWARE': True,
+        # Power Domains
+        'PWR_AWARE': True,
 
-      # Include Garnet?
-      'soc_only': False,
+        # Include Garnet?
+        'soc_only': False,
 
-      # Include SoC core? (use 0 for false, 1 for true)
-      'include_core': 1,
+        # Include SoC core? (use 0 for false, 1 for true)
+        'include_core': 1,
 
-      # Include sealring?
-      'include_sealring': False,
+        # Include sealring?
+        'include_sealring': False,
 
-      # SRAM macros
-      'num_words': 4096,
-      'word_size': 64,
-      'mux_size': 8,
-      'num_subarrays': 2,
-      'partial_write': True,
+        # SRAM macros
+        'num_words': 4096,
+        'word_size': 64,
+        'mux_size': 8,
+        'num_subarrays': 2,
+        'partial_write': True,
 
-      # Low Effort flow
-      'express_flow': False,
-      'skip_verify_connectivity': True,
+        # Low Effort flow
+        'express_flow': False,
+        'skip_verify_connectivity': True,
 
-      # Hold fixing
-      'signoff_engine': True,
-      'hold_target_slack': 0.100,
+        # Hold fixing
+        'signoff_engine': True,
+        'hold_target_slack': 0.100,
 
-      # LVS
-      # - need lvs2 because dragonphy uses LVT cells
-      'lvs_extra_spice_include': 'inputs/adk_lvs2/*.cdl',
-      'lvs_hcells_file': 'inputs/adk/hcells.inc',
-      'lvs_connect_names': '"VDD VSS VDDPST"',
-      'lvs_verify_netlist': 0,
+        # LVS
+        # - need lvs2 because dragonphy uses LVT cells
+        'lvs_extra_spice_include': 'inputs/adk_lvs2/*.cdl',
+        'lvs_hcells_file': 'inputs/adk/hcells.inc',
+        'lvs_connect_names': '"VDD VSS VDDPST"',
+        'lvs_verify_netlist': 0,
 
-      # TSMC16 support for LVS - need lvs2 because dragonphy uses LVT cells
-      'adk_view_lvs2': 'multivt',
+        # TSMC16 support for LVS - need lvs2 because dragonphy uses LVT cells
+        'adk_view_lvs2': 'multivt',
 
-      # TLX Ports Partitions
-      'TLX_FWD_DATA_LO_WIDTH': 16,
-      'TLX_REV_DATA_LO_WIDTH': 45,
+        # TLX Ports Partitions
+        'TLX_FWD_DATA_LO_WIDTH': 16,
+        'TLX_REV_DATA_LO_WIDTH': 45,
 
-      # DRC rule deck
-      'drc_rule_deck': drc_rule_deck,
-      'antenna_drc_rule_deck': antenna_drc_rule_deck,
-      'power_drc_rule_deck': power_drc_rule_deck,
-      'nthreads': 16,
-      'drc_env_setup': 'drcenv-chip.sh',
-      'antenna_drc_env_setup': 'drcenv-chip-ant.sh',
+        # DRC rule deck
+        'drc_rule_deck': drc_rule_deck,
+        'antenna_drc_rule_deck': antenna_drc_rule_deck,
+        'power_drc_rule_deck': power_drc_rule_deck,
+        'nthreads': 16,
+        'drc_env_setup': 'drcenv-chip.sh',
+        'antenna_drc_env_setup': 'drcenv-chip-ant.sh',
 
-      # Testbench
-      'cgra_apps': ["tests/conv_1_2", "tests/conv_2_1"]
+        # Testbench
+        'cgra_apps': ["tests/conv_1_2", "tests/conv_2_1"]
     }
 
     # Note 'lvs_adk_view' not used by amber/tsmc
-    if parameters['PWR_AWARE'] == True:
+    if parameters['PWR_AWARE'] is True:
         parameters['lvs_adk_view'] = adk_view + '-pm'
     else:
         parameters['lvs_adk_view'] = adk_view
 
     # TSMC overrides
-    if adk_name == 'tsmc16': parameters.update({
-      'clock_period': 1.3,
-      'include_sealring': True,
-      'num_words': 2048,
-      'corner': "tt0p8v25c",
-      # Dragonphy
-      'dragonphy_rdl_x': '613.565u',
-      'dragonphy_rdl_y': '3901.872u',
-      'hold_target_slack': 0.060,
+    if adk_name == 'tsmc16':
+        parameters.update({
+            'clock_period': 1.3,
+            'include_sealring': True,
+            'num_words': 2048,
+            'corner': "tt0p8v25c",
+            'dragonphy_rdl_x': '613.565u',
+            'dragonphy_rdl_y': '3901.872u',
+            'hold_target_slack': 0.060,
+        })
 
-    })
     # OG TSMC did not set drc_env_setup etc.
     if adk_name == 'tsmc16':
         parameters.pop('use_local_garnet')
@@ -160,19 +161,19 @@ def construct():
     # 'sram_2' and 'guarding' are onyx/GF-only parameters (for now)
 
     sram_2_params = {
-      # SRAM macros
-      'num_words': 32768,
-      'word_size': 32,
-      'mux_size': 16,
-      'num_subarrays': 8,
-      'partial_write': True,
+        # SRAM macros
+        'num_words': 32768,
+        'word_size': 32,
+        'mux_size': 16,
+        'num_subarrays': 8,
+        'partial_write': True,
     }
 
     guardring_params = {
-      # Merging guardring into GDS
-      'child_gds': 'inputs/adk/guardring.gds',
-      'coord_x': '-49.98u',
-      'coord_y': '-49.92u'
+        # Merging guardring into GDS
+        'child_gds': 'inputs/adk/guardring.gds',
+        'coord_x': '-49.98u',
+        'coord_y': '-49.92u'
     }
 
     # -----------------------------------------------------------------------
@@ -246,10 +247,10 @@ def construct():
     def default_step(step_name):
         return Step(step_name, default=True)
 
-    # Turn off formatting b/c want these cloumns to line up
+    # Turn off formatting b/c want these columns to line up
     # autopep8: off
     info           = default_step('info')  # noqa
-    #constraints   = default_step('constraints')
+    # constraints  = default_step('constraints')
     synth          = default_step('cadence-genus-synthesis')    # noqa
     iflow          = default_step('cadence-innovus-flowsetup')  # noqa
     init           = default_step('cadence-innovus-init')       # noqa
@@ -549,7 +550,7 @@ def construct():
 
     # All of the blocks within this hierarchical design
     # Skip these if we're doing soc_only
-    if parameters['soc_only'] == False:
+    if parameters['soc_only'] is False:
         blocks = [tile_array, glb_top, global_controller]
         if which_soc == 'onyx':
             blocks += [xgcd]
@@ -708,7 +709,7 @@ def construct():
     g.update_params(parameters)
 
     if which_soc == 'onyx':
-        # Provide different parameter set to second sram node, so it can actually 
+        # Provide different parameter set to second sram node, so it can actually
         # generate a different sram
         gen_sram_2.update_params(sram_2_params)
 
@@ -726,29 +727,31 @@ def construct():
     synth.update_params({'TLX_REV_DATA_LO_WIDTH': parameters['TLX_REV_DATA_LO_WIDTH']}, True)
     init.update_params({'soc_only': parameters['soc_only']}, True)
 
-    if which_soc == 'amber': init.update_params(
-      {'order': [
-        'main.tcl','quality-of-life.tcl',
-        'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-        'alignment-cells.tcl',
-        'analog-bumps/route-phy-bumps.tcl',
-        'analog-bumps/bump-connect.tcl',
-        'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
-        'place-macros.tcl', 'dont-touch.tcl'
-      ]}
-    )
+    if which_soc == 'amber':
+        init.update_params(
+            {'order': [
+                'main.tcl', 'quality-of-life.tcl',
+                'stylus-compatibility-procs.tcl', 'floorplan.tcl', 'io-fillers.tcl',
+                'alignment-cells.tcl',
+                'analog-bumps/route-phy-bumps.tcl',
+                'analog-bumps/bump-connect.tcl',
+                'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
+                'place-macros.tcl', 'dont-touch.tcl'
+            ]}
+        )
 
-    if which_soc == 'onyx': init.update_params(
-      {'order': [
-        'main.tcl','quality-of-life.tcl',
-        'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-        'alignment-cells.tcl',
-        # 'analog-bumps/route-phy-bumps.tcl',
-        # 'analog-bumps/bump-connect.tcl',
-        'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
-        'place-macros.tcl', 'dont-touch.tcl'
-      ]}
-    )
+    if which_soc == 'onyx':
+        init.update_params(
+            {'order': [
+                'main.tcl', 'quality-of-life.tcl',
+                'stylus-compatibility-procs.tcl', 'floorplan.tcl', 'io-fillers.tcl',
+                'alignment-cells.tcl',
+                # 'analog-bumps/route-phy-bumps.tcl',
+                # 'analog-bumps/bump-connect.tcl',
+                'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
+                'place-macros.tcl', 'dont-touch.tcl'
+            ]}
+        )
 
     # glb_top parameters update
     glb_top.update_params({'array_width': parameters['array_width']}, True)
@@ -765,8 +768,10 @@ def construct():
 
     # Power node order manipulation
     order = power.get_param('order')
+
     # Move endcap/welltap insertion to end of power step to improve runtime
     order.append('add-endcaps-welltaps.tcl')
+
     # Stream out post-power GDS so that we can run DRC here
     order.append('innovus-foundation-flow/custom-scripts/stream-out.tcl')
     order.append('attach-results-to-outputs.tcl')
@@ -779,9 +784,11 @@ def construct():
 
     # Signoff order additions
     order = signoff.get_param('order')
+
     # Add sealring at beginning of signoff, so it's in before we stream out GDS
-    if parameters['include_sealring'] == True:
+    if parameters['include_sealring'] is True:
         order.insert(0, 'add-sealring.tcl')
+
     # Add netlist-fixing script before we save new netlist
     index = order.index('generate-results.tcl')
     order.insert(index, 'netlist-fixing.tcl')
