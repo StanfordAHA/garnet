@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-#=========================================================================
+# =========================================================================
 # construct.py
-#=========================================================================
+# =========================================================================
 # Author :
 # Date   :
 
@@ -14,9 +14,9 @@ def construct():
 
     g = Graph()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameters
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
     adk_view = 'multivt'
@@ -87,9 +87,9 @@ def construct():
       'interconnect_only'   : True,
     })
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Create nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     this_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -268,9 +268,9 @@ def construct():
         signoff.extend_inputs(['check-clamp-logic-structure.tcl', 'conn-aon-cells-vdd.tcl', 'pd-generate-lvs-netlist.tcl'])
         pwr_aware_gls.extend_inputs(['design.vcs.pg.v', 'sram_pwr.v'])
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     g.add_step(info)
     g.add_step(rtl)
@@ -311,9 +311,9 @@ def construct():
         g.add_step(power_domains)
         g.add_step(pwr_aware_gls)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add edges
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     # Connect by name
 
@@ -436,7 +436,7 @@ def construct():
         g.connect_by_name(adk, pwr_aware_gls)
         g.connect_by_name(gen_sram, pwr_aware_gls)
         g.connect_by_name(signoff, pwr_aware_gls)
-        #g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
+        # g.connect(power_domains.o('pd-globalnetconnect.tcl'), power.i('globalnetconnect.tcl'))
 
     # New step, added for gf12
     if want_drc_pm:
@@ -450,9 +450,9 @@ def construct():
 
     g.connect_by_name(iflow, genlibdb)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameterize
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     g.update_params(parameters)
 
@@ -482,8 +482,8 @@ def construct():
 
 
     # Disable pwr aware flow
-    #init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True )
-    #power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True  )
+    # init.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True )
+    # power.update_params( { 'PWR_AWARE': parameters['PWR_AWARE'] }, allow_new=True  )
 
     # Since we are adding an additional input script to the generic Innovus
     # steps, we modify the order parameter for that node which determines
