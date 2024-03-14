@@ -180,8 +180,6 @@ def construct():
     # Create nodes
     # -----------------------------------------------------------------------
 
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-
     # ADK step
 
     g.set_adk(adk_name)
@@ -189,58 +187,65 @@ def construct():
 
     # Custom steps
 
-    rtl = Step(this_dir + '/../common/rtl')
-    soc_rtl = Step(this_dir + '/../common/soc-rtl-v2')
+    def custom_step(path):
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        return Step(this_dir + path)
+
+    rtl = custom_step('/../common/rtl')
+    soc_rtl = custom_step('/../common/soc-rtl-v2')
 
     if adk_name == "tsmc16":
-        gen_sram = Step(this_dir + '/../common/gen_sram_macro_amber')
-        constraints = Step(this_dir + '/constraints_amber')
+        gen_sram = custom_step('/../common/gen_sram_macro_amber')
+        constraints = custom_step('/constraints_amber')
     else:
-        gen_sram = Step(this_dir + '/../common/gen_sram_macro')
-        constraints = Step(this_dir + '/constraints')
+        gen_sram = custom_step('/../common/gen_sram_macro')
+        constraints = custom_step('/constraints')
 
-    read_design = Step(this_dir + '/../common/fc-custom-read-design')
+    read_design = custom_step('/../common/fc-custom-read-design')
+
     if adk_name == 'tsmc16':
-        custom_init = Step(this_dir + '/custom-init-amber')
-        custom_lvs = Step(this_dir + '/custom-lvs-rules-amber')
-        custom_power = Step(this_dir + '/../common/custom-power-chip-amber')
-        init_fc = Step(this_dir + '/../common/init-fullchip-amber')
+        custom_init = custom_step('/custom-init-amber')
+        custom_lvs = custom_step('/custom-lvs-rules-amber')
+        custom_power = custom_step('/../common/custom-power-chip-amber')
+        init_fc = custom_step('/../common/init-fullchip-amber')
     else:
-        custom_init = Step(this_dir + '/custom-init')
-        custom_lvs = Step(this_dir + '/custom-lvs-rules')
-        custom_power = Step(this_dir + '/../common/custom-power-chip')
-        custom_cts = Step(this_dir + '/custom-cts')
-        init_fc = Step(this_dir + '/../common/init-fullchip')
-    io_file = Step(this_dir + '/io_file')
-    pre_route = Step(this_dir + '/pre-route')
-    sealring = Step(this_dir + '/sealring')
-    netlist_fixing = Step(this_dir + '/../common/fc-netlist-fixing')
+        custom_init = custom_step('/custom-init')
+        custom_lvs = custom_step('/custom-lvs-rules')
+        custom_power = custom_step('/../common/custom-power-chip')
+        custom_cts = custom_step('/custom-cts')
+        init_fc = custom_step('/../common/init-fullchip')
+
+    io_file = custom_step('/io_file')
+    pre_route = custom_step('/pre-route')
+    sealring = custom_step('/sealring')
+    netlist_fixing = custom_step('/../common/fc-netlist-fixing')
     if which_soc == 'onyx':
-        drc_pm = Step(this_dir + '/../common/gf-mentor-calibre-drcplus-pm')
-        drc_dp = Step(this_dir + '/gf-drc-dp')
-        drc_mas = Step(this_dir + '/../common/gf-mentor-calibre-drc-mas')
+        drc_pm = custom_step('/../common/gf-mentor-calibre-drcplus-pm')
+        drc_dp = custom_step('/gf-drc-dp')
+        drc_mas = custom_step('/../common/gf-mentor-calibre-drc-mas')
 
     # Block-level designs
 
+    this_dir = os.path.dirname(os.path.abspath(__file__))
     tile_array = Subgraph(this_dir + '/../tile_array', 'tile_array')
     glb_top = Subgraph(this_dir + '/../glb_top', 'glb_top')
     global_controller = Subgraph(this_dir + '/../global_controller', 'global_controller')
 
     if which_soc == 'amber':
-        dragonphy = Step(this_dir + '/dragonphy')
+        dragonphy = custom_step('/dragonphy')
     elif which_soc == 'onyx':
-        xgcd = Step(this_dir + '/xgcd')
+        xgcd = custom_step('/xgcd')
 
     # CGRA simulation
 
-    cgra_rtl_sim_compile = Step(this_dir + '/cgra_rtl_sim_compile')
-    cgra_rtl_sim_run = Step(this_dir + '/cgra_rtl_sim_run')
-    cgra_sim_build = Step(this_dir + '/cgra_sim_build')
-    # cgra_gl_sim_compile   = Step(this_dir + '/cgra_gl_sim_compile')
-    # cgra_gl_sim_run       = Step(this_dir + '/cgra_gl_sim_run')
-    # cgra_gl_ptpx          = Step(this_dir + '/cgra_gl_ptpx')
-    # cgra_rtl_sim_verdict  = Step(this_dir + '/cgra_rtl_sim_verdict')
-    # cgra_gl_sim_verdict   = Step(this_dir + '/cgra_gl_sim_verdict')
+    cgra_rtl_sim_compile = custom_step('/cgra_rtl_sim_compile')
+    cgra_rtl_sim_run = custom_step('/cgra_rtl_sim_run')
+    cgra_sim_build = custom_step('/cgra_sim_build')
+    # cgra_gl_sim_compile   = custom_step('/cgra_gl_sim_compile')
+    # cgra_gl_sim_run       = custom_step('/cgra_gl_sim_run')
+    # cgra_gl_ptpx          = custom_step('/cgra_gl_ptpx')
+    # cgra_rtl_sim_verdict  = custom_step('/cgra_rtl_sim_verdict')
+    # cgra_gl_sim_verdict   = custom_step('/cgra_gl_sim_verdict')
 
     # Default steps
 
@@ -270,7 +275,7 @@ def construct():
         lvs = default_step('mentor-calibre-lvs')
         # GF has a different way of running fill
         if adk_name == 'gf12-adk':
-            fill = default_step(this_dir + '/../common/mentor-calibre-fill-gf')
+            fill = custom_step('/../common/mentor-calibre-fill-gf')
             merge_gdr = default_step('mentor-calibre-gdsmerge-child')
         else:
             fill = default_step('mentor-calibre-fill')
