@@ -207,8 +207,8 @@ def construct():
 
     # Block-level designs
 
-    tile_array        = Subgraph(this_dir + '/../tile_array',        'tile_array')
-    glb_top           = Subgraph(this_dir + '/../glb_top',           'glb_top')
+    tile_array        = Subgraph(this_dir + '/../tile_array', 'tile_array')
+    glb_top           = Subgraph(this_dir + '/../glb_top', 'glb_top')
     global_controller = Subgraph(this_dir + '/../global_controller', 'global_controller')
 
     if which_soc == 'amber':
@@ -229,38 +229,41 @@ def construct():
 
     # Default steps
 
-    info           = Step('info',                          default=True)
-    #constraints   = Step('constraints',                   default=True)
-    synth          = Step('cadence-genus-synthesis',       default=True)
-    iflow          = Step('cadence-innovus-flowsetup',     default=True)
-    init           = Step('cadence-innovus-init',          default=True)
-    power          = Step('cadence-innovus-power',         default=True)
-    place          = Step('cadence-innovus-place',         default=True)
-    cts            = Step('cadence-innovus-cts',           default=True)
-    postcts_hold   = Step('cadence-innovus-postcts_hold',  default=True)
-    route          = Step('cadence-innovus-route',         default=True)
-    postroute      = Step('cadence-innovus-postroute',     default=True)
-    postroute_hold = Step('cadence-innovus-postroute_hold', default=True)
-    signoff        = Step('cadence-innovus-signoff',       default=True)
-    pt_signoff     = Step('synopsys-pt-timing-signoff',    default=True)
+    def default_step(step_name):
+        return Step(step_name, default=True)
+
+    info           = default_step('info')
+    #constraints   = default_step('constraints')
+    synth          = default_step('cadence-genus-synthesis')
+    iflow          = default_step('cadence-innovus-flowsetup')
+    init           = default_step('cadence-innovus-init')
+    power          = default_step('cadence-innovus-power')
+    place          = default_step('cadence-innovus-place')
+    cts            = default_step('cadence-innovus-cts')
+    postcts_hold   = default_step('cadence-innovus-postcts_hold')
+    route          = default_step('cadence-innovus-route')
+    postroute      = default_step('cadence-innovus-postroute')
+    postroute_hold = default_step('cadence-innovus-postroute_hold')
+    signoff        = default_step('cadence-innovus-signoff')
+    pt_signoff     = default_step('synopsys-pt-timing-signoff')
 
     if which("calibre") is not None:
-        drc            = Step('mentor-calibre-drc',            default=True)
-        lvs            = Step('mentor-calibre-lvs',            default=True)
+        drc = default_step('mentor-calibre-drc')
+        lvs = default_step('mentor-calibre-lvs')
         # GF has a different way of running fill
         if adk_name == 'gf12-adk':
-            fill           = Step(this_dir + '/../common/mentor-calibre-fill-gf')
-            merge_gdr      = Step('mentor-calibre-gdsmerge-child',  default=True)
+            fill = default_step(this_dir + '/../common/mentor-calibre-fill-gf')
+            merge_gdr = default_step('mentor-calibre-gdsmerge-child')
         else:
-            fill           = Step('mentor-calibre-fill',            default=True)
-            merge_rdl      = Step('mentor-calibre-gdsmerge-child',  default=True)
+            fill = default_step('mentor-calibre-fill')
+            merge_rdl = default_step('mentor-calibre-gdsmerge-child')
             merge_rdl.set_name('gdsmerge-dragonphy-rdl')
 
-        merge_fill     = Step('mentor-calibre-gdsmerge-child', default=True)
+        merge_fill = default_step('mentor-calibre-gdsmerge-child')
     else:
         assert False, 'Sorry! Removed cadence-pegasus option'
 
-    debugcalibre   = Step('cadence-innovus-debug-calibre', default=True)
+    debugcalibre = default_step('cadence-innovus-debug-calibre')
 
     merge_fill.set_name('gdsmerge-fill')
 
@@ -483,41 +486,41 @@ def construct():
 
     # Connect by name
 
-    g.connect_by_name(adk,      gen_sram)
-    g.connect_by_name(adk,      synth)
-    g.connect_by_name(adk,      iflow)
-    g.connect_by_name(adk,      init)
-    g.connect_by_name(adk,      power)
-    g.connect_by_name(adk,      place)
-    g.connect_by_name(adk,      cts)
-    g.connect_by_name(adk,      postcts_hold)
-    g.connect_by_name(adk,      route)
-    g.connect_by_name(adk,      postroute)
-    g.connect_by_name(adk,      postroute_hold)
-    g.connect_by_name(adk,      signoff)
-    g.connect_by_name(adk,      fill)
-    g.connect_by_name(adk,      merge_fill)
-    g.connect_by_name(adk,      drc)
-    g.connect_by_name(adk,      antenna_drc)
+    g.connect_by_name(adk, gen_sram)
+    g.connect_by_name(adk, synth)
+    g.connect_by_name(adk, iflow)
+    g.connect_by_name(adk, init)
+    g.connect_by_name(adk, power)
+    g.connect_by_name(adk, place)
+    g.connect_by_name(adk, cts)
+    g.connect_by_name(adk, postcts_hold)
+    g.connect_by_name(adk, route)
+    g.connect_by_name(adk, postroute)
+    g.connect_by_name(adk, postroute_hold)
+    g.connect_by_name(adk, signoff)
+    g.connect_by_name(adk, fill)
+    g.connect_by_name(adk, merge_fill)
+    g.connect_by_name(adk, drc)
+    g.connect_by_name(adk, antenna_drc)
 
     # Onyx-specific connections
     if which_soc == 'onyx':
-        g.connect_by_name(adk,      gen_sram_2)
-        g.connect_by_name(adk,      prefill_drc)
-        g.connect_by_name(adk,      merge_gdr)
-        g.connect_by_name(adk,      drc_pm)
-        g.connect_by_name(adk,      drc_dp)
-        g.connect_by_name(adk,      drc_mas)
+        g.connect_by_name(adk, gen_sram_2)
+        g.connect_by_name(adk, prefill_drc)
+        g.connect_by_name(adk, merge_gdr)
+        g.connect_by_name(adk, drc_pm)
+        g.connect_by_name(adk, drc_dp)
+        g.connect_by_name(adk, drc_mas)
         # Use lvs_adk so lvs has access to cells used in lower-level blocks
-        g.connect_by_name(lvs_adk,  lvs)
+        g.connect_by_name(lvs_adk, lvs)
 
     # Amber-specific connections
     if which_soc == 'amber':
-        g.connect_by_name(adk,      merge_rdl)
-        g.connect_by_name(adk,      lvs)
+        g.connect_by_name(adk, merge_rdl)
+        g.connect_by_name(adk, lvs)
 
     # Post-Power DRC check
-    g.connect_by_name(adk,      power_drc)
+    g.connect_by_name(adk, power_drc)
 
     # Connect RTL verification nodes
     g.connect_by_name(rtl, cgra_rtl_sim_compile)
@@ -558,35 +561,38 @@ def construct():
         # global_controller can use rtl from rtl node
         g.connect_by_name(rtl, global_controller)
 
-    g.connect_by_name(rtl,         synth)
-    g.connect_by_name(soc_rtl,     synth)
-    g.connect_by_name(constraints, synth)
-    g.connect_by_name(read_design, synth)
+    def reverse_connect(node1, node2):
+        g.connect_by_name(node2, node1)
 
-    g.connect_by_name(soc_rtl,  io_file)
+    reverse_connect(synth, rtl)
+    reverse_connect(synth, soc_rtl)
+    reverse_connect(synth, constraints)
+    reverse_connect(synth, read_design)
 
-    g.connect_by_name(synth,       iflow)
-    g.connect_by_name(synth,       init)
-    g.connect_by_name(synth,       power)
-    g.connect_by_name(synth,       place)
-    g.connect_by_name(synth,       cts)
+    g.connect_by_name(soc_rtl, io_file)
 
-    g.connect_by_name(iflow,    init)
-    g.connect_by_name(iflow,    power)
-    g.connect_by_name(iflow,    place)
-    g.connect_by_name(iflow,    cts)
-    g.connect_by_name(iflow,    postcts_hold)
-    g.connect_by_name(iflow,    route)
-    g.connect_by_name(iflow,    postroute)
-    g.connect_by_name(iflow,    postroute_hold)
-    g.connect_by_name(iflow,    signoff)
+    g.connect_by_name(synth, iflow)
+    g.connect_by_name(synth, init)
+    g.connect_by_name(synth, power)
+    g.connect_by_name(synth, place)
+    g.connect_by_name(synth, cts)
 
-    g.connect_by_name(custom_init,  init)
-    g.connect_by_name(custom_lvs,   lvs)
+    g.connect_by_name(iflow, init)
+    g.connect_by_name(iflow, power)
+    g.connect_by_name(iflow, place)
+    g.connect_by_name(iflow, cts)
+    g.connect_by_name(iflow, postcts_hold)
+    g.connect_by_name(iflow, route)
+    g.connect_by_name(iflow, postroute)
+    g.connect_by_name(iflow, postroute_hold)
+    g.connect_by_name(iflow, signoff)
+
+    g.connect_by_name(custom_init, init)
+    g.connect_by_name(custom_lvs, lvs)
     g.connect_by_name(custom_power, power)
 
     if which_soc == 'onyx':
-        g.connect_by_name(custom_cts,   cts)
+        g.connect_by_name(custom_cts, cts)
 
     # Connect gen_sram_macro node(s) to all downstream nodes that
     # need them
@@ -604,16 +610,15 @@ def construct():
     # Full chip floorplan stuff
     g.connect_by_name(io_file, init_fc)
     g.connect_by_name(init_fc, init)
-
-    g.connect_by_name(init,           power)
-    g.connect_by_name(power,          place)
-    g.connect_by_name(place,          cts)
-    g.connect_by_name(cts,            postcts_hold)
-    g.connect_by_name(postcts_hold,   route)
-    g.connect_by_name(route,          postroute)
-    g.connect_by_name(postroute,      postroute_hold)
+    g.connect_by_name(init, power)
+    g.connect_by_name(power, place)
+    g.connect_by_name(place, cts)
+    g.connect_by_name(cts, postcts_hold)
+    g.connect_by_name(postcts_hold, route)
+    g.connect_by_name(route, postroute)
+    g.connect_by_name(postroute, postroute_hold)
     g.connect_by_name(postroute_hold, signoff)
-    g.connect_by_name(signoff,        lvs)
+    g.connect_by_name(signoff, lvs)
 
     if which_soc == 'onyx':
         # Merge guardring gds into design
@@ -643,7 +648,7 @@ def construct():
         g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
         # Skipping
-        g.connect(signoff.o('design-merged.gds'),   merge_rdl.i('design.gds'))
+        g.connect(signoff.o('design-merged.gds'), merge_rdl.i('design.gds'))
         g.connect(dragonphy.o('dragonphy_RDL.gds'), merge_rdl.i('child.gds'))
         g.connect_by_name(merge_rdl, lvs)
 
@@ -658,17 +663,17 @@ def construct():
         g.connect_by_name(merge_fill, drc)
         g.connect_by_name(merge_fill, antenna_drc)
 
-    g.connect_by_name(adk,          pt_signoff)
-    g.connect_by_name(signoff,      pt_signoff)
+    g.connect_by_name(adk, pt_signoff)
+    g.connect_by_name(signoff, pt_signoff)
 
-    g.connect_by_name(adk,      debugcalibre)
-    g.connect_by_name(synth,    debugcalibre)
-    g.connect_by_name(iflow,    debugcalibre)
-    g.connect_by_name(signoff,  debugcalibre)
+    g.connect_by_name(adk, debugcalibre)
+    g.connect_by_name(synth, debugcalibre)
+    g.connect_by_name(iflow, debugcalibre)
+    g.connect_by_name(signoff, debugcalibre)
 
     if which_soc == 'amber':
-        g.connect_by_name(drc,      debugcalibre)
-        g.connect_by_name(lvs,      debugcalibre)
+        g.connect_by_name(drc, debugcalibre)
+        g.connect_by_name(lvs, debugcalibre)
 
     g.connect_by_name(pre_route, route)
     g.connect_by_name(sealring, signoff)
