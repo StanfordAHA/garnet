@@ -248,20 +248,20 @@ def construct():
 
     # Turn off formatting b/c want these cloumns to line up
     # autopep8: off
-    info           = default_step('info')
+    info           = default_step('info')  # noqa
     #constraints   = default_step('constraints')
-    synth          = default_step('cadence-genus-synthesis')
-    iflow          = default_step('cadence-innovus-flowsetup')
-    init           = default_step('cadence-innovus-init')
-    power          = default_step('cadence-innovus-power')
-    place          = default_step('cadence-innovus-place')
-    cts            = default_step('cadence-innovus-cts')
-    postcts_hold   = default_step('cadence-innovus-postcts_hold')
-    route          = default_step('cadence-innovus-route')
-    postroute      = default_step('cadence-innovus-postroute')
-    postroute_hold = default_step('cadence-innovus-postroute_hold')
-    signoff        = default_step('cadence-innovus-signoff')
-    pt_signoff     = default_step('synopsys-pt-timing-signoff')
+    synth          = default_step('cadence-genus-synthesis')    # noqa
+    iflow          = default_step('cadence-innovus-flowsetup')  # noqa
+    init           = default_step('cadence-innovus-init')       # noqa
+    power          = default_step('cadence-innovus-power')      # noqa
+    place          = default_step('cadence-innovus-place')      # noqa
+    cts            = default_step('cadence-innovus-cts')        # noqa
+    postcts_hold   = default_step('cadence-innovus-postcts_hold')  # noqa
+    route          = default_step('cadence-innovus-route')         # noqa
+    postroute      = default_step('cadence-innovus-postroute')     # noqa
+    postroute_hold = default_step('cadence-innovus-postroute_hold')  # noqa
+    signoff        = default_step('cadence-innovus-signoff')         # noqa
+    pt_signoff     = default_step('synopsys-pt-timing-signoff')      # noqa
     # autopep8: on
 
     if which("calibre") is not None:
