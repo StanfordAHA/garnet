@@ -41,56 +41,18 @@ def set_clk_rst_flush(solver):
             )
         )
 
-    # rst_times = [0, 1]
-    # for rst in solver.rsts:
-    #     if rst in solver.fts.inputvars:
-    #         solver.fts.promote_inputvar(rst)
-    #     solver.fts.constrain_init(
-    #         solver.create_term(
-    #             solver.ops.Equal, rst, solver.create_term(0, rst.get_sort())
-    #         )
-    #     )
-    #     solver.fts_assert_at_times(
-    #         rst,
-    #         solver.create_term(0, rst.get_sort()),
-    #         solver.create_term(1, rst.get_sort()),
-    #         rst_times,
-    #     )
-
-    # flush_times = [2, 3]
-    # for flush in solver.flushes:
-    #     if flush in solver.fts.inputvars:
-    #         solver.fts.promote_inputvar(flush)
-    #     solver.fts.constrain_init(
-    #         solver.create_term(
-    #             solver.ops.Equal, flush, solver.create_term(0, flush.get_sort())
-    #         )
-    #     )
-    #     solver.fts_assert_at_times(
-    #         flush,
-    #         solver.create_term(1, flush.get_sort()),
-    #         solver.create_term(0, flush.get_sort()),
-    #         flush_times,
-    #     )
-
 
 def synchronize_cycle_counts(solver):
 
-    # solver.fts.add_invar(
-    #     solver.create_term(
-    #         solver.ops.And,
-    #         solver.create_term(
-    #             solver.ops.BVSgt, solver.cycle_count, solver.create_term(0, solver.cycle_count.get_sort())
-    #         ),
-    #         solver.create_term(
-    #             solver.ops.BVSlt, solver.cycle_count, solver.create_term(1000, solver.cycle_count.get_sort())
-    #         )
-    #     )
-    # )
-
     solver.fts.add_invar(
         solver.create_term(
-            solver.ops.BVSgt, solver.cycle_count, solver.create_term(0, solver.cycle_count.get_sort())
+            solver.ops.And,
+            solver.create_term(
+                solver.ops.BVSgt, solver.cycle_count, solver.create_term(0, solver.cycle_count.get_sort())
+            ),
+            solver.create_term(
+                solver.ops.BVSlt, solver.cycle_count, solver.create_term(100, solver.cycle_count.get_sort())
+            )
         )
     )
 
@@ -99,12 +61,6 @@ def synchronize_cycle_counts(solver):
             solver.fts.add_invar(
                 solver.create_term(solver.ops.Equal, term, solver.cycle_count)
             )
-
-    # for name, term in solver.fts.named_terms.items():
-    #     if "dim_counter" in name and not solver.fts.is_next_var(term):
-    #         solver.fts.constrain_init(
-    #             solver.create_term(solver.ops.Equal, term, solver.create_term(0, term.get_sort()))
-    #         )
 
 
 def flatten(lst):
@@ -245,36 +201,7 @@ def create_property_term(
         halide_pixel_index_var = solver.create_fts_state_var(
             f"halide_pixel_index_{str(mapped_output_var_name)}", bvsort16
         )
-        # solver.fts.constrain_init(
-        #     solver.create_term(
-        #         solver.ops.Equal, out_pixel_count, starting_cycle_count
-        #     )
-        # )
-        # count_plus_one = solver.create_term(
-        #     solver.ops.BVAdd, out_pixel_count, solver.create_term(1, bvsort16)
-        # )
-        # solver.fts.assign_next(
-        #     out_pixel_count,
-        #     solver.create_term(
-        #         solver.ops.Ite, valid_and_clk_low, count_plus_one, out_pixel_count
-        #     ),
-        # )
-
-        # # Output symbol decoder
-        # # This will requiring knowing the order of the output pixels
-        # out_symbol_decoder = flatten(halide_out_symbols)[0]
-        # output_var_idx = 0
-        # for halide_symbol in flatten(halide_out_symbols):
-        #     count_eq = solver.create_term(
-        #         solver.ops.Equal,
-        #         out_pixel_count,
-        #         solver.create_term(output_var_idx, bvsort16),
-        #     )
-        #     out_symbol_decoder = solver.create_term(
-        #         solver.ops.Ite, count_eq, halide_symbol, out_symbol_decoder
-        #     )
-        #     output_var_idx += 1
-
+      
         # Use stencil valid memtile addr_out - cycle_starting_addr as the index for the output_pixel_array
         assert valid_name in solver.stencil_valid_to_port_controller
         memtile = solver.stencil_valid_to_port_controller[valid_name]
