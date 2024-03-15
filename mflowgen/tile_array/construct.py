@@ -29,8 +29,7 @@ def construct():
         read_hdl_defines = ''
 
     # TSMC override(s)
-    if adk_name == 'tsmc16': which_soc = 'amber'
-    else:                    which_soc = 'onyx'
+    which_soc = 'amber' if adk_name == 'tsmc16' else 'onyx'
 
     parameters = {
       'construct_path'    : __file__,
@@ -95,7 +94,7 @@ def construct():
 
     rtl            = Step(this_dir + '/../common/rtl')
     Tile_MemCore   = Subgraph(this_dir + '/../Tile_MemCore', 'Tile_MemCore')
-    Tile_PE        = Subgraph(this_dir + '/../Tile_PE',      'Tile_PE')
+    Tile_PE        = Subgraph(this_dir + '/../Tile_PE', 'Tile_PE')
     constraints    = Step(this_dir + '/constraints')
     dc_postcompile = Step(this_dir + '/custom-dc-postcompile')
 
@@ -121,9 +120,11 @@ def construct():
 
     # Default steps
 
+    # autopep8: off
+
     info           = Step('info',                           default=True)
-    #constraints    = Step( 'constraints',                    default=True)
-    #dc             = Step( 'synopsys-dc-synthesis',          default=True)
+    # constraints  = Step( 'constraints',                   default=True)
+    # dc           = Step( 'synopsys-dc-synthesis',         default=True)
     synth          = Step('cadence-genus-synthesis',        default=True)
     iflow          = Step('cadence-innovus-flowsetup',      default=True)
     init           = Step('cadence-innovus-init',           default=True)
@@ -140,14 +141,16 @@ def construct():
     pt_genlibdb    = Step('synopsys-ptpx-genlibdb',         default=True)
     genlib         = Step('cadence-innovus-genlib',         default=True)
 
+    # autopep8: on
+
     if which("calibre") is not None:
-        drc            = Step('mentor-calibre-drc',             default=True)
-        lvs            = Step('mentor-calibre-lvs',             default=True)
+        drc            = Step('mentor-calibre-drc', default=True)
+        lvs            = Step('mentor-calibre-lvs', default=True)
     else:
-        drc            = Step('cadence-pegasus-drc',            default=True)
-        lvs            = Step('cadence-pegasus-lvs',            default=True)
-    debugcalibre   = Step('cadence-innovus-debug-calibre',   default=True)
-    vcs_sim        = Step('synopsys-vcs-sim',                default=True)
+        drc            = Step('cadence-pegasus-drc', default=True)
+        lvs            = Step('cadence-pegasus-lvs', default=True)
+    debugcalibre   = Step('cadence-innovus-debug-calibre', default=True)
+    vcs_sim        = Step('synopsys-vcs-sim', default=True)
 
     # Separate ADK for LVS so it has PM cells when needed
     if which_soc == 'onyx':
@@ -319,39 +322,42 @@ def construct():
 
     # Connect by name
 
-    g.connect_by_name(adk,      synth)
-    g.connect_by_name(adk,      iflow)
-    g.connect_by_name(adk,      init)
-    g.connect_by_name(adk,      power)
-    g.connect_by_name(adk,      place)
-    g.connect_by_name(adk,      cts)
-    g.connect_by_name(adk,      postcts_hold)
-    g.connect_by_name(adk,      route)
-    g.connect_by_name(adk,      postroute)
-    g.connect_by_name(adk,      postroute_hold)
-    g.connect_by_name(adk,      signoff)
-    g.connect_by_name(adk,      drc)
+    g.connect_by_name(adk, synth)
+    g.connect_by_name(adk, iflow)
+    g.connect_by_name(adk, init)
+    g.connect_by_name(adk, power)
+    g.connect_by_name(adk, place)
+    g.connect_by_name(adk, cts)
+    g.connect_by_name(adk, postcts_hold)
+    g.connect_by_name(adk, route)
+    g.connect_by_name(adk, postroute)
+    g.connect_by_name(adk, postroute_hold)
+    g.connect_by_name(adk, signoff)
+    g.connect_by_name(adk, drc)
 
     if which_soc == "onyx":
-        g.connect_by_name(adk,      drc_pm)
-        g.connect_by_name(lvs_adk,  lvs)
+        g.connect_by_name(adk, drc_pm)
+        g.connect_by_name(lvs_adk, lvs)
     else:
-        g.connect_by_name(adk,      lvs)
+        g.connect_by_name(adk, lvs)
+
+    def reverse_connect(node1, node2):
+        g.connect_by_name(node2, node1)
 
     if use_e2e:
         for app in e2e_apps:
-            g.connect_by_name(adk,               e2e_sim_nodes[app])
-            g.connect_by_name(Tile_MemCore,      e2e_sim_nodes[app])
-            g.connect_by_name(Tile_PE,           e2e_sim_nodes[app])
-            g.connect_by_name(e2e_tb_nodes[app], e2e_sim_nodes[app])
-            g.connect_by_name(signoff,           e2e_sim_nodes[app])
+            reverse_connect(e2e_sim_nodes[app], adk)
+            reverse_connect(e2e_sim_nodes[app], Tile_MemCore)
+            reverse_connect(e2e_sim_nodes[app], Tile_PE)
+            reverse_connect(e2e_sim_nodes[app], e2e_tb_nodes[app], 
+            reverse_connect(e2e_sim_nodes[app], signoff)
 
-            g.connect_by_name(adk,                e2e_power_nodes[app])
-            g.connect_by_name(Tile_MemCore,       e2e_power_nodes[app])
-            g.connect_by_name(Tile_PE,            e2e_power_nodes[app])
-            g.connect_by_name(signoff,            e2e_power_nodes[app])
-            g.connect_by_name(e2e_tb_nodes[app],  e2e_power_nodes[app])
-            g.connect_by_name(e2e_sim_nodes[app], e2e_power_nodes[app])
+            reverse_connect(e2e_power_nodes[app], adk)
+            reverse_connect(e2e_power_nodes[app], Tile_MemCore)
+            reverse_connect(e2e_power_nodes[app], Tile_PE)
+            reverse_connect(e2e_power_nodes[app], signoff)
+            reverse_connect(e2e_power_nodes[app], e2e_tb_nodes[app])
+            reverse_connect(e2e_power_nodes[app], e2e_sim_nodes[app])
 
     # In our CGRA, the tile pattern is:
     # PE PE PE Mem PE PE PE Mem ...
@@ -363,130 +369,131 @@ def construct():
         g.connect_by_name(rtl, Tile_MemCore)
         # outputs from Tile_MemCore
         #g.connect_by_name(Tile_MemCore,      dc)
-        g.connect_by_name(Tile_MemCore,      synth)
-        g.connect_by_name(Tile_MemCore,      iflow)
-        g.connect_by_name(Tile_MemCore,      init)
-        g.connect_by_name(Tile_MemCore,      power)
-        g.connect_by_name(Tile_MemCore,      place)
-        g.connect_by_name(Tile_MemCore,      cts)
-        g.connect_by_name(Tile_MemCore,      postcts_hold)
-        g.connect_by_name(Tile_MemCore,      route)
-        g.connect_by_name(Tile_MemCore,      postroute)
-        g.connect_by_name(Tile_MemCore,      postroute_hold)
-        g.connect_by_name(Tile_MemCore,      signoff)
-        g.connect_by_name(Tile_MemCore,      pt_signoff)
-        g.connect_by_name(Tile_MemCore,      genlib)
-        g.connect_by_name(Tile_MemCore,      drc)
-        g.connect_by_name(Tile_MemCore,      lvs)
+        g.connect_by_name(Tile_MemCore, synth)
+        g.connect_by_name(Tile_MemCore, iflow)
+        g.connect_by_name(Tile_MemCore, init)
+        g.connect_by_name(Tile_MemCore, power)
+        g.connect_by_name(Tile_MemCore, place)
+        g.connect_by_name(Tile_MemCore, cts)
+        g.connect_by_name(Tile_MemCore, postcts_hold)
+        g.connect_by_name(Tile_MemCore, route)
+        g.connect_by_name(Tile_MemCore, postroute)
+        g.connect_by_name(Tile_MemCore, postroute_hold)
+        g.connect_by_name(Tile_MemCore, signoff)
+        g.connect_by_name(Tile_MemCore, pt_signoff)
+        g.connect_by_name(Tile_MemCore, genlib)
+        g.connect_by_name(Tile_MemCore, drc)
+        g.connect_by_name(Tile_MemCore, lvs)
         # These rules LVS BOX the SRAM macro, so they should
         # only be used if memory tile is present
-        g.connect_by_name(custom_lvs,        lvs)
-        g.connect_by_name(Tile_MemCore,      vcs_sim)
-        g.connect_by_name(Tile_MemCore,      pt_genlibdb)
+        g.connect_by_name(custom_lvs, lvs)
+        g.connect_by_name(Tile_MemCore, vcs_sim)
+        g.connect_by_name(Tile_MemCore, pt_genlibdb)
         if which_soc == "onyx":
-            g.connect_by_name(Tile_MemCore,      drc_pm)
+            g.connect_by_name(Tile_MemCore, drc_pm)
 
     # inputs to Tile_PE
     g.connect_by_name(rtl, Tile_PE)
     # outputs from Tile_PE
-    #g.connect_by_name( Tile_PE,      dc)
-    g.connect_by_name(Tile_PE,      synth)
-    g.connect_by_name(Tile_PE,      iflow)
-    g.connect_by_name(Tile_PE,      init)
-    g.connect_by_name(Tile_PE,      power)
-    g.connect_by_name(Tile_PE,      place)
-    g.connect_by_name(Tile_PE,      cts)
-    g.connect_by_name(Tile_PE,      postcts_hold)
-    g.connect_by_name(Tile_PE,      route)
-    g.connect_by_name(Tile_PE,      postroute)
-    g.connect_by_name(Tile_PE,      postroute_hold)
-    g.connect_by_name(Tile_PE,      signoff)
-    g.connect_by_name(Tile_PE,      pt_signoff)
-    g.connect_by_name(Tile_PE,      genlib)
-    g.connect_by_name(Tile_PE,      drc)
-    g.connect_by_name(Tile_PE,      lvs)
-    g.connect_by_name(Tile_PE,      pt_genlibdb)
+    #g.connect_by_name( Tile_PE, dc)
+    g.connect_by_name(Tile_PE, synth)
+    g.connect_by_name(Tile_PE, iflow)
+    g.connect_by_name(Tile_PE, init)
+    g.connect_by_name(Tile_PE, power)
+    g.connect_by_name(Tile_PE, place)
+    g.connect_by_name(Tile_PE, cts)
+    g.connect_by_name(Tile_PE, postcts_hold)
+    g.connect_by_name(Tile_PE, route)
+    g.connect_by_name(Tile_PE, postroute)
+    g.connect_by_name(Tile_PE, postroute_hold)
+    g.connect_by_name(Tile_PE, signoff)
+    g.connect_by_name(Tile_PE, pt_signoff)
+    g.connect_by_name(Tile_PE, genlib)
+    g.connect_by_name(Tile_PE, drc)
+    g.connect_by_name(Tile_PE, lvs)
+    g.connect_by_name(Tile_PE, pt_genlibdb)
     if which_soc == "onyx":
-        g.connect_by_name(Tile_PE,      drc_pm)
+        g.connect_by_name(Tile_PE, drc_pm)
 
     #g.connect_by_name( rtl,            dc)
     #g.connect_by_name( constraints,    dc)
     #g.connect_by_name( dc_postcompile, dc)
 
-    #g.connect_by_name( dc,       iflow)
-    #g.connect_by_name( dc,       init)
-    #g.connect_by_name( dc,       power)
-    #g.connect_by_name( dc,       place)
-    #g.connect_by_name( dc,       cts)
+    #g.connect_by_name( dc, iflow)
+    #g.connect_by_name( dc, init)
+    #g.connect_by_name( dc, power)
+    #g.connect_by_name( dc, place)
+    #g.connect_by_name( dc, cts)
 
 
-    g.connect_by_name(rtl,            synth)
-    g.connect_by_name(rtl,            synth)
-    g.connect_by_name(constraints,    synth)
+    g.connect_by_name(rtl, synth)
+    g.connect_by_name(rtl, synth)
+    g.connect_by_name(constraints, synth)
     #g.connect_by_name( dc_postcompile, synth)
 
-    g.connect_by_name(synth,       iflow)
-    g.connect_by_name(synth,       init)
-    g.connect_by_name(synth,       power)
-    g.connect_by_name(synth,       place)
-    g.connect_by_name(synth,       cts)
+    g.connect_by_name(synth, iflow)
+    g.connect_by_name(synth, init)
+    g.connect_by_name(synth, power)
+    g.connect_by_name(synth, place)
+    g.connect_by_name(synth, cts)
 
-    g.connect_by_name(iflow,    init)
-    g.connect_by_name(iflow,    power)
-    g.connect_by_name(iflow,    place)
-    g.connect_by_name(iflow,    cts)
-    g.connect_by_name(iflow,    postcts_hold)
-    g.connect_by_name(iflow,    route)
-    g.connect_by_name(iflow,    postroute)
-    g.connect_by_name(iflow,    postroute_hold)
-    g.connect_by_name(iflow,    signoff)
-    g.connect_by_name(iflow,    genlib)
+    g.connect_by_name(iflow, init)
+    g.connect_by_name(iflow, power)
+    g.connect_by_name(iflow, place)
+    g.connect_by_name(iflow, cts)
+    g.connect_by_name(iflow, postcts_hold)
+    g.connect_by_name(iflow, route)
+    g.connect_by_name(iflow, postroute)
+    g.connect_by_name(iflow, postroute_hold)
+    g.connect_by_name(iflow, signoff)
+    g.connect_by_name(iflow, genlib)
 
-    g.connect_by_name(custom_init,  init)
+    g.connect_by_name(custom_init, init)
     g.connect_by_name(custom_power, power)
     g.connect_by_name(custom_cts, cts)
 
-    g.connect_by_name(init,         power)
-    g.connect_by_name(power,        place)
-    g.connect_by_name(place,        cts)
-    g.connect_by_name(cts,          postcts_hold)
+    g.connect_by_name(init, power)
+    g.connect_by_name(power, place)
+    g.connect_by_name(place, cts)
+    g.connect_by_name(cts, postcts_hold)
     g.connect_by_name(postcts_hold, route)
-    g.connect_by_name(route,        postroute)
-    g.connect_by_name(postroute,    postroute_hold)
+    g.connect_by_name(route, postroute)
+    g.connect_by_name(postroute, postroute_hold)
     g.connect_by_name(postroute_hold, signoff)
-    g.connect_by_name(signoff,      drc)
-    g.connect_by_name(signoff,      lvs)
+    g.connect_by_name(signoff, drc)
+    g.connect_by_name(signoff, lvs)
+
     g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
     g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
     if which_soc == "onyx":
-        g.connect_by_name(signoff,      drc_pm)
+        g.connect_by_name(signoff, drc_pm)
         g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
 
-    g.connect_by_name(adk,          pt_signoff)
-    g.connect_by_name(signoff,      pt_signoff)
+    g.connect_by_name(adk, pt_signoff)
+    g.connect_by_name(signoff, pt_signoff)
 
-    g.connect_by_name(adk,          pt_genlibdb)
-    g.connect_by_name(adk,          genlib)
-    g.connect_by_name(signoff,      pt_genlibdb)
-    g.connect_by_name(signoff,      genlib)
+    g.connect_by_name(adk, pt_genlibdb)
+    g.connect_by_name(adk, genlib)
+    g.connect_by_name(signoff, pt_genlibdb)
+    g.connect_by_name(signoff, genlib)
 
-    g.connect_by_name(genlib,       lib2db)
+    g.connect_by_name(genlib, lib2db)
 
-    g.connect_by_name(adk,      debugcalibre)
-    #g.connect_by_name( dc,       debugcalibre)
-    g.connect_by_name(synth,    debugcalibre)
-    g.connect_by_name(iflow,    debugcalibre)
-    g.connect_by_name(signoff,  debugcalibre)
-    g.connect_by_name(drc,      debugcalibre)
-    g.connect_by_name(lvs,      debugcalibre)
+    reverse_connect(debugcalibre, adk)
+    #reverse_connect( debugcalibre, dc)
+    reverse_connect(debugcalibre, synth)
+    reverse_connect(debugcalibre, iflow)
+    reverse_connect(debugcalibre, signoff)
+    reverse_connect(debugcalibre, drc)
+    reverse_connect(debugcalibre, lvs)
     if which_soc == "onyx":
-        g.connect_by_name(drc_pm,   debugcalibre)
+        reverse_connect(drc_debugcalibre, pm)
 
-    g.connect_by_name(adk,           vcs_sim)
-    g.connect_by_name(testbench,     vcs_sim)
-    g.connect_by_name(gls_args,      vcs_sim)
-    g.connect_by_name(signoff,       vcs_sim)
-    g.connect_by_name(Tile_PE,       vcs_sim)
+    reverse_connect(vcs_sim, adk)
+    reverse_connect(vcs_sim, testbench)
+    reverse_connect(vcs_sim, gls_args)
+    reverse_connect(vcs_sim, signoff)
+    reverse_connect(vcs_sim, Tile_PE)
 
     #-----------------------------------------------------------------------
     # Parameterize
@@ -503,8 +510,8 @@ def construct():
     init.update_params({'pipeline_stage_height': parameters['pipeline_stage_height']}, True)
 
     # CTS uses height/width param to do CTS endpoint overrides properly
-    cts.update_params({'array_width':  parameters['array_width']}, True)
-    cts.update_params({'array_height':  parameters['array_height']}, True)
+    cts.update_params({'array_width': parameters['array_width']}, True)
+    cts.update_params({'array_height': parameters['array_height']}, True)
 
     # Since we are adding an additional input script to the generic Innovus
     # steps, we modify the order parameter for that node which determines
