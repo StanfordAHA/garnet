@@ -12,7 +12,7 @@ import pono
 from simple_colors import *
 import re
 from tabulate import tabulate
-from .verify_design_top import import_from, print_trace, flatten, set_clk_rst_flush
+from .verify_design_top import import_from, print_trace, flatten
 
 import copy
 import json
@@ -33,26 +33,77 @@ from archipelago.pnr_graph import (
 from verified_agile_hardware.solver import Solver, Rewriter
 import smt_switch as ss
 
-def set_inputs(solver, input_symbols_coreir, input_symbols_pnr, 
+def set_clk_rst_flush(solver):
+    for clk in solver.clks:
+        if clk in solver.fts.inputvars:
+            solver.fts.promote_inputvar(clk)
+        solver.fts.constrain_init(
+            solver.create_term(
+                solver.ops.Equal, clk, solver.create_term(1, clk.get_sort())
+            )
+        )
+        ite = solver.create_term(
+            solver.ops.Ite,
+            solver.create_term(
+                solver.ops.Equal, clk, solver.create_term(0, clk.get_sort())
+            ),
+            solver.create_term(1, clk.get_sort()),
+            solver.create_term(0, clk.get_sort()),
+        )
+        solver.fts.assign_next(clk, ite)
+
+    rst_times = [0, 1]
+    for rst in solver.rsts:
+        if rst in solver.fts.inputvars:
+            solver.fts.promote_inputvar(rst)
+        solver.fts.constrain_init(
+            solver.create_term(
+                solver.ops.Equal, rst, solver.create_term(0, rst.get_sort())
+            )
+        )
+        solver.fts_assert_at_times(
+            rst,
+            solver.create_term(0, rst.get_sort()),
+            solver.create_term(1, rst.get_sort()),
+            rst_times,
+        )
+
+    flush_times = [2, 3]
+    for flush in solver.flushes:
+        if flush in solver.fts.inputvars:
+            solver.fts.promote_inputvar(flush)
+        solver.fts.constrain_init(
+            solver.create_term(
+                solver.ops.Equal, flush, solver.create_term(0, flush.get_sort())
+            )
+        )
+        solver.fts_assert_at_times(
+            flush,
+            solver.create_term(1, flush.get_sort()),
+            solver.create_term(0, flush.get_sort()),
+            flush_times,
+        )
+
+
+def set_pnr_inputs(solver, input_symbols_coreir, input_symbols_pnr, 
             bvsort16, id_to_name):
+
     # Map pnr symbols to names
-    input_pnr_symbols_to_names = {}
+    input_pnr_names_to_symbols = {}
     for input_symbol_pnr in input_symbols_pnr:
         input_pnr_id = input_symbol_pnr.split(".")[0]
         input_pnr_name = id_to_name[input_pnr_id]
-        input_pnr_symbols_to_names[input_symbol_pnr] = input_pnr_name
+        input_pnr_names_to_symbols[input_pnr_name] = input_symbol_pnr
     
-    # reverse map for pnr names to symbols
-    input_pnr_symbols_to_names_reversed = {v: k for k, v in input_pnr_symbols_to_names.items()}
-    
+
     # set each input symbol in coreir and pnr graphs equal
     for input_coreir_name in input_symbols_coreir:
         # find the matching pnr input
         input_coreir_name_sliced = input_coreir_name.split(".")[1]
-        for input_pnr_name in input_pnr_symbols_to_names_reversed:
+        for input_pnr_name in input_pnr_names_to_symbols:
             if (input_coreir_name_sliced in input_pnr_name):
                 # map pnr input name back to key symbol
-                input_pnr_symbol = input_pnr_symbols_to_names_reversed[input_pnr_name]
+                input_pnr_symbol = input_pnr_names_to_symbols[input_pnr_name]
                 # map coreir name and pnr ID back to nodes
                 input_coreir = input_symbols_coreir[input_coreir_name]
                 input_pnr = input_symbols_pnr[input_pnr_symbol]
@@ -82,6 +133,8 @@ def set_inputs(solver, input_symbols_coreir, input_symbols_pnr,
         solver.fts.add_invar(solver.create_term(solver.ops.Equal, state_var, v))
 
 
+
+
 def compare_output_array(
     solver, bvsort16, index, array0, array1, max_index, pnr_valid, bvsort1
 ):
@@ -103,7 +156,7 @@ def compare_output_array(
         )
         ############# DEBUG############
         t_n = solver.create_term(
-            solver.ops.BVUle, #BVUle
+            solver.ops.BVSlt, #BVSle
             solver.create_term(solver.ops.Select, array0, idx_bv),
             solver.create_term(solver.ops.Select, array1, idx_bv)
         )
@@ -138,7 +191,7 @@ def compare_output_array(
     #         solver.create_term(0, bvsort1)
     #     )
 
-def create_property_term(
+def create_pnr_property_term(
     solver, output_symbols_coreir, output_symbols_pnr, 
     bvsort16, bvsort1, id_to_name, num_output_pixels
 ):
@@ -351,12 +404,11 @@ def create_property_term(
         property_term = solver.create_term(
             solver.ops.And, property_term, prop
         )
-        breakpoint()
     
-    return property_term
+    return property_term, output_pair_1_bit
 
  
-def verify_pnr(interconnect, coreir_file):
+def verify_pnr(interconnect, coreir_file, instance_to_instr):
     file_info = {}
     file_info["port_remapping"] = coreir_file.replace(
         "design_top.json", "design.port_remap"
@@ -372,21 +424,16 @@ def verify_pnr(interconnect, coreir_file):
     hw_input_stencil, hw_output_stencil = create_app(Solver())
 
     cmod  = read_coreir(coreir_file)
-    nx = coreir_to_nx(cmod) # translate coreir to network x
-    print("CoreIR to NX done.")
-    coreir_to_pdf(nx,"/aha/nx_pdf/coreir_graph")
+    nx = coreir_to_nx(cmod) 
 
-    # Instantiate solver object
     solver = Solver()
-    solver.solver.set_opt("produce-models", "true")
+    # solver.solver.set_opt("produce-models", "true")
     solver.file_info = file_info
     solver.app_dir = f"{app_dir}/verification"
 
     solver, input_symbols_coreir, output_symbols_coreir = nx_to_smt(
         nx, interconnect, solver, app_dir
-    ) # network x to SMT
-
-    print("NX to SMT done.")
+    ) 
 
     # load PnR results
     packed_file = coreir_file.replace("design_top.json", "design.packed")
@@ -398,33 +445,27 @@ def verify_pnr(interconnect, coreir_file):
 
     placement = load_placement(placement_file)
     routing = load_routing_result(routing_file)
-    print("PnR results loaded.")
 
     # Construct PnR result graph
     routing_result_graph = construct_graph(
         placement, routing, id_to_name, netlist, 1, 0, 1, False
     )
-    print("PnR graph created.")
 
-    nx_pnr = pnr_to_nx(routing_result_graph, cmod) # translate pnr graph to network x
-    # add cmod as parameter
-    print("PnR NX generated.")
-
+    nx_pnr = pnr_to_nx(routing_result_graph, cmod, instance_to_instr) 
 
     solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
         nx_pnr, interconnect, solver, app_dir
-    ) # network x to SMT for PnR
-
+    ) 
     set_clk_rst_flush(solver)
 
     bvsort16 = solver.create_bvsort(16)
     bvsort1 = solver.create_bvsort(1)
 
-    set_inputs(solver, input_symbols_coreir, input_symbols_pnr, 
+    set_pnr_inputs(solver, input_symbols_coreir, input_symbols_pnr, 
             bvsort16, id_to_name)
     
     
-    property_term = create_property_term(
+    property_term, valid_pairs = create_pnr_property_term(
         solver, 
         output_symbols_coreir, 
         output_symbols_pnr, 
@@ -433,22 +474,52 @@ def verify_pnr(interconnect, coreir_file):
         id_to_name,
         len(flatten(hw_output_stencil))
     )
-    print(len(flatten(hw_output_stencil)))
 
-    prop = pono.Property(solver.solver, property_term) # create property
+    prop = pono.Property(solver.solver, property_term)
 
-    bmc = pono.Bmc(prop, solver.fts, solver.solver) # run bmc checker
+    bmc = pono.Bmc(prop, solver.fts, solver.solver)
 
-    print("Running BMC...")
+    check_pixels = 1
+    check_cycles = solver.first_valid_output + 1 + check_pixels
+
+    print("First valid output at cycle", solver.first_valid_output)
+    print("Running BMC for", check_cycles, "cycles")
     start = time.time()
-    res = bmc.check_until(20)
-    print("BMC time:", time.time() - start)
-
+    res = bmc.check_until(check_cycles * 2)
+    print(time.time() - start)
     if res is None or res:
-        print("\n\033[92m" + "Formal check of mapped application passed" + "\033[0m")
+
+        # Create property term that says valid is always 0
+        property_term = solver.create_term(
+            solver.ops.Equal,
+            solver.create_term(0, bvsort16),
+            solver.create_term(0, bvsort16),
+        )
+        for valid_pair in valid_pairs:
+            for mapped_output_var in valid_pair:
+
+                valid_eq = solver.create_term(
+                    solver.ops.Equal, mapped_output_var, solver.create_term(0, bvsort1)
+                )
+
+                property_term = solver.create_term(solver.ops.And, property_term, valid_eq)
+
+        prop = pono.Property(solver.solver, property_term)
+        btor_solver = Solver(solver_name="btor")
+        bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
+
+        print("Checking that valid is high at least once for", check_cycles, "cycles")
+        start = time.time()
+        res2 = bmc.check_until(check_cycles * 2)
+        print(time.time() - start)
+
+        if res2 is None or res2:
+            print("\n\033[91m" + "Valid is never high" + "\033[0m")
+        else:
+            print("\n\033[92m" + "Formal check of mapped application passed" + "\033[0m")
+
     else:
-        trace_symbols = list(output_symbols_coreir.keys()) + list(output_symbols_pnr.keys()) + list(input_symbols_pnr.keys()) + list(input_symbols_coreir.keys()) + \
-                        ["out.hw_output_stencil_op_hcompute_hw_output_stencil_write_0_array","|((_ extract 15 0) I0.f2io_16)_array|","out_count_out.hw_output_stencil_op_hcompute_hw_output_stencil_write_0","out_count_I0.f2io_16"]
+        trace_symbols = list(output_symbols_coreir.keys()) + list(output_symbols_pnr.keys()) + list(input_symbols_pnr.keys()) + list(input_symbols_coreir.keys())
         print_trace(bmc, trace_symbols)
 
     breakpoint()
