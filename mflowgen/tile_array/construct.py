@@ -1,22 +1,21 @@
 #! /usr/bin/env python
-#=========================================================================
+# =========================================================================
 # construct.py
-#=========================================================================
-# Author : 
-# Date   : 
+# =========================================================================
 
 import os
 from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
+
 def construct():
 
     g = Graph()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameters
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     adk_name = get_sys_adk()
     adk_view = 'multivt'
@@ -32,34 +31,42 @@ def construct():
     which_soc = 'amber' if adk_name == 'tsmc16' else 'onyx'
 
     parameters = {
-      'construct_path'    : __file__,
-      'design_name'       : 'Interconnect',
-      'clock_period'      : 1.0,
-      'adk'               : adk_name,
-      'adk_view'          : adk_view,
-      # Synthesis
-      'flatten_effort'    : 3,
-      'topographical'     : True,
-      'read_hdl_defines'  : read_hdl_defines,
-      # RTL Generation
-      'array_width'       : 32,
-      'array_height'      : 16,
-      'interconnect_only' : False,
-      # Power Domains
-      'PWR_AWARE'         : True,
-      # Useful Skew (CTS)
-      'useful_skew'       : False,
-      # hold target slack
-      'hold_target_slack' : 0.07,
-      # Pipeline stage insertion
-      'pipeline_config_interval': 8,
-      'pipeline_stage_height': 30,
-      # Testing
-      'testbench_name'    : 'Interconnect_tb',
-      # I am defaulting to True because nothing is worse than finishing
-      # a sim and needing the wave but not having it...
-      'waves'             : True,
-      'drc_env_setup'     : 'drcenv-block.sh'
+        'construct_path': __file__,
+        'design_name': 'Interconnect',
+        'clock_period': 1.0,
+        'adk': adk_name,
+        'adk_view': adk_view,
+
+        # Synthesis
+        'flatten_effort': 3,
+        'topographical': True,
+        'read_hdl_defines': read_hdl_defines,
+
+        # RTL Generation
+        'array_width': 32,
+        'array_height': 16,
+        'interconnect_only': False,
+
+        # Power Domains
+        'PWR_AWARE': True,
+
+        # Useful Skew (CTS)
+        'useful_skew': False,
+
+        # hold target slack
+        'hold_target_slack': 0.07,
+
+        # Pipeline stage insertion
+        'pipeline_config_interval': 8,
+        'pipeline_stage_height': 30,
+
+        # Testing
+        'testbench_name': 'Interconnect_tb',
+
+        # I am defaulting to True because nothing is worse than finishing
+        # a sim and needing the wave but not having it...
+        'waves': True,
+        'drc_env_setup': 'drcenv-block.sh'
     }
 
     if parameters['PWR_AWARE'] == True:
@@ -68,10 +75,11 @@ def construct():
         parameters['lvs_adk_view'] = adk_view
 
     # TSMC overrides
-    if adk_name == 'tsmc16': parameters.update({
-      'clock_period'      : 1.1,
-      'hold_target_slack' : 0.015,
-    })
+    if adk_name == 'tsmc16':
+        parameters.update({
+            'clock_period': 1.1,
+            'hold_target_slack': 0.015,
+        })
 
     # OG TSMC did not set read_hdl_defines etc.
     if adk_name == 'tsmc16':
@@ -79,9 +87,9 @@ def construct():
         parameters.pop('drc_env_setup')
         parameters.pop('lvs_adk_view')
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Create nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     this_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -92,36 +100,34 @@ def construct():
 
     # Custom steps
 
-    rtl            = Step(this_dir + '/../common/rtl')
-    Tile_MemCore   = Subgraph(this_dir + '/../Tile_MemCore', 'Tile_MemCore')
-    Tile_PE        = Subgraph(this_dir + '/../Tile_PE', 'Tile_PE')
-    constraints    = Step(this_dir + '/constraints')
+    rtl = Step(this_dir + '/../common/rtl')
+    Tile_MemCore = Subgraph(this_dir + '/../Tile_MemCore', 'Tile_MemCore')
+    Tile_PE = Subgraph(this_dir + '/../Tile_PE', 'Tile_PE')
+    constraints = Step(this_dir + '/constraints')
     dc_postcompile = Step(this_dir + '/custom-dc-postcompile')
 
     if adk_name == 'tsmc16':
-        custom_init    = Step(this_dir + '/custom-init-amber')
+        custom_init = Step(this_dir + '/custom-init-amber')
     else:
-        custom_init    = Step(this_dir + '/custom-init')
+        custom_init = Step(this_dir + '/custom-init')
 
-    custom_power   = Step(this_dir + '/../common/custom-power-hierarchical')
-    custom_cts     = Step(this_dir + '/custom-cts-overrides')
+    custom_power = Step(this_dir + '/../common/custom-power-hierarchical')
+    custom_cts = Step(this_dir + '/custom-cts-overrides')
 
     if adk_name == 'tsmc16':
-        custom_lvs     = Step(this_dir + '/custom-lvs-rules-amber')
+        custom_lvs = Step(this_dir + '/custom-lvs-rules-amber')
     else:
-        custom_lvs     = Step(this_dir + '/custom-lvs-rules')
+        custom_lvs = Step(this_dir + '/custom-lvs-rules')
 
-    gls_args       = Step(this_dir + '/gls_args')
-    testbench      = Step(this_dir + '/testbench')
-    lib2db         = Step(this_dir + '/../common/synopsys-dc-lib2db')
+    gls_args = Step(this_dir + '/gls_args')
+    testbench = Step(this_dir + '/testbench')
+    lib2db = Step(this_dir + '/../common/synopsys-dc-lib2db')
     if which_soc == 'onyx':
-        drc_pm         = Step(this_dir + '/../common/gf-mentor-calibre-drcplus-pm')
-
+        drc_pm = Step(this_dir + '/../common/gf-mentor-calibre-drcplus-pm')
 
     # Default steps
 
     # autopep8: off
-
     info           = Step('info',                           default=True)
     # constraints  = Step( 'constraints',                   default=True)
     # dc           = Step( 'synopsys-dc-synthesis',         default=True)
@@ -142,15 +148,14 @@ def construct():
     genlib         = Step('cadence-innovus-genlib',         default=True)
 
     # autopep8: on
-
     if which("calibre") is not None:
-        drc            = Step('mentor-calibre-drc', default=True)
-        lvs            = Step('mentor-calibre-lvs', default=True)
+        drc = Step('mentor-calibre-drc', default=True)
+        lvs = Step('mentor-calibre-lvs', default=True)
     else:
-        drc            = Step('cadence-pegasus-drc', default=True)
-        lvs            = Step('cadence-pegasus-lvs', default=True)
-    debugcalibre   = Step('cadence-innovus-debug-calibre', default=True)
-    vcs_sim        = Step('synopsys-vcs-sim', default=True)
+        drc = Step('cadence-pegasus-drc', default=True)
+        lvs = Step('cadence-pegasus-lvs', default=True)
+    debugcalibre = Step('cadence-innovus-debug-calibre', default=True)
+    vcs_sim = Step('synopsys-vcs-sim', default=True)
 
     # Separate ADK for LVS so it has PM cells when needed
     if which_soc == 'onyx':
@@ -159,9 +164,9 @@ def construct():
 
     # Add cgra tile macro inputs to downstream nodes
 
-    #dc.extend_inputs( ['Tile_PE.db'])
+    # dc.extend_inputs( ['Tile_PE.db'])
     synth.extend_inputs(['Tile_PE_tt.lib'])
-    #dc.extend_inputs( ['Tile_MemCore.db'])
+    # dc.extend_inputs( ['Tile_MemCore.db'])
     synth.extend_inputs(['Tile_MemCore_tt.lib'])
     pt_signoff.extend_inputs(['Tile_PE_tt.db'])
     pt_signoff.extend_inputs(['Tile_MemCore_tt.db'])
@@ -182,10 +187,10 @@ def construct():
         for app in e2e_apps:
             e2e_testbench = Step(this_dir + '/e2e_testbench')
             e2e_xcelium_sim = Step(this_dir + '/../common/cadence-xcelium-sim')
-            e2e_ptpx_gl     = Step(this_dir + '/../common/synopsys-ptpx-gl') 
+            e2e_ptpx_gl = Step(this_dir + '/../common/synopsys-ptpx-gl')
             # Simple rename
             app_name = app.split("/")[1]
-            e2e_testbench.set_name(f"e2e_testbench_{app_name}") 
+            e2e_testbench.set_name(f"e2e_testbench_{app_name}")
             e2e_xcelium_sim.set_name(f"e2e_xcelium_sim_{app_name}")
             e2e_ptpx_gl.set_name(f"e2e_ptpx_gl_{app_name}")
             e2e_tb_nodes[app] = e2e_testbench
@@ -195,7 +200,7 @@ def construct():
             # override app_to_run param of the testbench gen
             e2e_testbench.set_param("app_to_run", app)
 
-            # Send all the relevant post-pnr files to sim 
+            # Send all the relevant post-pnr files to sim
             e2e_xcelium_sim.extend_inputs(Tile_MemCore.all_outputs())
             e2e_xcelium_sim.extend_inputs(Tile_PE.all_outputs())
             e2e_xcelium_sim.extend_inputs(['design.vcs.pg.v'])
@@ -235,8 +240,8 @@ def construct():
     lvs.extend_inputs(['sram.spi'])
 
     # Extra dc inputs
-    #dc.extend_inputs( dc_postcompile.all_outputs())
-    #synth.extend_inputs( dc_postcompile.all_outputs())
+    # dc.extend_inputs( dc_postcompile.all_outputs())
+    # synth.extend_inputs( dc_postcompile.all_outputs())
 
     # Add extra input edges to innovus steps that need custom tweaks
 
@@ -272,9 +277,9 @@ def construct():
         from common.streamout_no_uniquify import streamout_no_uniquify
         streamout_no_uniquify(iflow)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     g.add_step(info)
     g.add_step(rtl)
@@ -316,9 +321,9 @@ def construct():
             g.add_step(e2e_tb_nodes[app])
             g.add_step(e2e_sim_nodes[app])
             g.add_step(e2e_power_nodes[app])
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add edges
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     # Connect by name
 
@@ -349,7 +354,7 @@ def construct():
             reverse_connect(e2e_sim_nodes[app], adk)
             reverse_connect(e2e_sim_nodes[app], Tile_MemCore)
             reverse_connect(e2e_sim_nodes[app], Tile_PE)
-            reverse_connect(e2e_sim_nodes[app], e2e_tb_nodes[app], 
+            reverse_connect(e2e_sim_nodes[app], e2e_tb_nodes[app])
             reverse_connect(e2e_sim_nodes[app], signoff)
 
             reverse_connect(e2e_power_nodes[app], adk)
@@ -368,7 +373,7 @@ def construct():
         # inputs to Tile_MemCore
         g.connect_by_name(rtl, Tile_MemCore)
         # outputs from Tile_MemCore
-        #g.connect_by_name(Tile_MemCore,      dc)
+        # g.connect_by_name(Tile_MemCore,      dc)
         g.connect_by_name(Tile_MemCore, synth)
         g.connect_by_name(Tile_MemCore, iflow)
         g.connect_by_name(Tile_MemCore, init)
@@ -395,7 +400,7 @@ def construct():
     # inputs to Tile_PE
     g.connect_by_name(rtl, Tile_PE)
     # outputs from Tile_PE
-    #g.connect_by_name( Tile_PE, dc)
+    # g.connect_by_name( Tile_PE, dc)
     g.connect_by_name(Tile_PE, synth)
     g.connect_by_name(Tile_PE, iflow)
     g.connect_by_name(Tile_PE, init)
@@ -415,21 +420,20 @@ def construct():
     if which_soc == "onyx":
         g.connect_by_name(Tile_PE, drc_pm)
 
-    #g.connect_by_name( rtl,            dc)
-    #g.connect_by_name( constraints,    dc)
-    #g.connect_by_name( dc_postcompile, dc)
+    # g.connect_by_name( rtl,            dc)
+    # g.connect_by_name( constraints,    dc)
+    # g.connect_by_name( dc_postcompile, dc)
 
-    #g.connect_by_name( dc, iflow)
-    #g.connect_by_name( dc, init)
-    #g.connect_by_name( dc, power)
-    #g.connect_by_name( dc, place)
-    #g.connect_by_name( dc, cts)
-
+    # g.connect_by_name( dc, iflow)
+    # g.connect_by_name( dc, init)
+    # g.connect_by_name( dc, power)
+    # g.connect_by_name( dc, place)
+    # g.connect_by_name( dc, cts)
 
     g.connect_by_name(rtl, synth)
     g.connect_by_name(rtl, synth)
     g.connect_by_name(constraints, synth)
-    #g.connect_by_name( dc_postcompile, synth)
+    # g.connect_by_name( dc_postcompile, synth)
 
     g.connect_by_name(synth, iflow)
     g.connect_by_name(synth, init)
@@ -480,7 +484,7 @@ def construct():
     g.connect_by_name(genlib, lib2db)
 
     reverse_connect(debugcalibre, adk)
-    #reverse_connect( debugcalibre, dc)
+    # reverse_connect( debugcalibre, dc)
     reverse_connect(debugcalibre, synth)
     reverse_connect(debugcalibre, iflow)
     reverse_connect(debugcalibre, signoff)
@@ -495,15 +499,15 @@ def construct():
     reverse_connect(vcs_sim, signoff)
     reverse_connect(vcs_sim, Tile_PE)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameterize
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     g.update_params(parameters)
 
     # LVS adk has separate view parameter
     if which_soc == "onyx":
-        lvs_adk.update_params({'adk_view' : parameters['lvs_adk_view']})
+        lvs_adk.update_params({'adk_view': parameters['lvs_adk_view']})
 
     # Init needs pipeline params for floorplanning
     init.update_params({'pipeline_config_interval': parameters['pipeline_config_interval']}, True)
@@ -517,11 +521,11 @@ def construct():
     # steps, we modify the order parameter for that node which determines
     # which scripts get run and when they get run.
 
-    #order = synth.get_param('order')
-    #compile_idx = order.index( 'compile.tcl')
-    #order.insert ( compile_idx + 1, 'custom-dc-postcompile.tcl')
-    #dc.update_params( {'order': order })
-    #synth.update_params( {'order': order })
+    # order = synth.get_param('order')
+    # compile_idx = order.index( 'compile.tcl')
+    # order.insert ( compile_idx + 1, 'custom-dc-postcompile.tcl')
+    # dc.update_params( {'order': order })
+    # synth.update_params( {'order': order })
 
     # pt_genlibdb -- Remove 'write-interface-timing.tcl' because it takes
     # very long and is not necessary
@@ -531,10 +535,9 @@ def construct():
 
     # init -- Add 'dont-touch.tcl' before reporting
 
-    order = init.get_param('order') # get the default script run order
-    reporting_idx = order.index('reporting.tcl') # find reporting.tcl
-    # Add dont-touch before reporting
-    order.insert (reporting_idx, 'dont-touch.tcl')
+    order = init.get_param('order')                # get the default script run order
+    reporting_idx = order.index('reporting.tcl')   # find reporting.tcl
+    order.insert(reporting_idx, 'dont-touch.tcl')  # Add dont-touch before reporting
     init.update_params({'order': order})
 
     # We are overriding certain pin types for CTS, so we need to
@@ -544,13 +547,12 @@ def construct():
     order.insert(main_idx, 'cts-overrides.tcl')
     cts.update_params({'order': order})
 
-
-    # Remove 
-    #dc_postconditions = dc.get_postconditions()
-    #for postcon in dc_postconditions:
+    # Remove
+    # dc_postconditions = dc.get_postconditions()
+    # for postcon in dc_postconditions:
     #    if 'percent_clock_gated' in postcon:
     #        dc_postconditions.remove(postcon)
-    #dc.set_postconditions( dc_postconditions)
+    # dc.set_postconditions( dc_postconditions)
 
     synth_postconditions = synth.get_postconditions()
     for postcon in synth_postconditions:
@@ -559,6 +561,7 @@ def construct():
     synth.set_postconditions(synth_postconditions)
 
     return g
+
 
 if __name__ == '__main__':
     g = construct()
