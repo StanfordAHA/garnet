@@ -4,6 +4,8 @@ from verified_agile_hardware.coreir_utils import (
     coreir_to_pdf,
     nx_to_smt,
 )
+
+from verified_agile_hardware.lake_utils import mem_tile_get_num_valids
 from memory_core.memtile_util import LakeCoreBase
 import time
 import os
@@ -13,6 +15,7 @@ from simple_colors import *
 import re
 from tabulate import tabulate
 from verified_agile_hardware.solver import Solver
+import smt_switch as ss
 
 
 def set_clk_rst_flush(solver):
@@ -51,10 +54,11 @@ def synchronize_cycle_counts(solver):
                 solver.ops.BVSgt, solver.cycle_count, solver.create_term(0, solver.cycle_count.get_sort())
             ),
             solver.create_term(
-                solver.ops.BVSlt, solver.cycle_count, solver.create_term(100, solver.cycle_count.get_sort())
+                solver.ops.BVSlt, solver.cycle_count, solver.create_term(solver.max_cycles, solver.cycle_count.get_sort())
             )
         )
     )
+
 
     for name, term in solver.fts.named_terms.items():
         if "cycle_count" in name and not solver.fts.is_next_var(term):
@@ -173,49 +177,64 @@ def create_property_term(
             solver.ops.Equal, mapped_valid, solver.create_term(1, bvsort1)
         )
 
-        clk_low = solver.create_term(
-            solver.ops.Equal, solver.clks[0], solver.create_term(0, bvsort1)
-        )
+        # clk_low = solver.create_term(
+        #     solver.ops.Equal, solver.clks[0], solver.create_term(0, bvsort1)
+        # )
 
-        valid_and_clk_low = solver.create_term(solver.ops.And, valid_eq, clk_low)
+        # valid_and_clk_low = solver.create_term(solver.ops.And, valid_eq, clk_low)
 
-        for i in range(input_to_output_cycle_dep):
-            output_dep_on_input = solver.create_term(
-                solver.ops.Or,
-                solver.create_term(
-                    solver.ops.Equal,
-                    solver.bmc_counter,
-                    solver.create_term(2*i, bvsort16),
-                ),
-                solver.create_term(
-                    solver.ops.Equal,
-                    solver.bmc_counter,
-                    solver.create_term((2*i) + 1, bvsort16),
-                ),
-            )
+        # for i in range(input_to_output_cycle_dep):
+        #     output_dep_on_input = solver.create_term(
+        #         solver.ops.Or,
+        #         solver.create_term(
+        #             solver.ops.Equal,
+        #             solver.bmc_counter,
+        #             solver.create_term(2*i, bvsort16),
+        #         ),
+        #         solver.create_term(
+        #             solver.ops.Equal,
+        #             solver.bmc_counter,
+        #             solver.create_term((2*i) + 1, bvsort16),
+        #         ),
+        #     )
 
-            valid_and_clk_low = solver.create_term(
-                solver.ops.And, valid_and_clk_low, solver.create_term(solver.ops.Not, output_dep_on_input)
-            )
+        #     valid_and_clk_low = solver.create_term(
+        #         solver.ops.And, valid_and_clk_low, solver.create_term(solver.ops.Not, output_dep_on_input)
+        #     )
 
         halide_pixel_index_var = solver.create_fts_state_var(
             f"halide_pixel_index_{str(mapped_output_var_name)}", bvsort16
         )
       
-        # Use stencil valid memtile addr_out - cycle_starting_addr as the index for the output_pixel_array
+        # Precalculate the halide pixel index based on the memory tile schedule
         assert valid_name in solver.stencil_valid_to_port_controller
         memtile = solver.stencil_valid_to_port_controller[valid_name]
 
-        cycle_starting_addr = solver.stencil_valid_to_cycle_starting_addr[memtile]
+        # This is a list that stores the number of valid pixels at each cycle
+        # Can use this to index into halide output pixel array
+        cycle_to_halide_idx = mem_tile_get_num_valids(solver.stencil_valid_to_schedule[memtile], solver.max_cycles, iterator_support=6)
 
-        for name, term in solver.fts.named_terms.items():
-            if "addr_out" in name and memtile in name and not solver.fts.is_next_var(term):
-                addr_out = term
-                break
+
+        # Create SMT LUT to map cycle count to halide pixel index
+        cycle_to_halide_idx_var = solver.create_fts_state_var(
+            f"{memtile}_cycle_to_halide_idx_var",
+            solver.solver.make_sort(
+                ss.sortkinds.ARRAY, bvsort16, bvsort16
+            ),
+        )
+
+        for i, idx in enumerate(cycle_to_halide_idx):
+            cycle_to_halide_idx_var = solver.create_term(
+                solver.ops.Store,
+                cycle_to_halide_idx_var,
+                solver.create_const(i, bvsort16),
+                solver.create_const(idx, bvsort16),
+            )
 
         halide_pixel_index = solver.create_term(
-            solver.ops.BVSub, addr_out, solver.create_term(cycle_starting_addr, addr_out.get_sort())
+            solver.ops.Select, cycle_to_halide_idx_var, solver.cycle_count
         )
+
 
         solver.fts.add_invar(
             solver.create_term(
@@ -382,6 +401,7 @@ def verify_design_top(interconnect, coreir_file):
 
     solver, input_symbols, output_symbols = nx_to_smt(nx, interconnect, solver, app_dir)
 
+
     set_clk_rst_flush(solver)
 
     synchronize_cycle_counts(solver)
@@ -427,7 +447,7 @@ def verify_design_top(interconnect, coreir_file):
     btor_solver = Solver(solver_name="btor")
     bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
 
-    #run_bmc_profiling_sweep(solver, prop)
+    # run_bmc_profiling_sweep(solver, prop)
 
     #breakpoint()
 
