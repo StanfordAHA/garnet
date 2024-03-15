@@ -14,7 +14,8 @@ import json
 import archipelago
 import archipelago.power
 import archipelago.io
-from verification.verify_design_top import verify_design_top
+# from verification.verify_design_top import verify_design_top
+from verification.verify_pnr import verify_pnr
 
 from lassen.sim import PE_fc as lassen_fc
 
@@ -816,7 +817,7 @@ def build_verilog(args, garnet):
 
 def pnr(garnet, args, app):
 
-    verify_design_top(garnet.interconnect, args.app)
+    # verify_design_top(garnet.interconnect, args.app)
 
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
@@ -829,6 +830,8 @@ def pnr(garnet, args, app):
 
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
+
+    # verify_pnr(garnet.interconnect, args.app, instance_to_instr)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,

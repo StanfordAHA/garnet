@@ -12,7 +12,13 @@ import pono
 from simple_colors import *
 import re
 from tabulate import tabulate
-from .verify_design_top import import_from, print_trace, flatten
+from .verify_design_top import (
+    import_from,
+    print_trace,
+    flatten,
+    set_clk_rst_flush,
+    synchronize_cycle_counts,
+)
 
 import copy
 import json
@@ -33,60 +39,10 @@ from archipelago.pnr_graph import (
 from verified_agile_hardware.solver import Solver, Rewriter
 import smt_switch as ss
 
-def set_clk_rst_flush(solver):
-    for clk in solver.clks:
-        if clk in solver.fts.inputvars:
-            solver.fts.promote_inputvar(clk)
-        solver.fts.constrain_init(
-            solver.create_term(
-                solver.ops.Equal, clk, solver.create_term(1, clk.get_sort())
-            )
-        )
-        ite = solver.create_term(
-            solver.ops.Ite,
-            solver.create_term(
-                solver.ops.Equal, clk, solver.create_term(0, clk.get_sort())
-            ),
-            solver.create_term(1, clk.get_sort()),
-            solver.create_term(0, clk.get_sort()),
-        )
-        solver.fts.assign_next(clk, ite)
 
-    rst_times = [0, 1]
-    for rst in solver.rsts:
-        if rst in solver.fts.inputvars:
-            solver.fts.promote_inputvar(rst)
-        solver.fts.constrain_init(
-            solver.create_term(
-                solver.ops.Equal, rst, solver.create_term(0, rst.get_sort())
-            )
-        )
-        solver.fts_assert_at_times(
-            rst,
-            solver.create_term(0, rst.get_sort()),
-            solver.create_term(1, rst.get_sort()),
-            rst_times,
-        )
-
-    flush_times = [2, 3]
-    for flush in solver.flushes:
-        if flush in solver.fts.inputvars:
-            solver.fts.promote_inputvar(flush)
-        solver.fts.constrain_init(
-            solver.create_term(
-                solver.ops.Equal, flush, solver.create_term(0, flush.get_sort())
-            )
-        )
-        solver.fts_assert_at_times(
-            flush,
-            solver.create_term(1, flush.get_sort()),
-            solver.create_term(0, flush.get_sort()),
-            flush_times,
-        )
-
-
-def set_pnr_inputs(solver, input_symbols_coreir, input_symbols_pnr, 
-            bvsort16, id_to_name):
+def set_pnr_inputs(
+    solver, input_symbols_coreir, input_symbols_pnr, bvsort16, id_to_name
+):
 
     # Map pnr symbols to names
     input_pnr_names_to_symbols = {}
@@ -94,45 +50,45 @@ def set_pnr_inputs(solver, input_symbols_coreir, input_symbols_pnr,
         input_pnr_id = input_symbol_pnr.split(".")[0]
         input_pnr_name = id_to_name[input_pnr_id]
         input_pnr_names_to_symbols[input_pnr_name] = input_symbol_pnr
-    
 
     # set each input symbol in coreir and pnr graphs equal
     for input_coreir_name in input_symbols_coreir:
         # find the matching pnr input
         input_coreir_name_sliced = input_coreir_name.split(".")[1]
         for input_pnr_name in input_pnr_names_to_symbols:
-            if (input_coreir_name_sliced in input_pnr_name):
+            if input_coreir_name_sliced in input_pnr_name:
                 # map pnr input name back to key symbol
                 input_pnr_symbol = input_pnr_names_to_symbols[input_pnr_name]
                 # map coreir name and pnr ID back to nodes
                 input_coreir = input_symbols_coreir[input_coreir_name]
                 input_pnr = input_symbols_pnr[input_pnr_symbol]
                 input_pnr_short = solver.fts.make_term(
-                    ss.Op(ss.primops.Extract, input_coreir.get_sort().get_width() - 1, 0),
+                    ss.Op(
+                        ss.primops.Extract, input_coreir.get_sort().get_width() - 1, 0
+                    ),
                     input_pnr,
                 )
-                
-                solver.fts.add_invar(solver.create_term(solver.ops.Equal, input_coreir, input_pnr_short))
-                
 
-    for k,v in input_symbols_coreir.items():
+                solver.fts.add_invar(
+                    solver.create_term(solver.ops.Equal, input_coreir, input_pnr_short)
+                )
+
+    for k, v in input_symbols_coreir.items():
         state_var = solver.create_fts_state_var(k + "_state", v.get_sort())
         input_var = solver.create_fts_input_var(k + "_input", v.get_sort())
 
         clk_low = solver.create_term(
-            solver.ops.Equal, solver.clks[0], solver.create_term(0, solver.create_bvsort(1))
+            solver.ops.Equal,
+            solver.clks[0],
+            solver.create_term(0, solver.create_bvsort(1)),
         )
 
         solver.fts.assign_next(
             state_var,
-            solver.create_term(
-                solver.ops.Ite, clk_low, input_var, state_var
-            ),
+            solver.create_term(solver.ops.Ite, clk_low, input_var, state_var),
         )
 
         solver.fts.add_invar(solver.create_term(solver.ops.Equal, state_var, v))
-
-
 
 
 def compare_output_array(
@@ -152,48 +108,43 @@ def compare_output_array(
         t = solver.create_term(
             solver.ops.Equal,
             solver.create_term(solver.ops.Select, array0, idx_bv),
-            solver.create_term(solver.ops.Select, array1, idx_bv)
+            solver.create_term(solver.ops.Select, array1, idx_bv),
         )
         ############# DEBUG############
         t_n = solver.create_term(
-            solver.ops.BVSlt, #BVSle
+            solver.ops.BVSlt,  # BVSle
             solver.create_term(solver.ops.Select, array0, idx_bv),
-            solver.create_term(solver.ops.Select, array1, idx_bv)
+            solver.create_term(solver.ops.Select, array1, idx_bv),
         )
         ################################
-        
+
         # check if idx is less than index
-        idx_in_range = solver.create_term(solver.ops.BVUlt, 
-                            idx_bv, 
-                            index)
+        idx_in_range = solver.create_term(solver.ops.BVUlt, idx_bv, index)
         # update term if idx < index
         # new_term = solver.create_term(solver.ops.And, term, t)
         # term = solver.create_term(
-        #         solver.ops.Ite, 
-        #         idx_in_range, 
-        #         new_term, 
+        #         solver.ops.Ite,
+        #         idx_in_range,
+        #         new_term,
         #         term
         # )
 
         ################### DEBUG ####################
         new_term_n = solver.create_term(solver.ops.And, term, t_n)
-        term = solver.create_term(
-                solver.ops.Ite, 
-                idx_in_range, 
-                new_term_n, 
-                term
-        )
+        term = solver.create_term(solver.ops.Ite, idx_in_range, new_term_n, term)
         ##########################################
     return term
-    # return solver.create_term( # Claim that pnr_valid is low
-    #         solver.ops.Equal,
-    #         pnr_valid, 
-    #         solver.create_term(0, bvsort1)
-    #     )
+
 
 def create_pnr_property_term(
-    solver, output_symbols_coreir, output_symbols_pnr, 
-    bvsort16, bvsort1, id_to_name, num_output_pixels
+    solver,
+    output_symbols_coreir,
+    output_symbols_pnr,
+    bvsort16,
+    bvsort1,
+    id_to_name,
+    input_to_output_cycle_dep,
+    num_output_pixels,
 ):
     # Pair up coreir outputs with pnr outputs
     # create separate lists for 16-bit and 1-bit outputs
@@ -203,9 +154,11 @@ def create_pnr_property_term(
         output_pnr_id = output_symbol_pnr.split(".")[0]
         output_pnr_name = id_to_name[output_pnr_id]
         output_pnr_symbols_to_names[output_symbol_pnr] = output_pnr_name
-    
+
     # reverse map for pnr names to symbols
-    output_pnr_symbols_to_names_reversed = {v: k for k, v in output_pnr_symbols_to_names.items()}
+    output_pnr_symbols_to_names_reversed = {
+        v: k for k, v in output_pnr_symbols_to_names.items()
+    }
 
     # for each coreir output, find matching pnr output
     output_pair_1_bit = []
@@ -216,28 +169,42 @@ def create_pnr_property_term(
         # find the matching pnr output
         output_coreir_name_sliced = output_coreir_name.split(".")[1]
         for output_pnr_name in output_pnr_symbols_to_names_reversed:
-            if (output_coreir_name_sliced in output_pnr_name):
+            if output_coreir_name_sliced in output_pnr_name:
                 # map pnr output name back to key symbol
-                output_pnr_symbol = output_pnr_symbols_to_names_reversed[output_pnr_name]
+                output_pnr_symbol = output_pnr_symbols_to_names_reversed[
+                    output_pnr_name
+                ]
                 # map coreir name and pnr ID back to nodes
                 output_coreir = output_symbols_coreir[output_coreir_name]
                 output_pnr = output_symbols_pnr[output_pnr_symbol]
 
                 # find if the pair of outputs is 1 bit or 16 bit
-                if (output_coreir.get_sort().get_width() == 1 and 
-                    output_pnr.get_sort().get_width() == 1):
+                if (
+                    output_coreir.get_sort().get_width() == 1
+                    and output_pnr.get_sort().get_width() == 1
+                ):
                     # if both 1 bits
-                    output_pair_1_bit.append([output_coreir,output_pnr])
-                    output_pair_1_bit_names.append([output_coreir_name,output_pnr_symbol])
-                elif (output_coreir.get_sort().get_width() >= 16 and 
-                      output_pnr.get_sort().get_width() >= 16):
+                    output_pair_1_bit.append([output_coreir, output_pnr])
+                    output_pair_1_bit_names.append(
+                        [output_coreir_name, output_pnr_symbol]
+                    )
+                elif (
+                    output_coreir.get_sort().get_width() >= 16
+                    and output_pnr.get_sort().get_width() >= 16
+                ):
                     # if both 16 bits
                     output_pnr_short = solver.fts.make_term(
-                        ss.Op(ss.primops.Extract, output_coreir.get_sort().get_width() - 1, 0),
+                        ss.Op(
+                            ss.primops.Extract,
+                            output_coreir.get_sort().get_width() - 1,
+                            0,
+                        ),
                         output_pnr,
                     )
-                    output_pair_16_bit.append([output_coreir,output_pnr_short])
-                    output_pair_16_bit_names.append([output_coreir_name,output_pnr_symbol])
+                    output_pair_16_bit.append([output_coreir, output_pnr_short])
+                    output_pair_16_bit_names.append(
+                        [output_coreir_name, output_pnr_symbol]
+                    )
                 else:
                     print("OUTPUT FORMAT DID NOT MATCH!!!!")
                     breakpoint()
@@ -264,10 +231,12 @@ def create_pnr_property_term(
         )
 
         # create array for CoreIR output
-        coreir_output_array_name = str(coreir_output_var)+"_array"
-        coreir_output_array = solver.create_fts_state_var(coreir_output_array_name, 
-                                solver.solver.make_sort(ss.sortkinds.ARRAY, 
-                                bvsort16, bvsort16) # last 2 param = index_type, data_type, both 16 bit vec in this case
+        coreir_output_array_name = str(coreir_output_var) + "_array"
+        coreir_output_array = solver.create_fts_state_var(
+            coreir_output_array_name,
+            solver.solver.make_sort(
+                ss.sortkinds.ARRAY, bvsort16, bvsort16
+            ),  # last 2 param = index_type, data_type, both 16 bit vec in this case
         )
 
         # find valid signal for coreir variable
@@ -278,8 +247,10 @@ def create_pnr_property_term(
         # signal for checking if coreir_valid is high
         coreir_valid_eq = solver.create_term(
             solver.ops.Equal, coreir_valid, solver.create_term(1, bvsort1)
-        ) 
-        coreir_valid_and_clk_low = solver.create_term(solver.ops.And, coreir_valid_eq, clk_low)
+        )
+        coreir_valid_and_clk_low = solver.create_term(
+            solver.ops.And, coreir_valid_eq, clk_low
+        )
 
         # create variable for counting valid coreir outputs
         coreir_out_pixel_count = solver.create_fts_state_var(
@@ -287,49 +258,53 @@ def create_pnr_property_term(
         )
         solver.fts.constrain_init(
             solver.create_term(
-                solver.ops.Equal, coreir_out_pixel_count, solver.create_term(0, bvsort16)
+                solver.ops.Equal,
+                coreir_out_pixel_count,
+                solver.create_term(0, bvsort16),
             )
-        ) # initialize count to 0
+        )  # initialize count to 0
         coreir_count_plus_one = solver.create_term(
             solver.ops.BVAdd, coreir_out_pixel_count, solver.create_term(1, bvsort16)
-        ) # variable for holding count+1
+        )  # variable for holding count+1
 
         # if valid and clk low, increment count
         solver.fts.assign_next(
             coreir_out_pixel_count,
             solver.create_term(
-                solver.ops.Ite, 
-                coreir_valid_and_clk_low, 
-                coreir_count_plus_one, 
-                coreir_out_pixel_count
+                solver.ops.Ite,
+                coreir_valid_and_clk_low,
+                coreir_count_plus_one,
+                coreir_out_pixel_count,
             ),
         )
 
         # array updated with new output
         # ARE WE SURE ABOUT THIS????
         coreir_output_array_updated = solver.create_term(
-            solver.ops.Store, 
-            coreir_output_array, 
-            coreir_out_pixel_count, # array index
-            coreir_output_var # element data
+            solver.ops.Store,
+            coreir_output_array,
+            coreir_out_pixel_count,  # array index
+            coreir_output_var,  # element data
         )
 
         # if valid and clk low, update array
         solver.fts.assign_next(
             coreir_output_array,
             solver.create_term(
-                solver.ops.Ite, 
-                coreir_valid_and_clk_low, 
-                coreir_output_array_updated, 
-                coreir_output_array
+                solver.ops.Ite,
+                coreir_valid_and_clk_low,
+                coreir_output_array_updated,
+                coreir_output_array,
             ),
         )
 
         # create array for pnr output
-        pnr_output_array_name = str(pnr_output_var)+"_array"
-        pnr_output_array = solver.create_fts_state_var(pnr_output_array_name, 
-                                solver.solver.make_sort(ss.sortkinds.ARRAY, 
-                                bvsort16, bvsort16) # last 2 param = index_type, data_type, both 16 bit vec in this case
+        pnr_output_array_name = str(pnr_output_var) + "_array"
+        pnr_output_array = solver.create_fts_state_var(
+            pnr_output_array_name,
+            solver.solver.make_sort(
+                ss.sortkinds.ARRAY, bvsort16, bvsort16
+            ),  # last 2 param = index_type, data_type, both 16 bit vec in this case
         )
 
         # find valid signal for pnr variable
@@ -340,8 +315,10 @@ def create_pnr_property_term(
         # signal for checking if pnr_valid is high
         pnr_valid_eq = solver.create_term(
             solver.ops.Equal, pnr_valid, solver.create_term(1, bvsort1)
-        ) 
-        pnr_valid_and_clk_low = solver.create_term(solver.ops.And, pnr_valid_eq, clk_low)
+        )
+        pnr_valid_and_clk_low = solver.create_term(
+            solver.ops.And, pnr_valid_eq, clk_low
+        )
 
         # create variable for counting valid pnr outputs
         pnr_out_pixel_count = solver.create_fts_state_var(
@@ -351,69 +328,76 @@ def create_pnr_property_term(
             solver.create_term(
                 solver.ops.Equal, pnr_out_pixel_count, solver.create_term(0, bvsort16)
             )
-        ) # initialize count to 0
+        )  # initialize count to 0
         pnr_count_plus_one = solver.create_term(
             solver.ops.BVAdd, pnr_out_pixel_count, solver.create_term(1, bvsort16)
-        ) # variable for holding count+1
+        )  # variable for holding count+1
 
         # if valid and clk low, increment count
         solver.fts.assign_next(
             pnr_out_pixel_count,
             solver.create_term(
-                solver.ops.Ite, 
-                pnr_valid_and_clk_low, 
-                pnr_count_plus_one, 
-                pnr_out_pixel_count
+                solver.ops.Ite,
+                pnr_valid_and_clk_low,
+                pnr_count_plus_one,
+                pnr_out_pixel_count,
             ),
         )
 
         # array updated with new output
         pnr_output_array_updated = solver.create_term(
-            solver.ops.Store, 
-            pnr_output_array, 
-            pnr_out_pixel_count, # array index
-            pnr_output_var # element data
+            solver.ops.Store,
+            pnr_output_array,
+            pnr_out_pixel_count,  # array index
+            pnr_output_var,  # element data
         )
 
         # if valid and clk low, update array
         solver.fts.assign_next(
             pnr_output_array,
             solver.create_term(
-                solver.ops.Ite, 
-                pnr_valid_and_clk_low, 
-                pnr_output_array_updated, 
-                pnr_output_array
+                solver.ops.Ite,
+                pnr_valid_and_clk_low,
+                pnr_output_array_updated,
+                pnr_output_array,
             ),
         )
 
         # find minimum counter value of coreir and pnr valids
-        coreir_less_count = solver.create_term(solver.ops.BVUlt, 
-                            coreir_out_pixel_count, 
-                            pnr_out_pixel_count)
+        coreir_less_count = solver.create_term(
+            solver.ops.BVUlt, coreir_out_pixel_count, pnr_out_pixel_count
+        )
 
         min_out_pixel_count = solver.create_term(
-                solver.ops.Ite, 
-                coreir_less_count, 
-                coreir_out_pixel_count, 
-                pnr_out_pixel_count)
-        
-        # return term
-        prop = compare_output_array(solver, bvsort16, min_out_pixel_count, 
-                            coreir_output_array, pnr_output_array, num_output_pixels, pnr_valid, bvsort1)
-
-        property_term = solver.create_term(
-            solver.ops.And, property_term, prop
+            solver.ops.Ite,
+            coreir_less_count,
+            coreir_out_pixel_count,
+            pnr_out_pixel_count,
         )
-    
+
+        # return term
+        prop = compare_output_array(
+            solver,
+            bvsort16,
+            min_out_pixel_count,
+            coreir_output_array,
+            pnr_output_array,
+            num_output_pixels,
+            pnr_valid,
+            bvsort1,
+        )
+
+        property_term = solver.create_term(solver.ops.And, property_term, prop)
+
     return property_term, output_pair_1_bit
 
- 
+
 def verify_pnr(interconnect, coreir_file, instance_to_instr):
     file_info = {}
     file_info["port_remapping"] = coreir_file.replace(
         "design_top.json", "design.port_remap"
     )
-    app_dir = os.path.dirname(coreir_file) # coreir_file has mapped dataflow graph
+    app_dir = os.path.dirname(coreir_file)  # coreir_file has mapped dataflow graph
 
     sys.path.append(os.path.abspath(app_dir))
 
@@ -423,8 +407,8 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
 
     hw_input_stencil, hw_output_stencil = create_app(Solver())
 
-    cmod  = read_coreir(coreir_file)
-    nx = coreir_to_nx(cmod) 
+    cmod = read_coreir(coreir_file)
+    nx = coreir_to_nx(cmod)
 
     solver = Solver()
     # solver.solver.set_opt("produce-models", "true")
@@ -433,7 +417,7 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
 
     solver, input_symbols_coreir, output_symbols_coreir = nx_to_smt(
         nx, interconnect, solver, app_dir
-    ) 
+    )
 
     # load PnR results
     packed_file = coreir_file.replace("design_top.json", "design.packed")
@@ -451,28 +435,33 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
         placement, routing, id_to_name, netlist, 1, 0, 1, False
     )
 
-    nx_pnr = pnr_to_nx(routing_result_graph, cmod, instance_to_instr) 
+    nx_pnr = pnr_to_nx(routing_result_graph, cmod, instance_to_instr)
 
     solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
         nx_pnr, interconnect, solver, app_dir
-    ) 
+    )
+
     set_clk_rst_flush(solver)
+    synchronize_cycle_counts(solver)
 
     bvsort16 = solver.create_bvsort(16)
     bvsort1 = solver.create_bvsort(1)
 
-    set_pnr_inputs(solver, input_symbols_coreir, input_symbols_pnr, 
-            bvsort16, id_to_name)
-    
-    
+    set_pnr_inputs(
+        solver, input_symbols_coreir, input_symbols_pnr, bvsort16, id_to_name
+    )
+
+    input_to_output_cycle_dep = solver.first_valid_output
+
     property_term, valid_pairs = create_pnr_property_term(
-        solver, 
-        output_symbols_coreir, 
-        output_symbols_pnr, 
-        bvsort16, 
-        bvsort1, 
+        solver,
+        output_symbols_coreir,
+        output_symbols_pnr,
+        bvsort16,
+        bvsort1,
         id_to_name,
-        len(flatten(hw_output_stencil))
+        input_to_output_cycle_dep,
+        len(flatten(hw_output_stencil)),
     )
 
     prop = pono.Property(solver.solver, property_term)
@@ -502,7 +491,9 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
                     solver.ops.Equal, mapped_output_var, solver.create_term(0, bvsort1)
                 )
 
-                property_term = solver.create_term(solver.ops.And, property_term, valid_eq)
+                property_term = solver.create_term(
+                    solver.ops.And, property_term, valid_eq
+                )
 
         prop = pono.Property(solver.solver, property_term)
         btor_solver = Solver(solver_name="btor")
@@ -516,10 +507,17 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
         if res2 is None or res2:
             print("\n\033[91m" + "Valid is never high" + "\033[0m")
         else:
-            print("\n\033[92m" + "Formal check of mapped application passed" + "\033[0m")
+            print(
+                "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m"
+            )
 
     else:
-        trace_symbols = list(output_symbols_coreir.keys()) + list(output_symbols_pnr.keys()) + list(input_symbols_pnr.keys()) + list(input_symbols_coreir.keys())
+        trace_symbols = (
+            list(output_symbols_coreir.keys())
+            + list(output_symbols_pnr.keys())
+            + list(input_symbols_pnr.keys())
+            + list(input_symbols_coreir.keys())
+        )
         print_trace(bmc, trace_symbols)
 
     breakpoint()
