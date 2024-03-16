@@ -92,7 +92,7 @@ def construct():
     # E.g. 'export clock_period_PE="4.0"' to target 250MHz
     # Optionally could restrict to bk only: if (os.getenv('USER') == "buildkite-agent")
     cp = os.getenv('clock_period_PE')
-    if (cp != None):
+    if cp is not None:
         print("@file_info: WARNING found env var 'clock_period_PE'")
         print("@file_info: WARNING setting PE clock period to '%s'" % cp)
         parameters['clock_period'] = cp
