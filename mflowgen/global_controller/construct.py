@@ -31,34 +31,34 @@ def construct():
         which_soc = 'amber'
 
     parameters = {
-        'construct_path'    : __file__,
-        'design_name'       : 'global_controller',
-        'clock_period'      : 1.0,
-        'adk'               : adk_name,
-        'adk_view'          : adk_view,
+        'construct_path': __file__,
+        'design_name': 'global_controller',
+        'clock_period': 1.0,
+        'adk': adk_name,
+        'adk_view': adk_view,
 
         # Synthesis
-        'flatten_effort'    : 3,
-        'topographical'     : True,
+        'flatten_effort': 3,
+        'topographical': True,
 
         # RTL Generation
-        'interconnect_only' : False,
+        'interconnect_only': False,
 
         # Power Domains (leave this false)
-        'PWR_AWARE'         : False,
+        'PWR_AWARE': False,
 
         # hold target slack
-        'hold_target_slack' : 0.015,
+        'hold_target_slack': 0.015,
 
         # Utilization target
-        'core_density_target' : 0.50,
-        'drc_env_setup'     : 'drcenv-block.sh'
+        'core_density_target': 0.50,
+        'drc_env_setup': 'drcenv-block.sh'
     }
 
     # TSMC overrides
     if adk_name == 'tsmc16':
         parameters.update({
-            'hold_target_slack' : 0.030,
+            'hold_target_slack': 0.030,
         })
 
     # OG TSMC did not specify drc_env_setup
@@ -273,7 +273,7 @@ def construct():
 
         order = init.get_param('order')               # get the default script run order
         floorplan_idx = order.index('floorplan.tcl')  # find floorplan.tcl
-        order.insert(floorplan_idx + 1, 'add-endcaps-welltaps.tcl') # add here
+        order.insert(floorplan_idx + 1, 'add-endcaps-welltaps.tcl')  # add here
         init.update_params({'order': order})
 
     # Add density target parameter
