@@ -111,47 +111,52 @@ def construct():
 
     # Default steps
 
-    info           = Step('info',                            default=True)
-    synth          = Step('cadence-genus-synthesis',         default=True)
-    iflow          = Step('cadence-innovus-flowsetup',       default=True)
-    init           = Step('cadence-innovus-init',            default=True)
-    power          = Step('cadence-innovus-power',           default=True)
-    place          = Step('cadence-innovus-place',           default=True)
-    cts            = Step('cadence-innovus-cts',             default=True)
-    postcts_hold   = Step('cadence-innovus-postcts_hold',    default=True)
-    route          = Step('cadence-innovus-route',           default=True)
-    postroute      = Step('cadence-innovus-postroute',       default=True)
-    postroute_hold = Step('cadence-innovus-postroute_hold',  default=True)
-    signoff        = Step('cadence-innovus-signoff',         default=True)
-    pt_signoff     = Step('synopsys-pt-timing-signoff',      default=True)
+    # autopep8: off
+    info           = Step('info',                            default=True)  # noqa
+    synth          = Step('cadence-genus-synthesis',         default=True)  # noqa
+    iflow          = Step('cadence-innovus-flowsetup',       default=True)  # noqa
+    init           = Step('cadence-innovus-init',            default=True)  # noqa
+    power          = Step('cadence-innovus-power',           default=True)  # noqa
+    place          = Step('cadence-innovus-place',           default=True)  # noqa
+    cts            = Step('cadence-innovus-cts',             default=True)  # noqa
+    postcts_hold   = Step('cadence-innovus-postcts_hold',    default=True)  # noqa
+    route          = Step('cadence-innovus-route',           default=True)  # noqa
+    postroute      = Step('cadence-innovus-postroute',       default=True)  # noqa
+    postroute_hold = Step('cadence-innovus-postroute_hold',  default=True)  # noqa
+    signoff        = Step('cadence-innovus-signoff',         default=True)  # noqa
+    pt_signoff     = Step('synopsys-pt-timing-signoff',      default=True)  # noqa
+    # autopep8: on
+
     if which("calibre") is not None:
-        drc            = Step('mentor-calibre-drc',            default=True)
-        lvs            = Step('mentor-calibre-lvs',            default=True)
+        drc            = Step('mentor-calibre-drc', default=True)
+        lvs            = Step('mentor-calibre-lvs', default=True)
     else:
-        drc            = Step('cadence-pegasus-drc',           default=True)
-        lvs            = Step('cadence-pegasus-lvs',           default=True)
-    debugcalibre   = Step('cadence-innovus-debug-calibre',   default=True)
+        drc            = Step('cadence-pegasus-drc', default=True)
+        lvs            = Step('cadence-pegasus-lvs', default=True)
+    debugcalibre   = Step('cadence-innovus-debug-calibre', default=True)
 
     # Inputs
     g.add_input('design.v', rtl.i('design.v'))
     g.add_input('header'  , rtl.i('header'))
 
     # Outputs
-    g.add_output('glb_top_tt.lib',      genlib.o('design.lib'))
-    g.add_output('glb_top_tt.db',       lib2db.o('design.db'))
-    g.add_output('glb_top.lef',         signoff.o('design.lef'))
-    g.add_output('glb_top.gds',         signoff.o('design-merged.gds'))
-    g.add_output('glb_top.sdf',         signoff.o('design.sdf'))
-    g.add_output('glb_top.vcs.v',       signoff.o('design.vcs.v'))
-    g.add_output('glb_top.vcs.pg.v',    signoff.o('design.vcs.pg.v'))
-    g.add_output('glb_top.spef.gz',     signoff.o('design.spef.gz'))
-    g.add_output('glb_top.lvs.v',       lvs.o('design_merged.lvs.v'))
-    g.add_output('glb_top.sram.spi',    glb_tile.o('glb_tile_sram.spi'))
-    g.add_output('glb_top.sram.v',      glb_tile.o('glb_tile_sram.v'))
-    g.add_output('glb_top.sram_pwr.v',  glb_tile.o('glb_tile_sram_pwr.v'))
-    g.add_output('glb_top.sram_tt.db',  glb_tile.o('glb_tile_sram_tt.db'))
-    g.add_output('glb_top.sram_tt.lib', glb_tile.o('glb_tile_sram_tt.lib'))
-    g.add_output('glb_top.sram_ff.lib', glb_tile.o('glb_tile_sram_ff.lib'))
+    # autopep8: off
+    g.add_output('glb_top_tt.lib',      genlib.o('design.lib')             )  # noqa
+    g.add_output('glb_top_tt.db',       lib2db.o('design.db')              )  # noqa
+    g.add_output('glb_top.lef',         signoff.o('design.lef')            )  # noqa
+    g.add_output('glb_top.gds',         signoff.o('design-merged.gds')     )  # noqa
+    g.add_output('glb_top.sdf',         signoff.o('design.sdf')            )  # noqa
+    g.add_output('glb_top.vcs.v',       signoff.o('design.vcs.v')          )  # noqa
+    g.add_output('glb_top.vcs.pg.v',    signoff.o('design.vcs.pg.v')       )  # noqa
+    g.add_output('glb_top.spef.gz',     signoff.o('design.spef.gz')        )  # noqa
+    g.add_output('glb_top.lvs.v',       lvs.o('design_merged.lvs.v')       )  # noqa
+    g.add_output('glb_top.sram.spi',    glb_tile.o('glb_tile_sram.spi')    )  # noqa
+    g.add_output('glb_top.sram.v',      glb_tile.o('glb_tile_sram.v')      )  # noqa
+    g.add_output('glb_top.sram_pwr.v',  glb_tile.o('glb_tile_sram_pwr.v')  )  # noqa
+    g.add_output('glb_top.sram_tt.db',  glb_tile.o('glb_tile_sram_tt.db')  )  # noqa
+    g.add_output('glb_top.sram_tt.lib', glb_tile.o('glb_tile_sram_tt.lib') )  # noqa
+    g.add_output('glb_top.sram_ff.lib', glb_tile.o('glb_tile_sram_ff.lib') )  # noqa
+    # autopep8: on
 
     if parameters['tool'] == 'VCS':
         sim_compile.extend_outputs(['simv', 'simv.daidir'])
@@ -292,97 +297,97 @@ def construct():
 
     # Connect by name
 
-    g.connect_by_name(adk,      synth)
-    g.connect_by_name(adk,      iflow)
-    g.connect_by_name(adk,      init)
-    g.connect_by_name(adk,      power)
-    g.connect_by_name(adk,      place)
-    g.connect_by_name(adk,      cts)
-    g.connect_by_name(adk,      postcts_hold)
-    g.connect_by_name(adk,      route)
-    g.connect_by_name(adk,      postroute)
-    g.connect_by_name(adk,      postroute_hold)
-    g.connect_by_name(adk,      signoff)
-    g.connect_by_name(adk,      drc)
+    g.connect_by_name(adk, synth)
+    g.connect_by_name(adk, iflow)
+    g.connect_by_name(adk, init)
+    g.connect_by_name(adk, power)
+    g.connect_by_name(adk, place)
+    g.connect_by_name(adk, cts)
+    g.connect_by_name(adk, postcts_hold)
+    g.connect_by_name(adk, route)
+    g.connect_by_name(adk, postroute)
+    g.connect_by_name(adk, postroute_hold)
+    g.connect_by_name(adk, signoff)
+    g.connect_by_name(adk, drc)
 
     # if which_soc == 'onyx':
     #    g.connect_by_name( adk,      drc_pm         )
     g.connect_by_name(adk, drc_pm) if which_soc == 'onyx' else 0
 
-    g.connect_by_name(adk,      lvs)
-    g.connect_by_name(adk,      genlib)
+    g.connect_by_name(adk, lvs)
+    g.connect_by_name(adk, genlib)
 
-    g.connect_by_name(glb_tile,      synth)
-    g.connect_by_name(glb_tile,      iflow)
-    g.connect_by_name(glb_tile,      init)
-    g.connect_by_name(glb_tile,      power)
-    g.connect_by_name(glb_tile,      place)
-    g.connect_by_name(glb_tile,      cts)
-    g.connect_by_name(glb_tile,      postcts_hold)
-    g.connect_by_name(glb_tile,      route)
-    g.connect_by_name(glb_tile,      postroute)
-    g.connect_by_name(glb_tile,      postroute_hold)
-    g.connect_by_name(glb_tile,      signoff)
-    g.connect_by_name(glb_tile,      pt_signoff)
-    g.connect_by_name(glb_tile,      genlib)
-    g.connect_by_name(glb_tile,      drc)
+    g.connect_by_name(glb_tile, synth)
+    g.connect_by_name(glb_tile, iflow)
+    g.connect_by_name(glb_tile, init)
+    g.connect_by_name(glb_tile, power)
+    g.connect_by_name(glb_tile, place)
+    g.connect_by_name(glb_tile, cts)
+    g.connect_by_name(glb_tile, postcts_hold)
+    g.connect_by_name(glb_tile, route)
+    g.connect_by_name(glb_tile, postroute)
+    g.connect_by_name(glb_tile, postroute_hold)
+    g.connect_by_name(glb_tile, signoff)
+    g.connect_by_name(glb_tile, pt_signoff)
+    g.connect_by_name(glb_tile, genlib)
+    g.connect_by_name(glb_tile, drc)
 
     # if which_soc == 'onyx':
     #    g.connect_by_name( glb_tile,      drc_pm       )
     g.connect_by_name(glb_tile, drc_pm) if which_soc == 'onyx' else 0
 
-    g.connect_by_name(glb_tile,      lvs)
+    g.connect_by_name(glb_tile, lvs)
 
-    g.connect_by_name(rtl,         sim_compile)
-    g.connect_by_name(testbench,   sim_compile)
-    g.connect_by_name(testbench,   sim_run)
+    g.connect_by_name(rtl, sim_compile)
+    g.connect_by_name(testbench, sim_compile)
+    g.connect_by_name(testbench, sim_run)
     g.connect_by_name(sim_compile, sim_run)
 
-    g.connect_by_name(rtl,         synth)
+    g.connect_by_name(rtl, synth)
     g.connect_by_name(constraints, synth)
 
     # glb_tile can use the same rtl as glb_top
-    g.connect_by_name(rtl,         glb_tile)
+    g.connect_by_name(rtl, glb_tile)
 
-    g.connect_by_name(synth,       iflow)
-    g.connect_by_name(synth,       init)
-    g.connect_by_name(synth,       power)
-    g.connect_by_name(synth,       place)
-    g.connect_by_name(synth,       cts)
+    g.connect_by_name(synth, iflow)
+    g.connect_by_name(synth, init)
+    g.connect_by_name(synth, power)
+    g.connect_by_name(synth, place)
+    g.connect_by_name(synth, cts)
 
-    g.connect_by_name(iflow,    init)
-    g.connect_by_name(iflow,    power)
-    g.connect_by_name(iflow,    place)
-    g.connect_by_name(iflow,    cts)
-    g.connect_by_name(iflow,    postcts_hold)
-    g.connect_by_name(iflow,    route)
-    g.connect_by_name(iflow,    postroute)
-    g.connect_by_name(iflow,    postroute_hold)
-    g.connect_by_name(iflow,    signoff)
-    g.connect_by_name(iflow,    genlib)
+    g.connect_by_name(iflow, init)
+    g.connect_by_name(iflow, power)
+    g.connect_by_name(iflow, place)
+    g.connect_by_name(iflow, cts)
+    g.connect_by_name(iflow, postcts_hold)
+    g.connect_by_name(iflow, route)
+    g.connect_by_name(iflow, postroute)
+    g.connect_by_name(iflow, postroute_hold)
+    g.connect_by_name(iflow, signoff)
+    g.connect_by_name(iflow, genlib)
 
-    g.connect_by_name(custom_init,  init)
+    g.connect_by_name(custom_init, init)
     g.connect_by_name(custom_power, power)
     # if which_soc == 'onyx':
     #   g.connect_by_name( custom_cts,   cts      )
     g.connect_by_name(custom_cts, cts) if which_soc == 'onyx' else 0
 
-    g.connect_by_name(custom_lvs,   lvs)
+    g.connect_by_name(custom_lvs, lvs)
 
-    g.connect_by_name(init,         power)
-    g.connect_by_name(power,        place)
-    g.connect_by_name(place,        cts)
-    g.connect_by_name(cts,          postcts_hold)
+    g.connect_by_name(init, power)
+    g.connect_by_name(power, place)
+    g.connect_by_name(place, cts)
+    g.connect_by_name(cts, postcts_hold)
     g.connect_by_name(postcts_hold, route)
-    g.connect_by_name(route,        postroute)
-    g.connect_by_name(postroute,    postroute_hold)
-    g.connect_by_name(postroute_hold,    signoff)
+    g.connect_by_name(route, postroute)
+    g.connect_by_name(postroute, postroute_hold)
+    g.connect_by_name(postroute_hold, signoff)
 
     # if which_soc == 'onyx':
     #   g.connect_by_name( signoff,      drc_pm         )
-    g.connect_by_name(signoff,      drc)
-    g.connect_by_name(signoff,      lvs)
-    g.connect_by_name(signoff,      drc_pm) if which_soc == 'onyx' else 0
+    g.connect_by_name(signoff, drc)
+    g.connect_by_name(signoff, lvs)
+    g.connect_by_name(signoff, drc_pm) if which_soc == 'onyx' else 0
 
     # if which_soc == 'onyx':
     #     g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
@@ -391,37 +396,37 @@ def construct():
     g.connect(o, lvs.i('design_merged.gds'))
     g.connect(o, drc_pm.i('design_merged.gds')) if which_soc == 'onyx' else 0
 
-    g.connect_by_name(adk,          pt_signoff)
-    g.connect_by_name(signoff,      pt_signoff)
+    g.connect_by_name(adk, pt_signoff)
+    g.connect_by_name(signoff, pt_signoff)
 
-    g.connect_by_name(adk,          genlib)
-    g.connect_by_name(signoff,      genlib)
+    g.connect_by_name(adk, genlib)
+    g.connect_by_name(signoff, genlib)
 
-    g.connect_by_name(rtl,        sim_gl_compile)
-    g.connect_by_name(testbench,  sim_gl_compile)
-    g.connect_by_name(adk,        sim_gl_compile)
-    g.connect_by_name(glb_tile,   sim_gl_compile)
-    g.connect_by_name(signoff,    sim_gl_compile)
+    g.connect_by_name(rtl, sim_gl_compile)
+    g.connect_by_name(testbench, sim_gl_compile)
+    g.connect_by_name(adk, sim_gl_compile)
+    g.connect_by_name(glb_tile, sim_gl_compile)
+    g.connect_by_name(signoff, sim_gl_compile)
 
     for test in parameters["gls_testvectors"]:
         g.connect_by_name(testbench, sim_gl_run_nodes[test])
         g.connect_by_name(sim_gl_compile, sim_gl_run_nodes[test])
 
     for test in parameters["gls_testvectors"]:
-        g.connect_by_name(adk,                    ptpx_gl_nodes[test])
-        g.connect_by_name(glb_tile,               ptpx_gl_nodes[test])
-        g.connect_by_name(signoff,                ptpx_gl_nodes[test])
+        g.connect_by_name(adk, ptpx_gl_nodes[test])
+        g.connect_by_name(glb_tile, ptpx_gl_nodes[test])
+        g.connect_by_name(signoff, ptpx_gl_nodes[test])
         g.connect_by_name(sim_gl_run_nodes[test], ptpx_gl_nodes[test])
 
-    g.connect_by_name(genlib,       lib2db)
+    g.connect_by_name(genlib, lib2db)
 
-    g.connect_by_name(adk,      debugcalibre)
-    g.connect_by_name(synth,    debugcalibre)
-    g.connect_by_name(iflow,    debugcalibre)
-    g.connect_by_name(signoff,  debugcalibre)
-    g.connect_by_name(drc_pm,   debugcalibre) if which_soc == 'onyx' else 0
-    g.connect_by_name(drc,      debugcalibre)
-    g.connect_by_name(lvs,      debugcalibre)
+    g.connect_by_name(adk, debugcalibre)
+    g.connect_by_name(synth, debugcalibre)
+    g.connect_by_name(iflow, debugcalibre)
+    g.connect_by_name(signoff, debugcalibre)
+    g.connect_by_name(drc_pm, debugcalibre) if which_soc == 'onyx' else 0
+    g.connect_by_name(drc, debugcalibre)
+    g.connect_by_name(lvs, debugcalibre)
 
     #-----------------------------------------------------------------------
     # Parameterize

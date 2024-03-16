@@ -146,8 +146,8 @@ def construct():
 
     pt_genlibdb    = Step('synopsys-ptpx-genlibdb',         default=True)  # noqa
     genlib         = Step('cadence-innovus-genlib',         default=True)  # noqa
-
     # autopep8: on
+
     if which("calibre") is not None:
         drc = Step('mentor-calibre-drc', default=True)
         lvs = Step('mentor-calibre-lvs', default=True)
