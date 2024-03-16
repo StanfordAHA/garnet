@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-#=========================================================================
+# =========================================================================
 # construct.py
-#=========================================================================
+# =========================================================================
 # Author :
 # Date   :
 #
@@ -11,13 +11,14 @@ from mflowgen.components import Graph, Step, Subgraph
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
+
 def construct():
 
     g = Graph()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameters
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     adk_name = get_sys_adk()  # E.g. 'gf12-adk' or 'tsmc16'
     adk_view = 'multivt'
@@ -29,52 +30,53 @@ def construct():
         which_soc = 'amber'
 
     parameters = {
-        'construct_path' : __file__,
-        'design_name'    : 'global_buffer',
-        'clock_period'      : 1.0,
-        'sim_clock_period'  : 1.42,
-        'adk'            : adk_name,
-        'adk_view'       : adk_view,
+        'construct_path': __file__,
+        'design_name': 'global_buffer',
+        'clock_period': 1.0,
+        'sim_clock_period': 1.42,
+        'adk': adk_name,
+        'adk_view': adk_view,
 
         # Synthesis
-        'flatten_effort' : 3,
-        'topographical'  : True,
+        'flatten_effort': 3,
+        'topographical': True,
 
         # hold target slack
-        'hold_target_slack'   : 0.1,
+        'hold_target_slack': 0.1,
 
         # array_width = width of CGRA below GLB; `pin-assignments.tcl` uses
         # these parms to set up per-cgra-column ports connecting glb tile
         # signals in glb_top to corresponding CGRA tile columns below glb_top
-        'array_width'         : 32,
-        'num_glb_tiles'       : 16,
-        'tool'                : "VCS",
+        'array_width': 32,
+        'num_glb_tiles': 16,
+        'tool': "VCS",
 
         # glb tile memory size (unit: KB)
-        'use_container' : True,
-        'glb_tile_mem_size' : 256,
-        'rtl_testvectors' : ["test01", "test02", "test03", "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11"],
-        'gls_testvectors' : ["test01", "test02", "test03", "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11"],
-        'sdf' : True,
-        'saif' : False,
-        'waveform' : True,
+        'use_container': True,
+        'glb_tile_mem_size': 256,
+        'rtl_testvectors': ["test01", "test02", "test03", "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11"],
+        'gls_testvectors': ["test01", "test02", "test03", "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11"],
+        'sdf': True,
+        'saif': False,
+        'waveform': True,
         'drc_env_setup': 'drcenv-block.sh'
     }
 
     # TSMC overrides
-    if adk_name == 'tsmc16': parameters.update({
-        'clock_period'      : 1.11,
-        'hold_target_slack'   : 0.03,
-        # 'use_container' : False,
-    })
+    if adk_name == 'tsmc16':
+        parameters.update({
+            'clock_period': 1.11,
+            'hold_target_slack': 0.03,
+            # 'use_container' : False,
+        })
 
     # OG TSMC did not specify drc_env_setup
     if adk_name == 'tsmc16':
         parameters.pop('drc_env_setup')
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Create nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     this_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -89,25 +91,29 @@ def construct():
 
     # Custom steps
 
-    rtl               = Step(this_dir + '/../common/rtl')
-    testbench         = Step(this_dir + '/testbench')
-    sim_compile       = Step(this_dir + '/sim-compile')
-    sim_run           = Step(this_dir + '/sim-run')
-    sim_gl_compile    = Step(this_dir + '/sim-gl-compile')
+    # autopep8: off
+    rtl            = Step(this_dir + '/../common/rtl'                      )  # noqa
+    testbench      = Step(this_dir + '/testbench'                          )  # noqa
+    sim_compile    = Step(this_dir + '/sim-compile'                        )  # noqa
+    sim_run        = Step(this_dir + '/sim-run'                            )  # noqa
+    sim_gl_compile = Step(this_dir + '/sim-gl-compile'                     )  # noqa
+    custom_power   = Step(this_dir + '/../common/custom-power-hierarchical')  # noqa
+    genlib         = Step(this_dir + '/../common/cadence-innovus-genlib'   )  # noqa
+    lib2db         = Step(this_dir + '/../common/synopsys-dc-lib2db'       )  # noqa
+    # autopep8: on
+
     if adk_name == 'tsmc16':
-        constraints       = Step(this_dir + '/constraints-amber')
-        custom_init       = Step(this_dir + '/custom-init-amber')
-        custom_lvs        = Step(this_dir + '/custom-lvs-rules-amber')
+        constraints = Step(this_dir + '/constraints-amber')
+        custom_init = Step(this_dir + '/custom-init-amber')
+        custom_lvs = Step(this_dir + '/custom-lvs-rules-amber')
     else:
-        constraints       = Step(this_dir + '/constraints')
-        custom_init       = Step(this_dir + '/custom-init')
-        custom_lvs        = Step(this_dir + '/custom-lvs-rules')
-    custom_power      = Step(this_dir + '/../common/custom-power-hierarchical')
-    genlib            = Step(this_dir + '/../common/cadence-innovus-genlib')
-    lib2db            = Step(this_dir + '/../common/synopsys-dc-lib2db')
+        constraints = Step(this_dir + '/constraints')
+        custom_init = Step(this_dir + '/custom-init')
+        custom_lvs = Step(this_dir + '/custom-lvs-rules')
+
     if which_soc == 'onyx':
-        custom_cts        = Step(this_dir + '/custom-cts')
-        drc_pm            = Step(this_dir + '/../common/gf-mentor-calibre-drcplus-pm')
+        custom_cts = Step(this_dir + '/custom-cts')
+        drc_pm = Step(this_dir + '/../common/gf-mentor-calibre-drcplus-pm')
 
     # Default steps
 
@@ -128,16 +134,16 @@ def construct():
     # autopep8: on
 
     if which("calibre") is not None:
-        drc            = Step('mentor-calibre-drc', default=True)
-        lvs            = Step('mentor-calibre-lvs', default=True)
+        drc = Step('mentor-calibre-drc', default=True)
+        lvs = Step('mentor-calibre-lvs', default=True)
     else:
-        drc            = Step('cadence-pegasus-drc', default=True)
-        lvs            = Step('cadence-pegasus-lvs', default=True)
-    debugcalibre   = Step('cadence-innovus-debug-calibre', default=True)
+        drc = Step('cadence-pegasus-drc', default=True)
+        lvs = Step('cadence-pegasus-lvs', default=True)
+    debugcalibre = Step('cadence-innovus-debug-calibre', default=True)
 
     # Inputs
     g.add_input('design.v', rtl.i('design.v'))
-    g.add_input('header'  , rtl.i('header'))
+    g.add_input('header', rtl.i('header'))
 
     # Outputs
     # autopep8: off
@@ -170,15 +176,15 @@ def construct():
     sim_gl_run_nodes = {}
     ptpx_gl_nodes = {}
     for test in parameters["gls_testvectors"]:
-        sim_gl_run        = Step(this_dir + '/sim-gl-run')
-        ptpx_gl           = Step(this_dir + '/synopsys-ptpx-gl')
+        sim_gl_run = Step(this_dir + '/sim-gl-run')
+        ptpx_gl = Step(this_dir + '/synopsys-ptpx-gl')
 
         # rename
         sim_gl_run.set_name(f"sim_gl_run_{test}")
         ptpx_gl.set_name(f"ptpx_gl_{test}")
         sim_gl_run_nodes[test] = sim_gl_run
         ptpx_gl_nodes[test] = ptpx_gl
-        sim_gl_run.update_params({'test' : test}, allow_new=True)
+        sim_gl_run.update_params({'test': test}, allow_new=True)
         # Gate-level ptpx node
         ptpx_gl.set_param("strip_path", "top/dut")
         ptpx_gl.extend_inputs(glb_tile.all_outputs())
@@ -191,7 +197,6 @@ def construct():
         if parameters['waveform'] == True:
             sim_gl_run.extend_postconditions(["assert File( 'outputs/run.fsdb' ) "])
 
-
     # Add header files to outputs
     rtl.extend_outputs(['header'])
     rtl.extend_postconditions(["assert File( 'outputs/header' ) "])
@@ -199,9 +204,9 @@ def construct():
     # Add (dummy) parameters to the default innovus init step
 
     init.update_params({
-      'core_width'  : 0,
-      'core_height' : 0
-      }, allow_new=True)
+        'core_width': 0,
+        'core_height': 0
+    }, allow_new=True)
 
     # Add glb_tile macro inputs to downstream nodes
 
@@ -250,9 +255,9 @@ def construct():
         from common.streamout_no_uniquify import streamout_no_uniquify
         streamout_no_uniquify(iflow)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     g.add_step(info)
     g.add_step(rtl)
@@ -291,9 +296,9 @@ def construct():
         g.add_step(sim_gl_run_nodes[test])
         g.add_step(ptpx_gl_nodes[test])
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add edges
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     # Connect by name
 
@@ -428,9 +433,9 @@ def construct():
     g.connect_by_name(drc, debugcalibre)
     g.connect_by_name(lvs, debugcalibre)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameterize
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     g.update_params(parameters)
 
@@ -449,14 +454,15 @@ def construct():
     synth.update_params({'nthreads': 4})
     iflow.update_params({'nthreads': 4})
 
-    order = init.get_param('order') # get the default script run order
-    reporting_idx = order.index('reporting.tcl') # find reporting.tcl
-    # Add dont-touch before reporting
-    order.insert (reporting_idx, 'dont-touch.tcl')
+    order = init.get_param('order')                 # get the default script run order
+    reporting_idx = order.index('reporting.tcl')    # find reporting.tcl
+    order.insert(reporting_idx, 'dont-touch.tcl')  # Add dont-touch before reporting
     init.update_params({'order': order})
 
     # Increase hold slack on postroute_hold step
-    postroute_hold.update_params({'hold_target_slack': parameters['hold_target_slack']}, allow_new=True)
+    postroute_hold.update_params(
+        {'hold_target_slack': parameters['hold_target_slack']},
+        allow_new=True)
 
     # useful_skew
     if which_soc == "amber":
