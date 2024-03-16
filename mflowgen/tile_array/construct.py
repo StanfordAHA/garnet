@@ -69,7 +69,7 @@ def construct():
         'drc_env_setup': 'drcenv-block.sh'
     }
 
-    if parameters['PWR_AWARE'] == True:
+    if parameters['PWR_AWARE'] is True:
         parameters['lvs_adk_view'] = adk_view + '-pm'
     else:
         parameters['lvs_adk_view'] = adk_view
@@ -128,24 +128,24 @@ def construct():
     # Default steps
 
     # autopep8: off
-    info           = Step('info',                           default=True)
-    # constraints  = Step( 'constraints',                   default=True)
-    # dc           = Step( 'synopsys-dc-synthesis',         default=True)
-    synth          = Step('cadence-genus-synthesis',        default=True)
-    iflow          = Step('cadence-innovus-flowsetup',      default=True)
-    init           = Step('cadence-innovus-init',           default=True)
-    power          = Step('cadence-innovus-power',          default=True)
-    place          = Step('cadence-innovus-place',          default=True)
-    cts            = Step('cadence-innovus-cts',            default=True)
-    postcts_hold   = Step('cadence-innovus-postcts_hold',   default=True)
-    route          = Step('cadence-innovus-route',          default=True)
-    postroute      = Step('cadence-innovus-postroute',      default=True)
-    postroute_hold = Step('cadence-innovus-postroute_hold', default=True)
-    signoff        = Step('cadence-innovus-signoff',        default=True)
-    pt_signoff     = Step('synopsys-pt-timing-signoff',     default=True)
+    info           = Step('info',                           default=True)  # noqa
+    # constraints  = Step( 'constraints',                   default=True)  # noqa
+    # dc           = Step( 'synopsys-dc-synthesis',         default=True)  # noqa
+    synth          = Step('cadence-genus-synthesis',        default=True)  # noqa
+    iflow          = Step('cadence-innovus-flowsetup',      default=True)  # noqa
+    init           = Step('cadence-innovus-init',           default=True)  # noqa
+    power          = Step('cadence-innovus-power',          default=True)  # noqa
+    place          = Step('cadence-innovus-place',          default=True)  # noqa
+    cts            = Step('cadence-innovus-cts',            default=True)  # noqa
+    postcts_hold   = Step('cadence-innovus-postcts_hold',   default=True)  # noqa
+    route          = Step('cadence-innovus-route',          default=True)  # noqa
+    postroute      = Step('cadence-innovus-postroute',      default=True)  # noqa
+    postroute_hold = Step('cadence-innovus-postroute_hold', default=True)  # noqa
+    signoff        = Step('cadence-innovus-signoff',        default=True)  # noqa
+    pt_signoff     = Step('synopsys-pt-timing-signoff',     default=True)  # noqa
 
-    pt_genlibdb    = Step('synopsys-ptpx-genlibdb',         default=True)
-    genlib         = Step('cadence-innovus-genlib',         default=True)
+    pt_genlibdb    = Step('synopsys-ptpx-genlibdb',         default=True)  # noqa
+    genlib         = Step('cadence-innovus-genlib',         default=True)  # noqa
 
     # autopep8: on
     if which("calibre") is not None:
@@ -491,7 +491,7 @@ def construct():
     reverse_connect(debugcalibre, drc)
     reverse_connect(debugcalibre, lvs)
     if which_soc == "onyx":
-        reverse_connect(drc_debugcalibre, pm)
+        reverse_connect(debugcalibre, drc_pm)
 
     reverse_connect(vcs_sim, adk)
     reverse_connect(vcs_sim, testbench)
