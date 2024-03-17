@@ -19,7 +19,6 @@ def construct():
 
     adk_name = 'tsmc16'
     adk_view = 'multivt'
-    pwr_aware = False
 
     # autopep8: off
     parameters = {
@@ -40,8 +39,6 @@ def construct():
     # -----------------------------------------------------------------------
     # Create nodes
     # -----------------------------------------------------------------------
-
-    this_dir = os.path.dirname(os.path.abspath(__file__))
 
     # ADK step
 
