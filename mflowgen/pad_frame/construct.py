@@ -46,21 +46,21 @@ def construct():
     # Create nodes
     #-----------------------------------------------------------------------
 
-    this_dir = os.path.dirname( os.path.abspath( __file__ ) )
+    this_dir = os.path.dirname(os.path.abspath(__file__))
 
     # ADK step
-    g.set_adk( adk_name )
+    g.set_adk(adk_name)
     adk = g.get_adk_step()
 
     # Custom steps
-    soc_rtl              = Step( this_dir + '/../common/soc-rtl-v2'                )
-    rtl                  = Step( this_dir + '/rtl'                         )   
-    constraints          = Step( this_dir + '/constraints'                 )
+    soc_rtl              = Step(this_dir + '/../common/soc-rtl-v2')
+    rtl                  = Step(this_dir + '/rtl')   
+    constraints          = Step(this_dir + '/constraints')
     if adk_name == 'tsmc16':
-        init_fullchip        = Step( this_dir + '/../common/init-fullchip-amber')
+        init_fullchip        = Step(this_dir + '/../common/init-fullchip-amber')
     else:
-        init_fullchip        = Step( this_dir + '/../common/init-fullchip'      )
-    netlist_fixing       = Step( this_dir + '/../common/fc-netlist-fixing' )
+        init_fullchip        = Step(this_dir + '/../common/init-fullchip')
+    netlist_fixing       = Step(this_dir + '/../common/fc-netlist-fixing')
 
     if which_soc == 'amber':
         # Custom step 'pre-flowsetup'
@@ -70,40 +70,40 @@ def construct():
         # - connect pre-flowsetup step to flowsetup (iflow) step
         # - extend iflow inputs to include icovl cells
         # - iflow "setup.tcl" automatically includes "inputs/*.lef"
-        pre_flowsetup         = Step( this_dir + '/pre-flowsetup'        )
+        pre_flowsetup         = Step(this_dir + '/pre-flowsetup')
 
     # More custom steps
     if adk_name == 'tsmc16':
-        custom_power         = Step( this_dir + '/../common/custom-power-chip-amber' )
+        custom_power         = Step(this_dir + '/../common/custom-power-chip-amber')
     else:
-        custom_power         = Step( this_dir + '/../common/custom-power-chip' )
+        custom_power         = Step(this_dir + '/../common/custom-power-chip')
 
     # It's not plugged in yet!
-    # custom_power         = Step( this_dir + '/custom-power'                )
+    # custom_power         = Step(this_dir + '/custom-power')
 
     # Some kinda primetime thingy maybe
-    # genlibdb_constraints = Step( this_dir + '/../common/custom-genlibdb-constraints' )
+    # genlibdb_constraints = Step(this_dir + '/../common/custom-genlibdb-constraints')
 
     # Default steps
-    info         = Step( 'info',                          default=True )
-    # constraints= Step( 'constraints',                   default=True )
-    dc           = Step( 'synopsys-dc-synthesis',         default=True )
-    iflow        = Step( 'cadence-innovus-flowsetup',     default=True )
-    init         = Step( 'cadence-innovus-init',          default=True )
-    power        = Step( 'cadence-innovus-power',         default=True )
-    place        = Step( 'cadence-innovus-place',         default=True )
-    route        = Step( 'cadence-innovus-route',         default=True )
-    signoff      = Step( 'cadence-innovus-signoff',       default=True )
-    pt_signoff   = Step( 'synopsys-pt-timing-signoff',    default=True )
-    genlibdb     = Step( 'synopsys-ptpx-genlibdb',        default=True )
-    init_fill    = Step( 'mentor-calibre-fill',           default=True )
+    info         = Step('info',                          default=True)
+    # constraints= Step('constraints',                   default=True)
+    dc           = Step('synopsys-dc-synthesis',         default=True)
+    iflow        = Step('cadence-innovus-flowsetup',     default=True)
+    init         = Step('cadence-innovus-init',          default=True)
+    power        = Step('cadence-innovus-power',         default=True)
+    place        = Step('cadence-innovus-place',         default=True)
+    route        = Step('cadence-innovus-route',         default=True)
+    signoff      = Step('cadence-innovus-signoff',       default=True)
+    pt_signoff   = Step('synopsys-pt-timing-signoff',    default=True)
+    genlibdb     = Step('synopsys-ptpx-genlibdb',        default=True)
+    init_fill    = Step('mentor-calibre-fill',           default=True)
     if which("calibre") is not None:
-        drc          = Step( 'mentor-calibre-drc',            default=True )
-        lvs          = Step( 'mentor-calibre-lvs',            default=True )
+        drc          = Step('mentor-calibre-drc',            default=True)
+        lvs          = Step('mentor-calibre-lvs',            default=True)
     else:
-        drc          = Step( 'cadence-pegasus-drc',           default=True )
-        lvs          = Step( 'cadence-pegasus-lvs',           default=True )
-    debugcalibre = Step( 'cadence-innovus-debug-calibre', default=True )
+        drc          = Step('cadence-pegasus-drc',           default=True)
+        lvs          = Step('cadence-pegasus-lvs',           default=True)
+    debugcalibre = Step('cadence-innovus-debug-calibre', default=True)
 
     # Die if unconnected bumps (why was this deleted?)
     init.extend_postconditions([
@@ -113,23 +113,23 @@ def construct():
     # Send in the clones
     # 'init' step now gets its own design-rule check
     init_drc = drc.clone()
-    init_drc.set_name( 'init-drc' )
+    init_drc.set_name('init-drc')
 
     #-----------------------------------------------------------------------
     # Add extra input edges to innovus steps that need custom tweaks
     #-----------------------------------------------------------------------
 
     # "init" (cadence-innovus-init) inputs are "init_fullchip" outputs
-    init.extend_inputs( init_fullchip.all_outputs() )
+    init.extend_inputs(init_fullchip.all_outputs())
 
     # Also: 'init' now produces a gds file
     # for intermediate drc check 'init-drc'
-    init.extend_outputs( ["design-merged.gds"] )
+    init.extend_outputs(["design-merged.gds"])
 
     # "power" inputs are "custom_power" outputs
-    power.extend_inputs( custom_power.all_outputs() )
+    power.extend_inputs(custom_power.all_outputs())
 
-    signoff.extend_inputs( netlist_fixing.all_outputs() )
+    signoff.extend_inputs(netlist_fixing.all_outputs())
 
     # Your comment here.
     # FIXME what about gds???
@@ -146,10 +146,10 @@ def construct():
           iflow, init # can we get away with this?
         ]
         for step in pre_flowsetup_followers:
-            step.extend_inputs( [ 
+            step.extend_inputs([ 
               "icovl-cells.lef", "dtcd-cells.lef", 
               "bumpcells.lef" 
-            ] )
+            ])
 
     # TSMC needs streamout *without* the (new) default -uniquify flag
     # This python method finds 'stream-out.tcl' and strips out that flag.
@@ -161,41 +161,41 @@ def construct():
         cmd1 = "cp rtl-scripts-amber/nic400_design_files.tcl  rtl-scripts"
         cmd2 = "cp rtl-scripts-amber/nic400_include_paths.tcl rtl-scripts"
         cmd3 = "cp rtl-scripts-amber/soc_design_files.tcl     rtl-scripts"
-        soc_rtl.pre_extend_commands( [ cmd1 ] )
-        soc_rtl.pre_extend_commands( [ cmd2 ] )
-        soc_rtl.pre_extend_commands( [ cmd3 ] )
+        soc_rtl.pre_extend_commands([cmd1])
+        soc_rtl.pre_extend_commands([cmd2])
+        soc_rtl.pre_extend_commands([cmd3])
 
 
     #-----------------------------------------------------------------------
     # Graph -- Add nodes
     #-----------------------------------------------------------------------
 
-    g.add_step( info                     )
-    g.add_step( soc_rtl                  )
-    g.add_step( rtl                      )
-    g.add_step( constraints              )
-    g.add_step( dc                       )
+    g.add_step(info)
+    g.add_step(soc_rtl)
+    g.add_step(rtl)
+    g.add_step(constraints)
+    g.add_step(dc)
     
-    g.add_step( pre_flowsetup            ) if (which_soc == 'amber') else None
-    g.add_step( iflow                    )
-    g.add_step( init_fullchip            )
-    g.add_step( init                     )
+    g.add_step(pre_flowsetup) if (which_soc == 'amber') else None
+    g.add_step(iflow)
+    g.add_step(init_fullchip)
+    g.add_step(init)
 
-    g.add_step( init_fill                )
-    g.add_step( init_drc                 )
+    g.add_step(init_fill)
+    g.add_step(init_drc)
 
-    g.add_step( power                    )
-    g.add_step( custom_power             )
-    g.add_step( place                    )
-    g.add_step( route                    )
-    g.add_step( netlist_fixing           )
-    g.add_step( signoff                  )
-    g.add_step( pt_signoff   )
-    # g.add_step( genlibdb_constraints     )
-    g.add_step( genlibdb                 )
-    g.add_step( drc                      )
-    g.add_step( lvs                      )
-    g.add_step( debugcalibre             )
+    g.add_step(power)
+    g.add_step(custom_power)
+    g.add_step(place)
+    g.add_step(route)
+    g.add_step(netlist_fixing)
+    g.add_step(signoff)
+    g.add_step(pt_signoff)
+    # g.add_step( genlibdb_constraints)
+    g.add_step(genlibdb)
+    g.add_step(drc)
+    g.add_step(lvs)
+    g.add_step(debugcalibre)
 
     #-----------------------------------------------------------------------
     # Graph -- Add edges
@@ -203,86 +203,86 @@ def construct():
 
     # Connect by name
 
-    g.connect_by_name( adk,      dc            )
-    g.connect_by_name( adk,      pre_flowsetup ) if (which_soc == 'amber') else None
-    g.connect_by_name( adk,      iflow         )
-    g.connect_by_name( adk,      init          )
-    g.connect_by_name( adk,      init_fill     )
-    g.connect_by_name( adk,      init_drc      )
-    g.connect_by_name( adk,      power         )
-    g.connect_by_name( adk,      place         )
-    g.connect_by_name( adk,      route         )
-    g.connect_by_name( adk,      signoff       )
-    g.connect_by_name( adk,      drc           )
-    g.connect_by_name( adk,      lvs           )
+    g.connect_by_name(adk,      dc)
+    g.connect_by_name(adk,      pre_flowsetup) if (which_soc == 'amber') else None
+    g.connect_by_name(adk,      iflow)
+    g.connect_by_name(adk,      init)
+    g.connect_by_name(adk,      init_fill)
+    g.connect_by_name(adk,      init_drc)
+    g.connect_by_name(adk,      power)
+    g.connect_by_name(adk,      place)
+    g.connect_by_name(adk,      route)
+    g.connect_by_name(adk,      signoff)
+    g.connect_by_name(adk,      drc)
+    g.connect_by_name(adk,      lvs)
 
-    g.connect_by_name( soc_rtl, rtl )
+    g.connect_by_name(soc_rtl, rtl)
 
-    g.connect_by_name( rtl,         dc        )
-    g.connect_by_name( constraints, dc        )
+    g.connect_by_name(rtl,         dc)
+    g.connect_by_name(constraints, dc)
 
     # sr02.2020 b/c now init_fullchip needs io_file from soc-rtl
-    g.connect_by_name( soc_rtl,  init_fullchip )
+    g.connect_by_name(soc_rtl,  init_fullchip)
 
-    g.connect_by_name( dc,       iflow        )
-    g.connect_by_name( dc,       init         )
-    g.connect_by_name( dc,       power        )
-    g.connect_by_name( dc,       place        )
+    g.connect_by_name(dc,       iflow)
+    g.connect_by_name(dc,       init)
+    g.connect_by_name(dc,       power)
+    g.connect_by_name(dc,       place)
 
     if which_soc == 'amber':
-        # g.connect_by_name( pre_flowsetup,  iflow   )
+        # g.connect_by_name(pre_flowsetup,  iflow)
         # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
         for step in pre_flowsetup_followers:
-            g.connect_by_name( pre_flowsetup, step)
+            g.connect_by_name(pre_flowsetup, step)
 
-    g.connect_by_name( iflow,    init         )
-    g.connect_by_name( iflow,    power        )
-    g.connect_by_name( iflow,    place        )
-    g.connect_by_name( iflow,    route        )
-    g.connect_by_name( iflow,    signoff      )
+    g.connect_by_name(iflow,    init)
+    g.connect_by_name(iflow,    power)
+    g.connect_by_name(iflow,    place)
+    g.connect_by_name(iflow,    route)
+    g.connect_by_name(iflow,    signoff)
     # for step in iflow_followers:
     #   g.connect_by_name( iflow, step)
 
-    g.connect_by_name( init_fullchip, init   )
-    g.connect_by_name( custom_power,  power  )
+    g.connect_by_name(init_fullchip, init)
+    g.connect_by_name(custom_power,  power)
 
     # init => init_drc
-    g.connect( init.o('design-merged.gds'), init_drc.i('design_merged.gds') )
-    g.connect( init.o('design-merged.gds'), init_fill.i('design.gds') )
+    g.connect(init.o('design-merged.gds'), init_drc.i('design_merged.gds'))
+    g.connect(init.o('design-merged.gds'), init_fill.i('design.gds'))
 
-    g.connect_by_name( init,         power        )
-    g.connect_by_name( power,        place        )
-    g.connect_by_name( place,        route        )
-    g.connect_by_name( route,        signoff      )
-    g.connect_by_name( signoff,      drc          )
-    g.connect_by_name( signoff,      lvs          )
-    g.connect( signoff.o('design-merged.gds'), drc.i('design_merged.gds') )
-    g.connect( signoff.o('design-merged.gds'), lvs.i('design_merged.gds') )
+    g.connect_by_name(init,         power)
+    g.connect_by_name(power,        place)
+    g.connect_by_name(place,        route)
+    g.connect_by_name(route,        signoff)
+    g.connect_by_name(signoff,      drc)
+    g.connect_by_name(signoff,      lvs)
+    g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
+    g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-    g.connect_by_name( signoff,              genlibdb )
-    g.connect_by_name( adk,                  genlibdb )
-  #   g.connect_by_name( genlibdb_constraints, genlibdb )
+    g.connect_by_name(signoff,              genlibdb)
+    g.connect_by_name(adk,                  genlibdb)
+  #   g.connect_by_name(genlibdb_constraints, genlibdb)
 
-    g.connect_by_name( adk,          pt_signoff   )
-    g.connect_by_name( signoff,      pt_signoff   )
+    g.connect_by_name(adk,          pt_signoff)
+    g.connect_by_name(signoff,      pt_signoff)
 
-    g.connect_by_name( adk,      debugcalibre )
-    g.connect_by_name( dc,       debugcalibre )
-    g.connect_by_name( iflow,    debugcalibre )
-    g.connect_by_name( signoff,  debugcalibre )
-    g.connect_by_name( drc,      debugcalibre )
-    g.connect_by_name( lvs,      debugcalibre )
+    g.connect_by_name(adk,      debugcalibre)
+    g.connect_by_name(dc,       debugcalibre)
+    g.connect_by_name(iflow,    debugcalibre)
+    g.connect_by_name(signoff,  debugcalibre)
+    g.connect_by_name(drc,      debugcalibre)
+    g.connect_by_name(lvs,      debugcalibre)
 
     # Netlist fixing should be run during signoff
-    g.connect_by_name( netlist_fixing, signoff )
+    g.connect_by_name(netlist_fixing, signoff)
 
     # yes? no?
-    # g.connect_by_name( init_drc,      debugcalibre )
+    # g.connect_by_name(init_drc,      debugcalibre)
 
     #-----------------------------------------------------------------------
     # Parameterize
     #-----------------------------------------------------------------------
-    g.update_params( parameters )
+    g.update_params(parameters)
 
     # Default order can be found in e.g.
     # mflowgen/steps/cadence-innovus-init/configure.yml
@@ -314,19 +314,19 @@ def construct():
     )
 
     if which_soc == 'amber':
-        index = init.index(   'alignment-cells.tcl')
-        init.insert( index+1, 'analog-bumps/route-phy-bumps.tcl' )
-        init.insert( index+2, 'analog-bumps/bump-connect.tcl'    )
+        index = init.index('alignment-cells.tcl')
+        init.insert(index+1, 'analog-bumps/route-phy-bumps.tcl')
+        init.insert(index+2, 'analog-bumps/bump-connect.tcl')
 
     order = power.get_param('order')
-    order.append( 'add-endcaps-welltaps.tcl' )
-    power.update_params( { 'order': order } )
+    order.append('add-endcaps-welltaps.tcl')
+    power.update_params({'order': order})
 
     # Signoff Order 
     order = signoff.get_param('order')
-    index = order.index( 'generate-results.tcl' ) # Fix netlist before streaming out netlist
-    order.insert( index, 'netlist-fixing.tcl' )
-    signoff.update_params( { 'order': order } )
+    index = order.index('generate-results.tcl') # Fix netlist before streaming out netlist
+    order.insert(index, 'netlist-fixing.tcl')
+    signoff.update_params({'order': order})
 
     # Not sure what this is or why it was commented out...
     #   # Adding new input for genlibdb node to run 
