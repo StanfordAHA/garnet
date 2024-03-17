@@ -25,33 +25,33 @@ def construct():
     adk_view = 'view-standard'
 
     parameters = {
-      'construct_path'    : __file__,
-      'design_name'       : 'AhaGarnetSoC',
-      'clock_period'      : 2.0,
-      'adk'               : adk_name,
-      'adk_view'          : adk_view,
+      'construct_path': __file__,
+      'design_name': 'AhaGarnetSoC',
+      'clock_period': 2.0,
+      'adk': adk_name,
+      'adk_view': adk_view,
 
       # Synthesis
-      'flatten_effort'    : 3,
-      'topographical'     : True,
+      'flatten_effort': 3,
+      'topographical': True,
 
       # RTL Generation
-      'array_width'       : 32,
-      'array_height'      : 16,
-      'interconnect_only' : False,
+      'array_width': 32,
+      'array_height': 16,
+      'interconnect_only': False,
 
       # Don't touch this parameter
-      'soc_only'          : True,
+      'soc_only': True,
 
       # SRAM macros
-      'num_words'      : 2048,
-      'word_size'      : 64,
-      'mux_size'       : 8,
-      'corner'         : "tt0p8v25c",
-      'partial_write'  : True,
+      'num_words': 2048,
+      'word_size': 64,
+      'mux_size': 8,
+      'corner': "tt0p8v25c",
+      'partial_write': True,
 
       # Low Effort flow
-      'express_flow' : False,
+      'express_flow': False,
       # TLX Ports Partitions
       'TLX_FWD_DATA_LO_WIDTH': 16,
       'TLX_REV_DATA_LO_WIDTH': 45
@@ -70,38 +70,42 @@ def construct():
 
     # Custom steps
 
-    rtl            = Step(this_dir + '/../common/rtl')
-    soc_rtl        = Step(this_dir + '/../common/soc-rtl-v2')
+    rtl = Step(this_dir + '/../common/rtl')
+    soc_rtl = Step(this_dir + '/../common/soc-rtl-v2')
     if adk_name == 'tsmc16':
-        gen_sram             = Step(this_dir + '/../common/gen_sram_macro_amber')
+        gen_sram = Step(this_dir + '/../common/gen_sram_macro_amber')
     else:
-        gen_sram             = Step(this_dir + '/../common/gen_sram_macro')
-    constraints    = Step(this_dir + '/constraints')
-    read_design    = Step(this_dir + '/../common/fc-custom-read-design')
-    custom_lvs     = Step(this_dir + '/custom-lvs-rules')
-    custom_power   = Step(this_dir + '/../common/custom-power-hierarchical')
+        gen_sram = Step(this_dir + '/../common/gen_sram_macro')
+    constraints = Step(this_dir + '/constraints')
+    read_design = Step(this_dir + '/../common/fc-custom-read-design')
+    custom_lvs = Step(this_dir + '/custom-lvs-rules')
+    custom_power = Step(this_dir + '/../common/custom-power-hierarchical')
 
     # Default steps
 
-    info         = Step('info',                          default=True)
-    #constraints  = Step('constraints',                   default=True)
-    dc           = Step('synopsys-dc-synthesis',         default=True)
-    iflow        = Step('cadence-innovus-flowsetup',     default=True)
-    init         = Step('cadence-innovus-init',          default=True)
-    power        = Step('cadence-innovus-power',         default=True)
-    place        = Step('cadence-innovus-place',         default=True)
-    cts          = Step('cadence-innovus-cts',           default=True)
-    postcts_hold = Step('cadence-innovus-postcts_hold',  default=True)
-    route        = Step('cadence-innovus-route',         default=True)
-    postroute    = Step('cadence-innovus-postroute',     default=True)
-    signoff      = Step('cadence-innovus-signoff',       default=True)
-    pt_signoff   = Step('synopsys-pt-timing-signoff',    default=True)
+    # autopep8: off
+    info         = Step('info',                          default=True)  # noqa
+    # constraints= Step('constraints',                   default=True)  # noqa
+    dc           = Step('synopsys-dc-synthesis',         default=True)  # noqa
+    iflow        = Step('cadence-innovus-flowsetup',     default=True)  # noqa
+    init         = Step('cadence-innovus-init',          default=True)  # noqa
+    power        = Step('cadence-innovus-power',         default=True)  # noqa
+    place        = Step('cadence-innovus-place',         default=True)  # noqa
+    cts          = Step('cadence-innovus-cts',           default=True)  # noqa
+    postcts_hold = Step('cadence-innovus-postcts_hold',  default=True)  # noqa
+    route        = Step('cadence-innovus-route',         default=True)  # noqa
+    postroute    = Step('cadence-innovus-postroute',     default=True)  # noqa
+    signoff      = Step('cadence-innovus-signoff',       default=True)  # noqa
+    pt_signoff   = Step('synopsys-pt-timing-signoff',    default=True)  # noqa
+    # autopep8: on
+
     if which("calibre") is not None:
-        drc          = Step('mentor-calibre-drc',            default=True)
-        lvs          = Step('mentor-calibre-lvs',            default=True)
+        drc = Step('mentor-calibre-drc', default=True)
+        lvs = Step('mentor-calibre-lvs', default=True)
     else:
-        drc          = Step('cadence-pegasus-drc',           default=True)
-        lvs          = Step('cadence-pegasus-lvs',           default=True)
+        drc = Step('cadence-pegasus-drc', default=True)
+        lvs = Step('cadence-pegasus-lvs', default=True)
+
     debugcalibre = Step('cadence-innovus-debug-calibre', default=True)
 
     # Add cgra tile macro inputs to downstream nodes
@@ -172,41 +176,41 @@ def construct():
 
     # Connect by name
 
-    g.connect_by_name(adk,      gen_sram)
-    g.connect_by_name(adk,      dc)
-    g.connect_by_name(adk,      iflow)
-    g.connect_by_name(adk,      init)
-    g.connect_by_name(adk,      power)
-    g.connect_by_name(adk,      place)
-    g.connect_by_name(adk,      cts)
-    g.connect_by_name(adk,      postcts_hold)
-    g.connect_by_name(adk,      route)
-    g.connect_by_name(adk,      postroute)
-    g.connect_by_name(adk,      signoff)
-    g.connect_by_name(adk,      drc)
-    g.connect_by_name(adk,      lvs)
+    g.connect_by_name(adk, gen_sram)
+    g.connect_by_name(adk, dc)
+    g.connect_by_name(adk, iflow)
+    g.connect_by_name(adk, init)
+    g.connect_by_name(adk, power)
+    g.connect_by_name(adk, place)
+    g.connect_by_name(adk, cts)
+    g.connect_by_name(adk, postcts_hold)
+    g.connect_by_name(adk, route)
+    g.connect_by_name(adk, postroute)
+    g.connect_by_name(adk, signoff)
+    g.connect_by_name(adk, drc)
+    g.connect_by_name(adk, lvs)
 
-    g.connect_by_name(rtl,         dc)
-    g.connect_by_name(soc_rtl,     dc)
+    g.connect_by_name(rtl, dc)
+    g.connect_by_name(soc_rtl, dc)
     g.connect_by_name(constraints, dc)
     g.connect_by_name(read_design, dc)
 
-    g.connect_by_name(dc,       iflow)
-    g.connect_by_name(dc,       init)
-    g.connect_by_name(dc,       power)
-    g.connect_by_name(dc,       place)
-    g.connect_by_name(dc,       cts)
+    g.connect_by_name(dc, iflow)
+    g.connect_by_name(dc, init)
+    g.connect_by_name(dc, power)
+    g.connect_by_name(dc, place)
+    g.connect_by_name(dc, cts)
 
-    g.connect_by_name(iflow,    init)
-    g.connect_by_name(iflow,    power)
-    g.connect_by_name(iflow,    place)
-    g.connect_by_name(iflow,    cts)
-    g.connect_by_name(iflow,    postcts_hold)
-    g.connect_by_name(iflow,    route)
-    g.connect_by_name(iflow,    postroute)
-    g.connect_by_name(iflow,    signoff)
+    g.connect_by_name(iflow, init)
+    g.connect_by_name(iflow, power)
+    g.connect_by_name(iflow, place)
+    g.connect_by_name(iflow, cts)
+    g.connect_by_name(iflow, postcts_hold)
+    g.connect_by_name(iflow, route)
+    g.connect_by_name(iflow, postroute)
+    g.connect_by_name(iflow, signoff)
 
-    g.connect_by_name(custom_lvs,   lvs)
+    g.connect_by_name(custom_lvs, lvs)
     g.connect_by_name(custom_power, power)
 
     # SRAM macro
@@ -224,27 +228,29 @@ def construct():
     g.connect_by_name(gen_sram, drc)
     g.connect_by_name(gen_sram, lvs)
 
-    g.connect_by_name(init,         power)
-    g.connect_by_name(power,        place)
-    g.connect_by_name(place,        cts)
-    g.connect_by_name(cts,          postcts_hold)
+    g.connect_by_name(init, power)
+    g.connect_by_name(power, place)
+    g.connect_by_name(place, cts)
+    g.connect_by_name(cts, postcts_hold)
     g.connect_by_name(postcts_hold, route)
-    g.connect_by_name(route,        postroute)
-    g.connect_by_name(postroute,    signoff)
-    g.connect_by_name(signoff,      drc)
-    g.connect_by_name(signoff,      lvs)
+    g.connect_by_name(route, postroute)
+    g.connect_by_name(postroute, signoff)
+    g.connect_by_name(signoff, drc)
+    g.connect_by_name(signoff, lvs)
     g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
     g.connect(signoff.o('design-merged.gds'), lvs.i('design_merged.gds'))
 
-    g.connect_by_name(adk,          pt_signoff)
-    g.connect_by_name(signoff,      pt_signoff)
+    g.connect_by_name(adk, pt_signoff)
+    g.connect_by_name(signoff, pt_signoff)
 
-    g.connect_by_name(adk,      debugcalibre)
-    g.connect_by_name(dc,       debugcalibre)
-    g.connect_by_name(iflow,    debugcalibre)
-    g.connect_by_name(signoff,  debugcalibre)
-    g.connect_by_name(drc,      debugcalibre)
-    g.connect_by_name(lvs,      debugcalibre)
+    # autopep8: off
+    g.connect_by_name(adk,      debugcalibre)  # noqa
+    g.connect_by_name(dc,       debugcalibre)  # noqa
+    g.connect_by_name(iflow,    debugcalibre)  # noqa
+    g.connect_by_name(signoff,  debugcalibre)  # noqa
+    g.connect_by_name(drc,      debugcalibre)  # noqa
+    g.connect_by_name(lvs,      debugcalibre)  # noqa
+    # autopep8: on
 
     #-----------------------------------------------------------------------
     # Parameterize
@@ -259,8 +265,8 @@ def construct():
     # DC needs this param to set the NO_CGRA macro
     dc.update_params({'soc_only': parameters['soc_only']}, True)
     # DC needs these params to set macros in soc rtl
-    dc.update_params({'TLX_FWD_DATA_LO_WIDTH' : parameters['TLX_FWD_DATA_LO_WIDTH']}, True)
-    dc.update_params({'TLX_REV_DATA_LO_WIDTH' : parameters['TLX_REV_DATA_LO_WIDTH']}, True)
+    dc.update_params({'TLX_FWD_DATA_LO_WIDTH': parameters['TLX_FWD_DATA_LO_WIDTH']}, True)
+    dc.update_params({'TLX_REV_DATA_LO_WIDTH': parameters['TLX_REV_DATA_LO_WIDTH']}, True)
 
     init.update_params({'soc_only': parameters['soc_only']}, True)
 
