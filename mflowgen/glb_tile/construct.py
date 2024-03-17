@@ -179,7 +179,7 @@ def construct():
 
     # Add sram macro inputs to downstream nodes
 
-    genlib.extend_inputs(['sram_tt.db']) if (which_soc == 'onyx') else 0
+    genlib.extend_inputs(['sram_tt.db']) if (which_soc == 'onyx') else None
     pt_signoff.extend_inputs(['sram_tt.db'])
 
     # These steps need timing and lef info for srams
@@ -233,7 +233,7 @@ def construct():
     g.add_step(power)
     g.add_step(custom_power)
     g.add_step(place)
-    g.add_step(custom_cts) if which_soc == 'onyx' else 0
+    g.add_step(custom_cts) if which_soc == 'onyx' else None
     g.add_step(cts)
     g.add_step(postcts_hold)
     g.add_step(route)
@@ -245,7 +245,7 @@ def construct():
     g.add_step(genlib)
     g.add_step(lib2db)
     g.add_step(drc)
-    g.add_step(drc_pm) if which_soc == 'onyx' else 0
+    g.add_step(drc_pm) if which_soc == 'onyx' else None
     g.add_step(lvs)
     g.add_step(custom_lvs)
     g.add_step(debugcalibre)
@@ -269,7 +269,7 @@ def construct():
     g.connect_by_name(adk, postroute_hold)
     g.connect_by_name(adk, signoff)
     g.connect_by_name(adk, drc)
-    g.connect_by_name(adk, drc_pm) if which_soc == 'onyx' else 0
+    g.connect_by_name(adk, drc_pm) if which_soc == 'onyx' else None
     g.connect_by_name(adk, lvs)
     g.connect_by_name(adk, genlib)
 
@@ -287,7 +287,7 @@ def construct():
     g.connect_by_name(gen_sram, genlib)
     g.connect_by_name(gen_sram, pt_signoff)
     g.connect_by_name(gen_sram, drc)
-    g.connect_by_name(gen_sram, drc_pm) if which_soc == 'onyx' else 0
+    g.connect_by_name(gen_sram, drc_pm) if which_soc == 'onyx' else None
     g.connect_by_name(gen_sram, lvs)
 
     g.connect_by_name(rtl, synth)
@@ -315,7 +315,7 @@ def construct():
 
     g.connect_by_name(custom_init, init)
     g.connect_by_name(custom_power, power)
-    g.connect_by_name(custom_cts, cts) if which_soc == 'onyx' else 0
+    g.connect_by_name(custom_cts, cts) if which_soc == 'onyx' else None
     g.connect_by_name(custom_lvs, lvs)
 
     g.connect_by_name(init, power)
@@ -328,7 +328,7 @@ def construct():
     g.connect_by_name(postroute_hold, signoff)
 
     g.connect_by_name(signoff, drc)
-    g.connect_by_name(signoff, drc_pm) if which_soc == 'onyx' else 0
+    g.connect_by_name(signoff, drc_pm) if which_soc == 'onyx' else None
     g.connect_by_name(signoff, lvs)
 
     g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
@@ -349,7 +349,7 @@ def construct():
     g.connect_by_name(iflow, debugcalibre)
     g.connect_by_name(signoff, debugcalibre)
     g.connect_by_name(drc, debugcalibre)
-    g.connect_by_name(drc_pm, debugcalibre) if which_soc == 'onyx' else 0
+    g.connect_by_name(drc_pm, debugcalibre) if which_soc == 'onyx' else None
     g.connect_by_name(lvs, debugcalibre)
 
     # -----------------------------------------------------------------------

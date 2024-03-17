@@ -173,8 +173,8 @@ def construct():
     g.add_step(genlibdb)
     g.add_step(lib2db)
     g.add_step(drc)
-    g.add_step(drc_pm) if (which_soc == "onyx") else 0
-    g.add_step(drc_mas) if (which_soc == "onyx") else 0
+    g.add_step(drc_pm) if (which_soc == "onyx") else None
+    g.add_step(drc_mas) if (which_soc == "onyx") else None
     g.add_step(lvs)
     g.add_step(debugcalibre)
 
@@ -196,8 +196,8 @@ def construct():
     g.connect_by_name(adk, postroute_hold)
     g.connect_by_name(adk, signoff)
     g.connect_by_name(adk, drc)
-    g.connect_by_name(adk, drc_pm) if (which_soc == "onyx") else 0
-    g.connect_by_name(adk, drc_mas) if (which_soc == "onyx") else 0
+    g.connect_by_name(adk, drc_pm) if (which_soc == "onyx") else None
+    g.connect_by_name(adk, drc_mas) if (which_soc == "onyx") else None
     g.connect_by_name(adk, lvs)
 
     g.connect_by_name(rtl, synth)
@@ -233,8 +233,8 @@ def construct():
     g.connect_by_name(postroute_hold, signoff)
 
     g.connect_by_name(signoff, drc)
-    g.connect_by_name(signoff, drc_pm) if (which_soc == "onyx") else 0
-    g.connect_by_name(signoff, drc_mas) if (which_soc == "onyx") else 0
+    g.connect_by_name(signoff, drc_pm) if (which_soc == "onyx") else None
+    g.connect_by_name(signoff, drc_mas) if (which_soc == "onyx") else None
     g.connect_by_name(signoff, lvs)
 
     g.connect(signoff.o('design-merged.gds'), drc.i('design_merged.gds'))
@@ -255,7 +255,7 @@ def construct():
     g.connect_by_name(iflow, debugcalibre)
     g.connect_by_name(signoff, debugcalibre)
     g.connect_by_name(drc, debugcalibre)
-    g.connect_by_name(drc_pm, debugcalibre) if (which_soc == "onyx") else 0
+    g.connect_by_name(drc_pm, debugcalibre) if (which_soc == "onyx") else None
     g.connect_by_name(lvs, debugcalibre)
 
     # -----------------------------------------------------------------------

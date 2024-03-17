@@ -317,7 +317,7 @@ def construct():
 
     # if which_soc == 'onyx':
     #    g.connect_by_name( adk,      drc_pm         )
-    g.connect_by_name(adk, drc_pm) if which_soc == 'onyx' else 0
+    g.connect_by_name(adk, drc_pm) if which_soc == 'onyx' else None
 
     g.connect_by_name(adk, lvs)
     g.connect_by_name(adk, genlib)
@@ -339,7 +339,7 @@ def construct():
 
     # if which_soc == 'onyx':
     #    g.connect_by_name( glb_tile,      drc_pm       )
-    g.connect_by_name(glb_tile, drc_pm) if which_soc == 'onyx' else 0
+    g.connect_by_name(glb_tile, drc_pm) if which_soc == 'onyx' else None
 
     g.connect_by_name(glb_tile, lvs)
 
@@ -375,7 +375,7 @@ def construct():
     g.connect_by_name(custom_power, power)
     # if which_soc == 'onyx':
     #   g.connect_by_name( custom_cts,   cts      )
-    g.connect_by_name(custom_cts, cts) if which_soc == 'onyx' else 0
+    g.connect_by_name(custom_cts, cts) if which_soc == 'onyx' else None
 
     g.connect_by_name(custom_lvs, lvs)
 
@@ -392,14 +392,14 @@ def construct():
     #   g.connect_by_name( signoff,      drc_pm         )
     g.connect_by_name(signoff, drc)
     g.connect_by_name(signoff, lvs)
-    g.connect_by_name(signoff, drc_pm) if which_soc == 'onyx' else 0
+    g.connect_by_name(signoff, drc_pm) if which_soc == 'onyx' else None
 
     # if which_soc == 'onyx':
     #     g.connect(signoff.o('design-merged.gds'), drc_pm.i('design_merged.gds'))
     o = signoff.o('design-merged.gds')
     g.connect(o, drc.i('design_merged.gds'))
     g.connect(o, lvs.i('design_merged.gds'))
-    g.connect(o, drc_pm.i('design_merged.gds')) if which_soc == 'onyx' else 0
+    g.connect(o, drc_pm.i('design_merged.gds')) if which_soc == 'onyx' else None
 
     g.connect_by_name(adk, pt_signoff)
     g.connect_by_name(signoff, pt_signoff)
@@ -429,7 +429,7 @@ def construct():
     g.connect_by_name(synth, debugcalibre)
     g.connect_by_name(iflow, debugcalibre)
     g.connect_by_name(signoff, debugcalibre)
-    g.connect_by_name(drc_pm, debugcalibre) if which_soc == 'onyx' else 0
+    g.connect_by_name(drc_pm, debugcalibre) if which_soc == 'onyx' else None
     g.connect_by_name(drc, debugcalibre)
     g.connect_by_name(lvs, debugcalibre)
 
