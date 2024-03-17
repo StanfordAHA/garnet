@@ -19,7 +19,7 @@ def construct():
 
     adk_name = 'tsmc16'
     adk_view = 'multivt'
-    pwr_aware = False     # environ('PWR_AWARE')
+    pwr_aware = False     # os.environ.get('PWR_AWARE')
 
     # autopep8: off
     parameters = {
@@ -28,7 +28,7 @@ def construct():
         'clock_period'      : float(os.environ.get('clock_period')), # noqa
         'adk'               : adk_name,                              # noqa
         'adk_view'          : adk_view,                              # noqa
-        'PWR_AWARE'         : pwr_aware                              # noqa
+        'PWR_AWARE'         : pwr_aware,                             # noqa
         'testbench_name'    : os.environ.get('testbench_name'),      # noqa
         'strip_path'        : os.environ.get('strip_path'),          # noqa
         'waves'             : os.environ.get('waves'),               # noqa
