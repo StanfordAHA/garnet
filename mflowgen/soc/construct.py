@@ -17,49 +17,49 @@ def construct():
 
     g = Graph()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameters
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     adk_name = get_sys_adk()
     adk_view = 'view-standard'
 
     parameters = {
-      'construct_path': __file__,
-      'design_name': 'AhaGarnetSoC',
-      'clock_period': 2.0,
-      'adk': adk_name,
-      'adk_view': adk_view,
+        'construct_path': __file__,
+        'design_name': 'AhaGarnetSoC',
+        'clock_period': 2.0,
+        'adk': adk_name,
+        'adk_view': adk_view,
 
-      # Synthesis
-      'flatten_effort': 3,
-      'topographical': True,
+        # Synthesis
+        'flatten_effort': 3,
+        'topographical': True,
 
-      # RTL Generation
-      'array_width': 32,
-      'array_height': 16,
-      'interconnect_only': False,
+        # RTL Generation
+        'array_width': 32,
+        'array_height': 16,
+        'interconnect_only': False,
 
-      # Don't touch this parameter
-      'soc_only': True,
+        # Don't touch this parameter
+        'soc_only': True,
 
-      # SRAM macros
-      'num_words': 2048,
-      'word_size': 64,
-      'mux_size': 8,
-      'corner': "tt0p8v25c",
-      'partial_write': True,
+        # SRAM macros
+        'num_words': 2048,
+        'word_size': 64,
+        'mux_size': 8,
+        'corner': "tt0p8v25c",
+        'partial_write': True,
 
-      # Low Effort flow
-      'express_flow': False,
-      # TLX Ports Partitions
-      'TLX_FWD_DATA_LO_WIDTH': 16,
-      'TLX_REV_DATA_LO_WIDTH': 45
+        # Low Effort flow
+        'express_flow': False,
+        # TLX Ports Partitions
+        'TLX_FWD_DATA_LO_WIDTH': 16,
+        'TLX_REV_DATA_LO_WIDTH': 45
     }
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Create nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     this_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -141,11 +141,11 @@ def construct():
     # TSMC needs streamout *without* the (new) default -uniquify flag
     # This python method finds 'stream-out.tcl' and strips out that flag.
     from common.streamout_no_uniquify import streamout_no_uniquify
-    if adk_name == "tsmc16": streamout_no_uniquify(iflow)
+    streamout_no_uniquify(iflow) if (adk_name == "tsmc16") else None
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     g.add_step(info)
     g.add_step(rtl)
@@ -170,9 +170,9 @@ def construct():
     g.add_step(custom_lvs)
     g.add_step(debugcalibre)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add edges
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     # Connect by name
 
@@ -252,9 +252,9 @@ def construct():
     g.connect_by_name(lvs,      debugcalibre)  # noqa
     # autopep8: on
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameterize
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     g.update_params(parameters)
 
