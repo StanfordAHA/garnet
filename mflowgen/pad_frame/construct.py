@@ -262,7 +262,7 @@ def construct():
 
     g.connect_by_name(signoff, genlibdb)
     g.connect_by_name(adk, genlibdb)
-  #   g.connect_by_name(genlibdb_constraints, genlibdb)
+    # g.connect_by_name(genlibdb_constraints, genlibdb)
 
     g.connect_by_name(adk, pt_signoff)
     g.connect_by_name(signoff, pt_signoff)

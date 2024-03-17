@@ -192,9 +192,9 @@ def construct():
             sim_gl_run.extend_inputs(['simv', 'simv.daidir'])
         elif parameters['tool'] == 'XCELIUM':
             sim_gl_run.extend_inputs(['xcelium.d'])
-        if parameters['saif'] == True:
+        if parameters['saif'] is True:
             sim_gl_run.extend_postconditions(["assert File( 'outputs/run.saif' ) "])
-        if parameters['waveform'] == True:
+        if parameters['waveform'] is True:
             sim_gl_run.extend_postconditions(["assert File( 'outputs/run.fsdb' ) "])
 
     # Add header files to outputs
