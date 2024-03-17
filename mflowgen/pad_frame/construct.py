@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-#=========================================================================
+# =========================================================================
 # construct.py
-#=========================================================================
+# =========================================================================
 
 import os
 
@@ -9,12 +9,13 @@ from mflowgen.components import Graph, Step
 from shutil import which
 from common.get_sys_adk import get_sys_adk
 
+
 def construct():
     g = Graph()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameters
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     adk_name = get_sys_adk()   # E.g. 'gf12-adk' or 'tsmc16'
     adk_view = 'view-standard'
@@ -23,27 +24,27 @@ def construct():
     which_soc = 'amber' if adk_name == 'tsmc16' else 'onyx'
 
     parameters = {
-        'construct_path'    : __file__,
-        'design_name'       : 'GarnetSOC_pad_frame',
-        'clock_period'      : 20.0,
-        'adk'               : adk_name,
-        'adk_view'          : adk_view,
+        'construct_path': __file__,
+        'design_name': 'GarnetSOC_pad_frame',
+        'clock_period': 20.0,
+        'adk': adk_name,
+        'adk_view': adk_view,
 
         # soc-rtl
-        'include_core'      : 0,
+        'include_core': 0,
 
         # Synthesis
-        'flatten_effort'    : 3,
-        'topographical'     : False,
-        'express_flow'      : False,
-        'skip_verify_connectivity' : True,
-        'lvs_hcells_file' : 'inputs/adk/hcells.inc',
-        'lvs_connect_names' : '"VDD VSS VDDPST"'
+        'flatten_effort': 3,
+        'topographical': False,
+        'express_flow': False,
+        'skip_verify_connectivity': True,
+        'lvs_hcells_file': 'inputs/adk/hcells.inc',
+        'lvs_connect_names': '"VDD VSS VDDPST"'
     }
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Create nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     this_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -53,7 +54,7 @@ def construct():
 
     # Custom steps
     soc_rtl = Step(this_dir + '/../common/soc-rtl-v2')
-    rtl = Step(this_dir + '/rtl')   
+    rtl = Step(this_dir + '/rtl')
     constraints = Step(this_dir + '/constraints')
     if adk_name == 'tsmc16':
         init_fullchip = Step(this_dir + '/../common/init-fullchip-amber')
@@ -109,7 +110,7 @@ def construct():
 
     # Die if unconnected bumps (why was this deleted?)
     init.extend_postconditions([
-      "assert 'STILL UNCONNECTED: bump' not in File( 'mflowgen-run.log' )"
+        "assert 'STILL UNCONNECTED: bump' not in File( 'mflowgen-run.log' )"
     ])
 
     # Send in the clones
@@ -117,9 +118,9 @@ def construct():
     init_drc = drc.clone()
     init_drc.set_name('init-drc')
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Add extra input edges to innovus steps that need custom tweaks
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     # "init" (cadence-innovus-init) inputs are "init_fullchip" outputs
     init.extend_inputs(init_fullchip.all_outputs())
@@ -144,13 +145,12 @@ def construct():
     # the icovl/dtcd lefs I guess?
     if which_soc == 'amber':
         pre_flowsetup_followers = [
-          # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
-          iflow, init # can we get away with this?
+            # iflow, init, power, place, cts, postcts_hold, route, postroute, signoff
+            iflow, init  # can we get away with this?
         ]
         for step in pre_flowsetup_followers:
-            step.extend_inputs([ 
-              "icovl-cells.lef", "dtcd-cells.lef", 
-              "bumpcells.lef" 
+            step.extend_inputs([
+                "icovl-cells.lef", "dtcd-cells.lef", "bumpcells.lef"
             ])
 
     # TSMC needs streamout *without* the (new) default -uniquify flag
@@ -167,17 +167,16 @@ def construct():
         soc_rtl.pre_extend_commands([cmd2])
         soc_rtl.pre_extend_commands([cmd3])
 
-
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add nodes
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     g.add_step(info)
     g.add_step(soc_rtl)
     g.add_step(rtl)
     g.add_step(constraints)
     g.add_step(dc)
-    
+
     g.add_step(pre_flowsetup) if (which_soc == 'amber') else None
     g.add_step(iflow)
     g.add_step(init_fullchip)
@@ -199,9 +198,9 @@ def construct():
     g.add_step(lvs)
     g.add_step(debugcalibre)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Graph -- Add edges
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     # Connect by name
 
@@ -283,9 +282,9 @@ def construct():
     # yes? no?
     # g.connect_by_name(init_drc,      debugcalibre)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Parameterize
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     g.update_params(parameters)
 
     # Default order can be found in e.g.
@@ -307,33 +306,33 @@ def construct():
     # Note "route-phy-bumps" explicitly sources a file "analog-bumps/build-phy-nets.tcl"
     # 5/2020 moved stream-out to *after* bump routing
     init.update_params(
-      {'order': [
-        'main.tcl','quality-of-life.tcl',
-        'stylus-compatibility-procs.tcl','floorplan.tcl','io-fillers.tcl',
-        'attach-results-to-outputs.tcl',
-        'alignment-cells.tcl',
-        'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
-        'innovus-foundation-flow/custom-scripts/stream-out.tcl',
-      ]}
+        {'order': [
+            'main.tcl', 'quality-of-life.tcl',
+            'stylus-compatibility-procs.tcl', 'floorplan.tcl', 'io-fillers.tcl',
+            'attach-results-to-outputs.tcl',
+            'alignment-cells.tcl',
+            'gen-bumps.tcl', 'check-bumps.tcl', 'route-bumps.tcl',
+            'innovus-foundation-flow/custom-scripts/stream-out.tcl',
+        ]}
     )
 
     if which_soc == 'amber':
         index = init.index('alignment-cells.tcl')
-        init.insert(index+1, 'analog-bumps/route-phy-bumps.tcl')
-        init.insert(index+2, 'analog-bumps/bump-connect.tcl')
+        init.insert(index + 1, 'analog-bumps/route-phy-bumps.tcl')
+        init.insert(index + 2, 'analog-bumps/bump-connect.tcl')
 
     order = power.get_param('order')
     order.append('add-endcaps-welltaps.tcl')
     power.update_params({'order': order})
 
-    # Signoff Order 
+    # Signoff Order
     order = signoff.get_param('order')
-    index = order.index('generate-results.tcl') # Fix netlist before streaming out netlist
+    index = order.index('generate-results.tcl')  # Fix netlist before streaming out netlist
     order.insert(index, 'netlist-fixing.tcl')
     signoff.update_params({'order': order})
 
     # Not sure what this is or why it was commented out...
-    #   # Adding new input for genlibdb node to run 
+    #   # Adding new input for genlibdb node to run
     #   genlibdb.update_params(
     #     {'order': "\"read_design.tcl genlibdb-constraints.tcl extract_model.tcl\""}
     #   )
