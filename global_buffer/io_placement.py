@@ -1,11 +1,13 @@
 import re
 import os
 
+
 def atoi(text):
     return int(text) if text.isdigit() else text
 
+
 def natural_keys(text):
-    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
+    return [atoi(c) for c in re.split(r'(\d+)', text)]
 
 
 def place_io_blk(id_to_name, app_dir):
@@ -21,7 +23,7 @@ def place_io_blk(id_to_name, app_dir):
         # Human sort thing from Kalhan used in GLB scripts
         id_to_name_list.sort(key=lambda x: natural_keys(x[1]))
 
-        blks = [blk for (blk,_) in id_to_name_list]
+        blks = [blk for (blk, _) in id_to_name_list]
 
     placement = {}
     # find out all the IO blocks
@@ -30,7 +32,6 @@ def place_io_blk(id_to_name, app_dir):
         if blk_id[0] in {"i", "I"}:
             assert blk_id not in ios
             ios.append(blk_id)
-
 
     # need to know if it's an input or output
 
