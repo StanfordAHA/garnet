@@ -8,14 +8,14 @@ class GlbAddrGen(Generator):
 
     def __init__(self, _params: GlobalBufferParams, loop_level: int):
         if os.getenv('WHICH_SOC') == "amber":
-            super().__init__(f"glb_addr_gen")
+            super().__init__("glb_addr_gen")
         else:
             super().__init__(f"glb_addr_gen_{loop_level}")
         self._params = _params
         self.p_addr_width = self.param("addr_width", width=32, value=32)
         if os.getenv('WHICH_SOC') == "amber":
             self.p_loop_level = self._params.loop_level
-            self.loop_level   = self._params.loop_level
+            self.loop_level = self._params.loop_level
         else:
             self.p_loop_level = self.param("loop_level", width=32, value=self._params.loop_level)
             self.loop_level = loop_level
