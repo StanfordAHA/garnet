@@ -50,7 +50,7 @@ def convert_raw(signals, input_file, output_file):
             width = int(dim_pattern.match(name).groups()[0]) + 1
             name = name.replace(f'[{width-1}:0]', '')
             widths[name] = width
-        except:
+        except Exception:
             widths[name] = 1
         col[name] = i
 
@@ -86,10 +86,10 @@ def create_testbench(design, inputs, outputs, input_widths, output_widths, num_t
     tb = open("testbench.sv", "w")
 
     # write defines
-    tb.write(f'`timescale 1ns/1ps\n')
-    tb.write(f'`define NUM_TEST_VECTORS {num_test_vectors}\n')
-    tb.write(f'`define ASSIGNMENT_DELAY 0.2 \n')
-    tb.write(f'\n')
+    tb.write(f'`timescale 1ns/1ps\n')                           # noqa
+    tb.write(f'`define NUM_TEST_VECTORS {num_test_vectors}\n')  # noqa
+    tb.write(f'`define ASSIGNMENT_DELAY 0.2 \n')                # noqa
+    tb.write(f'\n')                                             # noqa
 
     input_base = 0
     for i in inputs:
@@ -109,9 +109,9 @@ def create_testbench(design, inputs, outputs, input_widths, output_widths, num_t
 module testbench;
 
     localparam ADDR_WIDTH = $clog2(`NUM_TEST_VECTORS);
-   
+
     reg [ADDR_WIDTH - 1 : 0] test_vector_addr;
- 
+
     reg [{input_base}-1: 0] test_vectors [`NUM_TEST_VECTORS - 1 : 0];
     reg [{input_base}-1: 0] test_vector;
 
@@ -148,7 +148,7 @@ module testbench;
     for i in inputs + outputs:
         tb.write(f'        .{i}({i}),\n')
     if pwr_aware:
-        tb.write(f'''        .VDD(VDD),
+        tb.write('''        .VDD(VDD),
         .VSS(VSS),
 ''')
     if design == 'Tile_PE':
@@ -162,16 +162,18 @@ module testbench;
     );
 
     always #(`CLK_PERIOD/2) clk =~clk;
-    
+
     initial begin
       $readmemh("inputs/test_vectors.txt", test_vectors);
       $readmemh("inputs/test_outputs.txt", test_outputs);
       clk <= 0;
       test_vector_addr <= 0;
     end
-  
+
     always @ (posedge clk) begin
-        test_vector_addr <= # `ASSIGNMENT_DELAY (test_vector_addr + 1); // Don't change the inputs right after the clock edge because that will cause problems in gate level simulation
+        // Don't change the inputs right after the clock edge because
+        // that will cause problems in gate level simulation
+        test_vector_addr <= # `ASSIGNMENT_DELAY (test_vector_addr + 1);
         test_vector <= test_vectors[test_vector_addr];
         test_output <= test_outputs[test_vector_addr];
 
@@ -188,7 +190,7 @@ module testbench;
 
     tb.write('''
     end
-  
+
     initial begin
         $sdf_annotate("inputs/design.sdf", testbench.dut,,"testbench_sdf.log","MAXIMUM");
     end
