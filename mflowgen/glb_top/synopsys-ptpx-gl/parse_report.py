@@ -10,7 +10,7 @@ def gen_power_df(filename: str, instances: list):
         line_start = False
         for line in f.readlines():
             if line_start is True:
-                if line.startswith( '---------------------' ):
+                if line.startswith('---------------------'):
                     break
                 is_counted = False
                 line_list = line.split()
@@ -24,11 +24,11 @@ def gen_power_df(filename: str, instances: list):
                 if is_counted is False:  # If not counted, add it to misc.
                     line_list = line.split()
                     power_df.loc['misc'] += list(map(float, power_list))
-            elif line.startswith( '---------------------' ):
+            elif line.startswith('---------------------'):
                 line_start = True
-    
+
     return power_df
-        
+
 
 def main():
     parser = argparse.ArgumentParser(description='Power Report Parser')
