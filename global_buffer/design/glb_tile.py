@@ -517,30 +517,32 @@ class GlbTile(Generator):
             self.glb_bank_arr.append(glb_bank)
 
         if self._params.is_sram_stub:
-            self.readmemh_block = RawStringStmt(["initial begin",
-                                                "\tstring b0_file_name;",
-                                                "\tstring b1_file_name;",
-                                                "\tstring load_arg;",
-                                                "\t$sformat(b0_file_name, \"testvectors/tile%0d_b0.dat\", glb_tile_id);",  # noqa
-                                                "\t$sformat(b1_file_name, \"testvectors/tile%0d_b1.dat\", glb_tile_id);",  # noqa
-                                                "\t$sformat(load_arg, \"LOAD%0d\", glb_tile_id);",
-                                                "\tif (($test$plusargs(load_arg))) begin",
-                                                "\t\t$readmemh(b0_file_name, glb_core.glb_bank_0.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
-                                                "\t\t$readmemh(b1_file_name, glb_core.glb_bank_1.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
-                                                "\tend",
-                                                "end"])
-            self.writememh_block = RawStringStmt(["final begin",
-                                                "\tstring b0_file_name;",
-                                                "\tstring b1_file_name;",
-                                                "\tstring save_arg;",
-                                                "\t$sformat(b0_file_name, \"testvectors/tile%0d_b0_out.dat\", glb_tile_id);",  # noqa
-                                                "\t$sformat(b1_file_name, \"testvectors/tile%0d_b1_out.dat\", glb_tile_id);",  # noqa
-                                                "\t$sformat(save_arg, \"SAVE%0d\", glb_tile_id);",
-                                                "\tif (($test$plusargs(save_arg))) begin",
-                                                "\t\t$writememh(b0_file_name, glb_core.glb_bank_0.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
-                                                "\t\t$writememh(b1_file_name, glb_core.glb_bank_1.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
-                                                "\tend",
-                                                "end"])
+            self.readmemh_block = RawStringStmt([
+                "initial begin",
+                "\tstring b0_file_name;",
+                "\tstring b1_file_name;",
+                "\tstring load_arg;",
+                "\t$sformat(b0_file_name, \"testvectors/tile%0d_b0.dat\", glb_tile_id);",  # noqa
+                "\t$sformat(b1_file_name, \"testvectors/tile%0d_b1.dat\", glb_tile_id);",  # noqa
+                "\t$sformat(load_arg, \"LOAD%0d\", glb_tile_id);",
+                "\tif (($test$plusargs(load_arg))) begin",
+                "\t\t$readmemh(b0_file_name, glb_core.glb_bank_0.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
+                "\t\t$readmemh(b1_file_name, glb_core.glb_bank_1.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
+                "\tend",
+                "end"])
+            self.writememh_block = RawStringStmt([
+                "final begin",
+                "\tstring b0_file_name;",
+                "\tstring b1_file_name;",
+                "\tstring save_arg;",
+                "\t$sformat(b0_file_name, \"testvectors/tile%0d_b0_out.dat\", glb_tile_id);",  # noqa
+                "\t$sformat(b1_file_name, \"testvectors/tile%0d_b1_out.dat\", glb_tile_id);",  # noqa
+                "\t$sformat(save_arg, \"SAVE%0d\", glb_tile_id);",
+                "\tif (($test$plusargs(save_arg))) begin",
+                "\t\t$writememh(b0_file_name, glb_core.glb_bank_0.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
+                "\t\t$writememh(b1_file_name, glb_core.glb_bank_1.glb_bank_memory.glb_bank_sram_stub.mem);",  # noqa
+                "\tend",
+                "end"])
             self.add_stmt(self.readmemh_block.stmt())
             self.add_stmt(self.writememh_block.stmt())
 
@@ -648,7 +650,7 @@ class GlbTile(Generator):
             self.wire(self.pcfg_rdrs_packet_w2e_esto[port], self.pcfg_w2e_esto_dict[port])
 
     def pcfg_wiring(self):
-        cgra_cfg_g2f_w = self.var(f"cgra_cfg_g2f_cfg_w", self.header.cgra_cfg_t,
+        cgra_cfg_g2f_w = self.var("cgra_cfg_g2f_cfg_w", self.header.cgra_cfg_t,
                                   size=self._params.cgra_per_glb, packed=True)
         self.wire(self.glb_pcfg_broadcast.cgra_cfg_g2f, cgra_cfg_g2f_w)
         for i in range(self._params.cgra_per_glb):
