@@ -3,9 +3,9 @@ from gemstone.common.jtag_type import JTAGType
 from gemstone.common.configurable import ConfigurationType
 from gemstone.generator.from_magma import FromMagma
 from gemstone.generator.generator import Generator
-from gemstone.generator.const import Const
 from .global_controller_genesis2 import gen_wrapper, GlobalControllerParams
-from cgra.ifc_struct import *
+# from cgra.ifc_struct import *
+from cgra.ifc_struct import GlbCfgIfc, AXI4LiteIfc
 from systemRDL.util import run_systemrdl
 import pathlib
 import os
