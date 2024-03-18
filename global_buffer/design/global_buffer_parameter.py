@@ -184,6 +184,7 @@ class GlobalBufferParams:
     if os.getenv('WHICH_SOC') == "amber":
         process = "TSMC"
 
+
 def gen_global_buffer_params(**kwargs):
     # User-defined parameters
     num_prr = kwargs.pop('num_prr', 16)
@@ -255,17 +256,17 @@ def gen_header_files(params, svh_filename, h_filename, header_name):
         f.write(f"`define {header_name.upper()}_PARAM\n")
         f.write(f"package {header_name}_param;\n")
         for k, v in mod_params.items():
-            if type(v) == str:
+            if type(v) is str:
                 continue
             v = int(v)
             f.write(f"localparam int {k.upper()} = {v};\n")
-        f.write(f"endpackage\n")
-        f.write(f"`endif\n")
+        f.write("endpackage\n")
+        f.write("`endif\n")
 
     with open(h_filename, "w") as f:
-        f.write(f"#pragma once\n")
+        f.write("#pragma once\n")
         for k, v in mod_params.items():
-            if type(v) == str:
+            if type(v) is str:
                 continue
             v = int(v)
             f.write(f"#define {k.upper()} {v}\n")
