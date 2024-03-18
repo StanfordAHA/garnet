@@ -13,4 +13,3 @@ if __name__ == "__main__":
                     # Cadence format for specifying annotation of a particular design
                     new_constraint = f"SDF_FILE = \"./inputs/{tile}.sdf\",\nSCOPE = Interconnect_tb.dut.{tile_coord},\nLOG_FILE = \"./sdf_logs/{tile}_{tile_coord}_sdf.log\",\nMTM_CONTROL = \"MAXIMUM\";\n\n"
                     fi.write(new_constraint)
-
