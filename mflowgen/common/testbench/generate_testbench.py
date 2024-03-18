@@ -1,16 +1,14 @@
-import numpy as np
-import binascii
 import os
 import csv
 import re
 from defines import inputs, outputs, scope
 import subprocess
 
+
 def generate_raw(tile):
     sv = open('waveform_to_csv.sh', 'w')
 
     waveform = 'run'
-    clock_period = float(os.environ.get("clock_period"))
 
     input_signals = ' '.join([f'-signal {scope}.{tile}.{i}' for i in inputs])
     output_signals = ' '.join([f'-signal {scope}.{tile}.{o}' for o in outputs])
@@ -35,6 +33,7 @@ def generate_raw(tile):
     subprocess.run(['chmod', '+x', 'waveform_to_csv.sh'])
     subprocess.run(['./waveform_to_csv.sh'])
 
+
 def convert_raw(signals, input_file, output_file):
     dim_pattern = re.compile("\w*\[(\d+):0\]")
     raw = open(input_file, "r")
@@ -45,7 +44,7 @@ def convert_raw(signals, input_file, output_file):
 
     widths = {}
     col = {}
-    for i,h in enumerate(headers):
+    for i, h in enumerate(headers):
         name = h.split('.')[-1]
         try:
             width = int(dim_pattern.match(name).groups()[0]) + 1
@@ -55,30 +54,31 @@ def convert_raw(signals, input_file, output_file):
             widths[name] = 1
         col[name] = i
 
-    for c in range(1,len(data)):
+    for c in range(1, len(data)):
         to_write = []
         for s in signals:
             value = data[c][col[s]]
 
             # append leading zeros to pad up to 16 bits (4 hex spaces)
             while len(value) % 4 != 0:
-                value = "0"+value
+                value = "0" + value
 
             term = []
             for i in range(int((len(value) - 1) / 4) + 1):
-                partial_value = value[i*4:min((i+1)*4, len(value)+1)]
+                partial_value = value[i * 4:min((i + 1) * 4, len(value) + 1)]
                 term.append(partial_value)
             term.reverse()
             for t in term:
                 to_write.append(t)
         to_write.reverse()
-        f.write('_'.join(to_write)+'\n')
-             
+        f.write('_'.join(to_write) + '\n')
+
     f.close()
     raw.close()
-    
+
     num_test_vectors = len(data) - 1
     return num_test_vectors, widths
+
 
 def create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors):
     pwr_aware = os.environ.get("PWR_AWARE") == "True"
@@ -141,12 +141,11 @@ module testbench;
     supply0 VSS;
 ''')
 
-
     tb.write(f'''
     {design} dut (
 ''')
 
-    for i in inputs+outputs:
+    for i in inputs + outputs:
         tb.write(f'        .{i}({i}),\n')
     if pwr_aware:
         tb.write(f'''        .VDD(VDD),
@@ -198,6 +197,7 @@ endmodule''')
 
     tb.close()
 
+
 def main():
     design = os.environ.get('design_name')
     f = open(f'inputs/tiles_{design}.list', 'r')
@@ -208,12 +208,13 @@ def main():
         y = fields[-1]
         tile = f"Tile_X{x}_Y{y}"
 
-        generate_raw(tile) 
+        generate_raw(tile)
         num_test_vectors, input_widths = convert_raw(inputs, "raw_input.csv", f"outputs/tile_tbs/{tile}/test_vectors.txt")
         _, output_widths = convert_raw(outputs, "raw_output.csv", f"outputs/tile_tbs/{tile}/test_outputs.txt")
         if i == 0:
             create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors)
         i += 1
+
 
 if __name__ == '__main__':
     main()
