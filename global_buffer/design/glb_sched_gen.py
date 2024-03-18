@@ -1,4 +1,4 @@
-from kratos import always_ff, always_comb, posedge, Generator, clog2
+from kratos import always_ff, always_comb, posedge, Generator
 from global_buffer.design.global_buffer_parameter import GlobalBufferParams
 
 
@@ -6,7 +6,7 @@ class GlbSchedGen(Generator):
     ''' Generate schedule '''
 
     def __init__(self, _params: GlobalBufferParams):
-        super().__init__(f"glb_sched_gen")
+        super().__init__("glb_sched_gen")
         self._params = _params
 
         self.clk = self.clock("clk")
