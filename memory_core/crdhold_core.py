@@ -1,14 +1,6 @@
-import magma
 from gemstone.generator.from_magma import FromMagma
-from canal.interconnect import Interconnect
-from lake.top.extract_tile_info import *
-import kratos as kts
-from gemstone.generator.from_magma import FromMagma
-from lake.top.pond import Pond
-from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
-from lake.modules.crdhold import *
-
+from lake.modules.crdhold import CrdHold
 import kratos as kts
 
 if __name__ == "__main__":
