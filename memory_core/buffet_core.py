@@ -2,7 +2,6 @@ from gemstone.generator.from_magma import FromMagma
 from gemstone.common.core import PnRTag
 from lake.modules.buffet_like import BuffetLike
 from lake.top.tech_maps import TSMC_Tech_Map
-
 import kratos as kts
 
 if __name__ == "__main__":
@@ -22,6 +21,7 @@ class BuffetCore(LakeCoreBase):
                  fifo_depth=8,
                  tech_map=TSMC_Tech_Map(depth=512, width=32)):
 
+        buffet_name = "Buffet"    # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
