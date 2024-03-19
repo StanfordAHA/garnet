@@ -9,10 +9,12 @@
 # -------------------------------------------------------------------------
 
 
-# def test_clk_pass_through_arrival():
-#     rpt = 'reports/time-clock-passthrough.rpt'
-#     # assert arrival( rpt ) >= 0.030 # clock must pass through >= 0.030 ns
-#     # assert arrival( rpt ) <= 0.052 # clock must pass through <= 0.052 ns
+def test_clk_pass_through_arrival():
+    print('This test does nothing at all now, apparently.')
+    print('But it still must exist, else pytest fails.')
+    # rpt = 'reports/time-clock-passthrough.rpt'
+    # assert arrival( rpt ) >= 0.030 # clock must pass through >= 0.030 ns
+    # assert arrival( rpt ) <= 0.052 # clock must pass through <= 0.052 ns
 
 
 # -------------------------------------------------------------------------
