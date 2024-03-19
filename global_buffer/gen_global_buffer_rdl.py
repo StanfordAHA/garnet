@@ -114,13 +114,13 @@ class Rdl:
                 elab_name = rdl_node.name + f"_{i}"
                 if isinstance(rdl_node, Field):
                     expr += "\t" * level
-                    expr += f"}} {elab_name}[{rdl_node.width}] = 0;\n"
+                    expr += f"}} {elab_name}[{rdl_node.width}] = 0;\n"  # Note f"}}" == "}"
                 elif not isinstance(rdl_node, AddrMap):
                     expr += "\t" * level
-                    expr += f"}} {elab_name};\n"
+                    expr += f"}} {elab_name};\n"                        # Note f"}}" == "}"
                 else:
                     expr += "\t" * level
-                    expr += "}};\n"
+                    expr += "};\n"        # Note "}" == f"}}"
                 expr += "\n"
         else:
             expr += "\t" * level
@@ -147,13 +147,13 @@ class Rdl:
             elab_name = rdl_node.name
             if isinstance(rdl_node, Field):
                 expr += "\t" * level
-                expr += f"}} {elab_name}[{rdl_node.width}] = 0;\n"
+                expr += f"}} {elab_name}[{rdl_node.width}] = 0;\n"  # Note f"}}" == "}"
             elif not isinstance(rdl_node, AddrMap):
                 expr += "\t" * level
-                expr += f"}} {elab_name};\n"
+                expr += f"}} {elab_name};\n"                        # Note f"}}" == "}"
             else:
                 expr += "\t" * level
-                expr += "}};\n"
+                expr += "};\n"        # Note "}" == f"}}"
             expr += "\n"
 
         return expr
