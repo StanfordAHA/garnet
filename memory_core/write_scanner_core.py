@@ -18,7 +18,7 @@ class WriteScannerCore(LakeCoreBase):
                  fifo_depth=8,
                  defer_fifos=False):
 
-        scan_name = "WriteScanner"    # noqa "assigned but never used"
+        scan_name = "WriteScanner"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,
