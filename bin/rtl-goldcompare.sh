@@ -28,7 +28,7 @@ set -o pipefail # FAIL if any command in any pipe fails from here down
 function vcompare { (
     cat $1 |
     sed 's/_O._value_O/_Ox_value_O/g'                     | # Treat all zeroes as equivalent
-    sed 's/clk_gate0 glb_clk_gate/clk_gate glb_clk_gate' | # Treat gate0 same as gate :(
+    sed 's/clk_gate0 glb_clk_gate/clk_gate glb_clk_gate/' | # Treat gate0 same as gate :(
     sed 's/,$//'           | # No trailing commas
     sed 's/unq[0-9*]/unq/' | # Canonicalize unq's
     sed '/^\s*$/d'         | # No blank lines
