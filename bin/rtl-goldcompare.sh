@@ -25,11 +25,16 @@ EXAMPLES
 function vcompare {
     cat $1 |
     sed 's/_O._value_O/_Ox_value_O/g'                     | # Treat all zeroes as equivalent
-    sed 's/clk_gate0 glb_clk_gate/clk_gate glb_clk_gate/' | # Treat gate0 same as gate :(
+    sed 's/clk_gate0 glb_clk_gate/clk_gate glb_clk_gate' | # Treat gate0 same as gate :(
     sed 's/,$//'           | # No trailing commas
     sed 's/unq[0-9*]/unq/' | # Canonicalize unq's
     sed '/^\s*$/d'         | # No blank lines
     sort                   | # Out-of-order is okay
     cat
 }
+# FAIL if something is wrong with vcompare
+vcompare $1 > /dev/null
+vcompare $2 > /dev/null
+
+# Do the final compare
 diff -Bb -I Date <(vcompare $1) <(vcompare $2)
