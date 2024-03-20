@@ -33,6 +33,7 @@ function vcompare {
     cat
 }
 # FAIL if something is wrong with vcompare
+set -o pipefail
 vcompare $1 > /dev/null
 vcompare $2 > /dev/null
 
