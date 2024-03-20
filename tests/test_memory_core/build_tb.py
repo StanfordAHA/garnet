@@ -1515,7 +1515,7 @@ def prepare_glb_collateral(glb_dir=None, bitstream=None, matrices_in=None, desig
                         "dimensionality": 1,
                         # "extent": [num_lines],
                         # HAX for testing against GLB
-                        "extent": [1024],
+                        "extent": [64000],
                         "write_data_starting_addr": [0],
                         "write_data_stride": [1]
                     },
