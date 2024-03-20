@@ -22,9 +22,10 @@ EXAMPLES
 
 #     sed 's/clk_gate_unq/clk_gate/'    | # Treat clk_gate_unq same as clk_gate :(
 
-# Use parens for subshell so as not to screw up 'pipefail' setting in outer scope
+set -e          # FAIL if any single command fails from here down
+set -o pipefail # FAIL if any command in any pipe fails from here down
+
 function vcompare { (
-    set -o pipefail # Fail if any part of the following pipe fails
     cat $1 |
     sed 's/_O._value_O/_Ox_value_O/g'                     | # Treat all zeroes as equivalent
     sed 's/clk_gate0 glb_clk_gate/clk_gate glb_clk_gate' | # Treat gate0 same as gate :(
@@ -36,8 +37,8 @@ function vcompare { (
 ) }
 
 # FAIL if something is wrong with vcompare
-vcompare $1 > /dev/null || exit 13
-vcompare $2 > /dev/null || exit 13
+vcompare $1 > /dev/null
+vcompare $2 > /dev/null
 
 # Do the final compare
 diff -Bb -I Date <(vcompare $1) <(vcompare $2)

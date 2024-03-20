@@ -153,6 +153,9 @@ printf "\n"
 
 vcompare=/aha/garnet/bin/rtl-goldcompare.sh
 
+set -e          # FAIL if any single command fails from here down
+set -o pipefail # FAIL if any command in any pipe fails from here down
+
 echo "$vcompare $f1 $f2"
 ndiffs=`$vcompare $f1 $f2 | wc -l`
 if [ "$ndiffs" != "0" ]; then
@@ -166,6 +169,7 @@ if [ "$ndiffs" != "0" ]; then
     printf "\ndiff $f1 $f2"
     printf "Test FAILED with $ndiffs diffs\n"
     exit 13
+else
+    echo "Test PASSED"
 fi
 
-echo "Test PASSED"
