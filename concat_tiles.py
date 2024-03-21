@@ -59,7 +59,7 @@ def add_extents(json_tiles, output_file_path):
     new_f.write(json_string)
     new_f.close()
 
-def create_concate(app_name = "matmul_ijk", dataset = "football", tiles = [0, 2, 3]):
+def create_concate(app_name = "matmul_ijk", dataset = "football", tiles = [0, 2, 3], concat_name = "concat"):
     base_dir_list = []
     for tile in tiles:
         base_dir_list.append(f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{tile}/GLB_DIR/{app_name}_combined_seed_{app_name}-{dataset}_tile{tile}/bin/")
@@ -67,7 +67,7 @@ def create_concate(app_name = "matmul_ijk", dataset = "football", tiles = [0, 2,
     # output_tile = ""
     # for tile in tiles:
     #     output_tile += f"_t{tile}"
-    output_tile = "_concat"
+    output_tile = "_" + concat_name
     
     output_base_dir = f"SPARSE_TESTS/{app_name}_{app_name}-{dataset}_tile{output_tile}/GLB_DIR/{app_name}_combined_seed_{app_name}-{dataset}_tile{output_tile}/bin/"
 
@@ -123,7 +123,14 @@ if __name__ == "__main__":
         create_concate()
     else:
         assert len(sys.argv) >= 3
-        app_name = sys.argv[1]
-        dataset = sys.argv[2]
-        tile_list = sys.argv[3:]
-        create_concate(app_name, dataset, tile_list)
+        if sys.argv[3].isdigit():
+            app_name = sys.argv[1]
+            dataset = sys.argv[2]
+            tile_list = [int(sys.argv[3])]
+            create_concate(app_name, dataset, tile_list)
+        else:
+            app_name = sys.argv[1]
+            dataset = sys.argv[2]
+            concat_name = sys.argv[3]
+            tile_list = sys.argv[4:]
+            create_concate(app_name, dataset, tile_list, concat_name=concat_name)
