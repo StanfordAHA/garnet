@@ -11,6 +11,7 @@ import magma
 from systemRDL.util import gen_rdl_header  # If I move this it breaks. Dunno why.
 from cgra import compress_config_data
 import json
+import shutil
 import archipelago
 import archipelago.power
 import archipelago.io
@@ -819,6 +820,12 @@ def pnr(garnet, args, app):
 
     # verify_design_top(garnet.interconnect, args.app)
 
+    design_top_map = str(args.app).split(".json")[0] + "_map.json"
+
+    if not os.path.exists(design_top_map):
+        # copy args.app to design_top_map
+        shutil.copy(args.app, design_top_map)
+
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
 
@@ -831,7 +838,7 @@ def pnr(garnet, args, app):
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
 
-    # verify_pnr(garnet.interconnect, args.app, instance_to_instr)
+    verify_pnr(garnet.interconnect, design_top_map, instance_to_instr)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,

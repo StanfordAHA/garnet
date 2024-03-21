@@ -1,7 +1,7 @@
 from verified_agile_hardware.coreir_utils import (
     read_coreir,
     coreir_to_nx,
-    coreir_to_pdf,
+    nx_to_pdf,
     nx_to_smt,
 )
 
@@ -186,31 +186,6 @@ def create_property_term(
             solver.ops.Equal, mapped_valid, solver.create_term(1, bvsort1)
         )
 
-        # clk_low = solver.create_term(
-        #     solver.ops.Equal, solver.clks[0], solver.create_term(0, bvsort1)
-        # )
-
-        # valid_and_clk_low = solver.create_term(solver.ops.And, valid_eq, clk_low)
-
-        # for i in range(input_to_output_cycle_dep):
-        #     output_dep_on_input = solver.create_term(
-        #         solver.ops.Or,
-        #         solver.create_term(
-        #             solver.ops.Equal,
-        #             solver.bmc_counter,
-        #             solver.create_term(2*i, bvsort16),
-        #         ),
-        #         solver.create_term(
-        #             solver.ops.Equal,
-        #             solver.bmc_counter,
-        #             solver.create_term((2*i) + 1, bvsort16),
-        #         ),
-        #     )
-
-        #     valid_and_clk_low = solver.create_term(
-        #         solver.ops.And, valid_and_clk_low, solver.create_term(solver.ops.Not, output_dep_on_input)
-        #     )
-
         halide_pixel_index_var = solver.create_fts_state_var(
             f"halide_pixel_index_{str(mapped_output_var_name)}", bvsort16
         )
@@ -307,11 +282,11 @@ def print_trace(solver, bmc, symbols, waveform_signals=[]):
 
     trace_table = []
 
-    trace = ["0step"]
+    trace = ["step"]
     trace += list(range(len(bmc.witness())))
     trace_table.append(trace)
 
-    trace = ["1clock"]
+    trace = ["clock"]
     t = list(range(len(bmc.witness())))
     trace += [int(n / 2) for n in t]
     trace_table.append(trace)
@@ -353,8 +328,21 @@ def print_trace(solver, bmc, symbols, waveform_signals=[]):
                     trace.append(green(str(val)))
 
             trace_table.append(trace)
-    trace_table.sort()
-    print(tabulate(trace_table))
+    trace_table_sorted = []
+    trace_table_sorted.append(trace_table[0])
+    trace_table_sorted.append(trace_table[1])
+
+    for symbol in symbols:
+        for trace in trace_table:
+            if str(symbol) == trace[0]:
+                trace_table_sorted.append(trace)
+
+    for symbol in waveform_signals:
+        for trace in trace_table:
+            if str(symbol) in trace[0]:
+                trace_table_sorted.append(trace)
+
+    print(tabulate(trace_table_sorted))
 
 
 def run_bmc_profiling_sweep(solver, prop):
