@@ -1,91 +1,86 @@
 #! /usr/bin/env python
-#=========================================================================
+# =========================================================================
 # construct.py
-#=========================================================================
-# Author : 
-# Date   : 
-#
-
+# =========================================================================
 import os
-
 from mflowgen.components import Graph, Step
+
 
 def construct():
 
-  g = Graph()
+    g = Graph()
 
-  #-----------------------------------------------------------------------
-  # Parameters
-  #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    # Parameters
+    # -----------------------------------------------------------------------
 
-  adk_name = 'tsmc16'
-  adk_view = 'view-standard'
+    adk_name = 'tsmc16'
+    adk_view = 'view-standard'
 
-  parameters = {
-    'construct_path'    : __file__,
-    'design_name'       : 'Tile_PE',
-    'clock_period'      : 10.0,
-    'adk'               : adk_name,
-    'adk_view'          : adk_view,
-    # Synthesis
-    'flatten_effort'    : 3,
-    'topographical'     : False,
-    # RTL Generation
-    'interconnect_only' : True
-  }
+    parameters = {
+        'construct_path': __file__,
+        'design_name': 'Tile_PE',
+        'clock_period': 10.0,
+        'adk': adk_name,
+        'adk_view': adk_view,
 
-  #-----------------------------------------------------------------------
-  # Create nodes
-  #-----------------------------------------------------------------------
+        # Synthesis
+        'flatten_effort': 3,
+        'topographical': False,
 
-  this_dir = os.path.dirname( os.path.abspath( __file__ ) )
+        # RTL Generation
+        'interconnect_only': True
+    }
 
-  # ADK step
+    # -----------------------------------------------------------------------
+    # Create nodes
+    # -----------------------------------------------------------------------
 
-  g.set_adk( adk_name )
-  adk = g.get_adk_step()
+    this_dir = os.path.dirname(os.path.abspath(__file__))
 
-  # Custom steps
+    # ADK step
 
-  rtl                  = Step( this_dir + '/../../common/rtl'                      )
-  constraints          = Step( this_dir + '/../../Tile_PE/constraints'             )
-  # Default steps
+    g.set_adk(adk_name)
+    adk = g.get_adk_step()
 
-  info         = Step( 'info',                          default=True )
-  #constraints  = Step( 'constraints',                   default=True )
-  dc           = Step( 'synopsys-dc-synthesis',         default=True )
+    # Custom steps
 
-  #-----------------------------------------------------------------------
-  # Graph -- Add nodes
-  #-----------------------------------------------------------------------
+    rtl = Step(this_dir + '/../../common/rtl')
+    constraints = Step(this_dir + '/../../Tile_PE/constraints')
+    # Default steps
 
-  g.add_step( info                     )
-  g.add_step( rtl                      )
-  g.add_step( constraints              )
-  g.add_step( dc                       )
+    info = Step('info', default=True)
+    # constraints= Step('constraints', default=True)
+    dc = Step('synopsys-dc-synthesis', default=True)
 
-  #-----------------------------------------------------------------------
-  # Graph -- Add edges
-  #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    # Graph -- Add nodes
+    # -----------------------------------------------------------------------
 
-  # Connect by name
+    g.add_step(info)
+    g.add_step(rtl)
+    g.add_step(constraints)
+    g.add_step(dc)
 
-  g.connect_by_name( adk,      dc           )
+    # -----------------------------------------------------------------------
+    # Graph -- Add edges
+    # -----------------------------------------------------------------------
 
-  g.connect_by_name( rtl,         dc        )
-  g.connect_by_name( constraints, dc        )
+    # Connect by name
 
-  #-----------------------------------------------------------------------
-  # Parameterize
-  #-----------------------------------------------------------------------
+    g.connect_by_name(adk, dc)
 
-  g.update_params( parameters )
+    g.connect_by_name(rtl, dc)
+    g.connect_by_name(constraints, dc)
 
-  return g
+    # -----------------------------------------------------------------------
+    # Parameterize
+    # -----------------------------------------------------------------------
+
+    g.update_params(parameters)
+
+    return g
 
 
 if __name__ == '__main__':
-  g = construct()
-#  g.plot()
-
-
+    g = construct()
