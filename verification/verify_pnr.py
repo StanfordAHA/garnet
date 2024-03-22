@@ -526,11 +526,7 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
     if res is None or res:
 
         # Create property term that says valid is always 0
-        property_term = solver.create_term(
-            solver.ops.Equal,
-            solver.create_term(0, bvsort16),
-            solver.create_term(0, bvsort16),
-        )
+        property_term = solver.create_term(True)
         for mapped_output_var in valid_symbols:
 
             valid_eq = solver.create_term(
