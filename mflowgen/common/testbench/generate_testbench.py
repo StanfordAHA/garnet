@@ -1,16 +1,14 @@
-import numpy as np
-import binascii
 import os
 import csv
 import re
 from defines import inputs, outputs, scope
 import subprocess
 
+
 def generate_raw(tile):
     sv = open('waveform_to_csv.sh', 'w')
 
     waveform = 'run'
-    clock_period = float(os.environ.get("clock_period"))
 
     input_signals = ' '.join([f'-signal {scope}.{tile}.{i}' for i in inputs])
     output_signals = ' '.join([f'-signal {scope}.{tile}.{o}' for o in outputs])
@@ -35,6 +33,7 @@ def generate_raw(tile):
     subprocess.run(['chmod', '+x', 'waveform_to_csv.sh'])
     subprocess.run(['./waveform_to_csv.sh'])
 
+
 def convert_raw(signals, input_file, output_file):
     dim_pattern = re.compile("\w*\[(\d+):0\]")
     raw = open(input_file, "r")
@@ -45,40 +44,41 @@ def convert_raw(signals, input_file, output_file):
 
     widths = {}
     col = {}
-    for i,h in enumerate(headers):
+    for i, h in enumerate(headers):
         name = h.split('.')[-1]
         try:
             width = int(dim_pattern.match(name).groups()[0]) + 1
             name = name.replace(f'[{width-1}:0]', '')
             widths[name] = width
-        except:
+        except Exception:
             widths[name] = 1
         col[name] = i
 
-    for c in range(1,len(data)):
+    for c in range(1, len(data)):
         to_write = []
         for s in signals:
             value = data[c][col[s]]
 
             # append leading zeros to pad up to 16 bits (4 hex spaces)
             while len(value) % 4 != 0:
-                value = "0"+value
+                value = "0" + value
 
             term = []
             for i in range(int((len(value) - 1) / 4) + 1):
-                partial_value = value[i*4:min((i+1)*4, len(value)+1)]
+                partial_value = value[i * 4:min((i + 1) * 4, len(value) + 1)]
                 term.append(partial_value)
             term.reverse()
             for t in term:
                 to_write.append(t)
         to_write.reverse()
-        f.write('_'.join(to_write)+'\n')
-             
+        f.write('_'.join(to_write) + '\n')
+
     f.close()
     raw.close()
-    
+
     num_test_vectors = len(data) - 1
     return num_test_vectors, widths
+
 
 def create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors):
     pwr_aware = os.environ.get("PWR_AWARE") == "True"
@@ -86,10 +86,10 @@ def create_testbench(design, inputs, outputs, input_widths, output_widths, num_t
     tb = open("testbench.sv", "w")
 
     # write defines
-    tb.write(f'`timescale 1ns/1ps\n')
-    tb.write(f'`define NUM_TEST_VECTORS {num_test_vectors}\n')
-    tb.write(f'`define ASSIGNMENT_DELAY 0.2 \n')
-    tb.write(f'\n')
+    tb.write(f'`timescale 1ns/1ps\n')                           # noqa
+    tb.write(f'`define NUM_TEST_VECTORS {num_test_vectors}\n')  # noqa
+    tb.write(f'`define ASSIGNMENT_DELAY 0.2 \n')                # noqa
+    tb.write(f'\n')                                             # noqa
 
     input_base = 0
     for i in inputs:
@@ -109,9 +109,9 @@ def create_testbench(design, inputs, outputs, input_widths, output_widths, num_t
 module testbench;
 
     localparam ADDR_WIDTH = $clog2(`NUM_TEST_VECTORS);
-   
+
     reg [ADDR_WIDTH - 1 : 0] test_vector_addr;
- 
+
     reg [{input_base}-1: 0] test_vectors [`NUM_TEST_VECTORS - 1 : 0];
     reg [{input_base}-1: 0] test_vector;
 
@@ -141,15 +141,14 @@ module testbench;
     supply0 VSS;
 ''')
 
-
     tb.write(f'''
     {design} dut (
 ''')
 
-    for i in inputs+outputs:
+    for i in inputs + outputs:
         tb.write(f'        .{i}({i}),\n')
     if pwr_aware:
-        tb.write(f'''        .VDD(VDD),
+        tb.write('''        .VDD(VDD),
         .VSS(VSS),
 ''')
     if design == 'Tile_PE':
@@ -163,16 +162,18 @@ module testbench;
     );
 
     always #(`CLK_PERIOD/2) clk =~clk;
-    
+
     initial begin
       $readmemh("inputs/test_vectors.txt", test_vectors);
       $readmemh("inputs/test_outputs.txt", test_outputs);
       clk <= 0;
       test_vector_addr <= 0;
     end
-  
+
     always @ (posedge clk) begin
-        test_vector_addr <= # `ASSIGNMENT_DELAY (test_vector_addr + 1); // Don't change the inputs right after the clock edge because that will cause problems in gate level simulation
+        // Don't change the inputs right after the clock edge because
+        // that will cause problems in gate level simulation
+        test_vector_addr <= # `ASSIGNMENT_DELAY (test_vector_addr + 1);
         test_vector <= test_vectors[test_vector_addr];
         test_output <= test_outputs[test_vector_addr];
 
@@ -189,7 +190,7 @@ module testbench;
 
     tb.write('''
     end
-  
+
     initial begin
         $sdf_annotate("inputs/design.sdf", testbench.dut,,"testbench_sdf.log","MAXIMUM");
     end
@@ -197,6 +198,7 @@ module testbench;
 endmodule''')
 
     tb.close()
+
 
 def main():
     design = os.environ.get('design_name')
@@ -208,12 +210,13 @@ def main():
         y = fields[-1]
         tile = f"Tile_X{x}_Y{y}"
 
-        generate_raw(tile) 
+        generate_raw(tile)
         num_test_vectors, input_widths = convert_raw(inputs, "raw_input.csv", f"outputs/tile_tbs/{tile}/test_vectors.txt")
         _, output_widths = convert_raw(outputs, "raw_output.csv", f"outputs/tile_tbs/{tile}/test_outputs.txt")
         if i == 0:
             create_testbench(design, inputs, outputs, input_widths, output_widths, num_test_vectors)
         i += 1
+
 
 if __name__ == '__main__':
     main()
