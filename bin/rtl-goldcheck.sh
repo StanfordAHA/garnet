@@ -166,6 +166,7 @@ if [ "$ndiffs" != "0" ]; then
     printf "\ndiff $f1 $f2"
     printf "Test FAILED with $ndiffs diffs\n"
     exit 13
+else
+    echo "Test PASSED"
 fi
 
-echo "Test PASSED"
