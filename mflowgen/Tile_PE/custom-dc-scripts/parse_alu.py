@@ -1,11 +1,12 @@
 import sys
 
+
 def main():
-    f = open(sys.argv[1]) 
+    f = open(sys.argv[1])
 
     print("\nPE MAX DELAYS")
 
-    line = f.readline();
+    line = f.readline()
 
     while line:
         if 'Startpoint' in line:
@@ -18,8 +19,8 @@ def main():
             print(f"{scenario}: {time} ns")
 
         line = f.readline()
-    
     print()
+
 
 if __name__ == '__main__':
     main()

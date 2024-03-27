@@ -5,7 +5,6 @@ from archipelago.io import load_routing_result
 from pycyclone.io import load_placement
 import math
 import os
-import re
 import argparse
 from typing import Dict, List, Tuple, Set
 #from .place_and_route_graph import construct_graph, load_folded_regs

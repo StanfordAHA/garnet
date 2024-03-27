@@ -1,9 +1,4 @@
-import glob
-import os
 import random
-import shutil
-import tempfile
-
 import pytest
 
 from hwtypes import BitVector

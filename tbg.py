@@ -3,7 +3,6 @@ import magma as m
 import shutil
 import json
 import os
-import sys
 import filecmp
 from fault import Tester
 import glob

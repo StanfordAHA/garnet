@@ -72,19 +72,29 @@ f1=$1; f2=$2
 # Need 's/_O._value_O/...' because generator seems e.g. to randomly assign
 # the equivalent values 'PE_onyx_inst_onyxpeintf_O3_value_O' and '...O4_value_O' :(
 
+
+#     sed 's/clk_gate_unq/clk_gate/'    | # Treat clk_gate_unq same as clk_gate :(
+
+set -o pipefail # FAIL if any command in any pipe fails from here down
+
 function vcompare {
     cat $1 |
-    sed 's/_O._value_O/_Ox_value_O/g' | # Treat all zeroes as equivalent
-    sed 's/,$//'         | # No trailing commas
-    sed 's/_unq[0-9*]//' | # Canonicalize unq's
-    sed '/^\s*$/d'       | # No blank lines
-    sort                 | # Out-of-order is okay
+    sed 's/_O._value_O/_Ox_value_O/g'                     | # Treat all zeroes as equivalent
+    sed 's/clk_gate0 glb_clk_gate/clk_gate glb_clk_gate/' | # Treat gate0 same as gate :(
+    sed 's/,$//'           | # No trailing commas
+    sed 's/unq[0-9*]/unq/' | # Canonicalize unq's
+    sed '/^\s*$/d'         | # No blank lines
+    sort                   | # Out-of-order is okay
     cat
 }
-printf "\n"
-echo "Comparing `vcompare $f1 | wc -l` lines of $f1"
-echo "versus    `vcompare $f2 | wc -l` lines of $f2"
-printf "\n"
 
-echo "diff $f1 $f2"
-diff -Bb -I Date <(vcompare $f1) <(vcompare $f2)
+# FAIL if something is wrong with vcompare
+errmsg='vcompare script failed in rtl-goldcompare.sh'
+if ! vcompare $1 > /dev/null; then echo $errmsg; exit 13; fi
+if ! vcompare $2 > /dev/null; then echo $errmsg; exit 13; fi
+
+# vcompare $1 > /dev/null || echo 'vcompare script failed in rtl-goldcompare.sh'
+# vcompare $2 > /dev/null || echo 'vcompare script failed in rtl-goldcompare.sh'
+
+# Do the final compare
+diff -Bb -I Date <(vcompare $1) <(vcompare $2)

@@ -124,10 +124,9 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
 
     # pond may have inter-core connection
     if add_pond:
-        inter_core_connection = {"data_out_pond": ["data0", "data1"],
-                                 "valid_out_pond": ["bit0"],
-                                 "alu_res": ["data_in_pond"]}
-        # inter_core_connection = {}
+        inter_core_connection_1 = {"PondTop_output_width_1_num_0": ["bit0"]}
+        inter_core_connection_16 = {"PondTop_output_width_16_num_0": ["data0", "data1"],
+                                    "res": ["PondTop_input_width_16_num_0", "PondTop_input_width_16_num_1"]}
     else:
         inter_core_connection = {}
 
@@ -204,6 +203,10 @@ def create_cgra(width: int, height: int, io_sides: IOSide,
             io_conn = None
         else:
             io_conn = {"in": io_in, "out": io_out}
+        if bit_width == 1:
+            inter_core_connection = inter_core_connection_1
+        else:
+            inter_core_connection = inter_core_connection_16
         ic = create_uniform_interconnect(width, height, bit_width,
                                          create_core,
                                          port_conns,

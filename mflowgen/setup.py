@@ -6,7 +6,7 @@ setup(
     author='Alex Carsello',
     url='https://github.com/StanfordAHA/garnet/tree/master/mflowgen',
 
-    install_requires = [
+    install_requires=[
         'mflowgen'
     ],
 
