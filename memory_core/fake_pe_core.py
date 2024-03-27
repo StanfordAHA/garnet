@@ -1,14 +1,6 @@
-import magma
 from gemstone.generator.from_magma import FromMagma
-from canal.interconnect import Interconnect
-from lake.top.extract_tile_info import *
-import kratos as kts
-from gemstone.generator.from_magma import FromMagma
-from lake.top.pond import Pond
-from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
-from lake.modules.pe import *
-
+from lake.modules.pe import PE
 import kratos as kts
 
 if __name__ == "__main__":
@@ -25,7 +17,7 @@ class FakePECore(LakeCoreBase):
                  config_addr_width=8,
                  fifo_depth=8):
 
-        pe_name = "PE_fake"
+        pe_name = "PE_fake"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,

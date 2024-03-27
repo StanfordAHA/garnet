@@ -113,14 +113,14 @@ class Rdl:
 
                 elab_name = rdl_node.name + f"_{i}"
                 if isinstance(rdl_node, Field):
-                    expr += f"\t" * level
-                    expr += f"}} {elab_name}[{rdl_node.width}] = 0;\n"
+                    expr += "\t" * level
+                    expr += f"}} {elab_name}[{rdl_node.width}] = 0;\n"  # Note f"}}" == "}"
                 elif not isinstance(rdl_node, AddrMap):
-                    expr += f"\t" * level
-                    expr += f"}} {elab_name};\n"
+                    expr += "\t" * level
+                    expr += f"}} {elab_name};\n"                        # Note f"}}" == "}"
                 else:
-                    expr += f"\t" * level
-                    expr += f"}};\n"
+                    expr += "\t" * level
+                    expr += "};\n"        # Note "}" == f"}}"
                 expr += "\n"
         else:
             expr += "\t" * level
@@ -146,14 +146,14 @@ class Rdl:
 
             elab_name = rdl_node.name
             if isinstance(rdl_node, Field):
-                expr += f"\t" * level
-                expr += f"}} {elab_name}[{rdl_node.width}] = 0;\n"
+                expr += "\t" * level
+                expr += f"}} {elab_name}[{rdl_node.width}] = 0;\n"  # Note f"}}" == "}"
             elif not isinstance(rdl_node, AddrMap):
-                expr += f"\t" * level
-                expr += f"}} {elab_name};\n"
+                expr += "\t" * level
+                expr += f"}} {elab_name};\n"                        # Note f"}}" == "}"
             else:
-                expr += f"\t" * level
-                expr += f"}};\n"
+                expr += "\t" * level
+                expr += "};\n"        # Note "}" == f"}}"
             expr += "\n"
 
         return expr
@@ -208,28 +208,28 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
 
     # Store DMA Header
     if params.queue_depth == 1:
-        st_dma_header_rf = RegFile(f"st_dma_header_0", size=params.queue_depth)
+        st_dma_header_rf = RegFile("st_dma_header_0", size=params.queue_depth)
     else:
-        st_dma_header_rf = RegFile(f"st_dma_header", size=params.queue_depth)
+        st_dma_header_rf = RegFile("st_dma_header", size=params.queue_depth)
 
     # dim reg
-    dim_r = Reg(f"dim")
+    dim_r = Reg("dim")
     if os.getenv('WHICH_SOC') == "amber":
-        dim_f = Field(f"dim", width=clog2(params.loop_level) + 1)
+        dim_f = Field("dim", width=clog2(params.loop_level) + 1)
     else:
-        dim_f = Field(f"dim", width=clog2(params.store_dma_loop_level) + 1)
+        dim_f = Field("dim", width=clog2(params.store_dma_loop_level) + 1)
     dim_r.add_child(dim_f)
     st_dma_header_rf.add_child(dim_r)
 
     # start_addr reg
-    start_addr_r = Reg(f"start_addr")
-    start_addr_f = Field(f"start_addr", width=params.glb_addr_width)
+    start_addr_r = Reg("start_addr")
+    start_addr_f = Field("start_addr", width=params.glb_addr_width)
     start_addr_r.add_child(start_addr_f)
     st_dma_header_rf.add_child(start_addr_r)
 
     # cycle_start_addr reg
-    cycle_start_addr_r = Reg(f"cycle_start_addr")
-    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.cycle_count_width)
+    cycle_start_addr_r = Reg("cycle_start_addr")
+    cycle_start_addr_f = Field("cycle_start_addr", width=params.cycle_count_width)
     cycle_start_addr_r.add_child(cycle_start_addr_f)
     st_dma_header_rf.add_child(cycle_start_addr_r)
 
@@ -284,29 +284,29 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
 
     # Load DMA Header
     if params.queue_depth == 1:
-        ld_dma_header_rf = RegFile(f"ld_dma_header_0", size=params.queue_depth)
+        ld_dma_header_rf = RegFile("ld_dma_header_0", size=params.queue_depth)
     else:
-        ld_dma_header_rf = RegFile(f"ld_dma_header", size=params.queue_depth)
+        ld_dma_header_rf = RegFile("ld_dma_header", size=params.queue_depth)
 
     # dim reg
-    dim_r = Reg(f"dim")
+    dim_r = Reg("dim")
     if os.getenv('WHICH_SOC') == "amber":
-        dim_f = Field(f"dim", width=clog2(params.loop_level) + 1)
+        dim_f = Field("dim", width=clog2(params.loop_level) + 1)
     else:
-        dim_f = Field(f"dim", width=clog2(params.load_dma_loop_level) + 1)
+        dim_f = Field("dim", width=clog2(params.load_dma_loop_level) + 1)
 
     dim_r.add_child(dim_f)
     ld_dma_header_rf.add_child(dim_r)
 
     # start_addr reg
-    start_addr_r = Reg(f"start_addr")
-    start_addr_f = Field(f"start_addr", width=params.glb_addr_width)
+    start_addr_r = Reg("start_addr")
+    start_addr_f = Field("start_addr", width=params.glb_addr_width)
     start_addr_r.add_child(start_addr_f)
     ld_dma_header_rf.add_child(start_addr_r)
 
     # cycle_start_addr reg
-    cycle_start_addr_r = Reg(f"cycle_start_addr")
-    cycle_start_addr_f = Field(f"cycle_start_addr", width=params.cycle_count_width)
+    cycle_start_addr_r = Reg("cycle_start_addr")
+    cycle_start_addr_f = Field("cycle_start_addr", width=params.cycle_count_width)
     cycle_start_addr_r.add_child(cycle_start_addr_f)
     ld_dma_header_rf.add_child(cycle_start_addr_r)
 
@@ -343,13 +343,13 @@ def gen_global_buffer_rdl(name, params: GlobalBufferParams):
     # Pcfg DMA Header RegFile
     pcfg_dma_header_rf = RegFile("pcfg_dma_header")
     # start_addr reg
-    start_addr_r = Reg(f"start_addr")
-    start_addr_f = Field(f"start_addr", width=params.glb_addr_width)
+    start_addr_r = Reg("start_addr")
+    start_addr_f = Field("start_addr", width=params.glb_addr_width)
     start_addr_r.add_child(start_addr_f)
     pcfg_dma_header_rf.add_child(start_addr_r)
     # num cfg reg
-    num_cfg_r = Reg(f"num_cfg")
-    num_cfg_f = Field(f"num_cfg", width=params.max_num_cfg_width)
+    num_cfg_r = Reg("num_cfg")
+    num_cfg_f = Field("num_cfg", width=params.max_num_cfg_width)
     num_cfg_r.add_child(num_cfg_f)
     pcfg_dma_header_rf.add_child(num_cfg_r)
     addr_map.add_child(pcfg_dma_header_rf)

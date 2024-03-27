@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, posedge, clog2
+from kratos import Generator, always_ff, posedge
 
 
 class GlbClkEnGen(Generator):

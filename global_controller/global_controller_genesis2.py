@@ -17,6 +17,7 @@ class GlobalControllerParams:
     cgra_width: int = 32
     glb_tile_mem_size: int = 256
 
+
 def gen_wrapper(params: GlobalControllerParams = None):
     type_map = {
         "clk_in": magma.In(magma.Clock),

@@ -1,4 +1,4 @@
-from kratos import Generator, always_ff, posedge, always_comb, clock_en, clog2, const, concat, resize
+from kratos import Generator, always_ff, posedge, always_comb, clock_en, clog2, const, concat
 from kratos.util import to_magma
 from global_buffer.design.glb_tile import GlbTile
 from global_buffer.design.glb_tile_ifc import GlbTileInterface

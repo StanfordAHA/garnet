@@ -190,7 +190,7 @@ class GlbStoreDma(Generator):
                        step=self.iter_step_valid,
                        mux_sel_out=self.loop_mux_sel,
                        restart=self.loop_done)
-        self.wire(self.loop_iter.dim, self.current_dma_header[f"dim"])
+        self.wire(self.loop_iter.dim, self.current_dma_header["dim"])
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.loop_iter.ranges[i], self.current_dma_header[f"range_{i}"])
 
@@ -220,7 +220,7 @@ class GlbStoreDma(Generator):
                        step=self.iter_step_valid,
                        mux_sel=self.loop_mux_sel)
         self.wire(self.cycle_stride_addr_gen.addr_out, self.cycle_current_addr)
-        self.wire(self.cycle_stride_addr_gen.start_addr, self.current_dma_header[f"cycle_start_addr"])
+        self.wire(self.cycle_stride_addr_gen.start_addr, self.current_dma_header["cycle_start_addr"])
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.cycle_stride_addr_gen.strides[i],
                       self.current_dma_header[f"cycle_stride_{i}"])
@@ -238,7 +238,7 @@ class GlbStoreDma(Generator):
                        step=self.iter_step_valid,
                        mux_sel=self.loop_mux_sel,
                        addr_out=self.data_current_addr)
-        self.wire(self.data_stride_addr_gen.start_addr, ext(self.current_dma_header[f"start_addr"],
+        self.wire(self.data_stride_addr_gen.start_addr, ext(self.current_dma_header["start_addr"],
                                                             self._params.glb_addr_width + 1))
         for i in range(self._params.store_dma_loop_level):
             self.wire(self.data_stride_addr_gen.strides[i], self.current_dma_header[f"stride_{i}"])

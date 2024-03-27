@@ -52,7 +52,9 @@ class FIFO(Generator):
 
     @always_comb
     def almost_full_empty_logic(self):
-        self._almost_full = self._num_items >= const(self.depth, clog2(self.depth) + 1) - resize(self.almost_full_diff, (clog2(self.depth) + 1))
+        self._almost_full = self._num_items >= \
+            const(self.depth, clog2(self.depth) + 1) - \
+            resize(self.almost_full_diff, (clog2(self.depth) + 1))
         self._almost_empty = self._num_items <= self.almost_empty_diff
 
     @always_ff((posedge, "clk"), (posedge, "reset"))

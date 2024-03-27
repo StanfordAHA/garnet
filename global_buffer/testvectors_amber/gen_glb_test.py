@@ -1,6 +1,7 @@
 import random
 import argparse
 
+
 def gen_reg_pair(f_reglist, f_regpair):
     with open(f_reglist, 'r') as reglist:
         num = 0
@@ -19,6 +20,7 @@ def gen_reg_pair(f_reglist, f_regpair):
             data = 2**int(bits) - 1
             regpair.write(f"{addr} {data}\n")
 
+
 def gen_bs_sample(filename, num):
     with open(filename, 'w') as f:
         f.write(f"{num}\n")
@@ -30,12 +32,14 @@ def gen_bs_sample(filename, num):
             f.write(f"{(reg << 8 ) | col} ")
             f.write(f"{data}\n")
 
+
 def gen_data_sample(filename, width, num):
     with open(filename, 'w') as f:
         # f.write(f"{num}\n")
         for i in range(num):
             x = random.randrange(0, 2**width)
             f.write(f"{hex(x)[2:]} ")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='testvector generator')

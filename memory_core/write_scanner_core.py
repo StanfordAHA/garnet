@@ -1,14 +1,6 @@
-import magma
 from gemstone.generator.from_magma import FromMagma
-from canal.interconnect import Interconnect
-from lake.top.extract_tile_info import *
-import kratos as kts
-from gemstone.generator.from_magma import FromMagma
-from lake.top.pond import Pond
-from lake.top.extract_tile_info import *
 from gemstone.common.core import PnRTag
-from lake.modules.write_scanner import *
-
+from lake.modules.write_scanner import WriteScanner
 import kratos as kts
 
 if __name__ == "__main__":
@@ -26,7 +18,7 @@ class WriteScannerCore(LakeCoreBase):
                  fifo_depth=8,
                  defer_fifos=False):
 
-        scan_name = "WriteScanner"
+        scan_name = "WriteScanner"  # noqa "assigned but never used"
         super().__init__(config_data_width=config_data_width,
                          config_addr_width=config_addr_width,
                          data_width=data_width,

@@ -51,7 +51,8 @@ class GlbCfg(Generator):
         # pcfg broadcast
         self.cfg_pcfg_broadcast_mux = self.output("cfg_pcfg_broadcast_mux", self.header.cfg_pcfg_broadcast_mux_t)
 
-        if os.getenv('WHICH_SOC') == "amber": pass
+        if os.getenv('WHICH_SOC') == "amber":
+            pass
         else:
             # rdy/vld number of blocks
             # self.cfg_ld_dma_num_blocks = self.output("cfg_ld_dma_num_blocks", self._params.axi_data_width)
@@ -106,29 +107,29 @@ class GlbCfg(Generator):
         self.wire(self.gclk, self.glb_pio_wrapper.ports["clk"])
         self.wire(self.reset, self.glb_pio_wrapper.ports["reset"])
         self.wire(self.cfg_data_network['tile_connected'],
-                  self.glb_pio_wrapper.ports[f"l2h_data_network_ctrl_connected_r"])
+                  self.glb_pio_wrapper.ports["l2h_data_network_ctrl_connected_r"])
         self.wire(self.cfg_data_network['latency'],
-                  self.glb_pio_wrapper.ports[f"l2h_data_network_latency_value_r"])
+                  self.glb_pio_wrapper.ports["l2h_data_network_latency_value_r"])
 
         self.wire(self.cfg_pcfg_network['tile_connected'],
-                  self.glb_pio_wrapper.ports[f"l2h_pcfg_network_ctrl_connected_r"])
+                  self.glb_pio_wrapper.ports["l2h_pcfg_network_ctrl_connected_r"])
         self.wire(self.cfg_pcfg_network['latency'],
-                  self.glb_pio_wrapper.ports[f"l2h_pcfg_network_latency_value_r"])
+                  self.glb_pio_wrapper.ports["l2h_pcfg_network_latency_value_r"])
 
         if os.getenv('WHICH_SOC') == "amber":
             self.wire(self.cfg_st_dma_ctrl['data_mux'],
-                      self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_data_mux_r"])
-            self.wire(self.cfg_st_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_mode_r"])
+                      self.glb_pio_wrapper.ports["l2h_st_dma_ctrl_data_mux_r"])
+            self.wire(self.cfg_st_dma_ctrl['mode'], self.glb_pio_wrapper.ports["l2h_st_dma_ctrl_mode_r"])
             self.wire(self.cfg_st_dma_ctrl['use_valid'],
-                      self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_use_valid_r"])
-            self.wire(self.cfg_st_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_num_repeat_r"])
+                      self.glb_pio_wrapper.ports["l2h_st_dma_ctrl_use_valid_r"])
+            self.wire(self.cfg_st_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports["l2h_st_dma_ctrl_num_repeat_r"])
         else:
             self.wire(self.cfg_st_dma_ctrl['data_mux'],
-                      self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_data_mux_r"])
-            self.wire(self.cfg_st_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_mode_r"])
-            self.wire(self.cfg_st_dma_ctrl['valid_mode'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_valid_mode_r"])
-            self.wire(self.cfg_st_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_st_dma_ctrl_num_repeat_r"])
-            self.wire(self.cfg_st_dma_num_blocks, self.glb_pio_wrapper.ports[f"l2h_st_dma_num_blocks_value_r"])
+                      self.glb_pio_wrapper.ports["l2h_st_dma_ctrl_data_mux_r"])
+            self.wire(self.cfg_st_dma_ctrl['mode'], self.glb_pio_wrapper.ports["l2h_st_dma_ctrl_mode_r"])
+            self.wire(self.cfg_st_dma_ctrl['valid_mode'], self.glb_pio_wrapper.ports["l2h_st_dma_ctrl_valid_mode_r"])
+            self.wire(self.cfg_st_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports["l2h_st_dma_ctrl_num_repeat_r"])
+            self.wire(self.cfg_st_dma_num_blocks, self.glb_pio_wrapper.ports["l2h_st_dma_num_blocks_value_r"])
 
         for i in range(self._params.queue_depth):
             if self._params.queue_depth == 1:
@@ -142,8 +143,10 @@ class GlbCfg(Generator):
             self.wire(current_header['dim'],
                       self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_dim_dim_r"])
 
-            if os.getenv('WHICH_SOC') == "amber": LL = self._params.loop_level
-            else: LL = self._params.store_dma_loop_level
+            if os.getenv('WHICH_SOC') == "amber":
+                LL = self._params.loop_level
+            else:
+                LL = self._params.store_dma_loop_level
             for j in range(LL):
                 self.wire(current_header[f"cycle_stride_{j}"],
                           self.glb_pio_wrapper.ports[f"l2h_st_dma_header_{i}_cycle_stride_{j}_cycle_stride_r"])
@@ -154,21 +157,21 @@ class GlbCfg(Generator):
 
         if os.getenv('WHICH_SOC') == "amber":
             self.wire(self.cfg_ld_dma_ctrl['data_mux'],
-                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_data_mux_r"])
-            self.wire(self.cfg_ld_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_mode_r"])
+                      self.glb_pio_wrapper.ports["l2h_ld_dma_ctrl_data_mux_r"])
+            self.wire(self.cfg_ld_dma_ctrl['mode'], self.glb_pio_wrapper.ports["l2h_ld_dma_ctrl_mode_r"])
             self.wire(self.cfg_ld_dma_ctrl['use_valid'],
-                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_use_valid_r"])
+                      self.glb_pio_wrapper.ports["l2h_ld_dma_ctrl_use_valid_r"])
             self.wire(self.cfg_ld_dma_ctrl['use_flush'],
-                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_use_flush_r"])
-            self.wire(self.cfg_ld_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_num_repeat_r"])
+                      self.glb_pio_wrapper.ports["l2h_ld_dma_ctrl_use_flush_r"])
+            self.wire(self.cfg_ld_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports["l2h_ld_dma_ctrl_num_repeat_r"])
         else:
             self.wire(self.cfg_ld_dma_ctrl['data_mux'],
-                      self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_data_mux_r"])
-            self.wire(self.cfg_ld_dma_ctrl['mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_mode_r"])
-            self.wire(self.cfg_ld_dma_ctrl['valid_mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_valid_mode_r"])
-            self.wire(self.cfg_ld_dma_ctrl['flush_mode'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_flush_mode_r"])
-            self.wire(self.cfg_ld_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports[f"l2h_ld_dma_ctrl_num_repeat_r"])
-            # self.wire(self.cfg_ld_dma_num_blocks, self.glb_pio_wrapper.ports[f"l2h_ld_dma_num_blocks_value_r"])
+                      self.glb_pio_wrapper.ports["l2h_ld_dma_ctrl_data_mux_r"])
+            self.wire(self.cfg_ld_dma_ctrl['mode'], self.glb_pio_wrapper.ports["l2h_ld_dma_ctrl_mode_r"])
+            self.wire(self.cfg_ld_dma_ctrl['valid_mode'], self.glb_pio_wrapper.ports["l2h_ld_dma_ctrl_valid_mode_r"])
+            self.wire(self.cfg_ld_dma_ctrl['flush_mode'], self.glb_pio_wrapper.ports["l2h_ld_dma_ctrl_flush_mode_r"])
+            self.wire(self.cfg_ld_dma_ctrl['num_repeat'], self.glb_pio_wrapper.ports["l2h_ld_dma_ctrl_num_repeat_r"])
+            # self.wire(self.cfg_ld_dma_num_blocks, self.glb_pio_wrapper.ports["l2h_ld_dma_num_blocks_value_r"])
 
         for i in range(self._params.queue_depth):
             if self._params.queue_depth == 1:
@@ -182,8 +185,10 @@ class GlbCfg(Generator):
             self.wire(current_header['dim'],
                       self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_dim_dim_r"])
 
-            if os.getenv('WHICH_SOC') == "amber": LL = self._params.loop_level
-            else: LL = self._params.load_dma_loop_level
+            if os.getenv('WHICH_SOC') == "amber":
+                LL = self._params.loop_level
+            else:
+                LL = self._params.load_dma_loop_level
             for j in range(LL):
                 self.wire(current_header[f"cycle_stride_{j}"],
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_cycle_stride_{j}_cycle_stride_r"])
@@ -193,19 +198,19 @@ class GlbCfg(Generator):
                           self.glb_pio_wrapper.ports[f"l2h_ld_dma_header_{i}_range_{j}_range_r"])
 
         self.wire(self.cfg_pcfg_dma_ctrl['mode'],
-                  self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_mode_r"])
+                  self.glb_pio_wrapper.ports["l2h_pcfg_dma_ctrl_mode_r"])
         self.wire(self.cfg_pcfg_dma_ctrl['relocation_value'],
-                  self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_relocation_value_r"])
+                  self.glb_pio_wrapper.ports["l2h_pcfg_dma_ctrl_relocation_value_r"])
         self.wire(self.cfg_pcfg_dma_ctrl['relocation_is_msb'],
-                  self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_ctrl_relocation_is_msb_r"])
+                  self.glb_pio_wrapper.ports["l2h_pcfg_dma_ctrl_relocation_is_msb_r"])
 
         self.wire(self.cfg_pcfg_dma_header['start_addr'],
-                  self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_header_start_addr_start_addr_r"])
+                  self.glb_pio_wrapper.ports["l2h_pcfg_dma_header_start_addr_start_addr_r"])
         self.wire(self.cfg_pcfg_dma_header['num_cfg'],
-                  self.glb_pio_wrapper.ports[f"l2h_pcfg_dma_header_num_cfg_num_cfg_r"])
-        self.wire(self.cfg_pcfg_broadcast_mux['west'], self.glb_pio_wrapper.ports[f"l2h_pcfg_broadcast_mux_west_r"])
-        self.wire(self.cfg_pcfg_broadcast_mux['east'], self.glb_pio_wrapper.ports[f"l2h_pcfg_broadcast_mux_east_r"])
-        self.wire(self.cfg_pcfg_broadcast_mux['south'], self.glb_pio_wrapper.ports[f"l2h_pcfg_broadcast_mux_south_r"])
+                  self.glb_pio_wrapper.ports["l2h_pcfg_dma_header_num_cfg_num_cfg_r"])
+        self.wire(self.cfg_pcfg_broadcast_mux['west'], self.glb_pio_wrapper.ports["l2h_pcfg_broadcast_mux_west_r"])
+        self.wire(self.cfg_pcfg_broadcast_mux['east'], self.glb_pio_wrapper.ports["l2h_pcfg_broadcast_mux_east_r"])
+        self.wire(self.cfg_pcfg_broadcast_mux['south'], self.glb_pio_wrapper.ports["l2h_pcfg_broadcast_mux_south_r"])
 
     def wire_ctrl_signals(self):
         self.wire(self.gclk, self.glb_cfg_ctrl.gclk)
