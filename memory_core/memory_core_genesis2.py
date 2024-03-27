@@ -1,5 +1,5 @@
 import magma as m
-from gemstone.common.genesis_wrapper import GenesisWrapper, default_type_map
+from gemstone.common.genesis_wrapper import GenesisWrapper
 from gemstone.common.generator_interface import GeneratorInterface
 
 

@@ -9,6 +9,7 @@ from systemRDL.util import gen_rdl_header
 import pathlib
 import kratos as k
 
+
 def gen_param_header(top_name, params, output_folder):
     svh_filename = os.path.join(output_folder, f"{top_name}.svh")
     h_filename = os.path.join(output_folder, f"{top_name}.h")

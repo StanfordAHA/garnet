@@ -199,7 +199,7 @@ class GlbBankSramGen(Generator):
                              + f"B{self._params.sram_macro_word_size:03d}"
                              + f"M{self._params.sram_macro_mux_size:02d}"
                              + f"S{self._params.sram_macro_num_subarrays}"
-                             + f"_HB"
+                             + "_HB"
                              )
                 self.add_child(f"sram_array_{i}",
                                SRAM(self._params.process, sram_name,

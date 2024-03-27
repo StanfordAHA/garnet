@@ -18,24 +18,23 @@ class ClkGate(Generator):
 
     def add_clk_gate_cell(self):
         if self._params.process == "TSMC":
-            self.add_child(f"CG_CELL",
+            self.add_child("CG_CELL",
                            CG(self._params),
                            E=self.enable,
                            CP=self.clk,
                            TE=const(0, 1),
                            Q=self.gclk)
         elif self._params.process == "GF":
-            self.add_child(f"CG_CELL",
+            self.add_child("CG_CELL",
                            CG(self._params),
                            E=self.enable,
                            CLK=self.clk,
                            TE=const(0, 1),
                            Z=self.gclk)
         else:
-            self.add_child(f"CG_CELL",
+            self.add_child("CG_CELL",
                            CG(self._params),
                            E=self.enable,
                            CLK=self.clk,
                            TE=const(0, 1),
                            Z=self.gclk)
-                        
