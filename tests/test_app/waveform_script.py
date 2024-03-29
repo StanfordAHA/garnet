@@ -63,8 +63,9 @@ def main():
         "RepeatSignalGenerator": ["RepeatSignalGenerator", pe_tile, ["base_data_in", "repsig_data_out"]],
         "Repeat ": ["Repeat", pe_tile, ["repsig_data_in", "proc_data_in", "ref_data_out"]],
         "intersect": ["intersect_unit", pe_tile, ["coord_in_0", "coord_in_1", "pos_in_0", "pos_in_1", "coord_out", "pos_out_0", "pos_out_1"]],
+        "union": ["intersect_unit", pe_tile, ["coord_in_0", "coord_in_1", "pos_in_0", "pos_in_1", "coord_out", "pos_out_0", "pos_out_1"]],
         "Mul": ["reduce_pe_cluster", pe_tile, ["data0", "data1", "res"]],
-        "Add": ["reduce_pe_cluster", pe_tile, ["data0", "data1", "res"]],
+        "Add": ["reduce_pe_cluster", pe_tile, ["data0", "data2", "res"]],
         "CrdDrop": ["crddrop", pe_tile, ["cmrg_coord_in_0", "cmrg_coord_in_1", "cmrg_coord_out_0", "cmrg_coord_out_1"]],
         "Reduce": ["reduce_pe_cluster", pe_tile, ["reduce_data_in", "reduce_data_out"]],
     }
