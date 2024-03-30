@@ -308,6 +308,7 @@ def main():
     # print(colors)
     
     glb_write_signal = "fiber_access_16_inst/write_scanner/block_wr_in"
+    glb_read_signal = "fiber_access_16_inst/read_scanner/block_rd_out"
     
     clk = "/top/dut/clk_in"
     fsdb_file = "cgra.fsdb"
@@ -344,6 +345,13 @@ def main():
                         for signal in signals_out:
                             signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{signal}_{suffix}_" for suffix in ("ready_f", "valid_f", "f")]
                             sub_tracker.append(signal_rv)
+
+                        tile_name_display = tile[0] + "_glb_read"
+                        if "v" in tile[0] or "V" in tile[0]:
+                            tile_name_display = tile[0] + "_glb_read_v"
+                        
+                        glb_signal_rv = [f"{cmd_prefix}{tile_path}{tile_name}_flat/{glb_read_signal}{suffix}" for suffix in ("_ready", "_valid", "")]
+                        signal_tracker.append([tile_name_display, glb_signal_rv])
 
                 else:
                     for signal in signals_in:
