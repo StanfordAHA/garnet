@@ -1,0 +1,53 @@
+#=========================================================================
+# Cadence Innovus Clamp Logic Check
+#=========================================================================
+# Author : Alex Carsello
+# Date   : April 1, 2024
+#
+
+name: cadence-innovus-clamp-logic-check
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - innovus-foundation-flow
+  - adk
+  - design.checkpoint
+
+outputs:
+  - result
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - ln -sf inputs/innovus-foundation-flow
+  - innovus -overwrite -64 -nowin -init START.tcl -log logs/run.log
+
+  # Outputs
+  - cd outputs
+  - ln -sf ../result .
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  order:
+    - main.tcl
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+preconditions:
+
+  - assert Tool( 'innovus' )                         # tool check
+  - assert File( 'inputs/innovus-foundation-flow' )  # must exist
+  - assert File( 'inputs/adk' )                      # must exist
+  - assert File( 'inputs/design.checkpoint' )        # must exist
+
+

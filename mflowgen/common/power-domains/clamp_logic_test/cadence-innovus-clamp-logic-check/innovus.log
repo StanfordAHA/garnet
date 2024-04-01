@@ -1,0 +1,25 @@
+
+Cadence Innovus(TM) Implementation System.
+Copyright 2019 Cadence Design Systems, Inc. All rights reserved worldwide.
+
+Version:	v19.10-p002_1, built Fri Apr 19 15:18:11 PDT 2019
+Options:	
+Date:		Mon Apr  1 16:42:28 2024
+Host:		aha-gf (x86_64 w/Linux 3.10.0-1160.42.2.el7.x86_64) (21cores*42cpus*Common KVM processor 16384KB)
+OS:		CentOS Linux release 7.9.2009 (Core)
+
+License:
+		invs	Innovus Implementation System	19.1	checkout succeeded
+		8 CPU jobs allowed with the current license(s). Use setMultiCpuUsage to set your required CPU count.
+**WARN: (IMPSYT-1507):	The display is invalid and will start in no window mode
+Change the soft stacksize limit to 0.2%RAM (515 mbytes). Set global soft_stack_size_limit to change the value.
+
+**INFO:  MMMC transition support version v31-84 
+
+<CMD> set_global _enable_mmmc_by_default_flow      $CTE::mmmc_default
+<CMD> suppressMessage ENCEXT-2799
+
+*** Memory Usage v#1 (Current mem = 568.473M, initial mem = 256.688M) ***
+*** Message Summary: 0 warning(s), 0 error(s)
+
+--- Ending "Innovus" (totcpu=0:00:17.7, real=0:03:13, mem=568.5M) ---

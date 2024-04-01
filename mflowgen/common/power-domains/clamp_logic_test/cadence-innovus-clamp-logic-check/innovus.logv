@@ -1,0 +1,38 @@
+[04/01 16:42:28      0s] 
+[04/01 16:42:28      0s] Cadence Innovus(TM) Implementation System.
+[04/01 16:42:28      0s] Copyright 2019 Cadence Design Systems, Inc. All rights reserved worldwide.
+[04/01 16:42:28      0s] 
+[04/01 16:42:28      0s] Version:	v19.10-p002_1, built Fri Apr 19 15:18:11 PDT 2019
+[04/01 16:42:28      0s] Options:	
+[04/01 16:42:28      0s] Date:		Mon Apr  1 16:42:28 2024
+[04/01 16:42:28      0s] Host:		aha-gf (x86_64 w/Linux 3.10.0-1160.42.2.el7.x86_64) (21cores*42cpus*Common KVM processor 16384KB)
+[04/01 16:42:28      0s] OS:		CentOS Linux release 7.9.2009 (Core)
+[04/01 16:42:28      0s] 
+[04/01 16:42:28      0s] License:
+[04/01 16:42:28      0s] 		invs	Innovus Implementation System	19.1	checkout succeeded
+[04/01 16:42:28      0s] 		8 CPU jobs allowed with the current license(s). Use setMultiCpuUsage to set your required CPU count.
+[04/01 16:42:28      0s] **WARN: (IMPSYT-1507):	The display is invalid and will start in no window mode
+[04/01 16:42:39     17s] @(#)CDS: Innovus v19.10-p002_1 (64bit) 04/19/2019 15:18 (Linux 2.6.32-431.11.2.el6.x86_64)
+[04/01 16:42:39     17s] @(#)CDS: NanoRoute 19.10-p002_1 NR190418-1643/19_10-UB (database version 18.20, 458.7.1) {superthreading v1.51}
+[04/01 16:42:39     17s] @(#)CDS: AAE 19.10-b002 (64bit) 04/19/2019 (Linux 2.6.32-431.11.2.el6.x86_64)
+[04/01 16:42:39     17s] @(#)CDS: CTE 19.10-p002_1 () Apr 19 2019 06:39:48 ( )
+[04/01 16:42:39     17s] @(#)CDS: SYNTECH 19.10-b001_1 () Apr  4 2019 03:00:51 ( )
+[04/01 16:42:39     17s] @(#)CDS: CPE v19.10-p002
+[04/01 16:42:39     17s] @(#)CDS: IQuantus/TQuantus 19.1.0-e101 (64bit) Thu Feb 28 10:29:46 PST 2019 (Linux 2.6.32-431.11.2.el6.x86_64)
+[04/01 16:42:39     17s] @(#)CDS: OA 22.60-p012 Thu Dec 20 13:36:08 2018
+[04/01 16:42:39     17s] @(#)CDS: SGN 18.10-d003 (18-Jul-2018) (64 bit executable, Qt5.9.1)
+[04/01 16:42:39     17s] @(#)CDS: RCDB 11.14.18
+[04/01 16:42:39     17s] @(#)CDS: STYLUS 19.10-b001_1 (03/15/2019 08:18 PDT)
+[04/01 16:42:39     17s] Create and set the environment variable TMPDIR to /tmp/innovus_temp_41879_aha-gf_ajcars_6NSWTY.
+
+[04/01 16:42:39     17s] Change the soft stacksize limit to 0.2%RAM (515 mbytes). Set global soft_stack_size_limit to change the value.
+[04/01 16:42:40     17s] 
+[04/01 16:42:40     17s] **INFO:  MMMC transition support version v31-84 
+[04/01 16:42:40     17s] 
+[04/01 16:42:40     17s] <CMD> set_global _enable_mmmc_by_default_flow      $CTE::mmmc_default
+[04/01 16:42:40     17s] <CMD> suppressMessage ENCEXT-2799
+[04/01 16:45:41     17s] 
+[04/01 16:45:41     17s] *** Memory Usage v#1 (Current mem = 568.473M, initial mem = 256.688M) ***
+[04/01 16:45:41     17s] *** Message Summary: 0 warning(s), 0 error(s)
+[04/01 16:45:41     17s] 
+[04/01 16:45:41     17s] --- Ending "Innovus" (totcpu=0:00:17.7, real=0:03:13, mem=568.5M) ---
