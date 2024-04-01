@@ -33,4 +33,13 @@ outputs:
   - upf_Tile_PE.tcl
   - add-aon-tie-cells.tcl
   - check-pdcr-address.sh
- 
+
+tests:
+  - description: clamp_logic_test
+    test_graph: clamp_logic_test
+    express_mode: low_effort
+    attach_points:
+      - PLACE
+      - CTS
+      - ROUTE
+      - SIGNOFF
