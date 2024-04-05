@@ -253,24 +253,24 @@ def create_property_term(
 
         property_term = solver.create_term(solver.ops.And, property_term, imp)
 
-    for i in range(input_to_output_cycle_dep):
-        output_dep_on_input = solver.create_term(
-            solver.ops.Or,
-            solver.create_term(
-                solver.ops.Equal,
-                solver.bmc_counter,
-                solver.create_term(2 * i, bvsort16),
-            ),
-            solver.create_term(
-                solver.ops.Equal,
-                solver.bmc_counter,
-                solver.create_term((2 * i) + 1, bvsort16),
-            ),
-        )
+    # for i in range(input_to_output_cycle_dep):
+    #     output_dep_on_input = solver.create_term(
+    #         solver.ops.Or,
+    #         solver.create_term(
+    #             solver.ops.Equal,
+    #             solver.bmc_counter,
+    #             solver.create_term(2 * i, bvsort16),
+    #         ),
+    #         solver.create_term(
+    #             solver.ops.Equal,
+    #             solver.bmc_counter,
+    #             solver.create_term((2 * i) + 1, bvsort16),
+    #         ),
+    #     )
 
-        property_term = solver.create_term(
-            solver.ops.Or, output_dep_on_input, property_term
-        )
+    #     property_term = solver.create_term(
+    #         solver.ops.Or, output_dep_on_input, property_term
+    #     )
 
     return property_term
 
@@ -422,7 +422,6 @@ def verify_design_top(interconnect, coreir_file):
 
     set_inputs(solver, input_symbols, hw_input_stencil, bvsort16)
 
-    # Is this right? May not be general
     input_to_output_cycle_dep = solver.first_valid_output
 
     property_term = create_property_term(
