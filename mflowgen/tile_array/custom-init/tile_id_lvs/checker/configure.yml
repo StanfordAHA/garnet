@@ -1,22 +1,24 @@
 #=========================================================================
-# Custom Scripts -- init
+# Checker
 #=========================================================================
 
-name: custom-init
+name: checker
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
-outputs:
-  - add-endcaps-welltaps.tcl
-  - floorplan.tcl
-  - pin-assignments.tcl
-  - dont-touch.tcl
+inputs:
+  - lvs.report
 
-tests:
-  - description: tile-id-connection
-    test_graph: tile_id_lvs
-    express_mode: low_effort
-    attach_points:
-      - INIT
+outputs:
+  - result
+
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - mkdir -p outputs
+  - python gen_result.py

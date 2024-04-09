@@ -1,0 +1,7 @@
+LVS BOX "*S1DB*"
+
+# Define the tile ID nets we actually want to check
+LVS INCLUDE NETS {
+  Tile_*_hi_*
+  Tile_*_lo_*
+}

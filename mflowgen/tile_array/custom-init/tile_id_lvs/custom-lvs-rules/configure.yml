@@ -1,22 +1,12 @@
 #=========================================================================
-# Custom Scripts -- init
+# Custom Scripts -- LVS SVRF Rules
 #=========================================================================
 
-name: custom-init
+name: custom-lvs-rules
 
 #-------------------------------------------------------------------------
 # Inputs and Outputs
 #-------------------------------------------------------------------------
 
 outputs:
-  - add-endcaps-welltaps.tcl
-  - floorplan.tcl
-  - pin-assignments.tcl
-  - dont-touch.tcl
-
-tests:
-  - description: tile-id-connection
-    test_graph: tile_id_lvs
-    express_mode: low_effort
-    attach_points:
-      - INIT
+  - rules.svrf
