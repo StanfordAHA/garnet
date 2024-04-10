@@ -1711,6 +1711,18 @@ def software_gold(app_name, matrix_tmp_dir, give_tensor=False, print_inputs=None
         output_matrix = b_mat
         output_format = "CSF"
         output_name = "X"
+    elif 'mat_sp2dn.gv' in app_name:
+        b_mat = get_tensor(input_name='B', shapes=[10, 12], give_tensor=give_tensor, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=clean, tensor_ordering=tensor_orderings['B'],
+                           sparsity=1.0, format="UNC")
+        c_mat = get_tensor(input_name='C', shapes=[10, 12], give_tensor=False, tmp_dir=matrix_tmp_dir,
+                           dump=matrix_tmp_dir, suffix=suffix, clean=False, tensor_ordering=tensor_orderings['C'],
+                           sparsity=0.8)
+
+        input_dims['B'] = tuple(b_mat.shape)
+        output_matrix = c_mat
+        output_format = "CSF"
+        output_name = "X"
     elif 'mat_identity_dense.gv' in app_name:
         b_matrix = MatrixGenerator(name="B", shape=[10, 10], sparsity=0.7, format='UNC', dump_dir=matrix_tmp_dir)
         b_matrix.dump_outputs()
