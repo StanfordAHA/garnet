@@ -44,30 +44,74 @@ def set_clk_rst_flush(solver):
             )
         )
 
+    for name, term in solver.fts.named_terms.items():
+        if "valid_gate_inv" in name and not solver.fts.is_next_var(term):
+            solver.fts.constrain_init(
+                solver.create_term(
+                    solver.ops.Equal, term, solver.create_term(0, term.get_sort())
+                )
+            )
+        if "flushed" in name and not solver.fts.is_next_var(term):
+            solver.fts.constrain_init(
+                solver.create_term(
+                    solver.ops.Equal, term, solver.create_term(1, term.get_sort())
+                )
+            )
+
 
 def synchronize_cycle_counts(solver):
 
-    solver.fts.add_invar(
+    cycle_count_in_range = solver.create_term(
+        solver.ops.And,
         solver.create_term(
-            solver.ops.And,
-            solver.create_term(
-                solver.ops.BVSgt,
-                solver.cycle_count,
-                solver.create_term(0, solver.cycle_count.get_sort()),
-            ),
-            solver.create_term(
-                solver.ops.BVSlt,
-                solver.cycle_count,
-                solver.create_term(solver.max_cycles, solver.cycle_count.get_sort()),
-            ),
-        )
+            solver.ops.BVSge,
+            solver.cycle_count,
+            solver.create_term(0, solver.cycle_count.get_sort()),
+        ),
+        solver.create_term(
+            solver.ops.BVSlt,
+            solver.cycle_count,
+            solver.create_term(solver.max_cycles, solver.cycle_count.get_sort()),
+        ),
     )
+
+    solver.fts.add_invar(cycle_count_in_range)
 
     for name, term in solver.fts.named_terms.items():
         if "cycle_count" in name and not solver.fts.is_next_var(term):
             solver.fts.add_invar(
                 solver.create_term(solver.ops.Equal, term, solver.cycle_count)
             )
+
+    # print("Constraining cycle count to start at 0")
+    # solver.fts.constrain_init(
+    #     solver.create_term(
+    #         solver.ops.Equal, solver.cycle_count, solver.create_term(0, solver.cycle_count.get_sort())
+    #     )
+    # )
+
+    # increment cycle count every 2 bmc counters
+    solver.fts.assign_next(
+        solver.cycle_count,
+        solver.create_term(
+            solver.ops.Ite,
+            solver.create_term(
+                solver.ops.Equal,
+                solver.create_term(
+                    solver.ops.BVUrem,
+                    solver.bmc_counter,
+                    solver.create_term(2, solver.bmc_counter.get_sort()),
+                ),
+                solver.create_term(1, solver.bmc_counter.get_sort()),
+            ),
+            solver.create_term(
+                solver.ops.BVAdd,
+                solver.cycle_count,
+                solver.create_term(1, solver.cycle_count.get_sort()),
+            ),
+            solver.cycle_count,
+        ),
+    )
 
 
 def flatten(lst):
@@ -87,8 +131,8 @@ def set_inputs(solver, input_symbols, halide_image_symbols, bvsort16):
         solver.solver.make_sort(solver.sortkinds.ARRAY, bvsort16, bvsort16),
     )
 
+    print("set pix to pix_idx")
     for pix_idx, pix in enumerate(flatten(halide_image_symbols)):
-        # set pix to pix_idx
         solver.fts.add_invar(
             solver.create_term(
                 solver.ops.Equal, pix, solver.create_term(pix_idx, bvsort16)
@@ -169,11 +213,7 @@ def create_property_term(
             pix,
         )
 
-    property_term = solver.create_term(
-        solver.ops.Equal,
-        solver.create_term(0, bvsort16),
-        solver.create_term(0, bvsort16),
-    )
+    property_term = solver.create_term(True)
 
     for mapped_output_var_name in mapped_output_datas:
         mapped_output_var = output_symbols[mapped_output_var_name]
@@ -196,7 +236,7 @@ def create_property_term(
 
         # This is a list that stores the number of valid pixels at each cycle
         # Can use this to index into halide output pixel array
-        cycle_to_halide_idx = mem_tile_get_num_valids(
+        cycle_to_halide_idx, valids = mem_tile_get_num_valids(
             solver.stencil_valid_to_schedule[memtile],
             solver.max_cycles,
             iterator_support=6,
@@ -234,6 +274,7 @@ def create_property_term(
             solver.create_term(
                 solver.ops.Equal,
                 halide_out,
+                # solver.create_term(0, bvsort16),
                 solver.create_term(
                     solver.ops.Select, output_pixel_array, halide_pixel_index
                 ),
@@ -253,24 +294,152 @@ def create_property_term(
 
         property_term = solver.create_term(solver.ops.And, property_term, imp)
 
-    # for i in range(input_to_output_cycle_dep):
-    #     output_dep_on_input = solver.create_term(
-    #         solver.ops.Or,
-    #         solver.create_term(
-    #             solver.ops.Equal,
-    #             solver.bmc_counter,
-    #             solver.create_term(2 * i, bvsort16),
-    #         ),
-    #         solver.create_term(
-    #             solver.ops.Equal,
-    #             solver.bmc_counter,
-    #             solver.create_term((2 * i) + 1, bvsort16),
-    #         ),
-    #     )
+    for i in range(input_to_output_cycle_dep):
+        output_dep_on_input = solver.create_term(
+            solver.ops.Or,
+            solver.create_term(
+                solver.ops.Equal,
+                solver.bmc_counter,
+                solver.create_term(2 * i, bvsort16),
+            ),
+            solver.create_term(
+                solver.ops.Equal,
+                solver.bmc_counter,
+                solver.create_term((2 * i) + 1, bvsort16),
+            ),
+        )
 
-    #     property_term = solver.create_term(
-    #         solver.ops.Or, output_dep_on_input, property_term
+        property_term = solver.create_term(
+            solver.ops.Or, output_dep_on_input, property_term
+        )
+
+    # # Term to count up every 2 bmc_counters
+    # clock_cycle_count = solver.create_fts_state_var("clock_cycle_count", bvsort16)
+    # solver.fts.constrain_init(
+    #     solver.create_term(
+    #         solver.ops.Equal, clock_cycle_count, starting_cycle_count
     #     )
+    # )
+
+    # # only incrememnt clock_cycle_count every 2 bmc_counters
+    # solver.fts.assign_next(
+    #     clock_cycle_count,
+    #     solver.create_term(
+    #         solver.ops.Ite,
+    #         solver.create_term(
+    #             solver.ops.Equal,
+    #             solver.create_term(
+    #                 solver.ops.BVUrem,
+    #                 solver.bmc_counter,
+    #                 solver.create_term(2, bvsort16),
+    #             ),
+    #             solver.create_term(1, bvsort16),
+    #         ),
+    #         solver.create_term(
+    #             solver.ops.BVAdd,
+    #             clock_cycle_count,
+    #             solver.create_term(1, bvsort16),
+    #         ),
+    #         clock_cycle_count,
+    #     ),
+    # )
+    # # Add to property term that cycle_count is actually counting up
+    # property_term = solver.create_term(
+    #     solver.ops.And,
+    #     property_term,
+    #     solver.create_term(
+    #         solver.ops.Equal,
+    #         solver.cycle_count,
+    #         clock_cycle_count
+    #     ),
+    # )
+
+    return property_term
+
+
+def create_valids_property_term(
+    solver,
+    output_symbols,
+    mapped_output_datas,
+    halide_out_symbols,
+    input_to_output_cycle_dep,
+    bvsort16,
+    bvsort1,
+):
+
+    starting_cycle_count = solver.create_fts_state_var("starting_cycle_count", bvsort16)
+
+    solver.fts.constrain_init(
+        solver.create_term(solver.ops.Equal, starting_cycle_count, solver.cycle_count)
+    )
+
+    solver.fts.assign_next(starting_cycle_count, starting_cycle_count)
+
+    output_pixel_array = solver.create_fts_state_var(
+        "output_pixel_array",
+        solver.solver.make_sort(solver.sortkinds.ARRAY, bvsort16, bvsort16),
+    )
+
+    for pix_idx, pix in enumerate(flatten(halide_out_symbols)):
+        output_pixel_array = solver.create_term(
+            solver.ops.Store,
+            output_pixel_array,
+            solver.create_term(pix_idx, solver.create_bvsort(16)),
+            pix,
+        )
+
+    property_term = solver.create_term(True)
+
+    for mapped_output_var_name in mapped_output_datas:
+        mapped_output_var = output_symbols[mapped_output_var_name]
+
+        valid_name = f'{mapped_output_var_name.split("_write")[0]}_write_valid'
+        assert valid_name in output_symbols
+        mapped_valid = output_symbols[valid_name]
+
+        halide_valid_sym = solver.create_fts_state_var(
+            f"halide_valid_{str(mapped_output_var_name)}", bvsort1
+        )
+
+        # Precalculate the halide pixel index based on the memory tile schedule
+        assert valid_name in solver.stencil_valid_to_port_controller
+        memtile = solver.stencil_valid_to_port_controller[valid_name]
+
+        # This is a list that stores the number of valid pixels at each cycle
+        # Can use this to index into halide output pixel array
+        cycle_to_halide_idx, valids = mem_tile_get_num_valids(
+            solver.stencil_valid_to_schedule[memtile],
+            solver.max_cycles,
+            iterator_support=6,
+        )
+
+        # Create SMT LUT to map cycle count to valid
+        cycle_to_halide_idx_var = solver.create_fts_state_var(
+            f"{memtile}_cycle_to_halide_idx_var",
+            solver.solver.make_sort(ss.sortkinds.ARRAY, bvsort16, bvsort1),
+        )
+
+        for i, idx in enumerate(valids):
+            cycle_to_halide_idx_var = solver.create_term(
+                solver.ops.Store,
+                cycle_to_halide_idx_var,
+                solver.create_const(i, bvsort16),
+                solver.create_const(idx, bvsort1),
+            )
+
+        halide_valid = solver.create_term(
+            solver.ops.Select, cycle_to_halide_idx_var, solver.cycle_count
+        )
+
+        solver.fts.add_invar(
+            solver.create_term(solver.ops.Equal, halide_valid_sym, halide_valid)
+        )
+
+        property_term = solver.create_term(
+            solver.ops.And,
+            property_term,
+            solver.create_term(solver.ops.Equal, mapped_valid, halide_valid),
+        )
 
     return property_term
 
@@ -343,6 +512,17 @@ def print_trace(solver, bmc, symbols, waveform_signals=[]):
                 trace_table_sorted.append(trace)
 
     print(tabulate(trace_table_sorted))
+
+
+def check_if_fts_overconstrained(solver):
+    prop = pono.Property(solver.solver, solver.create_term(False))
+    btor_solver = Solver(solver_name="btor")
+    bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
+    res = bmc.check_until(1)
+
+    if res is None:
+        print("\033[91m" + "FTS is overconstrained" + "\033[0m")
+        exit(1)
 
 
 def run_bmc_profiling_sweep(solver, prop):
@@ -420,10 +600,12 @@ def verify_design_top(interconnect, coreir_file):
 
     hw_input_stencil, hw_output_stencil = create_app(solver)
 
+    print("Setting input constraints")
     set_inputs(solver, input_symbols, hw_input_stencil, bvsort16)
 
     input_to_output_cycle_dep = solver.first_valid_output
 
+    print("Creating property term")
     property_term = create_property_term(
         solver,
         output_symbols,
@@ -433,6 +615,8 @@ def verify_design_top(interconnect, coreir_file):
         bvsort16,
         bvsort1,
     )
+
+    check_if_fts_overconstrained(solver)
 
     prop = pono.Property(solver.solver, property_term)
 
@@ -455,11 +639,7 @@ def verify_design_top(interconnect, coreir_file):
     if res is None or res:
 
         # Create property term that says valid is always 0
-        property_term = solver.create_term(
-            solver.ops.Equal,
-            solver.create_term(0, bvsort16),
-            solver.create_term(0, bvsort16),
-        )
+        property_term = solver.create_term(True)
 
         for mapped_output_var_name in mapped_output_valids:
             mapped_output_var = output_symbols[mapped_output_var_name]
@@ -493,14 +673,15 @@ def verify_design_top(interconnect, coreir_file):
             "halide_pixel_index_",
             "out_symbol_data_eq_",
             "in_symbol_",
-            "flush",
-            "cycle_count",
-            "addr_out",
             "halide_out",
-            "dim_counter",
+            "halide_valid",
         ]
 
-        symbols = mapped_output_datas + mapped_output_valids
+        symbols = (
+            mapped_output_datas
+            + mapped_output_valids
+            + ["cycle_count", "bmc_counter", "clock_cycle_count"]
+        )
 
         print_trace(solver, bmc, symbols, waveform_signals)
 
