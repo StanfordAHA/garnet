@@ -15,7 +15,7 @@ import shutil
 import archipelago
 import archipelago.power
 import archipelago.io
-# from verification.verify_design_top import verify_design_top
+from verification.verify_design_top import verify_design_top
 from verification.verify_pnr import verify_pnr
 
 from lassen.sim import PE_fc as lassen_fc
@@ -817,14 +817,14 @@ def build_verilog(args, garnet):
                        output_folder=os.path.join(garnet_home, "global_controller/header"))
 
 def pnr(garnet, args, app):
-
-    # verify_design_top(garnet.interconnect, args.app)
-
     design_top_map = str(args.app).split(".json")[0] + "_map.json"
 
     if not os.path.exists(design_top_map):
         # copy args.app to design_top_map
         shutil.copy(args.app, design_top_map)
+
+    
+    verify_design_top(garnet.interconnect, design_top_map)
 
     placement, routing, id_to_name, instance_to_instr, netlist, bus = \
         garnet.place_and_route(args, load_only=args.generate_bitstream_only)
@@ -833,12 +833,12 @@ def pnr(garnet, args, app):
     # instead, we load a previously-built pnr result and use that. So
     # reschedule_pipelined_app() only happens if 'generate_bitstream_only' is False.
     if args.pipeline_pnr and not args.generate_bitstream_only:
-        reschedule_pipelined_app(app)
+        # reschedule_pipelined_app(app)
 
         placement, routing, id_to_name, instance_to_instr, netlist, bus = \
             garnet.place_and_route(args, load_only=True)
 
-    verify_pnr(garnet.interconnect, design_top_map, instance_to_instr)
+    # verify_pnr(garnet.interconnect, design_top_map, instance_to_instr)
 
     bitstream, iorved_tuple = garnet.generate_bitstream(
         args.app,

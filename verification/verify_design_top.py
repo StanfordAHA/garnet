@@ -294,6 +294,8 @@ def create_property_term(
 
         property_term = solver.create_term(solver.ops.And, property_term, imp)
 
+    print("input_to_output_cycle_dep", input_to_output_cycle_dep)
+
     for i in range(input_to_output_cycle_dep):
         output_dep_on_input = solver.create_term(
             solver.ops.Or,
@@ -313,47 +315,6 @@ def create_property_term(
             solver.ops.Or, output_dep_on_input, property_term
         )
 
-    # # Term to count up every 2 bmc_counters
-    # clock_cycle_count = solver.create_fts_state_var("clock_cycle_count", bvsort16)
-    # solver.fts.constrain_init(
-    #     solver.create_term(
-    #         solver.ops.Equal, clock_cycle_count, starting_cycle_count
-    #     )
-    # )
-
-    # # only incrememnt clock_cycle_count every 2 bmc_counters
-    # solver.fts.assign_next(
-    #     clock_cycle_count,
-    #     solver.create_term(
-    #         solver.ops.Ite,
-    #         solver.create_term(
-    #             solver.ops.Equal,
-    #             solver.create_term(
-    #                 solver.ops.BVUrem,
-    #                 solver.bmc_counter,
-    #                 solver.create_term(2, bvsort16),
-    #             ),
-    #             solver.create_term(1, bvsort16),
-    #         ),
-    #         solver.create_term(
-    #             solver.ops.BVAdd,
-    #             clock_cycle_count,
-    #             solver.create_term(1, bvsort16),
-    #         ),
-    #         clock_cycle_count,
-    #     ),
-    # )
-    # # Add to property term that cycle_count is actually counting up
-    # property_term = solver.create_term(
-    #     solver.ops.And,
-    #     property_term,
-    #     solver.create_term(
-    #         solver.ops.Equal,
-    #         solver.cycle_count,
-    #         clock_cycle_count
-    #     ),
-    # )
-
     return property_term
 
 
@@ -366,27 +327,6 @@ def create_valids_property_term(
     bvsort16,
     bvsort1,
 ):
-
-    starting_cycle_count = solver.create_fts_state_var("starting_cycle_count", bvsort16)
-
-    solver.fts.constrain_init(
-        solver.create_term(solver.ops.Equal, starting_cycle_count, solver.cycle_count)
-    )
-
-    solver.fts.assign_next(starting_cycle_count, starting_cycle_count)
-
-    output_pixel_array = solver.create_fts_state_var(
-        "output_pixel_array",
-        solver.solver.make_sort(solver.sortkinds.ARRAY, bvsort16, bvsort16),
-    )
-
-    for pix_idx, pix in enumerate(flatten(halide_out_symbols)):
-        output_pixel_array = solver.create_term(
-            solver.ops.Store,
-            output_pixel_array,
-            solver.create_term(pix_idx, solver.create_bvsort(16)),
-            pix,
-        )
 
     property_term = solver.create_term(True)
 
@@ -415,7 +355,7 @@ def create_valids_property_term(
 
         # Create SMT LUT to map cycle count to valid
         cycle_to_halide_idx_var = solver.create_fts_state_var(
-            f"{memtile}_cycle_to_halide_idx_var",
+            f"{memtile}_cycle_to_halide_idx_valids_var",
             solver.solver.make_sort(ss.sortkinds.ARRAY, bvsort16, bvsort1),
         )
 
@@ -440,6 +380,51 @@ def create_valids_property_term(
             property_term,
             solver.create_term(solver.ops.Equal, mapped_valid, halide_valid),
         )
+
+    return property_term
+
+
+def create_cycle_count_property_term(
+    solver,
+    output_symbols,
+    mapped_output_datas,
+    halide_out_symbols,
+    input_to_output_cycle_dep,
+    bvsort16,
+    bvsort1,
+):
+    # Create property term that says cycle count incremements every 2 bmc counters
+    check_cycle_count = solver.create_fts_state_var("check_cycle_count", bvsort16)
+
+    solver.fts.constrain_init(
+        solver.create_term(solver.ops.Equal, solver.cycle_count, check_cycle_count)
+    )
+
+    solver.fts.assign_next(
+        check_cycle_count,
+        solver.create_term(
+            solver.ops.Ite,
+            solver.create_term(
+                solver.ops.Equal,
+                solver.create_term(
+                    solver.ops.BVUrem,
+                    solver.bmc_counter,
+                    solver.create_term(2, solver.bmc_counter.get_sort()),
+                ),
+                solver.create_term(1, solver.bmc_counter.get_sort()),
+            ),
+            solver.create_term(
+                solver.ops.BVAdd,
+                check_cycle_count,
+                solver.create_term(1, check_cycle_count.get_sort()),
+            ),
+            check_cycle_count,
+        ),
+    )
+
+    property_term = solver.create_term(
+        solver.ops.Equal, solver.cycle_count, check_cycle_count
+    )
 
     return property_term
 
@@ -606,6 +591,26 @@ def verify_design_top(interconnect, coreir_file):
     input_to_output_cycle_dep = solver.first_valid_output
 
     print("Creating property term")
+    cycle_count_property_term = create_cycle_count_property_term(
+        solver,
+        output_symbols,
+        mapped_output_datas,
+        hw_output_stencil,
+        input_to_output_cycle_dep,
+        bvsort16,
+        bvsort1,
+    )
+
+    valids_property_term = create_valids_property_term(
+        solver,
+        output_symbols,
+        mapped_output_datas,
+        hw_output_stencil,
+        input_to_output_cycle_dep,
+        bvsort16,
+        bvsort1,
+    )
+
     property_term = create_property_term(
         solver,
         output_symbols,
@@ -616,16 +621,19 @@ def verify_design_top(interconnect, coreir_file):
         bvsort1,
     )
 
+    property_term = solver.create_term(
+        solver.ops.And, property_term, valids_property_term
+    )
+    property_term = solver.create_term(
+        solver.ops.And, property_term, cycle_count_property_term
+    )
+
     check_if_fts_overconstrained(solver)
 
     prop = pono.Property(solver.solver, property_term)
 
     btor_solver = Solver(solver_name="btor")
     bmc = pono.Bmc(prop, solver.fts, btor_solver.solver)
-
-    # run_bmc_profiling_sweep(solver, prop)
-
-    # breakpoint()
 
     check_pixels = 1
     check_cycles = solver.first_valid_output + 1 + check_pixels
@@ -660,7 +668,7 @@ def verify_design_top(interconnect, coreir_file):
         print(time.time() - start)
 
         if res2 is None or res2:
-            print("\n\033[91m" + "Valid is never high" + "\033[0m")
+            print("\n\033[91m" + "Valid can never be 1" + "\033[0m")
         else:
             print(
                 "\n\033[92m" + "Formal check of mapped application passed" + "\033[0m"
@@ -680,7 +688,7 @@ def verify_design_top(interconnect, coreir_file):
         symbols = (
             mapped_output_datas
             + mapped_output_valids
-            + ["cycle_count", "bmc_counter", "clock_cycle_count"]
+            + ["cycle_count", "bmc_counter", "check_cycle_count"]
         )
 
         print_trace(solver, bmc, symbols, waveform_signals)
