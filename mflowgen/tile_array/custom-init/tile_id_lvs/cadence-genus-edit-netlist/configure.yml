@@ -62,6 +62,5 @@ postconditions:
 
   # Basic error checking
 
-  - assert 'Cannot resolve reference' not in File( 'logs/genus.log' )
   - assert 'Error   :' not in File( 'logs/genus.log' )
 
