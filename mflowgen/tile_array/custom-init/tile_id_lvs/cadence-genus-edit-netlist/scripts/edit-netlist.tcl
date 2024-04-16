@@ -11,7 +11,7 @@ set non_tile_insts [get_cells * -filter {(ref_lib_cell_name!=Tile_MemCore) && (r
 set top_tiles [get_cells Tile_*_Y01]
 foreach_in_collection tile $top_tiles {
   set tile_name [get_property $tile hierarchical_name]
-  foreach pin_query {*NORTH* *config_config* config_read config_write flush clk clk_pass_through reset read_config_data_in} {
+  foreach pin_query {*NORTH* *config_config* config_read config_write flush clk clk_pass_through reset read_config_data_in stall} {
     set pins [get_pins ${tile_name}/${pin_query}]
     foreach_in_collection pin $pins {
       edit_netlist disconnect $pin
