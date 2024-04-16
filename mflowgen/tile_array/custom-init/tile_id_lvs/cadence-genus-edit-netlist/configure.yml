@@ -1,0 +1,67 @@
+#=========================================================================
+# Cadence Genus Synthesis
+#=========================================================================
+# Author : Alex Carsello
+# Date   : April 15, 2024
+#
+
+name: cadence-genus-edit-netlist
+
+#-------------------------------------------------------------------------
+# Inputs and Outputs
+#-------------------------------------------------------------------------
+
+inputs:
+  - adk
+  - design.v
+  - constraints.tcl
+
+outputs:
+  - design.v
+  - design.sdc
+  - design.sdf
+  - design.spef
+  - design.namemap
+
+#-------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------
+
+commands:
+  - genus -no_gui -f START.tcl -log logs/genus.log
+  - mkdir -p outputs && cd outputs
+  - ln -sf ../design.v design.v
+
+#-------------------------------------------------------------------------
+# Parameters
+#-------------------------------------------------------------------------
+
+parameters:
+  design_name: undefined
+  read_hdl_defines: ""
+  order:
+    - designer-interface.tcl
+    - setup-session.tcl
+    - read-design.tcl
+    - edit-netlist.tcl
+    - generate-results.tcl
+
+#-------------------------------------------------------------------------
+# Assertions
+#-------------------------------------------------------------------------
+
+preconditions:
+
+  - assert Tool( 'genus' )                   # tool check
+  - assert File( 'inputs/adk' )              # must exist
+  - assert File( 'inputs/design.v' )         # must exist
+
+postconditions:
+
+  - assert File( 'outputs/design.v' )        # must exist
+
+  # Basic error checking
+
+  - assert 'Cannot resolve reference' not in File( 'logs/genus.log' )
+  - assert 'Error   :' not in File( 'logs/genus.log' )
+
