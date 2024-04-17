@@ -42,14 +42,19 @@ set max_row_hex [format %02X $max_row]
 set min_col_hex [format %02X $min_col]
 set max_col_hex [format %02X $max_col]
 
+set second_half_start_row_hex [format %02X [expr $min_row + 8]]
+
 set non_tile_insts [get_cells * -filter {(ref_lib_cell_name!=Tile_MemCore) && (ref_lib_cell_name!=Tile_PE)}]
 
 # Disconnect everything going into top of array
 # Get all the top row tiles
 set top_tiles [get_cells Tile_*_Y${min_row_hex}]
+set second_half_top_tiles [get_cells Tile_*_Y${second_half_start_row_hex}]
+
+append_to_collection top_tiles $second_half_top_tiles
+
 foreach_in_collection tile $top_tiles {
   set tile_name [get_property $tile hierarchical_name]
-  # Turn off boundary opto so unconnected pins remain unconnected
   foreach pin_query {*NORTH* *config_config* config_read config_write flush clk clk_pass_through reset read_config_data_in stall} {
     set pins [get_pins ${tile_name}/${pin_query}]
     foreach_in_collection pin $pins {
