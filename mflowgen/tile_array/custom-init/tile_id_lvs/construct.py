@@ -37,6 +37,7 @@ def construct(design_name='undefined', clock_period=1000):
   # Custom steps
   lvs_rules = Step( this_dir + '/custom-lvs-rules' )
   checker   = Step( this_dir + '/checker' )
+  edit_netlist = Step( this_dir + '/cadence-genus-edit-netlist' )
 
   # Default steps
   lvs = Step( 'mentor-calibre-lvs', default=True )
@@ -46,12 +47,13 @@ def construct(design_name='undefined', clock_period=1000):
   # Inputs
   g.add_input( 'adk', \
                lvs.i( 'adk' ), \
+               edit_netlist.i( 'adk' ) \
+             )
+  g.add_input( 'design.lvs.v', \
+               edit_netlist.i( 'design.v' ), \
              )
   g.add_input( 'design-merged.gds', \
                lvs.i( 'design_merged.gds' ), \
-             )
-  g.add_input( 'design.lvs.v', \
-               lvs.i( 'design.lvs.v' ), \
              )
 
   g.add_output( 'result', checker.o( 'result' ) )
@@ -60,13 +62,17 @@ def construct(design_name='undefined', clock_period=1000):
   # Graph -- Add nodes
   #-----------------------------------------------------------------------
 
-  g.add_step( lvs_rules )
-  g.add_step( lvs       )
-  g.add_step( checker   )
+  g.add_step( lvs_rules    )
+  g.add_step( edit_netlist )
+  g.add_step( lvs          )
+  g.add_step( checker      )
 
   #-----------------------------------------------------------------------
   # Graph -- Add edges
   #-----------------------------------------------------------------------
+
+  # Connections
+  g.connect( edit_netlist.o( 'design.v' ), lvs.i( 'design.lvs.v' ) )
 
   # Connect by name
   g.connect_by_name( lvs_rules, lvs )
