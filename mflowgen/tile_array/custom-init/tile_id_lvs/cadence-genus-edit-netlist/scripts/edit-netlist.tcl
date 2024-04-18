@@ -42,7 +42,8 @@ set max_row_hex [format %02X $max_row]
 set min_col_hex [format %02X $min_col]
 set max_col_hex [format %02X $max_col]
 
-set second_half_start_row_hex [format %02X [expr $min_row + 8]]
+set second_half_start_row [expr $min_row + 8]
+set second_half_start_row_hex [format %02X $second_half_start_row]
 
 set non_tile_insts [get_cells * -filter {(ref_lib_cell_name!=Tile_MemCore) && (ref_lib_cell_name!=Tile_PE)}]
 
@@ -53,13 +54,21 @@ set second_half_top_tiles [get_cells Tile_*_Y${second_half_start_row_hex}]
 
 append_to_collection top_tiles $second_half_top_tiles
 
+# Disconnect clk
+edit_netlist disconnect clk
+
 foreach_in_collection tile $top_tiles {
   set tile_name [get_property $tile hierarchical_name]
-  foreach pin_query {*NORTH* *config_config* config_read config_write flush clk clk_pass_through reset read_config_data_in stall} {
+  foreach pin_query {*NORTH* *config_config* config_read config_write flush reset read_config_data_in stall} {
     set pins [get_pins ${tile_name}/${pin_query}]
     foreach_in_collection pin $pins {
       edit_netlist disconnect $pin
     }
+  }
+  # Disconnect the clk pin if it's a PE tile
+  if {[get_property $tile ref_lib_cell_name] == "Tile_PE"} {
+    edit_netlist disconnect [get_pin $tile_name/clk]
+    edit_netlist disconnect [get_pin $tile_name/clk_pass_through]
   }
 }
 
