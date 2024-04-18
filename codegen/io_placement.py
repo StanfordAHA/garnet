@@ -1,3 +1,6 @@
+import sys
+import os 
+import re
 from textwrap import dedent
 import parse_gold
 
@@ -16,12 +19,6 @@ def unrolling(inputs, outputs, input_place_list, output_place_list, extent_dict,
         input_name_str = input_name.replace("hw_", "")
         input_name_str = input_name_str.replace(".raw", "")
         input_str = ", ".join([str(elem) for elem in input_place_list[idx]])
-
-        if("matmul_ijk" in app_name):
-            if ("mode_0" in input_name_str and "tensor_C" in input_name_str):
-                input_name_str = input_name_str.replace("mode_0", "mode_1")
-            elif ("mode_1" in input_name_str and "tensor_C" in input_name_str):
-                input_name_str = input_name_str.replace("mode_1", "mode_0")
 
         f_str = f'''
         int {input_name_str}_unroll = {len(input_place_list[idx])};
@@ -48,9 +45,7 @@ def unrolling(inputs, outputs, input_place_list, output_place_list, extent_dict,
         input_name_str = input_name.replace("hw_", "")
         input_name_str = input_name_str.replace(".raw", "")
         f_str = f'''
-        for (int i = 0; i < {input_name_str}_unroll; i++) {{
-          write_glb_memory(0x40000 * ({input_name_str}_unroll_array[i]), (uint16_t * ) app_{input_name_str}_data, app_{input_name_str}_data_size / {input_name_str}_unroll, i, {input_name_str}_unroll);
-        }}
+          write_glb_memory(0x40000 * ({input_name_str}_unroll_array[0]), (uint16_t * ) app_{input_name_str}_data, app_{input_name_str}_data_size / {input_name_str}_unroll, 0, {input_name_str}_unroll);
         '''
         f.write(dedent(f_str))
         checkpoint = checkpoint + len(input_place_list[idx])
@@ -70,42 +65,49 @@ def unrolling(inputs, outputs, input_place_list, output_place_list, extent_dict,
     f.write(f"int stream_pulse_g2f = {hex(stream_pulse_g2f)};\n")
     f.write(f"int stream_pulse_f2g = {hex(stream_pulse_f2g)};\n\n")
 
-    f.write("static void update_glb_pointer_start_addr(int k){")
-    for idx, input_name in enumerate(inputs):
-        input_name_str = input_name.replace("hw_", "")
-        input_name_str = input_name_str.replace(".raw", "")
-        f_str = f'''        
-        for (int i = 0; i < {input_name_str}_unroll; i++) {{
-          int sum = 0;
-          if (k == 0) {{
-            sum = {input_name_str}_extents[k]*2;
-          }} else {{
-            sum = {input_name_str}_extents[k]*2 + {input_name_str}_extents[k-1]*2;
-            {input_name_str}_extents[k] = sum/2;
-          }}
-        HAL_Cgra_Glb_WriteReg(0x100 * ({input_name_str}_unroll_array[i]) + GLB_LD_DMA_HEADER_0_START_ADDR_R, 0x40000 * ({input_name_str}_unroll_array[i]) + sum);
-        }}
-        '''
-        f.write(dedent(f_str))
-
-    f.write("}\n\n")
-
-    f.write("\n")
-
-    f.write("static void update_glb_pointer_extent(int k){")
     for idx, input_name in enumerate(inputs):
         input_name_str = input_name.replace("hw_", "")
         input_name_str = input_name_str.replace(".raw", "")
         f_str = f'''
-        for (int i = 0; i < {input_name_str}_unroll; i++) {{
-          HAL_Cgra_Glb_WriteReg(0x100 * ({input_name_str}_unroll_array[i]) + GLB_LD_DMA_HEADER_0_RANGE_0_R, {input_name_str}_extents[k]-2);
-        }}
+          int {input_name_str}_extents_sum = 0;
+        '''
+        f.write(dedent(f_str))
+
+    f.write("\n")
+    
+
+    f.write("static void update_glb_input(int k){")
+    for idx, input_name in enumerate(inputs):
+        input_name_str = input_name.replace("hw_", "")
+        input_name_str = input_name_str.replace(".raw", "")
+        f_str = f'''        
+        {input_name_str}_extents_sum += {input_name_str}_extents[k]*2;
+        glb_reg_write(0x100 * ({input_name_str}_unroll_array[0]) + GLB_LD_DMA_HEADER_0_START_ADDR_R, 0x40000 * ({input_name_str}_unroll_array[0]) + {input_name_str}_extents_sum);
+        glb_reg_write(0x100 * ({input_name_str}_unroll_array[0]) + GLB_LD_DMA_HEADER_0_RANGE_0_R, {input_name_str}_extents[k+1]-2);
+        
         '''
         f.write(dedent(f_str))
 
     f.write("}\n\n")
 
     f.write("\n")
+
+
+    f.write("\n")
+
+    # f.close()
+
+    # f = open("./extents.h", "w")
+    # for idx, input_name in enumerate(inputs):
+    #     extents = extent_dict[input_name]
+    #     input_name_str = input_name.replace("hw_", "")
+    #     input_name_str = input_name_str.replace(".raw", "")
+    #     input_str = ", ".join([str(elem) for elem in extents])
+    #     f_str = f'''
+    #     uint16_t {input_name_str}_extents[{len(extents)}] = {{{input_str}}};
+    #     '''
+    #     f.write(dedent(f_str))
+    # f.close()
 
 
     if dense: 
@@ -139,8 +141,11 @@ def unrolling(inputs, outputs, input_place_list, output_place_list, extent_dict,
       f.write("return err;\n")
       f.write("}\n\n")
 
+    
+
+
     else:
-        print("no gold")
+        print("generate sparse gold elsewhere")
         #parse_gold.parse_gold(f, name_list)
       
 
