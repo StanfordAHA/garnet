@@ -1,2 +1,4 @@
 LVS BOX "*S1DB*"
+LVS BOX "Tile_PE"
+LVS BOX "Tile_MemCore"
 
