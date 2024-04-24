@@ -67,8 +67,20 @@ def set_pnr_inputs(
                     input_pnr_symbol,
                 )
 
+                # PnR inputs are delayed by 1 cycle
+
+                input_coreir_d0 = solver.create_fts_state_var(
+                    input_coreir_name + "_d0", input_coreir.get_sort()
+                )
+                input_coreir_d1 = solver.create_fts_state_var(
+                    input_coreir_name + "_d1", input_coreir.get_sort()
+                )
+
+                solver.fts.assign_next(input_coreir_d0, input_coreir)
+                solver.fts.assign_next(input_coreir_d1, input_coreir_d0)
+
                 solver.fts.add_invar(
-                    solver.create_term(solver.ops.Equal, input_coreir, input_pnr_short)
+                    solver.create_term(solver.ops.Equal, input_coreir_d1, input_pnr_short)
                 )
 
     for k, v in input_symbols_coreir.items():
@@ -100,7 +112,7 @@ def get_output_array_idx(solver, bvsort16, mapped_output_var_name, valid_name):
 
     # This is a list that stores the number of valid pixels at each cycle
     # Can use this to index into halide output pixel array
-    cycle_to_idx = mem_tile_get_num_valids(
+    cycle_to_idx, valids = mem_tile_get_num_valids(
         solver.stencil_valid_to_schedule[memtile],
         solver.max_cycles,
         iterator_support=6,
@@ -147,11 +159,7 @@ def compare_output_arrays(
     solver, coreir_output_array, pnr_output_array, coreir_valid_array, pnr_valid_array
 ):
     # Create property term that says valid is always 1
-    property_term = solver.create_term(
-        solver.ops.Equal,
-        solver.create_term(0, solver.create_bvsort(16)),
-        solver.create_term(0, solver.create_bvsort(16)),
-    )
+    property_term = solver.create_term(True)
 
     for cycle in range(solver.max_cycles):
         coreir_output = solver.create_term(
@@ -176,23 +184,24 @@ def compare_output_arrays(
             solver.create_const(cycle, solver.create_bvsort(16)),
         )
 
-        valid_high = solver.create_term(
+
+        # prop = solver.create_term(
+        #     solver.ops.Implies,
+        #     solver.create_term(solver.ops.Equal, coreir_valid, solver.create_term(1, solver.create_bvsort(1))),
+        #     solver.create_term(solver.ops.Equal, coreir_valid, pnr_valid),
+        # )
+
+        # property_term = solver.create_term(solver.ops.And, property_term, prop)
+
+        both_valid = solver.create_term(
             solver.ops.And,
-            solver.create_term(
-                solver.ops.Equal,
-                coreir_valid,
-                solver.create_term(1, solver.create_bvsort(1)),
-            ),
-            solver.create_term(
-                solver.ops.Equal,
-                pnr_valid,
-                solver.create_term(1, solver.create_bvsort(1)),
-            ),
+            solver.create_term(solver.ops.Equal, coreir_valid, solver.create_term(1, solver.create_bvsort(1))),
+            solver.create_term(solver.ops.Equal, pnr_valid, solver.create_term(1, solver.create_bvsort(1))),
         )
 
         prop = solver.create_term(
             solver.ops.Implies,
-            valid_high,
+            both_valid,
             solver.create_term(solver.ops.Equal, coreir_output, pnr_output),
         )
 
@@ -269,16 +278,12 @@ def create_pnr_property_term(
 
     # If solver.bmc_counter is less than to solver.first_valid_output
     output_dep_on_input = solver.create_term(
-        solver.ops.BVUlt,
+        solver.ops.BVUle,
         solver.bmc_counter,
         solver.create_term(2 * input_to_output_cycle_dep, bvsort16),
     )
 
-    property_term = solver.create_term(
-        solver.ops.Equal,
-        solver.create_term(0, bvsort16),
-        solver.create_term(0, bvsort16),
-    )
+    property_term = solver.create_term(True)
 
     # create an array and counter for each output variable
     for coreir_symbol, pnr_symbol in coreir_to_pnr.items():
@@ -482,10 +487,9 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
         instance_to_instr,
     )
 
-    nx_to_pdf(nx_pnr, "/aha/pnr")
 
     solver, input_symbols_pnr, output_symbols_pnr = nx_to_smt(
-        nx_pnr, interconnect, solver, app_dir, io_delay=True
+        nx_pnr, interconnect, solver, app_dir
     )
 
     set_clk_rst_flush(solver)
@@ -514,6 +518,8 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
     prop = pono.Property(solver.solver, property_term)
 
     bmc = pono.Bmc(prop, solver.fts, solver.solver)
+
+    breakpoint()
 
     check_pixels = 1
     check_cycles = solver.first_valid_output + 1 + check_pixels
@@ -562,9 +568,7 @@ def verify_pnr(interconnect, coreir_file, instance_to_instr):
         waveform_signals = [
             "pixel_index_",
             "cycle_count",
-            "addr_out",
             "halide_out",
-            "dim_counter",
         ]
 
         print_trace(solver, bmc, symbols, waveform_signals)
